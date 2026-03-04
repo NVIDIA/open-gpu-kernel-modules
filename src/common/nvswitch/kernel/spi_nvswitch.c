@@ -48,7 +48,7 @@ nvswitch_spi_init
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
     cmd.hdr.unitId = RM_SOE_UNIT_SPI;
-    cmd.hdr.size   = sizeof(cmd);
+    cmd.hdr.size   = RM_FLCN_QUEUE_HDR_SIZE + sizeof(RM_SOE_SPI_CMD);
     cmd.cmd.spi.cmdType = RM_SOE_SPI_INIT;
 
     nvswitch_timeout_create(NVSWITCH_INTERVAL_1MSEC_IN_NS * 30, &timeout);

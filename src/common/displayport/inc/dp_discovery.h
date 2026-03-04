@@ -57,7 +57,7 @@ namespace DisplayPort
             bool        videoSink;          // Should be true when a video sink is supported
             NvU64       maxTmdsClkRate;
 
-            Device():peerDevice(None),SDPStreams(0),SDPStreamSinks(0),dirty(false),videoSink(false)
+            Device():peerDevice(None),SDPStreams(0),SDPStreamSinks(0),dirty(false),videoSink(false),maxTmdsClkRate(0)
             {
                 portMap.validMap = portMap.inputMap = portMap.internalMap = 0;
             }
@@ -223,6 +223,7 @@ namespace DisplayPort
                 : device(device), address(device.address), parent(parent), completed(false),
                   retriesRemoteDpcdWriteMessage(0), retryRemoteDpcdWriteMessage(false),
                   retriesRemoteDpcdReadMessage(0), retryRemoteDpcdReadMessage(false),
+                  retriesLinkAddressMessage(0), retryLinkAddressMessage(false),
                   bFromCSN(bFromCSN)
             {}
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,16 +21,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clc637_h_
-#define _clc637_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc637.finn
+//
 
-#define AMPERE_SMC_PARTITION_REF    (0x0000c637)
+#define AMPERE_SMC_PARTITION_REF        (0xc637U) /* finn: Evaluated from "NVC637_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 //
 // This swizzId can be used by root clients like tools for device level
@@ -42,10 +42,12 @@ extern "C" {
 // TODO: Deprecate NVC637_DEVICE_LEVEL_SWIZZID once all the clients are moved to
 //       NVC637_DEVICE_PROFILING_SWIZZID
 //
-#define NVC637_DEVICE_LEVEL_SWIZZID NVC637_DEVICE_PROFILING_SWIZZID
+#define NVC637_DEVICE_LEVEL_SWIZZID     NVC637_DEVICE_PROFILING_SWIZZID
 
 /* NvRmAlloc parameters */
-typedef struct {
+#define NVC637_ALLOCATION_PARAMETERS_MESSAGE_ID (0xc637U)
+
+typedef struct NVC637_ALLOCATION_PARAMETERS {
     //
     // capDescriptor is a file descriptor for unix RM clients, but a void
     // pointer for windows RM clients.
@@ -57,10 +59,4 @@ typedef struct {
 
     NvU32 swizzId;
 } NVC637_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _clc637_h_ */
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,8 @@ rmapiAlloc
     NvHandle     hParent,
     NvHandle    *phObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 );
 
 NV_STATUS
@@ -46,7 +47,8 @@ rmapiAllocWithHandle
     NvHandle     hParent,
     NvHandle     hObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 );
 
 NV_STATUS
@@ -58,6 +60,7 @@ rmapiAllocWithSecInfo
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequired,
     API_SECURITY_INFO   *pSecInfo
@@ -72,6 +75,7 @@ rmapiAllocWithSecInfoTls
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequired,
     API_SECURITY_INFO   *pSecInfo
@@ -106,7 +110,7 @@ rmapiFreeWithSecInfoTls
 );
 
 NV_STATUS
-rmapiFreeClientList
+rmapiDisableClients
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,
@@ -114,7 +118,7 @@ rmapiFreeClientList
 );
 
 NV_STATUS
-rmapiFreeClientListWithSecInfo
+rmapiDisableClientsWithSecInfo
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,
@@ -123,7 +127,7 @@ rmapiFreeClientListWithSecInfo
 );
 
 NV_STATUS
-rmapiFreeClientListWithSecInfoTls
+rmapiDisableClientsWithSecInfoTls
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,
@@ -263,6 +267,20 @@ rmapiMapToCpuWithSecInfo
 );
 
 NV_STATUS
+rmapiMapToCpuWithSecInfoV2
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32             *flags,
+    API_SECURITY_INFO *pSecInfo
+);
+
+NV_STATUS
 rmapiMapToCpuWithSecInfoTls
 (
     RM_API            *pRmApi,
@@ -273,6 +291,19 @@ rmapiMapToCpuWithSecInfoTls
     NvU64              length,
     NvP64             *ppCpuVirtAddr,
     NvU32              flags,
+    API_SECURITY_INFO *pSecInfo
+);
+NV_STATUS
+rmapiMapToCpuWithSecInfoTlsV2
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32             *flags,
     API_SECURITY_INFO *pSecInfo
 );
 
@@ -317,29 +348,15 @@ rmapiUnmapFromCpuWithSecInfoTls
 NV_STATUS
 rmapiMap
 (
-    RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvHandle  hMemory,
-    NvU64     offset,
-    NvU64     length,
-    NvU32     flags,
-    NvU64    *pDmaOffset
+    RM_API            *pRmApi,
+    NVOS46_PARAMETERS *pParms
 );
 
 NV_STATUS
 rmapiMapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 );
 
@@ -348,14 +365,7 @@ NV_STATUS
 rmapiMapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 );
 
@@ -363,24 +373,14 @@ NV_STATUS
 rmapiUnmap
 (
     RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvHandle  hMemory,
-    NvU32     flags,
-    NvU64     dmaOffset
+    NVOS47_PARAMETERS *pParms
 );
 
 NV_STATUS
 rmapiUnmapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU32              flags,
-    NvU64              dmaOffset,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 );
 
@@ -388,12 +388,7 @@ NV_STATUS
 rmapiUnmapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU32              flags,
-    NvU64              dmaOffset,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 );
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,14 +24,13 @@
 #ifndef GSP_INIT_ARGS_H
 #define GSP_INIT_ARGS_H
 
-#include "core/core.h"
+#include "nvtypes.h"
+#include "gpu/mem_mgr/rm_page_size.h"
+
+#define WPR_ALIGNMENT RM_PAGE_SIZE_128K
 
 typedef struct {
-    RmPhysAddr cmdQueuePhysAddr;
-} GSP_RMFS_INIT_ARGUMENTS;
-
-typedef struct {
-    RmPhysAddr sharedMemPhysAddr;
+    NvU64 sharedMemPhysAddr;
     NvU32 pageTableEntryCount;
     NvLength cmdQueueOffset;
     NvLength statQueueOffset;
@@ -50,6 +49,21 @@ typedef struct
 {
     MESSAGE_QUEUE_INIT_ARGUMENTS      messageQueueInitArguments;
     GSP_SR_INIT_ARGUMENTS             srInitArguments;
+    NvU32                             gpuInstance;
+    NvBool                            bDmemStack;
+
+    struct
+    {
+        NvU64                         pa;
+        NvU64                         size;
+    } profilerArgs;
+
+    struct
+    {
+        NvU64                         pa;
+        NvU64                         size;
+    } sysmemHeapArgs;
+
 } GSP_ARGUMENTS_CACHED;
 
 #endif // GSP_INIT_ARGS_H

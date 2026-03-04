@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -155,6 +155,42 @@
 // uvm_push_end().
 #define UVM_PUSH_MAX_CONCURRENT_PUSHES UVM_PUSHBUFFER_CHUNKS
 
+// Push space needed for static part for the WLC schedule, as initialized in
+// 'setup_wlc_schedule':
+// * CE decrypt (of WLC PB): 56B
+// * WFI:                     8B
+// Total:                    64B
+//
+// Push space needed for secure work launch is 364B. The push is constructed
+// in 'internal_channel_submit_work_indirect' and 'uvm_channel_end_push'
+// * CE decrypt (of indirect PB):                   56B
+// * memset_8 (indirect GPFIFO entry):              44B
+// * semaphore release (indirect GPPUT):            24B
+// * semaphore release (indirect doorbell):         24B
+// Appendix added in 'uvm_channel_end_push':
+// * semaphore release (WLC tracking):             168B
+//      * semaphore release (payload):              24B
+//      * notifier memset:                          40B
+//      * payload encryption:                       64B
+//      * notifier memset:                          40B
+// * semaphore increment (LCIC GPPUT):              24B
+// * semaphore release (LCIC doorbell):             24B
+// Total:                                          364B
+#define UVM_MAX_WLC_PUSH_SIZE (364)
+
+// Push space needed for static LCIC schedule, as initialized in
+// 'setup_lcic_schedule':
+// * WFI:                                   8B
+// * semaphore increment (WLC GPPUT):      24B
+// * semaphore increment (WLC GPPUT):      24B
+// * semaphore increment (LCIC tracking): 160B
+//      * semaphore increment (payload):   24B
+//      * notifier memcopy:                36B
+//      * payload encryption:              64B
+//      * notifier memcopy:                36B
+// Total:                                 216B
+#define UVM_LCIC_PUSH_SIZE (216)
+
 typedef struct
 {
     // Offset within the chunk of where a next push should begin if there is
@@ -175,6 +211,12 @@ struct uvm_pushbuffer_struct
 
     // Memory allocation backing the pushbuffer
     uvm_rm_mem_t *memory;
+
+    // Mirror image of memory in dma sysmem
+    uvm_rm_mem_t *memory_unprotected_sysmem;
+
+    // Secure sysmem backing memory
+    void *memory_protected_sysmem;
 
     // Array of the pushbuffer chunks
     uvm_pushbuffer_chunk_t chunks[UVM_PUSHBUFFER_CHUNKS];
@@ -216,10 +258,16 @@ NV_STATUS uvm_pushbuffer_begin_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *pu
 
 // Complete a pending push
 // Updates the chunk state the pending push used
-void uvm_pushbuffer_mark_completed(uvm_pushbuffer_t *pushbuffer, uvm_gpfifo_entry_t *gpfifo);
+void uvm_pushbuffer_mark_completed(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo);
 
 // Get the GPU VA for an ongoing push
 NvU64 uvm_pushbuffer_get_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push);
+
+// Get the CPU VA for encrypted sysmem mirror
+void *uvm_pushbuffer_get_unprotected_cpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push);
+
+// Get the GPU VA for encrypted sysmem mirror
+NvU64 uvm_pushbuffer_get_unprotected_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push);
 
 // Get the offset of the beginning of the push from the base of the pushbuffer allocation
 NvU32 uvm_pushbuffer_get_offset_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push);
@@ -235,5 +283,12 @@ bool uvm_pushbuffer_has_space(uvm_pushbuffer_t *pushbuffer);
 
 // Helper to print pushbuffer state for debugging
 void uvm_pushbuffer_print(uvm_pushbuffer_t *pushbuffer);
+
+// Helper to retrieve the pushbuffer->memory GPU VA.
+NvU64 uvm_pushbuffer_get_gpu_va_base(uvm_pushbuffer_t *pushbuffer);
+
+// SEC2 variant to retrieve GPU VA for push location.
+// Unlike other channels, SEC2 uses signed pushes in unprotected sysmem.
+NvU64 uvm_pushbuffer_get_sec2_gpu_va_base(uvm_pushbuffer_t *pushbuffer);
 
 #endif // __UVM_PUSHBUFFER_H__

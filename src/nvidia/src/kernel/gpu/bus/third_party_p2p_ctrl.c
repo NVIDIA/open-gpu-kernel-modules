@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/subdevice/subdevice.h"
 #include <class/cl90f1.h>  // FERMI_VASPACE_A
 #include <rmp2pdefines.h>
 #include "gpu/bus/third_party_p2p.h"
@@ -37,8 +38,6 @@ thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL
     NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *pRegisterVaSpaceParams
 )
 {
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pThirdPartyP2P);
-    NvHandle  hObject = RES_GET_HANDLE(pThirdPartyP2P);
     NvU32     vaSpaceToken;
     NV_STATUS status;
     OBJGPU *pGpu;
@@ -48,8 +47,7 @@ thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL
         return NV_ERR_INVALID_OBJECT_PARENT;
 
 
-    status = CliAddThirdPartyP2PVASpace(hClient,
-                                        hObject,
+    status = CliAddThirdPartyP2PVASpace(pThirdPartyP2P,
                                         pRegisterVaSpaceParams->hVASpace,
                                         &vaSpaceToken);
     if (status == NV_OK)
@@ -91,7 +89,6 @@ thirdpartyp2pCtrlCmdRegisterVidmem_IMPL
 {
     Memory    *pMemory;
     RsClient  *pClient = RES_GET_CLIENT(pThirdPartyP2P);
-    NvHandle   hObject = RES_GET_HANDLE(pThirdPartyP2P);
     NvHandle   hDevice;
     NvU64      address = pRegisterVidmemParams->address;
     NvU64      size    = pRegisterVidmemParams->size;
@@ -138,8 +135,7 @@ thirdpartyp2pCtrlCmdRegisterVidmem_IMPL
     if (memdescGetSize(pMemory->pMemDesc) < offset + size)
         return NV_ERR_INVALID_ARGUMENT;
 
-    status = CliAddThirdPartyP2PVidmemInfo(pClient->hClient,
-                                           hObject,
+    status = CliAddThirdPartyP2PVidmemInfo(pThirdPartyP2P,
                                            pRegisterVidmemParams->hMemory,
                                            address,
                                            size,
@@ -179,17 +175,16 @@ thirdpartyp2pCtrlCmdRegisterPid_IMPL
     NV503C_CTRL_REGISTER_PID_PARAMS *pRegisterPidParams
 )
 {
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pThirdPartyP2P);
-    NvHandle  hObject = RES_GET_HANDLE(pThirdPartyP2P);
     RmClient *pClient;
     NvU32     pid;
     NV_STATUS status;
 
-    NV_ASSERT_OK_OR_RETURN(serverutilGetClientUnderLock(pRegisterPidParams->hClient, &pClient));
+    pClient = serverutilGetClientUnderLock(pRegisterPidParams->hClient);
+    NV_ASSERT_OR_RETURN(pClient != NULL, NV_ERR_INVALID_CLIENT);
+
     pid = pClient->ProcID;
 
-    status = CliAddThirdPartyP2PClientPid(hClient,
-                                          hObject,
+    status = CliAddThirdPartyP2PClientPid(pThirdPartyP2P,
                                           pid,
                                           pRegisterPidParams->hClient);
     return status;

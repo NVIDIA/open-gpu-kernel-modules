@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,16 @@
  */
 #ifndef _NV_GMMU_FMT_H_
 #define _NV_GMMU_FMT_H_
+
+#include <ctrl/ctrl90f1.h>
+
+#if (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
+#include <rmconfig.h>
+#else
+#if !defined(RMCFG_CHIP_ENABLED)
+#define RMCFG_CHIP_x 0
+#endif
+#endif //(defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
 
 #ifdef __cplusplus
 extern "C" {
@@ -174,11 +184,6 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_MAX_ENTRY_SIZE 16
 
 /*!
- * Maximum number of page levels across the supported formats.
- */
-#define GMMU_FMT_MAX_LEVELS 6
-
-/*!
  * Default version specifier for API args to indicate no preference.
  * This is not a real version number and not part of the
  * enumeration array below.
@@ -197,9 +202,14 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_VERSION_2        2
 
 /*!
+ * 6-level (57b VA) format supported on Hopper+.
+ */
+#define GMMU_FMT_VERSION_3        3
+
+/*!
  * Maximum number of MMU versions supported.
  */
-#define GMMU_FMT_MAX_VERSION_COUNT 2
+#define GMMU_FMT_MAX_VERSION_COUNT 3
 
 /*!
  * Array of format version numbers for enumeration utility.
@@ -409,7 +419,7 @@ struct GMMU_FMT_PDE
      * Should be always the same as version in GMMU_FMT above.
      */
     NvU32 version;
-    
+
     /*!
      * Aperture field indicating which physical address space the sublevel resides.
      */
@@ -439,7 +449,7 @@ struct GMMU_FMT_PDE
      *       TODO: Wiki link to explain arch differences.
      */
     NV_FIELD_BOOL fldVolatile;
-    
+
     /*!
      * PDE_PCF field for V3 format.
      */

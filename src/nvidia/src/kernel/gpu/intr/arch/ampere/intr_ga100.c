@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,7 @@
 #include "core/core.h"
 #include "kernel/gpu/intr/intr.h"
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "os/os.h"
 
 #include "published/ampere/ga100/dev_vm.h"
@@ -34,82 +34,43 @@
 // intrga100.c - HAL routines for Ampere interrupt object
 //
 
-/*!
- * @brief Returns a 64 bit mask, where all the bits set to 0 are the ones we
- * intend to leave enabled in the client shared subtree even when we disable
- * interrupts (for example, when we take the GPU lock).
- *
- * The non-replayable fault interrupt is shared with the client, and in the
- * top half of the interrupt handler, as such, we only copy fault packets from
- * the HW buffer to the appropriate SW buffers.
- *
- * The timer interrupt also does not need to be blocked by the GPU lock
- * since SWRL granular locking requires the timer interrupt to be serviced
- * outside the GPU lock.
- * Note - While we keep the timer interrupt enabled during the GPU lock,
- * we don't enable it in the PTIMER level when SWRL granular locking is disabled.
- */
-NvU64
-intrGetUvmSharedLeafEnDisableMask_GA100
+
+void
+intrGetLocklessVectorsInRmSubtree_GA100
 (
-    OBJGPU  *pGpu,
-    Intr *pIntr
+    OBJGPU *pGpu,
+    Intr   *pIntr,
+    NvU32 (*pInterruptVectors)[2]
 )
 {
-    NvU32 intrVectorNonReplayableFault;
-    NvU32 intrVectorTimerSwrl = NV_INTR_VECTOR_INVALID;
-    NvU64 mask = 0;
-
-    // GSP RM services both MMU non-replayable fault and FIFO interrupts
-    if (IS_GSP_CLIENT(pGpu))
+    NvU32 i;
+    for (i = 0; i < NV_ARRAY_ELEMENTS((*pInterruptVectors)); i++)
     {
-        return ~mask;
+        (*pInterruptVectors)[i] = NV_INTR_VECTOR_INVALID;
     }
-
-    intrVectorNonReplayableFault = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_NON_REPLAYABLE_FAULT, NV_FALSE);
-
-    if (!IS_VIRTUAL(pGpu))
-    {
-        intrVectorTimerSwrl = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_TMR_SWRL, NV_FALSE);
-    }
-
-    if (intrVectorTimerSwrl != NV_INTR_VECTOR_INVALID)
-    {
-        // Ascertain that they're in the same subtree and same leaf
-        NV_ASSERT(NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(intrVectorNonReplayableFault) ==
-                NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(intrVectorTimerSwrl));
-        NV_ASSERT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(intrVectorNonReplayableFault) ==
-                NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(intrVectorTimerSwrl));
-    }
-
-    // Ascertain that they're in the first leaf
-    NV_ASSERT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(intrVectorNonReplayableFault) ==
-              NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(NV_CPU_INTR_UVM_SHARED_SUBTREE_START));
+    i = 0;
 
     //
-    // Compile-time ascertain that we only have 1 client subtree (we assume
-    // this since we cache only 64 bits).
+    // The non-replayable fault interrupt is shared with the client, and in the
+    // top half of the interrupt handler, as such, we only copy fault packets
+    // from the HW buffer to the appropriate SW buffers.
     //
-    ct_assert(NV_CPU_INTR_UVM_SHARED_SUBTREE_START == NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST);
-
     //
-    // Compile-time ascertain that we only have 2 subtrees as this is what we currently support
-    // by only caching 64 bits
+    // On GSP we service non replayable faults in the bottom half, so we
+    // shouldn't mask them
     //
-    ct_assert((NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST) - 1) ==
-               NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(NV_CPU_INTR_UVM_SHARED_SUBTREE_START));
+    NV_ASSERT(i < NV_ARRAY_ELEMENTS((*pInterruptVectors)));
 
-    mask = NVBIT32(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVectorNonReplayableFault));
-
-    if (intrVectorTimerSwrl != NV_INTR_VECTOR_INVALID)
+    if (IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
-        mask |= NVBIT32(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVectorTimerSwrl));
+        (*pInterruptVectors)[i] = intrGetVectorFromEngineId(pGpu, pIntr,
+            MC_ENGINE_IDX_NON_REPLAYABLE_FAULT,
+            NV_FALSE);
+        i++;
     }
 
-    mask <<= 32;
-
-    return ~mask;
 }
+
 
 /*!
  * @brief Sanity check that the given stall engine interrupt vector is in the right tree

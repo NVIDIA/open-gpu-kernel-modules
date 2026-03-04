@@ -26,7 +26,7 @@
 
 #include "nvkms-types.h"
 
-void nv3DVisionAuthenticationEvo(NVDispEvoRec *pDispEvo, const NvU32 head);
+void nv3DVisionAuthenticationEvo(NVDispEvoRec *pDispEvo, const NvU32 apiHead);
 
 void nvDpyCheck3DVisionCapsEvo(NVDpyEvoPtr pDpyEvo);
 NvBool
@@ -34,6 +34,6 @@ nvPatch3DVisionModeTimingsEvo(NVT_TIMING *pTiming, NVDpyEvoPtr pDpyEvo,
                               NVEvoInfoStringPtr pInfoString);
 void nvDisable3DVisionAegis(const NVDpyEvoRec *pDpyEvo);
 void nvSendHwModeTimingsToAegisEvo(const NVDispEvoRec *pDispEvo,
-                                   const NvU32 head);
+                                   const NvU32 apiHead);
 
 #endif /* __NVKMS_3DVISION_H__ */

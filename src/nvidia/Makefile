@@ -10,6 +10,13 @@ include ../../utils.mk
 
 include srcs.mk
 
+##############################################################################
+# Helper functions to determine the compiler type
+##############################################################################
+GET_COMPILER_TYPE = \
+  $(shell $(VERSION_MK_DIR)/nv-compiler.sh type $(1))
+##############################################################################
+
 # The source files for nv-kernel.o are all SRCS and SRCS_CXX defined in srcs.mk,
 # and the NVIDIA ID string
 ALL_SRCS = $(SRCS) $(SRCS_CXX)
@@ -23,7 +30,9 @@ CFLAGS += -include $(SRC_COMMON)/sdk/nvidia/inc/cpuopsys.h
 CFLAGS += -I kernel/inc
 CFLAGS += -I interface
 CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc
+CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc/hw
 CFLAGS += -I arch/nvalloc/common/inc
+CFLAGS += -I arch/nvalloc/common/inc/gsp
 CFLAGS += -I arch/nvalloc/common/inc/deprecated
 CFLAGS += -I arch/nvalloc/unix/include
 CFLAGS += -I inc
@@ -33,7 +42,7 @@ CFLAGS += -I $(SRC_COMMON)/shared/msgq/inc
 CFLAGS += -I $(SRC_COMMON)/inc
 
 CFLAGS += -I $(SRC_COMMON)/uproc/os/libos-v2.0.0/include
-CFLAGS += -I $(SRC_COMMON)/uproc/os/libos-v2.0.0/debug
+CFLAGS += -I $(SRC_COMMON)/uproc/os/common/include
 CFLAGS += -I $(SRC_COMMON)/inc/swref
 CFLAGS += -I $(SRC_COMMON)/inc/swref/published
 
@@ -43,15 +52,30 @@ CFLAGS += -I $(SRC_COMMON)/nvswitch/interface
 CFLAGS += -I $(SRC_COMMON)/nvswitch/common/inc/
 CFLAGS += -I $(SRC_COMMON)/inc/displayport
 CFLAGS += -I $(SRC_COMMON)/nvlink/interface/
+CFLAGS += -I $(SRC_COMMON)/nvlink/inband/interface
 CFLAGS += -I src/mm/uvm/interface
 CFLAGS += -I inc/libraries
 CFLAGS += -I src/libraries
 CFLAGS += -I inc/kernel
 
+# Libspdm source requires additional include paths and build flags.
+include src/libraries/libspdm/nvidia/openspdm.mk
+$(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -I ,$(LIBSPDM_INCLUDES))
+$(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -D,$(LIBSPDM_DEFINES))
+
+#if NV_USE_MBEDTLS
+MBEDTLS_VERSION ?= 3.6.2
+CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/include
+CFLAGS += -I $(SRC_COMMON)/mbedtls/$(MBEDTLS_VERSION)/nvidia
+CFLAGS += -D"MBEDTLS_USER_CONFIG_FILE=<nvrm_mbedtls_config.h>"
+#endif
+
 CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings
+CFLAGS += -Wundef
 CFLAGS += -fno-common
 CFLAGS += -ffreestanding
+CFLAGS += -fno-stack-protector
 
 ifeq ($(TARGET_ARCH),x86_64)
   CFLAGS += -msoft-float
@@ -67,7 +91,15 @@ ifeq ($(TARGET_ARCH),aarch64)
   CFLAGS += -mgeneral-regs-only
   CFLAGS += -march=armv8-a
   CFLAGS += -mstrict-align
+  CFLAGS += -ffixed-x18
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mno-outline-atomics)
+endif
+
+ifeq ($(TARGET_ARCH),riscv64)
+  CFLAGS += -march=rv64imac_zicsr_zifencei
+  CFLAGS += -mabi=lp64
+  CFLAGS += -mcmodel=medany
+  CFLAGS += -mno-relax
 endif
 
 CFLAGS += -fno-pic
@@ -78,7 +110,7 @@ CFLAGS += -DNVRM
 CFLAGS += -DLOCK_VAL_ENABLED=0
 CFLAGS += -DPORT_ATOMIC_64_BIT_SUPPORTED=1
 CFLAGS += -DPORT_IS_KERNEL_BUILD=1
-CFLAGS += -DPORT_IS_CHECKED_BUILD=1
+CFLAGS += -DPORT_IS_CHECKED_BUILD=0
 CFLAGS += -DPORT_MODULE_atomic=1
 CFLAGS += -DPORT_MODULE_core=1
 CFLAGS += -DPORT_MODULE_cpu=1
@@ -120,11 +152,39 @@ CFLAGS += -fdata-sections
 NV_KERNEL_O_LDFLAGS += --gc-sections
 EXPORTS_LINK_COMMAND = exports_link_command.txt
 
-CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=none)
-
 ifeq ($(TARGET_ARCH),x86_64)
+  COMPILER_TYPE := $(call GET_COMPILER_TYPE, $(CC))
+  ENDBR_SUPPORTED := $(call AS_HAS_INSTR, endbr64)
+
+  FCF_SUPPORTED =
+
+  #
+  # GCC flags -fcf-protection=branch and -mindirect-branch=extern-thunk can
+  # be used together after GCC version 9.4.0. See 
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93654 for details.
+  # Check if GCC version is appropriate.
+  #
+  ifeq ($(COMPILER_TYPE),gcc)
+    FCF_SUPPORTED := \
+      $(shell $(VERSION_MK_DIR)/nv-compiler.sh version_is_at_least $(CC) 90400)
+  endif
+
+  #
+  # Clang version 14.0.0 is required for -fcf-protection=branch to work
+  # correctly. See commit
+  # https://github.com/llvm/llvm-project/commit/dfcf69770bc522b9e411c66454934a37c1f35332
+  #
+  ifeq ($(COMPILER_TYPE),clang)
+    FCF_SUPPORTED := \
+      $(shell $(VERSION_MK_DIR)/nv-compiler.sh version_is_at_least $(CC) 140000)
+  endif
+
+  ifeq ($(FCF_SUPPORTED)-$(ENDBR_SUPPORTED),1-1)
+    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=branch)
+  endif
+  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch-register)
-  CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
+    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)
 endif
 
 CFLAGS += $(CONDITIONAL_CFLAGS)
@@ -144,10 +204,12 @@ $(foreach src, $(ALL_SRCS), $(eval $(call DEFINE_OBJECT_RULE,TARGET,$(src))))
 
 NV_KERNEL_O = $(OUTPUTDIR)/nv-kernel.o
 
-.PNONY: all clean
+.PHONY: all
 all: $(NV_KERNEL_O)
 
 LINKER_SCRIPT = nv-kernel.ld
+
+NV_KERNEL_O_LDFLAGS += $(LDFLAGS)
 
 $(NV_KERNEL_O): $(OBJS) $(EXPORTS_LINK_COMMAND) $(LINKER_SCRIPT)
 	$(call quiet_cmd,LD) \
@@ -157,7 +219,9 @@ $(NV_KERNEL_O): $(OBJS) $(EXPORTS_LINK_COMMAND) $(LINKER_SCRIPT)
 	$(call quiet_cmd,OBJCOPY) \
 	  --localize-symbol=memset \
 	  --localize-symbol=memcpy \
+	  --remove-section=.note.gnu.property \
 	  $@
 
+.PHONY: clean
 clean:
 	$(RM) -rf $(OUTPUTDIR)

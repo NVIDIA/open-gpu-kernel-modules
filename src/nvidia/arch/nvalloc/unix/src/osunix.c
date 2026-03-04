@@ -28,59 +28,10 @@
 *                                                                           *
 \***************************************************************************/
 
-#include <osfuncs.h>
-#include <os/os.h> 
-
-static void initOSSpecificFunctionPointers(OBJOS *);
-static void initMiscOSFunctionPointers(OBJOS *);
-static void initUnixOSFunctionPointers(OBJOS *);
-static void initOSSpecificProperties(OBJOS *);
+#include <os/os.h>
 
 void
 osInitObjOS(OBJOS *pOS)
-{
-    initOSSpecificFunctionPointers(pOS);
-    initOSSpecificProperties(pOS);
-}
-
-static void
-initOSSpecificFunctionPointers(OBJOS *pOS)
-{
-    initMiscOSFunctionPointers(pOS);
-    initUnixOSFunctionPointers(pOS);
-}
-
-static void
-initMiscOSFunctionPointers(OBJOS *pOS)
-{
-    pOS->osQueueWorkItem           = osQueueWorkItem;
-    pOS->osQueueWorkItemWithFlags  = osQueueWorkItemWithFlags;
-    pOS->osQueueSystemWorkItem     = osQueueSystemWorkItem;
-}
-
-static void
-initUnixOSFunctionPointers(OBJOS *pOS)
-{
-#if defined(NVCPU_X86_64)
-    pOS->osNv_rdcr4                  = nv_rdcr4;
-    pOS->osNv_cpuid                  = nv_cpuid;
-#endif
-
-    pOS->osCallACPI_DSM              = osCallACPI_DSM;
-    pOS->osCallACPI_DDC              = osCallACPI_DDC;
-    pOS->osCallACPI_NVHG_ROM         = osCallACPI_NVHG_ROM;
-    pOS->osCallACPI_DOD              = osCallACPI_DOD;
-    pOS->osCallACPI_MXDM             = osCallACPI_MXDM;
-    pOS->osCallACPI_MXDS             = osCallACPI_MXDS;
-
-    pOS->osDbgBreakpointEnabled      = osDbgBreakpointEnabled;
-}
-
-static void
-initOSSpecificProperties
-(
-    OBJOS *pOS
-)
 {
     pOS->setProperty(pOS, PDB_PROP_OS_ONDEMAND_VBLANK_CONTROL_ENABLE_DEFAULT, NV_TRUE);
     pOS->setProperty(pOS, PDB_PROP_OS_CACHED_MEMORY_MAPPINGS_FOR_ACPI_TABLE, NV_TRUE);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,8 @@
  *         Command Messages between driver and SMBPBI unit of SOE
  */
 
+#include "oob/smbpbi.h"
+
 /*!
  * Test command/event type
  */
@@ -41,6 +43,8 @@ enum
     RM_SOE_SMBPBI_CMD_ID_INIT,
     RM_SOE_SMBPBI_CMD_ID_UNLOAD,
     RM_SOE_SMBPBI_CMD_ID_SET_LINK_ERROR_INFO,
+    RM_SOE_SMBPBI_CMD_ID_LOG_MESSAGE,
+    RM_SOE_SMBPBI_CMD_ID_INIT_DATA,
 };
 
 /*!
@@ -103,6 +107,37 @@ typedef struct
 *PRM_SOE_SMBPBI_CMD_SET_LINK_ERROR_INFO;
 
 /*!
+ * SMBPBI queue log message command payload
+ * TOFIX: Command size may not exceed 0x80, so we have
+ * to split the message into multiple segments.
+ * We anticipate that the max cmd size will be increased.
+ */
+#define RM_SOE_SMBPBI_CMD_LOG_MESSAGE_MAX_STRING        80
+#define RM_SOE_SMBPBI_CMD_LOG_MESSAGE_STRING_SEGMENT_SZ 42
+typedef struct
+{
+    NvU8    cmdType;
+    NvU8    msgLen;
+    NvU8    msgOffset;
+    NvU8    segSize;
+    NvU32   sxidId;
+    NvU32   timeStamp;
+    NvU8    errorString[RM_SOE_SMBPBI_CMD_LOG_MESSAGE_STRING_SEGMENT_SZ];
+} RM_SOE_SMBPBI_CMD_LOG_MESSAGE,
+*PRM_SOE_SMBPBI_CMD_LOG_MESSAGE;
+
+/*!
+ * SMBPBI init data command payload
+ */
+#define RM_SOE_SMBPBI_CMD_INIT_DATA_MAX_STRING          16
+typedef struct
+{
+    NvU8    cmdType;
+    NvU8    driverVersionString[RM_SOE_SMBPBI_CMD_INIT_DATA_MAX_STRING];
+} RM_SOE_SMBPBI_CMD_INIT_DATA,
+*PRM_SOE_SMBPBI_CMD_INIT_DATA;
+
+/*!
  * SMBPBI queue command payload
  */
 typedef union
@@ -112,6 +147,8 @@ typedef union
     RM_SOE_SMBPBI_CMD_INIT                 init;
     RM_SOE_SMBPBI_CMD_UNLOAD               unload;
     RM_SOE_SMBPBI_CMD_SET_LINK_ERROR_INFO  linkErrorInfo;
+    RM_SOE_SMBPBI_CMD_LOG_MESSAGE          logMessage;
+    RM_SOE_SMBPBI_CMD_INIT_DATA            initData;
 } RM_SOE_SMBPBI_CMD;
 
 #endif  // _SOEIFSMBPBI_H_

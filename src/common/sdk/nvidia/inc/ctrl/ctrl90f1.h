@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,28 +27,26 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl90f1.finn
+// Source file:      ctrl/ctrl90f1.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 #include "mmu_fmt_types.h"
+#include "nvcfg_sdk.h"
 
-#define GMMU_FMT_MAX_LEVELS  6
+#define GMMU_FMT_MAX_LEVELS  6U
 
 /* Fermi+ GPU VASpace control commands and parameters */
 #define NV90F1_CTRL_CMD(cat,idx)          NVXXXX_CTRL_CMD(0x90F1, NV90F1_CTRL_##cat, idx)
 
 /* Command categories (6bits) */
-#define NV90F1_CTRL_RESERVED (0x00)
-#define NV90F1_CTRL_VASPACE  (0x01)
+#define NV90F1_CTRL_RESERVED (0x00U)
+#define NV90F1_CTRL_VASPACE  (0x01U)
 
 /*!
  * Does nothing.
  */
-#define NV90F1_CTRL_CMD_NULL (0x90f10000) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_RESERVED_INTERFACE_ID << 8) | 0x0" */
+#define NV90F1_CTRL_CMD_NULL (0x90f10000U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
 
 
@@ -57,7 +55,7 @@
 /*!
  * Get VAS GPU MMU format.
  */
-#define NV90F1_CTRL_CMD_VASPACE_GET_GMMU_FORMAT (0x90f10101) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_CMD_VASPACE_GET_GMMU_FORMAT (0x90f10101U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS_MESSAGE_ID" */
 
 #define NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS_MESSAGE_ID (0x1U)
 
@@ -84,7 +82,42 @@ typedef struct NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS {
 /*!
  * Get VAS page level information.
  */
-#define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO (0x90f10102) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | 0x2" */
+#define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO (0x90f10102U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS_MESSAGE_ID" */
+
+typedef struct NV_CTRL_VASPACE_PAGE_LEVEL {
+    /*!
+     * Format of this level.
+     */
+    NV_DECLARE_ALIGNED(struct MMU_FMT_LEVEL *pFmt, 8);
+
+    /*!
+     * Level/Sublevel Formats flattened
+     */
+    NV_DECLARE_ALIGNED(MMU_FMT_LEVEL levelFmt, 8);
+    NV_DECLARE_ALIGNED(MMU_FMT_LEVEL sublevelFmt[MMU_FMT_MAX_SUB_LEVELS], 8);
+
+    /*!
+     * Physical address of this page level instance.
+     */
+    NV_DECLARE_ALIGNED(NvU64 physAddress, 8);
+
+    /*!
+     * Aperture in which this page level instance resides.
+     */
+    NvU32 aperture;
+
+    /*!
+     * Size in bytes allocated for this level instance.
+     */
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+
+    /*!
+     * Entry Index for this offset.
+     */
+    NvU32 entryIndex;
+} NV_CTRL_VASPACE_PAGE_LEVEL;
+
+#define NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS_MESSAGE_ID (0x2U)
 
 typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
     /*!
@@ -109,6 +142,12 @@ typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
 
     /*!
+     * [in] Flags
+     * Contains flags to control various aspects of page level info.
+     */
+    NV_DECLARE_ALIGNED(NvU64 flags, 8);
+
+    /*!
      * [out] Number of levels populated.
      */
     NvU32    numLevels;
@@ -116,34 +155,13 @@ typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
     /*!
      * [out] Per-level information.
      */
-    struct {
-        /*!
-         * Format of this level.
-         */
-        NV_DECLARE_ALIGNED(struct MMU_FMT_LEVEL *pFmt, 8);
-
-       /*!
-        * Level/Sublevel Formats flattened
-        */
-        NV_DECLARE_ALIGNED(MMU_FMT_LEVEL levelFmt, 8);
-        NV_DECLARE_ALIGNED(MMU_FMT_LEVEL sublevelFmt[MMU_FMT_MAX_SUB_LEVELS], 8);
-
-        /*!
-         * Physical address of this page level instance.
-         */
-        NV_DECLARE_ALIGNED(NvU64 physAddress, 8);
-
-        /*!
-         * Aperture in which this page level instance resides.
-         */
-        NvU32 aperture;
-
-        /*!
-         * Size in bytes allocated for this level instance.
-         */
-        NV_DECLARE_ALIGNED(NvU64 size, 8);
-    } levels[GMMU_FMT_MAX_LEVELS];
+    NV_DECLARE_ALIGNED(NV_CTRL_VASPACE_PAGE_LEVEL levels[GMMU_FMT_MAX_LEVELS], 8);
 } NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS;
+
+/* valid flags parameter values */
+#define NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_FLAG_NONE 0x0ULL
+#define NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_FLAG_BAR1 NVBIT64(0)
+
 
 /*!
  * Reserve (allocate and bind) page directory/table entries up to
@@ -154,7 +172,7 @@ typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
  * A particular VA range and level (page size) combination may only be
  * locked down once at a given time, but each level is independent.
  */
-#define NV90F1_CTRL_CMD_VASPACE_RESERVE_ENTRIES (0x90f10103) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_CMD_VASPACE_RESERVE_ENTRIES           (0x90f10103U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS_MESSAGE_ID" */
 
 #define NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS_MESSAGE_ID (0x3U)
 
@@ -195,7 +213,7 @@ typedef struct NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS {
  * a given level of the MMU format that has been reserved through a call to
  * @ref NV90F1_CTRL_CMD_VASPACE_RESERVE_ENTRIES. Also referred to as "unlock".
  */
-#define NV90F1_CTRL_CMD_VASPACE_RELEASE_ENTRIES (0x90f10104) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_CMD_VASPACE_RELEASE_ENTRIES (0x90f10104U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS_MESSAGE_ID" */
 
 #define NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS_MESSAGE_ID (0x4U)
 
@@ -235,7 +253,11 @@ typedef struct NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS {
  * Get VAS page level information without kernel priviledge. This will internally call
  * NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO.
  */
-#define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO_VERIF (0x90f10105) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | 0x5" */
+#define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO_VERIF (0x90f10105U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_VERIF_PARAMS_MESSAGE_ID" */
+
+#define NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_VERIF_PARAMS_MESSAGE_ID (0x5U)
+
+typedef NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_VERIF_PARAMS;
 
 /*!
  * Pin PDEs for a given VA range on the server RM and then mirror the client's page 
@@ -243,7 +265,7 @@ typedef struct NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS {
  *  
  * @ref
  */
-#define NV90F1_CTRL_CMD_VASPACE_COPY_SERVER_RESERVED_PDES (0x90f10106) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_CMD_VASPACE_COPY_SERVER_RESERVED_PDES (0x90f10106U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_MESSAGE_ID" */
 
 #define NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_MESSAGE_ID (0x6U)
 
@@ -308,5 +330,78 @@ typedef struct NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS {
         NvU8  pageShift;
     } levels[GMMU_FMT_MAX_LEVELS];
 } NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS;
+
+/*!
+ * Retrieve extra VA range that RM needs to reserve from the OS
+ */
+#define NV90F1_CTRL_CMD_VASPACE_GET_HOST_RM_MANAGED_SIZE (0x90f10107U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS_MESSAGE_ID (0x7U)
+
+typedef struct NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS {
+    /*!
+     * [in] GPU sub-device handle - this API only supports unicast.
+     *      Pass 0 to use subDeviceId instead.
+     */
+    NvHandle hSubDevice;
+
+    /*!
+     * [in] GPU sub-device ID. Ignored if hSubDevice is non-zero.
+     */
+    NvU32    subDeviceId;
+
+    /*!
+     * [out]  The required VA range, in Megabytes
+     */
+    NV_DECLARE_ALIGNED(NvU64 requiredVaRange, 8);
+} NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS;
+
+/*!
+ * Retrieve info on a VAS heap - used only for the MODS test RandomVATest
+ */
+#define NV90F1_CTRL_CMD_VASPACE_GET_VAS_HEAP_INFO (0x90f10108U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_VAS_HEAP_INFO_PARAMS_MESSAGE_ID" */
+#define NV90F1_CTRL_VASPACE_GET_VAS_HEAP_INFO_PARAMS_MESSAGE_ID (0x8U)
+
+typedef struct NV90F1_CTRL_VASPACE_GET_VAS_HEAP_INFO_PARAMS {
+    /*!
+     * [in] GPU sub-device handle - this API only supports unicast.
+     *      Pass 0 to use subDeviceId instead.
+     */
+    NvHandle hSubDevice;
+
+    /*!
+     * [in] GPU sub-device ID. Ignored if hSubDevice is non-zero.
+     */
+    NvU32    subDeviceId;
+
+    /*!
+     * [out] Number of free bytes in the heap
+     */
+    NV_DECLARE_ALIGNED(NvU64 bytesFree, 8);
+
+    /*!
+     * [out] Number of bytes in the heap
+     */
+    NV_DECLARE_ALIGNED(NvU64 bytesTotal, 8);
+
+    /*!
+     * [out] Offset of largest free block
+     */
+    NV_DECLARE_ALIGNED(NvU64 largestFreeOffset, 8);
+
+    /*!
+     * [out] Size of the largest free block
+     */
+    NV_DECLARE_ALIGNED(NvU64 largestFreeSize, 8);
+
+    /*!
+     * [out] Number of usable free bytes
+     */
+    NV_DECLARE_ALIGNED(NvU64 usableBytesFree, 8);
+
+    /*!
+     * [out] Number of free blocks
+     */
+    NvU32    numFreeBlocks;
+} NV90F1_CTRL_VASPACE_GET_VAS_HEAP_INFO_PARAMS;
 
 /* _ctrl90f1_h_ */

@@ -113,6 +113,10 @@ kmemsysCacheOp_GM200
             }
             break;
         case FB_CACHE_VIDEO_MEMORY:
+            // Fbmem cache ops are not supported from VF -- force NV_OK for MODS
+            if (IS_VIRTUAL(pGpu))
+                return NV_OK;
+
             if (cacheOp == FB_CACHE_EVICT)
             {
                 status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem,

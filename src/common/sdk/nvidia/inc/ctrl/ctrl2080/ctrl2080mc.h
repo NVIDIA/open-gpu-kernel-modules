@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,12 +27,11 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080mc.finn
+// Source file:      ctrl/ctrl2080/ctrl2080mc.finn
 //
 
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
+#include "nvcfg_sdk.h"
 
 /* NV20_SUBDEVICE_XX mc control commands and parameters */
 
@@ -72,16 +71,22 @@ typedef struct NV2080_CTRL_MC_GET_ARCH_INFO_PARAMS {
 
 /* valid architecture values */
 
-
 #define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_T23X          (0xE0000023)
 
 
 #define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100         (0x00000160)
 #define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100         (0x00000170)
+#define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100         (0x00000180)
+#define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100         (0x00000190)
+#define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100         (0x000001A0)
+
+#define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200         (0x000001B0)
 
 
 
 /* valid ARCHITECTURE_T23X implementation values */
+
+
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_T234        (0x00000004)
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_T234D       (0x00000005)
 
@@ -107,6 +112,43 @@ typedef struct NV2080_CTRL_MC_GET_ARCH_INFO_PARAMS {
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA106       (0x00000006)
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA107       (0x00000007)
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA10B       (0x0000000B)
+
+
+/* valid ARCHITECTURE_GH10x implementation values */
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GH100       (0x00000000)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GH100_SOC   (0x00000001)
+
+/* valid ARCHITECTURE_AD10x implementation values */
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD100       (0x00000000)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD000       (0x00000001)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD101       (0x00000001)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD102       (0x00000002)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD103       (0x00000003)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD104       (0x00000004)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD106       (0x00000006)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD107       (0x00000007)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_AD10B       (0x0000000B)
+/* valid ARCHITECTURE_GB10x implementation values */
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB100       (0x00000000)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB102       (0x00000002)
+
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB110       (0x00000003)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB112       (0x00000004)
+
+
+/* valid ARCHITECTURE_GB20x implementation values */
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB200       (0x00000000)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB202       (0x00000002)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB203       (0x00000003)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB205       (0x00000005)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB206       (0x00000006)
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB207       (0x00000007)
+
+
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B       (0x0000000B)
+
+
+#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20C       (0x0000000C)
 
 
 
@@ -167,52 +209,6 @@ typedef struct NV2080_CTRL_MC_GET_MANUFACTURER_PARAMS {
 
 
 /*
- * NV2080_CTRL_CMD_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS
- *
- * This command is used to allow clients to query whether hostclk slowdown is
- * disabled.
- *
- *  bDisabled
- *    This parameter will hold the status of hostclk slowdown
- *
- * Possible status values returned are:
- *   NV_OK
- *
- */
-#define NV2080_CTRL_CMD_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS              (0x20801708) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS_PARAMS_MESSAGE_ID (0x8U)
-
-typedef struct NV2080_CTRL_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS_PARAMS {
-    NvBool bDisabled;
-} NV2080_CTRL_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_MC_SET_HOSTCLK_SLOWDOWN_STATUS
- *
- * This command is used to allow clients to disable/enable hostclk slowdown.
- *
- *  bDisable
- *    When this parameter is set to TRUE, RM should disable hostclk slowdown.
- *    If it is set to FALSE, RM will attempt to enable hostclk slowdown, but
- *    in this case, slowdown is NOT guaranteed to be enabled since there may
- *    be other reason (like regkey) preventing slowdown.
- *
- * Possible status values returned are:
- *   NV_OK
- *
- */
-#define NV2080_CTRL_CMD_MC_SET_HOSTCLK_SLOWDOWN_STATUS (0x20801709) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS_MESSAGE_ID (0x9U)
-
-typedef struct NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS {
-    NvBool bDisable;
-} NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS;
-
-
-
-/*
  * NV2080_CTRL_CMD_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP
  *
  * This call will setup RM to either service or ignore the
@@ -226,7 +222,7 @@ typedef struct NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS {
  *   NVOS_STATUS_ERROR_NOT_SUPPORTED
  */
 
-#define NV2080_CTRL_CMD_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP (0x2080170c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP          (0x2080170c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_MC_CHANGE_REPLAYABLE_FAULT_OWNERSHIP_PARAMS_MESSAGE_ID (0xCU)
 
@@ -320,5 +316,46 @@ typedef struct NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS {
     NvU32                            numEntries;
     NV2080_CTRL_MC_STATIC_INTR_ENTRY entries[NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX];
 } NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS;
+
+
+/*!
+ * Categories of interrupts.
+ *
+ * Each of these categories get a separate range of interrupt subtrees (top
+ * level bits) corresponding to a set of interrupt leaves.
+ * Interrupt leaves may overlap between two or more categories.
+ * Interrupt leaves may or may not be contiguous.
+ */
+typedef enum NV2080_INTR_CATEGORY {
+    NV2080_INTR_CATEGORY_DEFAULT = 0,
+    NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE = 1,
+    NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION = 2,
+    NV2080_INTR_CATEGORY_RUNLIST = 3,
+    NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION = 4,
+    NV2080_INTR_CATEGORY_UVM_OWNED = 5,
+    NV2080_INTR_CATEGORY_UVM_SHARED = 6,
+    NV2080_INTR_CATEGORY_ENUM_COUNT = 7,
+} NV2080_INTR_CATEGORY;
+
+#define NV2080_INTR_INVALID_SUBTREE NV_U8_MAX
+
+typedef struct NV2080_INTR_CATEGORY_SUBTREE_MAP {
+    // Maximum possible 64 subtrees, but 16 is enough for any existing silicon.
+    NV_DECLARE_ALIGNED(NvU64 subtreeMask, 8);
+} NV2080_INTR_CATEGORY_SUBTREE_MAP;
+
+/*
+ *  NV2080_CTRL_CMD_MC_GET_INTR_CATEGORY_SUBTREE_MAP
+ *
+ *  This command gets a mapping from every interrupt category -> subtrees used from
+ *  Host RM.
+ */
+#define NV2080_CTRL_CMD_MC_GET_INTR_CATEGORY_SUBTREE_MAP (0x2080170f) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID << 8) | NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS_MESSAGE_ID (0xFU)
+
+typedef struct NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS {
+    NV_DECLARE_ALIGNED(NV2080_INTR_CATEGORY_SUBTREE_MAP subtreeMap[NV2080_INTR_CATEGORY_ENUM_COUNT], 8);
+} NV2080_CTRL_MC_GET_INTR_CATEGORY_SUBTREE_MAP_PARAMS;
 
 /* _ctrl2080mc_h_ */

@@ -30,11 +30,11 @@
 #ifndef __EDID_H_
 #define __EDID_H_
 
-#include "nvtiming.h"
 #include "nvtiming_pvt.h"
+#include "displayid.h"
+#include "displayid20.h"
 
 // EDID 1.x detailed timing template
-
 
 #define NVT_PVT_EDID_LDD_PAYLOAD_SIZE       13
 
@@ -286,7 +286,6 @@ typedef struct _tagEIA861EXTENSION
     NvU8   checksum;                       // 0x7F
 }EIA861EXTENSION;
 
-
 typedef struct _tagVTBEXTENSION
 {
     NvU8 tag;                              // 0x00
@@ -297,6 +296,18 @@ typedef struct _tagVTBEXTENSION
     NvU8 data[NVT_VTB_MAX_PAYLOAD];        // 0x05 - 0x7E
     NvU8 checksum;
 }VTBEXTENSION;
+
+// EDID DisplayID extension block template
+typedef struct _tagDIDEXTENSION
+{
+    NvU8   tag;                            // 0x00
+    NvU8   struct_version;                 // 0x01
+    NvU8   length;                         // 0x02
+    NvU8   use_case;                       // 0x03
+    NvU8   ext_count;                      // 0x04
+    NvU8   data[NVT_DID_MAX_EXT_PAYLOAD];  // 0x05 - 0x7E
+    NvU8   checksum;                       // 0x7F
+}DIDEXTENSION;
 
 // video signal interface mask
 #define NVT_PVT_EDID_INPUT_ISDIGITAL_MASK       0x80 // 0==analog

@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080fb.finn
+// Source file:      ctrl/ctrl0080/ctrl0080fb.finn
 //
-
-
-
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
@@ -89,11 +86,13 @@ typedef struct NV0080_CTRL_FB_GET_CAPS_PARAMS {
 #define NV0080_CTRL_FB_CAPS_OS_OWNS_HEAP_NEED_ECC_SCRUB                             1:0x10
 #define NV0080_CTRL_FB_CAPS_ASYNC_CE_L2_BYPASS_SET                                  1:0x20 // Deprecated
 #define NV0080_CTRL_FB_CAPS_DISABLE_TILED_CACHING_INVALIDATES_WITH_ECC_BUG_1521641  1:0x40
+#define NV0080_CTRL_FB_CAPS_GENERIC_PAGE_KIND                                       1:0x80
 
 #define NV0080_CTRL_FB_CAPS_DISABLE_MSCG_WITH_VR_BUG_1681803                        2:0x01
 #define NV0080_CTRL_FB_CAPS_VIDMEM_ALLOCS_ARE_CLEARED                               2:0x02
 #define NV0080_CTRL_FB_CAPS_DISABLE_PLC_GLOBALLY                                    2:0x04
 #define NV0080_CTRL_FB_CAPS_PLC_BUG_3046774                                         2:0x08
+#define NV0080_CTRL_FB_CAPS_PARTIAL_UNMAP                                           2:0x10
 
 
 /* size in bytes of fb caps table */
@@ -164,6 +163,7 @@ typedef struct NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS {
     NvU32 backingStoreCbcBase;
     NvU32 comptaglineAllocationPolicy;
     NV_DECLARE_ALIGNED(NvU64 privRegionStartOffset, 8);
+    NvU32 cbcCoveragePerSlice;
 } NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS;
 
 #define NV0080_CTRL_CMD_FB_GET_COMPBIT_STORE_INFO_ADDRESS_SPACE_UNKNOWN 0 // ADDR_UNKNOWN
@@ -229,7 +229,36 @@ typedef struct NV0080_CTRL_FB_GET_CAPS_V2_PARAMS {
     NvU8 capsTbl[NV0080_CTRL_FB_CAPS_TBL_SIZE];
 } NV0080_CTRL_FB_GET_CAPS_V2_PARAMS;
 
+/**
+ * NV0080_CTRL_CMD_FB_SET_DEFAULT_VIDMEM_PHYSICALITY
+ *
+ * When clients allocate video memory specifying _DEFAULT (0) for
+ * NVOS32_ATTR_PHYSICALITY, RM will usually allocate contiguous memory.
+ * Clients can change that behavior with this command so that _DEFAULT maps to
+ * another value.
+ *
+ * The expectation is that clients currently implicitly rely on the default,
+ * but can be incrementally updated to explicitly specify _CONTIGUOUS where
+ * necessary and change the default for their allocations to _NONCONTIGUOUS or
+ * _ALLOW_NONCONTIGUOUS.
+ *
+ * In the future RM may be updated to globally default to _NONCONTIGUOUS or
+ * _ALLOW_NONCONTIGUOUS, and at that point this can be removed.
+ */
+#define NV0080_CTRL_CMD_FB_SET_DEFAULT_VIDMEM_PHYSICALITY (0x801308) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_FB_INTERFACE_ID << 8) | NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS_MESSAGE_ID" */
 
+#define NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS_MESSAGE_ID (0x8U)
+
+typedef struct NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS {
+    NvU32 value;
+} NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS;
+
+typedef enum NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY {
+    NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_DEFAULT = 0,
+    NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_NONCONTIGUOUS = 1,
+    NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_CONTIGUOUS = 2,
+    NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_ALLOW_NONCONTIGUOUS = 3,
+} NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY;
 
 
 /* _ctrl0080fb_h_ */

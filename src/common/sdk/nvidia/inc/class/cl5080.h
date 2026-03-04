@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,34 +20,27 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef _cl5080_h_
-#define _cl5080_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
 
-#define NV50_DEFERRED_API_CLASS                                    (0x00005080)
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl5080.finn
+//
+
+#include "cl5080_notification.h"
+
+#define NV50_DEFERRED_API_CLASS (0x5080U) /* finn: Evaluated from "NV5080_ALLOC_PARAMS_MESSAGE_ID" */
 
 /* NvRmAlloc parameters */
-typedef struct {
+#define NV5080_ALLOC_PARAMS_MESSAGE_ID (0x5080U)
+
+typedef struct NV5080_ALLOC_PARAMS {
     // Should the deferred api completion trigger an event
     NvBool notifyCompletion;
 } NV5080_ALLOC_PARAMS;
 
-/* dma method offsets, fields, and values */
-#define NV5080_SET_OBJECT                                          (0x00000000)
-#define NV5080_NO_OPERATION                                        (0x00000100)
-#define NV5080_DEFERRED_API                                        (0x00000200)
-#define NV5080_DEFERRED_API_HANDLE                                 31:0
-
 // Class-specific allocation capabilities
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl5080_h_ */
 

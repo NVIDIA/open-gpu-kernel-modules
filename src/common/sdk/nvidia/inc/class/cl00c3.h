@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,20 +20,24 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef SDK_CL00C3_H
-#define SDK_CL00C3_H
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
 
-#define NV01_MEMORY_SYNCPOINT 0x00C3
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl00c3.finn
+//
+
+#define NV01_MEMORY_SYNCPOINT (0xc3U) /* finn: Evaluated from "NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS_MESSAGE_ID" */
 
 /*
-* NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS - Allocation params to create syncpoint
-through NvRmAlloc.
-*/
-typedef struct
-{
-    NvU32    syncpointId;
+ * NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS - Allocation params to create syncpoint
+ * through NvRmAlloc.
+ */
+#define NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS_MESSAGE_ID (0x00c3U)
+
+typedef struct NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS {
+    NvU32 syncpointId;
 } NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS;
 
-#endif // SDK_CL00C3_H

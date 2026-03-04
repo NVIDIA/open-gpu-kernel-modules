@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,12 +54,8 @@
  *   device: multiple devices may have disps with the same dispHandle
  *   value.
  *
- *   A disp contains one or more subdevices, as reported by
- *   NvKmsQueryDispReply::subDeviceMask.  A disp will only have
- *   multiple subdevices in cases where the device only has a single
- *   disp.  Any subdevice specified in
- *   NvKmsQueryDispReply::subDeviceMask will also be in
- *   NvKmsAllocDeviceReply::subDeviceMask.
+ *   A disp represents one subdevice; disp index N corresponds to subdevice
+ *   index N.
  *
  * - A connector, which represents an electrical connection to the
  *   GPU.  E.g., a physical DVI-I connector has two NVKMS connector
@@ -198,9 +194,9 @@
  * structures, so the convention is to place a "padding" NvU32 in
  * request or reply structures that would otherwise be empty.
  */
-
 #include "nvtypes.h"
 #include "nvlimits.h"
+#include "nv_mig_types.h"
 #include "nv_dpy_id.h"
 #include "nv_mode_timings.h"
 #include "nvkms-api-types.h"
@@ -225,6 +221,7 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_SET_CURSOR_IMAGE,
     NVKMS_IOCTL_MOVE_CURSOR,
     NVKMS_IOCTL_SET_LUT,
+    NVKMS_IOCTL_CHECK_LUT_NOTIFIER,
     NVKMS_IOCTL_IDLE_BASE_CHANNEL,
     NVKMS_IOCTL_FLIP,
     NVKMS_IOCTL_DECLARE_DYNAMIC_DPY_INTEREST,
@@ -267,15 +264,19 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_RELEASE_SWAP_GROUP,
     NVKMS_IOCTL_SWITCH_MUX,
     NVKMS_IOCTL_GET_MUX_STATE,
-    NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE,
     NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT,
+    NVKMS_IOCTL_NOTIFY_VBLANK,
+    NVKMS_IOCTL_SET_FLIPLOCK_GROUP,
+    NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
+    NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
+    NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
+    NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED,
 };
 
 
 #define NVKMS_NVIDIA_DRIVER_VERSION_STRING_LENGTH                     32
 #define NVKMS_MAX_CONNECTORS_PER_DISP                                 16
-#define NVKMS_MAX_HEADS_PER_DISP                                      4
 #define NVKMS_MAX_GPUS_PER_FRAMELOCK                                  4
 #define NVKMS_MAX_DEVICE_REGISTRY_KEYS                                16
 #define NVKMS_MAX_DEVICE_REGISTRY_KEYNAME_LEN                         32
@@ -294,10 +295,6 @@ enum NvKmsIoctlCommand {
 #define NVKMS_GUID_SIZE                                               16
 #define NVKMS_3DVISION_DONGLE_PARAM_BYTES                             20
 #define NVKMS_GPU_STRING_SIZE                                         80
-
-#define NVKMS_LOG2_LUT_ARRAY_SIZE                                     10
-#define NVKMS_LUT_ARRAY_SIZE                                          (1 << NVKMS_LOG2_LUT_ARRAY_SIZE)
-#define NVKMS_VRR_SEMAPHORE_SURFACE_SIZE                              1024
 
 /*
  * The GUID string has the form:
@@ -359,6 +356,8 @@ enum NvKmsModeValidationOverrides {
     NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS                = (1 << 16),
     NVKMS_MODE_VALIDATION_ALLOW_DP_INTERLACED                = (1 << 17),
     NVKMS_MODE_VALIDATION_NO_INTERLACED_MODES                = (1 << 18),
+    NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD              = (1 << 19),
+    NVKMS_MODE_VALIDATION_PREFER_HDMI_FRL_MODE               = (1 << 20),
 };
 
 /*!
@@ -417,6 +416,12 @@ enum NvKmsStereoMode {
     NVKMS_STEREO_OTHER,
 };
 
+enum NvKmsDscMode {
+    NVKMS_DSC_MODE_DEFAULT = 0,
+    NVKMS_DSC_MODE_FORCE_ENABLE,
+    NVKMS_DSC_MODE_FORCE_DISABLE,
+};
+
 struct NvKmsModeValidationParams {
     NvBool verboseModeValidation;
     NvBool moreVerboseModeValidation;
@@ -434,11 +439,11 @@ struct NvKmsModeValidationParams {
     struct NvKmsModeValidationValidSyncs validSyncs;
 
     /*!
-     * Normally, NVKMS will determine on its own whether to use Display
-     * Stream Compression (DSC).  Use forceDsc to force NVKMS to use DSC,
-     * when the GPU supports it.
+     * Normally, NVKMS will determine on its own whether to enable/disable
+     * Display Stream Compression (DSC). Use dscMode to force NVKMS to
+     * enable/disable DSC, when both the GPU and display supports it.
      */
-    NvBool forceDsc;
+    enum NvKmsDscMode dscMode;
 
     /*!
      * When enabled, Display Stream Compression (DSC) has an
@@ -525,16 +530,6 @@ struct NvKmsSetCursorImageCommonParams {
 struct NvKmsMoveCursorCommonParams {
     NvS16 x; /*! in */
     NvS16 y; /*! in */
-};
-
-/*!
- * Per-component arrays of NvU16s describing the LUT; used for both the input
- * LUT and output LUT.
- */
-struct NvKmsLutRamps {
-    NvU16 red[NVKMS_LUT_ARRAY_SIZE];   /*! in */
-    NvU16 green[NVKMS_LUT_ARRAY_SIZE]; /*! in */
-    NvU16 blue[NVKMS_LUT_ARRAY_SIZE];  /*! in */
 };
 
 /*!
@@ -700,73 +695,6 @@ struct NvKmsChannelSyncObjects {
     } u;
 };
 
-enum NvKmsOutputTf {
-    /*
-     * NVKMS itself won't apply any OETF (clients are still
-     * free to provide a custom OLUT)
-     */
-    NVKMS_OUTPUT_TF_NONE = 0,
-    NVKMS_OUTPUT_TF_PQ = 1,
-};
-
-/*!
- * HDR Static Metadata Type1 Descriptor as per CEA-861.3 spec.
- * This is expected to match exactly with the spec.
- */
-struct NvKmsHDRStaticMetadata {
-    /*!
-     * Color primaries of the data.
-     * These are coded as unsigned 16-bit values in units of 0.00002,
-     * where 0x0000 represents zero and 0xC350 represents 1.0000.
-     */
-    struct {
-        NvU16 x, y;
-    } displayPrimaries[3];
-
-    /*!
-     * White point of colorspace data.
-     * These are coded as unsigned  16-bit values in units of 0.00002,
-     * where 0x0000 represents zero and 0xC350 represents 1.0000.
-     */
-    struct {
-        NvU16 x, y;
-    } whitePoint;
-
-    /**
-     * Maximum mastering display luminance.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxDisplayMasteringLuminance;
-
-    /*!
-     * Minimum mastering display luminance.
-     * This value is coded as an unsigned 16-bit value in units of
-     * 0.0001 cd/m2, where 0x0001 represents 0.0001 cd/m2 and 0xFFFF
-     * represents 6.5535 cd/m2.
-     */
-    NvU16 minDisplayMasteringLuminance;
-
-    /*!
-     * Maximum content light level.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxCLL;
-
-    /*!
-     * Maximum frame-average light level.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxFALL;
-};
-
-enum NvKmsInputColorSpace {
-    /* Unknown colorspace; no de-gamma will be applied */
-    NVKMS_SURFACE_COLORSPACE_NONE       = 0,
-};
-
 /*!
  * Description of how to flip on a single head.
  *
@@ -783,6 +711,8 @@ enum NvKmsInputColorSpace {
  * hardware value is used.
  */
 struct NvKmsFlipCommonParams {
+    
+    NvBool allowVrr;
 
     struct {
         NvBool specified;
@@ -800,13 +730,12 @@ struct NvKmsFlipCommonParams {
     /*
      * Set the output transfer function.
      *
-     * If output transfer function is HDR and staticMetadata is disabled
-     * for all the layers, flip request will be rejected.
+     * If output transfer function is HDR and no staticMetadata is specified
+     * for the head or layers, flip request will be rejected.
      *
-     * If output transfer function is HDR and staticMetadata is enabled
-     * for any of the layers, HDR output will be enabled. In this case,
-     * output lut values specified during modeset will be ignored and
-     * output lut will be set with the specified HDR transfer function.
+     * If output transfer is set, output lut values specified during modeset
+     * will be ignored and output lut will be set with the specified HDR
+     * transfer function.
      *
      * If output transfer function is SDR and staticMetadata is enabled,
      * HDR content for that layer will be tonemapped to the SDR output
@@ -816,6 +745,43 @@ struct NvKmsFlipCommonParams {
         enum NvKmsOutputTf val;
         NvBool specified;
     } tf;
+
+    /*!
+     * Describe the LUT to be used with the modeset or flip.
+     */
+    struct NvKmsSetLutCommonParams lut;
+
+    struct {
+        NvBool specified;
+        NvBool enabled;
+        struct NvKmsLUTSurfaceParams lut;
+    } olut;
+
+    struct {
+        NvBool specified;
+        NvU32 val;
+    } olutFpNormScale;
+
+    struct {
+        NvBool specified;
+        /*!
+         * If TRUE, override HDR static metadata for the head, instead of
+         * calculating it from HDR layer(s). If FALSE, do not override.
+         *
+         * Note that “specified” serves to mark the field as being changed in
+         * this flip request, rather than as specified for this frame.  So to
+         * disable HDR static metadata, set hdrStaticMetadata.specified = TRUE
+         * and hdrStaticMetadata.enabled = FALSE.
+         */
+        NvBool enabled;
+        enum NvKmsInfoFrameEOTF eotf;
+        struct NvKmsHDRStaticMetadata staticMetadata;
+    } hdrInfoFrame;
+
+    struct {
+        NvBool specified;
+        enum NvKmsOutputColorimetry val;
+    } colorimetry;
 
     struct {
         struct {
@@ -931,6 +897,18 @@ struct NvKmsFlipCommonParams {
             NvBool specified;
         } compositionParams;
 
+        struct {
+            NvBool specified;
+            NvBool enabled;
+            struct NvKmsLUTSurfaceParams lut;
+        } ilut;
+
+        struct {
+            NvBool specified;
+            NvBool enabled;
+            struct NvKmsLUTSurfaceParams lut;
+        } tmo;
+
         /*
          * Color-space conversion matrix applied to the layer before
          * compositing.
@@ -961,7 +939,7 @@ struct NvKmsFlipCommonParams {
 
         /*
          * This field can be used when
-         * NvKmsAllocDeviceReply::layerCaps[layer].supportsHDR = TRUE.
+         * NvKmsAllocDeviceReply::layerCaps[layer].supportsICtCp = TRUE.
          *
          * If staticMetadata is enabled for multiple layers, flip request
          * will be rejected.
@@ -980,10 +958,51 @@ struct NvKmsFlipCommonParams {
             struct NvKmsHDRStaticMetadata staticMetadata;
         } hdr;
 
+        /* Specifies whether the input color range is FULL or LIMITED. */
+        struct {
+            enum NvKmsInputColorRange val;
+            NvBool specified;
+        } colorRange;
+
+        /* This field has no effect right now. */
         struct {
             enum NvKmsInputColorSpace val;
             NvBool specified;
-        } colorspace;
+        } colorSpace;
+
+        /* Specifies input transfer function to be used */
+        struct {
+            enum NvKmsInputTf val;
+            NvBool specified;
+        } tf;
+
+        /* When enabled, explicitly set CSC00 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc00Override;
+
+        /* When enabled, explicitly set CSC01 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc01Override;
+
+        /* When enabled, explicitly set CSC10 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc10Override;
+
+        /* When enabled, explicitly set CSC11 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc11Override;
     } layer[NVKMS_MAX_LAYERS_PER_HEAD];
 };
 
@@ -1010,6 +1029,21 @@ struct NvKmsFlipCommonReplyOneHead {
  * object is freed.
  */
 
+struct NvKmsDeviceId {
+    /*!
+     * The (primary) GPU for this device; this is used as the value
+     * for NV0080_ALLOC_PARAMETERS::deviceId.
+     */
+    NvU32 rmDeviceId;
+
+    /*!
+     * The SMG (MIG) partition ID that this client must subscribe to in
+     * N-way SMG mode; or, if not in MIG mode, the value NO_MIG_DEVICE which
+     * equals to leaving this field initialized to zero (0).
+     */
+    MIGDeviceId migDevice;
+};
+
 struct NvKmsAllocDeviceRequest {
     /*!
      * Clients should populate versionString with the value of
@@ -1019,10 +1053,10 @@ struct NvKmsAllocDeviceRequest {
     char versionString[NVKMS_NVIDIA_DRIVER_VERSION_STRING_LENGTH];
 
     /*!
-     * The (primary) GPU for this device; this is used as the value
-     * for NV0080_ALLOC_PARAMETERS::deviceId.
+     * The underlying GPU for this device: this may point to a physical GPU
+     * or a graphics capable MIG partition (= an SMG device).
      */
-    NvU32 deviceId;
+    struct NvKmsDeviceId deviceId;
 
     /*!
      * Whether SLI Mosaic is requested: i.e., multiple disps, one
@@ -1117,9 +1151,6 @@ struct NvKmsAllocDeviceReply {
      * IMPLEMENTATION NOTE: this is the portion of DispHalRec::caps
      * that can vary between EVO classes.
      */
-    NvBool supportsInbandStereoSignaling;
-    NvBool requiresVrrSemaphores;
-    NvBool inputLutAppliesToBase;
 
     /*!
      * Whether the client can allocate and manipulate SwapGroup objects via
@@ -1128,17 +1159,9 @@ struct NvKmsAllocDeviceReply {
     NvBool supportsSwapGroups;
 
     /*!
-     * Whether the NVKMS SwapGroup implementation supports Warp and Blend on
-     * this device.
+     * Whether NVKMS supports Warp and Blend on this device.
      */
     NvBool supportsWarpAndBlend;
-
-    /*!
-     * When nIsoSurfacesInVidmemOnly=TRUE, then only video memory
-     * surfaces can be used for the surface in
-     * NvKmsCompletionNotifierDescription or NvKmsSemaphore.
-     */
-    NvBool nIsoSurfacesInVidmemOnly;
 
     /*
      * When requiresAllAllocationsInSysmem=TRUE, then all memory allocations
@@ -1166,26 +1189,11 @@ struct NvKmsAllocDeviceReply {
      */
     NvU8 validNIsoFormatMask;
 
-    /*!
-     * Which NvKmsResamplingMethod enum values are supported by the NVKMS
-     * device.
-     *
-     * Iff a particular enum NvKmsResamplingMethod 'value' is supported, then (1
-     * << value) will be set in validResamplingMethodMask.
-     */
-    NvU32 validResamplingMethodMask;
-
     NvU32 surfaceAlignment;
     NvU32 maxWidthInBytes;
     NvU32 maxWidthInPixels;
     NvU32 maxHeightInPixels;
     NvU32 maxCursorSize;
-
-    /*!
-     * The page kind used by the GPU's MMU for uncompressed block-linear color
-     * formats.
-     */
-    NvU8 genericPageKind;
 
     /*!
      * Describes the supported Color Key selects and blending modes for match
@@ -1202,6 +1210,11 @@ struct NvKmsAllocDeviceReply {
     struct NvKmsLayerCapabilities layerCaps[NVKMS_MAX_LAYERS_PER_HEAD];
 
     /*!
+     * Describes supported functionalities for the output LUT on each head
+     */
+    struct NvKmsLUTCaps olutCaps;
+
+    /*!
      * This bitmask specifies all of the (rotation, reflectionX, reflectionY)
      * combinations that are supported for the main and overlay layers.
      * Each bit in this bitmask is mapped to one combination per the scheme
@@ -1215,6 +1228,12 @@ struct NvKmsAllocDeviceReply {
      */
     NvKmsDispIOCoherencyModes isoIOCoherencyModes;
     NvKmsDispIOCoherencyModes nisoIOCoherencyModes;
+
+    /*!
+     * 'displayIsGpuL2Coherent' indicates whether display is coherent with
+     * GPU's L2 cache.
+     */
+    NvBool displayIsGpuL2Coherent;
 
     /*!
      * 'supportsSyncpts' indicates whether NVKMS supports the use of syncpts
@@ -1234,6 +1253,22 @@ struct NvKmsAllocDeviceReply {
      * generator sync objects that signal at vblank.
      */
     NvBool supportsVblankSyncObjects;
+
+    /*!
+     * 'supportsVblankSemControl' indicates whether the VBlank Semaphore Control
+     * interface:
+     *
+     *   NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
+     *   NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
+     *   NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
+     *
+     * is supported.
+     */
+    NvBool supportsVblankSemControl;
+
+    /*! framebuffer console base address and size. */
+    NvU64 vtFbBaseAddress;
+    NvU64 vtFbSize;
 };
 
 struct NvKmsAllocDeviceParams {
@@ -1290,15 +1325,6 @@ struct NvKmsQueryDispRequest {
 };
 
 struct NvKmsQueryDispReply {
-    /*!
-     * The instance of the subdevice that owns this disp.
-     * NVBIT(displayOwner) will be present in subDeviceMask.
-     */
-    NvU32 displayOwner;
-
-    /*! A bitmask of the device's subdevices used by this disp. */
-    NvU32 subDeviceMask;
-
     /*! The possible dpys for this disp, excluding any dynamic dpys. */
     NVDpyIdList validDpys;
 
@@ -1361,9 +1387,6 @@ struct NvKmsQueryConnectorStaticDataReply {
     NvKmsConnectorSignalFormat signalFormat;
     NvU32 physicalIndex;
     NvU32 physicalLocation;
-
-    /* Bitmask of valid heads to drive dpy(s) on this connector. */
-    NvU32 headMask;
 };
 
 struct NvKmsQueryConnectorStaticDataParams {
@@ -1427,6 +1450,8 @@ struct NvKmsQueryDpyStaticDataReply {
     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH];
     NvBool mobileInternal;
     NvBool isDpMST;
+    /* Bitmask of valid heads to drive this dpy. */
+    NvU32 headMask;
 };
 
 struct NvKmsQueryDpyStaticDataParams {
@@ -1468,6 +1493,23 @@ struct NvKmsQueryDpyDynamicDataRequest {
     } edid;
 };
 
+/*! Values for the NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC attributes. */
+enum NvKmsDpyAttributeColorBpcValue {
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN =  0,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6       =  6,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8       =  8,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10      = 10,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX     =
+        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10,
+};
+
+typedef struct _NvKmsDpyOutputColorFormatInfo {
+    struct {
+        enum NvKmsDpyAttributeColorBpcValue maxBpc;
+        enum NvKmsDpyAttributeColorBpcValue minBpc;
+    } rgb444, yuv444, yuv422;
+} NvKmsDpyOutputColorFormatInfo;
+
 enum NvKmsDpyVRRType {
     NVKMS_DPY_VRR_TYPE_NONE,
     NVKMS_DPY_VRR_TYPE_GSYNC,
@@ -1492,6 +1534,8 @@ struct NvKmsQueryDpyDynamicDataReply {
      * G-SYNC, Adaptive-Sync defaultlisted, or Adaptive-Sync non-defaultlisted.
      */
     enum NvKmsDpyVRRType vrrType;
+
+    NvBool supportsHDR;
 
     struct {
         NvBool supported;
@@ -1534,6 +1578,10 @@ struct NvKmsQueryDpyDynamicDataReply {
          */
         char infoString[NVKMS_EDID_INFO_STRING_LENGTH];
     } edid;
+
+    NvKmsDpyOutputColorFormatInfo supportedOutputColorFormats;
+
+    struct NvKmsSuperframeInfo superframeInfo;
 };
 
 struct NvKmsQueryDpyDynamicDataParams {
@@ -1652,6 +1700,12 @@ struct NvKmsValidateModeIndexReply {
      * NvKmsSetModeOneHeadReply.
      */
     struct NvKmsUsageBounds modeUsage;
+
+    /*
+     * Whether this mode supports stereo mode hdmi3D, but wasn't
+     * requested.
+     */
+    NvBool hdmi3DAvailable;
 };
 
 struct NvKmsValidateModeIndexParams {
@@ -1867,11 +1921,6 @@ struct NvKmsSetModeOneHeadRequest {
     struct NvKmsSize viewPortSizeIn;
 
     /*!
-     * Describe the LUT to be used with the modeset.
-     */
-    struct NvKmsSetLutCommonParams lut;
-
-    /*!
      * Describe the surfaces to present on this head.
      */
     struct NvKmsFlipCommonParams flip;
@@ -1882,14 +1931,6 @@ struct NvKmsSetModeOneHeadRequest {
     struct NvKmsSetModeHeadSurfaceParams headSurface;
 
     NvBool viewPortOutSpecified; /*! Whether to use viewPortOut. */
-
-    /*!
-     * Allow this head to be flipLocked to any other heads, set as
-     * part of this NVKMS_IOCTL_SET_MODE, who also have allowFlipLock
-     * set.  FlipLock will only be enabled if additional criteria,
-     * such as identical modetimings, are also met.
-     */
-    NvBool allowFlipLock;
 
     /*!
      * Allow G-SYNC to be enabled on this head if it is supported by the GPU
@@ -1933,6 +1974,12 @@ struct NvKmsSetModeOneHeadRequest {
      */
     enum NvKmsDpyAttributeRequestedColorSpaceValue colorSpace;
     NvBool colorSpaceSpecified;
+
+    /*!
+     * Output color bpc. Valid only when colorBpcSpecified is true.
+     */
+    enum NvKmsDpyAttributeColorBpcValue colorBpc;
+    NvBool colorBpcSpecified;
 
     /*!
      * Output color range. Valid only when colorRangeSpecified is true.
@@ -2000,7 +2047,6 @@ enum NvKmsSetModeOneHeadStatus {
     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_PERMISSIONS = 7,
     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_HEAD_SURFACE = 8,
     NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_COMBO = 9,
-    NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_FEATURE = 10,
 };
 
 struct NvKmsSetModeOneHeadReply {
@@ -2015,13 +2061,7 @@ struct NvKmsSetModeOneHeadReply {
      */
     enum NvKmsSetModeOneHeadStatus status;
 
-    /*!
-     * The identifier that we use to talk to RM about the display
-     * device(s) driven by this head.  For DP MST, it is the identifier
-     * of the DisplayPort library group to which the MST device belongs.
-     * Otherwise, it is the identifier of the connector.
-     */
-    NvU32 activeRmId;
+    NvU32 hwHead;
 
     /*!
      * The usage bounds that may be possible on this head based on the ISO
@@ -2066,6 +2106,7 @@ enum NvKmsSetModeOneDispStatus {
     NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_DISPLAY_PORT_BANDWIDTH_CHECK = 3,
     NVKMS_SET_MODE_ONE_DISP_STATUS_INCOMPATIBLE_DPYS = 4,
     NVKMS_SET_MODE_ONE_DISP_STATUS_DUPLICATE_DPYS = 5,
+    NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_TO_ASSIGN_HARDWARE_HEADS = 6,
 };
 
 struct NvKmsSetModeOneDispReply {
@@ -2168,6 +2209,27 @@ struct NvKmsSetLutParams {
     struct NvKmsSetLutReply reply;     /*! out */
 };
 
+/*!
+ * NVKMS_IOCTL_CHECK_LUT_NOTIFIER: Check or wait on the LUT notifier for the
+ * specified apiHead.
+ */
+
+struct NvKmsCheckLutNotifierRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 head;
+
+    NvBool waitForCompletion;
+};
+
+struct NvKmsCheckLutNotifierReply {
+    NvBool complete;
+};
+
+struct NvKmsCheckLutNotifierParams {
+    struct NvKmsCheckLutNotifierRequest request; /*! in */
+    struct NvKmsCheckLutNotifierReply reply;     /*! out */
+};
 
 /*!
  * NVKMS_IOCTL_IDLE_BASE_CHANNEL: Wait for the base channel to be idle on
@@ -2205,25 +2267,25 @@ struct NvKmsIdleBaseChannelParams {
 /*!
  * NVKMS_IOCTL_FLIP: Flip one or more heads on the subdevices of a device.
  *
- * At least one head on one subdevice must be specified in a flip request.
+ * At least one head must be specified in a flip request, and at most
+ * NV_MAX_FLIP_REQUEST_HEADS may be specified.
  */
 
-struct NvKmsFlipRequestOneSubDevice {
-    /*!
-     * The bit mask of which head[] elements to look at on this disp.
-     */
-    NvU32 requestedHeadsBitMask;
-    struct NvKmsFlipCommonParams head[NVKMS_MAX_HEADS_PER_DISP];
+struct NvKmsFlipRequestOneHead {
+    NvU32 sd;
+    NvU32 head;
+    struct NvKmsFlipCommonParams flip;
 };
+
+#define NV_MAX_FLIP_REQUEST_HEADS (NV_MAX_SUBDEVICES * NV_MAX_HEADS)
 
 struct NvKmsFlipRequest {
     NvKmsDeviceHandle deviceHandle;
 
-    /*
-     * sd[n] corresponds to bit N in NvKmsQueryDispReply::subDeviceMask and
-     * NvKmsAllocDeviceReply::subDeviceMask.
-     */
-    struct NvKmsFlipRequestOneSubDevice sd[NVKMS_MAX_SUBDEVICES];
+    /* Pointer to an array of length 'numFlipHeads'; each entry in the array is
+     * of type 'struct NvKmsFlipRequestOneHead'. */
+    NvU64 pFlipHead NV_ALIGN_BYTES(8);
+    NvU32 numFlipHeads;
 
     /*!
      * When a flip request is made, NVKMS will first perform
@@ -2238,12 +2300,6 @@ struct NvKmsFlipRequest {
      */
     NvBool commit;
 
-    /*!
-     * When set, indicates that the client is capable of releasing the VRR
-     * semaphore to indicate when the flip is ready.  Setting this to FALSE
-     * disables VRR.
-     */
-    NvBool allowVrr;
 };
 
 enum NvKmsVrrFlipType {
@@ -2252,21 +2308,7 @@ enum NvKmsVrrFlipType {
     NV_KMS_VRR_FLIP_ADAPTIVE_SYNC,
 };
 
-struct NvKmsFlipReplyOneSubDevice {
-    struct NvKmsFlipCommonReplyOneHead head[NVKMS_MAX_HEADS_PER_DISP];
-};
-
 struct NvKmsFlipReply {
-    /*!
-     * If vrrFlipType != NV_KMS_VRR_FLIP_NON_VRR, then VRR was used for the
-     * requested flip. In this case, vrrSemaphoreIndex indicates the index
-     * into the VRR semaphore surface that the client should release to
-     * trigger the flip.
-     *
-     * A value of -1 indicates that no VRR semaphore release is needed.
-     */
-    NvS32 vrrSemaphoreIndex;
-
     /*!
      * Indicates whether the flip was non-VRR, was a VRR flip on one or more
      * G-SYNC displays, or was a VRR flip exclusively on Adaptive-Sync
@@ -2275,10 +2317,15 @@ struct NvKmsFlipReply {
     enum NvKmsVrrFlipType vrrFlipType;
 
     /*!
-     * sd[n] corresponds to bit N in NvKmsQueryDispReply::subDeviceMask and
-     * NvKmsAllocDeviceReply::subDeviceMask.
+     * Indicates either success or the reason the flip request failed.
      */
-    struct NvKmsFlipReplyOneSubDevice sd[NVKMS_MAX_SUBDEVICES];
+    enum NvKmsFlipResult flipResult;
+
+    /*!
+     * Entries correspond to the heads specified in
+     * NvKmsFlipRequest::pFlipHead, in the same order.
+     */
+    struct NvKmsFlipCommonReplyOneHead flipHead[NV_MAX_FLIP_REQUEST_HEADS];
 };
 
 struct NvKmsFlipParams {
@@ -2431,6 +2478,15 @@ struct NvKmsRegisterSurfaceRequest {
     NvBool noDisplayHardwareAccess;
 
     /*
+     * This flag should be set if the surface can potentially be updated
+     * directly on the screen after the flip. For example, this is the case
+     * if the surface is CPU mapped, accessible by more than one GPU, or in
+     * a similar situation. If this flag is set NVKMS knows not to consider
+     * the surface content cacheable between flips.
+     */
+    NvBool noDisplayCaching;
+
+    /*
      * If isoType == NVKMS_MEMORY_NISO, NVKMS will create CPU and GPU mappings
      * for the surface memory.
      */
@@ -2451,6 +2507,16 @@ struct NvKmsRegisterSurfaceParams {
 struct NvKmsUnregisterSurfaceRequest {
     NvKmsDeviceHandle deviceHandle;
     NvKmsSurfaceHandle surfaceHandle;
+    /*
+     * Normally, when a surface is unregistered, nvkms will sync any
+     * outstanding flips to ensure the surface is no longer referenced by
+     * display hardware before being torn down.
+     *
+     * To improve performance with GSP firmware, when checking if this sync is
+     * necessary a trusted kernel-mode client who knows it is safe to do so
+     * may indicate to nvkms that the sync is unneeded.
+     */
+    NvBool skipSync;
 };
 
 struct NvKmsUnregisterSurfaceReply {
@@ -2598,6 +2664,7 @@ enum NvKmsAttributeType {
 enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_BACKLIGHT_BRIGHTNESS = 0,
     NV_KMS_DPY_ATTRIBUTE_SCANLINE,
+    NV_KMS_DPY_ATTRIBUTE_HW_HEAD,
     NV_KMS_DPY_ATTRIBUTE_HEAD,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_MODE,
@@ -2606,16 +2673,16 @@ enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_MODE,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH,
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_VIBRANCE,
-    NV_KMS_DPY_ATTRIBUTE_IMAGE_SHARPENING,
-    NV_KMS_DPY_ATTRIBUTE_IMAGE_SHARPENING_AVAILABLE,
-    NV_KMS_DPY_ATTRIBUTE_IMAGE_SHARPENING_DEFAULT,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_RANGE,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_RANGE,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC,
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL,
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_LINK_TYPE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE,
+    NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ,
+    NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_FORCE_ENABLE_FEC,
     NV_KMS_DPY_ATTRIBUTE_FRAMELOCK_DISPLAY_CONFIG,
     /*
      * XXX NVKMS TODO: Delete UPDATE_GLS_FRAMELOCK; this event-only
@@ -2636,6 +2703,8 @@ enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_CONNECTOR_TYPE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_IS_MULTISTREAM,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_SINK_IS_AUDIO_CAPABLE,
+
+    NV_KMS_DPY_ATTRIBUTE_NUMBER_OF_HARDWARE_HEADS_USED,
 };
 
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING attribute. */
@@ -2666,6 +2735,7 @@ enum NvKmsDpyAttributeRequestedDitheringDepthValue {
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DEPTH_AUTO = 0,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DEPTH_6_BITS = 1,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DEPTH_8_BITS = 2,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DEPTH_10_BITS = 3,
 };
 
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH attribute. */
@@ -2673,6 +2743,7 @@ enum NvKmsDpyAttributeCurrentDitheringDepthValue {
     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_NONE = 0,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_6_BITS = 1,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_8_BITS = 2,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_10_BITS = 3,
 };
 
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE attribute. */
@@ -2709,8 +2780,6 @@ enum NvKmsDpyAttributeFrameLockDisplayConfigValue {
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_DPMS attribute. */
 enum NvKmsDpyAttributeDpmsValue {
     NV_KMS_DPY_ATTRIBUTE_DPMS_ON,
-    NV_KMS_DPY_ATTRIBUTE_DPMS_STANDBY,
-    NV_KMS_DPY_ATTRIBUTE_DPMS_SUSPEND,
     NV_KMS_DPY_ATTRIBUTE_DPMS_OFF,
 };
 
@@ -2807,7 +2876,6 @@ enum NvKmsDispAttribute {
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_TEST_SIGNAL,
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_RESET,
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_SET_SWAP_BARRIER,
-    NV_KMS_DISP_ATTRIBUTE_ALLOW_FLIPLOCK,
     NV_KMS_DISP_ATTRIBUTE_QUERY_DP_AUX_LOG,
 };
 
@@ -2905,6 +2973,8 @@ enum NvKmsFrameLockAttribute {
     NV_KMS_FRAMELOCK_ATTRIBUTE_SYNC_RATE,
     NV_KMS_FRAMELOCK_ATTRIBUTE_SYNC_RATE_4,
     NV_KMS_FRAMELOCK_ATTRIBUTE_INCOMING_HOUSE_SYNC_RATE,
+    NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_VALUE,
+    NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE,
 };
 
 /*! Values for the NV_KMS_FRAMELOCK_ATTRIBUTE_POLARITY attribute. */
@@ -2940,6 +3010,12 @@ enum NvKmsFrameLockAttributeVideoModeValue {
 enum NvKmsFrameLockAttributePortStatusValue {
     NV_KMS_FRAMELOCK_ATTRIBUTE_PORT_STATUS_INPUT = 0,
     NV_KMS_FRAMELOCK_ATTRIBUTE_PORT_STATUS_OUTPUT = 1,
+};
+
+/*! Values for the NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE attribute. */
+enum NvKmsFrameLockAttributeMulDivModeValue {
+    NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE_MULTIPLY = 0,
+    NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE_DIVIDE = 1,
 };
 
 struct NvKmsSetFrameLockAttributeRequest {
@@ -3255,6 +3331,11 @@ struct NvKmsSetLayerPositionParams {
  *
  * Releasing modeset ownership enables console hotplug handling. See the
  * explanation in the comment for enableConsoleHotplugHandling above.
+ *
+ * If modeset ownership is held by nvidia-drm, then NVKMS_IOCTL_GRAB_OWNERSHIP
+ * will fail. Clients should open the corresponding DRM device node, acquire
+ * 'master' on it, and then use DRM_NVIDIA_GRANT_PERMISSIONS with permission
+ * type NV_DRM_PERMISSIONS_TYPE_SUB_OWNER to acquire sub-owner permission.
  */
 
 struct NvKmsGrabOwnershipRequest {
@@ -3293,8 +3374,9 @@ struct NvKmsReleaseOwnershipParams {
  * successfully called NVKMS_IOCTL_GRAB_OWNERSHIP) is allowed to flip
  * or set modes.
  *
- * However, the modeset owner can grant various permissions to other
- * clients through the following steps:
+ * However, the modeset owner or another NVKMS client with
+ * NV_KMS_PERMISSIONS_TYPE_SUB_OWNER permission can grant various
+ * permissions to other clients through the following steps:
  *
  * - The modeset owner should open /dev/nvidia-modeset, and call
  *   NVKMS_IOCTL_GRANT_PERMISSIONS to define a set of permissions
@@ -3320,13 +3402,12 @@ struct NvKmsReleaseOwnershipParams {
  *   permissions.
  *
  * - The modeset owner can optionally revoke any previously granted
- *   permissions with NVKMS_IOCTL_REVOKE_PERMISSIONS.
+ *   permissions with NVKMS_IOCTL_REVOKE_PERMISSIONS. This can be 
+ *   device-scope for all of a type, or just a set of permissions.
+ *   Note that _REVOKE_PERMISSIONS to revoke a set of modeset permissions
+ *   will cause the revoked heads to be shut down.
  *
  * Notes:
- *
- * - NVKMS_IOCTL_REVOKE_PERMISSIONS has device-scope.  It could be
- *   made finer-grained (e.g., take the file descriptor that was used
- *   to grant permissions) if that were needed.
  *
  * - NvKmsPermissions::disp[n] corresponds to the disp named by
  *   NvKmsAllocDeviceReply::dispHandles[n].
@@ -3346,6 +3427,7 @@ struct NvKmsReleaseOwnershipParams {
 enum NvKmsPermissionsType {
     NV_KMS_PERMISSIONS_TYPE_FLIPPING = 1,
     NV_KMS_PERMISSIONS_TYPE_MODESET = 2,
+    NV_KMS_PERMISSIONS_TYPE_SUB_OWNER = 3,
 };
 
 struct NvKmsFlipPermissions {
@@ -3434,10 +3516,15 @@ struct NvKmsRevokePermissionsRequest {
 
     /*
      * A bitmask of permission types to be revoked for this device.
-     * It should be the bitwise 'or' of one or more
+     * It should be the bitwise 'or' of any number of
      * NVBIT(NV_KMS_PERMISSIONS_TYPE_*) values.
      */
     NvU32 permissionsTypeBitmask;
+
+    /*
+     * If permissionsTypeBitmask is 0, instead revoke only these permissions.
+     */
+    struct NvKmsPermissions permissions;
 };
 
 struct NvKmsRevokePermissionsReply {
@@ -3978,28 +4065,6 @@ struct NvKmsGetMuxStateParams {
 };
 
 /*!
- * NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE:
- *
- * Export the VRR semaphore surface onto the provided RM 'memFd'.
- * The RM memory FD should be "empty".  An empty FD can be allocated by calling
- * NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD with 'EMPTY_FD' set.
- */
-
-struct NvKmsExportVrrSemaphoreSurfaceRequest {
-    NvKmsDeviceHandle deviceHandle;
-    int memFd;
-};
-
-struct NvKmsExportVrrSemaphoreSurfaceReply {
-    NvU32 padding;
-};
-
-struct NvKmsExportVrrSemaphoreSurfaceParams {
-    struct NvKmsExportVrrSemaphoreSurfaceRequest request;
-    struct NvKmsExportVrrSemaphoreSurfaceReply reply;
-};
-
-/*!
  * NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT:
  * NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT:
  *
@@ -4058,6 +4123,233 @@ struct NvKmsDisableVblankSyncObjectReply {
 struct NvKmsDisableVblankSyncObjectParams {
     struct NvKmsDisableVblankSyncObjectRequest request; /*! in */
     struct NvKmsDisableVblankSyncObjectReply reply;     /*! out */
+};
+
+/*!
+ * NVKMS_IOCTL_NOTIFY_VBLANK:
+ *
+ * Register a unicast event fd to be notified when the next vblank event occurs
+ * on the specified head. This is a one-shot notification, and in order to be
+ * notified of subsequent vblank events the caller must clear and re-register
+ * the unicast event fd.
+ */
+
+struct NvKmsNotifyVblankRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 head;
+
+    struct {
+        int fd;
+    } unicastEvent;
+};
+
+struct NvKmsNotifyVblankReply {
+    NvU32 padding;
+};
+
+struct NvKmsNotifyVblankParams {
+    struct NvKmsNotifyVblankRequest request; /*! in */
+    struct NvKmsNotifyVblankReply reply;     /*! out */
+};
+
+/*!
+ * NVKMS_IOCTL_SET_FLIPLOCK_GROUP:
+ *
+ * This ioctl specifies a set of active heads on which fliplock is allowed.
+ * The heads can span devices.
+ * The requested state for this group will be maintained until:
+ * a) A subsequent SetFlipLockGroup ioctl that specifies any of the heads
+ * b) A subsequent ModeSet ioctl that specifies any of the heads
+ * If either of those occurs, the requested state will be destroyed for *all*
+ * of the heads.
+ *
+ * Note that a successful call with 'enable = TRUE' only indicates that the
+ * request to enable fliplock is registered, not that fliplock was actually
+ * enabled.  Fliplock may not be enabled due to incompatible modetimings, for
+ * example.
+ */
+
+struct NvKmsSetFlipLockGroupOneDev {
+    NvKmsDeviceHandle deviceHandle;
+
+    NvU32 requestedDispsBitMask;
+    struct {
+        NvU32 requestedHeadsBitMask;
+    } disp[NVKMS_MAX_SUBDEVICES];
+};
+
+struct NvKmsSetFlipLockGroupRequest {
+    NvBool enable;
+    struct NvKmsSetFlipLockGroupOneDev dev[NV_MAX_SUBDEVICES];
+};
+
+struct NvKmsSetFlipLockGroupReply {
+    NvU32 padding;
+};
+
+struct NvKmsSetFlipLockGroupParams {
+    struct NvKmsSetFlipLockGroupRequest request; /*! in */
+    struct NvKmsSetFlipLockGroupReply reply;     /*! out */
+};
+
+/*
+ * NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL
+ * NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS
+ *
+ * The VBlank Semaphore Control API ("VBlank Sem Control") allows clients to
+ * register for a semaphore release to be performed on the specified system
+ * memory.
+ *
+ * One or more clients may register a memory allocation + offset by specifying
+ * an NvKmsSurfaceHandle and offset within that surface.  Until the
+ * vblank_sem_control is disabled, during each vblank on all enabled heads,
+ * nvkms will interpret the specified memory location as an
+ * NvKmsVblankSemControlData data structure.  Each enabled head will inspect the
+ * corresponding NvKmsVblankSemControlDataOneHead at
+ * NvKmsVblankSemControlData::head[head].
+ *
+ * NvKmsEnableVblankSemControlRequest::surfaceOffset must be a multiple of 8, so
+ * that GPU semaphore releases can write to 8-byte fields within
+ * NvKmsVblankSemControlDataOneHead with natural alignment.
+ *
+ * During vblank, the NvKmsVblankSemControlDataOneHead::requestCounter field
+ * will be read, and the following pseudocode will be performed:
+ *
+ *   swapInterval      = DRF_VAL(data->flags)
+ *
+ *   if (data->requestCounter == prevRequestCounter)
+ *       return
+ *
+ *   if (currentVblankCount < (prevVBlankCount + swapInterval))
+ *       return
+ *
+ *   data->vblankCount    = currentVblankCount
+ *   data->semaphore      = data->requestCounter
+ *
+ *   prevRequestCounter   = data->requestCounter
+ *   previousVblankCount  = currentVblankCount
+ *
+ * I.e., if the client-described conditions are met, nvkms will write
+ * NvKmsVblankSemControlDataOneHead::semaphore to the client-requested
+ * 'requestCounter' along with the vblankCount.
+ *
+ * The intent is for clients to use semaphore releases to write:
+ *
+ *   NvKmsVblankSemControlDataOneHead::swapInterval
+ *   NvKmsVblankSemControlDataOneHead::requestCounter
+ *
+ * and then perform a semaphore acquire on
+ * NvKmsVblankSemControlDataOneHead::semaphore >= requestCounter (using the
+ * ACQ_GEQ semaphore operation).  This will block any following methods in the
+ * client's channel (e.g., a blit) until the requested conditions are met.  Note
+ * the ::requestCounter should be written last, because the change in value of
+ * ::requestCounter is what causes nvkms, during a vblank callback, to inspect
+ * the other fields.
+ *
+ * Additionally, clients should use the CPU (not semaphore releases in their
+ * channel) to write the field
+ * NvKmsVblankSemControlDataOneHead::requestCounterAccel at the same time that
+ * they enqueue the semaphore release to write to
+ * NvKmsVblankSemControlDataOneHead::requestCounter.  ::requestCounterAccel will
+ * be used by nvkms to "accelerate" the vblank sem control by copying the value
+ * from ::requestCounterAccel to ::semaphore.  This will be done when the vblank
+ * sem control is disabled, and when a client calls
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS.  It is important for nvkms to have
+ * access to the value in ::requestCounterAccel, and not just ::requestCounter.
+ * The latter is only the last value released so far by the client's channel
+ * (further releases to ::requestCounter may still be inflight, perhaps blocked
+ * on pending semaphore acquires).  The former should be the most recent value
+ * enqueued in the channel.  This is also why it is important for clients to
+ * acquire with ACQ_GEQ (greater-than-or-equal-to), rather than just ACQUIRE.
+ *
+ * The same NvKmsSurfaceHandle (with different surfaceOffsets) may be used by
+ * multiple VBlank Sem Controls.
+ *
+ * It is the responsibility of the nvkms client(s) to coordinate at modeset
+ * time: the mapping of nvkms apiHeads to underlying hwHeads may change during a
+ * modeset, such that a registered vblank sem control will no longer receive
+ * vblank callbacks if the head is shutdown.  Before a modeset shuts down a
+ * head, nvkms clients should ensure that all in-flight semaphore acquires are
+ * satisfied.
+ *
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS can be used, specifying a particular
+ * set of heads, to set all vblank sem controls on those heads to have their
+ * semaphore set to the value in their respective
+ * NvKmsVblankSemControlDataOneHead::requestCounterAccel fields.
+ *
+ * These ioctls are only available when
+ * NvKmsAllocDeviceReply::supportsVblankSemControl is true.
+ */
+
+struct NvKmsEnableVblankSemControlRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvKmsSurfaceHandle surfaceHandle;
+    NvU64 surfaceOffset NV_ALIGN_BYTES(8);
+};
+
+struct NvKmsEnableVblankSemControlReply {
+    NvKmsVblankSemControlHandle vblankSemControlHandle;
+};
+
+struct NvKmsEnableVblankSemControlParams {
+    struct NvKmsEnableVblankSemControlRequest request;
+    struct NvKmsEnableVblankSemControlReply reply;
+};
+
+struct NvKmsDisableVblankSemControlRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvKmsVblankSemControlHandle vblankSemControlHandle;
+};
+
+struct NvKmsDisableVblankSemControlReply {
+    NvU32 padding;
+};
+
+struct NvKmsDisableVblankSemControlParams {
+    struct NvKmsDisableVblankSemControlRequest request;
+    struct NvKmsDisableVblankSemControlReply reply;
+};
+
+struct NvKmsAccelVblankSemControlsRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 headMask;
+};
+
+struct NvKmsAccelVblankSemControlsReply {
+    NvU32 padding;
+};
+
+struct NvKmsAccelVblankSemControlsParams {
+    struct NvKmsAccelVblankSemControlsRequest request;
+    struct NvKmsAccelVblankSemControlsReply reply;
+};
+
+/*
+ * NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED
+ *
+ * Notify NVKMS that the calling client has disabled the framebuffer console.
+ * NVKMS will free the framebuffer console reserved memory and disable
+ * NVKMS-based console restore.
+ *
+ * This IOCTL can only be used by kernel-mode clients.
+ */
+
+struct NvKmsFramebufferConsoleDisabledRequest {
+    NvKmsDeviceHandle deviceHandle;
+};
+
+struct NvKmsFramebufferConsoleDisabledReply {
+    NvU32 padding;
+};
+
+struct NvKmsFramebufferConsoleDisabledParams {
+    struct NvKmsFramebufferConsoleDisabledRequest request;
+    struct NvKmsFramebufferConsoleDisabledReply reply;
 };
 
 #endif /* NVKMS_API_H */

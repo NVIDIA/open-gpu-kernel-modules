@@ -25,11 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080base.finn
+// Source file:      ctrl/ctrl2080/ctrl2080base.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV20_SUBDEVICE_XX control commands and parameters */
@@ -91,9 +88,11 @@
 #define NV2080_CTRL_FLA                           (0x35)
 #define NV2080_CTRL_GSP                           (0x36)
 #define NV2080_CTRL_NNE                           (0x37)
+#define NV2080_CTRL_NNE_LEGACY_NON_PRIVILEGED     (0xb7) /* finn: Evaluated from "(NV2080_CTRL_NNE | NVxxxx_CTRL_LEGACY_NON_PRIVILEGED)" */
 #define NV2080_CTRL_GRMGR                         (0x38)
 #define NV2080_CTRL_UCODE_FUZZER                  (0x39)
 #define NV2080_CTRL_DMABUF                        (0x3A)
+#define NV2080_CTRL_BIF                           (0x3B)
 
 // per-OS categories start at highest category and work backwards
 #define NV2080_CTRL_OS_WINDOWS                    (0x3F)

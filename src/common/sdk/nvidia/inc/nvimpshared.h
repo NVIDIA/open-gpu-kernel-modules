@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: nvimpshared.finn
+// Source file:      nvimpshared.finn
 //
 
 
@@ -66,10 +66,6 @@ typedef struct DRAM_CLK_INSTANCE {
 // This table is used to collect information from other modules that is needed
 // for RM IMP calculations.  (Used on Tegra only.)
 //
-#define TEGRA_IMP_IMPORT_DATA_DRAM_TYPE_UNKNOWN 0U
-#define TEGRA_IMP_IMPORT_DATA_DRAM_TYPE_LPDDR4  1U
-#define TEGRA_IMP_IMPORT_DATA_DRAM_TYPE_LPDDR5  2U
-
 typedef struct TEGRA_IMP_IMPORT_DATA {
     //
     // max_iso_bw_kbps stores the maximum possible ISO bandwidth available to
@@ -79,7 +75,6 @@ typedef struct TEGRA_IMP_IMPORT_DATA {
     //
     NvU32             max_iso_bw_kbps;
 
-    NvU32             dram_type;
     // On Orin, each dram channel is 16 bits wide.
     NvU32             num_dram_channels;
 

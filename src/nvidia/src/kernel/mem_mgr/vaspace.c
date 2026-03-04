@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *         Virtual Address Space Function Definitions.                       *
 \***************************************************************************/
 
@@ -62,13 +62,13 @@ vaspaceFillAllocParams_IMPL
 )
 {
     NvBool bRestrictedVaRange = NV_FALSE;
-    NvBool bEnforce32bitPtr = NV_FALSE;
-    NvU32 vasFlags =  vaspaceGetFlags(pVAS);
+    NvBool bEnforce32bitPtr   = NV_FALSE;
+    NvU32 vasFlags            =  vaspaceGetFlags(pVAS);
 
     OBJGPU             *pGpu     = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
     VirtMemAllocator   *pDma     = GPU_GET_DMA(pGpu);
-    bRestrictedVaRange = !!(pDma->getProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE));
-    bEnforce32bitPtr = !!(pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER));
+    bRestrictedVaRange           = pDma->bDmaRestrictVaRange;
+    bEnforce32bitPtr             = pDma->bDmaEnforce32BitPointer;
 
     // Apply default alignment policies to offset alignment and size.
     NV_ASSERT_OK_OR_RETURN(
@@ -101,70 +101,26 @@ vaspaceFillAllocParams_IMPL
         }
     }
 
-    if (vaspaceIsInternalVaRestricted(pVAS)) // will be true only for MAC's GPUVA.
+    //
+    // Handle 32bit pointer requests.  32b pointers are forced below 32b
+    // on all chips.  Non-32b requests are only forced on some chips,
+    // typically kepler, and only if there are no other address hints.
+    //
+    // If requested size cannot be satisfied with range above 4 GB, then relax that
+    // restriction.
+    //
+    if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
     {
-
-        if (pFlags->bClientAllocation) //  client allocations
-        {
-            NvU64 partitionRangeLo = 0;
-            NvU64 partitionRangeHi = 0;
-
-            // If 32 bit enforcement is set, route to the lower va range.
-            if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
-            {
-                partitionRangeLo = vaspaceGetVaStart(pVAS);
-                partitionRangeHi = NVBIT64(32) - 1;
-            }
-            else
-            {
-                // route to >4gig
-                partitionRangeLo = NVBIT64(32);
-                partitionRangeHi = vaspaceGetVaLimit(pVAS);
-            }
-
-            // If fixed address is requested - the range should be entirely contained within the partition.
-            if (pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE ||
-                pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) // Is this a valid expectation?
-            {
-                // Within the 32 bit or 64 bit partition.
-                if (!(*pRangeLo >= partitionRangeLo && *pRangeHi <=partitionRangeHi))
-                {
-                    return NV_ERR_INVALID_PARAMETER;
-                }
-                // both use_begin_end and fixed_addr_range will have this flag set
-                pFlags->bFixedAddressRange = NV_TRUE;
-            }
-            else
-            {
-                *pRangeLo = partitionRangeLo;
-                *pRangeHi = partitionRangeHi;
-                pFlags->bFixedAddressRange = NV_FALSE;
-            }
-        }
+        *pRangeHi = NV_MIN(*pRangeHi, NVBIT64(32) - 1);
     }
-    else
-    {
-            //
-            // Handle 32bit pointer requests.  32b pointers are forced below 32b
-            // on all chips.  Non-32b requests are only forced on some chips,
-            // typically kepler, and only if there are no other address hints.
-            //
-            // If requested size cannot be satisfied with range above 4 GB, then relax that
-            // restriction.
-            //
-            if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
-            {
-                *pRangeHi = NV_MIN(*pRangeHi, NVBIT64(32) - 1);
-            }
 
-            else if (bEnforce32bitPtr &&
-                     !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
-                     !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) &&
-                     ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)) &&
-                     !(vasFlags & VASPACE_FLAGS_FLA))
-            {
-                *pRangeLo = NV_MAX(*pRangeLo, NVBIT64(32));
-            }
+    else if (bEnforce32bitPtr &&
+             !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
+             !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) &&
+             ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)) &&
+             !(vasFlags & VASPACE_FLAGS_FLA))
+    {
+        *pRangeLo = NV_MAX(*pRangeLo, NVBIT64(32));
     }
 
     if ((*pRangeHi - *pRangeLo + 1) < *pSize) // Moved the range check here
@@ -190,12 +146,6 @@ vaspaceFillAllocParams_IMPL
 
     pFlags->bSparse =
         !!(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_SPARSE);
-
-    //
-    // The protected flag for kernel allocations is honoured only
-    // if this is a root client(kernel client).
-    //
-    pFlags->bPrivileged = pAllocInfo->bIsKernelAlloc;
 
     return NV_OK;
 }
@@ -223,12 +173,6 @@ vaspaceInvalidateTlb_IMPL
     NV_ASSERT(0);
 }
 
-NvBool
-vaspaceIsInternalVaRestricted_IMPL(OBJVASPACE *pVAS)
-{
-    return NV_FALSE;
-}
-
 NV_STATUS
 vaspaceGetByHandleOrDeviceDefault_IMPL
 (
@@ -241,7 +185,7 @@ vaspaceGetByHandleOrDeviceDefault_IMPL
     NV_STATUS      status = NV_OK;
     NvHandle       _hDeviceOrSubDevice;
     Device        *pDevice    = NULL;
-    RsResourceRef *pResourceRef;
+    RsResourceRef *pResourceRef = NULL;
 
     if (hVASpace == NV01_NULL_OBJECT)
     {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,7 @@
 #include "nvstatus.h"
 #include "nvmisc.h"
 
-#include "nvoc/object.h"
+#include "nvoc/prelude.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,6 +102,7 @@ Dynamic *objFindAncestor_IMPL(Dynamic *pDynamic, NVOC_CLASS_ID classId);
  * This is a linear-time operation.
  */
 const struct NVOC_EXPORTED_METHOD_DEF* objGetExportedMethodDef_IMPL(Dynamic* pObj, NvU32 methodId);
+const struct NVOC_EXPORTED_METHOD_DEF* nvocGetExportedMethodDefFromMethodInfo_IMPL(const struct NVOC_EXPORT_INFO *pExportInfo, NvU32 methodId);
 
 /*!
  * @brief Dynamic cast by class id

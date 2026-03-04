@@ -65,7 +65,7 @@ typedef enum
 typedef struct _DEPRECATED_CONTEXT
 {
     NV_STATUS (*RmAlloc)(struct _DEPRECATED_CONTEXT *pContext, NvHandle hClient, NvHandle hParent,
-                         NvHandle *phObject, NvU32 hClass, void *pAllocParams);
+                         NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize);
 
     NV_STATUS (*RmControl)(struct _DEPRECATED_CONTEXT *pContext, NvHandle hClient, NvHandle hObject,
                            NvU32 cmd, void *pParams, NvU32 paramsSize);
@@ -102,6 +102,7 @@ void RmDeprecatedAllocMemory(DEPRECATED_CONTEXT *pContext, NVOS02_PARAMETERS *pA
  */
 typedef NV_STATUS (*RmDeprecatedControlHandler)(API_SECURITY_INFO*,DEPRECATED_CONTEXT*,NVOS54_PARAMETERS*);
 RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArgs);
+NvBool IsGssLegacyCall(NvU32 cmd);
 
 NV_STATUS RmDeprecatedGetHandleParent(DEPRECATED_CONTEXT *pContext, NvHandle hClient,
                                       NvHandle hObject, NvHandle *phParent);

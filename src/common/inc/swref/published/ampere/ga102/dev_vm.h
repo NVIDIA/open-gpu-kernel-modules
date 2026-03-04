@@ -61,4 +61,5 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_TRIGGER                                0x00001640 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_TRIGGER_VECTOR                               11:0 /* -WXVF */
 #define NV_VIRTUAL_FUNCTION_PRIV_DOORBELL                                          0x2200 /* -W-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MAILBOX_SCRATCH(i)                        (0x2100+(i)*4) /* RW-4A */
 #endif // __ga102_dev_vm_h__

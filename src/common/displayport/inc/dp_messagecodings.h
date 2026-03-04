@@ -274,9 +274,11 @@ namespace DisplayPort
         struct
         {
             unsigned portNumber;
+            unsigned availableStreams;
             bool     bFECCapability;
             unsigned TotalPBN;
             unsigned FreePBN;
+            unsigned DFPLinkAvailablePBN;
         } reply;
         EnumPathResMessage(const Address & target, unsigned port, bool point);
     };
@@ -354,6 +356,8 @@ namespace DisplayPort
         struct
         {
             unsigned port;
+            unsigned availableStreams;
+            bool     bFECCapability;
             GUID guid;
             unsigned PBN;
         } request;

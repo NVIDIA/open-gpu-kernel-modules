@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,12 +22,20 @@
  */
 #include "kernel/gpu/rc/kernel_rc.h"
 
+#include "kernel/diagnostics/journal.h"
+#include "kernel/gpu/disp/head/kernel_head.h"
+#include "kernel/gpu/disp/kern_disp.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
+
+#include "kernel/gpu/intr/engine_idx.h"
 
 #include "ctrl/ctrl906f.h"
+
+#include "nverror.h"
 
 
 // Seconds before watchdog tries to reset itself
@@ -61,7 +69,8 @@ _krcThwapChannel
         return;
     }
 
-    NV_PRINTF(LEVEL_INFO, "Thwapping channel 0x%02x.\n",
+    NV_PRINTF(LEVEL_INFO,
+              "Thwapping channel " FMT_CHANNEL_DEBUG_TAG ".\n",
               kchannelGetDebugTag(pKernelChannel));
 
 
@@ -129,18 +138,24 @@ void krcWatchdogTimerProc
     void   *data
 )
 {
-    //
-    // These calls shouldn't occur during a hibernate/standby enter or resume
-    // sequence or if the GPU is lost, which will cause a system hang.
-    //
-    if (gpuIsGpuFullPower(pGpu) &&
-        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    KernelWatchdog *pKernelWatchdog = (KernelWatchdog *)data;
+    
+    // TODO: (Bug 4154640) Below functions are not ready to support KernelWatchdog, so bail out if pKernelWatchdog is not NULL
+    if (pKernelWatchdog == NULL)
     {
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+        //
+        // These calls shouldn't occur during a hibernate/standby enter or resume
+        // sequence or if the GPU is lost, which will cause a system hang.
+        //
+        if (gpuIsGpuFullPower(pGpu) &&
+            !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        {
+            KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
 
-        krcWatchdog_HAL(pGpu, pKernelRc);
-        krcWatchdogCallbackVblankRecovery_HAL(pGpu, pKernelRc);
-        krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc);
+            krcWatchdog_HAL(pGpu, pKernelRc);
+            krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc);
+            krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc);
+        }
     }
 }
 
@@ -179,7 +194,6 @@ krcWatchdog_IMPL
             (WATCHDOG_RESET_QUEUE_SIZE - 1));
     }
 
-    // If we are disabled or chip is in low power mode
     if ((WATCHDOG_FLAGS_DISABLED !=
          (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED)) &&
         gpuIsGpuFullPower(pGpu))
@@ -190,7 +204,7 @@ krcWatchdog_IMPL
         //
         if (!(pKernelRc->watchdog.flags & WATCHDOG_FLAGS_INITIALIZED))
         {
-            rmStatus = krcWatchdogInit_HAL(pGpu, pKernelRc);
+            rmStatus = krcWatchdogInit_HAL(pGpu, pKernelRc, NULL);
 
             if (rmStatus!= NV_OK)
             {
@@ -212,7 +226,7 @@ krcWatchdog_IMPL
             pKernelRc->watchdog.errorContext->status = 0;
 
             // reinit the pushbuffer image and kickoff again
-            krcWatchdogInitPushbuffer_HAL(pGpu, pKernelRc);
+            krcWatchdogInitPushbuffer_HAL(pGpu, pKernelRc, NULL);
 
             // Run Immediately
             pKernelRc->watchdogPersistent.nextRunTime = 0;
@@ -234,7 +248,7 @@ krcWatchdog_IMPL
             }
         }
 
-        osGetCurrentTime(&sec, &usec);
+        osGetSystemTime(&sec, &usec);
         currentTime = (((NvU64)sec) * 1000000) + usec;
 
         //
@@ -329,7 +343,7 @@ krcWatchdog_IMPL
             SLI_LOOP_END;
 
             // Set the put pointer on our buffer.
-            krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc);
+            krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc, NULL);
         }
     }
 }
@@ -351,3 +365,112 @@ krcWatchdogRecovery_KERNEL
                     NULL,
                     0);
 }
+
+
+/*!
+ * @brief Recover VBlank callbacks that may have missed due to missing VBlank
+ */
+void krcWatchdogCallbackVblankRecovery_IMPL
+(
+    OBJGPU   *pGpu,
+    KernelRc *pKernelRc
+)
+{
+    NvU32           head;
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    MC_ENGINE_BITVECTOR intrDispPending;
+
+    if (!pKernelRc->bRobustChannelsEnabled ||
+        (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED) ||
+        !gpuIsGpuFullPower(pGpu) || (pKernelDisplay == NULL))
+    {
+        return;
+    }
+
+    //
+    // The pending intr would have been cleared from the HW by now
+    // if there is a deferred vblank. We don't need a retrigger for
+    // MC_ENGINE_IDX_DISP since that is handled in a separate function
+    // and doesn't need a clear if a vblank is pending.
+    // We do need a retrigger if we have a separate interrupt vector,
+    // so do one if we have it.
+    //
+    bitVectorClrAll(&intrDispPending);
+
+    if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
+    {
+        bitVectorSet(&intrDispPending, MC_ENGINE_IDX_DISP_LOW);
+    }
+
+    for (head = 0; head < kdispGetNumHeads(pKernelDisplay); head++)
+    {
+        KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+
+        if (kheadReadVblankIntrState(pGpu, pKernelHead) !=
+            NV_HEAD_VBLANK_INTR_ENABLED)
+        {
+            continue;
+        }
+
+        //
+        // Sliding windows -- we expect some failures around mode switches
+        // since vblank and watchdog are async to each other. This will
+        // dispose of these.
+        //
+        if (pKernelRc->watchdog.oldVblank[head] ==
+            kheadGetVblankTotalCounter_HAL(pKernelHead))
+        {
+            // VBlank Failed to Advance
+            pKernelRc->watchdog.vblankFailureCount[head]++;
+
+            if (pKernelRc->watchdog.vblankFailureCount[head] >
+                pKernelRc->watchdogPersistent.timeoutSecs)
+            {
+                Journal        *pRcDB = SYS_GET_RCDB(SYS_GET_INSTANCE());
+                SYS_ERROR_INFO *pSysErrorInfo = &pRcDB->ErrorInfo;
+
+                if (pKernelRc->bLogEvents &&
+                    pSysErrorInfo->LogCount < MAX_ERROR_LOG_COUNT)
+                {
+                    pSysErrorInfo->LogCount++;
+                    nvErrorLog_va((void *)pGpu,
+                                  ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT,
+                                  "Head %08x Count %08x",
+                                  head,
+                                  pKernelRc->watchdog.oldVblank[head]);
+                }
+
+                NV_PRINTF(LEVEL_ERROR,
+                    "NVRM-RC: RM has detected that %x Seconds without a Vblank Counter Update on head:%c%d\n",
+                    pKernelRc->watchdogPersistent.timeoutSecs,
+                    'A' + head,
+                    gpuGetInstance(pGpu));
+
+                //
+                // Have the VBlank Service run through in IMMEDIATE mode and
+                // process all queues
+                //
+                kdispServiceLowLatencyIntrs_HAL(pGpu, pKernelDisplay,
+                                                NVBIT(head),
+                                                (VBLANK_STATE_PROCESS_IMMEDIATE |
+                                                VBLANK_STATE_PROCESS_ALL_CALLBACKS),
+                                                NULL /* threadstate */,
+                                                NULL /* vblankIntrServicedHeadMask */,
+                                                &intrDispPending);
+
+                pKernelRc->watchdog.vblankFailureCount[head] = 0;
+            }
+        }
+        else
+        {
+            if (pKernelRc->watchdog.vblankFailureCount[head] > 0)
+            {
+                pKernelRc->watchdog.vblankFailureCount[head]--;
+            }
+        }
+
+        pKernelRc->watchdog.oldVblank[head] = kheadGetVblankTotalCounter_HAL(
+            pKernelHead);
+    }
+}
+

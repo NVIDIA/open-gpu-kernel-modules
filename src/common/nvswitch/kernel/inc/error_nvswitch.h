@@ -61,9 +61,27 @@ typedef struct
     NvU32 data[4];              // record of interrupt specific data
 } NVSWITCH_INTERRUPT_LOG_TYPE;
 
+#define NVSWITCH_RAW_ERROR_LOG_DATA_SIZE    16
+
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME     BIT(0)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_MISC     BIT(1)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR      BIT(2)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME   BIT(3)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC   BIT(4)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR    BIT(5)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME    BIT(6)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC    BIT(7)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR     BIT(8)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MC_TIME BIT(9)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MC_MISC BIT(10)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MC_HDR  BIT(11)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_MC_TIME        BIT(12)
+#define NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_RED_TIME       BIT(13)
+
 typedef struct
 {
-    NvU32 data[16];
+    NvU32 flags;
+    NvU32 data[NVSWITCH_RAW_ERROR_LOG_DATA_SIZE];
 } NVSWITCH_RAW_ERROR_LOG_TYPE;
 
 #define NVSWITCH_ERROR_NEXT_LOCAL_NUMBER(log) (log->error_total)
@@ -81,6 +99,8 @@ typedef struct
     NvU64   timer_count;                    // NvSwitch timer count
     NvU64   time;                           // Platform time, in ns
     NvU32   line;
+    NvU32   data_size;                      // Size of data
+    NvU8    description[NVSWITCH_ERROR_MAX_DESCRPTION_LEN]; // Short description of error type    
 
     union
     {
@@ -117,9 +137,9 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_FATAL,                                                  \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__)
+        __LINE__, "")
 
-#define NVSWITCH_LOG_FATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata)   \
+#define NVSWITCH_LOG_FATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \
         _device,                                                                        \
         &(_device->log_FATAL_ERRORS),                                                   \
@@ -129,8 +149,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_FATAL,                                                  \
         _errresolved,                                                                   \
         _errdata, sizeof(*_errdata),                                                    \
-        __LINE__)
-
+        __LINE__, #__VA_ARGS__)
 
 #define NVSWITCH_LOG_NONFATAL(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved) \
     nvswitch_record_error(                                                              \
@@ -142,9 +161,9 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_NONFATAL,                                               \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__)
+        __LINE__, "")
 
-#define NVSWITCH_LOG_NONFATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata)   \
+#define NVSWITCH_LOG_NONFATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \
         _device,                                                                        \
         &(_device->log_NONFATAL_ERRORS),                                                \
@@ -154,7 +173,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_NONFATAL,                                               \
         _errresolved,                                                                   \
         _errdata, sizeof(*_errdata),                                                    \
-        __LINE__)
+        __LINE__, #__VA_ARGS__)
 
 #define NVSWITCH_NVLINK_ARCH_ERROR_NONE             0
 #define NVSWITCH_NVLINK_ARCH_ERROR_GENERIC          1

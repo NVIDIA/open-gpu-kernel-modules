@@ -24,18 +24,14 @@
 #ifndef __NV_KTHREAD_QUEUE_H__
 #define __NV_KTHREAD_QUEUE_H__
 
-#include <linux/types.h>            // atomic_t
-#include <linux/list.h>             // list
-#include <linux/sched.h>            // task_struct
-#include <linux/numa.h>             // NUMA_NO_NODE
+struct nv_kthread_q;
+struct nv_kthread_q_item;
+typedef struct nv_kthread_q nv_kthread_q_t;
+typedef struct nv_kthread_q_item nv_kthread_q_item_t;
 
-#include "conftest.h"
+typedef void (*nv_q_func_t)(void *args);
 
-#if defined(NV_LINUX_SEMAPHORE_H_PRESENT)
-    #include <linux/semaphore.h>
-#else
-    #include <asm/semaphore.h>
-#endif
+#include "nv-kthread-q-os.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // nv_kthread_q:
@@ -90,43 +86,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct nv_kthread_q nv_kthread_q_t;
-typedef struct nv_kthread_q_item nv_kthread_q_item_t;
-
-typedef void (*nv_q_func_t)(void *args);
-
-struct nv_kthread_q
-{
-    struct list_head q_list_head;
-    spinlock_t q_lock;
-
-    // This is a counting semaphore. It gets incremented and decremented
-    // exactly once for each item that is added to the queue.
-    struct semaphore q_sem;
-    atomic_t main_loop_should_exit;
-
-    struct task_struct *q_kthread;
-};
-
-struct nv_kthread_q_item
-{
-    struct list_head q_list_node;
-    nv_q_func_t function_to_run;
-    void *function_args;
-};
-
-#if defined(NV_KTHREAD_CREATE_ON_NODE_PRESENT)
-    #define NV_KTHREAD_Q_SUPPORTS_AFFINITY() 1
-#else
-    #define NV_KTHREAD_Q_SUPPORTS_AFFINITY() 0
-#endif
-
-#ifndef NUMA_NO_NODE
-#define NUMA_NO_NODE (-1)
-#endif
-
-#define NV_KTHREAD_NO_NODE NUMA_NO_NODE
-
 //
 // The queue must not be used before calling this routine.
 //
@@ -142,17 +101,11 @@ struct nv_kthread_q_item
 //
 // A short prefix of the qname arg will show up in []'s, via the ps(1) utility.
 //
-// The kernel thread stack is preferably allocated on the specified NUMA node if
-// NUMA-affinity (NV_KTHREAD_Q_SUPPORTS_AFFINITY() == 1) is supported, but
-// fallback to another node is possible because kernel allocators do not
+// The kernel thread stack is preferably allocated on the specified NUMA node, 
+// but fallback to another node is possible because kernel allocators do not
 // guarantee affinity. Note that NUMA-affinity applies only to
 // the kthread stack. This API does not do anything about limiting the CPU
 // affinity of the kthread. That is left to the caller.
-//
-// On kernels, which do not support NUMA-aware kthread stack allocations
-// (NV_KTHTREAD_Q_SUPPORTS_AFFINITY() == 0), the API will return -ENOTSUPP
-// if the value supplied for 'preferred_node' is anything other than
-// NV_KTHREAD_NO_NODE.
 //
 // Reusing a queue: once a queue is initialized, it must be safely shut down
 // (see "Stopping the queue(s)", below), before it can be reused. So, for
@@ -171,10 +124,7 @@ int nv_kthread_q_init_on_node(nv_kthread_q_t *q,
 // This routine is the same as nv_kthread_q_init_on_node() with the exception
 // that the queue stack will be allocated on the NUMA node of the caller.
 //
-static inline int nv_kthread_q_init(nv_kthread_q_t *q, const char *qname)
-{
-    return nv_kthread_q_init_on_node(q, qname, NV_KTHREAD_NO_NODE);
-}
+int nv_kthread_q_init(nv_kthread_q_t *q, const char *qname);
 
 //
 // The caller is responsible for stopping all queues, by calling this routine

@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080event.finn
+// Source file:      ctrl/ctrl2080/ctrl2080event.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
@@ -211,11 +208,11 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMAPHORE_MEMORY_PARAMS {
  *     guestMSIData
  *       This parameter indicates the MSI data set by the guest OS.
  *
- *     vmIdType
- *       This parameter specifies the type of guest virtual machine identifier
+ *     vgpuUuid
+ *       This parameter specifies the uuid of vGPU assigned to VM.
  *
- *     guestVmId
- *       This parameter specifies the guest virtual machine identifier
+ *     domainId
+ *       This parameter specifies the unique guest virtual machine identifier
  *
  * Possible status values returned are:
  *      NV_OK
@@ -228,11 +225,11 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMAPHORE_MEMORY_PARAMS {
 
 typedef struct NV2080_CTRL_EVENT_SET_GUEST_MSI_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 guestMSIAddr, 8);
-    NvU32      guestMSIData;
-    NvHandle   hSemMemory;
-    NvBool     isReset;
-    VM_ID_TYPE vmIdType;
-    NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
+    NvU32    guestMSIData;
+    NvHandle hSemMemory;
+    NvBool   isReset;
+    NvU8     vgpuUuid[VM_UUID_SIZE];
+    NV_DECLARE_ALIGNED(NvU64 domainId, 8);
 } NV2080_CTRL_EVENT_SET_GUEST_MSI_PARAMS;
 
 
@@ -268,40 +265,6 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMA_MEM_VALIDATION_PARAMS {
     NvHandle hSemMemory;
     NvBool   isSemaMemValidationEnabled;
 } NV2080_CTRL_EVENT_SET_SEMA_MEM_VALIDATION_PARAMS;
-
-
-/*
- * NV2080_CTRL_CMD_EVENT_SET_VMBUS_CHANNEL
- *
- *     hSemMemory
- *       This parameter specifies the handle of the memory object that
- *       identifies the semaphore memory associated with this subdevice
- *       event notification.  Once this is set RM will generate an event
- *       only when there is a change in the semaphore value.  It is
- *       expected that the semaphore memory value will be updated by
- *       the GPU indicating that there is an event pending. This
- *       command is used by VGX plugin to determine which virtual
- *       machine has generated a particular event.
- *
- *     vmIdType
- *       This parameter specifies the type of guest virtual machine identifier
- *
- *     guestVmId
- *       This parameter specifies the guest virtual machine identifier
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_EVENT_SET_VMBUS_CHANNEL (0x20800307) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_EVENT_INTERFACE_ID << 8) | NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS {
-    NvHandle   hSemMemory;
-    VM_ID_TYPE vmIdType;
-    NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
-} NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS;
 
 
 /*
@@ -371,5 +334,40 @@ typedef struct NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS {
     NvU32                                   eventFilter;
     NvBool                                  bAllUsers;
 } NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS;
+
+
+/*
+ * NV2080_CTRL_CMD_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_FOR_UID
+ *
+ * This command is used to create a RATS tracing bindpoint to eventbuffer.
+ *
+ *  hEventBuffer[IN]
+ *      The event buffer to bind to
+ *
+ *  tracepointMask[IN]
+ *      Bitmask for selecting tracepoints
+ *
+ *  gspLoggingBufferSize[IN]
+ *      User defined size of GSP owned event logging buffer
+ *
+ *  gspLoggingBufferWatermark[IN]
+ *      User defined watermark that triggers RPC to kernel of traces
+ *      HINT: set higher for more frequent trace updates
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_EVENT_RATS_GSP_TRACE_BIND_EVTBUF (0x2080030a) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_EVENT_INTERFACE_ID << 8) | NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS_MESSAGE_ID (0xAU)
+
+typedef struct NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS {
+    NvHandle hEventBuffer;
+    NV_DECLARE_ALIGNED(NvU64 tracepointMask, 8);
+    NvU32    gspLoggingBufferSize;
+    NvU32    gspLoggingBufferWatermark;
+} NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS;
 
 /* _ctrl2080event_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +22,10 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
+#include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "platform/p2p/p2p_caps.h"
 #include "gpu/bus/kern_bus.h"
@@ -38,6 +41,11 @@
 // This is used to get internal VidmemInfo for persistent mappings.
 //
 static volatile NvU64 vidmemInfoId = 0;
+
+//
+// A monotonic counter as ID that's assigned to every new 3rd party p2p class.
+//
+static volatile NvU64 p2pTokenId = 0;
 
 //
 // We make sure that only one instance of NV50_THIRD_PARTY_P2P can be active at
@@ -65,6 +73,8 @@ thirdpartyp2pConstruct_IMPL
     NvU32                       pidIndex         = 0;
     NV_STATUS                   status           = NV_OK;
     NvU32                       pid = osGetCurrentProcess();
+    RsShared                   *pShare;
+    P2PTokenShare              *pP2PTokenShare;
 
     pSubdevice = dynamicCast(pSubdeviceRef->pResource, Subdevice);
     if (pSubdevice == NULL)
@@ -108,7 +118,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_ARGUMENT;
         }
 
-        p2pToken = CLI_ENCODEP2PTOKEN(pGpu->gpuId, hClient);
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
     }
     else if (type == CLI_THIRD_PARTY_P2P_TYPE_NVLINK)
     {
@@ -117,7 +127,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_STATE;
         }
 
-        p2pToken = CLI_ENCODEP2PTOKEN(pGpu->gpuId, hClient);
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
     }
     else
     {
@@ -152,6 +162,15 @@ thirdpartyp2pConstruct_IMPL
         }
     }
 
+    status = serverAllocShare(&g_resServ, classInfo(P2PTokenShare), &pShare);
+
+    if (status != NV_OK)
+        return status;
+
+    pP2PTokenShare = dynamicCast(pShare, P2PTokenShare);
+    pP2PTokenShare->pThirdPartyP2P = pThirdPartyP2P;
+    pThirdPartyP2P->pTokenShare = pP2PTokenShare;
+
     NV_ASSERT(status == NV_OK);
     return status;
 }
@@ -176,6 +195,9 @@ thirdpartyp2pDestruct_IMPL
     RS_RES_FREE_PARAMS_INTERNAL            *pParams;
 
     resGetFreeParams(staticCast(pThirdPartyP2P, RsResource), &pCallContext, &pParams);
+
+    if (pThirdPartyP2P->pTokenShare)
+        serverFreeShare(&g_resServ, staticCast(pThirdPartyP2P->pTokenShare, RsShared));
 
     pParams->status = gpuFullPowerSanityCheck(pGpu, NV_TRUE);
     if (pParams->status != NV_OK)
@@ -208,29 +230,6 @@ thirdpartyp2pDestruct_IMPL
     pParams->status = status;
 }
 
-NV_STATUS CliGetThirdPartyP2PInfo
-(
-    NvHandle                   hClient,
-    NvHandle                   hThirdPartyP2P,
-    ThirdPartyP2P            **ppThirdPartyP2P
-)
-{
-    RsResourceRef *pThirdPartyP2PRef;
-    RsClient *pRsClient;
-    NV_ASSERT_OR_RETURN((ppThirdPartyP2P != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, hThirdPartyP2P, &pThirdPartyP2PRef));
-    *ppThirdPartyP2P = dynamicCast(pThirdPartyP2PRef->pResource, ThirdPartyP2P);
-
-    if (*ppThirdPartyP2P == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
-    return NV_OK;
-}
-
 NV_STATUS CliGetThirdPartyP2PInfoFromToken
 (
     NvU64  p2pToken,
@@ -238,29 +237,24 @@ NV_STATUS CliGetThirdPartyP2PInfoFromToken
 )
 {
     ThirdPartyP2P *pThirdPartyP2P;
-    RmClient **ppClient;
-    RmClient  *pClient;
+    RS_SHARE_ITERATOR it;
 
     NV_ASSERT_OR_RETURN((ppThirdPartyP2P != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
-    {
-        RS_ITERATOR it;
-        RsClient *pRsClient;
-        pClient = *ppClient;
-        pRsClient = staticCast(pClient, RsClient);
+    it = serverutilShareIter(classId(P2PTokenShare));
 
-        it = clientRefIter(pRsClient, NULL, classId(ThirdPartyP2P), RS_ITERATE_DESCENDANTS, NV_TRUE);
-        while (clientRefIterNext(pRsClient, &it))
+    while(serverutilShareIterNext(&it))
+    {
+        RsShared *pShared = it.pShared;
+        P2PTokenShare *pP2PTokenShare = dynamicCast(pShared, P2PTokenShare);
+        if (pP2PTokenShare == NULL)
+            continue;
+        pThirdPartyP2P = pP2PTokenShare->pThirdPartyP2P;
+
+        if (pThirdPartyP2P->p2pToken == p2pToken)
         {
-            pThirdPartyP2P = dynamicCast(it.pResourceRef->pResource, ThirdPartyP2P);
-            if (pThirdPartyP2P->p2pToken == p2pToken)
-            {
-                *ppThirdPartyP2P = pThirdPartyP2P;
-                return NV_OK;
-            }
+            *ppThirdPartyP2P = pThirdPartyP2P;
+            return NV_OK;
         }
     }
 
@@ -313,61 +307,34 @@ NV_STATUS CliNextThirdPartyP2PInfoWithPid
 )
 {
     ThirdPartyP2P *pThirdPartyP2P;
-    RmClient **ppClient;
-    RmClient  *pClient;
+    RS_SHARE_ITERATOR it;
 
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    it = serverutilShareIter(classId(P2PTokenShare));
+
+    while(serverutilShareIterNext(&it))
     {
-        RsClient *pRsClient;
-        RS_ITERATOR it, devIt, subDevIt;
-        pClient = *ppClient;
-        pRsClient = staticCast(pClient, RsClient);
-
-        if (pRsClient->type == CLIENT_TYPE_KERNEL)
-        {
+        RsShared *pShared = it.pShared;
+        P2PTokenShare *pP2PTokenShare = dynamicCast(pShared, P2PTokenShare);
+        if (pP2PTokenShare == NULL)
             continue;
-        }
 
-        devIt = clientRefIter(pRsClient, NULL, classId(Device),
-                              RS_ITERATE_CHILDREN, NV_TRUE);
-        while(clientRefIterNext(pRsClient, &devIt))
+        pThirdPartyP2P = pP2PTokenShare->pThirdPartyP2P;
+
+        if (NULL == *ppThirdPartyP2P)
         {
-            Device *pDevice = dynamicCast(devIt.pResourceRef->pResource, Device);
-            OBJGPU *pGpuFromDevice = GPU_RES_GET_GPU(pDevice);
-
-            if ((pGpu != NULL) && (pGpu != pGpuFromDevice))
+            if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient))
             {
-                continue;
+                RsClient *pClient = RES_GET_CLIENT(pThirdPartyP2P);
+                *ppClientOut = dynamicCast(pClient, RmClient);
+                *ppThirdPartyP2P = pThirdPartyP2P;
+                return NV_OK;
             }
-
-            subDevIt = clientRefIter(pRsClient, devIt.pResourceRef, classId(Subdevice),
-                                     RS_ITERATE_CHILDREN, NV_TRUE);
-            while(clientRefIterNext(pRsClient, &subDevIt))
-            {
-                it = clientRefIter(pRsClient, subDevIt.pResourceRef,
-                                   classId(ThirdPartyP2P), RS_ITERATE_CHILDREN, NV_TRUE);
-                while (clientRefIterNext(pRsClient, &it))
-                {
-                    pThirdPartyP2P = dynamicCast(it.pResourceRef->pResource, ThirdPartyP2P);
-                    if (NULL == *ppThirdPartyP2P)
-                    {
-                        if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient))
-                        {
-                            *ppClientOut = pClient;
-                            *ppThirdPartyP2P = pThirdPartyP2P;
-                            return NV_OK;
-                        }
-                    }
-                    else if (pThirdPartyP2P->p2pToken ==
-                             (*ppThirdPartyP2P)->p2pToken)
-                    {
-                        *ppClientOut = NULL;
-                        *ppThirdPartyP2P = NULL;
-                    }
-                }
-            }
+        }
+        else if (pThirdPartyP2P->p2pToken ==
+                                         (*ppThirdPartyP2P)->p2pToken)
+        {
+            *ppClientOut = NULL;
+            *ppThirdPartyP2P = NULL;
         }
     }
 
@@ -376,27 +343,17 @@ NV_STATUS CliNextThirdPartyP2PInfoWithPid
 
 NV_STATUS CliAddThirdPartyP2PVASpace
 (
-    NvHandle  hClient,
-    NvHandle  hThirdPartyP2P,
-    NvHandle  hVASpace,
-    NvU32    *pVASpaceToken
+    ThirdPartyP2P *pThirdPartyP2P,
+    NvHandle       hVASpace,
+    NvU32         *pVASpaceToken
 )
 {
-    RsClient *pRsClient;
-    ThirdPartyP2P *pThirdPartyP2P;
+    NvHandle hThirdPartyP2P = RES_GET_HANDLE(pThirdPartyP2P);
+    RsClient *pClient = RES_GET_CLIENT(pThirdPartyP2P);
     CLI_THIRD_PARTY_P2P_VASPACE_INFO vaSpaceInfo;
     NvU32 vaSpaceToken;
-    NV_STATUS status;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
     NV_ASSERT_OR_RETURN((pVASpaceToken != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK || pThirdPartyP2P == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT;
-    }
 
     portMemSet(&vaSpaceInfo, 0, sizeof(CLI_THIRD_PARTY_P2P_VASPACE_INFO));
 
@@ -410,7 +367,7 @@ NV_STATUS CliAddThirdPartyP2PVASpace
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
-    vaSpaceInfo.hClient = hClient;
+    vaSpaceInfo.hClient = pClient->hClient;
     vaSpaceInfo.hThirdPartyP2P = hThirdPartyP2P;
     vaSpaceInfo.hVASpace = hVASpace;
     vaSpaceInfo.vaSpaceToken = vaSpaceToken;
@@ -431,8 +388,8 @@ NV_STATUS CliAddThirdPartyP2PVASpace
     {
         RsResourceRef *pP2PRef;
         RsResourceRef *pVASpaceRef;
-        if ((clientGetResourceRef(pRsClient, hThirdPartyP2P, &pP2PRef) == NV_OK) &&
-            (clientGetResourceRef(pRsClient, hVASpace, &pVASpaceRef) == NV_OK))
+        if ((clientGetResourceRef(pClient, hThirdPartyP2P, &pP2PRef) == NV_OK) &&
+            (clientGetResourceRef(pClient, hVASpace, &pVASpaceRef) == NV_OK))
         {
             refAddDependant(pVASpaceRef, pP2PRef);
         }
@@ -516,26 +473,18 @@ NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL
 
 NV_STATUS CliAddThirdPartyP2PVidmemInfo
 (
-    NvHandle     hClient,
-    NvHandle     hThirdPartyP2P,
-    NvHandle     hMemory,
-    NvU64        address,
-    NvU64        size,
-    NvU64        offset,
-    Memory      *pMemory
+    ThirdPartyP2P *pThirdPartyP2P,
+    NvHandle       hMemory,
+    NvU64          address,
+    NvU64          size,
+    NvU64          offset,
+    Memory        *pMemory
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pMemory != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P, &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = portMemAllocNonPaged(sizeof(CLI_THIRD_PARTY_P2P_VIDMEM_INFO));
     if (pVidmemInfo == NULL)
@@ -576,8 +525,8 @@ NV_STATUS CliAddThirdPartyP2PVidmemInfo
         return status;
     }
 
-    pVidmemInfo->hClient = hClient;
-    pVidmemInfo->hThirdPartyP2P = hThirdPartyP2P;
+    pVidmemInfo->hClient = RES_GET_CLIENT_HANDLE(pThirdPartyP2P);
+    pVidmemInfo->hThirdPartyP2P = RES_GET_HANDLE(pThirdPartyP2P);
     pVidmemInfo->hMemory = hMemory;
     pVidmemInfo->pMemDesc = pMemory->pMemDesc;
     pVidmemInfo->id = portAtomicExIncrementU64(&vidmemInfoId);
@@ -615,7 +564,6 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO pMappingInfo;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
     void *pKey;
-    NvBool bPendingMappings = NV_FALSE;
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -634,18 +582,10 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
             pMappingInfo->pFreeCallback(pMappingInfo->pData);
         }
 
-        status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey, NV_FALSE);
+        status = thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey);
         NV_ASSERT(status == NV_OK);
 
         pNode = pVidmemInfo->pMappingInfoList;
-
-        bPendingMappings = NV_TRUE;
-    }
-
-    // RSYNC is needed only if there are outstanding mappings.
-    if (bPendingMappings)
-    {
-        osWaitForIbmnpuRsync(pVidmemInfo->pMemDesc->pGpu->pOsGpuInfo);
     }
 
     mapRemove(&pThirdPartyP2P->vidmemInfoMap, pVidmemInfo);
@@ -661,8 +601,7 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
 
 NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 (
-    NvHandle                          hClient,
-    NvHandle                          hThirdPartyP2P,
+    ThirdPartyP2P                    *pThirdPartyP2P,
     NvU64                             address,
     NvU64                             length,
     NvU64                            *pOffset,
@@ -671,18 +610,10 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 {
     NV_STATUS status;
     PNODE pNode;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pOffset != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppVidmemInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     status = btreeSearch(address, &pNode,
                          pThirdPartyP2P->pAddressRangeTree);
@@ -710,24 +641,15 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 
 NV_STATUS CliGetThirdPartyP2PVidmemInfoFromId
 (
-    NvHandle                          hClient,
-    NvHandle                          hThirdPartyP2P,
+    ThirdPartyP2P                    *pThirdPartyP2P,
     NvU64                             id,
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO **ppVidmemInfo
 )
 {
     NV_STATUS status;
     PNODE pNode;
-    ThirdPartyP2P *pThirdPartyP2P;
 
     NV_ASSERT_OR_RETURN((ppVidmemInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     status = btreeSearch(id, &pNode, pThirdPartyP2P->pAddressRangeTree);
     if (status != NV_OK)
@@ -742,8 +664,7 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromId
 
 NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 (
-    NvHandle                              hClient,
-    NvHandle                              hThirdPartyP2P,
+    ThirdPartyP2P                        *pThirdPartyP2P,
     NvHandle                              hMemory,
     void                                 *pKey,
     THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *pFreeCallback,
@@ -755,8 +676,8 @@ NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 
     NV_ASSERT_OR_RETURN((pFreeCallback != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    status = CliGetThirdPartyP2PMappingInfoFromKey(hClient, hThirdPartyP2P,
-                                                   hMemory, pKey, &pMappingInfo);
+    status = CliGetThirdPartyP2PMappingInfoFromKey(pThirdPartyP2P, hMemory, pKey,
+                                                   &pMappingInfo);
     if (status != NV_OK)
     {
         return status;
@@ -772,8 +693,7 @@ NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 
 NV_STATUS CliAddThirdPartyP2PMappingInfo
 (
-    NvHandle                              hClient,
-    NvHandle                              hThirdPartyP2P,
+    ThirdPartyP2P                        *pThirdPartyP2P,
     NvHandle                              hMemory,
     void                                 *pKey,
     THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *pFreeCallback,
@@ -782,19 +702,11 @@ NV_STATUS CliAddThirdPartyP2PMappingInfo
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO pMappingInfo;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppMappingInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -831,27 +743,18 @@ NV_STATUS CliAddThirdPartyP2PMappingInfo
 
 NV_STATUS CliGetThirdPartyP2PMappingInfoFromKey
 (
-    NvHandle                           hClient,
-    NvHandle                           hThirdPartyP2P,
+    ThirdPartyP2P                     *pThirdPartyP2P,
     NvHandle                           hMemory,
     void                              *pKey,
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO *ppMappingInfo
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PNODE pNode;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppMappingInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -875,7 +778,6 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
     void                             *pKey,
-    NvBool                            bIsRsyncNeeded,
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO **ppVidmemInfo
 )
 {
@@ -893,12 +795,31 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
     NvU64                                    address;
     NvU64                                    startOffset;
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO_MAPIter  vidMemMapIter;
+    NvBool                                   bGpuLockTaken;
+    NvBool                                   bVgpuRpc;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    bGpuLockTaken = (rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)) ||
+                     rmGpuLockIsOwner());
+
+    bVgpuRpc = IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
 
     pSubdevice = pThirdPartyP2P->pSubdevice;
 
     GPU_RES_SET_THREAD_BC_STATE(pThirdPartyP2P);
+
+    //
+    // vGPU RPC is being called without GPU lock held.
+    // So acquire the lock only for non-vGPU case and if
+    // no locks are held.
+    //
+    if (!bVgpuRpc && !bGpuLockTaken)
+    {
+        status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                         RM_LOCK_MODULES_P2P);
+        NV_ASSERT_OK_OR_RETURN(status);
+    }
 
     vidMemMapIter = mapIterAll(&pThirdPartyP2P->vidmemInfoMap);
     while (mapIterNext(&vidMemMapIter))
@@ -929,20 +850,19 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                               "Freeing P2P mapping for gpu VA: 0x%llx, length: 0x%llx\n",
                               pExtentInfo->address, pExtentInfo->length);
 
-                    if (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+                    if (bVgpuRpc)
                     {
                         NV_RM_RPC_UNMAP_MEMORY(pGpu, pThirdPartyP2P->hClient,
                                                RES_GET_PARENT_HANDLE(pSubdevice),
                                                pVidmemInfo->hMemory,
                                                0,
-                                               pExtentInfo->fbApertureOffset, status);
+                                               pExtentInfo->memArea.pRanges[0].start, status);
                     }
                     else
                     {
                         status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                          pExtentInfo->pMemDesc,
-                                                         pExtentInfo->fbApertureOffset,
-                                                         pExtentInfo->length,
+                                                         pExtentInfo->memArea,
                                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
                     }
                     NV_ASSERT(status == NV_OK);
@@ -963,11 +883,6 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                 portMemFree(pMappingInfo);
             }
 
-            if (bIsRsyncNeeded)
-            {
-                osWaitForIbmnpuRsync(pVidmemInfo->pMemDesc->pGpu->pOsGpuInfo);
-            }
-
             //
             // For persistent mappings, we return the VidmemInfo and clean up
             // the internal ThirdPartyP2P object and duped memory handle.
@@ -980,6 +895,10 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
         }
     }
 
+    if (!bVgpuRpc && !bGpuLockTaken)
+    {
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
 
     return NV_OK;
 }
@@ -987,28 +906,25 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
 NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
-    void                             *pKey,
-    NvBool                            bIsRsyncNeeded
+    void                             *pKey
 )
 {
     return _thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P,
                                              pKey,
-                                             bIsRsyncNeeded,
                                              NULL);
 }
 
 NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL
 (
     ThirdPartyP2P                    *pThirdPartyP2P,
-    void                             *pKey,
-    NvBool                            bIsRsyncNeeded
+    void                             *pKey
 )
 {
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfo = NULL;
 
     NV_ASSERT_OK_OR_RETURN(
         _thirdpartyp2pDelMappingInfoByKey(pThirdPartyP2P, pKey,
-                                          bIsRsyncNeeded, &pVidmemInfo));
+                                          &pVidmemInfo));
 
     CliDelThirdPartyP2PVidmemInfoPersistent(pThirdPartyP2P, pVidmemInfo);
 
@@ -1018,33 +934,20 @@ NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL
 NV_STATUS
 CliAddThirdPartyP2PClientPid
 (
-    NvHandle hClient,
-    NvHandle hThirdPartyP2P,
-    NvU32    pid,
-    NvU32    client
+    ThirdPartyP2P* pThirdPartyP2P,
+    NvU32          pid,
+    NvHandle       hRegisterClient
 )
 {
-    RsResourceRef *pThirdPartyP2PRef;
-    ThirdPartyP2P *pThirdPartyP2P;
-    NvU32          pidIndex;
-    RsClient      *pClient;
+    NvU32    pidIndex;
 
-    NV_ASSERT_OK_OR_RETURN(
-        serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    NV_ASSERT_OK_OR_RETURN(
-        clientGetResourceRef(pClient,
-                                  hThirdPartyP2P,
-                                  &pThirdPartyP2PRef));
-
-    pThirdPartyP2P = dynamicCast(pThirdPartyP2PRef->pResource, ThirdPartyP2P);
     if (pThirdPartyP2P == NULL)
     {
         return NV_ERR_INVALID_OBJECT;
     }
 
     // Do not register another client if one already exists for this PID
-    if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, client))
+    if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hRegisterClient))
     {
         return NV_OK;
     }
@@ -1056,7 +959,7 @@ CliAddThirdPartyP2PClientPid
         if (0 == pThirdPartyP2P->pidClientList[pidIndex].pid)
         {
             pThirdPartyP2P->pidClientList[pidIndex].pid = pid;
-            pThirdPartyP2P->pidClientList[pidIndex].hClient = client;
+            pThirdPartyP2P->pidClientList[pidIndex].hClient = hRegisterClient;
             return NV_OK;
         }
     }
@@ -1148,6 +1051,16 @@ CliUnregisterFromThirdPartyP2P
     }
 
     return status;
+}
+
+NV_STATUS
+shrp2pConstruct_IMPL(P2PTokenShare *pP2PTokenShare)
+{
+    return NV_OK;
+}
+
+void shrp2pDestruct_IMPL(P2PTokenShare *pP2PTokenShare)
+{
 }
 
 void

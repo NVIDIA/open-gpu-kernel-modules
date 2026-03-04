@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "published/pascal/gp100/dev_mmu.h"
 #include "class/cl906f.h"   // GF100_CHANNEL_GPFIFO
@@ -175,69 +176,6 @@ memmgrFinishHandleSizeOverrides_GP100
 }
 
 /*!
- * Inserts semaphore methods into the push buffer for one block"
- *
- * @param[in]     subCh     Subchannel Id
- * @param[in]     data      Semaphore address.
- * @param[in]     payload   size of copies.
- * @param[in/out] **pPtr    Pointer to location in pushbuffer.
- */
-void
-memmgrChannelPushSemaphoreMethodsBlock_GP100
-(
-    MemoryManager *pMemoryManager,
-    NvU32          subCh,
-    NvU64          data,
-    NvU32          payload,
-    NvU32        **pPtr
-)
-{
-    NvU32 *ptr  = *pPtr;
-    PUSH_PAIR(subCh, NVC0B5_SET_SEMAPHORE_A, DRF_NUM(C0B5, _SET_SEMAPHORE_A,
-              _UPPER, NvU64_HI32(data)));
-    PUSH_PAIR(subCh, NVC0B5_SET_SEMAPHORE_B, DRF_NUM(C0B5, _SET_SEMAPHORE_B,
-              _LOWER, NvU64_LO32(data)));
-    PUSH_PAIR(subCh, NVC0B5_SET_SEMAPHORE_PAYLOAD, payload);
-    *pPtr = ptr;
-}
-
-/*!
- * @brief Inserts address methods into the push buffer for one block
- *
- * @param[in]     bSrc      If true the address passed is for source
- * @param[in]     subCh     Subchannel Id
- * @param[in]     addr      Physical address of source/destination
- * @param[in/out] **pPtr    Pointer to location in pushbuffer.
- */
-void
-memmgrChannelPushAddressMethodsBlock_GP100
-(
-    MemoryManager *pMemoryManager,
-    NvBool         bSrc,
-    NvU32          subCh,
-    RmPhysAddr     addr,
-    NvU32        **pPtr
-)
-{
-    NvU32 *ptr  = *pPtr;
-    if (bSrc == NV_TRUE)
-    {
-        PUSH_PAIR(subCh, NVC0B5_OFFSET_IN_UPPER, DRF_NUM(C0B5,
-                  _OFFSET_IN_UPPER, _UPPER, NvU64_HI32(addr)));
-        PUSH_PAIR(subCh, NVC0B5_OFFSET_IN_LOWER, DRF_NUM(C0B5,
-                  _OFFSET_IN_LOWER, _VALUE, NvU64_LO32(addr)));
-    }
-    else
-    {
-        PUSH_PAIR(subCh, NVC0B5_OFFSET_OUT_UPPER, DRF_NUM(C0B5,
-                  _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(addr)));
-        PUSH_PAIR(subCh, NVC0B5_OFFSET_OUT_LOWER, DRF_NUM(C0B5,
-                  _OFFSET_OUT_LOWER, _VALUE, NvU64_LO32(addr)));
-    }
-    *pPtr = ptr;
-}
-
-/*!
  *  Returns the max context size
  *
  *  @returns NvU64
@@ -278,7 +216,7 @@ memmgrGetMaxContextSize_GP100
     // a new kmdtest (CreateNProcesses) should be used.
 
 
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM)
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
     {
         // Only needs increase in single GPU case as 400 process requirement is satisfied on SLI with the additional SLI reserve
         if (!IsSLIEnabled(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTERNAL_HEAP_CONTROL))

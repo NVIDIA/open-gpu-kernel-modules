@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,15 +29,16 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/os/os.h"
 #include "rmapi/client.h"
+#include "rmapi/rs_utils.h"
 
 #include "ctrl/ctrl506f.h"
 
 #include "libraries/utils/nvprintf.h"
 #include "nverror.h"
 #include "nvtypes.h"
-#include "objtmr.h"
 #include "vgpu/rpc.h"
 
 
@@ -55,16 +56,31 @@ _vgpuRcResetCallback
 
     if (osCondAcquireRmSema(pSys->pSema) == NV_OK)
     {
-        if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_COND_ACQUIRE,
+        if (rmGpuLocksAcquire(GPU_LOCK_FLAGS_COND_ACQUIRE,
                               RM_LOCK_MODULES_RC) == NV_OK)
         {
             THREAD_STATE_NODE                             threadState;
             NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS params = {0};
+            RsClient      *pClient;
+            KernelChannel *pKernelChannel = NULL;
 
             threadStateInitISRAndDeferredIntHandler(
                 &threadState,
                 pRcErrorContext->pGpu,
                 THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
+
+            NV_ASSERT_OK_OR_GOTO(
+                status,
+                serverGetClientUnderLock(&g_resServ, hClient, &pClient),
+                error_cleanup);
+            NV_ASSERT_OK_OR_GOTO(
+                status,
+                CliGetKernelChannel(pClient, hChannel, &pKernelChannel),
+                error_cleanup);
+ 
+            NV_ASSERT_OR_ELSE(pKernelChannel != NULL,
+                              status = NV_ERR_INVALID_STATE;
+                              goto error_cleanup);
 
             params.engineID   = pRcErrorContext->EngineId;
             params.exceptType = pRcErrorContext->exceptType;
@@ -77,13 +93,14 @@ _vgpuRcResetCallback
                               sizeof params,
                               status);
 
+            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+
             threadStateFreeISRAndDeferredIntHandler(
                 &threadState,
                 pRcErrorContext->pGpu,
                 THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
             portMemFree(pRcErrorContext);
-            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
         else
         {
@@ -96,6 +113,11 @@ _vgpuRcResetCallback
         status = NV_ERR_STATE_IN_USE;
     }
 
+    return status;
+
+error_cleanup:
+    rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    osReleaseRmSema(pSys->pSema, NULL);
     return status;
 }
 
@@ -147,6 +169,7 @@ krcResetCallback
             if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_RC) ==
                 NV_OK)
             {
+                RsClient      *pClient;
                 KernelChannel *pKernelChannel = NULL;
 
                 threadStateInitISRAndDeferredIntHandler(
@@ -156,28 +179,31 @@ krcResetCallback
 
                 NV_ASSERT_OK_OR_GOTO(
                     status,
-                    serverGetClientUnderLock(&g_resServ, hClient, NULL),
+                    serverGetClientUnderLock(&g_resServ, hClient, &pClient),
                     error_cleanup);
                 NV_ASSERT_OK_OR_GOTO(
                     status,
-                    CliGetKernelChannel(hClient, hChannel, &pKernelChannel),
+                    CliGetKernelChannel(pClient, hChannel, &pKernelChannel),
                     error_cleanup);
 
                 NV_ASSERT_OR_ELSE(pKernelChannel != NULL,
                                   status = NV_ERR_INVALID_STATE;
                                   goto error_cleanup);
 
-                if (IS_GSP_CLIENT(pRcErrorContext->pGpu))
                 {
                     NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS params = {0};
-                    NV_RM_RPC_CONTROL(pRcErrorContext->pGpu,
-                                      RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                      RES_GET_HANDLE(pKernelChannel),
-                                      NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
-                                      &params,
-                                      sizeof params,
-                                      status);
+                    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pRcErrorContext->pGpu);
+
+                    // Client lock is already obtained above.
+                    status = pRmApi->Control(pRmApi,
+                        RES_GET_CLIENT_HANDLE(pKernelChannel),
+                        RES_GET_HANDLE(pKernelChannel),
+                        NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
+                        &params,
+                        sizeof params);
                 }
+
+                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
 
                 threadStateFreeISRAndDeferredIntHandler(
                     &threadState,
@@ -185,7 +211,6 @@ krcResetCallback
                     THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
                 portMemFree(pRcErrorContext);
-                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
             }
             else
             {
@@ -223,32 +248,25 @@ krcErrorInvokeCallback_IMPL
     FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData,
     NvU32                    exceptType,
     NvU32                    exceptLevel,
-    NvU32                    engineId,
+    RM_ENGINE_TYPE           rmEngineType,
     NvU32                    rcDiagRecStart
 )
 {
     OBJSYS             *pSys              = SYS_GET_INSTANCE();
     Journal            *pRcDB             = SYS_GET_RCDB(pSys);
-    OBJOS              *pOS               = SYS_GET_OS(pSys);
     KernelMIGManager   *pKernelMigManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     RmClient           *pClient           = NULL;
-    RsClient           *pRsClient;
     RC_CALLBACK_STATUS  clientAction;
-    NvU32               localEngineId  = engineId;
+    RM_ENGINE_TYPE      localRmEngineType  = rmEngineType;
     NvU32               rcDiagRecOwner = RCDB_RCDIAG_DEFAULT_OWNER;
     NV_STATUS           status;
     NvBool              bReturn = NV_TRUE;
+    NvBool              bCheckCallback;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), bReturn);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel != NULL, bReturn);
 
-    status = serverGetClientUnderLock(&g_resServ,
-                                      RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                      &pRsClient);
-    if (status != NV_OK)
-        return bReturn;
-
-    pClient = dynamicCast(pRsClient, RmClient);
+    pClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
     if (pClient == NULL)
         return bReturn;
 
@@ -256,24 +274,22 @@ krcErrorInvokeCallback_IMPL
     // If SMC is enabled, RM need to notify partition local engineIds.
     // Convert global ID to partition local
     //
-    if (IS_MIG_IN_USE(pGpu) && NV2080_ENGINE_TYPE_IS_VALID(engineId) &&
-        kmigmgrIsEnginePartitionable(pGpu, pKernelMigManager, engineId))
+    if (IS_MIG_IN_USE(pGpu) && RM_ENGINE_TYPE_IS_VALID(rmEngineType) &&
+        kmigmgrIsEnginePartitionable(pGpu, pKernelMigManager, rmEngineType))
     {
         MIG_INSTANCE_REF ref;
-        status = kmigmgrGetInstanceRefFromClient(pGpu,
+        status = kmigmgrGetInstanceRefFromDevice(pGpu,
                                                  pKernelMigManager,
-                                                 pRsClient->hClient,
+                                                 GPU_RES_GET_DEVICE(pKernelChannel),
                                                  &ref);
         if (status != NV_OK)
             return bReturn;
 
-        if (!kmigmgrIsEngineInInstance(pGpu, pKernelMigManager, engineId, ref))
+        if (!kmigmgrIsEngineInInstance(pGpu, pKernelMigManager, rmEngineType, ref))
         {
             // Notifier is requested for an unsupported engine
-            NV_PRINTF(
-                LEVEL_ERROR,
-                "RcErroCallback requested for an unsupported engine (0x%x)\n",
-                localEngineId);
+            NV_PRINTF(LEVEL_ERROR, "RcErroCallback requested for an unsupported engine 0x%x (0x%x)\n",
+                                    gpuGetNv2080EngineType(rmEngineType), rmEngineType);
             return bReturn;
         }
 
@@ -281,23 +297,21 @@ krcErrorInvokeCallback_IMPL
         status = kmigmgrGetGlobalToLocalEngineType(pGpu,
                                                    pKernelMigManager,
                                                    ref,
-                                                   engineId,
-                                                   &localEngineId);
+                                                   rmEngineType,
+                                                   &localRmEngineType);
         if (status != NV_OK)
             return bReturn;
     }
 
-    if (pOS->osCheckCallback(pGpu))
+    bCheckCallback =
+        IS_GSP_CLIENT(pGpu) ? osCheckCallback_v2(pGpu) : osCheckCallback(pGpu);
+
+    if (bCheckCallback)
     {
-        NvHandle          hDevice, hFifo;
         RC_ERROR_CONTEXT *pRcErrorContext = NULL;
-        Device           *pDevice;
-
-        NV_ASSERT_OK_OR_RETURN(
-            deviceGetByGpu(pRsClient, pGpu, NV_TRUE, &pDevice));
-
-        hDevice = RES_GET_HANDLE(pDevice);
-
+        Device           *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
+        NvHandle          hDevice = RES_GET_HANDLE(pDevice);
+        NvHandle          hFifo;
 
         if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup
                  ->bAllocatedByRm)
@@ -319,7 +333,7 @@ krcErrorInvokeCallback_IMPL
             pRcErrorContext->secChId    = 0xFFFFFFFF;
             pRcErrorContext->sechClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
             pRcErrorContext->exceptType = exceptType;
-            pRcErrorContext->EngineId   = localEngineId;
+            pRcErrorContext->EngineId   = gpuGetNv2080EngineType(localRmEngineType);
             pRcErrorContext->subdeviceInstance = pGpu->subdeviceInstance;
 
             if (pMmuExceptionData != NULL)
@@ -331,17 +345,50 @@ krcErrorInvokeCallback_IMPL
                     GPU_GET_KERNEL_GMMU(pGpu),
                     pMmuExceptionData->faultType);
             }
+            else
+            {
+                // TODO: Set some default values
+            }
         }
 
-        clientAction = pOS->osRCCallback(pGpu,
-                                         RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                         hDevice,
-                                         hFifo,
-                                         RES_GET_HANDLE(pKernelChannel),
-                                         exceptLevel,
-                                         exceptType,
-                                         (NvU32 *)pRcErrorContext,
-                                         &krcResetCallback);
+        NvBool bResetRequired;
+        status = gpuIsDeviceMarkedForReset(pGpu, &bResetRequired);
+        if ((status == NV_OK) && bResetRequired &&
+            (pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT)))
+        {
+            NV_PRINTF(LEVEL_FATAL, "Gpu marked for reset. Triggering TDR.\n");
+            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_RC_RESET, NULL, 0, 0, 0);
+            // RM takes no action to the channel and triggers TDR (similar to RC_CALLBACK_IGNORE)
+            return NV_FALSE;
+        }
+        else
+        {
+            if (IS_GSP_CLIENT(pGpu))
+            {
+                clientAction = osRCCallback_v2(pGpu,
+                                            RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                            hDevice,
+                                            hFifo,
+                                            RES_GET_HANDLE(pKernelChannel),
+                                            exceptLevel,
+                                            exceptType,
+                                            NV_FALSE,
+                                            (NvU32 *)pRcErrorContext,
+                                            &krcResetCallback);
+            }
+            else
+            {
+                clientAction = osRCCallback(pGpu,
+                                            RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                            hDevice,
+                                            hFifo,
+                                            RES_GET_HANDLE(pKernelChannel),
+                                            exceptLevel,
+                                            exceptType,
+                                            (NvU32 *)pRcErrorContext,
+                                            &krcResetCallback);
+            }
+        }
 
         if (clientAction == RC_CALLBACK_IGNORE ||
             clientAction == RC_CALLBACK_ISOLATE_NO_RESET)
@@ -358,6 +405,20 @@ krcErrorInvokeCallback_IMPL
             //
             portMemFree(pRcErrorContext);
         }
+        else if (IS_GSP_CLIENT(pGpu) && clientAction == RC_CALLBACK_ISOLATE)
+        {
+            NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS params = {0};
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pRcErrorContext->pGpu);
+
+            // Client lock is already obtained above.
+            status = pRmApi->Control(pRmApi,
+                                     RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                     RES_GET_HANDLE(pKernelChannel),
+                                     NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
+                                     &params,
+                                     sizeof params);
+        }
+
         bReturn = (clientAction != RC_CALLBACK_IGNORE);
     }
     else
@@ -381,10 +442,10 @@ krcErrorInvokeCallback_IMPL
                                &classInfo);
 
         // notify the Fifo channel based event listeners
-        kchannelNotifyGeneric(pKernelChannel,
-                              classInfo.rcNotifierIndex,
-                              &params,
-                              sizeof(params));
+        kchannelNotifyEvent(pKernelChannel,
+                            classInfo.rcNotifierIndex,
+                            0, 0, &params,
+                            sizeof(params));
     }
 
     // update RC diagnostic records with process id and owner

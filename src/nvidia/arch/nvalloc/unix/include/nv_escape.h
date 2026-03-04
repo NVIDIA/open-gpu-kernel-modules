@@ -50,5 +50,6 @@
 #define NV_ESC_RM_EXPORT_OBJECT_TO_FD               0x5C
 #define NV_ESC_RM_IMPORT_OBJECT_FROM_FD             0x5D
 #define NV_ESC_RM_UPDATE_DEVICE_MAPPING_INFO        0x5E
+#define NV_ESC_RM_LOCKLESS_DIAGNOSTIC               0x5F
 
 #endif // NV_ESCAPE_H_INCLUDED

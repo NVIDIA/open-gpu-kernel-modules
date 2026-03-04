@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,7 +91,7 @@ rmLocksAcquireAll(NvU32 module)
         return NV_ERR_INVALID_LOCK_STATE;
     }
 
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, module) != NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, module) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to acquire the API lock!\n");
         osReleaseRmSema(pSys->pSema, NULL);
@@ -101,7 +101,7 @@ rmLocksAcquireAll(NvU32 module)
     if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, module) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to acquire the GPU lock!\n");
-        rmApiLockRelease();
+        rmapiLockRelease();
         osReleaseRmSema(pSys->pSema, NULL);
         return NV_ERR_INVALID_LOCK_STATE;
     }
@@ -118,74 +118,54 @@ rmLocksReleaseAll(void)
     OBJSYS    *pSys = SYS_GET_INSTANCE();
 
     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-    rmApiLockRelease();
+    rmapiLockRelease();
     osReleaseRmSema(pSys->pSema, NULL);
 }
 
 
 NV_STATUS
-workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32 *pGpuMask)
+workItemLocksAcquire(NvU32 gpuInstance, OsQueueWorkItemFlags flags, OsQueueWorkItemFlags *pReleaseLocks, NvU32 *pGpuMask)
 {
     OBJSYS   *pSys = SYS_GET_INSTANCE();
     OBJGPU   *pGpu;
     NvU32     grp;
     NV_STATUS status = NV_OK;
 
-    *pReleaseLocks = 0;
+    *pReleaseLocks = (OsQueueWorkItemFlags){0};
     *pGpuMask = 0;
 
-    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA)
+    if (flags.bLockSema)
     {
         status = osAcquireRmSema(pSys->pSema);
         if (status != NV_OK)
             goto done;
 
-        *pReleaseLocks |= OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA;
+        pReleaseLocks->bLockSema = NV_TRUE;
     }
 
-    if ((flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO))
+    if (flags.apiLock != WORKITEM_FLAGS_API_LOCK_NOT_ACQUIRED)
     {
-        NvU32 apiLockFlags = RMAPI_LOCK_FLAGS_NONE;
-        NvU32 releaseFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW;
-
-        if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO)
-        {
-            apiLockFlags = RMAPI_LOCK_FLAGS_READ;
-            releaseFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO;
-        }
-
-        status = rmApiLockAcquire(apiLockFlags, RM_LOCK_MODULES_WORKITEM);
+        status = rmapiLockAcquire(flags.apiLock == WORKITEM_FLAGS_API_LOCK_READ_ONLY ?
+                                      RMAPI_LOCK_FLAGS_READ :
+                                      RMAPI_LOCK_FLAGS_WRITE,
+                                  RM_LOCK_MODULES_WORKITEM);
         if (status != NV_OK)
             goto done;
 
-        *pReleaseLocks |= releaseFlags;
+        pReleaseLocks->apiLock = flags.apiLock;
     }
 
-    if ((flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RO) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RO) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RO))
+    if (flags.bLockGpus ||
+        flags.bLockGpuGroupDevice ||
+        flags.bLockGpuGroupSubdevice)
     {
         NvU32 gpuLockFlags = GPUS_LOCK_FLAGS_NONE;
-        NvU32 releaseFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW;
 
-        if (((flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RO) ||
-             (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RO) ||
-             (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RO)) &&
-            (pSys->gpuLockModuleMask & RM_LOCK_MODULE_GRP(RM_LOCK_MODULES_WORKITEM)))
-        {
-            gpuLockFlags = GPU_LOCK_FLAGS_READ;
-            releaseFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RO;
-        }
-
-        if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW)
+        if (flags.bLockGpus)
             grp = GPU_LOCK_GRP_ALL;
-        else if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW)
+        else if (flags.bLockGpuGroupDevice)
             grp = GPU_LOCK_GRP_DEVICE;
-        else // (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW)
+        else // (flags.bLockGpuGroupSubdevice)
             grp = GPU_LOCK_GRP_SUBDEVICE;
 
         status = rmGpuGroupLockAcquire(gpuInstance, grp, gpuLockFlags,
@@ -194,7 +174,7 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
             goto done;
 
         // All of these call into the same function, just share the flag
-        *pReleaseLocks |= releaseFlags;
+        pReleaseLocks->bLockGpus = NV_TRUE;
 
         pGpu = gpumgrGetGpu(gpuInstance);
         if (pGpu == NULL)
@@ -203,7 +183,7 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
             goto done;
         }
 
-        if (flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)
+        if (flags.bFullGpuSanity)
         {
             if (!FULL_GPU_SANITY_CHECK(pGpu) ||
                 !pGpu->getProperty(pGpu, PDB_PROP_GPU_STATE_INITIALIZED))
@@ -216,7 +196,7 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
             }
         }
 
-        if (flags & OS_QUEUE_WORKITEM_FLAGS_FOR_PM_RESUME)
+        if (flags.bForPmResume)
         {
             if (!FULL_GPU_SANITY_FOR_PM_RESUME(pGpu))
             {
@@ -233,33 +213,27 @@ done:
     if (status != NV_OK)
     {
         workItemLocksRelease(*pReleaseLocks, *pGpuMask);
-        *pReleaseLocks = 0;
+        *pReleaseLocks = (OsQueueWorkItemFlags){0};
     }
     return status;
 }
 
 void
-workItemLocksRelease(NvU32 releaseLocks, NvU32 gpuMask)
+workItemLocksRelease(OsQueueWorkItemFlags releaseLocks, NvU32 gpuMask)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
-    if (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW)
+    if (releaseLocks.bLockGpus)
     {
         rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
     }
 
-    if (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RO)
+    if (releaseLocks.apiLock != WORKITEM_FLAGS_API_LOCK_NOT_ACQUIRED)
     {
-        rmGpuGroupLockRelease(gpuMask, GPU_LOCK_FLAGS_READ);
+        rmapiLockRelease();
     }
 
-    if ((releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW) ||
-        (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO))
-    {
-        rmApiLockRelease();
-    }
-
-    if (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA)
+    if (releaseLocks.bLockSema)
     {
         osReleaseRmSema(pSys->pSema, NULL);
     }

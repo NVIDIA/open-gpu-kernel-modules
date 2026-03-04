@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,76 +23,171 @@
 
 #define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
 
-#include "gpu/disp/kern_disp.h"
-#include "gpu/disp/disp_objs.h"
 #include "class/cl5070.h"
-#include "mem_mgr/mem.h"
+#include "gpu/disp/disp_objs.h"
+#include "gpu/disp/kern_disp.h"
 #include "gpu/gpu.h"
+#include "gpu/subdevice/subdevice.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "mem_mgr/mem.h"
+#include "rmapi/client_resource.h"
+#include "rmapi/rmapi.h"
+#include "rmapi/rs_utils.h"
 
-NV_STATUS
-dispobjCtrlCmdEventSetTrigger_IMPL
-(
-    DispObject *pDispObject
-)
+static NV_STATUS getRgConnectedLockpin(OBJGPU *pGpu,
+    KernelDisplay *pKernelDisplay, NvU32 head,
+    OBJGPU *pPeerGpu, NvU32 peerHead,
+    NvU32 *pMasterScanLock, NvU32 *pSlaveScanLock)
 {
-    OBJGPU        *pGpu = DISPAPI_GET_GPU(pDispObject);
-    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvBool bMasterScanLock, bSlaveScanLock;
+    NvU32 masterScanLockPin, slaveScanLockPin;
 
-    kdispNotifyEvent(pGpu, pKernelDisplay, NV5070_NOTIFIERS_SW, NULL, 0, 0, 0);
+    *pMasterScanLock = 0;
+    *pSlaveScanLock = 0;
+
+    NV_STATUS status = kdispGetRgScanLock_HAL(pGpu, pKernelDisplay,
+                                   head,
+                                   pPeerGpu,
+                                   peerHead,
+                                   &bMasterScanLock,
+                                   &masterScanLockPin,
+                                   &bSlaveScanLock,
+                                   &slaveScanLockPin);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    if (bMasterScanLock)
+    {
+        *pMasterScanLock =
+            FLD_SET_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                        _MASTER_SCAN_LOCK_CONNECTED, _YES, *pMasterScanLock);
+
+        *pMasterScanLock =
+            FLD_SET_DRF_NUM(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                            _MASTER_SCAN_LOCK_PIN, masterScanLockPin,
+                            *pMasterScanLock);
+    }
+    else
+    {
+        *pMasterScanLock =
+            FLD_SET_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                        _MASTER_SCAN_LOCK_CONNECTED, _NO, *pMasterScanLock);
+    }
+
+    if (bSlaveScanLock)
+    {
+        *pSlaveScanLock =
+            FLD_SET_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                        _SLAVE_SCAN_LOCK_CONNECTED, _YES, *pSlaveScanLock);
+
+        *pSlaveScanLock =
+            FLD_SET_DRF_NUM(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                            _SLAVE_SCAN_LOCK_PIN, slaveScanLockPin,
+                            *pSlaveScanLock);
+    }
+    else
+    {
+        *pSlaveScanLock =
+            FLD_SET_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
+                        _SLAVE_SCAN_LOCK_CONNECTED, _NO, *pSlaveScanLock);
+    }
 
     return NV_OK;
 }
 
 NV_STATUS
-dispobjCtrlCmdEventSetMemoryNotifies_IMPL
+dispobjCtrlCmdGetRgConnectedLockpinStateless_IMPL
 (
     DispObject *pDispObject,
-    NV5070_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS *pSetMemoryNotifiesParams
+    NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS *pParams
 )
 {
-    OBJGPU        *pGpu = DISPAPI_GET_GPU(pDispObject);
-    DisplayApi    *pDisplayApi = staticCast(pDispObject, DisplayApi);
-    RsClient      *pClient = RES_GET_CLIENT(pDispObject);
-    Memory        *pMemory;
-    NvU32         *pNotifyActions, i;
+    OBJGPU         *pGpu = DISPAPI_GET_GPU(pDispObject);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvHandle        hClient = RES_GET_CLIENT_HANDLE(pDispObject);
+    OBJGPU         *pPeerGpu;
 
-    // error check subDeviceInstance
-    if (pSetMemoryNotifiesParams->subDeviceInstance >= gpumgrGetSubDeviceCountFromGpu(pGpu))
+    NV_ASSERT_OR_RETURN(pParams->head < pKernelDisplay->numHeads, NV_ERR_INVALID_ARGUMENT);
+
+    RsResourceRef *pPeerDisplayRef;
+    NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRef(hClient, pParams->peer.hDisplay, &pPeerDisplayRef));
+    NV_ASSERT_OR_RETURN(pPeerDisplayRef->pParentRef != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN((dynamicCast(pPeerDisplayRef->pResource, DispCommon) != NULL ||
+                         dynamicCast(pPeerDisplayRef->pResource, DispObject) != NULL), 
+                         NV_ERR_INVALID_OBJECT);
+
+    Subdevice *pPeerSubdevice;
+    NV_ASSERT_OK_OR_RETURN(subdeviceGetByInstance(RES_GET_CLIENT(pDispObject), pPeerDisplayRef->pParentRef->hResource,
+        pParams->peer.subdeviceIndex, &pPeerSubdevice));
+    pPeerGpu = GPU_RES_GET_GPU(pPeerSubdevice);
+
+    NV_ASSERT_OR_RETURN(pPeerGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pParams->peer.head < GPU_GET_KERNEL_DISPLAY(pPeerGpu)->numHeads, NV_ERR_INVALID_ARGUMENT);
+
+    return getRgConnectedLockpin(pGpu, pKernelDisplay, pParams->head, pPeerGpu, pParams->peer.head,
+        &pParams->masterScanLock, &pParams->slaveScanLock);
+}
+
+NV_STATUS
+nvdispapiCtrlCmdChannelCancelFlip_IMPL
+(
+    NvDispApi *pNvDispApi,
+    NVC370_CTRL_CHANNEL_CANCEL_FLIP_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = DISPAPI_GET_GPU(pNvDispApi);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pNvDispApi);
+    DISPCHNCLASS internalChnClass = dispChnClass_Supported;
+    NvU32 dispChannelNum = 0;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    status = kdispGetIntChnClsForHwCls(pKernelDisplay, pParams->channelClass, &internalChnClass);
+    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_INFO, "bad subDeviceInstance 0x%x\n",
-                  pSetMemoryNotifiesParams->subDeviceInstance);
-        return NV_ERR_INVALID_ARGUMENT;
+        return status;
     }
 
-    pNotifyActions = pDisplayApi->pNotifyActions[pSetMemoryNotifiesParams->subDeviceInstance];
-
-    // ensure there's no pending notifications
-    for (i = 0; i < pDisplayApi->numNotifiers; i++)
+    if (kdispGetChannelNum_HAL(pKernelDisplay, internalChnClass, pParams->channelInstance, &dispChannelNum) != NV_OK)
     {
-        if (pNotifyActions[i] != NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
+        return NV_ERR_INVALID_CHANNEL;
+    }
+
+    if (pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse != NV_TRUE)
+    {
+        NV_PRINTF(LEVEL_WARNING, "disp Channel not allocated by RM yet!\n");
+        return NV_ERR_INVALID_CHANNEL;
+    }
+    else
+    {
+        // Does HW also think the same
+        if (!kdispIsChannelAllocatedHw_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance))
         {
-            return NV_ERR_STATE_IN_USE;
+            NV_PRINTF(LEVEL_WARNING, "disp Channel not allocated by HW yet!\n");
+            return NV_ERR_INVALID_CHANNEL;
         }
     }
 
-    if (pSetMemoryNotifiesParams->hMemory == NV01_NULL_OBJECT)
+    if (internalChnClass == dispChnClass_Core)
     {
-        pDisplayApi->hNotifierMemory = pSetMemoryNotifiesParams->hMemory;
-        pDisplayApi->pNotifierMemory = NULL;
-        return NV_OK;
+        // Ensure that only core channel owner can touch it.
+        if (pKernelDisplay->pClientChannelTable[dispChannelNum].pClient->hClient != hClient)
+        {
+            NV_ASSERT(0);
+            return NV_ERR_INVALID_OWNER;
+        }
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
-        memGetByHandle(pClient, pSetMemoryNotifiesParams->hMemory, &pMemory));
+    kdispSetChannelTrashAndAbortAccel_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance, NV_TRUE);
 
-    if (pMemory->pMemDesc->Size < sizeof(NvNotification) * pDisplayApi->numNotifiers)
+    if (!kdispIsChannelIdle_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance))
     {
-        return NV_ERR_INVALID_LIMIT;
+        NV_PRINTF(LEVEL_WARNING, "disp channel not in idle state! %u %u\n", internalChnClass, pParams->channelInstance);
+        NV_ASSERT(0);
     }
 
-    pDisplayApi->hNotifierMemory = pSetMemoryNotifiesParams->hMemory;
-    pDisplayApi->pNotifierMemory = pMemory;
-
-    return NV_OK;
+    kdispSetChannelTrashAndAbortAccel_HAL(pGpu, pKernelDisplay, internalChnClass, pParams->channelInstance, NV_FALSE);
+   
+    return status;
 }

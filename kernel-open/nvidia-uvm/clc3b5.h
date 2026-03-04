@@ -1,19 +1,19 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to
-    deal in the Software without restriction, including without limitation the
-    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-    sell copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
 
-        The above copyright notice and this permission notice shall be
-        included in all copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
     THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
@@ -32,6 +32,10 @@ extern "C" {
 
 #define VOLTA_DMA_COPY_A                                                            (0x0000C3B5)
 
+#define NVC3B5_NOP                                                              (0x00000100)
+#define NVC3B5_NOP_PARAMETER                                                    31:0
+#define NVC3B5_PM_TRIGGER                                                       (0x00000140)
+#define NVC3B5_PM_TRIGGER_V                                                     31:0
 #define NVC3B5_SET_SEMAPHORE_A                                                  (0x00000240)
 #define NVC3B5_SET_SEMAPHORE_A_UPPER                                            16:0
 #define NVC3B5_SET_SEMAPHORE_B                                                  (0x00000244)
@@ -69,6 +73,9 @@ extern "C" {
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE                                          2:2
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE_FALSE                                    (0x00000000)
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE_TRUE                                     (0x00000001)
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE                                            25:25
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE_SYS                                        (0x00000000)
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE_GL                                         (0x00000001)
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE                                        4:3
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE_NONE                                   (0x00000000)
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE_RELEASE_ONE_WORD_SEMAPHORE             (0x00000001)
@@ -123,8 +130,6 @@ extern "C" {
 #define NVC3B5_LAUNCH_DMA_VPRMODE                                               23:22
 #define NVC3B5_LAUNCH_DMA_VPRMODE_VPR_NONE                                      (0x00000000)
 #define NVC3B5_LAUNCH_DMA_VPRMODE_VPR_VID2VID                                   (0x00000001)
-#define NVC3B5_LAUNCH_DMA_VPRMODE_VPR_VID2SYS                                   (0x00000002)
-#define NVC3B5_LAUNCH_DMA_VPRMODE_VPR_SYS2VID                                   (0x00000003)
 #define NVC3B5_LAUNCH_DMA_RESERVED_START_OF_COPY                                24:24
 #define NVC3B5_LAUNCH_DMA_RESERVED_ERR_CODE                                     31:28
 #define NVC3B5_OFFSET_IN_UPPER                                                  (0x00000400)
@@ -195,6 +200,76 @@ extern "C" {
 #define NVC3B5_SET_REMAP_COMPONENTS_NUM_DST_COMPONENTS_TWO                      (0x00000001)
 #define NVC3B5_SET_REMAP_COMPONENTS_NUM_DST_COMPONENTS_THREE                    (0x00000002)
 #define NVC3B5_SET_REMAP_COMPONENTS_NUM_DST_COMPONENTS_FOUR                     (0x00000003)
+#define NVC3B5_SET_DST_BLOCK_SIZE                                               (0x0000070C)
+#define NVC3B5_SET_DST_BLOCK_SIZE_WIDTH                                         3:0
+#define NVC3B5_SET_DST_BLOCK_SIZE_WIDTH_ONE_GOB                                 (0x00000000)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT                                        7:4
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_ONE_GOB                                (0x00000000)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_TWO_GOBS                               (0x00000001)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_FOUR_GOBS                              (0x00000002)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_EIGHT_GOBS                             (0x00000003)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_SIXTEEN_GOBS                           (0x00000004)
+#define NVC3B5_SET_DST_BLOCK_SIZE_HEIGHT_THIRTYTWO_GOBS                         (0x00000005)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH                                         11:8
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_ONE_GOB                                 (0x00000000)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_TWO_GOBS                                (0x00000001)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_FOUR_GOBS                               (0x00000002)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_EIGHT_GOBS                              (0x00000003)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_SIXTEEN_GOBS                            (0x00000004)
+#define NVC3B5_SET_DST_BLOCK_SIZE_DEPTH_THIRTYTWO_GOBS                          (0x00000005)
+#define NVC3B5_SET_DST_BLOCK_SIZE_GOB_HEIGHT                                    15:12
+#define NVC3B5_SET_DST_BLOCK_SIZE_GOB_HEIGHT_GOB_HEIGHT_FERMI_8                 (0x00000001)
+#define NVC3B5_SET_DST_WIDTH                                                    (0x00000710)
+#define NVC3B5_SET_DST_WIDTH_V                                                  31:0
+#define NVC3B5_SET_DST_HEIGHT                                                   (0x00000714)
+#define NVC3B5_SET_DST_HEIGHT_V                                                 31:0
+#define NVC3B5_SET_DST_DEPTH                                                    (0x00000718)
+#define NVC3B5_SET_DST_DEPTH_V                                                  31:0
+#define NVC3B5_SET_DST_LAYER                                                    (0x0000071C)
+#define NVC3B5_SET_DST_LAYER_V                                                  31:0
+#define NVC3B5_SET_DST_ORIGIN                                                   (0x00000720)
+#define NVC3B5_SET_DST_ORIGIN_X                                                 15:0
+#define NVC3B5_SET_DST_ORIGIN_Y                                                 31:16
+#define NVC3B5_SET_SRC_BLOCK_SIZE                                               (0x00000728)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_WIDTH                                         3:0
+#define NVC3B5_SET_SRC_BLOCK_SIZE_WIDTH_ONE_GOB                                 (0x00000000)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT                                        7:4
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_ONE_GOB                                (0x00000000)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_TWO_GOBS                               (0x00000001)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_FOUR_GOBS                              (0x00000002)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_EIGHT_GOBS                             (0x00000003)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_SIXTEEN_GOBS                           (0x00000004)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_HEIGHT_THIRTYTWO_GOBS                         (0x00000005)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH                                         11:8
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_ONE_GOB                                 (0x00000000)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_TWO_GOBS                                (0x00000001)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_FOUR_GOBS                               (0x00000002)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_EIGHT_GOBS                              (0x00000003)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_SIXTEEN_GOBS                            (0x00000004)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_DEPTH_THIRTYTWO_GOBS                          (0x00000005)
+#define NVC3B5_SET_SRC_BLOCK_SIZE_GOB_HEIGHT                                    15:12
+#define NVC3B5_SET_SRC_BLOCK_SIZE_GOB_HEIGHT_GOB_HEIGHT_FERMI_8                 (0x00000001)
+#define NVC3B5_SET_SRC_WIDTH                                                    (0x0000072C)
+#define NVC3B5_SET_SRC_WIDTH_V                                                  31:0
+#define NVC3B5_SET_SRC_HEIGHT                                                   (0x00000730)
+#define NVC3B5_SET_SRC_HEIGHT_V                                                 31:0
+#define NVC3B5_SET_SRC_DEPTH                                                    (0x00000734)
+#define NVC3B5_SET_SRC_DEPTH_V                                                  31:0
+#define NVC3B5_SET_SRC_LAYER                                                    (0x00000738)
+#define NVC3B5_SET_SRC_LAYER_V                                                  31:0
+#define NVC3B5_SET_SRC_ORIGIN                                                   (0x0000073C)
+#define NVC3B5_SET_SRC_ORIGIN_X                                                 15:0
+#define NVC3B5_SET_SRC_ORIGIN_Y                                                 31:16
+#define NVC3B5_SRC_ORIGIN_X                                                     (0x00000744)
+#define NVC3B5_SRC_ORIGIN_X_VALUE                                               31:0
+#define NVC3B5_SRC_ORIGIN_Y                                                     (0x00000748)
+#define NVC3B5_SRC_ORIGIN_Y_VALUE                                               31:0
+#define NVC3B5_DST_ORIGIN_X                                                     (0x0000074C)
+#define NVC3B5_DST_ORIGIN_X_VALUE                                               31:0
+#define NVC3B5_DST_ORIGIN_Y                                                     (0x00000750)
+#define NVC3B5_DST_ORIGIN_Y_VALUE                                               31:0
+#define NVC3B5_PM_TRIGGER_END                                                   (0x00001114)
+#define NVC3B5_PM_TRIGGER_END_V                                                 31:0
 
 #ifdef __cplusplus
 };     /* extern "C" */

@@ -42,6 +42,7 @@ extern "C" {
 void NV_API_CALL os_dbg_breakpoint(void);
 void NV_API_CALL out_string(const char *str);
 int  NV_API_CALL nv_printf(NvU32 debuglevel, const char *format, ...);
+void NV_API_CALL os_dump_stack(void);
 
 // No init/shutdown needed
 #define portDbgInitialize()
@@ -67,6 +68,7 @@ portDbgPrintString
 #define portDbgExPrintfLevel_SUPPORTED 1
 
 #define PORT_BREAKPOINT() os_dbg_breakpoint()
+#define PORT_DUMP_STACK() os_dump_stack()
 
 #ifdef __cplusplus
 }

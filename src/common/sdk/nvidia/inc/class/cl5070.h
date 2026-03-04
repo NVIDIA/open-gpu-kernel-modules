@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1993-2021, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,37 +21,24 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl5070_h_
-#define _cl5070_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl5070.finn
+//
 
-#define  NV50_DISPLAY                                            (0x00005070)
+#include "cl5070_notification.h"
 
-/* event values */
-#define NV5070_NOTIFIERS_SW                                      (0)
-#define NV5070_NOTIFIERS_MAXCOUNT                                (1)
+#define NV50_DISPLAY (0x5070U) /* finn: Evaluated from "NV5070_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-#define NV5070_NOTIFICATION_STATUS_IN_PROGRESS                   (0x8000)
-#define NV5070_NOTIFICATION_STATUS_BAD_ARGUMENT                  (0x4000)
-#define NV5070_NOTIFICATION_STATUS_ERROR_INVALID_STATE           (0x2000)
-#define NV5070_NOTIFICATION_STATUS_ERROR_STATE_IN_USE            (0x1000)
-#define NV5070_NOTIFICATION_STATUS_DONE_SUCCESS                  (0x0000)
+#define NV5070_ALLOCATION_PARAMETERS_MESSAGE_ID (0x5070U)
 
-typedef struct
-{
-    NvU32   numHeads; // Number of HEADs in this chip/display
-    NvU32   numDacs;  // Number of DACs in this chip/display
-    NvU32   numSors;  // Number of SORs in this chip/display
-    NvU32   numPiors; // Number of PIORs in this chip/display
+typedef struct NV5070_ALLOCATION_PARAMETERS {
+    NvU32 numHeads; // Number of HEADs in this chip/display
+    NvU32 numDacs;  // Number of DACs in this chip/display
+    NvU32 numSors;  // Number of SORs in this chip/display
+    NvU32 numPiors; // Number of PIORs in this chip/display
 } NV5070_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl5070_h_ */

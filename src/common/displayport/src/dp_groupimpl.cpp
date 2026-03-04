@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,7 @@
 #include "dp_deviceimpl.h"
 #include "dp_groupimpl.h"
 #include "dp_connectorimpl.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -110,11 +111,11 @@ void GroupImpl::update(Device * dev, bool allocationState)
         {
             if (allocationState)
             {
-                DP_LOG(("DP-TM> Attached stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Attached stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
             }
             else
             {
-                DP_LOG(("DP-TM> Detached stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Detached stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
             }
 
             ((DeviceImpl *)dev)->payloadAllocated = allocationState;
@@ -126,12 +127,12 @@ void GroupImpl::update(Device * dev, bool allocationState)
     // we should not have ideally reached here unless allocate payload failed.
     if (allocationState)
     {
-        DP_LOG(("DP-TM> Allocate_payload: Failed to ATTACH stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to ATTACH stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
         DP_ASSERT(0);
     }
     else
     {
-        DP_LOG(("DP-TM> Allocate_payload: Failed to DETACH stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to DETACH stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
         DP_ASSERT(0);
     }
 
@@ -166,6 +167,16 @@ void GroupImpl::remove(Device * dev)
 
     if (isHeadAttached())
     {
+        /*
+         * The device may become lost and free after removal from the active
+         * group. Therefore, also remove the device from the
+         * 'dscEnabledDevices' list and ensure that its dangling pointer is not
+         * left behind.
+         */
+        if (parent->dscEnabledDevices.contains(dev)) {
+            parent->dscEnabledDevices.remove(dev);
+        }
+
         di->activeGroup = 0;
     }
     members.remove(di);
@@ -177,11 +188,54 @@ void GroupImpl::remove(Device * dev)
 
 void GroupImpl::destroy()
 {
+    ConnectorImpl* parent = NULL;
     for (Device * i = enumDevices(0); i; i = enumDevices(i))
         remove(i);
 
     // Cancel any queue the auth callback.
     cancelHdcpCallbacks();
+
+    parent = this->parent;
+
+    if (parent)
+    {
+        if (!parent->activeGroups.isEmpty())
+        {
+            for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+            {
+                GroupImpl * group = (GroupImpl *)i;
+                if (group == this)
+                {
+                    parent->activeGroups.remove(this);
+                    break;
+                }
+            }
+        }
+
+
+        if (!parent->inactiveGroups.isEmpty())
+        {
+            for (ListElement * i = parent->inactiveGroups.begin(); i != parent->inactiveGroups.end(); i = i->next)
+            {
+                GroupImpl * group = (GroupImpl *)i;
+                if (group == this)
+                {
+                    parent->inactiveGroups.remove(this);
+                    break;
+                }
+            }
+        }
+
+        if (parent->intransitionGroups.contains(this))
+        {
+            parent->intransitionGroups.remove(this);
+        }
+
+        if (parent->addStreamMSTIntransitionGroups.contains(this))
+        {
+            parent->addStreamMSTIntransitionGroups.remove(this);
+        }
+    }
 
     delete this;
 }
@@ -292,11 +346,11 @@ void GroupImpl::updateVbiosScratchRegister(Device * lastDev)
 //
 // Helper function for attaching and detaching heads.
 //
-// For attach, we will assert if group already has head attached but for 
+// For attach, we will assert if group already has head attached but for
 // some device in the group, active group did not point to current group.
-// For detach, we will assert if the group does not have head attached but  
-// some device in group has an active group OR head is marked attached but 
-// not all devies in the group have the current group as active group.  
+// For detach, we will assert if the group does not have head attached but
+// some device in group has an active group OR head is marked attached but
+// not all devies in the group have the current group as active group.
 // This also sets or clears dev->activeGroup for each contained
 // device.
 //
@@ -320,7 +374,7 @@ void GroupImpl::setHeadAttached(bool attached)
             {
                 DP_ASSERT(di->activeGroup == NULL);
             }
-            else 
+            else
             {
                 DP_ASSERT(di->activeGroup == this);
             }

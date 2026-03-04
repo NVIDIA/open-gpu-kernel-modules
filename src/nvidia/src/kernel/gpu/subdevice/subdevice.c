@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "resserv/rs_resource.h"
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 #include "vgpu/rpc.h"
 #include "core/locks.h"
@@ -41,7 +42,7 @@
 #include "core/thread_state.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "Nvcm.h"
 #include "gpu/bus/p2p_api.h"
@@ -118,7 +119,7 @@ subdeviceConstruct_IMPL
 
     NV_ASSERT_OK_OR_RETURN(gpuRegisterSubdevice(pGpu, pSubdevice));
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
     {
         NV_RM_RPC_ALLOC_SUBDEVICE(pPrimaryGpu, pRsClient->hClient, pParentRef->hResource,
                               pResourceRef->hResource, NV20_SUBDEVICE_0,
@@ -129,13 +130,38 @@ subdeviceConstruct_IMPL
     return status;
 }
 
+//
+// subdeviceUnsetDynamicBoostLimit_IMPL
+//
+// Unset Dynamic Boost limit when nvidia-powerd is terminated
+//
+NV_STATUS
+subdeviceUnsetDynamicBoostLimit_IMPL
+(
+    Subdevice *pSubdevice
+)
+{
+    if (!pSubdevice->bUpdateTGP)
+        return NV_OK;
+
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    return pRmApi->Control(pRmApi,
+                           pGpu->hInternalClient,
+                           pGpu->hInternalSubdevice,
+                           NV2080_CTRL_CMD_INTERNAL_PMGR_UNSET_DYNAMIC_BOOST_LIMIT,
+                           NULL,
+                           0);
+}
+
 void
 subdevicePreDestruct_IMPL
 (
     Subdevice *pSubdevice
 )
 {
-    subdeviceResetTGP(pSubdevice);
+    subdeviceUnsetDynamicBoostLimit(pSubdevice);
 }
 
 void
@@ -150,6 +176,11 @@ subdeviceDestruct_IMPL
     OBJGPU                 *pGpu            = GPU_RES_GET_GPU(pSubdevice);
     NV_STATUS               status          = NV_OK;
 
+    if (pSubdevice == pGpu->pCachedSubdevice)
+    {
+        pGpu->pCachedSubdevice = NULL;
+    }
+
     if (pSubdevice->bGcoffDisallowed)
     {
         osClientGcoffDisallowRefcount(pGpu->pOsGpuInfo, NV_FALSE);
@@ -160,22 +191,20 @@ subdeviceDestruct_IMPL
     // TODO - Call context lookup in dtor can likely be phased out now that we have RES_GET_CLIENT
     resGetFreeParams(staticCast(pSubdevice, RsResource), &pCallContext, NULL);
 
-    // free P2P objects associated with this subDevice
-    // can't rely on resource server to clean up since object exists in both lists
-    if (NULL != pSubdevice->pP2PMappingList)
-    {
-        CliFreeSubDeviceP2PList(pSubdevice, pCallContext);
-    }
-
     // check for any pending client's timer notification for this subdevice
-    if (pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] != NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
+    if ((pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] != NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE) ||
+        (pSubdevice->pTimerEvent != NULL))
     {
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-        tmrCancelCallback(pTmr, pSubdevice);
+        tmrEventDestroy(pTmr, pSubdevice->pTimerEvent);
+        pSubdevice->pTimerEvent = NULL;
         pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
     }
 
     subdeviceRestoreLockedClock(pSubdevice, pCallContext);
+
+    // Decrement the reference count for VF if previously incremented.
+    subdeviceRestoreVF(pSubdevice, pCallContext);
 
     // Restore GR tick frequency to default.
     subdeviceRestoreGrTickFreq(pSubdevice, pCallContext);
@@ -192,7 +221,7 @@ subdeviceDestruct_IMPL
     subdeviceUnsetGpuDebugMode(pSubdevice);
     subdeviceRestoreWatchdog(pSubdevice);
 
-    if (pResourceRef != NULL && (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)))
+    if (pResourceRef != NULL && (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu)))
     {
         NV_RM_RPC_FREE(pGpu, pRsClient->hClient,
                        pResourceRef->pParentRef->hResource,
@@ -225,127 +254,6 @@ subdeviceInternalControlForward_IMPL
 }
 
 NV_STATUS
-subdeviceControlFilter_IMPL(Subdevice *pSubdevice,
-                            CALL_CONTEXT *pCallContext,
-                            RS_RES_CONTROL_PARAMS_INTERNAL *pParams)
-{
-    return NV_OK;
-}
-
-NV_STATUS
-subdeviceAddP2PApi_IMPL
-(
-    Subdevice    *pSubdevice,
-    P2PApi       *pP2PApi
-)
-{
-    PNODE               pNode;
-    NvHandle            hPeerSubDevice;
-    NV_STATUS           status;
-    PCLI_P2P_INFO_LIST *pP2PInfoList;
-    NvHandle          hSubDevice = RES_GET_HANDLE(pSubdevice);
-
-    if (NULL == pP2PApi || NULL == pP2PApi->peer1 || NULL == pP2PApi->peer2)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    //
-    // in case of loopback, both handles are the same and this will not matter
-    // otherwise we need the peer subdevice handle
-    //
-    hPeerSubDevice = (RES_GET_HANDLE(pP2PApi->peer1) == hSubDevice) ?
-                      RES_GET_HANDLE(pP2PApi->peer2) :
-                      RES_GET_HANDLE(pP2PApi->peer1);
-
-    if (NV_OK != btreeSearch(hPeerSubDevice, &pNode,
-                             pSubdevice->pP2PMappingList))
-    {
-        pP2PInfoList = portMemAllocNonPaged(sizeof(PCLI_P2P_INFO_LIST));
-        if (pP2PInfoList == NULL)
-        {
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto failed;
-        }
-
-        listInit(pP2PInfoList, portMemAllocatorGetGlobalNonPaged());
-
-        pNode = portMemAllocNonPaged(sizeof(NODE));
-        if (pNode == NULL)
-        {
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto failed;
-        }
-
-        portMemSet(pNode, 0, sizeof(NODE));
-        pNode->keyStart = hPeerSubDevice;
-        pNode->keyEnd = hPeerSubDevice;
-        pNode->Data = pP2PInfoList;
-
-        status = btreeInsert(pNode, &pSubdevice->pP2PMappingList);
-failed:
-        if (NV_OK != status)
-        {
-            portMemFree(pNode);
-            portMemFree(pP2PInfoList);
-            return status;
-        }
-    }
-    else
-    {
-        pP2PInfoList = pNode->Data;
-    }
-
-    listAppendValue(pP2PInfoList, &pP2PApi);
-
-    return NV_OK;
-}
-
-NV_STATUS
-subdeviceDelP2PApi_IMPL
-(
-    Subdevice    *pSubdevice,
-    P2PApi       *pP2PApi
-)
-{
-    PCLI_P2P_INFO_LIST *pP2PInfoList;
-    PNODE               pNode;
-    NV_STATUS           status;
-    NvHandle            hPeerSubDevice;
-    NvHandle            hSubDevice = RES_GET_HANDLE(pSubdevice);
-
-    //
-    // in case of loopback, both handles are the same and this will not matter
-    // otherwise we need the peer subdevice handle
-    //
-    hPeerSubDevice = (RES_GET_HANDLE(pP2PApi->peer1) == hSubDevice) ?
-                      RES_GET_HANDLE(pP2PApi->peer2) :
-                      RES_GET_HANDLE(pP2PApi->peer1);
-
-    if (NV_OK != (status = btreeSearch(hPeerSubDevice, &pNode, pSubdevice->pP2PMappingList)))
-        return status;
-
-    pP2PInfoList = pNode->Data;
-
-    listRemoveFirstByValue(pP2PInfoList, &pP2PApi);
-    if (listCount(pP2PInfoList) == 0)
-    {
-        if (NV_OK != (status = btreeUnlink(pNode, &pSubdevice->pP2PMappingList)))
-        {
-            return status;
-        }
-
-        pNode->Data = NULL;
-        portMemFree(pNode);
-        pNode = NULL;
-        portMemFree(pP2PInfoList);
-        pP2PInfoList = NULL;
-    }
-
-    return NV_OK;
-}
-
-NV_STATUS
 subdeviceGetByHandle_IMPL
 (
     RsClient         *pClient,
@@ -375,24 +283,39 @@ subdeviceGetByGpu_IMPL
     Subdevice       **ppSubdevice
 )
 {
-    Subdevice          *pSubdevice = NULL;
-    OBJGPU             *pTmpGpu = NULL;
-    RS_ITERATOR         it;
-    RsResourceRef      *pResourceRef;
+    return subdeviceGetByDeviceAndGpu(pClient, NULL, pGpu, ppSubdevice);
+}
+
+NV_STATUS
+subdeviceGetByDeviceAndGpu_IMPL
+(
+    RsClient         *pClient,
+    Device           *pDevice,
+    OBJGPU           *pGpu,
+    Subdevice       **ppSubdevice
+)
+{
+    Subdevice    *pSubdevice = NULL;
+    RS_ITERATOR   it;
+    RS_ITER_TYPE  iterType = RS_ITERATE_DESCENDANTS;
+    RsResourceRef *pDeviceRef = NULL;
 
     *ppSubdevice = NULL;
 
-    it = clientRefIter(pClient, NULL, classId(Subdevice), RS_ITERATE_DESCENDANTS, NV_TRUE);
+    if (pDevice != NULL)
+    {
+        pDeviceRef = RES_GET_REF(pDevice);
+        iterType = RS_ITERATE_CHILDREN;
+    }
+
+    it = clientRefIter(pClient, pDeviceRef, classId(Subdevice),
+                       iterType, NV_TRUE);
+
     while (clientRefIterNext(pClient, &it))
     {
-        pResourceRef = it.pResourceRef;
-        pSubdevice = dynamicCast(pResourceRef->pResource, Subdevice);
-        if (pSubdevice == NULL)
-            continue;
+        pSubdevice = dynamicCast(it.pResourceRef->pResource, Subdevice);
 
-        pTmpGpu = GPU_RES_GET_GPU(pSubdevice);
-
-        if (pTmpGpu == pGpu)
+        if (GPU_RES_GET_GPU(pSubdevice) == pGpu)
         {
             *ppSubdevice = pSubdevice;
             return NV_OK;
@@ -517,124 +440,3 @@ subdeviceRestoreWatchdog_IMPL
     krcWatchdogChangeState(pKernelRc, pSubdevice, RM_CLIENT_DESTRUCTION);
 }
 
-// ****************************************************************************
-//                            Deprecated Functions
-// ****************************************************************************
-
-/**
- * WARNING: This function is deprecated! Please use subdeviceGetByGpu and
- * GPU_RES_SET_THREAD_BC_STATE (if needed to set thread UC state for SLI)
- */
-Subdevice *
-CliGetSubDeviceInfoFromGpu
-(
-    NvHandle hClient,
-    OBJGPU  *pGpu
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    Subdevice  *pSubdevice;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NULL;
-
-    status = subdeviceGetByGpu(pClient, pGpu, &pSubdevice);
-    if (status != NV_OK)
-        return NULL;
-
-    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
-
-    return pSubdevice;
-}
-
-/**
- * WARNING: This function is deprecated! Please use subdeviceGetByGpu and
- * RES_GET_HANDLE
- */
-NV_STATUS
-CliGetSubDeviceHandleFromGpu
-(
-    NvHandle    hClient,
-    OBJGPU     *pGpu,
-    NvHandle   *phSubDevice
-)
-{
-    Subdevice *pSubdevice;
-
-    if (phSubDevice == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if ((pSubdevice = CliGetSubDeviceInfoFromGpu(hClient, pGpu)) == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    *phSubDevice = RES_GET_HANDLE(pSubdevice);
-
-    return NV_OK;
-}
-
-/**
- * WARNING: This function is deprecated and use is *strongly* discouraged
- * (especially for new code!)
- *
- * From the function name (CliSetSubDeviceContext) it appears as a simple
- * accessor but violates expectations by modifying the SLI BC threadstate (calls
- * to GPU_RES_SET_THREAD_BC_STATE). This can be dangerous if not carefully
- * managed by the caller.
- *
- * Instead of using this routine, please use subdeviceGetByHandle then call
- * GPU_RES_GET_GPU, RES_GET_HANDLE, GPU_RES_SET_THREAD_BC_STATE as needed.
- *
- * Note that GPU_RES_GET_GPU supports returning a pGpu for both pDevice,
- * pSubdevice, the base pResource type, and any resource that inherits from
- * GpuResource. That is, instead of using CliSetGpuContext or
- * CliSetSubDeviceContext, please use following pattern to look up the pGpu:
- *
- * OBJGPU *pGpu = GPU_RES_GET_GPU(pResource or pResourceRef->pResource)
- *
- * To set the threadstate, please use:
- *
- * GPU_RES_SET_THREAD_BC_STATE(pResource or pResourceRef->pResource);
- */
-NV_STATUS
-CliSetSubDeviceContext
-(
-    NvHandle  hClient,
-    NvHandle  hSubdevice,
-    NvHandle *phDevice,
-    OBJGPU  **ppGpu
-)
-{
-    Subdevice *pSubdevice;
-    RsClient  *pClient;
-    NV_STATUS  status;
-
-    if (phDevice != NULL)
-    {
-        *phDevice = 0;
-    }
-    *ppGpu = NULL;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return status;
-
-    status = subdeviceGetByHandle(pClient, hSubdevice, &pSubdevice);
-    if (status != NV_OK)
-        return status;
-
-    *ppGpu = GPU_RES_GET_GPU(pSubdevice);
-    if (phDevice != NULL)
-    {
-        *phDevice = RES_GET_HANDLE(pSubdevice->pDevice);
-    }
-
-    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
-
-    return NV_OK;
-}

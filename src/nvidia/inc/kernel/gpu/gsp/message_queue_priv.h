@@ -42,28 +42,24 @@
 
 typedef struct GSP_MSG_QUEUE_ELEMENT
 {
-    NvU32 checkSum;        // Set to value needed to make checksum always zero.
-    NvU32 seqNum;          // Sequence number maintained by the message queue.
-    rpc_message_header_v  rpc;
+    NvU8  authTagBuffer[16];         // Authentication tag buffer.
+    NvU8  aadBuffer[16];             // AAD buffer.
+    NvU32 checkSum;                  // Set to value needed to make checksum always zero.
+    NvU32 seqNum;                    // Sequence number maintained by the message queue.
+    NvU32 elemCount;                 // Number of message queue elements this message has.
+    NV_DECLARE_ALIGNED(rpc_message_header_v rpc, 8);
 } GSP_MSG_QUEUE_ELEMENT;
 
 typedef struct _message_queue_info
 {
     // Parameters
-    NvLength               pageTableEntryCount;
-    NvLength               pageTableSize;
     NvLength               commandQueueSize;
     NvLength               statusQueueSize;
 
     // Shared memory area.
-    MEMORY_DESCRIPTOR     *pSharedMemDesc;
-    RmPhysAddr             sharedMemPA;   // Page table for all of shared mem.
     void                  *pCommandQueue;
     void                  *pStatusQueue;
     rpc_message_header_v  *pRpcMsgBuf;    // RPC message buffer VA.
-
-    void                  *pInitMsgBuf;   // RPC message buffer VA.
-    RmPhysAddr             initMsgBufPA;  // RPC message buffer PA.
 
     // Other CPU-side fields
     void                  *pWorkArea;
@@ -72,7 +68,22 @@ typedef struct _message_queue_info
     msgqHandle             hQueue;              // Do not allow requests when hQueue is null.
     NvU32                  txSeqNum;            // Next sequence number for tx.
     NvU32                  rxSeqNum;            // Next sequence number for rx.
+    NvU32                  txBufferFull;
+    NvU32                  queueIdx;            // QueueIndex used to identify which task the message is supposed to be sent to.
 } MESSAGE_QUEUE_INFO;
+
+typedef struct MESSAGE_QUEUE_COLLECTION
+{
+    // Parameters
+    NvLength               pageTableEntryCount;
+    NvLength               pageTableSize;
+
+    // Shared memory area.
+    MEMORY_DESCRIPTOR     *pSharedMemDesc;
+    RmPhysAddr             sharedMemPA;   // Page table for all of shared mem.
+
+    MESSAGE_QUEUE_INFO rpcQueues[RPC_QUEUE_COUNT];
+} MESSAGE_QUEUE_COLLECTION;
 
 //
 // Most of the following defines resolve to compile-time constants.
@@ -91,5 +102,25 @@ typedef struct _message_queue_info
 #define GSP_MSG_QUEUE_ELEMENT_ALIGN                                RM_PAGE_SHIFT   // 2 ^ 12 = 4096
 #define GSP_MSG_QUEUE_HEADER_SIZE                                   RM_PAGE_SIZE
 #define GSP_MSG_QUEUE_HEADER_ALIGN                                             4   // 2 ^ 4 = 16
+
+/*!
+ * Calculate 32-bit checksum
+ *
+ * This routine assumes that the data is padded out with zeros to the next
+ * 8-byte alignment, and it is OK to read past the end to the 8-byte alignment.
+ */
+static NV_INLINE NvU32 _checkSum32(void *pData, NvU32 uLen)
+{
+    NvU64 *p        = (NvU64 *)pData;
+    NvU64 *pEnd     = (NvU64 *)((NvUPtr)pData + uLen);
+    NvU64  checkSum = 0;
+
+    NV_ASSERT_CHECKED(uLen > 0);
+
+    while (p < pEnd)
+        checkSum ^= *p++;
+
+    return NvU64_HI32(checkSum) ^ NvU64_LO32(checkSum);
+}
 
 #endif // _MESSAGE_QUEUE_PRIV_H_

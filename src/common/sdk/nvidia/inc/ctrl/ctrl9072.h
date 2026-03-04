@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl9072.finn
+// Source file:      ctrl/ctrl9072.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 #define NV9072_CTRL_CMD(cat,idx)  \

@@ -46,6 +46,9 @@ nvlink_core_print_link_state
     NvU32 txSublinkSubMode = 0;
     NvU32 rxSublinkSubMode = 0;
 
+    if (link == NULL)
+        return;
+
     link->link_handlers->get_dl_link_mode(link, &linkMode);
     link->link_handlers->get_tx_mode(link, &txSublinkMode, &txSublinkSubMode);
     link->link_handlers->get_rx_mode(link, &rxSublinkMode, &rxSublinkSubMode);
@@ -87,6 +90,9 @@ _nvlink_core_print_link
     nvlink_link *link
 )
 {
+    if (link == NULL)
+        return;
+
     switch (link->dev->type)
     {
         case NVLINK_DEVICE_TYPE_GPU:

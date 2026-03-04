@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,9 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gpu_access.h"
 
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+
 #include "published/pascal/gp102/dev_pbdma.h"
 
 static NvBool _kfifoIsValidCETag_GP102(OBJGPU *pGpu, KernelFifo *pKernelFifo,
@@ -46,7 +49,7 @@ kfifoValidateSCGTypeAndRunqueue_GP102
     NvU32       runqueue
 )
 {
-    if (scgType == NV_PPBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1 &&
+    if (scgType == NV_PBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1 &&
         runqueue == 0)
     {
         NV_PRINTF(LEVEL_INFO,
@@ -190,6 +193,29 @@ _kfifoIsValidCETag_GP102
     NvU32 *pSrcPbdmaIds;
     NvU32 numSrcPbdmaIds;
     NvU32 i;
+    NvU32 grEngineTag = ENG_GR(0);
+
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RsResourceRef *pDeviceRef;
+        NV_STATUS status = NV_OK;
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+        Device *pDevice;
+        MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
+
+        NV_ASSERT_OK_OR_ELSE(status,
+                        refFindAncestorOfType(pCallContext->pResourceRef,
+                                            classId(Device), &pDeviceRef),
+                        return NV_FALSE; );
+        pDevice = dynamicCast(pDeviceRef->pResource, Device);
+        NV_ASSERT_OK(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
+        NV_ASSERT_OK(kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
+                                                       RM_ENGINE_TYPE_GR(0),
+                                                       &rmEngineType));
+        grEngineTag = ENG_GR(RM_ENGINE_TYPE_GR_IDX(rmEngineType));
+    }
 
     if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                  ENGINE_INFO_TYPE_ENG_DESC, ceEngineTag,
@@ -204,13 +230,13 @@ _kfifoIsValidCETag_GP102
 
     NV_ASSERT_OR_RETURN(
         kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                 ENGINE_INFO_TYPE_ENG_DESC, ENG_GR(0),
+                                 ENGINE_INFO_TYPE_ENG_DESC, grEngineTag,
                                  ENGINE_INFO_TYPE_RUNLIST, &srcRunlist) == NV_OK,
         NV_FALSE);
 
     NV_ASSERT_OR_RETURN(
         kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
-                                  ENGINE_INFO_TYPE_ENG_DESC, ENG_GR(0),
+                                  ENGINE_INFO_TYPE_ENG_DESC, grEngineTag,
                                   &pSrcPbdmaIds, &numSrcPbdmaIds) == NV_OK,
         NV_FALSE);
 

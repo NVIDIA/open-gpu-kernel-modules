@@ -33,7 +33,8 @@ extern "C" {
 
 /* event values */
 #define NV0073_NOTIFIERS_SW                                        (0)
-#define NV0073_NOTIFIERS_MAXCOUNT                                  (5)
+#define NV0073_NOTIFIERS_LTM_CALC_TIMEOUT                          (5)
+#define NV0073_NOTIFIERS_MAXCOUNT                                  (6)
 
 
 #define NV0073_NOTIFICATION_STATUS_IN_PROGRESS              (0x8000)

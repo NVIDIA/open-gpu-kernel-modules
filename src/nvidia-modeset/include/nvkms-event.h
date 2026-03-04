@@ -28,5 +28,6 @@
 
 void nvHandleHotplugEventDeferredWork(void *dataPtr, NvU32 dataU32);
 void nvHandleDPIRQEventDeferredWork(void *dataPtr, NvU32 dataU32);
+void nvHandleHDMIFRLRetrainEventDeferredWork(void *dataPtr, NvU32 dataU32);
 
 #endif /* __NVKMS_EVENT_H__ */

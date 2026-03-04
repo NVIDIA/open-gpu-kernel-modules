@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,24 +42,20 @@ static inline void nv_timer_callback_typed_data(struct timer_list *timer)
     nv_timer->nv_timer_callback(nv_timer);
 }
 
-static inline void nv_timer_callback_anon_data(unsigned long arg)
-{
-    struct nv_timer *nv_timer = (struct nv_timer *)arg;
-
-    nv_timer->nv_timer_callback(nv_timer);
-}
-
 static inline void nv_timer_setup(struct nv_timer *nv_timer,
                                   void (*callback)(struct nv_timer *nv_timer))
 {
     nv_timer->nv_timer_callback = callback;
 
-#if defined(NV_TIMER_SETUP_PRESENT)
     timer_setup(&nv_timer->kernel_timer, nv_timer_callback_typed_data, 0);
+}
+
+static inline void nv_timer_delete_sync(struct timer_list *timer)
+{
+#if !defined(NV_BSD) && NV_IS_EXPORT_SYMBOL_PRESENT_timer_delete_sync
+    timer_delete_sync(timer);
 #else
-    init_timer(&nv_timer->kernel_timer);
-    nv_timer->kernel_timer.function = nv_timer_callback_anon_data;
-    nv_timer->kernel_timer.data = (unsigned long)nv_timer;
+    del_timer_sync(timer);
 #endif
 }
 

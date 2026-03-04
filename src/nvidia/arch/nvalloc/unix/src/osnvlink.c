@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,7 @@ extern NvlStatus knvlinkCoreReadDiscoveryTokenCallback(struct nvlink_link *, NvU
 extern NvlStatus knvlinkCoreWriteDiscoveryTokenCallback(struct nvlink_link *, NvU64);
 extern void      knvlinkCoreTrainingCompleteCallback(struct nvlink_link *);
 extern void      knvlinkCoreGetUphyLoadCallback(struct nvlink_link *, NvBool*);
+extern NvlStatus knvlinkCoreGetCciLinkModeCallback(struct nvlink_link *, NvU64 *);
 
 /*!
  * @brief Helper to allocate an alternate stack from within core RM.
@@ -95,6 +96,15 @@ static void NV_API_CALL osNvlinkFreeAltStack(nvidia_stack_t *sp)
 #endif
 }
 
+static NV_STATUS NV_API_CALL osNvlinkGetAltStack(nvidia_stack_t **sp)
+{
+    return osNvlinkAllocAltStack(sp);
+}
+static void NV_API_CALL osNvlinkPutAltStack(nvidia_stack_t *sp)
+{
+    osNvlinkFreeAltStack(sp);
+}
+
 static NvlStatus NV_API_CALL rm_nvlink_ops_add_link
 (
     struct nvlink_link *link
@@ -102,10 +112,9 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_add_link
 {
     void *fp;
     NvlStatus status;
-    KNVLINK_RM_LINK *pLink = link->link_info;
     nvidia_stack_t *sp;
 
-    if (NV_OK != osNvlinkAllocAltStack(&sp))
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
     {
         return NVL_ERR_GENERIC;
     }
@@ -116,14 +125,7 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_add_link
 
     NV_EXIT_RM_RUNTIME(sp, fp);
 
-    if (status == NVL_SUCCESS)
-    {
-        pLink->pOsInfo = sp;
-    }
-    else
-    {
-        osNvlinkFreeAltStack(sp);
-    }
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -135,10 +137,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_remove_link
 {
     void *fp;
     NvlStatus status;
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
 
-    pLink->pOsInfo = NULL;
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -146,7 +150,7 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_remove_link
 
     NV_EXIT_RM_RUNTIME(sp, fp);
 
-    osNvlinkFreeAltStack(sp);
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -159,8 +163,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_lock_link
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -169,6 +177,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_lock_link
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -180,8 +190,12 @@ static void NV_API_CALL rm_nvlink_ops_unlock_link
 {
     void *fp;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -190,6 +204,8 @@ static void NV_API_CALL rm_nvlink_ops_unlock_link
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 }
 
 static NvlStatus NV_API_CALL rm_nvlink_ops_queue_link_change
@@ -200,8 +216,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_queue_link_change
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link_change->master->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -210,6 +230,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_queue_link_change
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -224,8 +246,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_dl_link_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -234,6 +260,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_dl_link_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -247,8 +275,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_dl_link_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -257,6 +289,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_dl_link_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -271,8 +305,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_tl_link_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -281,6 +319,7 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_tl_link_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -294,8 +333,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_tl_link_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -304,6 +347,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_tl_link_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -318,8 +363,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_tx_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -328,6 +377,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_tx_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -342,8 +393,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_tx_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -352,6 +407,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_tx_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -366,8 +423,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_rx_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -376,6 +437,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_rx_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -390,8 +453,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_rx_mode
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -400,6 +467,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_rx_mode
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -413,8 +482,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_rx_detect
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -423,6 +496,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_set_link_rx_detect
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -435,8 +510,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_rx_detect
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -445,6 +524,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_get_link_rx_detect
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -457,8 +538,12 @@ static void NV_API_CALL rm_nvlink_get_uphy_load
 {
     void *fp;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -467,6 +552,8 @@ static void NV_API_CALL rm_nvlink_get_uphy_load
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 }
 
 static NvlStatus NV_API_CALL rm_nvlink_ops_read_link_discovery_token
@@ -478,8 +565,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_read_link_discovery_token
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -488,6 +579,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_read_link_discovery_token
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -501,8 +594,12 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_write_link_discovery_token
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -511,6 +608,8 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_write_link_discovery_token
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
 
     return status;
 }
@@ -522,8 +621,12 @@ static void NV_API_CALL rm_nvlink_ops_training_complete
 {
     void *fp;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link->link_info;
-    nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
+    nvidia_stack_t *sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return;
+    }
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
@@ -532,6 +635,44 @@ static void NV_API_CALL rm_nvlink_ops_training_complete
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
+}
+
+static NvlStatus NV_API_CALL rm_nvlink_ops_ali_training
+(
+    struct nvlink_link *link
+)
+{
+    void *fp;
+    NvlStatus status;
+    THREAD_STATE_NODE threadState = {0};
+    nvidia_stack_t * sp;
+
+    if (osNvlinkGetAltStack(&sp) != NV_OK)
+    {
+        return NVL_ERR_GENERIC;
+    }
+
+    NV_ENTER_RM_RUNTIME(sp, fp);
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+    status = knvlinkCoreAliTrainingCallback(link);
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    NV_EXIT_RM_RUNTIME(sp, fp);
+
+    osNvlinkPutAltStack(sp);
+    return status;
+}
+
+static NvlStatus NV_API_CALL rm_nvlink_ops_get_cci_link_mode
+(
+    struct nvlink_link *link,
+    NvU64 *mode
+)
+{
+    return NVL_SUCCESS;
 }
 
 #endif /* defined(INCLUDE_NVLINK_LIB) */
@@ -560,6 +701,8 @@ const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void)
         .read_discovery_token       = rm_nvlink_ops_read_link_discovery_token,
         .training_complete          = rm_nvlink_ops_training_complete,
         .get_uphy_load              = rm_nvlink_get_uphy_load,
+        .get_cci_link_mode          = rm_nvlink_ops_get_cci_link_mode,
+        .ali_training               = rm_nvlink_ops_ali_training,
     };
 
     return &rm_nvlink_link_ops;
@@ -591,28 +734,17 @@ osGetForcedNVLinkConnection
     int i, ret;
     NV_STATUS status;
     char path[64];
-    OBJSYS *pSys;
-    OBJOS *pOS;
 
     NV_ASSERT_OR_RETURN((pLinkConnection != NULL), NV_ERR_INVALID_POINTER);
     NV_ASSERT_OR_RETURN((maxLinks > 0), NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN((pGpu != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    pSys = SYS_GET_INSTANCE();
-    pOS = SYS_GET_OS(pSys);
-    if (pOS == NULL || pOS->osSimEscapeRead == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "%s: escape reads not supported on platform\n",
-                  __FUNCTION__);
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     for (i = 0; i < maxLinks; i++)
     {
         ret = os_snprintf(path, sizeof(path), "CPU_MODEL|CM_ATS_ADDRESS|NVLink%u", i);
         NV_ASSERT((ret > 0) && (ret < (sizeof(path) - 1)));
 
-        status = pOS->osSimEscapeRead(pGpu, path, 0, 4, &pLinkConnection[i]);
+        status = gpuSimEscapeRead(pGpu, path, 0, 4, &pLinkConnection[i]);
         if (status == NV_OK)
         {
             NV_PRINTF(LEVEL_INFO, "%s: %s=0x%X\n", __FUNCTION__,
@@ -620,7 +752,7 @@ osGetForcedNVLinkConnection
         }
         else
         {
-            NV_PRINTF(LEVEL_INFO, "%s: osSimEscapeRead for '%s' failed (%u)\n",
+            NV_PRINTF(LEVEL_INFO, "%s: gpuSimEscapeRead for '%s' failed (%u)\n",
                       __FUNCTION__, path, status);
             return NV_ERR_NOT_SUPPORTED;
         }
@@ -646,31 +778,6 @@ osGetPlatformNvlinkLinerate
     NvU32   *lineRate
 )
 {
-#if defined(NVCPU_PPC64LE)
-    nv_state_t   *nv            = NV_GET_NV_STATE(pGpu);
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-    if (!pKernelNvlink)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    return nv_get_nvlink_line_rate(nv, lineRate);
-#else
-    //TODO : FRU based method to be filled out by Bug 200285656
-    //*lineRate = 0;
-    //return NV_OK;
+    // TODO: Remove this function
     return NV_ERR_NOT_SUPPORTED;
-#endif
-}
-
-void
-osSetNVLinkSysmemLinkState
-(
-    OBJGPU *pGpu,
-    NvBool enabled
-)
-{
-    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-    NV_ASSERT(enabled);
-    if (enabled)
-        nv_dma_enable_nvlink(nv->dma_dev);
 }

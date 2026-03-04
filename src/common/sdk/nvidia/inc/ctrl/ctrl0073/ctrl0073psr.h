@@ -27,6 +27,44 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073psr.finn
+// Source file:      ctrl/ctrl0073/ctrl0073psr.finn
 //
 
+#include "ctrl/ctrl0073/ctrl0073base.h"
+
+
+
+/*
+ * NV0073_CTRL_CMD_PSR_GET_SR_PANEL_INFO
+ *
+ * displayId
+ *    Display ID on which this information is being requested.
+ * frameLockPin
+ *    Returns the frame lock pin of the panel.
+ * i2cAddress
+ *    Returns the i2c address on which the SR panel is attached.
+ *    NOTE: applies only to LVDS panels, otherwise this field
+ *          should be ignored.
+ * bSelfRefreshEnabled
+ *    Returns whether SR is enabled in RM.
+ *
+ *   Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0073_CTRL_CMD_PSR_GET_SR_PANEL_INFO        (0x731602U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_PSR_INTERFACE_ID << 8) | NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS {
+    NvU32  displayId;
+    NvU32  frameLockPin;
+    NvU8   i2cAddress;
+    NvBool bSelfRefreshEnabled;
+} NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS;
+
+
+
+/* _ctrl0073psr_h_ */

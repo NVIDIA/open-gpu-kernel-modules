@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,12 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "core/locks.h"
+#include "diagnostics/tracer.h"
+#include "gpu_mgr/gpu_mgr.h"
+#include "nvlimits.h"
 #include "nvlog/nvlog.h"
 #include "nvrm_registry.h"
 #include "os/os.h"
-#include "diagnostics/tracer.h"
 #include "tls/tls.h"
-#include "core/locks.h"
 
 //
 // Buffer push method declarations
@@ -78,9 +80,24 @@ NVLOG_LOGGER NvLogLogger =
 #define NVLOG_IS_VALID_BUFFER_HANDLE(hBuffer)                                  \
   ((hBuffer < NVLOG_MAX_BUFFERS) && (NvLogLogger.pBuffers[hBuffer] != NULL))
 
+typedef struct
+{
+    void (*pCb)(void *);
+    void *pData;
+} NvlogFlushCb;
+
+#define NVLOG_MAX_FLUSH_CBS 32
+
+// At least one callback for each OBJGPU's KernelGsp
+ct_assert(NVLOG_MAX_FLUSH_CBS >= NV_MAX_DEVICES);
+
+static NvlogFlushCb nvlogFlushCbs[NVLOG_MAX_FLUSH_CBS];
+
 NV_STATUS
 nvlogInit(void *pData)
 {
+    NV_STATUS status = NV_OK;
+
     nvlogRegRoot = pData;
     portInitialize();
     NvLogLogger.mainLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
@@ -88,32 +105,57 @@ nvlogInit(void *pData)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
+    NvLogLogger.buffersLock = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+    if (NvLogLogger.buffersLock == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+    NvLogLogger.flushCbsLock = portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
+    if (NvLogLogger.flushCbsLock == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
     tlsInitialize();
-    return NV_OK;
+
+    portMemSet(nvlogFlushCbs, '\0', sizeof(nvlogFlushCbs));
+    return status;
 }
 
-void nvlogUpdate() {
+void nvlogUpdate(void) {
 }
 
 NV_STATUS
-nvlogDestroy()
+nvlogDestroy(void)
 {
+    NV_STATUS status = NV_OK;
     NvU32 i;
 
-    tlsShutdown();
     for (i = 0; i < NVLOG_MAX_BUFFERS; i++)
     {
-        nvlogDeallocBuffer(i);
+        nvlogDeallocBuffer(i, NV_TRUE);
     }
+
     if (NvLogLogger.mainLock != NULL)
     {
         portSyncSpinlockDestroy(NvLogLogger.mainLock);
         NvLogLogger.mainLock = NULL;
     }
+    if (NvLogLogger.buffersLock != NULL)
+    {
+        portSyncMutexDestroy(NvLogLogger.buffersLock);
+        NvLogLogger.buffersLock = NULL;
+    }
+    if (NvLogLogger.flushCbsLock != NULL)
+    {
+        portSyncRwLockDestroy(NvLogLogger.flushCbsLock);
+        NvLogLogger.flushCbsLock = NULL;
+    }
 
+    tlsShutdown();
     /// @todo Destructor should return void.
     portShutdown();
-    return NV_OK;
+
+    return status;
 }
 
 static NV_STATUS
@@ -228,6 +270,7 @@ nvlogAllocBuffer
         return status;
     }
 
+    portSyncMutexAcquire(NvLogLogger.buffersLock);
     portSyncSpinlockAcquire(NvLogLogger.mainLock);
 
     if (NvLogLogger.nextFree < NVLOG_MAX_BUFFERS)
@@ -249,6 +292,7 @@ nvlogAllocBuffer
         else break;
     }
     portSyncSpinlockRelease(NvLogLogger.mainLock);
+    portSyncMutexRelease(NvLogLogger.buffersLock);
 
     if (status != NV_OK)
     {
@@ -261,7 +305,8 @@ nvlogAllocBuffer
 void
 nvlogDeallocBuffer
 (
-    NVLOG_BUFFER_HANDLE hBuffer
+    NVLOG_BUFFER_HANDLE hBuffer,
+    NvBool bDeallocPreserved
 )
 {
     NVLOG_BUFFER *pBuffer;
@@ -271,15 +316,23 @@ nvlogDeallocBuffer
 
     pBuffer = NvLogLogger.pBuffers[hBuffer];
 
+    if (FLD_TEST_DRF(LOG_BUFFER, _FLAGS, _PRESERVE, _YES, pBuffer->flags) &&
+        !bDeallocPreserved)
+    {
+        return;
+    }
+
     pBuffer->flags = FLD_SET_DRF(LOG_BUFFER, _FLAGS, _DISABLED,
                                  _YES, pBuffer->flags);
 
     while (pBuffer->threadCount > 0) { /*spin*/ }
+    portSyncMutexAcquire(NvLogLogger.buffersLock);
     portSyncSpinlockAcquire(NvLogLogger.mainLock);
       NvLogLogger.pBuffers[hBuffer] = NULL;
       NvLogLogger.nextFree = NV_MIN(hBuffer, NvLogLogger.nextFree);
       NvLogLogger.totalFree++;
     portSyncSpinlockRelease(NvLogLogger.mainLock);
+    portSyncMutexRelease(NvLogLogger.buffersLock);
 
     _deallocateNvlogBuffer(pBuffer);
 }
@@ -567,6 +620,7 @@ nvlogNowrapBufferPush
                   // Another thread has already expanded the buffer, bail out.
                   // TODO: Maybe we could store the handle and then try again?
                   portSyncSpinlockRelease(NvLogLogger.mainLock);
+                  portMemFree(pNewBuffer);
                   return NV_FALSE;
               }
 
@@ -725,3 +779,53 @@ void nvlogDumpToKernelLogIfEnabled(void)
     nvlogDumpToKernelLog(NV_FALSE);
 }
 
+NV_STATUS nvlogRegisterFlushCb(void (*pCb)(void*), void *pData)
+{
+    NV_STATUS status = NV_ERR_INSUFFICIENT_RESOURCES;
+    portSyncRwLockAcquireWrite(NvLogLogger.flushCbsLock);
+
+    for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(nvlogFlushCbs); i++)
+    {
+        // The same callback should not be registered twice
+        NV_ASSERT(nvlogFlushCbs[i].pCb != pCb || nvlogFlushCbs[i].pData != pData);
+
+        if (nvlogFlushCbs[i].pCb == NULL)
+        {
+            nvlogFlushCbs[i].pCb = pCb;
+            nvlogFlushCbs[i].pData = pData;
+
+            status = NV_OK;
+            goto done;
+        }
+    }
+
+done:
+    portSyncRwLockReleaseWrite(NvLogLogger.flushCbsLock);
+    return status;
+}
+
+void nvlogDeregisterFlushCb(void (*pCb)(void*), void *pData)
+{
+    portSyncRwLockAcquireWrite(NvLogLogger.flushCbsLock);
+
+    for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(nvlogFlushCbs); i++)
+    {
+        if (nvlogFlushCbs[i].pCb == pCb && nvlogFlushCbs[i].pData == pData)
+        {
+            nvlogFlushCbs[i] = (NvlogFlushCb){0};
+            goto done;
+        }
+    }
+
+done:
+    portSyncRwLockReleaseWrite(NvLogLogger.flushCbsLock);
+}
+
+void nvlogRunFlushCbs(void)
+{
+    portSyncRwLockAcquireRead(NvLogLogger.flushCbsLock);
+    for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(nvlogFlushCbs); i++)
+        if (nvlogFlushCbs[i].pCb != NULL)
+            nvlogFlushCbs[i].pCb(nvlogFlushCbs[i].pData);
+    portSyncRwLockReleaseRead(NvLogLogger.flushCbsLock);
+}

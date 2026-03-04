@@ -146,3 +146,24 @@ void nvDPDpyFree(NVDpyEvoPtr pDpyEvo)
 
     pDpyEvo->pConnectorEvo->pDpLibConnector->evtSink->lostDevice(device);
 }
+
+NvBool nvDPDpyIsDscPossible(const NVDpyEvoRec *pDpyEvo)
+{
+    if (!nvDpyUsesDPLib(pDpyEvo) ||
+            (pDpyEvo->dp.pDpLibDevice == NULL)) {
+        return FALSE;
+    }
+    return pDpyEvo->dp.pDpLibDevice->device->isDSCPossible();
+}
+
+NvBool nvDPDpyGetDpcdRevision(const NVDpyEvoRec *pDpyEvo,
+                              unsigned int *major,
+                              unsigned int *minor)
+{
+    if (!nvDpyUsesDPLib(pDpyEvo) ||
+        (pDpyEvo->dp.pDpLibDevice == NULL)) {
+        return FALSE;
+    }
+
+    return pDpyEvo->dp.pDpLibDevice->device->getDpcdRevision(major, minor);
+}

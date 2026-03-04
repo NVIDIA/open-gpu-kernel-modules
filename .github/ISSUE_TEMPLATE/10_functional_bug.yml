@@ -1,5 +1,8 @@
 name: Report a functional bug 🐛
-description: Functional bugs affect operation or stability of the driver and/or hardware.
+description: |
+  Functional bugs affect operation or stability of the driver or hardware.
+
+  Bugs with the closed source driver must be reported on the forums (see link on New Issue page below).
 labels:
   - "bug"
 body:
@@ -18,14 +21,12 @@ body:
     description: "Which open-gpu-kernel-modules version are you running? Be as specific as possible: SHA is best when built from specific commit."
   validations:
     required: true
-- type: dropdown
+- type: checkboxes
   id: sw_driver_proprietary
   attributes:
-    label: "Does this happen with the proprietary driver (of the same version) as well?"
+    label: "Please confirm this issue does not happen with the proprietary driver (of the same version). This issue tracker is only for bugs specific to the open kernel driver."
     options:
-    - "Yes"
-    - "No"
-    - "I cannot test this"
+    - label: "I confirm that this does not happen with the proprietary driver package."
   validations:
     required: true
 - type: input
@@ -40,6 +41,14 @@ body:
   attributes:
     label: Kernel Release
     description: "Which kernel are you running? (output of `uname -a`, say if you built it yourself)"
+  validations:
+    required: true
+- type: checkboxes
+  id: sw_host_kernel_stable
+  attributes:
+    label: "Please confirm you are running a stable release kernel (e.g. not a -rc). We do not accept bug reports for unreleased kernels."
+    options:
+    - label: "I am running on a stable kernel release."
   validations:
     required: true
 - type: input
@@ -78,7 +87,10 @@ body:
   id: bug_report_gz
   attributes:
     label: nvidia-bug-report.log.gz
-    description: "Please reproduce the problem, after that run `nvidia-bug-report.sh`, and attach the resulting nvidia-bug-report.log.gz here."
+    description: |
+      Please reproduce the problem, after that run `nvidia-bug-report.sh`, and attach the resulting nvidia-bug-report.log.gz here.
+
+      Reports without this file will be closed.
     placeholder: You can usually just drag & drop the file into this textbox.
   validations:
     required: true

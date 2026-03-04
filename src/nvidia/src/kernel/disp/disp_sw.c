@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,12 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "sweng/dispsw.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "rmapi/control.h"
 #include "rmapi/mapping_list.h"
 #include "gpu/device/device.h"
+#include "gpu/disp/dispsw.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/head/kernel_head.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
@@ -66,7 +66,7 @@ dispswConstruct_IMPL
 
     if (!pKernelDisplay)
     {
-        NV_PRINTF(LEVEL_ERROR, "Display is not enabled, can't create class\n");
+        NV_PRINTF(LEVEL_INFO, "Display is not enabled, can't create class\n");
         return (NV_ERR_INVALID_ARGUMENT);
     }
 
@@ -128,14 +128,13 @@ dispswDestruct_IMPL
 
 NV_STATUS dispswReleaseSemaphoreAndNotifierFill
 (
-    OBJGPU   *pGpu, 
+    OBJGPU   *pGpu,
     NvU64     gpuVA,
     NvU32     vaSpace,
     NvU32     releasevalue,
     NvU32     flags,
     NvU32     completionStatus,
-    NvHandle  hClient,
-    NvHandle  hEvent
+    Device   *pDevice
 )
 {
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
@@ -144,8 +143,8 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
 
     if (flags & F_SEMAPHORE_ADDR_VALID)
     {
-        bFound = CliGetDmaMappingInfo(hClient,
-                                      hEvent,
+        bFound = CliGetDmaMappingInfo(RES_GET_CLIENT(pDevice),
+                                      RES_GET_HANDLE(pDevice),
                                       vaSpace,
                                       gpuVA,
                                       gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
@@ -153,10 +152,10 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
         if (!bFound)
             return NV_ERR_INVALID_ADDRESS;
     }
-    else if (flags & F_SEMAPHORE_RELEASE) 
+    else if (flags & F_SEMAPHORE_RELEASE)
     {
         status =  semaphoreFillGPUVA(pGpu,
-                                     hClient,
+                                     pDevice,
                                      vaSpace,
                                      gpuVA,
                                      releasevalue,
@@ -164,10 +163,10 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
                                      NV_TRUE);
         return status;
     }
-    else if (flags & F_NOTIFIER_FILL) 
+    else if (flags & F_NOTIFIER_FILL)
     {
         status = notifyFillNotifierGPUVA(pGpu,
-                                         hClient,
+                                         pDevice,
                                          vaSpace,
                                          gpuVA,
                                          releasevalue, /* Info32 */

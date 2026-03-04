@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,10 +23,16 @@
 
 #include "gpu/gpu.h"
 #include "gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/device/device.h"
 #include "nvos.h"
 #include "resserv/rs_server.h"
 
 #include "class/clc4d1.h" // NVC4D1_VIDEO_NVJPG
+#include "class/clb8d1.h" // NVB8D1_VIDEO_NVJPG
+#include "class/clc9d1.h" // NVC9D1_VIDEO_NVJPG
+#include "class/clcdd1.h" // NVCDD1_VIDEO_NVJPG
+#include "class/clced0.h" // NVCED0_VIDEO_NVJPG
+#include "class/clcfd1.h" // NVCFD1_VIDEO_NVJPG
 
 /*!
  * This function returns an engine descriptor corresponding to the class
@@ -66,8 +72,22 @@ nvjpgGetEngineDescFromAllocParams
         case NVC4D1_VIDEO_NVJPG:
             engineInstance = 0;
             break;
+        case NVB8D1_VIDEO_NVJPG:
+        case NVCDD1_VIDEO_NVJPG:
+        case NVCED0_VIDEO_NVJPG:
+        case NVCFD1_VIDEO_NVJPG:
+        case NVC9D1_VIDEO_NVJPG:
+            engineInstance = pNvjpgAllocParms->engineInstance;
+            NV_PRINTF(LEVEL_INFO, "Supported nvjpg class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      engineInstance);
+            break;
+
         default:
             DBG_BREAKPOINT();
+            NV_PRINTF(LEVEL_ERROR, "Not supported nvjpg class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      pNvjpgAllocParms->engineInstance);
             return ENG_INVALID;
     }
 
@@ -75,16 +95,26 @@ nvjpgGetEngineDescFromAllocParams
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
+        RsResourceRef *pDeviceRef = NULL;
 
         NV_ASSERT_OK(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            pCallContext->pClient->hClient, &ref));
+            refFindAncestorOfType(pCallContext->pResourceRef,
+                                  classId(Device), &pDeviceRef));
+
+        if (pDeviceRef == NULL)
+            return ENG_INVALID;
+
+        NV_ASSERT_OK(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            dynamicCast(pDeviceRef->pResource, Device),
+                                            &ref));
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_NVJPEG(engineInstance),
-                                              &engineInstance));
-        return ENG_NVJPEG(NV2080_ENGINE_TYPE_NVJPEG_IDX(engineInstance));
+                                              RM_ENGINE_TYPE_NVJPEG(engineInstance),
+                                              &rmEngineType));
+        return ENG_NVJPEG(RM_ENGINE_TYPE_NVJPEG_IDX(rmEngineType));
     }
 
     // Get the right class as per engine instance.

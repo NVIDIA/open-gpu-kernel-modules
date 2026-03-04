@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,18 +43,21 @@
 #include "gpu/mem_mgr/context_dma.h"
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 #include "vgpu/rpc.h"
 
 static void
 dispchnParseAllocParams
 (
-    DispChannel *pDispChannel,
-    void        *pAllocParams,
-    NvU32       *pChannelInstance,
-    NvHandle    *pHObjectBuffer,
-    NvU32       *pInitialGetPutOffset,
-    NvBool      *pAllowGrabWithinSameClient,
-    NvBool      *pConnectPbAtGrab
+    DispChannel   *pDispChannel,
+    void          *pAllocParams,
+    NvU32         *pChannelInstance,
+    NvHandle      *pHObjectBuffer,
+    NvU32         *pInitialGetPutOffset,
+    NvBool        *pAllowGrabWithinSameClient,
+    NvBool        *pConnectPbAtGrab,
+    ChannelPBSize *channelPBSize,
+    NvU32         *pSubDeviceId
 )
 {
     NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS *pDmaChannelAllocParams = NULL;
@@ -65,10 +68,11 @@ dispchnParseAllocParams
 
     if (pDispChannel->bIsDma)
     {
-        pDmaChannelAllocParams = pAllocParams;
-        *pChannelInstance      = pDmaChannelAllocParams->channelInstance;
-        *pHObjectBuffer        = pDmaChannelAllocParams->hObjectBuffer;
-        *pInitialGetPutOffset  = pDmaChannelAllocParams->offset;
+        pDmaChannelAllocParams      = pAllocParams;
+        *pChannelInstance           = pDmaChannelAllocParams->channelInstance;
+        *pHObjectBuffer             = pDmaChannelAllocParams->hObjectBuffer;
+        *pInitialGetPutOffset       = pDmaChannelAllocParams->offset;
+        *channelPBSize              = pDmaChannelAllocParams->channelPBSize;
 
         if (FLD_TEST_DRF(50VAIO_CHANNELDMA_ALLOCATION, _FLAGS,
                          _CONNECT_PB_AT_GRAB, _YES,
@@ -81,13 +85,16 @@ dispchnParseAllocParams
         {
             NV_PRINTF(LEVEL_WARNING, "Error notifier parameter is not used in Display channel allocation.\n");
         }
+
+        *pSubDeviceId = pDmaChannelAllocParams->subDeviceId;
     }
     else
     {
-        pPioChannelAllocParams = pAllocParams;
-        *pChannelInstance      = pPioChannelAllocParams->channelInstance;
-        *pHObjectBuffer        = 0; // No one should look at this. So, 0 should be fine.
-        *pInitialGetPutOffset  = 0; // No one should look at this. So, 0 should be fine.
+        pPioChannelAllocParams      = pAllocParams;
+        *pChannelInstance           = pPioChannelAllocParams->channelInstance;
+        *pHObjectBuffer             = 0; // No one should look at this. So, 0 should be fine.
+        *pInitialGetPutOffset       = 0; // No one should look at this. So, 0 should be fine.
+        *channelPBSize              = 0; // No one should look at this. So, 0 should be fine.
 
         if (pPioChannelAllocParams->hObjectNotify != 0)
         {
@@ -120,16 +127,31 @@ dispchnConstruct_IMPL
     DispObject     *pDispObject = dynamicCast(pParentRef->pResource, DispObject);
     ContextDma     *pBufferContextDma = NULL;
     NvU32           hClass = RES_GET_EXT_CLASS_ID(pDispChannel);
+    ChannelPBSize   channelPBSize;
+    NvU32           subDeviceId = 0U;
+    RsClient       *pClient;
+    NvHandle        hChannel;
+    NvU32           dispChannelNum;
 
-    NV_ASSERT_OR_RETURN(pDispObject, NV_ERR_INVALID_OBJECT_HANDLE);
+    NvU32 prevGpuInst = gpumgrSetCurrentGpuInstance(pGpu->gpuInstance);
+
+    NV_ASSERT_TRUE_OR_GOTO(rmStatus, pDispObject != NULL, NV_ERR_INVALID_OBJECT_HANDLE, done);
 
     if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n", 
+                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
                   pParams->externalClassId);
 
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+        //
+        // GPUSWSEC-1560 introduced a central object privilege check in RS. Please mark derived external classes
+        // of DispChannel privileged in their RS_ENTRY. Since DispChannel doesn't have an external class of its own
+        // and is used as a base class, leaving this check inline to catch future derivations.
+        //
+        osAssertFailed();
+
+        rmStatus =  NV_ERR_INSUFFICIENT_PERMISSIONS;
+        goto done;
     }
 
     //
@@ -140,7 +162,8 @@ dispchnConstruct_IMPL
     if (!gpuIsClassSupported(pGpu, RES_GET_EXT_CLASS_ID(pDispChannel)))
     {
         NV_PRINTF(LEVEL_ERROR, "Unsupported class in\n");
-        return NV_ERR_INVALID_CLASS;
+        rmStatus = NV_ERR_INVALID_CLASS;
+        goto done;
     }
 
     // Move params into RM's address space
@@ -151,27 +174,43 @@ dispchnConstruct_IMPL
                             &hObjectBuffer,
                             &initialGetPutOffset,
                             &allowGrabWithinSameClient,
-                            &connectPbAtGrab);
+                            &connectPbAtGrab,
+                            &channelPBSize,
+                            &subDeviceId);
 
     rmStatus = kdispGetIntChnClsForHwCls(pKernelDisplay,
                                          RES_GET_EXT_CLASS_ID(pDispChannel),
                                         &internalDispChnClass);
     if (rmStatus != NV_OK)
-        return rmStatus;
+        goto done;
+
+    if (internalDispChnClass == dispChnClass_Any)
+    {
+        //
+        // Any channel is kernel only channel, Physical RM doesn't need ANY channel information.
+        // return from here as ANY channel is constructed.
+        //
+        pDispChannel->DispClass        = internalDispChnClass;
+        pDispChannel->InstanceNumber   = channelInstance;
+        rmStatus = NV_OK;
+        goto done;
+    }
 
     API_GPU_FULL_POWER_SANITY_CHECK(pGpu, NV_TRUE, NV_FALSE);
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY);
     {
         rmStatus = kdispSetPushBufferParamsToPhysical_HAL(pGpu,
                                             pKernelDisplay,
-                                            pDispChannel, 
+                                            pDispChannel,
                                             hObjectBuffer,
                                             pBufferContextDma,
                                             hClass,
                                             channelInstance,
-                                            internalDispChnClass);
+                                            internalDispChnClass,
+                                            channelPBSize,
+                                            subDeviceId);
         if (rmStatus != NV_OK)
-           return rmStatus;
+           goto done;
     }
     SLI_LOOP_END
 
@@ -189,7 +228,7 @@ dispchnConstruct_IMPL
                   "disp channel[0x%x] alloc failed. Return status = 0x%x\n",
                   channelInstance, rmStatus);
 
-        return rmStatus;
+        goto done;
     }
 
     // Channel allocation is successful, initialize new channel's data structures
@@ -211,6 +250,29 @@ dispchnConstruct_IMPL
         NV50VAIO_CHANNELPIO_ALLOCATION_PARAMETERS *pPioChannelAllocParams = pAllocParams;
         pPioChannelAllocParams->pControl = pDispChannel->pControl;
     }
+
+    if (rmStatus == NV_OK && (pKernelDisplay->pClientChannelTable != NULL))
+    {
+        pClient = RES_GET_CLIENT(pDispChannel);
+        hChannel = RES_GET_HANDLE(pDispChannel);
+
+        rmStatus = kdispGetChannelNum_HAL(pKernelDisplay, internalDispChnClass, channelInstance, &dispChannelNum);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "kdispGetChannelNum_HAL failed!\n");
+            goto done;
+        }
+
+        pKernelDisplay->pClientChannelTable[dispChannelNum].pClient = pClient;
+        pKernelDisplay->pClientChannelTable[dispChannelNum].hChannel = hChannel;
+        pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse = NV_TRUE;
+         
+        NV_PRINTF(LEVEL_INFO, "Mapped hclient: %p hchannel: 0x%x channleNum: 0x%x\n",
+                                pClient, hChannel, dispChannelNum);
+    }
+
+done:
+    gpumgrSetCurrentGpuInstance(prevGpuInst);
 
     return rmStatus;
 }
@@ -243,6 +305,8 @@ dispchnGrabChannel_IMPL
     NvBool             connectPbAtGrab;
     ContextDma        *pBufferContextDma = NULL;
     DISPCHNCLASS       internalDispChnClass;
+    ChannelPBSize      channelPBSize;
+    NvU32              subDeviceId = 0U;
 
     if (RES_GET_PARENT_HANDLE(pDispChannel) != hParent)
     {
@@ -259,7 +323,9 @@ dispchnGrabChannel_IMPL
                             &hObjectBuffer,
                             &initialGetPutOffset,
                             &allowGrabWithinSameClient,
-                            &connectPbAtGrab);
+                            &connectPbAtGrab,
+                            &channelPBSize,
+                            &subDeviceId);
 
     //
     // The handle already exists in our DB.
@@ -283,12 +349,14 @@ dispchnGrabChannel_IMPL
     {
       rmStatus = kdispSetPushBufferParamsToPhysical_HAL(pGpu,
                                            pKernelDisplay,
-                                           pDispChannel, 
+                                           pDispChannel,
                                            hObjectBuffer,
                                            pBufferContextDma,
                                            hClass,
                                            channelInstance,
-                                           internalDispChnClass);
+                                           internalDispChnClass,
+                                           channelPBSize,
+                                           subDeviceId);
       if (rmStatus != NV_OK)
           return rmStatus;
     }
@@ -411,25 +479,9 @@ void kdispUnbindUnmapDispChannel_IMPL
     RsClient           *pClient     = RES_GET_CLIENT(pDispChannel);
     RmClient           *pRmClient   = dynamicCast(pClient, RmClient);
     RS_PRIV_LEVEL       privLevel   = rmclientGetCachedPrivilege(pRmClient);
-    RS_ITERATOR         ContextDmaIt;
 
-    // Unbind all context dmas bound to this channel
-    ContextDmaIt = clientRefIter(pClient, RES_GET_REF(GPU_RES_GET_DEVICE(pDispChannel)), classId(ContextDma), RS_ITERATE_DESCENDANTS, NV_TRUE);
-    while (clientRefIterNext(ContextDmaIt.pClient, &ContextDmaIt))
-    {
-        ContextDma *pContextDma;
-
-        pContextDma = dynamicCast(ContextDmaIt.pResourceRef->pResource, ContextDma);
-        if (pContextDma == NULL)
-            continue;
-
-        // Quickly skip unbound ContextDmas
-        if (ctxdmaIsBound(pContextDma))
-        {
-            // Ignore unbind status as the ContextDma may not be bound to this channel
-            (void)dispchnUnbindCtx(pDispChannel, pGpu, pContextDma);
-        }
-    }
+    // Unbind all ContextDmas from this channel
+    dispchnUnbindAllCtx(pGpu, pDispChannel);
 
     // Unmap the channel
     osUnmapGPU(pGpu->pOsGpuInfo, privLevel, pDispChannel->pControl,
@@ -446,6 +498,7 @@ dispchnDestruct_IMPL
     OBJGPU             *pGpu      = GPU_RES_GET_GPU(pDispChannel);
     KernelDisplay      *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     RM_API             *pRmApi    = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvU32               dispChannelNum;
 
     LOCK_METER_DATA(FREE_CHANNEL_DISP, pDispChannel->DispClass, 0, 0);
 
@@ -526,6 +579,21 @@ dispchnDestruct_IMPL
         }
     }
 
+    if (pKernelDisplay->pClientChannelTable != NULL)
+    {
+        rmStatus = kdispGetChannelNum_HAL(pKernelDisplay, pDispChannel->DispClass, pDispChannel->InstanceNumber, &dispChannelNum);
+        if (rmStatus == NV_OK)
+        {
+            pKernelDisplay->pClientChannelTable[dispChannelNum].pClient = NULL;
+            pKernelDisplay->pClientChannelTable[dispChannelNum].hChannel = 0;
+            pKernelDisplay->pClientChannelTable[dispChannelNum].bInUse = NV_FALSE;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_WARNING, "Failed to reset clientChannelTable!\n");
+        }
+    }
+
     //
     // Unbind all context dmas bound to this channel, unmap the channel and
     // finally release HW resources.
@@ -590,14 +658,24 @@ dispchnGetByHandle_IMPL
 NV_STATUS
 dispchnBindCtx_IMPL
 (
-    DispChannel  *pDispChannel,
     OBJGPU       *pGpu,
-    ContextDma   *pContextDma
+    ContextDma   *pContextDma,
+    NvHandle     hChannel
 )
 {
+    RsClient     *pClient = RES_GET_CLIENT(pContextDma);
+    DispChannel  *pDispChannel = NULL;
     NV_STATUS rmStatus = NV_OK;
     KernelDisplay *pKernelDisplay;
     DisplayInstanceMemory *pInstMem;
+
+    // Look-up channel
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        dispchnGetByHandle(pClient, hChannel, &pDispChannel));
+
+    // Ensure ContextDma and DisplayChannel are on the save device
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pContextDma->pDevice == GPU_RES_GET_DEVICE(pDispChannel),
+                       NV_ERR_INVALID_DEVICE);
 
     //
     // Enforce alignment requirements
@@ -633,15 +711,25 @@ dispchnBindCtx_IMPL
 NV_STATUS
 dispchnUnbindCtx_IMPL
 (
-    DispChannel *pDispChannel,
     OBJGPU      *pGpu,
-    ContextDma  *pContextDma
+    ContextDma  *pContextDma,
+    NvHandle     hChannel
 )
 {
+    RsClient     *pClient = RES_GET_CLIENT(pContextDma);
+    DispChannel  *pDispChannel = NULL;
     NV_STATUS  rmStatus = NV_OK;
     KernelDisplay *pKernelDisplay;
     DisplayInstanceMemory *pInstMem;
     NvBool bFound = NV_FALSE;
+
+    // Look-up channel given by client
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        dispchnGetByHandle(pClient, hChannel, &pDispChannel));
+
+    // Ensure ContextDma and DisplayChannel are on the save device
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pContextDma->pDevice == GPU_RES_GET_DEVICE(pDispChannel),
+                       NV_ERR_INVALID_DEVICE);
 
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
     pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
@@ -658,6 +746,50 @@ dispchnUnbindCtx_IMPL
     return bFound ? NV_OK : NV_ERR_INVALID_STATE;
 }
 
+/*!
+ * @brief Unbind all ContextDmas from the given channel
+ */
+void
+dispchnUnbindAllCtx_IMPL
+(
+    OBJGPU      *pGpu,
+    DispChannel *pDispChannel
+)
+{
+    KernelDisplay *pKernelDisplay;
+    DisplayInstanceMemory *pInstMem;
+
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    pInstMem = KERNEL_DISPLAY_GET_INST_MEM(pKernelDisplay);
+
+    instmemUnbindDispChannelContextDmas(pGpu, pInstMem, pDispChannel);
+
+    SLI_LOOP_END
+}
+
+/*!
+ * @brief Unbind ContextDma from all display channels
+ */
+void
+dispchnUnbindCtxFromAllChannels_IMPL
+(
+    OBJGPU      *pGpu,
+    ContextDma  *pContextDma
+)
+{
+    KernelDisplay *pKernelDisplay;
+    DisplayInstanceMemory *pInstMem;
+
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    pInstMem = KERNEL_DISPLAY_GET_INST_MEM(pKernelDisplay);
+
+    instmemUnbindContextDmaFromAllChannels(pGpu, pInstMem, pContextDma);
+
+    SLI_LOOP_END
+}
+
 NV_STATUS
 kdispSetPushBufferParamsToPhysical_IMPL
 (
@@ -668,7 +800,9 @@ kdispSetPushBufferParamsToPhysical_IMPL
     ContextDma      *pBufferContextDma,
     NvU32            hClass,
     NvU32            channelInstance,
-    DISPCHNCLASS    internalDispChnClass
+    DISPCHNCLASS     internalDispChnClass,
+    ChannelPBSize    channelPBSize,
+    NvU32            subDeviceId
 )
 {
     RsClient       *pClient  = RES_GET_CLIENT(pDispChannel);
@@ -685,6 +819,7 @@ kdispSetPushBufferParamsToPhysical_IMPL
 
     pushBufferParams.hclass = hClass;
     pushBufferParams.channelInstance = channelInstance;
+    pushBufferParams.subDeviceId = subDeviceId;
 
     if (pDispChannel->bIsDma)
     {
@@ -707,6 +842,20 @@ kdispSetPushBufferParamsToPhysical_IMPL
         // Generate PUSHBUFFER_ADDR. Shift the addr to get the size in 4KB
         pushBufferParams.physicalAddr = memdescGetPhysAddr(memdescGetMemDescFromGpu(pBufferContextDma->pMemDesc, pGpu), AT_GPU, 0);
         pushBufferParams.cacheSnoop= pBufferContextDma->CacheSnoop;
+        pushBufferParams.pbTargetAperture = kdispGetPBTargetAperture_HAL(pGpu,
+                                                                         pKernelDisplay,
+                                                                         pushBufferParams.addressSpace,
+                                                                         pushBufferParams.cacheSnoop);
+
+        NvU32 size = NVBIT32(channelPBSize + 12) - 1;
+        if (size <= pushBufferParams.limit)
+        {
+            pushBufferParams.channelPBSize = (NvU32)channelPBSize;
+        }
+        else
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
         pushBufferParams.valid = NV_TRUE;
     }
     else

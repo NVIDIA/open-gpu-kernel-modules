@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,14 +30,6 @@
 
 #include "nvtypes.h"
 #include "flcnretval.h"
-
-#ifndef NV_SIZEOF32
-#define NV_SIZEOF32(v) (sizeof(v))
-#endif
-
-#ifndef NV_ARRAY_ELEMENTS
-#define NV_ARRAY_ELEMENTS(x)   ((sizeof(x)/sizeof((x)[0])))
-#endif
 
 /*!
  * @ref NvU64_ALIGN32 , NvU64_ALIGN32_PACK, NvU64_ALIGN32_UNPACK

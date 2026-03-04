@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,16 @@
 #ifndef ga100_dev_nv_bus_addendum_h
 #define ga100_dev_nv_bus_addendum_h
 
-#define NV_PBUS_SW_SCRATCH1_SMC_MODE                                15:15
-#define NV_PBUS_SW_SCRATCH1_SMC_MODE_OFF                            0x00000000
-#define NV_PBUS_SW_SCRATCH1_SMC_MODE_ON                             0x00000001
+#define NV_PBUS_SW_SCRATCH1_SMC_MODE                               15:15
+#define NV_PBUS_SW_SCRATCH1_SMC_MODE_OFF                           0x00000000
+#define NV_PBUS_SW_SCRATCH1_SMC_MODE_ON                            0x00000001
+
+//
+// This bit is set by RM to indicate that a GPU reset is recommended after
+// work is drained
+//
+#define NV_PBUS_SW_SCRATCH30_GPU_DRAIN_AND_RESET_RECOMMENDED       1:1
+#define NV_PBUS_SW_SCRATCH30_GPU_DRAIN_AND_RESET_RECOMMENDED_NO    0x00000000
+#define NV_PBUS_SW_SCRATCH30_GPU_DRAIN_AND_RESET_RECOMMENDED_YES   0x00000001
 
 #endif // ga100_dev_nv_bus_addendum_h

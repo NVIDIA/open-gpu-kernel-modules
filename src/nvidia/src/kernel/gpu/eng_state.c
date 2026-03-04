@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,14 +24,7 @@
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
-
-#include "gpu/bus/kern_bus.h"
-
-// Function pointer wrapper
-#define engstateStatePreInitUnlocked_Fnptr(pEngstate)      pEngstate->__engstateStatePreInitUnlocked__
-#define engstateStateInitUnlocked_Fnptr(pEngstate)         pEngstate->__engstateStateInitUnlocked__
 
 NV_STATUS
 engstateConstructBase_IMPL
@@ -45,10 +38,14 @@ engstateConstructBase_IMPL
     pEngstate->engDesc      = engDesc;
     pEngstate->currentState = ENGSTATE_STATE_UNDEFINED;
 
+    if (pEngstate->getProperty(pEngstate, PDB_PROP_ENGSTATE_IS_MISSING))
+        return NV_ERR_NOT_SUPPORTED;
+
 #if NV_PRINTF_STRINGS_ALLOWED
     nvDbgSnprintf(pEngstate->name, sizeof(pEngstate->name), "%s:%d",
         objGetClassName(pEngstate), ENGDESC_FIELD(pEngstate->engDesc, _INST));
 #endif
+
     return NV_OK;
 }
 
@@ -177,8 +174,6 @@ engstateDestruct_IMPL
     OBJENGSTATE *pEngstate
 )
 {
-    portMemFree(pEngstate->pOriginalTunableState);
-    pEngstate->pOriginalTunableState = NULL;
 }
 
 /*!
@@ -200,10 +195,10 @@ engstateInitMissing_IMPL
 NV_STATUS
 engstateStatePreInit_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 {
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     /* Check if we overrode the unlocked variant */
-    if ((engstateStatePreInitUnlocked_Fnptr(pEngstate)      !=
+    if ((engstateStatePreInitUnlocked_FNPTR(pEngstate)      !=
          engstateStatePreInitUnlocked_IMPL))
     {
         NV_STATUS status, lockStatus;
@@ -248,10 +243,10 @@ engstateStatePreInitUnlocked_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 NV_STATUS
 engstateStateInit_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 {
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     /* Check if we overrode the unlocked variant */
-    if (engstateStateInitUnlocked_Fnptr(pEngstate) != engstateStateInitUnlocked_IMPL)
+    if (engstateStateInitUnlocked_FNPTR(pEngstate) != engstateStateInitUnlocked_IMPL)
     {
         NV_STATUS status, lockStatus;
 
@@ -385,117 +380,6 @@ engstateStateDestroy_IMPL
 }
 
 /*!
- * @brief allocates a tunable state structure
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[out]  ppTunableState
- */
-NV_STATUS
-engstateAllocTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void **ppTunableState
-)
-{
-    *ppTunableState = NULL;
-    return NV_OK;
-}
-
-/*!
- * @brief frees a tunable state structure
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[in]   pTunableState
- */
-void
-engstateFreeTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    portMemFree(pTunableState);
-}
-
-/*!
- * @brief fills pTunableState with the current state
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[out]  pTunableState
- */
-NV_STATUS
-engstateGetTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief sets the current state to values in pTunableState
- *
- * @param[in]      pGpu
- * @param[in,out]  pEngstate
- * @param[in]      pTunableState
- */
-NV_STATUS
-engstateSetTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief modifies pTunableState to be compatible with pEngstate->pOriginalTunableState
- *
- * @param[in]      pGpu
- * @param[in]      pEngstate
- * @param[in,out]  pTunableState
- */
-NV_STATUS
-engstateReconcileTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief returns NV_ERR_GENERIC if two tunable states are incompatible
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[in]   pTunables1
- * @param[in]   pTunables2
- */
-NV_STATUS
-engstateCompareTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunables1,
-    void *pTunables2
-)
-{
-    return NV_OK;
-}
-
-/*!
  * @brief returns the ENGDESCRIPTOR associated with this ENGSTATE
  *
  * @param[in]   pEngstate
@@ -522,10 +406,7 @@ engstateIsPresent_IMPL
     OBJENGSTATE *pEngstate
 )
 {
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
-    NV_ASSERT(pEngstate != NULL);
-    return kbusCheckEngine_HAL(pGpu, pKernelBus, pEngstate->engDesc);
+    return gpuCheckEngine_HAL(pGpu, pEngstate->engDesc);
 }
 
 

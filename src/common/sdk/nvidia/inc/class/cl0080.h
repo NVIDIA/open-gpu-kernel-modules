@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,27 +21,23 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl0080_h_
-#define _cl0080_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
+
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl0080.finn
+//
 
 #include "nvlimits.h"
-#include "nvtypes.h"
+#include "cl0080_notification.h"
 
-#define  NV01_DEVICE_0                                             (0x00000080)
-/* NvNotification[] fields and values */
-#define NV080_NOTIFICATION_STATUS_ERROR_PROTECTION_FAULT           (0x4000)
-/* pio method data structure */
-typedef volatile struct _cl0080_tag0 {
- NvV32 Reserved00[0x7c0];
-} Nv080Typedef, Nv01Device0;
-#define  NV080_TYPEDEF                                             Nv01Device0
+#define NV01_DEVICE_0      (0x80U) /* finn: Evaluated from "NV0080_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* NvAlloc parameteters */
-#define NV0080_MAX_DEVICES                                         NV_MAX_DEVICES
+#define NV0080_MAX_DEVICES NV_MAX_DEVICES
+
 /**
  * @brief Alloc param 
  *
@@ -51,21 +47,18 @@ typedef volatile struct _cl0080_tag0 {
  *  NV_DEVICE_ALLOCATION_VAMODE_SINGLE_VASPACE
  *  NV_DEVICE_ALLOCATION_VAMODE_MULTIPLE_VASPACES
  *  Detailed description of these modes is in nvos.h
- **/ 
-typedef struct {
-    NvU32       deviceId;
-    NvHandle    hClientShare;
-    NvHandle    hTargetClient;
-    NvHandle    hTargetDevice;
-    NvV32       flags;
-    NvU64       vaSpaceSize NV_ALIGN_BYTES(8);
-    NvU64       vaStartInternal NV_ALIGN_BYTES(8);
-    NvU64       vaLimitInternal NV_ALIGN_BYTES(8);
-    NvV32       vaMode;
+ **/
+
+#define NV0080_ALLOC_PARAMETERS_MESSAGE_ID (0x0080U)
+
+typedef struct NV0080_ALLOC_PARAMETERS {
+    NvU32    deviceId;
+    NvHandle hClientShare;
+    NvHandle hTargetClient;
+    NvHandle hTargetDevice;
+    NvV32    flags;
+    NV_DECLARE_ALIGNED(NvU64 vaSpaceSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 vaStartInternal, 8);
+    NV_DECLARE_ALIGNED(NvU64 vaLimitInternal, 8);
+    NvV32    vaMode;
 } NV0080_ALLOC_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl0080_h_ */

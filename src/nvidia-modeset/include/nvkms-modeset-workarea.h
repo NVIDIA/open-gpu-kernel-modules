@@ -24,21 +24,24 @@
 #ifndef __NVKMS_MODESET_WORKAREA_H__
 #define __NVKMS_MODESET_WORKAREA_H__
 
+#include "nvkms-headsurface-config.h"
+
 typedef struct {
     struct {
         struct {
             NVFlipEvoHwState newState;
             NVFlipEvoHwState oldState;
-            NvU32 oldActiveRmId;
         } head[NVKMS_MAX_HEADS_PER_DISP];
+
+        struct {
+            NvU32 oldActiveRmId;
+        } apiHead[NVKMS_MAX_HEADS_PER_DISP];
 
         NVDpyIdList changedDpyIdList;
 
-        NVDpyIdList sorAssignedConnectorsList;
         NvU32 assignedSorMask;
-
     } sd[NVKMS_MAX_SUBDEVICES];
-    NVEvoUpdateState earlyUpdateState;
+    NVHsConfig hsConfig;
     NVEvoModesetUpdateState modesetUpdateState;
 
     /*

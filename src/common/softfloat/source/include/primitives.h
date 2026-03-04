@@ -90,6 +90,21 @@ extern const uint_least8_t softfloat_countLeadingZeros8[256];
 
 /*----------------------------------------------------------------------------
 | Returns the number of leading 0 bits before the most-significant 1 bit of
+| 'a'.  If 'a' is zero, 16 is returned.
+*----------------------------------------------------------------------------*/
+INLINE uint_fast8_t softfloat_countLeadingZeros16( uint16_t a )
+{
+    uint_fast8_t count = 8;
+    if ( 0x100 <= a ) {
+        count = 0;
+        a >>= 8;
+    }
+    count += softfloat_countLeadingZeros8[a];
+    return count;
+}
+
+/*----------------------------------------------------------------------------
+| Returns the number of leading 0 bits before the most-significant 1 bit of
 | 'a'.  If 'a' is zero, 32 is returned.
 *----------------------------------------------------------------------------*/
 INLINE uint_fast8_t softfloat_countLeadingZeros32( uint32_t a )

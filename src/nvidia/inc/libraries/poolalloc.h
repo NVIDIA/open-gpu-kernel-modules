@@ -48,28 +48,28 @@ extern "C" {
 
 typedef struct poolnode POOLNODE;
 
-/*! 
+/*!
  * Each node corresponds to one page of upStreamPageSize
  * The pool allocator sub-allocates from each of these pages.
- */ 
+ */
 struct poolnode
 {
     NvU64    pageAddr;     // Address of the page to sub-allocate
     NvU64    bitmap;       // The bit map for this page. Only used if the
                            // node represents a partially allocated node
-    POOLNODE *pParent;     // The upstream pool node in case this node is 
+    POOLNODE *pParent;     // The upstream pool node in case this node is
                            // allocated from the upper pool.
     ListNode node;         // For intrusive lists.
 };
 
 MAKE_INTRUSIVE_LIST(PoolNodeList, POOLNODE, node);
 
-/*! 
+/*!
  * The handle contains a generic metadata field that is needed for fast
  * access. In the case of a linked list implementation of the pool allocator,
  * the metadata is the pointer to the node that contains the page it was
- * sub-allocated from 
- */ 
+ * sub-allocated from
+ */
 typedef struct poolallocHandle
 {
     NvU64 address;      // The base address for this chunk
@@ -83,10 +83,11 @@ MAKE_LIST(PoolPageHandleList, POOLALLOC_HANDLE);
 /*!
  * @brief Callback function to upstream allocators for allocating new pages
  *
- * This function only allocate 1 page at a time right now
+ * This function can allocate multiple pages at a time
  *
  * @param[in]   ctxPtr      Provides context to upstream allocator
- * @param[in]   pageSize    Not really needed. For debugging only
+ * @param[in]   pageSize    Size of page to ask for from upstream
+ * @param[in]   numPages    Number of pages to allocate
  * @param[out]  pPage       The output page handle from upstream
  *
  * @return NV_OK            if successfully allocated NvF32 totalTest, doneTest, failTest; the page
@@ -96,7 +97,7 @@ MAKE_LIST(PoolPageHandleList, POOLALLOC_HANDLE);
  *
  */
 typedef NV_STATUS (*allocCallback_t)(void *ctxPtr, NvU64 pageSize,
-                   POOLALLOC_HANDLE *pPage);
+                   NvU64 numPages, POOLALLOC_HANDLE *pPage);
 
 /*!
  * @brief Callback function to upstream allocators for freeing unused pages
@@ -110,7 +111,7 @@ typedef NV_STATUS (*allocCallback_t)(void *ctxPtr, NvU64 pageSize,
  */
 typedef void (*freeCallback_t)(void *ctxPtr, NvU64 pageSize, POOLALLOC_HANDLE *pPage);
 
-/*! 
+/*!
  * Structure representing a pool.
  */
 typedef struct poolalloc
@@ -128,14 +129,14 @@ typedef struct poolalloc
         void            *pUpstreamCtx; // The context to pass to upstream allocator
     } callBackInfo;
 
-    NvU32              upstreamPageSize; // Page size for upstream allocations
-    NvU32              allocPageSize;    // Page size to give out
+    NvU64              upstreamPageSize; // Page size for upstream allocations
+    NvU64              allocPageSize;    // Page size to give out
     NvU32              ratio;            // Ratio == upstreamPageSize / allocPageSize
     NvU32              flags;            // POOLALLOC_FLAGS_*
 } POOLALLOC;
 
 
-/*! 
+/*!
  * Dump the lists maintained by the pools.
  */
 void poolAllocPrint(POOLALLOC *pPool);
@@ -169,14 +170,14 @@ void poolAllocPrint(POOLALLOC *pPool);
  * @param[in]   freeFun             The free for internal structures
  * @param[in]   pAllocCtxPtr        The context pointer for the special
  *                                  allocator
- * @param[in]   flags               POOLALLOC_FLAGS_* 
+ * @param[in]   flags               POOLALLOC_FLAGS_*
  *
  * @return A pointer to a POOLALLOC structure if the initialization
  * succeeded; NULL otherwise
  *
  */
 
-POOLALLOC *poolInitialize(NvU32 upstreamPageSize, NvU32 allocPageSize,
+POOLALLOC *poolInitialize(NvU64 upstreamPageSize, NvU64 allocPageSize,
     allocCallback_t allocCb, freeCallback_t freeCb, void *pUpstreamCtxPtr,
     PORT_MEM_ALLOCATOR *pAllocator, NvU32 flags);
 
@@ -276,10 +277,10 @@ void poolFree(POOLALLOC *pPool, POOLALLOC_HANDLE *pPageHandle);
  */
 void poolDestroy(POOLALLOC *pPool);
 
-/*! 
+/*!
  * @briefs Returns the lengths of a pool's lists
  */
-void poolGetListLength(POOLALLOC *pPool, NvU32 *pFreeListLength, 
+void poolGetListLength(POOLALLOC *pPool, NvU32 *pFreeListLength,
                        NvU32 *pPartialListLength, NvU32 *pFullListLength);
 
 #ifdef __cplusplus

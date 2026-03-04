@@ -20,13 +20,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-connector.h"
+#include "nvidia-drm-crtc.h"
 #include "nvidia-drm-utils.h"
 #include "nvidia-drm-encoder.h"
 
@@ -42,6 +43,7 @@
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_edid.h>
 
 static void nv_drm_connector_destroy(struct drm_connector *connector)
 {
@@ -98,7 +100,11 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
             break;
     }
 
+#if defined(NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID)
     if (connector->override_edid) {
+#else
+    if (drm_edid_override_connector_update(connector) > 0) {
+#endif
         const struct drm_property_blob *edid = connector->edid_blob_ptr;
 
         if (edid->length <= sizeof(pDetectParams->edid.buffer)) {
@@ -117,6 +123,11 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
             "Failed to detect display state");
         return false;
     }
+
+#if defined(NV_DRM_CONNECTOR_HAS_VRR_CAPABLE_PROPERTY)
+    drm_connector_attach_vrr_capable_property(&nv_connector->base);
+    drm_connector_set_vrr_capable_property(&nv_connector->base, pDetectParams->vrrSupported ? true : false);
+#endif
 
     if (pDetectParams->connected) {
         if (!pDetectParams->overrideEdid && pDetectParams->edid.bufferSize) {
@@ -197,6 +208,11 @@ done:
 
     nv_drm_free(pDetectParams);
 
+    if (status == connector_status_disconnected &&
+        nv_connector->modeset_permission_filep) {
+        nv_drm_connector_revoke_permissions(dev, nv_connector);
+    }
+
     return status;
 }
 
@@ -212,9 +228,6 @@ nv_drm_connector_detect(struct drm_connector *connector, bool force)
 }
 
 static struct drm_connector_funcs nv_connector_funcs = {
-#if defined NV_DRM_ATOMIC_HELPER_CONNECTOR_DPMS_PRESENT
-    .dpms                   = drm_atomic_helper_connector_dpms,
-#endif
     .destroy                = nv_drm_connector_destroy,
     .reset                  = drm_atomic_helper_connector_reset,
     .force                  = __nv_drm_connector_force,
@@ -298,7 +311,11 @@ static int nv_drm_connector_get_modes(struct drm_connector *connector)
 }
 
 static int nv_drm_connector_mode_valid(struct drm_connector    *connector,
+#if defined(NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG)
+                                       const struct drm_display_mode *mode)
+#else
                                        struct drm_display_mode *mode)
+#endif
 {
     struct drm_device *dev = connector->dev;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
@@ -333,10 +350,133 @@ nv_drm_connector_best_encoder(struct drm_connector *connector)
     return NULL;
 }
 
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+static const NvU32 __nv_drm_connector_supported_colorspaces =
+    BIT(DRM_MODE_COLORIMETRY_BT2020_RGB) |
+    BIT(DRM_MODE_COLORIMETRY_BT2020_YCC);
+#endif
+
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+static int
+__nv_drm_connector_atomic_check(struct drm_connector *connector,
+                                struct drm_atomic_state *state)
+{
+    struct drm_connector_state *new_connector_state =
+        drm_atomic_get_new_connector_state(state, connector);
+    struct drm_connector_state *old_connector_state =
+        drm_atomic_get_old_connector_state(state, connector);
+    struct nv_drm_device *nv_dev = to_nv_device(connector->dev);
+
+    struct drm_crtc *crtc = new_connector_state->crtc;
+    struct drm_crtc_state *crtc_state;
+    struct nv_drm_crtc_state *nv_crtc_state;
+    struct NvKmsKapiHeadRequestedConfig *req_config;
+
+    if (!crtc) {
+        return 0;
+    }
+
+    crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
+    nv_crtc_state = to_nv_crtc_state(crtc_state);
+    req_config = &nv_crtc_state->req_config;
+
+    /*
+     * Override metadata for the entire head instead of allowing NVKMS to derive
+     * it from the layers' metadata.
+     *
+     * This is the metadata that will sent to the display, and if applicable,
+     * layers will be tone mapped to this metadata rather than that of the
+     * display.
+     */
+    req_config->flags.hdrInfoFrameChanged =
+        !drm_connector_atomic_hdr_metadata_equal(old_connector_state,
+                                                 new_connector_state);
+    if (new_connector_state->hdr_output_metadata &&
+        new_connector_state->hdr_output_metadata->data) {
+
+        /*
+         * Note that HDMI definitions are used here even though we might not
+         * be using HDMI. While that seems odd, it is consistent with
+         * upstream behavior.
+         */
+
+        struct hdr_output_metadata *hdr_metadata =
+            new_connector_state->hdr_output_metadata->data;
+        struct hdr_metadata_infoframe *info_frame =
+            &hdr_metadata->hdmi_metadata_type1;
+        unsigned int i;
+
+        if (hdr_metadata->metadata_type != HDMI_STATIC_METADATA_TYPE1) {
+            return -EINVAL;
+        }
+
+        for (i = 0; i < ARRAY_SIZE(info_frame->display_primaries); i++) {
+            req_config->modeSetConfig.hdrInfoFrame.staticMetadata.displayPrimaries[i].x =
+                info_frame->display_primaries[i].x;
+            req_config->modeSetConfig.hdrInfoFrame.staticMetadata.displayPrimaries[i].y =
+                info_frame->display_primaries[i].y;
+        }
+
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.whitePoint.x =
+            info_frame->white_point.x;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.whitePoint.y =
+            info_frame->white_point.y;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxDisplayMasteringLuminance =
+            info_frame->max_display_mastering_luminance;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.minDisplayMasteringLuminance =
+            info_frame->min_display_mastering_luminance;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxCLL =
+            info_frame->max_cll;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxFALL =
+            info_frame->max_fall;
+
+        req_config->modeSetConfig.hdrInfoFrame.eotf = info_frame->eotf;
+
+        req_config->modeSetConfig.hdrInfoFrame.enabled = NV_TRUE;
+    } else {
+        req_config->modeSetConfig.hdrInfoFrame.enabled = NV_FALSE;
+    }
+
+    req_config->flags.colorimetryChanged =
+        (old_connector_state->colorspace != new_connector_state->colorspace);
+    // When adding a case here, also add to __nv_drm_connector_supported_colorspaces
+    switch (new_connector_state->colorspace) {
+        case DRM_MODE_COLORIMETRY_DEFAULT:
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
+            break;
+        case DRM_MODE_COLORIMETRY_BT601_YCC:
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_BT601;
+            break;
+        case DRM_MODE_COLORIMETRY_BT709_YCC:
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_BT709;
+            break;
+        case DRM_MODE_COLORIMETRY_BT2020_RGB:
+        case DRM_MODE_COLORIMETRY_BT2020_YCC:
+            // Ignore RGB/YCC
+            // See https://patchwork.freedesktop.org/patch/525496/?series=111865&rev=4
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_BT2100;
+            break;
+        default:
+            // XXX HDR TODO: Add support for more color spaces
+            NV_DRM_DEV_LOG_ERR(nv_dev, "Unsupported color space");
+            return -EINVAL;
+    }
+
+    return 0;
+}
+#endif /* defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT) */
+
 static const struct drm_connector_helper_funcs nv_connector_helper_funcs = {
     .get_modes    = nv_drm_connector_get_modes,
     .mode_valid   = nv_drm_connector_mode_valid,
     .best_encoder = nv_drm_connector_best_encoder,
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+    .atomic_check = __nv_drm_connector_atomic_check,
+#endif
 };
 
 static struct drm_connector*
@@ -362,6 +502,8 @@ nv_drm_connector_new(struct drm_device *dev,
     nv_connector->physicalIndex = physicalIndex;
     nv_connector->type     = type;
     nv_connector->internal = internal;
+    nv_connector->modeset_permission_filep = NULL;
+    nv_connector->modeset_permission_crtc = NULL;
 
     strcpy(nv_connector->dpAddress, dpAddress);
 
@@ -386,6 +528,32 @@ nv_drm_connector_new(struct drm_device *dev,
         nv_connector->base.polled =
             DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
     }
+
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+    if (nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI) {
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+        if (drm_mode_create_hdmi_colorspace_property(
+                &nv_connector->base,
+                __nv_drm_connector_supported_colorspaces) == 0) {
+#else
+        if (drm_mode_create_hdmi_colorspace_property(&nv_connector->base) == 0) {
+#endif
+            drm_connector_attach_colorspace_property(&nv_connector->base);
+        }
+        drm_connector_attach_hdr_output_metadata_property(&nv_connector->base);
+    } else if (nv_connector->type == NVKMS_CONNECTOR_TYPE_DP) {
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+        if (drm_mode_create_dp_colorspace_property(
+                &nv_connector->base,
+                __nv_drm_connector_supported_colorspaces) == 0) {
+#else
+        if (drm_mode_create_dp_colorspace_property(&nv_connector->base) == 0) {
+#endif
+            drm_connector_attach_colorspace_property(&nv_connector->base);
+        }
+        drm_connector_attach_hdr_output_metadata_property(&nv_connector->base);
+    }
+#endif /* defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT) */
 
     /* Register connector with DRM subsystem */
 
@@ -425,16 +593,11 @@ nv_drm_get_connector(struct drm_device *dev,
                      char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH])
 {
     struct drm_connector *connector = NULL;
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
     struct drm_connector_list_iter conn_iter;
-    nv_drm_connector_list_iter_begin(dev, &conn_iter);
-#else
-    struct drm_mode_config *config = &dev->mode_config;
-    mutex_lock(&config->mutex);
-#endif
+    drm_connector_list_iter_begin(dev, &conn_iter);
 
     /* Lookup for existing connector with same physical index */
-    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+    drm_for_each_connector_iter(connector, &conn_iter) {
         struct nv_drm_connector *nv_connector = to_nv_connector(connector);
 
         if (nv_connector->physicalIndex == physicalIndex) {
@@ -449,11 +612,7 @@ nv_drm_get_connector(struct drm_device *dev,
     connector = NULL;
 
 done:
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
-    nv_drm_connector_list_iter_end(&conn_iter);
-#else
-    mutex_unlock(&config->mutex);
-#endif
+    drm_connector_list_iter_end(&conn_iter);
 
     if (!connector) {
         connector = nv_drm_connector_new(dev,
@@ -462,6 +621,28 @@ done:
     }
 
     return connector;
+}
+
+/*
+ * Revoke the permissions on this connector.
+ */
+bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
+                                         struct nv_drm_connector* nv_connector)
+{
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    bool ret = true;
+
+    if (nv_connector->modeset_permission_crtc) {
+        if (nv_connector->nv_detected_encoder) {
+            ret = nvKms->revokePermissions(
+                nv_dev->pDevice, nv_connector->modeset_permission_crtc->head,
+                nv_connector->nv_detected_encoder->hDisplay);
+        }
+        nv_connector->modeset_permission_crtc->modeset_permission_filep = NULL;
+        nv_connector->modeset_permission_crtc = NULL;
+    }
+    nv_connector->modeset_permission_filep = NULL;
+    return ret;
 }
 
 #endif

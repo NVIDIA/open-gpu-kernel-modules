@@ -30,6 +30,7 @@
  */
 
 #include "nvstatus.h"
+#include "flcnifcmn.h"
 
 struct nvswitch_device;
 struct NVSWITCH_TIMEOUT;

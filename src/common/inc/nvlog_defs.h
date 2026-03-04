@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -102,31 +102,17 @@ struct _NVLOG_BUFFER
 
 #define NVLOG_MAX_BUFFERS_v11       16
 #define NVLOG_MAX_BUFFERS_v12       256
+#define NVLOG_MAX_BUFFERS_v13       3840
 
-#if NVOS_IS_UNIX
-#define NVLOG_MAX_BUFFERS           NVLOG_MAX_BUFFERS_v12
-#define NVLOG_LOGGER_VERSION        12          // v1.2
-#else
-#define NVLOG_MAX_BUFFERS           NVLOG_MAX_BUFFERS_v11
-#define NVLOG_LOGGER_VERSION        11          // v1.1
-#endif // NVOS_IS_UNIX
+#define NVLOG_MAX_BUFFERS           NVLOG_MAX_BUFFERS_v13
+#define NVLOG_LOGGER_VERSION        13          // v1.3
 
-
-//
 // Due to this file's peculiar location, NvPort may or may not be includable
-// This hack will go away when NvLog is moved into common/shared
-//
-#if NVOS_IS_MACINTOSH
-
-#if !PORT_IS_KERNEL_BUILD
 typedef struct PORT_SPINLOCK PORT_SPINLOCK;
-#else
-#include "nvport/nvport.h"
-#endif
+typedef struct PORT_MUTEX PORT_MUTEX;
+typedef struct PORT_RWLOCK PORT_RWLOCK;
 
-#elif !defined(PORT_IS_KERNEL_BUILD)
-typedef struct PORT_SPINLOCK PORT_SPINLOCK;
-#else
+#if PORT_IS_KERNEL_BUILD
 #include "nvport/nvport.h"
 #endif
 
@@ -143,10 +129,34 @@ typedef struct _NVLOG_LOGGER
     NvU32           nextFree;
     /** Total number of free buffer slots */
     NvU32           totalFree;
-    /** Lock for all buffer oprations */
+    /** Lock for some buffer oprations */
     PORT_SPINLOCK*  mainLock;
+    /** Lock for creating/deleting pBuffers and accessing them from RmCtrls */
+    PORT_MUTEX*  buffersLock;
+    /** Lock for registering/deregistering flush callbacks */
+    PORT_RWLOCK  *flushCbsLock;
 } NVLOG_LOGGER;
 extern NVLOG_LOGGER NvLogLogger;
+
+/**
+ * NvLog uses two locks:
+ * - NVLOG_LOGGER::mainLock is used to protect some accesses to pBuffers, or
+ * an individual pBuffers entry depending on locking flags.
+ * - NVLOG_LOGGER::buffersLock is used to protect creating/deleting pBuffers and accessing them
+ * from certain RmCtrl handlers.
+ *
+ * Historically in most contexts obtaining RMAPI lock would suffice, and mainLock would optionally
+ * be used for certain buffers. Ioctl NV_ESC_RM_LOCKLESS_DIAGNOSTIC cannot touch RMAPI lock and needs
+ * to access NvLog. The latter operation might race if called at an inopportune time: e.g. if the
+ * ioctl is called during RM init when KGSP creates/deletes GSP NvLog buffers. Using buffersLock is
+ * thus necessary to resolve the potential race.
+ *
+ * This leads to an unfortunate sequence where mainLock and buffersLock are nested. The latter lock
+ * cannot be removed as it is used in IRQ paths.
+ *
+ * This should be refactored to use a single RWLock that does conditional acquire in possible IRQ
+ * paths.
+ */
 
 //
 // Buffer flags
@@ -194,6 +204,11 @@ extern NVLOG_LOGGER NvLogLogger;
 #define NVLOG_BUFFER_FLAGS_FORMAT_PRINTF                 0
 #define NVLOG_BUFFER_FLAGS_FORMAT_LIBOS_LOG              1
 #define NVLOG_BUFFER_FLAGS_FORMAT_MEMTRACK               2
+
+// Never deallocate this buffer until RM is unloaded
+#define NVLOG_BUFFER_FLAGS_PRESERVE                     11:11
+#define NVLOG_BUFFER_FLAGS_PRESERVE_NO                  0
+#define NVLOG_BUFFER_FLAGS_PRESERVE_YES                 1
 
 // Buffer GPU index
 #define NVLOG_BUFFER_FLAGS_GPU_INSTANCE              31:24
@@ -423,6 +438,26 @@ typedef enum _NVLOG_ARGTYPE
     NVLOG_ARGTYPE_FLOAT,
     NVLOG_ARGTYPE__COUNT
 } NVLOG_ARGTYPE;
+
+// Default flags for NvLog registry, used for single-buffer option or the read fails
+#ifndef   NVLOG_DEFAULT_FLAGS
+#define   NVLOG_DEFAULT_FLAGS                                                  \
+    (                                                                          \
+        DRF_NUM(_REG_STR_RM, _NVLOG, _BUFFER_FLAGS,                            \
+            (                                                                  \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _DISABLED,   _NO)       |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _TYPE,       _RING)     |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _EXPANDABLE, _NO)       |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _NONPAGED,   _YES)      |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _LOCKING,    _STATE)    |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _OCA,        _YES)                 \
+            ))                                                      |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _BUFFER_SIZE,   _DEFAULT)      |          \
+        DRF_NUM(_REG_STR_RM, _NVLOG, _RUNTIME_LEVEL, 0)             |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _TIMESTAMP,     _64)           |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _INITED,        _YES)                     \
+    )
+#endif // NVLOG_DEFAULT_FLAGS
 
 /**
  * @brief General info about the NvLog Print system

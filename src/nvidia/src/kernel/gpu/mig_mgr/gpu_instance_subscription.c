@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,8 @@
  *
  *****************************************************************************/
 
+#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
+
 #include "core/core.h"
 #include "core/system.h"
 #include "gpu/gpu.h"
@@ -39,6 +41,8 @@
 #include "kernel/gpu/mig_mgr/gpu_instance_subscription.h"
 #include "kernel/gpu/mig_mgr/compute_instance_subscription.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/gr/kernel_watchdog.h"
+#include "kernel/gpu/rc/kernel_rc.h"
 
 #include "ctrl/ctrlc637.h"
 #include "core/locks.h"
@@ -55,12 +59,14 @@ _gisubscriptionClientSharesVASCrossPartition
     NvU32 targetedSwizzId
 )
 {
-    NV_STATUS status = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    RsClient *pRsClientShare;
     RsResourceRef *pDeviceRef;
     Device *pDevice;
     MIG_INSTANCE_REF shareRef;
+    RS_ITERATOR it;
+    NvBool bClientShareHasMatchingInstance = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pGPUInstanceSubscription != NULL, NV_TRUE);
 
@@ -86,12 +92,30 @@ _gisubscriptionClientSharesVASCrossPartition
     // is subscribed to a different GPU instance than the subscription request, or
     // if the sharing client isn't subscribed to any GPU instance.
     //
-    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                             pDevice->hClientShare,
-                                             &shareRef);
+    NV_ASSERT_OK_OR_RETURN(
+        serverGetClientUnderLock(&g_resServ, pDevice->hClientShare, &pRsClientShare));
 
+    it = clientRefIter(pRsClientShare, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
 
-    return (status != NV_OK) || (shareRef.pKernelMIGGpuInstance->swizzId != targetedSwizzId);
+    while (clientRefIterNext(pRsClientShare, &it))
+    {
+        pDevice = dynamicCast(it.pResourceRef->pResource, Device);
+
+        if ((pGpu != GPU_RES_GET_GPU(pDevice)) ||
+            (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice,
+                                             &shareRef) != NV_OK))
+        {
+            continue;
+        }
+
+        if (shareRef.pKernelMIGGpuInstance->swizzId == targetedSwizzId)
+        {
+            bClientShareHasMatchingInstance = NV_TRUE;
+            break;
+        }
+    }
+
+    return !bClientShareHasMatchingInstance;
 }
 
 NV_STATUS
@@ -104,11 +128,13 @@ gisubscriptionConstruct_IMPL
 {
     NVC637_ALLOCATION_PARAMETERS *pUserParams = pRmAllocParams->pAllocParams;
     RsClient *pRsClient = pCallContext->pClient;
+    RmClient *pRmClient = dynamicCast(pRsClient, RmClient);
     OBJGPU *pGpu;
     KernelMIGManager *pKernelMIGManager;
     NvU32 swizzId;
     NV_STATUS status;
 
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
     pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
 
     osRmCapInitDescriptor(&pGPUInstanceSubscription->dupedCapDescriptor);
@@ -126,14 +152,20 @@ gisubscriptionConstruct_IMPL
     }
 
     //
-    // Root-SwizzID is a special swizzID which doesn't have any GPU instance 
-    // associated with it. It can be subscribed to even without GPU instances 
+    // Disable RMCTRL Cache before subscribe to GPU instance.
+    // RMCTRL-CACHE-TODO: remove the workaround when CORERM-5016 is done.
+    //
+    rmapiControlCacheSetMode(NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_DISABLE);
+
+    //
+    // Root-SwizzID is a special swizzID which doesn't have any GPU instance
+    // associated with it. It can be subscribed to even without GPU instances
     //
     if (swizzId == NVC637_DEVICE_PROFILING_SWIZZID)
     {
         // Check if this is a root-client or un-privileged device profiling is allowed
         if (gpuIsRmProfilingPrivileged(pGpu) &&
-            !rmclientIsAdminByHandle(pRmAllocParams->hClient, pCallContext->secInfo.privLevel))
+            !rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
         {
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
         }
@@ -231,7 +263,7 @@ gisubscriptionCopyConstruct_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
 
     {
-        // non kernel clients are not allowed to dup GPU instances 
+        // non kernel clients are not allowed to dup GPU instances
         NV_CHECK_OR_RETURN(LEVEL_SILENT, pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
                            NV_ERR_NOT_SUPPORTED);
     }
@@ -342,6 +374,92 @@ gisubscriptionCanCopy_IMPL
     return NV_TRUE;
 }
 
+/*!
+ * @brief  Helper function to allocate and init KERNEL_WATCHDOG under the CI if it's GFX-capable
+ */
+static NV_STATUS
+_gisubscriptionAllocKernelWatchdog
+(
+    OBJGPU *pGpu,
+    MIG_COMPUTE_INSTANCE *pMIGComputeInstance
+)
+{
+    // Allocate watchdog channel for valid GFX-capable CI
+    if (pMIGComputeInstance->bValid && (pMIGComputeInstance->resourceAllocation.gfxGpcCount > 0))
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+        RsResourceRef *pKernelWatchdogRef;
+        KernelWatchdog *pKernelWatchdog;
+
+        NV_PRINTF(LEVEL_INFO, "Allocating KERNEL_WATCHDOG object for CI hClient 0x%x, hSubdevice 0x%x, gfxGpcCount(%d)\n",
+                  pMIGComputeInstance->instanceHandles.hClient,
+                  pMIGComputeInstance->instanceHandles.hSubdevice,
+                  pMIGComputeInstance->resourceAllocation.gfxGpcCount);
+
+        NV_ASSERT_OK_OR_RETURN(
+            pRmApi->AllocWithHandle(pRmApi,
+                                    pMIGComputeInstance->instanceHandles.hClient,
+                                    pMIGComputeInstance->instanceHandles.hSubdevice,
+                                    KERNEL_WATCHDOG_OBJECT_ID,
+                                    KERNEL_WATCHDOG,
+                                    NvP64_NULL,
+                                    0));
+
+        NV_ASSERT_OK_OR_RETURN(
+            serverutilGetResourceRefWithType(pMIGComputeInstance->instanceHandles.hClient,
+                                             KERNEL_WATCHDOG_OBJECT_ID,
+                                             classId(KernelWatchdog),
+                                             &pKernelWatchdogRef));
+
+        pKernelWatchdog = dynamicCast(pKernelWatchdogRef->pResource, KernelWatchdog);
+
+        NV_ASSERT_OR_RETURN(pKernelWatchdog != NULL, NV_ERR_INVALID_STATE);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, krcWatchdogInit(pGpu, pKernelRc, pKernelWatchdog));
+    }
+    
+    return NV_OK;
+}
+
+/*!
+ * @brief  Helper function to shutdown and free KERNEL_WATCHDOG under the CI
+ */
+static NV_STATUS
+_gisubscriptionFreeKernelWatchdog
+(
+    OBJGPU *pGpu,
+    MIG_COMPUTE_INSTANCE *pMIGComputeInstance
+)
+{
+    if (pMIGComputeInstance->bValid && (pMIGComputeInstance->resourceAllocation.gfxGpcCount > 0))
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        RsResourceRef *pKernelWatchdogRef;
+        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+        KernelWatchdog *pKernelWatchdog;
+
+        NV_PRINTF(LEVEL_INFO, "Freeing KERNEL_WATCHDOG object for CI hClient 0x%x, gfxGpcCount(%d)\n",
+                  pMIGComputeInstance->instanceHandles.hClient,
+                  pMIGComputeInstance->resourceAllocation.gfxGpcCount);
+
+        NV_ASSERT_OK_OR_RETURN(
+            serverutilGetResourceRefWithType(pMIGComputeInstance->instanceHandles.hClient,
+                                             KERNEL_WATCHDOG_OBJECT_ID,
+                                             classId(KernelWatchdog),
+                                             &pKernelWatchdogRef));
+  
+        pKernelWatchdog = dynamicCast(pKernelWatchdogRef->pResource, KernelWatchdog);
+        NV_ASSERT_OR_RETURN(pKernelWatchdog != NULL, NV_ERR_INVALID_STATE);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, krcWatchdogShutdown(pGpu, pKernelRc, pKernelWatchdog));
+
+        pRmApi->Free(pRmApi, pMIGComputeInstance->instanceHandles.hClient, KERNEL_WATCHDOG_OBJECT_ID);
+    }
+
+    return NV_OK;
+}
+
 //
 // gisubscriptionCtrlCmdExecPartitionsCreate
 //
@@ -359,17 +477,21 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
+    NvU32 i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    if (!rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
-                                          NV_RM_CAP_SYS_SMC_CONFIG,
-                                          pCallContext->secInfo.privLevel))
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pGPUInstanceSubscription), RmClient);
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
+
+    if (!rmclientIsCapableOrAdmin(pRmClient,
+                                  NV_RM_CAP_SYS_SMC_CONFIG,
+                                  pCallContext->secInfo.privLevel))
     {
         NV_PRINTF(LEVEL_ERROR, "Non-privileged context issued privileged cmd\n");
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -378,6 +500,20 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
 
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED), NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(IS_MIG_IN_USE(pGpu), NV_ERR_INVALID_STATE);
+
+    // Check whether CI Manipulation is disabled for vGPU.
+    if (IS_VIRTUAL(pGpu)) 
+    { 
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+ 
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_ARGUMENT); 
+
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED, _FALSE,
+                         pVSI->vgpuConfig.vgpuDeviceCapsBits)) 
+        { 
+            return NV_ERR_NOT_SUPPORTED; 
+        } 
+    }
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, (pParams->execPartCount <= NVC637_CTRL_MAX_EXEC_PARTITIONS),
                      NV_ERR_INVALID_ARGUMENT);
@@ -405,32 +541,74 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
         {
             .type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_REQUEST,
             .inst.request.count = pParams->execPartCount,
-            .inst.request.pReqComputeInstanceInfo = pParams->execPartInfo
+            .inst.request.pReqComputeInstanceInfo = pParams->execPartInfo,
+            .inst.request.requestFlags = pParams->flags
         };
 
-        if (hypervisorIsVgxHyper() &&
-            FLD_TEST_REF(NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID, _TRUE, pParams->flags))
+        if (!gpuIsSriovEnabled(pGpu))
         {
-            request.type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_REQUEST_WITH_IDS;
+            request.inst.request.requestFlags = FLD_SET_DRF(C637_CTRL, _DMA_EXEC_PARTITIONS_CREATE_REQUEST, _WITH_PART_ID, _FALSE, request.inst.request.requestFlags);
         }
 
         if (IS_VIRTUAL(pGpu))
         {
-            status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
-                                                       pParams->bQuery,
-                                                       request,
-                                                       pParams->execPartId,
-                                                       NV_TRUE /* create MIG compute instance capabilities */);
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_MIRROR_HOST_CI_ON_GUEST))
+            {
+                NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS export;
+                GPUMGR_SAVE_COMPUTE_INSTANCE save;
+
+                KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS restore =
+                {
+                    .type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_RESTORE,
+                    .inst.restore.pComputeInstanceSave = &save,
+                };
+
+                for (i = 0; i < pParams->execPartCount; i++)
+                {
+                    portMemSet(&export, 0, sizeof(export));
+                    export.id = pParams->execPartId[i];
+
+                    NV_RM_RPC_CONTROL(pGpu, pKernelMIGGpuInstance->instanceHandles.hClient,
+                        pKernelMIGGpuInstance->instanceHandles.hSubscription,
+                        NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT,
+                        &export,
+                        sizeof(export), status);
+
+                    NV_ASSERT_OK_OR_RETURN(status);
+
+                    portMemSet(&save, 0, sizeof(save));
+                    save.bValid = NV_TRUE;
+                    save.id = pParams->execPartId[i];
+                    save.ciInfo = export.info;
+
+                    status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
+                                                    pParams->bQuery, restore, &pParams->execPartId[i], NV_TRUE);
+                }
+            }
+            else
+            {
+                status = kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
+                                                            pParams->bQuery,
+                                                            request,
+                                                            pParams->execPartId,
+                                                            NV_TRUE /* create MIG compute instance capabilities */);
+            }
         }
         else
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+
+        {
+            for (i = 0; i < pParams->execPartCount; i++)
+            {
+                gpumgrCacheCreateComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                                 pParams->execPartId[i]);
+            }
+        }
     }
     else
     {
-        NvU32 i;
-
         for (i = 0; i < pParams->execPartCount; i++)
         {
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -439,7 +617,7 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
             KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS restore =
             {
                 .type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_RESTORE,
-                .inst.restore.pComputeInstanceSave = &save, 
+                .inst.restore.pComputeInstanceSave = &save,
             };
             portMemSet(&export, 0, sizeof(export));
             export.id = pParams->execPartId[i];
@@ -461,11 +639,23 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
             NV_ASSERT_OK_OR_RETURN(
                 kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
                                                   NV_FALSE, restore, &pParams->execPartId[i], NV_TRUE));
+
+            gpumgrCacheCreateComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                             pParams->execPartId[i]);
+        }
+    }
+
+    if (gpuIsClassSupported(pGpu, KERNEL_WATCHDOG) &&
+        !(IS_GSP_CLIENT(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))
+    {
+        for (i = 0; i < pParams->execPartCount; i++)
+        {
+            NV_ASSERT_OK_OR_RETURN(_gisubscriptionAllocKernelWatchdog(pGpu, &pKernelMIGGpuInstance->MIGComputeInstance[pParams->execPartId[i]]));
         }
     }
 
     //
-    // Generate a subdevice event stating something has changed in GPU instance 
+    // Generate a subdevice event stating something has changed in GPU instance
     // config. Clients currently do not care about changes and their scope
     //
     if (!pParams->bQuery)
@@ -495,16 +685,20 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     NvU32 execPartIdx;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmClient *pRmClient;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    if (!rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
-                                          NV_RM_CAP_SYS_SMC_CONFIG,
-                                          pCallContext->secInfo.privLevel))
+    pRmClient = dynamicCast(RES_GET_CLIENT(pGPUInstanceSubscription), RmClient);
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
+
+    if (!rmclientIsCapableOrAdmin(pRmClient,
+                                  NV_RM_CAP_SYS_SMC_CONFIG,
+                                  pCallContext->secInfo.privLevel))
     {
         NV_PRINTF(LEVEL_ERROR, "Non-privileged context issued privileged cmd\n");
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -516,13 +710,27 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
 
     NV_ASSERT_OR_RETURN(IS_MIG_IN_USE(pGpu), NV_ERR_INVALID_STATE);
 
+    // Check whether CI Manipulation is disabled for vGPU.
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_ARGUMENT);
+        
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED, _FALSE, 
+                         pVSI->vgpuConfig.vgpuDeviceCapsBits))
+        {   
+            return NV_ERR_NOT_SUPPORTED;
+        }   
+    }
+
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pParams->execPartCount <= NVC637_CTRL_MAX_EXEC_PARTITIONS,
                      NV_ERR_INVALID_ARGUMENT);
 
     // Check for trivial arguments
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pParams->execPartCount > 0, NV_WARN_NOTHING_TO_DO);
 
-    // Check that the passed indices are valid compute instances 
+    // Check that the passed indices are valid compute instances
     for (execPartIdx = 0; execPartIdx < pParams->execPartCount; ++execPartIdx)
     {
         NvU32 execPartId = pParams->execPartId[execPartIdx];
@@ -536,9 +744,16 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
 
     for (execPartIdx = 0; execPartIdx < pParams->execPartCount; ++execPartIdx)
     {
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+
+        if (gpuIsClassSupported(pGpu, KERNEL_WATCHDOG) &&
+            !(IS_GSP_CLIENT(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))
+        {
+            NV_ASSERT_OK_OR_RETURN(_gisubscriptionFreeKernelWatchdog(pGpu, &pKernelMIGGpuInstance->MIGComputeInstance[pParams->execPartId[execPartIdx]]));
+        }
+
         if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
         {
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 kmigmgrDeleteComputeInstance(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
                                              pParams->execPartId[execPartIdx],
@@ -548,10 +763,12 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+        gpumgrCacheDestroyComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                          pParams->execPartId[execPartIdx]);
     }
 
     //
-    // Generate a subdevice event stating something has changed in GPU instance 
+    // Generate a subdevice event stating something has changed in GPU instance
     // config. Clients currently do not care about changes and their scope
     //
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_SMC_CONFIG_UPDATE, NULL, 0, 0, 0);
@@ -590,19 +807,25 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
     ComputeInstanceSubscription *pComputeInstanceSubscription = NULL;
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     NvU32 ciIdx;
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription);
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pGPUInstanceSubscription), RmClient);
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
+
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NvBool bEnumerateAll = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
-    NvBool bEnumerateAll = rmclientIsCapableOrAdminByHandle(hClient, 
-                                                            NV_RM_CAP_SYS_SMC_CONFIG,
-                                                            pCallContext->secInfo.privLevel);
+    // Capability checks shouldn't be done on
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        bEnumerateAll = rmclientIsCapableOrAdmin(pRmClient,
+                                                 NV_RM_CAP_SYS_SMC_CONFIG,
+                                                 pCallContext->secInfo.privLevel);
+    }
 
     MIG_COMPUTE_INSTANCE *pTargetComputeInstanceInfo = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED),
                         NV_ERR_NOT_SUPPORTED);
@@ -612,8 +835,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
     (void)cisubscriptionGetComputeInstanceSubscription(RES_GET_CLIENT(pGPUInstanceSubscription), RES_GET_HANDLE(pGPUInstanceSubscription), &pComputeInstanceSubscription);
     if (pComputeInstanceSubscription != NULL)
     {
-        bEnumerateAll = NV_FALSE;
-        pTargetComputeInstanceInfo = pComputeInstanceSubscription->pMIGComputeInstance;
+        pTargetComputeInstanceInfo = cisubscriptionGetMIGComputeInstance(pComputeInstanceSubscription);
     }
     else if (!bEnumerateAll)
     {
@@ -640,19 +862,39 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
         ++pParams->execPartCount;
 
         pOutInfo->gpcCount = pMIGComputeInstance->resourceAllocation.gpcCount;
+        pOutInfo->gfxGpcCount = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
         pOutInfo->veidCount = pMIGComputeInstance->resourceAllocation.veidCount;
-        pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      NV2080_ENGINE_TYPE_COPY(0));
+
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTS_SPLIT_CE_RANGES))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            ENGTYPE_BIT_VECTOR globalEngines;
+            NV_ASSERT_OK_OR_RETURN(
+                kmigmgrEngBitVectorXlate(&pKernelMIGGpuInstance->resourceAllocation.localEngines,
+                                         &pMIGComputeInstance->resourceAllocation.engines,
+                                         &pKernelMIGGpuInstance->resourceAllocation.engines, &globalEngines));
+            pOutInfo->ceCount = kmigmgrCountEnginesInRange(&globalEngines,
+                                                           kmigmgrGetAsyncCERange_HAL(pGpu, pKernelMIGManager));
+        }
+        else
+        {
+            pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
+                                                          RM_ENGINE_TYPE_COPY(0));
+        }
+
         pOutInfo->nvEncCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      NV2080_ENGINE_TYPE_NVENC(0));
+                                                      RM_ENGINE_TYPE_NVENC(0));
         pOutInfo->nvDecCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      NV2080_ENGINE_TYPE_NVDEC(0));
+                                                      RM_ENGINE_TYPE_NVDEC(0));
         pOutInfo->nvJpgCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      NV2080_ENGINE_TYPE_NVJPG);
+                                                      RM_ENGINE_TYPE_NVJPG);
         pOutInfo->ofaCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      NV2080_ENGINE_TYPE_OFA);
+                                                      RM_ENGINE_TYPE_OFA(0));
         pOutInfo->sharedEngFlag = pMIGComputeInstance->sharedEngFlag;
         pOutInfo->veidStartOffset = pMIGComputeInstance->resourceAllocation.veidOffset;
+        pOutInfo->smCount = pMIGComputeInstance->resourceAllocation.smCount;
+        pOutInfo->computeSize = pMIGComputeInstance->computeSize;
+        pOutInfo->spanStart = pMIGComputeInstance->spanStart;
     }
 
     return status;
@@ -676,7 +918,7 @@ gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     NvU32 ciIdx;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED),
                         NV_ERR_NOT_SUPPORTED);
@@ -699,8 +941,9 @@ gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL
         ct_assert(NV_UUID_LEN == NVC637_UUID_LEN);
         ct_assert(NV_UUID_STR_LEN == NVC637_UUID_STR_LEN);
 
-        nvGetSmcUuidString(&pMIGComputeInstance->uuid,
-                           pParams->execPartUuid[pParams->execPartCount].str);
+        nvGetUuidString(&pMIGComputeInstance->uuid,
+                        RM_UUID_PREFIX_MIG,
+                        pParams->execPartUuid[pParams->execPartCount].str);
 
         ++pParams->execPartCount;
     }
@@ -726,13 +969,17 @@ gisubscriptionCtrlCmdExecPartitionsExport_IMPL
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmClient     *pRmClient;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
+    pRmClient = dynamicCast(RES_GET_CLIENT(pGPUInstanceSubscription), RmClient);
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
+
     // An unprivileged client has no use case for import/export
-    if (!rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
-                                          NV_RM_CAP_SYS_SMC_CONFIG,
-                                          pCallContext->secInfo.privLevel))
+    if (!rmclientIsCapableOrAdmin(pRmClient,
+                                  NV_RM_CAP_SYS_SMC_CONFIG,
+                                  pCallContext->secInfo.privLevel))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
@@ -748,17 +995,14 @@ gisubscriptionCtrlCmdExecPartitionsExport_IMPL
     {
         CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS status = NV_OK;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     if (pParams->id >= NV_ARRAY_ELEMENTS(pGPUInstance->MIGComputeInstance))
@@ -772,8 +1016,13 @@ gisubscriptionCtrlCmdExecPartitionsExport_IMPL
     portMemCopy(pParams->info.uuid, sizeof(pParams->info.uuid),
                 pMIGComputeInstance->uuid.uuid, sizeof(pMIGComputeInstance->uuid.uuid));
     pParams->info.sharedEngFlags = pMIGComputeInstance->sharedEngFlag;
+    pParams->info.gfxGpcCount    = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
     pParams->info.veidOffset     = pMIGComputeInstance->resourceAllocation.veidOffset;
     pParams->info.veidCount      = pMIGComputeInstance->resourceAllocation.veidCount;
+    pParams->info.smCount        = pMIGComputeInstance->resourceAllocation.smCount;
+    pParams->info.spanStart      = pMIGComputeInstance->spanStart;
+    pParams->info.computeSize    = pMIGComputeInstance->computeSize;
+
     for (gpcIdx = 0; gpcIdx < pMIGComputeInstance->resourceAllocation.gpcCount; ++gpcIdx)
     {
          pParams->info.gpcMask |= NVBIT32(pMIGComputeInstance->resourceAllocation.gpcIds[gpcIdx]);
@@ -800,13 +1049,17 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmClient     *pRmClient;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
+    pRmClient = dynamicCast(RES_GET_CLIENT(pGPUInstanceSubscription), RmClient);
+    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
+
     // An unprivileged client has no use case for import/export
-    if (!rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
-                                          NV_RM_CAP_SYS_SMC_CONFIG,
-                                          pCallContext->secInfo.privLevel))
+    if (!rmclientIsCapableOrAdmin(pRmClient,
+                                  NV_RM_CAP_SYS_SMC_CONFIG,
+                                  pCallContext->secInfo.privLevel))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
@@ -822,14 +1075,14 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
     {
         CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
 
         if (status != NV_OK)
             return status;
@@ -840,7 +1093,7 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
         KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS restore =
         {
             .type = KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_RESTORE,
-            .inst.restore.pComputeInstanceSave = &save, 
+            .inst.restore.pComputeInstanceSave = &save,
         };
 
         portMemSet(&save, 0, sizeof(save));
@@ -852,13 +1105,20 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pGPUInstance, NV_FALSE, restore, &pParams->id, NV_FALSE),
+                kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager,
+                 pGPUInstance, NV_FALSE, restore, &pParams->id, pParams->bCreateCap),
                 cleanup_rpc);
         }
         else
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+    }
+
+    if (gpuIsClassSupported(pGpu, KERNEL_WATCHDOG) &&
+        !(IS_GSP_CLIENT(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))
+    {
+        NV_ASSERT_OK_OR_GOTO(status, _gisubscriptionAllocKernelWatchdog(pGpu, &pGPUInstance->MIGComputeInstance[pParams->id]), cleanup_rpc);
     }
 
     return NV_OK;
@@ -879,7 +1139,7 @@ cleanup_rpc:
                             RES_GET_HANDLE(pGPUInstanceSubscription),
                             NVC637_CTRL_CMD_EXEC_PARTITIONS_DELETE,
                             &params,
-                            sizeof(params))); 
+                            sizeof(params)));
     }
 
     return status;
@@ -1006,3 +1266,43 @@ done:
     return;
 }
 
+NV_STATUS
+gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
+(
+    GPUInstanceSubscription *pGPUInstanceSubscription,
+    NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    Subdevice *pSubdevice = GPU_RES_GET_SUBDEVICE(pGPUInstanceSubscription);
+
+    return kmigmgrComputeProfileGetCapacity(pGpu, pKernelMIGManager, pKernelMIGGpuInstance->pProfile,
+                                            pKernelMIGGpuInstance, RES_GET_CLIENT_HANDLE(pGPUInstanceSubscription),
+                                            RES_GET_HANDLE(pSubdevice), pParams);
+}
+
+NV_STATUS
+gisubscriptionCtrlCmdGetUuid_IMPL
+(
+    GPUInstanceSubscription *pGPUInstanceSubscription,
+    NVC637_CTRL_GET_UUID_PARAMS *pParams
+)
+{
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, !pGPUInstanceSubscription->bDeviceProfiling,
+                       NV_ERR_NOT_SUPPORTED);
+
+    portMemCopy(pParams->uuid, sizeof(pParams->uuid),
+                pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid,
+                sizeof(pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid));
+
+    nvGetUuidString((void*)pParams->uuid,
+                    RM_UUID_PREFIX_MIG,
+                    pParams->uuidStr);
+
+    pParams->uuidStr[1] = 'G';
+    pParams->uuidStr[2] = 'I';
+
+    return NV_OK;
+}

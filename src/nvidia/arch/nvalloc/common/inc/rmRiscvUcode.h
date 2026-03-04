@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,8 +37,9 @@ typedef struct {
     //
     // Version 1
     // Version 2
-    // Vesrion 3 = for Partition boot
-    // Vesrion 4 = for eb riscv boot
+    // Version 3 = for Partition boot
+    // Version 4 = for eb riscv boot
+    // Version 5 = Support signing entire RISC-V image as "code" in code section for hopper and later.
     //
     NvU32  version;                         // structure version
     NvU32  bootloaderOffset;
@@ -75,6 +76,20 @@ typedef struct {
     //
     NvU32  swbromDataOffset;
     NvU32  swbromDataSize;
+    //
+    // Total size of FB carveout (image and reserved space).
+    //
+    NvU32  fbReservedSize;
+    //
+    // Indicates whether the entire RISC-V image is signed as "code" in code section.
+    //
+    NvU32  bSignedAsCode;
+    //
+    // SMP (multihart) and PLIC (split interrupts)
+    // enablement options
+    //
+    NvU32 bIsSmp;
+    NvU32 bIsPlicEnabled;
 } RM_RISCV_UCODE_DESC;
 
 #endif  // RM_RISCV_UCODE_H

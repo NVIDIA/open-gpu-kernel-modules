@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,12 @@
 #include "class/cl0071.h" // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
+#include "class/cl0042.h" // NV_MEMORY_EXTENDED_USER
 
 #include "ctrl/ctrl0041.h" // NV04_MEMORY
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
+
+#include "nvmisc.h"
 
 typedef NV_STATUS RmVidHeapControlFunc(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 
@@ -41,13 +44,11 @@ typedef struct {
 } RmVidHeapControlEntry;
 
 // forward declarations
-static NV_STATUS _nvos32FunctionAllocDepthWidthHeight(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocSize(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocSizeRange(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocTiledPitchHeight(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionFree(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionInfo(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
-static NV_STATUS _nvos32FunctionDump(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionReleaseReacquireCompr(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionGetMemAlignment(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionHwAlloc(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
@@ -56,13 +57,11 @@ static NV_STATUS _nvos32FunctionAllocOsDesc(DEPRECATED_CONTEXT *, NVOS32_PARAMET
 
 static const RmVidHeapControlEntry rmVidHeapControlTable[] = {
 
-    { NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT,  _nvos32FunctionAllocDepthWidthHeight },
     { NVOS32_FUNCTION_ALLOC_SIZE,                _nvos32FunctionAllocSize },
     { NVOS32_FUNCTION_ALLOC_SIZE_RANGE,          _nvos32FunctionAllocSizeRange },
     { NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT,  _nvos32FunctionAllocTiledPitchHeight },
     { NVOS32_FUNCTION_FREE,                      _nvos32FunctionFree },
     { NVOS32_FUNCTION_INFO,                      _nvos32FunctionInfo },
-    { NVOS32_FUNCTION_DUMP,                      _nvos32FunctionDump },
     { NVOS32_FUNCTION_RELEASE_COMPR,             _nvos32FunctionReleaseReacquireCompr },
     { NVOS32_FUNCTION_REACQUIRE_COMPR,           _nvos32FunctionReleaseReacquireCompr },
     { NVOS32_FUNCTION_GET_MEM_ALIGNMENT,         _nvos32FunctionGetMemAlignment },
@@ -71,7 +70,7 @@ static const RmVidHeapControlEntry rmVidHeapControlTable[] = {
     { NVOS32_FUNCTION_ALLOC_OS_DESCRIPTOR,       _nvos32FunctionAllocOsDesc },
 };
 
-static NvU32 rmVidHeapControlTableSize = sizeof(rmVidHeapControlTable) / sizeof(rmVidHeapControlTable[0]);
+static NvU32 rmVidHeapControlTableSize = NV_ARRAY_ELEMENTS(rmVidHeapControlTable);
 
 void
 RmDeprecatedVidHeapControl
@@ -138,78 +137,18 @@ _rmVidHeapControlAllocCommon
 
     if (pUserParams->flags & NVOS32_ALLOC_FLAGS_VIRTUAL)
         externalClassId = NV50_MEMORY_VIRTUAL;
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pUserParams->attr2))
+        externalClassId = NV_MEMORY_EXTENDED_USER;
     else if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, pUserParams->attr))
         externalClassId = NV01_MEMORY_LOCAL_USER;
     else
         externalClassId = NV01_MEMORY_SYSTEM;
 
     status = pContext->RmAlloc(pContext, hClient, hDevice, phMemory, externalClassId,
-                               pUserParams);
+                               pUserParams, sizeof(*pUserParams));
 
     pArgs->free = 0;
     pArgs->total = 0;
-
-    return status;
-}
-
-static NV_STATUS
-_nvos32FunctionAllocDepthWidthHeight
-(
-    DEPRECATED_CONTEXT *pContext,
-    NVOS32_PARAMETERS  *pArgs
-)
-{
-    NV_MEMORY_ALLOCATION_PARAMS  allocParams = {0};
-    NvU32                        byteWidth;
-    NV_STATUS                    status = NV_OK;
-
-    // For NV3, scanline alignment is 32 bytes.
-    byteWidth = ((pArgs->data.AllocDepthWidthHeight.width * pArgs->data.AllocDepthWidthHeight.depth) + 7) >> 3;
-    pArgs->data.AllocDepthWidthHeight.size  = pArgs->data.AllocDepthWidthHeight.height * ((byteWidth + 31) & ~31);
-
-    // Range begin/end are captured only if the appropriate flag bit is set.
-    if (pArgs->data.AllocDepthWidthHeight.flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END)
-    {
-        allocParams.rangeLo    = pArgs->data.AllocDepthWidthHeight.rangeBegin;
-        allocParams.rangeHi    = pArgs->data.AllocDepthWidthHeight.rangeEnd;
-    }
-    else
-    {
-        allocParams.rangeLo    = 0;
-        allocParams.rangeHi    = 0;
-    }
-
-    #define ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_IN, _IN_OUT) \
-    _IN(owner, AllocDepthWidthHeight.owner) \
-    _IN(type, AllocDepthWidthHeight.type) \
-    _IN(flags, AllocDepthWidthHeight.flags) \
-    _IN(height, AllocDepthWidthHeight.height) \
-    _IN(width, AllocDepthWidthHeight.width) \
-    _IN_OUT(size, AllocDepthWidthHeight.size) \
-    _IN(alignment, AllocDepthWidthHeight.alignment) \
-    _IN_OUT(offset, AllocDepthWidthHeight.offset) \
-    _IN_OUT(attr, AllocDepthWidthHeight.attr) \
-    _IN_OUT(attr2, AllocDepthWidthHeight.attr2) \
-    _IN_OUT(format, AllocDepthWidthHeight.format) \
-    _IN_OUT(limit, AllocDepthWidthHeight.limit) \
-    _IN_OUT(address, AllocDepthWidthHeight.address) \
-    _IN_OUT(comprCovg, AllocDepthWidthHeight.comprCovg) \
-    _IN_OUT(zcullCovg, AllocDepthWidthHeight.zcullCovg) \
-    _IN_OUT(ctagOffset, AllocDepthWidthHeight.ctagOffset)
-
-    ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_COPY_IN, _COPY_IN);
-
-    pArgs->data.AllocDepthWidthHeight.partitionStride = 256;
-
-    // get memory
-    status = _rmVidHeapControlAllocCommon(pContext,
-                                          pArgs,
-                                          pArgs->hRoot,
-                                          pArgs->hObjectParent,
-                                          &pArgs->data.AllocDepthWidthHeight.hMemory,
-                                          &allocParams);
-
-    ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_NO_COPY, _COPY_OUT);
 
     return status;
 }
@@ -244,6 +183,7 @@ _nvos32FunctionAllocSize
     _IN(width, AllocSize.width) \
     _IN_OUT(size, AllocSize.size) \
     _IN(alignment, AllocSize.alignment) \
+    _IN(numaNode, AllocSize.numaNode) \
     _IN_OUT(offset, AllocSize.offset) \
     _IN_OUT(attr, AllocSize.attr) \
     _IN_OUT(attr2, AllocSize.attr2) \
@@ -289,6 +229,7 @@ _nvos32FunctionAllocSizeRange
     _IN(rangeHi, AllocSizeRange.rangeEnd) \
     _IN_OUT(size, AllocSizeRange.size) \
     _IN(alignment, AllocSizeRange.alignment) \
+    _IN(numaNode, AllocSizeRange.numaNode) \
     _IN_OUT(offset, AllocSizeRange.offset) \
     _IN_OUT(attr, AllocSizeRange.attr) \
     _IN_OUT(attr2, AllocSizeRange.attr2) \
@@ -350,6 +291,7 @@ _nvos32FunctionAllocTiledPitchHeight
     _IN(pitch, AllocTiledPitchHeight.pitch) \
     _IN_OUT(size, AllocTiledPitchHeight.size) \
     _IN(alignment, AllocTiledPitchHeight.alignment) \
+    _IN(numaNode, AllocTiledPitchHeight.numaNode) \
     _IN_OUT(offset, AllocTiledPitchHeight.offset) \
     _IN_OUT(attr, AllocTiledPitchHeight.attr) \
     _IN_OUT(attr2, AllocTiledPitchHeight.attr2) \
@@ -404,8 +346,7 @@ _nvos32FunctionInfo
     NVOS32_PARAMETERS  *pArgs
 )
 {
-    NV2080_CTRL_FB_GET_INFO_PARAMS  fbInfoParams = {0};
-    NV2080_CTRL_FB_INFO             fbInfoEntries[6] = {{0}};
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS  fbInfoParams = {0};
     NV_STATUS                       status;
     NvHandle                        hSubDevice;
     NvBool                          bMustFreeSubDevice;
@@ -419,26 +360,25 @@ _nvos32FunctionInfo
         return status;
 
     fbInfoParams.fbInfoListSize = 6;
-    fbInfoParams.fbInfoList = NV_PTR_TO_NvP64(&fbInfoEntries);
 
-    fbInfoEntries[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
-    fbInfoEntries[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
-    fbInfoEntries[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_TAX_SIZE_KB;
-    fbInfoEntries[3].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_BASE_KB;
-    fbInfoEntries[4].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_SIZE_KB;
-    fbInfoEntries[5].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_BASE_KB;
+    fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
+    fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
+    fbInfoParams.fbInfoList[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_TAX_SIZE_KB;
+    fbInfoParams.fbInfoList[3].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_BASE_KB;
+    fbInfoParams.fbInfoList[4].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_SIZE_KB;
+    fbInfoParams.fbInfoList[5].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_BASE_KB;
 
     status = pContext->RmControl(pContext, hClient, hSubDevice,
-                                 NV2080_CTRL_CMD_FB_GET_INFO,
+                                 NV2080_CTRL_CMD_FB_GET_INFO_V2,
                                  &fbInfoParams,
                                  sizeof(fbInfoParams));
 
-    pArgs->free = ((NvU64)fbInfoEntries[0].data << 10);
-    pArgs->total = ((NvU64)fbInfoEntries[1].data << 10);
-    pArgs->total += ((NvU64)fbInfoEntries[2].data << 10); // For vGPU, add FB tax incurred by host RM
-    pArgs->data.Info.base = ((NvU64)fbInfoEntries[3].data << 10);
-    pArgs->data.Info.size = ((NvU64)fbInfoEntries[4].data << 10);
-    pArgs->data.Info.offset = ((NvU64)fbInfoEntries[5].data << 10);
+    pArgs->free = ((NvU64)fbInfoParams.fbInfoList[0].data << 10);
+    pArgs->total = ((NvU64)fbInfoParams.fbInfoList[1].data << 10);
+    pArgs->total += ((NvU64)fbInfoParams.fbInfoList[2].data << 10); // For vGPU, add FB tax incurred by host RM
+    pArgs->data.Info.base = ((NvU64)fbInfoParams.fbInfoList[3].data << 10);
+    pArgs->data.Info.size = ((NvU64)fbInfoParams.fbInfoList[4].data << 10);
+    pArgs->data.Info.offset = ((NvU64)fbInfoParams.fbInfoList[5].data << 10);
 
     if (bMustFreeSubDevice)
     {
@@ -446,17 +386,6 @@ _nvos32FunctionInfo
     }
 
     return status;
-}
-
-static NV_STATUS
-_nvos32FunctionDump
-(
-    DEPRECATED_CONTEXT *pContext,
-    NVOS32_PARAMETERS  *pArgs
-)
-{
-    // Not supported since PMA
-    return NV_ERR_NOT_SUPPORTED;
 }
 
 static NV_STATUS
@@ -516,14 +445,6 @@ _nvos32FunctionGetMemAlignment
     _IN_OUT(alignPitch, AllocHintAlignment.alignPitch) \
     _IN_OUT(alignPad, AllocHintAlignment.alignPad) \
     _IN_OUT(alignMask, AllocHintAlignment.alignMask) \
-    _IN_OUT(alignOutputFlags[0], AllocHintAlignment.alignOutputFlags[0]) \
-    _IN_OUT(alignOutputFlags[1], AllocHintAlignment.alignOutputFlags[1]) \
-    _IN_OUT(alignOutputFlags[2], AllocHintAlignment.alignOutputFlags[2]) \
-    _IN_OUT(alignOutputFlags[3], AllocHintAlignment.alignOutputFlags[3]) \
-    _IN_OUT(alignBank[0], AllocHintAlignment.alignBank[0]) \
-    _IN_OUT(alignBank[1], AllocHintAlignment.alignBank[1]) \
-    _IN_OUT(alignBank[2], AllocHintAlignment.alignBank[2]) \
-    _IN_OUT(alignBank[3], AllocHintAlignment.alignBank[3]) \
     _IN_OUT(alignKind, AllocHintAlignment.alignKind) \
     _IN_OUT(alignAdjust, AllocHintAlignment.alignAdjust) \
     _IN_OUT(alignAttr2, AllocHintAlignment.alignAttr2)
@@ -603,7 +524,8 @@ _nvos32FunctionHwAlloc
                                pArgs->hObjectParent,
                                &pArgs->data.HwAlloc.allochMemory,
                                NV01_MEMORY_HW_RESOURCES,
-                               &allocParams);
+                               &allocParams,
+                               sizeof(allocParams));
 
     pArgs->data.HwAlloc.hResourceHandle = pArgs->data.HwAlloc.allochMemory;
 
@@ -654,7 +576,8 @@ _nvos32FunctionAllocOsDesc
                                pArgs->hObjectParent,
                                &pArgs->data.AllocOsDesc.hMemory,
                                NV01_MEMORY_SYSTEM_OS_DESCRIPTOR,
-                               &allocParams);
+                               &allocParams,
+                               sizeof(allocParams));
 
     return status;
 }

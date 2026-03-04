@@ -28,7 +28,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_va_space.h"
 
-NV_STATUS uvm_perf_heuristics_init()
+NV_STATUS uvm_perf_heuristics_init(void)
 {
     NV_STATUS status;
 
@@ -47,10 +47,9 @@ NV_STATUS uvm_perf_heuristics_init()
     return NV_OK;
 }
 
-void uvm_perf_heuristics_exit()
+void uvm_perf_heuristics_exit(void)
 {
     uvm_perf_access_counters_exit();
-    uvm_perf_prefetch_exit();
     uvm_perf_thrashing_exit();
 }
 
@@ -75,9 +74,6 @@ NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space)
     status = uvm_perf_thrashing_load(va_space);
     if (status != NV_OK)
         return status;
-    status = uvm_perf_prefetch_load(va_space);
-    if (status != NV_OK)
-        return status;
     status = uvm_perf_access_counters_load(va_space);
     if (status != NV_OK)
         return status;
@@ -85,11 +81,11 @@ NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space)
     return NV_OK;
 }
 
-NV_STATUS uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+void uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
-    return uvm_perf_thrashing_register_gpu(va_space, gpu);
+    uvm_perf_thrashing_register_gpu(va_space, gpu);
 }
 
 void uvm_perf_heuristics_stop(uvm_va_space_t *va_space)
@@ -105,6 +101,5 @@ void uvm_perf_heuristics_unload(uvm_va_space_t *va_space)
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
     uvm_perf_access_counters_unload(va_space);
-    uvm_perf_prefetch_unload(va_space);
     uvm_perf_thrashing_unload(va_space);
 }

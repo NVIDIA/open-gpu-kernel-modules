@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,8 @@
  * message structures, RM_SOE_COMMAND and RM_SOE_MESSAGE (respectively).
  */
 
+
+
 #include "flcnifcmn.h"
 
 #include "soe/soebif.h"
@@ -47,6 +49,9 @@
 #include "soe/soeifsmbpbi.h"
 #include "soe/soeifcore.h"
 #include "soe/soeifchnmgmt.h"
+#include "soe/soeiftnvl.h"
+#include "soe/soeifcci.h"
+#include "soe/soeifheartbeat.h"
 
 /*!
  * Defines the structure that must be populated to send any arbitrary command
@@ -67,6 +72,8 @@ typedef struct
         RM_SOE_BIF_CMD       bif;
         RM_SOE_CORE_CMD      core;
         RM_SOE_CHNMGMT_CMD   chnmgmt;
+        RM_SOE_TNVL_CMD      tnvl;
+        RM_SOE_CCI_CMD       cci;
     } cmd;
 } RM_FLCN_CMD_SOE,
 *PRM_FLCN_CMD_SOE;
@@ -89,6 +96,9 @@ typedef struct
         RM_SOE_THERM_MSG     soeTherm;
         RM_FLCN_MSG_SOE_INIT init;
         RM_SOE_CHNMGMT_MSG   chnmgmt;
+        RM_SOE_CORE_MSG      core;   
+        RM_SOE_CCI_MSG       cci;
+        RM_SOE_HEARTBEAT_MSG heartbeat;
     } msg;
 } RM_FLCN_MSG_SOE,
 *PRM_FLCN_MSG_SOE;
@@ -115,8 +125,12 @@ typedef struct
 #define RM_SOE_TASK_ID_IFR          0x0A
 #define RM_SOE_TASK_ID_CHNMGMT      0x0B
 #define RM_SOE_TASK_ID_RMMSG        0x0C
+#define RM_SOE_TASK_ID_CCI          0x0D
+#define RM_SOE_TASK_ID_FSPMGMT      0x0E
+#define RM_SOE_TASK_ID_HEARTBEAT    0x0F
+#define RM_SOE_TASK_ID_TNVL         0x10
 // Add new task ID here...
-#define RM_SOE_TASK_ID__END         0x0C
+#define RM_SOE_TASK_ID__END         0x11
 
 /*!
  * Unit-identifiers:
@@ -138,9 +152,11 @@ typedef struct
 #define  RM_SOE_UNIT_CORE            (0x0B)
 #define  RM_SOE_UNIT_IFR             (0x0C)
 #define  RM_SOE_UNIT_CHNMGMT         (0x0D)
+#define  RM_SOE_UNIT_CCI             (0x0E)
+#define  RM_SOE_UNIT_HEARTBEAT       (0x0F)
+#define  RM_SOE_UNIT_TNVL            (0x10)
 // Add new unit ID here...
-#define  RM_SOE_UNIT_END             (0x0D)
-
+#define  RM_SOE_UNIT_END             (0x11)
 
 #endif // _RMSOECMDIF_H_
 

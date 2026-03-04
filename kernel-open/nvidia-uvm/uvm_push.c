@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -25,6 +25,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_push.h"
 #include "uvm_channel.h"
+#include "uvm_global.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_linux.h"
@@ -55,6 +56,13 @@ static uvm_push_acquire_info_t *push_acquire_info_from_push(uvm_push_t *push)
     return &channel->push_acquire_infos[push->push_info_index];
 }
 
+bool uvm_push_allow_dependencies_across_gpus(void)
+{
+    // In Confidential Computing a GPU semaphore release cannot be waited on
+    // (acquired by) any other GPU, due to a mix of HW and SW constraints.
+    return !g_uvm_global.conf_computing_enabled;
+}
+
 // Acquire a single tracker entry. Subsequently pushed GPU work will not start
 // before the work tracked by tracker entry is complete.
 static void push_acquire_tracker_entry(uvm_push_t *push,
@@ -77,9 +85,14 @@ static void push_acquire_tracker_entry(uvm_push_t *push,
     if (channel == entry_channel)
         return;
 
-    semaphore_va = uvm_channel_tracking_semaphore_get_gpu_va_in_channel(entry_channel, channel);
     gpu = uvm_channel_get_gpu(channel);
 
+    // If dependencies across GPUs are disallowed, the caller is required to
+    // previously wait on such dependencies.
+    if (gpu != uvm_tracker_entry_gpu(tracker_entry))
+        UVM_ASSERT(uvm_push_allow_dependencies_across_gpus());
+
+    semaphore_va = uvm_channel_tracking_semaphore_get_gpu_va_in_channel(entry_channel, channel);
     gpu->parent->host_hal->semaphore_acquire(push, semaphore_va, (NvU32)tracker_entry->value);
 
     if (push_acquire_info) {
@@ -188,6 +201,17 @@ static void push_fill_info(uvm_push_t *push,
         push_set_description(push, format, args);
 }
 
+static NV_STATUS wait_for_other_gpus_if_needed(uvm_tracker_t *tracker, uvm_gpu_t *gpu)
+{
+    if (tracker == NULL)
+        return NV_OK;
+
+    if (uvm_push_allow_dependencies_across_gpus())
+        return NV_OK;
+
+    return uvm_tracker_wait_for_other_gpus(tracker, gpu);
+}
+
 static NV_STATUS push_begin_acquire_with_info(uvm_channel_t *channel,
                                               uvm_tracker_t *tracker,
                                               uvm_push_t *push,
@@ -234,6 +258,10 @@ NV_STATUS __uvm_push_begin_acquire_with_info(uvm_channel_manager_t *manager,
         UVM_ASSERT(dst_gpu != manager->gpu);
     }
 
+    status = wait_for_other_gpus_if_needed(tracker, manager->gpu);
+    if (status != NV_OK)
+        return status;
+
     status = push_reserve_channel(manager, type, dst_gpu, &channel);
     if (status != NV_OK)
         return status;
@@ -243,6 +271,9 @@ NV_STATUS __uvm_push_begin_acquire_with_info(uvm_channel_manager_t *manager,
     va_start(args, format);
     status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
     va_end(args);
+
+    if (status != NV_OK)
+        uvm_channel_release(channel, 1);
 
     return status;
 }
@@ -259,7 +290,11 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     va_list args;
     NV_STATUS status;
 
-    status = uvm_channel_reserve(channel);
+    status = wait_for_other_gpus_if_needed(tracker, uvm_channel_get_gpu(channel));
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_channel_reserve(channel, 1);
     if (status != NV_OK)
         return status;
 
@@ -267,15 +302,36 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
     va_end(args);
 
+    if (status != NV_OK)
+        uvm_channel_release(channel, 1);
+
     return status;
 }
 
-bool uvm_push_info_is_tracking_descriptions()
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS __uvm_push_begin_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                         uvm_push_t *push,
+                                                         const char *filename,
+                                                         const char *function,
+                                                         int line,
+                                                         const char *format, ...)
+{
+    va_list args;
+    NV_STATUS status;
+
+    va_start(args, format);
+    status = push_begin_acquire_with_info(channel, NULL, push, filename, function, line, format, args);
+    va_end(args);
+
+    return status;
+}
+
+bool uvm_push_info_is_tracking_descriptions(void)
 {
     return uvm_debug_enable_push_desc != 0;
 }
 
-bool uvm_push_info_is_tracking_acquires()
+bool uvm_push_info_is_tracking_acquires(void)
 {
     return uvm_debug_enable_push_acquire_info != 0;
 }
@@ -283,6 +339,7 @@ bool uvm_push_info_is_tracking_acquires()
 void uvm_push_end(uvm_push_t *push)
 {
     uvm_push_flag_t flag;
+
     uvm_channel_end_push(push);
 
     flag = find_first_bit(push->flags, UVM_PUSH_FLAG_COUNT);
@@ -294,6 +351,7 @@ void uvm_push_end(uvm_push_t *push)
 NV_STATUS uvm_push_wait(uvm_push_t *push)
 {
     uvm_tracker_entry_t entry;
+
     uvm_push_get_tracker_entry(push, &entry);
 
     return uvm_tracker_wait_for_entry(&entry);
@@ -332,11 +390,11 @@ void *uvm_push_inline_data_get(uvm_push_inline_data_t *data, size_t size)
     UVM_ASSERT(!uvm_global_is_suspended());
 
     UVM_ASSERT_MSG(uvm_push_get_size(data->push) + uvm_push_inline_data_size(data) + UVM_METHOD_SIZE + size <= UVM_MAX_PUSH_SIZE,
-            "push size %u inline data size %zu new data size %zu max push %u\n",
-            uvm_push_get_size(data->push), uvm_push_inline_data_size(data), size, UVM_MAX_PUSH_SIZE);
+                   "push size %u inline data size %zu new data size %zu max push %u\n",
+                   uvm_push_get_size(data->push), uvm_push_inline_data_size(data), size, UVM_MAX_PUSH_SIZE);
     UVM_ASSERT_MSG(uvm_push_inline_data_size(data) + size <= UVM_PUSH_INLINE_DATA_MAX_SIZE,
-            "inline data size %zu new data size %zu max %u\n",
-            uvm_push_inline_data_size(data), size, UVM_PUSH_INLINE_DATA_MAX_SIZE);
+                   "inline data size %zu new data size %zu max %u\n",
+                   uvm_push_inline_data_size(data), size, UVM_PUSH_INLINE_DATA_MAX_SIZE);
 
     data->next_data += size;
 
@@ -349,6 +407,7 @@ void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size
     size_t offset = 0;
     char *buffer;
 
+    UVM_ASSERT(alignment <= UVM_PAGE_SIZE_4K);
     UVM_ASSERT_MSG(IS_ALIGNED(alignment, UVM_METHOD_SIZE), "alignment %zu\n", alignment);
 
     offset = UVM_ALIGN_UP(next_ptr, alignment) - next_ptr;
@@ -371,11 +430,13 @@ uvm_gpu_address_t uvm_push_inline_data_end(uvm_push_inline_data_t *data)
         inline_data_address = (NvU64) (uintptr_t)(push->next + 1);
     }
     else {
+        uvm_pushbuffer_t *pushbuffer = uvm_channel_get_pushbuffer(channel);
+
         // Offset of the inlined data within the push.
         inline_data_address = (push->next - push->begin + 1) * UVM_METHOD_SIZE;
 
         // Add GPU VA of the push begin
-        inline_data_address += uvm_pushbuffer_get_gpu_va_for_push(channel->pool->manager->pushbuffer, push);
+        inline_data_address += uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
     }
 
     // This will place a noop right before the inline data that was written.
@@ -385,15 +446,15 @@ uvm_gpu_address_t uvm_push_inline_data_end(uvm_push_inline_data_t *data)
     return uvm_gpu_address_virtual(inline_data_address);
 }
 
-// Same as uvm_push_get_single_inline_buffer() but provides the specified
-// alignment.
-static void *push_get_single_inline_buffer_aligned(uvm_push_t *push,
-                                                   size_t size,
-                                                   size_t alignment,
-                                                   uvm_gpu_address_t *gpu_address)
+void *uvm_push_get_single_inline_buffer(uvm_push_t *push,
+                                        size_t size,
+                                        size_t alignment,
+                                        uvm_gpu_address_t *gpu_address)
 {
     uvm_push_inline_data_t data;
     void *buffer;
+
+    UVM_ASSERT(IS_ALIGNED(alignment, UVM_METHOD_SIZE));
 
     uvm_push_inline_data_begin(push, &data);
     buffer = uvm_push_inline_data_get_aligned(&data, size, alignment);
@@ -404,11 +465,6 @@ static void *push_get_single_inline_buffer_aligned(uvm_push_t *push,
     return buffer;
 }
 
-void *uvm_push_get_single_inline_buffer(uvm_push_t *push, size_t size, uvm_gpu_address_t *gpu_address)
-{
-    return push_get_single_inline_buffer_aligned(push, size, UVM_METHOD_SIZE, gpu_address);
-}
-
 NvU64 *uvm_push_timestamp(uvm_push_t *push)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
@@ -416,32 +472,31 @@ NvU64 *uvm_push_timestamp(uvm_push_t *push)
     NvU64 *timestamp;
     uvm_gpu_address_t address;
 
-    timestamp = (NvU64 *)push_get_single_inline_buffer_aligned(push, timestamp_size, timestamp_size, &address);
+    timestamp = (NvU64 *)uvm_push_get_single_inline_buffer(push, timestamp_size, timestamp_size, &address);
+
     // Timestamp is in the second half of the 16 byte semaphore release
     timestamp += 1;
 
     if (uvm_channel_is_ce(push->channel))
         gpu->parent->ce_hal->semaphore_timestamp(push, address.address);
-
-
-
-
     else
-        UVM_ASSERT_MSG(0, "Semaphore release timestamp on an unsupported channel.\n");
+        gpu->parent->sec2_hal->semaphore_timestamp(push, address.address);
 
     return timestamp;
 }
 
-bool uvm_push_method_validate(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data)
+bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
     if (subch == UVM_SUBCHANNEL_CE)
-        return gpu->parent->ce_hal->method_validate(push, method_address, method_data);
+        return gpu->parent->ce_hal->method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SUBCHANNEL_HOST)
-        return gpu->parent->host_hal->method_validate(push, method_address, method_data);
-    else if (subch == UVM_SW_OBJ_SUBCHANNEL)
-        return gpu->parent->host_hal->sw_method_validate(push, method_address, method_data);
+        return gpu->parent->host_hal->method_is_valid(push, method_address, method_data);
+    else if (subch == UVM_SUBCHANNEL_SW)
+        return gpu->parent->host_hal->sw_method_is_valid(push, method_address, method_data);
+    else if (subch == UVM_SUBCHANNEL_SEC2)
+        return true;
 
     UVM_ERR_PRINT("Unsupported subchannel 0x%x\n", subch);
     return false;

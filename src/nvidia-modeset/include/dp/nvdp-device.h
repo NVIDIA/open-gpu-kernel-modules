@@ -35,6 +35,10 @@ unsigned int nvDPGetEDIDSize(const NVDpyEvoRec *pDpyEvo);
 NvBool nvDPGetEDID(const NVDpyEvoRec *pDpyEvo, void *buffer, unsigned int size);
 void nvDPGetDpyGUID(NVDpyEvoPtr pDpyEvo);
 void nvDPDpyFree(NVDpyEvoPtr pDpyEvo);
+NvBool nvDPDpyIsDscPossible(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDPDpyGetDpcdRevision(const NVDpyEvoRec *pDpyEvo,
+                              unsigned int *major,
+                              unsigned int *minor);
 
 #ifdef __cplusplus
 };

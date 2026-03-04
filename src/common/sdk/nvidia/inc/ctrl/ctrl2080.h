@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080.finn
+// Source file:      ctrl/ctrl2080.finn
 //
 
 
@@ -40,6 +40,10 @@
 #include "ctrl2080/ctrl2080mc.h"
 #include "ctrl2080/ctrl2080fifo.h"
 #include "ctrl2080/ctrl2080fb.h"
+
+
+
+#include "ctrl2080/ctrl2080spdm.h"
 #include "ctrl2080/ctrl2080gr.h"
 #include "ctrl2080/ctrl2080bus.h"
 #include "ctrl2080/ctrl2080thermal.h"
@@ -70,14 +74,17 @@
 #include "ctrl2080/ctrl2080cipher.h"
 #include "ctrl2080/ctrl2080fla.h"
 #include "ctrl2080/ctrl2080gsp.h"
+#include "ctrl2080/ctrl2080pmu.h"
 
 
 #include "ctrl2080/ctrl2080grmgr.h"
-#include "ctrl2080/ctrl2080ucodefuzzer.h"
 
 
+#include "ctrl2080/ctrl2080vgpumgrinternal.h"
 #include "ctrl2080/ctrl2080hshub.h"
 /* include appropriate os-specific command header */
 
 
 #include "ctrl2080/ctrl2080unix.h"
+
+

@@ -1,0 +1,138 @@
+# extract-firmware-nouveau.py
+
+## Introduction
+
+This script is used to extract GSP-RM firmware binaries for Nouveau, the
+upstream Linux kernel driver for Nvidia GPUs.  This firmware is required
+by Nouveau to fully support Nvidia Turing and later GPU architectures.
+
+Nouveau uses GSP-RM the same way that the NVIDIA Linux Open GPU Kernel Module
+(aka "OpenRM") does.  GSP-RM is loaded into the GSP (GPU System Processor)
+on the Nvidia GPU and handles most of the resource management of the GPU.
+Unlike OpenRM, Nouveau only supports specific GSP-RM versions.
+
+Nvidia labels its software versions in the form of XXX.YYY.ZZ.  The GSP-RM
+Application Binary Interface (ABI) is not stable across versions.  This means
+that Nouveau needs to be programmed to support each new firmware version.
+End-users cannot simply upgrade the firmware version and expect Nouveau to
+still function.
+
+This script is used to generate new firmware images so that Nouveau
+developers can add support to Nouveau itself for new GSP-RM versions.  For
+end-users, Nouveau is already packaged with the firmware version(s) that it
+supports.
+
+## Sources
+
+Nouveau requires two sets of firmware images, and they are obtained from two
+different locations.  Both sources must support the new firmware versions.
+
+  1) The GSP-RM firmware binaries themselves, which are extracted from the
+     proprietary driver's ".run" installer file.  Typically there are two
+     images, one for TU10x/GA100 GPUs, and another for all other GPUs.  The
+     images are several tens of megabytes in size.
+
+  2) Several auxiliary firmware images and metadata, which are extracted
+     from the source files of this git repository.  There are multiple
+     specific images for each GPU architecture.
+
+For the .run file, the version is in the file name.  For example, version
+535.113.01 of the GSP-RM firmware can be found in the
+NVIDIA-Linux-x86_64-535.113.01.run file on Nvidia's website.
+
+For the auxiliary images, the git repository uses git "tags" to identify each
+version.  So for example, to generate firmware for version 535.113.01, issue
+the command `git checkout 535.113.01`.
+
+## Linux-firmware git repository
+
+The linux-firmware git repository (https://gitlab.com/kernel-firmware/linux-firmware)
+is a central repository for binary-only firmware images for various devices
+supported by Linux drivers.  The images are typically provided by the hardware
+vendors directly.
+
+Nvidia submits all firmware images required by Nouveau to linux-firmware.
+
+## Modes of Operation
+
+Nouveau expects the images to be located in the /lib/firmware/nvidia
+directory.  This script can be used not only to extract the images, but also
+to place them where they belong.
+
+The script can handle image extraction from both the git repository and the
+.run file.  The script has two modes of usage:
+
+  1) Generating new images for any Nouveau developers to support that new
+     version in Nouveau.
+
+  2) Generating new images for submission to the linux-firmware git
+     repository.
+
+Mode #2 is intended to be used only by Nvidia employees, as only these
+individuals should submit images to the linux-firmware git repository.
+However, Linux distro vendors may use Mode #2 to generate firmware packages
+for GSP-RM versions that are not (yet) available in linux-firmware.
+
+## Preparation
+
+The first step is use "git checkout" in the OpenRM git repository to switch
+to the desired version tag, e.g.
+
+    git checkout 570.133.07
+
+Unfortunately, this has the side-effect of also checking out an outdated
+version of the script.  To ensure that the latest version is used:
+
+    git checkout main -- nouveau/extract-firmware-nouveau.py
+
+In addition, if you wish to install the firmware into /lib/firmware/nvidia
+directly, you should first delete or rename the 'nvidia' directory so that
+the script does not overwrite its contents.
+
+## Usage
+
+Executing `nouveau/extract-firmware-nouveau.py -h` will show:
+
+    usage: extract-firmware-nouveau.py [-h] [-i INPUT] [-o OUTPUT] [-r REVISION] [--debug-fused] [-d [DRIVER]] [-s] [-w]
+
+    Extract firmware binaries from the OpenRM git repository in a format expected by the Nouveau device driver.
+
+    options:
+    -h, --help            show this help message and exit
+    -i INPUT, --input INPUT
+                            Path to source directory (where version.mk exists)
+    -o OUTPUT, --output OUTPUT
+                            Path to target directory (where files will be written)
+    -r REVISION, --revision REVISION
+                            Files will be named with this version number
+    --debug-fused         Extract debug instead of production images
+    -d [DRIVER], --driver [DRIVER]
+                            Path or URL to NVIDIA-Linux-x86_64-<version>.run driver package, for also extracting the GSP-RM firmware
+    -s, --symlink         Also create symlinks for all supported GPUs
+    -w, --whence          Also generate a WHENCE file
+
+To quickly extract and install the images, use this command:
+
+    sudo nouveau/extract-firmware-nouveau.py -o /lib/firmware -s -d
+
+ The -s option creates the symlinks for all GPU variants that are necessary
+ in /lib/firmware.  This is needed because Nouveau expects different
+ directories for each specific GPU variant.
+
+ The -d option by itself instructs the script to search for and download the
+ matching .run file from Nvidia's website.  It will then extract the images
+ from that archive and then clean up all the temporary files.
+
+ The -r option is used to make one version of the firmware look like another.
+ Nouveau uses file names to determine the version of any specific firmware
+ image.  This is handy if you want to trick Nouveau into loading a firmware
+ version that it doesn't currently support, without having to edit the
+ Nouveau source code.
+
+ The --debug-fused option is used to extract the "debug fused" variants of
+ the firmware images.  This option is only useful for Nvidia employees.
+ Although OpenRM does include these images, they only can be used on special
+ hardware that is not available to non-employees.
+
+ The -w option is used to help update the WHENCE file for the linux-firmware
+ git repository.  This is only useful for Mode #2.

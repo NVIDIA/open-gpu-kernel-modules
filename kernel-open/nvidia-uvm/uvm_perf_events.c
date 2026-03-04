@@ -39,7 +39,8 @@ static struct kmem_cache *g_callback_desc_cache;
 // Check if the callback list already contains an entry for the given callback. Caller needs to hold (at least) read
 // va_space_events lock
 static callback_desc_t *event_list_find_callback(uvm_perf_va_space_events_t *va_space_events,
-                                                 struct list_head *callback_list, uvm_perf_event_callback_t callback)
+                                                 struct list_head *callback_list,
+                                                 uvm_perf_event_callback_t callback)
 {
     callback_desc_t *callback_desc;
 
@@ -79,7 +80,8 @@ NV_STATUS uvm_perf_register_event_callback_locked(uvm_perf_va_space_events_t *va
     return NV_OK;
 }
 
-NV_STATUS uvm_perf_register_event_callback(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+NV_STATUS uvm_perf_register_event_callback(uvm_perf_va_space_events_t *va_space_events,
+                                           uvm_perf_event_t event_id,
                                            uvm_perf_event_callback_t callback)
 {
     NV_STATUS status;
@@ -91,7 +93,8 @@ NV_STATUS uvm_perf_register_event_callback(uvm_perf_va_space_events_t *va_space_
     return status;
 }
 
-void uvm_perf_unregister_event_callback_locked(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_unregister_event_callback_locked(uvm_perf_va_space_events_t *va_space_events,
+                                               uvm_perf_event_t event_id,
                                                uvm_perf_event_callback_t callback)
 {
     callback_desc_t *callback_desc;
@@ -113,7 +116,8 @@ void uvm_perf_unregister_event_callback_locked(uvm_perf_va_space_events_t *va_sp
     kmem_cache_free(g_callback_desc_cache, callback_desc);
 }
 
-void uvm_perf_unregister_event_callback(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_unregister_event_callback(uvm_perf_va_space_events_t *va_space_events,
+                                        uvm_perf_event_t event_id,
                                         uvm_perf_event_callback_t callback)
 {
     uvm_down_write(&va_space_events->lock);
@@ -121,7 +125,8 @@ void uvm_perf_unregister_event_callback(uvm_perf_va_space_events_t *va_space_eve
     uvm_up_write(&va_space_events->lock);
 }
 
-void uvm_perf_event_notify(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_event_notify(uvm_perf_va_space_events_t *va_space_events,
+                           uvm_perf_event_t event_id,
                            uvm_perf_event_data_t *event_data)
 {
     callback_desc_t *callback_desc;
@@ -135,9 +140,8 @@ void uvm_perf_event_notify(uvm_perf_va_space_events_t *va_space_events, uvm_perf
     uvm_down_read(&va_space_events->lock);
 
     // Invoke all registered callbacks for the events
-    list_for_each_entry(callback_desc, callback_list, callback_list_node) {
-        callback_desc->callback(event_id, event_data);
-    }
+    list_for_each_entry(callback_desc, callback_list, callback_list_node)
+        callback_desc->callback(va_space_events->va_space, event_id, event_data);
 
     uvm_up_read(&va_space_events->lock);
 }

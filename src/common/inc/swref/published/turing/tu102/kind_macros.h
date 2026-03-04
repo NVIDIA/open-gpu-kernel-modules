@@ -21,11 +21,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#define _kind_macros_orig_H_
+#ifndef TU102_KIND_MACROS_H_INCLUDED
+#define TU102_KIND_MACROS_H_INCLUDED
 
 #define KIND_INVALID(k)               (                                      ((k) ==NV_MMU_CLIENT_KIND_INVALID))
+#define PTEKIND_PITCH(k)              (                                      ((k) ==NV_MMU_PTE_KIND_PITCH)||                                      ((k) ==NV_MMU_PTE_KIND_SMSKED_MESSAGE))
 #define PTEKIND_COMPRESSIBLE(k)       (                                      ((k) >=NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE && (k) <= NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC))
 #define PTEKIND_DISALLOWS_PLC(k)      (                                      !((k) ==NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE))
 #define PTEKIND_SUPPORTED(k)          (                                      ((k) ==NV_MMU_PTE_KIND_INVALID)||                                      ((k) ==NV_MMU_PTE_KIND_PITCH)||                                      ((k) ==NV_MMU_PTE_KIND_GENERIC_MEMORY)||                                      ((k) >=NV_MMU_PTE_KIND_Z16 && (k) <= NV_MMU_PTE_KIND_Z24S8)||                                      ((k) >=NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE && (k) <= NV_MMU_PTE_KIND_SMSKED_MESSAGE))
 #define KIND_Z(k)                     (                                      ((k) >=NV_MMU_CLIENT_KIND_Z16 && (k) <= NV_MMU_CLIENT_KIND_Z24S8))
+#define PTEKIND_Z(k)                  (                                      ((k) >=NV_MMU_PTE_KIND_Z16 && (k) <= NV_MMU_PTE_KIND_Z24S8)||                                      ((k) >=NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC && (k) <= NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC))
+#define PTEKIND_GENERIC_MEMORY(k)     (                                      ((k) ==NV_MMU_PTE_KIND_GENERIC_MEMORY)||                                      ((k) >=NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE && (k) <= NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC))
 
+#endif // TU102_KIND_MACROS_H_INCLUDED

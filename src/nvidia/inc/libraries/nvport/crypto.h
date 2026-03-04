@@ -46,21 +46,21 @@
  *
  * True random numbers are generated from hardware, and as such are completely
  * nondeterministic. There is no support for setting a seed, and you can expect
- * the output to always be different. Unlike pseudorandom numbers, true random 
+ * the output to always be different. Unlike pseudorandom numbers, true random
  * output will always vary across different platforms.
  *
  * These numbers are suitable for security sensitive and cryptography operations.
  *
  * In case of kernelmode code, the entropy pool will contain bits that are not
  * available to usermode clients. As a consequence, a usermode client cannot
- * deplete the entropy pool to lower the security 
+ * deplete the entropy pool to lower the security
  *
- * @note Unless ending with the "-Blocking" suffix, all functions are 
- * non-blocking. With regards to True Random numbers, this has a consequence 
+ * @note Unless ending with the "-Blocking" suffix, all functions are
+ * non-blocking. With regards to True Random numbers, this has a consequence
  * that if there are insufficient bits in the entropy pool, they will be used
- * to seed a custom PRNG which will provide the final output. A blocking 
+ * to seed a custom PRNG which will provide the final output. A blocking
  * version of some functions may be available as an extended function.
- * 
+ *
  * @note As a general rule, you should always use the non-blocking version of a
  * function, unless ALL the following conditions are satisfied:
  * - First time booting a clean OS
@@ -114,8 +114,8 @@ typedef struct PORT_CRYPTO_PRNG PORT_CRYPTO_PRNG;
  * @warning These objects are not Cryptographically Secure, and thus not
  * appropriate for any security sensitive operations. Use "True" random instead.
  *
- * The same seed will always result in the same sequence returned by 
- * @ref portCryptoPseudoRandomGeneratorGetU32, 
+ * The same seed will always result in the same sequence returned by
+ * @ref portCryptoPseudoRandomGeneratorGetU32,
  * @ref portCryptoPseudoRandomGeneratorGetU64 and
  * @ref portCryptoPseudoRandomGeneratorFillBuffer. This behavior is consistent
  * across all platforms. The following code will always print the same thing:
@@ -131,10 +131,10 @@ typedef struct PORT_CRYPTO_PRNG PORT_CRYPTO_PRNG;
  *
  * @return NULL if the construction failed, a PRNG object otherwise.
  *
- */ 
-PORT_CRYPTO_PRNG *portCryptoPseudoRandomGeneratorCreate(NvU64 seed); 
+ */
+PORT_CRYPTO_PRNG *portCryptoPseudoRandomGeneratorCreate(NvU64 seed);
 /**
- * @brief Destroys an object created with 
+ * @brief Destroys an object created with
  * @ref portCryptoPseudoRandomGeneratorCreate
  *
  */
@@ -153,7 +153,7 @@ NvU32 portCryptoPseudoRandomGeneratorGetU32(PORT_CRYPTO_PRNG *pPrng);
  * @brief Returns a 64bit pseudorandom number from a given PRNG.
  *
  * @warning The numbers generated in this way are not appropriate for security
- * sensitive operations. Use @ref portCryptoExTrueRandomGetU64 instead. 
+ * sensitive operations. Use @ref portCryptoExTrueRandomGetU64 instead.
  *
  * @param [in] pPrng - Generator object. If NULL, the default one will be used
  *
@@ -164,7 +164,7 @@ NvU64 portCryptoPseudoRandomGeneratorGetU64(PORT_CRYPTO_PRNG *pPrng);
  * PRNG
  *
  * @warning The numbers generated in this way are not appropriate for security
- * sensitive operations. Use @ref portCryptoExTrueRandomFillBuffer instead. 
+ * sensitive operations. Use @ref portCryptoExTrueRandomFillBuffer instead.
  *
  * @param [in] pPrng - Generator object. If NULL, the default one will be used
  *
@@ -177,7 +177,7 @@ NV_STATUS portCryptoPseudoRandomGeneratorFillBuffer(PORT_CRYPTO_PRNG *pPrng, NvU
 /**
  * @brief Sets the PRNG seed of the global generator
  *
- * The same seed will always result in the same sequence returned by 
+ * The same seed will always result in the same sequence returned by
  * @ref portCryptoPseudoRandomGetU32, @ref portCryptoPseudoRandomGetU64 and
  * @ref portCryptoPseudoRandomFillBuffer. This behavior is consistent across
  * all platforms. The following code will print the same thing on all platforms:
@@ -197,7 +197,7 @@ void portCryptoPseudoRandomSetSeed(NvU64 seed);
  * a NULL generator object.
  *
  * @warning The numbers generated in this way are not appropriate for security
- * sensitive operations. Use @ref portCryptoExTrueRandomGetU32 instead. 
+ * sensitive operations. Use @ref portCryptoExTrueRandomGetU32 instead.
  *
  */
 NvU32 portCryptoPseudoRandomGetU32(void);
@@ -208,7 +208,7 @@ NvU32 portCryptoPseudoRandomGetU32(void);
  * a NULL generator object.
  *
  * @warning The numbers generated in this way are not appropriate for security
- * sensitive operations. Use @ref portCryptoExTrueRandomGetU64 instead. 
+ * sensitive operations. Use @ref portCryptoExTrueRandomGetU64 instead.
  *
  */
 NvU64 portCryptoPseudoRandomGetU64(void);
@@ -219,7 +219,7 @@ NvU64 portCryptoPseudoRandomGetU64(void);
  * with a NULL generator object.
  *
  * @warning The numbers generated in this way are not appropriate for security
- * sensitive operations. Use @ref portCryptoExTrueRandomFillBuffear instead. 
+ * sensitive operations. Use @ref portCryptoExTrueRandomFillBuffear instead.
  *
  * @return  NV_OK if successful;
  *          NV_ERR_INVALID_POINTER if pBuffer is NULL;
@@ -276,8 +276,8 @@ NV_STATUS portCryptoHashMD5HexStringToBinary(const char *pHexStr, NvU8 pBinary[1
  *
  * @note This function does not block, but rather combines the bits from the
  * entropy pool with a PRNG to produce a random output of desired width.
- * This is considered safe for most cryptographic applications. You can use 
- * @ref portCryptoExTrueRandomGetU32Blocking for a guaranteed high entropy output. 
+ * This is considered safe for most cryptographic applications. You can use
+ * @ref portCryptoExTrueRandomGetU32Blocking for a guaranteed high entropy output.
  */
 NvU32 portCryptoExTrueRandomGetU32(void);
 #define portCryptoExTrueRandomGetU32_SUPPORTED 0
@@ -285,9 +285,9 @@ NvU32 portCryptoExTrueRandomGetU32(void);
  * @brief Returns a 64bit random number
  *
  * @note This function does not block, but rather combines the bits from the
- * entropy pool with a PRNG to produce a random output of desired width. 
+ * entropy pool with a PRNG to produce a random output of desired width.
  * This is considered safe for most cryptographic applications. You can use
- * @ref portCryptoExTrueRandomGetU64Blocking for a guaranteed high entropy output. 
+ * @ref portCryptoExTrueRandomGetU64Blocking for a guaranteed high entropy output.
  */
 NvU64 portCryptoExTrueRandomGetU64(void);
 #define portCryptoExTrueRandomGetU64_SUPPORTED 0
@@ -296,9 +296,9 @@ NvU64 portCryptoExTrueRandomGetU64(void);
  *
  * @note This function does not block, but rather combines the bits from the
  * entropy pool with a PRNG to produce a random output of desired width. This is
- * considered safe for most cryptographic applications. You can use 
+ * considered safe for most cryptographic applications. You can use
  * @ref portCryptoExTrueRandomFillBufferBlocking for a guaranteed high entropy
- * output. 
+ * output.
  *
  * @return  NV_OK if successful;
  *          NV_ERR_INVALID_POINTER if pBuffer is NULL;

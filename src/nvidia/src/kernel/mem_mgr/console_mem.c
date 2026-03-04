@@ -28,8 +28,10 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "rmapi/client.h"
 #include "virtualization/hypervisor/hypervisor.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
+#include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 
 NV_STATUS
 conmemConstruct_IMPL
@@ -40,12 +42,11 @@ conmemConstruct_IMPL
 )
 {
     NV_STATUS          status         = NV_OK;
-    NvHandle           hClient        = pCallContext->pClient->hClient;
     Memory            *pMemory        = staticCast(pConsoleMemory, Memory);
     OBJGPU            *pGpu           = pMemory->pGpu;
     MemoryManager     *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     MEMORY_DESCRIPTOR *pMemDesc       = memmgrGetReservedConsoleMemDesc(pGpu, pMemoryManager);
-    RS_PRIV_LEVEL      privLevel      = pCallContext->secInfo.privLevel;
+    NvU32 memClassId;
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
@@ -53,14 +54,21 @@ conmemConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
         return NV_OK;
 
-    if (!(rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-    {
-        return NV_ERR_INVALID_CLASS;
-    }
-
     if (pMemDesc == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    switch (pMemDesc->_addressSpace)
+    {
+        case ADDR_SYSMEM:
+            memClassId = NV01_MEMORY_SYSTEM;
+            break;
+        case ADDR_FBMEM:
+            memClassId = NV01_MEMORY_LOCAL_USER;
+            break;
+        default:
+            return NV_ERR_NOT_SUPPORTED;
     }
 
     NV_ASSERT(pMemDesc->Allocated == 0);
@@ -69,10 +77,10 @@ conmemConstruct_IMPL
 
     //
     // NV01_MEMORY_FRAMEBUFFER_CONSOLE is just a way to get at the reserved
-    // framebuffer console memDesc rather than allocating a new one. Otherwise,
-    // it's treated as normal memory.
+    // video memory or system memory console memDesc rather than allocating
+    // a new one. Otherwise, it's treated as normal memory.
     //
-    status = memConstructCommon(pMemory, NV01_MEMORY_LOCAL_USER, 0, pMemDesc,
+    status = memConstructCommon(pMemory, memClassId, 0, pMemDesc,
                                 0, NULL, 0, 0, 0, 0, NVOS32_MEM_TAG_NONE,
                                 (HWRESOURCE_INFO *)NULL);
     if (status != NV_OK)
@@ -89,4 +97,21 @@ conmemCanCopy_IMPL
 )
 {
     return NV_TRUE;
+}
+
+NV_STATUS conmemCtrlCmdNotifyConsoleDisabled_IMPL(ConsoleMemory *pConsoleMemory)
+{
+    Memory            *pMemory        = staticCast(pConsoleMemory, Memory);
+    OBJGPU            *pGpu           = pMemory->pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc       = pMemory->pMemDesc;
+    KernelBus         *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
+    NvU32              gfid           = pMemDesc->gfid;
+
+    // Remove the BAR1 mapping of the framebuffer console.
+    kbusUnmapPreservedConsole(pGpu, pKernelBus, gfid);
+
+    // Inform OS layer, to no longer save/restore console.
+    osDisableConsoleManagement(pGpu);
+
+    return NV_OK;
 }

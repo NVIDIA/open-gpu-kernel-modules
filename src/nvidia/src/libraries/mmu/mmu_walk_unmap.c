@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2015,2020,2022,2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,9 +27,6 @@
  */
 
 /* ------------------------ Includes --------------------------------------- */
-#if defined(SRT_BUILD)
-#include "shrdebug.h"
-#endif
 #include "mmu_walk_private.h"
 
 /* ------------------------ Macros ----------------------------------------- */
@@ -53,16 +50,9 @@ mmuWalkUnmap
     // Unmap starting from root if it exists.
     if (NULL != pWalk->root.pInstances)
     {
-        if (pWalk->flags.bUseIterative)
-        {
-            status = mmuWalkProcessPdes(pWalk, &g_opParamsUnmap,
-                                        &pWalk->root, pWalk->root.pInstances, vaLo, vaHi);
-        }
-        else
-        {
-            status = g_opParamsUnmap.opFunc(pWalk, &g_opParamsUnmap,
-                                            &pWalk->root, pWalk->root.pInstances, vaLo, vaHi);
-        }
+
+        status = mmuWalkProcessPdes(pWalk, &g_opParamsUnmap,
+                                    &pWalk->root, pWalk->root.pInstances, vaLo, vaHi);
 
         if (NV_OK != status)
         {

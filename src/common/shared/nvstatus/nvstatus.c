@@ -24,16 +24,17 @@
 #include "nvstatus.h"
 
 #if !defined(NV_PRINTF_STRING_SECTION)
-#if defined(NVRM) && NVCPU_IS_RISCV64
-#define NV_PRINTF_STRING_SECTION         __attribute__ ((section (".logging")))
-#else // defined(NVRM) && NVCPU_IS_RISCV64
+#if defined(NVRM) && NVOS_IS_LIBOS
+#include "libos_log.h"
+#define NV_PRINTF_STRING_SECTION LIBOS_SECTION_LOGGING
+#else // defined(NVRM) && NVOS_IS_LIBOS
 #define NV_PRINTF_STRING_SECTION
-#endif // defined(NVRM) && NVCPU_IS_RISCV64
+#endif // defined(NVRM) && NVOS_IS_LIBOS
 #endif // !defined(NV_PRINTF_STRING_SECTION)
 
 /*
  * Include nvstatuscodes.h twice.  Once for creating constant strings in the
- * the NV_PRINTF_STRING_SECTION section of the ececutable, and once to build
+ * the NV_PRINTF_STRING_SECTION section of the executable, and once to build
  * the g_StatusCodeList table.
  */
 #undef NV_STATUS_CODE

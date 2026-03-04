@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -127,7 +127,7 @@ gpudbRegisterGpu(const NvU8 *pUuid, const NBADDR *pUpstreamPortPciInfo, NvU64 pc
     pNode->upstreamPciPortInfo.bus = pUpstreamPortPciInfo->bus;
     pNode->upstreamPciPortInfo.device = pUpstreamPortPciInfo->device;
     pNode->upstreamPciPortInfo.function = pUpstreamPortPciInfo->func;
-    pNode->upstreamPciPortInfo.bValid = pUpstreamPortPciInfo->valid; 
+    pNode->upstreamPciPortInfo.bValid = pUpstreamPortPciInfo->valid;
 
     pNode->bShutdownState = NV_FALSE;
 
@@ -140,6 +140,9 @@ gpudbRegisterGpu(const NvU8 *pUuid, const NBADDR *pUpstreamPortPciInfo, NvU64 pc
         ct_assert(sizeof(pNode->clkPropTopPolsControl.chosenIdx[0]) == sizeof(NvU8));
         pNode->clkPropTopPolsControl.chosenIdx[i] = NV_U8_MAX;
     }
+
+    // Initialize rusd permanent polling mask to 0
+    pNode->rusd.permanentPolledDataMask = 0;
 
 done:
     portSyncMutexRelease(pGpuDb->pLock);
@@ -368,3 +371,91 @@ done:
     portSyncMutexRelease(pGpuDb->pLock);
     return status;
 }
+
+/*!
+*  @brief Update/Set the RUSD settings for a GPU
+*
+*  @param[in]   uuid        GPU uuid
+*  @param[in]   pRusd       pointer to rusd settings
+*
+*  @return NV_OK                           Config updated successfully
+*  @return NV_ERR_INVALID_ARGUMENT         Invalid argument specified
+*  @return NV_ERR_OBJECT_NOT_FOUND         GPU entry in db not found
+*/
+NV_STATUS
+gpudbSetRusdSettings
+(
+    const NvU8              *pUuid,
+    GPU_DB_RUSD_SETTINGS    *pRusd
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    GpuDb *pGpuDb = SYS_GET_GPUDB(pSys);
+    GPU_INFO_LIST_NODE *pNode;
+    NV_STATUS status = NV_OK;
+
+    if (pUuid == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    portSyncMutexAcquire(pGpuDb->pLock);
+
+    pNode = _gpudbFindGpuInfoByUuid(pUuid);
+    if (pNode == NULL)
+    {
+        status = NV_ERR_OBJECT_NOT_FOUND;
+        goto done;
+    }
+
+    pNode->rusd = *pRusd;
+
+done:
+    portSyncMutexRelease(pGpuDb->pLock);
+    return status;
+}
+
+/*!
+*  @brief Get all GPU RUSD settings
+*
+*  @param[in]   uuid          GPU uuid
+*  @param[in]   pRusd         pointer to the rusd settings.
+*
+*  @return NV_OK                           Configs retrieved successfully
+*  @return NV_ERR_INVALID_ARGUMENT         Invalid argument specified
+*  @return NV_ERR_OBJECT_NOT_FOUND         GPU entry in db not found
+*/
+NV_STATUS
+gpudbGetRusdSettings
+(
+    const NvU8              *pUuid,
+    GPU_DB_RUSD_SETTINGS    *pRusd
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    GpuDb *pGpuDb = SYS_GET_GPUDB(pSys);
+    GPU_INFO_LIST_NODE *pNode;
+    NV_STATUS status = NV_OK;
+
+    if (pUuid == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    portSyncMutexAcquire(pGpuDb->pLock);
+
+    pNode = _gpudbFindGpuInfoByUuid(pUuid);
+    if (pNode == NULL)
+    {
+        status = NV_ERR_OBJECT_NOT_FOUND;
+        goto done;
+    }
+
+    // Return the policy specific data
+    *pRusd = pNode->rusd;
+
+done:
+    portSyncMutexRelease(pGpuDb->pLock);
+    return status;
+}
+

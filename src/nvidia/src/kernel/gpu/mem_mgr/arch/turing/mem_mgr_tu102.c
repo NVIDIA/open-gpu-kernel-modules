@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -245,8 +245,9 @@ memmgrChooseKind_TU102
                 case NVOS32_TYPE_NOTIFIER:
                 case NVOS32_TYPE_RESERVED:
                 case NVOS32_TYPE_PMA:
+                case NVOS32_TYPE_SYNCPOINT:
                 {
-                    if (comprAttr == NVOS32_ATTR_COMPR_NONE)
+                    if (comprAttr == NVOS32_ATTR_COMPR_NONE || pMemorySystemConfig->bDisableCompbitBacking)
                     {
                         kind = NV_MMU_PTE_KIND_GENERIC_MEMORY;
                     }
@@ -340,11 +341,51 @@ memmgrGetUncompressedKind_TU102
         case NV_MMU_PTE_KIND_ZF32_X24S8:
         case NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC:
             return NV_MMU_PTE_KIND_ZF32_X24S8;
+        case NV_MMU_PTE_KIND_PITCH:
+            return NV_MMU_PTE_KIND_PITCH;
         default:
         {
             NV_PRINTF(LEVEL_ERROR, "Unknown kind 0x%x.\n", kind);
             DBG_BREAKPOINT();
 
+            return NV_MMU_PTE_KIND_INVALID;
+        }
+    }
+}
+
+NvU32
+memmgrGetCompressedKind_TU102
+(
+    MemoryManager *pMemoryManager,
+    NvU32          kind,
+    NvBool         bDisablePlc
+)
+{
+    switch (kind)
+    {
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY:
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE:
+        case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC:
+            return bDisablePlc ? NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC
+                               : NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
+        case NV_MMU_PTE_KIND_S8:
+        case NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_Z16:
+        case NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_S8Z24:
+        case NV_MMU_PTE_KIND_S8Z24_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_S8Z24_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_Z24S8:
+        case NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_Z24S8_COMPRESSIBLE_DISABLE_PLC;
+        case NV_MMU_PTE_KIND_ZF32_X24S8:
+        case NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC:
+            return NV_MMU_PTE_KIND_ZF32_X24S8_COMPRESSIBLE_DISABLE_PLC;
+        default:
+        {
+            NV_PRINTF(LEVEL_ERROR, "Unknown kind 0x%x.\n", kind);
             return NV_MMU_PTE_KIND_INVALID;
         }
     }
@@ -584,4 +625,75 @@ memmgrGetMaxContextSize_TU102
     }
 
     return size;
+}
+
+
+/*!
+ * Calculates heap offset based on presence and size of console and CBC regions
+ *
+ * When GSP is in use, CBC is placed at the beginning of memory instead of the
+ * end, which means it must be taken into account when calculating where the
+ * heap starts. If the offset is successfully calculated, it is placed in the
+ * offset variable and NV_OK is returned
+ *
+ *  @returns NV_STATUS
+ */
+NV_STATUS
+memmgrCalculateHeapOffsetWithGSP_TU102
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    NvU32         *offset
+)
+{
+    // The heap will be located after the Console and CBC regions if they are
+    // present. Zero, one, or both of them may be present. If Console and
+    // CBC regions are present, they are guaranteed to be in Regions 0 and 1.
+    // If only one is present, then it is guaranteed to be in Region 0. As an
+    // extra check, it should be validated that these regions are indeed
+    // reserved
+    KernelMemorySystem   *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    FB_REGION_DESCRIPTOR *pFbRegion0          = &pMemoryManager->Ram.fbRegion[0];
+    FB_REGION_DESCRIPTOR *pFbRegion1          = &pMemoryManager->Ram.fbRegion[1];
+
+    NvBool isConsoleRegionPresent = pMemoryManager->Ram.ReservedConsoleDispMemSize != 0;
+    NvBool isCbcRegionPresent     = !pKernelMemorySystem->pStaticConfig->bDisableCompbitBacking;
+
+    // Both regions in use
+    if (isCbcRegionPresent && isConsoleRegionPresent &&
+        pFbRegion0->bRsvdRegion && pFbRegion1->bRsvdRegion)
+    {
+        // Use Region 1 limit and safely convert to KB
+        *offset = NvU64_LO32((pFbRegion1->limit + 1) >> 10);
+        NV_ASSERT_OR_RETURN(((NvU64) *offset << 10ULL) == (pFbRegion1->limit + 1),
+                            NV_ERR_INVALID_DATA);
+    }
+
+    // One region in use
+    else if ((isCbcRegionPresent || isConsoleRegionPresent) &&
+             pFbRegion0->bRsvdRegion)
+    {
+        // Use Region 0 limit and safely convert to KB
+        *offset = NvU64_LO32((pFbRegion0->limit + 1) >> 10);
+        NV_ASSERT_OR_RETURN(((NvU64) *offset << 10ULL) == (pFbRegion0->limit + 1),
+                            NV_ERR_INVALID_DATA);
+    }
+
+    // Neither region in use, return NOT_SUPPORTED to fall back to default calculation
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
+}
+
+NvU32
+memmgrGetPteKindGenericMemoryCompressible_TU102
+(
+    OBJGPU* pGpu,
+    MemoryManager* pMemoryManager
+)
+{
+    return NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
 }

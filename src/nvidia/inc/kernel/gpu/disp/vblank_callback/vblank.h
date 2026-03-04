@@ -63,7 +63,6 @@ typedef struct VBLANKCALLBACK
 #define VBLANK_CALLBACK_FLAG_PROMOTE_TO_FRONT              0x00000080  // Promotes to being 'first', while still honoring VBlankCount
 #define VBLANK_CALLBACK_FLAG_RELEASES_SEMAPHORE            0x00000100  // A flag for deadlock detection to check if this callback could release a semaphore
 #define VBLANK_CALLBACK_FLAG_GUARANTEE_SAFETY              0x00000200  // This callback absolutely needs to run during vertical blank, even if it runs late as a consequence.
-#define VBLANK_CALLBACK_FLAG_LOW_LATENCY__ISR_ONLY         0x08000000  // This means always process during ISR (never DPC.) Be careful!
 #define VBLANK_CALLBACK_FLAG_LOW_LATENCY                   0x10000000  // This now means ASAP, which could be ISR or DPC, depending on which happens first
 #define VBLANK_CALLBACK_FLAG_MC_EXECUTE_ONCE               0x40000000  // A special flag for MultiChip configurations to have the callback execute only once
 #define VBLANK_CALLBACK_FLAG_USER                          0x80000000

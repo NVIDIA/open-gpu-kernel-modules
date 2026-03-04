@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 \***************************************************************************/
 #include "dp_connectorimpl.h"
 #include "dp_vrr.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -36,7 +37,7 @@ bool VrrEnablement::start()
 {
     bool rc;
 
-    DP_LOG(("DPHAL_VRR_ENABLE> **** VRR Enablement Started ****"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> **** VRR Enablement Started ****");
     rc = vrrGetPublicInfo();
     if(rc)
     {
@@ -56,7 +57,7 @@ bool VrrEnablement::start()
         return false;
     }
 
-    DP_LOG(("DPHAL_VRR_ENABLE> **** VRR Enablement Ends ****"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> **** VRR Enablement Ends ****");
 
     return true;
 }
@@ -92,7 +93,7 @@ bool VrrEnablement::vrrEnableMonitor()
 {
     MainLink *main = this->parent->connector->main;
 
-    DP_LOG(("DPHAL_VRR_ENABLE> ** VRR_MON_ENABLE starts **"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> ** VRR_MON_ENABLE starts **");
 
     // Always set the enable F/W state m/c to a known state.
     if(main->vrrRunEnablementStage(VRR_ENABLE_STAGE_RESET_MONITOR, NULL) != true)
@@ -130,7 +131,7 @@ bool VrrEnablement::vrrEnableMonitor()
         this->bMonitorEnabled = true;
     }
 
-    DP_LOG(("DPHAL_VRR_ENABLE> ** VRR_MON_ENABLE ends **"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> ** VRR_MON_ENABLE ends **");
 
     return this->bMonitorEnabled;
 }
@@ -141,7 +142,7 @@ bool VrrEnablement::vrrEnableDriver()
 
     MainLink *main = this->parent->connector->main;
 
-    DP_LOG(("DPHAL_VRR_ENABLE> ** VRR_DRV_ENABLE starts **"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> ** VRR_DRV_ENABLE starts **");
 
     // Always set the enable F/W state m/c to a known state.
     if(main->vrrRunEnablementStage(VRR_ENABLE_STAGE_RESET_MONITOR, NULL) != true)
@@ -189,7 +190,7 @@ bool VrrEnablement::vrrEnableDriver()
         return false;
     }
 
-    DP_LOG(("DPHAL_VRR_ENABLE> ** VRR_DRV_ENABLE ends **"));
+    DP_PRINTF(DP_NOTICE, "DPHAL_VRR_ENABLE> ** VRR_DRV_ENABLE ends **");
 
     return true;
 }

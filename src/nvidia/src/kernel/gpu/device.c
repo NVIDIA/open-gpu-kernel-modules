@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,10 @@
 #include "resserv/rs_server.h"
 #include "resserv/rs_client.h"
 #include "resserv/rs_resource.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/device/device.h"
+#include "gpu/subdevice/subdevice.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0080.h"
 #include "core/locks.h"
@@ -52,6 +55,11 @@
 
 static NV_STATUS _deviceTeardown(Device *pDevice, CALL_CONTEXT *pCallContext);
 static NV_STATUS _deviceTeardownRef(Device *pDevice, CALL_CONTEXT *pCallContext);
+static NV_STATUS _deviceInit(Device *pDevice, CALL_CONTEXT *pCallContext,
+                             NvHandle hClient, NvHandle hDevice, NvU32 deviceInst,
+                             NvHandle hClientShare, NvHandle hTargetClient, NvHandle hTargetDevice,
+                             NvU64 vaSize, NvU64 vaStartInternal, NvU64 vaLimitInternal,
+                             NvU32 allocFlags, NvU32 vaMode, NvBool *pbIsFirstDevice);
 
 NV_STATUS
 deviceConstruct_IMPL
@@ -75,6 +83,7 @@ deviceConstruct_IMPL
     NvU64                            vaStartInternal     = 0;
     NvU64                            vaLimitInternal     = 0;
     NvU32                            physicalAllocFlags;
+    NvBool                           bIsFirstDevice;
 
     if (pNv0080AllocParams == NULL)
     {
@@ -120,9 +129,9 @@ deviceConstruct_IMPL
     }
 
     // add new device to client and set the device context
-    rmStatus = deviceInit(pDevice, pCallContext, pParams->hClient, pParams->hResource, deviceInst,
-                          hClientShare, hTargetClient, hTargetDevice, vaSize, vaStartInternal, vaLimitInternal,
-                          flags, vaMode);
+    rmStatus = _deviceInit(pDevice, pCallContext, pParams->hClient, pParams->hResource, deviceInst,
+                           hClientShare, hTargetClient, hTargetDevice, vaSize, vaStartInternal, vaLimitInternal,
+                           flags, vaMode, &bIsFirstDevice);
     if (rmStatus != NV_OK)
         return rmStatus;
 
@@ -168,13 +177,14 @@ deviceConstruct_IMPL
         }
     }
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
     {
         physicalAllocFlags = flags & ~(NV_DEVICE_ALLOCATION_FLAGS_PLUGIN_CONTEXT
             | NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE);
 
         NV_RM_RPC_ALLOC_SHARE_DEVICE(pGpu, pParams->hParent, pParams->hResource, pDevice->hClientShare,
-                                     hTargetClient, hTargetDevice, deviceClass, physicalAllocFlags, vaSize, vaMode, rmStatus);
+                                     hTargetClient, hTargetDevice, deviceClass,
+                                     physicalAllocFlags, vaSize, vaMode, bIsFirstDevice, rmStatus);
         if (rmStatus != NV_OK)
         {
             return rmStatus;
@@ -195,8 +205,6 @@ deviceDestruct_IMPL
     NV_STATUS               rmStatus = NV_OK;
     NV_STATUS               tmpStatus;
     NvHandle                hClient;
-    NODE                   *pNode;
-    RM_API                 *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     resGetFreeParams(staticCast(pDevice, RsResource), &pCallContext, &pParams);
 
@@ -205,18 +213,6 @@ deviceDestruct_IMPL
     NV_PRINTF(LEVEL_INFO, "    type: device\n");
 
     LOCK_METER_DATA(FREE_DEVICE, 0, 0, 0);
-
-    // Free all device memory
-    btreeEnumStart(0, &pNode, pDevice->DevMemoryTable);
-    while (pNode != NULL)
-    {
-        Memory *pMemory = pNode->Data;
-        btreeEnumNext(&pNode, pDevice->DevMemoryTable);
-
-        tmpStatus = pRmApi->Free(pRmApi, hClient, RES_GET_HANDLE(pMemory));
-        if ((tmpStatus != NV_OK) && (rmStatus == NV_OK))
-            rmStatus = tmpStatus;
-    }
 
     // free the device
     if (_deviceTeardownRef(pDevice, pCallContext) != NV_OK ||
@@ -237,10 +233,14 @@ deviceDestruct_IMPL
     {
         OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
         // vGpu support
-        if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+        if (IS_VIRTUAL(pGpu) || IS_FW_CLIENT(pGpu))
         {
             RsResourceRef *pResourceRef = pCallContext->pResourceRef;
             NvHandle       hDevice = pResourceRef->hResource;
+            NvBool         bClientInUse = NV_FALSE;
+            RsClient      *pRsClient = pCallContext->pClient;
+            NvBool         bNonOffloadVgpu = (IS_VIRTUAL(pGpu) && !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu));
+            RS_ITERATOR    it;
 
             if (rmStatus == NV_OK)
             {
@@ -253,7 +253,41 @@ deviceDestruct_IMPL
                 return;
             }
 
-            NV_RM_RPC_FREE(pGpu, hClient, NV01_NULL_OBJECT, hClient, rmStatus);
+            // check if there are any more devices in use.
+            it = clientRefIter(pRsClient, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
+
+            while (clientRefIterNext(it.pClient, &it))
+            {
+                Device *pDeviceTest = dynamicCast(it.pResourceRef->pResource, Device);
+                NvBool bSameGpu = (GPU_RES_GET_GPU(pDeviceTest) == pGpu);
+
+                if ((pDeviceTest != pDevice) && (bNonOffloadVgpu || bSameGpu))
+                {
+                    bClientInUse = NV_TRUE;
+                    break;
+                }
+            }
+
+            // check if there are any more KernelSMDebuggerSession in use.
+            it = clientRefIter(pRsClient, NULL, classId(KernelSMDebuggerSession), RS_ITERATE_CHILDREN, NV_TRUE);
+
+            while (clientRefIterNext(it.pClient, &it))
+            {
+                KernelSMDebuggerSession *pKernelSMDebuggerSession = dynamicCast(it.pResourceRef->pResource, KernelSMDebuggerSession);
+
+                if (pKernelSMDebuggerSession != NULL &&
+                    (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) || GPU_RES_GET_GPU(pKernelSMDebuggerSession) == pGpu))
+                {
+                    bClientInUse = NV_TRUE;
+                    break;
+                }
+            }
+
+            //  If neither any devices nor KernelSMDebuggerSession are in use, free up the client on host.
+            if (!bClientInUse)
+            {
+                NV_RM_RPC_FREE(pGpu, hClient, NV01_NULL_OBJECT, hClient, rmStatus);
+            }
         }
     }
 } // end of deviceDestruct_IMPL
@@ -296,8 +330,8 @@ deviceInternalControlForward_IMPL
 // add a device with specified handle, instance num, within a specified client
 // (hClientShare also specified)
 //
-NV_STATUS
-deviceInit_IMPL
+static NV_STATUS
+_deviceInit
 (
     Device  *pDevice,
     CALL_CONTEXT *pCallContext,
@@ -311,7 +345,8 @@ deviceInit_IMPL
     NvU64    vaStartInternal,
     NvU64    vaLimitInternal,
     NvU32    allocFlags,
-    NvU32    vaMode
+    NvU32    vaMode,
+    NvBool  *pbIsFirstDevice
 )
 {
     OBJGPU      *pGpu;
@@ -323,17 +358,6 @@ deviceInit_IMPL
     if (deviceInst >= NV_MAX_DEVICES)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Check if device inst already allocated, fail if this call succeeds
-    status = deviceGetByInstance(pCallContext->pClient, deviceInst, &pExistingDevice);
-    if (status == NV_OK)
-    {
-        //
-        // RS-TODO: Status code should be NV_ERR_STATE_IN_USE, however keeping
-        // existing code from CliAllocElement (for now)
-        //
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-
     // Look up GPU and GPU Group
     gpuInst = gpumgrGetPrimaryForDevice(deviceInst);
 
@@ -342,9 +366,22 @@ deviceInit_IMPL
         return NV_ERR_INVALID_STATE;
     }
 
+    // Check if device inst already allocated, fail if this call succeeds.
+    status = deviceGetByInstance(pCallContext->pClient, deviceInst, &pExistingDevice);
+    if (status == NV_OK)
+    {
+        //
+        // RS-TODO: Status code should be NV_ERR_STATE_IN_USE, however keeping
+        // existing code from CliAllocElement (for now)
+        //
+        if (IS_VIRTUAL(pGpu))
+            return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    *pbIsFirstDevice = (status != NV_OK);
+
     pDevice->hTargetClient  = hTargetClient;
     pDevice->hTargetDevice  = hTargetDevice;
-    pDevice->pHostVgpuDevice = NULL;
     pDevice->pKernelHostVgpuDevice = NULL;
 
     pDevice->deviceInst = deviceInst;
@@ -353,6 +390,26 @@ deviceInit_IMPL
     pDevice->vaMode = vaMode;
 
     gpuresSetGpu(pGpuResource, pGpu, NV_TRUE);
+
+    //
+    // In case of a SR-IOV enabled guest we create a default client inside
+    // the guest whose handle can be used for VAS sharing. Setting hClientShare
+    // to 0 on baremetal causes any VA alloc made under this device to use the
+    // global vaspace. We do not support use of the global vaspace inside guest.
+    // The legacy paravirtualization config also makes use of a default client.
+    // But, in the legacy case, the client is created by the plugin and not guest
+    // RM . On SR-IOV, vaspace management has been pushed inside the guest. So,
+    // having a vaspace only on the plugin side won't help since RmMapMemoryDma
+    // calls will no longer be RPCed to host RM.
+    //
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+        gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
+    {
+        if (hClientShare == NV01_NULL_OBJECT)
+        {
+            hClientShare = pGpu->hDefaultClientShare;
+        }
+    }
 
     status = deviceSetClientShare(pDevice, hClientShare, vaSize,
                                   vaStartInternal, vaLimitInternal, allocFlags);
@@ -382,6 +439,12 @@ deviceInit_IMPL
         }
     }
 
+    if (allocFlags & NV_DEVICE_ALLOCATION_FLAGS_PLUGIN_CONTEXT)
+    {
+        NV_ASSERT_OR_RETURN(allocFlags & NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE,
+            NV_ERR_INVALID_ARGUMENT);
+    }
+
 done:
     if (status != NV_OK)
     {
@@ -389,7 +452,7 @@ done:
     }
 
     return status;
-} // end of deviceInit_IMPL()
+}
 
 //
 // delete a device with a specified handle within a client
@@ -524,29 +587,6 @@ deviceGetByGpu_IMPL
 // ****************************************************************************
 //                            Deprecated Functions
 // ****************************************************************************
-
-/**
- * WARNING: This function is deprecated! Please use deviceGetByHandle.
- */
-Device *
-CliGetDeviceInfo
-(
-    NvHandle hClient,
-    NvHandle hDevice
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    Device     *pDevice;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NULL;
-
-    status = deviceGetByHandle(pClient, hDevice, &pDevice);
-
-    return (status == NV_OK) ? pDevice : NULL;
-}
 
 /**
  * WARNING: This function is deprecated and use is *strongly* discouraged

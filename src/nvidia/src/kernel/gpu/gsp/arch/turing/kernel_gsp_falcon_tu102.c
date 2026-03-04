@@ -31,7 +31,6 @@
 #include "gpu/gpu.h"
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/sec2/kernel_sec2.h"
-#include "gpu/nvdec/kernel_nvdec.h"
 #include "rmflcnbl.h"
 
 #include "published/turing/tu102/dev_falcon_v4.h"

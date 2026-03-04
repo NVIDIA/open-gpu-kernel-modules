@@ -591,6 +591,14 @@ typedef volatile struct _clc573_tag0 {
 #define NVC573_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_2TAP_INIT               0x00000000 /* RWI-V */
 #define NVC573_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_5TAP                         31:16 /* RWIVF */
 #define NVC573_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_5TAP_INIT               0x00000000 /* RWI-V */
+#define NVC573_SOR_CLK_CAP(i)                                 (0x608+(i)*4) /* RW-4A */
+#define NVC573_SOR_CLK_CAP__SIZE_1                                             8 /*       */
+#define NVC573_SOR_CLK_CAP_DP_MAX                                            7:0 /* RWIUF */
+#define NVC573_SOR_CLK_CAP_DP_MAX_INIT                                0x00000051 /* RWI-V */
+#define NVC573_SOR_CLK_CAP_TMDS_MAX                                        23:16 /* RWIUF */
+#define NVC573_SOR_CLK_CAP_TMDS_MAX_INIT                              0x0000003C /* RWI-V */
+#define NVC573_SOR_CLK_CAP_LVDS_MAX                                        31:24 /* RWIUF */
+#define NVC573_SOR_CLK_CAP_LVDS_MAX_INIT                              0x00000000 /* RWI-V */
 
 #ifdef __cplusplus
 };

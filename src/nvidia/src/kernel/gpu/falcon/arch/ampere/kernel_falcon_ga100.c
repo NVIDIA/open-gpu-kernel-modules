@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,4 +76,21 @@ kflcnMaskDmemAddr_GA100
 {
     return (addr & (DRF_SHIFTMASK(NV_PFALCON_FALCON_DMEMC_OFFS) |
                     DRF_SHIFTMASK(NV_PFALCON_FALCON_DMEMC_BLK)));
+}
+
+/*!
+ * Return a string for each field in NV_PRISCV_RISCV_FAULT_CONTAINMENT_SRCSTAT
+ *
+ * TODO Bug 5297008: Remove this function and inline the logic
+ */
+const char *
+kflcnFatalHwErrorCodeToString_GA100
+(
+    OBJGPU       *pGpu,
+    KernelFalcon *pKernelFlcn,
+    NvU32         errorCode,
+    NvBool        bNvPrintfStr
+)
+{
+    return (bNvPrintfStr ? MAKE_NV_PRINTF_STR("Unknown") : "Unknown");
 }

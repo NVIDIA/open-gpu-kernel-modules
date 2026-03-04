@@ -53,18 +53,18 @@ static NV_INLINE NV_STATUS portCpuCheckStdFunSupport(NvU32 function_id)
     portMemSet(cpuInfo, 0, sizeof(cpuInfo));
     status = portCpuCpuId(cpuInfo, PORT_CPU_CPUID_STD_FUN_BASIC,
         PORT_CPU_CPUID_STD_SUBFUN_0);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
     }
 
-    if (function_id > cpuInfo[0]) 
+    if (function_id > cpuInfo[0])
     {
         PORT_BREAKPOINT_DEBUG();
         return NV_ERR_NOT_SUPPORTED;
     }
-    
+
     return NV_OK;
 }
 
@@ -74,15 +74,15 @@ static NV_INLINE NV_STATUS portCpuIntelGetVersion(PORT_CPU_INTEL *pCpuVersion)
     NvU32 cpuInfo[4];
     NvU32 model;
     NvU32 family;
-    
-    if (pCpuVersion == NULL) 
+
+    if (pCpuVersion == NULL)
     {
         PORT_BREAKPOINT_DEBUG();
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     status = portCpuCheckStdFunSupport(PORT_CPU_CPUID_STD_FUN_VERSION);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -91,7 +91,7 @@ static NV_INLINE NV_STATUS portCpuIntelGetVersion(PORT_CPU_INTEL *pCpuVersion)
     portMemSet(cpuInfo, 0U, sizeof(cpuInfo));
     status = portCpuCpuId(cpuInfo, PORT_CPU_CPUID_STD_FUN_VERSION,
         PORT_CPU_CPUID_STD_SUBFUN_0);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -100,17 +100,17 @@ static NV_INLINE NV_STATUS portCpuIntelGetVersion(PORT_CPU_INTEL *pCpuVersion)
     pCpuVersion->steppingId = PORT_CPU_CPUID_GET_STEPPING_ID(cpuInfo[0]);
     family = PORT_CPU_CPUID_GET_FAMILY(cpuInfo[0]);
     model = PORT_CPU_CPUID_GET_MODEL(cpuInfo[0]);
-    if ((family == 0x0FU) || (family == 0x06U)) 
+    if ((family == 0x0FU) || (family == 0x06U))
     {
         model |= PORT_CPU_CPUID_GET_EXT_MODEL(cpuInfo[0])
                  << PORT_CPU_CPUID_MODEL_SHIFT;
     }
-        
-    if (family == 0x0FU) 
+
+    if (family == 0x0FU)
     {
         family += PORT_CPU_CPUID_GET_EXT_FAMILY(cpuInfo[0]);
     }
-    
+
     pCpuVersion->family = family;
     switch (pCpuVersion->family)
     {
@@ -121,7 +121,7 @@ static NV_INLINE NV_STATUS portCpuIntelGetVersion(PORT_CPU_INTEL *pCpuVersion)
         // Unknown famliy, ignore model.
         break;
     }
-   
+
     pCpuVersion->brandIndex = PORT_CPU_CPUID_GET_BRAND_INDEX(cpuInfo[1]);
     pCpuVersion->localApicId = PORT_CPU_CPUID_GET_LOCAL_APIC_ID(cpuInfo[1]);
     pCpuVersion->processorType = PORT_CPU_CPUID_GET_PROCESSOR_TYPE(cpuInfo[1]);
@@ -135,14 +135,14 @@ static NV_INLINE NV_STATUS portCpuGetIntelFeatures(PORT_CPU_INTEL_X86_FEATURES
     NV_STATUS status;
     NvU32 cpuInfo[4];
 
-    if (pCpuFeatures == NULL) 
+    if (pCpuFeatures == NULL)
     {
         PORT_BREAKPOINT_DEBUG();
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     status = portCpuCheckStdFunSupport(PORT_CPU_CPUID_STD_FUN_VERSION);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -151,7 +151,7 @@ static NV_INLINE NV_STATUS portCpuGetIntelFeatures(PORT_CPU_INTEL_X86_FEATURES
     portMemSet(cpuInfo, 0U, sizeof(cpuInfo));
     status = portCpuCpuId(cpuInfo, PORT_CPU_CPUID_STD_FUN_VERSION,
              PORT_CPU_CPUID_STD_SUBFUN_0);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -276,7 +276,7 @@ static NV_INLINE NV_STATUS portCpuGetIntelFeatures(PORT_CPU_INTEL_X86_FEATURES
     pCpuFeatures->TM = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[3],
                        PORT_CPU_CPUID_FEATURE_TM_BIT);
     pCpuFeatures->PBE = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[3],
-                        PORT_CPU_CPUID_FEATURE_PBE_BIT);      
+                        PORT_CPU_CPUID_FEATURE_PBE_BIT);
     return NV_OK;
 }
 
@@ -286,14 +286,14 @@ static NV_INLINE NV_STATUS portCpuGetIntelArchPerfMonitor(
     NV_STATUS status;
     NvU32 cpuInfo[4];
 
-    if (pCpuArchPerfMonitor == NULL) 
+    if (pCpuArchPerfMonitor == NULL)
     {
         PORT_BREAKPOINT_DEBUG();
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     status = portCpuCheckStdFunSupport(PORT_CPU_CPUID_STD_FUN_TPM);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -302,7 +302,7 @@ static NV_INLINE NV_STATUS portCpuGetIntelArchPerfMonitor(
     portMemSet(cpuInfo, 0U, sizeof(cpuInfo));
     status = portCpuCpuId(cpuInfo, PORT_CPU_CPUID_STD_FUN_ARCH_PERF_MONITOR,
         PORT_CPU_CPUID_STD_SUBFUN_0);
-    if (status != NV_OK) 
+    if (status != NV_OK)
     {
         PORT_BREAKPOINT_DEBUG();
         return status;
@@ -371,13 +371,13 @@ static NV_INLINE NV_STATUS portCpuGetIntelTPMFeatures(
         return status;
     }
 
-    pCpuTPMFeatures->DTS = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->DTS = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_DTS_BIT);
     pCpuTPMFeatures->IntelTurboBoost = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_ITB_BIT);
-    pCpuTPMFeatures->ARAT = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->ARAT = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_ARAT_BIT);
-    pCpuTPMFeatures->PLN = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->PLN = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_PLN_BIT);
     pCpuTPMFeatures->ECMD = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_ECMD_BIT);
@@ -399,21 +399,21 @@ static NV_INLINE NV_STATUS portCpuGetIntelTPMFeatures(
         PORT_CPU_CPUID_TPM_FEATURE_ITBMT30_BIT);
     pCpuTPMFeatures->HWPCapabilities = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_HWP_CAPABILITIES_BIT);
-    pCpuTPMFeatures->HWPPECI = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->HWPPECI = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_HWPPECI_BIT);
-    pCpuTPMFeatures->FLEXHWP = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->FLEXHWP = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_FLEXHWP_BIT);
-    pCpuTPMFeatures->FAM = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->FAM = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_FAM_BIT);
-    pCpuTPMFeatures->ILPHWPRequest = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0], 
+    pCpuTPMFeatures->ILPHWPRequest = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[0],
         PORT_CPU_CPUID_TPM_FEATURE_ILPHWP_REQUEST_BIT);
-    pCpuTPMFeatures->NoOfInterruptThresholdsInDTS = 
+    pCpuTPMFeatures->NoOfInterruptThresholdsInDTS =
                                      PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[1],
                                      PORT_CPU_CPUID_TPM_FEATURE_NFITI_DTS_BIT);
 
-    pCpuTPMFeatures->HCFC = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[2], 
+    pCpuTPMFeatures->HCFC = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[2],
         PORT_CPU_CPUID_TPM_FEATURE_HCFC_BIT);
-    pCpuTPMFeatures->PEBP = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[2], 
+    pCpuTPMFeatures->PEBP = PORT_CPU_CPUID_FEATURE_GET_BIT(cpuInfo[2],
         PORT_CPU_CPUID_TPM_FEATURE_PEBP_BIT);
 
     return NV_OK;
@@ -444,7 +444,7 @@ static NV_INLINE NV_STATUS portCpuGetIntelTopology(PORT_CPU_INTEL* pCpuInfo)
             PORT_BREAKPOINT_DEBUG();
             return status;
         }
-        
+
         switch (PORT_CPU_EXT_TOPOLOGY_ENUM_GET_LEVEL_TYPE(cpuInfo[2]))
         {
         case PORT_CPU_EXT_TOPOLOGY_ENUM_LEVEL_TYPE_SMT:
@@ -459,11 +459,11 @@ static NV_INLINE NV_STATUS portCpuGetIntelTopology(PORT_CPU_INTEL* pCpuInfo)
             cond = NV_FALSE;
             break;
         }
-                
+
         pCpuInfo->physicalCoreCount = pCpuInfo->logicalCoreCount / pCpuInfo->threadCountPerCore;
         sub++;
     } while (cond == NV_TRUE);
-    
+
     return NV_OK;
 }
 

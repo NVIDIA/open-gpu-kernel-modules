@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080dma.finn
+// Source file:      ctrl/ctrl0080/ctrl0080dma.finn
 //
-
-
-
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
@@ -90,7 +87,7 @@
  */
 
 typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
-    NvU32 pageSize;
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NV_DECLARE_ALIGNED(NvU64 pteEntrySize, 8);
     NvU32 comptagLine;
     NvU32 kind;
@@ -163,7 +160,7 @@ typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
 
 #define NV0080_CTRL_CMD_DMA_GET_PTE_INFO                                          (0x801801U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS                                   4U
+#define NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS                                   5U
 
 #define NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS_MESSAGE_ID (0x1U)
 
@@ -193,7 +190,7 @@ typedef struct NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS {
 
 #define NV0080_CTRL_CMD_DMA_SET_PTE_INFO        (0x80180aU) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV0080_CTRL_DMA_SET_PTE_INFO_PTE_BLOCKS 4U
+#define NV0080_CTRL_DMA_SET_PTE_INFO_PTE_BLOCKS 5U
 
 #define NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS_MESSAGE_ID (0xAU)
 
@@ -229,7 +226,7 @@ typedef struct NV0080_CTRL_DMA_FILL_PTE_MEM_PARAMS {
     NvU32    pteMemPfn;
     NvU32    pageSize;
     NvU32    startPageIndex;
-    NvU32    flags;
+    NV_DECLARE_ALIGNED(NvU64 flags, 8);
     NvHandle hSrcVASpace;
     NvHandle hTgtVASpace;
     NvU32    peerId;
@@ -359,9 +356,8 @@ typedef struct NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS {
     NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PAGE_TABLE_FORMAT pageTable4KFormat[NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_MAX_NUM_PAGE_TABLE_FORMATS];
     NvHandle                                                hVASpace;
     NV_DECLARE_ALIGNED(NvU64 vaRangeLo, 8);
-    NvU32                                                   hugePageSize;
     NvU32                                                   vaSpaceId;
-    NvU32                                                   pageSize512MB;
+    NV_DECLARE_ALIGNED(NvU64 supportedPageSizeMask, 8);
 } NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS;
 
 /*
@@ -432,7 +428,7 @@ typedef struct NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCK {
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PTE_ADDR_SPACE_SYSTEM_COHERENT_MEMORY     (0x00000001U)
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PTE_ADDR_SPACE_SYSTEM_NON_COHERENT_MEMORY (0x00000002U)
 
-#define NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS                                           4U
+#define NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS                                           5U
 
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_MESSAGE_ID (0x9U)
 
@@ -455,23 +451,6 @@ typedef struct NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS {
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_HALF                             2U
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_QUARTER                          3U
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_EIGHTH                           4U
-
-/*
- * NV0080_CTRL_CMD_DMA_INVALIDATE_PDB_TARGET
- *
- * This command invalidates PDB target setting in hardware.
- * After execeution of this command PDB target would be in undefined state.
- *
- * Returns error if the PDB target can not be invalidate.
- *
- * This call is only supported on chips fermi and later chips.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-
-#define NV0080_CTRL_CMD_DMA_INVALIDATE_PDB_TARGET                                     (0x80180bU) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | 0xB" */
 
 /*
  * NV0080_CTRL_CMD_DMA_INVALIDATE_TLB
@@ -699,7 +678,7 @@ typedef struct NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS {
     NvU32    flags;
     NV_DECLARE_ALIGNED(NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS ptParams[NV0080_CTRL_DMA_UPDATE_PDE_2_PT_IDX__SIZE], 8);
     NvHandle hVASpace;
-    NV_DECLARE_ALIGNED(NvP64 pPdeBuffer, 8); // NV_MMU_VER2_PDE__SIZE
+    NV_DECLARE_ALIGNED(NvP64 pPdeBuffer, 8); // NV_MMU_VER2_DUAL_PDE__SIZE
     NvU32    subDeviceId; // ID+1, 0 for BC
 } NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS;
 
@@ -737,36 +716,6 @@ typedef struct NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS {
 #define NV0080_CTRL_DMA_UPDATE_PDE_2_FLAGS_SPARSE_TRUE           (0x00000001U)
 
 /*
- * NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE
- * This interface will create a corresponding privileged
- * kernel address space that will mirror user space allocations in this
- * VASPACE.
- * The user can either pass a FERMI_VASPACE_A handle or RM will use the 
- * vaspace associated with the client/device if hVaspace is passed as 
- * NULL.
- * Once this property is set, the user will not be able to make allocations
- * from  the top most PDE of this address space.
- *
- * The user is expected to call this function as soon as he has created 
- * the device/Vaspace object. If the user has already made VA allocations 
- * in this vaspace then this call will return a failure 
- * (NV_ERR_INVALID_STATE). 
- * The Vaspace should have no VA allocations when this call is made.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_INVALID_STATE
-*/
-#define NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE                  (0x801810U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS_MESSAGE_ID" */
-
-#define NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS_MESSAGE_ID (0x10U)
-
-typedef struct NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS {
-    NvHandle hVASpace;
-} NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS;
-
-/*
  * NV0080_CTRL_DMA_SET_DEFAULT_VASPACE
  * This is a special control call provided for KMD to use. 
  * It will associate an allocated Address Space Object as the 
@@ -790,7 +739,7 @@ typedef struct NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS {
  *   NV_ERR_INVALID_STATE
  *  
  */
-#define NV0080_CTRL_DMA_SET_DEFAULT_VASPACE (0x801812U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_SET_DEFAULT_VASPACE_PARAMS_MESSAGE_ID" */
+#define NV0080_CTRL_DMA_SET_DEFAULT_VASPACE                      (0x801812U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_SET_DEFAULT_VASPACE_PARAMS_MESSAGE_ID" */
 
 #define NV0080_CTRL_DMA_SET_DEFAULT_VASPACE_PARAMS_MESSAGE_ID (0x12U)
 

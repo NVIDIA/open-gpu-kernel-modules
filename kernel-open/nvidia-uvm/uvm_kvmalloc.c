@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2020 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -36,7 +36,7 @@
 typedef struct
 {
     size_t alloc_size;
-    uint8_t ptr[0];
+    uint8_t ptr[];
 } uvm_vmalloc_hdr_t;
 
 typedef struct
@@ -111,13 +111,13 @@ void uvm_kvmalloc_exit(void)
         return;
 
     if (atomic_long_read(&g_uvm_leak_checker.bytes_allocated) > 0) {
-        printk(KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX "!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-        printk(KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX "Memory leak of %lu bytes detected.%s\n",
-                      atomic_long_read(&g_uvm_leak_checker.bytes_allocated),
-                      uvm_leak_checker < UVM_KVMALLOC_LEAK_CHECK_ORIGIN ?
+        UVM_INFO_PRINT("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        UVM_INFO_PRINT("Memory leak of %lu bytes detected.%s\n",
+                        atomic_long_read(&g_uvm_leak_checker.bytes_allocated),
+                        uvm_leak_checker < UVM_KVMALLOC_LEAK_CHECK_ORIGIN ?
                         " insmod with uvm_leak_checker=2 for detailed information." :
                         "");
-        printk(KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX "!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+        UVM_INFO_PRINT("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
         if (g_uvm_global.unload_state.ptr)
             *g_uvm_global.unload_state.ptr |= UVM_TEST_UNLOAD_STATE_MEMORY_LEAK;
@@ -129,12 +129,12 @@ void uvm_kvmalloc_exit(void)
         uvm_rb_tree_for_each_safe(node, next, &g_uvm_leak_checker.allocation_info) {
             uvm_kvmalloc_info_t *info = container_of(node, uvm_kvmalloc_info_t, node);
 
-            printk(KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX "    Leaked %zu bytes from %s:%d:%s (0x%llx)\n",
-                   uvm_kvsize((void *)((uintptr_t)info->node.key)),
-                   kbasename(info->file),
-                   info->line,
-                   info->function,
-                   info->node.key);
+            UVM_INFO_PRINT("    Leaked %zu bytes from %s:%d:%s (0x%llx)\n",
+                            uvm_kvsize((void *)((uintptr_t)info->node.key)),
+                            kbasename(info->file),
+                            info->line,
+                            info->function,
+                            info->node.key);
 
             // Free so we don't keep eating up memory while debugging. Note that
             // this also removes the entry from the table, frees info, and drops

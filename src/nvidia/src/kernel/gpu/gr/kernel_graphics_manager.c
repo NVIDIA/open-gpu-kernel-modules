@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,14 +21,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/gr/fecs_event_list.h"
 
+#include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 
 #include "kernel/rmapi/client.h"
 #include "kernel/rmapi/client_resource.h"
+#include "nvRmReg.h"
 
 // COMPUTE
 #include "class/clb0c0.h"
@@ -39,6 +44,10 @@
 #include "class/clc5c0.h"
 #include "class/clc6c0.h"
 #include "class/clc7c0.h"
+#include "class/clc9c0.h"
+#include "class/clcbc0.h"
+#include "class/clcdc0.h"
+#include "class/clcec0.h"
 // GFX
 #include "class/clb097.h"
 #include "class/clb197.h"
@@ -48,11 +57,16 @@
 #include "class/clc597.h"
 #include "class/clc697.h"
 #include "class/clc797.h"
+#include "class/clc997.h"
+#include "class/clcb97.h"
+#include "class/clcd97.h"
+#include "class/clce97.h"
 // TWOD
 #include "class/cl902d.h"
 
 // MEM2MEM
 #include "class/cla140.h"
+#include "class/clcd40.h"
 
 static NvBool
 _kgrmgrGPUInstanceHasComputeInstances
@@ -99,6 +113,10 @@ kgrmgrGetGrObjectType_IMPL
         case TURING_COMPUTE_A:
         case AMPERE_COMPUTE_A:
         case AMPERE_COMPUTE_B:
+        case ADA_COMPUTE_A:
+        case HOPPER_COMPUTE_A:
+        case BLACKWELL_COMPUTE_A:
+        case BLACKWELL_COMPUTE_B:
             *pObjectType = GR_OBJECT_TYPE_COMPUTE;
             break;
         case MAXWELL_A:
@@ -109,12 +127,17 @@ kgrmgrGetGrObjectType_IMPL
         case TURING_A:
         case AMPERE_A:
         case AMPERE_B:
+        case ADA_A:
+        case HOPPER_A:
+        case BLACKWELL_A:
+        case BLACKWELL_B:
             *pObjectType = GR_OBJECT_TYPE_3D;
             break;
         case FERMI_TWOD_A:
             *pObjectType = GR_OBJECT_TYPE_2D;
             break;
         case KEPLER_INLINE_TO_MEMORY_B:
+        case BLACKWELL_INLINE_TO_MEMORY_A:
             *pObjectType = GR_OBJECT_TYPE_MEM;
             break;
         default:
@@ -159,6 +182,8 @@ kgrmgrIsCtxBufSupported_IMPL
         case GR_CTX_BUFFER_PAGEPOOL:
             // fall-through
         case GR_CTX_BUFFER_RTV_CB:
+            // fall-through
+        case GR_CTX_BUFFER_SETUP:
             bSupported = NV_FALSE;
             break;
 
@@ -280,6 +305,15 @@ kgrmgrCtrlSetChannelHandle_IMPL
     }
 }
 
+static void
+_kgrmgrInitRegistryOverrides
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager
+)
+{
+}
+
 NV_STATUS
 kgrmgrConstructEngine_IMPL
 (
@@ -288,6 +322,10 @@ kgrmgrConstructEngine_IMPL
     ENGDESCRIPTOR          engDesc
 )
 {
+    _kgrmgrInitRegistryOverrides(pGpu, pKernelGraphicsManager);
+
+    fecsGlobalLoggingInit(pGpu, pKernelGraphicsManager, &pKernelGraphicsManager->pFecsGlobalTraceInfo);
+
     return NV_OK;
 }
 
@@ -297,13 +335,27 @@ kgrmgrDestruct_IMPL
     KernelGraphicsManager *pKernelGraphicsManager
 )
 {
+    OBJGPU *pGpu = ENG_GET_GPU(pKernelGraphicsManager);
+
+    fecsGlobalLoggingTeardown(pGpu, pKernelGraphicsManager);
+
     portMemSet(&pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks, 0,
-               sizeof(pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks));
+           sizeof(pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks));
     portMemFree(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pPpcMasks);
     pKernelGraphicsManager->legacyKgraphicsStaticInfo.pPpcMasks = NULL;
     portMemFree(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo);
     pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo = NULL;
     pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized = NV_FALSE;
+}
+
+void
+kgrmgrStateDestroy_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager
+)
+{
+    fecsRemoveAllBindpointsForGpu(pGpu);
 }
 
 /*!
@@ -354,20 +406,20 @@ cleanup:
 }
 
 /*!
- * @brief Retrieves associated KernelGraphics engine for given client / route info
+ * @brief Retrieves associated KernelGraphics engine for given device / route info
  *
  * @param[in]  pGpu
  * @param[in]  pKernelGraphicsManager
- * @param[in]  hClient                       Client handle
+ * @param[in]  pDevice
  * @param[in]  grRouteInfo                   Client-provided info to direct GR accesses
  * @param[out] ppKernelGraphics (Optional)   Ptr to store appropriate KernelGraphics *, if desired.
  */
 NV_STATUS
-kgrmgrCtrlRouteKGR_IMPL
+kgrmgrCtrlRouteKGRWithDevice_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsManager *pKernelGraphicsManager,
-    NvHandle hClient,
+    Device *pDevice,
     const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo,
     KernelGraphics **ppKernelGraphics
 )
@@ -379,6 +431,7 @@ kgrmgrCtrlRouteKGR_IMPL
     NvU32 grIdx;
     NV2080_CTRL_GR_ROUTE_INFO grRouteInfo = *pGrRouteInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    RsClient *pClient;
 
     if (!IS_MIG_IN_USE(pGpu))
     {
@@ -386,8 +439,10 @@ kgrmgrCtrlRouteKGR_IMPL
         goto done;
     }
 
+    pClient = RES_GET_CLIENT(pDevice);
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+        kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
     //
     // Compute instances always have 1 GR engine, so automatically fill in
@@ -400,8 +455,13 @@ kgrmgrCtrlRouteKGR_IMPL
     }
     else
     {
-        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilegeByHandle(hClient);
-        if (!rmclientIsAdminByHandle(hClient, privLevel) &&
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
+
+        if (pRmClient == NULL)
+            return NV_ERR_INVALID_OBJECT_HANDLE;
+
+        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pRmClient);
+        if (!rmclientIsAdmin(pRmClient, privLevel) &&
              _kgrmgrGPUInstanceHasComputeInstances(pGpu, pKernelGraphicsManager, ref.pKernelMIGGpuInstance))
         {
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -420,15 +480,15 @@ kgrmgrCtrlRouteKGR_IMPL
         {
             NvU32 localGrIdx = DRF_VAL64(2080_CTRL_GR, _ROUTE_INFO_DATA,
                                          _ENGID, grRouteInfo.route);
-            NvU32 globalEngType;
+            RM_ENGINE_TYPE globalRmEngType;
 
             NV_CHECK_OK_OR_RETURN(
                 LEVEL_ERROR,
                 kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                                  NV2080_ENGINE_TYPE_GR(localGrIdx),
-                                                  &globalEngType));
-            NV_ASSERT_OR_RETURN(NV2080_ENGINE_TYPE_IS_GR(globalEngType), NV_ERR_INVALID_STATE);
-            grIdx = NV2080_ENGINE_TYPE_GR_IDX(globalEngType);
+                                                  RM_ENGINE_TYPE_GR(localGrIdx),
+                                                  &globalRmEngType));
+            NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_GR(globalRmEngType), NV_ERR_INVALID_STATE);
+            grIdx = RM_ENGINE_TYPE_GR_IDX(globalRmEngType);
 
             break;
         }
@@ -436,11 +496,11 @@ kgrmgrCtrlRouteKGR_IMPL
         case NV2080_CTRL_GR_ROUTE_INFO_FLAGS_TYPE_CHANNEL:
         {
             KernelChannel *pKernelChannel;
-            NvU32 engineType;
+            RM_ENGINE_TYPE rmEngineType;
             NvHandle hChannel = DRF_VAL64(2080_CTRL_GR, _ROUTE_INFO_DATA,
                                           _CHANNEL_HANDLE, grRouteInfo.route);
 
-            status = CliGetKernelChannel(hClient, hChannel, &pKernelChannel);
+            status = CliGetKernelChannel(pClient, hChannel, &pKernelChannel);
             if (status != NV_OK)
             {
                 RsResourceRef         *pChanGrpRef;
@@ -451,12 +511,13 @@ kgrmgrCtrlRouteKGR_IMPL
                 // If retrieving a channel with the given hChannel doesn't work,
                 // try interpreting it as a handle to a channel group instead.
                 //
-                status = CliGetChannelGroup(hClient, hChannel, &pChanGrpRef, NULL);
+                status = CliGetChannelGroup(pClient->hClient, hChannel,
+                    &pChanGrpRef, NULL);
                 if (NV_OK != status)
                 {
                     NV_PRINTF(LEVEL_ERROR,
                               "Failed to find a channel or TSG with given handle 0x%08x associated with hClient=0x%08x\n",
-                              hChannel, hClient);
+                              hChannel, pClient->hClient);
                     return NV_ERR_INVALID_ARGUMENT;
                 }
 
@@ -472,25 +533,25 @@ kgrmgrCtrlRouteKGR_IMPL
                 NV_PRINTF(LEVEL_INFO,
                           "Found TSG with given handle 0x%08x, using this to determine GR engine ID\n",
                           hChannel);
-                engineType = pKernelChannelGroup->engineType;
+                rmEngineType = pKernelChannelGroup->engineType;
             }
             else
             {
                 NV_PRINTF(LEVEL_INFO,
                           "Found channel with given handle 0x%08x, using this to determine GR engine ID\n",
                           hChannel);
-                engineType = kchannelGetEngineType(pKernelChannel);
+                rmEngineType = kchannelGetEngineType(pKernelChannel);
             }
 
-            if (!NV2080_ENGINE_TYPE_IS_GR(engineType))
+            if (!RM_ENGINE_TYPE_IS_GR(rmEngineType))
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Failed to route GR using non-GR engine type 0x%x\n",
-                          engineType);
+                          "Failed to route GR using non-GR engine type 0x%x (0x%x)\n",
+                          gpuGetNv2080EngineType(rmEngineType), rmEngineType);
                 return NV_ERR_INVALID_ARGUMENT;
             }
 
-            grIdx = NV2080_ENGINE_TYPE_GR_IDX(engineType);
+            grIdx = RM_ENGINE_TYPE_GR_IDX(rmEngineType);
             break;
         }
         default:
@@ -522,6 +583,21 @@ kgrmgrGetLegacyGpcMask_IMPL
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
 
     return pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks.gpcMask;
+}
+
+/*!
+ * @return legacy physical GFX GPC mask enumerated by this chip
+ */
+NvU32
+kgrmgrGetLegacyPhysGfxGpcMask_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager
+)
+{
+    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
+
+    return pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks.physGfxGpcMask;
 }
 
 /*!
@@ -604,7 +680,8 @@ kgrmgrGetLegacyZcullMask_IMPL
  * @param[IN]   pGpu
  * @param[IN]   pKernelGraphicsManager
  * @param[IN]   grIdx                  phys gr idx
- * @param[IN]   gpcCount               Total GPCs connected to this GR engine
+ * @param[IN]   veidSpanOffset         Offset of spans localized to a GPU instance to make the VEID request from
+ * @param[IN]   veidCount              Total VEIDs connected to this GR engine
  * @param[IN]   pKernelMIGGPUInstance
  */
 NV_STATUS
@@ -613,30 +690,44 @@ kgrmgrAllocVeidsForGrIdx_IMPL
     OBJGPU *pGpu,
     KernelGraphicsManager *pKernelGraphicsManager,
     NvU32 grIdx,
-    NvU32 gpcCount,
+    NvU32 veidSpanOffset,
+    NvU32 veidCount,
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance
 )
 {
-    NvU32 maxVeidsPerGpc;
-    NvU32 maxVeidsForThisGr;
+    NvU32 veidSizePerSpan;
     NvU32 veidStart = 0;
     NvU32 veidEnd = 0;
     NvU32 GPUInstanceVeidEnd;
     NvU64 GPUInstanceVeidMask;
     NvU64 GPUInstanceFreeVeidMask;
-    NvU64 grVeidMask;
     NvU64 reqVeidMask;
-    NvU32 i;
 
     // This GR should not be already configured to use any VEIDs
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager->grIdxVeidMask[grIdx] == 0, NV_ERR_INVALID_STATE);
 
     NV_ASSERT_OK_OR_RETURN(
-        kgrmgrGetMaxVeidsPerGpc(pGpu, pKernelGraphicsManager, &maxVeidsPerGpc));
+        kgrmgrGetVeidSizePerSpan(pGpu, pKernelGraphicsManager, &veidSizePerSpan));
 
     // We statically assign VEIDs to a GR based on the number of GPCs connected to it
-    maxVeidsForThisGr = maxVeidsPerGpc * gpcCount;
-    reqVeidMask = NVBIT64(maxVeidsForThisGr) - 1;
+    if (veidCount % veidSizePerSpan != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "veidCount %d is not aligned to veidSizePerSpan=%d\n", veidCount, veidSizePerSpan);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV_ASSERT_OR_RETURN(veidSpanOffset != KMIGMGR_SPAN_OFFSET_INVALID, NV_ERR_INVALID_ARGUMENT);
+
+    veidStart = (veidSpanOffset * veidSizePerSpan) + pKernelMIGGPUInstance->resourceAllocation.veidOffset;
+    veidEnd = veidStart + veidCount - 1;
+
+    NV_ASSERT_OR_RETURN(veidStart < veidEnd, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(veidStart < 64, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(veidEnd < 64, NV_ERR_INVALID_ARGUMENT);
+
+    reqVeidMask = DRF_SHIFTMASK64(veidEnd:veidStart);
+
+    NV_ASSERT_OR_RETURN(reqVeidMask != 0x0, NV_ERR_INVALID_STATE);
 
     // Create a mask for VEIDs associated with this GPU instance
     GPUInstanceVeidEnd = pKernelMIGGPUInstance->resourceAllocation.veidOffset + pKernelMIGGPUInstance->resourceAllocation.veidCount - 1;
@@ -644,31 +735,22 @@ kgrmgrAllocVeidsForGrIdx_IMPL
 
     NV_ASSERT_OR_RETURN(GPUInstanceVeidMask != 0x0, NV_ERR_INVALID_STATE);
 
-    GPUInstanceFreeVeidMask = ~pKernelGraphicsManager->veidInUseMask & GPUInstanceVeidMask;
-
-    for (i = pKernelMIGGPUInstance->resourceAllocation.veidOffset; i <= GPUInstanceVeidEnd; i += maxVeidsPerGpc)
-    {
-        // See if requested slots are available within this range
-        if (((GPUInstanceFreeVeidMask >> i) & reqVeidMask) == reqVeidMask)
-        {
-            veidStart = i;
-            veidEnd = veidStart + maxVeidsForThisGr - 1;
-            break;
-        }
-    }
-
-    NV_CHECK_OR_RETURN(LEVEL_SILENT, i <= GPUInstanceVeidEnd,
-                       NV_ERR_INSUFFICIENT_RESOURCES);
-
-    grVeidMask = DRF_SHIFTMASK64(veidEnd:veidStart);
-    NV_ASSERT_OR_RETURN(grVeidMask != 0x0, NV_ERR_INVALID_STATE);
+    GPUInstanceFreeVeidMask = ~(pKernelGraphicsManager->veidInUseMask) & GPUInstanceVeidMask;
 
     // VEID range should not overlap with existing VEIDs in use
-    NV_ASSERT_OR_RETURN((pKernelGraphicsManager->veidInUseMask & grVeidMask) == 0, NV_ERR_STATE_IN_USE);
+    NV_ASSERT_OR_RETURN((pKernelGraphicsManager->veidInUseMask & reqVeidMask) == 0, NV_ERR_STATE_IN_USE);
+
+    //
+    // For swizzId 0, client can use any range of VEIDs if not used, so we don't
+    // need to do the range check
+    //
+    NV_ASSERT_OR_RETURN(((pKernelMIGGPUInstance->swizzId == 0) ||
+                         ((GPUInstanceFreeVeidMask & reqVeidMask) == reqVeidMask)),
+                        NV_ERR_INSUFFICIENT_RESOURCES);
 
     // mark each VEID in the range as "in use"
-    pKernelGraphicsManager->veidInUseMask |= grVeidMask;
-    pKernelGraphicsManager->grIdxVeidMask[grIdx] |= grVeidMask;
+    pKernelGraphicsManager->veidInUseMask |= reqVeidMask;
+    pKernelGraphicsManager->grIdxVeidMask[grIdx] |= reqVeidMask;
 
     return NV_OK;
 }
@@ -692,30 +774,52 @@ kgrmgrClearVeidsForGrIdx_IMPL
     pKernelGraphicsManager->grIdxVeidMask[grIdx] = 0;
 }
 
-/*!
- * @brief   Function to get max VEID count per GPC
+/*! 
+ * @brief Get VEID step size
  */
 NV_STATUS
-kgrmgrGetMaxVeidsPerGpc_IMPL
+kgrmgrGetVeidStepSize_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsManager *pKernelGraphicsManager,
-    NvU32 *pMaxVeidsPerGpc
+    NvU32 *pVeidStepSize
 )
 {
-    NvU32 maxVeids;
-    NvU32 maxGpcCount;
-
-    NV_ASSERT_OR_RETURN(pMaxVeidsPerGpc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pVeidStepSize != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo != NULL, NV_ERR_INVALID_STATE);
 
-    maxVeids = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo->infoList[NV0080_CTRL_GR_INFO_INDEX_MAX_SUBCONTEXT_COUNT].data;
+    *pVeidStepSize = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo->infoList[NV0080_CTRL_GR_INFO_INDEX_LITTER_MIN_SUBCTX_PER_SMC_ENG].data;
 
-    maxGpcCount = gpuGetLitterValues_HAL(pGpu, NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GPCS);
-    NV_ASSERT_OR_RETURN(maxGpcCount != 0, NV_ERR_INSUFFICIENT_RESOURCES);
+    return NV_OK;
+}
 
-    *pMaxVeidsPerGpc = (maxVeids / maxGpcCount);
+/*!
+ * @brief Get VEID size for each span
+ */
+NV_STATUS
+kgrmgrGetVeidSizePerSpan_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager,
+    NvU32 *pVeidSizePerSpan
+)
+{
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE computeProfile;
+    NvU32 computeSize;
+
+    NV_ASSERT_OR_RETURN(pVeidSizePerSpan != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    computeSize = kmigmgrSmallestComputeProfileSize(pGpu, pKernelMIGManager);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, computeSize != KMIGMGR_COMPUTE_SIZE_INVALID, NV_ERR_INVALID_STATE);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, computeSize, &computeProfile));
+
+    // VEIDs for each span should be the VEID size we assign to the smallest GPC count
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kgrmgrGetVeidsFromGpcCount_HAL(pGpu, pKernelGraphicsManager, computeProfile.gpcCount, pVeidSizePerSpan));
 
     return NV_OK;
 }
@@ -789,49 +893,19 @@ kgrmgrDiscoverMaxLocalCtxBufInfo_IMPL
 )
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
-    NvU32 bufId;
+
+    //
+    // Most of GR is stub'd so context related things are not needed in AMODEL.
+    // But this function can be called in some MODS test, so return OK directly
+    // to avoid failing the test.
+    //
+    if (IS_MODS_AMODEL(pGpu))
+        return NV_OK;
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT,
         kmigmgrIsMemoryPartitioningNeeded_HAL(pGpu, pKernelMIGManager, swizzId), NV_OK);
 
-    // Make sure sizes of all buffers are setup
-    NV_ASSERT_OK_OR_RETURN(
-        kgraphicsInitializeDeferredStaticData(pGpu, pKernelGraphics, NV01_NULL_OBJECT, NV01_NULL_OBJECT));
-
-    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pContextBuffersInfo != NULL, NV_ERR_INVALID_STATE);
-
-    // Get sizes of local ctx buffers
-    FOR_EACH_IN_ENUM(GR_CTX_BUFFER, bufId)
-    {
-        if (bufId == GR_CTX_BUFFER_MAIN)
-        {
-            NvU32 size;
-
-            // Get size of main buffer including subctx headers
-            NV_ASSERT_OK_OR_RETURN(kgraphicsGetMainCtxBufferSize(pGpu, pKernelGraphics, NV_TRUE, &size));
-            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
-                                      size,
-                                      RM_PAGE_SIZE,
-                                      RM_ATTR_PAGE_SIZE_4KB,
-                                      kgraphicsShouldForceMainCtxContiguity_HAL(pGpu, pKernelGraphics));
-        }
-        else
-        {
-            NvU32 fifoEngineId;
-
-            NV_ASSERT_OK_OR_RETURN(
-                kgrctxCtxBufferToFifoEngineId(bufId, &fifoEngineId));
-
-            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
-                                      pKernelGraphicsStaticInfo->pContextBuffersInfo->engine[fifoEngineId].size,
-                                      RM_PAGE_SIZE,
-                                      RM_ATTR_PAGE_SIZE_4KB,
-                                      ((bufId == GR_CTX_BUFFER_PATCH) || (bufId == GR_CTX_BUFFER_PM)));
-        }
-    }
-    FOR_EACH_IN_ENUM_END;
-    return NV_OK;
+    return kgraphicsDiscoverMaxLocalCtxBufferSize(pGpu, pKernelGraphics);
 }
 
 /*!
@@ -890,6 +964,14 @@ kgrmgrDiscoverMaxGlobalCtxBufSizes_IMPL
 {
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     GR_GLOBALCTX_BUFFER bufId;
+
+    //
+    // Most of GR is stub'd so context related things are not needed in AMODEL.
+    // But this function can be called in some MODS test, so return OK directly
+    // to avoid failing the test.
+    //
+    if (IS_MODS_AMODEL(pGpu))
+        return NV_OK;
 
     NV_ASSERT_OR_RETURN(!IS_MIG_IN_USE(pGpu), NV_ERR_INVALID_STATE);
 
@@ -959,5 +1041,107 @@ kgrmgrGetLegacyGpcTpcCount_IMPL
     NV_CHECK_OR_RETURN(LEVEL_ERROR, (gpcId < maxNumGpcs), 0);
 
     return pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks.tpcCount[gpcId];
+}
+
+/*!
+ * @brief   Function to Alloc VEIDs with either a specific placement or first-fit placement
+ *          depending upon the value passed into pSpanStart
+ *
+ * @param[IN]     pGpu
+ * @param[IN]     pKernelGraphicsManager
+ * @param[IN/OUT] pInUseMask             Mask of VEIDs in-use, updated with newly set VEIDs
+ * @param[IN]     veidCount              Total VEIDs connected to this GR engine
+ * @param[IN/OUT] pSpanStart             GPU Instance local span offset to begin assigning VEIDs from
+ * @param[IN]     pKernelMIGGPUInstance
+ */
+NV_STATUS
+kgrmgrCheckVeidsRequest_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager,
+    NvU64 *pInUseMask,
+    NvU32 veidCount,
+    NvU32 *pSpanStart,
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance
+)
+{
+    NvU32 veidSizePerSpan;
+    NvU32 veidStart = 0;
+    NvU32 veidEnd = 0;
+    NvU32 GPUInstanceVeidEnd;
+    NvU64 GPUInstanceVeidMask;
+    NvU64 GPUInstanceFreeVeidMask;
+    NvU64 veidMask;
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrmgrGetVeidSizePerSpan(pGpu, pKernelGraphicsManager, &veidSizePerSpan));
+
+    NV_ASSERT_OR_RETURN(pSpanStart != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pInUseMask != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // We statically assign VEIDs to a GR based on the number of GPCs connected to it
+    if (veidCount % veidSizePerSpan != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "veidCount %d is not aligned to veidSizePerSpan=%d\n", veidCount, veidSizePerSpan);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Create a mask for VEIDs associated with this GPU instance
+    GPUInstanceVeidEnd = pKernelMIGGPUInstance->resourceAllocation.veidOffset + pKernelMIGGPUInstance->resourceAllocation.veidCount - 1;
+    GPUInstanceVeidMask = DRF_SHIFTMASK64(GPUInstanceVeidEnd:pKernelMIGGPUInstance->resourceAllocation.veidOffset);
+
+    NV_ASSERT_OR_RETURN(GPUInstanceVeidMask != 0x0, NV_ERR_INVALID_STATE);
+
+    GPUInstanceFreeVeidMask = ~(*pInUseMask) & GPUInstanceVeidMask;
+
+    if (*pSpanStart != KMIGMGR_SPAN_OFFSET_INVALID)
+    {
+        veidStart = (*pSpanStart * veidSizePerSpan) + pKernelMIGGPUInstance->resourceAllocation.veidOffset;
+        veidEnd = veidStart + veidCount - 1;
+
+        NV_ASSERT_OR_RETURN(veidStart < veidEnd, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(veidStart < 64, NV_ERR_INVALID_ARGUMENT);
+        NV_ASSERT_OR_RETURN(veidEnd < 64, NV_ERR_INVALID_ARGUMENT);
+    }
+    else
+    {
+        NvU64 reqVeidMask = DRF_SHIFTMASK64(veidCount - 1:0);
+        NvU32 i;
+
+        for (i = pKernelMIGGPUInstance->resourceAllocation.veidOffset; i <= GPUInstanceVeidEnd; i += veidSizePerSpan)
+        {
+            // See if requested slots are available within this range
+            if (((GPUInstanceFreeVeidMask >> i) & reqVeidMask) == reqVeidMask)
+            {
+                veidStart = i;
+                veidEnd = veidStart + veidCount - 1;
+                break;
+            }
+        }
+
+        NV_CHECK_OR_RETURN(LEVEL_SILENT, i <= GPUInstanceVeidEnd,
+                           NV_ERR_INSUFFICIENT_RESOURCES);
+    }
+
+    veidMask = DRF_SHIFTMASK64(veidEnd:veidStart);
+    NV_ASSERT_OR_RETURN(veidMask != 0x0, NV_ERR_INVALID_STATE);
+
+    //
+    // For swizzId 0, client can use any range of VEIDs if not used, so we don't
+    // need to do the range check
+    //
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, 
+                       ((pKernelMIGGPUInstance->swizzId == 0) ||
+                        (GPUInstanceVeidMask & veidMask) == veidMask),
+                       NV_ERR_INSUFFICIENT_RESOURCES);
+
+    // VEID range should not overlap with existing VEIDs in use
+    NV_ASSERT_OR_RETURN((*pInUseMask & veidMask) == 0, NV_ERR_STATE_IN_USE);
+
+    NV_ASSERT(veidStart >= pKernelMIGGPUInstance->resourceAllocation.veidOffset);
+
+    *pSpanStart = (veidStart - pKernelMIGGPUInstance->resourceAllocation.veidOffset) / veidSizePerSpan;
+    *pInUseMask |= veidMask;
+    return NV_OK;
 }
 

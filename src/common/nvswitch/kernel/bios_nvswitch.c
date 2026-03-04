@@ -29,6 +29,7 @@
 #include "flcn/flcn_nvswitch.h"
 
 #include "rmflcncmdif_nvswitch.h"
+#include "haldef_nvswitch.h"
 
 static NvlStatus
 _nvswitch_core_bios_read
@@ -48,7 +49,6 @@ _nvswitch_core_bios_read
     RM_SOE_CORE_CMD_BIOS *pParams = &cmd.cmd.core.bios;
     NvU64 dmaHandle = 0;
     NvU8 *pReadBuffer = NULL;
-    NvU32 spiReadCnt = 0;
     NvU32 offset = 0;
     NvU32 bufferSize = (reqSize < SOE_DMA_MAX_SIZE) ? SOE_DMA_MAX_SIZE : MAX_READ_SIZE;
 
@@ -81,7 +81,7 @@ _nvswitch_core_bios_read
         nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
         cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-        cmd.hdr.size   = sizeof(cmd);
+        cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, BIOS);
         cmd.cmd.core.bios.cmdType = readType;
         RM_FLCN_U64_PACK(&pParams->dmaHandle, &dmaHandle);
         pParams->offset = offset;
@@ -134,7 +134,6 @@ _nvswitch_core_bios_read
         }
 
         offset += pParams->sizeInBytes;
-        spiReadCnt++;
     }
 
     nvswitch_os_unmap_dma_region(device->os_handle, pReadBuffer, dmaHandle,
@@ -203,7 +202,7 @@ nvswitch_bios_get_image
         return NVL_SUCCESS;
     }
 
-    status = nvswitch_bios_read_size(device, &biosSize);
+    status = device->hal.nvswitch_get_bios_size(device, &biosSize);
     if (status != NVL_SUCCESS || biosSize == 0)
     {
         NVSWITCH_PRINT(device, ERROR,

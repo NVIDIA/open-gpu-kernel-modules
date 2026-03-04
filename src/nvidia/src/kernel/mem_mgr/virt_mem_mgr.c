@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,11 +21,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         Virtual Memory Manager Object Function Definitions.               *
 *                                                                           *
 \***************************************************************************/
+
+#include "core/system.h"
 
 #include "mem_mgr/virt_mem_mgr.h"
 #include "mem_mgr/vaspace.h"
@@ -137,6 +139,7 @@ vmmCreateVaspace_IMPL
         return status;
     }
 
+    (*ppVAS)->vasUniqueId = portAtomicIncrementU32(&SYS_GET_INSTANCE()->currentVasUniqueId);
     return status;
 }
 

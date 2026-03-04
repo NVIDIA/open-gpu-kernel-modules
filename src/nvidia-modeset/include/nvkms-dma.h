@@ -60,7 +60,8 @@ void nvEvoResetCRC32Notifier(volatile NvU32 *pCRC32Notifier,
                              NvU32 offset,
                              NvU32 reset_base_bit,
                              NvU32 reset_value);
-NvBool nvEvoWaitForCRC32Notifier(volatile NvU32 *pCRC32Notifier,
+NvBool nvEvoWaitForCRC32Notifier(const NVDevEvoPtr pDevEvo,
+                                 volatile NvU32 *pCRC32Notifier,
                                  NvU32 offset,
                                  NvU32 done_base_bit,
                                  NvU32 done_extent_bit,
@@ -228,11 +229,7 @@ void nvDisableCoreInterlockUpdateState(NVDevEvoPtr pDevEvo,
 #define NV_UDISP_DMA_OPCODE                                   31:29 /* RWXUF */
 #define NV_UDISP_DMA_OPCODE_METHOD                       0x00000000 /* RW--V */
 #define NV_UDISP_DMA_METHOD_COUNT                             27:18 /* RWXUF */
-// Technically, the METHOD_OFFSET field is 13:2 for nvdisplay (classes c3*),
-// and only 11:2 for older display classes.  But, the higher bits were
-// unused in the older classes, and we should never push any methods of that
-// size on them anyway, so we always use the wider definition here.
-#define NV_UDISP_DMA_METHOD_OFFSET                             13:2 /* RWXUF */
+#define NV_UDISP_DMA_METHOD_OFFSET                             15:2 /* RWXUF */
 
 // Start an EVO method.
 static inline void nvDmaSetStartEvoMethod(
@@ -282,5 +279,8 @@ static inline NvBool nvIsUpdateStateEmpty(const NVDevEvoRec *pDevEvo,
     }
     return TRUE;
 }
+
+NvBool nvEvoPollForEmptyChannel(NVEvoChannelPtr pChannel, NvU32 sd,
+                                NvU64 *pStartTime, const NvU32 timeout);
 
 #endif /* __NVKMS_DMA_H__ */

@@ -288,12 +288,13 @@ nvswitch_i2c_add_adapter
 
     rc = nvswitch_os_snprintf(adapter->name,
                               sizeof(adapter->name),
-                              "NVIDIA NVSwitch i2c adapter %u at %x:%02x.%u",
+                              "NVIDIA NVSwitch i2c adapter %u at %04x:%x:%02x.%u",
                               port,
+                              NV_PCI_DOMAIN_NUMBER(pci_dev),
                               NV_PCI_BUS_NUMBER(pci_dev),
                               NV_PCI_SLOT_NUMBER(pci_dev),
                               PCI_FUNC(pci_dev->devfn));
-    if ((rc < 0) && (rc >= sizeof(adapter->name)))
+    if ((rc < 0) || (rc >= sizeof(adapter->name)))
     {
         goto cleanup;
     }

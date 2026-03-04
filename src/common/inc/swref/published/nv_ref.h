@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,8 @@
 #define NV_REF_PUBLISHED_H
 
 
+
+#include "nvmisc.h"
 
 //
 // These registers can be accessed by chip-independent code as
@@ -102,10 +104,11 @@
  * Very stable across generations.
  */
 
-/* dev_master.ref */
+/* dev_boot */
 #define NV_PMC_BOOT_0                                    0x00000000 /* R--4R */
 #define NV_PMC_BOOT_0_MINOR_REVISION                            3:0 /* R--VF */
 #define NV_PMC_BOOT_0_MAJOR_REVISION                            7:4 /* R--VF */
+#define NV_PMC_BOOT_0_ARCHITECTURE_1                            8:8 /* R--VF */
 #define NV_PMC_BOOT_0_IMPLEMENTATION                          23:20 /* R--VF */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_0                   0x00000000 /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_1                   0x00000001 /* R---V */
@@ -123,10 +126,14 @@
 #define NV_PMC_BOOT_0_IMPLEMENTATION_D                   0x0000000D /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_E                   0x0000000E /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_F                   0x0000000F /* R---V */
-#define NV_PMC_BOOT_0_ARCHITECTURE                            28:24 /* R--VF */
+#define NV_PMC_BOOT_0_ARCHITECTURE_0                          28:24 /* R--VF */
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU100                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU110                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GA100                 0x00000017 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GH100                 0x00000018 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_AD100                 0x00000019 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GB100                 0x0000001A /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GB200                 0x0000001B /* R---V */
 
 #define NV_PMC_BOOT_1                                    0x00000004 /* R--4R */
 #define NV_PMC_BOOT_1_VGPU8                                     8:8 /* R--VF */
@@ -144,11 +151,67 @@
 #define NV_PMC_BOOT_42_MINOR_REVISION                         15:12 /* R-XVF */
 #define NV_PMC_BOOT_42_MAJOR_REVISION                         19:16 /* R-XVF */
 #define NV_PMC_BOOT_42_IMPLEMENTATION                         23:20 /*       */
-#define NV_PMC_BOOT_42_ARCHITECTURE                           28:24 /*       */
-#define NV_PMC_BOOT_42_CHIP_ID                                28:20 /* R-XVF */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_0                  0x00000000 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_1                  0x00000001 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_2                  0x00000002 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_3                  0x00000003 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_4                  0x00000004 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_5                  0x00000005 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_6                  0x00000006 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_7                  0x00000007 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_8                  0x00000008 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_9                  0x00000009 /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_A                  0x0000000A /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_B                  0x0000000B /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_C                  0x0000000C /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_D                  0x0000000D /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_E                  0x0000000E /*       */
+#define NV_PMC_BOOT_42_IMPLEMENTATION_F                  0x0000000F /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE                           29:24 /*       */
+#define NV_PMC_BOOT_42_CHIP_ID                                29:20 /* R-XVF */
+
+#define NV_PMC_BOOT_42_ARCHITECTURE_GM100                0x00000011 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GM200                0x00000012 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GP100                0x00000013 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GV100                0x00000014 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GV110                0x00000015 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_TU100                0x00000016 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GA100                0x00000017 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GH100                0x00000018 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_AD100                0x00000019 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GB100                0x0000001A /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GB200                0x0000001B /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_AMODEL               0x0000001F /*       */
+
+#define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
 
 /* dev_arapb_misc.h */
 #define NV_PAPB_MISC_GP_HIDREV_CHIPID                    15:8 /* ----F */
 #define NV_PAPB_MISC_GP_HIDREV_MAJORREV                   7:4 /* ----F */
+
+
+//
+// Helper to return NV_PMC_BOOT_0 architecture, which is split across fields:
+// ARCHITECTURE_1 (msb) and ARCHITECTURE_0 (lsb)
+//
+static inline NvU32
+decodePmcBoot0Architecture(NvU32 pmcBoot0RegVal)
+{
+    return (DRF_VAL(_PMC, _BOOT_0, _ARCHITECTURE_1, pmcBoot0RegVal) << DRF_SIZE(NV_PMC_BOOT_0_ARCHITECTURE_0)) |
+            DRF_VAL(_PMC, _BOOT_0, _ARCHITECTURE_0, pmcBoot0RegVal);
+}
+
+// Helpers to return NV_PMC_BOOT_42 architecture and chip ID
+static inline NvU32
+decodePmcBoot42Architecture(NvU32 pmcBoot42RegVal)
+{
+    return DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42RegVal);
+}
+
+static inline NvU32
+decodePmcBoot42ChipId(NvU32 pmcBoot42RegVal)
+{
+    return DRF_VAL(_PMC, _BOOT_42, _CHIP_ID, pmcBoot42RegVal);
+}
 
 #endif // NV_REF_PUBLISHED_H

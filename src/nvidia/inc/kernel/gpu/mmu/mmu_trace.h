@@ -65,11 +65,9 @@ typedef NvU32 (*MmuTraceCbSwToHwLevel)(const void *pFmt, NvU32 level);
 
 typedef enum
 {
-    MMU_TRACE_MODE_TRACE         = 0,
     MMU_TRACE_MODE_TRACE_VERBOSE = 1,
     MMU_TRACE_MODE_TRANSLATE     = 2,
-    MMU_TRACE_MODE_VALIDATE      = 3,
-    MMU_TRACE_MODE_DUMP_RANGE    = 4
+    MMU_TRACE_MODE_DUMP_RANGE    = 3
 } MMU_TRACE_MODE, *PMMU_TRACE_MODE;
 
 typedef struct
@@ -78,7 +76,6 @@ typedef struct
     NvU32                                      aperture;
     NvBool                                     valid;
     NV83DE_CTRL_DEBUG_GET_MAPPINGS_PARAMETERS *pMapParams;
-    NvU64                                      validateCount;
 } MMU_TRACE_ARG, *PMMU_TRACE_ARG;
 
 typedef struct

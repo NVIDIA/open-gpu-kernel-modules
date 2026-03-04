@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -31,14 +31,6 @@
 #include "uvm_tracker.h"
 #include "nvtypes.h"
 
-// Space (in bytes) used by uvm_push_end() on a CE channel.
-// This is the storage required by a semaphore release.
-#define UVM_PUSH_CE_END_SIZE 24
-
-
-
-
-
 // The max amount of inline push data is limited by how much space can be jumped
 // over with a single NOOP method.
 #define UVM_PUSH_INLINE_DATA_MAX_SIZE (UVM_METHOD_COUNT_MAX * UVM_METHOD_SIZE)
@@ -52,15 +44,39 @@ typedef enum
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use no membar at all.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself does not need a membar to be used (membar sys is the default). A
+    // membar may still be used, if needed to order the semaphore release
+    // write. See comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_NONE,
 
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use a membar gpu instead.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself only needs a membar gpu (the default is membar sys). A membar sys
+    // may still be used, if needed to order the semaphore release write. See
+    // comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_GPU,
 
     UVM_PUSH_FLAG_COUNT,
 } uvm_push_flag_t;
+
+struct uvm_push_crypto_bundle_struct {
+    // Initialization vector used to decrypt the push on the CPU
+    UvmCslIv iv;
+
+    // Key version used to decrypt the push on the CPU
+    NvU32 key_version;
+
+    // Size of the pushbuffer that is encrypted/decrypted
+    NvU32 push_size;
+
+    // Auth tag location for push decryption of updated push
+    void *auth_tag;
+};
 
 struct uvm_push_struct
 {
@@ -87,6 +103,12 @@ struct uvm_push_struct
 
     // A bitmap of flags from uvm_push_flag_t
     DECLARE_BITMAP(flags, UVM_PUSH_FLAG_COUNT);
+
+    // IV to use when launching WLC push
+    UvmCslIv launch_iv;
+
+    // Channel to use for indirect submission
+    uvm_channel_t *launch_channel;
 };
 
 #define UVM_PUSH_ACQUIRE_INFO_MAX_ENTRIES 16
@@ -121,7 +143,7 @@ struct uvm_push_acquire_info_struct
         };
     } values[UVM_PUSH_ACQUIRE_INFO_MAX_ENTRIES];
 
-    NvU32            num_values;
+    NvU32 num_values;
 };
 
 struct uvm_push_info_struct
@@ -143,7 +165,8 @@ struct uvm_push_info_struct
     char description[128];
 
     // Procedure to be called when the corresponding push is complete.
-    // This procedure is called with the UVM_LOCK_ORDER_CHANNEL spin lock held.
+    // This procedure is called with the channel pool lock held, which
+    // may be a spinlock.
     void (*on_complete)(void *);
     void *on_complete_data;
 };
@@ -190,6 +213,14 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
                                                         int line,
                                                         const char *format, ...);
 
+// Internal helper for uvm_push_begin_on_reserved channel
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS __uvm_push_begin_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                         uvm_push_t *push,
+                                                         const char *filename,
+                                                         const char *function,
+                                                         int line,
+                                                         const char *format, ...);
 // Begin a push on a channel of channel_type type
 // Picks the first available channel. If all channels of the given type are
 // busy, spin waits for one to become available.
@@ -197,20 +228,22 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
 // Notably requires a description of the push to be provided. This is currently
 // unused, but will be in the future for tracking push history.
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin(manager, type, push, format, ...)                      \
     __uvm_push_begin_acquire_with_info((manager), (type), NULL, NULL, (push), \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
 
-// Begin a push on a channel of channel_type type with dependencies in the tracker
-// This is equivalent to starting a push and acquiring the tracker, but in the
-// future it will have the ability to pick the channel to do a push on in a
-// smarter way based on its dependencies.
+// Begin a push on a channel of channel_type type with dependencies in the
+// tracker. This is equivalent to starting a push and acquiring the tracker, but
+// in the future it will have the ability to pick the channel to do a push on in
+// a smarter way based on its dependencies.
 //
 // Same as for uvm_push_acquire_tracker(), the tracker can be NULL. In this case
 // this will be equivalent to just uvm_push_begin().
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin_acquire(manager, type, tracker, push, format, ...)          \
     __uvm_push_begin_acquire_with_info((manager), (type), NULL, (tracker), (push), \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
@@ -231,9 +264,18 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
 // Begin a push on a specific channel
 // If the channel is busy, spin wait for it to become available.
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin_on_channel(channel, push, format, ...)                 \
     __uvm_push_begin_acquire_on_channel_with_info((channel), NULL, (push),    \
+        __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
+
+// Begin a push on a specific pre-reserved channel
+//
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
+#define uvm_push_begin_on_reserved_channel(channel, push, format, ...) \
+    __uvm_push_begin_on_reserved_channel_with_info((channel), (push),  \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
 
 // Same as uvm_push_begin_on_channel except it also acquires the input tracker
@@ -287,6 +329,11 @@ static void uvm_push_get_tracker_entry(uvm_push_t *push, uvm_tracker_entry_t *en
 // Subsequently pushed GPU work will not start before all the work tracked by
 // tracker is complete.
 // Notably a NULL tracker is handled the same way as an empty tracker.
+//
+// If dependencies across GPUs are not allowed in the current configuration
+// (see uvm_push_allow_dependencies_across_gpus), the caller is responsible for
+// ensuring that the input tracker does not contain dependencies on GPUs other
+// than the one associated with the push.
 void uvm_push_acquire_tracker(uvm_push_t *push, uvm_tracker_t *tracker);
 
 // Set a push flag
@@ -295,6 +342,14 @@ static void uvm_push_set_flag(uvm_push_t *push, uvm_push_flag_t flag)
     UVM_ASSERT_MSG(flag < UVM_PUSH_FLAG_COUNT, "flag %u\n", (unsigned)flag);
 
     __set_bit(flag, push->flags);
+}
+
+// Check if a push flag is set
+static bool uvm_push_test_flag(uvm_push_t *push, uvm_push_flag_t flag)
+{
+    UVM_ASSERT_MSG(flag < UVM_PUSH_FLAG_COUNT, "flag %u\n", (unsigned)flag);
+
+    return test_bit(flag, push->flags);
 }
 
 // Get and reset (if set) a push flag
@@ -317,6 +372,17 @@ static uvm_membar_t uvm_push_get_and_reset_membar_flag(uvm_push_t *push)
     return UVM_MEMBAR_SYS;
 }
 
+// Set a membar push flag.
+static void uvm_push_set_membar(uvm_push_t *push, uvm_membar_t membar)
+{
+    if (membar == UVM_MEMBAR_NONE)
+        uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+    else if (membar == UVM_MEMBAR_GPU)
+        uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    else
+        UVM_ASSERT(membar == UVM_MEMBAR_SYS);
+}
+
 // Get the size of the push so far
 static NvU32 uvm_push_get_size(uvm_push_t *push)
 {
@@ -334,6 +400,10 @@ static bool uvm_push_has_space(uvm_push_t *push, NvU32 free_space)
 // These do just enough for inline push data and uvm_push_get_gpu() to work.
 // Used by tests that run on fake GPUs without a channel manager (see
 // uvm_page_tree_test.c for an example).
+//
+// When the Confidential Computing feature is enabled, LCIC channels also use
+// fake push for other things, like encrypting semaphore values to unprotected
+// sysmem.
 NV_STATUS uvm_push_begin_fake(uvm_gpu_t *gpu, uvm_push_t *push);
 void uvm_push_end_fake(uvm_push_t *push);
 
@@ -353,6 +423,7 @@ void uvm_push_end_fake(uvm_push_t *push);
 static void uvm_push_inline_data_begin(uvm_push_t *push, uvm_push_inline_data_t *data)
 {
     data->push = push;
+
     // +1 for the NOOP method inserted at inline_data_end()
     data->next_data = (char*)(push->next + 1);
 }
@@ -380,7 +451,8 @@ void *uvm_push_inline_data_get(uvm_push_inline_data_t *data, size_t size);
 // Same as uvm_push_inline_data_get() but provides the specified alignment.
 void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size, size_t alignment);
 
-// Get a single buffer of size bytes of inline data in the push
+// Get a single buffer of size bytes of inline data in the push, alignment must
+// be positive and a multiple of UVM_METHOD_SIZE.
 //
 // Returns the CPU pointer to the beginning of the buffer. The buffer can be
 // accessed as long as the push is on-going. Also returns the GPU address of the
@@ -388,7 +460,10 @@ void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size
 //
 // This is a wrapper around uvm_push_inline_data_begin() and
 // uvm_push_inline_data_end() so see their comments for more details.
-void *uvm_push_get_single_inline_buffer(uvm_push_t *push, size_t size, uvm_gpu_address_t *gpu_address);
+void *uvm_push_get_single_inline_buffer(uvm_push_t *push,
+                                        size_t size,
+                                        size_t alignment,
+                                        uvm_gpu_address_t *gpu_address);
 
 // Helper that copies size bytes of data from src into the inline data fragment
 static void uvm_push_inline_data_add(uvm_push_inline_data_t *data, const void *src, size_t size)
@@ -412,7 +487,7 @@ static uvm_gpu_t *uvm_push_get_gpu(uvm_push_t *push)
 
 // Validate that the given method can be pushed to the underlying channel. The
 // method contents can be used to further validate individual fields.
-bool uvm_push_method_validate(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data);
+bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data);
 
 // Retrieve the push info object for a push that has already started
 static uvm_push_info_t *uvm_push_info_from_push(uvm_push_t *push)
@@ -426,5 +501,9 @@ static uvm_push_info_t *uvm_push_info_from_push(uvm_push_t *push)
 
     return &channel->push_infos[push->push_info_index];
 }
+
+// Returns true if a push is allowed to depend on pushes on other GPUs: work
+// dependencies across GPUs are permitted.
+bool uvm_push_allow_dependencies_across_gpus(void);
 
 #endif // __UVM_PUSH_H__

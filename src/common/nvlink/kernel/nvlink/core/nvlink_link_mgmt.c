@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,48 @@
 #include "../nvlink_helper.h"
 
 /**
+ * For the given link, are link state transitions symmetric, or do state
+ * transitions need to be initiated on both ends separately?
+ *
+ * @param[in]  link       NVLink link pointer
+ *
+ * return NV_TRUE if unilateral state transitions are supported
+ */
+NvBool
+nvlink_core_link_states_symmetric
+(
+    nvlink_link *link
+)
+{
+    return link->dev->bLinkStatesSymmetric;
+}
+
+/**
+ * For the given link, does this device support the given link state?
+ *
+ * @param[in]  link       NVLink link pointer
+ * @param[in]  linkState  Target Link State
+ *
+ * return NV_TRUE if the link supports the given state
+ */
+NvBool
+nvlink_core_link_state_supported
+(
+    nvlink_link *link,
+    NvU64        linkState
+)
+{
+    if (linkState >= NVLINK_LINKSTATE_INVALID)
+        return NV_FALSE;
+    
+    // Note: move to bitvector if any more link states are added
+    if (linkState >= 32)
+        return NV_FALSE;
+
+    return (link->dev->linkStateSupportedMask & NVBIT32(linkState)) != 0x0;
+}
+
+/**
  * For the given link, check whether the link state is at the requested state.
  *
  * @param[in]  link       NVLink link pointer
@@ -46,11 +88,20 @@ nvlink_core_check_link_state
     NvU64     crntTlLinkMode = NVLINK_LINKSTATE_OFF;
     NvlStatus status         = NVL_SUCCESS;
 
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    // Skip checks for linkstates not supported by device
+    if (!nvlink_core_link_state_supported(link, linkState))
+        return NV_FALSE;
+
     switch (linkState)
     {
-        case NVLINK_LINKSTATE_OFF:
         case NVLINK_LINKSTATE_RESET:
         case NVLINK_LINKSTATE_SAFE:
+        case NVLINK_LINKSTATE_OFF:
         case NVLINK_LINKSTATE_HS:
         {
             status = link->link_handlers->get_dl_link_mode(link, &crntDlLinkMode);
@@ -68,7 +119,36 @@ nvlink_core_check_link_state
             }
             break;
         }
+        case NVLINK_LINKSTATE_ALI:
+        {
+            status = link->link_handlers->get_tl_link_mode(link, &crntTlLinkMode);
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to get TL link mode for %s:%s\n",
+                    __FUNCTION__, link->dev->deviceName, link->linkName));
+                return NV_FALSE;
+            }
+
+            status = link->link_handlers->get_dl_link_mode(link, &crntDlLinkMode);
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to get DL link mode for %s:%s\n",
+                    __FUNCTION__, link->dev->deviceName, link->linkName));
+                return NV_FALSE;
+            }
+
+            if (crntTlLinkMode == NVLINK_LINKSTATE_HS &&
+                (crntDlLinkMode == NVLINK_LINKSTATE_HS ||
+                 crntDlLinkMode == NVLINK_LINKSTATE_SLEEP))
+            {
+                return NV_TRUE;
+            }
+            break;
+        }
         case NVLINK_LINKSTATE_SLEEP:
+        case NVLINK_LINKSTATE_ACTIVE_PENDING:
         {
             status = link->link_handlers->get_tl_link_mode(link, &crntTlLinkMode);
             if (status != NVL_SUCCESS)
@@ -85,7 +165,6 @@ nvlink_core_check_link_state
             }
             break;
         }
-
     }
 
     // return false for default case or the states are not matching
@@ -112,6 +191,11 @@ nvlink_core_check_tx_sublink_state
 
     NvU64 crntTxSublinkMode    = NVLINK_SUBLINK_STATE_TX_OFF;
     NvU32 crntTxSublinkSubMode = NVLINK_SUBLINK_SUBSTATE_TX_STABLE;
+
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
 
     status = link->link_handlers->get_tx_mode(link,
                                               &crntTxSublinkMode,
@@ -178,6 +262,11 @@ nvlink_core_check_rx_sublink_state
     NvU64 crntRxSublinkMode    = NVLINK_SUBLINK_STATE_RX_OFF;
     NvU32 crntRxSublinkSubMode = NVLINK_SUBLINK_SUBSTATE_RX_STABLE;
 
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
+
     status = link->link_handlers->get_rx_mode(link,
                                               &crntRxSublinkMode,
                                               &crntRxSublinkSubMode);
@@ -242,6 +331,15 @@ nvlink_core_poll_link_state
 {
     NvU64 currentLinkState = ~0;
 
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    // Skip poll for linkstates not supported by device
+    if (!nvlink_core_link_state_supported(link, linkState))
+        return NVL_ERR_NOT_SUPPORTED;
+
     link->link_handlers->get_dl_link_mode(link, &currentLinkState);
 
     while (currentLinkState != linkState)
@@ -300,6 +398,14 @@ nvlink_core_poll_sublink_state
 {
     NvlStatus status = NVL_SUCCESS;
 
+    if ((localTxSubLink == NULL) || (remoteRxSubLink == NULL))
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    if (localTxSubLink->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
+
     // check for tx sublink if a valid link is specified
     if (localTxSubLink)
     {
@@ -352,6 +458,14 @@ nvlink_core_poll_tx_sublink_state
 {
     NvU64 currentTxSublinkState    = ~0;
     NvU32 currentTxSublinkSubState = ~0;
+
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    if (link->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
 
     link->link_handlers->get_tx_mode(link,
                                      &currentTxSublinkState,
@@ -410,6 +524,14 @@ nvlink_core_poll_rx_sublink_state
 {
     NvU64 currentRxSublinkState    = ~0;
     NvU32 currentRxSublinkSubState = ~0;
+
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    if (link->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
 
     link->link_handlers->get_rx_mode(link,
                                      &currentRxSublinkState,

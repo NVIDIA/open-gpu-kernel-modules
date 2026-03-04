@@ -74,21 +74,8 @@ typedef struct file_operations nv_proc_ops_t;
         __entry;                                                         \
     })
 
-/*
- * proc_mkdir_mode exists in Linux 2.6.9, but isn't exported until Linux 3.0.
- * Use the older interface instead unless the newer interface is necessary.
- */
-#if defined(NV_PROC_REMOVE_PRESENT)
 # define NV_PROC_MKDIR_MODE(name, mode, parent)                \
     proc_mkdir_mode(name, mode, parent)
-#else
-# define NV_PROC_MKDIR_MODE(name, mode, parent)                \
-   ({                                                          \
-        struct proc_dir_entry *__entry;                        \
-        __entry = create_proc_entry(name, mode, parent);       \
-        __entry;                                               \
-    })
-#endif
 
 #define NV_CREATE_PROC_DIR(name,parent)                        \
    ({                                                          \
@@ -104,17 +91,25 @@ typedef struct file_operations nv_proc_ops_t;
 #define NV_PDE_DATA(inode) PDE_DATA(inode)
 #endif
 
-#if defined(NV_PROC_REMOVE_PRESENT)
-# define NV_REMOVE_PROC_ENTRY(entry)                           \
-    proc_remove(entry);
-#else
-# define NV_REMOVE_PROC_ENTRY(entry)                           \
-    remove_proc_entry(entry->name, entry->parent);
-#endif
-
-void nv_procfs_unregister_all(struct proc_dir_entry *entry,
-                              struct proc_dir_entry *delimiter);
 #define NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                     \
+    static ssize_t nv_procfs_read_lock_##name(                              \
+        struct file *file,                                                  \
+        char __user *buf,                                                   \
+        size_t size,                                                        \
+        loff_t *ppos                                                        \
+    )                                                                       \
+    {                                                                       \
+        int ret;                                                            \
+        ret = nv_down_read_interruptible(&lock);                            \
+        if (ret < 0)                                                        \
+        {                                                                   \
+            return ret;                                                     \
+        }                                                                   \
+        size = seq_read(file, buf, size, ppos);                             \
+        up_read(&lock);                                                     \
+        return size;                                                        \
+    }                                                                       \
+                                                                            \
     static int nv_procfs_open_##name(                                       \
         struct inode *inode,                                                \
         struct file *filep                                                  \
@@ -127,11 +122,6 @@ void nv_procfs_unregister_all(struct proc_dir_entry *entry,
         {                                                                   \
             return ret;                                                     \
         }                                                                   \
-        ret = nv_down_read_interruptible(&lock);                            \
-        if (ret < 0)                                                        \
-        {                                                                   \
-            single_release(inode, filep);                                   \
-        }                                                                   \
         return ret;                                                         \
     }                                                                       \
                                                                             \
@@ -140,7 +130,6 @@ void nv_procfs_unregister_all(struct proc_dir_entry *entry,
         struct file *filep                                                  \
     )                                                                       \
     {                                                                       \
-        up_read(&lock);                                                     \
         return single_release(inode, filep);                                \
     }
 
@@ -150,46 +139,7 @@ void nv_procfs_unregister_all(struct proc_dir_entry *entry,
     static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
         NV_PROC_OPS_SET_OWNER()                                             \
         .NV_PROC_OPS_OPEN    = nv_procfs_open_##name,                       \
-        .NV_PROC_OPS_READ    = seq_read,                                    \
-        .NV_PROC_OPS_LSEEK   = seq_lseek,                                   \
-        .NV_PROC_OPS_RELEASE = nv_procfs_release_##name,                    \
-    };
-
-
-#define NV_DEFINE_SINGLE_PROCFS_FILE_READ_WRITE(name, lock,                 \
-write_callback)                                                             \
-    NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                         \
-                                                                            \
-    static ssize_t nv_procfs_write_##name(                                  \
-        struct file *file,                                                  \
-        const char __user *buf,                                             \
-        size_t size,                                                        \
-        loff_t *ppos                                                        \
-    )                                                                       \
-    {                                                                       \
-        ssize_t ret;                                                        \
-        struct seq_file *s;                                                 \
-                                                                            \
-        s = file->private_data;                                             \
-        if (s == NULL)                                                      \
-        {                                                                   \
-            return -EIO;                                                    \
-        }                                                                   \
-                                                                            \
-        ret = write_callback(s, buf + *ppos, size - *ppos);                 \
-        if (ret == 0)                                                       \
-        {                                                                   \
-            /* avoid infinite loop */                                       \
-            ret = -EIO;                                                     \
-        }                                                                   \
-        return ret;                                                         \
-    }                                                                       \
-                                                                            \
-    static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
-        NV_PROC_OPS_SET_OWNER()                                             \
-        .NV_PROC_OPS_OPEN    = nv_procfs_open_##name,                       \
-        .NV_PROC_OPS_READ    = seq_read,                                    \
-        .NV_PROC_OPS_WRITE   = nv_procfs_write_##name,                      \
+        .NV_PROC_OPS_READ    = nv_procfs_read_lock_##name,                  \
         .NV_PROC_OPS_LSEEK   = seq_lseek,                                   \
         .NV_PROC_OPS_RELEASE = nv_procfs_release_##name,                    \
     };

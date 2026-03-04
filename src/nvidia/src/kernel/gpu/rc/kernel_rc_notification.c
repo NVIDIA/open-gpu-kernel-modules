@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,9 +44,9 @@ _krcErrorWriteNotifierCpuMemHelper
 (
     OBJGPU    *pGpu,
     Memory    *pMemory,
-    NvHandle   hClient,
+    Device    *pDevice,
     NvU32      exceptType,
-    NvU32      localEngineType,
+    RM_ENGINE_TYPE localRmEngineType,
     NV_STATUS  notifierStatus
 )
 {
@@ -56,11 +56,11 @@ _krcErrorWriteNotifierCpuMemHelper
     {
         case ADDR_VIRTUAL:
             notifyFillNotifierGPUVA(pGpu,
-                hClient,
+                pDevice,
                 RES_GET_HANDLE(pMemory),
                 memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU_VA, 0),
                 exceptType,
-                (NvU16)localEngineType,
+                (NvU16)gpuGetNv2080EngineType(localRmEngineType),
                 notifierStatus,
                 0 /* Index */);
             break;
@@ -70,7 +70,7 @@ _krcErrorWriteNotifierCpuMemHelper
             notifyFillNotifierMemory(pGpu,
                                      pMemory,
                                      exceptType,
-                                     (NvU16)localEngineType,
+                                     (NvU16)gpuGetNv2080EngineType(localRmEngineType),
                                      notifierStatus,
                                      0 /* Index */ );
             break;
@@ -95,7 +95,7 @@ krcErrorWriteNotifier_CPU
     KernelRc      *pKernelRc,
     KernelChannel *pKernelChannel,
     NvU32          exceptType,
-    NvU32          localEngineType,
+    RM_ENGINE_TYPE localRmEngineType,
     NV_STATUS      notifierStatus,
     NvU32         *pFlushFlags
 )
@@ -103,7 +103,7 @@ krcErrorWriteNotifier_CPU
     NV_STATUS   status = NV_OK;
     ContextDma *pContextDma;
     Memory     *pMemory;
-    Device     *pDevice;
+    Device     *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
     //
     // Update the ECC error notifier for exceptTypes related to
     // CONTAINED/UNCONTAINED/DBE errors
@@ -112,14 +112,6 @@ krcErrorWriteNotifier_CPU
         exceptType == ROBUST_CHANNEL_GPU_ECC_DBE ||
         exceptType == ROBUST_CHANNEL_UNCONTAINED_ERROR ||
         exceptType == ROBUST_CHANNEL_CONTAINED_ERROR);
-
-    status = deviceGetByInstance(RES_GET_CLIENT(pKernelChannel),
-                                 gpuGetDeviceInstance(pGpu),
-                                 &pDevice);
-    if (status != NV_OK)
-    {
-        return NV_ERR_INVALID_DEVICE;
-    }
 
     if (hypervisorIsVgxHyper() && bUpdateEccNotifier &&
         pKernelChannel->hEccErrorContext != NV01_NULL_OBJECT)
@@ -136,7 +128,7 @@ krcErrorWriteNotifier_CPU
             notifyFillNotifier(pGpu,
                                pContextDma,
                                exceptType,
-                               (NvU16)localEngineType,
+                               (NvU16)gpuGetNv2080EngineType(localRmEngineType),
                                notifierStatus);
         }
         else if ((status = memGetByHandleAndDevice(
@@ -147,16 +139,16 @@ krcErrorWriteNotifier_CPU
         {
             status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
                 pMemory,
-                RES_GET_CLIENT_HANDLE(pKernelChannel),
+                pDevice,
                 exceptType,
-                localEngineType,
+                localRmEngineType,
                 notifierStatus);
         }
 
         if (status == NV_OK)
         {
             NV_PRINTF(LEVEL_INFO,
-                      "notified (ECC) channel %d\n",
+                      "notified (ECC) " FMT_CHANNEL_DEBUG_TAG "\n",
                       kchannelGetDebugTag(pKernelChannel));
         }
         else
@@ -177,9 +169,10 @@ krcErrorWriteNotifier_CPU
         notifyFillNotifier(pGpu,
                            pContextDma,
                            exceptType,
-                           (NvU16)localEngineType,
+                           (NvU16)gpuGetNv2080EngineType(localRmEngineType),
                            notifierStatus);
-        NV_PRINTF(LEVEL_INFO, "notified channel %d\n",
+        NV_PRINTF(LEVEL_INFO,
+                  "notified " FMT_CHANNEL_DEBUG_TAG "\n",
                   kchannelGetDebugTag(pKernelChannel));
         if (pEventNotifications)
         {
@@ -199,14 +192,14 @@ krcErrorWriteNotifier_CPU
     {
         status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
             pMemory,
-            RES_GET_CLIENT_HANDLE(pKernelChannel),
+            pDevice,
             exceptType,
-            localEngineType,
+            localRmEngineType,
             notifierStatus);
         if (status == NV_OK)
         {
             NV_PRINTF(LEVEL_INFO,
-                      "notified channel %d\n",
+                      "notified " FMT_CHANNEL_DEBUG_TAG "\n",
                       kchannelGetDebugTag(pKernelChannel));
         }
         else
@@ -230,7 +223,7 @@ krcErrorWriteNotifier_CPU
  *
  * @param[in] pKernelChannel    Channel
  * @param[in] exceptType        Exception type written to notifier
- * @param[in] nv2080EngineType  Engine ID written to notifier
+ * @param[in] rmEngineType      RM Engine ID written to notifier
  * @param[in] scope             If we should notify every channel in the TSG
  *
  * @returns NV_OK                  if successful
@@ -244,11 +237,12 @@ NV_STATUS krcErrorSetNotifier_IMPL
     KernelRc          *pKernelRc,
     KernelChannel     *pKernelChannel,
     NvU32              exceptType,
-    NvU32              nv2080EngineType,
+    RM_ENGINE_TYPE     rmEngineType,
     RC_NOTIFIER_SCOPE  scope
 )
 {
     KernelFifo   *pKernelFifo     = GPU_GET_KERNEL_FIFO(pGpu);
+    OBJSYS       *pSys            = SYS_GET_INSTANCE();
     NvU32         status          = NV_OK;
     NvU32         flushFlags      = 0;
     NvBool        bNewListCreated = NV_FALSE;
@@ -257,6 +251,15 @@ NV_STATUS krcErrorSetNotifier_IMPL
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+
+    //
+    // WAR bug 4503046: mark reboot required when any UVM channels receive an
+    // error.
+    //
+    if (pKernelChannel->bUvmOwned)
+    {
+        sysSetRecoveryRebootRequired(pSys, NV_TRUE);
+    }
 
     //
     // WAR bug 200326278, 200474671
@@ -285,7 +288,7 @@ NV_STATUS krcErrorSetNotifier_IMPL
 
     for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
     {
-        NvU32          localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
         KernelChannel *pKernelChannel = pChanNode->pKernelChannel;
 
         //
@@ -293,24 +296,24 @@ NV_STATUS krcErrorSetNotifier_IMPL
         // Convert global ID to partition local if client has filled proper
         // engineIDs
         //
-        localEngineType = nv2080EngineType;
+        localRmEngineType = rmEngineType;
         if (IS_MIG_IN_USE(pGpu) &&
-            nv2080EngineType > NV2080_ENGINE_TYPE_NULL)
+            RM_ENGINE_TYPE_IS_VALID(rmEngineType))
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             MIG_INSTANCE_REF ref;
 
-            status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                     RES_GET_CLIENT_HANDLE(pKernelChannel),
+            status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                     GPU_RES_GET_DEVICE(pKernelChannel),
                                                      &ref);
             if (status != NV_OK)
                 goto Error;
 
-            if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, nv2080EngineType, ref))
+            if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, rmEngineType, ref))
             {
                 NV_PRINTF(LEVEL_ERROR,
-                    "Notifier requested for an unsupported engine (0x%x)\n",
-                    nv2080EngineType);
+                    "Notifier requested for an unsupported engine 0x%x (0x%x)\n",
+                    gpuGetNv2080EngineType(rmEngineType), rmEngineType);
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto Error;
             }
@@ -318,8 +321,8 @@ NV_STATUS krcErrorSetNotifier_IMPL
             // Override the engine type with the local engine idx
             status = kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager,
                                                        ref,
-                                                       nv2080EngineType,
-                                                       &localEngineType);
+                                                       rmEngineType,
+                                                       &localRmEngineType);
             if (status != NV_OK)
                 goto Error;
         }
@@ -328,7 +331,7 @@ NV_STATUS krcErrorSetNotifier_IMPL
             krcErrorWriteNotifier_HAL(pGpu, pKernelRc,
                                       pKernelChannel,
                                       exceptType,
-                                      localEngineType,
+                                      localRmEngineType,
                                       0xffff /* notifierStatus */,
                                       &flushFlags),
             Error)
@@ -438,19 +441,23 @@ krcErrorSendEventNotifications_KERNEL
     OBJGPU            *pGpu,
     KernelRc          *pKernelRc,
     KernelChannel     *pKernelChannel,
-    NvU32              engineId,       // unused
+    RM_ENGINE_TYPE     rmEngineType,       // unused
+    NvU32              exceptLevel,        // unused
     NvU32              exceptType,
     RC_NOTIFIER_SCOPE  scope,
-    NvU16              partitionAttributionId
+    NvU16              partitionAttributionId,
+    NvBool             bOsRcCallbackNeeded // unused
 )
 {
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
 
-    NV_ASSERT_OK_OR_RETURN(
-        krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
-                                                 pKernelChannel,
-                                                 scope));
+    if (pKernelChannel != NULL)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
+                                                     pKernelChannel,
+                                                     scope));
+    }
 
     gpuNotifySubDeviceEvent(pGpu,
                             NV2080_NOTIFIERS_RC_ERROR,

@@ -59,7 +59,7 @@ extern "C" {
  * is used for allocations coming from the Linux kernel.
  * The perf implication is under further study. See bug #1999793.
  */
-NV_STATUS pmaNumaAllocate(PMA *pPma, NvLength allocationCount, NvU32 pageSize,
+NV_STATUS pmaNumaAllocate(PMA *pPma, NvLength allocationCount, NvU64 pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions, NvU64 *pPages);
 
 /*!

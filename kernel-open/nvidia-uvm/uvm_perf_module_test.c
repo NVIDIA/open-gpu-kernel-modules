@@ -53,7 +53,7 @@ static void *get_or_alloc_data(uvm_perf_module_data_desc_t *modules_data, uvm_pe
 }
 
 // Block destruction callback for module1
-static void module1_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void module1_destroy(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     uvm_va_block_t *va_block;
     void *data;
@@ -68,6 +68,8 @@ static void module1_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *ev
         va_block = event_data->module_unload.block;
     }
 
+    UVM_ASSERT(uvm_va_block_get_va_space(va_block) == va_space);
+
     data = uvm_perf_module_type_data(va_block->perf_modules_data, module1.type);
 
     if (data) {
@@ -77,12 +79,14 @@ static void module1_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *ev
 }
 
 // Page fault callback for module1
-static void module1_fault(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void module1_fault(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     module1_data_type_t *data;
     uvm_va_block_t *va_block;
 
     va_block = event_data->fault.block;
+
+    UVM_ASSERT(uvm_va_block_get_va_space(va_block) == va_space);
 
     data = get_or_alloc_data(va_block->perf_modules_data, &module1, sizeof(*data));
     if (!data)
@@ -92,7 +96,7 @@ static void module1_fault(uvm_perf_event_t event_id, uvm_perf_event_data_t *even
 }
 
 // Block destruction callback for module2
-static void module2_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void module2_destroy(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     void *data;
     uvm_va_block_t *va_block;
@@ -107,6 +111,8 @@ static void module2_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *ev
         va_block = event_data->module_unload.block;
     }
 
+    UVM_ASSERT(uvm_va_block_get_va_space(va_block) == va_space);
+
     data = uvm_perf_module_type_data(va_block->perf_modules_data, module2.type);
     if (data) {
         uvm_kvfree(data);
@@ -115,12 +121,14 @@ static void module2_destroy(uvm_perf_event_t event_id, uvm_perf_event_data_t *ev
 }
 
 // Page fault callback for module2
-static void module2_fault(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+static void module2_fault(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     module2_data_type_t *data;
     uvm_va_block_t *va_block;
 
     va_block = event_data->fault.block;
+
+    UVM_ASSERT(uvm_va_block_get_va_space(va_block) == va_space);
 
     data = get_or_alloc_data(va_block->perf_modules_data, &module2, sizeof(*data));
     if (!data)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,15 +21,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/core/locks.h"
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "kernel/mem_mgr/gpu_vaspace.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0020.h"
 
@@ -59,14 +63,21 @@ kgrobjPromoteContext_IMPL
     NvU32 entryCount;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV_STATUS status;
+    Device *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsObject);
     Subdevice *pSubdevice;
     ChannelDescendant *pChannelDescendant = staticCast(pKernelGraphicsObject, ChannelDescendant);
 
     if (IS_MODS_AMODEL(pGpu))
         return NV_OK;
 
-    pSubdevice = CliGetSubDeviceInfoFromGpu(RES_GET_CLIENT_HANDLE(pKernelGraphicsObject), pGpu);
-    NV_ASSERT_OR_RETURN(pSubdevice != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(
+        subdeviceGetByDeviceAndGpu(
+            RES_GET_CLIENT(pKernelGraphicsObject),
+            pDevice,
+            pGpu,
+            &pSubdevice));
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     kgrobjGetPromoteIds_HAL(pGpu, pKernelGraphicsObject,
                             NV_ARRAY_ELEMENTS(promoteIds),
@@ -185,16 +196,12 @@ _kgrAlloc
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrobjSetComputeMmio_HAL(pGpu, pKernelGraphicsObject));
 
-    listInit(&pKernelGraphicsObject->activeDebuggers, portMemAllocatorGetGlobalNonPaged());
-
     // Ensure that ctx buffer information is initialized
     if (!IS_MODS_AMODEL(pGpu))
     {
         NV_ASSERT_OK_OR_RETURN(
             kgraphicsInitializeDeferredStaticData(pGpu, pKernelGraphics, NV01_NULL_OBJECT, NV01_NULL_OBJECT));
     }
-
-    pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsTraceUnsupportedInGuest = NV_FALSE;
 
     // Allocate FECS buffer in Guest for SRIOV configs.
     if (kgrctxShouldManageCtxBuffers_HAL(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, gfid) || IS_VIRTUAL_WITH_SRIOV(pGpu))
@@ -242,26 +249,20 @@ static void _kgrobjDestruct
         KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
         KernelGraphics *pKernelGraphics;
         NV2080_CTRL_GR_ROUTE_INFO grRouteInfo = {0};
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pChannelDescendant);
+        Device *pDevice = GPU_RES_GET_DEVICE(pChannelDescendant);
         NvHandle hParent = RES_GET_PARENT_HANDLE(pChannelDescendant);
         NvU32 classNum = pChannelDescendant->resourceDesc.externalClassId;
-        NvU32 gfid = kchannelGetGfid(pChannelDescendant->pKernelChannel);
 
         // If MIG is enabled, perform GR instance routing based upon parent channel handle
         kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics));
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics));
 
         if (status != NV_OK)
             SLI_LOOP_CONTINUE;
 
-        pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsTraceUnsupportedInGuest = NV_FALSE;
-
         // Free Compute Mmio mapping
         kgrobjFreeComputeMmio_HAL(pGpu, pKernelGraphicsObject);
-
-        NV_ASSERT(listCount(&pKernelGraphicsObject->activeDebuggers) == 0);
-        listDestroy(&pKernelGraphicsObject->activeDebuggers);
 
         if (bDestructor)
             kgrctxDecObjectCount_HAL(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, classNum);
@@ -293,12 +294,14 @@ kgrobjConstruct_IMPL
     KernelChannel     *pKernelChannel = pChannelDescendant->pKernelChannel;
     NV_STATUS          status = NV_OK;
     OBJGPU            *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
-    NvHandle           hClient = pCallContext->pClient->hClient;
+    Device            *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsObject);
 
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_STATE);
 
-    NV_PRINTF(LEVEL_INFO, "class: 0x%x on channel: 0x%08x\n",
-              pChannelDescendant->resourceDesc.externalClassId, kchannelGetDebugTag(pKernelChannel));
+    NV_PRINTF(LEVEL_INFO,
+              "class: 0x%x on " FMT_CHANNEL_DEBUG_TAG "\n",
+              pChannelDescendant->resourceDesc.externalClassId,
+              kchannelGetDebugTag(pKernelChannel));
 
     //
     // Legacy code believed this to be possible, but Resource Server should
@@ -335,7 +338,7 @@ kgrobjConstruct_IMPL
         // If MIG is enabled, perform GR instance routing based upon parent channel handle
         kgrmgrCtrlSetChannelHandle(pParams->hParent, &grRouteInfo);
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics));
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics));
         if (status != NV_OK)
             SLI_LOOP_BREAK;
 
@@ -410,6 +413,7 @@ kgrobjSetComputeMmio_IMPL
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU32 classNum = pChanDes->resourceDesc.externalClassId;
     NvU32 objType;
+    NV_ADDRESS_SPACE addrSpace;
 
     kgrmgrGetGrObjectType(classNum, &objType);
 
@@ -421,24 +425,50 @@ kgrobjSetComputeMmio_IMPL
     if (pKernelGraphicsObject->pMmioMemDesc != NULL)
         return NV_OK;
 
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+    {
+        addrSpace = ADDR_SYSMEM;
+    }
+    else
+    {
+        addrSpace = ADDR_FBMEM;
+    }
+
     // Set up MMIO memDesc to allow GPU mappings of compute object
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(&pKernelGraphicsObject->pMmioMemDesc, pGpu, RM_PAGE_SIZE, 0,
-                      NV_TRUE, ADDR_FBMEM, NV_MEMORY_UNCACHED,
-                      MEMDESC_FLAGS_NONE));
+                    NV_TRUE, addrSpace, NV_MEMORY_UNCACHED,
+                    MEMDESC_FLAGS_NONE));
 
     //
     // The address field is completely ignored for these mappings.  We use the
     // chid as the address strictly for debug purposes.
     //
-    memdescDescribe(pKernelGraphicsObject->pMmioMemDesc, ADDR_FBMEM /* Ignored */,
+    memdescDescribe(pKernelGraphicsObject->pMmioMemDesc, addrSpace /* Ignored */,
                     RM_PAGE_SIZE * pChanDes->pKernelChannel->ChID,
                     RM_PAGE_SIZE);
+
     memdescSetPteKind(pKernelGraphicsObject->pMmioMemDesc,
                       memmgrGetMessageKind_HAL(pGpu, pMemoryManager));
 
     memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pKernelGraphicsObject->pMmioMemDesc, AT_GPU,
                                  RM_ATTR_PAGE_SIZE_4KB);
+
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+    {
+        //
+        // DMA mapping path in RM checks to make sure the sysmem page is actually allocated before allowing
+        // the mapping
+        //
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, memdescAlloc(pKernelGraphicsObject->pMmioMemDesc));
+
+        //
+        // Flag needed to differentiate between SKED and internal MMIO
+        // - SKED reflected surface is encoded with aperture = sysncoh and KIND = SKED
+        // - MMIO surface is encoded with aperture = syscoh and KIND = SKED
+        //
+        memdescSetFlag(pKernelGraphicsObject->pMmioMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED, NV_TRUE);
+    }
 
     return NV_OK;
 }
@@ -453,6 +483,9 @@ kgrobjFreeComputeMmio_IMPL
     KernelGraphicsObject *pKernelGraphicsObject
 )
 {
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+        memdescFree(pKernelGraphicsObject->pMmioMemDesc);
+
     memdescDestroy(pKernelGraphicsObject->pMmioMemDesc);
     pKernelGraphicsObject->pMmioMemDesc = NULL;
 }
@@ -488,7 +521,8 @@ kgrobjShouldCleanup_PHYSICAL
     ChannelDescendant *pChannelDescendant = staticCast(pKernelGraphicsObject, ChannelDescendant);
     NvU32              gfid = kchannelGetGfid(pChannelDescendant->pKernelChannel);
 
-    return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || (gpuIsSriovEnabled(pGpu) && IS_GFID_PF(gfid));
+    return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || (gpuIsSriovEnabled(pGpu) && IS_GFID_PF(gfid) &&
+                                                             !(IS_MIG_IN_USE(pGpu) && hypervisorIsType(OS_HYPERVISOR_VMWARE)));
 }
 
 /*!

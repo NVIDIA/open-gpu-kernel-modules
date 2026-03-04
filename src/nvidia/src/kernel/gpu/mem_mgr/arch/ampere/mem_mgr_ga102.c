@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@ memmgrEnableDynamicPageOfflining_GA102
 )
 {
     if (IS_VIRTUAL(pGpu) || hypervisorIsVgxHyper() ||
-        gpuIsGlobalPoisonFuseEnabled(pGpu))
+        gpuIsGlobalPoisonFuseEnabled(pGpu) || gpuIsSriovEnabled(pGpu))
     {
        pMemoryManager->bEnableDynamicPageOfflining = NV_TRUE;
     }

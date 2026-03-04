@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080perf_cf_pwr_model.finn
+// Source file:      ctrl/ctrl2080/ctrl2080perf_cf_pwr_model.finn
 //
 
 

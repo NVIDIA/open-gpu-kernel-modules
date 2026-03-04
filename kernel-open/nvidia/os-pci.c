@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,70 +137,89 @@ NV_STATUS NV_API_CALL os_pci_write_dword(
 
 NvBool NV_API_CALL os_pci_remove_supported(void)
 {
-#if defined NV_PCI_STOP_AND_REMOVE_BUS_DEVICE
     return NV_TRUE;
-#else
-    return NV_FALSE;
-#endif
 }
 
 void NV_API_CALL os_pci_remove(
     void *handle
 )
 {
-#if defined(NV_PCI_STOP_AND_REMOVE_BUS_DEVICE)
-    NV_PCI_STOP_AND_REMOVE_BUS_DEVICE(handle);
-#elif defined(DEBUG)
-    nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s() is called even though NV_PCI_STOP_AND_REMOVE_BUS_DEVICE is not defined\n",
-            __FUNCTION__);
-    os_dbg_breakpoint();
-#endif
+    pci_stop_and_remove_bus_device(handle);
 }
 
+NV_STATUS NV_API_CALL
+os_enable_pci_req_atomics(
+    void *handle,
+    enum os_pci_req_atomics_type type
+)
+{
+#ifdef NV_PCI_ENABLE_ATOMIC_OPS_TO_ROOT_PRESENT
+    int ret;
+    u16 val;
 
+    switch (type)
+    {
+        case OS_INTF_PCIE_REQ_ATOMICS_32BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP32);
+            break;
+        case OS_INTF_PCIE_REQ_ATOMICS_64BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP64);
+            break;
+        case OS_INTF_PCIE_REQ_ATOMICS_128BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP128);
+            break;
+        default:
+            ret = -1;
+            break;
+    }
 
+    if (ret == 0)
+    {
+        /*
+         * GPUs that don't support Requester Atomics have its
+         * PCI_EXP_DEVCTL2_ATOMIC_REQ always set to 0 even after SW enables it.
+         */
+        if ((pcie_capability_read_word(handle, PCI_EXP_DEVCTL2, &val) == 0) &&
+            (val & PCI_EXP_DEVCTL2_ATOMIC_REQ))
+        {
+            return NV_OK;
+        }
+    }
+#endif
+    return NV_ERR_NOT_SUPPORTED;
+}
 
+void NV_API_CALL os_pci_trigger_flr(void *handle)
+{
+    struct pci_dev *pdev = (struct pci_dev *) handle;
+    int ret;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ret = pci_save_state(pdev);
+    if (ret)
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: %s() PCI save state failed, Skip FLR\n", __FUNCTION__);
+        return;
+    }
+#if defined(NV_PCIE_RESET_FLR_PRESENT)
+    // If PCI_RESET_DO_RESET is not defined in a particular kernel version
+    // define it as 0. Boolean value 0 will trigger a reset of the device.
+#ifndef PCI_RESET_DO_RESET
+#define PCI_RESET_DO_RESET 0
+#endif
+    ret = pcie_reset_flr(pdev, PCI_RESET_DO_RESET);
+    if (ret)
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: %s() PCI FLR might have failed\n", __FUNCTION__);
+    }
+#else
+    nv_printf(NV_DBG_ERRORS,
+        "NVRM: %s() PCI FLR not supported\n", __FUNCTION__);
+#endif
+    pci_restore_state(pdev);
+    return;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@
 
 #include "class/cl0000.h"
 #include "kernel/gpu/timed_sema.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "rmapi/control.h"
@@ -67,7 +67,7 @@ static NV_STATUS _class9074TimerCallback
 (
     OBJGPU  *pGpu,
     OBJTMR  *pTmr,
-    void    *pContext
+    TMR_EVENT *pTmrEvent
 );
 
 //---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ _9074TimedSemRelease
 (
     OBJGPU     *pGpu,
     ChannelDescendant *pObject,
-    NvHandle    hClient,
+    Device     *pDevice,
     NvU64       notifierGPUVA,
     NvU64       semaphoreGPUVA,
     NvU64       time,
@@ -116,35 +116,17 @@ _9074TimedSemRelease
     NV_STATUS status;
     NV_STATUS overallStatus = NV_OK;
 
-    status = semaphoreFillGPUVATimestamp(pGpu,
-                                         hClient,
-                                         pObject->pKernelChannel->hVASpace,
-                                         semaphoreGPUVA,
-                                         releaseValue,
-                                         0, /* Index */
-                                         NV_TRUE,
-                                         time);
+    status = tsemaRelease_HAL(pGpu,
+                              semaphoreGPUVA,
+                              notifierGPUVA,
+                              pObject->pKernelChannel->hVASpace,
+                              releaseValue,
+                              notifierStatus,
+                              pDevice);
+
+    // timedSemaphoreRelease_HAL will print errors on its own
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Semaphore fill failed, error 0x%x\n", status);
-
-        if (overallStatus == NV_OK)
-            overallStatus = status;
-    }
-
-    status = notifyFillNotifierGPUVATimestamp(pGpu,
-                                              hClient,
-                                              pObject->pKernelChannel->hVASpace,
-                                              notifierGPUVA,
-                                              0, /* Info32 */
-                                              0, /* Info16 */
-                                              notifierStatus,
-                                              0, /* Index */
-                                              time);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Notifier fill failed, error 0x%x\n", status);
-
         if (overallStatus == NV_OK)
             overallStatus = status;
     }
@@ -201,7 +183,7 @@ _9074TimedSemRequest
         {
             status = _9074TimedSemRelease(pGpu,
                         pObject,
-                        RES_GET_CLIENT_HANDLE(pTimedSemSw),
+                        GPU_RES_GET_DEVICE(pTimedSemSw),
                         notifierGPUVA,
                         semaphoreGPUVA,
                         currentTime,
@@ -230,9 +212,9 @@ _9074TimedSemRequest
     // Schedule the callback when entry was added to an empty list.
     if (listCount(&pTimedSemSw->entryList) == 1)
     {
-        tmrScheduleCallbackAbs(pTmr, _class9074TimerCallback, pObject,
-            pTimedSemEntry->WaitTimestamp, TMR_FLAG_RELEASE_SEMAPHORE,
-            staticCast(pTimedSemSw, ChannelDescendant)->pKernelChannel->ChID);
+        tmrEventScheduleAbs(pTmr,
+            pTimedSemSw->pTmrEvent,
+            pTimedSemEntry->WaitTimestamp);
     }
 
     return status;
@@ -252,6 +234,11 @@ tsemaConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
+    ChannelDescendant *pChannelDescendant = staticCast(pTimedSemSw, ChannelDescendant);
+    OBJTMR            *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pChannelDescendant));
+
+    tmrEventCreate(pTmr, &pTimedSemSw->pTmrEvent, _class9074TimerCallback, pChannelDescendant, TMR_FLAG_RECUR);
+
     listInit(&pTimedSemSw->entryList, portMemAllocatorGetGlobalNonPaged());
 
     return NV_OK;
@@ -266,7 +253,8 @@ tsemaDestruct_IMPL
     ChannelDescendant      *pChannelDescendant = staticCast(pTimedSemSw, ChannelDescendant);
     OBJTMR                 *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pChannelDescendant));
 
-    tmrCancelCallback(pTmr, pChannelDescendant);
+    tmrEventDestroy(pTmr, pTimedSemSw->pTmrEvent);
+    pTimedSemSw->pTmrEvent = NULL;
 
     chandesIsolateOnDestruct(pChannelDescendant);
 
@@ -288,7 +276,6 @@ tsemaCtrlCmdFlush_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pTimedSemaSwObject);
-    ChannelDescendant *pObject = staticCast(pTimedSemaSwObject, ChannelDescendant);
 
     if (pFlushParams->isFlushing) {
         pTimedSemaSwObject->Flags |= F_FLUSHING;
@@ -304,8 +291,8 @@ tsemaCtrlCmdFlush_IMPL
         tmrGetCurrentTime(pTmr, &pTimedSemaSwObject->FlushLimitTimestamp);
         pTimedSemaSwObject->FlushLimitTimestamp += pFlushParams->maxFlushTime;
 
-        tmrCancelCallback(pTmr, pObject);
-        _class9074TimerCallback(pGpu, pTmr, pObject);
+        tmrEventCancel(pTmr, pTimedSemaSwObject->pTmrEvent);
+        _class9074TimerCallback(pGpu, pTmr, pTimedSemaSwObject->pTmrEvent);
     }
 
     return NV_OK;
@@ -357,7 +344,6 @@ static NV_STATUS _class9074SetNotifierHi
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -376,7 +362,6 @@ static NV_STATUS _class9074SetNotifierLo
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -412,7 +397,6 @@ static NV_STATUS _class9074SetSemaphoreHi
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -431,7 +415,6 @@ static NV_STATUS _class9074SetSemaphoreLo
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -467,7 +450,6 @@ static NV_STATUS _class9074SetWaitTimestampHi
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -486,7 +468,6 @@ static NV_STATUS _class9074SetWaitTimestampLo
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -515,7 +496,6 @@ static NV_STATUS _class9074SetSemaphoreReleaseValue
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -534,7 +514,6 @@ static NV_STATUS _class9074ScheduleSemaphoreRelease
 (
     OBJGPU *pGpu,
     ChannelDescendant *pObject,
-    PMETHOD pMethod,
     NvU32   Offset,
     NvU32   Data
 )
@@ -564,10 +543,10 @@ static NV_STATUS _class9074TimerCallback
 (
     OBJGPU  *pGpu,
     OBJTMR  *pTmr,
-    void    *pContext
+    TMR_EVENT *pTmrEvent
 )
 {
-    ChannelDescendant *pObject = pContext;
+    ChannelDescendant *pObject = pTmrEvent->pUserData;
     PGF100_TIMED_SEM_SW_OBJECT pTimedSemSw = dynamicCast(pObject, TimedSemaSwObject);
     PGF100_TIMED_SEM_ENTRY     pTimedSemEntry = NULL;
     PGF100_TIMED_SEM_ENTRY     pTimedSemEntryNext = NULL;
@@ -594,7 +573,7 @@ static NV_STATUS _class9074TimerCallback
 
         status = _9074TimedSemRelease(pGpu,
                     pObject,
-                    RES_GET_CLIENT_HANDLE(pTimedSemSw),
+                    GPU_RES_GET_DEVICE(pTimedSemSw),
                     pTimedSemEntry->NotifierGPUVA,
                     pTimedSemEntry->SemaphoreGPUVA,
                     currentTime,
@@ -608,16 +587,16 @@ static NV_STATUS _class9074TimerCallback
     // Schedule the callback for entry at the head of the queue.
     if (pTimedSemEntry != NULL)
     {
-        tmrScheduleCallbackAbs(pTmr, _class9074TimerCallback, pObject,
-            pTimedSemEntry->WaitTimestamp, TMR_FLAG_RELEASE_SEMAPHORE,
-            staticCast(pTimedSemSw, ChannelDescendant)->pKernelChannel->ChID);
+        tmrEventScheduleAbs(pTmr,
+            pTimedSemSw->pTmrEvent,
+            pTimedSemEntry->WaitTimestamp);
     }
 
     return status;
 } // end of _class9074TimerCallback
 
 // GF100_TIMED_SEMAPHORE_SW
-static METHOD GF100TimedSemSwMethods[] =
+static const METHOD GF100TimedSemSwMethods[] =
 {
     { mthdNoOperation,                    0x0100, 0x0103 },
     { _class9074SetNotifierHi,            0x0140, 0x0143 },
@@ -633,12 +612,76 @@ static METHOD GF100TimedSemSwMethods[] =
 NV_STATUS tsemaGetSwMethods_IMPL
 (
     TimedSemaSwObject *pTimedSemSw,
-    METHOD           **ppMethods,
+    const METHOD     **ppMethods,
     NvU32             *pNumMethods
 )
 {
     *ppMethods = GF100TimedSemSwMethods;
-    *pNumMethods = NV_ARRAY_ELEMENTS32(GF100TimedSemSwMethods);
+    *pNumMethods = NV_ARRAY_ELEMENTS(GF100TimedSemSwMethods);
     return NV_OK;
 }
 
+NvBool
+tsemaCheckCallbackReleaseSem_IMPL
+(
+    TimedSemaSwObject *pTimedSemSw
+)
+{
+    OBJTMR *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pTimedSemSw));
+    return tmrEventOnList(pTmr, pTimedSemSw->pTmrEvent);
+}
+
+NV_STATUS
+tsemaRelease_KERNEL
+(
+    OBJGPU *pGpu,
+    NvU64 semaphoreVA,
+    NvU64 notifierVA,
+    NvU32 hVASpace,
+    NvU32 releaseValue,
+    NvU32 completionStatus,
+    Device *pDevice
+)
+{
+    OBJTMR   *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64     currentTime;
+    NV_STATUS status;
+    NV_STATUS overallStatus = NV_OK;
+
+    tmrGetCurrentTime(pTmr, &currentTime);
+
+    status = semaphoreFillGPUVATimestamp(pGpu,
+                                         pDevice,
+                                         hVASpace,
+                                         semaphoreVA,
+                                         releaseValue,
+                                         0, /* Index */
+                                         NV_TRUE,
+                                         currentTime);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Semaphore fill failed, error 0x%x\n", status);
+
+        if (overallStatus == NV_OK)
+            overallStatus = status;
+    }
+
+    status = notifyFillNotifierGPUVATimestamp(pGpu,
+                                              pDevice,
+                                              hVASpace,
+                                              notifierVA,
+                                              0, /* Info32 */
+                                              0, /* Info16 */
+                                              completionStatus,
+                                              0, /* Index */
+                                              currentTime);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Notifier fill failed, error 0x%x\n", status);
+
+        if (overallStatus == NV_OK)
+            overallStatus = status;
+    }
+
+    return overallStatus;
+}

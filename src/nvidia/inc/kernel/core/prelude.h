@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,8 +39,7 @@
 
 /* ------------------------ RM library and utils ---------------------------- */
 #include "nvport/nvport.h"
-#include "nvoc/runtime.h"
-#include "nvoc/utility.h"
+#include "nvoc/object.h"
 #include "core/printf.h"
 #include "core/strict.h"
 #include "utils/nvassert.h"
@@ -82,9 +81,6 @@ typedef struct THREAD_STATE_NODE THREAD_STATE_NODE; // FW declare thread state
 #define NV_ROUNDUP(a,b)                 ((NV_CEIL(a,b))*(b))
 #define NV_ROUND_TO_QUANTA(a, quanta)   (((quanta) == 0) ? (a): ((((a) + ((quanta) >> 1)) / (quanta)) *  (quanta)))
 #define NV_FLOOR_TO_QUANTA(a, quanta)   (((a) / (quanta)) *  (quanta))
-#define NV_SIZEOF32(x)                  (sizeof(x))
-#define NV_ARRAY_ELEMENTS(x)            ((sizeof(x)/sizeof((x)[0])))
-#define NV_ARRAY_ELEMENTS32(x)          ((NV_SIZEOF32(x)/NV_SIZEOF32((x)[0])))
 #define NV_BYTESWAP16(a)                ((((a) & 0xff00)>>8)      |  \
                                          (((a) & 0x00ff)<<8))
 #define NV_BYTESWAP32(a)                ((((a) & 0xff000000)>>24) |  \

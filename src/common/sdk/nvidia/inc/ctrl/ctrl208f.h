@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f.finn
+// Source file:      ctrl/ctrl208f.finn
 //
 
 
@@ -43,9 +43,10 @@
 #include "ctrl208f/ctrl208fevent.h"
 #include "ctrl208f/ctrl208fgpu.h"
 #include "ctrl208f/ctrl208fgr.h"
-#include "ctrl208f/ctrl208fclk.h"
 #include "ctrl208f/ctrl208fpmgr.h"
 #include "ctrl208f/ctrl208fdma.h"
 #include "ctrl208f/ctrl208fmmu.h"
-
+#include "ctrl208f/ctrl208fucodeinstrumentation.h"
+#include "ctrl208f/ctrl208fnvlink.h"
+#include "ctrl208f/ctrl208fpmu.h"
 

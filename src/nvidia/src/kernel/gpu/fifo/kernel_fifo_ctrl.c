@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,8 +28,10 @@
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/gpu/subdevice/subdevice_diag.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
+#include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "kernel/core/locks.h"
 #include "lib/base_utils.h"
+#include "platform/sli/sli.h"
 
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
@@ -40,14 +42,15 @@
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
 
+#include "kernel/gpu/conf_compute/conf_compute.h"
+
 static NV_STATUS _kfifoGetCaps(OBJGPU *pGpu, NvU8 *pKfifoCaps);
+static NV_STATUS _kfifoDisableChannelsForKeyRotation(OBJGPU *pGpu, RmCtrlParams *pRmCtrlParams,
+                                                     NvBool bEnableAfterKeyRotation, NvBool bForceKeyRotation,
+                                                     NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams);
 
 /*!
- *
  * @brief deviceCtrlCmdFifoGetChannelList
- *
- * Lock Requirements:
- *      Assert that API lock and GPUs lock held on entry
  */
 NV_STATUS
 deviceCtrlCmdFifoGetChannelList_IMPL
@@ -60,8 +63,6 @@ deviceCtrlCmdFifoGetChannelList_IMPL
     NvU32   *pChannelHandleList = NvP64_VALUE(pChannelParams->pChannelHandleList);
     NvU32   *pChannelList       = NvP64_VALUE(pChannelParams->pChannelList);
     NvU32    counter;
-
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
 
     // Validate input / Size / Args / Copy args
     if (pChannelParams->numChannels == 0)
@@ -78,7 +79,8 @@ deviceCtrlCmdFifoGetChannelList_IMPL
         NV_STATUS status;
 
         // Searching through the rm client db.
-        status = CliGetKernelChannel(RES_GET_CLIENT_HANDLE(pDevice), pChannelHandleList[counter], &pKernelChannel);
+        status = CliGetKernelChannel(RES_GET_CLIENT(pDevice),
+            pChannelHandleList[counter], &pKernelChannel);
 
         if (status == NV_OK)
         {
@@ -109,6 +111,7 @@ deviceCtrlCmdFifoIdleChannels_IMPL
     OBJGPU       *pGpu = GPU_RES_GET_GPU(pDevice);
     CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
+    RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     // Check buffer size against maximum
     if (pParams->numChannels > NV0080_CTRL_CMD_FIFO_IDLE_CHANNELS_MAX_CHANNELS)
@@ -129,18 +132,17 @@ deviceCtrlCmdFifoIdleChannels_IMPL
     }
 
     //
-    // Send RPC if running in Guest/CPU-RM. Do this manually instead of ROUTE_TO_PHYSICAL
+    // Send RPC if running in CPU-RM. Do this manually instead of ROUTE_TO_PHYSICAL
     // so that we can acquire the GPU lock in CPU-RM first.
     //
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_GSP_CLIENT(pGpu))
     {
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
     }
     else
     {
@@ -220,7 +222,7 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
     NvU32          i;
     NvU32          data;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // error checck
     if (pFifoInfoParams->fifoInfoTblSize > NV2080_CTRL_FIFO_GET_INFO_MAX_ENTRIES)
@@ -232,7 +234,7 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
         switch (pFifoInfoParams->fifoInfoTbl[i].index)
         {
             case NV2080_CTRL_FIFO_INFO_INDEX_INSTANCE_TOTAL:
-                data = memmgrGetRsvdMemorySize(pMemoryManager);
+                data = (NvU32)(memmgrGetRsvdMemorySize(pMemoryManager));
                 break;
             case NV2080_CTRL_FIFO_INFO_INDEX_MAX_CHANNEL_GROUPS:
                 //
@@ -252,12 +254,28 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
                 data = kfifoGetChannelGroupsInUse(pGpu, pKernelFifo);
                 break;
             case NV2080_CTRL_FIFO_INFO_INDEX_MAX_SUBCONTEXT_PER_GROUP:
-                //
-                // RM-SMC AMPERE-TODO This data is incompatible with SMC, where
-                // different engines can have different max VEID counts
-                //
                 data = kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, NV_FALSE);
                 break;
+            case NV2080_CTRL_FIFO_INFO_INDEX_BAR1_USERD_START_OFFSET:
+            {
+                NvU64 userdAddr;
+                NvU32 userdSize;
+                NvU32 gfid;
+
+                NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+                if (hypervisorIsVgxHyper() && IS_GFID_PF(gfid))
+                {
+                    status = kfifoGetUserdBar1MapInfo_HAL(pGpu, pKernelFifo, &userdAddr, &userdSize);
+                    if (status == NV_OK)
+                        data = (NvU32)(userdAddr >> NV2080_CTRL_FIFO_GET_INFO_USERD_OFFSET_SHIFT);
+                }
+                else
+                {
+                    data = 0;
+                    status = NV_ERR_INVALID_REQUEST;
+                }
+                break;
+            }
             case NV2080_CTRL_FIFO_INFO_INDEX_DEFAULT_CHANNEL_TIMESLICE:
                 {
                     NvU64 timeslice = kfifoChannelGroupGetDefaultTimeslice_HAL(pKernelFifo);
@@ -271,17 +289,23 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
             case NV2080_CTRL_FIFO_INFO_INDEX_MAX_CHANNEL_GROUPS_PER_ENGINE:
                 // Get runlist ID for Engine type.
                 NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                                                ENGINE_INFO_TYPE_NV2080, pFifoInfoParams->engineType,
-                                                                ENGINE_INFO_TYPE_RUNLIST, &runlistId));
+                                                                ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                                gpuGetRmEngineType(pFifoInfoParams->engineType),
+                                                                ENGINE_INFO_TYPE_RUNLIST,
+                                                                &runlistId));
                 pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistId);
                 data = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
                 break;
             case NV2080_CTRL_FIFO_INFO_INDEX_CHANNEL_GROUPS_IN_USE_PER_ENGINE:
                 // Get runlist ID for Engine type.
                 NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                                                ENGINE_INFO_TYPE_NV2080, pFifoInfoParams->engineType,
+                                                                ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                                gpuGetRmEngineType(pFifoInfoParams->engineType),
                                                                 ENGINE_INFO_TYPE_RUNLIST, &runlistId));
                 data = kfifoGetRunlistChannelGroupsInUse(pGpu, pKernelFifo, runlistId);
+                break;
+            case NV2080_CTRL_FIFO_INFO_INDEX_MAX_LOWER_SUBCONTEXT:
+                data = kfifoGetMaxLowerSubcontext(pGpu, pKernelFifo);
                 break;
             default:
                 data = 0;
@@ -299,6 +323,40 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
     return status;
 }
 
+
+/*!
+ * @brief Get bitmask of allocated channels
+ */
+NV_STATUS subdeviceCtrlCmdFifoGetAllocatedChannels_IMPL
+(
+    Subdevice                                      *pSubdevice,
+    NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS *pParams
+)
+{
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(GPU_RES_GET_GPU(pSubdevice));
+    NV_STATUS status;
+
+    status = kfifoGetAllocatedChannelMask(GPU_RES_GET_GPU(pSubdevice),
+                                          pKernelFifo,
+                                          pParams->runlistId,
+                                          pParams->bitMask,
+                                          sizeof pParams->bitMask);
+    switch(status)
+    {
+    case NV_ERR_BUFFER_TOO_SMALL:
+    case NV_ERR_INVALID_ARGUMENT:
+        //
+        // Update the ctrl call structure to have sufficient space for 1 bit per
+        // possible channels in a runlist. This is a driver bug.
+        //
+        NV_ASSERT_OK(status);
+        return NV_ERR_NOT_SUPPORTED;
+    default:
+        return status;
+    }
+}
+
+
 /*!
  * @brief subdeviceCtrlCmdFifoGetUserdLocation
  *
@@ -312,19 +370,13 @@ subdeviceCtrlCmdFifoGetUserdLocation_IMPL
     NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS *pUserdLocationParams
 )
 {
-    RsClient  *pClient = RES_GET_CLIENT(pSubdevice);
-    Device    *pDevice;
     NvU32      userdAperture;
     NvU32      userdAttribute;
     NV_STATUS  rmStatus = NV_OK;
     OBJGPU    *pGpu  = GPU_RES_GET_GPU(pSubdevice);
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
-
-    rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (rmStatus != NV_OK)
-        return NV_ERR_INVALID_DEVICE;
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     rmStatus = kfifoGetUserdLocation_HAL(pKernelFifo,
                                          &userdAperture,
@@ -386,7 +438,7 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
 )
 {
     OBJGPU    *pGpu     = GPU_RES_GET_GPU(pSubdevice);
-    Device    *pDevice;
+    NvHandle   hDevice  = RES_GET_PARENT_HANDLE(pSubdevice);
     RsClient  *pClient  = RES_GET_CLIENT(pSubdevice);
     NV_STATUS  rmStatus = NV_OK;
     NvU32      index;
@@ -396,14 +448,10 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NV2080_CTRL_FIFO_CHANNEL_MEM_INFO chMemInfo;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (rmStatus != NV_OK)
-        return NV_ERR_INVALID_DEVICE;
-
-    rmStatus = CliGetKernelChannelWithDevice(pClient->hClient,
-                                             RES_GET_HANDLE(pDevice),
+    rmStatus = CliGetKernelChannelWithDevice(pClient,
+                                             hDevice,
                                              pChannelMemParams->hChannel,
                                              &pKernelChannel);
     if (rmStatus != NV_OK)
@@ -426,11 +474,15 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
 
     // Get RAMFC mem Info
     pMemDesc = NULL;
-    kfifoChannelGetFifoContextMemDesc_HAL(pGpu,
+    rmStatus = kfifoChannelGetFifoContextMemDesc_HAL(pGpu,
                                           pKernelFifo,
                                           pKernelChannel,
                                           FIFO_CTX_RAMFC,
                                           &pMemDesc);
+
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
     kfifoFillMemInfo(pKernelFifo, pMemDesc, &chMemInfo.ramfc);
 
     // Get Method buffer mem info
@@ -456,33 +508,6 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
     return rmStatus;
 }
 
-NV_STATUS
-diagapiCtrlCmdFifoEnableVirtualContext_IMPL
-(
-    DiagApi *pDiagApi,
-    NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS *pEnableVCParams
-)
-{
-    OBJGPU        *pGpu = GPU_RES_GET_GPU(pDiagApi);
-    Device        *pDevice;
-    NV_STATUS      rmStatus = NV_OK;
-    KernelChannel *pKernelChannel = NULL;
-    RsClient      *pClient = RES_GET_CLIENT(pDiagApi);
-
-    rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (rmStatus != NV_OK)
-        return NV_ERR_INVALID_DEVICE;
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-        CliGetKernelChannelWithDevice(pClient->hClient,
-                                      RES_GET_HANDLE(pDevice),
-                                      pEnableVCParams->hChannel,
-                                      &pKernelChannel));
-
-    rmStatus = kchannelEnableVirtualContext_HAL(pKernelChannel);
-    return rmStatus;
-}
-
 /*!
  * @brief subdeviceCtrlCmdFifoUpdateChannelInfo
  *
@@ -503,17 +528,25 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
     CALL_CONTEXT             *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams             *pRmCtrlParams = pCallContext->pControlParams;
     OBJGPU                   *pGpu           = GPU_RES_GET_GPU(pSubdevice);
+    RsClient                 *pChannelClient;
     NvHandle                  hClient        = RES_GET_CLIENT_HANDLE(pSubdevice);
     KernelChannel            *pKernelChannel = NULL;
     NV_STATUS                 status         = NV_OK;
     NvU64                     userdAddr      = 0;
     NvU32                     userdAper      = 0;
+    RM_API                   *pRmApi         = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     // Bug 724186 -- Skip this check for deferred API
-    LOCK_ASSERT_AND_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner(),
+        NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-                          CliGetKernelChannel(pChannelInfo->hClient,
+                          serverGetClientUnderLock(&g_resServ,
+                                                   pChannelInfo->hClient,
+                                                   &pChannelClient));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+                          CliGetKernelChannel(pChannelClient,
                                               pChannelInfo->hChannel,
                                               &pKernelChannel));
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
@@ -528,15 +561,14 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_GSP_CLIENT(pGpu))
     {
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
         if (status != NV_OK)
             return status;
 
@@ -552,9 +584,10 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                        "kchannelCreateUserdMemDesc_HAL"
-                        "failed for hClient 0x%x and channel 0x%x status 0x%x\n",
-                        hClient, kchannelGetDebugTag(pKernelChannel), status);
+                "kchannelCreateUserdMemDesc_HAL" "failed for hClient 0x%x and " FMT_CHANNEL_DEBUG_TAG " status 0x%x\n",
+                hClient,
+                kchannelGetDebugTag(pKernelChannel),
+                status);
         }
     }
     else
@@ -573,10 +606,15 @@ diagapiCtrlCmdFifoGetChannelState_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDiagApi);
+    RsClient *pChannelClient;
     KernelChannel *pKernelChannel;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-        CliGetKernelChannel(pChannelStateParams->hClient, pChannelStateParams->hChannel, &pKernelChannel));
+        serverGetClientUnderLock(&g_resServ, pChannelStateParams->hClient,
+            &pChannelClient));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        CliGetKernelChannel(pChannelClient, pChannelStateParams->hChannel, &pKernelChannel));
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         kchannelGetChannelPhysicalState(pGpu, pKernelChannel, pChannelStateParams));
 
@@ -632,7 +670,7 @@ deviceCtrlCmdFifoGetCaps_IMPL
     OBJGPU  *pGpu      = GPU_RES_GET_GPU(pDevice);
     NvU8    *pKfifoCaps = NvP64_VALUE(pKfifoCapsParams->capsTbl);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // sanity check array size
     if (pKfifoCapsParams->capsTblSize != NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
@@ -663,7 +701,7 @@ deviceCtrlCmdFifoGetCapsV2_IMPL
     OBJGPU    *pGpu      = GPU_RES_GET_GPU(pDevice);
     NvU8      *pKfifoCaps = pKfifoCapsParams->capsTbl;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // now accumulate caps for entire device
     return _kfifoGetCaps(pGpu, pKfifoCaps);
@@ -702,11 +740,417 @@ subdeviceCtrlCmdFifoDisableChannels_IMPL
                           pRmCtrlParams->paramsSize,
                           status);
     }
-    // Send internal control call to actually disable channels 
+    // Send internal control call to actually disable channels
     else
     {
         status = NV_ERR_NOT_SUPPORTED;
     }
 
     return status;
+}
+
+/**
+ * @brief Disables and preempts the given channels and marks
+ *        them disabled for key rotation. Conditionally also marks
+ *        them for re-enablement.
+ */
+NV_STATUS
+subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS *pDisableChannelParams
+)
+{
+    NV_STATUS       status        = NV_OK;
+    OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
+    RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
+    NvU32           i = 0;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        pDisableChannelParams->numChannels <= NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList),
+        NV_ERR_INVALID_ARGUMENT);
+    ct_assert(NV_ARRAY_ELEMENTS(pDisableChannelParams->hClientList) ==
+              NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList));
+
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams = NULL;
+    pParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_NO_MEMORY);
+    portMemSet(pParams, 0, sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+
+    for (i = 0; i < pDisableChannelParams->numChannels; i++)
+    {
+        pParams->hClientList[i] = pDisableChannelParams->hClientList[i];
+        pParams->hChannelList[i] = pDisableChannelParams->hChannelList[i];
+    }
+    pParams->numChannels = pDisableChannelParams->numChannels;
+    status = _kfifoDisableChannelsForKeyRotation(pGpu, pRmCtrlParams, pDisableChannelParams->bEnableAfterKeyRotation,
+                                                 NV_FALSE, pParams);
+    portMemFree(pParams);
+    return status;
+}
+
+/**
+ * @brief This does the same thing as @ref subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
+ *        with the main difference being it operates on a single client and take a RO API lock.
+ */
+NV_STATUS
+subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS *pDisableChannelParams
+)
+{
+    NV_STATUS       status        = NV_OK;
+    OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
+    RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
+    NvU32           i = 0;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        pDisableChannelParams->numChannels <= NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList),
+        NV_ERR_INVALID_ARGUMENT);
+
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams = NULL;
+    pParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_NO_MEMORY);
+    portMemSet(pParams, 0, sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+
+    for (i = 0; i < pDisableChannelParams->numChannels; i++)
+    {
+        pParams->hClientList[i] = pRmCtrlParams->hClient;
+        pParams->hChannelList[i] = pDisableChannelParams->hChannelList[i];
+    }
+    pParams->numChannels = pDisableChannelParams->numChannels;
+    status = _kfifoDisableChannelsForKeyRotation(pGpu, pRmCtrlParams, pDisableChannelParams->bEnableAfterKeyRotation,
+                                                 NV_TRUE, pParams);
+    portMemFree(pParams);
+    return status;
+}
+
+static NV_STATUS
+_kfifoDisableChannelsForKeyRotation
+(
+    OBJGPU         *pGpu,
+    RmCtrlParams   *pRmCtrlParams,
+    NvBool          bEnableAfterKeyRotation,
+    NvBool          bForceKeyRotation,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams
+)
+{
+    NV_STATUS       status        = NV_OK;
+    NV_STATUS       tmpStatus     = NV_OK;
+    NvU32           i;
+    KernelChannel  *pKernelChannel = NULL;
+    RM_API         *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    // Send RPC to handle message on Host-RM
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
+    }
+    // Send internal control call to actually disable channels and preempt channels
+    else
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    }
+
+    // Loop through all the channels and mark them disabled
+    NvBool bFound = NV_FALSE;
+    NvU32 h2dKeyList[CC_KEYSPACE_TOTAL_SIZE];
+    NvU32 keyIndex = 0;
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    for (i = 0; i < pParams->numChannels; i++)
+    {
+        RsClient              *pClient = NULL;
+        tmpStatus = serverGetClientUnderLock(&g_resServ,
+                                          pParams->hClientList[i], &pClient);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get client with hClient = 0x%x status = 0x%x\n", pParams->hClientList[i], status);
+            continue;
+        }
+        tmpStatus = CliGetKernelChannel(pClient,
+                                     pParams->hChannelList[i], &pKernelChannel);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n",
+                                    pParams->hClientList[i], pParams->hChannelList[i], status);
+            continue;
+        }
+        kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
+        kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, bEnableAfterKeyRotation);
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            NvU32 h2dKey, d2hKey;
+            NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel,
+                                                                      &h2dKey, &d2hKey));
+            if (bForceKeyRotation)
+            {
+                //
+                // This loop doesn't need to execute in the first iteration of above loop
+                // since keyList is empty.
+                //
+                for (NvU32 j = 0; j < keyIndex; j++)
+                {
+                    if (h2dKeyList[j] == h2dKey)
+                    {
+                        bFound = NV_TRUE;
+                        break;
+                    }
+                }
+                if (!bFound)
+                {
+                    NV_ASSERT_OR_RETURN(keyIndex < CC_KEYSPACE_TOTAL_SIZE, NV_ERR_INVALID_STATE);
+                    h2dKeyList[keyIndex++] = h2dKey;
+                }
+                bFound = NV_FALSE;
+            }
+            else
+            {
+                KEY_ROTATION_STATUS state;
+                NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+                if ((state == KEY_ROTATION_STATUS_PENDING) ||
+                    (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
+                {
+                    NV_ASSERT_OK_OR_RETURN(confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+                }
+            }
+        }
+    }
+
+    if (IS_GSP_CLIENT(pGpu) && bForceKeyRotation)
+    {
+        for (NvU32 j = 0; j < keyIndex; j++)
+        {
+            NvU32 h2dKey, d2hKey;
+            confComputeGetKeyPairByKey(pConfCompute, h2dKeyList[j], &h2dKey, &d2hKey);
+            NV_PRINTF(LEVEL_INFO, "Forcing key rotation on h2dKey 0x%x\n", h2dKey);
+            status = confComputeForceKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Forced key rotation for key 0x%x failed\n", h2dKey);
+                return status;
+            }
+        }
+    }
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFifoGetDeviceInfoTable_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i = pParams->baseIndex / NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (i >= MAX_ITERATIONS_DEVICE_INFO_TABLE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->numEntries = pVSI->fifoDeviceInfoTable[i].numEntries;
+    if (pParams->numEntries > NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->bMore = pVSI->fifoDeviceInfoTable[i].bMore;
+
+    portMemCopy(&pParams->entries,
+                pParams->numEntries * sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY),
+                pVSI->fifoDeviceInfoTable[i].entries,
+                pParams->numEntries * sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY));
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdFifoGetLatencyBufferSize_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    for (i = 0; i < NV2080_ENGINE_TYPE_LAST_v1C_09; i++)
+    {
+        if (pParams->engineID == pVSI->fifoLatencyBufferSize[i].engineID)
+        {
+            pParams->gpEntries = pVSI->fifoLatencyBufferSize[i].gpEntries;
+            pParams->pbEntries = pVSI->fifoLatencyBufferSize[i].pbEntries;
+            break;
+        }
+    }
+
+    NV_ASSERT_OR_RETURN(i < NV2080_ENGINE_TYPE_LAST_v1C_09, NV_ERR_INVALID_ARGUMENT);
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdFifoGetEngineContextProperties_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (gpuIsClientRmAllocatedCtxBufferEnabled(pGpu))
+    {
+        NvU32 size = 0;
+        NvU32 alignment = RM_PAGE_SIZE;
+        NvU32 engine;
+
+        pParams->size = 0;
+        pParams->alignment = 0;
+
+        engine = DRF_VAL(0080_CTRL_FIFO, _GET_ENGINE_CONTEXT_PROPERTIES, _ENGINE_ID,
+                pParams->engineId);
+
+        switch (engine)
+        {
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_ZCULL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PREEMPT:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_SPILL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PAGEPOOL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_BETACB:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_RTV:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_SETUP:
+                pParams->size = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].size, size);
+                pParams->alignment = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].alignment, alignment);
+                status = NV_OK;
+                break;
+
+            default:
+                status = NV_ERR_NOT_SUPPORTED;
+        }
+        return status;
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+
+NV_STATUS
+subdeviceCtrlCmdFifoQueryChannelUniqueId_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS *pGetChannelUidParams
+)
+{
+    RsClient      *pRsClient      = NULL;
+    RsResourceRef *pResourceRef   = NULL;
+    KernelChannel *pKernelChannel = NULL;
+    NvU32 i;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        (pGetChannelUidParams->numChannels > 0 && pGetChannelUidParams->numChannels <= NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG),
+         NV_ERR_INVALID_PARAMETER);
+
+    for (i = 0; i < pGetChannelUidParams->numChannels; i++)
+    {
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            serverGetClientUnderLock(&g_resServ, pGetChannelUidParams->hClients[i], &pRsClient));
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            clientGetResourceRefByType(pRsClient, pGetChannelUidParams->hChannels[i],
+                classId(KernelChannel), &pResourceRef));
+        pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
+        pGetChannelUidParams->channelUniqueIDs[i] = kchannelGetCid(pKernelChannel);
+    }
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFifoGetChannelGroupUniqueIdInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_GET_CHANNEL_GROUP_UNIQUE_ID_INFO_PARAMS *pGetCidGrpParams
+)
+{
+    RsClient              *pRsClient              = NULL;
+    RsResourceRef         *pResourceRef           = NULL;
+    KernelChannelGroupApi *pKernelChannelGroupApi = NULL;
+    KernelChannelGroup    *pKernelChannelGroup    = NULL;
+    KernelChannel         *pKernelChannel         = NULL;
+    NV_STATUS status;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            serverGetClientUnderLock(&g_resServ, pGetCidGrpParams->hClient, &pRsClient));
+
+    status = clientGetResourceRefByType(pRsClient, pGetCidGrpParams->hChannelOrTsg,
+                                        classId(KernelChannelGroupApi),
+                                        &pResourceRef);;
+    if (status != NV_OK)
+    {
+        // if its not a channel Group, check if its a Kernel Channel.
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+            clientGetResourceRefByType(pRsClient, pGetCidGrpParams->hChannelOrTsg,
+                classId(KernelChannel),
+                &pResourceRef));
+
+        pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
+
+        pGetCidGrpParams->numChannels = 1;
+        pGetCidGrpParams->tsgId = 0;
+        pGetCidGrpParams->channelUniqueID[0] = kchannelGetCid(pKernelChannel);
+        pGetCidGrpParams->veid[0] = pKernelChannel->subctxId;
+        pGetCidGrpParams->vasUniqueID[0] = pKernelChannel->pVAS->vasUniqueId;
+   }
+   else // Channel Group
+   {
+        NvU32 chanIdx = 0;
+        OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+        NvU32 maxChannelsPerTSG = kfifoGetMaxChannelGroupSize_HAL(GPU_GET_KERNEL_FIFO(pGpu));
+
+        pKernelChannelGroupApi = dynamicCast(pResourceRef->pResource, KernelChannelGroupApi);
+        pKernelChannelGroup = pKernelChannelGroupApi->pKernelChannelGroup;
+        PCHANNEL_LIST pChanList = pKernelChannelGroup->pChanList;
+        PCHANNEL_NODE pChanNode = pChanList->pHead;
+        pGetCidGrpParams->tsgId = pKernelChannelGroup->tsgUniqueId;
+
+        for (; (pChanNode != NULL && chanIdx < maxChannelsPerTSG); pChanNode = pChanNode->pNext)
+        {
+            pKernelChannel = pChanNode->pKernelChannel;
+            if (pKernelChannel == NULL)
+                continue;
+
+            pGetCidGrpParams->channelUniqueID[chanIdx] = kchannelGetCid(pKernelChannel);
+            pGetCidGrpParams->veid[chanIdx] = pKernelChannel->subctxId;
+            pGetCidGrpParams->vasUniqueID[chanIdx] = pKernelChannel->pVAS->vasUniqueId;
+            chanIdx++;
+        }
+
+        pGetCidGrpParams->numChannels = chanIdx;
+   }
+
+   return NV_OK;
 }

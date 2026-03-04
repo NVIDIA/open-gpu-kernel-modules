@@ -34,7 +34,8 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
 void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
                             struct NvKmsPerOpenDev *pOpenDev,
                             NvKmsSurfaceHandle surfaceHandle,
-                            NvBool skipUpdate);
+                            NvBool skipUpdate,
+                            NvBool skipSync);
 void nvEvoReleaseSurface(NVDevEvoPtr pDevEvo,
                          struct NvKmsPerOpenDev *pOpenDev,
                          NvKmsSurfaceHandle surfaceHandle);
@@ -47,7 +48,11 @@ void nvEvoIncrementSurfaceStructRefCnt(NVSurfaceEvoPtr pSurfaceEvo);
 void nvEvoDecrementSurfaceStructRefCnt(NVSurfaceEvoPtr pSurfaceEvo);
 
 void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo);
-void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo);
+void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
+                                  NVSurfaceEvoPtr pSurfaceEvo);
+void nvEvoDecrementSurfaceRefCntsWithSync(NVDevEvoPtr pDevEvo,
+                                          NVSurfaceEvoPtr pSurfaceEvo,
+                                          NvBool skipSync);
 
 NvBool nvEvoSurfaceRefCntsTooLarge(const NVSurfaceEvoRec *pSurfaceEvo);
 
@@ -55,9 +60,15 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask);
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel);
 
-NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
+    const NVDevEvoRec *pDevEvo,
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
+    NvKmsSurfaceHandle surfaceHandle);
+
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoHWAccess(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     NvKmsSurfaceHandle surfaceHandle);
@@ -69,6 +80,10 @@ NVDeferredRequestFifoRec *nvEvoRegisterDeferredRequestFifo(
 void nvEvoUnregisterDeferredRequestFifo(
     NVDevEvoPtr pDevEvo,
     NVDeferredRequestFifoRec *pDeferredRequestFifo);
+
+NvBool nvEvoCpuMapSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr pSurfaceEvo);
 
 static inline NvBool nvEvoIsSurfaceOwner(const NVSurfaceEvoRec *pSurfaceEvo,
                                          const struct NvKmsPerOpenDev *pOpenDev,

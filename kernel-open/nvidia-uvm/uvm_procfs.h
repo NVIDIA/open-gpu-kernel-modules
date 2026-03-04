@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -45,15 +45,10 @@ static bool uvm_procfs_is_enabled(void)
 
 // Is debug procfs enabled? This indicates that debug procfs files should be
 // created.
-static bool uvm_procfs_is_debug_enabled(void)
-{
-    return uvm_enable_debug_procfs != 0;
-}
+bool uvm_procfs_is_debug_enabled(void);
 
 struct proc_dir_entry *uvm_procfs_get_gpu_base_dir(void);
 struct proc_dir_entry *uvm_procfs_get_cpu_base_dir(void);
-
-void uvm_procfs_destroy_entry(struct proc_dir_entry *entry);
 
 int uvm_procfs_open_callback(void);
 void uvm_procfs_close_callback(void);
@@ -73,8 +68,8 @@ void uvm_procfs_close_callback(void);
 
 // Defer PM lock acquisition until the respective read() callback
 // is invoked, to ensure the lock is acquired and released by
-// the same thread.  Else the lock tracking validation code must
-// be disabled for this lock, which is undesirable. As a result, 
+// the same thread. Else the lock tracking validation code must
+// be disabled for this lock, which is undesirable. As a result,
 // lockless macro is used below. See bug 2594854 for additional
 // information.
 #define UVM_DEFINE_SINGLE_PROCFS_FILE(name) \

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -37,19 +37,24 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->utlb_per_gpc_count = uvm_volta_get_utlbs_per_gpc(parent_gpu);
 
-    parent_gpu->fault_buffer_info.replayable.utlb_count = parent_gpu->rm_info.gpcCount * parent_gpu->utlb_per_gpc_count;
+    parent_gpu->fault_buffer.replayable.utlb_count = parent_gpu->rm_info.gpcCount * parent_gpu->utlb_per_gpc_count;
     {
         uvm_fault_buffer_entry_t *dummy;
-        UVM_ASSERT(parent_gpu->fault_buffer_info.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
+        UVM_ASSERT(parent_gpu->fault_buffer.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
     }
 
     // A single top level PDE on Volta covers 128 TB and that's the minimum
     // size that can be used.
     parent_gpu->rm_va_base = 0;
-    parent_gpu->rm_va_size = 128ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->rm_va_size = 128 * UVM_SIZE_1TB;
 
-    parent_gpu->uvm_mem_va_base = 384ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->peer_va_base = parent_gpu->rm_va_base + parent_gpu->rm_va_size;
+    parent_gpu->peer_va_size = NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE;
+
+    parent_gpu->uvm_mem_va_base = 384 * UVM_SIZE_1TB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
+
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     parent_gpu->peer_copy_mode = UVM_GPU_PEER_COPY_MODE_VIRTUAL;
 
@@ -77,7 +82,13 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = true;
 
-    parent_gpu->access_counters_supported = true;
+    parent_gpu->access_counters_serialize_clear_ops_by_type = false;
+
+    // Although access counters are supported in HW, it only notifies memory
+    // accesses using physical addresses, which is not supported in SW.
+    parent_gpu->access_counters_supported = false;
+
+    parent_gpu->access_bits_supported = false;
 
     parent_gpu->fault_cancel_va_supported = true;
 
@@ -96,4 +107,10 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->smc.supported = false;
 
     parent_gpu->plc_supported = false;
+
+    parent_gpu->ats.no_ats_range_required = false;
+
+    parent_gpu->ats.gmmu_pt_depth0_init_required = false;
+
+    parent_gpu->conf_computing.per_channel_key_rotation = false;
 }

@@ -36,7 +36,7 @@ void NV_API_CALL nv_init_msi(nv_state_t *nv)
         nv->interrupt_line = nvl->pci_dev->irq;
         nv->flags |= NV_FLAG_USES_MSI;
         nvl->num_intr = 1;
-        NV_KMALLOC(nvl->irq_count, sizeof(nv_irq_count_info_t) * nvl->num_intr);
+        NV_KZALLOC(nvl->irq_count, sizeof(nv_irq_count_info_t) * nvl->num_intr);
 
         if (nvl->irq_count == NULL)
         {
@@ -47,7 +47,6 @@ void NV_API_CALL nv_init_msi(nv_state_t *nv)
         }
         else
         {
-            memset(nvl->irq_count, 0,  sizeof(nv_irq_count_info_t) * nvl->num_intr);
             nvl->current_num_irq_tracked = 0;
         }
     }
@@ -100,7 +99,7 @@ void NV_API_CALL nv_init_msix(nv_state_t *nv)
         msix_entries->entry = i;
     }
 
-    NV_KMALLOC(nvl->irq_count, sizeof(nv_irq_count_info_t) * num_intr);
+    NV_KZALLOC(nvl->irq_count, sizeof(nv_irq_count_info_t) * num_intr);
 
     if (nvl->irq_count == NULL)
     {
@@ -109,7 +108,6 @@ void NV_API_CALL nv_init_msix(nv_state_t *nv)
     }
     else
     {
-        memset(nvl->irq_count, 0,  sizeof(nv_irq_count_info_t) * num_intr);
         nvl->current_num_irq_tracked = 0;
     }
     rc = nv_pci_enable_msix(nvl, num_intr);
@@ -158,7 +156,7 @@ NvS32 NV_API_CALL nv_request_msix_irq(nv_linux_state_t *nvl)
         {
             for( j = 0; j < i; j++)
             {
-                free_irq(nvl->msix_entries[i].vector, (void *)nvl);
+                free_irq(nvl->msix_entries[j].vector, (void *)nvl);
             }
             break;
         }

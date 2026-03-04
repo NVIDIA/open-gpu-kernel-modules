@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc372/ctrlc372base.finn
+// Source file:      ctrl/ctrlc372/ctrlc372base.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NVC372_DISPLAY_SW control commands and parameters */

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2021 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -42,7 +42,7 @@ static NvU32 entries_per_index_volta(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_volta(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_volta(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 3)
@@ -145,13 +145,20 @@ static NvU64 small_half_pde_volta(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_volta(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_volta(void *entry,
+                           uvm_mmu_page_table_alloc_t **phys_allocs,
+                           uvm_page_directory_t *dir,
+                           NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_volta(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
 
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_volta(dir->depth);
+
     if (entry_count == 1) {
-        *entry_bits = single_pde_volta(*phys_allocs, depth);
+        *entry_bits = single_pde_volta(*phys_allocs, dir->depth);
     }
     else if (entry_count == 2) {
         entry_bits[MMU_BIG] = big_half_pde_volta(phys_allocs[MMU_BIG]);
@@ -245,7 +252,7 @@ static NvU64 make_pte_volta(uvm_aperture_t aperture, NvU64 address, uvm_prot_t p
 
 static uvm_mmu_mode_hal_t volta_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU64 big_page_size)
 {
     static bool initialized = false;
 
@@ -272,20 +279,6 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU32 big_page_size)
     }
 
     return &volta_mmu_mode_hal;
-}
-
-uvm_mmu_engine_type_t uvm_hal_volta_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST13)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE8)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS, "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }
 
 NvU16 uvm_hal_volta_mmu_client_id_to_utlb_id(NvU16 client_id)

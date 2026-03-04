@@ -47,13 +47,6 @@ uvmswConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NvHandle hClient = pCallContext->pClient->hClient;
-    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
-    RS_PRIV_LEVEL privLevel = pCallContext->secInfo.privLevel;
-
-    if (!(rmclientIsAdmin(pRmClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-        return NV_ERR_INVALID_CLIENT;
-
     uvmswInitSwMethodState(pUvmSw);
 
     return NV_OK;

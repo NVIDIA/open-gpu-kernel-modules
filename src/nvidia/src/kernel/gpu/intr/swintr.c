@@ -42,9 +42,6 @@ swintrRegisterIntrService_IMPL
     NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
     pRecords[engineIdx].pInterruptService = staticCast(pSwIntr, IntrService);
 
-    engineIdx = MC_ENGINE_IDX_PRIV_DOORBELL;
-    NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
-    pRecords[engineIdx].pInterruptService = staticCast(pSwIntr, IntrService);
 }
 
 /**
@@ -62,7 +59,7 @@ swintrServiceInterrupt_IMPL
 )
 {
     NV_ASSERT_OR_RETURN(pParams != NULL, 0);
-    
+
     switch (pParams->engineIdx)
     {
         case MC_ENGINE_IDX_CPU_DOORBELL:
@@ -75,14 +72,7 @@ swintrServiceInterrupt_IMPL
             //
             return 0;
         }
-        case MC_ENGINE_IDX_PRIV_DOORBELL:
-        {
-            MODS_ARCH_REPORT(NV_ARCH_EVENT_PRIV_DOORBELL, "%s", "processing PRIV doorbell interrupt\n");
 
-            // Then service all virtual interrupts that may be pending
-            intrServiceVirtual_HAL(pGpu, GPU_GET_INTR(pGpu));
-            return 0;
-        }
         default:
         {
             NV_ASSERT_FAILED("Invalid engineIdx");

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,15 +119,4 @@ subdeviceCtrlCmdRcReleaseWatchdogRequests_IMPL
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
                                   pSubdevice,
                                   RMAPI_RELEASE_ALL_REQUESTS);
-}
-
-
-NV_STATUS subdeviceCtrlCmdInternalRcWatchdogTimeout_IMPL
-(
-    Subdevice *pSubdevice
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    krcWatchdogRecovery_HAL(pGpu, GPU_GET_KERNEL_RC(pGpu));
-    return NV_OK;
 }

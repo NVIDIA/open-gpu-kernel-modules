@@ -32,18 +32,18 @@ extern "C" {
 
 void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             const NvU32 head,
-                            const NVAttributesSetEvoRec *pAttributesSet,
-                            const NvBool hdTimings,
-                            const NVT_VIDEO_INFOFRAME_CTRL *pCtrl,
+                            const NVDpyAttributeColor *pDpyColor,
+                            const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                             NVDpyEvoRec *pDpyEvo);
 
 void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo);
 void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo);
-void nvUpdateHdmiCaps(NVDpyEvoPtr pDpyEvo);
+void nvSendHdmiCapsToRm(NVDpyEvoPtr pDpyEvo);
 
 void nvLogEdidCea861InfoEvo(NVDpyEvoPtr pDpyEvo,
                             NVEvoInfoStringPtr pInfoString);
 NvBool nvDpyIsHdmiEvo(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDpyIsHdmiDepth30Evo(const NVDpyEvoRec *pDpyEvo);
 
 NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsModeValidationParams *pParams,
@@ -60,16 +60,38 @@ NvBool nvInitHdmiLibrary(NVDevEvoRec *pDevEvo);
 void nvTeardownHdmiLibrary(NVDevEvoRec *pDevEvo);
 
 NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo);
-NvBool nvHdmiFrlQueryConfig(const NVDpyEvoRec *pDpyEvo,
-                            const NvModeTimings *pModeTimings,
-                            NVHwModeTimingsEvo *pTimings,
-                            const struct NvKmsModeValidationParams *pParams);
+NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo);
+NvBool nvHdmiFrlQueryConfigOneColorSpaceAndBpc(const NVDpyEvoRec *pDpyEvo,
+                                               const NvModeTimings *pModeTimings,
+                                               const NVHwModeTimingsEvo *pHwTimings,
+                                               const NVDpyAttributeColor *pDpyColor,
+                                               const NvBool b2Heads1Or,
+                                               const struct NvKmsModeValidationParams *pValidationParams,
+                                               HDMI_FRL_CONFIG *pConfig,
+                                               NVDscInfoEvoRec *pDscInfo);
 void nvHdmiFrlClearConfig(NVDispEvoRec *pDispEvo, NvU32 activeRmId);
 void nvHdmiFrlSetConfig(NVDispEvoRec *pDispEvo, NvU32 head);
 
 void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
                                      const NVDpyEvoRec *pDpyEvo,
                                      NVDispHeadAudioStateEvoRec *pAudioState);
+
+NvBool nvHdmiIsTmdsPossible(const NVDpyEvoRec *pDpyEvo,
+                            const NVHwModeTimingsEvo *pHwTimings,
+                            const NVDpyAttributeColor *pDpyColor);
+
+static inline NvBool nvHdmiIsFrlPossible(const NVDpyEvoRec *pDpyEvo)
+{
+    return nvHdmiDpySupportsFrl(pDpyEvo) &&
+           (pDpyEvo->hdmi.sinkCaps.linkMaxFRLRate != HDMI_FRL_DATA_RATE_NONE);
+}
+
+static inline NvBool nvHdmiDpySupportsDsc(const NVDpyEvoRec *pDpyEvo)
+{
+    return nvDpyIsHdmiEvo(pDpyEvo) &&
+                pDpyEvo->parsedEdid.valid &&
+                pDpyEvo->parsedEdid.info.hdmiForumInfo.dsc_1p2;
+}
 
 #ifdef __cplusplus
 };

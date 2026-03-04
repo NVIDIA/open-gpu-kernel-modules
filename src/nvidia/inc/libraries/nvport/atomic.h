@@ -71,6 +71,13 @@
  */
 
 /**
+ * @brief Initialization function for port atomics
+ *
+ * This function is only needed for Libos
+ */
+PORT_ATOMIC_INLINE void portAtomicInit(void);
+
+/**
  * @brief Atomic addition on a signed 32b integer
  *
  * This function is the atomic equivalent to:

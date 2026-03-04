@@ -1,13 +1,22 @@
+
 #ifndef _G_MEM_DESC_NVOC_H_
 #define _G_MEM_DESC_NVOC_H_
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +38,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_mem_desc_nvoc.h"
 
 #ifndef _MEMDESC_H_
@@ -36,6 +46,7 @@ extern "C" {
 
 #include "core/prelude.h"
 #include "poolalloc.h"
+
 
 
 struct OBJVASPACE;
@@ -50,6 +61,7 @@ typedef struct OBJVASPACE OBJVASPACE;
 #endif /* __nvoc_class_id_OBJVASPACE */
 
 
+
 struct OBJGPU;
 
 #ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
@@ -60,6 +72,7 @@ typedef struct OBJGPU OBJGPU;
 #ifndef __nvoc_class_id_OBJGPU
 #define __nvoc_class_id_OBJGPU 0x7ef3cb
 #endif /* __nvoc_class_id_OBJGPU */
+
 
 
 struct Heap;
@@ -74,6 +87,19 @@ typedef struct Heap Heap;
 #endif /* __nvoc_class_id_Heap */
 
 
+
+struct RsClient;
+
+#ifndef __NVOC_CLASS_RsClient_TYPEDEF__
+#define __NVOC_CLASS_RsClient_TYPEDEF__
+typedef struct RsClient RsClient;
+#endif /* __NVOC_CLASS_RsClient_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_RsClient
+#define __nvoc_class_id_RsClient 0x8f87e5
+#endif /* __nvoc_class_id_RsClient */
+
+
 struct MEMORY_DESCRIPTOR;
 
 typedef struct CTX_BUF_POOL_INFO CTX_BUF_POOL_INFO;
@@ -81,6 +107,8 @@ typedef struct COMPR_INFO COMPR_INFO;
 
 //
 // Address space identifiers.
+// Note: This should match the NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_* defines
+//       in ctrl2080gr.h
 //
 typedef NvU32      NV_ADDRESS_SPACE;
 #define ADDR_UNKNOWN    0         // Address space is unknown
@@ -88,8 +116,14 @@ typedef NvU32      NV_ADDRESS_SPACE;
 #define ADDR_FBMEM      2         // Frame buffer memory space
 #define ADDR_REGMEM     3         // NV register memory space
 #define ADDR_VIRTUAL    4         // Virtual address space only
-#define ADDR_FABRIC     5         // Fabric address space for the GPA based addressing.
 #define ADDR_FABRIC_V2  6         // Fabric address space for the FLA based addressing. Will replace ADDR_FABRIC.
+#define ADDR_EGM        7         // Extended GPU Memory (EGM)
+#define ADDR_FABRIC_MC  8         // Multicast fabric address space (MCFLA)
+
+typedef NvU32 MEMDESC_CUSTOM_HEAP;
+#define MEMDESC_CUSTOM_HEAP_NONE                0
+#define MEMDESC_CUSTOM_HEAP_ACR                 1
+#define MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT    2
 
 //
 // Address translation identifiers:
@@ -163,6 +197,476 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define AT_VALUE(x)    ((NvU64)(NvUPtr)(x))
 
 //
+// RM defined Memdesc surface names. The names are sent to Mods to enable feature verification.
+//
+#define NV_RM_SURF_NAME_INSTANCE_BLOCK                      "rm_instance_block_surface"
+#define NV_RM_SURF_NAME_PAGE_TABLE                          "rm_page_table_surface"
+#define NV_RM_SURF_NAME_NONREPLAYABLE_FAULT_BUFFER          "rm_non_replayable_fault_buffer_surface"
+#define NV_RM_SURF_NAME_REPLAYABLE_FAULT_BUFFER             "rm_replayable_fault_buffer_surface"
+#define NV_RM_SURF_NAME_CE_FAULT_METHOD_BUFFER              "rm_ce_fault_method_buffer_surface"
+#define NV_RM_SURF_NAME_ACCESS_COUNTER_BUFFER               "rm_access_counter_buffer_surface"
+#define NV_RM_SURF_NAME_VAB                                 "rm_vab_surface"
+#define NV_RM_SURF_NAME_GR_CIRCULAR_BUFFER                  "rm_gr_ctx_circular_buffer_surface"
+
+//
+// Tagging wrapper macro for memdescAlloc
+//
+#define memdescTagAlloc(stat, tag, pMemdesc)                        {(pMemdesc)->allocTag = tag; stat = memdescAlloc(pMemdesc);}
+#define memdescTagAllocList(stat, tag, pMemdesc, pList)             {(pMemdesc)->allocTag = tag; stat = memdescAllocList(pMemdesc, pList);}
+
+//
+// Defines for commonly used transformations for page size
+//
+#define GET_PAGE_SHIFT(val) (BIT_IDX_32(val))
+#define GET_PAGE_MASK(val) (val - 1)
+#define GET_SIZE_FROM_PAGE_AND_COUNT(pageCount, pageSize) (((NvU64) pageCount) << (GET_PAGE_SHIFT(pageSize)))
+
+// Invalid PTE value
+#define MEMDESC_INVALID_PTE (~0ULL)
+
+//
+// External flags:
+//   ALLOC_PER_SUBDEVICE    Allocate independent system memory for each GPU
+//   LOST_ON_SUSPEND        PM code will skip this allocation during S/R
+//   LOCKLESS_SYSMEM_ALLOC  System memory should be allocated unprotected by
+//                          the  RM lock
+//   GPU_PRIVILEGED         This memory will be marked as privileged in the GPU
+//                          page tables.  When set only GPU requestors who are
+//                          "privileged" are allowed to access this memory.
+//                          This can be used for mapping sensitive memory into
+//                          a user's GPU address space (like context buffers).
+//                          Note support for this in our GPUs is limited, so
+//                          only use it if you know the HW accessing the memory
+//                          makes privileged requests.
+//
+// Internal flags:
+//   SET_KIND               Whether or not the kind was set a different value
+//                          than default.
+//   PRE_ALLOCATED          Caller provided memory descriptor memory
+//   FIXED_ADDRESS_ALLOCATE Allocate from the heap with a fixed address
+//   ALLOCATED              Has the memory been allocated yet?
+//   GUEST_ALLOCATED        Is the memory allocated by a guest VM?
+//                          We make aliased memory descriptors to guest
+//                          allocated memory and mark it so, so that we know
+//                          how to deal with it in memdescMap() etc.
+//   KERNEL_MODE            Is the memory for a user or kernel context?
+//                          XXX This is lame, and it would be best if we could
+//                          get rid of it.  Memory *storage* isn't either user
+//                          or kernel -- only mappings are user or kernel.
+//                          Unfortunately, osAllocPages requires that we
+//                          provide this information.
+//  PHYSICALLY_CONTIGUOUS   Are the underlying physical pages of this memory
+//                          allocation contiguous?
+//  ENCRYPTED               TurboCipher allocations need a bit in the PTE to
+//                          indicate encrypted
+//  UNICAST                 Memory descriptor was created via UC path
+//  PAGED_SYSMEM            Allocate the memory from paged system memory. When
+//                          this flag is used, memdescLock() should be called
+//                          to lock the memory in physical pages before we
+//                          access this memory descriptor.
+//  CPU_ONLY                Allocate memory only accessed by CPU.
+//
+#define MEMDESC_FLAGS_NONE                         ((NvU64)0x0)
+#define MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE          NVBIT64(0)
+#define MEMDESC_FLAGS_SET_KIND                     NVBIT64(1)
+#define MEMDESC_FLAGS_LOST_ON_SUSPEND              NVBIT64(2)
+#define MEMDESC_FLAGS_PRE_ALLOCATED                NVBIT64(3)
+#define MEMDESC_FLAGS_FIXED_ADDRESS_ALLOCATE       NVBIT64(4)
+#define MEMDESC_FLAGS_LOCKLESS_SYSMEM_ALLOC        NVBIT64(5)
+#define MEMDESC_FLAGS_GPU_IN_RESET                 NVBIT64(6)
+#define MEMDESC_ALLOC_FLAGS_PROTECTED              NVBIT64(7)
+#define MEMDESC_FLAGS_GUEST_ALLOCATED              NVBIT64(8)
+#define MEMDESC_FLAGS_KERNEL_MODE                  NVBIT64(9)
+#define MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS        NVBIT64(10)
+#define MEMDESC_FLAGS_ENCRYPTED                    NVBIT64(11)
+#define MEMDESC_FLAGS_PAGED_SYSMEM                 NVBIT64(12)
+#define MEMDESC_FLAGS_GPU_PRIVILEGED               NVBIT64(13)
+#define MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND  NVBIT64(14)
+#define MEMDESC_FLAGS_DUMMY_TOPLEVEL               NVBIT64(15)
+
+// Don't use the below two flags. For memdesc internal use only.
+// These flags will be removed on memory allocation refactoring in RM
+#define MEMDESC_FLAGS_PROVIDE_IOMMU_MAP            NVBIT64(16)
+#define MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE        NVBIT64(17)
+
+#define MEMDESC_FLAGS_CUSTOM_HEAP_ACR              NVBIT64(18)
+
+// Allocate in "fast" or "slow" memory, if there are multiple grades of memory (like mixed density)
+#define MEMDESC_FLAGS_HIGH_PRIORITY                NVBIT64(19)
+#define MEMDESC_FLAGS_LOW_PRIORITY                 NVBIT64(20)
+
+#define MEMDESC_FLAGS_CPU_ONLY                     NVBIT64(22)
+
+// This flags is used for a special SYSMEM descriptor that points to a memory
+// region allocated externally (e.g. malloc, kmalloc etc.)
+#define MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM           NVBIT64(23)
+
+// Owned by Physical Memory Allocator (PMA).
+#define MEMDESC_FLAGS_ALLOC_PMA_OWNED              NVBIT64(24)
+
+// This flag is added as part of Sub-Allocator feature meant to be used by VGPU clients.
+// Once VGPU clients allocate a large block of memory for their use, they carve-out a small
+// portion of it to be used for RM internal allocations originating from a given client. Each
+// allocation can choose to use this carved-out memory owned by client or be part of global heap.
+// This flag has to be used in RM internal allocation only when a particular allocation is tied to
+// the life-time of this client and will be freed before client gets destroyed.
+#define MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE      NVBIT64(25)
+
+// This flag is used to specify the pages are pinned using other kernel module or API
+// Currently, this flag is used for vGPU on KVM where RM calls vfio APIs to pin and unpin pages
+// instead of using os_lock_user_pages() and os_unlock_user_pages().
+#define MEMDESC_FLAGS_FOREIGN_PAGE                 NVBIT64(26)
+
+// These flags are used for SYSMEM descriptors that point to a physical BAR
+// range and do not take the usual memory mapping paths. Currently, these are used for vGPU.
+#define MEMDESC_FLAGS_BAR0_REFLECT                 NVBIT64(27)
+#define MEMDESC_FLAGS_BAR1_REFLECT                 NVBIT64(28)
+
+// This flag is used to create shared memory required for vGPU operation.
+// During RPC and all other shared memory allocations, VF RM will set this flag to instruct mods
+// layer to create shared memory between VF process and PF process.
+#define MEMDESC_FLAGS_MODS_SHARED_MEM              NVBIT64(29)
+
+// This flag is set in memdescs that describe client (currently MODS) managed VPR allocations.
+#define MEMDESC_FLAGS_VPR_REGION_CLIENT_MANAGED    NVBIT64(30)
+
+// This flags is used for a special SYSMEM descriptor that points to physical BAR
+// range of a third party device.
+#define MEMDESC_FLAGS_PEER_IO_MEM                  NVBIT64(31)
+
+// If the flag is set, the RM will only allow read-only CPU user-mappings
+// to the descriptor.
+#define MEMDESC_FLAGS_USER_READ_ONLY               NVBIT64(32)
+
+// If the flag is set, the RM will only allow read-only DMA mappings
+// to the descriptor.
+#define MEMDESC_FLAGS_DEVICE_READ_ONLY             NVBIT64(33)
+
+// This flag is used to denote the memory descriptor that is part of larger memory descriptor;
+// created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
+#define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
+
+// This flag is used to configure the memory descriptor as SKED reflected for SYSMEM address spaces.
+// Memory accesses to these pages will be routed to SKED. Note that the memory aperture needs to be
+// non-coherent to enable the feature.
+#define MEMDESC_FLAGS_ALLOC_SKED_REFLECTED         NVBIT64(35)
+
+// This flag is used to denote that this memdesc is allocated from
+// a context buffer pool. When this flag is set, we expect a pointer
+// to this context buffer pool to be cached in memdesc.
+#define MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL        NVBIT64(36)
+
+//
+// This flag is used to skip privilege checks for the ADDR_REGMEM mapping type.
+// This flag is useful for cases like UserModeApi where we want to use this memory type
+// in a non-privileged user context
+#define MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK       NVBIT64(37)
+
+// This flag denotes the memory descriptor of type Display non iso
+#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO     NVBIT64(38)
+
+// This flag is used to force mapping of coherent sysmem through
+// the GMMU over BAR1. This is useful when we need some form
+// of special translation of the SYSMEM_COH aperture by the GMMU.
+#define MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1         NVBIT64(39)
+
+// This flag is used to override system memory limit to be allocated
+// within override address width.
+#define MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT   NVBIT64(40)
+
+//
+// If this flag is set, Linux RM will ensure that the allocated memory is
+// 32-bit addressable.
+#define MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE      NVBIT64(41)
+
+// unused                                          NVBIT64(42)
+
+//
+// If this flag is set then it indicates that the memory associated with
+// this descriptor was allocated from local EGM.
+//
+#define MEMDESC_FLAGS_ALLOC_FROM_EGM               NVBIT64(43)
+
+//
+// Indicates that this memdesc is tracking client sysmem allocation as
+// against RM internal sysmem allocation
+//
+#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT       NVBIT64(44)
+//
+// Clients (including RM) should set this flag to request allocations in
+// unprotected memory. This is required for Confidential Compute cases
+//
+#define MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY  NVBIT64(45)
+
+//
+// The following is a special use case for sharing memory between
+// the GPU and a WSL client. There is no IOMMU-compliant support
+// currently for this, so a WAR is required for r515. The intent
+// is to remove this by r525.
+//
+#define MEMDESC_FLAGS_WSL_SHARED_MEMORY            NVBIT64(46)
+
+//
+// Skip IOMMU mapping creation during alloc for sysmem.
+// A mapping might be requested later with custom parameters.
+//
+#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING           NVBIT64(47)
+
+//
+// Specical case to allocate the runlists for Guests from its GPA
+// In MODS, VM's GPA allocated from subheap so using this define to
+// Forcing memdesc to allocated from subheap
+//
+#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP     NVBIT64(48)
+
+//
+// Indicate if memdesc is allocated as localized memory or not.
+//
+#define MEMDESC_FLAGS_ALLOC_AS_LOCALIZED           NVBIT64(50)
+
+// Indicate whether memdesc tracks the memory allocated from the scanout-carevout heap.
+#define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
+
+// Force-compress pte kind when mapping with virtual pte kind
+#define MEMDESC_FLAGS_MAP_FORCE_COMPRESSED_MAP     NVBIT64(52)
+
+//
+// RM will allow to map the ext sysmem memory into user space (cpu mapping).
+// ClassId == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR is treated as
+// ext sysmem memory.
+//
+#define MEMDESC_FLAGS_ALLOW_EXT_SYSMEM_USER_CPU_MAPPING NVBIT64(53)
+
+// Indicate if memdesc is allocated for non IO-coherent memory.
+#define MEMDESC_FLAGS_NON_IO_COHERENT              NVBIT64(54)
+
+// Indicate if memdesc is tracking the uefi carveout memory.
+#define MEMDESC_FLAGS_ALLOC_FROM_UEFI_CARVEOUT     NVBIT64(55)
+
+//
+// RM internal allocations owner tags
+// Total 200 tags are introduced, out of which some are already
+// replaced with known verbose strings
+//
+typedef enum
+{
+    NV_FB_ALLOC_RM_INTERNAL_OWNER__MIN                  = 10U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_COMPBIT_STORE         = 11U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_CONTEXT_BUFFER        = 12U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ATTR_BUFFER           = 13U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_PMU_SURFACE           = 14U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_CIRCULAR_BUFFER       = 15U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_PAGE_POOL             = 16U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ACCESS_MAP            = 17U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_WPR_METADATA          = 18U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_LIBOS_ARGS            = 19U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_BOOTLOADER_ARGS       = 20U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_SR_METADATA           = 21U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ACR_SETUP             = 22U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ACR_SHADOW            = 23U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ACR_BACKUP            = 24U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_ACR_BINARY            = 25U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_VBIOS_FRTS            = 26U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_USERD_BUFFER          = 27U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_RUNLIST_ENTRIES       = 28U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_PAGE_PTE              = 29U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_MMU_FAULT_BUFFER      = 30U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FAULT_METHOD          = 31U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_WAR_PT                = 32U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_WAR_PD                = 33U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_1         = 34U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_2         = 35U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_3         = 36U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_4         = 37U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_5         = 38U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_6         = 39U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7         = 40U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_8         = 41U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_9         = 42U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_10        = 43U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_11        = 44U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_12        = 45U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_13        = 46U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_14        = 47U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_15        = 48U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_16        = 49U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_17        = 50U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_18        = 51U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_19        = 52U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_20        = 53U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_21        = 54U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_22        = 55U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_23        = 56U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_24        = 57U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_25        = 58U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_26        = 59U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_27        = 60U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_28        = 61U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_29        = 62U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_30        = 63U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_31        = 64U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_32        = 65U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_33        = 66U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34        = 67U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_RUSD_BUFFER           = 68U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_36        = 69U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_37        = 70U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_38        = 71U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_39        = 72U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_40        = 73U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_41        = 74U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_42        = 75U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_43        = 76U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_44        = 77U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_45        = 78U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_46        = 79U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_47        = 80U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_48        = 81U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_49        = 82U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_50        = 83U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_51        = 84U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_52        = 85U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_53        = 86U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_54        = 87U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_55        = 88U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_56        = 89U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_57        = 90U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_58        = 91U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_59        = 92U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_60        = 93U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_61        = 94U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_62        = 95U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_63        = 96U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_64        = 97U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_65        = 98U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_66        = 99U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_67        = 100U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_68        = 101U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_69        = 102U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_70        = 103U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_71        = 104U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_72        = 105U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_73        = 106U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_74        = 107U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_75        = 108U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_76        = 109U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77        = 110U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_78        = 111U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_79        = 112U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_80        = 113U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_81        = 114U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_82        = 115U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_83        = 116U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_84        = 117U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_85        = 118U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_86        = 119U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_87        = 120U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_88        = 121U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_89        = 122U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_90        = 123U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_91        = 124U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_92        = 125U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_93        = 126U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_94        = 127U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95        = 128U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_96        = 129U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_97        = 130U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_98        = 131U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_99        = 132U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_100       = 133U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101       = 134U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_102       = 135U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_103       = 136U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_104       = 137U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_105       = 138U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_106       = 139U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_107       = 140U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_108       = 141U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_109       = 142U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_110       = 143U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_111       = 144U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_112       = 145U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_113       = 146U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_114       = 147U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_115       = 148U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_116       = 149U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_117       = 150U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_118       = 151U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_119       = 152U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_120       = 153U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_121       = 154U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_122       = 155U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_123       = 156U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_124       = 157U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_125       = 158U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_126       = 159U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_127       = 160U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_128       = 161U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FBSR_CE_TEST_BUFFER   = 162U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_130       = 163U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_131       = 164U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_132       = 165U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_133       = 166U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_134       = 167U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_135       = 168U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_136       = 169U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_137       = 170U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_138       = 171U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_139       = 172U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_140       = 173U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_141       = 174U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_142       = 175U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143       = 176U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE = 177U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FAKE_WPR_RSVD         = 178U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GR_SCRUB_CHANNEL      = 179U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_CMC_LOG_BUFFER        = 180U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_148       = 181U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_PMU_ACR_SHADOW_COPY   = 182U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FLCN_BACKING_STORE    = 183U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
+
+    //
+    // Unused tags from here, for any new use-case it's required 
+    // to replace the below tags with known verbose strings
+    //
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_154       = 187U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_155       = 188U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_156       = 189U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_157       = 190U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_158       = 191U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_159       = 192U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_160       = 193U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_161       = 194U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_162       = 195U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_163       = 196U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_164       = 197U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_165       = 198U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_166       = 199U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_167       = 200U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_168       = 201U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_169       = 202U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_170       = 203U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_171       = 204U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_172       = 205U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_173       = 206U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_174       = 207U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_175       = 208U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_176       = 209U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_COV_TASK_DESCRIPTOR   = 210U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER__MAX                  = 211U,
+} NV_FB_ALLOC_RM_INTERNAL_OWNER;
+
+// Enums defining CPU/GPU snooping behavior
+typedef enum {
+    MEMDESC_CACHE_SNOOP_DEFER_TO_MAP = 0,    // Choice was made at allocation time
+    MEMDESC_CACHE_SNOOP_DISABLE = 1,         // No GPU cache snooping takes place (SYS_NCOH)
+    MEMDESC_CACHE_SNOOP_ENABLE = 2           // GPU cache is snooped (SYS_COH)
+} MEMDESC_CACHE_SNOOP;
+
+//
 // Overrides address translation in SR-IOV enabled usecases
 //
 // In SRIOV systems, an access from guest has to go through the following
@@ -203,10 +707,13 @@ typedef struct MEMORY_DESCRIPTOR
     NvU64 _flags;
 
     // Size of mapping used for this allocation.  Multiple mappings on Fermi must always use the same page size.
-    NvU32 _pageSize;
+    NvU64 _pageSize;
 
     // Size of the memory allocation in pages
     NvU64 PageCount;
+
+    // Total size of the page array. Used for overflow checks.
+    NvU64 pageArraySize;
 
     // Alignment of the memory allocation as size in bytes
     // XXX: would 32b work here?
@@ -271,6 +778,30 @@ typedef struct MEMORY_DESCRIPTOR
     // One of NV_MEMORY_CACHED, NV_MEMORY_UNCACHED, NV_MEMORY_WRITECOMBINED
     NvU32 _cpuCacheAttrib;
 
+    //
+    // This field is used on fully coherent platforms (like Blackwell+ Tegra) to decide
+    // whether memory should be mapped as COH/NCOH.
+    //
+    // For fully coherent platforms, the aperture fields have been repurposed
+    // to specify whether the GPU cache will be snooped by the CPU or other IO devices.
+    //
+    // Setting MEMDESC_CACHE_SNOOP_DEFER_TO_MAP defers making the choice to map time.
+    //
+    MEMDESC_CACHE_SNOOP gpuCacheSnoop;
+
+    //
+    // This field is used on non-fully coherent platforms (like dGPU and preBlackwell Tegra) to decide
+    // whether memory should be mapped as COH/NCOH.
+    //
+    // For non-fully coherent platforms, these settings specify whether the CPU cache will be
+    // snooped by the GPU.
+    //
+    // Setting MEMDESC_CACHE_SNOOP_DEFER_TO_MAP defers making the choice to map time.
+    //
+    MEMDESC_CACHE_SNOOP cpuCacheSnoop;
+
+    NvBool bInvalidateL2OnFree;
+
     // The page kind of this memory
     NvU32 _pteKind;
     NvU32 _pteKindCompressed;
@@ -293,6 +824,11 @@ typedef struct MEMORY_DESCRIPTOR
     // resources attached to the memory (e.g.: compression tags, zcull).
     //
     NvU32 _hwResId;
+
+    //
+    // alloc tag for tracking internal allocations @ref NV_FB_ALLOC_RM_INTERNAL_OWNER
+    //
+    NV_FB_ALLOC_RM_INTERNAL_OWNER allocTag;
 
     //
     // Keep track which heap is actually used for this allocation
@@ -332,6 +868,9 @@ typedef struct MEMORY_DESCRIPTOR
     // Serve as a head node in a list of submemdescs
     MEMORY_DESCRIPTOR_LIST *pSubMemDescList;
 
+    // Reserved for RM exclusive use
+    NvBool bRmExclusiveUse;
+
     // If strung in a intrusive linked list
     ListNode   node;
 
@@ -351,6 +890,11 @@ typedef struct MEMORY_DESCRIPTOR
     void *_pInternalMappingPriv;
     NvU32 _internalMappingRefCount;
 
+    // Static BAR1 mapping
+    NvU32 staticBar1MappingRefCount;
+    NvU32 staticBar1MappingKind;
+    NvU32 staticBar1DmaFlags;
+
     // Array to hold SPA addresses when memdesc is allocated from GPA. Valid only for SRIOV cases
     RmPhysAddr *pPteSpaMappings;
 
@@ -366,6 +910,21 @@ typedef struct MEMORY_DESCRIPTOR
 
     // We verified that memdesc is safe to be mapped as large pages
     NvBool bForceHugePages;
+
+    //
+    // If MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, OR the physical address against this to
+    // get the address to be programmed into HW.
+    //
+    NvU64 localizedMask;
+
+    // Indicates granularity of mapping. Will be used to implement dynamic page sizes.
+    NvU32 pageArrayGranularity;
+
+    // NUMA node ID from which memory should be allocated
+    NvS32 numaNode;
+
+    // Array to hold EGM addresses when EGM is enabled
+    RmPhysAddr *pPteEgmMappings;
 
     //
     // If PhysicallyContiguous is NV_TRUE, this array consists of one element.
@@ -456,7 +1015,7 @@ NV_STATUS memdescMap(MEMORY_DESCRIPTOR *pMemDesc, NvU64 Offset, NvU64 Size,
                      NvBool Kernel, NvU32 Protect, NvP64 *pAddress, NvP64 *pPriv);
 
 // Free a CPU mapping of an arbitrary subrange of the memory.
-void memdescUnmap(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel, NvU32 ProcessId,
+void memdescUnmap(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel,
                   NvP64 Address, NvP64 Priv);
 
 // Allocate a CPU mapping of an arbitrary subrange of the memory.
@@ -465,7 +1024,7 @@ NV_STATUS memdescMapOld(MEMORY_DESCRIPTOR *pMemDesc, NvU64 Offset, NvU64 Size,
                         NvBool Kernel, NvU32 Protect, void **pAddress, void **pPriv);
 
 // Free a CPU mapping of an arbitrary subrange of the memory.
-void memdescUnmapOld(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel, NvU32 ProcessId,
+void memdescUnmapOld(MEMORY_DESCRIPTOR *pMemDesc, NvBool Kernel,
                      void *Address, void *Priv);
 
 // Fill in a MEMORY_DESCRIPTOR with a description of a preexisting contiguous
@@ -478,7 +1037,7 @@ void memdescDescribe(MEMORY_DESCRIPTOR *pMemDesc,
 // Fill in a MEMORY_DESCRIPTOR with the physical page addresses returned by PMA.
 // It should already be initialized with memdescCreate*().
 void memdescFillPages(MEMORY_DESCRIPTOR *pMemDesc, NvU32 offset,
-                      NvU64 *pPages, NvU32 pageCount, NvU32 pageSize);
+                      NvU64 *pPages, NvU32 pageCount, NvU64 pageSize);
 
 // Create a MEMORY_DESCRIPTOR for a subset of an existing memory allocation.
 // The new MEMORY_DESCRIPTOR must be freed with memdescDestroy.
@@ -489,6 +1048,9 @@ NV_STATUS memdescCreateSubMem(MEMORY_DESCRIPTOR **ppMemDescNew,
 // Compute the physical address of a byte within a MEMORY_DESCRIPTOR
 RmPhysAddr memdescGetPhysAddr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 offset);
 
+// Compute the physical address of a byte within a MEMORY_DESCRIPTOR for a PTE or HW
+RmPhysAddr memdescGetPtePhysAddr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 offset);
+
 // Compute count physical addresses within a MEMORY_DESCRIPTOR. Starting at the
 // given offset and advancing it by stride for each consecutive address.
 void memdescGetPhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
@@ -497,6 +1059,15 @@ void memdescGetPhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
                          NvU64 stride,
                          NvU64 count,
                          RmPhysAddr *pAddresses);
+
+// Compute count physical addresses for a PTE or HW within a MEMORY_DESCRIPTOR. Starting at the
+// given offset and advancing it by stride for each consecutive address.
+void memdescGetPtePhysAddrs(MEMORY_DESCRIPTOR *pMemDesc,
+                            ADDRESS_TRANSLATION addressTranslation,
+                            NvU64 offset,
+                            NvU64 stride,
+                            NvU64 count,
+                            RmPhysAddr *pAddresses);
 
 // Compute count physical addresses within a MEMORY_DESCRIPTOR for a specific
 // GPU. Starting at the given offset and advancing it by stride for each
@@ -508,6 +1079,17 @@ void memdescGetPhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
                                NvU64 stride,
                                NvU64 count,
                                RmPhysAddr *pAddresses);
+
+// Compute count physical addresses to be encoded into PTEs within a
+// MEMORY_DESCRIPTOR for a specific GPU. Starting at the given offset
+// and advancing it by stride for each consecutive address.
+void memdescGetPtePhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
+                                  OBJGPU *pGpu,
+                                  ADDRESS_TRANSLATION addressTranslation,
+                                  NvU64 offset,
+                                  NvU64 stride,
+                                  NvU64 count,
+                                  RmPhysAddr *pAddresses);
 
 // Obtains one of the PTEs from the MEMORY_DESCRIPTOR.  Assumes 4KB pages,
 // and works for either contiguous or noncontiguous descriptors.
@@ -555,7 +1137,7 @@ MEMORY_DESCRIPTOR *memdescGetMemDescFromIndex(MEMORY_DESCRIPTOR *pMemDesc, NvU32
 void memdescPrintMemdesc(MEMORY_DESCRIPTOR *pMemDesc, NvBool bPrintIndividualPages, const char *pPrefixMessage);
 
 // Get the page offset for an arbitrary power of two page size
-NvU64 memdescGetPageOffset(MEMORY_DESCRIPTOR *pMemDesc, NvU32 pageSize);
+NvU64 memdescGetPageOffset(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageSize);
 
 //
 // Internal APIs for the IOVASPACE to manage IOMMU mappings in a memdesc.
@@ -625,11 +1207,25 @@ NvBool memdescGetContiguity(PMEMORY_DESCRIPTOR pMemDesc, ADDRESS_TRANSLATION add
 void memdescSetContiguity(PMEMORY_DESCRIPTOR pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvBool isContiguous);
 NvBool memdescCheckContiguity(PMEMORY_DESCRIPTOR pMemDesc, ADDRESS_TRANSLATION addressTranslation);
 NV_ADDRESS_SPACE memdescGetAddressSpace(PMEMORY_DESCRIPTOR pMemDesc);
-NvU32 memdescGetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
-void  memdescSetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU32 pageSize);
+NvU64 memdescGetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
+void  memdescSetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 pageSize);
 PMEMORY_DESCRIPTOR memdescGetRootMemDesc(PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pRootOffset);
-void memdescSetCustomHeap(PMEMORY_DESCRIPTOR);
-NvBool memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
+void memdescSetCustomHeap(PMEMORY_DESCRIPTOR, MEMDESC_CUSTOM_HEAP heap);
+MEMDESC_CUSTOM_HEAP memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
+NV_STATUS memdescSetPageArrayGranularity(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageArrayGranularity);
+NvBool memdescAcquireRmExclusiveUse(MEMORY_DESCRIPTOR *pMemDesc);
+NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation,
+                                        NvU64 *pOffset,NvU32 *pMemAperture, NvU32 *pMemKind,
+                                        NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
+NvBool memdescIsEgm(MEMORY_DESCRIPTOR *pMemDesc);
+NvU64 memdescGetAdjustedPageSize(MEMORY_DESCRIPTOR *pMemDesc);
+
+static inline NvBool
+memdescIsCarveoutMemory(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return !!(pMemDesc->_flags & (MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT |
+                                  MEMDESC_FLAGS_ALLOC_FROM_UEFI_CARVEOUT));
+}
 
 /*!
  *  @brief Get PTE kind
@@ -820,6 +1416,31 @@ memdescGetSize(PMEMORY_DESCRIPTOR pMemDesc)
 }
 
 /*!
+ *  @brief Set CPU NUMA node to allocate memory from
+ *
+ *  @param[in]  pMemDesc    Memory Descriptor to use
+ *  @param[in]  numaNode    NUMA node to allocate memory from
+ */
+static NV_INLINE void
+memdescSetNumaNode(MEMORY_DESCRIPTOR *pMemDesc, NvS32 numaNode)
+{
+    pMemDesc->numaNode = numaNode;
+}
+
+/*!
+ *  @brief Get CPU NUMA node to allocate memory from
+ *
+ *  @param[in]  pMemDesc    Memory Descriptor to use
+ *
+ *  @returns    NUMA node to allocate memory from
+ */
+static NV_INLINE NvS32
+memdescGetNumaNode(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return pMemDesc->numaNode;
+}
+
+/*!
  *  @brief Checks if subdevice memory descriptors are present
  *
  *  See memdescGetMemDescFromSubDeviceInst for an explanation of subdevice memory
@@ -868,31 +1489,6 @@ void memdescOverrideInstLocList(NvU32 loc, const char *name, const NV_ADDRESS_SP
 */
 void memdescOverridePhysicalAddressWidthWindowsWAR(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 addressWidth);
 
-/*!
-* @brief Register memory descriptor referenced by hMemory in CPU-RM to GSP
-*
-* @param[in]  pGpu          OBJGPU pointer
-* @param[in]  hClient       client handled
-* @param[in]  hSubDevice    subdevice handle
-* @param[in]  hMemory       memory handle
-*
-* @returns NV_STATUS
-*/
-NV_STATUS memdescRegisterToGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent, NvHandle hMemory);
-
-/*!
-* @brief Deregister memory descriptor referenced by hMemory in CPU-RM from GSP
-*
-* @param[in]  pGpu          OBJGPU pointer
-* @param[in]  hClient       client handled
-* @param[in]  hSubDevice    subdevice handle
-* @param[in]  hMemory       memory handle
-*
-* @returns NV_STATUS
-*/
-
-NV_STATUS memdescDeregisterFromGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent, NvHandle hMemory);
-
 // cache maintenance functions
 void memdescFlushGpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
 void memdescFlushCpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
@@ -901,181 +1497,111 @@ void memdescFlushCpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
 void* memdescMapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
 void memdescUnmapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
 
-//
-// External flags:
-//   ALLOC_PER_SUBDEVICE    Allocate independent system memory for each GPU
-//   LOST_ON_SUSPEND        PM code will skip this allocation during S/R
-//   LOCKLESS_SYSMEM_ALLOC  System memory should be allocated unprotected by
-//                          the  RM lock
-//   GPU_PRIVILEGED         This memory will be marked as privileged in the GPU
-//                          page tables.  When set only GPU requestors who are
-//                          "privileged" are allowed to access this memory.
-//                          This can be used for mapping sensitive memory into
-//                          a user's GPU address space (like context buffers).
-//                          Note support for this in our GPUs is limited, so
-//                          only use it if you know the HW accessing the memory
-//                          makes privileged requests.
-//
-// Internal flags:
-//   SET_KIND               Whether or not the kind was set a different value
-//                          than default.
-//   PRE_ALLOCATED          Caller provided memory descriptor memory
-//   FIXED_ADDRESS_ALLOCATE Allocate from the heap with a fixed address
-//   ALLOCATED              Has the memory been allocated yet?
-//   GUEST_ALLOCATED        Is the memory allocated by a guest VM?
-//                          We make aliased memory descriptors to guest
-//                          allocated memory and mark it so, so that we know
-//                          how to deal with it in memdescMap() etc.
-//   KERNEL_MODE            Is the memory for a user or kernel context?
-//                          XXX This is lame, and it would be best if we could
-//                          get rid of it.  Memory *storage* isn't either user
-//                          or kernel -- only mappings are user or kernel.
-//                          Unfortunately, osAllocPages requires that we
-//                          provide this information.
-//  PHYSICALLY_CONTIGUOUS   Are the underlying physical pages of this memory
-//                          allocation contiguous?
-//  ENCRYPTED               TurboCipher allocations need a bit in the PTE to
-//                          indicate encrypted
-//  UNICAST                 Memory descriptor was created via UC path
-//  PAGED_SYSMEM            Allocate the memory from paged system memory. When
-//                          this flag is used, memdescLock() should be called
-//                          to lock the memory in physical pages before we
-//                          access this memory descriptor.
-//  CPU_ONLY                Allocate memory only accessed by CPU.
-//
-#define MEMDESC_FLAGS_NONE                         ((NvU64)0x0)
-#define MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE          NVBIT64(0)
-#define MEMDESC_FLAGS_SET_KIND                     NVBIT64(1)
-#define MEMDESC_FLAGS_LOST_ON_SUSPEND              NVBIT64(2)
-#define MEMDESC_FLAGS_PRE_ALLOCATED                NVBIT64(3)
-#define MEMDESC_FLAGS_FIXED_ADDRESS_ALLOCATE       NVBIT64(4)
-#define MEMDESC_FLAGS_LOCKLESS_SYSMEM_ALLOC        NVBIT64(5)
-#define MEMDESC_FLAGS_GPU_IN_RESET                 NVBIT64(6)
-#define MEMDESC_ALLOC_FLAGS_PROTECTED              NVBIT64(7)
-#define MEMDESC_FLAGS_GUEST_ALLOCATED              NVBIT64(8)
-#define MEMDESC_FLAGS_KERNEL_MODE                  NVBIT64(9)
-#define MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS        NVBIT64(10)
-#define MEMDESC_FLAGS_ENCRYPTED                    NVBIT64(11)
-#define MEMDESC_FLAGS_PAGED_SYSMEM                 NVBIT64(12)
-#define MEMDESC_FLAGS_GPU_PRIVILEGED               NVBIT64(13)
-#define MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND  NVBIT64(14)
-#define MEMDESC_FLAGS_DUMMY_TOPLEVEL               NVBIT64(15)
+/*!
+ * @brief Set the name of the surface.
+ *
+ * @param[in] pGpu     OBJGPU pointer.
+ * @param[in] pMemDesc MEMORY_DESCRIPTOR pointer that the name is to be set for.
+ * @param[in] name     const char pointer to the name to be set.
+ */
+void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, const char *suffix);
 
-// Don't use the below two flags. For memdesc internal use only.
-// These flags will be removed on memory allocation refactoring in RM
-#define MEMDESC_FLAGS_PROVIDE_IOMMU_MAP            NVBIT64(16)
-#define MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE        NVBIT64(17)
+/*!
+ * @brief sets thet pageCount, granularity and actual size described by the memdesc
+ *
+ * @param[in] pMemDesc     MEMORY_DESCRIPTOR pointer of the memdesc being populated.
+ * @param[in] actualSize   Size of the allocation after accounting for tracking granularity.
+ * @param[in] granularity  Tracking granularity of the memory.
+ *
+ * @returns NV_OK on success, NV_ERR_BUFFER_TOO_SMALL if page array overflow is detected.
+ */
+static NV_INLINE NV_STATUS
+memdescSetAllocSizeFields(MEMORY_DESCRIPTOR *pMemDesc, NvU64 actualSize, NvU32 granularity)
+{
+    NvU64 pageCount = actualSize >> GET_PAGE_SHIFT(granularity);
 
-#define MEMDESC_FLAGS_CUSTOM_HEAP_ACR              NVBIT64(18)
+    if (!(pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS) &&
+        pageCount > pMemDesc->pageArraySize)
+    {
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
 
-// Allocate in "fast" or "slow" memory, if there are multiple grades of memory (like mixed density)
-#define MEMDESC_FLAGS_HIGH_PRIORITY                NVBIT64(19)
-#define MEMDESC_FLAGS_LOW_PRIORITY                 NVBIT64(20)
+    pMemDesc->PageCount = pageCount;
+    pMemDesc->ActualSize = actualSize;
+    pMemDesc->pageArrayGranularity = granularity;
 
-// Flag to specify if requested size should be rounded to page size
-#define MEMDESC_FLAGS_PAGE_SIZE_ALIGN_IGNORE       NVBIT64(21)
+    return NV_OK;
+}
 
-#define MEMDESC_FLAGS_CPU_ONLY                     NVBIT64(22)
+/*!
+ *  @brief Get GPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc    Memory descriptor pointer
+ *
+ *  @returns Current GPU cache snoop setting
+ */
+static NV_INLINE MEMDESC_CACHE_SNOOP
+memdescGetGpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return pMemDesc->gpuCacheSnoop;
+}
 
-// This flags is used for a special SYSMEM descriptor that points to a memory
-// region allocated externally (e.g. malloc, kmalloc etc.)
-#define MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM           NVBIT64(23)
+/*!
+ *  @brief Set GPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc           Memory descriptor pointer
+ *  @param[in]  gpuCacheSnoop      New GPU cache snoop setting
+ *
+ *  @returns nothing
+ */
+static NV_INLINE void
+memdescSetGpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc, MEMDESC_CACHE_SNOOP gpuCacheSnoop)
+{
+    pMemDesc->gpuCacheSnoop = gpuCacheSnoop;
+}
 
-// Owned by Physical Memory Allocator (PMA).
-#define MEMDESC_FLAGS_ALLOC_PMA_OWNED              NVBIT64(24)
+/*!
+ *  @brief Get CPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc    Memory descriptor pointer
+ *
+ *  @returns Current CPU cache snoop setting
+ */
+static NV_INLINE MEMDESC_CACHE_SNOOP
+memdescGetCpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc)
+{
+    return pMemDesc->cpuCacheSnoop;
+}
 
-// This flag is added as part of Sub-Allocator feature meant to be used by VGPU clients.
-// Once VGPU clients allocate a large block of memory for their use, they carve-out a small
-// portion of it to be used for RM internal allocations originating from a given client. Each
-// allocation can choose to use this carved-out memory owned by client or be part of global heap.
-// This flag has to be used in RM internal allocation only when a particular allocation is tied to
-// the life-time of this client and will be freed before client gets destroyed.
-#define MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE      NVBIT64(25)
+/*!
+ *  @brief Set CPU cache snoop setting
+ *
+ *  @param[in]  pMemDesc           Memory descriptor pointer
+ *  @param[in]  cpuCacheSnoop      New CPU cache snoop setting
+ *
+ *  @returns nothing
+ */
+static NV_INLINE void
+memdescSetCpuCacheSnoop(MEMORY_DESCRIPTOR *pMemDesc, MEMDESC_CACHE_SNOOP cpuCacheSnoop)
+{
+    pMemDesc->cpuCacheSnoop = cpuCacheSnoop;
+}
 
-// This flag is used to specify the pages are pinned using other kernel module or API
-// Currently, this flag is used for vGPU on KVM where RM calls vfio APIs to pin and unpin pages
-// instead of using os_lock_user_pages() and os_unlock_user_pages().
-#define MEMDESC_FLAGS_FOREIGN_PAGE                 NVBIT64(26)
-
-// These flags are used for SYSMEM descriptors that point to a physical BAR
-// range and do not take the usual memory mapping paths. Currently, these are used for vGPU.
-#define MEMDESC_FLAGS_BAR0_REFLECT                 NVBIT64(27)
-#define MEMDESC_FLAGS_BAR1_REFLECT                 NVBIT64(28)
-
-// This flag is used to create shared memory required for vGPU operation.
-// During RPC and all other shared memory allocations, VF RM will set this flag to instruct mods
-// layer to create shared memory between VF process and PF process.
-#define MEMDESC_FLAGS_MODS_SHARED_MEM              NVBIT64(29)
-
-// This flag is set in memdescs that describe client (currently MODS) managed VPR allocations.
-#define MEMDESC_FLAGS_VPR_REGION_CLIENT_MANAGED    NVBIT64(30)
-
-// This flags is used for a special SYSMEM descriptor that points to physical BAR
-// range of a third party device.
-#define MEMDESC_FLAGS_PEER_IO_MEM                  NVBIT64(31)
-
-// If the flag is set, the RM will only allow read-only CPU user-mappings
-// to the descriptor.
-#define MEMDESC_FLAGS_USER_READ_ONLY               NVBIT64(32)
-
-// If the flag is set, the RM will only allow read-only DMA mappings
-// to the descriptor.
-#define MEMDESC_FLAGS_DEVICE_READ_ONLY             NVBIT64(33)
-
-// This flag is used to denote the memory descriptor that is part of larger memory descriptor;
-// created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
-#define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
-
-// This flag is used to denote that this memdesc is allocated from
-// a context buffer pool. When this flag is set, we expect a pointer
-// to this context buffer pool to be cached in memdesc.
-#define MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL        NVBIT64(36)
-
-//
-// This flag is used to skip privilege checks for the ADDR_REGMEM mapping type.
-// This flag is useful for cases like UserModeApi where we want to use this memory type
-// in a non-privileged user context
-#define MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK       NVBIT64(37)
-
-// This flag denotes the memory descriptor of type Display non iso
-#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO             NVBIT64(38)
-
-// This flag is used to force mapping of coherent sysmem through
-// the GMMU over BAR1. This is useful when we need some form
-// of special translation of the SYSMEM_COH aperture by the GMMU.
-#define MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1         NVBIT64(39)
-
-// This flag is used to override system memory limit to be allocated
-// within override address width.
-#define MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT   NVBIT64(40)
-
-//
-// If this flag is set, Linux RM will ensure that the allocated memory is
-// 32-bit addressable.
-#define MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE      NVBIT64(41)
-
-//
-// If this flag is set, the memory is registered in GSP
-//
-#define MEMDESC_FLAGS_REGISTERED_TO_GSP      NVBIT64(42)
-
-//
-// Indicates that this memdesc is tracking client sysmem allocation as
-// against RM internal sysmem allocation
-//
-#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT        NVBIT64(44)
-
-//
-// The following is a special use case for sharing memory between
-// the GPU and a WSL client. There is no IOMMU-compliant support
-// currently for this, so a WAR is required for r515. The intent
-// is to remove this by r525.
-//
-#define MEMDESC_FLAGS_WSL_SHARED_MEMORY             NVBIT64(46)
+/*!
+ *  @brief Calculate the actual size of the memory descriptor
+ *
+ *  @param[in]  pMemDesc         Memory descriptor pointer
+ *  @param[in]  requestedSize    Requested size of the memory descriptor (pMemDesc->Size)
+ *  @param[out] allocSizeOutput  Pointer to the actual size of the memory descriptor
+ *
+ *  @returns NV_STATUS
+ */
+NV_STATUS memdescCalculateActualSize(MEMORY_DESCRIPTOR *pMemDesc, NvU64 requestedSize, NvU64 *allocSizeOutput);
 
 #endif // _MEMDESC_H_
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_DESC_NVOC_H_

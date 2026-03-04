@@ -29,13 +29,13 @@
 
 static NV_STATUS
 _rmAllocForDeprecatedApi(DEPRECATED_CONTEXT *_pContext, NvHandle hClient, NvHandle hParent,
-                         NvHandle *phObject, NvU32 hClass, void *pAllocParams)
+                         NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize)
 {
     DEPRECATED_CONTEXT_EXT *pContext = (DEPRECATED_CONTEXT_EXT *)_pContext;
     RM_API                 *pRmApi   = pContext->pRmApi;
 
     return pRmApi->AllocWithSecInfo(pRmApi, hClient, hParent, phObject,
-                                    hClass, NV_PTR_TO_NvP64(pAllocParams),
+                                    hClass, NV_PTR_TO_NvP64(pAllocParams), paramsSize,
                                     RMAPI_ALLOC_FLAGS_NONE, NvP64_NULL, &pContext->secInfo);
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,34 +24,9 @@
 #define _RESOURCE_DESC_H_
 
 #include "nvtypes.h"
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 #include "resserv/rs_access_rights.h"
-
-// Flags for RS_ENTRY
-#define RS_FLAGS_NONE                             0
-
-#define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC       NVBIT(0)  ///< GPUs Lock is acquired on allocation
-#define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE        NVBIT(1)  ///< GPUs Lock is acquired for free
-#define RS_FLAGS_ACQUIRE_GPUS_LOCK                (RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE)
-
-#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC  NVBIT(2)  ///< GPU Group Lock is acquired on allocation
-#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE   NVBIT(3)  ///< GPU Group Lock is acquired for free
-#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK           (RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE)
-
-#define RS_FLAGS_ALLOC_RPC_TO_VGPU_HOST           NVBIT(4)  ///< Issue RPC to host to allocate resource for virtual GPUs
-
-#define RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC     NVBIT(5)  ///< Acquire the RO API lock for allocation, default is RW API lock
-
-#define RS_FLAGS_ALLOC_RPC_TO_PHYS_RM             NVBIT(6)  ///< Issue RPC to allocate resource in physical RM
-
-#define RS_FLAGS_ALLOC_RPC_TO_ALL                 (RS_FLAGS_ALLOC_RPC_TO_VGPU_HOST | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM)
-
-#define RS_FLAGS_INTERNAL_ONLY                    NVBIT(7)  ///< Class cannot be allocated outside of RM
-
-#define RS_FLAGS_CHANNEL_DESCENDANT_COMMON        (RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_RPC_TO_ALL)
-
-#define RS_FREE_PRIORITY_DEFAULT                  0
-#define RS_FREE_PRIORITY_HIGH                     1       ///< Resources with this priority will be freed ahead of others
+#include "resource_desc_flags.h"
 
 /**
  * Information about a RsResource subclass.

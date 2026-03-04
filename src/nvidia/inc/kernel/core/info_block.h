@@ -23,25 +23,13 @@
 #ifndef _INFO_BLOCK_H_
 #define _INFO_BLOCK_H_
 
+#include "nvtypes.h"
+
 //
 // HAL privata data management.
 //
 typedef struct ENG_INFO_LINK_NODE *PENG_INFO_LINK_NODE;
 typedef struct ENG_INFO_LINK_NODE ENG_INFO_LINK_NODE;
-
-// new style typedef for info block functions, simple typedef.
-// Used by hal .def files via INFO_BLOCK_GROUP template in Gpuhal.def
-typedef void    *EngGetInfoBlockFn(PENG_INFO_LINK_NODE pHead, NvU32 dataId);
-typedef void    *EngAddInfoBlockFn(PENG_INFO_LINK_NODE *ppHead, NvU32 dataId, NvU32 size);
-typedef void     EngDeleteInfoBlockFn(PENG_INFO_LINK_NODE *ppHead, NvU32 dataId);
-typedef NvBool   EngTestInfoBlockFn(PENG_INFO_LINK_NODE pHead, NvU32 dataId);
-
-// old style typedef for info block functions (ptr to fn)
-// delete these 4 typedefs once all .def files converted to use OBJECT_INTERFACES
-typedef EngGetInfoBlockFn    *EngGetInfoBlock;
-typedef EngAddInfoBlockFn    *EngAddInfoBlock;
-typedef EngDeleteInfoBlockFn *EngDeleteInfoBlock;
-typedef EngTestInfoBlockFn   *EngTestInfoBlock;
 
 
 struct ENG_INFO_LINK_NODE

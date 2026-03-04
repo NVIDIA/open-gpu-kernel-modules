@@ -39,6 +39,8 @@
 
 namespace nvkmsDisplayPort {
 
+static void EnableVRR(NVDpyEvoPtr pDpyEvo);
+
 ConnectorEventSink::ConnectorEventSink(NVConnectorEvoPtr pConnectorEvo)
     : pConnectorEvo(pConnectorEvo)
 {
@@ -221,6 +223,83 @@ static void nvDPAddDeviceToActiveGroup(NVDpyEvoPtr pDpyEvo)
     }
 }
 
+static bool DpyHasVRREDID(NVDpyEvoPtr pDpyEvo)
+{
+    return pDpyEvo->parsedEdid.valid &&
+           pDpyEvo->parsedEdid.info.nvdaVsdbInfo.valid &&
+           // As of this writing, only version 1 is defined.
+           pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vsdbVersion == 1 &&
+           pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vrrData.v1.supportsVrr;
+}
+
+static void EnableVRR(NVDpyEvoPtr pDpyEvo)
+{
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
+    const NvBool conceal = nvkms_conceal_vrr_caps();
+    const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo) && !conceal;
+
+    // If the dpy is a laptop internal panel and an SBIOS cookie indicates that
+    // it supports VRR, override its enable flag and timeout.  Note that in the
+    // internal panel scenario, the EDID may not claim VRR support, so honor
+    // hasPlatformCookie even if DpyHasVRREDID() reports FALSE.
+    if (!conceal && (pDpyEvo->internal && pDispEvo->vrr.hasPlatformCookie)) {
+        pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
+        return;
+    }
+
+    // If the DP library already has the monitor VRR-enabled, then we don't need to
+    // do it again, but we should still update the minimum refresh rate from the
+    // EDID if one is available.
+    const bool alreadyEnabled = device->isVrrMonitorEnabled() &&
+                                device->isVrrDriverEnabled();
+
+    if (DpyHasVRREDID(pDpyEvo) && !alreadyEnabled) {
+        // Perform VRR enablement whenever the monitor supports VRR, but only
+        // record it as actually enabled if the rest of the system supports VRR.
+        // Other state such as the availability of NV_CTRL_GSYNC_ALLOWED is
+        // keyed off of the presence of a dpy with vrr.type !=
+        // NVKMS_DPY_VRR_TYPE_NONE.
+        if (device->startVrrEnablement() && dispSupportsVrr) {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
+        } else {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+        }
+
+        if ((pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_NONE) && dispSupportsVrr) {
+            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                         "%s: Failed to initialize G-SYNC",
+                         pDpyEvo->name);
+        }
+    } else if (device->getIgnoreMSACap()) {
+        // DP monitors indicate Adaptive-Sync support through the
+        // MSA_TIMING_PAR_IGNORED bit in the DOWN_STREAM_PORT_COUNT register
+        // (DP spec 1.4a section 2.2.4.1.1)
+        if (dispSupportsVrr) {
+            if (nvDpyIsAdaptiveSyncDefaultlisted(pDpyEvo)) {
+                pDpyEvo->vrr.type =
+                    NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED;
+            } else {
+                pDpyEvo->vrr.type =
+                    NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED;
+            }
+        } else {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+        }
+    } else {
+        // Assign pDpyEvo->vrr.type independent of DpyHasVRREDID(), so that if
+        // the monitor is successfully reenabled by the DP library before it
+        // calls notifyZombieStateChange(), it'll pick up the correct state.  If
+        // reenablement succeeds, the monitor supports VRR even if we haven't
+        // read an EDID that says it does yet.
+        if (alreadyEnabled && dispSupportsVrr) {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
+        } else {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+        }
+    }
+}
+
 // when we get this event, the DP lib has done link training and the
 // EDID has been read (by the DP lib)
 void ConnectorEventSink::newDevice(DisplayPort::Device *device)
@@ -395,11 +474,19 @@ void ConnectorEventSink::notifyZombieStateChange(DisplayPort::Device *dev,
             sendEvent = TRUE;
         }
 
+        // Don't reset VRR enablement here.  Though normally NVKMS initiates VRR
+        // enablement, the DP library needs to initiate VRR re-enablement of a
+        // zombie device itself before performing link training or else the
+        // monitor might remain blank if a VRR stream is active when it's
+        // plugged back in.
     } else {
         if (!pDpLibDevice->isPlugged && dev->isPlugged()) {
             pDpLibDevice->isPlugged = TRUE;
             sendEvent = TRUE;
         }
+
+        // Determine whether the DP library reenabled VRR on this display.
+        EnableVRR(pDpyEvo);
 
         nvDPAddDeviceToActiveGroup(pDpyEvo);
     }
@@ -437,6 +524,13 @@ NvBool nvDPLibDpyIsConnected(NVDpyEvoPtr pDpyEvo)
             pDpyEvo->dp.pDpLibDevice->isPlugged);
 }
 
+NvBool nvDPLibDpyIsYuv420ModeSupported(const NVDpyEvoRec *pDpyEvo)
+{
+    DisplayPort::Device *dev = (pDpyEvo->dp.pDpLibDevice != NULL) ?
+        pDpyEvo->dp.pDpLibDevice->device : NULL;
+    return (dev != NULL) && (dev->getSDPExtnForColorimetrySupported());
+}
+
 // Adaptive-Sync is enabled/disabled by setting the MSA_TIMING_PAR_IGNORE_EN
 // bit in the DOWNSPREAD_CTRL register (DP spec 1.4a appendix K)
 void nvDPLibSetAdaptiveSync(const NVDispEvoRec *pDispEvo, NvU32 head,
@@ -469,11 +563,13 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         pDpyEvo->pConnectorEvo->pDpLibConnector->connector;
     unsigned laneCount;
     NvU64 linkRate;
+    NvU64 linkRate10MHz;
     enum NvKmsDpyAttributeDisplayportConnectorTypeValue connectorType;
     NvBool sinkIsAudioCapable;
 
     if (!dev || !pDpLibDevice->isPlugged) {
         linkRate = 0;
+        linkRate10MHz = 0;
         laneCount = NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_1;
         connectorType = NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_CONNECTOR_TYPE_UNKNOWN;
         sinkIsAudioCapable = FALSE;
@@ -482,9 +578,10 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         // configuration from the connector itself?
         connector->getCurrentLinkConfig(laneCount, linkRate);
 
-        // The DisplayPort library multiplies the link rate enum value by
-        // 27000000.  Convert back to NV-CONTROL's defines.
-        linkRate /= 27000000;
+        linkRate10MHz = linkRate;
+        linkRate /= 27;
+
+        nvkmsDisplayPort::EnableVRR(pDpyEvo);
 
         switch (pDpLibDevice->device->getConnectorType()) {
         case DisplayPort::connectorDisplayPort:
@@ -528,6 +625,13 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         nvSendDpyAttributeChangedEventEvo(pDpyEvo,
                           NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE,
                           linkRate);
+    }
+
+    if (linkRate10MHz != pDpyEvo->dp.linkRate10MHz) {
+        pDpyEvo->dp.linkRate10MHz = linkRate10MHz;
+        nvSendDpyAttributeChangedEventEvo(pDpyEvo,
+                          NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ,
+                          linkRate10MHz);
     }
 
     if (connectorType != pDpyEvo->dp.connectorType) {

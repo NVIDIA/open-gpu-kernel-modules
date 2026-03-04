@@ -158,7 +158,7 @@ extern "C" {
  *
  * This switch will define type and method aliases for object types in NvPort.
  * The current NvPort style object names are PORT_MODULE_OBJECT, while the
- * methods are portModuleObjectMethod(). 
+ * methods are portModuleObjectMethod().
  * The update proposal dictates these to be PortModuleObject and objectMethod.
  *
  * @todo Currently we just alias the new names to the old ones. Once the coding
@@ -174,18 +174,18 @@ extern "C" {
  *
  * No compilation errors are reported by any compiler when we use
  * the following definition.
- * 
+ *
  * #define PORT_UNREFERENCED_VARIABLE(x)  ((void)sizeof(&(x)))
  *
  * But Coverity reports BAD_SIZEOF error with this definition.
- * Adding a Coverity annotation "coverity[bad_sizeof]" near 
+ * Adding a Coverity annotation "coverity[bad_sizeof]" near
  * the definition does not work. The preprocessor ignores all
  * the comments and the Coverity annotation is also ignored
  * as a legal comment. As a result, this annotation never ends
  * up in the source code where this macro is used. Hence, we use
  * two definitions of this macro - one for Coverity and the other
- * for the rest of the targets. 
- * 
+ * for the rest of the targets.
+ *
  * Coverity does not report any warnings for unused variables.
  * Hence, we do nothing while building for Coverity.
  */

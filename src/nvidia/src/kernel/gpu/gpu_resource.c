@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -61,22 +62,20 @@ gpuresConstruct_IMPL
     NvBool         bBcResource = NV_TRUE;
     NV_STATUS      status;
 
-    // Check if instance is a subdevice
-    pGpuResource->pSubdevice = dynamicCast(pGpuResource, Subdevice);
-
-    // Else check for ancestor
-    if (!pGpuResource->pSubdevice)
+    // Check if instance is a subdevice or device, else check for ancestor
+    if (pResourceRef->internalClassId == classId(Subdevice))
+        pGpuResource->pSubdevice = dynamicCast(pGpuResource, Subdevice);
+    else
     {
         status = refFindAncestorOfType(pResourceRef, classId(Subdevice), &pSubdeviceRef);
         if (status == NV_OK)
             pGpuResource->pSubdevice = dynamicCast(pSubdeviceRef->pResource, Subdevice);
     }
 
-    // Check if instance is a device
-    pGpuResource->pDevice = dynamicCast(pGpuResource, Device);
-
-    // Else check for ancestor
-    if (!pGpuResource->pDevice)
+    // Check if instance is a device, else check for ancestor
+    if (pResourceRef->internalClassId == classId(Device))
+        pGpuResource->pDevice = dynamicCast(pGpuResource, Device);
+    else
     {
         status = refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef);
         if (status == NV_OK)
@@ -86,8 +85,10 @@ gpuresConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
         return gpuresCopyConstruct(pGpuResource, pCallContext, pParams);
 
+
     // Fails during device/subdevice ctor. Subclass ctor calls gpuresSetGpu
     status = gpuGetByRef(pResourceRef, &bBcResource, &pGpu);
+
     if (status == NV_OK)
         gpuresSetGpu(pGpuResource, pGpu, bBcResource);
 
@@ -215,6 +216,11 @@ gpuresShareCallback_IMPL
                     //
                     case NV01_MEMORY_LOCAL_USER:
                     case NV01_MEMORY_SYSTEM:
+                    //
+                    // We also exempt this check for cases when KernelHostVgpuDeviceApi(NVA084_KERNEL_HOST_VGPU_DEVICE) is being duped
+                    //  by plugins under every client it creates for itself or guest.
+                    //
+                    case NVA084_KERNEL_HOST_VGPU_DEVICE:
                         return NV_TRUE;
                     //
                     // We exempt this check for cases when a kernel client is trying to dup AMPERE_SMC_PARTITION_REF object.
@@ -224,14 +230,14 @@ gpuresShareCallback_IMPL
                     {
                         RmClient *pRmClient = dynamicCast(pInvokingClient, RmClient);
                         RS_PRIV_LEVEL privLevel = RS_PRIV_LEVEL_USER;
+                        NvBool bOverrideDupAllow = NV_FALSE;
 
                         if (pRmClient != NULL)
                         {
                             privLevel = rmclientGetCachedPrivilege(pRmClient);
                         }
 
-                        if ((privLevel >= RS_PRIV_LEVEL_KERNEL)
-                           )
+                        if ((privLevel >= RS_PRIV_LEVEL_KERNEL) || bOverrideDupAllow)
                             return NV_TRUE;
 
                         break;
@@ -244,11 +250,27 @@ gpuresShareCallback_IMPL
                 KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
                 MIG_INSTANCE_REF refClient;
                 MIG_INSTANCE_REF refResource;
+                RsResourceRef *pInvokingDeviceRef;
+                Device *pInvokingDevice;
+
+                NV_ASSERT_OR_RETURN(pParentRef != NULL, NV_ERR_INVALID_ARGUMENT);
+
+                if (pParentRef->internalClassId == classId(Device))
+                {
+                    pInvokingDeviceRef = pParentRef;
+                }
+                else
+                {
+                    NV_ASSERT_OK_OR_RETURN(
+                        refFindAncestorOfType(pParentRef, classId(Device), &pInvokingDeviceRef));
+                }
+
+                pInvokingDevice = dynamicCast(pInvokingDeviceRef->pResource, Device);
 
                 if (bMIGInUse &&
-                    (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pInvokingClient->hClient,
+                    (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pInvokingDevice,
                                                      &refClient) == NV_OK) &&
-                    (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, RES_GET_CLIENT_HANDLE(pGpuResource),
+                    (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, GPU_RES_GET_DEVICE(pGpuResource),
                                                      &refResource) == NV_OK))
                 {
                     // Ignore execution partition differences when sharing
@@ -375,10 +397,14 @@ gpuresControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
+    NV_ASSERT_OR_RETURN(pGpuResource->pGpu != NULL, NV_ERR_INVALID_STATE);
     gpuresControlSetup(pParams, pGpuResource);
 
-    return resControl_IMPL(staticCast(pGpuResource, RsResource),
-                           pCallContext, pParams);
+    NvU32 prevGpuInst = gpumgrSetCurrentGpuInstance(pGpuResource->pGpu->gpuInstance);
+    NV_STATUS status = resControl_IMPL(staticCast(pGpuResource, RsResource), pCallContext, pParams);
+    gpumgrSetCurrentGpuInstance(prevGpuInst);
+
+    return status;
 }
 
 void
@@ -451,7 +477,7 @@ gpuresGetByDeviceOrSubdeviceHandle
         return status;
 
     // Must be device or subdevice
-    if (!dynamicCast(*ppGpuResource, Device) && 
+    if (!dynamicCast(*ppGpuResource, Device) &&
         !dynamicCast(*ppGpuResource, Subdevice))
     {
         return NV_ERR_INVALID_OBJECT_HANDLE;

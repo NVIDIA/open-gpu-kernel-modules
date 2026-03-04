@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,13 +46,15 @@
 
 typedef enum
 {
-    POOL_CONFIG_GMMU_FMT_1         = 0, // configure pool for client page tables with version = GMMU_FMT_VERSION_1
-    POOL_CONFIG_GMMU_FMT_2         = 1, // configure pool for client page tables with version = GMMU_FMT_VERSION_2
-    POOL_CONFIG_CTXBUF_512M        = 2, // configure pool for RM internal allocations like ctx buffers with 512MB page size
-    POOL_CONFIG_CTXBUF_2M          = 3, // configure pool for RM internal allocations like ctx buffers with 2MB page size
-    POOL_CONFIG_CTXBUF_64K         = 4, // configure pool for RM internal allocations like ctx buffers with 64KB page size
-    POOL_CONFIG_CTXBUF_4K          = 5, // configure pool for RM internal allocations like ctx buffers with 4KB page size
-    POOL_CONFIG_MAX_SUPPORTED      = 6
+    POOL_CONFIG_GMMU_FMT_1,     // configure pool for client page tables with version = GMMU_FMT_VERSION_1
+    POOL_CONFIG_GMMU_FMT_2,     // configure pool for client page tables with version = GMMU_FMT_VERSION_2
+    POOL_CONFIG_CTXBUF_256G,    // configure pool for RM internal allocations like ctx buffers with 256GB page size
+    POOL_CONFIG_CTXBUF_512M,    // configure pool for RM internal allocations like ctx buffers with 512MB page size
+    POOL_CONFIG_CTXBUF_2M,      // configure pool for RM internal allocations like ctx buffers with 2MB page size
+    POOL_CONFIG_CTXBUF_128K,   // configure pool for RM internal allocations like ctx buffers with  128KB page size
+    POOL_CONFIG_CTXBUF_64K,     // configure pool for RM internal allocations like ctx buffers with 64KB page size
+    POOL_CONFIG_CTXBUF_4K,      // configure pool for RM internal allocations like ctx buffers with 4KB page size
+    POOL_CONFIG_MAX_SUPPORTED
 
 }POOL_CONFIG_MODE;
 /* ------------------------------------ Datatypes ---------------------------------- */
@@ -196,6 +198,17 @@ NvBool    rmMemPoolIsScrubSkipped(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInf
  *    NV_ERR_INVALID_ARGUMENT
  *    NV_OK
  */
-NV_STATUS      rmMemPoolGetChunkAndPageSize(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo, NvU64*, NvU32*);
+NV_STATUS      rmMemPoolGetChunkAndPageSize(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo, NvU64*, NvU64*);
 
-#endif //_RM_POOL_ALLOC_H_
+/*!
+ * @brief Indicate that pool should be allocated in protected video memory in
+ *        case memory protection is enabled
+ *
+ * @param[in] pMemReserveInfo  Pointer to the RM_POOL_ALLOC_MEM_RESERVE_INFO data
+ * @param[in] bProtected       Allocate in protected memory
+ *
+ * @return
+ */
+void           rmMemPoolAllocateProtectedMemory(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo, NvBool bProtected);
+
+#endif //_RM_POOL_ALLOC_

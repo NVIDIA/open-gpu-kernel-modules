@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl402c.finn
+// Source file:      ctrl/ctrl402c.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV40_I2C control commands and parameters */
@@ -108,8 +105,6 @@
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
  */
-
-
 
 
 #define NV402C_CTRL_CMD_I2C_GET_PORT_INFO (0x402c0101) /* finn: Evaluated from "(FINN_NV40_I2C_I2C_INTERFACE_ID << 8) | NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS_MESSAGE_ID" */

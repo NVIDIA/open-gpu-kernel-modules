@@ -83,6 +83,7 @@ typedef struct tagHDMI_QUERY_FRL_CLIENT_CONTROL
 
     NvU32 forceFRLRate        :  1;
     NvU32 forceAudio2Ch48KHz  :  1;
+    NvU32 forceDisableDSC     :  1;
     NvU32 enableDSC           :  1;
     NvU32 forceSliceCount     :  1;
     NvU32 forceSliceWidth     :  1;
@@ -198,6 +199,7 @@ typedef struct tagHDMI_FRL_CONFIG
 *                                                                                               *
 * Calls RM to get DSC related src side caps. Performs physical link training to determine if    *
 * sink reported max FRL rate can actually be supported on the physical link                     *
+* This API is deprecated. Instead, use NvHdmi_AssessLinkCapabilities2().                        *
 *************************************************************************************************/
 NVHDMIPKT_RESULT
 NvHdmi_AssessLinkCapabilities(NvHdmiPkt_Handle             libHandle,
@@ -206,6 +208,35 @@ NvHdmi_AssessLinkCapabilities(NvHdmiPkt_Handle             libHandle,
                               NVT_EDID_INFO         const * const pSinkEdid,
                               HDMI_SRC_CAPS               *pSrcCaps,
                               HDMI_SINK_CAPS              *pSinkCaps);
+
+/************************************************************************************************
+* NvHdmi_AssessLinkCapabilities2:                                                               *
+*                                                                                               *
+* Input parameters:                                                                             *
+*    subDevice        - Sub Device ID.                                                          *
+*    displayId        - Display ID.                                                             *
+*    pSinkEdid        - EDID of sink                                                            *
+*    bPerformLinkTrainingToAssess - Perform link training to determin max supported link rate.  *
+*    bIsDisplayActive - Is the given displayId actively attached to head.                       *
+*    currFRLRate - If the given displayId is active then provide current FRL link rate.         *
+*                                                                                               *
+* Output parameters:                                                                            *
+*    pSrcCaps         - src capabilities - DSC caps                                             *
+*    pSinkCaps        - sink capabilities - actual caps calculated from link training           *
+*                                                                                               *
+* Calls RM to get DSC related src side caps. Performs physical link training to determine if    *
+* sink reported max FRL rate can actually be supported on the physical link                     *
+*************************************************************************************************/
+NVHDMIPKT_RESULT
+NvHdmi_AssessLinkCapabilities2(NvHdmiPkt_Handle             libHandle,
+                               NvU32                        subDevice,
+                               NvU32                        displayId,
+                               NVT_EDID_INFO         const * const pSinkEdid,
+                               const NvBool                 bPerformLinkTrainingToAssess,
+                               const NvBool                 bIsDisplayActive,
+                               const HDMI_FRL_DATA_RATE     currFRLRate,
+                               HDMI_SRC_CAPS               *pSrcCaps,
+                               HDMI_SINK_CAPS              *pSinkCaps);
 
 /************************************************************************************************
 * NvHdmi_QueryFRLConfig:                                                                        *

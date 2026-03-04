@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,13 +24,14 @@
 #ifndef _NVLINK_LIB_CTRL_H_
 #define _NVLINK_LIB_CTRL_H_
 
+
 #include "nvtypes.h"
 #include "nvlink_errors.h"
 
 /* List of supported capability type */
 #define NVLINK_CAP_FABRIC_MANAGEMENT 0
 
-/*
+/* 
  * Max supported capabilities count
  *
  */
@@ -62,11 +63,13 @@
 
 /*
  * Total number of nvlink endpoints core library can have
- *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h
+ *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h 
  */
-#define NVLINK_MAX_NVLINK_ENDPOINTS 312
+#define NVLINK_MAX_NVLINK_ENDPOINTS 624
 
 #define NVLINK_VERSION_STRING_LENGTH    64
+
+#define NVLINK_CCI_TRAINING_TIMEOUT_SEC 30          
 
 /*
  * NVLink version consists of,
@@ -90,7 +93,7 @@ typedef struct
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
 } nvlink_endpoint;
 
@@ -110,13 +113,15 @@ typedef struct
     NvU16               numLinks;
     NvU32               devType;
     NV_DECLARE_ALIGNED(NvU64 enabledLinkMask, 8);
+    NvBool              bEnableAli;
+    /* See struct definition modification guidelines at the top of this file */
 } nvlink_detailed_dev_info;
 
 /* detailed information about a remote nvlink connection endpoint */
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
     NvU8                devUuid[NVLINK_UUID_LEN];
     NvU32               devType;
@@ -153,7 +158,8 @@ typedef enum
     nvlink_link_mode_enable_pm,
     nvlink_link_mode_disable_pm,
     nvlink_link_mode_traffic_setup,
-    nvlink_link_mode_contain
+    nvlink_link_mode_contain,
+    nvlink_link_mode_training_cci
 } nvlink_link_mode;
 
 /* sublink tx modes */
@@ -188,9 +194,9 @@ typedef enum
 /* link and sublink state of an nvlink endpoint */
 typedef struct
 {
-    NvU32 linkMode;
-    NvU32 txSubLinkMode;
-    NvU32 rxSubLinkMode;
+    NvU8 linkMode;
+    NvU8 txSubLinkMode;
+    NvU8 rxSubLinkMode;
 } nvlink_link_state;
 
 /*
@@ -353,7 +359,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32  linkIndex;
+    NvU16  linkIndex;
     NvBool initStatus;
 } nvlink_link_init_status;
 
@@ -502,7 +508,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32 linkIndex;
+    NvU16 linkIndex;
     NV_DECLARE_ALIGNED(NvU64 tokenValue, 8);
 } nvlink_token_info;
 
@@ -586,6 +592,9 @@ typedef enum
     nvlink_train_conn_to_off,
     nvlink_train_conn_active_to_swcfg,
     nvlink_train_conn_swcfg_to_off,
+    nvlink_train_conn_off_to_active_ali_non_blocking,
+    nvlink_train_conn_off_to_active_ali_blocking,
+    /* See enum modification guidelines at the top of this file */
 } nvlink_conn_train_type;
 
 typedef struct
@@ -782,7 +791,10 @@ typedef struct
  * 
  * NVLink 3.0 onwards, connection detection is handled by Minion. After INITNEGOTIATE
  * completed, this interface needs to be queried to retrieve the local/remote SIDs
- * and the local/remote link number of all links associated with a device
+ * and the local/remote link number of all links associated with a device.
+ *
+ * On NVLink 4.0 this needs to be queried after all links in the system have been 
+ * trained.  
  *
  * Parameters:
  *   devInfo [IN]
@@ -1075,9 +1087,9 @@ typedef struct
 } nvlink_initphase5;
 
 /*
- * CTRL_NVLINK_GET_DEVICE_LINKS_STATE
+ * CTRL_NVLINK_GET_DEVICE_LINK_STATES
  *
- * Returns the link state of all enabled links on a given device.
+ * Returns the link state of all links on a given device.
  *
  * Parameters:
  *   devInfo [IN]
@@ -1094,7 +1106,7 @@ typedef struct
  *      will show the states as INVALID.
  *
  *   endStatesCount [OUT]
- *      count of valid entries into the endStates array
+ *      count of total entries in the endStates array
  *
  */
 typedef struct
@@ -1105,9 +1117,15 @@ typedef struct
 
     /* output parameters */
     NvlStatus              status;
-    nvlink_link_state      endStates[NVLINK_MAX_NVLINK_ENDPOINTS];
+    nvlink_link_state      endStates[NVLINK_MAX_DEVICE_CONN];
     NvU32                  endStatesCount;
+    NvU64                  time;
 } nvlink_get_device_link_states;
+
+/* 
+ * Note: Verify that new parameter structs for IOCTLs satisfy 
+ *       sizing restrictions for all OSs they could be used in.
+ */ 
 
 #define CTRL_NVLINK_CHECK_VERSION                            0x01
 #define CTRL_NVLINK_SET_NODE_ID                              0x02

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,17 +22,17 @@
  */
 
 /*!
- * @file
- * @brief   GSP Client (CPU RM) specific GPU routines reside in this file.
+ * GSP Client (CPU RM) specific GPU routines reside in this file.
  */
 
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "ctrl/ctrl2080.h"
 
-#include "gpu/gr/kernel_graphics_manager.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
-#include "gpu/gsp/kernel_gsp.h"
+#include "gpu/gsp/gsp_static_config.h"  // CORERM-3199
 
 /*!
  * @brief Determines if the GPU has INTERNAL SKU FUSE parts by checking the GSP
@@ -62,26 +62,18 @@ gpuInitSriov_FWCLIENT
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
     NvU32 totalPcieFns = 0;
 
-    pGpu->sriovState.totalVFs             = pGSCI->sriovCaps.totalVFs;
-    pGpu->sriovState.firstVFOffset        = pGSCI->sriovCaps.firstVfOffset;
-    pGpu->sriovState.firstVFBarAddress[0] = pGSCI->sriovCaps.FirstVFBar0Address;
-    pGpu->sriovState.firstVFBarAddress[1] = pGSCI->sriovCaps.FirstVFBar1Address;
-    pGpu->sriovState.firstVFBarAddress[2] = pGSCI->sriovCaps.FirstVFBar2Address;
-    pGpu->sriovState.vfBarSize[0]         = pGSCI->sriovCaps.bar0Size;
-    pGpu->sriovState.vfBarSize[1]         = pGSCI->sriovCaps.bar1Size;
-    pGpu->sriovState.vfBarSize[2]         = pGSCI->sriovCaps.bar2Size;
-    pGpu->sriovState.b64bitVFBar0         = pGSCI->sriovCaps.b64bitBar0;
-    pGpu->sriovState.b64bitVFBar1         = pGSCI->sriovCaps.b64bitBar1;
-    pGpu->sriovState.b64bitVFBar2         = pGSCI->sriovCaps.b64bitBar2;
-    
-    pGpu->sriovState.maxGfid              = pGSCI->sriovMaxGfid;
+    pGpu->sriovState.vfBarSize[0] = pGSCI->sriovCaps.bar0Size;
+    pGpu->sriovState.vfBarSize[1] = pGSCI->sriovCaps.bar1Size;
+    pGpu->sriovState.vfBarSize[2] = pGSCI->sriovCaps.bar2Size;
+
+    pGpu->sriovState.maxGfid      = pGSCI->sriovMaxGfid;
 
     // note: pGpu->sriovState.virtualRegPhysOffset is initialized separately
 
     // owned by physical RM, so leave uninitialized
-    pGpu->sriovState.pP2PInfo             = NULL;
-    pGpu->sriovState.bP2PAllocated        = NV_FALSE;
-    pGpu->sriovState.maxP2pGfid           = 0;
+    pGpu->sriovState.pP2PInfo      = NULL;
+    pGpu->sriovState.bP2PAllocated = NV_FALSE;
+    pGpu->sriovState.maxP2pGfid    = 0;
 
     // Include Physical function that occupies GFID 0
     totalPcieFns = pGpu->sriovState.totalVFs + 1;
@@ -133,45 +125,44 @@ gpuCheckPageRetirementSupport_GSPCLIENT
     return pGSCI->bPageRetirementSupported;
 }
 
-void gpuInitBranding_FWCLIENT(OBJGPU *pGpu)
+NV_STATUS gpuInitBranding_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
     pGpu->bIsQuadro    = pGSCI->bIsQuadroAd || pGSCI->bIsQuadroGeneric;
+    pGpu->bIsQuadroAD  = pGSCI->bIsQuadroAd;
     pGpu->bIsNvidiaNvs = pGSCI->bIsNvidiaNvs;
     pGpu->bIsVgx       = pGSCI->bIsVgx;
     pGpu->bGeforceSmb  = pGSCI->bGeforceSmb;
     pGpu->bIsTitan     = pGSCI->bIsTitan;
     pGpu->bIsTesla     = pGSCI->bIsTesla;
+    pGpu->bIsGeforce   = !(pGpu->bIsQuadro || pGpu->bIsTesla || pGpu->bIsNvidiaNvs);
 
-    pGpu->bIsGeforce = !(pGpu->bIsQuadro || pGpu->bIsTesla || pGpu->bIsNvidiaNvs);
+    return NV_OK;
 }
 
-BRANDING_TYPE gpuDetectBranding_FWCLIENT(OBJGPU *pGpu)
+NV_STATUS
+gpuGetPdi_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvU64  *pdi
+)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
-    if (pGSCI->bIsQuadroGeneric)
-        return BRANDING_TYPE_QUADRO_GENERIC;
-    if (pGSCI->bIsQuadroAd)
-        return BRANDING_TYPE_QUADRO_AD;
-    if (pGSCI->bIsNvidiaNvs)
-        return BRANDING_TYPE_NVS_NVIDIA;
+    if (pGSCI->bPdiValid)
+    {
+        *pdi = pGSCI->pdi;
+        return NV_OK;
+    }
+    else if (!IS_SILICON(pGpu))
+    {
+        // SHA1 generated from string "Nvidia" => "0xA7C66AD26DBB0AB8C1A237BA6DBA36B8"
+        *pdi = 0x6DBB0AB8A7C66AD2;
+        return NV_OK;
+    }
 
-    return BRANDING_TYPE_NONE;
-}
-
-COMPUTE_BRANDING_TYPE
-gpuDetectComputeBranding_FWCLIENT(OBJGPU *pGpu)
-{
-    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-    return pGSCI->computeBranding;
-}
-
-BRANDING_TYPE
-gpuDetectVgxBranding_FWCLIENT(OBJGPU *pGpu)
-{
-    return pGpu->bIsVgx ? BRANDING_TYPE_VGX : BRANDING_TYPE_NONE;
+    return NV_ERR_INVALID_STATE;
 }
 
 NV_STATUS
@@ -186,44 +177,44 @@ gpuGenGidData_FWCLIENT
     if (FLD_TEST_DRF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1, gidFlags))
     {
         GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+        NvU8 zeroGid[RM_SHA1_GID_SIZE] = { 0 };
+
+        if (portMemCmp(pGSCI->gidInfo.data, zeroGid, RM_SHA1_GID_SIZE) == 0)
+        {
+             NV_PRINTF(LEVEL_INFO, "GSP Static Info has not been initialized yet for UUID\n");
+             return NV_ERR_INVALID_STATE;
+        }
+
         portMemCopy(pGidData, RM_SHA1_GID_SIZE, pGSCI->gidInfo.data, RM_SHA1_GID_SIZE);
         return NV_OK;
     }
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU32 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
+NvU64 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, 0);
+
     return pGSCI->fbio_mask;
 }
 
 NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, NV_FALSE);
+
     return pGSCI->poisonFuseEnabled;
 }
 
-/*!
- * @brief These functions are used on CPU RM when pGpu is a GSP client.
- * Data is fetched from GSP using subdeviceCtrlCmdInternalGetChipInfo and cached,
- * then retrieved through the internal gpuGetChipInfo.
- *
- * Functions either return value directly, or through a second [out] param, depending
- * on the underlying function.
- *
- * @param[in]  pGpu
- */
-NvU8
-gpuGetChipSubRev_FWCLIENT
-(
-    OBJGPU *pGpu
-)
+void gpuGetRtd3GC6Data_FWCLIENT(OBJGPU *pGpu)
 {
-    const NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo = gpuGetChipInfo(pGpu);
-    NV_ASSERT_OR_RETURN(pChipInfo != NULL, 0);
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
-    return pChipInfo->chipSubRev;
+    NV_ASSERT_OR_RETURN_VOID(pGSCI != NULL);
+
+    pGpu->gc6State.GC6PerstDelay      = pGSCI->RTD3GC6PerstDelay;
+    pGpu->gc6State.GC6TotalBoardPower = pGSCI->RTD3GC6TotalBoardPower;
 }
 
 NvU32
@@ -248,55 +239,96 @@ gpuConstructDeviceInfoTable_FWCLIENT
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS *pParams;
-    const NvU32 cmd = NV2080_CTRL_CMD_INTERNAL_GET_DEVICE_INFO_TABLE;
 
     if (pGpu->pDeviceInfoTable) // already initialized
         return NV_OK;
 
-    pParams = portMemAllocNonPaged(sizeof(*pParams));
+    pParams = portMemAllocNonPaged(sizeof *pParams);
     NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_NO_MEMORY);
 
-    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                             cmd, pParams, sizeof(*pParams));
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_GET_DEVICE_INFO_TABLE,
+                             pParams,
+                             sizeof *pParams);
     if (status != NV_OK)
         goto done;
 
     if (pParams->numEntries == 0)
         goto done;
 
-    pGpu->pDeviceInfoTable = portMemAllocNonPaged(pParams->numEntries * sizeof(DEVICE_INFO2_TABLE));
-    NV_ASSERT_TRUE_OR_GOTO(status, pGpu->pDeviceInfoTable != NULL, NV_ERR_NO_MEMORY, done);
+    NV_ASSERT_OR_RETURN(pParams->numEntries <= NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES,
+                        NV_ERR_INVALID_STATE);
+
+    pGpu->pDeviceInfoTable = portMemAllocNonPaged(
+        pParams->numEntries * (sizeof *pGpu->pDeviceInfoTable));
+    NV_ASSERT_TRUE_OR_GOTO(status,
+                           pGpu->pDeviceInfoTable != NULL,
+                           NV_ERR_NO_MEMORY,
+                           done);
 
     pGpu->numDeviceInfoEntries = pParams->numEntries;
-    portMemCopy(pGpu->pDeviceInfoTable,   pGpu->numDeviceInfoEntries * sizeof(DEVICE_INFO2_TABLE),
-                pParams->deviceInfoTable, pParams->numEntries        * sizeof(DEVICE_INFO2_TABLE));
-
+    for (NvU32 i = 0; i < pParams->numEntries; i++)
+    {
+        NV2080_CTRL_INTERNAL_DEVICE_INFO *pSrc = &pParams->deviceInfoTable[i];
+        pGpu->pDeviceInfoTable[i] = (DEVICE_INFO_ENTRY){
+            .faultId                = pSrc->faultId,
+            .instanceId             = pSrc->instanceId,
+            .typeEnum               = pSrc->typeEnum,
+            .resetId                = pSrc->resetId,
+            .devicePriBase          = pSrc->devicePriBase,
+            .isEngine               = pSrc->isEngine,
+            .rlEngId                = pSrc->rlEngId,
+            .runlistPriBase         = pSrc->runlistPriBase,
+            .groupId                = pSrc->groupId,
+            .ginTargetId            = pSrc->ginTargetId,
+            .deviceBroadcastPriBase = pSrc->deviceBroadcastPriBase,
+            .groupLocalInstanceId   = pSrc->groupLocalInstanceId,
+        };
+    }
 done:
     portMemFree(pParams);
     return status;
 }
 
-NvU32
-gpuGetLitterValues_FWCLIENT
+NV_STATUS
+gpuGetNameString_FWCLIENT
 (
     OBJGPU *pGpu,
-    NvU32 index
+    NvU32 type,
+    void *nameStringBuffer
 )
 {
-    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
-    const NV2080_CTRL_INTERNAL_STATIC_GR_INFO *pGrInfo;
-    NvU32 i;
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
-    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
-    pGrInfo = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo;
-    NV_ASSERT_OR_RETURN(pGrInfo != NULL, 0);
-
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pGrInfo->infoList); i++)
+    if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
     {
-        if (pGrInfo->infoList[i].index == index)
-            return pGrInfo->infoList[i].data;
+        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString),
+                    pGSCI->gpuNameString, sizeof(pGSCI->gpuNameString));
     }
-    return 0;
+    else
+    {
+        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString_Unicode),
+                    pGSCI->gpuNameString_Unicode, sizeof(pGSCI->gpuNameString_Unicode));
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuGetShortNameString_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvU8 *nameStringBuffer
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuShortNameString),
+                pGSCI->gpuShortNameString, sizeof(pGSCI->gpuShortNameString));
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -320,8 +352,18 @@ gpuGetRegBaseOffset_FWCLIENT
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU32
-gpuReadBAR1Size_FWCLIENT
+/*!
+ * @brief These functions are used on CPU RM when pGpu is a GSP client.
+ * Data is fetched from GSP using subdeviceCtrlCmdInternalGetChipInfo and cached,
+ * then retrieved through the internal gpuGetChipInfo.
+ *
+ * Functions either return value directly, or through a second [out] param, depending
+ * on the underlying function.
+ *
+ * @param[in]  pGpu
+ */
+NvU8
+gpuGetChipSubRev_FWCLIENT
 (
     OBJGPU *pGpu
 )
@@ -329,5 +371,33 @@ gpuReadBAR1Size_FWCLIENT
     const NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo = gpuGetChipInfo(pGpu);
     NV_ASSERT_OR_RETURN(pChipInfo != NULL, 0);
 
-    return pChipInfo->bar1Size;
+    return pChipInfo->chipSubRev;
+}
+
+/*! GPU has a new reset required state */
+NV_STATUS
+gpuResetRequiredStateChanged_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvBool  newState
+)
+{
+    gpuRefreshRecoveryAction_HAL(pGpu, NV_FALSE);
+
+    return NV_OK;
+}
+
+NvBool
+gpuIsSystemRebootRequired_FWCLIENT
+(
+    OBJGPU *pGpu
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    if (pGSCI == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    return pGSCI->bSystemRebootRequired;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,6 +76,7 @@ struct THREAD_STATE_NODE
      */
     NvU32                threadSeqId;
     NvBool               bValid;
+    NvBool               bUsingHeap;
     THREAD_TIMEOUT_STATE timeout;
     NvU32                cpuNum;
     NvU32                flags;
@@ -132,9 +133,12 @@ typedef struct THREAD_STATE_DB
      * sequencer id via @ref threadStateInitXYZ().
      */
     NvU32   threadSeqCntr;
+    /*!
+     * Thread state sequencer id counter for only GSP task_interrupt.
+     */
+    NvU32   gspIsrThreadSeqCntr;
     PORT_SPINLOCK *spinlock;
     ThreadStateNodeMap  dbRoot;
-    ThreadStateNodeMap  dbRootPreempted;
     THREAD_STATE_NODE **ppISRDeferredIntHandlerThreadNode;
     PTHREAD_STATE_ISR_LOCKLESS pIsrlocklessThreadNode;
     THREAD_STATE_DB_TIMEOUT timeout;
@@ -149,9 +153,14 @@ typedef struct THREAD_STATE_DB
 
 //
 // The normal power transition requirement for Windows is 4 seconds.
-// Use longer time to let OS fire timeout and ask recovery. 
+// Use longer time to let OS fire timeout and ask recovery.
 //
 #define TIMEOUT_WDDM_POWER_TRANSITION_INTERVAL_MS       9800
+
+//
+// Thread state timeout for DPC or ISR handling
+//
+#define TIMEOUT_DPC_ISR_INTERVAL_MS 500
 
 //
 // Thread State flags used for threadStateInitSetupFlags
@@ -176,9 +185,10 @@ typedef struct THREAD_STATE_DB
 #define THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER      NVBIT(2)
 #define THREAD_STATE_FLAGS_IS_ISR_LOCKLESS              NVBIT(3)
 #define THREAD_STATE_FLAGS_TIMEOUT_INITED               NVBIT(5)
-#define THREAD_STATE_FLAGS_PLACED_ON_PREEMPT_LIST       NVBIT(6)
 #define THREAD_STATE_FLAGS_DEVICE_INIT                  NVBIT(7)
 #define THREAD_STATE_FLAGS_STATE_FREE_CB_ENABLED        NVBIT(8)
+#define THREAD_STATE_FLAGS_IS_KERNEL_THREAD             NVBIT(9)
+#define THREAD_STATE_FLAGS_IS_EXITING                   NVBIT(10)
 
 // These Threads run exclusively between a conditional acquire
 #define THREAD_STATE_FLAGS_EXCLUSIVE_RUNNING   (THREAD_STATE_FLAGS_IS_ISR                       | \
@@ -197,8 +207,11 @@ NvU32       threadStateGetSetupFlags(void);
 void        threadStateInitISRLockless(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateFreeISRLockless(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateInitISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
+void        threadStateOnlyProcessWorkISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
+void        threadStateOnlyFreeISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateFreeISRAndDeferredIntHandler(THREAD_STATE_NODE *, OBJGPU*, NvU32);
 void        threadStateInit(THREAD_STATE_NODE *pThreadNode, NvU32 flags);
+THREAD_STATE_NODE* threadStateAlloc(NvU32 flags);
 void        threadStateFree(THREAD_STATE_NODE *pThreadNode, NvU32 flags);
 
 NV_STATUS   threadStateGetCurrent(THREAD_STATE_NODE **ppThreadNode, OBJGPU *pGpu);
@@ -207,8 +220,9 @@ NV_STATUS   threadStateInitTimeout(OBJGPU *pGpu, NvU32 timeoutUs, NvU32 flags);
 NV_STATUS   threadStateCheckTimeout(OBJGPU *pGpu, NvU64 *pElapsedTimeUs);
 NV_STATUS   threadStateResetTimeout(OBJGPU *pGpu);
 void        threadStateLogTimeout(OBJGPU *pGpu, NvU64 funcAddr, NvU32 lineNum);
-void        threadStateYieldCpuIfNecessary(OBJGPU *pGpu);
+void        threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet);
 void        threadStateSetTimeoutOverride(THREAD_STATE_NODE *, NvU64);
+void        threadStateSetTimeoutSingleOverride(THREAD_STATE_NODE *, NvU64);
 
 NV_STATUS   threadStateEnqueueCallbackOnFree(THREAD_STATE_NODE *pThreadNode,
                                              THREAD_STATE_FREE_CALLBACK *pCallback);

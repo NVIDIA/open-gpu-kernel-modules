@@ -68,8 +68,8 @@ typedef void (*msgqFcnBarrier)(void);
 // Function to access backend memory (if it's not memory mapped).
 // Keep in mind than when using it, pointers given by peek can't be trusted
 // Should return 0 on success.
-typedef int (*msgqFcnBackendRw)(void *pDest, const void *pSrc, unsigned size,
-                                unsigned flags, void *pArg);
+typedef unsigned (*msgqFcnBackendRw)(void *pDest, const void *pSrc, unsigned size,
+                                     unsigned flags, void *pArg);
 
 /**
  * @brief Return size of metadata (that must be allocated)
@@ -177,7 +177,14 @@ int msgqTxSubmitBuffers(msgqHandle handle, unsigned n);
 int msgqTxSync(msgqHandle handle);
 
 /**
- * @brief Get number of unread messages
+ * @brief Get number of unread messages in TX channel
+ * @param handle
+ * @return Number of messages. 0 if queue is empty or not linked. 
+ */
+unsigned msgqTxGetPending(msgqHandle handle);
+
+/**
+ * @brief Get number of unread messages in RX channel
  * @param handle
  * @return Number of messages. 0 if queue is empty or not linked.
  */

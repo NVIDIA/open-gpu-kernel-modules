@@ -43,13 +43,6 @@ public:
     virtual NvU32 rmControl0073(NvU32 command, void * params, NvU32 paramSize);
     virtual NvU32 rmControl5070(NvU32 command, void * params, NvU32 paramSize);
 
-    virtual void disconnectHead(unsigned head) {
-        nvAssert(!"disconnectHead should never be called");
-    }
-    virtual void reattachHead(unsigned head) {
-        nvAssert(!"reattachHead should never be called");
-    }
-
     virtual NvU32 getSubdeviceIndex();
     virtual NvU32 getDisplayId();
     virtual NvU32 getSorIndex();

@@ -27,13 +27,18 @@
 #ifndef _MESSAGE_QUEUE_H_
 #define _MESSAGE_QUEUE_H_
 
+// Used for indexing into the MESSAGE_QUEUE_COLLECTION array.
+#define RPC_TASK_RM_QUEUE_IDX      0
+#define RPC_QUEUE_COUNT            1
+
 typedef struct _message_queue_info MESSAGE_QUEUE_INFO;
+typedef struct MESSAGE_QUEUE_COLLECTION MESSAGE_QUEUE_COLLECTION;
 
 // CPU-side calls
-NV_STATUS GspMsgQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI);
+NV_STATUS GspMsgQueuesInit(OBJGPU *pGpu, MESSAGE_QUEUE_COLLECTION **ppMQCollection);
+void      GspMsgQueuesCleanup(MESSAGE_QUEUE_COLLECTION **ppMQCollection);
 NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI);
-void GspMsgQueueCleanup(MESSAGE_QUEUE_INFO **ppMQI);
 NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
-NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI);
+NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
 
 #endif // _MESSAGE_QUEUE_H_

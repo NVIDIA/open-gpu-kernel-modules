@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl506f.finn
+// Source file:      ctrl/ctrl506f.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV50_GPFIFO control commands and parameters */
@@ -42,7 +39,6 @@
 /* NV50_GPFIFO command categories (6bits) */
 #define NV506F_CTRL_RESERVED (0x00)
 #define NV506F_CTRL_GPFIFO   (0x01)
-#define NV506F_CTRL_EVENT    (0x02)
 
 /*
  * NV506F_CTRL_CMD_NULL
@@ -78,24 +74,28 @@
  */
 
 
-
-
 #define NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL (0x506f0105) /* finn: Evaluated from "(FINN_NV50_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID" */
-
-/*
- * NV506F_CTRL_CMD_EVENT_SET_TRIGGER  (deprecated on Fermi+)
- *
- * This command triggers a software event for the associated channel.
- * This command accepts no parameters.
- *
- * Possible status values returned are:
- *   NV_OK
- */
-// #define NV506F_CTRL_CMD_EVENT_SET_TRIGGER         NV506F_CTRL_CMD(EVENT, 0x09)
 
 #define NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID (0x5U)
 
 typedef struct NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS {
     NvU32 exceptType;
     NvU32 engineID;
-} NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS;/* _ctrl506f.h_ */
+} NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS;
+
+/*
+ * NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to perform the channel reset operations in hardware on an isolated channel
+ *
+ * Please see description of NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL for more information.
+ *
+ */
+#define NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL (0x506f0106) /* finn: Evaluated from "(FINN_NV50_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID" */
+
+#define NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID (0x6U)
+
+typedef NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS;
+
+/* _ctrl506f.h_ */

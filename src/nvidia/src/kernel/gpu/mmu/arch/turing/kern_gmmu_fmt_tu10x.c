@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #if !defined(SRT_BUILD)
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 #include "gpu/mmu/kern_gmmu.h"
 #endif
 #include "mmu/gmmu_fmt.h"
@@ -36,7 +37,7 @@ void kgmmuFmtInitPteComptagLine_TU10X(KernelGmmu *pKernelGmmu, GMMU_FMT_PTE *pPt
 void kgmmuFmtInitPeerPteFld_TU10X(KernelGmmu *pKernelGmmu, GMMU_FMT_PTE *pPte, const NvU32 version)
 {
     NV_ASSERT_OR_RETURN_VOID(version == GMMU_FMT_VERSION_2);
-    
+
     NV_FIELD_DESC64 *pField = &pPte->fldAddrPeer.desc;
 
     pPte->fldAddrPeer.shift = NV_MMU_VER2_PTE_ADDRESS_SHIFT;

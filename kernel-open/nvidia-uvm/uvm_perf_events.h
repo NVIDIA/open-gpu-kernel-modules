@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -54,6 +54,9 @@ typedef enum
     // Locking: uvm_va_space: write
     UVM_PERF_EVENT_BLOCK_SHRINK,
 
+    // Locking: HMM uvm_va_block lock
+    UVM_PERF_EVENT_BLOCK_MUNMAP,
+
     // Locking: uvm_va_space: write
     UVM_PERF_EVENT_RANGE_DESTROY,
 
@@ -66,7 +69,9 @@ typedef enum
     // Locking: uvm_va_space: at least in read mode, uvm_va_block: exclusive (if uvm_va_block is not NULL)
     UVM_PERF_EVENT_FAULT,
 
-    // Locking: uvm_va_block: exclusive. Notably the uvm_va_space lock may not be held on eviction.
+    // Locking: None for pageable migrations. Otherwise, exclusive lock on
+    // uvm_va_block is needed. Notably the uvm_va_space lock may not be held on
+    // eviction.
     UVM_PERF_EVENT_MIGRATION,
 
     // Locking: uvm_va_space: at least in read mode, uvm_va_block: exclusive
@@ -91,6 +96,12 @@ typedef union
 
     struct
     {
+        uvm_va_block_t *block;
+        uvm_va_block_region_t region;
+    } block_munmap;
+
+    struct
+    {
         uvm_va_range_t *range;
     } range_destroy;
 
@@ -105,16 +116,11 @@ typedef union
 
         // Only one of these two can be set. The other one must be NULL
         uvm_va_block_t *block;
-        uvm_va_range_t *range;
+        uvm_va_range_managed_t *range;
     } module_unload;
 
     struct
     {
-        // This field contains the VA space where this fault was reported.
-        // If block is not NULL, this field must match
-        // uvm_va_block_get_va_space(block).
-        uvm_va_space_t *space;
-
         // VA block for the page where the fault was triggered if it exists,
         // NULL otherwise (this can happen if the fault is fatal or the
         // VA block could not be created).
@@ -142,6 +148,8 @@ typedef union
             {
                 NvU64 fault_va;
 
+                NvU32 cpu_num;
+
                 bool is_write;
 
                 NvU64 pc;
@@ -153,7 +161,15 @@ typedef union
     // stale. Do not rely on them in the callbacks.
     struct
     {
-        uvm_push_t *push;
+        // CPU-to-CPU migrations do not use a push. Instead, such migrations
+        // need to record the migration start time, which for other migrations
+        // is recorded by the push.
+        union
+        {
+            uvm_push_t *push;
+            NvU64 cpu_start_timestamp;
+        };
+
         uvm_va_block_t *block;
 
         // ID of the destination processor of the migration
@@ -161,6 +177,11 @@ typedef union
 
         // ID of the source processor of the migration
         uvm_processor_id_t src;
+
+        // For CPU-to-CPU migrations, these two fields indicate the source
+        // and destination NUMA node IDs.
+        NvS16 dst_nid;
+        NvS16 src_nid;
 
         // Start address of the memory range being migrated
         NvU64 address;
@@ -170,6 +191,10 @@ typedef union
 
         // Whether the page has been copied or moved
         uvm_va_block_transfer_mode_t transfer_mode;
+
+        // Access counters notification buffer index. Only valid when cause is
+        // UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER.
+        NvU32 access_counters_buffer_index;
 
         // Event that performed the call to make_resident
         uvm_make_resident_cause_t cause;
@@ -202,11 +227,12 @@ typedef union
 
 // Type of the function that can be registered as a callback
 //
+// va_space: is the va_space under which the event was generated.
 // event_id: is the event being notified. Passing it to the callback enables using the same function to handle
 //           different events.
 // event_data: extra event data that is passed to the callback function. The format of data passed for each event type
 //             is declared in the uvm_perf_event_data_t union
-typedef void (*uvm_perf_event_callback_t)(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
+typedef void (*uvm_perf_event_callback_t)(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
 
 typedef struct
 {
@@ -233,25 +259,30 @@ void uvm_perf_destroy_va_space_events(uvm_perf_va_space_events_t *va_space_event
 // Register a callback to be executed under the given event. The given callback cannot have been already registered for
 // the same event, although the same callback can be registered for different events.
 NV_STATUS uvm_perf_register_event_callback(uvm_perf_va_space_events_t *va_space_events,
-                                           uvm_perf_event_t event_id, uvm_perf_event_callback_t callback);
+                                           uvm_perf_event_t event_id,
+                                           uvm_perf_event_callback_t callback);
 
 // Same as uvm_perf_register_event_callback(), but the caller must hold
 // va_space_events lock in write mode.
 NV_STATUS uvm_perf_register_event_callback_locked(uvm_perf_va_space_events_t *va_space_events,
-                                                  uvm_perf_event_t event_id, uvm_perf_event_callback_t callback);
+                                                  uvm_perf_event_t event_id,
+                                                  uvm_perf_event_callback_t callback);
 
 // Removes a callback for the given event. It's safe to call with a callback that hasn't been registered.
-void uvm_perf_unregister_event_callback(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_unregister_event_callback(uvm_perf_va_space_events_t *va_space_events,
+                                        uvm_perf_event_t event_id,
                                         uvm_perf_event_callback_t callback);
 
 // Same as uvm_perf_unregister_event_callback(), but the caller must hold
 // va_space_events lock in write mode.
-void uvm_perf_unregister_event_callback_locked(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_unregister_event_callback_locked(uvm_perf_va_space_events_t *va_space_events,
+                                               uvm_perf_event_t event_id,
                                                uvm_perf_event_callback_t callback);
 
 // Invoke the callbacks registered for the given event. Callbacks cannot fail.
 // Acquires the va_space_events lock internally
-void uvm_perf_event_notify(uvm_perf_va_space_events_t *va_space_events, uvm_perf_event_t event_id,
+void uvm_perf_event_notify(uvm_perf_va_space_events_t *va_space_events,
+                           uvm_perf_event_t event_id,
                            uvm_perf_event_data_t *event_data);
 
 // Checks if the given callback is already registered for the event.
@@ -273,6 +304,7 @@ static inline void uvm_perf_event_notify_migration(uvm_perf_va_space_events_t *v
                                                    NvU64 address,
                                                    NvU64 bytes,
                                                    uvm_va_block_transfer_mode_t transfer_mode,
+                                                   NvU32 access_counters_buffer_index,
                                                    uvm_make_resident_cause_t cause,
                                                    uvm_make_resident_context_t *make_resident_context)
 {
@@ -280,17 +312,89 @@ static inline void uvm_perf_event_notify_migration(uvm_perf_va_space_events_t *v
         {
             .migration =
                 {
-                    .push                  = push,
-                    .block                 = va_block,
-                    .dst                   = dst,
-                    .src                   = src,
-                    .address               = address,
-                    .bytes                 = bytes,
-                    .transfer_mode         = transfer_mode,
-                    .cause                 = cause,
-                    .make_resident_context = make_resident_context,
+                    .push                           = push,
+                    .block                          = va_block,
+                    .dst                            = dst,
+                    .src                            = src,
+                    .address                        = address,
+                    .bytes                          = bytes,
+                    .transfer_mode                  = transfer_mode,
+                    .access_counters_buffer_index   = access_counters_buffer_index,
+                    .cause                          = cause,
+                    .make_resident_context          = make_resident_context,
                 }
         };
+
+    uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_MIGRATION, &event_data);
+}
+
+static inline void uvm_perf_event_notify_migration_cpu(uvm_perf_va_space_events_t *va_space_events,
+                                                       uvm_va_block_t *va_block,
+                                                       int dst_nid,
+                                                       int src_nid,
+                                                       NvU64 address,
+                                                       NvU64 bytes,
+                                                       NvU64 begin_timestamp,
+                                                       uvm_va_block_transfer_mode_t transfer_mode,
+                                                       NvU32 access_counters_buffer_index,
+                                                       uvm_make_resident_cause_t cause,
+                                                       uvm_make_resident_context_t *make_resident_context)
+{
+    uvm_perf_event_data_t event_data =
+        {
+            .migration =
+                {
+                    .cpu_start_timestamp            = begin_timestamp,
+                    .block                          = va_block,
+                    .dst                            = UVM_ID_CPU,
+                    .src                            = UVM_ID_CPU,
+                    .src_nid                        = (NvS16)src_nid,
+                    .dst_nid                        = (NvS16)dst_nid,
+                    .address                        = address,
+                    .bytes                          = bytes,
+                    .transfer_mode                  = transfer_mode,
+                    .access_counters_buffer_index   = access_counters_buffer_index,
+                    .cause                          = cause,
+                    .make_resident_context          = make_resident_context,
+                }
+        };
+
+    // Ensure src_nid can fit within its type in event data.migration
+    BUILD_BUG_ON(MAX_NUMNODES >= (1 << (8 * sizeof(event_data.migration.src_nid) - 1)));
+
+    uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_MIGRATION, &event_data);
+}
+
+static inline void uvm_perf_event_notify_migration_ats(uvm_perf_va_space_events_t *va_space_events,
+                                                       uvm_push_t *push,
+                                                       uvm_processor_id_t dst_id,
+                                                       uvm_processor_id_t src_id,
+                                                       int dst_nid,
+                                                       int src_nid,
+                                                       NvU64 address,
+                                                       NvU64 bytes,
+                                                       NvU32 access_counters_buffer_index,
+                                                       uvm_make_resident_cause_t cause)
+{
+    uvm_perf_event_data_t event_data =
+    {
+        .migration =
+        {
+            .push                           = push,
+            .block                          = NULL,
+            .dst                            = dst_id,
+            .src                            = src_id,
+            .src_nid                        = (NvS16)src_nid,
+            .dst_nid                        = (NvS16)dst_nid,
+            .address                        = address,
+            .bytes                          = bytes,
+            .access_counters_buffer_index   = access_counters_buffer_index,
+            .cause                          = cause,
+        }
+    };
+
+    // Ensure src_nid can fit within its type in event data.migration
+    BUILD_BUG_ON(MAX_NUMNODES >= (1 << (8 * sizeof(event_data.migration.src_nid) - 1)));
 
     uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_MIGRATION, &event_data);
 }
@@ -308,7 +412,6 @@ static inline void uvm_perf_event_notify_gpu_fault(uvm_perf_va_space_events_t *v
         {
             .fault =
                 {
-                    .space            = va_space_events->va_space,
                     .block            = va_block,
                     .proc_id          = gpu_id,
                     .preferred_location = preferred_location,
@@ -328,22 +431,23 @@ static inline void uvm_perf_event_notify_cpu_fault(uvm_perf_va_space_events_t *v
                                                    uvm_processor_id_t preferred_location,
                                                    NvU64 fault_va,
                                                    bool is_write,
+                                                   NvU32 cpu_num,
                                                    NvU64 pc)
 {
     uvm_perf_event_data_t event_data =
         {
             .fault =
                 {
-                    .space         = va_space_events->va_space,
                     .block         = va_block,
                     .proc_id       = UVM_ID_CPU,
                     .preferred_location = preferred_location,
                 }
         };
 
-     event_data.fault.cpu.fault_va = fault_va,
-     event_data.fault.cpu.is_write = is_write,
-     event_data.fault.cpu.pc       = pc,
+    event_data.fault.cpu.fault_va = fault_va;
+    event_data.fault.cpu.is_write = is_write;
+    event_data.fault.cpu.pc       = pc;
+    event_data.fault.cpu.cpu_num  = cpu_num;
 
     uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_FAULT, &event_data);
 }

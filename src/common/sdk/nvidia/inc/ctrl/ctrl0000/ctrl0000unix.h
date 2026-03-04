@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0000/ctrl0000unix.finn
+// Source file:      ctrl/ctrl0000/ctrl0000unix.finn
 //
-
-
-
 
 #include "ctrl/ctrl0000/ctrl0000base.h"
 
@@ -225,6 +222,13 @@ typedef struct NV0000_CTRL_OS_GET_GPU_INFO_PARAMS {
  *  deviceInstatnce
  *    This parameter returns a deviceInstance on which the object is located.
  *
+ *    NV_MAX_DEVICES is returned if the object is parented by a client instead
+ *    of a device.
+ *
+ *  gpuInstanceId
+ *    For objects parented by device this parameter returns MIG GPU instance
+ *    id the device is subscribed to or NV_U32_MAX if no subscription was made.
+ *
  *  maxObjects
  *    This parameter returns the maximum number of object handles that may be
  *    contained in the file descriptor.
@@ -246,9 +250,10 @@ typedef struct NV0000_CTRL_OS_GET_GPU_INFO_PARAMS {
 #define NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS_MESSAGE_ID (0x8U)
 
 typedef struct NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS {
-    NvS32 fd;               /* IN  */
+    NvS32 fd;   /* IN  */
     NvU32 deviceInstance;   /* OUT */
-    NvU16 maxObjects;       /* OUT */
+    NvU32 gpuInstanceId;   /* OUT */
+    NvU16 maxObjects;   /* OUT */
     NvU8  metadata[NV0000_OS_UNIX_EXPORT_OBJECT_FD_BUFFER_SIZE]; /* OUT */
 } NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS;
 
@@ -418,6 +423,7 @@ typedef struct NV0000_CTRL_OS_UNIX_EXPORT_OBJECTS_TO_FD_PARAMS {
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_VIDMEM    1
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_SYSMEM    2
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC    3
+#define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC_MC 4
 
 #define NV0000_CTRL_OS_UNIX_IMPORT_OBJECTS_FROM_FD_PARAMS_MESSAGE_ID (0xCU)
 

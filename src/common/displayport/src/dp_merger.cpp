@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "dp_auxdefs.h"
 #include "dp_crc.h"
 #include "dp_messageheader.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -50,7 +51,7 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
 
     if (!imsg)
     {
-        DP_LOG(("DP-MM> Ignore message due to OOM"));
+        DP_PRINTF(DP_WARNING, "DP-MM> Ignore message due to OOM");
         return 0;
     }
 
@@ -63,7 +64,7 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     {
         if (imsg->message.buffer.length == 0)
         {
-            DP_LOG(("DP-MM> Expected transaction-start, ignoring message transaction"));
+            DP_PRINTF(DP_NOTICE, "DP-MM> Expected transaction-start, ignoring message transaction");
             return 0;
         }
 
@@ -79,7 +80,7 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     //
     if (header->isTransactionStart && imsg->message.buffer.length)
     {
-        DP_LOG(("DP-MM> Unexpected repeated transaction-start, resetting message state."));
+        DP_PRINTF(DP_WARNING, "DP-MM> Unexpected repeated transaction-start, resetting message state.");
 
         // We must have seen a previous incomplete transaction from this device
         // they've begun a new packet.  Forget about the old thing
@@ -93,7 +94,7 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     {
         freeOnNextCall = imsg;
         imsg->message.buffer.reset();
-        DP_LOG(("DP-MM> Received truncated or corrupted message transaction"));
+        DP_PRINTF(DP_ERROR, "DP-MM> Received truncated or corrupted message transaction");
         return 0;
     }
 
@@ -108,7 +109,7 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     if (dataCrc != data->data[header->headerSizeBits/8 + header->payloadBytes - 1] ||
         header->payloadBytes == 0)
     {
-        DP_LOG(("DP-MM> Received corruption message transactions"));
+        DP_PRINTF(DP_ERROR, "DP-MM> Received corruption message transactions");
         freeOnNextCall = imsg;
         imsg->message.buffer.reset();
         return 0;

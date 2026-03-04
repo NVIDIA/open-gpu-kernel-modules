@@ -30,14 +30,18 @@
 #include "nvlink_lock.h"
 
 //
-// Only enabling locking for testing purposes at the moment.
-// Disabled at all other times.
-//
-#define LOCKING_DISABLED 1 
+// Only enabling top level locking for linux as required by Bug 4108674.
+// Per link locking is still disabled at all times. It will be enabled 
+// after other locking related clean up is done.
+// 
 
 static void   _sort_links(nvlink_link **, NvU32, NvBool (*)(void *, void *));
 static NvBool _compare(void *, void *);
 
+#if defined(NV_LINUX)
+#undef TOP_LEVEL_LOCKING_DISABLED 
+#   define TOP_LEVEL_LOCKING_DISABLED 0
+#endif  /* defined(NV_LINUX) */
 /*
  * Allocate top level lock. Return NVL_SUCCESS if 
  * the lock was allocated else return NVL_ERR_GENERIC.
@@ -45,7 +49,7 @@ static NvBool _compare(void *, void *);
 NvlStatus
 nvlink_lib_top_lock_alloc(void)
 {
-    if (LOCKING_DISABLED)
+    if (TOP_LEVEL_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -86,7 +90,7 @@ nvlink_lib_top_lock_alloc(void)
 NvlStatus
 nvlink_lib_top_lock_free(void)
 {
-    if (LOCKING_DISABLED)
+    if (TOP_LEVEL_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -119,7 +123,7 @@ nvlink_lib_link_lock_alloc
     nvlink_link *link
 )
 {
-    if (LOCKING_DISABLED)
+    if (PER_LINK_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -162,7 +166,7 @@ nvlink_lib_link_lock_free
     nvlink_link *link
 )
 {
-    if (LOCKING_DISABLED)
+    if (PER_LINK_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -192,7 +196,7 @@ nvlink_lib_link_lock_free
 NvlStatus
 nvlink_lib_top_lock_acquire(void)
 {
-    if (LOCKING_DISABLED)
+    if (TOP_LEVEL_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -213,10 +217,6 @@ nvlink_lib_top_lock_acquire(void)
     //
     nvlink_acquireLock(nvlinkLibCtx.topLevelLock);
 
-    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
-        "%s: Acquired top-level lock\n",
-        __FUNCTION__));
-
     return NVL_SUCCESS;
 }
 
@@ -227,7 +227,7 @@ nvlink_lib_top_lock_acquire(void)
 NvlStatus
 nvlink_lib_top_lock_release(void)
 {
-    if (LOCKING_DISABLED)
+    if (TOP_LEVEL_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
@@ -248,10 +248,6 @@ nvlink_lib_top_lock_release(void)
     //
     nvlink_releaseLock(nvlinkLibCtx.topLevelLock);
 
-    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
-        "%s: Released top-level lock\n",
-        __FUNCTION__));
-
     return NVL_SUCCESS;
 }
 
@@ -269,13 +265,12 @@ nvlink_lib_link_locks_acquire
     int           numLinks
 )
 {
-    if (LOCKING_DISABLED)
+    if (PER_LINK_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
 
     int i;
-
     nvlink_link *link_prev  = NULL;
 
     // Check if array of links is already empty before attempting to release. 
@@ -305,9 +300,9 @@ nvlink_lib_link_locks_acquire
                 "%s: Acquire link lock for dom:%d bus:%d dev:%d fun:%d link:%d\n",
                 __FUNCTION__,
 
-			links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
-			links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
-			links[i]->linkNumber));
+            links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
+            links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
+            links[i]->linkNumber));
         }
 
         link_prev = links[i];
@@ -332,13 +327,12 @@ nvlink_lib_link_locks_release
     int           numLinks
 )
 {
-    int i;
-
-    if (LOCKING_DISABLED)
+    if (PER_LINK_LOCKING_DISABLED)
     {
         return NVL_SUCCESS;
     }
 
+    int i;
     nvlink_link *link_prev  = NULL;
 
     // Check if array of links is already empty before attempting to release. 
@@ -368,9 +362,9 @@ nvlink_lib_link_locks_release
                 "%s: Release link lock for dom:%d bus:%d dev:%d fun:%d link:%d\n",
                 __FUNCTION__,
 
-			links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
-			links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
-			links[i]->linkNumber));
+            links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
+            links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
+            links[i]->linkNumber));
         }
 
         link_prev = links[i];

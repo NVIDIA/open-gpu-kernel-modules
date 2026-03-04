@@ -28,9 +28,13 @@
 extern "C" {
 #endif
 
+#include <nvlimits.h>
 #include "nvkms-types.h"
 #include <class/cl0092.h> /* NV0092_REGISTER_RG_LINE_CALLBACK_FN */
 #include <class/cl9010.h> /* OSVBLANKCALLBACKPROC */
+
+#define NVKMS_RM_HANDLE_SPACE_DEVICE(_i)    ((_i) + 1)
+#define NVKMS_RM_HANDLE_SPACE_FRAMELOCK(_i) (NV_MAX_DEVICES + (_i) + 1)
 
 NvBool nvWriteDPCDReg(NVConnectorEvoPtr pConnectorEvo,
                       NvU32 dpcdAddr,
@@ -62,12 +66,8 @@ NvBool nvRmSetDpmsEvo(NVDpyEvoPtr pDpyEvo, NvS64 value);
 NvBool nvRmAllocSysmem(NVDevEvoPtr pDevEvo, NvU32 memoryHandle,
                        NvU32 *ctxDmaFlags, void **ppBase, NvU64 size,
                        NvKmsMemoryIsoType isoType);
-NvBool nvRMAllocateBaseChannels(NVDevEvoPtr pDevEvo);
-NvBool nvRMAllocateOverlayChannels(NVDevEvoPtr pDevEvo);
 NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo);
 NvBool nvRMSetupEvoCoreChannel(NVDevEvoPtr pDevEvo);
-void nvRMFreeBaseChannels(NVDevEvoPtr pDevEvo);
-void nvRMFreeOverlayChannels(NVDevEvoPtr pDevEvo);
 void nvRMFreeWindowChannels(NVDevEvoPtr pDevEvo);
 void nvRMFreeEvoCoreChannel(NVDevEvoPtr pDevEvo);
 NvBool nvRMSyncEvoChannel(
@@ -77,25 +77,16 @@ NvBool nvRMSyncEvoChannel(
 NvBool nvRMIdleBaseChannel(NVDevEvoPtr pDevEvo, NvU32 head, NvU32 sd,
                            NvBool *stoppedBase);
 NvBool nvRmEvoClassListCheck(const NVDevEvoRec *pDevEvo, NvU32 classID);
-NvU32 nvRmEvoBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NVEvoChannelPtr pChannel,
-    NvU32 hCtxDma);
-NvU32 nvRmEvoAllocateAndBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NvU32 hMemory,
-    const enum NvKmsSurfaceMemoryLayout layout,
-    NvU64 limit);
 NvBool nvRmEvoAllocAndBindSyncpt(
     NVDevEvoRec *pDevEvo,
     NVEvoChannel *pChannel,
     NvU32 id,
-    NvU32 *pSyncptHandle,
-    NvU32 *pSyncptCtxDmaHandle);
+    NVSurfaceDescriptor *pSurfaceDesc,
+    NVEvoSyncpt *pEvoSyncpt);
 void nvRmEvoFreePreSyncpt(NVDevEvoRec *pDevEvo,
                           NVEvoChannel *pChannel);
-NvBool nvRmGarbageCollectSyncpts(
-    NVDevEvoRec *pDevEvo);
+void nvRmFreeSyncptHandle(NVDevEvoRec *pDevEvo,
+                          NVEvoSyncpt *pSyncpt);
 void nvRmEvoFreeSyncpt(NVDevEvoRec *pDevEvo,
                        NVEvoSyncpt *pEvoSyncpt);
 void nvRmEvoFreeDispContextDMA(NVDevEvoPtr pDevEvo,
@@ -110,30 +101,35 @@ NvBool nvRmEvoMapVideoMemory(NVDevEvoPtr pDevEvo,
 NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
                           const struct NvKmsAllocDeviceRequest *pRequest);
 void nvRmFreeDeviceEvo(NVDevEvoPtr pDevEvo);
+NvBool nvRmRegisterDIFREventHandler(NVDevEvoPtr pDevEvo);
+void nvRmUnregisterDIFREventHandler(NVDevEvoPtr pDevEvo);
 NvBool nvRmIsPossibleToActivateDpyIdList(NVDispEvoPtr pDispEvo,
                                          const NVDpyIdList dpyIdList);
 NvBool nvRmVTSwitch(NVDevEvoPtr pDevEvo, NvU32 cmd);
 NvBool nvRmGetVTFBInfo(NVDevEvoPtr pDevEvo);
 void nvRmImportFbConsoleMemory(NVDevEvoPtr pDevEvo);
+void nvRmUnmapFbConsoleMemory(NVDevEvoPtr pDevEvo);
 NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo,
                        NVEvoDmaPtr pDma,
                        NvU64 limit,
-                       NvU32 ctxDmaFlags,
-                       NvU32 subDeviceMask);
+                       NvU32 ctxDmaFlags);
 void nvRmFreeEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma);
 NvBool nvRmQueryDpAuxLog(NVDispEvoRec *pDispEvo, NvS64 *pValue);
 NvU64 nvRmGetGpuTime(NVDevEvoPtr pDevEvo);
 NvBool nvRmSetGc6Allowed(NVDevEvoPtr pDevEvo, NvBool allowed);
-NvU32 nvRmAddRgLine1Callback(
-    const NVDispEvoRec *pDispEvo,
-    NvU32 head,
-    NV0092_REGISTER_RG_LINE_CALLBACK_FN pCallback);
+NVRgLine1CallbackPtr
+nvRmAddRgLine1Callback(NVDispEvoRec *pDispEvo,
+                       NvU32 head,
+                       NVRgLine1CallbackProc pCallbackProc,
+                       void *pUserData);
 void nvRmRemoveRgLine1Callback(const NVDispEvoRec *pDispEvo,
-                               NvU32 callbackObjectHandle);
+                               NVRgLine1CallbackPtr pCallback);
+
 NvU32 nvRmAddVBlankCallback(
     const NVDispEvoRec *pDispEvo,
     NvU32 head,
-    OSVBLANKCALLBACKPROC pCallback);
+    OSVBLANKCALLBACKPROC pCallback,
+    void *pParam2);
 void nvRmRemoveVBlankCallback(const NVDispEvoRec *pDispEvo,
                               NvU32 callbackObjectHandle);
 void nvRmMuxInit(NVDevEvoPtr pDevEvo);
@@ -144,6 +140,17 @@ NvMuxState nvRmMuxState(const NVDpyEvoRec *pDpyEvo);
 
 void nvRmRegisterBacklight(NVDispEvoRec *pDispEvo);
 void nvRmUnregisterBacklight(NVDispEvoRec *pDispEvo);
+
+void nvRmAllocCoreRGSyncpts(NVDevEvoPtr pDevEvo);
+void nvRmFreeCoreRGSyncpts(NVDevEvoPtr pDevEvo);
+
+NvU32 nvRmAllocAndBindSurfaceDescriptor(
+    NVDevEvoPtr pDevEvo,
+    NvU32 hMemory,
+    const enum NvKmsSurfaceMemoryLayout layout,
+    NvU64 limit,
+    NVSurfaceDescriptor *pSurfaceDesc,
+    NvBool mapToDisplayRm);
 
 #ifdef __cplusplus
 };

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,7 +68,7 @@
     if ((i * sizeof(NvU32)) < ((sp)->size / 8))                                 \
     {                                                                           \
         nv_printf(NV_DBG_ERRORS, "NVRM: altstack: used %d of %d bytes!\n",      \
-                  ((sp)->size - (i * sizeof(NvU32))), (sp)->size);              \
+                  ((sp)->size - (i * (NvU32)sizeof(NvU32))), (sp)->size);       \
         NV_ASSERT_PRECOMP((i * sizeof(NvU32)) >= ((sp)->size / 8));             \
     }                                                                           \
 }
@@ -121,14 +121,13 @@ NvBool     RmGpuHasIOSpaceEnabled (nv_state_t *);
 void       RmFreeUnusedClients    (nv_state_t *, nv_file_private_t *);
 NV_STATUS  RmIoctl                (nv_state_t *, nv_file_private_t *, NvU32, void *, NvU32);
 
-NV_STATUS  RmAllocOsEvent         (NvHandle, nv_file_private_t *, NvU32);
-NV_STATUS  RmFreeOsEvent          (NvHandle, NvU32);
-
 void       RmI2cAddGpuPorts(nv_state_t *);
 
 NV_STATUS  RmInitX86EmuState(OBJGPU *);
 void       RmFreeX86EmuState(OBJGPU *);
-NV_STATUS  RmSystemEvent(nv_state_t *, NvU32, NvU32);
+NV_STATUS  RmPowerSourceChangeEvent(nv_state_t *, NvU32);
+
+void       RmRequestDNotifierState(nv_state_t *);
 
 const NvU8 *RmGetGpuUuidRaw(nv_state_t *);
 
@@ -139,12 +138,9 @@ int        amd_msr_c0011022_incompatible(OBJOS *);
 
 NV_STATUS  rm_get_adapter_status    (nv_state_t *, NvU32 *);
 
-NV_STATUS  rm_alloc_os_event        (NvHandle, nv_file_private_t *, NvU32);
-NV_STATUS  rm_free_os_event         (NvHandle, NvU32);
-NV_STATUS  rm_get_event_data        (nv_file_private_t *, NvP64, NvU32 *);
 void       rm_client_free_os_events (NvHandle);
 
-NV_STATUS  rm_create_mmap_context   (nv_state_t *, NvHandle, NvHandle, NvHandle, NvP64, NvU64, NvU64, NvU32);
+NV_STATUS  rm_create_mmap_context   (NvHandle, NvHandle, NvHandle, NvP64, NvU64, NvU64, NvU32, NvU32);
 NV_STATUS  rm_update_device_mapping_info  (NvHandle, NvHandle, NvHandle, void *, void *);
 
 NV_STATUS  rm_access_registry       (NvHandle, NvHandle, NvU32, NvP64, NvU32, NvP64, NvU32, NvP64, NvU32 *, NvU32 *, NvU32 *);
@@ -169,9 +165,10 @@ void       RmUnInitAcpiMethods      (OBJSYS *);
 void       RmInflateOsToRmPageArray (RmPhysAddr *, NvU64);
 void       RmDeflateRmToOsPageArray (RmPhysAddr *, NvU64);
 
-void       RmInitS0ixPowerManagement              (nv_state_t *);
-void       RmInitDeferredDynamicPowerManagement   (nv_state_t *);
-void       RmDestroyDeferredDynamicPowerManagement(nv_state_t *);
+void       RmInitPowerManagement    (nv_state_t *);
+void       RmDestroyPowerManagement (nv_state_t *);
+
+NV_STATUS  RmPowerManagementTegra   (OBJGPU *pGpu, nv_pm_action_t pmAction);
 
 NV_STATUS  os_ref_dynamic_power     (nv_state_t *, nv_dynamic_power_mode_t);
 void       os_unref_dynamic_power   (nv_state_t *, nv_dynamic_power_mode_t);
@@ -180,6 +177,8 @@ void       RmUpdateGc6ConsoleRefCount (nv_state_t *, NvBool);
 
 NvBool     rm_get_uefi_console_status (nv_state_t *);
 NvU64      rm_get_uefi_console_size (nv_state_t *, NvU64 *);
+
+void       rm_check_s0ix_regkey_and_platform_support(void);
 
 RM_API    *RmUnixRmApiPrologue      (nv_state_t *, THREAD_STATE_NODE *, NvU32 module);
 void       RmUnixRmApiEpilogue      (nv_state_t *, THREAD_STATE_NODE *);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208fgpu.finn
+// Source file:      ctrl/ctrl208f/ctrl208fgpu.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"        /* 208F is partially derivative of 2080 */
 #include "ctrl/ctrl208f/ctrl208fbase.h"
@@ -56,7 +53,7 @@
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV208F_CTRL_CMD_GPU_GET_RAM_SVOP_VALUES (0x208f1101) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | 0x1" */
+#define NV208F_CTRL_CMD_GPU_GET_RAM_SVOP_VALUES (0x208f1101) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID" */
 
 typedef struct NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS {
     NvU32 sp;
@@ -64,6 +61,10 @@ typedef struct NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS {
     NvU32 pdp;
     NvU32 dp;
 } NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS;
+
+#define NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID (0x1U)
+
+typedef NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS;
 
 /*
  * NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES
@@ -85,7 +86,11 @@ typedef struct NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES (0x208f1102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | 0x2" */
+#define NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES (0x208f1102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID (0x2U)
+
+typedef NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS;
 
 
 

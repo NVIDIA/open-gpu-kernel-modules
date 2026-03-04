@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,16 +28,22 @@
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/falcon/kernel_falcon.h"
+#include "kernel/gpu/rc/kernel_rc.h"
+#include "platform/sli/sli.h"
+
+#include "kernel/gpu/conf_compute/conf_compute.h"
 
 #include "class/cl0090.h" // KERNEL_GRAPHICS_CONTEXT
 #include "class/cl9067.h" // FERMI_CONTEXT_SHARE_A
 
 #include "libraries/utils/nvprintf.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "vgpu/rpc.h"
 #include "rmapi/rs_utils.h"
+#include "containers/eheap_old.h"
 
 NV_STATUS
 kchangrpapiConstruct_IMPL
@@ -47,28 +53,30 @@ kchangrpapiConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NvBool            bTsgAllocated     = NV_FALSE;
-    RsResourceRef    *pResourceRef      = pCallContext->pResourceRef;
-    NV_STATUS         rmStatus;
-    OBJVASPACE       *pVAS              = NULL;
-    OBJGPU           *pGpu              = GPU_RES_GET_GPU(pKernelChannelGroupApi);
-    KernelMIGManager *pKernelMIGManager = NULL;
-    KernelFifo       *pKernelFifo       = GPU_GET_KERNEL_FIFO(pGpu);
-    NvHandle          hVASpace          = NV01_NULL_OBJECT;
-    Device           *pDevice           = NULL;
-    NvU32             gfid              = GPU_GFID_PF;
-    RsShared         *pShared;
-    RsClient         *pClient;
-    NvBool            bLockAcquired           = NV_FALSE;
-    Heap             *pHeap                   = GPU_GET_HEAP(pGpu);
-    NvBool            bMIGInUse               = NV_FALSE;
-    CTX_BUF_INFO     *bufInfoList             = NULL;
-    NvU32             bufCount                = 0;
-    NvBool            bReserveMem             = NV_FALSE;
-    MIG_INSTANCE_REF  ref;
-    RM_API           *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    KernelChannelGroup *pKernelChannelGroup = NULL;
-    NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams = NULL;
+    NvBool                                  bTsgAllocated       = NV_FALSE;
+    RsResourceRef                          *pResourceRef        = pCallContext->pResourceRef;
+    NV_STATUS                               rmStatus;
+    OBJVASPACE                             *pVAS                = NULL;
+    OBJGPU                                 *pGpu                = GPU_RES_GET_GPU(pKernelChannelGroupApi);
+    KernelMIGManager                       *pKernelMIGManager   = NULL;
+    KernelFifo                             *pKernelFifo         = GPU_GET_KERNEL_FIFO(pGpu);
+    NvHandle                                hVASpace            = NV01_NULL_OBJECT;
+    Device                                 *pDevice             = NULL;
+    NvU32                                   gfid                = GPU_GFID_PF;
+    RsShared                               *pShared             = NULL;
+    RsClient                               *pClient;
+    NvBool                                  bLockAcquired       = NV_FALSE;
+    Heap                                   *pHeap               = GPU_GET_HEAP(pGpu);
+    NvBool                                  bMIGInUse           = NV_FALSE;
+    CTX_BUF_INFO                           *bufInfoList         = NULL;
+    NvU32                                   bufCount            = 0;
+    NvBool                                  bReserveMem         = NV_FALSE;
+    MIG_INSTANCE_REF                        ref;
+    RM_API                                 *pRmApi              = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    KernelChannelGroup                     *pKernelChannelGroup = NULL;
+    NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams        = NULL;
+    RM_ENGINE_TYPE                          rmEngineType;
+
 
     NV_PRINTF(LEVEL_INFO,
               "hClient: 0x%x, hParent: 0x%x, hObject:0x%x, hClass: 0x%x\n",
@@ -78,7 +86,7 @@ kchangrpapiConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
     {
         NV_ASSERT_OK_OR_GOTO(rmStatus,
-                             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
+                             rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
                              done);
         bLockAcquired = NV_TRUE;
         rmStatus = kchangrpapiCopyConstruct_IMPL(pKernelChannelGroupApi,
@@ -95,7 +103,7 @@ kchangrpapiConstruct_IMPL
     if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
         NV_PRINTF(LEVEL_ERROR, "TSG alloc should be called without acquiring GPU lock\n");
-        LOCK_ASSERT_AND_RETURN(0);
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_LOCK_STATE);
     }
 
     bufInfoList = portMemAllocNonPaged(NV_ENUM_SIZE(GR_CTX_BUFFER) * sizeof(*bufInfoList));
@@ -106,7 +114,7 @@ kchangrpapiConstruct_IMPL
 
     // Acquire the lock *only after* PMA is done allocating.
     NV_ASSERT_OK_OR_GOTO(rmStatus,
-                         rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
+                         rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO),
                          done);
     bLockAcquired = NV_TRUE;
 
@@ -129,6 +137,7 @@ kchangrpapiConstruct_IMPL
         goto failed;
     }
 
+    pKernelChannelGroupApi->hVASpace = hVASpace;
 
     rmStatus = serverGetClientUnderLock(&g_resServ, pParams->hClient, &pClient);
     if (rmStatus != NV_OK)
@@ -149,9 +158,11 @@ kchangrpapiConstruct_IMPL
     pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     bMIGInUse = IS_MIG_IN_USE(pGpu);
 
+    rmEngineType = gpuGetRmEngineType(pAllocParams->engineType);
+
     if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo))
     {
-        if (!NV2080_ENGINE_TYPE_IS_VALID(pAllocParams->engineType))
+        if (!RM_ENGINE_TYPE_IS_VALID(rmEngineType))
         {
             NV_PRINTF(LEVEL_NOTICE, "Valid engine Id must be specified while allocating TSGs or bare channels!\n");
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -163,10 +174,9 @@ kchangrpapiConstruct_IMPL
         // to determine runlistId from engineId passed by client. This
         // runlistId is used to associate all future channels in this TSG to
         // that runlist. Setting the engineType will cause the runlist
-        // corresponding to that engine to be chosen in
-        // kchangrpGetDefaultRunlist_HAL.
+        // corresponding to that engine to be chosen.
         //
-        pKernelChannelGroup->engineType = pAllocParams->engineType;
+        pKernelChannelGroup->engineType = rmEngineType;
     }
 
     //
@@ -176,29 +186,37 @@ kchangrpapiConstruct_IMPL
     //
     if (bMIGInUse)
     {
-        NvU32 engineId;
-
         // Engine type must be valid for MIG
-        NV_CHECK_OR_ELSE(LEVEL_NOTICE, NV2080_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType),
+        NV_CHECK_OR_ELSE(LEVEL_NOTICE, RM_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType),
                          rmStatus = NV_ERR_INVALID_STATE; goto failed);
 
         NV_CHECK_OK_OR_GOTO(
             rmStatus,
             LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pParams->hClient, &ref),
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            pDevice, &ref),
             failed);
 
         NV_CHECK_OK_OR_GOTO(
             rmStatus,
             LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              pAllocParams->engineType,
-                                              &engineId),
+                                              rmEngineType,
+                                              &rmEngineType),
             failed);
 
         // Rewrite the engineType with the global engine type
-        pKernelChannelGroup->engineType = engineId;
+        pKernelChannelGroup->engineType = rmEngineType;
         pHeap = ref.pKernelMIGGpuInstance->pMemoryPartitionHeap;
+    }
+    else
+    {
+        // Only GR0 is allowed without MIG
+        if ((RM_ENGINE_TYPE_IS_GR(rmEngineType)) && (rmEngineType != RM_ENGINE_TYPE_GR0))
+        {
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto failed;
+        }
     }
 
     if((pDevice->vaMode != NV_DEVICE_ALLOCATION_VAMODE_MULTIPLE_VASPACES) || (hVASpace != 0))
@@ -217,7 +235,9 @@ kchangrpapiConstruct_IMPL
 
     // vGpu plugin context flag should only be set on host if context is plugin
     if (gpuIsSriovEnabled(pGpu))
+    {
         pKernelChannelGroup->bIsCallingContextVgpuPlugin = pAllocParams->bIsCallingContextVgpuPlugin;
+    }
 
     if (pKernelChannelGroup->bIsCallingContextVgpuPlugin)
         gfid = GPU_GFID_PF;
@@ -228,13 +248,26 @@ kchangrpapiConstruct_IMPL
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pCtxBufPool),
-            failed);
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
+        //
+        // WAR for 4217716 - Force allocations made on behalf of internal clients to
+        // RM reserved heap. This avoids a constant memory allocation from appearing
+        // due to the ctxBufPool reservation out of PMA.
+        //
+        if ((pRmClient == NULL) || !serverIsClientInternal(&g_resServ, pParams->hClient))
+        {
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pCtxBufPool),
+                failed);
 
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pChannelBufPool),
-            failed);
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pChannelBufPool),
+                failed);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping ctxBufPoolInit for RC watchdog\n");
+        }
     }
 
     NV_ASSERT_OK_OR_GOTO(rmStatus,
@@ -264,6 +297,28 @@ kchangrpapiConstruct_IMPL
                                    NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM),
         failed);
 
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    if ((pConfCompute != NULL) &&
+        (pConfCompute->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)))
+    {
+        // TODO: jira CONFCOMP-1621: replace this with actual flag for TSG alloc that skips scrub
+        if ((pMemoryManager->bScrubChannelSetupInProgress) &&
+            (pKernelChannelGroup->pChannelBufPool != NULL) &&
+            (pKernelChannelGroup->pCtxBufPool != NULL))
+        {
+            if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                NV_PRINTF(LEVEL_ERROR, "Only kernel priv clients can skip scrubber\n");
+                goto failed;
+            }
+            ctxBufPoolSetScrubSkip(pKernelChannelGroup->pChannelBufPool, NV_TRUE);
+            ctxBufPoolSetScrubSkip(pKernelChannelGroup->pCtxBufPool, NV_TRUE);
+            NV_PRINTF(LEVEL_INFO, "Skipping scrubber for all allocations on this context\n");
+        }
+    }
+
     //
     // If ctx buf pools are enabled, filter out partitionable engines
     // that aren't part of our instance.
@@ -271,20 +326,28 @@ kchangrpapiConstruct_IMPL
     // Memory needs to be reserved in the pool only for buffers for
     // engines in instance.
     //
+
+    //
+    // Size of memory that will be calculated for ctxBufPool reservation if ctxBufPool is enabled and MIG is disabled
+    // or current engine belongs to this MIG instance and MIG is enabled
+    //
     if (pKernelChannelGroup->pCtxBufPool != NULL &&
-        kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, pKernelChannelGroup->engineType, ref))
+        (!bMIGInUse || kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, pKernelChannelGroup->engineType, ref)))
     {
         // GR Buffers
-        if (NV2080_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
+        if (RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
         {
-            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, NV2080_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType));
-            NvU32 bufId;
+            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType));
+            NvU32 bufId = 0;
             portMemSet(&bufInfoList[0], 0, sizeof(CTX_BUF_INFO) * NV_ENUM_SIZE(GR_CTX_BUFFER));
             bufCount = 0;
+
+            kgraphicsDiscoverMaxLocalCtxBufferSize(pGpu, pKernelGraphics);
+
             FOR_EACH_IN_ENUM(GR_CTX_BUFFER, bufId)
             {
                 // TODO expose engine class capabilities to kernel RM
-                if (kgrmgrIsCtxBufSupported(bufId, !IS_MIG_ENABLED(pGpu)))
+                if (kgrmgrIsCtxBufSupported(bufId, NV_FALSE))
                 {
                     const CTX_BUF_INFO *pBufInfo = kgraphicsGetCtxBufferInfo(pGpu, pKernelGraphics, bufId);
                     bufInfoList[bufCount] = *pBufInfo;
@@ -325,19 +388,21 @@ kchangrpapiConstruct_IMPL
                 bufInfoList[0].align = RM_PAGE_SIZE;
                 bufInfoList[0].attr  = RM_ATTR_PAGE_SIZE_4KB;
                 bufInfoList[0].bContig = NV_TRUE;
-                NV_PRINTF(LEVEL_INFO, "Reserving 0x%llx bytes for engineType %u flcn ctx buffer\n",
-                              bufInfoList[0].size, pKernelChannelGroup->engineType);
+                NV_PRINTF(LEVEL_INFO, "Reserving 0x%llx bytes for engineType %d (%d) flcn ctx buffer\n",
+                              bufInfoList[0].size, gpuGetNv2080EngineType(pKernelChannelGroup->engineType),
+                              pKernelChannelGroup->engineType);
                 bufCount++;
             }
             else
             {
-                NV_PRINTF(LEVEL_INFO, "No buffer reserved for engineType %u in ctx_buf_pool\n",
+                NV_PRINTF(LEVEL_INFO, "No buffer reserved for engineType %d (%d) in ctx_buf_pool\n",
+                                  gpuGetNv2080EngineType(pKernelChannelGroup->engineType),
                                   pKernelChannelGroup->engineType);
             }
         }
     }
 
-    if ((!bMIGInUse || NV2080_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
+    if ((!bMIGInUse || RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
         && !IsT234D(pGpu))
     {
         NV_ASSERT_OK_OR_GOTO(rmStatus,
@@ -347,6 +412,7 @@ kchangrpapiConstruct_IMPL
                 &pKernelChannelGroupApi->hKernelGraphicsContext,
                 KERNEL_GRAPHICS_CONTEXT,
                 NvP64_NULL,
+                0,
                 RMAPI_ALLOC_FLAGS_SKIP_RPC,
                 NvP64_NULL,
                 &pRmApi->defaultSecInfo),
@@ -365,6 +431,7 @@ kchangrpapiConstruct_IMPL
                                pParams->hResource,
                                pParams->externalClassId,
                                pAllocParams,
+                               sizeof(*pAllocParams),
                                rmStatus);
         //
         // Make sure that corresponding RPC occurs when freeing
@@ -482,13 +549,20 @@ failed:
 done:
 
     if (bLockAcquired)
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
 
-    if (bReserveMem)
+    if ((rmStatus == NV_OK) && bReserveMem)
     {
         // GPU lock should not be held when reserving memory for ctxBufPool
-        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
+        NV_CHECK_OK(rmStatus, LEVEL_ERROR,
             ctxBufPoolReserve(pGpu, pKernelChannelGroup->pCtxBufPool, bufInfoList, bufCount));
+        if (rmStatus != NV_OK)
+        {
+            // Acquire the lock again for the cleanup path
+            NV_ASSERT_OK_OR_RETURN(rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO));
+            bLockAcquired = NV_TRUE;
+            goto failed;
+        }
     }
 
     portMemFree(bufInfoList);
@@ -548,7 +622,8 @@ kchangrpapiDestruct_IMPL
         goto done;
     }
 
-    kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, NV_FALSE);
+    if (pKernelChannelGroup != NULL)
+        kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, NV_FALSE);
 
     // If channels still exist in this group, free them
     // RS-TODO this can be removed after re-parenting support is added
@@ -579,9 +654,9 @@ kchangrpapiDestruct_IMPL
             ctxBufPoolRelease(pKernelChannelGroup->pChannelBufPool);
             ctxBufPoolDestroy(&pKernelChannelGroup->pChannelBufPool);
         }
-    }
 
-    listClear(&pKernelChannelGroup->apiObjList);
+        listClear(&pKernelChannelGroup->apiObjList);
+    }
 
 done:
     serverFreeShare(&g_resServ, pShared);
@@ -839,6 +914,8 @@ kchangrpapiSetLegacyMode_IMPL
 
     pKernelChannelGroup->pSubctxIdHeap->eheapDestruct(
         pKernelChannelGroup->pSubctxIdHeap);
+    pKernelChannelGroup->pVaSpaceIdHeap->eheapDestruct(
+        pKernelChannelGroup->pVaSpaceIdHeap);
     //
     // There should only be 1 (SYNC) or 2 legacy kctxshares (SYNC + ASYNC),
     // depending on chip
@@ -850,6 +927,8 @@ kchangrpapiSetLegacyMode_IMPL
     NV_ASSERT(maxSubctx == 1 || maxSubctx == 2);
 
     constructObjEHeap(pKernelChannelGroup->pSubctxIdHeap,
+                      0, maxSubctx, sizeof(KernelCtxShare *), 0);
+    constructObjEHeap(pKernelChannelGroup->pVaSpaceIdHeap,
                       0, maxSubctx, sizeof(KernelCtxShare *), 0);
 
     pKernelChannelGroup->bLegacyMode = NV_TRUE;
@@ -867,6 +946,7 @@ kchangrpapiSetLegacyMode_IMPL
                                                   &hkCtxShare,
                                                   FERMI_CONTEXT_SHARE_A,
                                                   NV_PTR_TO_NvP64(&kctxshareParams),
+                                                  sizeof(kctxshareParams),
                                                   RMAPI_ALLOC_FLAGS_SKIP_RPC,
                                                   NvP64_NULL,
                                                   &pRmApi->defaultSecInfo),
@@ -891,6 +971,7 @@ kchangrpapiSetLegacyMode_IMPL
                                                       &hkCtxShare,
                                                       FERMI_CONTEXT_SHARE_A,
                                                       NV_PTR_TO_NvP64(&kctxshareParams),
+                                                      sizeof(kctxshareParams),
                                                       RMAPI_ALLOC_FLAGS_SKIP_RPC,
                                                       NvP64_NULL,
                                                       &pRmApi->defaultSecInfo),
@@ -1068,7 +1149,8 @@ kchangrpapiCtrlCmdGpFifoSchedule_IMPL
     // If no channels have a runlist set, get the default and use it.
     if (runlistId == INVALID_RUNLIST_ID)
     {
-        runlistId = kchangrpGetDefaultRunlist_HAL(pGpu, pKernelChannelGroup);
+        runlistId = kfifoGetDefaultRunlist_HAL(pGpu, pKernelFifo,
+            pKernelChannelGroup->engineType);
     }
 
     // We can rewrite TSG runlist id just as we will do that for all TSG channels below
@@ -1132,16 +1214,16 @@ kchangrpapiCtrlCmdBind_IMPL
 {
     NV_STATUS     rmStatus = NV_OK;
     OBJGPU       *pGpu     = GPU_RES_GET_GPU(pKernelChannelGroupApi);
-    NvHandle      hClient  = RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi);
+    Device       *pDevice  = GPU_RES_GET_DEVICE(pKernelChannelGroupApi);
     CHANNEL_NODE *pChanNode;
-    NvU32         localEngineType;
-    NvU32         globalEngineType;
+    RM_ENGINE_TYPE localEngineType;
+    RM_ENGINE_TYPE globalEngineType;
     ENGDESCRIPTOR engineDesc;
     NvBool        bMIGInUse = IS_MIG_IN_USE(pGpu);
 
     NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    localEngineType = globalEngineType = pParams->engineType;
+    localEngineType = globalEngineType = gpuGetRmEngineType(pParams->engineType);
 
     if (bMIGInUse)
     {
@@ -1149,7 +1231,7 @@ kchangrpapiCtrlCmdBind_IMPL
         MIG_INSTANCE_REF ref;
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
@@ -1158,9 +1240,9 @@ kchangrpapiCtrlCmdBind_IMPL
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "Binding TSG %d to Engine %d\n",
+              "Binding TSG %d to Engine %d (%d)\n",
               pKernelChannelGroupApi->pKernelChannelGroup->grpID,
-              globalEngineType);
+              gpuGetNv2080EngineType(globalEngineType), globalEngineType);
 
     // Translate globalEnginetype -> enginedesc
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
@@ -1303,7 +1385,7 @@ kchangrpapiCtrlCmdSetInterleaveLevel_IMPL
     RsResourceRef   *pResourceRef = RES_GET_REF(pKernelChannelGroupApi);
     KernelChannelGroup *pKernelChannelGroup =
         pKernelChannelGroupApi->pKernelChannelGroup;
-    PCLASSDESCRIPTOR pClass       = NULL;
+    CLASSDESCRIPTOR *pClass       = NULL;
     NV_STATUS        status       = NV_OK;
 
     if (gpuGetClassByClassId(pGpu, pResourceRef->externalClassId, &pClass) != NV_OK)
@@ -1355,19 +1437,3 @@ kchangrpapiCtrlCmdGetInterleaveLevel_IMPL
     return NV_OK;
 }
 
-/*!
- * @brief Handler for NVA06C_CTRL_CMD_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS
- *
- * This is currently un-implemented as split change for bug 200691429
- */
-NV_STATUS
-kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL
-(
-    KernelChannelGroupApi *pKernelChannelGroupApi,
-    NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *pParams
-)
-{
-    NV_PRINTF(LEVEL_INFO,
-        "bug 200691429: kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL received\n");
-    return NV_OK;
-}

@@ -282,6 +282,9 @@ typedef struct FLCN
 
     /*! HW arch that is enabled and running on corresponding uproc engine. */
     NvU32                 engArch;
+
+    /*! Flcn debug buffer object */
+
 } FLCN, *PFLCN;
 
 // hal functions
@@ -339,6 +342,10 @@ void        flcnImemCopyTo_HAL                          (struct nvswitch_device 
 NvU32       flcnSetDmemAddr_HAL                         (struct nvswitch_device *, struct FLCN *, NvU32 dst);
 NvU32       flcnRiscvRegRead_HAL                        (struct nvswitch_device *, PFLCN, NvU32 offset);
 void        flcnRiscvRegWrite_HAL                       (struct nvswitch_device *, PFLCN, NvU32 offset, NvU32 data);
+NV_STATUS   flcnDebugBufferInit_HAL                     (struct nvswitch_device *, struct FLCN *, NvU32 debugBufferMaxSize, NvU32 writeRegAddr, NvU32 readRegAddr);
+NV_STATUS   flcnDebugBufferDestroy_HAL                  (struct nvswitch_device *, struct FLCN *);
+NV_STATUS   flcnDebugBufferDisplay_HAL                  (struct nvswitch_device *, struct FLCN *);
+NvBool      flcnDebugBufferIsEmpty_HAL                  (struct nvswitch_device *, struct FLCN *);
 
 // Falcon core revision / subversion definitions.
 #define NV_FLCN_CORE_REV_3_0    0x30  // 3.0 - Core revision 3 subversion 0.

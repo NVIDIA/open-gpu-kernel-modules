@@ -38,10 +38,7 @@ nvswitch_inforom_read_only_objects_load
         return -NVL_ERR_NOT_SUPPORTED;
     }
 
-    status = nvswitch_inforom_load_object(device, pInforom, "OBD",
-                                        INFOROM_OBD_OBJECT_V1_XX_FMT,
-                                        pInforom->OBD.packedObject,
-                                        &pInforom->OBD.object);
+    status = device->hal.nvswitch_inforom_load_obd(device);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR, "Failed to load OBD object, rc:%d\n",

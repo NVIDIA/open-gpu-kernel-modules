@@ -51,7 +51,5 @@ void nv_unregister_rsync_driver(
                         void (*put_relaxed_ordering_mode)(int mode, void *data),
                         void (*wait_for_rsync)(struct pci_dev *gpu, void *data),
                         void *data);
-NvBool nv_get_rsync_relaxed_ordering_mode(nv_state_t *nv);
-void nv_wait_for_rsync(nv_state_t *nv);
 
 #endif

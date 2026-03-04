@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: nvlimits.finn
+// Source file:      nvlimits.finn
 //
 
 
@@ -34,19 +34,25 @@
 /*
  * This is the maximum number of GPUs supported in a single system.
  */
-#define NV_MAX_DEVICES          32
+#define NV_MAX_DEVICES                32
 
 /*
  * This is the maximum number of subdevices within a single device.
  */
-#define NV_MAX_SUBDEVICES       8
+#define NV_MAX_SUBDEVICES             8
 
 /*
  * This is the maximum length of the process name string.
  */
-#define NV_PROC_NAME_MAX_LENGTH 100U
+#define NV_PROC_NAME_MAX_LENGTH       100U
 
 /*
  * This is the maximum number of heads per GPU.
  */
-#define NV_MAX_HEADS            4
+#define NV_MAX_HEADS                  4
+
+/*
+ * Maximum length of a MIG device UUID. It is a 36-byte UUID string plus a
+ * 4-byte prefix and NUL terminator: 'M' 'I' 'G' '-' UUID '\0x0'
+ */
+#define NV_MIG_DEVICE_UUID_STR_LENGTH 41U

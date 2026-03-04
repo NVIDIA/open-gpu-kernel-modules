@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -19,21 +19,27 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef SDK_CL9010_H
-#define SDK_CL9010_H
 
-#include "nvtypes.h"
+#pragma once
 
-#define NV9010_VBLANK_CALLBACK 0x9010
+#include <nvtypes.h>
 
-typedef void (*OSVBLANKCALLBACKPROC)(void * pParm1, void * pParm2);
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl9010.finn
+//
 
-typedef struct
-{
-    OSVBLANKCALLBACKPROC pProc;      // Routine to call at vblank time
-    NvV32    LogicalHead;            // Logical Head
-    void   *pParm1;                  // pParm1
-    void   *pParm2;                  // pParm2
+#include "class/cl9010_callback.h"
+
+#define NV9010_VBLANK_CALLBACK (0x9010U) /* finn: Evaluated from "NV_VBLANK_CALLBACK_ALLOCATION_PARAMETERS_MESSAGE_ID" */
+
+#define NV_VBLANK_CALLBACK_ALLOCATION_PARAMETERS_MESSAGE_ID (0x9010U)
+
+typedef struct NV_VBLANK_CALLBACK_ALLOCATION_PARAMETERS {
+    NV_DECLARE_ALIGNED(NvP64 pProc, 8);      // Routine to call at vblank time
+                                             // A function pointer of OSVBLANKCALLBACKPROC
+    NvV32 LogicalHead;                       // Logical Head
+    NV_DECLARE_ALIGNED(NvP64 pParm1, 8);     // pParm1
+    NV_DECLARE_ALIGNED(NvP64 pParm2, 8);     // pParm2
 } NV_VBLANK_CALLBACK_ALLOCATION_PARAMETERS;
 
-#endif // SDK_CL9010_H

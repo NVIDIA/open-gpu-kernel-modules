@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,6 +55,11 @@ struct SOE
 
     /*! The event descriptor for the Thermal event handler */
     NvU32                   thermEvtDesc;
+    /*! The event descriptor for the CCI event handler */
+    NvU32                   cciEvtDesc;
+
+    /*! The event descriptor for the Heartbeat event handler */
+    NvU32                   heartbeatEvtDesc;
 };
 
 #endif //_SOE_PRIV_NVSWITCH_H_

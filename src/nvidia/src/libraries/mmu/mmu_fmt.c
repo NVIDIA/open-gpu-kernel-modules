@@ -132,3 +132,31 @@ mmuFmtGetNextLevel
     }
     return NULL;
 }
+
+const char*
+mmuFmtConvertLevelIdToSuffix
+(
+    const MMU_FMT_LEVEL *pLevelFmt
+)
+{
+    switch (pLevelFmt->pageLevelIdTag)
+    {
+        case MMU_FMT_PT_SURF_ID_PD0:
+            return "_pd0";
+        case MMU_FMT_PT_SURF_ID_PD1:
+            return "_pd1";
+        case MMU_FMT_PT_SURF_ID_PD2:
+            return "_pd2";
+        case MMU_FMT_PT_SURF_ID_PD3:
+            return "_pd3";
+        case MMU_FMT_PT_SURF_ID_PD4:
+            return "_pd4";
+        case MMU_FMT_PT_SURF_ID_PT_4K:
+            return "_pt_4k";
+        case MMU_FMT_PT_SURF_ID_PT_BIG:
+            return "_pt_big";
+        default:
+            return NULL;
+    }
+}
+

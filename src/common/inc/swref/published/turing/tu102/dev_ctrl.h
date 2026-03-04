@@ -23,61 +23,13 @@
 
 #ifndef __tu102_dev_ctrl_h__
 #define __tu102_dev_ctrl_h__
-#define NV_CTRL_CPU_INTR_TOP(i)             (0x00B73400+(i)*4) /* R--4A */
-#define NV_CTRL_CPU_INTR_TOP__SIZE_1 64 /*       */
-#define NV_CTRL_CPU_INTR_TOP_VALUE                        31:0 /* R--VF */
-#define NV_CTRL_CPU_INTR_TOP_EN_SET(i)               (0x00B73800+(i)*4) /* RW-4A */
-#define NV_CTRL_CPU_INTR_TOP_EN_SET__SIZE_1   64 /*       */
-#define NV_CTRL_CPU_INTR_TOP_EN_SET_VALUE                          31:0 /* RWIVF */
-#define NV_CTRL_CPU_INTR_TOP_EN_SET_VALUE_INIT               0x00000000 /* R-I-V */
-#define NV_CTRL_CPU_INTR_TOP_EN_CLEAR(i)             (0x00B73C00+(i)*4) /* RW-4A */
-#define NV_CTRL_CPU_INTR_TOP_EN_CLEAR__SIZE_1 64 /*       */
-#define NV_CTRL_CPU_INTR_TOP_EN_CLEAR_VALUE                        31:0 /* RWIVF */
-#define NV_CTRL_CPU_INTR_TOP_EN_CLEAR_VALUE_INIT             0x00000000 /* R-I-V */
-#define NV_CTRL_CPU_INTR_LEAF(i)                                         (0x00B74000+(i)*4) /* RW-4A */
-#define NV_CTRL_CPU_INTR_LEAF__SIZE_1    1024 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_VALUE                                                    31:0 /* RWIVF */
-#define NV_CTRL_CPU_INTR_LEAF_VALUE_INIT                                         0x00000000 /* R-I-V */
-#define NV_CTRL_CPU_INTR_LEAF_ARRAY_SIZE_PER_FN  16 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_EN_SET(i)                                           (0x00B78000+(i)*4) /* RW-4A */
-#define NV_CTRL_CPU_INTR_LEAF_EN_SET__SIZE_1      1024 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_EN_SET_VALUE                                                      31:0 /* RWIVF */
-#define NV_CTRL_CPU_INTR_LEAF_EN_SET_VALUE_INIT                                           0x00000000 /* R-I-V */
-#define NV_CTRL_CPU_INTR_LEAF_EN_CLEAR(i)                                         (0x00B7C000+(i)*4) /* RW-4A */
-#define NV_CTRL_CPU_INTR_LEAF_EN_CLEAR__SIZE_1    1024 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_EN_CLEAR_VALUE                                                    31:0 /* RWIVF */
-#define NV_CTRL_CPU_INTR_LEAF_EN_CLEAR_VALUE_INIT                                         0x00000000 /* R-I-V */
+
 #define NV_CTRL_LEGACY_ENGINE_STALL_INTR_BASE_VECTORID         0xB66880 /* C--4R */
 #define NV_CTRL_LEGACY_ENGINE_STALL_INTR_BASE_VECTORID_VECTOR      11:0 /* C--UF */
 #define NV_CTRL_LEGACY_ENGINE_STALL_INTR_BASE_VECTORID_VECTOR_INIT   192 /* C---V */
 #define NV_CTRL_LEGACY_ENGINE_NONSTALL_INTR_BASE_VECTORID       0xB66884 /* C--4R */
 #define NV_CTRL_LEGACY_ENGINE_NONSTALL_INTR_BASE_VECTORID_VECTOR    11:0 /* C--UF */
 #define NV_CTRL_LEGACY_ENGINE_NONSTALL_INTR_BASE_VECTORID_VECTOR_INIT   0 /* C---V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF(i)              (0x00B66800+(i)*4) /* RW-4A */
-#define NV_CTRL_VIRTUAL_INTR_LEAF__SIZE_1                          2 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_PENDING                       31:0 /* RWIVF */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_PENDING_INIT                     0 /* RWI-V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_PENDING_INTR                     1 /* R---V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_PENDING_CLEAR                    1 /* -W--V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET(i)           (0x00B66820+(i)*4) /* RW-4A */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET__SIZE_1                       2 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VALUE                      31:0 /* RWIVF */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VALUE_INIT                    0 /* RWI-V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VECTOR(i)                   (i) /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VECTOR_ENABLE                 1 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VECTOR_ENABLED                1 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VECTOR_DISABLED               0 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR(i)         (0x00B66840+(i)*4) /* RW-4A */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR__SIZE_1                     2 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VALUE                    31:0 /* RWIVF */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VALUE_INIT                  0 /* RWI-V */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VECTOR(i)                 (i) /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VECTOR_DISABLE              1 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VECTOR_ENABLED              1 /*       */
-#define NV_CTRL_VIRTUAL_INTR_LEAF_EN_CLEAR_VECTOR_DISABLED             0 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_TRIGGER(i)                   (0x00B66C00+(i)*4) /* -W-4A */
-#define NV_CTRL_CPU_INTR_LEAF_TRIGGER__SIZE_1       64 /*       */
-#define NV_CTRL_CPU_INTR_LEAF_TRIGGER_VECTOR                             11:0 /* -WXVF */
 #define NV_CTRL_CPU_DOORBELL_VECTORID                                      0x00B6687C /* C--4R */
 #define NV_CTRL_CPU_DOORBELL_VECTORID_VALUE                                      11:0 /* C--VF */
 #define NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT 129 /* C---V */

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -36,16 +36,17 @@
 #include "uvm_tracker.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_perf_thrashing.h"
-#include "uvm_perf_utils.h"
 #include "uvm_va_block_types.h"
 #include "uvm_range_tree.h"
 #include "uvm_mmu.h"
 #include "nv-kthread-q.h"
 
 #include <linux/mmu_notifier.h>
+#include <linux/wait.h>
+#include <linux/nodemask.h>
 
 // VA blocks are the leaf nodes in the uvm_va_space tree for managed allocations
-// (VA ranges with type == UVM_VA_RANGE_TYPE_MANAGED):
+// (VA ranges of type uvm_va_range_managed_t):
 //
 //  UVM: uvm_va_space -> uvm_va_range -> uvm_va_block
 //  HMM: uvm_va_space -> uvm_va_block
@@ -109,8 +110,6 @@ typedef struct
 
     // Pages that have been evicted to sysmem
     uvm_page_mask_t evicted;
-
-    NvU64 *cpu_chunks_dma_addrs;
 
     // Array of naturally-aligned chunks. Each chunk has the largest possible
     // size which can fit within the block, so they are not uniform size.
@@ -206,12 +205,12 @@ typedef struct
     //
     // The indices represent the corresponding big PTEs in the block's interior.
     // For example, a block with alignment and size of one 4k page on either
-    // side of a big page will only use bit 0. Use uvm_va_block_big_page_index to look
-    // the big_ptes index of a page.
+    // side of a big page will only use bit 0. Use uvm_va_block_big_page_index
+    // to look up the big_ptes index of a page.
     //
     // The block might not be able to fit any big PTEs, in which case this
-    // bitmap is always zero. Use uvm_va_block_gpu_num_big_pages to find the number of
-    // valid bits in this mask.
+    // bitmap is always zero. Use uvm_va_block_gpu_num_big_pages to find the
+    // number of valid bits in this mask.
     DECLARE_BITMAP(big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
 
     // See the comments for uvm_va_block_mmap_t::cpu.pte_bits.
@@ -226,7 +225,45 @@ typedef struct
     // isn't involved, for example false sharing among peer GPUs.
     uvm_page_mask_t pte_bits[UVM_PTE_BITS_GPU_MAX];
 
+    // Set of pages using EGM mappings.
+    uvm_page_mask_t egm_pages;
 } uvm_va_block_gpu_state_t;
+
+typedef struct
+{
+    // Per-page residency bit vector, used for fast traversal of resident
+    // pages.
+    //
+    // A set bit means the CPU has a coherent copy of the physical page
+    // resident in the NUMA node's memory, and that a CPU chunk for the
+    // corresponding page index has been allocated. This does not mean that
+    // the coherent copy is currently mapped anywhere, however. A page may be
+    // resident on multiple processors (but not multiple CPU NUMA nodes) when in
+    // read-duplicate mode.
+    //
+    // A cleared bit means the CPU NUMA node does not have a coherent copy of
+    // that page resident. A CPU chunk for the corresponding page index may or
+    // may not have been allocated. If the chunk is present, it's a cached chunk
+    // which can be reused in the future.
+    //
+    // Allocating PAGES_PER_UVM_VA_BLOCK is overkill when the block is
+    // smaller than UVM_VA_BLOCK_SIZE, but it's not much extra memory
+    // overhead on the whole.
+    uvm_page_mask_t resident;
+
+    // Per-page allocation bit vector.
+    //
+    // A set bit means that a CPU chunk has been allocated for the
+    // corresponding page index on this NUMA node.
+    uvm_page_mask_t allocated;
+
+    // CPU memory chunks represent physically contiguous CPU memory
+    // allocations. See uvm_pmm_sysmem.h for more details on CPU chunks.
+    // This member is meant to hold an opaque value indicating the CPU
+    // chunk storage method. For more details on CPU chunk storage,
+    // see uvm_cpu_chunk_storage_type_t in uvm_va_block.c.
+    unsigned long chunks;
+} uvm_va_block_cpu_node_state_t;
 
 // TODO: Bug 1766180: Worst-case we could have one of these per system page.
 //       Options:
@@ -237,8 +274,7 @@ typedef struct
 struct uvm_va_block_struct
 {
     // Reference count for this block. References are held by:
-    // - The parent VA range for managed blocks or VA space for HMM blocks
-    // - The reverse map
+    // - The parent managed range for managed blocks or VA space for HMM blocks
     // - The eviction path temporarily when attempting to evict a GPU page under
     //   this block
     //
@@ -249,15 +285,15 @@ struct uvm_va_block_struct
     // Lock protecting the block. See the comment at the top of uvm.c.
     uvm_mutex_t lock;
 
-    // Parent VA range. UVM managed blocks have this set. HMM blocks will have
-    // va_range set to NULL and hmm.va_space set instead. Dead blocks that are
-    // waiting for the last ref count to be removed have va_range and
+    // Parent managed range. Managed blocks have this set. HMM blocks will have
+    // managed_range set to NULL and hmm.va_space set instead. Dead blocks that
+    // are waiting for the last ref count to be removed have managed_range and
     // hmm.va_space set to NULL (could be either type of block).
     //
     // This field can be read while holding either the block lock or just the VA
     // space lock in read mode, since it can only change when the VA space lock
     // is held in write mode.
-    uvm_va_range_t *va_range;
+    uvm_va_range_managed_t *managed_range;
 
     // Virtual address [start, end] covered by this block. These fields can be
     // read while holding either the block lock or just the VA space lock in
@@ -279,6 +315,17 @@ struct uvm_va_block_struct
     // cached pages allocated for future use, however. It also may have mappings
     // to pages resident on other processors.
     uvm_processor_mask_t resident;
+
+    // Page mask tracking the set of block pages which have been discarded.
+    //
+    // Pages in this mask must be cleared if they are either migrated or
+    // evicted.
+    uvm_page_mask_t discarded_pages;
+
+    // The set of processors on which the VA block has ever been fully
+    // resident. This is used when determining whether GPU chunks need to
+    // zeroed.
+    uvm_processor_mask_t ever_fully_resident;
 
     // Per-processor mapping bit vector, used for fast lookup of which
     // processors are active in this block.
@@ -305,37 +352,29 @@ struct uvm_va_block_struct
 
     struct
     {
-        // Per-page residency bit vector, used for fast traversal of resident
-        // pages.
-        //
-        // A set bit means the CPU has a coherent copy of the physical page
-        // resident in its memory, and that the corresponding entry in the pages
-        // array is present. This does not mean that the coherent copy is
-        // currently mapped anywhere, however. A page may be resident on
-        // multiple processors when in read-duplicate mode.
-        //
-        // A cleared bit means the CPU does not have a coherent copy of that
-        // page resident. The corresponding entry in the pages array may or may
-        // not present. If the entry is present, it's a cached page which can be
-        // reused in the future.
-        //
-        // Allocating PAGES_PER_UVM_VA_BLOCK is overkill when the block is
-        // smaller than UVM_VA_BLOCK_SIZE, but it's not much extra memory
-        // overhead on the whole.
-        uvm_page_mask_t resident;
-
-        // CPU memory chunks represent physically contiguous CPU memory
-        // allocations. See uvm_pmm_sysmem.h for more details on CPU chunks.
-        // This member is meant to hold an opaque value indicating the CPU
-        // chunk storage method. For more details on CPU chunk storage,
-        // see uvm_cpu_chunk_storage_type_t in uvm_pmm_sysmem.c.
-        unsigned long chunks;
+        // Per-NUMA node tracking of CPU allocations.
+        // This is a dense array with one entry per possible NUMA node.
+        uvm_va_block_cpu_node_state_t **node_state;
 
         // Per-page allocation bit vector.
         //
         // A set bit means that a CPU page has been allocated for the
-        // corresponding page index.
+        // corresponding page index on at least one CPU NUMA node.
         uvm_page_mask_t allocated;
+
+        // Per-page residency bit vector. See
+        // uvm_va_block_cpu_numa_state_t::resident for a detailed description.
+        // This mask is a cumulative mask (logical OR) of all
+        // uvm_va_block_cpu_node_state_t::resident masks. It is meant to be used
+        // only for fast testing of page residency when it matters only if the
+        // page is resident on the CPU.
+        //
+        // Note that this mask cannot be set directly as this will cause
+        // inconsistencies between this mask and the per-NUMA residency masks.
+        // In order to properly maintain consistency between the per-NUMA masks
+        // and this one, uvm_va_block_cpu_[set|clear]_residency_*() helpers
+        // should be used.
+        uvm_page_mask_t resident;
 
         // Per-page mapping bit vectors, one per bit we need to track. These are
         // used for fast traversal of valid mappings in the block. These contain
@@ -352,12 +391,18 @@ struct uvm_va_block_struct
         // UVM_PTE_BITS_CPU_WRITE is not set, the mapping is read-only.
         // Otherwise, the mapping is read-write.
         //
-        // Note that this is the maximum permissions a PTE could have, but not
-        // necessarily the actual current permissions of the CPU PTEs. The UVM
-        // driver will never change the PTEs without updating this state, but
-        // the kernel can downgrade our CPU mappings at any time without
-        // notifying the UVM driver (for example in response to user space
-        // calling madvise with MADV_DONTNEED).
+        // For managed allocations, this is the maximum permissions a PTE
+        // could have, but not necessarily the actual current permissions of the
+        // CPU PTEs. The UVM driver will never change the PTEs without updating
+        // this state, but the kernel can downgrade our CPU mappings at any time
+        // without notifying the UVM driver (for example in response to user
+        // space calling madvise with MADV_DONTNEED).
+        //
+        // For HMM allocations, this is the minimum permission the CPU has since
+        // Linux can upgrade a read-only PTE to read-write without notifying
+        // the UVM driver. This is why read duplication isn't currently
+        // supported.
+        // TODO: Bug 3660922: Need to handle read duplication at some point.
         uvm_page_mask_t pte_bits[UVM_PTE_BITS_CPU_MAX];
 
         // Whether the CPU has ever mapped a page on this VA block. This is
@@ -411,7 +456,8 @@ struct uvm_va_block_struct
     uvm_page_mask_t read_duplicated_pages;
 
     // Mask to keep track of the pages that are not mapped on any non-UVM-Lite
-    // processor.
+    // processor. This mask is not used for HMM because the CPU can map pages
+    // at any time without notifying the driver.
     //     0: Page is definitely not mapped by any processors
     //     1: Page may or may not be mapped by a processor
     //
@@ -432,23 +478,48 @@ struct uvm_va_block_struct
     // added to this tracker before the block's lock is dropped.
     uvm_tracker_t tracker;
 
+    // Track whether any new DMA mappings have been created under this block for
+    // each parent GPU without having been invalidated yet according to the
+    // rules described in uvm_dma_map_invalidation_t. The invalidation must
+    // happen before the DMA mappings are accessed by the GPU.
+    uvm_parent_processor_mask_t needs_phys_invalidate;
+
     // A queue item for establishing eviction mappings in a deferred way
     nv_kthread_q_item_t eviction_mappings_q_item;
 
     uvm_perf_module_data_desc_t perf_modules_data[UVM_PERF_MODULE_TYPE_COUNT];
 
-#if UVM_IS_CONFIG_HMM()
+    // Prefetch infomation that is updated while holding the va_block lock but
+    // records state while the lock is not held.
     struct
     {
+        uvm_processor_id_t last_migration_proc_id;
 
+        NvU16 fault_migrations_to_last_proc;
+    } prefetch_info;
+
+    struct
+    {
+#if UVM_IS_CONFIG_HMM()
         // The MMU notifier is registered per va_block.
         struct mmu_interval_notifier notifier;
+#endif
 
+        // This is used to serialize migrations between CPU and GPU while
+        // allowing the va_block lock to be dropped.
+        // This must be acquired before locking the va_block lock if the
+        // critical section can change the residency state.
+        // Do not access directly, use the uvm_hmm_migrate_*() routines.
+        uvm_mutex_t migrate_lock;
 
-        // Parent VA space pointer. It is NULL for UVM managed blocks or if
+        // Sequence number to tell if any changes were made to the va_block
+        // while not holding the block lock and calling hmm_range_fault().
+        unsigned long changed;
+
+        // Parent VA space pointer. It is NULL for managed blocks or if
         // the HMM block is dead. This field can be read while holding the
         // block lock and is only modified while holding the va_space write
-        // lock and va_block lock (same as the va_range pointer).
+        // lock and va_block lock (same as the managed_range pointer).
         uvm_va_space_t *va_space;
 
         // Tree of uvm_va_policy_node_t. The policy node ranges always cover
@@ -462,7 +533,6 @@ struct uvm_va_block_struct
         // Storage node for range tree of va_blocks.
         uvm_range_tree_node_t node;
     } hmm;
-#endif
 };
 
 // We define additional per-VA Block fields for testing. When
@@ -490,26 +560,39 @@ struct uvm_va_block_wrapper_struct
         // uvm_cpu_chunk_allocation_sizes module parameter.
         NvU32 cpu_chunk_allocation_size_mask;
 
-        // Force the next eviction attempt on this block to fail. Used for
-        // testing only.
-        bool inject_eviction_error;
-
-        // Subsequent operations that need to allocate CPU pages will fail. As
-        // opposed to other error injection settings, this one is persistent.
+        // Subsequent operations that need to allocate CPU chunks will fail. As
+        // opposed to other error injection settings, this one fails N times
+        // and then succeeds instead of failing on the Nth try. A value of ~0u
+        // means fail indefinitely.
         // This is because this error is supposed to be fatal and tests verify
         // the state of the VA blocks after the failure. However, some tests
         // use kernels to trigger migrations and a fault replay could trigger
         // a successful migration if this error flag is cleared.
-        bool inject_cpu_pages_allocation_error;
+        NvU32 inject_cpu_chunk_allocation_error_count;
 
-        // Force the next successful chunk allocation to then fail. Used for testing
-        // only to simulate driver metadata allocation failure.
+        // A NUMA node ID on which any CPU chunks will be allocated from.
+        // This will override any other setting and/or policy.
+        // Note that the kernel is still free to allocate from any of the
+        // nodes in the thread's policy.
+        int cpu_chunk_allocation_target_id;
+        int cpu_chunk_allocation_actual_id;
+
+        // Force the next eviction attempt on this block to fail. Used for
+        // testing only.
+        bool inject_eviction_error;
+
+        // Force the next successful chunk allocation to then fail. Used for
+        // testing only to simulate driver metadata allocation failure.
         bool inject_populate_error;
+
+        // Force the next split on this block to fail.
+        // Set by error injection ioctl for testing purposes only.
+        bool inject_split_error;
     } test;
 };
 
 // Tracking needed for supporting allocation-retry of user GPU memory
-typedef struct
+struct uvm_va_block_retry_struct
 {
     // A tracker used for all allocations from PMM.
     uvm_tracker_t tracker;
@@ -524,7 +607,7 @@ typedef struct
     // can contain chunks from multiple GPUs. All the used chunks are unpinned
     // when the operation is finished with uvm_va_block_retry_deinit().
     struct list_head used_chunks;
-} uvm_va_block_retry_t;
+};
 
 // Module load/exit
 NV_STATUS uvm_va_block_init(void);
@@ -532,12 +615,10 @@ void uvm_va_block_exit(void);
 
 // Allocates and initializes the block. The block's ref count is initialized to
 // 1. The caller is responsible for inserting the block into its parent
-// va_range.
+// managed range.
 //
 // The caller must be holding the VA space lock in at least read mode.
-//
-// The va_range must have type UVM_VA_RANGE_TYPE_MANAGED.
-NV_STATUS uvm_va_block_create(uvm_va_range_t *va_range,
+NV_STATUS uvm_va_block_create(uvm_va_range_managed_t *managed_range,
                               NvU64 start,
                               NvU64 end,
                               uvm_va_block_t **out_block);
@@ -551,6 +632,11 @@ static inline void uvm_va_block_retain(uvm_va_block_t *va_block)
     nv_kref_get(&va_block->kref);
 }
 
+// Locking: The va_block lock must not be held.
+// The va_space lock must be held in write mode unless it is the special case
+// that the block has no GPU state; for example, right after calling
+// uvm_va_block_create(). In that case, the va_space lock can be held in read
+// mode.
 static inline void uvm_va_block_release(uvm_va_block_t *va_block)
 {
     if (va_block) {
@@ -588,7 +674,7 @@ static inline bool uvm_va_block_is_hmm(uvm_va_block_t *va_block)
 // is held in write mode.
 static inline bool uvm_va_block_is_dead(uvm_va_block_t *va_block)
 {
-    if (va_block->va_range)
+    if (va_block->managed_range)
         return false;
 
 #if UVM_IS_CONFIG_HMM()
@@ -617,6 +703,12 @@ uvm_va_space_t *uvm_va_block_get_va_space_maybe_dead(uvm_va_block_t *va_block);
 // is held in write mode.
 uvm_va_space_t *uvm_va_block_get_va_space(uvm_va_block_t *va_block);
 
+// Return true if the VA space has access counter migrations enabled and should
+// remote map pages evicted to system memory. This is OK since access counters
+// can pull the data back to vidmem if sufficient accesses trigger a migration.
+// The caller must ensure that the VA space cannot go away.
+bool uvm_va_space_map_remote_on_eviction(uvm_va_space_t *va_space);
+
 // Dynamic cache-based allocation for uvm_va_block_context_t.
 //
 // See uvm_va_block_context_init() for a description of the mm parameter.
@@ -626,17 +718,7 @@ void uvm_va_block_context_free(uvm_va_block_context_t *va_block_context);
 // Initialization of an already-allocated uvm_va_block_context_t.
 //
 // mm is used to initialize the value of va_block_context->mm. NULL is allowed.
-static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, struct mm_struct *mm)
-{
-    UVM_ASSERT(va_block_context);
-
-    // Write garbage into the VA Block context to ensure that the UVM code
-    // clears masks appropriately
-    if (UVM_IS_DEBUG())
-        memset(va_block_context, 0xff, sizeof(*va_block_context));
-
-    va_block_context->mm = mm;
-}
+void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, struct mm_struct *mm);
 
 // TODO: Bug 1766480: Using only page masks instead of a combination of regions
 //       and page masks could simplify the below APIs and their implementations
@@ -648,8 +730,10 @@ static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, 
 // pages in the region which are present in the mask.
 //
 // prefetch_page_mask may be passed as a subset of page_mask when cause is
-// UVM_MAKE_RESIDENT_CAUSE_FAULT to indicate pages that have been pulled due
-// to automatic page prefetching heuristics. For pages in this mask,
+// UVM_MAKE_RESIDENT_CAUSE_REPLAYABLE_FAULT,
+// UVM_MAKE_RESIDENT_CAUSE_NON_REPLAYABLE_FAULT, or
+// UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER to indicate pages that have been
+// pulled due to automatic page prefetching heuristics. For pages in this mask,
 // UVM_MAKE_RESIDENT_CAUSE_PREFETCH will be reported in migration events,
 // instead.
 //
@@ -667,28 +751,38 @@ static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, 
 //
 // Allocation-retry: this operation may need to perform eviction to be able to
 // allocate GPU memory successfully and if that happens,
-// NV_WARN_MORE_PROCESSING_REQUIRED will be returned. That also means that the
+// NV_ERR_MORE_PROCESSING_REQUIRED will be returned. That also means that the
 // block's lock has been unlocked and relocked as part of the call and that the
 // whole sequence of operations performed under the block's lock needs to be
 // attempted again. To facilitate that, the caller needs to provide the same
-// va_block_retry struct for each attempt that has been initialized before the first
-// attempt and needs to be deinitialized after the last one. Most callers can
-// just use UVM_VA_BLOCK_LOCK_RETRY() that takes care of that for the caller.
+// va_block_retry struct for each attempt that has been initialized before the
+// first attempt and needs to be deinitialized after the last one. Most callers
+// can just use UVM_VA_BLOCK_LOCK_RETRY() that takes care of that for the
+// caller.
 //
 // If dest_id is the CPU then va_block_retry can be NULL and allocation-retry of
-// user memory is guaranteed not to happen. Allocation-retry of page tables can
-// still occur though.
+// user memory is guaranteed not to happen. Allocation-retry of GPU page tables
+// can still occur though.
 //
-// va_block_context must be non-NULL. This function will set a bit in
-// va_block_context->make_resident.pages_changed_residency for each page that
-// changed residency (due to a migration or first population) as a result of the
-// operation. This function only sets bits in that mask. It is the caller's
-// responsiblity to zero the mask or not first.
+// va_block_context must not be NULL and policy for the region must
+// match. This function will set a bit in
+// va_block_context->make_resident.pages_changed_residency for each
+// page that changed residency (due to a migration or first
+// population) as a result of the operation and
+// va_block_context->make_resident.all_involved_processors for each
+// processor involved in the copy. This function only sets bits in
+// those masks. It is the caller's responsiblity to zero the masks or
+// not first.
+//
+// va_block_context->make_resident.dest_nid is used to guide the NUMA node for
+// CPU allocations.
 //
 // Notably any status other than NV_OK indicates that the block's lock might
 // have been unlocked and relocked.
 //
 // LOCKING: The caller must hold the va_block lock.
+// If va_block_context->mm != NULL, va_block_context->mm->mmap_lock must be
+// held in at least read mode.
 NV_STATUS uvm_va_block_make_resident(uvm_va_block_t *va_block,
                                      uvm_va_block_retry_t *va_block_retry,
                                      uvm_va_block_context_t *va_block_context,
@@ -707,8 +801,8 @@ NV_STATUS uvm_va_block_make_resident(uvm_va_block_t *va_block,
 //   where they are unmapped
 // - All remote mappings (due to either SetAccessedBy or performance heuristics)
 //   are broken
-// - LOCKING: If va_block_context->mm != NULL, va_block_context->mm->mmap_lock
-//            must be held in at least read mode.
+// - Only managed va_blocks are supported.
+//   TODO: Bug 3660922: need to implement HMM read duplication support.
 NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
                                                     uvm_va_block_retry_t *va_block_retry,
                                                     uvm_va_block_context_t *va_block_context,
@@ -717,6 +811,38 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
                                                     const uvm_page_mask_t *page_mask,
                                                     const uvm_page_mask_t *prefetch_page_mask,
                                                     uvm_make_resident_cause_t cause);
+
+// Similar to uvm_va_block_make_resident() (read documentation there). The
+// difference is that source pages are only copied to the destination and the
+// residency is not updated until uvm_va_block_make_resident_finish() is called.
+// Otherwise, the combination of uvm_va_block_make_resident_copy() and
+// uvm_va_block_make_resident_finish() is the same as just calling
+// uvm_va_block_make_resident(). Note, however, that the va_block lock must be
+// held across the two calls for the operation to be complete. The va_block
+// lock can be dropped after calling uvm_va_block_make_resident_copy() but
+// uvm_va_block_make_resident_copy() must be called again after relocking the
+// va_block lock and before calling uvm_va_block_make_resident_finish().
+// This split is needed when using migrate_vma_setup() and migrate_vma_pages()
+// so that when migrate_vma_pages() indicates a page is not migrating, the
+// va_block state is not updated.
+// LOCKING: The caller must hold the va_block lock.
+NV_STATUS uvm_va_block_make_resident_copy(uvm_va_block_t *va_block,
+                                          uvm_va_block_retry_t *va_block_retry,
+                                          uvm_va_block_context_t *va_block_context,
+                                          uvm_processor_id_t dest_id,
+                                          uvm_va_block_region_t region,
+                                          const uvm_page_mask_t *page_mask,
+                                          const uvm_page_mask_t *prefetch_page_mask,
+                                          uvm_make_resident_cause_t cause);
+
+// The page_mask must be the same or a subset of the page_mask passed to
+// uvm_va_block_make_resident_copy(). This step updates the residency and breaks
+// read duplication.
+// LOCKING: The caller must hold the va_block lock.
+void uvm_va_block_make_resident_finish(uvm_va_block_t *va_block,
+                                       uvm_va_block_context_t *va_block_context,
+                                       uvm_va_block_region_t region,
+                                       const uvm_page_mask_t *page_mask);
 
 // Creates or upgrades a mapping from the input processor to the given virtual
 // address region. Pages which already have new_prot permissions or higher are
@@ -746,7 +872,8 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 // pages because the earlier operation can cause a PTE split or merge which is
 // assumed by the later operation.
 //
-// va_block_context must not be NULL.
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // If allocation-retry was required as part of the operation and was successful,
 // NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the entries in the
@@ -780,6 +907,18 @@ NV_STATUS uvm_va_block_map_mask(uvm_va_block_t *va_block,
                                 const uvm_page_mask_t *map_page_mask,
                                 uvm_prot_t new_prot,
                                 UvmEventMapRemoteCause cause);
+
+// Map pages not already mapped on the destination processor after a migration.
+//
+// LOCKING: The VA block lock must be held. If va_block_context->mm !=
+//          NULL, va_block_context->mm->mmap_lock must be held in at least read
+//          mode.
+NV_STATUS uvm_va_block_migrate_map_mapped_pages(uvm_va_block_t *va_block,
+                                                uvm_va_block_retry_t *va_block_retry,
+                                                uvm_va_block_context_t *va_block_context,
+                                                uvm_va_block_region_t region,
+                                                uvm_processor_id_t dest_id,
+                                                UvmEventMapRemoteCause cause);
 
 // Unmaps virtual regions from a single processor. This does not free page
 // tables or physical memory. This is safe to call on the eviction path, but the
@@ -834,12 +973,21 @@ NV_STATUS uvm_va_block_unmap_mask(uvm_va_block_t *va_block,
 //   up-to-date data.
 // - Unmap the preferred location's processor from any pages in this region
 //   which are not resident on the preferred location.
+//
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
+//
 // LOCKING: The caller must hold the VA block lock.
 NV_STATUS uvm_va_block_set_preferred_location_locked(uvm_va_block_t *va_block,
-                                                     uvm_va_block_context_t *va_block_context);
+                                                     uvm_va_block_context_t *va_block_context,
+                                                     uvm_va_block_region_t region);
 
 // Maps the given processor to all resident pages in this block, as allowed by
 // location and policy. Waits for the operation to complete before returning.
+// This function should only be called with managed va_blocks.
+//
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
 //          != NULL, va_block_context->mm->mmap_lock must be held in at least
@@ -848,9 +996,27 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
                                        uvm_va_block_context_t *va_block_context,
                                        uvm_processor_id_t processor_id);
 
-// Breaks SetAccessedBy and remote mappings
+// Maps given processor to all resident pages in this block and region, as
+// allowed by location and policy. The caller is responsible for waiting for
+// the tracker after all mappings have been started.
+// This function can be called with HMM and managed va_blocks.
 //
-// va_block_context must NOT be NULL
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
+//
+// LOCKING: The caller must hold the va_block lock and
+//          va_block_context->mm->mmap_lock must be held in at least read mode.
+NV_STATUS uvm_va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
+                                              uvm_va_block_context_t *va_block_context,
+                                              uvm_processor_id_t processor_id,
+                                              uvm_va_block_region_t region,
+                                              uvm_tracker_t *out_tracker);
+
+// Breaks SetAccessedBy and remote mappings
+// This function should only be called with managed va_blocks.
+//
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
 //          != NULL, va_block_context->mm->mmap_lock must be held in at least
@@ -859,14 +1025,45 @@ NV_STATUS uvm_va_block_set_read_duplication(uvm_va_block_t *va_block,
                                             uvm_va_block_context_t *va_block_context);
 
 // Restores SetAccessedBy mappings
+// This function should only be called with managed va_blocks.
 //
-// va_block_context must NOT be NULL
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
 //          != NULL, va_block_context->mm->mmap_lock must be held in at least
 //          read mode.
 NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
                                               uvm_va_block_context_t *va_block_context);
+
+// Check if processor_id is allowed to access the va_block with access_type
+// permissions. Return values:
+//
+// NV_ERR_INVALID_ADDRESS       The VA block is logically dead (zombie)
+// NV_ERR_INVALID_ACCESS_TYPE   The vma corresponding to the VA range does not
+//                              allow access_type permissions, or migration is
+//                              disallowed and processor_id cannot access the
+//                              range remotely (UVM-Lite).
+// NV_ERR_INVALID_OPERATION     The access would violate the policies specified
+//                              by UvmPreventMigrationRangeGroups.
+//
+// va_block_context must not be NULL, policy must match, and if the va_block is
+// a HMM block, va_block_context->hmm.vma must be valid which also means the
+// va_block_context->mm is not NULL, retained, and locked for at least read.
+// Locking: the va_block lock must be held.
+NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
+                                                 uvm_va_block_context_t *va_block_context,
+                                                 uvm_processor_id_t processor_id,
+                                                 uvm_page_index_t page_index,
+                                                 uvm_fault_access_type_t access_type,
+                                                 bool allow_migration);
+
+// Set a va_block discarded, unmap the block and revoke its residency status
+//
+// LOCKING: This takes and releases the VA block lock. If va_block_context->mm
+//          != NULL, va_block_context->mm->mmap_lock must be held in at least
+//          read mode.
+NV_STATUS uvm_va_block_discard(uvm_va_block_t *va_block, uvm_va_block_context_t *va_block_context, NvU64 flags);
 
 // API for access privilege revocation
 //
@@ -935,7 +1132,8 @@ NV_STATUS uvm_va_block_revoke_prot_mask(uvm_va_block_t *va_block,
 // processor_id, which triggered the migration and should have already been
 // mapped).
 //
-// va_block_context must not be NULL.
+// va_block_context must not be NULL and policy for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // This function acquires/waits for the va_block tracker and updates that
 // tracker with any new work pushed.
@@ -965,7 +1163,8 @@ NV_STATUS uvm_va_block_add_mappings_after_migration(uvm_va_block_t *va_block,
 // Note that this can return NV_ERR_MORE_PROCESSING_REQUIRED just like
 // uvm_va_block_map() indicating that the operation needs to be retried.
 //
-// va_block_context must not be NULL.
+// va_block_context must not be NULL and policy must for the region must match.
+// See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: The caller must hold the va block lock. If va_block_context->mm !=
 //          NULL, va_block_context->mm->mmap_lock must be held in at least read
@@ -986,14 +1185,13 @@ NV_STATUS uvm_va_block_add_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_spa
 // If mm != NULL, that mm is used for any CPU mappings which may be created as
 // a result of this call. See uvm_va_block_context_t::mm for details.
 //
-// LOCKING: The caller must hold the va_block lock. If mm != NULL, the caller
-//          must hold mm->mmap_lock in at least read mode.
-void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_space_t *gpu_va_space, struct mm_struct *mm);
-
-// Creates any mappings necessary in this VA block between the two GPUs, in
-// either direction.
-// LOCKING: The caller must hold the va_block lock
-NV_STATUS uvm_va_block_enable_peer(uvm_va_block_t *va_block, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1);
+// va_block_context must not be NULL.
+//
+// LOCKING: The caller must hold the va_block lock. If block_context->mm is not
+// NULL, the caller must hold mm->mmap_lock in at least read mode.
+void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
+                                      uvm_gpu_va_space_t *gpu_va_space,
+                                      uvm_va_block_context_t *block_context);
 
 // Unmaps all page tables in this VA block which have peer mappings between
 // the two GPUs, in either direction.
@@ -1018,16 +1216,22 @@ void uvm_va_block_unmap_preferred_location_uvm_lite(uvm_va_block_t *va_block, uv
 //          must hold mm->mmap_lock in at least read mode.
 void uvm_va_block_unregister_gpu(uvm_va_block_t *va_block, uvm_gpu_t *gpu, struct mm_struct *mm);
 
+// Same as uvm_va_block_unregister_gpu() but the VA block lock must be held.
+// Note that this handles allocation-retry internally and hence might unlock
+// and relock block's lock.
+void uvm_va_block_unregister_gpu_locked(uvm_va_block_t *va_block, uvm_gpu_t *gpu, struct mm_struct *mm);
+
 // Unmaps all memory associated with the block and drops the ref count of the
 // block. This allows the caller to free resources associated with this block
 // regardless of the block's current ref count. Most importantly it allows the
 // VA covered by this block to be immediately available for other page table
 // mappings upon return.
 //
-// This clears block->va_range, so only the VA range destroy path should call
-// it. Other paths with references on this block, specifically the eviction path
-// which temporarily takes a reference to the block, must always check the block
-// state after taking the block lock to see if their mapping is still in place.
+// This clears block->managed_range, so only the managed range destroy path
+// should call it. Other paths with references on this block, specifically the
+// eviction path which temporarily takes a reference to the block, must always
+// check the block state after taking the block lock to see if their mapping is
+// still in place.
 //
 // All of the unmap and state destruction steps are also performed when the ref
 // count goes to 0, so this function only needs to be called if the block's
@@ -1041,25 +1245,21 @@ void uvm_va_block_kill(uvm_va_block_t *va_block);
 // Exactly the same split semantics as uvm_va_range_split, including error
 // handling. See that function's comments for details.
 //
-// new_va_block's va_range is set to new_va_range before any reverse mapping is
-// established to the new block, but the caller is responsible for inserting the
-// new block into the range.
+// new_va_block's managed range is set to new_managed_range before any reverse
+// mapping is established to the new block, but the caller is responsible for
+// inserting the new block into the range.
 NV_STATUS uvm_va_block_split(uvm_va_block_t *existing_va_block,
                              NvU64 new_end,
                              uvm_va_block_t **new_va_block,
-                             uvm_va_range_t *new_va_range);
+                             uvm_va_range_managed_t *new_managed_range);
 
 // Exactly the same split semantics as uvm_va_block_split, including error
 // handling except the existing_va_block block lock needs to be held and
 // the new_va_block has to be preallocated.
-//
-// new_va_block's va_range is set to new_va_range before any reverse mapping is
-// established to the new block, but the caller is responsible for inserting the
-// new block into the range.
+// Also note that the existing_va_block lock may be dropped and re-acquired.
 NV_STATUS uvm_va_block_split_locked(uvm_va_block_t *existing_va_block,
                                     NvU64 new_end,
-                                    uvm_va_block_t *new_va_block,
-                                    uvm_va_range_t *new_va_range);
+                                    uvm_va_block_t *new_va_block);
 
 // Handles a CPU fault in the given VA block, performing any operations
 // necessary to establish a coherent CPU mapping (migrations, cache invalidates,
@@ -1082,7 +1282,13 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
 
 // Performs any operations necessary to establish a coherent mapping
 // (migrations, cache invalidates, etc.) in response to the given service block
-// context
+// context.
+//
+// service_context must not be NULL and policy for service_context->region must
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context->prefetch_hint is set by this function.
 //
 // Locking:
 //  - service_context->block_context.mm->mmap_lock must be held in at least
@@ -1091,17 +1297,94 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
 //  - va_block lock must be held
 //
 // If allocation-retry was required as part of the operation and was successful,
-// NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the block's lock was
-// unlocked and relocked.
+// NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the block's lock
+// was unlocked and relocked.
 //
 // NV_WARN_MORE_PROCESSING_REQUIRED indicates that thrashing has been detected
 // and the performance heuristics logic decided to throttle execution.
 // Any other error code different than NV_OK indicates OOM or a global fatal
 // error.
+// NV_WARN_MISMATCHED_TARGET is a special case of GPU fault handling when a
+// GPU is chosen as the destination and the source is a HMM CPU page that can't
+// be migrated. In that case, uvm_va_block_select_residency() should be called
+// with 'hmm_migratable' set to true so that system memory will be selected.
 NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
                                       uvm_va_block_t *va_block,
                                       uvm_va_block_retry_t *block_retry,
                                       uvm_service_block_context_t *service_context);
+
+// Performs population of the destination pages, unmapping and copying source
+// pages to new_residency.
+//
+// service_context must not be NULL and policy for service_context->region must
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context->prefetch_hint should be set before calling this function.
+//
+// Locking:
+//  - service_context->block_context.mm->mmap_lock must be held in at least
+//    read mode, if valid.
+//  - va_space lock must be held in at least read mode
+//  - va_block lock must be held
+//
+// If allocation-retry was required as part of the operation and was successful,
+// NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the block's lock
+// was unlocked and relocked.
+//
+// NV_WARN_MORE_PROCESSING_REQUIRED indicates that thrashing has been detected
+// and the performance heuristics logic decided to throttle execution.
+// Any other error code different than NV_OK indicates OOM or a global fatal
+// error.
+NV_STATUS uvm_va_block_service_copy(uvm_processor_id_t processor_id,
+                                    uvm_processor_id_t new_residency,
+                                    uvm_va_block_t *va_block,
+                                    uvm_va_block_retry_t *block_retry,
+                                    uvm_service_block_context_t *service_context);
+
+// This updates the va_block residency state and maps the faulting processor_id
+// to the new residency (which may be remote).
+//
+// service_context must not be NULL and policy for service_context->region must
+// match. See the comments for uvm_va_block_check_policy_is_valid(). If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid. See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context must be initialized by calling uvm_va_block_service_copy()
+// before calling this function.
+//
+// Locking:
+//  - service_context->block_context.mm->mmap_lock must be held in at least
+//    read mode, if valid.
+//  - va_space lock must be held in at least read mode
+//  - va_block lock must be held
+//  - the mmap lock and va_space lock must be held across the calls to
+//    uvm_va_block_service_copy() and this function. If the va_block lock is
+//    dropped inbetween, special care is needed to check for eviction and
+//    invalidation callbacks.
+//
+// If allocation-retry was required as part of the operation and was successful,
+// NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the block's lock
+// was unlocked and relocked.
+//
+// NV_WARN_MORE_PROCESSING_REQUIRED indicates that thrashing has been detected
+// and the performance heuristics logic decided to throttle execution.
+// Any other error code different than NV_OK indicates OOM or a global fatal
+// error.
+NV_STATUS uvm_va_block_service_finish(uvm_processor_id_t processor_id,
+                                      uvm_va_block_t *va_block,
+                                      uvm_service_block_context_t *service_context);
+
+// Returns the gpu_state for the given GPU. The returned pointer is
+// internally managed and will be allocated (and freed) automatically,
+// rather than by the caller. Returns NULL if there is no memory.
+// Locking: The block lock must be held.
+uvm_va_block_gpu_state_t *uvm_va_block_gpu_state_get_alloc(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
+
+// Release any GPU or policy data associated with the given region in response
+// to munmap().
+// Locking: The va_block lock must be held.
+void uvm_va_block_munmap_region(uvm_va_block_t *va_block,
+                                uvm_va_block_region_t region);
 
 // Size of the block in bytes. Guaranteed to be a page-aligned value between
 // PAGE_SIZE and UVM_VA_BLOCK_SIZE.
@@ -1127,11 +1410,6 @@ static inline NvU64 uvm_va_block_cpu_page_address(uvm_va_block_t *block, uvm_pag
     return block->start + PAGE_SIZE * page_index;
 }
 
-// Get the page physical address on the given GPU
-//
-// This will assert that GPU state is indeed present.
-uvm_gpu_phys_address_t uvm_va_block_gpu_phys_page_address(uvm_va_block_t *va_block, uvm_page_index_t page_index, uvm_gpu_t *gpu);
-
 static bool uvm_va_block_contains_address(uvm_va_block_t *block, NvU64 address)
 {
     return address >= block->start && address <= block->end;
@@ -1149,8 +1427,14 @@ static uvm_va_block_test_t *uvm_va_block_get_test(uvm_va_block_t *va_block)
 
 // Get the page residency mask for a processor if it's known to be there.
 //
+// If the processor is the CPU, the residency mask for the NUMA node ID
+// specified by nid will be returned (see
+// uvm_va_block_cpu_node_state_t::resident). If nid is NUMA_NO_NODE,
+// the cumulative CPU residency mask will be returned (see
+// uvm_va_block_t::cpu::resident).
+//
 // If the processor is a GPU, this will assert that GPU state is indeed present.
-uvm_page_mask_t *uvm_va_block_resident_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor);
+uvm_page_mask_t *uvm_va_block_resident_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor, int nid);
 
 // Get the page mapped mask for a processor. The returned mask cannot be
 // directly modified by the caller
@@ -1158,10 +1442,17 @@ uvm_page_mask_t *uvm_va_block_resident_mask_get(uvm_va_block_t *block, uvm_proce
 // If the processor is a GPU, this will assert that GPU state is indeed present.
 const uvm_page_mask_t *uvm_va_block_map_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor);
 
+// Return a mask of non-UVM-Lite pages that are unmapped within the given
+// region.
+// Locking: The block lock must be held.
+void uvm_va_block_unmapped_pages_get(uvm_va_block_t *va_block,
+                                     uvm_va_block_region_t region,
+                                     uvm_page_mask_t *out_mask);
+
 // VA block lookup functions. There are a number of permutations which might be
 // useful, such as looking up the block from {va_space, va_range} x {addr,
 // block index}. The ones implemented here and in uvm_va_range.h support the
-// primary two use cases, which are:
+// primary three use cases, which are:
 // 1) Iterating over all VA blocks in a VA range. This uses block indices on the
 //    VA range:
 //      uvm_va_range_num_blocks
@@ -1172,6 +1463,9 @@ const uvm_page_mask_t *uvm_va_block_map_mask_get(uvm_va_block_t *block, uvm_proc
 //    VA space and address:
 //      uvm_va_block_find
 //      uvm_va_block_find_create
+// 3) Operating on a single VA block (fault). This looks up the block using the
+//    supplied VA range and address:
+//      uvm_va_block_find_create_in_range
 
 // Finds the UVM or HMM VA block containing addr, if any. The va_space->lock
 // must be held in at least read mode. Return values:
@@ -1185,37 +1479,37 @@ const uvm_page_mask_t *uvm_va_block_map_mask_get(uvm_va_block_t *block, uvm_proc
 NV_STATUS uvm_va_block_find(uvm_va_space_t *va_space, NvU64 addr, uvm_va_block_t **out_block);
 
 // Same as uvm_va_block_find except that the block is created if not found.
-// If addr is covered by a UVM_VA_RANGE_TYPE_MANAGED va_range, a managed block
-// will be created. Otherwise, if addr is not covered by any va_range, mm is
-// non-NULL, and HMM is enabled in the va_space, an HMM block will be created.
-// In either case, if mm is non-NULL, it must be retained and locked in at
-// least read mode. Return values:
+// If addr is covered by a UVM_VA_RANGE_TYPE_MANAGED va_range a managed block
+// will be created. If addr is not covered by any va_range and HMM is
+// enabled in the va_space then a HMM block will be created and hmm_vma is
+// set to the VMA covering 'addr'. The va_space_mm must be retained and locked.
+// Otherwise hmm_vma is set to NULL.
+// Return values:
 // NV_ERR_INVALID_ADDRESS   addr is not a UVM_VA_RANGE_TYPE_MANAGED va_range nor
 //                          a HMM enabled VMA.
 // NV_ERR_NO_MEMORY         memory could not be allocated.
 NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
-                                   struct mm_struct *mm,
                                    NvU64 addr,
-                                   uvm_va_block_context_t *va_block_context,
+                                   struct vm_area_struct **hmm_vma,
                                    uvm_va_block_t **out_block);
 
-// Same as uvm_va_block_find_create except that only UVM managed va_blocks are
-// created if not already present in the VA range.
-static NV_STATUS uvm_va_block_find_create_managed(uvm_va_space_t *va_space,
-                                                  NvU64 addr,
-                                                  uvm_va_block_t **out_block)
-{
-    return uvm_va_block_find_create(va_space, NULL, addr, NULL, out_block);
-}
+// Same as uvm_va_block_find_create except that only managed va_blocks are
+// created if not already present in the VA range. Does not require va_space_mm
+// to be locked or retained.
+NV_STATUS uvm_va_block_find_create_managed(uvm_va_space_t *va_space,
+                                           NvU64 addr,
+                                           uvm_va_block_t **out_block);
 
-// Look up a chunk backing a specific address within the VA block. Returns NULL if none.
+// Same as uvm_va_block_find_create_managed except that va_range lookup was
+// already done by the caller. The supplied va_range must not be NULL.
+NV_STATUS uvm_va_block_find_create_in_range(uvm_va_space_t *va_space,
+                                            uvm_va_range_t *va_range,
+                                            NvU64 addr,
+                                            uvm_va_block_t **out_block);
+
+// Look up a chunk backing a specific address within the VA block.
+// Returns NULL if none.
 uvm_gpu_chunk_t *uvm_va_block_lookup_gpu_chunk(uvm_va_block_t *va_block, uvm_gpu_t *gpu, NvU64 address);
-
-typedef enum
-{
-    UVM_MIGRATE_MODE_MAKE_RESIDENT,
-    UVM_MIGRATE_MODE_MAKE_RESIDENT_AND_MAP,
-} uvm_migrate_mode_t;
 
 // Implementation of the UvmMigrate() API at the VA block scope.
 //
@@ -1227,14 +1521,19 @@ typedef enum
 // The caller needs to handle allocation-retry. va_block_retry can be NULL if
 // the destination is the CPU.
 //
-// va_block_context must not be NULL.
+// service_context and service_context->block_context must not be NULL and
+// policy for the region must match. See the comments for
+// uvm_va_block_check_policy_is_valid(). If va_block is a HMM block,
+// service->block_context->hmm.vma must be valid. See the comments for
+// uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 //
-// LOCKING: The caller must hold the va_block lock. If va_block_context->mm !=
-//          NULL, va_block_context->mm->mmap_lock must be held in at least
-//          read mode.
+// LOCKING: The caller must hold the va_block lock. If
+//          service_context->va_block_context->mm != NULL,
+//          service_context->va_block_context->mm->mmap_lock must be held in at
+//          least read mode.
 NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                       uvm_va_block_retry_t *va_block_retry,
-                                      uvm_va_block_context_t *va_block_context,
+                                      uvm_service_block_context_t *service_context,
                                       uvm_va_block_region_t region,
                                       uvm_processor_id_t dest_id,
                                       uvm_migrate_mode_t mode,
@@ -1243,6 +1542,9 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 // Write block's data from a CPU buffer
 //
 // The [dst, dst + size) range has to fit within a single PAGE_SIZE page.
+//
+// va_block_context must not be NULL. The caller is not required to set
+// va_block_context->hmm.vma.
 //
 // The caller needs to support allocation-retry of page tables.
 //
@@ -1258,7 +1560,11 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
 // The [src, src + size) range has to fit within a single PAGE_SIZE page.
 //
 // LOCKING: The caller must hold the va_block lock
-NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block, uvm_mem_t *dst, NvU64 src, size_t size);
+NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block,
+                                   uvm_va_block_context_t *va_block_context,
+                                   uvm_mem_t *dst,
+                                   NvU64 src,
+                                   size_t size);
 
 // Initialize va block retry tracking
 void uvm_va_block_retry_init(uvm_va_block_retry_t *uvm_va_block_retry);
@@ -1268,7 +1574,8 @@ void uvm_va_block_retry_init(uvm_va_block_retry_t *uvm_va_block_retry);
 // Frees all the remaining free chunks and unpins all the used chunks.
 void uvm_va_block_retry_deinit(uvm_va_block_retry_t *uvm_va_block_retry, uvm_va_block_t *va_block);
 
-// Evict all chunks from the block that are subchunks of the passed in root_chunk.
+// Evict all chunks from the block that are subchunks of the passed in
+// root_chunk.
 //
 // Add all the work tracking the eviction to the tracker.
 //
@@ -1285,6 +1592,7 @@ NV_STATUS uvm_test_va_block_inject_error(UVM_TEST_VA_BLOCK_INJECT_ERROR_PARAMS *
 NV_STATUS uvm_test_change_pte_mapping(UVM_TEST_CHANGE_PTE_MAPPING_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_va_block_info(UVM_TEST_VA_BLOCK_INFO_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_va_block_discard_status(UVM_TEST_VA_BLOCK_DISCARD_STATUS_PARAMS *params, struct file *filp);
 
 // Compute the offset in system pages of addr from the start of va_block.
 static uvm_page_index_t uvm_va_block_cpu_page_index(uvm_va_block_t *va_block, NvU64 addr)
@@ -1296,6 +1604,8 @@ static uvm_page_index_t uvm_va_block_cpu_page_index(uvm_va_block_t *va_block, Nv
 
 // Computes the size and index in the gpu_state chunks array of the GPU chunk
 // which corresponds to the given page_index of the VA region.
+// Note this is only used for testing and does not work on HMM va_blocks as it
+// returns incorrect results for those.
 size_t uvm_va_block_gpu_chunk_index_range(NvU64 start,
                                           NvU64 size,
                                           uvm_gpu_t *gpu,
@@ -1311,6 +1621,8 @@ void uvm_va_block_mark_cpu_dirty(uvm_va_block_t *va_block);
 // pages. If allocation-retry was required as part of the operation and was
 // successful, NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case the
 // block's lock was unlocked and relocked.
+//
+// va_block_context must not be NULL.
 //
 // LOCKING: The caller must hold the va_block lock.
 NV_STATUS uvm_va_block_set_cancel(uvm_va_block_t *va_block, uvm_va_block_context_t *block_context, uvm_gpu_t *gpu);
@@ -1389,6 +1701,32 @@ static uvm_va_block_region_t uvm_va_block_region_from_start_size(uvm_va_block_t 
 static uvm_va_block_region_t uvm_va_block_region_from_block(uvm_va_block_t *va_block)
 {
     return uvm_va_block_region(0, uvm_va_block_num_cpu_pages(va_block));
+}
+
+// Create a block region from a va block and page mask. If va_block is NULL, the
+// region is assumed to cover the maximum va_block size. Note that the region
+// covers the first through the last set bit and may have unset bits in between.
+static uvm_va_block_region_t uvm_va_block_region_from_mask(uvm_va_block_t *va_block, const uvm_page_mask_t *page_mask)
+{
+    uvm_va_block_region_t region;
+    uvm_page_index_t outer;
+
+    if (va_block)
+        outer = uvm_va_block_num_cpu_pages(va_block);
+    else
+        outer = PAGES_PER_UVM_VA_BLOCK;
+
+    region.first = find_first_bit(page_mask->bitmap, outer);
+    if (region.first >= outer) {
+        region = uvm_va_block_region(0, 0);
+    }
+    else {
+        // At least one bit is set so find_last_bit() should not return 'outer'.
+        region.outer = find_last_bit(page_mask->bitmap, outer) + 1;
+        UVM_ASSERT(region.outer <= outer);
+    }
+
+    return region;
 }
 
 static bool uvm_page_mask_test(const uvm_page_mask_t *mask, uvm_page_index_t page_index)
@@ -1489,17 +1827,28 @@ static bool uvm_page_mask_full(const uvm_page_mask_t *mask)
     return bitmap_full(mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static bool uvm_page_mask_and(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static void uvm_page_mask_fill(uvm_page_mask_t *mask)
+{
+    bitmap_fill(mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
+}
+
+static bool uvm_page_mask_and(uvm_page_mask_t *mask_out,
+                              const uvm_page_mask_t *mask_in1,
+                              const uvm_page_mask_t *mask_in2)
 {
     return bitmap_and(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static bool uvm_page_mask_andnot(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static bool uvm_page_mask_andnot(uvm_page_mask_t *mask_out,
+                                 const uvm_page_mask_t *mask_in1,
+                                 const uvm_page_mask_t *mask_in2)
 {
     return bitmap_andnot(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static void uvm_page_mask_or(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static void uvm_page_mask_or(uvm_page_mask_t *mask_out,
+                             const uvm_page_mask_t *mask_in1,
+                             const uvm_page_mask_t *mask_in2)
 {
     bitmap_or(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
@@ -1522,6 +1871,11 @@ static NvU32 uvm_page_mask_weight(const uvm_page_mask_t *mask)
 static bool uvm_page_mask_subset(const uvm_page_mask_t *subset, const uvm_page_mask_t *mask)
 {
     return bitmap_subset(subset->bitmap, mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
+}
+
+static bool uvm_page_mask_equal(const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+{
+    return bitmap_equal(mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
 static bool uvm_page_mask_init_from_region(uvm_page_mask_t *mask_out,
@@ -1666,17 +2020,6 @@ static uvm_page_index_t uvm_va_block_next_unset_page_in_mask(uvm_va_block_region
     }
 }
 
-static NvU64 uvm_reverse_map_start(const uvm_reverse_map_t *reverse_map)
-{
-    return uvm_va_block_cpu_page_address(reverse_map->va_block, reverse_map->region.first);
-}
-
-static NvU64 uvm_reverse_map_end(const uvm_reverse_map_t *reverse_map)
-{
-    return uvm_va_block_cpu_page_address(reverse_map->va_block, reverse_map->region.first) +
-           uvm_va_block_region_size(reverse_map->region) - 1;
-}
-
 // Iterate over contiguous pages of the region given by the page mask.
 // If the page mask is NULL then it behaves as if it was a fully set mask and
 // it will iterate over all pages within the region.
@@ -1710,60 +2053,22 @@ static NvU64 uvm_reverse_map_end(const uvm_reverse_map_t *reverse_map)
 #define for_each_va_block_page(page_index, va_block)                                         \
     for_each_va_block_page_in_region((page_index), uvm_va_block_region_from_block(va_block))
 
-static void uvm_va_block_bitmap_tree_init_from_page_count(uvm_va_block_bitmap_tree_t *bitmap_tree, size_t page_count)
-{
-    bitmap_tree->leaf_count  = page_count;
-    bitmap_tree->level_count = ilog2(roundup_pow_of_two(page_count)) + 1;
-    uvm_page_mask_zero(&bitmap_tree->pages);
-}
+// Return the first vma intersecting the region [start, va_block->end]
+// or NULL if no such vma exists. Also returns the region covered by
+// the vma within the va_block.
+struct vm_area_struct *uvm_va_block_find_vma_region(uvm_va_block_t *va_block,
+                                                    struct mm_struct *mm,
+                                                    NvU64 start,
+                                                    uvm_va_block_region_t *region);
 
-static void uvm_va_block_bitmap_tree_init(uvm_va_block_bitmap_tree_t *bitmap_tree, uvm_va_block_t *va_block)
-{
-    size_t num_pages = uvm_va_block_num_cpu_pages(va_block);
-    uvm_va_block_bitmap_tree_init_from_page_count(bitmap_tree, num_pages);
-}
-
-static void uvm_va_block_bitmap_tree_iter_init(const uvm_va_block_bitmap_tree_t *bitmap_tree,
-                                               uvm_page_index_t page_index,
-                                               uvm_va_block_bitmap_tree_iter_t *iter)
-{
-    UVM_ASSERT(bitmap_tree->level_count > 0);
-    UVM_ASSERT_MSG(page_index < bitmap_tree->leaf_count,
-                   "%zd vs %zd",
-                   (size_t)page_index,
-                   (size_t)bitmap_tree->leaf_count);
-
-    iter->level_idx = bitmap_tree->level_count - 1;
-    iter->node_idx  = page_index;
-}
-
-static uvm_va_block_region_t uvm_va_block_bitmap_tree_iter_get_range(const uvm_va_block_bitmap_tree_t *bitmap_tree,
-                                                                     const uvm_va_block_bitmap_tree_iter_t *iter)
-{
-    NvU16 range_leaves = uvm_perf_tree_iter_leaf_range(bitmap_tree, iter);
-    NvU16 range_start = uvm_perf_tree_iter_leaf_range_start(bitmap_tree, iter);
-    uvm_va_block_region_t subregion = uvm_va_block_region(range_start, range_start + range_leaves);
-
-    UVM_ASSERT(iter->level_idx >= 0);
-    UVM_ASSERT(iter->level_idx < bitmap_tree->level_count);
-
-    return subregion;
-}
-
-static NvU16 uvm_va_block_bitmap_tree_iter_get_count(const uvm_va_block_bitmap_tree_t *bitmap_tree,
-                                                     const uvm_va_block_bitmap_tree_iter_t *iter)
-{
-    uvm_va_block_region_t subregion = uvm_va_block_bitmap_tree_iter_get_range(bitmap_tree, iter);
-
-    return uvm_page_mask_region_weight(&bitmap_tree->pages, subregion);
-}
-
-#define uvm_va_block_bitmap_tree_traverse_counters(counter,tree,page,iter)                             \
-    for (uvm_va_block_bitmap_tree_iter_init((tree), (page), (iter)),                                   \
-         (counter) = uvm_va_block_bitmap_tree_iter_get_count((tree), (iter));                          \
-         (iter)->level_idx >= 0;                                                                       \
-         (counter) = --(iter)->level_idx < 0? 0:                                                       \
-                                              uvm_va_block_bitmap_tree_iter_get_count((tree), (iter)))
+// Iterate over all vma regions covered by a va_block
+#define for_each_va_block_vma_region(va_block, mm, vma, region)                                 \
+    for (vma = uvm_va_block_find_vma_region((va_block), (mm), (va_block)->start, (region));     \
+         (vma);                                                                                 \
+         vma = uvm_va_block_find_vma_region((va_block),                                         \
+                                            (mm),                                               \
+                                            uvm_va_block_region_end((va_block), *(region)) + 1, \
+                                            (region)))
 
 // Return the block region covered by the given chunk size. page_index must be
 // any page within the block known to be covered by the chunk.
@@ -1781,83 +2086,104 @@ static uvm_va_block_region_t uvm_va_block_chunk_region(uvm_va_block_t *block,
 // Helpers for page state (permissions, size, residency)
 //
 
-// Compute the gpus that have at least the given access permissions for the
-// range described by region and page_mask. The function sets the bit if any
-// page in the region has the permissions.
-void uvm_va_block_region_authorized_gpus(uvm_va_block_t *va_block,
-                                         uvm_va_block_region_t region,
-                                         uvm_prot_t access_permission,
-                                         uvm_processor_mask_t *authorized_gpus);
-
-// Compute the processors that have at least the given access permissions for the
-// range described by region and page_mask. The function sets the bit if any
-// page in the region has the permissions.
-void uvm_va_block_region_authorized_processors(uvm_va_block_t *va_block,
-                                               uvm_va_block_region_t region,
-                                               uvm_prot_t access_permission,
-                                               uvm_processor_mask_t *authorized_processors);
-
-void uvm_va_block_page_authorized_gpus(uvm_va_block_t *va_block,
-                                       uvm_page_index_t page_index,
-                                       uvm_prot_t access_permission,
-                                       uvm_processor_mask_t *authorized_gpus);
-
-void uvm_va_block_page_authorized_processors(uvm_va_block_t *va_block,
-                                             uvm_page_index_t page_index,
-                                             uvm_prot_t access_permission,
-                                             uvm_processor_mask_t *authorized_processors);
-
-bool uvm_va_block_is_gpu_authorized_on_whole_region(uvm_va_block_t *va_block,
-                                                    uvm_va_block_region_t region,
-                                                    uvm_gpu_id_t gpu_id,
-                                                    uvm_prot_t required_prot);
-
-bool uvm_va_block_is_processor_authorized_on_whole_region(uvm_va_block_t *va_block,
-                                                          uvm_va_block_region_t region,
-                                                          uvm_processor_id_t processor_id,
-                                                          uvm_prot_t required_prot);
-
 bool uvm_va_block_page_is_gpu_authorized(uvm_va_block_t *va_block,
                                          uvm_page_index_t page_index,
                                          uvm_gpu_id_t gpu_id,
                                          uvm_prot_t required_prot);
 
-bool uvm_va_block_page_is_processor_authorized(uvm_va_block_t *va_block,
-                                               uvm_page_index_t page_index,
-                                               uvm_processor_id_t processor_id,
-                                               uvm_prot_t required_prot);
-
-// Compute the gpus that have a copy of the given page resident in their memory
-void uvm_va_block_page_resident_gpus(uvm_va_block_t *va_block,
-                                     uvm_page_index_t page_index,
-                                     uvm_processor_mask_t *resident_gpus);
-
-// Compute the processors that have a copy of the given page resident in their memory
+// Compute the processors that have a copy of the given page resident in their
+// memory.
 void uvm_va_block_page_resident_processors(uvm_va_block_t *va_block,
                                            uvm_page_index_t page_index,
                                            uvm_processor_mask_t *resident_processors);
 
-// Count how many processors have a copy of the given page resident in their memory
-NvU32 uvm_va_block_page_resident_processors_count(uvm_va_block_t *va_block, uvm_page_index_t page_index);
+// Count how many processors have a copy of the given page resident in their
+// memory.
+NvU32 uvm_va_block_page_resident_processors_count(uvm_va_block_t *va_block,
+                                                  uvm_va_block_context_t *va_block_context,
+                                                  uvm_page_index_t page_index);
 
-// Get the processor with a resident copy of a page closest to the given processor
+// Get the processor with a resident copy of a page closest to the given
+// processor.
 uvm_processor_id_t uvm_va_block_page_get_closest_resident(uvm_va_block_t *va_block,
+                                                          uvm_va_block_context_t *va_block_context,
                                                           uvm_page_index_t page_index,
                                                           uvm_processor_id_t processor);
 
-uvm_processor_id_t uvm_va_block_page_get_closest_resident_in_mask(uvm_va_block_t *va_block,
-                                                                  uvm_page_index_t page_index,
-                                                                  uvm_processor_id_t processor,
-                                                                  const uvm_processor_mask_t *processor_mask);
+// Mark CPU page page_index as resident on NUMA node specified by nid.
+// nid cannot be NUMA_NO_NODE.
+void uvm_va_block_cpu_set_resident_page(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
+
+// Test if a CPU page is resident on NUMA node nid. If nid is NUMA_NO_NODE,
+// the function will return True if the page is resident on any CPU NUMA node.
+bool uvm_va_block_cpu_is_page_resident_on(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
+
+// Test if all pages in region are resident on NUMA node nid. If nid is
+// NUMA_NO_NODE, the function will test if the pages in the region are
+// resident on any CPU NUMA node.
+bool uvm_va_block_cpu_is_region_resident_on(uvm_va_block_t *va_block, int nid, uvm_va_block_region_t region);
+
+// Insert a CPU chunk at the given page_index into the va_block.
+// Locking: The va_block lock must be held.
+NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
+
+// Remove the given CPU chunk at the given page_index from the va_block.
+// nid cannot be NUMA_NO_NODE.
+// Locking: The va_block lock must be held.
+void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block,
+                                     uvm_cpu_chunk_t *chunk,
+                                     int nid,
+                                     uvm_page_index_t page_index);
+
+// Return the CPU chunk at the given page_index on the given NUMA node from the
+// va_block. nid cannot be NUMA_NO_NODE.
+// Locking: The va_block lock must be held.
+uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *va_block,
+                                                  int nid,
+                                                  uvm_page_index_t page_index);
+
+// Return the CPU chunk for the given page_index from the first available NUMA
+// node from the va_block. Should only be called for HMM va_blocks.
+// Locking: The va_block lock must be held.
+uvm_cpu_chunk_t *uvm_cpu_chunk_get_any_chunk_for_page(uvm_va_block_t *va_block, uvm_page_index_t page_index);
+
+// Return the struct page * from the chunk corresponding to the given page_index
+// Locking: The va_block lock must be held.
+struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
+
+// Return the struct page * of the resident chunk at the given page_index from
+// the va_block. The given page_index must be resident on the CPU.
+// Locking: The va_block lock must be held.
+struct page *uvm_va_block_get_cpu_page(uvm_va_block_t *va_block, uvm_page_index_t page_index);
+
+// Physically map a CPU chunk so it is DMA'able from all registered GPUs.
+// Locking: The va_block lock must be held.
+NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
+
+// Physically unmap a CPU chunk from all registered GPUs.
+// Locking: The va_block lock must be held.
+void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
+
+// Remove any CPU chunks in the given region.
+// Locking: The va_block lock must be held.
+void uvm_va_block_remove_cpu_chunks(uvm_va_block_t *va_block, uvm_va_block_region_t region);
+
+// Get the size of the physical allocation backing the page at page_index on the
+// specified processor in the block. Returns 0 if the address is not resident on
+// the specified processor.
+// Locking: The va_block lock must be held.
+NvU64 uvm_va_block_get_physical_size(uvm_va_block_t *block,
+                                     uvm_processor_id_t processor,
+                                     uvm_page_index_t page_index);
 
 // Get CPU page size or 0 if it is not mapped
-NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page_index);
+NvU64 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Get GPU page size or 0 if it is not mapped on the given GPU
-NvU32 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index);
+NvU64 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index);
 
 // Get page size or 0 if it is not mapped on the given processor
-static NvU32 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
+static NvU64 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
                                               uvm_processor_id_t processor_id,
                                               uvm_page_index_t page_index)
 {
@@ -1868,10 +2194,10 @@ static NvU32 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
 }
 
 // Returns the big page size for the GPU VA space of the block
-NvU32 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
+NvU64 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
 
 // Returns the number of big pages in the VA block for the given size
-size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU32 big_page_size);
+size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU64 big_page_size);
 
 // Returns the number of big pages in the VA block for the big page size on the
 // given GPU
@@ -1881,41 +2207,71 @@ static size_t uvm_va_block_gpu_num_big_pages(uvm_va_block_t *va_block, uvm_gpu_t
 }
 
 // Returns the start address of the given big page index and big page size
-NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU32 big_page_size);
+NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU64 big_page_size);
 
 // Returns the region [start, end] of the given big page index and big page size
 uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block,
                                                    size_t big_page_index,
-                                                   NvU32 big_page_size);
+                                                   NvU64 big_page_size);
 
 // Returns the largest sub-region region of [start, end] which can fit big
 // pages. If the region cannot fit any big pages, an invalid region (0, 0) is
 // returned.
-uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU32 big_page_size);
+uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU64 big_page_size);
+
+// Returns the largest sub-region region of 'region' which can fit big pages.
+// If the region cannot fit any big pages, an invalid region (0, 0) is returned.
+uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_block,
+                                                          uvm_va_block_region_t region,
+                                                          NvU64 big_page_size);
 
 // Returns the big page index (the bit index within
 // uvm_va_block_gpu_state_t::big_ptes) corresponding to page_index. If
 // page_index cannot be covered by a big PTE due to alignment or block size,
 // MAX_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
-size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU32 big_page_size);
+size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU64 big_page_size);
 
-// Returns the new residency for a page that faulted or triggered access
-// counter notifications. The read_duplicate output parameter indicates if the
-// page meets the requirements to be read-duplicated
+// Returns the new residency for a page that faulted or triggered access counter
+// notifications. The read_duplicate output parameter indicates if the page
+// meets the requirements to be read-duplicated. va_block_context must not be
+// NULL, and if the va_block is a HMM block, va_block_context->hmm.vma must be
+// valid which also means the va_block_context->mm is not NULL, retained, and
+// locked for at least read. See the comments for
+// uvm_va_block_check_policy_is_valid() and uvm_hmm_check_context_vma_is_valid()
+// in uvm_hmm.h. hmm_migratable should be true if the residency should be forced
+// to be system memory.
+// Locking: the va_block lock must be held.
 uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
+                                                 uvm_va_block_context_t *va_block_context,
                                                  uvm_page_index_t page_index,
                                                  uvm_processor_id_t processor_id,
                                                  NvU32 access_type_mask,
-                                                 uvm_va_policy_t *policy,
+                                                 const uvm_va_policy_t *policy,
                                                  const uvm_perf_thrashing_hint_t *thrashing_hint,
                                                  uvm_service_operation_t operation,
+                                                 const bool hmm_migratable,
                                                  bool *read_duplicate);
 
 // Return the maximum mapping protection for processor_id that will not require
 // any permision revocation on the rest of processors.
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
+                                                        uvm_va_block_context_t *va_block_context,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index);
+
+// Allocates a page for the given page_index in the va_block and maps
+// it to the GPU.
+// Locking: the va_block lock must be held.
+NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
+                                         uvm_page_index_t page_index,
+                                         uvm_va_block_context_t *block_context);
+
+// Populate all GPU chunks which cover the given region and page mask.
+NV_STATUS uvm_va_block_populate_pages_gpu(uvm_va_block_t *block,
+                                          uvm_va_block_retry_t *retry,
+                                          uvm_gpu_id_t gpu_id,
+                                          uvm_va_block_region_t region,
+                                          const uvm_page_mask_t *populate_mask);
 
 // A helper macro for handling allocation-retry
 //
@@ -1926,11 +2282,11 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
 // otherwise it will be initialized and deinitialized by the macro.
 //
 // The macro also locks and unlocks the block's lock internally as it's expected
-// that the block's lock has been unlocked and relocked whenever the function call
-// returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
+// that the block's lock has been unlocked and relocked whenever the function
+// call returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
 // block's state is not locked across these calls.
 #define UVM_VA_BLOCK_LOCK_RETRY(va_block, block_retry, call) ({     \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -1939,14 +2295,14 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
     uvm_mutex_lock(&__block->lock);                                 \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_mutex_unlock(&__block->lock);                               \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 // A helper macro for handling allocation-retry
@@ -1961,7 +2317,7 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
 // to be already taken. Notably the block's lock might be unlocked and relocked
 // as part of the call.
 #define UVM_VA_BLOCK_RETRY_LOCKED(va_block, block_retry, call) ({   \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -1970,12 +2326,12 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
     uvm_assert_mutex_locked(&__block->lock);                        \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 #endif // __UVM_VA_BLOCK_H__

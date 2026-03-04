@@ -297,3 +297,30 @@ nvswitch_therm_soe_callback_lr10
     }
 }
 
+//
+// nvswitch_therm_read_voltage
+//
+// Temperature and voltage are only available on SKUs which have thermal and
+// voltage sensors.
+//
+
+NvlStatus
+nvswitch_ctrl_therm_read_voltage_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *info
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_ctrl_therm_read_power_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_POWER_PARAMS *info
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+

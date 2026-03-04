@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,12 +31,14 @@
 
 #include "core/core.h"
 #include "nvlimits.h"
-#include "gpu_mgr/gpu_mgr.h"
+#include "nvmisc.h"
 
 #define IsDeviceDestroyed(p) (gpuGetDeviceInstance(p) == NV_MAX_DEVICES)
 
 // Unlinked SLI is implemented in RM clients
 #define IsUnlinkedSLIEnabled(p) ((p)->getProperty((p), PDB_PROP_GPU_RM_UNLINKED_SLI))
+
+void RmInitScalability(OBJGPU *pGpu);
 
 #define IsSLIEnabled(p)         0
 #define NumSubDevices(p)        0
@@ -57,7 +59,7 @@
 do {                                                                        \
     if (sizeof(arr) > sizeof(void *))                                       \
     {                                                                       \
-        NV_ASSERT(SLI_LOOP_ARRAY_SIZE == (sizeof(arr) / sizeof(arr[0])));   \
+        NV_ASSERT(SLI_LOOP_ARRAY_SIZE == NV_ARRAY_ELEMENTS(arr));   	    \
     }                                                                       \
 } while (0)
 

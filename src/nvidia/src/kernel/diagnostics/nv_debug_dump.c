@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "os/os.h"
 #include "diagnostics/journal.h"
 #include "diagnostics/nv_debug_dump.h"
 #include "diagnostics/journal.h"
@@ -177,6 +176,7 @@ nvdEngineDumpCallbackHelper
 {
     NV_STATUS   nvStatus      = NV_OK;
     NvU8        startingDepth = prbEncNestingLevel(pPrbEnc);
+    OBJSYS     *pSys          = SYS_GET_INSTANCE();
 
     if (!IS_GSP_CLIENT(pGpu) ||
         !FLD_TEST_REF(NVD_ENGINE_FLAGS_SOURCE, _GSP, pEngineCallback->flags))
@@ -192,7 +192,8 @@ nvdEngineDumpCallbackHelper
     }
 
     if (IS_GSP_CLIENT(pGpu) &&
-        !FLD_TEST_REF(NVD_ENGINE_FLAGS_SOURCE, _CPU, pEngineCallback->flags))
+        !FLD_TEST_REF(NVD_ENGINE_FLAGS_SOURCE, _CPU, pEngineCallback->flags) &&
+        !pSys->getProperty(pSys, PDB_PROP_SYS_IN_OCA_DATA_COLLECTION))
     {
             NV_RM_RPC_DUMP_PROTOBUF_COMPONENT(pGpu, nvStatus, pPrbEnc,
                 pNvDumpState, pEngineCallback->engDesc);
@@ -385,12 +386,13 @@ nvdDumpComponent_IMPL
         case NVDUMP_COMPONENT_ENG_CLK:
         case NVDUMP_COMPONENT_ENG_SEC2:
         case NVDUMP_COMPONENT_ENG_NVLINK:
-        case NVDUMP_COMPONENT_ENG_BSP:
+        case NVDUMP_COMPONENT_ENG_NVDEC:
         case NVDUMP_COMPONENT_ENG_DPU:
         case NVDUMP_COMPONENT_ENG_FBFLCN:
         case NVDUMP_COMPONENT_ENG_HDA:
-        case NVDUMP_COMPONENT_ENG_MSENC:
+        case NVDUMP_COMPONENT_ENG_NVENC:
         case NVDUMP_COMPONENT_ENG_GSP:
+        case NVDUMP_COMPONENT_ENG_KGSP:
         {
             status = nvdDoEngineDump(pGpu,
                                      pNvd,
@@ -448,6 +450,7 @@ nvdDumpDebugBuffers_IMPL
     NvP64 pUmdBuffer = NvP64_NULL;
     NvP64 priv = NvP64_NULL;
     NvU32 bufSize = 0;
+    NvU8 *dataBuffer = NULL;
 
     status = prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_DCL_MSG);
     if (status != NV_OK)
@@ -463,11 +466,23 @@ nvdDumpDebugBuffers_IMPL
         if (status != NV_OK)
             break;
 
-        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, NvP64_VALUE(pUmdBuffer), bufSize);
+        dataBuffer = (NvU8 *) portMemAllocStackOrHeap(bufSize);
+        if (dataBuffer == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            break;
+        }
 
+        // Copy UmdBuffer to prevent data races
+        portMemCopy(dataBuffer, bufSize, pUmdBuffer, bufSize);
+        portAtomicMemoryFenceFull();
+
+        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, dataBuffer, bufSize);
+
+        portMemFreeStackOrHeap(dataBuffer);
         // Unmap DebugBuffer address
         memdescUnmap(pCurrent->pMemDesc, NV_TRUE, // Kernel mapping?
-                     osGetCurrentProcess(), pUmdBuffer, priv);
+                     pUmdBuffer, priv);
 
         // Check the error state AFTER unmapping the memory desc
         if (status != NV_OK)
@@ -495,7 +510,7 @@ prbAppendSubMsg
     NvU8 *subAlloc = NULL;
     NV_STATUS status = NV_OK;
     NV_STATUS endStatus = NV_OK;
-    NvU32 subMsgLen = 0;
+    NvU16 subMsgLen = 0;
     NvU32 i;
 
     // Create field descriptor
@@ -522,10 +537,27 @@ prbAppendSubMsg
         header = (NVDUMP_SUB_ALLOC_HEADER *)pCurrent;
         subAlloc = pCurrent + sizeof(NVDUMP_SUB_ALLOC_HEADER);
 
+        // Check for out-of-bounds buffer access
+        if (pCurrent < buffer || subAlloc > (buffer + size))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
+        if (!portSafeSubU16(header->end, header->start, &subMsgLen))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
+        if ((subAlloc + subMsgLen) >= (buffer + size))
+        {
+            status = NV_ERR_INSUFFICIENT_RESOURCES;
+            goto done;
+        }
         // If valid, copy contents
         if (header->flags & NVDUMP_SUB_ALLOC_VALID)
         {
-            subMsgLen = header->end - header->start;
             status = prbEncStubbedAddBytes(pPrbEnc, subAlloc, subMsgLen);
             if (status != NV_OK)
                 goto done;
@@ -649,7 +681,8 @@ nvdAllocDebugBuffer_IMPL
     }
 
     // Allocate backing memory
-    status = memdescAlloc(pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_53, 
+                    pMemDesc);
     if (status != NV_OK) {
 
         // Destroy the memory descriptor

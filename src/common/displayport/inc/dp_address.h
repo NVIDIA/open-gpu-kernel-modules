@@ -72,7 +72,7 @@ namespace DisplayPort
             }
         }
 
-        void clear() 
+        void clear()
         {
             hops = 0;
             for (unsigned i = 0; i < maxHops; i++)
@@ -83,7 +83,11 @@ namespace DisplayPort
 
         Address parent() const
         {
-            DP_ASSERT(hops != 0);
+            if (hops == 0)
+            {
+                DP_ASSERT(hops != 0);
+                return 0;
+            }
             Address addr = *this;
             addr.hops --;
             return addr;

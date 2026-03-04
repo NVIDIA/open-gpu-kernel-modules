@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,10 @@
  * This file is part of the NVOC runtime.
  */
 
+#pragma once
+
+#include "nvoc/prelude.h"
+
 #include "g_object_nvoc.h"
 
 #ifndef _NVOC_OBJECT_H_
@@ -33,7 +37,7 @@
 #include "nvtypes.h"
 #include "nvstatus.h"
 
-#include "nvoc/prelude.h"
+
 
 class Object;
 struct NVOC_CLASS_INFO;
@@ -61,6 +65,9 @@ public:
 
     //! IP Version value.  Temporary until NVOC-style HALs are rolled out.
     NvU32 ipVersion;
+
+    //! flags used to create the object.
+    NvU32 createFlags;
 
     /*!
      * @brief Add pChild as a child of this object.
@@ -104,10 +111,10 @@ public:
     Object *objGetDirectParent(Object *pObj);
 };
 
-// 
-// IP versioning definitions are temporary until NVOC halspec support is 
-// finished. 
-//  
+//
+// IP versioning definitions are temporary until NVOC halspec support is
+// finished.
+//
 // IP_VERSION format as defined by the hardware engines.
 // A _MAJOR value of 0 means the object has no version number.
 //
@@ -118,8 +125,6 @@ public:
 #define NV_ODB_IP_VER_MAJOR                                   31:24 /* R-IVF */
 
 #define IPVersion(pObj)                            staticCast((pObj), Object)->ipVersion
-#define IsIPVersionValid(pObj)                     (DRF_VAL(_ODB, _IP_VER, _MAJOR, IPVersion(pObj)) != 0)
-#define IsIPVersionOrLater(pObj, v0)               (IPVersion(pObj) >= (v0))
 //  v0 .. v1  inclusive
 #define IsIPVersionInRange(pObj, v0, v1)           ((IPVersion(pObj) >= (v0)) && (IPVersion(pObj) <= (v1)))
 

@@ -108,6 +108,16 @@ nvlink_lib_reinit_link_from_off_to_swcfg
     // Release the top level-lock
     //
     nvlink_lib_top_lock_release();
+
+    if (conn->end0->version >= NVLINK_DEVICE_VERSION_40 ||
+        conn->end1->version >= NVLINK_DEVICE_VERSION_40)
+    {
+        if (!conn->end0->dev->enableALI)
+        {
+            nvlink_core_init_links_from_off_to_swcfg_non_ALI(links, 2, flags);
+        }
+    } 
+    else
     {
         nvlink_core_init_links_from_off_to_swcfg(links, 2, flags);
     }

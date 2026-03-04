@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2010 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,25 +21,23 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl00db_h_
-#define _cl00db_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
 
-#define NV40_DEBUG_BUFFER                               (0x000000db)
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl00db.finn
+//
+
+#define NV40_DEBUG_BUFFER (0xdbU) /* finn: Evaluated from "NV00DB_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /* NvRmAlloc() parameters */
-typedef struct {
+#define NV00DB_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00dbU)
+
+typedef struct NV00DB_ALLOCATION_PARAMETERS {
     NvU32 size; /* Desired message size / actual size returned */
     NvU32 tag; /* Protobuf tag for message location in dump message */
 } NV00DB_ALLOCATION_PARAMETERS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl00db_h_ */

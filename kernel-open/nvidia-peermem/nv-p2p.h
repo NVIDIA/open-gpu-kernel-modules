@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,11 +94,10 @@ struct nvidia_p2p_params {
 } nvidia_p2p_params_t;
 
 /*
- * Capability flag for users to detect
+ * Macro for users to detect
  * driver support for persistent pages.
  */
-extern int nvidia_p2p_cap_persistent_pages;
-#define NVIDIA_P2P_CAP_PERSISTENT_PAGES
+#define NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
 
 /*
  * This API is not supported.
@@ -133,10 +132,15 @@ struct nvidia_p2p_page {
     } registers;
 } nvidia_p2p_page_t;
 
-#define NVIDIA_P2P_PAGE_TABLE_VERSION   0x00010002
+#define NVIDIA_P2P_PAGE_TABLE_VERSION   0x00020000
 
 #define NVIDIA_P2P_PAGE_TABLE_VERSION_COMPATIBLE(p) \
     NVIDIA_P2P_VERSION_COMPATIBLE(p, NVIDIA_P2P_PAGE_TABLE_VERSION)
+
+/*
+ * Page Table Flags
+ */
+#define NVIDIA_P2P_PAGE_TABLE_FLAGS_CPU_CACHEABLE 0x1
 
 typedef
 struct nvidia_p2p_page_table {
@@ -145,6 +149,7 @@ struct nvidia_p2p_page_table {
     struct nvidia_p2p_page **pages;
     uint32_t entries;
     uint8_t *gpu_uuid;
+    uint32_t flags;
 } nvidia_p2p_page_table_t;
 
 /*
@@ -173,15 +178,6 @@ struct nvidia_p2p_page_table {
  *   A pointer to the function to be invoked when the pages
  *   underlying the virtual address range are freed
  *   implicitly.
- *   If NULL, persistent pages will be returned.
- *   This means the pages underlying the range of GPU virtual memory
- *   will persist until explicitly freed by nvidia_p2p_put_pages().
- *   Persistent GPU memory mappings are not supported on PowerPC,
-
-
-
- *   MIG-enabled devices and vGPU.
-
  * @param[in]     data
  *   A non-NULL opaque pointer to private data to be passed to the
  *   callback function.
@@ -194,12 +190,58 @@ struct nvidia_p2p_page_table {
  *     insufficient resources were available to complete the operation.
  *   -EIO         if an unknown error occurred.
  */
-int nvidia_p2p_get_pages(uint64_t p2p_token, uint32_t va_space,
-        uint64_t virtual_address,
+int nvidia_p2p_get_pages( uint64_t p2p_token, uint32_t va_space,
+        uint64_t virtual_address, uint64_t length,
+        struct nvidia_p2p_page_table **page_table,
+        void (*free_callback)(void *data), void *data);
+
+/*
+ * Flags to be used with persistent APIs
+ */
+#define NVIDIA_P2P_FLAGS_DEFAULT            0
+#define NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING 1
+
+/*
+ * @brief
+ *   Pin and make the pages underlying a range of GPU virtual memory
+ *   accessible to a third-party device. The pages will persist until
+ *   explicitly freed by nvidia_p2p_put_pages_persistent().
+ *
+ *   Persistent GPU memory mappings are not supported on
+ *   MIG-enabled devices and vGPU.
+ *
+ *   This API only supports pinned, GPU-resident memory, such as that provided
+ *   by cudaMalloc().
+ *
+ *   This API may sleep.
+ *
+ * @param[in]     virtual_address
+ *   The start address in the specified virtual address space.
+ *   Address must be aligned to the 64KB boundary.
+ * @param[in]     length
+ *   The length of the requested P2P mapping.
+ *   Length must be a multiple of 64KB.
+ * @param[out]    page_table
+ *   A pointer to an array of structures with P2P PTEs.
+ * @param[in]     flags
+ *   NVIDIA_P2P_FLAGS_DEFAULT:
+ *     Default value to be used if no specific behavior is expected.
+ *   NVIDIA_P2P_FLAGS_FORCE_BAR1_MAPPING:
+ *     Force BAR1 mappings on certain coherent platforms,
+ *     subject to capability and supported topology.
+ *
+ * @return
+ *    0           upon successful completion.
+ *   -EINVAL      if an invalid argument was supplied.
+ *   -ENOTSUPP    if the requested operation is not supported.
+ *   -ENOMEM      if the driver failed to allocate memory or if
+ *     insufficient resources were available to complete the operation.
+ *   -EIO         if an unknown error occurred.
+ */
+int nvidia_p2p_get_pages_persistent(uint64_t virtual_address,
         uint64_t length,
         struct nvidia_p2p_page_table **page_table,
-        void (*free_callback)(void *data),
-        void *data);
+        uint32_t flags);
 
 #define NVIDIA_P2P_DMA_MAPPING_VERSION   0x00020003
 
@@ -272,6 +314,8 @@ int nvidia_p2p_dma_unmap_pages(struct pci_dev *peer,
  *   Release a set of pages previously made accessible to
  *   a third-party device.
  *
+ *   This API may sleep.
+ *
  * @param[in]     p2p_token
  *   A token that uniquely identifies the P2P mapping.
  * @param[in]     va_space
@@ -286,9 +330,32 @@ int nvidia_p2p_dma_unmap_pages(struct pci_dev *peer,
  *   -EINVAL      if an invalid argument was supplied.
  *   -EIO         if an unknown error occurred.
  */
-int nvidia_p2p_put_pages(uint64_t p2p_token, uint32_t va_space,
-        uint64_t virtual_address,
+int nvidia_p2p_put_pages(uint64_t p2p_token,
+        uint32_t va_space, uint64_t virtual_address,
         struct nvidia_p2p_page_table *page_table);
+
+/*
+ * @brief
+ *   Release a set of persistent pages previously made accessible to
+ *   a third-party device.
+ *
+ *   This API may sleep.
+ *
+ * @param[in]     virtual_address
+ *   The start address in the specified virtual address space.
+ * @param[in]     page_table
+ *   A pointer to the array of structures with P2P PTEs.
+ * @param[in]     flags
+ *   Must be set to zero for now.
+ *
+ * @return
+ *    0           upon successful completion.
+ *   -EINVAL      if an invalid argument was supplied.
+ *   -EIO         if an unknown error occurred.
+ */
+int nvidia_p2p_put_pages_persistent(uint64_t virtual_address,
+        struct nvidia_p2p_page_table *page_table,
+        uint32_t flags);
 
 /*
  * @brief
@@ -392,35 +459,19 @@ typedef struct nvidia_p2p_rsync_reg_info {
 
 /*
  * @brief
- *   Gets rsync (GEN-ID) register information associated with the supported
- *   NPUs.
- *
- *   The caller would use the returned information {GPU device, NPU device,
- *   socket-id, cluster-id} to pick the optimal generation registers to issue
- *   RSYNC (NVLink HW flush).
- *
- *   The interface allocates structures to return the information, hence
- *   nvidia_p2p_put_rsync_registers() must be called to free the structures.
- *
- *   Note, cluster-id is hardcoded to zero as early system configurations would
- *   only support cluster mode i.e. all devices would share the same cluster-id
- *   (0). In the future, appropriate kernel support would be needed to query
- *   cluster-ids.
- *
- * @param[out]     reg_info
- *   A pointer to the rsync reg info structure.
+ *   This interface is no longer supported and will always return an error.  It
+ *   is left in place (for now) to allow third-party callers to build without
+ *   any errors.
  *
  * @Returns
- *   0 Upon successful completion. Otherwise, returns negative value.
+ *   -ENODEV
  */
 int nvidia_p2p_get_rsync_registers(nvidia_p2p_rsync_reg_info_t **reg_info);
 
 /*
  * @brief
- *   Frees the structures allocated by nvidia_p2p_get_rsync_registers().
- *
- * @param[in]     reg_info
- *   A pointer to the rsync reg info structure.
+ *   This interface is no longer supported.  It is left in place (for now) to
+ *   allow third-party callers to build without any errors.
  */
 void nvidia_p2p_put_rsync_registers(nvidia_p2p_rsync_reg_info_t *reg_info);
 

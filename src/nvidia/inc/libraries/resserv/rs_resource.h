@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_rs_resource_nvoc.h"
 
 #ifndef _RS_RESOURCE_H_
@@ -62,15 +63,16 @@ class RsSession;
  */
 struct RS_LOCK_INFO
 {
-    RsClient *pClient;              ///< Pointer to client that was locked (if any)
-    RsClient *pSecondClient;        ///< Pointer to second client, for dual-client locking
-    RsResourceRef *pContextRef;     ///< User-defined reference
-    RsSession *pSession;            ///< Session object to be locked, if any
-    NvU32 flags;                    ///< RS_LOCK_FLAGS_*
-    NvU32 state;                    ///< RS_LOCK_STATE_*
+    RsClient *pClient;                  ///< Pointer to client that was locked (if any)
+    RsClient *pSecondClient;            ///< Pointer to second client, for dual-client locking
+    RsResourceRef *pContextRef;         ///< User-defined reference
+    RsResourceRef *pResRefToBackRef;    ///< Resource from which to infer indirect GPU dependencies
+    RsSession *pSession;                ///< Session object to be locked, if any
+    NvU32 flags;                        ///< RS_LOCK_FLAGS_*
+    NvU32 state;                        ///< RS_LOCK_STATE_*
     NvU32 gpuMask;
-    NvU8  traceOp;                  ///< RS_LOCK_TRACE_* operation for lock-metering
-    NvU32 traceClassId;             ///< Class of initial resource that was locked for lock metering
+    NvU8  traceOp;                      ///< RS_LOCK_TRACE_* operation for lock-metering
+    NvU32 traceClassId;                 ///< Class of initial resource that was locked for lock metering
 };
 
 struct RS_RES_ALLOC_PARAMS_INTERNAL
@@ -90,6 +92,7 @@ struct RS_RES_ALLOC_PARAMS_INTERNAL
     API_SECURITY_INFO      *pSecInfo;
 
     void                   *pAllocParams;     ///< [in] Copied-in allocation parameters
+    NvU32                   paramsSize;       ///< [in] Copied-in allocation parameters size
 
     // ... Dupe alloc
     RsClient               *pSrcClient;       ///< The client that is sharing the resource
@@ -113,7 +116,9 @@ struct RS_RES_DUP_PARAMS_INTERNAL
     NvU32               flags;                 ///< [in] Flags to denote special cases ( Bug: 2859347 to track removal)
     // Internal use only
     RsClient           *pSrcClient;
+    RsClient           *pDstClient;
     RsResourceRef      *pSrcRef;
+    RsResourceRef      *pDstParentRef;
     API_SECURITY_INFO  *pSecInfo;              ///< [in] Security info
     RS_LOCK_INFO       *pLockInfo;             ///< [inout] Locking flags and state
 };
@@ -140,6 +145,7 @@ struct RS_RES_FREE_PARAMS_INTERNAL
 
     // Internal use only
     NvBool             bHiPriOnly;      ///< [in] Only free if this is a high priority resources
+    NvBool             bDisableOnly;    ///< [in] Disable the target instead of freeing it (only applies to clients)
     RS_LOCK_INFO      *pLockInfo;       ///< [inout] Locking flags and state
     NvU32              freeFlags;       ///< [in] Flags for the free operation
     NvU32              freeState;       ///< [inout] Free state
@@ -234,6 +240,11 @@ public:
     virtual NvBool resCanCopy(RsResource *pResource);
 
     /**
+     * Returns TRUE if the resources are duplicates
+     */
+    virtual NV_STATUS resIsDuplicate(RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate);
+
+    /**
      * Resource destructor
      * @param[in]   pResource Resource object to destruct
      */
@@ -268,9 +279,9 @@ public:
      * @param[in]       pParams
      * @param[out]      ppEntry
      */
-    virtual NV_STATUS resControlLookup(RsResource *pResource,
-                                       RS_RES_CONTROL_PARAMS_INTERNAL *pParams,
-                                       const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
+    NV_STATUS resControlLookup(RsResource *pResource,
+                               RS_RES_CONTROL_PARAMS_INTERNAL *pParams,
+                               const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
 
     /**
      * Dispatch resource control call
@@ -290,6 +301,30 @@ public:
      */
     virtual NV_STATUS resControlFilter(RsResource *pResource, CALL_CONTEXT *pCallContext,
                                        RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+    /**
+     * Serialize the control parameters if they are going to GSP/Host, not serialized, and support serialization
+     * Or
+     * Deserialize the control parameters if necessary and replace the inner params pointer with the deserialized params
+     *
+     * @param[in]   pResource
+     * @param[in]   pCallContext
+     * @param[in]   pParams
+     */
+    virtual NV_STATUS resControlSerialization_Prologue(RsResource *pResource, CALL_CONTEXT *pCallContext,
+                                                       RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+    /**
+     * Deserialize the parameters returned from GSP if client did not pass serialized params
+     * Or
+     * Serialize the control parameters if client expects it and restore the original inner params pointer
+     *
+     * @param[in]   pResource
+     * @param[in]   pCallContext
+     * @param[in]   pParams
+     */
+    virtual void resControlSerialization_Epilogue(RsResource *pResource, CALL_CONTEXT *pCallContext,
+                                                  RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
     /**
      * Operations performed right before the control call is executed. Default stubbed.
@@ -337,6 +372,12 @@ public:
      * @param[in]   pCpuMapping
      */
     virtual NV_STATUS resUnmap(RsResource *pResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
+
+    /**
+     * Returns true if partial unmap is supported by the resource
+     * If true, resUnmapFrom() can be called to unmap a mapping partially
+     */
+    virtual NvBool resIsPartialUnmapSupported(RsResource *pResource) { return NV_FALSE; }
 
      /**
      * Maps to this resource from another resource
@@ -423,6 +464,8 @@ struct RsCpuMapping
     NvU32 flags;
     NvP64 pLinearAddress;
     RsResourceRef *pContextRef;      ///< Context resource that may be needed for the mapping
+    RsResourceRef *pResourceRef;     ///< Resource that is actually getting mapped
+    ListNode backRefNode;            ///< Node to context backreference
     void *pContext;                  ///< Additional context data for the mapping
     NvU32 processId;
 
@@ -481,12 +524,7 @@ struct RS_CPU_UNMAP_PARAMS
 /**
  * CPU mapping back-reference
  */
-struct RS_CPU_MAPPING_BACK_REF
-{
-    RsCpuMapping *pCpuMapping;  ///< Mapping linked to this backref
-    RsResourceRef *pBackRef;    ///< Resource reference with mapping
-};
-MAKE_LIST(RsCpuMappingBackRefList, RS_CPU_MAPPING_BACK_REF);
+MAKE_INTRUSIVE_LIST(RsCpuMappingBackRefList, RsCpuMapping, backRefNode);
 /* @} */
 
 /**
@@ -502,6 +540,8 @@ struct RS_INTER_MAP_PARAMS
     NvU64           offset;
     NvU64           length;
     NvU32           flags;
+    NvU32           flags2;
+    NvU32           kindOverride;
     NvU64           dmaOffset;              ///< [inout] RS-TODO rename this
     void           *pMemDesc;               ///< [out]
 
@@ -516,13 +556,14 @@ struct RS_INTER_UNMAP_PARAMS
 {
     NvHandle        hClient;
     NvHandle        hMapper;
-    NvHandle        hMappable;
     NvHandle        hDevice;
     NvU32           flags;
     NvU64           dmaOffset;              ///< [in] RS-TODO rename this
-    void           *pMemDesc;               ///< MEMORY_DESCRIPTOR *
+    NvU64           size;
 
     // Internal use only
+    NvHandle        hMappable;
+    void           *pMemDesc;               ///< MEMORY_DESCRIPTOR *
     RS_LOCK_INFO   *pLockInfo;              ///< [inout] Locking flags and state
     API_SECURITY_INFO *pSecInfo;            ///< [in] Security Info
 
@@ -535,11 +576,15 @@ struct RS_INTER_UNMAP_PARAMS
  */
 struct RsInterMapping
 {
-    // RsResourceRef *pMapperRef     ///< (Implied) the resource that created and owns this mapping (this resource)
+    RsResourceRef *pMapperRef;       ///< The resource that created and owns this mapping (this resource)
     RsResourceRef *pMappableRef;     ///< The resource being mapped by the mapper (e.g. hMemory)
     RsResourceRef *pContextRef;      ///< A resource used to provide additional context for the mapping (e.g. hDevice)
+    ListNode       mappableNode;
+    ListNode       contextNode;
     NvU32 flags;                     ///< Flags passed when mapping, same flags also passed when unmapping
+    NvU32 flags2;                    ///< Additional flags for the mapping
     NvU64 dmaOffset;
+    NvU64 size;
     void *pMemDesc;
 };
 MAKE_LIST(RsInterMappingList, RsInterMapping);
@@ -547,12 +592,8 @@ MAKE_LIST(RsInterMappingList, RsInterMapping);
 /**
  * Inter-mapping back-reference
  */
-struct RS_INTER_MAPPING_BACK_REF
-{
-    RsResourceRef *pMapperRef;       ///< Resource reference with mapping
-    RsInterMapping *pMapping;        ///< Pointer to the inter-mapping linked to this backref
-};
-MAKE_LIST(RsInterMappingBackRefList, RS_INTER_MAPPING_BACK_REF);
+MAKE_INTRUSIVE_LIST(RsInterMappingBackRefMappableList, RsInterMapping, mappableNode);
+MAKE_INTRUSIVE_LIST(RsInterMappingBackRefContextList, RsInterMapping, contextNode);
 /* @} */
 
 typedef struct RS_RESOURCE_DESC RS_RESOURCE_DESC;
@@ -616,7 +657,8 @@ struct RsResourceRef
     RsCpuMappingBackRefList backRefs;  ///< List of references that have this reference as a mapping context
 
     RsInterMappingList interMappings;        ///< List of inter-resource mappings created by this resource
-    RsInterMappingBackRefList interBackRefs; ///< List of inter-resource mappings this resource has been mapped into
+    RsInterMappingBackRefMappableList interBackRefsMappable; ///< List of inter-resource mappings this resource has been mapped into
+    RsInterMappingBackRefContextList interBackRefsContext; ///< List of inter-resource mappings this context has been mapped into
 
     RsSession *pSession;          ///< If set, this ref depends on a shared session
     RsSession *pDependantSession; ///< If set, this ref is depended on by a shared session
@@ -783,7 +825,7 @@ NV_STATUS refAddDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependant
 /**
  * Remove the dependency between this resource reference and a dependent resource reference.
  */
-NV_STATUS refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
+void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
 
 /**
  * Find, Add, or Remove an inter-mapping between two resources to the Mapper's list of inter-mappings
@@ -797,7 +839,6 @@ NV_STATUS refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDepend
  * @param[inout] ppMapping Writes the resulting inter-mapping, if successfully created (Add) or found (Find)
  * @param[in] pMapping The inter-mapping to remove (Remove)
  */
-NV_STATUS refFindInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, RsResourceRef *pContextRef, NvU64 dmaOffset, RsInterMapping **ppMapping);
 NV_STATUS refAddInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, RsResourceRef *pContextRef, RsInterMapping **ppMapping);
 void      refRemoveInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pMapping);
 

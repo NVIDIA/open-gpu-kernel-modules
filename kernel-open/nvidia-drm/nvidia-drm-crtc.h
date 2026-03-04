@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -25,7 +25,7 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-helper.h"
 
@@ -35,37 +35,15 @@
 
 #include <drm/drm_crtc.h>
 
-#if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE) || defined(NV_DRM_ROTATION_AVAILABLE)
-/* For DRM_ROTATE_* , DRM_REFLECT_* */
-#include <drm/drm_blend.h>
-#endif
-
-#if defined(NV_DRM_ROTATION_AVAILABLE)
-/* For DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* */
-#include <uapi/drm/drm_mode.h>
-#endif
-
 #include "nvtypes.h"
 #include "nvkms-kapi.h"
 
-#if defined(NV_DRM_ROTATION_AVAILABLE)
-/*
- * 19-05-2017 c2c446ad29437bb92b157423c632286608ebd3ec has added
- * DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* to UAPI and removed
- * DRM_ROTATE_* and DRM_MODE_REFLECT_*
- */
-#if !defined(DRM_MODE_ROTATE_0)
-#define DRM_MODE_ROTATE_0       DRM_ROTATE_0
-#define DRM_MODE_ROTATE_90      DRM_ROTATE_90
-#define DRM_MODE_ROTATE_180     DRM_ROTATE_180
-#define DRM_MODE_ROTATE_270     DRM_ROTATE_270
-#define DRM_MODE_REFLECT_X      DRM_REFLECT_X
-#define DRM_MODE_REFLECT_Y      DRM_REFLECT_Y
-#define DRM_MODE_ROTATE_MASK    DRM_ROTATE_MASK
-#define DRM_MODE_REFLECT_MASK   DRM_REFLECT_MASK
-#endif
-
-#endif //NV_DRM_ROTATION_AVAILABLE
+enum nv_drm_transfer_function {
+    NV_DRM_TRANSFER_FUNCTION_DEFAULT,
+    NV_DRM_TRANSFER_FUNCTION_LINEAR,
+    NV_DRM_TRANSFER_FUNCTION_PQ,
+    NV_DRM_TRANSFER_FUNCTION_MAX,
+};
 
 struct nv_drm_crtc {
     NvU32 head;
@@ -84,6 +62,15 @@ struct nv_drm_crtc {
      * Spinlock to protect @flip_list.
      */
     spinlock_t flip_list_lock;
+
+    /**
+     * @modeset_permission_filep:
+     *
+     * The filep using this crtc with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
+     */
+    struct drm_file *modeset_permission_filep;
+
+    struct NvKmsLUTCaps olut_caps;
 
     struct drm_crtc base;
 };
@@ -164,9 +151,20 @@ struct nv_drm_crtc_state {
      * nv_drm_atomic_crtc_destroy_state().
      */
     struct nv_drm_flip *nv_flip;
+
+    enum nv_drm_transfer_function regamma_tf;
+    struct drm_property_blob *regamma_lut;
+    uint64_t regamma_divisor;
+    struct nv_drm_lut_surface *regamma_drm_lut_surface;
+    NvBool regamma_changed;
 };
 
 static inline struct nv_drm_crtc_state *to_nv_crtc_state(struct drm_crtc_state *state)
+{
+    return container_of(state, struct nv_drm_crtc_state, base);
+}
+
+static inline const struct nv_drm_crtc_state *to_nv_crtc_state_const(const struct drm_crtc_state *state)
 {
     return container_of(state, struct nv_drm_crtc_state, base);
 }
@@ -192,6 +190,9 @@ struct nv_drm_plane {
      * Index of this plane in the per head array of layers.
      */
     uint32_t layer_idx;
+
+    struct NvKmsLUTCaps ilut_caps;
+    struct NvKmsLUTCaps tmo_caps;
 };
 
 static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
@@ -202,14 +203,64 @@ static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
     return container_of(plane, struct nv_drm_plane, base);
 }
 
+struct nv_drm_nvkms_surface {
+    struct NvKmsKapiDevice *pDevice;
+    struct NvKmsKapiMemory *nvkms_memory;
+    struct NvKmsKapiSurface *nvkms_surface;
+    void *buffer;
+    struct kref refcount;
+};
+
+struct nv_drm_nvkms_surface_params {
+    NvU32 width;
+    NvU32 height;
+    size_t surface_size;
+    enum NvKmsSurfaceMemoryFormat format;
+};
+
+struct nv_drm_lut_surface {
+    struct nv_drm_nvkms_surface base;
+    struct {
+        NvU32 vssSegments;
+        enum NvKmsLUTVssType vssType;
+
+        NvU32 lutEntries;
+        enum NvKmsLUTFormat entryFormat;
+
+    } properties;
+};
+
 struct nv_drm_plane_state {
     struct drm_plane_state base;
     s32 __user *fd_user_ptr;
+    enum nv_drm_input_color_space input_colorspace;
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    struct drm_property_blob *hdr_output_metadata;
+#endif
+    struct drm_property_blob *lms_ctm;
+    struct drm_property_blob *lms_to_itp_ctm;
+    struct drm_property_blob *itp_to_lms_ctm;
+    struct drm_property_blob *blend_ctm;
+
+    enum nv_drm_transfer_function degamma_tf;
+    struct drm_property_blob *degamma_lut;
+    uint64_t degamma_multiplier; /* S31.32 Sign-Magnitude Format */
+    struct nv_drm_lut_surface *degamma_drm_lut_surface;
+    NvBool degamma_changed;
+
+    struct drm_property_blob *tmo_lut;
+    struct nv_drm_lut_surface *tmo_drm_lut_surface;
+    NvBool tmo_changed;
 };
 
 static inline struct nv_drm_plane_state *to_nv_drm_plane_state(struct drm_plane_state *state)
 {
     return container_of(state, struct nv_drm_plane_state, base);
+}
+
+static inline const struct nv_drm_plane_state *to_nv_drm_plane_state_const(const struct drm_plane_state *state)
+{
+    return container_of(state, const struct nv_drm_plane_state, base);
 }
 
 static inline struct nv_drm_crtc *to_nv_crtc(struct drm_crtc *crtc)
@@ -291,6 +342,6 @@ int nv_drm_get_crtc_crc32_ioctl(struct drm_device *dev,
 int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,
                                    void *data, struct drm_file *filep);
 
-#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_CRTC_H__ */

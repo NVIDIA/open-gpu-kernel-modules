@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,7 +49,7 @@ subdeviceCtrlCmdRcReadVirtualMem_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (CliGetKernelChannelWithDevice(RES_GET_CLIENT_HANDLE(pSubdevice),
+    if (CliGetKernelChannelWithDevice(RES_GET_CLIENT(pSubdevice),
                                       RES_GET_PARENT_HANDLE(pSubdevice),
                                       pReadVirtMemParam->hChannel,
                                       &pKernelChannel) == NV_OK)
@@ -70,56 +70,6 @@ subdeviceCtrlCmdRcReadVirtualMem_IMPL
 
 
 NV_STATUS
-subdeviceCtrlCmdSetRcInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_CMD_RC_INFO_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu      = GPU_RES_GET_GPU(pSubdevice);
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-
-    if (!((pParams->rcBreak == NV2080_CTRL_CMD_RC_INFO_BREAK_DISABLE ||
-           pParams->rcBreak == NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE) &&
-          (pParams->rcMode == NV2080_CTRL_CMD_RC_INFO_MODE_DISABLE ||
-           pParams->rcMode == NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE)))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pKernelRc->bBreakOnRc = (pParams->rcBreak ==
-                             NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE);
-
-    pKernelRc->bRobustChannelsEnabled = (pParams->rcMode ==
-                                         NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE);
-
-    return NV_OK;
-}
-
-
-NV_STATUS
-subdeviceCtrlCmdGetRcInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_CMD_RC_INFO_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu      = GPU_RES_GET_GPU(pSubdevice);
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-
-    pParams->rcBreak = pKernelRc->bBreakOnRc ?
-                           NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE :
-                           NV2080_CTRL_CMD_RC_INFO_BREAK_DISABLE;
-
-    pParams->rcMode = pKernelRc->bRobustChannelsEnabled ?
-                          NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE :
-                          NV2080_CTRL_CMD_RC_INFO_MODE_DISABLE;
-
-    return NV_OK;
-}
-
-
-NV_STATUS
 krcSubdeviceCtrlGetErrorInfoCheckPermissions_KERNEL
 (
     KernelRc  *pKernelRc,
@@ -128,19 +78,19 @@ krcSubdeviceCtrlGetErrorInfoCheckPermissions_KERNEL
 {
     OBJGPU       *pGpu         = GPU_RES_GET_GPU(pSubdevice);
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmClient     *pRmClient;
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    if (rmclientIsAdminByHandle(RES_GET_CLIENT_HANDLE(pSubdevice),
-                                pCallContext->secInfo.privLevel))
+    pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    if (rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
     {
         return NV_OK;
     }
 
-    if (IS_MIG_IN_USE(pGpu) &&
-        rmclientIsCapableOrAdminByHandle(RES_GET_CLIENT_HANDLE(pSubdevice),
-                                         NV_RM_CAP_SYS_SMC_MONITOR,
-                                         pCallContext->secInfo.privLevel))
+    if (IS_MIG_IN_USE(pGpu) && rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
         return NV_OK;
     }
@@ -364,6 +314,17 @@ krcCliresCtrlNvdGetRcerrRptCheckPermissions_KERNEL
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
+
+    return NV_OK;
+}
+
+NV_STATUS subdeviceCtrlCmdGetRcRecovery_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_RC_RECOVERY_PARAMS *pRcRecovery
+)
+{
+    pRcRecovery->rcEnable = NV2080_CTRL_CMD_RC_RECOVERY_DISABLED;
 
     return NV_OK;
 }

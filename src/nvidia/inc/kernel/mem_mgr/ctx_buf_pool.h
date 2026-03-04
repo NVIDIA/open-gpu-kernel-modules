@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,16 +37,16 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/pool_alloc.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
+#include "kernel/gpu/gpu_engine_type.h"
 
 // state of context buffer pools
 struct CTX_BUF_POOL_INFO
 {
     //
     // Each array index corresponds to a pointer to memory pool with
-    // page size corresponding to RM_ATTR_PAGE_SIZE_*
-    // Pool corresponding to RM_ATTR_PAGE_SIZE_DEFAULT will be left unused
+    // page size corresponding to POOL_CONFIG_MODE
     //
-    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemPool[RM_ATTR_PAGE_SIZE_INVALID];
+    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemPool[POOL_CONFIG_MAX_SUPPORTED];
 };
 
 // List of all context buffers supported by memory pools
@@ -76,8 +76,8 @@ NV_STATUS ctxBufPoolFree(CTX_BUF_POOL_INFO *pCtxBufPool, PMEMORY_DESCRIPTOR pMem
 void      ctxBufPoolRelease(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolDestroy(CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsSupported(OBJGPU *pGpu);
-NV_STATUS ctxBufPoolGetSizeAndPageSize(CTX_BUF_POOL_INFO *pCtxBufPool, OBJGPU *pGpu, NvU64 alignment, RM_ATTR_PAGE_SIZE attr, NvBool bContig, NvU64 *pSize, NvU32 *pPageSize);
-NV_STATUS ctxBufPoolGetGlobalPool(OBJGPU *pGpu, CTX_BUF_ID bufId, NvU32 engineType, CTX_BUF_POOL_INFO **ppCtxBufPool);
+NV_STATUS ctxBufPoolGetSizeAndPageSize(CTX_BUF_POOL_INFO *pCtxBufPool, OBJGPU *pGpu, NvU64 alignment, RM_ATTR_PAGE_SIZE attr, NvBool bContig, NvU64 *pSize, NvU64 *pPageSize);
+NV_STATUS ctxBufPoolGetGlobalPool(OBJGPU *pGpu, CTX_BUF_ID bufId, RM_ENGINE_TYPE rmEngineType, CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsScrubSkipped(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolSetScrubSkip(CTX_BUF_POOL_INFO *pCtxBufPool, NvBool bSkipScrub);
 #endif // _CTX_BUF_POOL_H_

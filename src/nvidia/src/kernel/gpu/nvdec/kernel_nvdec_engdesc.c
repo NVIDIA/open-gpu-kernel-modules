@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,16 +25,23 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/nvdec/kernel_nvdec_ctx.h"
+#include "kernel/gpu/device/device.h"
 
 #include "class/cla0b0.h" // NVA0B0_VIDEO_DECODER
 #include "class/clb0b0.h" // NVB0B0_VIDEO_DECODER
 #include "class/clb6b0.h" // NVB6B0_VIDEO_DECODER
+#include "class/clb8b0.h" // NVB8B0_VIDEO_DECODER
 #include "class/clc1b0.h" // NVC1B0_VIDEO_DECODER
 #include "class/clc2b0.h" // NVC2B0_VIDEO_DECODER
 #include "class/clc3b0.h" // NVC3B0_VIDEO_DECODER
 #include "class/clc4b0.h" // NVC4B0_VIDEO_DECODER
 #include "class/clc6b0.h" // NVC6B0_VIDEO_DECODER
 #include "class/clc7b0.h" // NVC7B0_VIDEO_DECODER
+#include "class/clc9b0.h" // NVC9B0_VIDEO_DECODER
+#include "class/clcdb0.h" // NVCDB0_VIDEO_DECODER
+#include "class/clceb0.h" // NVCEB0_VIDEO_DECODER
+#include "class/clcfb0.h" // NVCFB0_VIDEO_DECODER
+#include "class/cld1b0.h" // NVD1B0_VIDEO_DECODER
 
 /*
  * This function returns an engine descriptor corresponding to the class
@@ -82,6 +89,12 @@ nvdecGetEngineDescFromAllocParams
         case NVC4B0_VIDEO_DECODER:
         case NVC6B0_VIDEO_DECODER:
         case NVC7B0_VIDEO_DECODER:
+        case NVC9B0_VIDEO_DECODER:
+        case NVCDB0_VIDEO_DECODER:
+        case NVCEB0_VIDEO_DECODER:
+        case NVCFB0_VIDEO_DECODER:
+        case NVB8B0_VIDEO_DECODER:
+        case NVD1B0_VIDEO_DECODER:
             engineInstance = pNvdecAllocParams->engineInstance;
             break;
         default:
@@ -92,16 +105,26 @@ nvdecGetEngineDescFromAllocParams
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
+        RsResourceRef *pDeviceRef = NULL;
 
         NV_ASSERT_OK(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            pCallContext->pClient->hClient, &ref));
+            refFindAncestorOfType(pCallContext->pResourceRef,
+                                  classId(Device), &pDeviceRef));
+
+        if (pDeviceRef == NULL)
+            return ENG_INVALID;
+
+        NV_ASSERT_OK(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            dynamicCast(pDeviceRef->pResource, Device),
+                                            &ref));
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_NVDEC(engineInstance),
-                                              &engineInstance));
-        return ENG_NVDEC(NV2080_ENGINE_TYPE_NVDEC_IDX(engineInstance));
+                                              RM_ENGINE_TYPE_NVDEC(engineInstance),
+                                              &rmEngineType));
+        return ENG_NVDEC(RM_ENGINE_TYPE_NVDEC_IDX(rmEngineType));
     }
 
     // Get the right class as per engine instance.

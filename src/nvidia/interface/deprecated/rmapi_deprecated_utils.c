@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,8 @@
 #include "ctrl/ctrl0000/ctrl0000client.h" // NV0000_CTRL_CMD_CLIENT_GET_CHILD_HANDLE
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_CMD_GPU_FIND_SUBDEVICE_HANDLE
 #include "nvos.h"
+
+#include <stddef.h>
 
 NV_STATUS
 RmDeprecatedGetHandleParent
@@ -135,7 +137,7 @@ RmDeprecatedFindOrCreateSubDeviceHandle
 
     *pHSubDevice = 0;
 
-    status = pContext->RmAlloc(pContext, hClient, hDeviceOrSubDevice, pHSubDevice, NV20_SUBDEVICE_0, 0);
+    status = pContext->RmAlloc(pContext, hClient, hDeviceOrSubDevice, pHSubDevice, NV20_SUBDEVICE_0, NULL, 0);
 
     return status;
 }
@@ -163,10 +165,12 @@ NV_STATUS RmDeprecatedGetOrAllocObject
     }
     else
     {
+        //
         // Object does not exist yet, allocate.
-        void *pAllocParams = (void*)0; // TODO: Fill for classes that need them
+        // TODO: Fill alloc params for classes that need them
+        //
         status = pContext->RmAlloc(pContext, hClient, *pHObject,
-                                   pHObject, classId, pAllocParams);
+                                   pHObject, classId, NULL, 0);
     }
     return status;
 }
@@ -209,11 +213,6 @@ RmDeprecatedConvertOs32ToOs02Flags
         case NVOS32_ATTR_LOCATION_ANY: // NVOS02 defaults to PCI
         {
             os02Flags = FLD_SET_DRF(OS02, _FLAGS, _LOCATION, _PCI, os02Flags);
-            break;
-        }
-        case NVOS32_ATTR_LOCATION_AGP:
-        {
-            os02Flags = FLD_SET_DRF(OS02, _FLAGS, _LOCATION, _AGP, os02Flags);
             break;
         }
         case NVOS32_ATTR_LOCATION_VIDMEM:
@@ -287,12 +286,37 @@ RmDeprecatedConvertOs32ToOs02Flags
         }
     }
 
+    switch (DRF_VAL(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, attr2))
+    {
+        case NVOS32_ATTR2_REGISTER_MEMDESC_TO_PHYS_RM_TRUE:
+        {
+            os02Flags = FLD_SET_DRF(OS02, _FLAGS, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE, os02Flags);
+            break;
+        }
+        case NVOS32_ATTR2_REGISTER_MEMDESC_TO_PHYS_RM_FALSE:
+        {
+            os02Flags = FLD_SET_DRF(OS02, _FLAGS, _REGISTER_MEMDESC_TO_PHYS_RM, _FALSE, os02Flags);
+            break;
+        }
+        default:
+        {
+            rmStatus = NV_ERR_INVALID_FLAGS;
+            break;
+        }
+    }
+
     // VidHeapControl never creates a mapping
     os02Flags = FLD_SET_DRF(OS02, _FLAGS, _MAPPING, _NO_MAP, os02Flags);
     if (os32Flags & NVOS32_ALLOC_FLAGS_KERNEL_MAPPING_MAP)
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _KERNEL_MAPPING, _MAP, os02Flags);
     else
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _KERNEL_MAPPING, _NO_MAP, os02Flags);
+
+    if (os32Flags & NVOS32_ALLOC_FLAGS_USER_READ_ONLY)
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, _YES, os02Flags);
+
+    if (os32Flags & NVOS32_ALLOC_FLAGS_DEVICE_READ_ONLY)
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_DEVICE_READ_ONLY, _YES, os02Flags);
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, attr2))
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, _YES, os02Flags);
@@ -304,6 +328,15 @@ RmDeprecatedConvertOs32ToOs02Flags
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_NISO_DISPLAY, _YES, os02Flags);
     else
         os02Flags = FLD_SET_DRF(OS02, _FLAGS, _ALLOC_NISO_DISPLAY, _NO, os02Flags);
+
+    if (FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED, attr2))
+    {
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _PROTECTED, os02Flags);
+    }
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, attr2))
+    {
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, os02Flags);
+    }
 
     if (rmStatus == NV_OK)
     {
@@ -409,6 +442,20 @@ RmDeprecatedConvertOs02ToOs32Flags
 
     if (FLD_TEST_DRF(OS02, _FLAGS, _ALLOC_DEVICE_READ_ONLY, _YES, os02Flags))
         attr2 |= DRF_DEF(OS32, _ATTR2, _PROTECTION_DEVICE, _READ_ONLY);
+
+    if (FLD_TEST_DRF(OS02, _FLAGS, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE, os02Flags))
+        attr2 |= DRF_DEF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE);
+    else
+        attr2 |= DRF_DEF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _FALSE);
+
+    if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _PROTECTED, os02Flags))
+    {
+        attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED);
+    }
+    else if (FLD_TEST_DRF(OS02, _FLAGS, _MEMORY_PROTECTION, _UNPROTECTED, os02Flags))
+    {
+        attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED);
+    }
 
     if (rmStatus == NV_OK)
     {

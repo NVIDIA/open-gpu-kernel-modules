@@ -25,11 +25,11 @@
 #include "lib/ref_count.h"
 #include "os/os.h"
 
-static NV_STATUS _refcntReleaseReferences        (POBJREFCNT, NvU64, NvBool,
+static NV_STATUS _refcntReleaseReferences        (OBJREFCNT *, NvU64, NvBool,
                                                   NvBool, NvBool*);
-static NV_STATUS _refcntInvokeStateChangeCallback(POBJREFCNT, REFCNT_STATE,
+static NV_STATUS _refcntInvokeStateChangeCallback(OBJREFCNT *, REFCNT_STATE,
                                                   REFCNT_STATE);
-static void      _refcntInvokeResetCallback      (POBJREFCNT, NvU64);
+static void      _refcntInvokeResetCallback      (OBJREFCNT *, NvU64);
 
 /*!
  * @brief Construct the reference counter according to the parameters.
@@ -52,7 +52,7 @@ static void      _refcntInvokeResetCallback      (POBJREFCNT, NvU64);
 NV_STATUS
 refcntConstruct_IMPL
 (
-    POBJREFCNT                 pRefcnt,
+    OBJREFCNT                 *pRefcnt,
     Dynamic                   *pParent,
     NvU32                      tag,
     RefcntStateChangeCallback *pStateChangeCallback,
@@ -77,7 +77,7 @@ refcntConstruct_IMPL
 void
 refcntDestruct_IMPL
 (
-    POBJREFCNT pRefcnt
+    OBJREFCNT *pRefcnt
 )
 {
 
@@ -118,7 +118,7 @@ refcntDestruct_IMPL
 NV_STATUS
 refcntRequestReference_IMPL
 (
-    POBJREFCNT pRefcnt,
+    OBJREFCNT *pRefcnt,
     NvU64      requesterId,
     NvU32      requestedState,
     NvBool     bForce
@@ -279,7 +279,7 @@ done:
 NV_STATUS
 refcntReleaseReferences_IMPL
 (
-    POBJREFCNT pRefcnt,
+    OBJREFCNT *pRefcnt,
     NvU64      requesterId,
     NvBool     bReleaseAllRequests
 )
@@ -315,7 +315,7 @@ refcntReleaseReferences_IMPL
 NV_STATUS
 refcntReset_IMPL
 (
-    POBJREFCNT pRefcnt,
+    OBJREFCNT *pRefcnt,
     NvBool     bForceCallback
 )
 {
@@ -415,7 +415,7 @@ refcntReset_IMPL
  *                                   PDB property enabled
  * @param[in] bSuppressStateChange - Indicates whether the state change (and
  *                                   its callback) should be suppressed
- * @param[out] bNodeIsRemoved      - Whether the requester is removed from 
+ * @param[out] bNodeIsRemoved      - Whether the requester is removed from
  *                                   requesterTree.
  *
  * @returns NV_OK if the requester's references are successfully removed from
@@ -429,7 +429,7 @@ refcntReset_IMPL
 static NV_STATUS
 _refcntReleaseReferences
 (
-    POBJREFCNT pRefcnt,
+    OBJREFCNT *pRefcnt,
     NvU64      requesterId,
     NvBool     bReleaseAllRequests,
     NvBool     bSuppressStateChange,
@@ -546,7 +546,7 @@ _refcntReleaseReferences
 static NV_STATUS
 _refcntInvokeStateChangeCallback
 (
-    POBJREFCNT   pRefcnt,
+    OBJREFCNT   *pRefcnt,
     REFCNT_STATE prevState,
     REFCNT_STATE newState
 )
@@ -571,7 +571,7 @@ _refcntInvokeStateChangeCallback
 static void
 _refcntInvokeResetCallback
 (
-    POBJREFCNT pRefcnt,
+    OBJREFCNT *pRefcnt,
     NvU64      requesterId
 )
 {

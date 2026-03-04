@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,10 +27,12 @@
  *
  *   Description:
  *       Upon successful allocation of this class, a client is granted
- *       permission to query information across the GPU instances 
+ *       permission to query information across the GPU instances
  *       irrespective of per-instance MIG subscriptions
  *
  *****************************************************************************/
+
+#define NVOC_MIG_MONITOR_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "kernel/gpu/mig_mgr/mig_monitor_session.h"
@@ -49,9 +51,10 @@ migmonitorsessionConstruct_IMPL
 {
     NVC640_ALLOCATION_PARAMETERS *pUserParams = pRmAllocParams->pAllocParams;
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
     NV_STATUS status;
 
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
     osRmCapInitDescriptor(&pMIGMonitorSession->dupedCapDescriptor);
@@ -67,7 +70,7 @@ migmonitorsessionConstruct_IMPL
     //
     if (status == NV_ERR_NOT_SUPPORTED)
     {
-        if (!rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+        if (!rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
         {
             NV_PRINTF(LEVEL_ERROR, "insufficient permissions\n");
             return NV_ERR_INSUFFICIENT_PERMISSIONS;

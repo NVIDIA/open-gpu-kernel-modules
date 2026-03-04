@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,7 +62,8 @@ gpuValidateRegOps
     NV2080_CTRL_GPU_REG_OP *pRegOps,
     NvU32 regOpCount,
     NvBool bNonTransactional,
-    NvBool isClientGspPlugin
+    NvBool isClientGspPlugin,
+    NvBool bSkipPermissionValidation
 )
 {
     NvU8   regStatus;
@@ -72,10 +73,15 @@ gpuValidateRegOps
     {
         regStatus = NV2080_CTRL_GPU_REG_OP_STATUS_SUCCESS;
 
+        if (isClientGspPlugin)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+        else
         {
             NV_STATUS status;
 
-            status = gpuValidateRegOffset(pGpu, pRegOps[i].regOffset);
+            status = gpuValidateRegOffset(pGpu, pRegOps[i].regOffset, bSkipPermissionValidation);
             if (status != NV_OK)
             {
                 regStatus = NV2080_CTRL_GPU_REG_OP_STATUS_INVALID_OFFSET;
@@ -104,6 +110,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     NvU32         bNonTransactional,
     NV2080_CTRL_GR_ROUTE_INFO grRouteInfo,
     NV2080_CTRL_GPU_REG_OP   *pRegOps,
+    NvU32        *pOpSmIds,
     NvU32         regOpCount,
     NvBool        isClientGspPlugin
 )
@@ -112,8 +119,10 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     NV_STATUS         status = NV_OK;
     CALL_CONTEXT     *pCallContext = resservGetTlsCallContext();
     RmCtrlParams     *pRmCtrlParams = pCallContext->pControlParams;
+    NvBool            bUseMigratableOps;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     NV_PRINTF(LEVEL_INFO, "client 0x%x channel 0x%x\n", hClientTarget,
               hChannelTarget);
@@ -138,6 +147,47 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
         return NV_ERR_INVALID_PARAM_STRUCT;
     }
 
+    //
+    // pOpSmIds should will only be non-NULL when this code path is being
+    // used by the migratable ops function.
+    //
+    bUseMigratableOps = (pOpSmIds != NULL);
+    //
+    // If in a VM, do RPC to the host that has hw access.
+    //
+    // In case of SRIOV, vGPU guest UMD such as CUDA driver read/write
+    // PF registers through this RMCtrl. Since, it is a PF register the
+    // validation is to be performed by host RM only. Hence, we need to
+    // call RPC early and skip any validation check in Guest RM.
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        //
+        // If this function is being used by a MIGRATABLE call,
+        // we route the GSP call to normal DMA controller
+        //
+        if (bUseMigratableOps)
+        {
+            NV_RM_RPC_CONTROL(pGpu,
+                  pRmCtrlParams->hClient,
+                  pRmCtrlParams->hObject,
+                  pRmCtrlParams->cmd,
+                  pRmCtrlParams->pParams,
+                  pRmCtrlParams->paramsSize,
+                  status);
+        }
+        else
+        {
+            NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
+                                       pRmCtrlParams->hClient,
+                                       pRmCtrlParams->hObject,
+                                       pRmCtrlParams->pParams,
+                                       pRegOps,
+                                       status);
+        }
+        return status;
+    }
+
     // init once, only in monolithic-rm or the cpu-rm, or gsp-rm if the call
     // is from the gsp plugin
     if (!RMCFG_FEATURE_PLATFORM_GSP || isClientGspPlugin)
@@ -146,7 +196,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     }
 
     status = gpuValidateRegOps(pGpu, pRegOps, regOpCount, bNonTransactional,
-                               isClientGspPlugin);
+                               isClientGspPlugin, NV_FALSE);
     if (status != NV_OK)
     {
         return status;
@@ -154,12 +204,30 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
-                                   pRmCtrlParams->hClient,
-                                   pRmCtrlParams->hObject,
-                                   pRmCtrlParams->pParams,
-                                   pRegOps,
-                                   status);
+        //
+        // If this function is being used by a MIGRATABLE_OPS call,
+        // we route the GSP call to normal DMA controller
+        //
+        if (bUseMigratableOps)
+        {
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+            status = pRmApi->Control(pRmApi,
+                                     pRmCtrlParams->hClient,
+                                     pRmCtrlParams->hObject,
+                                     pRmCtrlParams->cmd,
+                                     pRmCtrlParams->pParams,
+                                     pRmCtrlParams->paramsSize);
+        }
+        else
+        {
+            NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
+                                       pRmCtrlParams->hClient,
+                                       pRmCtrlParams->hObject,
+                                       pRmCtrlParams->pParams,
+                                       pRegOps,
+                                       status);
+        }
         return status;
     }
 
@@ -185,6 +253,38 @@ subdeviceCtrlCmdGpuExecRegOps_IMPL
                                              pRegParams->bNonTransactional,
                                              pRegParams->grRouteInfo,
                                              pRegParams->regOps,
+                                             NULL,
+                                             pRegParams->regOpCount,
+                                             NV_FALSE);
+}
+
+//
+// subdeviceCtrlCmdGpuMigratableOps
+//
+// Lock Requirements:
+//      Assert that API lock and GPUs lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdGpuMigratableOps_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS *pRegParams
+)
+{
+    if (pRegParams->regOpCount > NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid regOpCount: %ud\n",
+                  pRegParams->regOpCount);
+        return NV_ERR_INVALID_PARAM_STRUCT;
+    }
+
+    return subdeviceCtrlCmdGpuExecRegOps_cmn(pSubdevice,
+                                             pRegParams->hClientTarget,
+                                             pRegParams->hChannelTarget,
+                                             pRegParams->bNonTransactional,
+                                             pRegParams->grRouteInfo,
+                                             pRegParams->regOps,
+                                             pRegParams->smIds,
                                              pRegParams->regOpCount,
                                              NV_FALSE);
 }

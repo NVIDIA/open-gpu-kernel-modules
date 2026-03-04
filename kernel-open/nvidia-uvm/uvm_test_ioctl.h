@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVidia Corporation
+    Copyright (c) 2015-2025 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -23,12 +23,10 @@
 #ifndef __UVM_TEST_IOCTL_H__
 #define __UVM_TEST_IOCTL_H__
 
-#ifndef __KERNEL__
 
-#endif
 #include "uvm_types.h"
 #include "uvm_ioctl.h"
-#include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +40,6 @@ typedef struct
 {
     // In params
     NvProcessorUuid gpu_uuid;
-    NvU32           swizz_id;
     // Out params
     NvU64           ref_count NV_ALIGN_BYTES(8);
     NV_STATUS       rmStatus;
@@ -148,8 +145,17 @@ typedef enum
     UVM_TEST_VA_RANGE_TYPE_CHANNEL,
     UVM_TEST_VA_RANGE_TYPE_SKED_REFLECTED,
     UVM_TEST_VA_RANGE_TYPE_SEMAPHORE_POOL,
+    UVM_TEST_VA_RANGE_TYPE_DEVICE_P2P,
     UVM_TEST_VA_RANGE_TYPE_MAX
 } UVM_TEST_VA_RANGE_TYPE;
+
+typedef enum
+{
+    UVM_TEST_RANGE_SUBTYPE_INVALID = 0,
+    UVM_TEST_RANGE_SUBTYPE_UVM,
+    UVM_TEST_RANGE_SUBTYPE_HMM,
+    UVM_TEST_RANGE_SUBTYPE_MAX
+} UVM_TEST_RANGE_SUBTYPE;
 
 // Keep this in sync with uvm_read_duplication_t in uvm_va_range.h
 typedef enum
@@ -160,6 +166,13 @@ typedef enum
     UVM_TEST_READ_DUPLICATION_MAX
 } UVM_TEST_READ_DUPLICATION_POLICY;
 
+typedef enum
+{
+    UVM_TEST_NVLINK_ERROR_NONE = 0,
+    UVM_TEST_NVLINK_ERROR_UNRESOLVED,
+    UVM_TEST_NVLINK_ERROR_RESOLVED
+} UVM_TEST_NVLINK_ERROR_TYPE;
+
 typedef struct
 {
     // Note: if this is a zombie or not owned by the calling process, the vma info
@@ -169,6 +182,7 @@ typedef struct
     NvBool is_zombie;                   // Out
     // Note: if this is a zombie, this field is meaningless.
     NvBool owned_by_calling_process;    // Out
+    NvU32  subtype;                     // Out (UVM_TEST_RANGE_SUBTYPE)
 } UVM_TEST_VA_RANGE_INFO_MANAGED;
 
 #define UVM_TEST_VA_RANGE_INFO                           UVM_TEST_IOCTL_BASE(4)
@@ -176,10 +190,15 @@ typedef struct
 {
     NvU64                           lookup_address                   NV_ALIGN_BYTES(8); // In
 
+    // For HMM ranges va_range_start/end will contain the lookup address but not
+    // neccessarily the maximal range over which the returned policy applies.
+    // For example there could be adjacent ranges with the same policy, implying
+    // the returned range could be as small as a page in the worst case for HMM.
     NvU64                           va_range_start                   NV_ALIGN_BYTES(8); // Out
     NvU64                           va_range_end                     NV_ALIGN_BYTES(8); // Out, inclusive
     NvU32                           read_duplication;                                   // Out (UVM_TEST_READ_DUPLICATION_POLICY)
     NvProcessorUuid                 preferred_location;                                 // Out
+    NvS32                           preferred_cpu_nid;                                  // Out
     NvProcessorUuid                 accessed_by[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           accessed_by_count;                                  // Out
     NvU32                           type;                                               // Out (UVM_TEST_VA_RANGE_TYPE)
@@ -336,20 +355,30 @@ typedef enum
     UVM_TEST_CHANNEL_STRESS_MODE_NOOP_PUSH = 0,
     UVM_TEST_CHANNEL_STRESS_MODE_UPDATE_CHANNELS,
     UVM_TEST_CHANNEL_STRESS_MODE_STREAM,
+    UVM_TEST_CHANNEL_STRESS_MODE_KEY_ROTATION,
 } UVM_TEST_CHANNEL_STRESS_MODE;
+
+typedef enum
+{
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_CPU_TO_GPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_GPU_TO_CPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_ROTATE,
+} UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION;
 
 #define UVM_TEST_CHANNEL_STRESS                          UVM_TEST_IOCTL_BASE(15)
 typedef struct
 {
-    NvU32     mode;                   // In
+    NvU32     mode;                   // In, one of UVM_TEST_CHANNEL_STRESS_MODE
 
     // Number of iterations:
     //   mode == NOOP_PUSH: number of noop pushes
     //   mode == UPDATE_CHANNELS: number of updates
     //   mode == STREAM: number of iterations per stream
+    //   mode == ROTATION: number of operations
     NvU32     iterations;
 
-    NvU32     num_streams;            // In, used only for mode == UVM_TEST_CHANNEL_STRESS_MODE_STREAM
+    NvU32     num_streams;            // In, used only if mode == STREAM
+    NvU32     key_rotation_operation; // In, used only if mode == ROTATION
     NvU32     seed;                   // In
     NvU32     verbose;                // In
     NV_STATUS rmStatus;               // Out
@@ -493,7 +522,7 @@ typedef struct
 typedef struct
 {
     // In params
-    UvmEventEntry entry; // contains only NvUxx types
+    UvmEventEntry    entry;    // contains only NvUxx types
     NvU32 count;
 
     // Out param
@@ -536,17 +565,35 @@ typedef struct
 // If user_pages_allocation_retry_force_count is non-0 then the next count user
 // memory allocations under the VA block will be forced to do allocation-retry.
 //
+// If cpu_chunk_allocation_error_count is not zero, the subsequent operations
+// that need to allocate CPU chunks will fail with NV_ERR_NO_MEMORY for
+// cpu_chunk_allocation_error_count times. If cpu_chunk_allocation_error_count
+// is equal to ~0U, the count is infinite.
+//
 // If eviction_failure is NV_TRUE, the next eviction attempt from the VA block
 // will fail with NV_ERR_NO_MEMORY.
-//
-// If cpu_pages_allocation_error is NV_TRUE, the subsequent operations that
-// need to allocate CPU pages will fail with NV_ERR_NO_MEMORY.
 //
 // If populate_failure is NV_TRUE, a retry error will be injected after the next
 // successful user memory allocation under the VA block but before that
 // allocation is used by the block. This is similar to
 // user_pages_allocation_retry_force_count, but the injection point simulates
 // driver metadata allocation failure.
+//
+// cpu_chunk_allocation_target_id and cpu_chunk_allocation_actual_id are used
+// to control the NUMA node IDs for CPU chunk allocations, specifically for
+// testing overlapping CPU chunk allocations.
+//
+// Currently, uvm_api_migrate() does not pass the preferred CPU NUMA node to for
+// managed memory so it is not possible to request a specific node.
+// cpu_chunk_allocation_target_id is used to request the allocation be made on
+// specific node. On the other hand, cpu_chunk_allocation_actual_id is the node
+// on which the allocation will actually be made.
+//
+// The two parameters can be used to force a CPU chunk allocation to overlap a
+// previously allocated chunk.
+//
+// Please note that even when specifying cpu_cpu_allocation_actual_id, the
+// kernel may end up allocating on a different node.
 //
 // Error returns:
 // NV_ERR_INVALID_ADDRESS
@@ -557,9 +604,11 @@ typedef struct
     NvU64     lookup_address NV_ALIGN_BYTES(8);         // In
     NvU32     page_table_allocation_retry_force_count;  // In
     NvU32     user_pages_allocation_retry_force_count;  // In
-    NvU32     cpu_chunk_allocation_size_mask;           // In
+    NvU64     cpu_chunk_allocation_size_mask;           // In
+    NvS32     cpu_chunk_allocation_target_id;           // In
+    NvS32     cpu_chunk_allocation_actual_id;           // In
+    NvU32     cpu_chunk_allocation_error_count;         // In
     NvBool    eviction_error;                           // In
-    NvBool    cpu_pages_allocation_error;               // In
     NvBool    populate_error;                           // In
     NV_STATUS rmStatus;                                 // Out
 } UVM_TEST_VA_BLOCK_INJECT_ERROR_PARAMS;
@@ -591,6 +640,10 @@ typedef struct
     NvProcessorUuid                 resident_on[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           resident_on_count;                                  // Out
 
+    // If the memory is resident on the CPU, the NUMA node on which the page
+    // is resident. Otherwise, -1.
+    NvS32                           resident_nid;                                       // Out
+
     // The size of the physical allocation backing lookup_address. Only the
     // system-page-sized portion of this allocation which contains
     // lookup_address is guaranteed to be resident on the corresponding
@@ -603,11 +656,13 @@ typedef struct
     // Array of processors which have a virtual mapping covering lookup_address.
     NvProcessorUuid                 mapped_on[UVM_MAX_PROCESSORS];                      // Out
     NvU32                           mapping_type[UVM_MAX_PROCESSORS];                   // Out
+    NvU64                           mapping_physical_address[UVM_MAX_PROCESSORS] NV_ALIGN_BYTES(8); // Out
+    NvBool                          is_egm_mapping[UVM_MAX_PROCESSORS];                 // Out
     NvU32                           mapped_on_count;                                    // Out
 
     // The size of the virtual mapping covering lookup_address on each
     // mapped_on processor.
-    NvU32                           page_size[UVM_MAX_PROCESSORS];                      // Out
+    NvU64                           page_size[UVM_MAX_PROCESSORS];                      // Out
 
     // Array of processors which have physical memory populated that would back
     // lookup_address if it was resident.
@@ -838,7 +893,7 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
-    NvU32                           page_size;
+    NvU64                           page_size;
     NvBool                          contiguous;
     NvU64                           num_pages                        NV_ALIGN_BYTES(8); // In
     NvU64                           phys_begin                       NV_ALIGN_BYTES(8); // In
@@ -871,31 +926,38 @@ typedef struct
 
 // Change configuration of access counters. This call will disable access
 // counters and reenable them using the new configuration. All previous
-// notifications will be lost
+// notifications will be lost.
 //
 // The reconfiguration affects all VA spaces that rely on the access
 // counters information for the same GPU. To avoid conflicting configurations,
 // only one VA space is allowed to reconfigure the GPU at a time.
 //
+// When the reconfiguration VA space is destroyed, the bottom-half control
+// settings are reset.
+//
 // Error returns:
 // NV_ERR_INVALID_STATE
-//  - The GPU has already been reconfigured in a different VA space
+//  - The GPU has already been reconfigured in a different VA space.
 #define UVM_TEST_RECONFIGURE_ACCESS_COUNTERS             UVM_TEST_IOCTL_BASE(56)
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
 
-    // Type UVM_ACCESS_COUNTER_GRANULARITY from nv_uvm_types.h
-    NvU32                           mimc_granularity;                                   // In
-    NvU32                           momc_granularity;                                   // In
-
-    // Type UVM_ACCESS_COUNTER_USE_LIMIT from nv_uvm_types.h
-    NvU32                           mimc_use_limit;                                     // In
-    NvU32                           momc_use_limit;                                     // In
+    // Type UVM_ACCESS_COUNTER_GRANULARITY from nv_uvm_user_types.h
+    NvU32                           granularity;                                        // In
 
     NvU32                           threshold;                                          // In
-    NvBool                          enable_mimc_migrations;                             // In
-    NvBool                          enable_momc_migrations;                             // In
+    NvBool                          enable_migrations;                                  // In
+
+    // Settings to control how notifications are serviced by the access counters
+    // bottom-half. These settings help tests to exercise races in the driver,
+    // e.g., unregister a GPU while (valid) pending notifications remain in the
+    // notification buffer.
+    //
+    // 0 max_batch_size doesn't change driver's behavior.
+    NvU32                           max_batch_size;                                     // In
+    NvBool                          one_iteration_per_batch;                            // In
+    NvU32                           sleep_per_iteration_us;                             // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_RECONFIGURE_ACCESS_COUNTERS_PARAMS;
@@ -907,13 +969,6 @@ typedef enum
     UVM_TEST_ACCESS_COUNTER_RESET_MODE_MAX
 } UVM_TEST_ACCESS_COUNTER_RESET_MODE;
 
-typedef enum
-{
-    UVM_TEST_ACCESS_COUNTER_TYPE_MIMC = 0,
-    UVM_TEST_ACCESS_COUNTER_TYPE_MOMC,
-    UVM_TEST_ACCESS_COUNTER_TYPE_MAX
-} UVM_TEST_ACCESS_COUNTER_TYPE;
-
 // Clear the contents of the access counters. This call supports different
 // modes for targeted/global resets.
 #define UVM_TEST_RESET_ACCESS_COUNTERS                   UVM_TEST_IOCTL_BASE(57)
@@ -923,9 +978,6 @@ typedef struct
 
     // Type UVM_TEST_ACCESS_COUNTER_RESET_MODE
     NvU32                           mode;                                               // In
-
-    // Type UVM_TEST_ACCESS_COUNTER_TYPE
-    NvU32                           counter_type;                                       // In
 
     NvU32                           bank;                                               // In
     NvU32                           tag;                                                // In
@@ -957,26 +1009,26 @@ typedef struct
 } UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS;
 
 //
-// UvmTestEnableNvlinkPeerAccess
+// UvmTestEnableStaticPeerAccess
 //
-#define UVM_TEST_ENABLE_NVLINK_PEER_ACCESS               UVM_TEST_IOCTL_BASE(60)
+#define UVM_TEST_ENABLE_STATIC_PEER_ACCESS               UVM_TEST_IOCTL_BASE(60)
 typedef struct
 {
     NvProcessorUuid gpuUuidA; // IN
     NvProcessorUuid gpuUuidB; // IN
     NV_STATUS  rmStatus; // OUT
-} UVM_TEST_ENABLE_NVLINK_PEER_ACCESS_PARAMS;
+} UVM_TEST_ENABLE_STATIC_PEER_ACCESS_PARAMS;
 
 //
-// UvmTestDisableNvlinkPeerAccess
+// UvmTestDisableStaticPeerAccess
 //
-#define UVM_TEST_DISABLE_NVLINK_PEER_ACCESS              UVM_TEST_IOCTL_BASE(61)
+#define UVM_TEST_DISABLE_STATIC_PEER_ACCESS              UVM_TEST_IOCTL_BASE(61)
 typedef struct
 {
     NvProcessorUuid gpuUuidA; // IN
     NvProcessorUuid gpuUuidB; // IN
     NV_STATUS  rmStatus; // OUT
-} UVM_TEST_DISABLE_NVLINK_PEER_ACCESS_PARAMS;
+} UVM_TEST_DISABLE_STATIC_PEER_ACCESS_PARAMS;
 
 typedef enum
 {
@@ -1005,30 +1057,6 @@ typedef struct
     NvU64                           pin_ns                           NV_ALIGN_BYTES(8); // In
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_SET_PAGE_THRASHING_POLICY_PARAMS;
-
-#define UVM_TEST_PMM_SYSMEM                              UVM_TEST_IOCTL_BASE(64)
-typedef struct
-{
-    NvU64                           range_address1                   NV_ALIGN_BYTES(8); // In
-    NvU64                           range_address2                   NV_ALIGN_BYTES(8); // In
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_SYSMEM_PARAMS;
-
-#define UVM_TEST_PMM_REVERSE_MAP                         UVM_TEST_IOCTL_BASE(65)
-typedef struct
-{
-    NvProcessorUuid                 gpu_uuid;                                           // In
-    NvU64                           range_address1                   NV_ALIGN_BYTES(8); // In
-    NvU64                           range_address2                   NV_ALIGN_BYTES(8); // In
-    NvU64                           range_size2                      NV_ALIGN_BYTES(8); // In
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_REVERSE_MAP_PARAMS;
-
-#define UVM_TEST_PMM_INDIRECT_PEERS                      UVM_TEST_IOCTL_BASE(66)
-typedef struct
-{
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_INDIRECT_PEERS_PARAMS;
 
 // Calls uvm_va_space_mm_retain on a VA space, operates on the mm, optionally
 // sleeps for a while, then releases the va_space_mm and returns. The idea is to
@@ -1067,20 +1095,6 @@ typedef struct
     NV_STATUS rmStatus;                                                                 // Out
 } UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS;
 
-// Forces the VA space mm_shutdown callback to delay until more than one thread
-// has entered the callback. This provides a high probability of exercising code
-// to handle this race condition between exit_mmap and file close.
-//
-// The delay has an upper bound to prevent an infinite stall.
-#define UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN              UVM_TEST_IOCTL_BASE(68)
-typedef struct
-{
-    NvBool verbose;
-
-    // NV_ERR_PAGE_TABLE_NOT_AVAIL if no va_space_mm is present
-    NV_STATUS rmStatus;
-} UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN_PARAMS;
-
 #define UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE            UVM_TEST_IOCTL_BASE(69)
 typedef struct
 {
@@ -1107,14 +1121,46 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_ACCESS_COUNTERS_ENABLED_BY_DEFAULT_PARAMS;
 
-// Inject an error into the VA space
+// Inject an error into the VA space or into a to-be registered GPU.
 //
 // If migrate_vma_allocation_fail_nth is greater than 0, the nth page
 // allocation within migrate_vma will fail.
+//
+// If va_block_allocation_fail_nth is greater than 0, the nth call to
+// uvm_va_block_find_create() will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_access_counters_alloc_buffer is set, the parent_gpu's access counters
+// buffer allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_access_counters_alloc_block_context is set, the access counters
+// buffer's block_context allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_isr_access_counters_alloc is set, the ISR access counters allocation
+// will fail with NV_ERR_NO_MEMORY.
+//
+// If gpu_isr_access_counters_alloc_stats_cpu is set, the ISR access counters
+// buffer's stats_cpu allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If access_counters_batch_context_notifications is set, the access counters
+// batch_context's notifications allocation will fail with NV_ERR_NO_MEMORY.
+//
+// If access_counters_batch_context_notification_cache is set, the access
+// counters batch_context's notification cache allocation will fail with
+// NV_ERR_NO_MEMORY.
+//
+// Note that only one of the gpu_* or access_counters_* setting can be selected
+// at a time.
 #define UVM_TEST_VA_SPACE_INJECT_ERROR                   UVM_TEST_IOCTL_BASE(72)
 typedef struct
 {
     NvU32                           migrate_vma_allocation_fail_nth;                    // In
+    NvU32                           va_block_allocation_fail_nth;                       // In
+    NvBool                          gpu_access_counters_alloc_buffer;                   // In
+    NvBool                          gpu_access_counters_alloc_block_context;            // In
+    NvBool                          gpu_isr_access_counters_alloc;                      // In
+    NvBool                          gpu_isr_access_counters_alloc_stats_cpu;            // In
+    NvBool                          access_counters_batch_context_notifications;        // In
+    NvBool                          access_counters_batch_context_notification_cache;   // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS;
@@ -1164,19 +1210,6 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_PMM_QUERY_PMA_STATS_PARAMS;
 
-#define UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU        UVM_TEST_IOCTL_BASE(77)
-typedef struct
-{
-    NvProcessorUuid                 gpu_uuid;                                           // In
-    NvHandle                        client;                                             // In
-    NvHandle                        smc_part_ref;                                       // In
-
-    // On kernels with NUMA support, this entry contains the closest CPU NUMA
-    // node to this GPU. Otherwise, the value will be -1.
-    NvS32                           node_id;                                            // Out
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU_PARAMS;
-
 // Test whether the bottom halves have run on the correct CPUs based on the
 // NUMA node locality of the GPU.
 //
@@ -1192,8 +1225,6 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
-    NvHandle                        client;                                             // In
-    NvHandle                        smc_part_ref;                                       // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS;
@@ -1248,8 +1279,7 @@ typedef enum
     UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_MMU_NOTIFIER,
 
     UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_HMM,
-    UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS_KERNEL,
-    UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS_DRIVER,
+    UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_ATS,
     UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE_COUNT
 } UVM_TEST_PAGEABLE_MEM_ACCESS_TYPE;
 
@@ -1341,6 +1371,24 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_HOST_SANITY_PARAMS;
 
+// Calls uvm_va_space_mm_or_current_retain() on a VA space,
+// then releases the va_space_mm and returns.
+#define UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN           UVM_TEST_IOCTL_BASE(89)
+typedef struct
+{
+    // User address of a flag to act as a semaphore. If non-NULL, the address
+    // is set to 1 after successful retain but before the sleep.
+    NvU64 retain_done_ptr                                            NV_ALIGN_BYTES(8); // In
+
+    // Approximate duration for which to sleep with the va_space_mm retained.
+    NvU64 sleep_us                                                   NV_ALIGN_BYTES(8); // In
+
+    // NV_ERR_PAGE_TABLE_NOT_AVAIL  Could not retain va_space_mm
+    //                              (uvm_va_space_mm_or_current_retain returned
+    //                              NULL)
+    NV_STATUS rmStatus;                                                                 // Out
+} UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN_PARAMS;
+
 #define UVM_TEST_GET_USER_SPACE_END_ADDRESS              UVM_TEST_IOCTL_BASE(90)
 typedef struct
 {
@@ -1351,19 +1399,9 @@ typedef struct
 #define UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES               UVM_TEST_IOCTL_BASE(91)
 typedef struct
 {
-    NvU32                           alloc_size_mask;                                    // Out
+    NvU64                           alloc_size_mask;                                    // Out
     NvU32                           rmStatus;                                           // Out
 } UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES_PARAMS;
-
-#define UVM_TEST_HMM_SANITY                              UVM_TEST_IOCTL_BASE(92)
-typedef struct
-{
-    NvU64     hmm_address             NV_ALIGN_BYTES(8); // In
-    NvU64     hmm_length              NV_ALIGN_BYTES(8); // In
-    NvU64     uvm_address             NV_ALIGN_BYTES(8); // In
-    NvU64     uvm_length              NV_ALIGN_BYTES(8); // In
-    NV_STATUS rmStatus;                                  // Out
-} UVM_TEST_HMM_SANITY_PARAMS;
 
 // Forces the next range covering the lookup_address to fail in
 // uvm_va_range_add_gpu_va_space() with an out-of-memory error. Only the next
@@ -1390,19 +1428,158 @@ typedef struct
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY_PARAMS;
 
-
-
-
-
-
-
-
+#define UVM_TEST_SEC2_SANITY                             UVM_TEST_IOCTL_BASE(95)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SEC2_SANITY_PARAMS;
 
 #define UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED             UVM_TEST_IOCTL_BASE(96)
 typedef struct
 {
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED_PARAMS;
+
+#define UVM_TEST_SPLIT_INVALIDATE_DELAY                  UVM_TEST_IOCTL_BASE(98)
+typedef struct
+{
+    NvU64 delay_us;                                      // In
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS;
+
+// Tests the CSL/SEC2 encryption/decryption methods by doing a secure transfer
+// of memory from CPU->GPU and a subsequent GPU->CPU transfer.
+#define UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP                  UVM_TEST_IOCTL_BASE(99)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP_PARAMS;
+
+#define UVM_TEST_CPU_CHUNK_API                           UVM_TEST_IOCTL_BASE(100)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_CPU_CHUNK_API_PARAMS;
+
+#define UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE          UVM_TEST_IOCTL_BASE(101)
+typedef struct
+{
+    NvBool force_copy_with_ce;                          // In
+    NV_STATUS rmStatus;                                 // Out
+} UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE_PARAMS;
+
+#define UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS     UVM_TEST_IOCTL_BASE(102)
+typedef struct
+{
+    NvBool allow_movable;                               // In
+    NV_STATUS rmStatus;                                 // Out
+} UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS_PARAMS;
+
+#define UVM_TEST_SKIP_MIGRATE_VMA                        UVM_TEST_IOCTL_BASE(103)
+typedef struct
+{
+    NvBool skip;                                         // In
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SKIP_MIGRATE_VMA_PARAMS;
+
+#define UVM_TEST_INJECT_TOOLS_EVENT_V2                   UVM_TEST_IOCTL_BASE(104)
+typedef struct
+{
+    // In params
+    UvmEventEntry_V2    entry_v2;    // contains only NvUxx types
+    NvU32 count;
+
+    // Out param
+    NV_STATUS rmStatus;
+} UVM_TEST_INJECT_TOOLS_EVENT_V2_PARAMS;
+
+#define UVM_TEST_SET_P2P_SUSPENDED                       UVM_TEST_IOCTL_BASE(105)
+typedef struct
+{
+    // UUID of the processor to check.
+    NvProcessorUuid gpu_uuid          NV_ALIGN_BYTES(8); // In
+    NvBool suspended;                                    // In
+
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SET_P2P_SUSPENDED_PARAMS;
+
+#define UVM_TEST_INJECT_NVLINK_ERROR                     UVM_TEST_IOCTL_BASE(106)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;                           // In
+    NvU32           error_type;                         // In (UVM_TEST_NVLINK_ERROR_TYPE)
+    NV_STATUS       rmStatus;                           // Out
+} UVM_TEST_INJECT_NVLINK_ERROR_PARAMS;
+
+#define UVM_TEST_FILE_INITIALIZE                         UVM_TEST_IOCTL_BASE(107)
+typedef struct
+{
+    NV_STATUS               rmStatus;                    // Out
+} UVM_TEST_FILE_INITIALIZE_PARAMS;
+
+#define UVM_TEST_FILE_UNMAP                              UVM_TEST_IOCTL_BASE(108)
+typedef struct
+{
+    // File offset at which to start unmapping. Note that this will unmap file
+    // offsets, not virtual addresses, so all virtual addresses mapping these
+    // offsets will be unmapped.
+    NvU64 offset        NV_ALIGN_BYTES(8);  // In
+
+    // Bytes to unmap
+    NvU64 length        NV_ALIGN_BYTES(8);  // In
+
+    NV_STATUS rmStatus;                     // Out
+} UVM_TEST_FILE_UNMAP_PARAMS;
+
+#define UVM_TEST_QUERY_ACCESS_COUNTERS                   UVM_TEST_IOCTL_BASE(109)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;               // In
+    NvU8 num_notification_buffers;          // Out
+    NvU32 num_notification_entries;         // Out
+
+    NV_STATUS rmStatus;                     // Out
+} UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS;
+
+#define UVM_TEST_VA_BLOCK_DISCARD_STATUS                 UVM_TEST_IOCTL_BASE(110)
+typedef struct
+{
+    NvU64 lookup_address    NV_ALIGN_BYTES(8);           // In
+    NvBool discarded;                                    // Out
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_VA_BLOCK_DISCARD_STATUS_PARAMS;
+
+// Keep this in sync with uvm_pmm_alloc_list_t in uvm_pmm_gpu.h
+typedef enum
+{
+    UVM_TEST_PMM_ALLOC_LIST_UNUSED = 0,
+    UVM_TEST_PMM_ALLOC_LIST_DISCARDED,
+    UVM_TEST_PMM_ALLOC_LIST_USED,
+    UVM_TEST_PMM_ALLOC_LIST_COUNT
+} UVM_TEST_PMM_ALLOC_LIST_TYPE;
+
+#define UVM_TEST_PMM_GET_ALLOC_LIST                      UVM_TEST_IOCTL_BASE(111)
+typedef struct
+{
+    NvU64 address   NV_ALIGN_BYTES(8);                   // In
+    NvProcessorUuid gpu_uuid;                            // In
+    NvU32 list_type;                                     // Out (UVM_TEST_PMM_ALLOC_LIST_TYPE)
+
+    // NV_ERR_INVALID_STATE if there is no chunk, or if the chunk is not on any
+    // of the allocated lists.
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_PMM_GET_ALLOC_LIST_PARAMS;
+
+#define UVM_TEST_DUMP_ACCESS_BITS                        UVM_TEST_IOCTL_BASE(112)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;                            // In
+    NvU64 mode;                                          // In 
+    NvU64 granularity_size_kb;                           // Out
+    NvU64* current_bits;                                 // Out
+    NvU64 current_bits_length;                           // Out
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_DUMP_ACCESS_BITS_PARAMS;
 
 #ifdef __cplusplus
 }

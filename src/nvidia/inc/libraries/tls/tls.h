@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -124,8 +124,10 @@ void tlsShutdown(void);
 enum {
     TLS_ENTRY_ID_THREADSTATE,
     TLS_ENTRY_ID_RESSERV_1,
+    TLS_ENTRY_ID_MAPPING_CONTEXT,
     TLS_ENTRY_ID_CURRENT_GPU_INSTANCE,
     TLS_ENTRY_ID_PRIORITY,
+    TLS_ENTRY_ID_GPUMGR_EXPANDED_GPU_VISIBILITY,
     TLS_ENTRY_ID_DYNAMIC, // dynamic allocations start here
     TLS_ENTRY_ID_TAG_START = 0x100000 // Custom tags start here
 };
@@ -139,6 +141,12 @@ enum {
  *
  */
 NvU64 tlsEntryAlloc(void);
+
+/**
+ * @brief Returns true if TLS entries are refcounted.
+ * Callers should ignore refcounts returned by the API is false.
+ **/
+NvBool tlsIsRefcounted(void);
 
 /**
  * @brief Get pointer to TLS entry for given @p entryId.
@@ -227,6 +235,15 @@ NvU32 tlsEntryReleaseWithAllocator(NvU64 entryId, PORT_MEM_ALLOCATOR *pAllocator
 NvP64 tlsEntryGet(NvU64 entryId);
 
 /**
+ * @brief Set TLS data pointer for given entryId.
+ *
+ * This function will not modify the refCount.
+ *
+ * @return NV_FALSE if the entry doesn't exist.
+ */
+NvBool tlsEntrySet(NvU64 entryId, NvP64 entryData);
+
+/**
  * @brief Increment the refCount of given TLS entry.
  *
  * If an entry with given entryId doesn't exist, this function does nothing.
@@ -262,7 +279,7 @@ NvU32 tlsEntryUnreference(NvU64 entryId);
 #define TLS_ISR_ALLOCATOR_SIZE 512
 #else
 #if defined(LOCK_VAL_ENABLED)
-    #define TLS_ISR_ALLOCATOR_SIZE 400
+    #define TLS_ISR_ALLOCATOR_SIZE 512
 #else
     #define TLS_ISR_ALLOCATOR_SIZE 256
 #endif

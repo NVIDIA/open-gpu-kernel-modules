@@ -25,10 +25,10 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "gpu/subdevice/generic_engine.h"
-#include "gpu/subdevice/subdevice.h"
 #include "rmapi/client.h"
 
 #include <class/cl90e6.h>
+#include <class/cl90e7.h>
 
 
 NV_STATUS
@@ -82,6 +82,15 @@ genapiControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
+    if (RES_GET_EXT_CLASS_ID(pGenericEngineApi) == GF100_SUBDEVICE_INFOROM)
+    {
+        OBJGPU     *pGpu     = GPU_RES_GET_GPU(pGenericEngineApi);
+        OBJINFOROM *pInforom = GPU_GET_INFOROM(pGpu);
+        if (!IS_GSP_CLIENT(pGpu) && pInforom == NULL)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
 
     return gpuresControl_IMPL(staticCast(pGenericEngineApi, GpuResource),
                               pCallContext, pParams);

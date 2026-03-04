@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -41,7 +41,52 @@ typedef enum
     UVM_APERTURE_PEER_6,
     UVM_APERTURE_PEER_7,
     UVM_APERTURE_PEER_MAX,
+
+    // SYS aperture is used for memory addresses in system physical address
+    // space, or device DMA space. This is currently used for system memory
+    // and certain types of peer memory.
+    // UVM always uses UVM_APERTURE_SYS to access system memory so the value
+    // is also used to denote 'sysmem' as a location (e.g. for page tables)
+    // It is directly encoded as SYS_COH in PTEs and CE/esched methods.
     UVM_APERTURE_SYS,
+
+    // SYS_NON_COHERENT aperture is used when we must prevent PCIe atomics from
+    // being issued to BAR1 P2P addresses. It's only used to control the use of
+    // atomics with no other impact on the coherence model.
+    //
+    // On platforms that support the GPU coherently caching system memory,
+    // SYS_NON_COHERENT prevents other clients from snooping the GPU L2 cache.
+    // This allows noncoherent caching of system memory by GPUs on these
+    // platforms. UVM does not use SYS_NON_COHERENT for its internal mappings,
+    // however it may be used by UvmMapExternalAllocation() for external
+    // mappings. On fully coherent platforms, SYS_NON_COHERENT will be used in
+    // the following cases:
+    //
+    // +----------------------------------------------------------+------------+-------------+
+    // | RM Allocation Settings / UvmMapExternalAllocation() Flag |  Default   | ForceCached |
+    // +----------------------------------------------------------+------------+-------------+
+    // | GPU_CACHE_SNOOP_DISABLE + GPU CACHED                     | SYS_NONCOH | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOPABLE_DEFER_TO_MAP + GPU CACHED            | SYS_NONCOH | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOP_DISABLE + GPU UNCACHED                   | -          | SYS_NONCOH  |
+    // | GPU_CACHE_SNOOPABLE_DEFER_TO_MAP + GPU UNCACHED          | -          | SYS_NONCOH  |
+    // +----------------------------------------------------------+------------+-------------+
+    //
+    // The implementation of UvmMapExternalAllocation() relies on RM to
+    // actually generate PTEs (see nvUvmInterfaceGetExternalAllocPtes()) which
+    // means that UVM does not create these SYS_NON_COHERENT entries itself.
+    //
+    // However, in the kernel_driver_get_rm_ptes test, UVM creates
+    // SYS_NON_COHERENT PTEs to verify that RM is using the expected aperture on
+    // fully coherent platforms. These test PTEs are never actually used for
+    // translation.
+    //
+    // SYS_NON_COHERENT aperture is never used to denote a location and its use
+    // is more limited than the SYS aperture above.
+    UVM_APERTURE_SYS_NON_COHERENT,
+
+    // VID aperture is used for memory accesses in GPU's local vidmem.
+    // It's the only aperture used for local vidmem, so it's also used to
+    // denote vidmem location (e.g. for page tables)
     UVM_APERTURE_VID,
 
     // DEFAULT is a special value to let MMU pick the location of page tables
@@ -51,6 +96,11 @@ typedef enum
 } uvm_aperture_t;
 
 const char *uvm_aperture_string(uvm_aperture_t aperture);
+
+static bool uvm_aperture_is_sys(uvm_aperture_t aperture)
+{
+    return (aperture == UVM_APERTURE_SYS) || (aperture == UVM_APERTURE_SYS_NON_COHERENT);
+}
 
 static bool uvm_aperture_is_peer(uvm_aperture_t aperture)
 {
@@ -111,6 +161,11 @@ typedef struct
 
     // Whether the address is virtual
     bool is_virtual;
+
+    // Whether the address resides in a non-protected memory region when the
+    // Confidential Computing feature is enabled. Default is protected.
+    // Ignored if the feature is disabled and should not be used.
+    bool is_unprotected;
 } uvm_gpu_address_t;
 
 // Create a virtual GPU address
@@ -120,6 +175,13 @@ static uvm_gpu_address_t uvm_gpu_address_virtual(NvU64 va)
     address.address = va;
     address.aperture = UVM_APERTURE_MAX;
     address.is_virtual = true;
+    return address;
+}
+
+static uvm_gpu_address_t uvm_gpu_address_virtual_unprotected(NvU64 va)
+{
+    uvm_gpu_address_t address = uvm_gpu_address_virtual(va);
+    address.is_unprotected = true;
     return address;
 }
 
@@ -258,8 +320,8 @@ typedef enum
     UVM_FAULT_CANCEL_VA_MODE_COUNT,
 } uvm_fault_cancel_va_mode_t;
 
-// Types of faults that can show up in the fault buffer. Non-UVM related faults are grouped in FATAL category
-// since we don't care about the specific type
+// Types of faults that can show up in the fault buffer. Non-UVM related faults
+// are grouped in FATAL category since we don't care about the specific type.
 typedef enum
 {
     UVM_FAULT_TYPE_INVALID_PDE = 0,
@@ -272,7 +334,8 @@ typedef enum
     // READ to WRITE-ONLY (ATS)
     UVM_FAULT_TYPE_READ,
 
-    // The next values are considered fatal and are not handled by the UVM driver
+    // The next values are considered fatal and are not handled by the UVM
+    // driver
     UVM_FAULT_TYPE_FATAL,
 
     // Values required for tools
@@ -287,7 +350,7 @@ typedef enum
     UVM_FAULT_TYPE_UNSUPPORTED_KIND,
     UVM_FAULT_TYPE_REGION_VIOLATION,
     UVM_FAULT_TYPE_POISONED,
-
+    UVM_FAULT_TYPE_CC_VIOLATION,
     UVM_FAULT_TYPE_COUNT
 } uvm_fault_type_t;
 
@@ -311,10 +374,24 @@ typedef enum
     UVM_MMU_ENGINE_TYPE_COUNT,
 } uvm_mmu_engine_type_t;
 
+typedef enum
+{
+    // Allow entry to be fetched before the previous entry finishes ESCHED
+    // execution.
+    UVM_GPFIFO_SYNC_PROCEED = 0,
+
+    // Fetch of this entry has to wait until the previous entry has finished
+    // executing by ESCHED.
+    // For a complete engine sync the previous entry needs to include
+    // WAIT_FOR_IDLE command or other engine synchronization.
+    UVM_GPFIFO_SYNC_WAIT,
+} uvm_gpfifo_sync_t;
+
 const char *uvm_mmu_engine_type_string(uvm_mmu_engine_type_t mmu_engine_type);
 
-// HW unit that triggered the fault. We include the fields required for fault cancelling. Including more information
-// might be useful for performance heuristics in the future
+// HW unit that triggered the fault. We include the fields required for fault
+// cancelling. Including more information might be useful for performance
+// heuristics in the future.
 typedef struct
 {
     uvm_fault_client_type_t                client_type  : order_base_2(UVM_FAULT_CLIENT_TYPE_COUNT) + 1;
@@ -372,6 +449,7 @@ struct uvm_fault_buffer_entry_struct
     //
 
     uvm_va_space_t                           *va_space;
+    uvm_gpu_t                                     *gpu;
 
     // This is set to true when some fault could not be serviced and a
     // cancel command needs to be issued
@@ -429,7 +507,8 @@ typedef enum
     // Completes when all fault replays are in-flight
     UVM_FAULT_REPLAY_TYPE_START = 0,
 
-    // Completes when all faulting accesses have been correctly translated or faulted again
+    // Completes when all faulting accesses have been correctly translated or
+    // faulted again
     UVM_FAULT_REPLAY_TYPE_START_ACK_ALL,
 
     UVM_FAULT_REPLAY_TYPE_MAX
@@ -444,62 +523,39 @@ static uvm_membar_t uvm_membar_max(uvm_membar_t membar_1, uvm_membar_t membar_2)
 
 typedef enum
 {
-    UVM_ACCESS_COUNTER_TYPE_MIMC = 0,
-    UVM_ACCESS_COUNTER_TYPE_MOMC,
-
-    UVM_ACCESS_COUNTER_TYPE_MAX,
-} uvm_access_counter_type_t;
-
-const char *uvm_access_counter_type_string(uvm_access_counter_type_t access_counter_type);
+    UVM_ACCESS_COUNTER_CLEAR_OP_TARGETED = 0,
+    UVM_ACCESS_COUNTER_CLEAR_OP_ALL,
+    UVM_ACCESS_COUNTER_CLEAR_OP_COUNT,
+} uvm_access_counter_clear_op_t;
 
 struct uvm_access_counter_buffer_entry_struct
 {
-    // Whether this counter refers to outbound accesses to remote GPUs or
-    // sysmem (MIMC), or it refers to inbound accesses from CPU or a non-peer
-    // GPU (whose accesses are routed through the CPU, too) to vidmem (MOMC)
-    uvm_access_counter_type_t counter_type;
-
     // Address of the region for which a notification was sent
-    uvm_gpu_address_t address;
+    NvU64 address;
 
-    // These fields are only valid if address.is_virtual is true
-    union
-    {
-        struct
-        {
-            // Instance pointer of one of the channels in the TSG that triggered the
-            // notification
-            uvm_gpu_phys_address_t instance_ptr;
+    // Instance pointer of one of the channels in the TSG that triggered
+    // the notification.
+    uvm_gpu_phys_address_t instance_ptr;
 
-            uvm_mmu_engine_type_t mmu_engine_type;
+    uvm_mmu_engine_type_t mmu_engine_type;
 
-            NvU32 mmu_engine_id;
+    NvU32 mmu_engine_id;
 
-            // Identifier of the subcontext that performed the memory accesses that
-            // triggered the notification. This value, combined with the instance_ptr,
-            // is needed to obtain the GPU VA space of the process that triggered the
-            // notification.
-            NvU32 ve_id;
+    // Identifier of the subcontext that performed the memory accesses
+    // that triggered the notification. This value, combined with the
+    // instance_ptr, is needed to obtain the GPU VA space of the process
+    // that triggered the notification.
+    NvU32 ve_id;
 
-            // VA space for the address that triggered the notification
-            uvm_va_space_t *va_space;
-        } virtual_info;
+    // VA space for the address that triggered the notification
+    uvm_va_space_t *va_space;
 
-        // These fields are only valid if address.is_virtual is false
-        struct
-        {
-            // Processor id where data is resident
-            //
-            // Although this information is not tied to a VA space, we can use
-            // a regular processor id because P2P is not allowed between
-            // partitioned GPUs.
-            uvm_processor_id_t resident_id;
-        } physical_info;
-    };
+    // This is the GPU that triggered the notification.
+    uvm_gpu_t *gpu;
 
     // Number of times the tracked region was accessed since the last time it
     // was cleared. Counter values saturate at the maximum value supported by
-    // the GPU (2^16 - 1 in Volta)
+    // the GPU (2^16 - 1 on Turing)
     NvU32 counter_value;
 
     // When the granularity of the tracked regions is greater than 64KB, the
@@ -524,10 +580,30 @@ static uvm_prot_t uvm_fault_access_type_to_prot(uvm_fault_access_type_t access_t
             return UVM_PROT_READ_WRITE;
 
         default:
-            // Prefetch faults, if not ignored, are handled like read faults and require
-            // a mapping with, at least, READ_ONLY access permission
+            // Prefetch faults, if not ignored, are handled like read faults and
+            // requirea mapping with, at least, READ_ONLY access permission.
             return UVM_PROT_READ_ONLY;
     }
 }
+
+// Indicates the type of GPU physical TLB invalidation required when
+// transitioning an IOMMU GPA mapping from invalid to valid (dma_map_page() and
+// friends).
+typedef enum
+{
+    UVM_DMA_MAP_INVALIDATION_NONE = 0,
+
+    // No actual invalidation of lines is required. A dummy invalidation is
+    // needed flush out non-fatal prefetch accesses which may have occurred
+    // while the mapping was still invalid.
+    UVM_DMA_MAP_INVALIDATION_FLUSH,
+
+    // Invalidate all matching GPA lines
+    UVM_DMA_MAP_INVALIDATION_FULL,
+
+    UVM_DMA_MAP_INVALIDATION_COUNT
+} uvm_dma_map_invalidation_t;
+
+const char *uvm_dma_map_invalidation_string(uvm_dma_map_invalidation_t inval_type);
 
 #endif // __UVM_HAL_TYPES_H__

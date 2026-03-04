@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080host.finn
+// Source file:      ctrl/ctrl0080/ctrl0080host.finn
 //
-
-
-
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
@@ -73,33 +70,8 @@ typedef struct NV0080_CTRL_HOST_GET_CAPS_PARAMS {
 #define NV0080_CTRL_HOST_GET_CAP(tbl,c)            (((NvU8)tbl[(1?c)]) & (0?c))
 
 /* caps format is byte_index:bit_mask */
-#define NV0080_CTRL_HOST_CAPS_SEMA_ACQUIRE_BUG_105665               0:0x01
-#define NV0080_CTRL_HOST_CAPS_DUP_CMPLT_BUG_126020                  0:0x02
-/*
- * This bit indicates whether CPU mappings obtained with NvRmMapMemory() are
- * coherent with the GPU.  When this bit is _not_ set, all mappings are to the
- * "raw" memory; i.e., they behave as it the NVOS33_FLAGS_MAPPING_DIRECT flag
- * were used on a sysmem mapping.
- */
-#define NV0080_CTRL_HOST_CAPS_GPU_COHERENT_MAPPING_SUPPORTED        0:0x04
-#define NV0080_CTRL_HOST_CAPS_SYS_SEMA_DEADLOCK_BUG_148216          0:0x08
-#define NV0080_CTRL_HOST_CAPS_SLOWSLI                               0:0x10
-#define NV0080_CTRL_HOST_CAPS_SEMA_READ_ONLY_BUG                    0:0x20
-#define NV0080_CTRL_HOST_CAPS_LARGE_NONCOH_UPSTR_WRITE_BUG_114871   0:0x40
-#define NV0080_CTRL_HOST_CAPS_LARGE_UPSTREAM_WRITE_BUG_115115       0:0x80
-#define NV0080_CTRL_HOST_CAPS_SEP_VIDMEM_PB_NOTIFIERS_BUG_83923     1:0x02
-#define NV0080_CTRL_HOST_CAPS_P2P_4_WAY                             1:0x08 // Deprecated
-#define NV0080_CTRL_HOST_CAPS_P2P_8_WAY                             1:0x10 // Deprecated
-#define NV0080_CTRL_HOST_CAPS_P2P_DEADLOCK_BUG_203825               1:0x20 // Deprecated
-#define NV0080_CTRL_HOST_CAPS_VIRTUAL_P2P                           1:0x40
-#define NV0080_CTRL_HOST_CAPS_BUG_254580                            1:0x80
-#define NV0080_CTRL_HOST_CAPS_COMPRESSED_BL_P2P_BUG_257072          2:0x02 // Deprecated
-#define NV0080_CTRL_HOST_CAPS_CROSS_BLITS_BUG_270260                2:0x04 // Deprecated
-/* unused                                                           2:0x08 */
-#define NV0080_CTRL_HOST_CAPS_MEM2MEM_BUG_365782                    2:0x10
 #define NV0080_CTRL_HOST_CAPS_CPU_WRITE_WAR_BUG_420495              2:0x20
 #define NV0080_CTRL_HOST_CAPS_EXPLICIT_CACHE_FLUSH_REQD             2:0x40
-#define NV0080_CTRL_HOST_CAPS_BAR1_READ_DEADLOCK_BUG_511418         2:0x80 // Deprecated
 
 /* size in bytes of host caps table */
 #define NV0080_CTRL_HOST_CAPS_TBL_SIZE   3

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,13 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080clk.finn
+// Source file:      ctrl/ctrl2080/ctrl2080clk.finn
 //
-
-
-
-/* _ctrl2080clk_h_ */
-
 
 #include "nvfixedtypes.h"
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -40,4 +35,11 @@
 #include "ctrl/ctrl2080/ctrl2080clkavfs.h"
 #include "ctrl/ctrl2080/ctrl2080volt.h"
 #include "ctrl/ctrl2080/ctrl2080pmumon.h"
+
+#define NV2080_CTRL_CLK_DOMAIN_TEGRA_UNDEFINED (0x00000000U)
+#define NV2080_CTRL_CLK_DOMAIN_TEGRA_GPCCLK    (0x00000001U)
+#define NV2080_CTRL_CLK_DOMAIN_TEGRA_NVDCLK    (0x00000002U)
+
+
+/* _ctrl2080clk_h_ */
 

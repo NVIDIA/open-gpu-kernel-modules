@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,8 +27,11 @@
 #include "gpu/gpu_timeout.h"
 #include "gpu/gpu_access.h"
 #include "core/thread_state.h"
-
+#include "nvdevid.h"
 #include "nvrm_registry.h"
+#include "gpu/conf_compute/conf_compute.h"
+
+#include "virtualization/hypervisor/hypervisor.h"
 
 static void _gpuInitGlobalSurfaceOverride(OBJGPU *pGpu);
 
@@ -55,7 +58,7 @@ gpuInitRegistryOverrides_KERNEL
     }
 
     // for 0FB set as though FB memory is broken to cover all the tests
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
     {
         data32 = FLD_SET_DRF(_REG_STR_GPU, _BROKEN_FB, _MEMORY, _BROKEN, data32);
     }
@@ -99,6 +102,48 @@ gpuInitRegistryOverrides_KERNEL
         }
     }
 
+    if (pGpu->bSriovCapable)
+    {
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE, &data32) == NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "Overriding SRIOV Mode to %u\n",
+                      (data32 == NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED));
+
+            pGpu->bSriovEnabled = (data32 == NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED);
+        }
+        else
+        {
+            if (hypervisorIsVgxHyper() && !RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                if (!IsTURING(pGpu))
+                {
+                    pGpu->bSriovEnabled = NV_TRUE;
+
+                    //
+                    // Set the registry key for GSP-RM to consume without having
+                    // to evaluate hypervisor support
+                    //
+                    osWriteRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE,
+                                               NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED);
+                }
+            }
+        }
+
+        NV_PRINTF(LEVEL_INFO, "SRIOV status[%d].\n", pGpu->bSriovEnabled);
+    }
+
+    if (pGpu->bSriovEnabled && (IS_GSP_CLIENT(pGpu) || RMCFG_FEATURE_PLATFORM_GSP))
+    {
+        pGpu->bVgpuGspPluginOffloadEnabled = NV_TRUE;
+    }
+    // Do not enable VGPU-GSP plugin offload on guest for MODS, MODS doesn't support GSP
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) && !gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+    {
+        {
+            pGpu->bVgpuGspPluginOffloadEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE);
+        }
+    }
+
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER, &data32) == NV_OK)
     {
         pGpu->bClientRmAllocatedCtxBuffer = (data32 == NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER_ENABLED);
@@ -110,7 +155,15 @@ gpuInitRegistryOverrides_KERNEL
     {
         pGpu->bClientRmAllocatedCtxBuffer = NV_TRUE;
     }
-    else if ( NV_IS_MODS || !(pGpu->bSriovEnabled || IS_VIRTUAL(pGpu)) )
+    else if (pGpu->pGpuArch->bGpuArchIsZeroFb &&
+        (pGpu->bSriovEnabled || IS_VIRTUAL_WITH_SRIOV(pGpu)))
+    {
+        // For zero-FB config + SRIOV
+        pGpu->bClientRmAllocatedCtxBuffer = NV_TRUE;
+        NV_PRINTF(LEVEL_INFO,
+            "Enabled Client RM managed context buffer for zero-FB + SRIOV.\n");
+    }
+    else if ( RMCFG_FEATURE_MODS_FEATURES || !(pGpu->bSriovEnabled || IS_VIRTUAL(pGpu)) )
     {
         // TODO : enable this feature on mods
         pGpu->bClientRmAllocatedCtxBuffer = NV_FALSE;
@@ -133,6 +186,60 @@ gpuInitRegistryOverrides_KERNEL
                   pGpu->bSplitVasManagementServerClientRm);
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE,
+                            &pGpu->fabricProbeRegKeyOverride) == NV_OK)
+    {
+        pGpu->fabricProbeRegKeyOverride |= \
+                        DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
+    }
+
+    pGpu->bBf3WarBug4040336Enabled = NV_FALSE;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3,
+                            &data32) == NV_OK)
+    {
+        pGpu->bBf3WarBug4040336Enabled = (data32 == NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE);
+    }
+
+#if defined(GPU_LOAD_FAILURE_TEST_SUPPORTED)
+    if (osReadRegistryDword(pGpu, NV_REG_STR_GPU_LOAD_FAILURE_TEST, &data32) == NV_OK)
+    {
+        pGpu->loadFailurePathTestControl = data32;
+    }
+#endif
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DEBUG_RUSD_POLLING, &data32) == NV_OK)
+    {
+        pGpu->userSharedData.pollingRegistryOverride = data32;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_RUSD_POLLING_INTERVAL, &data32) == NV_OK)
+    {
+        if (data32 < NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN)
+            data32 = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN;
+        if (data32 > NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX)
+            data32 = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MAX;
+        pGpu->userSharedData.pollingIntervalMs = data32;
+        pGpu->userSharedData.bPollIntervalOverridden = NV_TRUE;
+    }
+    else
+    {
+        if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
+        {
+            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_WINDOWS_GSP;
+        }
+        else
+        {
+            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
+        }
+        pGpu->userSharedData.bPollIntervalOverridden = NV_FALSE;
+    }
+    
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_INIT_MEM_REUSE, &data32) == NV_OK) &&
+        (data32 == NV_REG_STR_RM_INIT_MEM_REUSE_DISABLE))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM, NV_FALSE);
+    }
+
     return NV_OK;
 }
 
@@ -145,6 +252,30 @@ gpuInitInstLocOverrides_IMPL
     OBJGPU *pGpu
 )
 {
+    NvU32 data32 = 0;
+    NvBool bRegKeyCCEnabled = 
+        ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data32) == NV_OK) &&
+          FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32));
+
+    //
+    // If Hopper CC mode or protected pcie is enabled, move all except few buffers to FB
+    // Exception: when TDISP mode is enabled.
+    //
+    if ((bRegKeyCCEnabled ||
+         gpuIsCCEnabledInHw_HAL(pGpu) ||
+         gpuIsMultiGpuNvleEnabledInHw_HAL(pGpu))
+        )
+    {
+        pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides4 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+
+        // Only FW_SEC_LIC & FLCN UCODE buffers are required to be in NCOH now. These will be moved to VIDMEM eventually.
+        pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _FW_SEC_LIC_COMMAND, _NCOH, pGpu->instLocOverrides4);
+        pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _FLCN_UCODE_BUFFERS, _NCOH, pGpu->instLocOverrides4);
+    }
+    else
     {
         //
         // The pGpu fields are initialized to zero. Try to fill them from the
@@ -181,25 +312,6 @@ gpuInitInstLocOverrides_IMPL
         pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         // Leave instLocOverrides4 as _DEFAULT until all flavors are tested.
-
-        if (gpuIsCacheOnlyModeEnabled(pGpu))
-        {
-            //
-            // If cache only mode is enabled then we will override
-            // userD and bar page tables to vidmem(l2 cache).
-            // This is to avoid deadlocks on platforms
-            // that don't support reflected accesses.
-            // Such platforms will need to enable cache only mode to
-            // run test zeroFb
-            // NOTE: Since this puts USERD in vidmem, you probably also want to
-            // reduce the number of channels to allocate, or else
-            // fifoPreAllocUserD_GF100 will fail due to the limited amount of
-            // L2 available as "vidmem".  (Use the RmNumFifos regkey.)
-            //
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PTE, _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _USERD,   _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PDE, _VID, pGpu->instLocOverrides);
-        }
     }
 
     //
@@ -246,12 +358,13 @@ gpuInitInstLocOverrides_IMPL
     // SMs) are fine.
     //
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) &&
+        !gpuIsCacheOnlyModeEnabled(pGpu) &&
         !(FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PTE, _DEFAULT, pGpu->instLocOverrides) &&
           FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PDE, _DEFAULT, pGpu->instLocOverrides)))
     {
         pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PTE, _DEFAULT, pGpu->instLocOverrides);
         pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PDE, _DEFAULT, pGpu->instLocOverrides);
-        NV_PRINTF(LEVEL_WARNING, "Ignoring regkeys to place BAR PTE/PDE in SYSMEM\n");
+        NV_PRINTF(LEVEL_INFO, "Ignoring regkeys to place BAR PTE/PDE in SYSMEM\n");
     }
 
     return NV_OK;
@@ -270,7 +383,7 @@ _gpuInitGlobalSurfaceOverride
     OBJGPU *pGpu
 )
 {
-    NvU32 globalOverride;
+    NvU32 globalOverride = 0;
 
     //
     // Precedence of global overrides.
@@ -285,7 +398,7 @@ _gpuInitGlobalSurfaceOverride
             (pGpu->instLocOverrides3 != 0) ||
             (pGpu->instLocOverrides4 != 0))
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                 "INSTLOC overrides may not work with large mem systems on GP100+\n");
         }
         else

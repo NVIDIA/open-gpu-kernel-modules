@@ -48,7 +48,7 @@ memmgrIsKind_TU102
     switch (op)
     {
         case FB_IS_KIND_Z:
-            return KIND_Z(kind);
+            return PTEKIND_Z(kind);
         case FB_IS_KIND_ZBC:
             return PTEKIND_COMPRESSIBLE(kind);
         case FB_IS_KIND_COMPRESSIBLE:
@@ -63,6 +63,8 @@ memmgrIsKind_TU102
             return (PTEKIND_SUPPORTED(kind) && !(KIND_INVALID(kind)));
         case FB_IS_KIND_DISALLOW_PLC:
             return PTEKIND_DISALLOWS_PLC(kind);
+        case FB_IS_KIND_SWIZZLED:
+            return !PTEKIND_GENERIC_MEMORY(kind) && !PTEKIND_PITCH(kind);
         default:
             NV_PRINTF(LEVEL_ERROR, "Bad op (%08x) passed in\n", op);
             DBG_BREAKPOINT();
@@ -80,18 +82,8 @@ memmgrIsSurfaceBlockLinear_TU102
 (
     MemoryManager     *pMemoryManager,
     Memory            *pMemory,
-    NvU32              kind,
-    NvU32              dmaFlags
+    NvU32              kind
 )
 {
-    if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _BL, dmaFlags))
-    {
-        return NV_TRUE;
-    }
-    else if (FLD_TEST_DRF(OS03, _FLAGS, _PTE_KIND, _PITCH, dmaFlags))
-    {
-        return NV_FALSE;
-    }
-
     return FLD_TEST_DRF(OS32, _ATTR, _FORMAT, _BLOCK_LINEAR, pMemory->Attr);
 }

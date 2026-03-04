@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,7 @@
 #define NV_RAMUSERD_GP_GET                     (34*32+31):(34*32+0) /* RWXUF */
 #define NV_RAMUSERD_GP_PUT                     (35*32+31):(35*32+0) /* RWXUF */
 #define NV_RAMUSERD_BASE_SHIFT                                    9 /*       */
+#define NV_RAMUSERD_CHAN_SIZE                                   512 /*       */
 #define NV_RAMUSERD_GP_TOP_LEVEL_GET           (22*32+31):(22*32+0) /* RWXUF */
 #define NV_RAMUSERD_GP_TOP_LEVEL_GET_HI        (23*32+31):(23*32+0) /* RWXUF */
 #define NV_RAMRL_BASE_SHIFT                                      12 /*       */
@@ -54,4 +55,15 @@
 #define NV_RAMRL_ENTRY_TIMESLICE_TIMEOUT_128             0x00000080 /* RWI-V */
 #define NV_RAMRL_ENTRY_SIZE                                       8 /*       */
 #define NV_RAMRL_ENTRY_TSG_LENGTH_MAX                    0x00000020 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_TARGET               (128*32+1):(128*32+0) /* RWXUF */
+#define NV_RAMIN_PAGE_DIR_BASE_TARGET_VID_MEM                  0x00000000 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_TARGET_SYS_MEM_COHERENT         0x00000002 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_TARGET_SYS_MEM_NONCOHERENT      0x00000003 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_VOL                  (128*32+2):(128*32+2) /* RWXUF */
+#define NV_RAMIN_PAGE_DIR_BASE_VOL_TRUE                        0x00000001 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_VOL_FALSE                       0x00000000 /* RW--V */
+#define NV_RAMIN_PAGE_DIR_BASE_LO                 (128*32+31):(128*32+12) /* RWXUF */
+#define NV_RAMIN_PAGE_DIR_BASE_HI                   (129*32+7):(129*32+0) /* RWXUF */
+#define NV_RAMIN_ADR_LIMIT_LO                     (130*32+31):(130*32+12) /* RWXUF */
+#define NV_RAMIN_ADR_LIMIT_HI                       (131*32+7):(131*32+0) /* RWXUF */
 #endif // __gm107_dev_ram_h__

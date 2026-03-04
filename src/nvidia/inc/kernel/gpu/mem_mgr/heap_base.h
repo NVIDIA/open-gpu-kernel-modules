@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,9 +83,6 @@ typedef struct _def_fb_alloc_info
     NvU32    possAttr;          // AllocHint, BindCompr
     NvU32    ctagOffset;
 
-    // Special flag for kernel allocations
-    NvBool bIsKernelAlloc;
-
     //
     // Number of 4KB pages in the PTE array
     // For contiguous allocation, this will be set to '1'
@@ -117,7 +114,6 @@ typedef struct HWRESOURCE_INFO
     NvU32 hwResId;
     NvU32 refCount;
     NvBool isVgpuHostAllocated; // used in vGPU guest RM to indicate if this HW resource is allocated by host RM or not. Used in Windows guest.
-    NvBool isGuestAllocated;    // used in vGPU host RM to indicate if this HW resource is allocated from LIST_OBJECT path on behalf of Linux guest.
 } HWRESOURCE_INFO;
 
 
@@ -125,7 +121,7 @@ typedef struct PMA_ALLOC_INFO
 {
     NvBool bContig;
     NvU32  pageCount;
-    NvU32  pageSize;
+    NvU64  pageSize;
     NvU32  refCount;
     NvU64  allocSize;
     NvU32  flags;

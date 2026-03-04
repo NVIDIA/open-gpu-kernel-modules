@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,9 +30,9 @@
 #include "uvm_rb_tree.h"
 #include "nv-kref.h"
 
-// This structure contains the VA spaces of all the subcontexts in a TSG. It
+// This structure contains the GPU VA spaces of all the subcontexts in a TSG. It
 // is stored in a per-GPU UVM RB tree and is required to perform instance_ptr
-// to VA space translations when channels are registered in a subcontext,
+// to GPU VA space translations when channels are registered in a subcontext,
 // since SM fault/access counter notification packets may report any
 // instance_ptr in the TSG.
 typedef struct
@@ -46,7 +46,7 @@ typedef struct
     // Array of per-subcontext information
     struct
     {
-        uvm_va_space_t *va_space;
+        uvm_gpu_va_space_t *gpu_va_space;
 
         // Number of instance pointers referencing this specific subcontext
         NvU32 refcount;
@@ -98,16 +98,10 @@ struct uvm_user_channel_struct
         // If valid is true, tsg_id contains the ID of the TSG
         NvU32 id;
 
-        // If valid is true, this is the maximum number of subcontexts in the TSG
+        // If valid is true, this is the maximum number of subcontexts in the
+        // TSG
         NvU32 max_subctx_count;
     } tsg;
-
-    // This is the value that needs to be used when ringing the channel's
-    // doorbell
-    NvU32 work_submission_token;
-
-    // This is the address of the channel's doorbell
-    volatile NvU32 *work_submission_offset;
 
     // On Turing+, the CLEAR_FAULTED method requires passing a RM-provided
     // handle to identify the channel.
@@ -118,8 +112,14 @@ struct uvm_user_channel_struct
     uvm_tracker_t clear_faulted_tracker;
 
     // Address of the NV_CHRAM_CHANNEL register. Only valid on GPUs with
-    // non_replayable_faults_supported && !has_clear_faulted_channel_method
+    // non_replayable_faults_supported && !has_clear_faulted_channel_method.
     volatile NvU32 *chram_channel_register;
+
+    // Address of the channel's doorbell.
+    volatile NvU32 *work_submission_offset;
+
+    // The value that is used when ringing the channel's doorbell.
+    NvU32 work_submission_token;
 
     // Id of the SMC engine this channel is bound to, or zero if the GPU
     // does not support SMC or it is a CE channel
@@ -135,11 +135,11 @@ struct uvm_user_channel_struct
 
     // If in_subctx is true, subctx_info will point at a per-TSG data structure
     // that contains the VA spaces of all the subcontexts in the TSG. This value
-    // is assigned in uvm_gpu_add_user_channel.
+    // is assigned in uvm_parent_gpu_add_user_channel.
     uvm_user_channel_subctx_info_t *subctx_info;
 
     // Number of resources reported by RM. This is the size of both the
-    // resources and va_ranges arrays.
+    // resources and channel_ranges arrays.
     size_t num_resources;
 
     // Array of all resources for this channel, shared or not. Virtual mappings
@@ -150,11 +150,11 @@ struct uvm_user_channel_struct
     // the corresponding VA ranges.
     UvmGpuChannelResourceInfo *resources;
 
-    // Array of all VA ranges associated with this channel. Entry i in this
+    // Array of all channel ranges associated with this channel. Entry i in this
     // array corresponds to resource i in the resources array above and has the
     // same descriptor. uvm_user_channel_detach will drop the ref counts for
-    // these VA ranges, potentially destroying them.
-    uvm_va_range_t **va_ranges;
+    // these channel ranges, potentially destroying them.
+    uvm_va_range_channel_t **channel_ranges;
 
     // Physical instance pointer. There is a 1:1 mapping between instance
     // pointer and channel. GPU faults report an instance pointer, and the GPU

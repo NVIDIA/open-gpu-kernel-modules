@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -15,13 +15,15 @@
     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
     THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN hint OF CONTRACT, TORT OR OTHERWISE, ARISING
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
 #include "uvm_api.h"
+#include "uvm_common.h"
+#include "uvm_global.h"
 #include "uvm_perf_events.h"
 #include "uvm_perf_module.h"
 #include "uvm_perf_thrashing.h"
@@ -163,7 +165,7 @@ typedef struct
 
         uvm_spinlock_t                          lock;
 
-        uvm_va_block_context_t      va_block_context;
+        uvm_va_block_context_t      *va_block_context;
 
         // Flag used to avoid scheduling delayed unpinning operations after
         // uvm_perf_thrashing_stop has been called.
@@ -195,6 +197,8 @@ typedef struct
         unsigned                          max_resets;
 
         NvU64                                 pin_ns;
+
+        NvS8                              lapse_stat;
     } params;
 
     uvm_va_space_t                         *va_space;
@@ -222,9 +226,9 @@ typedef struct
 // uvm_procfs_is_debug_enabled() returns true.
 static processor_thrashing_stats_t g_cpu_thrashing_stats;
 
-#define PROCESSOR_THRASHING_STATS_INC(va_space, proc, field)                                         \
+#define PROCESSOR_THRASHING_STATS_INC(proc, field)                                                   \
     do {                                                                                             \
-        processor_thrashing_stats_t *_processor_stats = thrashing_stats_get_or_null(va_space, proc); \
+        processor_thrashing_stats_t *_processor_stats = thrashing_stats_get_or_null(proc);           \
         if (_processor_stats)                                                                        \
             atomic64_inc(&_processor_stats->field);                                                  \
     } while (0)
@@ -260,12 +264,21 @@ static unsigned uvm_perf_thrashing_pin_threshold = UVM_PERF_THRASHING_PIN_THRESH
 
 // TODO: Bug 1768615: [uvm] Automatically tune default values for thrashing
 // detection/prevention parameters
-#define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT 500
+#define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT 500ULL
 #define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_EMULATION (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 800)
+
+#define UVM_PERF_THRASHING_LAPSE_USEC_MAX (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 1000)
+#define UVM_PERF_THRASHING_LAPSE_USEC_MIN (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT / 100)
 
 // Lapse of time in microseconds that determines if two consecutive events on
 // the same page can be considered thrashing
 static unsigned uvm_perf_thrashing_lapse_usec = UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT;
+
+#define UVM_PERF_LAPSE_VOTE_THRESHOLD   32
+
+// Number of lapse intervals greater than uvm_perf_thrashing_lapse_usec,
+// big enough to consider readjusting.
+static unsigned int uvm_perf_lapse_vote_threshold = UVM_PERF_LAPSE_VOTE_THRESHOLD;
 
 #define UVM_PERF_THRASHING_NAP_DEFAULT 1
 #define UVM_PERF_THRASHING_NAP_MAX     100
@@ -307,6 +320,7 @@ module_param(uvm_perf_thrashing_enable,        uint, S_IRUGO);
 module_param(uvm_perf_thrashing_threshold,     uint, S_IRUGO);
 module_param(uvm_perf_thrashing_pin_threshold, uint, S_IRUGO);
 module_param(uvm_perf_thrashing_lapse_usec,    uint, S_IRUGO);
+module_param(uvm_perf_lapse_vote_threshold,    uint, S_IRUGO);
 module_param(uvm_perf_thrashing_nap,           uint, S_IRUGO);
 module_param(uvm_perf_thrashing_epoch,         uint, S_IRUGO);
 module_param(uvm_perf_thrashing_pin,           uint, S_IRUGO);
@@ -322,6 +336,7 @@ static bool g_uvm_perf_thrashing_enable;
 static unsigned g_uvm_perf_thrashing_threshold;
 static unsigned g_uvm_perf_thrashing_pin_threshold;
 static NvU64 g_uvm_perf_thrashing_lapse_usec;
+static unsigned g_uvm_perf_lapse_vote_threshold;
 static NvU64 g_uvm_perf_thrashing_nap;
 static NvU64 g_uvm_perf_thrashing_epoch;
 static NvU64 g_uvm_perf_thrashing_pin;
@@ -337,28 +352,28 @@ static unsigned g_uvm_perf_thrashing_max_resets;
 // parameter _d. The user value is read from _v, and the final value is stored
 // in a variable named g_##_v, so it must be declared, too. Only unsigned
 // parameters are supported.
-#define INIT_THRASHING_PARAMETER_MIN_MAX(_v, _d, _mi, _ma)                      \
-    do {                                                                        \
-        unsigned v = (_v);                                                      \
-        unsigned d = (_d);                                                      \
-        unsigned mi = (_mi);                                                    \
-        unsigned ma = (_ma);                                                    \
-                                                                                \
-        BUILD_BUG_ON(sizeof(_v) > sizeof(unsigned));                            \
-        BUILD_BUG_ON(THRASHING_PARAMETER_IS_SIGNED(_v));                        \
-                                                                                \
-        UVM_ASSERT(mi <= ma);                                                   \
-        UVM_ASSERT(d >= mi);                                                    \
-        UVM_ASSERT(d <= ma);                                                    \
-                                                                                \
-        if (v >= mi && v <= ma) {                                               \
-            g_##_v = v;                                                         \
-        }                                                                       \
-        else {                                                                  \
-            pr_info("Invalid value %u for " #_v ". Using %u instead\n", v, d);  \
-                                                                                \
-            g_##_v = d;                                                         \
-        }                                                                       \
+#define INIT_THRASHING_PARAMETER_MIN_MAX(_v, _d, _mi, _ma)                            \
+    do {                                                                              \
+        unsigned v = (_v);                                                            \
+        unsigned d = (_d);                                                            \
+        unsigned mi = (_mi);                                                          \
+        unsigned ma = (_ma);                                                          \
+                                                                                      \
+        BUILD_BUG_ON(sizeof(_v) > sizeof(unsigned));                                  \
+        BUILD_BUG_ON(THRASHING_PARAMETER_IS_SIGNED(_v));                              \
+                                                                                      \
+        UVM_ASSERT(mi <= ma);                                                         \
+        UVM_ASSERT(d >= mi);                                                          \
+        UVM_ASSERT(d <= ma);                                                          \
+                                                                                      \
+        if (v >= mi && v <= ma) {                                                     \
+            g_##_v = v;                                                               \
+        }                                                                             \
+        else {                                                                        \
+            UVM_INFO_PRINT("Invalid value %u for " #_v ". Using %u instead\n", v, d); \
+                                                                                      \
+            g_##_v = d;                                                               \
+        }                                                                             \
     } while (0)
 
 #define INIT_THRASHING_PARAMETER(v, d)                 INIT_THRASHING_PARAMETER_MIN_MAX(v, d, 0u, UINT_MAX)
@@ -396,13 +411,19 @@ static void page_thrashing_set_throttling_end_time_stamp(page_thrashing_info_t *
 static uvm_perf_module_t g_module_thrashing;
 
 // Callback declaration for the performance heuristics events
-static void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
-static void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
+static void thrashing_event_cb(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
+static void thrashing_block_destroy_cb(uvm_va_space_t *va_space,
+                                       uvm_perf_event_t event_id,
+                                       uvm_perf_event_data_t *event_data);
+static void thrashing_block_munmap_cb(uvm_va_space_t *va_space,
+                                      uvm_perf_event_t event_id,
+                                      uvm_perf_event_data_t *event_data);
 
 static uvm_perf_module_event_callback_desc_t g_callbacks_thrashing[] = {
     { UVM_PERF_EVENT_BLOCK_DESTROY, thrashing_block_destroy_cb },
     { UVM_PERF_EVENT_MODULE_UNLOAD, thrashing_block_destroy_cb },
     { UVM_PERF_EVENT_BLOCK_SHRINK , thrashing_block_destroy_cb },
+    { UVM_PERF_EVENT_BLOCK_MUNMAP , thrashing_block_munmap_cb  },
     { UVM_PERF_EVENT_MIGRATION,     thrashing_event_cb         },
     { UVM_PERF_EVENT_REVOCATION,    thrashing_event_cb         }
 };
@@ -458,7 +479,7 @@ static void cpu_thrashing_stats_exit(void)
 {
     if (g_cpu_thrashing_stats.procfs_file) {
         UVM_ASSERT(uvm_procfs_is_debug_enabled());
-        uvm_procfs_destroy_entry(g_cpu_thrashing_stats.procfs_file);
+        proc_remove(g_cpu_thrashing_stats.procfs_file);
         g_cpu_thrashing_stats.procfs_file = NULL;
     }
 }
@@ -471,7 +492,7 @@ static processor_thrashing_stats_t *gpu_thrashing_stats_get_or_null(uvm_gpu_t *g
     return uvm_perf_module_type_data(gpu->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 }
 
-static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_va_space_t *va_space, uvm_processor_id_t id)
+static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_processor_id_t id)
 {
     if (UVM_ID_IS_CPU(id)) {
         if (g_cpu_thrashing_stats.procfs_file)
@@ -480,7 +501,7 @@ static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_va_space_t *
         return NULL;
     }
 
-    return gpu_thrashing_stats_get_or_null(uvm_va_space_get_gpu(va_space, id));
+    return gpu_thrashing_stats_get_or_null(uvm_gpu_get(id));
 }
 
 // Create the thrashing stats struct for the given GPU
@@ -522,7 +543,7 @@ static void gpu_thrashing_stats_destroy(uvm_gpu_t *gpu)
         uvm_perf_module_type_unset_data(gpu->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 
         if (gpu_thrashing->procfs_file)
-            uvm_procfs_destroy_entry(gpu_thrashing->procfs_file);
+            proc_remove(gpu_thrashing->procfs_file);
 
         uvm_kvfree(gpu_thrashing);
     }
@@ -530,18 +551,20 @@ static void gpu_thrashing_stats_destroy(uvm_gpu_t *gpu)
 
 // Get the thrashing detection struct for the given VA space if it exists
 //
-// VA space lock needs to be held
+// The caller must ensure that the va_space cannot be deleted, for the
+// duration of this call. Holding either the va_block or va_space lock will do
+// that.
 static va_space_thrashing_info_t *va_space_thrashing_info_get_or_null(uvm_va_space_t *va_space)
 {
-    uvm_assert_rwsem_locked(&va_space->lock);
-
     return uvm_perf_module_type_data(va_space->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 }
 
 // Get the thrashing detection struct for the given VA space. It asserts that
 // the information has been previously created.
 //
-// VA space lock needs to be held
+// The caller must ensure that the va_space cannot be deleted, for the
+// duration of this call. Holding either the va_block or va_space lock will do
+// that.
 static va_space_thrashing_info_t *va_space_thrashing_info_get(uvm_va_space_t *va_space)
 {
     va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get_or_null(va_space);
@@ -595,6 +618,14 @@ static va_space_thrashing_info_t *va_space_thrashing_info_create(uvm_va_space_t 
 
     va_space_thrashing = uvm_kvmalloc_zero(sizeof(*va_space_thrashing));
     if (va_space_thrashing) {
+        uvm_va_block_context_t *block_context = uvm_va_block_context_alloc(NULL);
+
+        if (!block_context) {
+            uvm_kvfree(va_space_thrashing);
+            return NULL;
+        }
+
+        va_space_thrashing->pinned_pages.va_block_context = block_context;
         va_space_thrashing->va_space = va_space;
 
         va_space_thrashing_info_init_params(va_space_thrashing);
@@ -615,6 +646,7 @@ static void va_space_thrashing_info_destroy(uvm_va_space_t *va_space)
 
     if (va_space_thrashing) {
         uvm_perf_module_type_unset_data(va_space->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
+        uvm_va_block_context_free(va_space_thrashing->pinned_pages.va_block_context);
         uvm_kvfree(va_space_thrashing);
     }
 }
@@ -652,8 +684,7 @@ done:
 
 static void thrashing_reset_pages_in_region(uvm_va_block_t *va_block, NvU64 address, NvU64 bytes);
 
-// Destroy the thrashing detection struct for the given block
-static void thrashing_info_destroy(uvm_va_block_t *va_block)
+void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block)
 {
     block_thrashing_info_t *block_thrashing = thrashing_info_get(va_block);
 
@@ -667,7 +698,7 @@ static void thrashing_info_destroy(uvm_va_block_t *va_block)
     }
 }
 
-void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+void thrashing_block_destroy_cb(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     uvm_va_block_t *va_block;
 
@@ -687,7 +718,21 @@ void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t
     if (!va_block)
         return;
 
-    thrashing_info_destroy(va_block);
+    uvm_perf_thrashing_info_destroy(va_block);
+}
+
+void thrashing_block_munmap_cb(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+{
+    uvm_va_block_t *va_block = event_data->block_munmap.block;
+    uvm_va_block_region_t region = event_data->block_munmap.region;
+
+    UVM_ASSERT(g_uvm_perf_thrashing_enable);
+    UVM_ASSERT(event_id == UVM_PERF_EVENT_BLOCK_MUNMAP);
+    UVM_ASSERT(va_block);
+
+    thrashing_reset_pages_in_region(va_block,
+                                    uvm_va_block_region_start(va_block, region),
+                                    uvm_va_block_region_size(region));
 }
 
 // Sanity checks of the thrashing tracking state
@@ -874,6 +919,7 @@ static pinned_page_t *find_pinned_page(block_thrashing_info_t *block_thrashing, 
 //
 static NV_STATUS thrashing_pin_page(va_space_thrashing_info_t *va_space_thrashing,
                                     uvm_va_block_t *va_block,
+                                    uvm_va_block_context_t *va_block_context,
                                     block_thrashing_info_t *block_thrashing,
                                     page_thrashing_info_t *page_thrashing,
                                     uvm_page_index_t page_index,
@@ -881,17 +927,17 @@ static NV_STATUS thrashing_pin_page(va_space_thrashing_info_t *va_space_thrashin
                                     uvm_processor_id_t residency,
                                     uvm_processor_id_t requester)
 {
-    uvm_processor_mask_t current_residency;
+    uvm_processor_mask_t *current_residency = &va_block_context->scratch_processor_mask;
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(!uvm_processor_mask_test(&page_thrashing->throttled_processors, requester));
 
-    uvm_va_block_page_resident_processors(va_block, page_index, &current_residency);
+    uvm_va_block_page_resident_processors(va_block, page_index, current_residency);
 
     // If we are pinning the page for the first time or we are pinning it on a
     // different location that the current location, reset the throttling state
     // to make sure that we flush any pending ThrottlingEnd events.
-    if (!page_thrashing->pinned || !uvm_processor_mask_test(&current_residency, residency))
+    if (!page_thrashing->pinned || !uvm_processor_mask_test(current_residency, residency))
         thrashing_throttling_reset_page(va_block, block_thrashing, page_thrashing, page_index);
 
     if (!page_thrashing->pinned) {
@@ -1006,7 +1052,7 @@ static void thrashing_detected(uvm_va_block_t *va_block,
     if (!uvm_page_mask_test_and_set(&block_thrashing->thrashing_pages, page_index))
         ++block_thrashing->num_thrashing_pages;
 
-    PROCESSOR_THRASHING_STATS_INC(va_space, processor_id, num_thrashing);
+    PROCESSOR_THRASHING_STATS_INC(processor_id, num_thrashing);
 
     UVM_ASSERT(thrashing_state_checks(va_block, block_thrashing, page_thrashing, page_index));
 }
@@ -1066,17 +1112,17 @@ static void thrashing_reset_pages_in_region(uvm_va_block_t *va_block, NvU64 addr
 
 // Unmap remote mappings from the given processors on the pinned pages
 // described by region and block_thrashing->pinned pages.
-static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_block,
-                                                           uvm_va_block_context_t *va_block_context,
-                                                           block_thrashing_info_t *block_thrashing,
-                                                           uvm_va_block_region_t region,
-                                                           const uvm_processor_mask_t *unmap_processors)
+static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
+                                           uvm_va_block_context_t *va_block_context,
+                                           block_thrashing_info_t *block_thrashing,
+                                           uvm_va_block_region_t region,
+                                           const uvm_processor_mask_t *unmap_processors)
 {
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_processor_id_t processor_id;
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_policy_get(va_block, uvm_va_block_region_start(va_block, region));
 
     uvm_assert_mutex_locked(&va_block->lock);
 
@@ -1085,7 +1131,7 @@ static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_bl
                    !uvm_processor_mask_test(&policy->accessed_by, processor_id));
 
         if (uvm_processor_mask_test(&va_block->resident, processor_id)) {
-            const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id);
+            const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id, NUMA_NO_NODE);
 
             if (!uvm_page_mask_andnot(&va_block_context->caller_page_mask,
                                       &block_thrashing->pinned_pages.mask,
@@ -1093,8 +1139,7 @@ static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_bl
                 continue;
         }
         else {
-            uvm_page_mask_copy(&va_block_context->caller_page_mask,
-                               &block_thrashing->pinned_pages.mask);
+            uvm_page_mask_copy(&va_block_context->caller_page_mask, &block_thrashing->pinned_pages.mask);
         }
 
         status = uvm_va_block_unmap(va_block,
@@ -1116,15 +1161,13 @@ static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_bl
     return status;
 }
 
-// Unmap remote mappings from all processors on the pinned pages
-// described by region and block_thrashing->pinned pages.
-static NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block,
-                                                               uvm_va_block_context_t *va_block_context,
-                                                               uvm_va_block_region_t region)
+NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_block,
+                                                           uvm_va_block_context_t *va_block_context,
+                                                           uvm_va_block_region_t region)
 {
     block_thrashing_info_t *block_thrashing;
-    uvm_processor_mask_t unmap_processors;
-    uvm_va_policy_t *policy;
+    uvm_processor_mask_t *unmap_processors = &va_block_context->unmap_processors_mask;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
 
     uvm_assert_mutex_locked(&va_block->lock);
 
@@ -1137,15 +1180,9 @@ static NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *v
 
     // Unmap all mapped processors (that are not SetAccessedBy) with
     // no copy of the page
-    policy = uvm_va_policy_get(va_block, uvm_va_block_region_start(va_block, region));
+    uvm_processor_mask_andnot(unmap_processors, &va_block->mapped, &policy->accessed_by);
 
-    uvm_processor_mask_andnot(&unmap_processors, &va_block->mapped, &policy->accessed_by);
-
-    return unmap_remote_pinned_pages_from_processors(va_block,
-                                                     va_block_context,
-                                                     block_thrashing,
-                                                     region,
-                                                     &unmap_processors);
+    return unmap_remote_pinned_pages(va_block, va_block_context, block_thrashing, region, unmap_processors);
 }
 
 // Check that we are not migrating pages away from its pinned location and
@@ -1208,12 +1245,11 @@ static bool is_migration_pinned_pages_update(uvm_va_block_t *va_block,
 
 // This function processes migration/revocation events and determines if the
 // affected pages are thrashing or not.
-void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+void thrashing_event_cb(uvm_va_space_t *va_space, uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     va_space_thrashing_info_t *va_space_thrashing;
     block_thrashing_info_t *block_thrashing = NULL;
     uvm_va_block_t *va_block;
-    uvm_va_space_t *va_space;
     NvU64 address;
     NvU64 bytes;
     uvm_processor_id_t processor_id;
@@ -1232,6 +1268,11 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
         bytes        = event_data->migration.bytes;
         processor_id = event_data->migration.dst;
 
+        // TODO: Bug 5138823: [uvm] Add support for thrashing detection and
+        // mitigation for pageable memory
+        if (!va_block)
+            return;
+
         // Skip the thrashing detection logic on eviction as we cannot take
         // the VA space lock
         if (event_data->migration.cause == UVM_MAKE_RESIDENT_CAUSE_EVICTION)
@@ -1241,16 +1282,15 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
         if (!uvm_id_equal(event_data->migration.dst, event_data->migration.make_resident_context->dest_id))
             return;
 
-        va_space = uvm_va_block_get_va_space(va_block);
         va_space_thrashing = va_space_thrashing_info_get(va_space);
         if (!va_space_thrashing->params.enable)
             return;
 
-        // TODO: Bug 2046423: HMM will need to look up the policy when
+        // TODO: Bug 3660922: HMM will need to look up the policy when
         // read duplication is supported.
         read_duplication = uvm_va_block_is_hmm(va_block) ?
                            UVM_READ_DUPLICATION_UNSET :
-                           uvm_va_range_get_policy(va_block->va_range)->read_duplication;
+                           va_block->managed_range->policy.read_duplication;
 
         // We only care about migrations due to replayable faults, access
         // counters and page prefetching. For non-replayable faults, UVM will
@@ -1283,7 +1323,6 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
         bytes        = event_data->revocation.bytes;
         processor_id = event_data->revocation.proc_id;
 
-        va_space = uvm_va_block_get_va_space(va_block);
         va_space_thrashing = va_space_thrashing_info_get(va_space);
         if (!va_space_thrashing->params.enable)
             return;
@@ -1301,9 +1340,8 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
 
         if (block_thrashing->last_time_stamp == 0 ||
             uvm_id_equal(block_thrashing->last_processor, processor_id) ||
-            time_stamp - block_thrashing->last_time_stamp > va_space_thrashing->params.lapse_ns) {
+            time_stamp - block_thrashing->last_time_stamp > va_space_thrashing->params.lapse_ns)
             goto done;
-        }
 
         num_block_pages = uvm_va_block_size(va_block) / PAGE_SIZE;
 
@@ -1373,22 +1411,38 @@ static bool thrashing_processors_can_access(uvm_va_space_t *va_space,
 }
 
 static bool thrashing_processors_have_fast_access_to(uvm_va_space_t *va_space,
+                                                     uvm_va_block_context_t *va_block_context,
                                                      page_thrashing_info_t *page_thrashing,
                                                      uvm_processor_id_t to)
 {
-    uvm_processor_mask_t fast_to;
+    uvm_processor_mask_t *fast_to = &va_block_context->fast_access_mask;
 
     if (UVM_ID_IS_INVALID(to))
         return false;
 
-    // Combine NVLINK and native atomics mask since we could have PCIe
+    // Combine NVLINK/C2C and native atomics mask since we could have PCIe
     // atomics in the future
-    uvm_processor_mask_and(&fast_to,
-                           &va_space->has_nvlink[uvm_id_value(to)],
-                           &va_space->has_native_atomics[uvm_id_value(to)]);
-    uvm_processor_mask_set(&fast_to, to);
+    // TODO: Bug 5232283: has_fast_link is used incorrectly. It should be
+    // documented that has_fast_link is always symmetric. has_fast_link_from
+    // will be needed if the symmetry assumption is ever broken.
 
-    return uvm_processor_mask_subset(&page_thrashing->processors, &fast_to);
+    uvm_processor_mask_and(fast_to,
+                           &va_space->has_fast_link[uvm_id_value(to)],
+                           &va_space->has_native_atomics[uvm_id_value(to)]);
+    if (UVM_ID_IS_CPU(to)) {
+        uvm_processor_mask_set(fast_to, to);
+    }
+    else {
+        // Include all SMC peers and the processor 'to'.
+        // This includes SMC peers that are not registered.
+        // Since not-registered peers cannot be in page_thrashing->processors,
+        // the value of their respective bits in "fast_to" doesn't matter.
+        uvm_processor_mask_range_fill(fast_to,
+                                      uvm_gpu_id_from_sub_processor(uvm_parent_gpu_id_from_gpu_id(to), 0),
+                                      UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+    }
+
+    return uvm_processor_mask_subset(&page_thrashing->processors, fast_to);
 }
 
 static void thrashing_processors_common_locations(uvm_va_space_t *va_space,
@@ -1424,6 +1478,7 @@ static bool preferred_location_is_thrashing(uvm_processor_id_t preferred_locatio
 
 static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thrashing_info_t *va_space_thrashing,
                                                                   uvm_va_block_t *va_block,
+                                                                  uvm_va_block_context_t *va_block_context,
                                                                   uvm_page_index_t page_index,
                                                                   page_thrashing_info_t *page_thrashing,
                                                                   uvm_processor_id_t requester)
@@ -1433,7 +1488,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_processor_id_t do_not_throttle_processor = page_thrashing->do_not_throttle_processor_id;
     uvm_processor_id_t pinned_residency = page_thrashing->pinned_residency_id;
-    uvm_va_policy_t *policy;
+    const uvm_va_policy_t *policy;
     uvm_processor_id_t preferred_location;
 
     policy = uvm_va_policy_get(va_block, uvm_va_block_cpu_page_address(va_block, page_index));
@@ -1442,9 +1497,22 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
 
     hint.type = UVM_PERF_THRASHING_HINT_TYPE_NONE;
 
-    closest_resident_id = uvm_va_block_page_get_closest_resident(va_block, page_index, requester);
-    UVM_ASSERT(UVM_ID_IS_VALID(closest_resident_id));
+    closest_resident_id = uvm_va_block_page_get_closest_resident(va_block, va_block_context, page_index, requester);
+    if (uvm_va_block_is_hmm(va_block)) {
+        // HMM pages always start out resident on the CPU but may not be
+        // recorded in the va_block state because hmm_range_fault() or
+        // similar functions haven't been called to get an accurate snapshot
+        // of the Linux state. We can assume pages are CPU resident for the
+        // purpose of deciding where to migrate to reduce thrashing.
+        if (UVM_ID_IS_INVALID(closest_resident_id))
+            closest_resident_id = UVM_ID_CPU;
+    }
+    else {
+        UVM_ASSERT(UVM_ID_IS_VALID(closest_resident_id));
+    }
 
+    // TODO: Bug 5279540 : In CDMM mode, if the closest_resident_id is GPU,
+    // we need to pin to the CPU as opposed to throttling.
     if (thrashing_processors_can_access(va_space, page_thrashing, preferred_location)) {
         // The logic in uvm_va_block_select_residency chooses the preferred
         // location if the requester can access it, so all processors should
@@ -1458,14 +1526,14 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
         hint.pin.residency = preferred_location;
     }
     else if (!preferred_location_is_thrashing(preferred_location, page_thrashing) &&
-             thrashing_processors_have_fast_access_to(va_space, page_thrashing, closest_resident_id)) {
+             thrashing_processors_have_fast_access_to(va_space, va_block_context, page_thrashing, closest_resident_id)){
         // This is a fast path for those scenarios in which all thrashing
-        // processors have fast (NVLINK + native atomics) access to the current
-        // residency. This is skipped if the preferred location is thrashing and
-        // not accessible by the rest of thrashing processors. Otherwise, we
-        // would be in the condition above.
-        if (UVM_ID_IS_CPU(closest_resident_id)) {
-            // On P9 systems, we prefer the CPU to map vidmem (since it can
+        // processors have fast access (NVLINK + native atomics or SMC peers)
+        // to the current residency. This is skipped if the preferred location
+        // is thrashing and not accessible by the rest of thrashing processors.
+        // Otherwise, we would be in the condition above.
+        if (UVM_ID_IS_CPU(closest_resident_id) && thrashing_processors_can_access(va_space, page_thrashing, requester)) {
+            // On Coherent systems, we prefer the CPU to map vidmem (since it can
             // cache it), so don't map the GPU to sysmem.
             if (UVM_ID_IS_GPU(requester)) {
                 hint.type = UVM_PERF_THRASHING_HINT_TYPE_PIN;
@@ -1515,20 +1583,21 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
                 hint.pin.residency = requester;
             }
             else {
-                uvm_processor_mask_t common_locations;
+                uvm_processor_mask_t *common_locations = &va_block_context->scratch_processor_mask;
 
-                thrashing_processors_common_locations(va_space, page_thrashing, &common_locations);
-                if (uvm_processor_mask_empty(&common_locations)) {
+                thrashing_processors_common_locations(va_space, page_thrashing, common_locations);
+                if (uvm_processor_mask_empty(common_locations)) {
                     hint.pin.residency = requester;
                 }
                 else {
                     // Find the common location that is closest to the requester
-                    hint.pin.residency = uvm_processor_mask_find_closest_id(va_space, &common_locations, requester);
+                    hint.pin.residency = uvm_processor_mask_find_closest_id(va_space, common_locations, requester);
                 }
             }
         }
-        else if (uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(page_thrashing->pinned_residency_id)], requester)) {
-            UVM_ASSERT(uvm_id_equal(closest_resident_id, pinned_residency));
+        else if (uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(pinned_residency)], requester)) {
+            if (!uvm_va_block_is_hmm(va_block))
+                UVM_ASSERT(uvm_id_equal(closest_resident_id, pinned_residency));
 
             hint.type = UVM_PERF_THRASHING_HINT_TYPE_PIN;
             hint.pin.residency = pinned_residency;
@@ -1545,11 +1614,33 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
         hint.pin.residency = requester;
     }
 
-    if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN &&
-        !uvm_va_space_processor_has_memory(va_space, hint.pin.residency))
+    if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN && !uvm_processor_has_memory(hint.pin.residency))
         hint.pin.residency = UVM_ID_CPU;
 
     return hint;
+}
+
+static void adjust_thrashing_lapse(va_space_thrashing_info_t *ti, NvU64 lapse)
+{
+    // If lapse is non-default, i.e. provided by user explicitly, don't adjust it
+    if (g_uvm_perf_thrashing_lapse_usec != UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT)
+        return;
+
+    // Update statistics without if-else conditionals.
+    ti->params.lapse_stat += 2 * !(lapse < ti->params.lapse_ns) - 1;
+
+    // Voting capped exponential adjustment
+    if (ti->params.lapse_stat >= g_uvm_perf_lapse_vote_threshold &&
+        ti->params.lapse_ns < UVM_PERF_THRASHING_LAPSE_USEC_MAX * 1000)
+        ti->params.lapse_ns += min(ti->params.lapse_ns / 8, UVM_PERF_THRASHING_LAPSE_USEC_MAX / 10 * 1000);
+    else
+    if (-ti->params.lapse_stat <= -(int)g_uvm_perf_lapse_vote_threshold &&
+        ti->params.lapse_ns > UVM_PERF_THRASHING_LAPSE_USEC_MIN * 1000)
+        ti->params.lapse_ns -= max(ti->params.lapse_ns / 8, UVM_PERF_THRASHING_LAPSE_USEC_MIN * 1000);
+    else
+        return;
+
+    ti->params.lapse_stat /= 2;
 }
 
 // Function called on fault that tells the fault handler if any operation
@@ -1571,6 +1662,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
 //   that case we keep the page pinned while applying the same algorithm as in
 //   Phase1.
 uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
+                                                      uvm_va_block_context_t *va_block_context,
                                                       NvU64 address,
                                                       uvm_processor_id_t requester)
 {
@@ -1654,6 +1746,8 @@ uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
 
     last_time_stamp = page_thrashing_get_time_stamp(page_thrashing);
 
+    adjust_thrashing_lapse(va_space_thrashing, time_stamp - last_time_stamp);
+
     // If the lapse since the last thrashing event is longer than a thrashing
     // lapse we are no longer thrashing
     if (time_stamp - last_time_stamp > va_space_thrashing->params.lapse_ns &&
@@ -1683,6 +1777,7 @@ uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
     else {
         hint = get_hint_for_migration_thrashing(va_space_thrashing,
                                                 va_block,
+                                                va_block_context,
                                                 page_index,
                                                 page_thrashing,
                                                 requester);
@@ -1692,6 +1787,7 @@ done:
     if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN) {
         NV_STATUS status = thrashing_pin_page(va_space_thrashing,
                                               va_block,
+                                              va_block_context,
                                               block_thrashing,
                                               page_thrashing,
                                               page_index,
@@ -1706,9 +1802,9 @@ done:
         }
         else {
             if (uvm_id_equal(hint.pin.residency, requester))
-                PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_pin_local);
+                PROCESSOR_THRASHING_STATS_INC(requester, num_pin_local);
             else
-                PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_pin_remote);
+                PROCESSOR_THRASHING_STATS_INC(requester, num_pin_remote);
 
             uvm_processor_mask_copy(&hint.pin.processors, &page_thrashing->processors);
         }
@@ -1721,7 +1817,7 @@ done:
                                      page_index,
                                      requester);
 
-        PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_throttle);
+        PROCESSOR_THRASHING_STATS_INC(requester, num_throttle);
 
         hint.throttle.end_time_stamp = page_thrashing_get_throttling_end_time_stamp(page_thrashing);
     }
@@ -1774,30 +1870,13 @@ const uvm_page_mask_t *uvm_perf_thrashing_get_thrashing_pages(uvm_va_block_t *va
     return &block_thrashing->thrashing_pages;
 }
 
-bool uvm_perf_thrashing_is_block_thrashing(uvm_va_block_t *va_block)
-{
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
-    block_thrashing_info_t *block_thrashing = NULL;
-
-    if (!va_space_thrashing->params.enable)
-        return false;
-
-    block_thrashing = thrashing_info_get(va_block);
-    if (!block_thrashing)
-        return false;
-
-    return block_thrashing->num_thrashing_pages > 0;
-}
-
 #define TIMER_GRANULARITY_NS 20000ULL
 static void thrashing_unpin_pages(struct work_struct *work)
 {
     struct delayed_work *dwork = to_delayed_work(work);
     va_space_thrashing_info_t *va_space_thrashing = container_of(dwork, va_space_thrashing_info_t, pinned_pages.dwork);
     uvm_va_space_t *va_space = va_space_thrashing->va_space;
-
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
+    uvm_va_block_context_t *va_block_context = va_space_thrashing->pinned_pages.va_block_context;
 
     // Take the VA space lock so that VA blocks don't go away during this
     // operation.
@@ -1846,6 +1925,8 @@ static void thrashing_unpin_pages(struct work_struct *work)
             break;
 
         va_block = pinned_page->va_block;
+        if (uvm_va_block_is_hmm(va_block))
+            uvm_hmm_migrate_begin_wait(va_block);
         uvm_mutex_lock(&va_block->lock);
 
         // Only operate if the pinned page's tracking state isn't already
@@ -1857,16 +1938,17 @@ static void thrashing_unpin_pages(struct work_struct *work)
             UVM_ASSERT(block_thrashing);
             UVM_ASSERT(uvm_page_mask_test(&block_thrashing->pinned_pages.mask, page_index));
 
-            va_space_thrashing->pinned_pages.va_block_context.policy =
-                uvm_va_policy_get(va_block, uvm_va_block_cpu_page_address(va_block, page_index));
+            uvm_va_block_context_init(va_block_context, NULL);
 
-            unmap_remote_pinned_pages_from_all_processors(va_block,
-                                                          &va_space_thrashing->pinned_pages.va_block_context,
-                                                          uvm_va_block_region_for_page(page_index));
+            uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
+                                                             va_block_context,
+                                                             uvm_va_block_region_for_page(page_index));
             thrashing_reset_page(va_space_thrashing, va_block, block_thrashing, page_index);
         }
 
         uvm_mutex_unlock(&va_block->lock);
+        if (uvm_va_block_is_hmm(va_block))
+            uvm_hmm_migrate_finish(va_block);
         kmem_cache_free(g_pinned_page_cache, pinned_page);
     }
 
@@ -1928,28 +2010,23 @@ void uvm_perf_thrashing_unload(uvm_va_space_t *va_space)
 
     // Make sure that there are not pending work items
     if (va_space_thrashing) {
-        UVM_ASSERT(va_space_thrashing->pinned_pages.in_va_space_teardown);
         UVM_ASSERT(list_empty(&va_space_thrashing->pinned_pages.list));
 
         va_space_thrashing_info_destroy(va_space);
     }
 }
 
-NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+void uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
+    va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
+
     // If a simulated GPU is registered, re-initialize thrashing parameters in
-    // case they need to be adjusted
-    if (g_uvm_global.num_simulated_devices > 0) {
-        va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
-
-        if (!va_space_thrashing->params.test_overrides)
-            va_space_thrashing_info_init_params(va_space_thrashing);
-    }
-
-    return NV_OK;
+    // case they need to be adjusted.
+    if ((g_uvm_global.num_simulated_devices > 0) && !va_space_thrashing->params.test_overrides)
+        va_space_thrashing_info_init_params(va_space_thrashing);
 }
 
-NV_STATUS uvm_perf_thrashing_init()
+NV_STATUS uvm_perf_thrashing_init(void)
 {
     NV_STATUS status;
 
@@ -1973,10 +2050,11 @@ NV_STATUS uvm_perf_thrashing_init()
 
     INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
 
+    INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_lapse_vote_threshold, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
+
     INIT_THRASHING_PARAMETER_NONZERO_MAX(uvm_perf_thrashing_nap,
                                          UVM_PERF_THRASHING_NAP_DEFAULT,
                                          UVM_PERF_THRASHING_NAP_MAX);
-
 
     INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_epoch, UVM_PERF_THRASHING_EPOCH_DEFAULT);
 
@@ -2008,7 +2086,7 @@ error:
     return status;
 }
 
-void uvm_perf_thrashing_exit()
+void uvm_perf_thrashing_exit(void)
 {
     cpu_thrashing_stats_exit();
 
@@ -2087,31 +2165,25 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
     // When disabling thrashing detection, destroy the thrashing tracking
     // information for all VA blocks and unpin pages
     if (!va_space_thrashing->params.enable) {
-        uvm_va_range_t *va_range;
+        uvm_va_range_managed_t *managed_range;
 
-        uvm_for_each_va_range(va_range, va_space) {
+        uvm_for_each_va_range_managed(managed_range, va_space) {
             uvm_va_block_t *va_block;
 
-            if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
-                continue;
-
-            for_each_va_block_in_va_range(va_range, va_block) {
+            for_each_va_block_in_va_range(managed_range, va_block) {
                 uvm_va_block_region_t va_block_region = uvm_va_block_region_from_block(va_block);
                 uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
-
-                block_context->policy = uvm_va_range_get_policy(va_range);
 
                 uvm_mutex_lock(&va_block->lock);
 
                 // Unmap may split PTEs and require a retry. Needs to be called
                 // before the pinned pages information is destroyed.
-                status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
-                                                   NULL,
-                                                   unmap_remote_pinned_pages_from_all_processors(va_block,
-                                                                                                 block_context,
-                                                                                                 va_block_region));
+                status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, NULL,
+                             uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
+                                                                              block_context,
+                                                                              va_block_region));
 
-                thrashing_info_destroy(va_block);
+                uvm_perf_thrashing_info_destroy(va_block);
 
                 uvm_mutex_unlock(&va_block->lock);
 
@@ -2122,6 +2194,15 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
                     goto done_unlock_va_space;
                 }
             }
+        }
+
+        status = uvm_hmm_clear_thrashing_policy(va_space);
+
+        // Re-enable thrashing on failure to avoid getting asserts
+        // about having state while thrashing is disabled
+        if (status != NV_OK) {
+            va_space_thrashing->params.enable = true;
+            goto done_unlock_va_space;
         }
     }
 

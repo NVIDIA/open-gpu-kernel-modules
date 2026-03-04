@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrla06f/ctrla06fbase.finn
+// Source file:      ctrl/ctrla06f/ctrla06fbase.finn
 //
 
 
@@ -42,7 +42,6 @@
 /* GK100_GPFIFO command categories (6bits) */
 #define NVA06F_CTRL_RESERVED (0x00)
 #define NVA06F_CTRL_GPFIFO   (0x01)
-#define NVA06F_CTRL_EVENT    (0x02)
 #define NVA06F_CTRL_INTERNAL (0x03)
 
 /*

@@ -22,8 +22,7 @@
  */
 
 /**
- * @file
- * @brief NvLog call that logs prints.
+ * NvLog call that logs prints.
  *
  * This is the traditional NvLog component. When enabled, it will also activate
  * preprocessing of all source files to detect calls to NVLOG_PRINTF, and
@@ -32,8 +31,10 @@
  * This file just defines the macros used by NV_PRINTF and others clients
  */
 
-#ifndef _NVLOG_PRINTF_H_
-#define _NVLOG_PRINTF_H_
+#ifndef NVLOG_PRINTF_H
+#define NVLOG_PRINTF_H
+
+#include "utils/nvprintf_level.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,7 @@ extern "C" {
 
 #ifndef NVLOG_LEVEL
 /// @brief Level below which all prints will be compiled out.
-#define NVLOG_LEVEL 2
+#define NVLOG_LEVEL LEVEL_NOTICE
 #endif
 
 /// @brief Maximum number of arguments to NVLOG_PRINTF
@@ -60,12 +61,12 @@ extern "C" {
  *
  * @param tag    - An identifier to help with offline filtering. Doesn't need to
  *                 be defined anywhere.
- * @param route  - 8bit mask of buffers the print will be routed to. 
+ * @param route  - 8bit mask of buffers the print will be routed to.
  *                 Use NVLOG_BUFFER_XXX constants
  * @param level  - Level at which to print. Calls with level < NVLOG_LEVEL will
  *                 be compiled out.
  * @param format - printf-like format string
- * @param ...    - printf arguments 
+ * @param ...    - printf arguments
  */
 #define NVLOG_PRINTF(tag, route, level, format, ...) _NVLOG_PRINTF(tag, route, level, format, __VA_ARGS__)
 
@@ -88,4 +89,4 @@ extern "C" {
 } //extern "C"
 #endif
 
-#endif // _NVLOG_PRINTF_H_
+#endif // NVLOG_PRINTF_H

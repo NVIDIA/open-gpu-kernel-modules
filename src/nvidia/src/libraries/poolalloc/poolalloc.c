@@ -26,10 +26,6 @@
 #include "utils/nvprintf.h"
 #include "utils/nvassert.h"
 
-// Local defines
-#define LOG_ENTER NV_PRINTF(LEVEL_INFO, "--> %s at line %d\n", __FUNCTION__, __LINE__)
-#define LOG_EXIT  NV_PRINTF(LEVEL_INFO, "<-- %s at line %d\n", __FUNCTION__, __LINE__)
-
 // Local function declarations.
 static NvU32 ntz_64 (NvU64 bits);
 static NvU32 countZeros(NvU64 bits);
@@ -56,10 +52,10 @@ ntz_64
     return ((NvU32)(bz + b5 + b4 + b3 + b2 + b1 + b0));
 }
 
-static void 
+static void
 _setBitmap
 (
-    NvU64 *bitmap, 
+    NvU64 *bitmap,
     NvU32 index
 )
 {
@@ -126,8 +122,8 @@ poolListPrint
     it = listIterAll(pList);
     while (listIterNext(&it))
     {
-        NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, 
-                     "=> [pageAddr: 0x%llx, bitmap: 0x%llx]", 
+        NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE,
+                     "=> [pageAddr: 0x%llx, bitmap: 0x%llx]",
                       it.pValue->pageAddr, it.pValue->bitmap);
     }
     NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, "\n");
@@ -137,7 +133,7 @@ poolListPrint
 static void
 allocFreeList
 (
-    POOLALLOC        *pPool, 
+    POOLALLOC        *pPool,
     POOLALLOC_HANDLE *pPageHandle
 )
 {
@@ -167,7 +163,7 @@ allocFreeList
 static void
 allocPartialList
 (
-    POOLALLOC        *pPool, 
+    POOLALLOC        *pPool,
     POOLALLOC_HANDLE *pPageHandle
 )
 {
@@ -202,9 +198,9 @@ poolAllocPrint
 )
 {
 #if defined(DEBUG_VERBOSE)
-    NV_PRINTF(LEVEL_NOTICE, "upstreamPageSize = %dKB, allocPageSize = %d%s\n",
-              (pPool->upstreamPageSize >> 10), 
-              (pPool->allocPageSize >> 10) ? pPool->allocPageSize >> 10 : 
+    NV_PRINTF(LEVEL_NOTICE, "upstreamPageSize = %lldKB, allocPageSize = %lld%s\n",
+              (pPool->upstreamPageSize >> 10),
+              (pPool->allocPageSize >> 10) ? pPool->allocPageSize >> 10 :
                                              pPool->allocPageSize,
               (pPool->allocPageSize >> 10) ? "KB" : "B");
     NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, "freeList => ");
@@ -220,8 +216,8 @@ poolAllocPrint
 POOLALLOC *
 poolInitialize
 (
-    NvU32              upstreamPageSize,
-    NvU32              allocPageSize,
+    NvU64              upstreamPageSize,
+    NvU64              allocPageSize,
     allocCallback_t    allocCb,
     freeCallback_t     freeCb,
     void               *ctxPtr,
@@ -230,7 +226,6 @@ poolInitialize
 )
 {
     POOLALLOC *pPool;
-    LOG_ENTER;
 
     pPool = PORT_ALLOC(pAllocator, sizeof(*pPool));
     if (pPool == NULL)
@@ -240,7 +235,7 @@ poolInitialize
 
     pPool->upstreamPageSize = upstreamPageSize;
     pPool->allocPageSize    = allocPageSize;
-    pPool->ratio            = upstreamPageSize / allocPageSize;
+    pPool->ratio            = (NvU32)(upstreamPageSize / allocPageSize);
     pPool->flags            = flags;
 
     (pPool->callBackInfo).allocCb     = allocCb;
@@ -253,10 +248,9 @@ poolInitialize
     listInitIntrusive(&pPool->fullList);
     listInitIntrusive(&pPool->partialList);
 
-    NV_PRINTF(LEVEL_INFO, "Initialized pool with upstreamPageSize = %dB, allocPageSize = %dB and autoPopulate %s\n",
+    NV_PRINTF(LEVEL_INFO, "Initialized pool with upstreamPageSize = %lldB, allocPageSize = %lldB and autoPopulate %s\n",
               pPool->upstreamPageSize, pPool->allocPageSize,
               ((pPool->flags & NV_RMPOOL_FLAGS_AUTO_POPULATE_ENABLE) ? "enabled" : "disabled"));
-    LOG_EXIT;
     return pPool;
 }
 
@@ -268,53 +262,63 @@ poolReserve
     NvU64     numPages
 )
 {
-    NvU64            i, freeLength;
+    NvU64            i, freeLength, totalAlloc;
+    NV_STATUS status = NV_ERR_NO_MEMORY;
     allocCallback_t  allocCb;
-    POOLALLOC_HANDLE pageHandle;
+    POOLALLOC_HANDLE *pPageHandle = NULL;
+    POOLNODE *pNode = NULL;
 
-    LOG_ENTER;
 
     if (pPool == NULL || (pPool->callBackInfo).allocCb == NULL)
     {
-        LOG_EXIT;
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     freeLength = listCount(&pPool->freeList);
     if (freeLength >= numPages)
     {
-        LOG_EXIT;
         return NV_OK;
     }
 
+    totalAlloc = numPages - freeLength;
+
     allocCb = (pPool->callBackInfo).allocCb;
 
-    for (i = 0; i < (numPages - freeLength); i++)
+    pPageHandle = PORT_ALLOC(pPool->pAllocator, totalAlloc * sizeof(POOLALLOC_HANDLE));
+    NV_ASSERT_OR_GOTO(pPageHandle != NULL, free_none);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        allocCb(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize,
+            totalAlloc, pPageHandle),
+        free_page);
+
+    status = NV_ERR_NO_MEMORY;
+
+    for (i = 0; i < totalAlloc; i++)
     {
-        if ((*allocCb)((pPool->callBackInfo).pUpstreamCtx,
-              pPool->upstreamPageSize, &pageHandle) == NV_OK)
-        {
-            POOLNODE *pNode;
+        pNode = PORT_ALLOC(pPool->pAllocator, sizeof(POOLNODE));
+        NV_ASSERT_OR_GOTO(pNode != NULL, free_alloc);
 
-            pNode = PORT_ALLOC(pPool->pAllocator, sizeof(*pNode));
-            listPrependExisting(&pPool->freeList, pNode);
-
-            pNode->pageAddr = pageHandle.address;
-            pNode->bitmap = NV_U64_MAX;
-            pNode->pParent = pageHandle.pMetadata;
-        }
-        else
-        {
-            LOG_EXIT;
-            return NV_ERR_NO_MEMORY;
-        }
+        listPrependExisting(&pPool->freeList, pNode);
+        pNode->pageAddr = pPageHandle[i].address;
+        pNode->bitmap = NV_U64_MAX;
+        pNode->pParent = pPageHandle[i].pMetadata;
     }
 
+    status = NV_OK;
     freeLength = listCount(&pPool->freeList);
     NV_ASSERT(freeLength == numPages);
-
-    LOG_EXIT;
-    return NV_OK;
+    goto free_page;
+free_alloc:
+    for(; i < totalAlloc; i++)
+    {
+        pPool->callBackInfo.freeCb(pPool->callBackInfo.pUpstreamCtx,
+            pPool->upstreamPageSize, &pPageHandle[i]);
+    }
+free_page:
+    PORT_FREE(pPool->pAllocator, pPageHandle);
+free_none:
+    return status;
 }
 
 
@@ -328,17 +332,14 @@ poolTrim
     NvU64          i, freeLength;
     freeCallback_t freeCb;
 
-    LOG_ENTER;
     if (pPool == NULL || (pPool->callBackInfo).freeCb == NULL)
     {
-        LOG_EXIT;
         return;
     }
 
     freeLength = listCount(&pPool->freeList);
     if (freeLength <= preserveNum)
     {
-        LOG_EXIT;
         return;
     }
 
@@ -362,7 +363,6 @@ poolTrim
 
     freeLength = listCount(&pPool->freeList);
     NV_ASSERT(freeLength == preserveNum);
-    LOG_EXIT;
 }
 
 
@@ -377,13 +377,10 @@ poolAllocate
 {
     allocCallback_t allocCb;
 
-    LOG_ENTER;
-
     // Trying allocating from the partial list first.
     if (listCount(&pPool->partialList) > 0)
     {
         allocPartialList(pPool, pPageHandle);
-        LOG_EXIT;
         return NV_OK;
     }
 
@@ -391,19 +388,18 @@ poolAllocate
     if (listCount(&pPool->freeList) > 0)
     {
         allocFreeList(pPool, pPageHandle);
-        LOG_EXIT;
         return NV_OK;
     }
 
     allocCb = (pPool->callBackInfo).allocCb;
 
     //
-    // Nothing left in free list as well!! Populate the pool if it is configured to be auto-populated 
+    // Nothing left in free list as well!! Populate the pool if it is configured to be auto-populated
     // Once we have free list then allocate from free list.
     //
     if (FLD_TEST_DRF(_RMPOOL, _FLAGS, _AUTO_POPULATE, _ENABLE, pPool->flags))
     {
-        if ((*allocCb)(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize, pPageHandle) == NV_OK)
+        if ((*allocCb)(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize, 1, pPageHandle) == NV_OK)
         {
             POOLNODE *pNode;
 
@@ -416,18 +412,15 @@ poolAllocate
 
             allocFreeList(pPool, pPageHandle);
 
-            LOG_EXIT;
             return NV_OK;
         }
     }
-
-    LOG_EXIT;
 
     return NV_ERR_NO_MEMORY;
 }
 
 
-NV_STATUS 
+NV_STATUS
 poolAllocateContig
 (
     POOLALLOC *pPool,
@@ -441,8 +434,6 @@ poolAllocateContig
     NvU32 i;
     PoolPageHandleListIter it;
     NvU64 prevAddr, curAddr;
-
-    LOG_ENTER;
 
     // can't allocate more than one upstream chunk
     NV_ASSERT_OR_RETURN(numPages <= pPool->ratio, NV_ERR_INVALID_ARGUMENT);
@@ -510,8 +501,6 @@ poolFree
     NvU32    freeIdx;
     NvU64    address, baseAddr;
 
-    LOG_ENTER;
-
     address = pPageHandle->address;
     pNode = (POOLNODE *) (pPageHandle->pMetadata);
     baseAddr = pNode->pageAddr;
@@ -548,8 +537,6 @@ poolFree
             listPrependExisting(&pPool->freeList, pNode);
         }
     }
-
-    LOG_EXIT;
 }
 
 
@@ -559,15 +546,12 @@ poolDestroy
     POOLALLOC *pPool
 )
 {
-    LOG_ENTER;
-
     // call back to free all the pages
     poolListDestroy(&pPool->fullList, pPool);
     poolListDestroy(&pPool->partialList, pPool);
     poolListDestroy(&pPool->freeList, pPool);
 
     PORT_FREE(pPool->pAllocator, pPool);
-    LOG_EXIT;
 }
 
 void

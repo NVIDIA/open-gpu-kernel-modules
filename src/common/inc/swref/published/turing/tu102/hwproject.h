@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,5 +25,10 @@
 #define __tu102_hwproject_h__
 
 #define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              47
+#define NV_HOST_NUM_PBDMA                          12
+#define NV_SCAL_LITTER_NUM_FBPAS                       16
+#define NV_FBPA_PRI_STRIDE                      16384
+#define NV_LTC_PRI_STRIDE                            8192
+#define NV_LTS_PRI_STRIDE                             512
 
 #endif // __tu102_hwproject_h__

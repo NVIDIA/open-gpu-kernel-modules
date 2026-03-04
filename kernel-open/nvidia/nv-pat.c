@@ -61,8 +61,8 @@ static inline void nv_disable_caches(unsigned long *cr4)
     unsigned long cr0 = read_cr0();
     write_cr0(((cr0 & (0xdfffffff)) | 0x40000000));
     wbinvd();
-    *cr4 = NV_READ_CR4();
-    if (*cr4 & 0x80) NV_WRITE_CR4(*cr4 & ~0x80);
+    *cr4 = __read_cr4();
+    if (*cr4 & 0x80) __write_cr4(*cr4 & ~0x80);
     __flush_tlb();
 }
 
@@ -72,7 +72,7 @@ static inline void nv_enable_caches(unsigned long cr4)
     wbinvd();
     __flush_tlb();
     write_cr0((cr0 & 0x9fffffff));
-    if (cr4 & 0x80) NV_WRITE_CR4(cr4);
+    if (cr4 & 0x80) __write_cr4(cr4);
 }
 
 static void nv_setup_pat_entries(void *info)
@@ -86,8 +86,8 @@ static void nv_setup_pat_entries(void *info)
         return;
 #endif
 
-    NV_SAVE_FLAGS(eflags);
-    NV_CLI();
+    local_save_flags(eflags);
+    local_irq_disable();
     nv_disable_caches(&cr4);
 
     NV_READ_PAT_ENTRIES(pat1, pat2);
@@ -98,7 +98,7 @@ static void nv_setup_pat_entries(void *info)
     NV_WRITE_PAT_ENTRIES(pat1, pat2);
 
     nv_enable_caches(cr4);
-    NV_RESTORE_FLAGS(eflags);
+    local_irq_restore(eflags);
 }
 
 static void nv_restore_pat_entries(void *info)
@@ -112,38 +112,15 @@ static void nv_restore_pat_entries(void *info)
         return;
 #endif
 
-    NV_SAVE_FLAGS(eflags);
-    NV_CLI();
+    local_save_flags(eflags);
+    local_irq_disable();
     nv_disable_caches(&cr4);
 
     NV_WRITE_PAT_ENTRIES(orig_pat1, orig_pat2);
 
     nv_enable_caches(cr4);
-    NV_RESTORE_FLAGS(eflags);
+    local_irq_restore(eflags);
 }
-
-/*
- * NOTE 1:
- * Functions register_cpu_notifier(), unregister_cpu_notifier(),
- * macros register_hotcpu_notifier, register_hotcpu_notifier,
- * and CPU states CPU_DOWN_FAILED, CPU_DOWN_PREPARE
- * were removed by the following commit:
- *   2016 Dec 25: b272f732f888d4cf43c943a40c9aaa836f9b7431
- *
- * NV_REGISTER_CPU_NOTIFIER_PRESENT is true when
- * register_cpu_notifier() is present.
- *
- * The functions cpuhp_setup_state() and cpuhp_remove_state() should be
- * used as an alternative to register_cpu_notifier() and
- * unregister_cpu_notifier() functions. The following
- * commit introduced these functions as well as the enum cpuhp_state.
- *   2016 Feb 26: 5b7aa87e0482be768486e0c2277aa4122487eb9d
- *
- * NV_CPUHP_CPUHP_STATE_PRESENT is true when cpuhp_setup_state() is present.
- *
- * For kernels where both cpuhp_setup_state() and register_cpu_notifier()
- * are present, we still use register_cpu_notifier().
- */
 
 static int
 nvidia_cpu_teardown(unsigned int cpu)
@@ -229,37 +206,13 @@ nvidia_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu
     return NOTIFY_OK;
 }
 
-/*
- * See NOTE 1.
- * In order to avoid warnings for unused variable when compiling against
- * kernel versions which include changes of commit id
- * b272f732f888d4cf43c943a40c9aaa836f9b7431, we have to protect declaration
- * of nv_hotcpu_nfb with #if.
- *
- * NV_REGISTER_CPU_NOTIFIER_PRESENT is checked before
- * NV_CPUHP_SETUP_STATE_PRESENT to avoid compilation warnings for unused
- * variable nvidia_pat_online for kernels where both
- * NV_REGISTER_CPU_NOTIFIER_PRESENT and NV_CPUHP_SETUP_STATE_PRESENT
- * are true.
- */
-#if defined(NV_REGISTER_CPU_NOTIFIER_PRESENT) && defined(CONFIG_HOTPLUG_CPU)
-static struct notifier_block nv_hotcpu_nfb = {
-    .notifier_call = nvidia_cpu_callback,
-    .priority = 0
-};
-#elif defined(NV_CPUHP_SETUP_STATE_PRESENT)
 static enum cpuhp_state nvidia_pat_online;
-#endif
 
 static int
 nvidia_register_cpu_hotplug_notifier(void)
 {
     int ret;
-/* See NOTE 1 */
-#if defined(NV_REGISTER_CPU_NOTIFIER_PRESENT) && defined(CONFIG_HOTPLUG_CPU)
-    /* register_hotcpu_notiifer() returns 0 on success or -ENOENT on failure */
-    ret = register_hotcpu_notifier(&nv_hotcpu_nfb);
-#elif defined(NV_CPUHP_SETUP_STATE_PRESENT)
+
     /*
      *  cpuhp_setup_state() returns positive number on success when state is
      *  CPUHP_AP_ONLINE_DYN. On failure, it returns a negative number.
@@ -283,26 +236,6 @@ nvidia_register_cpu_hotplug_notifier(void)
     {
         nvidia_pat_online = ret;
     }
-#else
-
-    /*
-     * This function should be a no-op for kernels which
-     * - do not have CONFIG_HOTPLUG_CPU enabled,
-     * - do not have PAT support,
-     * - do not have the cpuhp_setup_state() function.
-     *
-     * On such kernels, returning an error here would result in module init
-     * failure. Hence, return 0 here.
-     */
-    if (nv_pat_mode == NV_PAT_MODE_BUILTIN)
-    {
-        ret = 0;
-    }
-    else
-    {
-        ret = -EIO;
-    }
-#endif
 
     if (ret < 0)
     {
@@ -317,13 +250,7 @@ nvidia_register_cpu_hotplug_notifier(void)
 static void
 nvidia_unregister_cpu_hotplug_notifier(void)
 {
-/* See NOTE 1 */
-#if defined(NV_REGISTER_CPU_NOTIFIER_PRESENT) && defined(CONFIG_HOTPLUG_CPU)
-    unregister_hotcpu_notifier(&nv_hotcpu_nfb);
-#elif defined(NV_CPUHP_SETUP_STATE_PRESENT)
     cpuhp_remove_state(nvidia_pat_online);
-#endif
-    return;
 }
 
 

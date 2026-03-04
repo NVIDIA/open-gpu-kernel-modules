@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,9 @@
 #include "kernel/mem_mgr/mem.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/mem_mgr/mem_desc.h"
+#include "platform/sli/sli.h"
+#include "containers/eheap_old.h"
 
 #include "class/cl906f.h"
 
@@ -47,44 +50,32 @@ static NV_STATUS _kchannelDestroyRMUserdMemDesc(OBJGPU *pGpu, KernelChannel *pKe
 NV_STATUS
 kchannelGetClassEngineID_GM107
 (
-    OBJGPU        *pGpu,
-    KernelChannel *pKernelChannel,
-    NvHandle       handle,
-    NvU32         *pClassEngineID,
-    NvU32         *pClassID,
-    NvU32         *pEngineID
+    OBJGPU         *pGpu,
+    KernelChannel  *pKernelChannel,
+    NvHandle        handle,
+    NvU32          *pClassEngineID,
+    NvU32          *pClassID,
+    RM_ENGINE_TYPE *pRmEngineID
 )
 {
-    NV_STATUS   status         =  NV_OK;
-    NvU32       halEngineTag   =  0;
-    NvU32       hwEngineID     =  0;
-    NvU32       classID;
-    KernelFifo *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
-    ChannelDescendant *pObject =  NULL;
+    NV_STATUS          status = NV_OK;
+    NvU32              halEngineTag;
+    NvU32              classID;
+    ChannelDescendant *pObject = NULL;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, kchannelFindChildByHandle(pKernelChannel, handle, &pObject));
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        kchannelFindChildByHandle(pKernelChannel, handle, &pObject));
     NV_ASSERT_OR_RETURN(pObject != NULL, NV_ERR_OBJECT_NOT_FOUND);
 
     *pClassID = classID = RES_GET_EXT_CLASS_ID(pObject);
     halEngineTag = pObject->resourceDesc.engDesc;
-
-    status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_ENG_DESC,
-                                      halEngineTag, ENGINE_INFO_TYPE_FIFO_TAG, &hwEngineID);
 
     if (halEngineTag == ENG_SW)
     {
         classID = pObject->classID;
     }
 
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  ": Invalid Engine Tag %x associated with object handle = %x\n",
-                  halEngineTag, handle);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
-
-    status = gpuXlateEngDescToClientEngineId(pGpu, halEngineTag, pEngineID);
+    status = gpuXlateEngDescToClientEngineId(pGpu, halEngineTag, pRmEngineID);
 
     if (status == NV_OK)
     {
@@ -92,8 +83,8 @@ kchannelGetClassEngineID_GM107
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "class ID: 0x%08x engine id 0x%08x classEngine ID: 0x%08x\n",
-              classID, hwEngineID, *pClassEngineID);
+              "class ID: 0x%08x classEngine ID: 0x%08x\n",
+              classID, *pClassEngineID);
 
     return status;
 }
@@ -213,7 +204,8 @@ NV_STATUS kchannelAllocMem_GM107
     }
 
     ///  Alloc Instance block
-    if (IsSLIEnabled(pGpu) || IS_GSP_CLIENT(pGpu))
+    if ((IsSLIEnabled(pGpu) || IS_GSP_CLIENT(pGpu)) &&
+        !pGpu->pGpuArch->bGpuArchIsZeroFb)
     {
         pInstAllocList = ADDRLIST_FBMEM_ONLY;
         CpuCacheAttrib = NV_MEMORY_UNCACHED;
@@ -266,7 +258,8 @@ NV_STATUS kchannelAllocMem_GM107
         }
     }
 
-    status = memdescAllocList(pInstanceBlock->pInstanceBlockDesc, pInstAllocList);
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_116, 
+                        pInstanceBlock->pInstanceBlockDesc, pInstAllocList);
     if (status == NV_OK)
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -282,6 +275,7 @@ NV_STATUS kchannelAllocMem_GM107
             SLI_LOOP_BREAK;
         }
 
+        memdescSetName(pGpu, pInstanceBlock->pInstanceBlockDesc, NV_RM_SURF_NAME_INSTANCE_BLOCK, NULL);
     }
     else
     {
@@ -399,11 +393,8 @@ kchannelDestroyMem_GM107
     }
 
     // Remove USERD memDescs
-    if (pKernelChannel->pInstSubDeviceMemDesc[subdevInst] != NULL)
-    {
-        memdescDestroy(pKernelChannel->pInstSubDeviceMemDesc[subdevInst]);
-        pKernelChannel->pInstSubDeviceMemDesc[subdevInst] = NULL;
-    }
+    memdescDestroy(pKernelChannel->pInstSubDeviceMemDesc[subdevInst]);
+    pKernelChannel->pInstSubDeviceMemDesc[subdevInst] = NULL;
 
     SLI_LOOP_END
 
@@ -523,11 +514,12 @@ kchannelFreeHwID_GM107
                                            kchannelGetRunlistId(pKernelChannel));
     EMEMBLOCK  *pFifoDataBlock;
 
+    NV_ASSERT_OR_RETURN(pChidMgr != NULL, NV_ERR_OBJECT_NOT_FOUND);
     pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
         pChidMgr->pFifoDataHeap,
         pKernelChannel->ChID,
         NV_FALSE);
-    NV_ASSERT_OR_RETURN(pFifoDataBlock, NV_ERR_OBJECT_NOT_FOUND);
+    NV_ASSERT_OR_RETURN(pFifoDataBlock != NULL, NV_ERR_OBJECT_NOT_FOUND);
     NV_ASSERT(pFifoDataBlock->pData == pKernelChannel);
 
     status = kfifoChidMgrFreeChid(pGpu, pKernelFifo, pChidMgr, pKernelChannel->ChID);
@@ -629,12 +621,7 @@ kchannelGetUserdBar1MapOffset_GM107
 
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    //
-    // only supported when bUsePerRunlistChannelRam is disabled.
-    // We don't pre-allocate userd for all channels across all runlists; we expect
-    // clients to have moved to client allocated userd.
-    //
-    NV_ASSERT_OR_RETURN(!kfifoIsPerRunlistChramEnabled(pKernelFifo),
+    NV_ASSERT_OR_RETURN(kfifoIsPreAllocatedUserDEnabled(pKernelFifo),
                         NV_ERR_NOT_SUPPORTED);
 
     if (pUserdInfo->userdBar1MapSize == 0)
@@ -728,7 +715,9 @@ kchannelGetEngine_GM107
     if (pEngDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    NV_PRINTF(LEVEL_INFO, "0x%x\n", kchannelGetDebugTag(pKernelChannel));
+    NV_PRINTF(LEVEL_INFO,
+              FMT_CHANNEL_DEBUG_TAG "\n",
+              kchannelGetDebugTag(pKernelChannel));
 
     *pEngDesc = kchannelGetRunlistId(pKernelChannel);
 

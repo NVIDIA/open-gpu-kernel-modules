@@ -58,6 +58,9 @@ static inline NvU32 nvKmsSizeOfNotifier(enum NvKmsNIsoFormat format,
     }
 }
 
+void nvKmsSetNotifier(enum NvKmsNIsoFormat format, NvBool overlay,
+                      NvU32 index, void *base, NvU64 timeStamp);
+
 void nvKmsResetNotifier(enum NvKmsNIsoFormat format, NvBool overlay,
                         NvU32 index, void *base);
 

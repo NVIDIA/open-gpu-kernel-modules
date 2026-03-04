@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 //
 //  File:       nvtiming_pvt.h
 //
-//  Purpose:    the private functions/structures which are only used inside 
+//  Purpose:    the private functions/structures which are only used inside
 //              the nv timing library.
 //
 //*****************************************************************************
@@ -44,7 +44,16 @@
 
 #define nvt_assert(p) ((void)0)
 
+#ifdef DD_UNITTEST
+#undef nvt_assert(p)
+#define nvt_assert(p) ((void)0)
+#endif // DD_UNITTEST
+
 #include <stddef.h> // NULL
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // EDID related private functions
 NvU32      getEdidVersion(NvU8 *pData, NvU32 *pVer);
@@ -68,8 +77,10 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *pEdid, NvU32 size, NVT_EDID_CEA861_INF
 void       parse861ExtDetailedTiming(NvU8 *pEdidExt, NvU8 basicCaps, NVT_EDID_INFO *pInfo);
 void       parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
-void       parse861bShortPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
+void       parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfScdb(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfEeodb(NVT_EDID_CEA861_INFO *pExt861, NvU32 *pTotalEdidExtensions);
 void       parseEdidMsftVsdbBlock(VSDB_DATA *pVsdb, MSFT_VSDB_PARSED_INFO *vsdbInfo);
@@ -77,12 +88,20 @@ void       parseEdidHdmiLlcBasicInfo(VSDB_DATA *pVsdb, NVT_HDMI_LLC_INFO *pHdmiL
 void       parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo);
 void       getEdidHDM1_4bVsdbTiming(NVT_EDID_INFO *pInfo);
 void       parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pSupported, HDMI3DSUPPORTMAP * pM);
+void       prioritizeEdidHDMIExtTiming(NVT_EDID_INFO *pInfo);
 void       parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo);
-void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN);
-void       parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_STATIC_METADATA *pDvInfo);
+void       parseCta861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_METADATA* pDvInfo);
+void       parseCta861Hdr10PlusDataBlock(VSVDB_DATA* pVsvdb, NVT_HDR10PLUS_INFO* pHdr10PlusInfo);
+void       parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
+void       parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
+void       parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 NvBool     isMatchedCTA861Timing(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
+NvBool     isMatchedStandardTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
+NvBool     isMatchedEstablishedTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
 NvU32      isHdmi3DStereoType(NvU8 StereoStructureType);
 NvU32      getCEA861TimingAspectRatio(NvU32 vic);
+NvU8       getHighestPrioritySVRIdx(const NVT_EDID_CEA861_INFO *pExt861);
 void       SetActiveSpaceForHDMI3DStereo(const NVT_TIMING *pTiming, NVT_EXT_TIMING *pExtTiming);
 void       AddModeToSupportMap(HDMI3DSUPPORTMAP * pMap, NvU8 vic, NvU8 structure, NvU8 Detail);
 void       getMonitorDescriptorString(NvU8 *pEdid, NvU8 tag, char *str, int onceOnly);
@@ -91,12 +110,21 @@ void       getMonitorDescriptorString(NvU8 *pEdid, NvU8 tag, char *str, int once
 // DispalyID base / extension related functions
 NvU32      getDID2Version(NvU8 *pData, NvU32 *pVer);
 NVT_STATUS getDisplayIdEDIDExtInfo(NvU8* pEdid, NvU32 edidSize, NVT_EDID_INFO* pEdidInfo);
+NVT_STATUS parseDisplayIdBlock(NvU8* pBlock, NvU8 max_length, NvU8* pLength, NVT_EDID_INFO* pEdidInfo);
 NVT_STATUS getDisplayId20EDIDExtInfo(NvU8* pDisplayid, NvU32 edidSize, NVT_EDID_INFO* pEdidInfo);
+NVT_STATUS parseDisplayId20EDIDExtDataBlocks(NvU8* pDataBlock, NvU8 remainSectionLength, NvU8* pCurrentDBLength, NVT_EDID_INFO* pEdidInfo);
+NVT_STATUS parseDisplayId20Timing7Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
+NVT_STATUS parseDisplayId20Timing8Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 codeType, NvU8 codeSize, NvU8 index, NvU8 count);
+NVT_STATUS parseDisplayId20Timing9Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
+NVT_STATUS parseDisplayId20Timing10Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 payloadBytes, NvU8 count);
 void       updateColorFormatForDisplayIdExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 void       updateColorFormatForDisplayId20ExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 NvBool     assignNextAvailableDisplayId20Timing(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, const NVT_TIMING *pTiming);
 void       updateColorFormatForDisplayId20Timings(NVT_DISPLAYID_2_0_INFO* pDisplayId2Info, NvU32 timingIdx);
 // End DisplayID
+#ifdef __cplusplus
+}
+#endif
 
 NvU32 axb_div_c_old(NvU32 a, NvU32 b, NvU32 c);
 
@@ -137,6 +165,7 @@ NvU32 axb_div_c_old(NvU32 a, NvU32 b, NvU32 c);
 
 // Sentinel values for NVT_TIMING
 #define NVT_TIMINGEXT_SENTINEL {0,0,0,0,0,{0},{0},{0},{0},0,""}
-#define NVT_TIMING_SENTINEL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,NVT_TIMINGEXT_SENTINEL}
+#define NVT_TIMING_SENTINEL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,NVT_TIMINGEXT_SENTINEL}
 
 #endif //__NVTIMING_PVT_H_
+

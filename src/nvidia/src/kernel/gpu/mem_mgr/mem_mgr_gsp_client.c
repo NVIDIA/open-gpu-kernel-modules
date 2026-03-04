@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,6 +90,8 @@ memmgrInitBaseFbRegions_FWCLIENT
         pMemoryManager->Ram.fbRegion[i].bSupportCompressed = pFbRegionInfo->supportCompressed;
         pMemoryManager->Ram.fbRegion[i].bSupportISO        = pFbRegionInfo->supportISO;
         pMemoryManager->Ram.fbRegion[i].rsvdSize           = pFbRegionInfo->reserved;
+        // CPU-RM is not responsible for saving GSP-RM allocations
+        pMemoryManager->Ram.fbRegion[i].bLostOnSuspend     = NV_TRUE;
 
         if (pFbRegionInfo->reserved)
         {
@@ -127,106 +129,4 @@ memmgrInitBaseFbRegions_FWCLIENT
               pMemoryManager->Ram.fbTotalMemSizeMb, pMemoryManager->Ram.fbAddrSpaceSizeMb);
 
     return NV_OK;
-}
-
-/*!
- * @brief Set up CPU RM reserved memory space for physical carveout.
- */
-NV_STATUS
-memmgrPreInitReservedMemory_FWCLIENT
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    KernelBus              *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
-    NvU64                   tmpAddr       = 0;
-
-    if (KBUS_BAR2_ENABLED(pKernelBus))
-    {
-        //
-        // This has to be the very *last* thing in reserved memory as it
-        // will may grow past the 1MB reserved memory window.  We cannot
-        // size it until memsysStateInitLockedHal_GK104.
-        //
-        memmgrReserveBar2BackingStore(pGpu, pMemoryManager, &tmpAddr);
-    }
-
-    NV_ASSERT(NvU64_LO32(tmpAddr) == tmpAddr);
-    pMemoryManager->rsvdMemorySize = NvU64_LO32(tmpAddr);
-
-    return NV_OK;
-}
-
-/*!
- *  @brief Calculate the FB reserved memory requirement.
- *
- *  @param[out] rsvdFastSize   generic reserved RM memory needed in fast region
- *  @param[out] rsvdSlowSize   generic reserved RM memory needed in slow region
- *  @param[out] rsvdISOSize    ISO-specific reserved RM memory needed
- */
-void
-memmgrCalcReservedFbSpaceHal_FWCLIENT
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager,
-    NvU64         *rsvdFastSize,
-    NvU64         *rsvdSlowSize,
-    NvU64         *rsvdISOSize
-)
-{
-    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    NvU64       rsvdSizeBytes;
-    NvU64       smallPagePte = 0;
-    NvU64       bigPagePte = 0;
-
-    //
-    // Minimum reserved memory for driver internal memdescAlloc() calls.
-    // DO NOT increase this hard-coded memory to account for more reserved
-    // FB memory, instead add individual calculations below.
-    //
-    rsvdSizeBytes = 5 * 1024 * 1024;
-
-    // Add in USERD reservation
-    rsvdSizeBytes += memmgrGetUserdReservedFbSpace_HAL(pGpu, pMemoryManager);
-
-    // Reserve FB for Fault method buffers
-    rsvdSizeBytes += kfifoCalcTotalSizeOfFaultMethodBuffers_HAL(pGpu, pKernelFifo, NV_TRUE);
-
-    // smallPagePte = FBSize /4k * 8 (Small page PTE for whole FB)
-    smallPagePte = NV_ROUNDUP((pMemoryManager->Ram.fbUsableMemSize / FERMI_SMALL_PAGESIZE) * 8, RM_PAGE_SIZE);
-
-    // bigPagePte = FBSize /bigPageSize * 8 (Big page PTE for whole FB)
-    bigPagePte = NV_ROUNDUP((pMemoryManager->Ram.fbUsableMemSize/ (kgmmuGetMaxBigPageSize_HAL(pKernelGmmu))) * 8,
-                            RM_PAGE_SIZE);
-
-    rsvdSizeBytes += smallPagePte;
-    rsvdSizeBytes += bigPagePte;
-
-    if (gpuIsClientRmAllocatedCtxBufferEnabled(pGpu))
-    {
-        rsvdSizeBytes += memmgrGetMaxContextSize_HAL(pGpu, pMemoryManager);
-    }
-
-    // Add in NV_REG_STR_RM_INCREASE_RSVD_MEMORY_SIZE_MB if applicable
-    if (pMemoryManager->rsvdMemorySizeIncrement != 0)
-    {
-        // Allow reservation up to half of usable FB size
-        if (pMemoryManager->rsvdMemorySizeIncrement > (pMemoryManager->Ram.fbUsableMemSize / 2))
-        {
-            pMemoryManager->rsvdMemorySizeIncrement = pMemoryManager->Ram.fbUsableMemSize / 2;
-            NV_PRINTF(LEVEL_ERROR,
-                      "RM can only increase reserved heap by 0x%llx bytes\n",
-                      pMemoryManager->rsvdMemorySizeIncrement);
-        }
-        rsvdSizeBytes += pMemoryManager->rsvdMemorySizeIncrement;
-    }
-
-    rsvdSizeBytes = NV_ROUNDUP(rsvdSizeBytes, RM_PAGE_SIZE_64K);
-
-    // mixed memory type/density only existed in pre-Pascal chips
-    *rsvdFastSize = rsvdSizeBytes;
-    *rsvdSlowSize = 0;
-    *rsvdISOSize  = 0;
 }

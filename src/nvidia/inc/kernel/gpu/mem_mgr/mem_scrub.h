@@ -34,16 +34,19 @@
 
 #include "nvctassert.h"
 #include "vgpu/vgpu_guest_pma_scrubber.h"
+#if !defined(SRT_BUILD)
+#include "gpu/mem_mgr/ce_utils.h"
+#include "gpu/mem_mgr/sec2_utils.h"
+#endif
 
 struct OBJGPU;
 struct Heap;
 struct OBJCHANNEL;
 
-#define RM_SUBCHANNEL                             0x0
 #define MEMSET_PATTERN                            0x00000000
 #define SCRUBBER_NUM_PAYLOAD_SEMAPHORES           (2)
 #define SCRUBBER_SEMAPHORE_SIZE_INBYTES           (4)
-#define SCRUBBER_CHANNEL_SEMAPHORE_SIZE           (SCRUBBER_SEMAPHORE_SIZE_INBYTES *\
+#define SCRUBBER_CHANNEL_SEMAPHORE_SIZE           (SCRUBBER_SEMAPHORE_SIZE_INBYTES * \
                                                   SCRUBBER_NUM_PAYLOAD_SEMAPHORES)
 #define SCRUBBER_CHANNEL_NOTIFIER_SIZE            (sizeof(NvNotification) * NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1)
 
@@ -52,66 +55,7 @@ struct OBJCHANNEL;
 #define SCRUB_MAX_BYTES_PER_LINE                  0xffffffffULL
 #define MAX_SCRUB_ITEMS                           4096 // 4K scrub items
 
-#define READ_SCRUBBER_PAYLOAD_SEMA(channel)       MEM_RD32((NvU8*)channel->pbCpuVA +\
-                                                  channel->finishPayloadOffset)
-
-#define READ_SCRUBBER_PB_SEMA(channel)            MEM_RD32((NvU8*)channel->pbCpuVA +\
-                                                  channel->semaOffset)
-
-#define WRITE_SCRUBBER_PB_SEMA(channel, val)      MEM_WR32((NvU8*)channel->pbCpuVA +\
-                                                  channel->semaOffset, val);
-
-#define WRITE_SCRUBBER_PAYLOAD_SEMA(channel,val)  MEM_WR32((NvU8*)channel->pbCpuVA +\
-                                                  channel->finishPayloadOffset, val);
-// Use Incrementing Methods to save the PB Space
-#define _NV_ASSERT_CONTIGUOUS_METHODS(a1, a2)     NV_ASSERT((a2) - (a1) == 4)
-
-#define NV_PUSH_METHOD(OpType, SubCh, Method, Count)                                                      \
-                                                  (DRF_DEF(906F, _DMA, _SEC_OP, OpType)                 |\
-                                                  DRF_NUM(906F, _DMA, _METHOD_ADDRESS,    (Method) >> 2) |\
-                                                  DRF_NUM(906F, _DMA, _METHOD_SUBCHANNEL, (SubCh))       |\
-                                                  DRF_NUM(906F, _DMA, _METHOD_COUNT,      (Count)))
-
-#define NV_PUSH_DATA(Data)                        MEM_WR32(pPtr++, (Data))
-
-#define _NV_PUSH_INC_1U(SubCh, a1,d1, Count)                                                                          \
-                                                  do{                                                               \
-                                                        NV_PUSH_DATA(NV_PUSH_METHOD(_INC_METHOD, SubCh, a1, Count));\
-                                                        NV_PUSH_DATA(d1);                                           \
-                                                    } while(0)
-
-#define NV_PUSH_INC_1U(SubCh, a1,d1)                                                      \
-                                                  do{                                     \
-                                                        _NV_PUSH_INC_1U (SubCh, a1,d1, 1);\
-                                                    } while(0)
-
-#define NV_PUSH_INC_2U(SubCh, a1,d1, a2,d2)                                                    \
-                                                  do{                                          \
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a1, a2);\
-                                                        _NV_PUSH_INC_1U(SubCh, a1,d1, 2);      \
-                                                        NV_PUSH_DATA(d2);                      \
-                                                    } while(0)
-
-#define NV_PUSH_INC_3U(SubCh, a1,d1, a2,d2, a3,d3)                                            \
-                                                  do{                                         \
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a1,a2);\
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a2,a3);\
-                                                        _NV_PUSH_INC_1U(SubCh, a1,d1, 3);     \
-                                                        NV_PUSH_DATA(d2);                     \
-                                                        NV_PUSH_DATA(d3);                     \
-                                                    } while(0)
-
-#define NV_PUSH_INC_4U(SubCh, a1,d1, a2,d2, a3,d3, a4,d4)                                    \
-                                                  do{                                        \
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a1,a2);\
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a2,a3);\
-                                                        _NV_ASSERT_CONTIGUOUS_METHODS(a3,a4);\
-                                                        _NV_PUSH_INC_1U(SubCh, a1,d1, 4);    \
-                                                        NV_PUSH_DATA(d2);                    \
-                                                        NV_PUSH_DATA(d3);                    \
-                                                        NV_PUSH_DATA(d4);                    \
-                                                    } while(0)
-
+#define SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB NVBIT(0)
 
 // structure to store the details of a scrubbing work
 typedef struct SCRUB_NODE {
@@ -144,12 +88,20 @@ typedef struct OBJMEMSCRUB {
     NvLength                           scrubListSize;
     // Pre-allocated Free Scrub List
     PSCRUB_NODE                        pScrubList;
-    // Scrubber Channel
-    struct OBJCHANNEL *pChannel;
+#if !defined(SRT_BUILD)
+    // Scrubber uses ceUtils to manage CE channel
+    CeUtils                           *pCeUtils;
+
+    // Scrubber uses sec2Utils to manage SEC2 channel
+    Sec2Utils                         *pSec2Utils;
+#endif //  !defined(SRT_BUILD)
+    // Engine used for scrubbing 
+    NvBool                             bIsEngineTypeSec2;
+
     struct OBJGPU                     *pGpu;
     VGPU_GUEST_PMA_SCRUB_BUFFER_RING   vgpuScrubBuffRing;
     NvBool                             bVgpuScrubberEnabled;
-} OBJMEMSCRUB, *POBJMEMSCRUB;
+} OBJMEMSCRUB;
 
 ct_assert(VGPU_GUEST_PMA_MAX_SCRUB_ITEMS == MAX_SCRUB_ITEMS);
 
@@ -177,10 +129,7 @@ NV_STATUS scrubberConstruct(struct OBJGPU *pGpu, struct Heap *pHeap);
  *
  */
 
-NV_STATUS vgpuAllocGuestPmaScrubberSharedBuffer(struct OBJGPU *pGpu, OBJMEMSCRUB *pScrubber);
-void vgpuFreeGuestPmaScrubberSharedBuffer(struct OBJGPU *pGpu, OBJMEMSCRUB *pScrubber);
-
-void scrubberDestruct(struct OBJGPU *pGpu, struct Heap *pHeap, OBJMEMSCRUB *pMemscrub);
+void scrubberDestruct(struct OBJGPU *pGpu, struct Heap *pHeap);
 
 
 /**
@@ -214,7 +163,7 @@ NV_STATUS scrubCheck(OBJMEMSCRUB *pScrubber, PSCRUB_NODE *ppList, NvU64 *size);
  */
 
 NV_STATUS scrubSubmitPages(OBJMEMSCRUB *pScrubber, NvU64 chunkSize, NvU64* pages,
-                           NvU64 pageCount, PSCRUB_NODE *ppList, NvU64 *size);
+                           NvU64 pageCount, PSCRUB_NODE *ppList, NvU64 *size, NvU32 flags);
 
 /**
  *  This function waits for the memory scrubber to wait for the scrubbing of

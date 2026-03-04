@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,13 +33,15 @@
 #include "dp_auxdefs.h"
 #include "dp_tracing.h"
 #include "dp_vrr.h"
+#include "dp_printf.h"
 #include <nvmisc.h>
 
-#include <ctrl/ctrl0073/ctrl0073dfp.h>
-#include <ctrl/ctrl0073/ctrl0073dp.h>
 #include <ctrl/ctrl0073/ctrl0073specific.h>
 #include <ctrl/ctrl0073/ctrl0073system.h>
 #include <ctrl/ctrl5070/ctrl5070or.h>
+
+#include "displayport2x.h"
+#include "dp_evoadapter2x.h"
 
 using namespace DisplayPort;
 
@@ -57,7 +59,7 @@ using namespace DisplayPort;
 // The first EvoMainLink constructor will populate that data base.
 // Later EvoMainLink will use values from that data base.
 //
-static struct DP_REGKEY_DATABASE dpRegkeyDatabase = {0};
+struct DP_REGKEY_DATABASE dpRegkeyDatabase = {0};
 
 enum DP_REG_VAL_TYPE
 {
@@ -74,30 +76,44 @@ const struct
     DP_REG_VAL_TYPE valueType;
 } DP_REGKEY_TABLE [] =
 {
-    {NV_DP_REGKEY_ENABLE_AUDIO_BEYOND_48K,          &dpRegkeyDatabase.bAudioBeyond48kEnabled,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_OVERRIDE_DPCD_REV,                &dpRegkeyDatabase.dpcdRevOveride,                  DP_REG_VAL_U32},
-    {NV_DP_REGKEY_DISABLE_SSC,                      &dpRegkeyDatabase.bSscDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING,        &dpRegkeyDatabase.bFastLinkTrainingEnabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_MST,                      &dpRegkeyDatabase.bMstDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_INBAND_STEREO_SIGNALING,   &dpRegkeyDatabase.bInbandStereoSignalingEnabled,   DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_POWEROFF_EDP_IN_HEAD_DETACH, &dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped, DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_OCA_LOGGING,               &dpRegkeyDatabase.bOcaLoggingEnabled,              DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_REPORT_DEVICE_LOST_BEFORE_NEW,    &dpRegkeyDatabase.bReportDeviceLostBeforeNew,      DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_APPLY_LINK_BW_OVERRIDE_WAR,       &dpRegkeyDatabase.bLinkBwOverrideWarApplied,       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES,    &dpRegkeyDatabase.applyMaxLinkRateOverrides,       DP_REG_VAL_U32},
-    {NV_DP_REGKEY_DISABLE_DSC,                      &dpRegkeyDatabase.bDscDisabled,                    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP,          &dpRegkeyDatabase.bAssesslinkForEdpSkipped,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_HDCP_AUTH_ONLY_ON_DEMAND,         &dpRegkeyDatabase.bHdcpAuthOnlyOnDemand,           DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_MSA_OVER_MST,              &dpRegkeyDatabase.bMsaOverMstEnabled,              DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE,              &dpRegkeyDatabase.bOptLinkKeptAlive,               DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,          &dpRegkeyDatabase.bOptLinkKeptAliveMst,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_ENABLE_PASS_THROUGH,             &dpRegkeyDatabase.bDscMstEnablePassThrough,        DP_REG_VAL_BOOL},
-    {NV_DP_DSC_OPTIMIZE_LT_BUG_3534707,             &dpRegkeyDatabase.bDscOptimizeLTBug3534707,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING,  &dpRegkeyDatabase.bNoReplyTimerForBusyWaiting,     DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING,    &dpRegkeyDatabase.bDpcdProbingForBusyWaiting,      DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_OVERRIDE_DPCD_REV,                      &dpRegkeyDatabase.dpcdRevOveride,                     DP_REG_VAL_U32},
+    {NV_DP_REGKEY_DISABLE_SSC,                            &dpRegkeyDatabase.bSscDisabled,                       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING,              &dpRegkeyDatabase.bFastLinkTrainingEnabled,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_MST,                            &dpRegkeyDatabase.bMstDisabled,                       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_INBAND_STEREO_SIGNALING,         &dpRegkeyDatabase.bInbandStereoSignalingEnabled,      DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_POWEROFF_EDP_IN_HEAD_DETACH,       &dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped,    DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_OCA_LOGGING,                     &dpRegkeyDatabase.bOcaLoggingEnabled,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_REPORT_DEVICE_LOST_BEFORE_NEW,          &dpRegkeyDatabase.bReportDeviceLostBeforeNew,         DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_APPLY_LINK_BW_OVERRIDE_WAR,             &dpRegkeyDatabase.bLinkBwOverrideWarApplied,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES,          &dpRegkeyDatabase.applyMaxLinkRateOverrides,          DP_REG_VAL_U32},
+    {NV_DP_REGKEY_DISABLE_DSC,                            &dpRegkeyDatabase.bDscDisabled,                       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP,                &dpRegkeyDatabase.bAssesslinkForEdpSkipped,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_MST_AUTO_HDCP_AUTH_AT_ATTACH,           &dpRegkeyDatabase.bMstAutoHdcpAuthAtAttach,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_MSA_OVER_MST,                    &dpRegkeyDatabase.bMsaOverMstEnabled,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE,                    &dpRegkeyDatabase.bOptLinkKeptAlive,                  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,                &dpRegkeyDatabase.bOptLinkKeptAliveMst,               DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,                &dpRegkeyDatabase.bOptLinkKeptAliveSst,               DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_EDP_ILR,                          &dpRegkeyDatabase.bBypassEDPRevCheck,                 DP_REG_VAL_BOOL},
+    {NV_DP_DSC_MST_CAP_BUG_3143315,                       &dpRegkeyDatabase.bDscMstCapBug3143315,               DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_POWER_DOWN_PHY,                         &dpRegkeyDatabase.bPowerDownPhyBeforeD3,              DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT,                    &dpRegkeyDatabase.supportInternalUhbrOnFpga,          DP_REG_VAL_U32},
+    {NV_DP2X_IGNORE_CABLE_ID_CAPS,                        &dpRegkeyDatabase.bIgnoreCableIdCaps,                 DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_VCONN_SOURCE_UNKNOWN_WAR,             &dpRegkeyDatabase.bCableVconnSourceUnknownWar,        DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_DISABLE_EFF_BPP_SST_8b10b,            &dpRegkeyDatabase.bDisableEffBppSST8b10b,             DP_REG_VAL_BOOL},
+    {NV_DP2X_REGKEY_DISABLE_WATERMARK_CACHING,            &dpRegkeyDatabase.bDisableWatermarkCaching,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,            &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,           &dpRegkeyDatabase.bForceDisableTunnelBwAllocation,    DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DOWNSPREAD,                     &dpRegkeyDatabase.bDownspreadDisabled,                DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR,                 &dpRegkeyDatabase.bDisableAvoidHBR3War,               DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,                    &dpRegkeyDatabase.bSkipZeroOuiCache,                  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_FIX_FOR_5147205,                 &dpRegkeyDatabase.bEnable5147205Fix,                  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                    &dpRegkeyDatabase.bForceHeadShutdown,                 DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                   &dpRegkeyDatabase.bEnableDevId,                       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_CQA_STATS_COLLECTION,            &dpRegkeyDatabase.bEnableCqaStatsCollection,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_IGNORE_CAPS_AND_FORCE_HIGHEST_LC,       &dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc,       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_OPTIMIZE_DSC_BPP_FOR_TUNNELLING_BW,     &dpRegkeyDatabase.bOptimizeDscBppForTunnellingBw,     DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_128b132b_DSC_LNK_CFG_REDUCTION,  &dpRegkeyDatabase.bEnable128b132bDSCLnkCfgReduction,  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST,            &dpRegkeyDatabase.bUseMaxDSCCompressionMST,           DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -115,13 +131,12 @@ EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
     this->initializeRegkeyDatabase();
     this->applyRegkeyOverrides();
 
-     _isDynamicMuxCapable       = false;
-     _isLTPhyRepeaterSupported  = true;
-     _rmPhyRepeaterCount        = 0;
-     dpMemZero(&_DSC, sizeof(_DSC));
-    queryGPUCapability();
-
-    queryAndUpdateDfpParams();
+    _isDynamicMuxCapable       = false;
+    _isLTPhyRepeaterSupported  = true;
+    _rmPhyRepeaterCount        = 0;
+    dpMemZero(&_DSC, sizeof(_DSC));
+    dpMemZero(&dfpParams, sizeof(dfpParams));
+    dpMemZero(&dpParams, sizeof(dpParams));
 
     //
     //  Tell RM to hands off on the DisplayPort hardware
@@ -241,17 +256,8 @@ bool EvoMainLink::getEdpPowerData(bool *panelPowerOn, bool *dpcdPowerStateD0)
     }
 }
 
-NvU32 EvoMainLink::streamToHead(NvU32 streamId, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
-{
-    NvU32 headIndex = 0;
-    NvU32 maxHeads = allHeadMask;
-    NUMSETBITS_32(maxHeads);
-    headIndex = DP_MST_STREAMID_TO_HEAD(streamId, streamIdentifier, maxHeads);
-
-    return headIndex;
-}
-
-NvU32 EvoMainLink::headToStream(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
+NvU32 EvoMainLink::headToStream(NvU32 head, bool bSidebandMessageSupported,
+                                DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier)
 {
     NvU32 streamIndex = 0;
 
@@ -262,62 +268,59 @@ NvU32 EvoMainLink::headToStream(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE
     return streamIndex;
 }
 
-void EvoMainLink::queryGPUCapability()
+bool EvoMainLink::queryGPUCapability()
 {
-    NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS params;
-
-    dpMemZero(&params, sizeof(params));
-    params.subDeviceInstance = subdeviceIndex;
-    params.sorIndex = provider->getSorIndex();
-    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CAPS, &params, sizeof(params));
+    dpMemZero(&dpParams, sizeof(dpParams));
+    dpParams.subDeviceInstance = subdeviceIndex;
+    dpParams.sorIndex = provider->getSorIndex();
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CAPS, &dpParams, sizeof(dpParams));
     if (code != NVOS_STATUS_SUCCESS)
     {
         DP_ASSERT(0 && "Unable to process GPU caps");
+        return false;
     }
+    //
+    // Check if MST feature needs to be disabled by regkey. This is requirement by few OEMs, they don't want to support
+    // MST feature on particular sku, whenever requested through INF.
+    //
+    _hasMultistream                 = (dpParams.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
+    _isStreamCloningEnabled         = (dpParams.bIsSCEnabled == NV_TRUE) ? true : false;
+    _hasIncreasedWatermarkLimits    = (dpParams.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
+    _isFECSupported                 = (dpParams.bFECSupported == NV_TRUE) ? true : false;
+    _useDfpMaxLinkRateCaps          = (dpParams.bOverrideLinkBw == NV_TRUE) ? true : false;
+    _isLTPhyRepeaterSupported       = (dpParams.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
+    _isDownspreadSupported          = (dpParams.bSupportDPDownSpread == NV_TRUE) ? true : false;
+    _bAvoidHBR3                     = (dpParams.bAvoidHBR3 == NV_TRUE) ? true : false;
+    _bIsDpTunnelingHwBugWarEnabled  = (dpParams.bIsDpTunnelingHwBugWarEnabled == NV_TRUE) ? true : false;
+
+    _gpuSupportedDpVersions         = dpParams.dpVersionsSupported;
+
+    if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, dpParams.maxLinkRate))
+        _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps; // in 10Mbps
+    else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _2_70, dpParams.maxLinkRate))
+        _maxLinkRateSupportedGpu = dp2LinkRate_2_70Gbps; // in 10Mbps
+    else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _5_40, dpParams.maxLinkRate))
+        _maxLinkRateSupportedGpu = dp2LinkRate_5_40Gbps; // in 10Mbps
+    else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _8_10, dpParams.maxLinkRate))
+        _maxLinkRateSupportedGpu = dp2LinkRate_8_10Gbps; // in 10Mbps
     else
     {
-        //
-        // Check if MST feature needs to be disabled by regkey. This is requirement by few OEMs, they don't want to support
-        // MST feature on particular sku, whenever requested through INF.
-        //
-        _hasMultistream         = (params.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
-        _isDP1_2Supported       = (params.bIsDp12Supported == NV_TRUE) ? true : false;
-        _isDP1_4Supported       = (params.bIsDp14Supported == NV_TRUE) ? true : false;
-        _isStreamCloningEnabled = (params.bIsSCEnabled == NV_TRUE) ? true : false;
-        _hasIncreasedWatermarkLimits     = (params.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
-
-        _isFECSupported         = (params.bFECSupported == NV_TRUE) ? true : false;
-
-        _useDfpMaxLinkRateCaps  = (params.bOverrideLinkBw == NV_TRUE) ? true : false;
-
-        _isLTPhyRepeaterSupported        = (params.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
-
-        if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, params.maxLinkRate))
-            _maxLinkRateSupportedGpu = RBR; //in Hz
-        else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _2_70, params.maxLinkRate))
-            _maxLinkRateSupportedGpu = HBR; //in Hz
-        else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _5_40, params.maxLinkRate))
-            _maxLinkRateSupportedGpu = HBR2; //in Hz
-        else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _8_10, params.maxLinkRate))
-            _maxLinkRateSupportedGpu = HBR3; //in Hz
-        else
-        {
-            DP_ASSERT(0 && "Unable to get max link rate");
-            // Assume that we can at least support RBR.
-            _maxLinkRateSupportedGpu = RBR;
-        }
-
-        if (!_isDscDisabledByRegkey)
-        {
-            _DSC.isDscSupported = params.DSC.bDscSupported ? true : false;
-            _DSC.encoderColorFormatMask = params.DSC.encoderColorFormatMask;
-            _DSC.lineBufferSizeKB = params.DSC.lineBufferSizeKB;
-            _DSC.rateBufferSizeKB = params.DSC.rateBufferSizeKB;
-            _DSC.bitsPerPixelPrecision = params.DSC.bitsPerPixelPrecision;
-            _DSC.maxNumHztSlices = params.DSC.maxNumHztSlices;
-            _DSC.lineBufferBitDepth = params.DSC.lineBufferBitDepth;
-        }
+        DP_ASSERT(0 && "Unable to get max link rate");
+        // Assume that we can at least support RBR.
+        _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps;
     }
+
+    if (!_isDscDisabledByRegkey)
+    {
+        _DSC.isDscSupported = dpParams.DSC.bDscSupported ? true : false;
+        _DSC.encoderColorFormatMask = dpParams.DSC.encoderColorFormatMask;
+        _DSC.lineBufferSizeKB = dpParams.DSC.lineBufferSizeKB;
+        _DSC.rateBufferSizeKB = dpParams.DSC.rateBufferSizeKB;
+        _DSC.bitsPerPixelPrecision = dpParams.DSC.bitsPerPixelPrecision;
+        _DSC.maxNumHztSlices = dpParams.DSC.maxNumHztSlices;
+        _DSC.lineBufferBitDepth = dpParams.DSC.lineBufferBitDepth;
+    }
+    return true;
 }
 
 void EvoMainLink::triggerACT()
@@ -326,10 +329,14 @@ void EvoMainLink::triggerACT()
     params.subDeviceInstance = this->subdeviceIndex;
     params.displayId = this->displayId;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SEND_ACT, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SEND_ACT, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "triggerACT failed!");
+    }
 }
 
-void EvoMainLink::configureHDCPRenegotiate(NvU64 cN, NvU64 cKSV, bool bForceReAuth, bool bRxIDMsgPending){}
+void EvoMainLink::configureHDCPRenegotiate(NvU64 cN, NvU64 cKSV, bool bForceReAuth, bool bRxIDMsgPending) {}
 void EvoMainLink::configureHDCPGetHDCPState(HDCPState &hdcpState)
 {
     // HDCP Not Supported
@@ -379,7 +386,11 @@ void EvoMainLink::configureSingleStream(NvU32 head,
     params.SST.waterMark = waterMark;
     params.SST.bEnableAudioOverRightPanel = bAudioOverRightPanel;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureSingleStream failed!");
+    }
 }
 
 void EvoMainLink::configureSingleHeadMultiStreamMode(NvU32 displayIDs[],
@@ -400,9 +411,12 @@ void EvoMainLink::configureSingleHeadMultiStreamMode(NvU32 displayIDs[],
     params.numStreams = numStreams;
     params.vbiosPrimaryDispIdIndex = vbiosPrimaryDispIdIndex;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM,
-                            &params,
-                            sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM,
+                                        &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureSingleHeadMultiStreamMode failed!");
+    }
 }
 
 void EvoMainLink::configureMultiStream(NvU32 head,
@@ -438,7 +452,11 @@ void EvoMainLink::configureMultiStream(NvU32 head,
     params.MST.singleHeadMSTPipeline = streamIdentifier;
     params.MST.bEnableAudioOverRightPanel = bAudioOverRightPanel;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureMultiStream failed!");
+    }
 }
 
 void EvoMainLink::configureMsScratchRegisters(NvU32 address,
@@ -454,7 +472,11 @@ void EvoMainLink::configureMsScratchRegisters(NvU32 address,
     params.hopCount = hopCount;
     params.dpMsDevAddrState = dpMsDevAddrState;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureMsScratchRegisters failed!");
+    }
 }
 
 //
@@ -497,7 +519,8 @@ bool EvoMainLink::setDpStereoMSAParameters(bool bStereoEnable, const NV0073_CTRL
     // implement this rmcontrol.  To avoid that, this class would need to be
     // aware of which evo display HAL is in use.
     //
-    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED) {
+    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED)
+    {
         DP_ASSERT(!"Enabling MSA stereo override failed!");
         return false;
     }
@@ -620,7 +643,7 @@ void EvoMainLink::clearFlushMode(unsigned headMask, bool testMode)
     NvU32 ret = provider->rmControl5070(NV5070_CTRL_CMD_SET_SOR_FLUSH_MODE, &params, sizeof params);
     if (ret != NVOS_STATUS_SUCCESS)
     {
-        DP_LOG(("DP_EVO> Disabling flush mode failed!"));
+        DP_PRINTF(DP_ERROR, "DP_EVO> Disabling flush mode failed!");
     }
 }
 
@@ -647,18 +670,18 @@ bool EvoMainLink::physicalLayerSetTestPattern(PatternInfo * patternInfo)
         {
             ctrlPattern.testPattern = NV0073_CTRL_DP_TESTPATTERN_DATA_CSTM;
 
-            params.cstm.lower = patternInfo->ctsmLower;
-            params.cstm.middle = patternInfo->ctsmMiddle;
-            params.cstm.upper = patternInfo->ctsmUpper;
+            params.cstm.field_31_0 = patternInfo->ctsmLower;
+            params.cstm.field_63_32 = patternInfo->ctsmMiddle;
+            params.cstm.field_95_64 = patternInfo->ctsmUpper;
             break;
         }
 #ifdef NV0073_CTRL_DP_TESTPATTERN_DATA_HBR2COMPLIANCE
         case LINK_QUAL_HBR2_COMPLIANCE_EYE:
         {
             ctrlPattern.testPattern = NV0073_CTRL_DP_TESTPATTERN_DATA_HBR2COMPLIANCE;
-            params.cstm.lower = 0;
-            params.cstm.middle = 0;
-            params.cstm.upper = 0;
+            params.cstm.field_31_0 = 0;
+            params.cstm.field_63_32 = 0;
+            params.cstm.field_95_64 = 0;
             break;
         }
 #endif
@@ -731,7 +754,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
     //
     if ((sizeRequested == 0) && (type & (i2cMot | i2c)) && (action == write))
     {
-        DP_LOG(("DP> Client requested address-only transaction"));
+        DP_PRINTF(DP_NOTICE, "DP> Client requested address-only transaction");
         params.bAddrOnly = NV_TRUE;
     }
     else if ((sizeRequested == 0) && (type == native))
@@ -782,7 +805,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
         // error, the request still went out on the DPAUX channel as part of
         // the last IC-over-AUX write transaction. So the error should be ignored.
         //
-        DP_LOG(("DP> %s: Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success", __FUNCTION__));
+        DP_PRINTF(DP_NOTICE, "DP> %s: Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success", __FUNCTION__);
         return AuxBus::success;
     }
 
@@ -791,7 +814,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
     {
         if (devicePlugged)
         {
-            DP_LOG(("DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this"));
+            DP_PRINTF(DP_WARNING, "DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this");
         }
         return nack;
     }
@@ -860,8 +883,10 @@ void EvoMainLink::postLinkTraining(NvU32 head)
 void EvoMainLink::initializeRegkeyDatabase()
 {
     NvU32 i;
+
     if (dpRegkeyDatabase.bInitialized)
         return;
+
     for (i = 0; i < sizeof(DP_REGKEY_TABLE)/sizeof(DP_REGKEY_TABLE[0]); i++)
     {
         NvU32 tempValue = 0;
@@ -882,6 +907,7 @@ void EvoMainLink::initializeRegkeyDatabase()
                 break;
         }
     }
+
     dpRegkeyDatabase.bInitialized = true;
 }
 
@@ -897,6 +923,9 @@ void EvoMainLink::applyRegkeyOverrides()
     _skipPowerdownEDPPanelWhenHeadDetach = dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped;
     _applyLinkBwOverrideWarRegVal        = dpRegkeyDatabase.bLinkBwOverrideWarApplied;
     _enableMSAOverrideOverMST            = dpRegkeyDatabase.bMsaOverMstEnabled;
+    _isMSTPCONCapsReadDisabled           = dpRegkeyDatabase.bMSTPCONCapsReadDisabled;
+    _isDownspreadDisabledByRegkey        = dpRegkeyDatabase.bDownspreadDisabled;
+    _bAvoidHBR3DisabledByRegkey          = dpRegkeyDatabase.bDisableAvoidHBR3War;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)
@@ -978,25 +1007,25 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
         DRF_DEF(0073_CTRL, _DP_CMD, _SET_LINK_BW,    _TRUE);
 
     if (link.multistream)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_FORMAT_MODE, _MULTI_STREAM );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_FORMAT_MODE, _MULTI_STREAM);
 
     if(link.bEnableFEC)
         dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _ENABLE_FEC, _TRUE);
 
     if (isPostLtAdjRequestGranted)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _POST_LT_ADJ_REQ_GRANTED, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _POST_LT_ADJ_REQ_GRANTED, _YES);
 
     if (link.enhancedFraming)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_ENHANCED_FRAMING, _TRUE );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_ENHANCED_FRAMING, _TRUE);
     if (bSkipLt)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SKIP_HW_PROGRAMMING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SKIP_HW_PROGRAMMING, _YES);
     if (force)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
 
     if (linkTrainingType == NO_LINK_TRAINING)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _NO_LINK_TRAINING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _NO_LINK_TRAINING, _YES);
     else if (linkTrainingType == FAST_LINK_TRAINING)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAST_LINK_TRAINING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAST_LINK_TRAINING, _YES);
 
     targetIndex = NV0073_CTRL_DP_DATA_TARGET_SINK;
     if (bTrainPhyRepeater && (_rmPhyRepeaterCount != phyRepeaterCount))
@@ -1007,12 +1036,18 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
 
     if (bTrainPhyRepeater)
     {
-
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _TRAIN_PHY_REPEATER, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _TRAIN_PHY_REPEATER, _YES);
         //
         // Start from the one closest to GPU. Note this is 1-based index.
         //
         targetIndex = phyRepeaterCount;
+    }
+
+    if (!this->isDownspreadSupported() || link.bDisableDownspread || _isDownspreadDisabledByRegkey)
+    {
+        // If GPU does not support downspread, disabling downspread.
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _USE_DOWNSPREAD_SETTING, _FORCE);
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _DISABLE_DOWNSPREAD, _TRUE);
     }
 
     NV_DPTRACE_INFO(LINK_TRAINING_START, link.multistream, link.peakRate, link.lanes,
@@ -1041,15 +1076,16 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
 
         switch (linkrate)
         {
-            case RBR:
-            case EDP_2_16GHZ:
-            case EDP_2_43GHZ:
-            case HBR:
-            case EDP_3_24GHZ:
-            case EDP_4_32GHZ:
-            case HBR2:
-            case HBR3:
-                linkBw = linkrate / DP_LINK_BW_FREQ_MULTI_MBPS;
+            case dp2LinkRate_1_62Gbps:
+            case dp2LinkRate_2_16Gbps:
+            case dp2LinkRate_2_43Gbps:
+            case dp2LinkRate_2_70Gbps:
+            case dp2LinkRate_3_24Gbps:
+            case dp2LinkRate_4_32Gbps:
+            case dp2LinkRate_5_40Gbps:
+            case dp2LinkRate_6_75Gbps:
+            case dp2LinkRate_8_10Gbps:
+                linkBw = LINK_RATE_10MHZ_TO_270MHZ(linkrate);
                 dpCtrlData = FLD_SET_DRF_NUM(0073_CTRL, _DP_DATA, _SET_LINK_BW,
                                              linkBw, dpCtrlData);
                 break;
@@ -1136,6 +1172,12 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             break;
         }
 
+        if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _LINK_STATUS, _DISCONNECTED, err))
+        {
+            // Don't fallback if the device is already gone.
+            break;
+        }
+
         if (FLD_TEST_DRF(0073_CTRL_DP, _CMD, _TRAIN_PHY_REPEATER, _YES, dpCtrlCmd) &&
             FLD_TEST_DRF(0073_CTRL_DP, _ERR, _INVALID_PARAMETER, _ERR, err) &&
             FLD_TEST_DRF(0073_CTRL_DP, _ERR, _TRAIN_PHY_REPEATER, _ERR, err))
@@ -1155,15 +1197,19 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
         if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _CLOCK_RECOVERY, _ERR, err))
         {
             // If failed CR, check if we need to fallback.
-            if (requestRmLC.peakRate != RBR)
+            if (requestRmLC.peakRate != dp2LinkRate_1_62Gbps)
             {
                 //
                 // We need to fallback on link rate if the following conditions are met:
                 // 1. CR or EQ phase failed.
                 // 2. The request link bandwidth is NOT RBR
                 //
+                if (!requestRmLC.lowerConfig())
+                {
+                    // If no valid link config could be found, break here.
+                    break;
+                }
                 fallback = true;
-                requestRmLC.lowerConfig();
             }
             else
             {
@@ -1204,7 +1250,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _CR_DONE_LANE, _0_LANE, err))
             {
                 //Per spec, if link rate has already been reduced to RBR, exit fallback
-                if(requestRmLC.peakRate == RBR || !requestRmLC.lowerConfig())
+                if(requestRmLC.peakRate == dp2LinkRate_1_62Gbps || !requestRmLC.lowerConfig())
                     break;
             }
             else
@@ -1234,6 +1280,12 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
     bool result = (status == NVOS_STATUS_SUCCESS);
     retLink->setLaneRate(requestRmLC.peakRate, result ? requestRmLC.lanes : 0);
     retLink->setLTCounter(ltCounter);
+
+    if (requestRmLC.bEnableFEC && (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _ENABLE_FEC, _ERR, err)))
+    {
+        retLink->bEnableFEC = false;
+        DP_ASSERT(0);
+    }
 
     NV_DPTRACE_INFO(LINK_TRAINING_DONE, status, requestRmLC.peakRate, requestRmLC.lanes);
 
@@ -1277,35 +1329,6 @@ bool EvoMainLink::getDynamicMuxState(NvU32 *muxState)
     return bIsMuxCapable;
 }
 
-bool EvoMainLink::aquireSema()
-{
-    NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS params;
-
-    dpMemZero(&params, sizeof(params));
-    params.subDeviceInstance       = subdeviceIndex;
-    params.displayId               = displayId;
-    params.owner                   = NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RM;
-
-    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA, &params, sizeof(params));
-
-    return code == NVOS_STATUS_SUCCESS;
-}
-
-void EvoMainLink::releaseSema()
-{
-    NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS params;
-
-    dpMemZero(&params, sizeof(params));
-    params.subDeviceInstance       = subdeviceIndex;
-    params.displayId               = displayId;
-    params.owner                   = NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RELEASE;
-
-    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_AUXCH_SET_SEMA, &params, sizeof(params));
-
-    DP_USED(code);
-    DP_ASSERT(code == NVOS_STATUS_SUCCESS);
-}
-
 void EvoMainLink::configurePowerState(bool bPowerUp)
 {
     NV0073_CTRL_DP_MAIN_LINK_CTRL_PARAMS params;
@@ -1334,7 +1357,16 @@ void EvoMainLink::getLinkConfig(unsigned &laneCount, NvU64 & linkRate)
     if (code == NVOS_STATUS_SUCCESS)
     {
         laneCount = params.laneCount;
-        linkRate = (NvU64)27000000 * params.linkBW;    // BUG: Beware, turbo mode need to be taken into account
+        if (params.linkBW != 0)
+        {
+            DP_ASSERT((params.dp2LinkBW == 0) && "dp2LinkBW should be zero if linkBw is not zero");
+            linkRate = LINK_RATE_270MHZ_TO_10MHZ((NvU64)params.linkBW);
+        }
+        else
+        {
+            // No link rate available.
+            linkRate = 0;
+        }
     }
     else
     {
@@ -1357,7 +1389,6 @@ bool EvoMainLink::getMaxLinkConfigFromUefi(NvU8 &linkRate, NvU8 &laneCount)
 
 bool EvoMainLink::queryAndUpdateDfpParams()
 {
-    NV0073_CTRL_DFP_GET_INFO_PARAMS  dfpParams;
     NvU32 dfpFlags;
     dpMemZero(&dfpParams, sizeof(dfpParams));
     dfpParams.subDeviceInstance = subdeviceIndex;
@@ -1394,18 +1425,19 @@ bool EvoMainLink::queryAndUpdateDfpParams()
             DP_ASSERT(0 && "maxLinkRate is set improperly in dfp object.");
             // intentionally fall-thru.
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_1_62GBPS:
-            _maxLinkRateSupportedDfp = RBR;
+            _maxLinkRateSupportedDfp = dp2LinkRate_1_62Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_2_70GBPS:
-            _maxLinkRateSupportedDfp = HBR;
+            _maxLinkRateSupportedDfp = dp2LinkRate_2_70Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_5_40GBPS:
-            _maxLinkRateSupportedDfp = HBR2;
+            _maxLinkRateSupportedDfp = dp2LinkRate_5_40Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_8_10GBPS:
-            _maxLinkRateSupportedDfp = HBR3;
+            _maxLinkRateSupportedDfp = dp2LinkRate_8_10Gbps;
             break;
     }
+
 
     _isDynamicMuxCapable = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _DYNAMIC_MUX_CAPABLE, _TRUE, dfpFlags);
 
@@ -1499,6 +1531,10 @@ bool EvoMainLink::skipPowerdownEdpPanelWhenHeadDetach()
     return _skipPowerdownEDPPanelWhenHeadDetach;
 }
 
+bool EvoMainLink::isMSTPCONCapsReadDisabled()
+{
+    return _isMSTPCONCapsReadDisabled;
+}
 
 bool EvoMainLink::isActive()
 {
@@ -1557,8 +1593,11 @@ bool EvoMainLink::controlRateGoverning(NvU32 head, bool enable, bool updateNow)
         params.flags |= DRF_DEF(0073_CTRL, _CMD_DP_SET_RATE_GOV_FLAGS, _TRIGGER_MODE, _LOADV);
     }
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_RATE_GOV, &params, sizeof params);
-
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_RATE_GOV, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "controlRateGoverning(): Set RateGov failed!");
+    }
     return true;
 }
 
@@ -1611,6 +1650,42 @@ bool EvoMainLink::getDpLaneData(NvU32 *numLanes, NvU32 *data)
     }
     else
         return false;
+}
+
+void EvoMainLink::getLinkConfigWithFEC(unsigned &laneCount, NvU64 & linkRate, bool &bFECEnabled)
+{
+    NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS params;
+    dpMemZero(&params, sizeof(params));
+
+    params.subDeviceInstance = subdeviceIndex;
+    params.displayId = displayId;
+
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_LINK_CONFIG, &params, sizeof(params));
+
+    if (code == NVOS_STATUS_SUCCESS)
+    {
+        laneCount = params.laneCount;
+        if (params.bFECEnabled)
+        {
+            bFECEnabled = true;
+        }
+
+        if (params.linkBW != 0)
+        {
+            DP_ASSERT((params.dp2LinkBW == 0) && "dp2LinkBW should be zero if linkBw is not zero");
+            linkRate = LINK_RATE_270MHZ_TO_10MHZ((NvU64)params.linkBW);
+        }
+        else
+        {
+            // No link rate available.
+            linkRate = 0;
+        }
+    }
+    else
+    {
+        laneCount = 0;
+        linkRate = 0;
+    }
 }
 
 bool EvoMainLink::setDpLaneData(NvU32 numLanes, NvU32 *data)
@@ -1686,7 +1761,11 @@ void EvoMainLink::configureTriggerSelect(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM
     params.subDeviceInstance = subdeviceIndex;
     params.sorIndex = provider->getSorIndex();
     params.singleHeadMSTPipeline = streamIdentifier;
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureTriggerSelect(): Set Trigger Select failed!");
+    }
 }
 
 void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
@@ -1695,12 +1774,38 @@ void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
     params.head = head;
     params.subDeviceInstance = subdeviceIndex;
     params.enable = enable;
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureTriggerAll(): Set Trigger All failed!");
+    }
 }
 
 MainLink * DisplayPort::MakeEvoMainLink(EvoInterface * provider, Timer * timer)
 {
-    return new EvoMainLink(provider, timer);
+    MainLink *main;
+    NvU32 nvosStatus;
+    NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS dpParams = {0};
+
+    dpParams.subDeviceInstance = provider->getSubdeviceIndex();
+    nvosStatus = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_CAPS, &dpParams, sizeof dpParams);
+
+    if (nvosStatus != NVOS_STATUS_SUCCESS)
+    {
+        DP_ASSERT(0 && "Unable to get DP caps params");
+        return NULL;
+    }
+
+    if (FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED,
+                     _DP2_0, _YES, dpParams.dpVersionsSupported))
+    {
+        main = new EvoMainLink2x(provider, timer);
+    }
+    else
+    {
+        main = new EvoMainLink(provider, timer);
+    }
+    return main;
 }
 
 AuxBus   * DisplayPort::MakeEvoAuxBus(EvoInterface * provider, Timer * timer)
@@ -1732,7 +1837,7 @@ bool EvoMainLink::dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *head
     code = provider->rmControl0073(NV0073_CTRL_CMD_DFP_DSC_CRC_CONTROL, &params, sizeof(params));
     if (code != NVOS_STATUS_SUCCESS)
     {
-        DP_LOG(("DP> Crc control failed."));
+        DP_PRINTF(DP_ERROR, "DP> Crc control failed.");
         return false;
     }
 
@@ -1759,8 +1864,8 @@ bool EvoMainLink::dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *head
 //
 bool EvoMainLink::configureLinkRateTable
 (
-    const NvU16 *pLinkRateTable,
-    LinkRates   *pLinkRates
+    const NvU16     *pLinkRateTable,
+    LinkRates       *pLinkRates
 )
 {
     NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS params;
@@ -1778,9 +1883,7 @@ bool EvoMainLink::configureLinkRateTable
         }
     }
 
-    NvU32 code = provider->rmControl0073(
-                NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES,
-                &params, sizeof(params));
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES, &params, sizeof(params));
 
     if ((pLinkRates != NULL ) && (code == NVOS_STATUS_SUCCESS) &&
         (params.linkBwCount <= NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES))
@@ -1790,20 +1893,19 @@ bool EvoMainLink::configureLinkRateTable
         {
             switch (params.linkBwTbl[i])
             {
-                case linkBW_1_62Gbps:
-                case linkBW_2_16Gbps:
-                case linkBW_2_43Gbps:
-                case linkBW_2_70Gbps:
-                case linkBW_3_24Gbps:
-                case linkBW_4_32Gbps:
-                case linkBW_5_40Gbps:
-                case linkBW_8_10Gbps:
-                    pLinkRates->import(params.linkBwTbl[i]);
+                case dp2LinkRate_1_62Gbps:
+                case dp2LinkRate_2_16Gbps:
+                case dp2LinkRate_2_43Gbps:
+                case dp2LinkRate_2_70Gbps:
+                case dp2LinkRate_3_24Gbps:
+                case dp2LinkRate_4_32Gbps:
+                case dp2LinkRate_5_40Gbps:
+                case dp2LinkRate_8_10Gbps:
+                    pLinkRates->import((NvU16)params.linkBwTbl[i]);
                     break;
-
                 default:
-                    DP_LOG(("DP_EVO> %s: Unsupported link rate received",
-                           __FUNCTION__));
+                    DP_PRINTF(DP_ERROR, "DP_EVO> %s: Unsupported link rate received",
+                             __FUNCTION__);
                     DP_ASSERT(0);
                     break;
             }
@@ -1833,9 +1935,7 @@ bool EvoMainLink::configureFec
     params.displayId = displayId;
     params.bEnableFec = bEnableFec;
 
-    NvU32 code = provider->rmControl0073(
-                NV0073_CTRL_CMD_DP_CONFIGURE_FEC,
-                &params, sizeof(params));
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIGURE_FEC, &params, sizeof(params));
 
     if (code == NVOS_STATUS_SUCCESS)
     {
@@ -1843,4 +1943,17 @@ bool EvoMainLink::configureFec
     }
 
     return false;
+}
+
+void EvoMainLink::applyStuffDummySymbolWAR(NvU32 head, bool enable)
+{
+    NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS params = {0};
+    params.subDeviceInstance = provider->getSubdeviceIndex();
+    params.head = head;
+    params.bEnable = enable ? NV_TRUE : NV_FALSE;
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR, &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "Failed to program the dummy symbol WAR!: %d", enable);
+    }
 }

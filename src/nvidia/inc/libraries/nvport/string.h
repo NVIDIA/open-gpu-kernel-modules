@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,11 +48,9 @@
 
 /**
  * @brief Compare two strings, character by character.
- * 
- * Will only compare lengthBytes bytes. Strings are assumed to be at least that
- * long.
  *
- * Strings are allowed to overlap, but in .
+ * Will compare the first 'length' chars of each string, or until
+ * the nul-terminator is reached in either string, whichever comes first.
  *
  * @returns:
  * - 0 if all bytes are equal
@@ -64,7 +62,7 @@
 NvS32 portStringCompare(const char *str1, const char *str2, NvLength length);
 /**
  * @brief Copy a string.
- * 
+ *
  * Will copy at most destSize bytes, stopping early if a null-terminator is found
  * or if srcSize bytes are read from the source.
  *
@@ -82,13 +80,13 @@ NvS32 portStringCompare(const char *str1, const char *str2, NvLength length);
 NvLength portStringCopy(char *dest, NvLength destSize, const char *src, NvLength srcSize);
 /**
  * @brief Concatenate two strings
- * 
+ *
  * Will copy cat string after the end of str. Will copy only until str buffer is
  * filled. str is assumed to point to a buffer of at least strSize bytes.
  *
  * Null character is always written at the end of the string.
  *
- * @return str if concatenation is succeeded. 
+ * @return str if concatenation is succeeded.
  *
  * @par Undefined:
  * Number of  allocated bytes in destination buffer are smaller than destSize. <br>
@@ -146,6 +144,25 @@ NvLength portStringBufferToHex(char *str, NvLength strSize, const NvU8 *buf, NvL
  * terminator (i.e. strlen(str))
  */
 NvLength portStringBufferToHexGroups(char *str, NvLength strSize, const NvU8 *buf, NvLength bufSize, NvLength groupCount, const NvU32 *groups, const char *separator);
+
+/**
+ * @brief Breaks the string into series of tokens using the delimiter
+ *
+ * @returns The number of characters in destination buffer
+ */
+char *portStringTok(char *str, const char *delim, char **saveptr);
+
+/**
+ * @brief Returns pointer to the first occurrence of substr in the str
+ *
+ */
+char *portStringStrStr(char *str, char *substr);
+
+/**
+ * @brief Returns pointer to the first occurrence of character in the str
+ *
+ */
+const char *portStringStrChar(const char *str, int c);
 
 /// @} End core functions
 

@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-encoder.h"
@@ -139,12 +139,8 @@ nv_drm_encoder_new(struct drm_device *dev,
 
     ret = drm_encoder_init(dev,
                            &nv_encoder->base, &nv_encoder_funcs,
-                           nvkms_connector_signal_to_drm_encoder_signal(format)
-#if defined(NV_DRM_ENCODER_INIT_HAS_NAME_ARG)
-                           , NULL
-#endif
-                           );
-
+                           nvkms_connector_signal_to_drm_encoder_signal(format),
+                           NULL);
     if (ret != 0) {
         nv_drm_free(nv_encoder);
 
@@ -205,7 +201,7 @@ nv_drm_add_encoder(struct drm_device *dev, NvKmsKapiDisplay hDisplay)
     encoder = nv_drm_encoder_new(dev,
                                  displayInfo->handle,
                                  connectorInfo->signalFormat,
-                                 get_crtc_mask(dev, connectorInfo->headMask));
+                                 get_crtc_mask(dev, displayInfo->headMask));
 
     if (IS_ERR(encoder)) {
         ret = PTR_ERR(encoder);
@@ -300,7 +296,7 @@ void nv_drm_handle_display_change(struct nv_drm_device *nv_dev,
 
     nv_drm_connector_mark_connection_status_dirty(nv_encoder->nv_connector);
 
-    drm_kms_helper_hotplug_event(dev);
+    schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }
 
 void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
@@ -319,7 +315,7 @@ void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
     nv_encoder = get_nv_encoder_from_nvkms_display(dev, hDisplay);
 
     if (nv_encoder != NULL) {
-        NV_DRM_DEV_LOG_ERR(
+        NV_DRM_DEV_LOG_INFO(
             nv_dev,
             "Encoder with NvKmsKapiDisplay 0x%08x already exists.",
             hDisplay);
@@ -336,17 +332,6 @@ void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
         return;
     }
 
-    /*
-     * On some kernels, DRM has the notion of a "primary group" that
-     * tracks the global mode setting state for the device.
-     *
-     * On kernels where DRM has a primary group, we need to reinitialize
-     * after adding encoders and connectors.
-     */
-#if defined(NV_DRM_REINIT_PRIMARY_MODE_GROUP_PRESENT)
-    drm_reinit_primary_mode_group(dev);
-#endif
-
-    drm_kms_helper_hotplug_event(dev);
+    schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }
 #endif

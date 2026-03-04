@@ -28,8 +28,9 @@ typedef struct _PORT_STATE
 } PORT_STATE;
 static PORT_STATE portState;
 
-
-#if PORT_IS_MODULE_SUPPORTED(atomic)
+// RISC-V implementation of atomics requires initialization
+// Disable initCount atomic operations for RISC-V builds
+#if PORT_IS_MODULE_SUPPORTED(atomic) && !NVCPU_IS_RISCV64
 #define PORT_DEC(x) portAtomicDecrementS32((volatile NvS32 *)&x)
 #define PORT_INC(x) portAtomicIncrementS32((volatile NvS32 *)&x)
 #else
@@ -39,12 +40,15 @@ static PORT_STATE portState;
 
 
 /// @todo Add better way to initialize all modules
-NV_STATUS portInitialize()
+NV_STATUS portInitialize(void)
 {
     if (PORT_INC(portState.initCount) == 1)
     {
 #if PORT_IS_MODULE_SUPPORTED(debug)
         portDbgInitialize();
+#endif
+#if PORT_IS_MODULE_SUPPORTED(atomic)
+        portAtomicInit();
 #endif
 #if PORT_IS_MODULE_SUPPORTED(sync)
         portSyncInitialize();
@@ -62,7 +66,7 @@ NV_STATUS portInitialize()
     return NV_OK;
 }
 
-void portShutdown()
+void portShutdown(void)
 {
     if (PORT_DEC(portState.initCount) == 0)
     {
@@ -88,7 +92,7 @@ void portShutdown()
     }
 }
 
-NvBool portIsInitialized()
+NvBool portIsInitialized(void)
 {
     return portState.initCount > 0;
 }

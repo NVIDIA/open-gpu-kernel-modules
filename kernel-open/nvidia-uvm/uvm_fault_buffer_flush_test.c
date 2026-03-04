@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -34,24 +34,27 @@ NV_STATUS uvm_test_fault_buffer_flush(UVM_TEST_FAULT_BUFFER_FLUSH_PARAMS *params
     NV_STATUS status = NV_OK;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     uvm_gpu_t *gpu;
-    uvm_global_processor_mask_t retained_gpus;
+    uvm_processor_mask_t *retained_gpus;
     NvU64 i;
 
-    uvm_global_processor_mask_zero(&retained_gpus);
+    retained_gpus = uvm_processor_mask_cache_alloc();
+    if (!retained_gpus)
+        return NV_ERR_NO_MEMORY;
+
+    uvm_processor_mask_zero(retained_gpus);
 
     uvm_va_space_down_read(va_space);
 
-    for_each_va_space_gpu(gpu, va_space) {
-        if (gpu->parent->replayable_faults_supported)
-            uvm_global_processor_mask_set(&retained_gpus, gpu->global_id);
-    }
+    uvm_processor_mask_and(retained_gpus, &va_space->faultable_processors, &va_space->registered_gpus);
 
-    uvm_global_mask_retain(&retained_gpus);
+    uvm_global_gpu_retain(retained_gpus);
 
     uvm_va_space_up_read(va_space);
 
-    if (uvm_global_processor_mask_empty(&retained_gpus))
-        return NV_ERR_INVALID_DEVICE;
+    if (uvm_processor_mask_empty(retained_gpus)) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto out;
+    }
 
     for (i = 0; i < params->iterations; i++) {
         if (fatal_signal_pending(current)) {
@@ -59,11 +62,12 @@ NV_STATUS uvm_test_fault_buffer_flush(UVM_TEST_FAULT_BUFFER_FLUSH_PARAMS *params
             break;
         }
 
-        for_each_global_gpu_in_mask(gpu, &retained_gpus)
+        for_each_gpu_in_mask(gpu, retained_gpus)
             TEST_CHECK_GOTO(uvm_gpu_fault_buffer_flush(gpu) == NV_OK, out);
     }
 
 out:
-    uvm_global_mask_release(&retained_gpus);
+    uvm_global_gpu_release(retained_gpus);
+    uvm_processor_mask_cache_free(retained_gpus);
     return status;
 }

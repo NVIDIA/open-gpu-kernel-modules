@@ -32,7 +32,7 @@
 #include "published/ampere/ga102/dev_sec_pri.h"
 #include "published/ampere/ga102/dev_sec_addendum.h"
 
-void
+NV_STATUS
 ksec2ConfigureFalcon_GA102
 (
     OBJGPU *pGpu,
@@ -55,4 +55,5 @@ ksec2ConfigureFalcon_GA102
     falconConfig.addrSpaceList      = memdescAddrSpaceListToU32(ADDRLIST_FBMEM_PREFERRED);
 
     kflcnConfigureEngine(pGpu, staticCast(pKernelSec2, KernelFalcon), &falconConfig);
+    return NV_OK;
 }

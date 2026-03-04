@@ -29,6 +29,7 @@
 #ifndef _NVPORT_ATOMIC_GCC_H_
 #define _NVPORT_ATOMIC_GCC_H_
 
+#if !NVOS_IS_LIBOS
 
 PORT_INLINE void
 portAtomicMemoryFenceStore(void)
@@ -75,6 +76,32 @@ portAtomicMemoryFenceFull(void)
 #error "portAtomicMemoryFenceFull implementation not found"
 #endif
 }
+
+#else
+
+#include "libos_interface.h"
+PORT_INLINE void portAtomicMemoryFenceStore(void)
+{
+    __asm__ __volatile__ ("fence" : : : "memory");
+   libosInterfaceSysopFlush();
+
+}
+
+PORT_INLINE void portAtomicMemoryFenceLoad(void)
+{
+    __asm__ __volatile__ ("fence" : : : "memory");
+   libosInterfaceSysopFlush();
+
+}
+
+PORT_INLINE void portAtomicMemoryFenceFull(void)
+{
+    __asm__ __volatile__ ("fence" : : : "memory");
+    libosInterfaceSysopFlush();
+}
+
+#endif //!NVOS_IS_LIBOS
+
 PORT_INLINE void
 portAtomicTimerBarrier(void)
 {
@@ -92,6 +119,12 @@ portAtomicTimerBarrier(void)
 }
 
 #if PORT_COMPILER_HAS_INTRINSIC_ATOMICS && !defined(NV_MODS) && !NVOS_IS_LIBOS
+
+PORT_ATOMIC_INLINE void
+portAtomicInit(void)
+{
+
+}
 
 PORT_ATOMIC_INLINE NvS32
 portAtomicAddS32

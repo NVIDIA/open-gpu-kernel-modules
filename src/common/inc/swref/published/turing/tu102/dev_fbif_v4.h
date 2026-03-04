@@ -30,8 +30,15 @@
 #define NV_PFALCON_FBIF_TRANSCFG_TARGET_COHERENT_SYSMEM                                                0x00000001     /* R---V */
 #define NV_PFALCON_FBIF_TRANSCFG_MEM_TYPE                                                              2:2            /* RWIVF */
 #define NV_PFALCON_FBIF_TRANSCFG_MEM_TYPE_PHYSICAL                                                     0x00000001     /* R---V */
+#define NV_PFALCON_FBIF_INSTBLK                                                                        0x00000020     /* R--4R */
 #define NV_PFALCON_FBIF_CTL                                                                            0x00000024     /* RW-4R */
 #define NV_PFALCON_FBIF_CTL_ALLOW_PHYS_NO_CTX                                                          7:7            /* RWIVF */
 #define NV_PFALCON_FBIF_CTL_ALLOW_PHYS_NO_CTX_ALLOW                                                    0x00000001     /* RW--V */
+#define NV_PFALCON_FBIF_THROTTLE                                                                       0x0000002c     /* RW-4R */
+#define NV_PFALCON_FBIF_ACHK_BLK(i)                                                                    (0x00000030+(i)*8) /* RW-4A */
+#define NV_PFALCON_FBIF_ACHK_BLK__SIZE_1                                                               2              /*       */
+#define NV_PFALCON_FBIF_ACHK_CTL(i)                                                                    (0x00000034+(i)*8) /* RW-4A */
+#define NV_PFALCON_FBIF_ACHK_CTL__SIZE_1                                                               2              /*       */
+#define NV_PFALCON_FBIF_CG1                                                                            0x00000074     /* RW-4R */
 
 #endif // __tu102_dev_fbif_v4_h__

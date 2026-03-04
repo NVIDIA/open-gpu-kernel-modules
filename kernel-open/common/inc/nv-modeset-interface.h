@@ -58,6 +58,12 @@ typedef struct {
      */
     void (*suspend)(NvU32 gpu_id);
     void (*resume)(NvU32 gpu_id);
+
+    /* Remove callback, called when a device is going away completely. */
+    void (*remove)(NvU32 gpu_id);
+
+    /* Probe callback, called when a device is being hotplugged. */
+    void (*probe)(const nv_gpu_info_t *gpu_info);
 } nvidia_modeset_callbacks_t;
 
 /*

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,12 +26,12 @@
 #include "os/os.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_desc.h"
-
-#include "gpu/device/device.h"
+#include "ctrl/ctrl2080/ctrl2080fb.h"
 
 #include "published/maxwell/gm107/dev_fb.h"
 #include "published/maxwell/gm107/dev_bus.h"
 #include "published/maxwell/gm107/dev_flush.h"
+#include "published/maxwell/gm107/dev_fifo.h"
 
 // Based on busFlushSingle_GM107
 
@@ -51,6 +51,20 @@ kmemsysDoCacheOp_GM107
     NV_STATUS        timeoutStatus = NV_OK;
     NvU32            regValueRead = 0;
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        switch (reg)
+        {
+            case NV_UFLUSH_L2_PEERMEM_INVALIDATE:
+            case NV_UFLUSH_L2_SYSMEM_INVALIDATE:
+                break;
+            case NV_UFLUSH_L2_FLUSH_DIRTY:
+                return NV_OK;
+            default:
+                return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
     {
         //
@@ -63,7 +77,7 @@ kmemsysDoCacheOp_GM107
     // We don't want this breakpoint when a debug build is being used by special test
     // equipment (e.g. ATE) that expects to hit this situation.  Bug 672073
 #ifdef DEBUG
-    if (!(API_GPU_IN_RESET_SANITY_CHECK(pGpu)))
+    if (!(API_GPU_IN_RESET_SANITY_CHECK(pGpu)) && !IS_VIRTUAL(pGpu))
     {
         NV_ASSERT(GPU_REG_RD32(pGpu, NV_UFLUSH_FB_FLUSH) == 0);
         NV_ASSERT(kmemsysReadL2SysmemInvalidateReg_HAL(pGpu, pKernelMemorySystem) == 0);
@@ -132,7 +146,7 @@ kmemsysDoCacheOp_GM107
     }
 
 #ifdef DEBUG
-    if (cnt > 1)
+    if (cnt > 1 && !IS_VIRTUAL(pGpu))
     {
         NvU32 intr0 = 0;
         intr0 = GPU_REG_RD32(pGpu, NV_PBUS_INTR_0);
@@ -212,9 +226,7 @@ kmemsysInitFlushSysmemBuffer_GM107
     if (pKernelMemorySystem->pSysmemFlushBufferMemDesc == NULL)
     {
         const NvU32 flushBufferDmaAddressSize = 40;
-        RmPhysAddr dmaWindowStartAddr = gpuGetDmaStartAddress(pGpu);
-        RmPhysAddr dmaWindowEndAddr = dmaWindowStartAddr +
-            (1ULL << flushBufferDmaAddressSize) - 1;
+        RmPhysAddr dmaWindowEndAddr = (1ULL << flushBufferDmaAddressSize) - 1;
 
         //
         // Sysmem flush buffer
@@ -232,7 +244,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         //
         status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
                                pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
+                               (1 << kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)),
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,
@@ -240,7 +252,8 @@ kmemsysInitFlushSysmemBuffer_GM107
         if (status != NV_OK)
             return status;
 
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_140, 
+                    pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         //
         // Check if the memory allocation failed (probably due to no available
@@ -255,8 +268,7 @@ kmemsysInitFlushSysmemBuffer_GM107
             // (possible on non-Linux platforms).
             //
             pKernelMemorySystem->sysmemFlushBuffer = memdescGetPhysAddr(pKernelMemorySystem->pSysmemFlushBufferMemDesc, AT_GPU, 0);
-            if (pKernelMemorySystem->sysmemFlushBuffer < dmaWindowStartAddr ||
-                pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
+            if (pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
                 bTryAgain = NV_TRUE;
         }
 
@@ -267,7 +279,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         if (!bTryAgain)
         {
             GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                               NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                               NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 
             return NV_OK;
         }
@@ -277,7 +289,7 @@ kmemsysInitFlushSysmemBuffer_GM107
 
         status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
                                pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
+                               (1 << kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)),
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,
@@ -294,30 +306,25 @@ kmemsysInitFlushSysmemBuffer_GM107
         // If DMA address size modification ever becomes needed in more places,
         // making it a part of the memdesc APIs would be cleaner.
         //
-        if (gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM) > flushBufferDmaAddressSize)
+        NvU32 gpuSysPhysAddrWidth = gpuarchGetSystemPhysAddrWidth_HAL(gpuGetArch(pGpu));
+        if (gpuSysPhysAddrWidth > flushBufferDmaAddressSize)
         {
             memdescOverridePhysicalAddressWidthWindowsWAR(pGpu, pKernelMemorySystem->pSysmemFlushBufferMemDesc, flushBufferDmaAddressSize);
             osDmaSetAddressSize(pGpu->pOsGpuInfo, flushBufferDmaAddressSize);
         }
 
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_141, 
+                        pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         // Restore it back to what HW supports
-        if (gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM) > flushBufferDmaAddressSize)
+        if (gpuSysPhysAddrWidth > flushBufferDmaAddressSize)
         {
-            osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
+            osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuSysPhysAddrWidth);
         }
 
         if (status == NV_OK)
         {
             pKernelMemorySystem->sysmemFlushBuffer = memdescGetPhysAddr(pKernelMemorySystem->pSysmemFlushBufferMemDesc, AT_GPU, 0);
-        }
-        else if (status == NV_ERR_INVALID_ADDRESS)
-        {
-            if (NVCPU_IS_PPC64LE && dmaWindowStartAddr != 0)
-            {
-                pKernelMemorySystem->sysmemFlushBuffer = dmaWindowStartAddr;
-            }
         }
         else
         {
@@ -328,8 +335,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         }
 
         // Manually redo the memdesc addressability check for the reduced address size
-        if (pKernelMemorySystem->sysmemFlushBuffer < dmaWindowStartAddr ||
-            pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
+        if (pKernelMemorySystem->sysmemFlushBuffer + RM_PAGE_SIZE - 1 > dmaWindowEndAddr)
         {
             NvBool bMakeItFatal = NV_TRUE;
             NV_PRINTF(LEVEL_ERROR,
@@ -345,17 +351,13 @@ kmemsysInitFlushSysmemBuffer_GM107
             // MODS on DGX-2 is hitting this. Make it non-fatal for now with
             // the proper WAR implementation tracked in bug 2403630.
             //
-            if (RMCFG_FEATURE_PLATFORM_MODS)
-            {
-                bMakeItFatal = NV_FALSE;
-            }
 
             //
             // Windows on greater than 2 TB systems is hitting this. Making it
             // non-fatal till a proper WAR is implemented. Bug 2423129 had
             // this issue.
             //
-            if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM)
+            if (RMCFG_FEATURE_PLATFORM_WINDOWS)
             {
                 bMakeItFatal = NV_FALSE;
             }
@@ -369,7 +371,7 @@ kmemsysInitFlushSysmemBuffer_GM107
 
     NV_ASSERT(pKernelMemorySystem->sysmemFlushBuffer != 0);
     GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 
     return NV_OK;
 }
@@ -398,7 +400,7 @@ kmemsysProgramSysmemFlushBuffer_GM107
     // A: Because on power management resume, this value should be restored too.
     //
     GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 }
 
 /*!
@@ -407,14 +409,61 @@ kmemsysProgramSysmemFlushBuffer_GM107
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
  *
- * @returns void
+ * @returns NV_STATUS - NV_OK if sysmemFlushBuffer is valid otherwise NV_ERR_INVALID_STATE
  */
-void
+NV_STATUS
 kmemsysAssertSysmemFlushBufferValid_GM107
 (
     OBJGPU *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NV_ASSERT(GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08) != 0);
+    NvU32 regPfbNisoFlushSysmemAddrVal = GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08);
+    if (regPfbNisoFlushSysmemAddrVal == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
+}
+
+NvU32
+kmemsysGetFlushSysmemBufferAddrShift_GM107
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    return NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT;
+}
+
+NvU16
+kmemsysGetMaximumBlacklistPages_GM107
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    return NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES;
+}
+
+/*!
+ * @brief  Do any operations to get ready for a XVE sw reset.
+ *
+ * Set the PFIFO_FB_IFACE to DISABLE
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kmemsysPrepareForXVEReset_GM107
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    GPU_REG_WR32(pGpu, NV_PFIFO_FB_IFACE,
+                 DRF_DEF(_PFIFO, _FB_IFACE, _CONTROL, _DISABLE) |
+                 DRF_DEF(_PFIFO, _FB_IFACE, _STATUS, _DISABLED));
+
+    return NV_OK;
 }

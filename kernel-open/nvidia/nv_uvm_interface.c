@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,18 +38,18 @@
 #include "nv_gpu_ops.h"
 #include "rm-gpu-ops.h"
 
-// This is really a struct UvmOpsUvmEvents *. It needs to be an atomic because
-// it can be read outside of the g_pNvUvmEventsLock. Use getUvmEvents and
+// This is really a struct UvmEventsLinux *. It needs to be an atomic because it
+// can be read outside of the g_pNvUvmEventsLock. Use getUvmEvents and
 // setUvmEvents to access it.
 static atomic_long_t g_pNvUvmEvents;
 static struct semaphore g_pNvUvmEventsLock;
 
-static struct UvmOpsUvmEvents *getUvmEvents(void)
+static struct UvmEventsLinux *getUvmEvents(void)
 {
-    return (struct UvmOpsUvmEvents *)atomic_long_read(&g_pNvUvmEvents);
+    return (struct UvmEventsLinux *)atomic_long_read(&g_pNvUvmEvents);
 }
 
-static void setUvmEvents(struct UvmOpsUvmEvents *newEvents)
+static void setUvmEvents(struct UvmEventsLinux *newEvents)
 {
     atomic_long_set(&g_pNvUvmEvents, (long)newEvents);
 }
@@ -126,6 +126,19 @@ static void nvUvmFreeSafeStack(nvidia_stack_t *sp)
         nv_kmem_cache_free_stack(sp);
 }
 
+static NV_STATUS nvUvmDestroyFaultInfoAndStacks(nvidia_stack_t *sp,
+                                                uvmGpuDeviceHandle device,
+                                                UvmGpuFaultInfo *pFaultInfo)
+{
+    nv_kmem_cache_free_stack(pFaultInfo->replayable.cslCtx.nvidia_stack);
+    nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_bh_sp);
+    nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_sp);
+
+    return rm_gpu_ops_destroy_fault_info(sp,
+                                         (gpuDeviceHandle)device,
+                                         pFaultInfo);
+}
+
 NV_STATUS nvUvmInterfaceRegisterGpu(const NvProcessorUuid *gpuUuid, UvmGpuPlatformInfo *gpuInfo)
 {
     nvidia_stack_t *sp = NULL;
@@ -195,10 +208,7 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
 
     memset(platformInfo, 0, sizeof(*platformInfo));
     platformInfo->atsSupported = nv_ats_supported;
-
-
-
-
+    platformInfo->confComputingEnabled = os_cc_enabled;
 
     status = rm_gpu_ops_create_session(sp, (gpuSessionHandle *)session);
 
@@ -284,6 +294,7 @@ EXPORT_SYMBOL(nvUvmInterfaceDupAddressSpace);
 NV_STATUS nvUvmInterfaceAddressSpaceCreate(uvmGpuDeviceHandle device,
                                            unsigned long long vaBase,
                                            unsigned long long vaSize,
+                                           NvBool enableAts,
                                            uvmGpuAddressSpaceHandle *vaSpace,
                                            UvmGpuAddressSpaceInfo *vaSpaceInfo)
 {
@@ -299,6 +310,7 @@ NV_STATUS nvUvmInterfaceAddressSpaceCreate(uvmGpuDeviceHandle device,
                                              (gpuDeviceHandle)device,
                                              vaBase,
                                              vaSize,
+                                             enableAts,
                                              (gpuAddressSpaceHandle *)vaSpace,
                                              vaSpaceInfo);
 
@@ -437,7 +449,7 @@ EXPORT_SYMBOL(nvUvmInterfacePmaUnregisterEvictionCallbacks);
 
 NV_STATUS nvUvmInterfacePmaAllocPages(void *pPma,
                                       NvLength pageCount,
-                                      NvU32 pageSize,
+                                      NvU64 pageSize,
                                       UvmPmaAllocationOptions *pPmaAllocOptions,
                                       NvU64 *pPages)
 {
@@ -464,7 +476,7 @@ EXPORT_SYMBOL(nvUvmInterfacePmaAllocPages);
 NV_STATUS nvUvmInterfacePmaPinPages(void *pPma,
                                     NvU64 *pPages,
                                     NvLength pageCount,
-                                    NvU32 pageSize,
+                                    NvU64 pageSize,
                                     NvU32 flags)
 {
     nvidia_stack_t *sp = NULL;
@@ -482,26 +494,6 @@ NV_STATUS nvUvmInterfacePmaPinPages(void *pPma,
 }
 EXPORT_SYMBOL(nvUvmInterfacePmaPinPages);
 
-NV_STATUS nvUvmInterfacePmaUnpinPages(void *pPma,
-                                      NvU64 *pPages,
-                                      NvLength pageCount,
-                                      NvU32 pageSize)
-{
-    nvidia_stack_t *sp = NULL;
-    NV_STATUS status;
-
-    if (nv_kmem_cache_alloc_stack(&sp) != 0)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    status = rm_gpu_ops_pma_unpin_pages(sp, pPma, pPages, pageCount, pageSize);
-
-    nv_kmem_cache_free_stack(sp);
-    return status;
-}
-EXPORT_SYMBOL(nvUvmInterfacePmaUnpinPages);
-
 void nvUvmInterfaceMemoryFree(uvmGpuAddressSpaceHandle vaSpace,
                     UvmGpuPointer gpuPointer)
 {
@@ -518,7 +510,7 @@ EXPORT_SYMBOL(nvUvmInterfaceMemoryFree);
 void nvUvmInterfacePmaFreePages(void *pPma,
                                 NvU64 *pPages,
                                 NvLength pageCount,
-                                NvU32 pageSize,
+                                NvU64 pageSize,
                                 NvU32 flags)
 {
     nvidia_stack_t *sp = nvUvmGetSafeStack();
@@ -531,7 +523,7 @@ EXPORT_SYMBOL(nvUvmInterfacePmaFreePages);
 
 NV_STATUS nvUvmInterfaceMemoryCpuMap(uvmGpuAddressSpaceHandle vaSpace,
            UvmGpuPointer gpuPointer, NvLength length, void **cpuPtr,
-           NvU32 pageSize)
+           NvU64 pageSize)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
@@ -559,7 +551,39 @@ void nvUvmInterfaceMemoryCpuUnMap(uvmGpuAddressSpaceHandle vaSpace,
 }
 EXPORT_SYMBOL(nvUvmInterfaceMemoryCpuUnMap);
 
-NV_STATUS nvUvmInterfaceChannelAllocate(uvmGpuAddressSpaceHandle  vaSpace,
+NV_STATUS nvUvmInterfaceTsgAllocate(uvmGpuAddressSpaceHandle vaSpace,
+                                    const UvmGpuTsgAllocParams *allocParams,
+                                    uvmGpuTsgHandle *tsg)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_tsg_allocate(sp,
+                                     (gpuAddressSpaceHandle)vaSpace,
+                                     allocParams,
+                                     (gpuTsgHandle *)tsg);
+
+    nv_kmem_cache_free_stack(sp);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceTsgAllocate);
+
+void nvUvmInterfaceTsgDestroy(uvmGpuTsgHandle tsg)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    rm_gpu_ops_tsg_destroy(sp, (gpuTsgHandle)tsg);
+    nvUvmFreeSafeStack(sp);
+}
+EXPORT_SYMBOL(nvUvmInterfaceTsgDestroy);
+
+
+NV_STATUS nvUvmInterfaceChannelAllocate(const uvmGpuTsgHandle tsg,
                                         const UvmGpuChannelAllocParams *allocParams,
                                         uvmGpuChannelHandle *channel,
                                         UvmGpuChannelInfo *channelInfo)
@@ -573,7 +597,7 @@ NV_STATUS nvUvmInterfaceChannelAllocate(uvmGpuAddressSpaceHandle  vaSpace,
     }
 
     status = rm_gpu_ops_channel_allocate(sp,
-                                         (gpuAddressSpaceHandle)vaSpace,
+                                         (gpuTsgHandle)tsg,
                                          allocParams,
                                          (gpuChannelHandle *)channel,
                                          channelInfo);
@@ -667,7 +691,8 @@ EXPORT_SYMBOL(nvUvmInterfaceServiceDeviceInterruptsRM);
 
 NV_STATUS nvUvmInterfaceSetPageDirectory(uvmGpuAddressSpaceHandle vaSpace,
                                          NvU64 physAddress, unsigned numEntries,
-                                         NvBool bVidMemAperture, NvU32 pasid)
+                                         NvBool bVidMemAperture, NvU32 pasid,
+                                         NvU64 *dmaAddress)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
@@ -678,7 +703,8 @@ NV_STATUS nvUvmInterfaceSetPageDirectory(uvmGpuAddressSpaceHandle vaSpace,
     }
 
     status = rm_gpu_ops_set_page_directory(sp, (gpuAddressSpaceHandle)vaSpace,
-                                    physAddress, numEntries, bVidMemAperture, pasid);
+                                    physAddress, numEntries, bVidMemAperture, pasid,
+                                    dmaAddress);
 
     nv_kmem_cache_free_stack(sp);
     return status;
@@ -700,6 +726,7 @@ EXPORT_SYMBOL(nvUvmInterfaceUnsetPageDirectory);
 NV_STATUS nvUvmInterfaceDupAllocation(uvmGpuAddressSpaceHandle srcVaSpace,
                                       NvU64 srcAddress,
                                       uvmGpuAddressSpaceHandle dstVaSpace,
+                                      NvU64 dstVaAlignment,
                                       NvU64 *dstAddress)
 {
     nvidia_stack_t *sp = NULL;
@@ -714,6 +741,7 @@ NV_STATUS nvUvmInterfaceDupAllocation(uvmGpuAddressSpaceHandle srcVaSpace,
                                       (gpuAddressSpaceHandle)srcVaSpace,
                                       srcAddress,
                                       (gpuAddressSpaceHandle)dstVaSpace,
+                                      dstVaAlignment,
                                       dstAddress);
 
     nv_kmem_cache_free_stack(sp);
@@ -823,6 +851,7 @@ NV_STATUS nvUvmInterfaceInitFaultInfo(uvmGpuDeviceHandle device,
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
+    int err;
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
@@ -832,43 +861,57 @@ NV_STATUS nvUvmInterfaceInitFaultInfo(uvmGpuDeviceHandle device,
     status = rm_gpu_ops_init_fault_info(sp,
                                        (gpuDeviceHandle)device,
                                        pFaultInfo);
+    if (status != NV_OK)
+    {
+        goto done;
+    }
 
     // Preallocate a stack for functions called from ISR top half
     pFaultInfo->nonReplayable.isr_sp = NULL;
     pFaultInfo->nonReplayable.isr_bh_sp = NULL;
-    if (status == NV_OK)
-    {
-        // NOTE: nv_kmem_cache_alloc_stack does not allocate a stack on PPC.
-        // Therefore, the pointer can be NULL on success. Always use the
-        // returned error code to determine if the operation was successful.
-        int err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_sp);
-        if (!err)
-        {
-            err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_bh_sp);
-            if (err)
-            {
-                nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_sp);
-                pFaultInfo->nonReplayable.isr_sp = NULL;
-            }
-        }
+    pFaultInfo->replayable.cslCtx.nvidia_stack = NULL;
 
+    // NOTE: nv_kmem_cache_alloc_stack does not allocate a stack on PPC.
+    // Therefore, the pointer can be NULL on success. Always use the
+    // returned error code to determine if the operation was successful.
+    err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_sp);
+    if (err)
+    {
+        goto error;
+    }
+
+    err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_bh_sp);
+    if (err)
+    {
+        goto error;
+    }
+
+    // The cslCtx.ctx pointer is not NULL only when ConfidentialComputing is enabled.
+    if (pFaultInfo->replayable.cslCtx.ctx != NULL)
+    {
+        err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->replayable.cslCtx.nvidia_stack);
         if (err)
         {
-            rm_gpu_ops_destroy_fault_info(sp,
-                                          (gpuDeviceHandle)device,
-                                          pFaultInfo);
-
-            status = NV_ERR_NO_MEMORY;
+            goto error;
         }
     }
 
+    goto done;
+
+error:
+    nvUvmDestroyFaultInfoAndStacks(sp,
+                                   device,
+                                   pFaultInfo);
+    status = NV_ERR_NO_MEMORY;
+done:
     nv_kmem_cache_free_stack(sp);
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceInitFaultInfo);
 
 NV_STATUS nvUvmInterfaceInitAccessCntrInfo(uvmGpuDeviceHandle device,
-                                           UvmGpuAccessCntrInfo *pAccessCntrInfo)
+                                           UvmGpuAccessCntrInfo *pAccessCntrInfo,
+                                           NvU32 accessCntrIndex)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
@@ -880,7 +923,8 @@ NV_STATUS nvUvmInterfaceInitAccessCntrInfo(uvmGpuDeviceHandle device,
 
     status = rm_gpu_ops_init_access_cntr_info(sp,
                                               (gpuDeviceHandle)device,
-                                              pAccessCntrInfo);
+                                              pAccessCntrInfo,
+                                              accessCntrIndex);
 
     nv_kmem_cache_free_stack(sp);
     return status;
@@ -889,7 +933,7 @@ EXPORT_SYMBOL(nvUvmInterfaceInitAccessCntrInfo);
 
 NV_STATUS nvUvmInterfaceEnableAccessCntr(uvmGpuDeviceHandle device,
                                          UvmGpuAccessCntrInfo *pAccessCntrInfo,
-                                         UvmGpuAccessCntrConfig *pAccessCntrConfig)
+                                         const UvmGpuAccessCntrConfig *pAccessCntrConfig)
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
@@ -915,23 +959,9 @@ NV_STATUS nvUvmInterfaceDestroyFaultInfo(uvmGpuDeviceHandle device,
     nvidia_stack_t *sp = nvUvmGetSafeStack();
     NV_STATUS status;
 
-    // Free the preallocated stack for functions called from ISR
-    if (pFaultInfo->nonReplayable.isr_sp != NULL)
-    {
-        nv_kmem_cache_free_stack((nvidia_stack_t *)pFaultInfo->nonReplayable.isr_sp);
-        pFaultInfo->nonReplayable.isr_sp = NULL;
-    }
-
-    if (pFaultInfo->nonReplayable.isr_bh_sp != NULL)
-    {
-        nv_kmem_cache_free_stack((nvidia_stack_t *)pFaultInfo->nonReplayable.isr_bh_sp);
-        pFaultInfo->nonReplayable.isr_bh_sp = NULL;
-    }
-
-    status = rm_gpu_ops_destroy_fault_info(sp,
-                                          (gpuDeviceHandle)device,
-                                          pFaultInfo);
-
+    status = nvUvmDestroyFaultInfoAndStacks(sp,
+                                            device,
+                                            pFaultInfo);
     nvUvmFreeSafeStack(sp);
     return status;
 }
@@ -956,6 +986,36 @@ NV_STATUS nvUvmInterfaceGetNonReplayableFaults(UvmGpuFaultInfo *pFaultInfo,
                                                 numFaults);
 }
 EXPORT_SYMBOL(nvUvmInterfaceGetNonReplayableFaults);
+
+NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(UvmGpuFaultInfo *pFaultInfo,
+                                                   NvBool bCopyAndFlush)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status;
+
+    status = rm_gpu_ops_flush_replayable_fault_buffer(sp,
+                                                      pFaultInfo,
+                                                      bCopyAndFlush);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceFlushReplayableFaultBuffer);
+
+NV_STATUS nvUvmInterfaceTogglePrefetchFaults(UvmGpuFaultInfo *pFaultInfo,
+                                             NvBool bEnable)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status;
+
+    status = rm_gpu_ops_toggle_prefetch_faults(sp,
+                                               pFaultInfo,
+                                               bEnable);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceTogglePrefetchFaults);
 
 NV_STATUS nvUvmInterfaceDestroyAccessCntrInfo(uvmGpuDeviceHandle device,
                                               UvmGpuAccessCntrInfo *pAccessCntrInfo)
@@ -987,12 +1047,55 @@ NV_STATUS nvUvmInterfaceDisableAccessCntr(uvmGpuDeviceHandle device,
 }
 EXPORT_SYMBOL(nvUvmInterfaceDisableAccessCntr);
 
-// this function is called by the UVM driver to register the ops
-NV_STATUS nvUvmInterfaceRegisterUvmCallbacks(struct UvmOpsUvmEvents *importedUvmOps)
+NV_STATUS nvUvmInterfaceAccessBitsBufAlloc(uvmGpuDeviceHandle device,
+                                           UvmGpuAccessBitsBufferAlloc* pAccessBitsInfo)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status;
+
+    status = rm_gpu_ops_access_bits_buffer_alloc(sp, (gpuDeviceHandle)device,
+                                                 pAccessBitsInfo);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceAccessBitsBufAlloc);
+
+NV_STATUS nvUvmInterfaceAccessBitsBufFree(uvmGpuDeviceHandle device,
+                                          UvmGpuAccessBitsBufferAlloc* pAccessBitsInfo)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status;
+
+    status = rm_gpu_ops_access_bits_buffer_free(sp, (gpuDeviceHandle)device,
+                                                pAccessBitsInfo);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceAccessBitsBufFree);
+
+NV_STATUS nvUvmInterfaceAccessBitsDump(uvmGpuDeviceHandle device,
+                                       UvmGpuAccessBitsBufferAlloc* pAccessBitsInfo,
+                                       UVM_ACCESS_BITS_DUMP_MODE mode)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status = NV_OK;
+
+    status = rm_gpu_ops_access_bits_dump(sp, (gpuDeviceHandle)device,
+                                         pAccessBitsInfo, mode);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceAccessBitsDump);
+
+// this function is called by the UVM driver to register the event callbacks
+NV_STATUS nvUvmInterfaceRegisterUvmEvents(struct UvmEventsLinux *importedEvents)
 {
     NV_STATUS status = NV_OK;
 
-    if (!importedUvmOps)
+    if (!importedEvents)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -1006,13 +1109,13 @@ NV_STATUS nvUvmInterfaceRegisterUvmCallbacks(struct UvmOpsUvmEvents *importedUvm
     {
         // Be careful: as soon as the pointer is assigned, top half ISRs can
         // start reading it to make callbacks, even before we drop the lock.
-        setUvmEvents(importedUvmOps);
+        setUvmEvents(importedEvents);
     }
     up(&g_pNvUvmEventsLock);
 
     return status;
 }
-EXPORT_SYMBOL(nvUvmInterfaceRegisterUvmCallbacks);
+EXPORT_SYMBOL(nvUvmInterfaceRegisterUvmEvents);
 
 static void flush_top_half(void *info)
 {
@@ -1021,7 +1124,7 @@ static void flush_top_half(void *info)
     return;
 }
 
-void nvUvmInterfaceDeRegisterUvmOps(void)
+void nvUvmInterfaceDeRegisterUvmEvents(void)
 {
     // Taking the lock forces us to wait for non-interrupt callbacks to finish
     // up.
@@ -1034,7 +1137,7 @@ void nvUvmInterfaceDeRegisterUvmOps(void)
     // cores. We can wait for them to finish by waiting for a context switch to
     // happen on every core.
     //
-    // This is slow, but since nvUvmInterfaceDeRegisterUvmOps is very rare
+    // This is slow, but since nvUvmInterfaceDeRegisterUvmEvents is very rare
     // (module unload) it beats having the top half synchronize with a spin lock
     // every time.
     //
@@ -1043,12 +1146,12 @@ void nvUvmInterfaceDeRegisterUvmOps(void)
     // ones to finish.
     on_each_cpu(flush_top_half, NULL, 1);
 }
-EXPORT_SYMBOL(nvUvmInterfaceDeRegisterUvmOps);
+EXPORT_SYMBOL(nvUvmInterfaceDeRegisterUvmEvents);
 
 NV_STATUS nv_uvm_suspend(void)
 {
     NV_STATUS status = NV_OK;
-    struct UvmOpsUvmEvents *events;
+    struct UvmEventsLinux *events;
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);
@@ -1070,7 +1173,7 @@ NV_STATUS nv_uvm_suspend(void)
 NV_STATUS nv_uvm_resume(void)
 {
     NV_STATUS status = NV_OK;
-    struct UvmOpsUvmEvents *events;
+    struct UvmEventsLinux *events;
 
     // Synchronize callbacks with unregistration
     down(&g_pNvUvmEventsLock);
@@ -1089,48 +1192,6 @@ NV_STATUS nv_uvm_resume(void)
     return status;
 }
 
-void nv_uvm_notify_start_device(const NvU8 *pUuid)
-{
-    NvProcessorUuid uvmUuid;
-    struct UvmOpsUvmEvents *events;
-
-    memcpy(uvmUuid.uuid, pUuid, UVM_UUID_LEN);
-
-    // Synchronize callbacks with unregistration
-    down(&g_pNvUvmEventsLock);
-
-    // It's not strictly necessary to use a cached local copy of the events
-    // pointer here since it can't change under the lock, but we'll do it for
-    // consistency.
-    events = getUvmEvents();
-    if(events && events->startDevice)
-    {
-        events->startDevice(&uvmUuid);
-    }
-    up(&g_pNvUvmEventsLock);
-}
-
-void nv_uvm_notify_stop_device(const NvU8 *pUuid)
-{
-    NvProcessorUuid uvmUuid;
-    struct UvmOpsUvmEvents *events;
-
-    memcpy(uvmUuid.uuid, pUuid, UVM_UUID_LEN);
-
-    // Synchronize callbacks with unregistration
-    down(&g_pNvUvmEventsLock);
-
-    // It's not strictly necessary to use a cached local copy of the events
-    // pointer here since it can't change under the lock, but we'll do it for
-    // consistency.
-    events = getUvmEvents();
-    if(events && events->stopDevice)
-    {
-        events->stopDevice(&uvmUuid);
-    }
-    up(&g_pNvUvmEventsLock);
-}
-
 NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
 {
     //
@@ -1140,7 +1201,7 @@ NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
     // absolutely necessary.
     //
     // Instead, we allow this function to be called concurrently with
-    // nvUvmInterfaceDeRegisterUvmOps. That function will clear the events
+    // nvUvmInterfaceDeRegisterUvmEvents. That function will clear the events
     // pointer, then wait for all top halves to finish out. This means the
     // pointer may change out from under us, but the callbacks are still safe to
     // invoke while we're in this function.
@@ -1149,7 +1210,7 @@ NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
     // nor the compiler make assumptions about the pointer remaining valid while
     // in this function.
     //
-    struct UvmOpsUvmEvents *events = getUvmEvents();
+    struct UvmEventsLinux *events = getUvmEvents();
 
     if (events && events->isrTopHalf)
         return events->isrTopHalf((const NvProcessorUuid *)pUuid);
@@ -1159,6 +1220,73 @@ NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
     // NV_ERR_NO_INTR_PENDING to tell the caller that we didn't do anything.
     //
     return NV_ERR_NO_INTR_PENDING;
+}
+
+NV_STATUS nvUvmInterfaceGetNvlinkInfo(uvmGpuDeviceHandle device,
+                                      UvmGpuNvlinkInfo *nvlinkInfo)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_get_nvlink_info(sp, (gpuDeviceHandle)device, nvlinkInfo);
+
+    nv_kmem_cache_free_stack(sp);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceGetNvlinkInfo);
+
+NV_STATUS nv_uvm_drain_P2P(const NvU8 *uuid)
+{
+    NvProcessorUuid uvmUuid;
+    struct UvmEventsLinux *events;
+    NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
+
+    memcpy(uvmUuid.uuid, uuid, NV_UUID_LEN);
+
+    // Synchronize callbacks with unregistration
+    down(&g_pNvUvmEventsLock);
+
+    // It's not strictly necessary to use a cached local copy of the events
+    // pointer here since it can't change under the lock, but we'll do it for
+    // consistency.
+    events = getUvmEvents();
+    if(events && events->drainP2P)
+    {
+        ret = events->drainP2P(&uvmUuid);
+    }
+    up(&g_pNvUvmEventsLock);
+
+    return ret;
+}
+
+NV_STATUS nv_uvm_resume_P2P(const NvU8 *uuid)
+{
+    NvProcessorUuid uvmUuid;
+    struct UvmEventsLinux *events;
+    NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
+
+    memcpy(uvmUuid.uuid, uuid, NV_UUID_LEN);
+
+    // Synchronize callbacks with unregistration
+    down(&g_pNvUvmEventsLock);
+
+    // It's not strictly necessary to use a cached local copy of the events
+    // pointer here since it can't change under the lock, but we'll do it for
+    // consistency.
+    events = getUvmEvents();
+    if(events && events->resumeP2P)
+    {
+        ret = events->resumeP2P(&uvmUuid);
+    }
+    up(&g_pNvUvmEventsLock);
+
+    return ret;
 }
 
 NV_STATUS nvUvmInterfaceP2pObjectCreate(uvmGpuDeviceHandle device1,
@@ -1218,6 +1346,32 @@ NV_STATUS nvUvmInterfaceGetExternalAllocPtes(uvmGpuAddressSpaceHandle vaSpace,
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceGetExternalAllocPtes);
+
+NV_STATUS nvUvmInterfaceGetExternalAllocPhysAddrs(uvmGpuAddressSpaceHandle vaSpace,
+                                                  NvHandle hDupedMemory,
+                                                  NvU64 offset,
+                                                  NvU64 size,
+                                                  UvmGpuExternalPhysAddrInfo *gpuExternalPhysAddrInfo)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_get_external_alloc_phys_addrs(sp,
+                                                      (gpuAddressSpaceHandle)vaSpace,
+                                                      hDupedMemory,
+                                                      offset,
+                                                      size,
+                                                      gpuExternalPhysAddrInfo);
+
+    nv_kmem_cache_free_stack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceGetExternalAllocPhysAddrs);
 
 NV_STATUS nvUvmInterfaceRetainChannel(uvmGpuAddressSpaceHandle vaSpace,
                                       NvHandle hClient,
@@ -1420,114 +1574,182 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
 }
 EXPORT_SYMBOL(nvUvmInterfacePagingChannelPushStream);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void nvUvmInterfaceReportFatalError(NV_STATUS error)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    rm_gpu_ops_report_fatal_error(sp, error);
+    nvUvmFreeSafeStack(sp);
+}
+EXPORT_SYMBOL(nvUvmInterfaceReportFatalError);
+
+NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
+                                       uvmGpuChannelHandle channel)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_ccsl_context_init(sp, &uvmCslContext->ctx, (gpuChannelHandle)channel);
+
+    // Saving the stack in the context allows UVM to safely use the CSL layer
+    // in interrupt context without making new allocations. UVM serializes CSL
+    // API usage for a given context so the stack pointer does not need
+    // additional protection.
+    if (status != NV_OK)
+    {
+        nv_kmem_cache_free_stack(sp);
+    }
+    else
+    {
+        uvmCslContext->nvidia_stack = sp;
+    }
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslInitContext);
+
+void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext)
+{
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+    rm_gpu_ops_ccsl_context_clear(sp, uvmCslContext->ctx);
+    nvUvmFreeSafeStack(sp);
+}
+EXPORT_SYMBOL(nvUvmInterfaceDeinitCslContext);
+
+NV_STATUS nvUvmInterfaceCslRotateKey(UvmCslContext *contextList[],
+                                     NvU32 contextListCount)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp;
+
+    if ((contextList == NULL) || (contextListCount == 0) || (contextList[0] == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    sp = contextList[0]->nvidia_stack;
+    status = rm_gpu_ops_ccsl_rotate_key(sp, contextList, contextListCount);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslRotateKey);
+
+NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
+                                    UvmCslOperation operation)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_rotate_iv(sp, uvmCslContext->ctx, operation);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslRotateIv);
+
+NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
+                                   NvU32 bufferSize,
+                                   NvU8 const *inputBuffer,
+                                   UvmCslIv *encryptIv,
+                                   NvU8 *outputBuffer,
+                                   NvU8 *authTagBuffer)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    if (encryptIv != NULL)
+        status = rm_gpu_ops_ccsl_encrypt_with_iv(sp, uvmCslContext->ctx, bufferSize, inputBuffer, (NvU8*)encryptIv, outputBuffer, authTagBuffer);
+    else
+        status = rm_gpu_ops_ccsl_encrypt(sp, uvmCslContext->ctx, bufferSize, inputBuffer, outputBuffer, authTagBuffer);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslEncrypt);
+
+NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
+                                   NvU32 bufferSize,
+                                   NvU8 const *inputBuffer,
+                                   UvmCslIv const *decryptIv,
+                                   NvU32 keyRotationId,
+                                   NvU8 *outputBuffer,
+                                   NvU8 const *addAuthData,
+                                   NvU32 addAuthDataSize,
+                                   NvU8 const *authTagBuffer)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_decrypt(sp,
+                                     uvmCslContext->ctx,
+                                     bufferSize,
+                                     inputBuffer,
+                                     (NvU8 *)decryptIv,
+                                     keyRotationId,
+                                     outputBuffer,
+                                     addAuthData,
+                                     addAuthDataSize,
+                                     authTagBuffer);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslDecrypt);
+
+NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
+                                NvU32 bufferSize,
+                                NvU8 const *inputBuffer,
+                                NvU8 *authTagBuffer)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_sign(sp, uvmCslContext->ctx, bufferSize, inputBuffer, authTagBuffer);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslSign);
+
+NV_STATUS nvUvmInterfaceCslQueryMessagePool(UvmCslContext *uvmCslContext,
+                                            UvmCslOperation operation,
+                                            NvU64 *messageNum)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_query_message_pool(sp, uvmCslContext->ctx, operation, messageNum);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslQueryMessagePool);
+
+NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
+                                       UvmCslOperation operation,
+                                       NvU64 increment,
+                                       UvmCslIv *iv)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_increment_iv(sp, uvmCslContext->ctx, operation, increment, (NvU8 *)iv);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslIncrementIv);
+
+NV_STATUS nvUvmInterfaceCslLogEncryption(UvmCslContext *uvmCslContext,
+                                         UvmCslOperation operation,
+                                         NvU32 bufferSize)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_log_encryption(sp, uvmCslContext->ctx, operation, bufferSize);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslLogEncryption);
 
 #else // NV_UVM_ENABLE
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -52,12 +52,12 @@ typedef enum
 
 const char *uvm_perf_fault_replay_policy_string(uvm_perf_fault_replay_policy_t fault_replay);
 
-NV_STATUS uvm_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu);
-void uvm_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu);
+NV_STATUS uvm_parent_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu);
 
-void uvm_gpu_fault_buffer_resume(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_fault_buffer_resume(uvm_parent_gpu_t *parent_gpu);
 
-bool uvm_gpu_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu);
+bool uvm_parent_gpu_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu);
 
 // Clear valid bit for all remaining unserviced faults in the buffer, set GET to
 // PUT, and push a fault replay of type UVM_FAULT_REPLAY_TYPE_START. It does not
@@ -68,11 +68,10 @@ bool uvm_gpu_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu);
 NV_STATUS uvm_gpu_fault_buffer_flush(uvm_gpu_t *gpu);
 
 // Enable/disable HW support for prefetch-initiated faults
-void uvm_gpu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
-void uvm_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
 
 // Service pending replayable faults on the given GPU. This function must be
 // only called from the ISR bottom half
-void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu);
-
+void uvm_parent_gpu_service_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 #endif // __UVM_GPU_PAGE_FAULT_H__

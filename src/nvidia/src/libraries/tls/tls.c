@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,17 @@
 /// @todo Figure out which builds have upward stack. Looks like none?
 #define STACK_GROWS_DOWNWARD 1
 
+#if NVOS_IS_LIBOS
+//
+// On LibOS we have at most one passive thread (task_rm) and one ISR
+// (task_interrupt) active at once (on same CPU core). Since these two will
+// use different maps, we don't need to protect them with spinlocks.
+// TLS structures are pre-allocated for single-threaded (1 passive, 1 ISR thread) runtimes.
+//
+#define TLS_IS_SINGLE_THREADED 1
+#else
+#define TLS_IS_SINGLE_THREADED 0
+#endif // NVOS_IS_LIBOS
 
 /**
  *  @brief Entry which counts how many times some data in TLS has been referenced.
@@ -52,7 +63,12 @@ typedef struct ThreadEntry
     } key;              /// @todo Use node.key instead?
     TlsEntryMap map;
     MapNode node;
+
+    NvU8 *pTlsBlock; // backing memory for TlsEntryMap nodes
+    PORT_MEM_ALLOCATOR *pTlsEntryAllocator;
 } ThreadEntry;
+
+#define TLS_THREAD_ENTRY_BLOCK_SZ PORT_MEM_PREALLOCATED_BLOCK(sizeof(TlsEntry[16]))
 
 MAKE_INTRUSIVE_MAP(ThreadEntryMap, ThreadEntry, node);
 
@@ -68,6 +84,10 @@ typedef struct TlsDatabase
     /// @brief Last allocated entry id.
     NvU64 lastEntryId;
 
+#if TLS_IS_SINGLE_THREADED
+    ThreadEntry passiveThreadEntry;
+    ThreadEntry isrThreadEntry;
+#else
     /// @brief Lock for the passive thread entry map
     PORT_SPINLOCK *pLock;
     /// @brief Map of thread entries of non ISR threads.
@@ -88,7 +108,8 @@ typedef struct TlsDatabase
         volatile NvU64 sp;
         ThreadEntry   *pThreadEntry;
     } isrEntries[TLS_MAX_ISRS];
-#endif
+#endif // TLS_ISR_CAN_USE_LOCK
+#endif // TLS_IS_SINGLE_THREADED
 
 #if TLS_THREADS_CAN_RAISE_IRQL
     /**
@@ -112,13 +133,17 @@ static ThreadEntry        *_tlsThreadEntryGet(void);
 static ThreadEntry        *_tlsThreadEntryGetOrAlloc(void);
 static NvP64               *_tlsEntryAcquire(ThreadEntry *pThreadEntry, NvU64 entryId, PORT_MEM_ALLOCATOR *pCustomAllocator);
 static NvU32               _tlsEntryRelease(ThreadEntry *pThreadEntry, TlsEntry *pTlsEntry, PORT_MEM_ALLOCATOR *pCustomAllocator);
+static PORT_MEM_ALLOCATOR *_tlsIsrAllocatorGet(void);
+static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(ThreadEntry *pThreadEntry);
+static NV_STATUS           _tlsPassiveThreadEntryInit(ThreadEntry *pThreadEntry);
+
+#if !TLS_IS_SINGLE_THREADED
 static NV_STATUS           _tlsIsrEntriesInit(void);
 static void                _tlsIsrEntriesDestroy(void);
 static void                _tlsIsrEntriesInsert(ThreadEntry *pThreadEntry);
 static ThreadEntry        *_tlsIsrEntriesRemove(NvU64 sp);
 static ThreadEntry        *_tlsIsrEntriesFind(NvU64 approxSp);
-static PORT_MEM_ALLOCATOR *_tlsIsrAllocatorGet(void);
-static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(void);
+#endif
 
 #if TLS_THREADS_CAN_RAISE_IRQL
 /// @todo move to NvPort (bug 1583359)
@@ -129,7 +154,6 @@ NvU32 osGetMaximumCoreCount(void);
 #define osGetMaximumCoreCount() 0x0
 #endif
 #endif
-
 
 #if !PORT_IS_FUNC_SUPPORTED(portSyncExSafeToSleep)
 #define portSyncExSafeToSleep() NV_TRUE
@@ -143,10 +167,7 @@ NvU32 osGetMaximumCoreCount(void);
 #include "tls_profiling.h"
 #endif
 
-
-
-
-NV_STATUS tlsInitialize()
+NV_STATUS tlsInitialize(void)
 {
     NV_STATUS status;
 
@@ -166,17 +187,29 @@ NV_STATUS tlsInitialize()
         goto done;
     }
 
+#if TLS_IS_SINGLE_THREADED
+    portMemSet(&tlsDatabase.passiveThreadEntry, 0, sizeof(tlsDatabase.passiveThreadEntry));
+    portMemSet(&tlsDatabase.isrThreadEntry, 0, sizeof(tlsDatabase.isrThreadEntry));
+
+    status = _tlsPassiveThreadEntryInit(&tlsDatabase.passiveThreadEntry);
+    if (status != NV_OK)
+        goto done;
+
+    mapInitIntrusive(&tlsDatabase.passiveThreadEntry.map);
+#else
     tlsDatabase.pLock = portSyncSpinlockCreate(tlsDatabase.pAllocator);
     if (tlsDatabase.pLock == NULL)
     {
         status = NV_ERR_INSUFFICIENT_RESOURCES;
         goto done;
     }
+
     mapInitIntrusive(&tlsDatabase.threadEntries);
 
     status = _tlsIsrEntriesInit();
     if (status != NV_OK)
         goto done;
+#endif
 
     tlsDatabase.lastEntryId = TLS_ENTRY_ID_DYNAMIC;
 
@@ -204,7 +237,7 @@ done:
     return status;
 }
 
-void tlsShutdown()
+void tlsShutdown(void)
 {
     if (portAtomicDecrementU32(&tlsDatabase.initCount) != 0)
     {
@@ -215,11 +248,17 @@ void tlsShutdown()
     _tlsProfilePrint();
 #endif
 
+#if TLS_IS_SINGLE_THREADED
+    portMemAllocatorRelease(tlsDatabase.passiveThreadEntry.pTlsEntryAllocator);
+    PORT_FREE(tlsDatabase.pAllocator, tlsDatabase.passiveThreadEntry.pTlsBlock);
+    mapDestroy(&tlsDatabase.passiveThreadEntry.map);
+#else
     mapDestroy(&tlsDatabase.threadEntries);
     if (tlsDatabase.pLock)
         portSyncSpinlockDestroy(tlsDatabase.pLock);
 
     _tlsIsrEntriesDestroy();
+#endif
 
     if (tlsDatabase.pAllocator)
     {
@@ -234,7 +273,7 @@ void tlsShutdown()
 
 void tlsIsrInit(PORT_MEM_ALLOCATOR *pIsrAllocator)
 {
-    ThreadEntry *pThreadEntry;
+    ThreadEntry * pThreadEntry = NULL;
     NV_ASSERT_OR_RETURN_VOID(tlsDatabase.initCount > 0);
 
     //
@@ -255,13 +294,21 @@ void tlsIsrInit(PORT_MEM_ALLOCATOR *pIsrAllocator)
         return;
     }
 
+#if TLS_IS_SINGLE_THREADED
+    pThreadEntry = &tlsDatabase.isrThreadEntry;
+#else
     pThreadEntry = PORT_ALLOC(pIsrAllocator, sizeof(*pThreadEntry));
     NV_ASSERT_OR_RETURN_VOID(pThreadEntry != NULL);
+#endif
 
     pThreadEntry->key.sp = (NvU64)(NvUPtr)pIsrAllocator;
+    pThreadEntry->pTlsEntryAllocator = NULL;
+
     mapInitIntrusive(&pThreadEntry->map);
 
+#if !TLS_IS_SINGLE_THREADED
     _tlsIsrEntriesInsert(pThreadEntry);
+#endif
 
 #if TLS_THREADS_CAN_RAISE_IRQL
     portAtomicIncrementU32(&tlsDatabase.isrCount[osGetCurrentProcessorNumber()]);
@@ -270,7 +317,8 @@ void tlsIsrInit(PORT_MEM_ALLOCATOR *pIsrAllocator)
 
 void tlsIsrDestroy(PORT_MEM_ALLOCATOR *pIsrAllocator)
 {
-    ThreadEntry *pThreadEntry;
+    ThreadEntry *pThreadEntry = NULL;
+    PORT_UNREFERENCED_VARIABLE(pIsrAllocator);
     NV_ASSERT_OR_RETURN_VOID(tlsDatabase.initCount > 0);
 
     if (!_tlsIsIsr())
@@ -284,10 +332,17 @@ void tlsIsrDestroy(PORT_MEM_ALLOCATOR *pIsrAllocator)
         return;
     }
 
+#if TLS_IS_SINGLE_THREADED
+    pThreadEntry = &tlsDatabase.isrThreadEntry;
+#else
     pThreadEntry = _tlsIsrEntriesRemove((NvU64)(NvUPtr)pIsrAllocator);
+#endif
 
     mapDestroy(&pThreadEntry->map);
+
+#if !TLS_IS_SINGLE_THREADED
     PORT_FREE(pIsrAllocator, pThreadEntry);
+#endif
 
 #if TLS_THREADS_CAN_RAISE_IRQL
     portAtomicDecrementU32(&tlsDatabase.isrCount[osGetCurrentProcessorNumber()]);
@@ -301,10 +356,15 @@ PORT_MEM_ALLOCATOR *tlsIsrAllocatorGet(void)
     return _tlsIsrAllocatorGet();
 }
 
-NvU64 tlsEntryAlloc()
+NvU64 tlsEntryAlloc(void)
 {
     NV_ASSERT_OR_RETURN(tlsDatabase.initCount > 0, TLS_ERROR_VAL);
     return portAtomicExIncrementU64(&tlsDatabase.lastEntryId);
+}
+
+NvBool tlsIsRefcounted(void)
+{
+    return NV_TRUE;
 }
 
 NvP64 *tlsEntryAcquire(NvU64 entryId)
@@ -383,6 +443,27 @@ NvP64 tlsEntryGet(NvU64 entryId)
     return pTlsEntry ? pTlsEntry->pUserData : NvP64_NULL;
 }
 
+NvBool tlsEntrySet(NvU64 entryId, NvP64 entryData)
+{
+    ThreadEntry *pThreadEntry;
+    TlsEntry *pTlsEntry;
+    NV_ASSERT_OR_RETURN(tlsDatabase.initCount > 0, NV_FALSE);
+
+    pThreadEntry = _tlsThreadEntryGet();
+    if (pThreadEntry == NULL)
+        return NV_FALSE;
+
+    pTlsEntry = mapFind(&pThreadEntry->map, entryId);
+
+    if (pTlsEntry != NULL)
+    {
+        pTlsEntry->pUserData = entryData;
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 NvU32 tlsEntryReference(NvU64 entryId)
 {
     ThreadEntry *pThreadEntry;
@@ -413,9 +494,47 @@ NvU32 tlsEntryUnreference(NvU64 entryId)
     return --pTlsEntry->refCount;
 }
 
+static NV_STATUS _tlsPassiveThreadEntryInit(ThreadEntry *pThreadEntry)
+{
+    pThreadEntry->key.threadId = portThreadGetCurrentThreadId();
+    pThreadEntry->pTlsBlock = PORT_ALLOC(tlsDatabase.pAllocator, TLS_THREAD_ENTRY_BLOCK_SZ);
+    if (pThreadEntry->pTlsBlock == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    pThreadEntry->pTlsEntryAllocator = portMemAllocatorCreateOnExistingBlock(pThreadEntry->pTlsBlock, TLS_THREAD_ENTRY_BLOCK_SZ);
+    if (pThreadEntry->pTlsEntryAllocator == NULL)
+    {
+        PORT_FREE(tlsDatabase.pAllocator, pThreadEntry->pTlsBlock);
+        pThreadEntry->pTlsBlock = NULL;
+        return NV_ERR_NO_MEMORY;
+    }
+
+    return NV_OK;
+}
+
+#if TLS_IS_SINGLE_THREADED
 
 static ThreadEntry *
-_tlsThreadEntryGet()
+_tlsThreadEntryGet(void)
+{
+    if (!_tlsIsIsr())
+        return &tlsDatabase.passiveThreadEntry;
+    else
+        return &tlsDatabase.isrThreadEntry;
+}
+
+static ThreadEntry *
+_tlsThreadEntryGetOrAlloc(void)
+{
+    return _tlsThreadEntryGet();
+}
+
+#else
+
+static ThreadEntry *
+_tlsThreadEntryGet(void)
 {
     ThreadEntry *pThreadEntry;
 
@@ -427,7 +546,7 @@ _tlsThreadEntryGet()
     {
         NvU64 threadId = portThreadGetCurrentThreadId();
         portSyncSpinlockAcquire(tlsDatabase.pLock);
-          pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
+        pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
         portSyncSpinlockRelease(tlsDatabase.pLock);
     }
     return pThreadEntry;
@@ -435,7 +554,7 @@ _tlsThreadEntryGet()
 
 
 static ThreadEntry *
-_tlsThreadEntryGetOrAlloc()
+_tlsThreadEntryGetOrAlloc(void)
 {
     ThreadEntry* pThreadEntry = NULL;
 
@@ -446,18 +565,24 @@ _tlsThreadEntryGetOrAlloc()
         pThreadEntry = PORT_ALLOC(tlsDatabase.pAllocator, sizeof(*pThreadEntry));
         if (pThreadEntry != NULL)
         {
-            pThreadEntry->key.threadId = portThreadGetCurrentThreadId();
+            if (_tlsPassiveThreadEntryInit(pThreadEntry) != NV_OK)
+            {
+                PORT_FREE(tlsDatabase.pAllocator, pThreadEntry);
+                return NULL;
+            }
+
             mapInitIntrusive(&pThreadEntry->map);
             portSyncSpinlockAcquire(tlsDatabase.pLock);
-              mapInsertExisting(&tlsDatabase.threadEntries,
-                                pThreadEntry->key.threadId,
-                                pThreadEntry);
+            mapInsertExisting(&tlsDatabase.threadEntries,
+                              pThreadEntry->key.threadId,
+                              pThreadEntry);
             portSyncSpinlockRelease(tlsDatabase.pLock);
         }
     }
 
     return pThreadEntry;
 }
+#endif // TLS_IS_SINGLE_THREADED
 
 static NvP64*
 _tlsEntryAcquire
@@ -470,7 +595,7 @@ _tlsEntryAcquire
     TlsEntry *pTlsEntry;
     PORT_MEM_ALLOCATOR *pAllocator;
 
-    pAllocator = (pCustomAllocator != NULL) ? pCustomAllocator : _tlsAllocatorGet();
+    pAllocator = (pCustomAllocator != NULL) ? pCustomAllocator : _tlsAllocatorGet(pThreadEntry);
     pTlsEntry = mapFind(&pThreadEntry->map, entryId);
     if (pTlsEntry != NULL)
     {
@@ -498,23 +623,30 @@ _tlsEntryRelease
 {
     NvU32 refCount;
     PORT_MEM_ALLOCATOR *pAllocator;
-    pAllocator = (pCustomAllocator != NULL) ? pCustomAllocator : _tlsAllocatorGet();
+    pAllocator = (pCustomAllocator != NULL) ? pCustomAllocator : _tlsAllocatorGet(pThreadEntry);
 
     refCount = --pTlsEntry->refCount;
     if (refCount == 0)
     {
         mapRemove(&pThreadEntry->map, pTlsEntry);
         PORT_FREE(pAllocator, pTlsEntry);
+
+#if !TLS_IS_SINGLE_THREADED
         // Only non ISR Thread Entry can be deallocated.
         if (!_tlsIsIsr() && (mapCount(&pThreadEntry->map) == 0))
         {
             NV_ASSERT(portMemExSafeForNonPagedAlloc());
+
+            portMemAllocatorRelease(pThreadEntry->pTlsEntryAllocator);
+            PORT_FREE(tlsDatabase.pAllocator, pThreadEntry->pTlsBlock);
+
             mapDestroy(&pThreadEntry->map);
             portSyncSpinlockAcquire(tlsDatabase.pLock);
-              mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
+            mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
             portSyncSpinlockRelease(tlsDatabase.pLock);
             PORT_FREE(tlsDatabase.pAllocator, pThreadEntry);
         }
+#endif
     }
     return refCount;
 }
@@ -529,15 +661,29 @@ static PORT_MEM_ALLOCATOR *_tlsIsrAllocatorGet(void)
     return (PORT_MEM_ALLOCATOR*)(NvUPtr)pThreadEntry->key.sp;
 }
 
-static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(void)
+static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(ThreadEntry *pThreadEntry)
 {
-    PORT_MEM_ALLOCATOR *pIsrAllocator = _tlsIsrAllocatorGet();
-    return (pIsrAllocator == NULL) ? tlsDatabase.pAllocator : pIsrAllocator;
+    PORT_MEM_ALLOCATOR *pAllocator = NULL;
+
+    if (_tlsIsIsr())
+    {
+        pAllocator = _tlsIsrAllocatorGet();
+    }
+    else
+    {
+        pAllocator = pThreadEntry->pTlsEntryAllocator;
+    }
+
+    if (pAllocator == NULL)
+        pAllocator = tlsDatabase.pAllocator;
+
+    return pAllocator;
 }
 
+#if !TLS_IS_SINGLE_THREADED
 #if TLS_ISR_CAN_USE_LOCK
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     tlsDatabase.pIsrLock = portSyncSpinlockCreate(tlsDatabase.pAllocator);
     if (tlsDatabase.pLock == NULL)
@@ -547,7 +693,7 @@ static NV_STATUS _tlsIsrEntriesInit()
     mapInitIntrusive(&tlsDatabase.isrEntries);
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     if (tlsDatabase.pIsrLock)
         portSyncSpinlockDestroy(tlsDatabase.pIsrLock);
@@ -556,15 +702,15 @@ static void _tlsIsrEntriesDestroy()
 static void _tlsIsrEntriesInsert(ThreadEntry *pThreadEntry)
 {
     portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
-      mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
+    mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
     portSyncSpinlockRelease(tlsDatabase.pIsrLock);
 }
 static ThreadEntry *_tlsIsrEntriesRemove(NvU64 sp)
 {
     ThreadEntry *pThreadEntry;
     portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
-      pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
-      mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
+    pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
+    mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
     portSyncSpinlockRelease(tlsDatabase.pIsrLock);
     return pThreadEntry;
 }
@@ -573,9 +719,9 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
     ThreadEntry *pThreadEntry;
     portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
 #if STACK_GROWS_DOWNWARD
-      pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
+    pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
 #else
-      pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
+    pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
 #endif
     portSyncSpinlockRelease(tlsDatabase.pIsrLock);
     return pThreadEntry;
@@ -583,12 +729,12 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 
 #else // Lockless
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
 }
@@ -641,10 +787,10 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 }
 
 #endif // TLS_ISR_CAN_USE_LOCK
+#endif // TLS_IS_SINGLE_THREADED
 
 
-
-static NvBool _tlsIsIsr()
+static NvBool _tlsIsIsr(void)
 {
 #if defined (TLS_ISR_UNIT_TEST)
     // In unit tests we simulate ISR tests in different ways, so tests define this

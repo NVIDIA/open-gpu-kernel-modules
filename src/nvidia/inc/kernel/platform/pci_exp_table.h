@@ -31,7 +31,7 @@
 #define PCI_EXP_ROM_SIGNATURE     0xaa55
 #define PCI_EXP_ROM_SIGNATURE_NV  0x4e56 // "VN" in word format
 #define PCI_EXP_ROM_SIGNATURE_NV2 0xbb77
-#define IS_VALID_PCI_ROM_SIG(sig) ((sig == PCI_EXP_ROM_SIGNATURE) || \
+#define IS_VALID_PCI_ROM_SIG(sig) ((sig == PCI_EXP_ROM_SIGNATURE) ||    \
                                    (sig == PCI_EXP_ROM_SIGNATURE_NV) || \
                                    (sig == PCI_EXP_ROM_SIGNATURE_NV2))
 
@@ -68,7 +68,7 @@ typedef union _PCI_EXP_ROM {
 #define PCI_DATA_STRUCT_SIGNATURE     0x52494350 // "PCIR" in dword format
 #define PCI_DATA_STRUCT_SIGNATURE_NV  0x5344504E // "NPDS" in dword format
 #define PCI_DATA_STRUCT_SIGNATURE_NV2 0x53494752 // "RGIS" in dword format
-#define IS_VALID_PCI_DATA_SIG(sig) ((sig == PCI_DATA_STRUCT_SIGNATURE) || \
+#define IS_VALID_PCI_DATA_SIG(sig) ((sig == PCI_DATA_STRUCT_SIGNATURE) ||    \
                                     (sig == PCI_DATA_STRUCT_SIGNATURE_NV) || \
                                     (sig == PCI_DATA_STRUCT_SIGNATURE_NV2))
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "nvlink_errors.h"
 #include "nvtypes.h"
 #include "nvstatus.h"
+#include "common_nvswitch.h"
 
 typedef struct SOE SOE, *PSOE;
 struct FLCNABLE;
@@ -37,10 +38,8 @@ NvlStatus soeInit(struct nvswitch_device *device, PSOE pSoe, NvU32 pci_device_id
 void soeDestroy(struct nvswitch_device *device, PSOE pSoe);
 
 //HAL functions
-NV_STATUS   soeProcessMessages          (struct nvswitch_device *device, PSOE pSoe);
-NV_STATUS   soeWaitForInitAck           (struct nvswitch_device *device, PSOE pSoe);
-
-
+NV_STATUS   soeProcessMessages_HAL      (struct nvswitch_device *device, PSOE pSoe);
+NV_STATUS   soeWaitForInitAck_HAL       (struct nvswitch_device *device, PSOE pSoe);
 NvU32       soeService_HAL              (struct nvswitch_device *device, PSOE pSoe);
 void        soeServiceHalt_HAL          (struct nvswitch_device *device, PSOE pSoe);
 void        soeEmemTransfer_HAL         (struct nvswitch_device *device, PSOE pSoe, NvU32 dmemAddr, NvU8 *pBuf, NvU32 sizeBytes, NvU8 port, NvBool bCopyFrom);
@@ -57,5 +56,6 @@ NvlStatus   soeGetPexEomStatus_HAL      (struct nvswitch_device *device, NvU8 mo
 NvlStatus   soeGetUphyDlnCfgSpace_HAL   (struct nvswitch_device *device, NvU32 regAddress, NvU32 laneSelectMask, NvU16 *pRegValue);
 NvlStatus   soeForceThermalSlowdown_HAL (struct nvswitch_device *device, NvBool slowdown, NvU32  periodUs);
 NvlStatus   soeSetPcieLinkSpeed_HAL     (struct nvswitch_device *device, NvU32 linkSpeed);
+NvlStatus   soeI2CAccess_HAL            (struct nvswitch_device *device, NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams);
 
 #endif //_SOE_NVSWITCH_H_

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,9 +71,9 @@
 #define MST_ALLOCATE_COOLDOWN                   10
 
 #define HDCP_AUTHENTICATION_RETRIES             6   // 6 retries
-#define HDCP_CPIRQ_RXSTAUS_RETRIES              3  
+#define HDCP_CPIRQ_RXSTAUS_RETRIES              3
 #define HDCP_AUTHENTICATION_COOLDOWN            1000// 1 sec between attempts
-#define HDCP22_AUTHENTICATION_COOLDOWN          2000// 2 sec between attempts
+#define HDCP22_AUTHENTICATION_COOLDOWN          30000// 30 sec between attempts
 #define HDCP_AUTHENTICATION_COOLDOWN_HPD        3000// 3 sec for first stream Add
 #define HDCP_CPIRQ_RXSTATUS_COOLDOWN            20  // 20ms between attempts
 

@@ -39,41 +39,35 @@ void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector);
 
 void nvDPDestroyConnector(NVDPLibConnectorPtr pNVDpLibConnector);
 
-NvBool nvDPIsLinkAwaitingTransition(NVConnectorEvoPtr pConnectorEvo);
-
 NVDPLibModesetStatePtr nvDPLibCreateModesetState(
     const NVDispEvoRec *pDispEvo,
     const NvU32 head,
     const NvU32 displayId,
     const NVDpyIdList dpyIdList,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
-    NVHwModeTimingsEvo *pTimings);
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
+    const NVHwModeTimingsEvo *pTimings,
+    const NVDscInfoEvoRec *pDscInfo);
 
 void nvDPLibFreeModesetState(NVDPLibModesetStatePtr pDpLibModesetState);
 
-void nvDPBeginValidation(NVDispEvoPtr pDispEvo);
-
-NvBool nvDPLibValidateTimings(
-    const NVDispEvoRec *pDispEvo,
-    const NvU32 head,
-    const NvU32 displayId,
-    const NVDpyIdList dpyIdList,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
-    const struct NvKmsModeValidationParams *pModeValidationParams,
-    NVHwModeTimingsEvo *pTimings);
-
-NvBool nvDPEndValidation(NVDispEvoPtr pDispEvo);
+NvBool nvDPLibIsModePossible(const NVDPLibConnectorRec *pDpLibConnector,
+                             const NVDpLibIsModePossibleParamsRec *pParams,
+                             NvU32 *pFailedHeadMask);
 
 NvBool nvDPValidateModeForDpyEvo(
     const NVDpyEvoRec *pDpyEvo,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const NVDpyAttributeColor *pDpyColor,
     const struct NvKmsModeValidationParams *pModeValidationParams,
-    NVHwModeTimingsEvo *pTimings);
+    const NVHwModeTimingsEvo *pTimings,
+    const NvBool b2Heads1Or,
+    NVDscInfoEvoRec *pDscInfo);
 
 void nvDPPreSetMode(NVDPLibConnectorPtr pDpLibConnector,
                     const NVEvoModesetUpdateState *pModesetUpdateState);
 
-void nvDPPostSetMode(NVDPLibConnectorPtr pDpLibConnector);
+void nvDPPostSetMode(NVDPLibConnectorPtr pDpLibConnector,
+                     const NVEvoModesetUpdateState *pModesetUpdateState);
 
 void nvDPPause(NVDPLibConnectorPtr pNVDpLibConnector);
 
@@ -92,6 +86,11 @@ enum NVDpLinkMode {
 };
 
 enum NVDpLinkMode nvDPGetActiveLinkMode(NVDPLibConnectorPtr pDpLibConnector);
+
+void nvDPSetLinkHandoff(NVDPLibConnectorPtr pDpLibConnector, NvBool enable);
+
+NvBool nvDPIsFECForceEnabled(NVConnectorEvoPtr pConnectorEvo);
+NvBool nvDPForceEnableFEC(NVConnectorEvoPtr pConnectorEvo, NvBool enable);
 
 #ifdef __cplusplus
 };

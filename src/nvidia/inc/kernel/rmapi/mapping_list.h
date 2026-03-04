@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,8 +28,8 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "os/os.h"
 #include "rmapi/resource.h"
+#include "mmu/gmmu_fmt.h" // GMMU_APERTURE
 
-struct P2PApi;
 typedef struct VirtualMemory VirtualMemory;
 typedef struct Memory Memory;
 
@@ -39,7 +39,6 @@ typedef struct Memory Memory;
 
 // dma information definitions
 typedef struct _def_client_dma_mapping_info CLI_DMA_MAPPING_INFO, *PCLI_DMA_MAPPING_INFO;
-typedef struct _def_client_dma_mapping_info_iterator CLI_DMA_MAPPING_INFO_ITERATOR, *PCLI_DMA_MAPPING_INFO_ITERATOR;
 
 // mapping information definitions
 typedef struct _def_client_dma_alloc_map_info           CLI_DMA_ALLOC_MAP_INFO;
@@ -51,7 +50,6 @@ typedef struct _def_client_dma_alloc_map_info           CLI_DMA_ALLOC_MAP_INFO;
 //
 struct _def_client_dma_mapping_info
 {
-    NvHandle              hDevice;
     NvU64                 DmaOffset;
     void*                 KernelVAddr[NV_MAX_SUBDEVICES];   // Kernel's virtual address, if required
     void*                 KernelPriv;                       // Token required to unmap the kernel mapping
@@ -59,13 +57,16 @@ struct _def_client_dma_mapping_info
     NvU64                 FbApertureLen[NV_MAX_SUBDEVICES]; // GPU aperture mapped lengths
     MEMORY_DESCRIPTOR    *pMemDesc;                         // Subregion to be mapped
     NvU32                 Flags;
-    struct P2PApi        *pP2PInfo;
+    NvU32                 Flags2;
+    NvBool                bP2P;
     NvU32                 gpuMask;
+    NvU64                 mapPageSize;                      // Page size at which the memory is mapped.
+    GMMU_APERTURE         aperture;
+    NvBool                bNeedL2InvalidateAtUnmap;
     ADDRESS_TRANSLATION   addressTranslation;
     MEMORY_DESCRIPTOR    *pBar1P2PVirtMemDesc;              // The peer GPU mapped BAR1 region
     MEMORY_DESCRIPTOR    *pBar1P2PPhysMemDesc;              // The peer GPU vidmem sub region
-    PCLI_DMA_MAPPING_INFO Next;
-    PCLI_DMA_MAPPING_INFO Prev;
+    CLI_DMA_MAPPING_INFO *pNext;
 };
 
 //
@@ -73,8 +74,7 @@ struct _def_client_dma_mapping_info
 //
 struct _def_client_dma_mapping_info_iterator
 {
-    PNODE          pDmaMappingList;        // list of hDevices
-    PNODE          pCurrentList;           // current hDevice list entry, is list of pDmaMappings
+    PNODE          pDmaMappingList;        // list of pDmaMappings
     PNODE          pNextDmaMapping;        // next pDmaMapping while iterating over the DmaOffsets
 };
 
@@ -116,8 +116,7 @@ CliUpdateMemoryMappingInfo
     pCpuMapping->processId = osGetCurrentProcess();
     pCpuMapping->pLinearAddress = cpuAddress;
     pCpuMapping->pPrivate->pPriv = priv;
-    pCpuMapping->pPrivate->gpuAddress = -1;
-    pCpuMapping->pPrivate->gpuMapLength = -1;
+    portMemSet(&pCpuMapping->pPrivate->memArea, 0, sizeof(MemoryArea));
 
     return NV_OK;
 }
@@ -151,8 +150,15 @@ CliUpdateDeviceMemoryMapping
     pCpuMapping->processId = osGetCurrentProcess();
     pCpuMapping->pLinearAddress = cpuAddress;
     pCpuMapping->pPrivate->pPriv = priv;
-    pCpuMapping->pPrivate->gpuAddress = gpuAddress;
-    pCpuMapping->pPrivate->gpuMapLength = gpuMapLength;
+    if (gpuMapLength == 0 || gpuAddress == 0)
+    {
+        portMemSet(&pCpuMapping->pPrivate->memArea, 0, sizeof(MemoryArea));
+        return NV_OK;
+    }
+    pCpuMapping->pPrivate->memArea.numRanges = 1;
+    pCpuMapping->pPrivate->memArea.pRanges = &pCpuMapping->pPrivate->backingRangeStore;
+    pCpuMapping->pPrivate->backingRangeStore.start = gpuAddress;
+    pCpuMapping->pPrivate->backingRangeStore.size = gpuMapLength;
 
     return NV_OK;
 }
@@ -160,16 +166,12 @@ CliUpdateDeviceMemoryMapping
 RsCpuMapping       *CliFindMappingInClient          (NvHandle, NvHandle, NvP64);
 
 // DMA Mappings
-NV_STATUS           intermapCreateDmaMapping        (RsClient *, RsResourceRef *, NvHandle, NvHandle, PCLI_DMA_MAPPING_INFO *, NvU32);
-NV_STATUS           intermapRegisterDmaMapping      (RsClient *, NvHandle, NvHandle, PCLI_DMA_MAPPING_INFO,  NvU64, NvU32);
-NV_STATUS           intermapDelDmaMapping           (RsClient *, NvHandle, NvHandle, NvU64, NvU32, NvBool*);
+NV_STATUS           intermapCreateDmaMapping        (RsClient *, VirtualMemory *, PCLI_DMA_MAPPING_INFO *, NvU32, NvU32);
+NV_STATUS           intermapRegisterDmaMapping      (RsClient *, VirtualMemory *, PCLI_DMA_MAPPING_INFO,  NvU64, NvU32);
+NV_STATUS           intermapDelDmaMapping           (RsClient *, VirtualMemory *, NvU64, NvU32);
 void                intermapFreeDmaMapping          (PCLI_DMA_MAPPING_INFO);
+CLI_DMA_MAPPING_INFO *intermapGetDmaMapping         (VirtualMemory *pVirtualMemory, NvU64 dmaOffset, NvU32 gpuMask);
 
-NvBool              CliGetDmaMappingInfo            (NvHandle, NvHandle, NvHandle, NvU64, NvU32, PCLI_DMA_MAPPING_INFO*);
-void                CliGetDmaMappingIterator        (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR, PNODE pDmaMappingList);
-void                CliGetDmaMappingNext            (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR);
-
-// Unmap all DMA mappings between a memory resource and any DynamicMemory
-NV_STATUS           intermapUnmapDeviceMemoryDma    (RsClient *, RsResourceRef *, NvHandle);
+NvBool              CliGetDmaMappingInfo            (RsClient *, NvHandle, NvHandle, NvU64, NvU32, PCLI_DMA_MAPPING_INFO*);
 
 #endif

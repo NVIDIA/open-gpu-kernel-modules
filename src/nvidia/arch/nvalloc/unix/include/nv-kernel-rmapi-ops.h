@@ -43,7 +43,7 @@ typedef struct {
     union {
         NVOS00_PARAMETERS free;                /* NV01_FREE */
         NVOS02_PARAMETERS allocMemory64;       /* NV01_ALLOC_MEMORY */
-        NVOS21_PARAMETERS alloc;               /* NV04_ALLOC */
+        NVOS64_PARAMETERS alloc;               /* NV04_ALLOC */
         NVOS32_PARAMETERS *pVidHeapControl;    /* NV04_VID_HEAP_CONTROL */
         NVOS33_PARAMETERS mapMemory;           /* NV04_MAP_MEMORY */
         NVOS34_PARAMETERS unmapMemory;         /* NV04_UNMAP_MEMORY */

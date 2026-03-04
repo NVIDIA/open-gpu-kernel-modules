@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2011 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,25 +26,6 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 
-void* NV_API_CALL os_map_user_space(
-    NvU64   start,
-    NvU64   size_bytes,
-    NvU32   mode,
-    NvU32   protect,
-    void  **priv_data
-)
-{
-    return (void *)(NvUPtr)start;
-}
-
-void NV_API_CALL os_unmap_user_space(
-    void  *address,
-    NvU64  size,
-    void  *priv_data
-)
-{
-}
-
 NV_STATUS NV_API_CALL os_match_mmap_offset(
     void  *pAllocPrivate,
     NvU64  offset,
@@ -58,7 +39,7 @@ NV_STATUS NV_API_CALL os_match_mmap_offset(
     {
         if (at->flags.contig)
         {
-            if (offset == (at->page_table[0]->phys_addr + (i * PAGE_SIZE)))
+            if (offset == (at->page_table[0].phys_addr + (i * PAGE_SIZE)))
             {
                 *pPageIndex = i;
                 return NV_OK;
@@ -66,7 +47,7 @@ NV_STATUS NV_API_CALL os_match_mmap_offset(
         }
         else
         {
-            if (offset == at->page_table[i]->phys_addr)
+            if (offset == at->page_table[i].phys_addr)
             {
                 *pPageIndex = i;
                 return NV_OK;

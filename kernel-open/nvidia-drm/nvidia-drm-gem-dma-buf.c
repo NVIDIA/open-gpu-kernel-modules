@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -24,20 +24,16 @@
 
 #if defined(NV_DRM_AVAILABLE)
 
-#if defined(NV_DRM_DRM_PRIME_H_PRESENT)
 #include <drm/drm_prime.h>
-#endif
 
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_DRV_H_PRESENT)
 #include <drm/drm_drv.h>
-#endif
 
 #include "nvidia-drm-gem-dma-buf.h"
-#include "nvidia-drm-ioctl.h"
+#include "nv_drm_common_ioctl.h"
 
 #include "linux/dma-buf.h"
 
@@ -47,12 +43,10 @@ void __nv_drm_gem_dma_buf_free(struct nv_drm_gem_object *nv_gem)
     struct nv_drm_device *nv_dev = nv_gem->nv_dev;
     struct nv_drm_gem_dma_buf *nv_dma_buf = to_nv_dma_buf(nv_gem);
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (nv_dma_buf->base.pMemory) {
         /* Free NvKmsKapiMemory handle associated with this gem object */
         nvKms->freeMemory(nv_dev->pDevice, nv_dma_buf->base.pMemory);
     }
-#endif
 
     drm_prime_gem_destroy(&nv_gem->base, nv_dma_buf->sgt);
 
@@ -71,12 +65,42 @@ static int __nv_drm_gem_dma_buf_create_mmap_offset(
 static int __nv_drm_gem_dma_buf_mmap(struct nv_drm_gem_object *nv_gem,
                                      struct vm_area_struct *vma)
 {
+#if defined(NV_LINUX)
     struct dma_buf_attachment *attach = nv_gem->base.import_attach;
     struct dma_buf *dma_buf = attach->dmabuf;
+#endif
     struct file *old_file;
     int ret;
 
     /* check if buffer supports mmap */
+#if defined(NV_BSD)
+    /*
+     * Most of the FreeBSD DRM code refers to struct file*, which is actually
+     * a struct linux_file*. The dmabuf code in FreeBSD is not actually plumbed
+     * through the same linuxkpi bits it seems (probably so it can be used
+     * elsewhere), so dma_buf->file really is a native FreeBSD struct file...
+     */
+    if (!nv_gem->base.filp->f_op->mmap)
+        return -EINVAL;
+
+    /* readjust the vma */
+    get_file(nv_gem->base.filp);
+    old_file = vma->vm_file;
+    vma->vm_file = nv_gem->base.filp;
+    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);
+
+    ret = nv_gem->base.filp->f_op->mmap(nv_gem->base.filp, vma);
+
+    if (ret) {
+        /* restore old parameters on failure */
+        vma->vm_file = old_file;
+        vma->vm_pgoff += drm_vma_node_start(&nv_gem->base.vma_node);
+        fput(nv_gem->base.filp);
+    } else {
+        if (old_file)
+            fput(old_file);
+    }
+#else
     if (!dma_buf->file->f_op->mmap)
         return -EINVAL;
 
@@ -84,18 +108,20 @@ static int __nv_drm_gem_dma_buf_mmap(struct nv_drm_gem_object *nv_gem,
     get_file(dma_buf->file);
     old_file = vma->vm_file;
     vma->vm_file = dma_buf->file;
-    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);;
+    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);
 
     ret = dma_buf->file->f_op->mmap(dma_buf->file, vma);
 
     if (ret) {
         /* restore old parameters on failure */
         vma->vm_file = old_file;
+        vma->vm_pgoff += drm_vma_node_start(&nv_gem->base.vma_node);
         fput(dma_buf->file);
     } else {
         if (old_file)
             fput(old_file);
     }
+#endif
 
     return ret;
 }
@@ -125,13 +151,11 @@ nv_drm_gem_prime_import_sg_table(struct drm_device *dev,
     BUG_ON(dma_buf->size % PAGE_SIZE);
 
     pMemory = NULL;
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (drm_core_check_feature(dev, DRIVER_MODESET)) {
         pMemory = nvKms->getSystemMemoryHandleFromDmaBuf(nv_dev->pDevice,
                                                   (NvP64)(NvUPtr)dma_buf,
                                                   dma_buf->size - 1);
     }
-#endif
 
     nv_drm_gem_object_init(nv_dev, &nv_dma_buf->base,
                            &__nv_gem_dma_buf_ops, dma_buf->size, pMemory);
@@ -162,7 +186,7 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
     }
 
     if ((nv_dma_buf = nv_drm_gem_object_dma_buf_lookup(
-             dev, filep, p->handle)) == NULL) {
+             filep, p->handle)) == NULL) {
         ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
@@ -171,7 +195,6 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
         goto done;
     }
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     if (drm_core_check_feature(dev, DRIVER_MODESET)) {
         if (!nv_dma_buf->base.pMemory) {
             /*
@@ -186,7 +209,6 @@ int nv_drm_gem_export_dmabuf_memory_ioctl(struct drm_device *dev,
                              nv_dma_buf->base.base.size - 1);
         }
     }
-#endif
 
     if (!nv_dma_buf->base.pMemory && !pTmpMemory) {
         ret = -ENOMEM;

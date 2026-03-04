@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,8 +30,11 @@
 *                                                                          *
 \***************************************************************************/
 
+#define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/rmapi/control.h"
 #include "kernel/rmapi/rmapi.h"
+#include "kernel/rmapi/mapping_list.h"
 #include "kernel/os/os.h"
 #include "kernel/core/locks.h"
 #include "vgpu/rpc.h"
@@ -58,85 +61,19 @@
 // for the caller to explicitly pass in the handle corresponding to the VaSpaceApi:
 //
 static NV_STATUS
-_nv83deCtrlCmdFetchVAS(NvU32 hClient, NvU32 hChannel, OBJVASPACE **ppVASpace)
+_nv83deCtrlCmdFetchVAS(RsClient *pClient, NvU32 hChannel, OBJVASPACE **ppVASpace)
 {
     KernelChannel *pKernelChannel = NULL;
 
     NV_ASSERT_OR_RETURN(ppVASpace != NULL, NV_ERR_INVALID_ARGUMENT);
 
     // Fetch the corresponding Channel object from our handle
-    NV_ASSERT_OK_OR_RETURN(CliGetKernelChannel(hClient, hChannel, &pKernelChannel));
+    NV_ASSERT_OK_OR_RETURN(CliGetKernelChannel(pClient, hChannel, &pKernelChannel));
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
 
     *ppVASpace = pKernelChannel->pVAS;
 
     return NV_OK;
-}
-
-//
-// _nv83deCtrlCmdValidateRange
-//
-// Helper to traverse through the virtual memory page hierarchy and
-// determine whether or not the virtual address (VA) range provided as
-// input has valid and allocated pages mapped to it in its entirety.
-//
-// This command's input is NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS which
-// contains a buffer of NV83DE_CTRL_DEBUG_ACCESS_OPs
-//
-// Possible return values:
-//     NV_OK
-//     NV_ERR_INVALID_ARGUMENT
-//     NV_ERR_INVALID_XLATE
-//
-static NV_STATUS
-_nv83deCtrlCmdValidateRange
-(
-    OBJGPU *pGpu,
-    OBJVASPACE *pVASpace,
-    NV83DE_CTRL_DEBUG_ACCESS_SURFACE_PARAMETERS *pParams
-)
-{
-    NvU32 i;
-    NvU64 totalLength;
-    NV_STATUS status = NV_OK;
-
-    // Loop through to validate range for all provided ops
-    for (i = 0; i < pParams->count; i++)
-    {
-        MMU_TRACE_PARAM mmuParams;
-        MMU_TRACE_ARG traceArg = {0};
-
-        // Ensure that input gpuVA is 4-byte aligned. cpuVA is handled directly by portmemCopy.
-        NV_ASSERT_OR_RETURN((pParams->opsBuffer[i].gpuVA & 3) == 0, NV_ERR_INVALID_ARGUMENT);
-
-        // Sanity-check the requested size
-        if (pParams->opsBuffer[i].size == 0 || !portSafeAddU64(pParams->opsBuffer[i].gpuVA, pParams->opsBuffer[i].size, &totalLength))
-            return NV_ERR_INVALID_ARGUMENT;
-
-        mmuParams.mode    = MMU_TRACE_MODE_VALIDATE;
-        mmuParams.va      = pParams->opsBuffer[i].gpuVA;
-        mmuParams.vaLimit = pParams->opsBuffer[i].gpuVA + pParams->opsBuffer[i].size - 1;
-        mmuParams.pArg    = &traceArg;
-
-        NV_ASSERT_OK_OR_RETURN(mmuTrace(pGpu, pVASpace, &mmuParams));
-
-        //
-        // mmuTrace may return NV_OK if the range is invalid but the translation did
-        // not otherwise cause errors. Use traceArg.valid to satisfy the output
-        // status needed for _nv83deCtrlCmdValidateRange.
-        //
-        if (traceArg.valid)
-        {
-            pParams->opsBuffer[i].valid = 1;
-        }
-        else
-        {
-            status = NV_ERR_INVALID_XLATE;
-            pParams->opsBuffer[i].valid = 0;
-        }
-    }
-
-    return status;
 }
 
 static NV_STATUS
@@ -148,124 +85,104 @@ _nv8deCtrlCmdReadWriteSurface
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelSMDebuggerSession);
-    OBJVASPACE *pVASpace = NULL;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    RsClient *pClient = RES_GET_CLIENT(pKernelSMDebuggerSession);
     NvU32 count = pParams->count;
     NvU32 i;
     NV_STATUS status = NV_OK;
+    KernelChannel *pKernelChannel;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (count > MAX_ACCESS_OPS)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Attempt to retrieve the VAS pointer
-    NV_ASSERT_OK_OR_RETURN(
-        _nv83deCtrlCmdFetchVAS(hClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
-
-    // Validate VA range and fail if invalid
-    NV_ASSERT_OK_OR_RETURN(
-        _nv83deCtrlCmdValidateRange(pGpu, pVASpace, pParams));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliGetKernelChannel(pClient, pKernelSMDebuggerSession->hChannel, &pKernelChannel));
 
     for (i = 0; i < count; i++)
     {
-        NvU8 *pBase;
-        MEMORY_DESCRIPTOR *pMemDesc = NULL;
+        CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
         NvU64 virtAddr = pParams->opsBuffer[i].gpuVA;
         NvP64 bufPtr = pParams->opsBuffer[i].pCpuVA;
-        NvU32 bufSize = pParams->opsBuffer[i].size;
-        NvU32 pageStartOffset;
-        NvU32 start4kPage;
-        NvU32 end4kPage;
-        NvU32 curSize;
-        NvU32 cur4kPage;
-        status = NV_OK;
+        NvU64 bufSize = pParams->opsBuffer[i].size;
 
-        // Break it up by 4K pages for now
-        pageStartOffset = NvOffset_LO32(virtAddr) & RM_PAGE_MASK;
-        start4kPage = (NvOffset_LO32(virtAddr) >> 12) & 0x1FFFF;
-        end4kPage = (NvOffset_LO32(virtAddr + bufSize - 1) >> 12) & 0x1FFFF;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, bufSize != 0, NV_ERR_INVALID_ARGUMENT);
 
-        curSize = RM_PAGE_SIZE - pageStartOffset;
-        virtAddr &= ~RM_PAGE_MASK;
-
-        for (cur4kPage = start4kPage; cur4kPage <= end4kPage; ++cur4kPage)
+        while (bufSize != 0)
         {
-            MMU_TRACE_PARAM mmuParams = {0};
-            MMU_TRACE_ARG traceArg    = {0};
+            NvU64 curSize = bufSize;
 
-            mmuParams.mode    = MMU_TRACE_MODE_TRANSLATE;
-            mmuParams.va      = virtAddr;
-            mmuParams.vaLimit = virtAddr;
-            mmuParams.pArg    = &traceArg;
+            // The memory has to be mapped in a single in a single call by the same client
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
+                                     virtAddr, gpumgrGetDeviceGpuMask(pGpu->deviceInstance), &pDmaMappingInfo),
+                NV_ERR_INVALID_ARGUMENT);
 
-            NV_ASSERT_OK_OR_RETURN(
-                mmuTrace(pGpu, pVASpace, &mmuParams));
+            NvU64 offsetInMapping = virtAddr - pDmaMappingInfo->DmaOffset;
+            curSize = NV_MIN(curSize, pDmaMappingInfo->pMemDesc->Size - offsetInMapping);
 
-            if (curSize > bufSize)
+            TRANSFER_SURFACE surf = { .pMemDesc = pDmaMappingInfo->pMemDesc, .offset = offsetInMapping };
+            NvU8 *pKernBuffer = portMemAllocNonPaged(curSize);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernBuffer != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+            // Force BAR instead of GSP-DMA copy in CC case
+            NvU32 transferFlags = TRANSFER_FLAGS_PREFER_PROCESSOR;
+            if (!memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_SWIZZLED, memdescGetPteKind(pDmaMappingInfo->pMemDesc)) &&
+                !IS_SIMULATION(pGpu))
             {
-                curSize = bufSize;
+                //
+                // CeUtils uses a compressed GMK mapping of the entire FB
+                // It won't respect PTE kind swizzling
+                // Don't set the flag on simulation, as it forces BAR0 path
+                //
+                if (gpuIsCCFeatureEnabled(pGpu))
+                {
+                    transferFlags = TRANSFER_FLAGS_NONE;
+                }
+                else
+                {
+                    transferFlags = TRANSFER_FLAGS_PREFER_CE;
+                }
             }
-
-            if (traceArg.aperture == ADDR_SYSMEM)
-            {
-                NvP64 physAddr = NV_PTR_TO_NvP64(traceArg.pa);
-                NvU64 limit = (NvU64)(curSize - 1);
-
-                NvU32 os02Flags = DRF_DEF(OS02, _FLAGS, _LOCATION,      _PCI)           |
-                                  DRF_DEF(OS02, _FLAGS, _MAPPING,       _NO_MAP)        |
-                                  DRF_DEF(OS02, _FLAGS, _PHYSICALITY,   _CONTIGUOUS)    |
-                                  DRF_DEF(OS02, _FLAGS, _COHERENCY,     _CACHED);
-
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                    osCreateMemFromOsDescriptor(pGpu,
-                                                physAddr,
-                                                pKernelSMDebuggerSession->hInternalClient,
-                                                os02Flags,
-                                                &limit,
-                                                &pMemDesc,
-                                                NVOS32_DESCRIPTOR_TYPE_OS_PHYS_ADDR,
-                                                RS_PRIV_LEVEL_KERNEL));
-            }
-            else if (traceArg.aperture == ADDR_FBMEM)
-            {
-                memdescCreate(&pMemDesc, pGpu, curSize, 0, NV_TRUE, traceArg.aperture, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
-                memdescDescribe(pMemDesc, traceArg.aperture, traceArg.pa, curSize);
-            }
-
-            pBase = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-            NV_ASSERT_OR_ELSE(
-                pBase != NULL,
-                memdescDestroy(pMemDesc);
-                return NV_ERR_INVALID_ARGUMENT; );
 
             if (bWrite)
             {
                 NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-                    portMemExCopyFromUser(bufPtr, pBase + pageStartOffset, curSize));
+                    portMemExCopyFromUser(bufPtr, pKernBuffer, curSize));
+
+                // Write out the buffer to memory
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        memmgrMemWrite(pMemoryManager, &surf, pKernBuffer, curSize, transferFlags));
+                }
             }
             else
             {
+                // Read from memory
                 NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-                    portMemExCopyToUser(pBase + pageStartOffset, bufPtr, curSize));
+                    memmgrMemRead(pMemoryManager, &surf, pKernBuffer, curSize, transferFlags));
+
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        portMemExCopyToUser(pKernBuffer, bufPtr, curSize));
+                }
             }
 
-            kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pBase, NV_FALSE);
-            memdescDestroy(pMemDesc);
+            portMemFree(pKernBuffer);
 
             if (status != NV_OK)
                 return status;
 
-            pBase = NULL;
-            pageStartOffset = 0;
-            bufPtr = NvP64_PLUS_OFFSET(bufPtr,curSize);
+            bufPtr = NvP64_PLUS_OFFSET(bufPtr, curSize);
             bufSize -= curSize;
-            curSize = RM_PAGE_SIZE;
-            virtAddr += RM_PAGE_SIZE;
+            virtAddr += curSize;
         }
     }
 
-    return status;
+    return NV_OK;
 }
 
 NV_STATUS
@@ -296,16 +213,16 @@ ksmdbgssnCtrlCmdGetMappings_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelSMDebuggerSession);
+    RsClient *pClient = RES_GET_CLIENT(pKernelSMDebuggerSession);
     OBJVASPACE *pVASpace = NULL;
     MMU_TRACE_ARG traceArg = {0};
     MMU_TRACE_PARAM mmuParams = {0};
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Attempt to retrieve the VAS pointer
     NV_ASSERT_OK_OR_RETURN(
-        _nv83deCtrlCmdFetchVAS(hClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
+        _nv83deCtrlCmdFetchVAS(pClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
 
     traceArg.pMapParams = pParams;
 
@@ -336,6 +253,18 @@ _nv83deFlushAllGpusL2Cache(MEMORY_DESCRIPTOR *pMemDesc)
 
     while ((pTempGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
+        //
+        // Skip kmemsysCacheOp_HAL() for TEGRA_SOC_NVDISPLAY.
+        // The GPU_GET_KERNEL_MEMORY_SYSTEM(pTempGpu) returns NULL for TEGRA_SOC_NVDISPLAY.
+        // To prevent a kernel panic, the call to kmemsysCacheOp_HAL() is skipped in this case.
+        // Additionally, kmemsysCacheOp_HAL() appears to be irrelevant for the TEGRA_SOC_NVDISPLAY use case,
+        // so skipping it has no functional impact.
+        //
+        if (pTempGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+        {
+            continue;
+        }
+
         //
         // On GPUs with write-back caches, FB_CACHE_INVALIDATE is reduced
         // to FB_CACHE_EVICT, which first writes back dirty lines and then
@@ -478,9 +407,9 @@ _nv83deCtrlCmdDebugAccessMemory
 )
 {
     RsResourceRef *pResourceRef;
+    Memory *pMemory;
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 totalLength;
-    NvP64 pCpuVirtAddr = NvP64_NULL;
     NV_STATUS rmStatus = NV_OK;
     NV_STATUS rmUnmapStatus = NV_OK;
     NvU32 flags = 0;
@@ -494,8 +423,8 @@ _nv83deCtrlCmdDebugAccessMemory
     if (serverutilGetResourceRef(hClient, hMemory, &pResourceRef) != NV_OK)
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
-    // Get a memdesc for this object to determine its attributes
-    if (!dynamicCast(pResourceRef->pResource, Memory))
+    pMemory = dynamicCast(pResourceRef->pResource, Memory);
+    if (pMemory == NULL)
     {
         rmStatus = NV_ERR_INVALID_ARGUMENT;
         NV_PRINTF(LEVEL_WARNING,
@@ -510,7 +439,8 @@ _nv83deCtrlCmdDebugAccessMemory
         return rmStatus;
     }
 
-    pMemDesc = dynamicCast(pResourceRef->pResource, Memory)->pMemDesc;
+    // Get a memdesc for this object to determine its attributes
+    pMemDesc = pMemory->pMemDesc;
     if (pMemDesc == NULL)
         return NV_ERR_INVALID_STATE;
 
@@ -520,109 +450,124 @@ _nv83deCtrlCmdDebugAccessMemory
     if (totalLength > pMemDesc->Size)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Setup mapping flags based on the kind of memory, access type etc.
-    if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)
-    {
-        flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _READ_ONLY, flags);
-    }
-    else
-    {
-        flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _WRITE_ONLY, flags);
-    }
-
     bCpuMemory = (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM);
     bGpuCached = (memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED);
 
-    //
-    // Ask for a direct mapping to this memory, to avoid getting a reflected
-    // mapping. We'll do explicit cache management to ensure coherence.
-    //
-    if (bCpuMemory)
-    {
-        flags = FLD_SET_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, flags);
-    }
-
-    // Map memory into the internal smdbg client
-    rmStatus = _nv83deMapMemoryIntoGrdbgClient(pTargetGpu,
-                                               pKernelSMDebuggerSession,
-                                               hClient,
-                                               hMemory,
-                                               offset,
-                                               length,
-                                               &pCpuVirtAddr,
-                                               flags);
-    if (NV_OK != rmStatus)
-    {
-        NV_PRINTF(LEVEL_WARNING,
-                  "Failed to map memory into internal smdbg client (GPU 0x%llx, hClient 0x%x, hMemory %x, offset 0x%llx, length 0x%x, flags 0x%x): (rmStatus = %x)\n",
-                  pTargetGpu->busInfo.gpuPhysAddr,
-                  hClient,
-                  hMemory,
-                  offset,
-                  length,
-                  flags,
-                  rmStatus);
-        return rmStatus;
-    }
-
-    // Fence to ensure previous in-flight accesses are complete
+    // Ensure previous in-flight accesses are complete
     osFlushCpuWriteCombineBuffer();
 
-    //
-    // Flush and invalidate SYSMEM lines from L2s of all GPUs.
-    // Some GPUs have write-back caches, so this must be done both for
-    // accessType == READ and accessType == WRITE.
-    //
     if (bCpuMemory && bGpuCached)
     {
-        rmStatus = _nv83deFlushAllGpusL2Cache(pMemDesc);
+        //
+        // Flush and invalidate SYSMEM lines from L2s of all GPUs.
+        // Some GPUs have write-back caches, so this must be done both for
+        // accessType == READ and accessType == WRITE.
+        //
+        NV_ASSERT_OK_OR_RETURN(_nv83deFlushAllGpusL2Cache(pMemDesc));
+    }
+
+    if (!bCpuMemory && (IS_VIRTUAL_WITHOUT_SRIOV(pTargetGpu) || IS_VIRTUAL_WITH_HEAVY_SRIOV(pTargetGpu)))
+    {
+        NvP64 pCpuVirtAddr = NvP64_NULL;
+
+        // Setup mapping flags based on the kind of memory, access type etc.
+        if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)
+        {
+            flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _READ_ONLY, flags);
+        }
+        else
+        {
+            flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _WRITE_ONLY, flags);
+        }
+
+        // Map memory into the internal smdbg client
+        rmStatus = _nv83deMapMemoryIntoGrdbgClient(pTargetGpu,
+                                                   pKernelSMDebuggerSession,
+                                                   hClient,
+                                                   hMemory,
+                                                   offset,
+                                                   length,
+                                                   &pCpuVirtAddr,
+                                                   flags);
         if (NV_OK != rmStatus)
         {
             NV_PRINTF(LEVEL_WARNING,
-                      "Failed to flush GPU L2 (GPU 0x%llx): (rmStatus = %x)\n",
-                      pTargetGpu->busInfo.gpuPhysAddr, rmStatus);
-            goto cleanup_mapping;
+                      "Failed to map memory into internal smdbg client (GPU 0x%llx, hClient 0x%x, hMemory %x, offset 0x%llx, length 0x%x, flags 0x%x): (rmStatus = %x)\n",
+                      pTargetGpu->busInfo.gpuPhysAddr,
+                      hClient,
+                      hMemory,
+                      offset,
+                      length,
+                      flags,
+                      rmStatus);
+            return rmStatus;
         }
-    }
 
-    // Perform the requested accessType operation
-    if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)
-    {
-        if (!portMemCopy(NvP64_VALUE(buffer), length, NvP64_VALUE(pCpuVirtAddr), length))
+        // Perform the requested accessType operation
+        if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)
         {
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-            NV_PRINTF(LEVEL_WARNING,
-                      "portMemCopy failed (from VA 0x" NvP64_fmt " to 0x" NvP64_fmt ", length 0x%x)\n",
-                      pCpuVirtAddr, buffer, length);
-            goto cleanup_mapping;
+            if (!portMemCopy(NvP64_VALUE(buffer), length, NvP64_VALUE(pCpuVirtAddr), length))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                NV_PRINTF(LEVEL_WARNING,
+                          "portMemCopy failed (from VA 0x" NvP64_fmt " to 0x" NvP64_fmt ", length 0x%x)\n",
+                          pCpuVirtAddr, buffer, length);
+                goto cleanup_mapping;
+            }
+            NV_PRINTF(LEVEL_INFO, "Reading %d bytes of memory from 0x%x\n",
+                      length, hMemory);
         }
-        NV_PRINTF(LEVEL_INFO, "Reading %d bytes of memory from 0x%x\n",
-                  length, hMemory);
+        else
+        {
+            if (!portMemCopy(NvP64_VALUE(pCpuVirtAddr), length, NvP64_VALUE(buffer), length))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                NV_PRINTF(LEVEL_WARNING,
+                          "portMemCopy failed (from VA 0x" NvP64_fmt " to 0x" NvP64_fmt ", length 0x%x)\n",
+                          buffer, pCpuVirtAddr, length);
+                goto cleanup_mapping;
+            }
+
+            NV_PRINTF(LEVEL_INFO, "Writing %d bytes of memory to 0x%x\n", length,
+                      hMemory);
+        }
+
+cleanup_mapping:
+        // Unmap memory.
+        rmUnmapStatus = _nv83deUnmapMemoryFromGrdbgClient(pTargetGpu,
+                                                          pKernelSMDebuggerSession,
+                                                          pCpuVirtAddr,
+                                                          flags);
     }
     else
     {
-        if (!portMemCopy(NvP64_VALUE(pCpuVirtAddr), length, NvP64_VALUE(buffer), length))
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pTargetGpu);
+        TRANSFER_SURFACE surf = { .pMemDesc = pMemDesc, .offset = offset };
+        // Force BAR instead of GSP-DMA copy in CC case
+        NvU32 transferFlags = TRANSFER_FLAGS_PREFER_PROCESSOR;
+
+        if (!IsMAXWELL(pTargetGpu))
         {
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-            NV_PRINTF(LEVEL_WARNING,
-                      "portMemCopy failed (from VA 0x" NvP64_fmt " to 0x" NvP64_fmt ", length 0x%x)\n",
-                      buffer, pCpuVirtAddr, length);
-            goto cleanup_mapping;
+            // Prefer CE, but use BAR2 if not available; disable for maxwell due to undebugged issues in specific tests
+            transferFlags |= TRANSFER_FLAGS_PREFER_CE;
+            if (gpuIsCCFeatureEnabled(pTargetGpu))
+            {
+                transferFlags = TRANSFER_FLAGS_NONE;
+            }
         }
 
-        NV_PRINTF(LEVEL_INFO, "Writing %d bytes of memory to 0x%x\n", length,
-                  hMemory);
+        if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                memmgrMemRead(pMemoryManager, &surf, NvP64_VALUE(buffer), length, transferFlags));
+        }
+        else
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                memmgrMemWrite(pMemoryManager, &surf, NvP64_VALUE(buffer), length, transferFlags));
+        }
     }
 
-    // Another fence to ensure our own new accesses are complete
-    osFlushCpuWriteCombineBuffer();
-
-cleanup_mapping:
-    // Unmap memory.
-    rmUnmapStatus = _nv83deUnmapMemoryFromGrdbgClient(pTargetGpu,
-                                                      pKernelSMDebuggerSession,
-                                                      pCpuVirtAddr,
-                                                      flags);
     // Return the first failure
     return (rmStatus != NV_OK ? rmStatus: rmUnmapStatus);
 }
@@ -681,27 +626,29 @@ NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NV_STATUS status = NV_OK;
     NvBool isClientGspPlugin = NV_FALSE;
+
+    NV_CHECK_OR_RETURN(LEVEL_WARNING,
+        pParams->regOpCount <= NV83DE_CTRL_GPU_EXEC_REG_OPS_MAX_OPS,
+        NV_ERR_INVALID_ARGUMENT);
 
     // Check if User have permission to access register offset
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         gpuValidateRegOps(pGpu, pParams->regOps, pParams->regOpCount,
-                          pParams->bNonTransactional, isClientGspPlugin));
+                          pParams->bNonTransactional, isClientGspPlugin, NV_FALSE));
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return NV_ERR_NOT_SUPPORTED;
@@ -718,16 +665,18 @@ ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL
     NV_STATUS status = NV_OK;
     NvU32 i;
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->count <= MAX_ACCESS_MEMORY_OPS,
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, pParams->count <= MAX_ACCESS_MEMORY_OPS,
                        NV_ERR_INVALID_ARGUMENT);
 
     for (i = 0; i < pParams->count; ++i)
     {
         NV_STATUS localStatus = NV_OK;
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
+        NvU32 endingOffset;
 
-        NV_CHECK_OR_ELSE(LEVEL_ERROR,
-            pParams->entries[i].dataOffset < pParams->dataLength,
+        NV_CHECK_OR_ELSE(LEVEL_WARNING,
+            portSafeAddU32(pParams->entries[i].dataOffset, pParams->entries[i].length, &endingOffset) &&
+            (endingOffset <= pParams->dataLength),
             localStatus = NV_ERR_INVALID_OFFSET;
             goto updateStatus; );
 
@@ -762,13 +711,18 @@ ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL
     NV_STATUS status = NV_OK;
     NvU32 i;
 
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, pParams->count <= MAX_ACCESS_MEMORY_OPS,
+                       NV_ERR_INVALID_ARGUMENT);
+
     for (i = 0; i < pParams->count; ++i)
     {
         NV_STATUS localStatus = NV_OK;
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
+        NvU32 endingOffset;
 
-        NV_CHECK_OR_ELSE(LEVEL_ERROR,
-            (pParams->entries[i].dataOffset + pParams->entries[i].length) <= pParams->dataLength,
+        NV_CHECK_OR_ELSE(LEVEL_WARNING,
+            portSafeAddU32(pParams->entries[i].dataOffset, pParams->entries[i].length, &endingOffset) &&
+            (endingOffset <= pParams->dataLength),
             localStatus = NV_ERR_INVALID_OFFSET;
             goto updateStatus; );
 
@@ -802,7 +756,7 @@ ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -828,7 +782,7 @@ ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL
         {
             NV_ASSERT_OK(
                 kgrctxLookupMmuFault(pGpu,
-                                     pKernelSMDebuggerSession->pObject->pKernelGraphicsContext,
+                                     kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
                                      &pParams->mmuFault));
         }
 
@@ -848,7 +802,7 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -872,12 +826,45 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
         if (IS_VIRTUAL_WITH_SRIOV(pGpu))
         {
             NV_ASSERT_OK(
-                kgrctxClearMmuFault(pGpu, pKernelSMDebuggerSession->pObject->pKernelGraphicsContext));
+                kgrctxClearMmuFault(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject)));
         }
 
         return rmStatus;
     }
 
     return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
+(
+    KernelSMDebuggerSession *pKernelSMDebuggerSession,
+    NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
+
+        return pRmApi->Control(pRmApi,
+                                pRmCtrlParams->hClient,
+                                pRmCtrlParams->hObject,
+                                pRmCtrlParams->cmd,
+                                pRmCtrlParams->pParams,
+                                pRmCtrlParams->paramsSize);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxLookupMmuFaultInfo(pGpu,
+                                 kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
+                                 pParams));
+
+    return NV_OK;
 }
 

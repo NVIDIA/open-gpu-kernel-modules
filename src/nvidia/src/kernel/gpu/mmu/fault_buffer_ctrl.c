@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 
@@ -55,7 +57,7 @@ faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL
     OBJGPU  *pGpu  = GPU_RES_GET_GPU(pMmuFaultBuffer);
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
-    return kgmmuGetFaultRegisterMappings_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER,
+    return kgmmuGetFaultRegisterMappings_HAL(pGpu, pKernelGmmu, pParams->faultBufferType,
                                             &pParams->pFaultBufferGet,
                                             &pParams->pFaultBufferPut,
                                             &pParams->pFaultBufferInfo,

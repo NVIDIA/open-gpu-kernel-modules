@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,16 +27,8 @@
 #include <linux/pci.h>
 #include "nv-linux.h"
 
-#if defined(NV_DEV_IS_PCI_PRESENT)
-#define nv_dev_is_pci(dev) dev_is_pci(dev)
-#else
-/*
- * Non-PCI devices are only supported on kernels which expose the
- * dev_is_pci() function. For older kernels, we only support PCI
- * devices, hence returning true to take all the PCI code paths.
- */
-#define nv_dev_is_pci(dev) (true)
-#endif
+#define NV_GPU_BAR1 1
+#define NV_GPU_BAR3 3
 
 int nv_pci_register_driver(void);
 void nv_pci_unregister_driver(void);
@@ -44,5 +36,6 @@ int nv_pci_count_devices(void);
 NvU8 nv_find_pci_capability(struct pci_dev *, NvU8);
 int nvidia_dev_get_pci_info(const NvU8 *, struct pci_dev **, NvU64 *, NvU64 *);
 nv_linux_state_t * find_pci(NvU32, NvU8, NvU8, NvU8);
-
+NvBool nv_pci_is_valid_topology_for_direct_pci(nv_state_t *, struct pci_dev *);
+NvBool nv_pci_has_common_pci_switch(nv_state_t *nv, struct pci_dev *);
 #endif

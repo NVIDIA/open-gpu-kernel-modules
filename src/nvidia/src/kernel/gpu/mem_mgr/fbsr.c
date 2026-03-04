@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,12 @@
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/fbsr.h"
+#include "class/cl906f.h"
+#include "nvrm_registry.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/bus/kern_bus.h"
+#include "rmapi/client.h"
+#include "vgpu/rpc_headers.h"
 
 NV_STATUS
 fbsrObjectInit_IMPL(OBJFBSR *pFbsr, NvU32 type)
@@ -33,6 +39,9 @@ fbsrObjectInit_IMPL(OBJFBSR *pFbsr, NvU32 type)
     pFbsr->type   = type;
     pFbsr->bValid = NV_FALSE;
     pFbsr->bInitialized = NV_FALSE;
+    pFbsr->pRegionRecords = NULL;
+    pFbsr->numRegions = 0;
+
     return NV_OK;
 }
 
@@ -65,7 +74,8 @@ fbsrReserveSysMemoryForPowerMgmt_IMPL
     if (status != NV_OK)
         return status;
 
-    status = memdescAlloc(pFbsr->pSysReservedMemDesc);
+    memdescTagAlloc(status, 
+            NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_18, pFbsr->pSysReservedMemDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pFbsr->pSysReservedMemDesc);

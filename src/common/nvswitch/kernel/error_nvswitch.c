@@ -40,12 +40,13 @@ _nvswitch_dump_error_entry
     if ((error_entry != NULL) &&
         (error_entry->error_src == NVSWITCH_ERROR_SRC_HW))
     {
-        NVSWITCH_PRINT_SXID(device, error_entry->error_type,
+        NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
             "Severity %d Engine instance %02d Sub-engine instance %02d\n",
             error_entry->severity, error_entry->instance, error_entry->subinstance);
 
-        NVSWITCH_PRINT_SXID(device, error_entry->error_type,
-            "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+        NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
+            "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+            error_entry->data.raw.flags,
             error_entry->data.raw.data[0], error_entry->data.raw.data[1],
             error_entry->data.raw.data[2], error_entry->data.raw.data[3],
             error_entry->data.raw.data[4], error_entry->data.raw.data[5],
@@ -61,7 +62,7 @@ _nvswitch_dump_error_entry
             (error_entry->data.raw.data[15] != 0))
 
         {
-            NVSWITCH_PRINT_SXID(device, error_entry->error_type,
+            NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
                 "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
                 error_entry->data.raw.data[ 8], error_entry->data.raw.data[ 9],
                 error_entry->data.raw.data[10], error_entry->data.raw.data[11],
@@ -152,13 +153,20 @@ nvswitch_record_error
     NvBool                       error_resolved,
     void                        *data,
     NvU32                        data_size,
-    NvU32                        line
+    NvU32                        line,
+    const char                  *description
 )
 {
     NvU32 idx_error;
+    NvU32 description_len = (NvU32)nvswitch_os_strlen(description) - 2; //take out leading and trailing quotation
 
     NVSWITCH_ASSERT(errors != NULL);
     NVSWITCH_ASSERT(data_size <= sizeof(errors->error_log[idx_error].data));
+
+    if (description_len > NVSWITCH_ERROR_MAX_DESCRPTION_LEN)
+    {
+        description_len = NVSWITCH_ERROR_MAX_DESCRPTION_LEN;
+    }
 
     // If no error log has been created, don't log it.
     if ((errors->error_log_size != 0) && (errors->error_log != NULL))
@@ -191,6 +199,8 @@ nvswitch_record_error
         errors->error_log[idx_error].severity   = severity;
         errors->error_log[idx_error].error_resolved = error_resolved;
         errors->error_log[idx_error].line       = line;
+        errors->error_log[idx_error].data_size  = data_size;
+        nvswitch_os_memcpy(&errors->error_log[idx_error].description, description + 1, description_len);
 
         // Log tracking info
         errors->error_log[idx_error].timer_count = nvswitch_hw_counter_read_counter(device);
@@ -264,6 +274,7 @@ nvswitch_get_error
             error_entry->timer_count = 
                 ((device == NULL) ? 0 : nvswitch_hw_counter_read_counter(device));
             error_entry->time = nvswitch_os_get_platform_time();
+            error_entry->data_size = 0;
         }
         else
         {
@@ -394,10 +405,30 @@ nvswitch_translate_hw_error
     {
         return NVSWITCH_ERR_HW_SOE;
     }
+    else if ((type >= NVSWITCH_ERR_HW_CCI) &&
+             (type < NVSWITCH_ERR_HW_CCI_LAST))
+    {
+        return NVSWITCH_ERR_HW_CCI;
+    }
+    else if ((type >= NVSWITCH_ERR_HW_OSFP_THERM) &&
+             (type < NVSWITCH_ERR_HW_OSFP_THERM_LAST))
+    {
+        return NVSWITCH_ERR_HW_OSFP_THERM;
+    }
+    else if ((type >= NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE) &&
+             (type < NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_LAST))
+    {
+        return NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE;
+    }
+    else if ((type >= NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE) &&
+             (type < NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST))
+    {
+        return NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE;
+    }
     else
     {
         // Update this assert after adding a new translation entry above
-        ct_assert(NVSWITCH_ERR_HW_SOE_LAST == (NVSWITCH_ERR_LAST - 1));
+        ct_assert(NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST == (NVSWITCH_ERR_LAST - 1));
 
         NVSWITCH_PRINT(NULL, ERROR,
             "%s: Undefined error type\n", __FUNCTION__);
@@ -534,6 +565,13 @@ nvswitch_ctrl_get_errors
         p->error[p->errorCount].subinstance = error.subinstance;
         p->error[p->errorCount].time = error.time;
         p->error[p->errorCount].error_resolved = error.error_resolved;
+        p->error[p->errorCount].error_data_size = error.data_size;
+        if (error.data_size > 0)
+        {
+            nvswitch_os_memcpy(p->error[p->errorCount].error_data, error.data.raw.data, error.data_size);
+        }
+        nvswitch_os_memcpy(p->error[p->errorCount].error_description, error.description, sizeof(error.description));
+        
         p->errorCount++;
         index++;
     }

@@ -23,6 +23,7 @@
 
 #ifndef __gv100_dev_ram_h__
 #define __gv100_dev_ram_h__
+#define NV_PRAMIN                             0x007FFFFF:0x00700000 /* RW--M */
 #define NV_RAMIN_BASE_SHIFT                                      12 /*       */
 #define NV_RAMIN_ALLOC_SIZE                                    4096 /*       */
 #define NV_RAMIN_ENABLE_ATS                        (135*32+31):(135*32+31) /* RWXUF */

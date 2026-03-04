@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_register.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 //
 
 #ifndef _G_RMCFG_HAL_REGISTER_H_
@@ -87,6 +87,154 @@ static NV_STATUS NV_INLINE REGISTER_GA10X_HALS(void)
     return NV_OK;
 }
 
+NV_STATUS registerHalModule_AD102(void);    
+NV_STATUS registerHalModule_AD103(void);    
+NV_STATUS registerHalModule_AD104(void);    
+NV_STATUS registerHalModule_AD106(void);    
+NV_STATUS registerHalModule_AD107(void);    
+
+static NV_STATUS NV_INLINE REGISTER_AD10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_AD102();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD103();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD104();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD106();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD107();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_GH100(void);    
+
+static NV_STATUS NV_INLINE REGISTER_GH10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_GH100();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_GB100(void);    
+NV_STATUS registerHalModule_GB102(void);    
+NV_STATUS registerHalModule_GB10B(void);    
+NV_STATUS registerHalModule_GB110(void);    
+NV_STATUS registerHalModule_GB112(void);    
+
+static NV_STATUS NV_INLINE REGISTER_GB10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_GB100();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB102();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB10B();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB110();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB112();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_GB202(void);    
+NV_STATUS registerHalModule_GB203(void);    
+NV_STATUS registerHalModule_GB205(void);    
+NV_STATUS registerHalModule_GB206(void);    
+NV_STATUS registerHalModule_GB207(void);    
+NV_STATUS registerHalModule_GB20B(void);    
+NV_STATUS registerHalModule_GB20C(void);    
+
+static NV_STATUS NV_INLINE REGISTER_GB20X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_GB202();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB203();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB205();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB206();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB207();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB20B();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB20C();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_T234D(void);    
+
+static NV_STATUS NV_INLINE REGISTER_T23XD_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_T234D();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_T264D(void);    
+
+static NV_STATUS NV_INLINE REGISTER_T26XD_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_T264D();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
 // 
 // This routine can be used by platform dependent code to
 // enable all HAL modules.
@@ -102,6 +250,42 @@ static NV_STATUS NV_INLINE REGISTER_ALL_HALS(void)
     }
 
     rmStatus = REGISTER_GA10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_AD10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_GH10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_GB10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_GB20X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_T23XD_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_T26XD_HALS();
     if (rmStatus != NV_OK)
     {
         return rmStatus;

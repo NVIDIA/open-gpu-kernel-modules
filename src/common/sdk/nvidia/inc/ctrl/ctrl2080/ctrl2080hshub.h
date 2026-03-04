@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080hshub.finn
+// Source file:      ctrl/ctrl2080/ctrl2080hshub.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
@@ -55,4 +52,22 @@ typedef struct NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS {
 
 #define NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK (0x20804101) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_HSHUB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE
+ *
+ * This command sets EC throttle mode registers
+ *
+ *  ecMode
+ *    EC Mode 0-7 to write to mode register
+ *  status
+ *    return status
+ */
+#define NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE_PARAMS {
+    NvU32 ecMode;
+    NvU32 status;
+} NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE_PARAMS;
+
+#define NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE (0x20804102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_HSHUB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_HSHUB_SET_EC_THROTTLE_MODE_PARAMS_MESSAGE_ID" */
 /* _ctrl2080hshub_h_ */

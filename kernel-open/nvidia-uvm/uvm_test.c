@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -24,6 +24,7 @@
 #include "uvm_api.h"
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
+#include "uvm_channel.h"
 #include "uvm_global.h"
 #include "uvm_va_space.h"
 #include "uvm_va_space_mm.h"
@@ -35,20 +36,19 @@
 #include "uvm_tools.h"
 #include "uvm_mmu.h"
 #include "uvm_gpu_access_counters.h"
+#include "uvm_pmm_gpu.h"
 #include "uvm_pmm_sysmem.h"
+#include "uvm_migrate_pageable.h"
+#include "uvm_test_file.h"
 
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
     NvU64 retained_count = 0;
-    uvm_parent_gpu_t *parent_gpu;
     uvm_gpu_t *gpu = NULL;
 
     uvm_mutex_lock(&g_uvm_global.global_lock);
 
-    parent_gpu = uvm_parent_gpu_get_by_uuid(&params->gpu_uuid);
-    if (parent_gpu)
-        gpu = uvm_gpu_get_by_parent_and_swizz_id(parent_gpu, params->swizz_id);
-
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
     if (gpu != NULL)
         retained_count = uvm_gpu_retained_count(gpu);
 
@@ -70,9 +70,8 @@ static NV_STATUS uvm_test_peer_ref_count(UVM_TEST_PEER_REF_COUNT_PARAMS *params,
     gpu0 = uvm_gpu_get_by_uuid(&params->gpu_uuid_1);
     gpu1 = uvm_gpu_get_by_uuid(&params->gpu_uuid_2);
 
-    if (gpu0 != NULL && gpu1 != NULL) {
-        uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(gpu0, gpu1);
-        registered_ref_count = peer_caps->ref_count;
+    if (gpu0 && gpu1 && !uvm_gpus_are_smc_peers(gpu0, gpu1)) {
+        registered_ref_count = uvm_gpu_peer_ref_count(gpu0, gpu1);
     }
     else {
         status = NV_ERR_INVALID_DEVICE;
@@ -106,26 +105,6 @@ static NV_STATUS uvm_test_nv_kthread_q(UVM_TEST_NV_KTHREAD_Q_PARAMS *params, str
     return NV_ERR_INVALID_STATE;
 }
 
-static NV_STATUS uvm_test_numa_get_closest_cpu_node_to_gpu(UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU_PARAMS *params,
-                                                           struct file *filp)
-{
-    uvm_gpu_t *gpu;
-    NV_STATUS status;
-    uvm_rm_user_object_t user_rm_va_space = {
-        .rm_control_fd = -1,
-        .user_client = params->client,
-        .user_object = params->smc_part_ref
-    };
-
-    status = uvm_gpu_retain_by_uuid(&params->gpu_uuid, &user_rm_va_space, &gpu);
-    if (status != NV_OK)
-        return status;
-
-    params->node_id = gpu->parent->closest_cpu_numa_node;
-    uvm_gpu_release(gpu);
-    return NV_OK;
-}
-
 // Callers of this function should ensure that node is not NUMA_NO_NODE in order
 // to avoid overrunning the kernel's node to cpumask map.
 static NV_STATUS uvm_test_verify_bh_affinity(uvm_intr_handler_t *isr, int node)
@@ -136,7 +115,7 @@ static NV_STATUS uvm_test_verify_bh_affinity(uvm_intr_handler_t *isr, int node)
     // something obviously went wrong. Otherwise, check that the CPUs on which
     // the bottom half was executed is a subset of the NUMA node's cpumask.
     if ((isr->stats.bottom_half_count && cpumask_empty(&isr->stats.cpus_used_mask)) ||
-        !cpumask_subset(&isr->stats.cpus_used_mask, uvm_cpumask_of_node(node))) {
+        !cpumask_subset(&isr->stats.cpus_used_mask, cpumask_of_node(node))) {
         UVM_TEST_PRINT("ISR BH cpu mask check failed! BH ran on CPU cores outside NUMA %u\n",
                        node);
         return NV_ERR_INVALID_STATE;
@@ -147,52 +126,56 @@ static NV_STATUS uvm_test_verify_bh_affinity(uvm_intr_handler_t *isr, int node)
 static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS *params, struct file *filp)
 {
     uvm_gpu_t *gpu;
-    NV_STATUS status;
-    uvm_rm_user_object_t user_rm_va_space = {
-        .rm_control_fd = -1,
-        .user_client = params->client,
-        .user_object = params->smc_part_ref
-    };
+    NV_STATUS status = NV_OK;
 
     if (!UVM_THREAD_AFFINITY_SUPPORTED())
         return NV_ERR_NOT_SUPPORTED;
 
-    status = uvm_gpu_retain_by_uuid(&params->gpu_uuid, &user_rm_va_space, &gpu);
-    if (status != NV_OK)
-        return status;
+    uvm_mutex_lock(&g_uvm_global.global_lock);
+
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
+    if (!gpu) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto unlock;
+    }
 
     // If the GPU is not attached to a NUMA node, there is nothing to do.
     if (gpu->parent->closest_cpu_numa_node == NUMA_NO_NODE) {
         status = NV_ERR_NOT_SUPPORTED;
-        goto release;
+        goto unlock;
     }
 
     if (gpu->parent->replayable_faults_supported) {
-        uvm_gpu_replayable_faults_isr_lock(gpu->parent);
+        UVM_ASSERT(gpu->parent->isr.access_counters);
+        UVM_ASSERT(gpu->parent->access_counters.buffer);
+
+        uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
         status = uvm_test_verify_bh_affinity(&gpu->parent->isr.replayable_faults,
                                               gpu->parent->closest_cpu_numa_node);
-        uvm_gpu_replayable_faults_isr_unlock(gpu->parent);
+        uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
         if (status != NV_OK)
-            goto release;
+            goto unlock;
 
         if (gpu->parent->non_replayable_faults_supported) {
-            uvm_gpu_non_replayable_faults_isr_lock(gpu->parent);
+            uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
             status = uvm_test_verify_bh_affinity(&gpu->parent->isr.non_replayable_faults,
                                                   gpu->parent->closest_cpu_numa_node);
-            uvm_gpu_non_replayable_faults_isr_unlock(gpu->parent);
+            uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
             if (status != NV_OK)
-                goto release;
+                goto unlock;
         }
 
         if (gpu->parent->access_counters_supported) {
-            uvm_gpu_access_counters_isr_lock(gpu->parent);
-            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters,
+            // We only need to test one notification buffer, we pick index 0.
+            uvm_access_counters_isr_lock(&gpu->parent->access_counters.buffer[0]);
+            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters[0],
                                                   gpu->parent->closest_cpu_numa_node);
-            uvm_gpu_access_counters_isr_unlock(gpu->parent);
+            uvm_access_counters_isr_unlock(&gpu->parent->access_counters.buffer[0]);
         }
     }
-release:
-    uvm_gpu_release(gpu);
+
+unlock:
+    uvm_mutex_unlock(&g_uvm_global.global_lock);
     return status;
 }
 
@@ -218,13 +201,51 @@ static NV_STATUS uvm_test_cgroup_accounting_supported(UVM_TEST_CGROUP_ACCOUNTING
     return UVM_CGROUP_ACCOUNTING_SUPPORTED() ? NV_OK : NV_ERR_NOT_SUPPORTED;
 }
 
+static NV_STATUS uvm_test_set_p2p_suspended(UVM_TEST_SET_P2P_SUSPENDED_PARAMS *params, struct file *filp)
+{
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_OK;
+
+    uvm_mutex_lock(&g_uvm_global.global_lock);
+
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
+    if (!gpu) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto unlock;
+    }
+
+    if (params->suspended)
+        status = uvm_channel_manager_suspend_p2p(gpu->channel_manager);
+    else
+        uvm_channel_manager_resume_p2p(gpu->channel_manager);
+
+unlock:
+    uvm_mutex_unlock(&g_uvm_global.global_lock);
+    return status;
+}
+
+static NV_STATUS uvm_test_inject_nvlink_error(UVM_TEST_INJECT_NVLINK_ERROR_PARAMS *params, struct file *filp)
+{
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_ERR_INVALID_DEVICE;
+
+    uvm_mutex_lock(&g_uvm_global.global_lock);
+
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
+    if (gpu)
+        status = uvm_gpu_inject_nvlink_error(gpu, params->error_type);
+
+    uvm_mutex_unlock(&g_uvm_global.global_lock);
+    return status;
+}
+
 long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     // Disable all test entry points if the module parameter wasn't provided.
     // These should not be enabled in a production environment.
     if (!uvm_enable_builtin_tests) {
         UVM_INFO_PRINT("ioctl %d not found. Did you mean to insmod with uvm_enable_builtin_tests=1?\n", cmd);
-        return -EINVAL;
+        return -ENOSYS;
     }
 
     switch (cmd)
@@ -247,6 +268,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CHANNEL_STRESS,               uvm_test_channel_stress);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CE_SANITY,                    uvm_test_ce_sanity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_HOST_SANITY,                  uvm_test_host_sanity);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN, uvm_test_va_space_mm_or_current_retain);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_BLOCK_INFO,                uvm_test_va_block_info);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_LOCK_SANITY,                  uvm_test_lock_sanity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PERF_UTILS_SANITY,            uvm_test_perf_utils_sanity);
@@ -291,15 +313,11 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_RESET_ACCESS_COUNTERS,        uvm_test_reset_access_counters);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_IGNORE_ACCESS_COUNTERS,   uvm_test_set_ignore_access_counters);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CHECK_CHANNEL_VA_SPACE,       uvm_test_check_channel_va_space);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_ENABLE_NVLINK_PEER_ACCESS,    uvm_test_enable_nvlink_peer_access);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DISABLE_NVLINK_PEER_ACCESS,   uvm_test_disable_nvlink_peer_access);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_ENABLE_STATIC_PEER_ACCESS,    uvm_test_enable_static_peer_access);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DISABLE_STATIC_PEER_ACCESS,   uvm_test_disable_static_peer_access);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_GET_PAGE_THRASHING_POLICY,    uvm_test_get_page_thrashing_policy);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_PAGE_THRASHING_POLICY,    uvm_test_set_page_thrashing_policy);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_SYSMEM,                   uvm_test_pmm_sysmem);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_REVERSE_MAP,              uvm_test_pmm_reverse_map);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_INDIRECT_PEERS,           uvm_test_pmm_indirect_peers);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_MM_RETAIN,           uvm_test_va_space_mm_retain);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN,   uvm_test_va_space_mm_delay_shutdown);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE, uvm_test_pmm_chunk_with_elevated_page);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_INJECT_ERROR,        uvm_test_va_space_inject_error);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_GET_GPU_TIME,                 uvm_test_get_gpu_time);
@@ -307,8 +325,6 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DRAIN_REPLAYABLE_FAULTS,      uvm_test_drain_replayable_faults);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMA_GET_BATCH_SIZE,           uvm_test_pma_get_batch_size);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_QUERY_PMA_STATS,          uvm_test_pmm_query_pma_stats);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU,
-                                       uvm_test_numa_get_closest_cpu_node_to_gpu);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_NUMA_CHECK_AFFINITY,          uvm_test_numa_check_affinity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_ADD_DUMMY_THREAD_CONTEXTS,
                                        uvm_test_va_space_add_dummy_thread_contexts);
@@ -323,14 +339,27 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_RB_TREE_RANDOM,               uvm_test_rb_tree_random);
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_GET_USER_SPACE_END_ADDRESS, uvm_test_get_user_space_end_address);
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES, uvm_test_get_cpu_chunk_allocation_sizes);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_HMM_SANITY,                   uvm_test_hmm_sanity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_RANGE_INJECT_ADD_GPU_VA_SPACE_ERROR,
                                        uvm_test_va_range_inject_add_gpu_va_space_error);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY,   uvm_test_destroy_gpu_va_space_delay);
-
-
-
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SEC2_SANITY,                  uvm_test_sec2_sanity);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP,       uvm_test_sec2_cpu_gpu_roundtrip);
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED, uvm_test_cgroup_accounting_supported);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SPLIT_INVALIDATE_DELAY, uvm_test_split_invalidate_delay);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CPU_CHUNK_API, uvm_test_cpu_chunk_api);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE, uvm_test_force_cpu_to_cpu_copy_with_ce);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS,
+                                       uvm_test_va_space_allow_movable_allocations);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SKIP_MIGRATE_VMA, uvm_test_skip_migrate_vma);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_TOOLS_EVENT_V2,        uvm_test_inject_tools_event_v2);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_P2P_SUSPENDED,            uvm_test_set_p2p_suspended);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_NVLINK_ERROR,          uvm_test_inject_nvlink_error);
+        UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_FILE_INITIALIZE,           uvm_test_file_initialize);
+        UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_FILE_UNMAP,                uvm_test_file_unmap);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_QUERY_ACCESS_COUNTERS,        uvm_test_query_access_counters);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_BLOCK_DISCARD_STATUS,      uvm_test_va_block_discard_status);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_GET_ALLOC_LIST,           uvm_test_pmm_get_alloc_list);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DUMP_ACCESS_BITS,             uvm_test_dump_access_bits);
     }
 
     return -EINVAL;

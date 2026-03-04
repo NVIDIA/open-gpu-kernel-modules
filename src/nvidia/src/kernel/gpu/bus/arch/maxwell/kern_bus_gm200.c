@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "platform/chipset/chipset.h"
 #include "mem_mgr/vaspace.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
@@ -212,17 +213,11 @@ kbusDestroyPeerAccess_GM200
     NvU32      peerNum
 )
 {
-    if (pKernelBus->p2pPcie.busPeer[peerNum].pRemoteWMBoxMemDesc != NULL)
-    {
-        memdescDestroy(pKernelBus->p2pPcie.busPeer[peerNum].pRemoteWMBoxMemDesc);
-        pKernelBus->p2pPcie.busPeer[peerNum].pRemoteWMBoxMemDesc = NULL;
-    }
+    memdescDestroy(pKernelBus->p2pPcie.busPeer[peerNum].pRemoteWMBoxMemDesc);
+    pKernelBus->p2pPcie.busPeer[peerNum].pRemoteWMBoxMemDesc = NULL;
 
-    if (pKernelBus->p2pPcie.busPeer[peerNum].pRemoteP2PDomMemDesc != NULL)
-    {
-        memdescDestroy(pKernelBus->p2pPcie.busPeer[peerNum].pRemoteP2PDomMemDesc);
-        pKernelBus->p2pPcie.busPeer[peerNum].pRemoteP2PDomMemDesc = NULL;
-    }
+    memdescDestroy(pKernelBus->p2pPcie.busPeer[peerNum].pRemoteP2PDomMemDesc);
+    pKernelBus->p2pPcie.busPeer[peerNum].pRemoteP2PDomMemDesc = NULL;
 }
 
 /*!
@@ -361,6 +356,11 @@ kbusCreateP2PMappingForMailbox_GM200
     RM_API *pRmApi;
     NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS params;
     NvU32 gpuInst0, gpuInst1;
+
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     if (peer0 == NULL || peer1 == NULL)
     {
@@ -669,6 +669,11 @@ kbusRemoveP2PMappingForMailbox_GM200
     NvU32 gpuInst0 = gpuGetInstance(pGpu0);
     NvU32 gpuInst1 = gpuGetInstance(pGpu1);
 
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     // a non-existent mapping
     if(peer0 == BUS_INVALID_PEER ||
        peer1 == BUS_INVALID_PEER)
@@ -878,7 +883,7 @@ kbusAllocP2PMailboxBar1_GM200
     OBJGPU           *pParentGpu;
     NvU64             vaAllocMax;
     NV_STATUS         status = NV_OK;
-    
+
     VAS_ALLOC_FLAGS flags = {0};
 
     pParentGpu  = gpumgrGetParentGPU(pGpu);

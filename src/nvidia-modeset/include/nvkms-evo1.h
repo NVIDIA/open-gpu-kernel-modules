@@ -26,22 +26,23 @@
 
 #include "nvkms-types.h"
 
-NvBool nvEvo1IsChannelIdle(NVDevEvoPtr, NVEvoChannelPtr, NvU32 sd,
-                           NvBool *result);
-NvBool nvEvo1IsChannelMethodPending(NVDevEvoPtr, NVEvoChannelPtr, NvU32 sd,
-                                    NvBool *result);
+NvBool nvEvo1NvtToHdmiInfoFramePacketType(const NvU32 srcType, NvU8 *pDstType);
 
-void nvEvo1IsModePossible(NVDispEvoPtr pDispEvo,
-                          const NVEvoIsModePossibleDispInput *pInput,
-                          NVEvoIsModePossibleDispOutput *pOutput);
-void nvEvo1PrePostIMP(NVDispEvoPtr pDispEvo, NvBool isPre);
+void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
+                             const NvU32 head,
+                             const NvEvoInfoFrameTransmitControl transmitCtrl,
+                             const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
+                             const NvU32 infoframeSize,
+                             NvBool needChecksum);
 
-void nvEvo1SetDscParams(const NVDispEvoRec *pDispEvo,
-                        const NvU32 head,
-                        const NVHwModeTimingsEvo *pTimings);
+void nvEvo1DisableHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
+                                const NvU32 head,
+                                const NvU8 nvtInfoFrameType);
 
-NVEvoChannel* nvEvo1AllocateCoreChannel(NVDevEvoRec *pDevEvo);
-void nvEvo1FreeCoreChannel(NVDevEvoRec *pDevEvo, NVEvoChannel *pChannel);
+void nvEvo1SendDpInfoFrameSdp(const NVDispEvoRec *pDispEvo,
+                              const NvU32 head,
+                              const NvEvoInfoFrameTransmitControl transmitCtrl,
+                              const DPSDP_DESCRIPTOR *sdp);
 
 static inline NvU16 nvEvo1GetColorSpaceFlag(NVDevEvoPtr pDevEvo,
                                             const NvBool colorSpaceOverride)
@@ -49,7 +50,6 @@ static inline NvU16 nvEvo1GetColorSpaceFlag(NVDevEvoPtr pDevEvo,
     NvU16 colorSpaceFlag = 0;
 
     if (colorSpaceOverride) {
-        nvAssert(pDevEvo->caps.supportsDP13);
         colorSpaceFlag = 1 << 11;
     }
 

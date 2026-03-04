@@ -42,6 +42,20 @@ typedef void nvkms_procfs_proc_t(void *data,
                                  char *buffer, size_t size,
                                  nvkms_procfs_out_string_func_t *outString);
 
+/* max number of loops to prevent hanging the kernel if an edge case is hit */
+#define NVKMS_READ_FILE_MAX_LOOPS 1000
+/* max size for any file read by the config system */
+#define NVKMS_READ_FILE_MAX_SIZE  8192
+
+/*
+ * The read file callback should allocate a buffer pointed to by *buff, fill it
+ * with the contents of fname, and return the size of the buffer. Buffer is not
+ * guaranteed to be null-terminated. The caller is responsible for freeing the
+ * buffer with nvkms_free, not nvFree.
+ */
+typedef size_t nvkms_config_read_file_func_t(char *fname,
+                                             char ** const buff);
+
 typedef struct {
     const char *name;
     nvkms_procfs_proc_t *func;
@@ -51,6 +65,8 @@ enum NvKmsClientType {
     NVKMS_CLIENT_USER_SPACE,
     NVKMS_CLIENT_KERNEL_SPACE,
 };
+
+struct NvKmsPerOpenDev;
 
 NvBool nvKmsIoctl(
     void *pOpenVoid,
@@ -74,6 +90,9 @@ void nvKmsResume(NvU32 gpuId);
 
 void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles);
 
+NvBool nvKmsReadConf(const char *buff, size_t size,
+                     nvkms_config_read_file_func_t readfile);
+
 void nvKmsKapiHandleEventQueueChange
 (
     struct NvKmsKapiDevice *device
@@ -84,7 +103,27 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     struct NvKmsKapiFunctionsTable *funcsTable
 );
 
+void nvKmsKapiSuspendResume(NvBool suspend);
+void nvKmsKapiRemove(NvU32 gpuId);
+void nvKmsKapiProbe(const nv_gpu_info_t *gpu_info);
+
 NvBool nvKmsGetBacklight(NvU32 display_id, void *drv_priv, NvU32 *brightness);
 NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness);
+
+NvBool nvKmsOpenDevHasSubOwnerPermissionOrBetter(const struct NvKmsPerOpenDev *pOpenDev);
+
+NvU32 nvKmsKapiF16ToF32Internal(NvU16 a);
+
+NvU16 nvKmsKapiF32ToF16Internal(NvU32 a);
+
+NvU32 nvKmsKapiF32MulInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32DivInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32AddInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32ToUI32RMinMagInternal(NvU32 a, NvBool exact);
+
+NvU32 nvKmsKapiUI32ToF32Internal(NvU32 a);
 
 #endif /* __NV_KMS_H__ */

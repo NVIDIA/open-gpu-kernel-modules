@@ -27,17 +27,12 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080dma.finn
+// Source file:      ctrl/ctrl2080/ctrl2080dma.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_XX dma control commands and parameters */
-
-#include "ctrl2080common.h"
 
 /*
  * NV2080_CTRL_CMD_DMA_INVALIDATE_TLB
@@ -119,10 +114,7 @@ typedef struct NV2080_CTRL_DMA_INVALIDATE_TLB_PARAMS {
  *   NV2080_CTRL_DMA_INFO_INDEX_SYSTEM_ADDRESS_SIZE
  *     This index can be used to request the system address size in bits.
  */
-typedef struct NV2080_CTRL_DMA_INFO {
-    NvU32 index;
-    NvU32 data;
-} NV2080_CTRL_DMA_INFO;
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_DMA_INFO;
 
 /* valid dma info index values */
 #define NV2080_CTRL_DMA_INFO_INDEX_SYSTEM_ADDRESS_SIZE (0x000000000)

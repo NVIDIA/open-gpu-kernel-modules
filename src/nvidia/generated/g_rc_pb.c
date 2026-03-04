@@ -414,6 +414,84 @@ const PRB_FIELD_DESC prb_fields_rc_rcdiagrecord[] = {
     },
 };
 
+// 'GrException' field defaults
+
+// 'GrException' field descriptors
+const PRB_FIELD_DESC prb_fields_rc_grexception[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_BOOL,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("first_fragment")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("fragment_count")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_MC,
+        0,
+        PRB_MAYBE_FIELD_NAME("mc")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("pmc_boot1")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("fragment_tag")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        6,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        REGS_REGSANDMEM,
+        0,
+        PRB_MAYBE_FIELD_NAME("gr_regs")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // Message descriptors
 const PRB_MSG_DESC prb_messages_rc[] = {
     {
@@ -430,6 +508,11 @@ const PRB_MSG_DESC prb_messages_rc[] = {
         3,
         prb_fields_rc_rcdiagrecord,
         PRB_MAYBE_MESSAGE_NAME("Rc.RcDiagRecord")
+    },
+    {
+        6,
+        prb_fields_rc_grexception,
+        PRB_MAYBE_MESSAGE_NAME("Rc.GrException")
     },
 };
 

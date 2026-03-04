@@ -11,16 +11,20 @@ extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 #define NVDEBUG_ENG_MC (&prb_messages_nvdebug_eng[0])
 #define NVDEBUG_ENG_GPU (&prb_messages_nvdebug_eng[1])
 #define NVDEBUG_ENG_NVD (&prb_messages_nvdebug_eng[2])
-#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[3])
-#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[4])
+#define NVDEBUG_ENG_KGSP (&prb_messages_nvdebug_eng[3])
+#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[4])
+#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[5])
+#define NVDEBUG_ENG_KGSP_RPCINFO (&prb_messages_nvdebug_eng[6])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
-#define NVDEBUG_ENG_MC_LEN 66
-#define NVDEBUG_ENG_GPU_LEN 56
+#define NVDEBUG_ENG_MC_LEN 72
+#define NVDEBUG_ENG_GPU_LEN 62
 #define NVDEBUG_ENG_NVD_LEN 30
-#define NVDEBUG_ENG_MC_RMDATA_LEN 6
+#define NVDEBUG_ENG_KGSP_LEN 100
+#define NVDEBUG_ENG_MC_RMDATA_LEN 12
 #define NVDEBUG_ENG_MC_PCIBARINFO_LEN 22
+#define NVDEBUG_ENG_KGSP_RPCINFO_LEN 46
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc[];
 
@@ -30,7 +34,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc[];
 #define NVDEBUG_ENG_MC_REGS (&prb_fields_nvdebug_eng_mc[2])
 
 // 'Mc' field lengths
-#define NVDEBUG_ENG_MC_RM_DATA_LEN 9
+#define NVDEBUG_ENG_MC_RM_DATA_LEN 15
 #define NVDEBUG_ENG_MC_PCI_BARS_LEN 25
 #define NVDEBUG_ENG_MC_REGS_LEN 29
 
@@ -49,6 +53,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_gpu[];
 #define NVDEBUG_ENG_GPU_IS_LOST (&prb_fields_nvdebug_eng_gpu[9])
 #define NVDEBUG_ENG_GPU_IS_ACCESSIBLE (&prb_fields_nvdebug_eng_gpu[10])
 #define NVDEBUG_ENG_GPU_REGS (&prb_fields_nvdebug_eng_gpu[11])
+#define NVDEBUG_ENG_GPU_RUSD_MASK (&prb_fields_nvdebug_eng_gpu[12])
 
 // 'Gpu' field lengths
 #define NVDEBUG_ENG_GPU_GPU_ID_LEN 5
@@ -63,6 +68,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_gpu[];
 #define NVDEBUG_ENG_GPU_IS_LOST_LEN 1
 #define NVDEBUG_ENG_GPU_IS_ACCESSIBLE_LEN 1
 #define NVDEBUG_ENG_GPU_REGS_LEN 29
+#define NVDEBUG_ENG_GPU_RUSD_MASK_LEN 5
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_nvd[];
 
@@ -72,13 +78,25 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_nvd[];
 // 'Nvd' field lengths
 #define NVDEBUG_ENG_NVD_REGS_LEN 29
 
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp[];
+
+// 'KGsp' field descriptor pointers
+#define NVDEBUG_ENG_KGSP_RPC_HISTORY (&prb_fields_nvdebug_eng_kgsp[0])
+#define NVDEBUG_ENG_KGSP_EVENT_HISTORY (&prb_fields_nvdebug_eng_kgsp[1])
+
+// 'KGsp' field lengths
+#define NVDEBUG_ENG_KGSP_RPC_HISTORY_LEN 49
+#define NVDEBUG_ENG_KGSP_EVENT_HISTORY_LEN 49
+
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_rmdata[];
 
 // 'RmData' field descriptor pointers
 #define NVDEBUG_ENG_MC_RMDATA_PMCBOOT0 (&prb_fields_nvdebug_eng_mc_rmdata[0])
+#define NVDEBUG_ENG_MC_RMDATA_PMCBOOT42 (&prb_fields_nvdebug_eng_mc_rmdata[1])
 
 // 'RmData' field lengths
 #define NVDEBUG_ENG_MC_RMDATA_PMCBOOT0_LEN 5
+#define NVDEBUG_ENG_MC_RMDATA_PMCBOOT42_LEN 5
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_pcibarinfo[];
 
@@ -89,6 +107,24 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_pcibarinfo[];
 // 'PciBarInfo' field lengths
 #define NVDEBUG_ENG_MC_PCIBARINFO_OFFSET_LEN 10
 #define NVDEBUG_ENG_MC_PCIBARINFO_LENGTH_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp_rpcinfo[];
+
+// 'RpcInfo' field descriptor pointers
+#define NVDEBUG_ENG_KGSP_RPCINFO_FUNCTION (&prb_fields_nvdebug_eng_kgsp_rpcinfo[0])
+#define NVDEBUG_ENG_KGSP_RPCINFO_TS_START (&prb_fields_nvdebug_eng_kgsp_rpcinfo[1])
+#define NVDEBUG_ENG_KGSP_RPCINFO_TS_END (&prb_fields_nvdebug_eng_kgsp_rpcinfo[2])
+#define NVDEBUG_ENG_KGSP_RPCINFO_DATA0 (&prb_fields_nvdebug_eng_kgsp_rpcinfo[3])
+#define NVDEBUG_ENG_KGSP_RPCINFO_DATA1 (&prb_fields_nvdebug_eng_kgsp_rpcinfo[4])
+#define NVDEBUG_ENG_KGSP_RPCINFO_SEQUENCE (&prb_fields_nvdebug_eng_kgsp_rpcinfo[5])
+
+// 'RpcInfo' field lengths
+#define NVDEBUG_ENG_KGSP_RPCINFO_FUNCTION_LEN 5
+#define NVDEBUG_ENG_KGSP_RPCINFO_TS_START_LEN 10
+#define NVDEBUG_ENG_KGSP_RPCINFO_TS_END_LEN 10
+#define NVDEBUG_ENG_KGSP_RPCINFO_DATA0_LEN 5
+#define NVDEBUG_ENG_KGSP_RPCINFO_DATA1_LEN 5
+#define NVDEBUG_ENG_KGSP_RPCINFO_SEQUENCE_LEN 5
 
 extern const PRB_SERVICE_DESC prb_services_nvdebug_eng[];
 

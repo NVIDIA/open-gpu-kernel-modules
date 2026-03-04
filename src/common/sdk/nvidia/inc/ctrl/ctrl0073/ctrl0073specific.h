@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073specific.finn
+// Source file:      ctrl/ctrl0073/ctrl0073specific.finn
 //
-
-
-
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
@@ -129,8 +126,8 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_TYPE_PARAMS {
  *             Perform the read and return an unadulterated EDID.
  *       NV0073_CTRL_SPECIFIC_GET_EDID_FLAGS_DISPMUX_READ_MODE
  *         A client uses this field to indicate whether to read EDID
- *         from SBIOS using ACPI sub function for display dynamic switching 
- *         feature. This flag should only be set on internal display with 
+ *         from SBIOS using ACPI sub function for display dynamic switching
+ *         feature. This flag should only be set on internal display with
  *         dynamic switching feature enabled.
  *         Possible values are:
  *           NV0073_CTRL_SPECIFIC_GET_EDID_FLAGS_DISPMUX_READ_MODE_ACPI
@@ -284,12 +281,10 @@ typedef struct NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS {
 
 /* Faking Support commands */
 /* some random value to enable/disable test code */
-#define NV0073_FAKE_DEVICE_SUPPORT_ENABLE                       0x11faU
-#define NV0073_FAKE_DEVICE_SUPPORT_DISABLE                      0x99ceU
-#define NV0073_FAKE_DEVICE_SUPPORT_ATTACH_DEVICES               0x100U
-#define NV0073_FAKE_DEVICE_SUPPORT_REMOVE_DEVICES               0x101U
-
-
+#define NV0073_FAKE_DEVICE_SUPPORT_ENABLE         0x11faU
+#define NV0073_FAKE_DEVICE_SUPPORT_DISABLE        0x99ceU
+#define NV0073_FAKE_DEVICE_SUPPORT_ATTACH_DEVICES 0x100U
+#define NV0073_FAKE_DEVICE_SUPPORT_REMOVE_DEVICES 0x101U
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_GET_I2C_PORTID
@@ -320,7 +315,7 @@ typedef struct NV0073_CTRL_CMD_SPECIFIC_FAKE_DEVICE_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV0073_CTRL_CMD_SPECIFIC_GET_I2C_PORTID                        (0x730211U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_I2C_PORTID   (0x730211U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS_MESSAGE_ID (0x11U)
 
@@ -331,10 +326,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS {
     NvU32 ddcPortId;
 } NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS;
 
-#define NV0073_CTRL_SPECIFIC_I2C_PORT_NONE            (0x0U)
-
-
-
+#define NV0073_CTRL_SPECIFIC_I2C_PORT_NONE          (0x0U)
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_GET_CONNECTOR_DATA
@@ -397,10 +389,10 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_I2C_PORTID_PARAMS {
  *
  */
 
-#define NV0073_CTRL_CMD_SPECIFIC_GET_CONNECTOR_DATA   (0x730250U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_CONNECTOR_DATA (0x730250U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS_MESSAGE_ID" */
 
 /* maximum number of connectors */
-#define NV0073_CTRL_MAX_CONNECTORS                    4U
+#define NV0073_CTRL_MAX_CONNECTORS                  4U
 
 #define NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS_MESSAGE_ID (0x50U)
 
@@ -455,6 +447,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS {
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_USB_C                                 0x00000071U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_DSI                                   0x00000072U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_STEREO_3PIN_DIN                       0x00000073U
+#define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_USB_C_UHBR                            0x00000074U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_DATA_TYPE_UNKNOWN                               0xFFFFFFFFU
 
 /* defines for the platform field */
@@ -470,7 +463,117 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_CONNECTOR_DATA_PARAMS {
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_PLATFORM_CRUSH_DEFAULT                          0x00000020U
 #define NV0073_CTRL_SPECIFIC_CONNECTOR_PLATFORM_UNKNOWN                                0xFFFFFFFFU
 
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GET_HDCP_REPEATER_INFO
+ *
+ * This command is used to get HDCP repeater information. From the
+ * repeater device this call returns KsvList,BStatus and VPrime. If the
+ * device is implemented internally, the client call supply a Cksv and Cn
+ * And in turn following parameters are returned: MPrime, Dksv which are used
+ * for upstream authentication. In addition to this the flag bAuthRequired
+ * shall be set to indicate that upstream authentication is required along with
+ * comparing the KsvList with SRM. On the other hand, if the device is an
+ * external implementation MPrime and Dksv values shall be ignored and the flag
+ * bAuthRequired will not be set indicating upstream authentication not
+ * required and just the comparison of KsvList with upstream SRM is required.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.  This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter indicates the digital display device's
+ *     displayId. This comes as input to this command.
+ *   bRepeaterPending
+ *     The repeater pending flag as the output to this command.
+ *     The flag returned indicating whether repeater is ready or not
+ *     TRUE if repeater is not ready and FALSE otherwise.
+ *   Cn
+ *     This parameter is the input value Cn a 64 bit random number
+ *     to be provided to this command. Cn value is Upstream protocol's
+ *     exchange random number.This value must be written by software
+ *     before the KSV is written if the transmitter device follows the HDCP
+ *     upstream protocol. If the transmitter supports a proprietary method of
+ *     authenticating the repeater device, Cn can be ignored.
+ *   Cksv
+ *     This parameter is the input value Cksv (a unique identifier) of 40 bit
+ *     size to be provided to this command. This input value shall contain 20
+ *     ones and 20 zeros in accordance with the HDCP specification. This value
+ *     must be written by software before the KSV is written if the transmitter
+ *     device follows the HDCP upstream protocol. If the transmitter supports
+ *     a proprietary method of authenticating the repeater device, Cksv can be
+ *     ignored.
+ *   actualKsvSize
+ *     The actual KSV list size(in bytes) returned back as output while reading
+ *     KSV list.
+ *   ksvList
+ *     In case downstream device is repeater then this will give the list of
+ *     KSV's of all downstream devices attached to the repeater. It differs
+ *     from actualKsvSize because this allocates maximum allowed size.
+ *     If downstream device is receiver then this array will contain all zeros.
+ *   BStatus
+ *     The BSTATUS value as output by this command.This value's bit fields
+ *     contains information returned by repeater device such as total number of
+ *     downstream devices attached to the repeater excluding HDCP repeater,
+ *     value for the depth indicating number of connection levels through
+ *     connection topology, this value also gives information about maximum
+ *     cascaded and devices exceeded (127).
+ *   VPrime
+ *      The VPRIME value returned as output by this command from the repeater
+ *      device. This value should be used to compare the verification value
+ *      during the HDCP upstream protocol using SHA1 in accordance with the
+ *      upstream protocol. This value can be ignored if bAuthRequired is not
+ *      set indicating the verification is done by the transmitter device.
+ *   bAuthrequired
+ *     The authentication flag as the output to this command.
+ *     The Flag returned indicating whether authentication is required or not
+ *     TRUE if authentication required and FALSE otherwise.
+ *   MPrime
+ *     The MPRIME value returned as output by this command.
+ *     MPrime shall be decrypted by the client and used in the SHA-1
+ *     computation of V during upstream authentication. This value can be
+ *     ignored if bAuthRequired is not set indicating the verification is
+ *     done by the transmitter device.
+ *   Dksv
+ *     This parameter is the output value DKSV of 40 bit size.
+ *     As per the HDCP specification this value should contain 20 ones and
+ *     20 zeros.This value can be ignored if bAuthRequired is not set
+ *     indicating the verification is done by the transmitter device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV0073_CTRL_REP_KSV_SIZE                                                       (5U)
+#define NV0073_CTRL_DKSV_SIZE                                                          (5U)
+#define NV0073_CTRL_MPRIME_SIZE                                                        (0x2U) /* finn: Evaluated from "(8 / 4)" */
+#define NV0073_CTRL_CN_SIZE                                                            (0x2U) /* finn: Evaluated from "(8 / 4)" */
+#define NV0073_CTRL_CKSV_SIZE                                                          (5U)
+#define NV0073_CTRL_VPRIME_SIZE                                                        (0x5U) /* finn: Evaluated from "(20 / 4)" */
 
+#define NV0073_CTRL_MAX_HDCP_REPEATER_COUNT                                            (0x27bU) /* finn: Evaluated from "(NV0073_CTRL_REP_KSV_SIZE * 127)" */
+
+#define NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_REPEATER_INFO                                (0x730260U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS_MESSAGE_ID (0x60U)
+
+typedef struct NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU8  bRepeaterPending;
+    NvU32 Cn[NV0073_CTRL_CN_SIZE];
+    NvU8  Cksv[NV0073_CTRL_CKSV_SIZE];
+    NvU32 actualKsvSize;
+    NvU8  ksvList[NV0073_CTRL_MAX_HDCP_REPEATER_COUNT];
+    NvU16 BStatus;
+    NvU32 VPrime[NV0073_CTRL_VPRIME_SIZE];
+    NvU8  bAuthrequired;
+    NvU32 MPrime[NV0073_CTRL_MPRIME_SIZE];
+    NvU8  Dksv[NV0073_CTRL_DKSV_SIZE];
+} NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_ENABLE
@@ -549,7 +652,896 @@ typedef struct NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS {
 #define NV0073_CTRL_SPECIFIC_CTRL_HDMI_DISABLE             (0x00000000U)
 #define NV0073_CTRL_SPECIFIC_CTRL_HDMI_ENABLE              (0x00000001U)
 
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM
+ *
+ * This command is used to signal the resource manager that the audio stream
+ * is to be mute off or on.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which operation should be directed.
+ *     This parameter must specify a value between zero and the total number
+ *     of subdevices within the parent device.  This parameter should be set
+ *     to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the displayId of HDMI resource to configure.
+ *     This comes as input to this command.
+ *   mute
+ *     This field specifies the legal values:
+ *       NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_TRUE
+ *       NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_FALSE
+ *
+ *  Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_PARAM_STRUCT
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM (0x730275U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS_MESSAGE_ID" */
 
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS_MESSAGE_ID (0x75U)
+
+typedef struct NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS {
+    NvU8  subDeviceInstance;
+    NvU32 displayId;
+    NvU8  mute;
+} NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_FALSE (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_TRUE  (0x00000001U)
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_STATE
+ *
+ * This command is used to obtain that state of hdcp for the specified attach
+ * point (that being the displayId).
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the display for which information is to be
+ *     returned.  Only one display may be indicated in this parameter.
+ *     If more than one displayId is used a failing status of
+ *     NV_ERR_INVALID_ARGUMENT will be returned.
+ *   flags
+ *     This parameter specifies the state of the attach point resource.
+ *     Here are the current defined fields:
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING
+ *         This comes as an output to this command.  The attach point
+ *         is currently encrypting hdcp content over the attach point
+ *         link.  This state of this field is determined by
+ *         NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED.  The
+ *         default is to return cached hdcp state.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED
+ *         This comes as an input to this command.  If set to 1, the return
+ *         value in NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING is based
+ *         on the Status Word.  If the uncached hdcp state fails,
+ *         such as the case for external hdcp designs that do not support
+ *         Upstream Status register, then if the flag
+ *         NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED is set, RM
+ *         will unclear  it and return the cached value instead.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_CAPABLE
+ *         This comes as an output to this command.
+ *         This bit indicates that the attach point resource is capable
+ *         of hdcp encryption.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DUAL_LINK_CAPABLE
+ *         This comes as an output to this command.
+ *         This bit indicates that the attach point resource is capable
+ *         of hdcp encryption in a dual-link configuration.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DISALLOWED
+ *         This bit indicates that the attach point resource should not
+ *         have HDCP available even if capable.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_RECEIVER_CAPABLE
+ *         This comes as an output to this command.
+ *         This bit indicates that the receiver attached to this attach point
+ *         resource is capable of hdcp encryption.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_REPEATER_CAPABLE
+ *         This comes as an output to this command.
+ *         This bit indicates that the receiver attached to this attach point
+ *         resource is capable of hdcp repeater operation.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_FP_INTERNAL
+ *         This comes as output to this command.
+ *         This bit indicates that the associated display is an HDCP-capable
+ *         internal panel.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_RECEIVER_CAPABLE
+ *         This comes as output to this command.
+ *         This bit indicates that the receiver attached to this attach point
+ *         resource is capable of hdcp22 encryption.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_REPEATER_CAPABLE
+  *        This comes as output to this command.
+ *         This bit indicates that the receiver attached to this attach point
+ *         resource is capable of hdcp22 repeater operation.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTING
+ *         This comes as an output to this command.  The attach point
+ *         is currently encrypting hdcp22 content over the attach point
+ *         link.  This state of this field is determined by
+ *         NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED, return hdcp22 uncached
+ *         status  by default.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_TYPE1
+ *         This comes as an output to this command.  The attach point
+ *         is currently encrypting hdcp22 content with stream Type 1 over the
+ *         link.  This state of this field is determined by
+ *         NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED, return hdcp22 uncached
+ *         status of stream type by default.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AUTHENTICATED
+ *         This comes an output to this command.
+ *         This bit indicates if the receiver attached to this attach point
+ *         completes authenticaion with source or not. To non DP-MST receiver, the state
+ *         should be identical to NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTING, while
+ *         DP MST needs to assign ECF after authenticated.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_HDCP22_CAPABLE
+ *         This comes as an output to this command.
+ *         This bit indicates that the attach point resource is capable
+ *         of hdcp2.2 encryption.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_STATE              (0x730280U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_HDCP_STATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_GET_HDCP_STATE_PARAMS_MESSAGE_ID (0x80U)
+
+typedef struct NV0073_CTRL_SPECIFIC_GET_HDCP_STATE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 flags;
+} NV0073_CTRL_SPECIFIC_GET_HDCP_STATE_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING                       0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_NO                    (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_YES                   (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED                1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED_TRUE           (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_ENCRYPTING_CACHED_FALSE          (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTION_INPROGRESS     2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTION_INPROGRESS_YES (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTION_INPROGRESS_NO  (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_CAPABLE                       4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_CAPABLE_NO                    (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_CAPABLE_YES                   (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DUAL_LINK_CAPABLE             5:5
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DUAL_LINK_CAPABLE_NO          (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DUAL_LINK_CAPABLE_YES         (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DISALLOWED                    6:6
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DISALLOWED_NO                 (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_DISALLOWED_YES                (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_RECEIVER_CAPABLE                 8:8
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_RECEIVER_CAPABLE_NO              (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_RECEIVER_CAPABLE_YES             (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_REPEATER_CAPABLE                 9:9
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_REPEATER_CAPABLE_NO              (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_REPEATER_CAPABLE_YES             (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_FP_INTERNAL                      10:10
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_FP_INTERNAL_FALSE                (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_FP_INTERNAL_TRUE                 (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_RECEIVER_CAPABLE          11:11
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_RECEIVER_CAPABLE_NO       (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_RECEIVER_CAPABLE_YES      (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_REPEATER_CAPABLE          12:12
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_REPEATER_CAPABLE_NO       (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_REPEATER_CAPABLE_YES      (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTING                13:13
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTING_NO             (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_ENCRYPTING_YES            (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_TYPE1                     14:14
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_TYPE1_NO                  (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_HDCP22_TYPE1_YES                 (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AUTHENTICATED                    15:15
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AUTHENTICATED_NO                 (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AUTHENTICATED_YES                (0x00000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_HDCP22_CAPABLE                16:16
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_HDCP22_CAPABLE_NO             (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_STATE_AP_HDCP22_CAPABLE_YES            (0x00000001U)
+
+/*
+ * NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_INFO
+ *
+ * This structure describes stStatus information.
+ *
+ *   displayId
+ *     This parameter returns the displayId associated with the
+ *     attach point index.
+ *   S
+ *     Each element contains the attach-point S.  This value's bit
+ *     field contains information pertaining to STATUS of each attach point.
+ *     The stStatus parameter is broken down as follows:
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_ENCRYPTING
+ *         This field specifies that the attach-point is transmitting and
+ *         has output encryption enabled.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_REPEATER
+ *         This field specifies that the attach-point is transmitting to a
+ *         repeater device.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_USER_ACCESSIBLE
+ *         This field specifies that the attach-point is transmitting on a
+ *         user-accessible external digital port.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_EXTERNALLY_UNPROTECTED
+ *         This field specifies that the attach-point is transmitting
+ *         externally and is unprotected.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_ATTACH_PORT_INDEX
+ *         This field specifies the port/attach-point index.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_NUM_PORTS
+ *         This field specifies the number of connectable attach-ports.
+ *         The default is 8.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_INTERNAL_PANEL
+ *         This field specifies a compliant internal/non-user accessible
+ *         port panel without hdcp encryption.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_WIDE_SCOPE
+ *         This field specifies _CS is not enough to determine the presence
+ *         of non-compliant outputs (this field is always 1).
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_CS_CAPABLE
+ *         This field specifies that connection-state is supported.
+ *         This field is always 1.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_READZ_CAPABLE
+ *         This field specifies that readZ is supported.
+ *         This field is always 0.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_DUAL_LINK_EVEN
+ *         This field specifies the even half of a dual-link (0x74).
+ *         This field *NOT* yet supported.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_DUAL_LINK_ODD
+ *         This field specifies the odd half of a dual-link (0x76)
+ *         This field *NOT* yet supported.
+ */
+typedef struct NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_INFO {
+    NvU32 displayId;
+    NV_DECLARE_ALIGNED(NvU64 S, 8);
+} NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_INFO;
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_ENCRYPTING                  0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_REPEATER                    1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_USER_ACCESSIBLE             2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_EXTERNALLY_UNPROTECTED      3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_ATTACH_PORT_INDEX           7:4
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_NUM_PORTS                  11:8
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_INTERNAL_PANEL            12:12
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_WIDE_SCOPE                13:13
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_CS_CAPABLE                14:14
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_READZ_CAPABLE             15:15
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_RESERVED0                 39:16
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_DUAL_LINK_EVEN            40:40
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_S_DUAL_LINK_ODD             41:41
+
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_HDCP_CTRL
+ *
+ * This command is used to do HDCP controls on the specified attach
+ * point (that being the displayId).
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the display for which information is to be
+ *     returned.  Only one display may be indicated in this parameter.
+ *     If more than one displayId is used a failing status of
+ *     NV_ERR_INVALID_ARGUMENT will be returned.
+ *   err
+ *     This parameter specifies provides info regarding the outcome
+ *     of this calling control call.  If zero, no errors were found.
+ *     Otherwise, this parameter will specify the error detected.
+ *     The valid parameter is broken down as follows:
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_UNSUCCESSFUL
+ *         If set to _YES, this indicates at least one of the calling
+ *         functions failed.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_PENDING
+ *         If set to _YES, this indicates at renogiation is not complete and
+ *         that the client should check status later.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_BAD_TOKEN_TYPE
+ *         If set to _YES, the session ID or KSV was rejected.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_LINK_FAILED
+ *         If set to _YES, renogiation could not complete.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_INVALID_PARAMETER
+ *         If set to _YES, one or more of the calling parameters was invalid.
+ *   cmd
+ *     This parameter specifies a bitmask of the legal defined fields.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_NULL
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_RENEGOTIATE
+ *         This command forces the specified displayId to renegotiate the
+ *         hdcp link.  The client should supply as an input,
+ *         cN and cKsv.  On return, bStatus, stStatus and cS is returned.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_DISABLE_AUTHENTICATION
+ *         This command forces the specified displayId to off authentication the
+ *         hdcp link.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_READ_LINK_STATUS
+ *         This command reads the status of the cipher returning a signed
+ *         S (ie: kP) and cS for the requested displayId, as well as
+ *         the relevant parameters necessary for the client to verify
+ *         the information provided.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_VALIDATE_LINK
+ *         This command returns the parameters necessary to validiate the
+ *         links for the displayId.  The client should supply as input
+ *         cN and cKsv.  On return, bStatus, cS, stStatus, aN, numBksvs,
+ *         bKsvList, vP, mP, and dKsv are returned.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_QUERY_HEAD_CONFIG
+ *         This command enumerates ports attached to a head.
+ *         On input, Cn and cKsv should be provided and on return
+ *         bSTatus, status, and connection state is returned.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_ABORT_AUTHENTICATION
+ *         This command causes the specified AP to abort authentication
+ *         protocol after KSV list is read, or during next time it's
+ *         renegotiated.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_GET_ALL_FLAGS
+ *         This command provides all possible valid device data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_GET_SPECIFIED_FLAGS
+ *         This command provides data specified by flags field set by the
+ *         client.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_FORWARD_PENDING_KSVLIST_READY
+ *         This command provides client to tell there's pending Hdcp1X KsvList
+ *         Ready notification at BStatus read.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_READ_LINK_STATUS_NO_DISPLAY
+ *         This command reads the status of the cipher returning a signed
+ *         S (ie: kP) and cS and the relevant parameters necessary for the client to
+ *         verify upstream.
+ *   flags
+ *     This parameter specifies a bitmask of the legal defined fields and the
+ *       reason AbortAuthentication.
+ *     The client shall set the desired fields and on return if valid,
+ *     the resource manager will set which flags are actually valid.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BCAPS_PRESENT
+ *         IN:  Request hdcp receiver bcaps register state.
+ *         OUT: Bcaps parameter contains valid receiver bcaps register data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BSTATUS_PRESENT
+ *         IN:  Request hdcp receiver bstatus register state.
+ *         OUT: BStatus parameter contains valid receiver bstatus register data
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_PRESENT
+ *         IN:  Request hdcp receiver key selection vector: BKSV
+ *              Driver will read BKSV from receiver and update RM states if
+ *              the cmd is _GET_SPECIFIED_FLAGS and _KP_PRESENT is unset.
+ *              Otherwise, driver returns cached BKSV.
+ *         OUT: Bksv parameter contains valid receiver bksv data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_LIST_PRESENT
+ *         IN:  Request list of downstream BKSV from repeater
+ *         OUT: BksvList parameter contains valid data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_PRESENT
+ *         IN:  Request hdcp transmitter key selection vector: DKSV
+ *         OUT: Dksv parameter contains valid receiver DKSV data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_PRESENT
+ *         IN:  Request hdcp parameter An
+ *         OUT: An parameter contains valid data
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_PRESENT
+ *         IN:  Request hdcp transmitter downstream key selection vector: AKSV
+ *         OUT: Aksv parameter contains valid receiver Aksv data.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_VP_PRESENT
+ *         IN:  Request VPrime data
+ *         OUT: VPrime parameter contains valid data
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_MP_PRESENT
+ *         IN:  Request MPrime data used for repeater authentication
+ *         OUT: MPrime parameter contains valid data
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_PRESENT
+ *         IN:  Request SPrime data
+ *         OUT: SPrime parameter contains valid data
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_IMPLICIT_HEAD
+ *         IN:  The head to use if no legal head could be located.
+ *              Use NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_IMPLICIT_HEAD_NONE
+ *              if no implicit head should be used.
+ *         OUT: n/a
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_FORCE_REAUTH
+ *         IN:  Request to execute authentication protocol even encryption
+ *              enabled.
+ *         OUT: n/a
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_RXIDMSG_PENDING
+ *         IN:  Request to execute repeater authentication protocol with pending
+ *              ID List message information.
+ *         OUT: n/a
+ *     Reason of AbortAuthentication.
+ *     When pass in by client, it indicates the reason why client issue an
+ *     Abort.  When return by RM, it indicates the reason of last successful
+ *     Abort.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_NONE
+ *         Default value
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_UNTRUST
+ *         Abort due to Kp mismatch
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_UNRELBL
+ *         Abort due to repeated link failure
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSV_LEN
+ *         Abort due to KSV length
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSV_SIG
+ *         Abort due to KSV signature
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_SRM_SIG
+ *         Abort due to SRM signature
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_SRM_REV
+ *         Abort due to SRM revocation
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_NORDY
+ *         Abort due to repeater not ready
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSVTOP
+ *         Abort due to KSV topology error
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_BADBKSV
+ *         Abort due to invalid Bksv
+ *   linkCount
+ *     This parameter specifies how many links are valid.  This is important
+ *     when determining AKSV, BKSV, AN, etc... and is an output to this
+ *     command.
+ *   apIndex
+ *     Each element of this parameter specifies the hardware attach-point index
+ *     for the requested displayId.  The 2nd element is only valid in the case
+ *     where the resource output is capable of dual-link determined when the
+ *     linkCount is greater than 1.
+ *   cN
+ *     This parameter is the input value Cn a 64 bit random number
+ *     to be provided to this command. Cn value is Upstream protocol's
+ *     exchange random number.This value must be written by software
+ *     before the KSV is written if the transmitter device follows the HDCP
+ *     upstream protocol.
+ *   cKsv
+ *     This parameter is the input value Cksv (a unique identifier) of 40 bit
+ *     size to be provided to this command. This input value shall contain 20
+ *     ones and 20 zeros in accordance with the HDCP specification. This value
+ *     must be written by software before the KSV is written if the transmitter
+ *     device follows the HDCP upstream protocol.
+ *   aN
+ *     Each element of this buffer specifies the output value aN,
+ *     a 64 bit random number used during hdcp authentication and validating
+ *     the upstream link in which case only the first 40 bits are used.
+ *     The 2nd element is only valid in the case where the resource output is
+ *     capable of dual-link determined when the linkCount is greater than 1.
+ *   aKsv
+ *     Each element of this buffer specifies output value aKsv of 40 bit size.
+ *     As per the HDCP specification this value should contain 20 ones and
+ *     20 zeros.
+ *     The 2nd element is only valid in the case where the resource output is
+ *     capable of dual-link determined when the linkCount is greater than 1.
+ *   bStatus
+ *     Each element contains the attach-point bStatus data returned by the
+ *     repeater/receiver device (if valid).  The bStatus value is an output
+ *     by this command. For HDCP on DP, bInfo is the one we should look at.
+ *     bInfo is defined exactly the same with bStatus on DVI. Hal is taking
+ *     care of the difference here.
+ *     This bStatus info is broken down as follows:
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_DEVICE_COUNT
+ *         Specifies the total number of receivers excluding repeater.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_MAX_DEVICES_EXCEEDED
+ *         Specifies a topology error in which greater than 127 devices are
+ *         detected in the overall hdcp configuration.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_REPEATER_DEPTH
+ *         Specifies the repeater depth.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_MAX_CASCADE_EXCEEDED
+ *         Specifies a topology error in which greater than 7 levels are
+ *         detected in the overall hdcp configuration.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDMI_MODE
+ *         Specifies that the hdcp receiver is in HDMI mode.
+ *   bCaps
+ *     The BCAPS value is an output by this command.  This value's bit fields
+ *     contains information returned by receiver device. Bcaps can be used
+ *     to determine if receiver is a repeater and when the ksvlist and vprime
+ *     data is ready.
+ *     The BCAPS is defined different in the spec of HDCP on DP. It's been
+ *     split to BCAPS and BSTATUS. Here we'll end a flag to indicate
+ *     the client if it's a DP.
+ *     The bCaps parameter is broken down as follows based on HDCP spec 1.1:
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_FAST_REAUTHENTICATION
+ *         This field when set to 1, specifies the receiver is capable of
+ *         receiving(unencrypted) video signal during session
+ *         re-authentication.  All HDMI capable receivers shall be capable of
+ *         performing the fast authentication even if this bit is not set.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_EESS_1_1
+ *         This field when set to 1, specifies this HDCP receiver supports
+ *         Enhanced Encryption Status Signaling (EESS), Advance cipher, and
+ *         Enhanced Link Verification options.  For the HDMI protocol, EESS
+ *         capability is assumed regardless of this bit setting.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_READY_KSV_FIFO
+ *         This field when set to 1, specifies this HDCP repeater has built
+ *         the list of attached KSVs and computed the verification value V'.
+ *         This value is always zero during the computation of V'.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_FAST
+ *         This field when set to 1, specifies this device supports 400khz
+ *         transfers.  When zero, 100 khz is the maximum transfer rate
+ *         supported.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_REPEATER
+ *         This field when set to 1, specifies the HDCP receiver supports
+ *         downstream connections as permitted by Digital Content
+ *         Protection LLC licence.  This bit does not change while the HDCP
+ *         receiver is active.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDMI_RESERVED
+ *         This field is reserved and HDCP receivers not capable of
+ *         support HDMI must clear this bit to 0.
+ *   stStatus
+ *     This parameter specifies the attach point stStatus. See
+ *     the description of NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_INFO for
+ *     details on stStatus information.
+ *   cS
+ *     This parameter provides the connection-state for the status of
+ *     all port/attach-points on this head.
+ *     The connection-state is broken down as follows:
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ATTACH_POINTS
+ *         This field specifies the transmitting attach-points.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_NON_HDCP
+ *         This field specifies the transmitting attach-points.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HEAD_INDEX
+ *         This field specifies the index of the head.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_RFUPLANES
+ *         This field specifies the RFUPLANES.
+ *         This field *NOT* yet supported.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_NUM_ACTIVE_HEADS
+ *         This field specifies the number of heads - 1.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ATTACH_PLANES
+ *         This field specifies attach planes.
+ *         This field *NOT* yet supported.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ENCRYPTING
+ *         This field is supported on chips with Display IP 0501 and later.
+ *       NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_SPAN_MODE
+ *         This field specifies dual-display span mode.
+ *         This field *NOT* yet supported.
+ *   bKsvList
+ *     In case downstream device is repeater then this will give the list of
+ *     KSV's of all downstream devices attached to the repeater. It differs
+ *     from actualKsvSize because this allocates maximum allowed size.
+ *     If downstream device is receiver then this array will contain all zeros.
+ *   numBksvs
+ *     Total number of Bksv from all downstream devices in the bKsvList.
+ *     This info can also be obtained via bStatus.
+ *   vP
+ *     The VPRIME value returned as output by this command from the repeater
+ *     device. This value should be used to compare the verification value
+ *     during the HDCP upstream protocol using SHA1 in accordance with the
+ *     upstream protocol. This value can be ignored if bAuthRequired is not
+ *     set indicating the verification is done by the transmitter device.
+ *   kP
+ *     The KP value is returned as an output by this command.  This
+ *     parameter is the signature computed by hardware and the client
+ *     should compute the signature to compare this value.
+ *     The 2nd element is only valid in the case where the resource output is
+ *     capable of dual-link determined when the linkCount is greater than 1.
+ *   mP
+ *     The MPRIME value returned as output by this command.
+ *     MPrime shall be decrypted by the client and used in the SHA-1
+ *     computation of V during upstream authentication. This value can be
+ *     ignored if bAuthRequired is not set indicating the verification is
+ *     done by the transmitter device.
+ *   dKsv
+ *     Each element of this buffer is the output value DKSV of 40 bit size.
+ *     As per the HDCP specification this value should contain 20 ones and
+ *     20 zeros.
+ *     The 2nd element is only valid in the case where the resource output is
+ *     capable of dual-link determined when the linkCount is greater than 1.
+ *   streamIndex
+ *     Each content stream is assigned an index value bye upstream client.
+ *     HDMI: The index must be 0.
+ *     DP SST: The index must be 0.
+ *     DP MST: Assigned stream index.
+ *   streamType
+ *     Each content stream is assigned a type value by the upstream content
+ *     control function.
+ *     0x00: Type 0 content stream. May be transimtted by the HDCP repeater to
+ *           all HDCP devices.
+ *     0x01: Type 1 content stream. Must not be transmitted by the HDCP
+ *           repeater to HDCP 1.x-compliant devices and HDCP 2.0-compliant
+ *           repeaters.
+ *     0x02-0xFF: reserved for futures use only.
+ *   bEnforceType0Hdcp1xDS
+ *     If this bit is set, DPU enforces Type0 if it finds Hdcp1x monitor downstream
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_HDCP_CTRL (0x730282U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_HDCP_LINK_COUNT        (0x0000002U)
+#define NV0073_CTRL_HDCP_VPRIME_SIZE       (0x0000014U)
+#define NV0073_CTRL_HDCP_MAX_DEVICE_COUNT  (0x00000FFU)
+#define NV0073_CTRL_HDCP_KSV_SIZE          (0x0000005U)
+#define NV0073_CTRL_HDCP_MAX_NUM_APS       (0x0000010U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS_MESSAGE_ID (0x82U)
+
+typedef struct NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+
+    NvU32  err;
+
+    NvU32  cmd;
+    NvU32  flags;
+    NvU8   linkCount;
+
+    NV_DECLARE_ALIGNED(NvU64 cN, 8);
+    NV_DECLARE_ALIGNED(NvU64 cKsv, 8);
+
+    NvU32  apIndex[NV0073_CTRL_HDCP_LINK_COUNT];
+
+    NV_DECLARE_ALIGNED(NvU64 aN[NV0073_CTRL_HDCP_LINK_COUNT], 8);
+    NV_DECLARE_ALIGNED(NvU64 aKsv[NV0073_CTRL_HDCP_LINK_COUNT], 8);
+
+    NvU32  bStatus[NV0073_CTRL_HDCP_MAX_NUM_APS];
+    NvU32  bCaps[NV0073_CTRL_HDCP_MAX_NUM_APS];
+
+    NV_DECLARE_ALIGNED(NV0073_CTRL_SPECIFIC_HDCP_CTRL_STATUS_INFO stStatus[NV0073_CTRL_HDCP_MAX_NUM_APS], 8);
+
+    NV_DECLARE_ALIGNED(NvU64 cS, 8);
+
+    NV_DECLARE_ALIGNED(NvU64 bKsv[NV0073_CTRL_HDCP_LINK_COUNT], 8);
+    NV_DECLARE_ALIGNED(NvU64 bKsvList[NV0073_CTRL_HDCP_MAX_DEVICE_COUNT], 8);
+    NvU32  numBksvs;
+
+    NvU8   vP[NV0073_CTRL_HDCP_VPRIME_SIZE];
+    NV_DECLARE_ALIGNED(NvU64 kP[NV0073_CTRL_HDCP_LINK_COUNT], 8);
+
+    NV_DECLARE_ALIGNED(NvU64 mP, 8);
+    NV_DECLARE_ALIGNED(NvU64 dKsv[NV0073_CTRL_HDCP_LINK_COUNT], 8);
+
+    NvU32  streamIndex;
+    NvU8   streamType;
+    NvBool bEnforceType0Hdcp1xDS;
+
+    NvBool bPendingKsvListReady;
+
+    NvBool isHdcpCapable;
+    NvBool isHdcpAuthOn;
+    NvBool isHdcpRp;
+    NvBool isHdcp2X;
+    NvBool bMaxCascadeExceeded;
+    NvBool bMaxDeviceExceeded;
+    NvBool bHdcp1DevDownstream;
+    NvBool bHdcp2LegacyDevDownstream;
+    NvU8   cascadeDepth;
+} NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_UNSUCCESSFUL             0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_UNSUCCESSFUL_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_UNSUCCESSFUL_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_PENDING                  1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_PENDING_NO                    (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_PENDING_YES                   (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_BAD_TOKEN_TYPE           2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_BAD_TOKEN_TYPE_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_BAD_TOKEN_TYPE_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_LINK_FAILED              3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_LINK_FAILED_NO                (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_LINK_FAILED_YES               (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_INVALID_PARAMETER        4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_INVALID_PARAMETER_NO          (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_ERR_INVALID_PARAMETER_YES         (0x0000001U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD                          31:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_NULL                          (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_READ_LINK_STATUS              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_VALIDATE_LINK                 (0x0000002U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_QUERY_HEAD_CONFIG             (0x0000003U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_RENEGOTIATE                   (0x0000004U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_GET_ALL_FLAGS                 (0x0000005U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_GET_SPECIFIED_FLAGS           (0x0000006U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_ABORT_AUTHENTICATION          (0x0000007U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_DISABLE_AUTHENTICATION        (0x0000008U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_SET_TYPE                      (0x0000009U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_FORWARD_KSVLIST_READY         (0x000000AU)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_READ_LINK_STATUS_NO_DISPLAY   (0x000000BU)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CMD_READ_TOPOLOGY                 (0x000000CU)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BCAPS_PRESENT          0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BCAPS_PRESENT_NO            (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BCAPS_PRESENT_YES           (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BSTATUS_PRESENT        1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BSTATUS_PRESENT_NO          (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BSTATUS_PRESENT_YES         (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_PRESENT           2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_S_PRESENT         3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_S_PRESENT_NO           (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_S_PRESENT_YES          (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_LIST_PRESENT      4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_LIST_PRESENT_NO        (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_BKSV_LIST_PRESENT_YES       (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_PRESENT             5:5
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_PRESENT_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_S_PRESENT           6:6
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_S_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AN_S_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_PRESENT           7:7
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_S_PRESENT         8:8
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_S_PRESENT_NO           (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_AKSV_S_PRESENT_YES          (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_PRESENT           9:9
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_S_PRESENT         10:10
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_S_PRESENT_NO           (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_DKSV_S_PRESENT_YES          (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_MP_PRESENT             11:11
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_MP_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_MP_PRESENT_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_VP_PRESENT             12:12
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_VP_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_VP_PRESENT_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CN_PRESENT             13:13
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CN_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CN_PRESENT_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CKSV_PRESENT           14:14
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CKSV_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CKSV_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_PRESENT             15:15
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_PRESENT_YES              (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_S_PRESENT           16:16
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_S_PRESENT_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_KP_S_PRESENT_YES            (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_STATUS_PRESENT         17:17
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_STATUS_PRESENT_NO           (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_STATUS_PRESENT_YES          (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CS_PRESENT             18:18
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CS_PRESENT_NO               (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_CS_PRESENT_YES              (0x0000001U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT                  22:19
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_NONE                  (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_UNTRUST               (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_UNRELBL               (0x0000002U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSV_LEN               (0x0000003U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSV_SIG               (0x0000004U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_SRM_SIG               (0x0000005U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_SRM_REV               (0x0000006U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_NORDY                 (0x0000007U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_KSVTOP                (0x0000008U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_ABORT_BADBKSV               (0x0000009U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_IMPLICIT_HEAD          25:23
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_IMPLICIT_HEAD_NONE          (0x0000007U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_TYPE_CHANGED           26:26
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_TYPE_CHANGED_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_TYPE_CHANGED_YES            (0x0000001U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_FORCE_REAUTH           27:27
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_FORCE_REAUTH_NO             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_FORCE_REAUTH_YES            (0x0000001U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_RXIDMSG_PENDING        28:28
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_RXIDMSG_PENDING_NO          (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_FLAGS_RXIDMSG_PENDING_YES         (0x0000001U)
+
+/* BCaps definition of HDCP over TMDS */
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_FAST_REAUTHENTICATION  0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_EESS_1_1               1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_FAST                   4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_READY_KSV_FIFO         5:5
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_REPEATER               6:6
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDMI_RESERVED          7:7
+/* BCaps definition of HDCP over DP */
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_DP_HDCP_CAPABLE        0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_DP_REPEATER            1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_DP_READY_KSV_FIFO      2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_DP_R0_AVAILABLE        3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_DP_LINK_INTEGRITY_FAILURE 4:4
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_DEVICE_COUNT         6:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_MAX_DEVICES_EXCEEDED 7:7
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_REPEATER_DEPTH       10:8
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BSTATUS_MAX_CASCADE_EXCEEDED 11:11
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDMI_MODE                    12:12
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_RESERVED_0                   31:13
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ATTACH_POINTS             15:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_NON_HDCP                  16:16
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HEAD_INDEX                20:17
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_RFUPLANES                 28:21
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_NUM_ACTIVE_HEADS          30:29
+// Bit 39-29 are implementation dependent connection state information
+// for HDCP22 from gm206 (v02_06) onwards Bit-30 says HDCP22 encryption status.
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_ENCRYPTION         30:30
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_ENCRYPTION_YES          0x00000001U
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_ENCRYPTION_NO           0x00000000U
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_TYPE1              31:31
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_TYPE1_YES               0x00000001U
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_HDCP22_TYPE1_NO                0x00000000U
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_RESERVED_0                39:32
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ATTACH_PLANES             47:40
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_ENCRYPTING                48:48
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_CS_SPAN_MODE                 49:49
+
+/* This HDCP_MODE definition applies to both DP and TMDS */
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_MODE             15:15
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_MODE_TMDS              (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_MODE_DP                (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_VERSION          23:16
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_VERSION_1X             (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_BCAPS_HDCP_VERSION_22             (0x0000022U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_REPEATER            0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_REPEATER_NO          (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_REPEATER_YES         (0x0000001U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_HDCP_CAPABLE        1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_HDCP_CAPABLE_NO      (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BCAPS_HDCP_CAPABLE_YES     (0x0000001U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DP_READY                     0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DP_HPRIME_AVAILABLE          1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DP_PAIRING_AVAILABLE         2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DP_REAUTH_REQ                3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DP_LINK_INTEGRITY_FAILURE    4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_HDCP1_REPEATER_DOWNSTREAM    5:5
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_HDCP2_0_REPEATER_DOWNSTREAM  6:6
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_MAX_CASCADE_EXCEEDED         7:7
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_MAX_DEVS_EXCEEDED            8:8
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_DEVICE_COUNT                 13:9
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_BSTATUS_REPEATER_DEPTH               16:14
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0                     (0x00U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_1                     (0x01U)
+
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_ENFORCE_TYPE0_HDCP1XDS_NO  (0x00U)
+#define NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_ENFORCE_TYPE0_HDCP1XDS_YES (0x01U)
+
+
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_DIAGNOSTICS
+ *
+ * This command is used to obtain diagnostic info, useful when hdcp
+ * fails for the specified attach point (that being the displayId).
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the display for which information is to be
+ *     returned.  Only one display may be indicated in this parameter.
+ *     If more than one displayId is used a failing status of
+ *     NV_ERR_INVALID_ARGUMENT will be returned.
+ *   flags
+ *     This parameter specifies the diagnostics obtained from the attach point
+ *     resource.  Here are the current defined fields:
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_ROM_ERROR
+ *         The hdcp hardware detected an error with the rom.  Possible
+ *         causes are that a rom is not present or if present, the hardware
+ *         is not able to access the rom.
+ *       NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_BOND_NOT_ENABLED
+ *         The hdcp fuse register has not been set.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_AKSV_INVALID
+ *         If the AKSV (key selection vector) of the hardware does not return
+ *         20 1s and 0s, this bit will be set.  This is an indication that
+ *         the ROM is not programmed correctly and may need to be corrected
+ *         by replacing the external hdcp cryptorom.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_BKSV_INVALID
+ *         If the BKSV (key selection vector) of the display receiver hardware
+ *         does not return 20 1s and 0s, this bit will be set.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_DKSV_INVALID
+ *         If the DKSV (key selection vector) of the upstream hdcp hardware
+ *         does not return 20 1s and 0s, this bit will be set.
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_DUAL_LINK_INUSE
+ *         This bit is set if the attach point is currently outputting dual-link
+ *       NV0073_CTRL_SPECIFIC_HDCP_STATE_DOWNSTREAM_CHECKSUM_FAILED
+ *         This bit is set if hardware reports that its checksum BIST of its
+ *         downstream HDCP keys failed.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_DIAGNOSTICS                        (0x730281U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_HDCP_DIAGNOSTICS_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_GET_HDCP_DIAGNOSTICS_PARAMS_MESSAGE_ID (0x81U)
+
+typedef struct NV0073_CTRL_SPECIFIC_GET_HDCP_DIAGNOSTICS_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 flags;
+} NV0073_CTRL_SPECIFIC_GET_HDCP_DIAGNOSTICS_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_ROM_ERROR                     0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_BOND_NOT_ENABLED              1:1
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_AKSV_INVALID                  2:2
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_BKSV_INVALID                  3:3
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_DKSV_INVALID                  4:4
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_DUAL_LINK_INUSE               5:5
+#define NV0073_CTRL_SPECIFIC_HDCP_DIAGNOSTICS_DOWNSTREAM_CHECKSUM_FAILED    6:6
 
 /*
  * NV0073_CTRL_SPECIFIC_ACPI_ID_MAPPING
@@ -577,7 +1569,48 @@ typedef struct NV0073_CTRL_SPECIFIC_ACPI_ID_MAPPING {
     NvU32 dodIndex;
 } NV0073_CTRL_SPECIFIC_ACPI_ID_MAPPING;
 
+/*
+ * NV0073_CTRL_CMD_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT
+ *
+ * This call will return the Display Port Attachment value
+ * per displayID as defined by Nvidia that is directly
+ * associated with the ACPI 3.0 _DOD entry's Display Port
+ * Attachment field.  This should help clients map the
+ * _DOD ACPI ID to each displayID. Note, that some systems
+ * do not have a standard in place for this field.  On those
+ * systems, the RM will return NV_ERR_NOT_SUPPORTED.
+ *
+ * Note that this "Display Port" attachment field has nothing
+ * to do with DisplayPort/DP.  It's an unfortunate name inside
+ * the ACPI 3.0 spec that coincides with the name of DisplayPort.
+ *
+ *
+ * Possible status values returned are:
+ * NV_OK
+ * NV_ERR_INVALID_PARAM_STRUCT
+ * NV_ERR_NOT_SUPPORTED
+ *
+*/
 
+#define NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS_MESSAGE_ID (0x85U)
+
+typedef struct NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 dispPortAttachment;
+} NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS;
+
+
+#define NV0073_CTRL_CMD_SPECIFIC_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT (0x730285U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS_MESSAGE_ID" */
+
+// defines for dispPortAttachment
+#define NV0073_DISPLAY_PORT_ATTACHMENT_ANALOG                         (0x00000000U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_LVDS                           (0x00000001U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_A                           (0x00000002U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_B                           (0x00000003U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_C                           (0x00000004U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_D                           (0x00000005U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_UNKNOWN                        (0xFFFFFFFFU)
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_SET_ACPI_ID_MAPPING
@@ -713,10 +1746,10 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS {
  *         It is temporal and will be deprecated soon.
  *   packetSize
  *     packet size of packets in pPacket to send, including header and payload.
- *   targetHead 
- *     Specifies the target head number for which SDP needs to be updated. 
+ *   targetHead
+ *     Specifies the target head number for which SDP needs to be updated.
  *   bUsePsrHeadforSdp
- *     Indicates use targetHead field for setting SDP or infoframe packet instead 
+ *     Indicates use targetHead field for setting SDP or infoframe packet instead
  *     of deriving the active head from displayID.
  *   pPacket
  *     pPacket points to the packets to send.
@@ -1069,6 +2102,72 @@ typedef struct NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS {
 #define NV0073_CTRL_SPECIFIC_OR_LOCATION_CHIP               (0x00000000U)
 #define NV0073_CTRL_SPECIFIC_OR_LOCATION_BOARD              (0x00000001U)
 
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_HDCP_KSVLIST_VALIDATE
+ *
+ * This Command initiate the KSV validation for the specific device
+ * if it is a repeater.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be directed.
+ *     This parameter must specify a value between zero and the total number
+ *     of subdevices within the parent device.  This parameter should be set
+ *     to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the root port device for which KsvList is to be validated
+ *   bUseCachedKsvList
+ *     The parameter specifies RM to use cachedKsvList in case BCAPS's READY bit not set to read
+ *     ksvList.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_NOT_READY
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_HDCP_KSVLIST_VALIDATE      (0x73028dU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_HDCP_KSVLIST_VALIDATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_HDCP_KSVLIST_VALIDATE_PARAMS_MESSAGE_ID (0x8DU)
+
+typedef struct NV0073_CTRL_SPECIFIC_HDCP_KSVLIST_VALIDATE_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvBool bUseCachedKsvList;
+} NV0073_CTRL_SPECIFIC_HDCP_KSVLIST_VALIDATE_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_HDCP_UPDATE
+ *
+ * This Command updates the display to the proper HDCP state based on
+ * whether it has been newly connected or disconnected. This is called
+ * during a hotplug event.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be directed.
+ *     This parameter must specify a value between zero and the total number
+ *     of subdevices within the parent device.  This parameter should be set
+ *     to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the root port device to update
+ *   bIsConnected
+ *     This parameter specifies whether the device has been connected (NV_TRUE)
+ *     or disconnected (NV_FALSE).
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_HDCP_UPDATE (0x73028eU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_HDCP_UPDATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_HDCP_UPDATE_PARAMS_MESSAGE_ID (0x8EU)
+
+typedef struct NV0073_CTRL_SPECIFIC_HDCP_UPDATE_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvBool bIsConnected;
+} NV0073_CTRL_SPECIFIC_HDCP_UPDATE_PARAMS;
+
 
 
 /*
@@ -1088,24 +2187,42 @@ typedef struct NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS {
  *     The backlight brightness in the range [0,100], inclusive.  This
  *     is an input for SET_BACKLIGHT_BRIGHTNESS, and an output for
  *     GET_BACKLIGHT_BRIGHTNESS.
- *
+ *   brightnessType
+ *     This can take in one of the three parameters:
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100(for percentage brightness with value calibrated to 100 scale),
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT1000(for percentage brightness with uncalibrated values),
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_NITS(used when panel supports Nits based)
+ *     based on the brightness control method to be used.
  *
  * Possible status values returned include:
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV0073_CTRL_CMD_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS (0x730291U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | 0x91" */
-
-#define NV0073_CTRL_CMD_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS (0x730292U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | 0x92" */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS (0x730291U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_BACKLIGHT_BRIGHTNESS_MIN_VALUE        0U
 #define NV0073_CTRL_BACKLIGHT_BRIGHTNESS_MAX_VALUE        100U
 
 typedef struct NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 brightness;
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  brightness;
+    NvBool bUncalibrated;
+    NvU8   brightnessType;
 } NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS;
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100        1
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT1000       2
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_NITS              3
+
+#define NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID (0x91U)
+
+typedef NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS;
+
+#define NV0073_CTRL_CMD_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS (0x730292U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID (0x92U)
+
+typedef NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_SINK_CAPS
@@ -1189,6 +2306,10 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS {
  *   powerState
  *     This parameter should be one of the valid
  *     NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_* values.
+ *   headIdx
+ *     The head id on which power operation needs to be done.
+ *   bForceMonitorState
+ *     Monitor power state that client wants to force in RM.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -1200,9 +2321,11 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS {
 #define NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS_MESSAGE_ID (0x95U)
 
 typedef struct NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 powerState;
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  powerState;
+    NvU32  headIdx;
+    NvBool bForceMonitorState;
 } NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS;
 
 #define NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_OFF     (0x00000000U)
@@ -1246,7 +2369,7 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS {
 *             For FRL 4-lane configuration and 10 Gbps bandwidth per lane.
 *           NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_12G
 *             For FRL 4-lane configuration and 12 Gbps bandwidth per lane.
-*         On return, the link bandwidth setting is returned which may be 
+*         On return, the link bandwidth setting is returned which may be
 *         different from the requested input setting.
 *   bFakeLt
 *     This flag as input to this command.
@@ -1255,6 +2378,10 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS {
 *   bLtSkipped
 *     The flag returned indicating whether link training is skipped or not.
 *     TRUE if link training is skipped due to the link config is not changed.
+*   bLinkAssessmentOnly
+*     The flag as input to this command. It indicates that the client is doing
+*     link training only for the link assessment, no FRL video transmission is
+*     intended.
 *
 * Possible status values returned include:
 * NV_OK -
@@ -1277,21 +2404,57 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS {
     NvU32  displayId;
     NvU32  data;
     NvBool bFakeLt;
+    NvBool bDoNotSkipLt;
     NvBool bLtSkipped;
+    NvBool bLinkAssessmentOnly;
 } NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS;
 
 #define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE                                           2:0
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_NONE                (0x00000000U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_3G           (0x00000001U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_6G           (0x00000002U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_6G           (0x00000003U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_8G           (0x00000004U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_10G          (0x00000005U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_12G          (0x00000006U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_NONE       (0x00000000U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_3G  (0x00000001U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_6G  (0x00000002U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_6G  (0x00000003U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_8G  (0x00000004U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_10G (0x00000005U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_12G (0x00000006U)
+
+/*
+* NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE
+*
+* This command is used to enable flush mode on given HDMI displayId in
+* preparation for FRL link training. The flush mode can be enabled only if HDMI
+* display is active and driven by FRL protocol. If display is not active then
+* this control command does nothing.
+*
+*   subDeviceInstance
+*     This parameter specifies the subdevice instance within the
+*     NV04_DISPLAY_COMMON parent device to which the operation should be
+*     directed.
+*   displayID
+*     This parameter specifies the displayID for the display output resource to
+*     configure.
+*   bEnable
+*     This parameter is an inputto this command.
+*
+* Possible status values returned include:
+* NV_OK
+* NV_ERR_INVALID_ARGUMENT
+*   If any argument is invalid for this control call, NV_ERR_INVALID_ARGUMENT
+*   status will be returned.
+*/
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE  (0x73029bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS_MESSAGE_ID (0x9BU)
+
+typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvBool bEnable;
+} NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS;
 
 
 
-#define NV0073_CTRL_SPECIFIC_MAX_CRC_REGIONS                                  9U
+#define NV0073_CTRL_SPECIFIC_MAX_CRC_REGIONS 9U
 
 #define NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS_MESSAGE_ID (0xA0U)
 
@@ -1306,7 +2469,7 @@ typedef struct NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS {
  * NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS
  *
  * This command is used to capture the active viewport region CRCs
- * 
+ *
  *  [in]subDeviceInstance
  *     This parameter specifies the subdevice instance within the
  *     NV04_DISPLAY_COMMON parent device to which the operation should be
@@ -1402,13 +2565,13 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS {
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_DISPLAY_CHANGE
- * 
+ *
  * Notifies the system that a display change is about to begin/end.
  * Also performs the necessary synchronizations for the same.
- * 
+ *
  * The command takes a NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS structure as an
  * argument with appropriate subDeviceInstance.
- * 
+ *
  *  [in]subDeviceInstance
  *   The sub-device instance
  *  [in]newDevices
@@ -1455,7 +2618,7 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS {
  *     NV04_DISPLAY_COMMON parent device to which the operation should be
  *     directed.
  *   displayId
- *     This parameter specifies the displayId of HDMI sink. 
+ *     This parameter specifies the displayId of HDMI sink.
  *   offset
  *     This parameter specifies the SCDC offset which the read operation
  *     should be used.
@@ -1539,7 +2702,7 @@ typedef struct NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS {
  *     This parameter specifies the command for the HDMI FRL capacity computation.
  *   [in] input
  *     This parameter specifies the input data for the HDMI FRL capacity
- *     computation.   
+ *     computation.
  *   [out] result
  *     This indicates the computation result of HDMI FRL capacity computation.
  *   [in/out] preCalc
@@ -1627,7 +2790,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS {
  * This generic packets can be used for both HDMI and DP.
  * HW has added 6 new generic packets for each head because some usecases have
  * requirement to send infoframe in particular location (vsync, vblank, loadV).
- * 
+ *
  * Note: 1. Client first needs to reserve or acquire a free infoframe index
  *          using NV0073_CTRL_CMD_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET.
  *       2. Client needs to update the SDP index for head through control call
@@ -1653,7 +2816,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS {
  *        Set to _YES will cause new infoframe to be transmitted exactly once.
  *        Set to _NO will cause new infoframe to be transmitted every frame.
  *       NV0073_CTRL_SPECIFIC_SHARED_GENERIC_CTRL_LOC
- *         SDP can be sent in 3 different locations: 
+ *         SDP can be sent in 3 different locations:
  *           VBLANK - new infoframe will be sent at Vblank.
  *           VSYNC - new infoframe will be sent at Vsync.
  *           LOADV - new infoframe will be triggered by LOADV, and sent at Vsync
@@ -1665,9 +2828,9 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS {
  *        _DISABLE: do not override shared generic infoframe subpacker DB1 bit3.
  *   [in]packetSize
  *     size of packets in Packet array to send, including header and payload.
- *   [in]infoframeIndex 
+ *   [in]infoframeIndex
  *     Specifies the target head number for which SDP needs to be updated.
- *   [in]infoframeIndex 
+ *   [in]infoframeIndex
  *     Specifies the index of infoframe.
  *   [in]packet
  *     pPacket points to the packets to send.
@@ -1723,9 +2886,9 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_SHARED_GENERIC_PACKET_PARAMS {
 /*
  * NV0073_CTRL_CMD_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET
  *
- * This command is used to reserve the infoframe for head and RM would assign 
+ * This command is used to reserve the infoframe for head and RM would assign
  * free infoframe index and return the index of infoframe. Later client needs
- * to call control call NV0073_CTRL_CMD_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET 
+ * to call control call NV0073_CTRL_CMD_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET
  * to release the index.
  *
  *   [in]subDeviceInstance
@@ -1771,7 +2934,7 @@ typedef struct NV0073_CTRL_SPECIFIC_ACQUIRE_SHARED_GENERIC_PACKET_PARAMS {
  *     of subdevices within the parent device.  This parameter should be set
  *     to zero for default behavior.
  *   [in]targetHeadIndex
- *     Specifies the target head number for which SDP needs to be updated. 
+ *     Specifies the target head number for which SDP needs to be updated.
  *   [in]infoframeIndex
  *     Infoframe index for the target head
  * Possible status values returned are:
@@ -1790,4 +2953,228 @@ typedef struct NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS {
     NvU32 infoframeIndex;
 } NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE
+ *
+ * This command is used to do I2C R/W to slave on display i2c instance.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   i2cPort
+ *      This parameter specifies the I2C CCB port ID.
+ *   i2cSlaveAddress
+ *      This parameter specifies the I2C slave address.
+ *   readWriteFlag
+ *      This parameter specifies whether its read/write operation.
+ *   readWriteLen
+ *      This parameter specifies the length of the read/write buffer
+ *   readBuffer
+ *      This parameter reads the data from slave address and copies to this
+ *      buffer
+ *   writeBuffer
+ *      This parameter specifies this buffer data that would be written to
+ *      slave address
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE     (0x7302acU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN 128U
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID (0xACU)
+
+typedef struct NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 i2cPort;
+    NvU32 i2cSlaveAddress;
+    NvU32 readWriteFlag;
+    NvU32 readWriteLen;
+    NvU8  readBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+    NvU8  writeBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+} NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_MODE                   (0x00000001)
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_WRITE_MODE                  (0x00000000)
+
+/*
+ * NV0073_CTRL_CMD_GET_VALID_HEAD_WINDOW_ASSIGNMENT
+ *
+ * This command returns the valid window head assignment mask
+ *
+ * windowHeadMask [out]
+ *   This out parameter is an array which holds the head mask for
+ *   each window. The Nth element in the array would be a bitmask
+ *   of which heads can possibly drive window N.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_GENERIC
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT (0x7302ad) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_MAX_WINDOWS                          32U
+#define NV0073_CTRL_SPECIFIC_FLEXIBLE_HEAD_WINDOW_ASSIGNMENT      (0xFFU)
+
+#define NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS_MESSAGE_ID (0xADU)
+
+typedef struct NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU8  windowHeadMask[NV0073_CTRL_SPECIFIC_MAX_WINDOWS];
+} NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY
+ *
+ * This command is used to query whether the specified monitor should default
+ * to adaptive sync.
+ *
+ *   [in]manufacturerID
+ *     This parameter specifies the 16-bit EDID Manufacturer ID.
+ *   [in]productID
+ *     This parameter specifies the 16-bit EDID Product ID.
+ *   [out]bDefaultAdaptivesync;
+ *     This indicates whether the monitor should default to adaptive sync.
+ * Possible return values:
+ *  NV_OK
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY (0x7302aeU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS_MESSAGE_ID (0xAEU)
+
+typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
+    NvU16  manufacturerID;
+    NvU16  productID;
+    NvBool bDefaultAdaptivesync;
+} NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM
+ * NV0073_CTRL_CMD_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM
+ * These commands retrieve and set the brightness level and Local Tone Mapping (LTM) settings for
+ * the specified display.
+ *
+ * subDeviceInstance
+ * This parameter specifies the subdevice instance within the
+ * NV04_DISPLAY_COMMON parent device to which the operation should be
+ * directed.
+ *
+ * displayId
+ * Display for which brightness/LTM settings is to be retrieved or set.
+ *
+ * brightnessMilliNits
+ * the display brightness in the millinits units in the [0,10000000] range, inclusive.
+ *
+ * transitionTimeMs
+ * the transition time for display brightness to transition from current brightness level to the brightnessMilliNits
+ *
+ * bUncalibrated
+ * if true the parameter indicates brightnessMilliNits has to be interpreted as brightness % value, in 0.001% units
+ *
+ * bAdaptiveBrightness
+ * if true the brightnessMilliNits is set by the OS in the response to the ambient light sensor (ALS) input (if present on the system)
+ *
+ * bBoostRange
+ * if true the brightnessMilliNits value is set by the OS in the response to the ambient light sensor (ALS) input (if present on the system)
+ * Indicating very bright ambient light environment
+ *
+ * ambientIlluminance
+ * if bAdaptiveBrightness = true, ambientIlluminance represents an ambient illuminance value reported by the ALS sensor, in 0.001 Lux units
+ *
+ * ambientChromaticityX
+ * if bAdaptiveBrightness = true, ambientChromaticityX represents X chromaticity value reported by ALS sensor, in 0.001 units of [0,1] range
+ *
+ * ambientChromaticityY
+ * if bAdaptiveBrightness = true, ambientChromaticityY represents Y chromaticity value reported by ALS sensor, in 0.001 units of [0,1] range
+ *
+ * bLtmEnable
+ * if set to true, enable LTM functionality in GPU display HW. Set to true by default.
+ *
+ * bEnhanceContrast
+ * if bLtmEnable = true, and if set to true, enhance local contrast via LTM regardless of any other contrast enhancement driver policies. Set to false by default.
+ *
+ * contrastGain
+ * if bLtmEnable = true, this is used to how gain we need to apply on the contrast.
+ *
+ * detailGain
+ * if bLtmEnable = true, how much details needs to be boosted is indicated by this parameter.
+ *
+ * bContentAdaptiveBrightness
+ * if bLtmEnable = true, and if set to true, modify display backlight level and adjust pixel values dynamically on per-frame basis to perform content adaptive brightness control to reduce display power. Set to false by default.
+ *
+ * bDynamicHdrTonemapping
+ * if bLtmEnable = true, and if set to true, and output is HDR, enable dynamic per frame HDR tonemapping. Set to false by default.
+ *
+ * maxDisplayLuminance
+ * maximum display luminance
+ *
+ * luminanceSscalingFactor
+ * HDR tone mapping luminance scaling factor
+ *
+ * Possible status values returned include:
+ * NV_OK
+ * NV_ERR_NOT_SUPPORTED
+ */
+
+typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  brightnessMilliNits;
+    NvU32  transitionTimeMs;
+    NvBool bUncalibrated;
+    NvBool bAdaptiveBrightness;
+    NvBool bBoostRange;
+    NvU32  ambientIlluminance;
+    NvU32  ambientChromaticityX;
+    NvU32  ambientChromaticityY;
+    NvBool bEnhanceContrast;
+    NvU16  contrastGain;
+    NvU16  detailGain;
+    NvBool bContentAdaptiveBrightness;
+    NvBool bDynamicHdrTonemapping;
+    NvU32  maxDisplayLuminance;
+    NvU32  luminanceScalingFactor;
+} NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID (0xAFU)
+
+typedef NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS NV0073_CTRL_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM_PARAMS;
+
+#define NV0073_CTRL_CMD_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM (0x7302afU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID (0xB0U)
+
+typedef NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS NV0073_CTRL_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM_PARAMS;
+
+#define NV0073_CTRL_CMD_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM    (0x7302b0U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID" */
+
+/*
+* NV0073_CTRL_CMD_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP
+*
+* The command returns the offset of the disp registers for sending timestamp
+* directly to RISCV, so that clients may map them directly and write to this
+* register which will trigger interrupt in RISCV.
+*
+* Possible status values returned are: 
+*   NV_OK
+*   NV_ERR_NOT_SUPPORTED
+*/
+
+#define NV0073_CTRL_CMD_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP (0x7302b1U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS_MESSAGE_ID (0xB1U)
+
+typedef struct NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 dispRegisterBase;
+} NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS;
 /* _ctrl0073specific_h_ */

@@ -48,13 +48,20 @@ nvlink_core_discover_and_get_remote_end
 (
     nvlink_link  *end,
     nvlink_link **remote_end,
-    NvU32         flags
+    NvU32         flags,
+    NvBool        bForceDiscovery
 )
 {
     nvlink_intranode_conn *conn      = NULL;
     nvlink_device         *dev       = NULL;
     nvlink_link           *link      = NULL;
     NvU32                  linkCount = 0;
+
+    if ((end == NULL) || (remote_end == NULL))
+    {
+        return;
+    }
+
     nvlink_link   **pLinks = (nvlink_link **)nvlink_malloc(
                             sizeof(nvlink_link *) * NVLINK_MAX_SYSTEM_LINK_NUM);
     if (pLinks == NULL)
@@ -62,7 +69,7 @@ nvlink_core_discover_and_get_remote_end
         return;
     }
 
-    if (nvlinkLibCtx.bNewEndpoints)
+    if (nvlinkLibCtx.bNewEndpoints || bForceDiscovery)
     {
         if (!_nvlink_core_all_links_initialized())
         {
@@ -85,6 +92,15 @@ nvlink_core_discover_and_get_remote_end
                     pLinks[linkCount++] = link;
                 }
             }
+
+            if (pLinks[0]->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                if (!pLinks[0]->dev->enableALI)
+                {
+                    nvlink_core_init_links_from_off_to_swcfg_non_ALI(pLinks, linkCount, flags);
+                }
+            }
+            else
             {
                 nvlink_core_init_links_from_off_to_swcfg(pLinks, linkCount, flags);
             }

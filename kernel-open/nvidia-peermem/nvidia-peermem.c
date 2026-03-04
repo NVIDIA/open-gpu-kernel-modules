@@ -1,20 +1,25 @@
-/* SPDX-License-Identifier: Linux-OpenIB */
 /*
  * Copyright (c) 2006, 2007 Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2007, 2008 Mellanox Technologies. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or
- * without modification, are permitted provided that the following
- * conditions are met:
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  - Redistributions of source code must retain the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer.
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
- *  - Redistributions in binary form must reproduce the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -43,7 +48,9 @@
 
 MODULE_AUTHOR("Yishai Hadas");
 MODULE_DESCRIPTION("NVIDIA GPU memory plug-in");
-MODULE_LICENSE("Linux-OpenIB");
+
+MODULE_LICENSE("Dual BSD/GPL");
+
 MODULE_VERSION(DRV_VERSION);
 enum {
         NV_MEM_PEERDIRECT_SUPPORT_DEFAULT = 0,
@@ -53,7 +60,20 @@ static int peerdirect_support = NV_MEM_PEERDIRECT_SUPPORT_DEFAULT;
 module_param(peerdirect_support, int, S_IRUGO);
 MODULE_PARM_DESC(peerdirect_support, "Set level of support for Peer-direct, 0 [default] or 1 [legacy, for example MLNX_OFED 4.9 LTS]");
 
-#define peer_err(FMT, ARGS...) printk(KERN_ERR "nvidia-peermem" " %s:%d " FMT, __FUNCTION__, __LINE__, ## ARGS)
+enum {
+        NV_MEM_PERSISTENT_API_SUPPORT_LEGACY = 0,
+        NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT = 1,
+};
+static int persistent_api_support = NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT;
+module_param(persistent_api_support, int, S_IRUGO);
+MODULE_PARM_DESC(persistent_api_support, "Set level of support for persistent APIs, 0 [legacy] or 1 [default]");
+
+#define peer_err(FMT, ARGS...) printk(KERN_ERR "nvidia-peermem" " %s:%d ERROR " FMT, __FUNCTION__, __LINE__, ## ARGS)
+#ifdef NV_MEM_DEBUG
+#define peer_trace(FMT, ARGS...) printk(KERN_DEBUG "nvidia-peermem" " %s:%d TRACE " FMT, __FUNCTION__, __LINE__, ## ARGS)
+#else
+#define peer_trace(FMT, ARGS...) do {} while (0)
+#endif
 
 #if defined(NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
 
@@ -74,7 +94,10 @@ invalidate_peer_memory mem_invalidate_callback;
 static void *reg_handle = NULL;
 static void *reg_handle_nc = NULL;
 
+#define NV_MEM_CONTEXT_MAGIC ((u64)0xF1F4F1D0FEF0DAD0ULL)
+
 struct nv_mem_context {
+    u64 pad1;
     struct nvidia_p2p_page_table *page_table;
     struct nvidia_p2p_dma_mapping *dma_mapping;
     u64 core_context;
@@ -86,8 +109,22 @@ struct nv_mem_context {
     struct task_struct *callback_task;
     int sg_allocated;
     struct sg_table sg_head;
+    u64 pad2;
 };
 
+#define NV_MEM_CONTEXT_CHECK_OK(MC) ({                                  \
+    struct nv_mem_context *mc = (MC);                                   \
+    int rc = ((0 != mc) &&                                              \
+              (READ_ONCE(mc->pad1) == NV_MEM_CONTEXT_MAGIC) &&          \
+              (READ_ONCE(mc->pad2) == NV_MEM_CONTEXT_MAGIC));           \
+    if (!rc) {                                                          \
+        peer_trace("invalid nv_mem_context=%px pad1=%016llx pad2=%016llx\n", \
+                   mc,                                                  \
+                   mc?mc->pad1:0,                                       \
+                   mc?mc->pad2:0);                                      \
+    }                                                                   \
+    rc;                                                                 \
+})
 
 static void nv_get_p2p_free_callback(void *data)
 {
@@ -97,8 +134,9 @@ static void nv_get_p2p_free_callback(void *data)
     struct nvidia_p2p_dma_mapping *dma_mapping = NULL;
 
     __module_get(THIS_MODULE);
-    if (!nv_mem_context) {
-        peer_err("nv_get_p2p_free_callback -- invalid nv_mem_context\n");
+
+    if (!NV_MEM_CONTEXT_CHECK_OK(nv_mem_context)) {
+        peer_err("detected invalid context, skipping further processing\n");
         goto out;
     }
 
@@ -169,9 +207,11 @@ static int nv_mem_acquire(unsigned long addr, size_t size, void *peer_mem_privat
         /* Error case handled as not mine */
         return 0;
 
+    nv_mem_context->pad1 = NV_MEM_CONTEXT_MAGIC;
     nv_mem_context->page_virt_start = addr & GPU_PAGE_MASK;
     nv_mem_context->page_virt_end   = (addr + size + GPU_PAGE_SIZE - 1) & GPU_PAGE_MASK;
     nv_mem_context->mapped_size  = nv_mem_context->page_virt_end - nv_mem_context->page_virt_start;
+    nv_mem_context->pad2 = NV_MEM_CONTEXT_MAGIC;
 
     ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
                                &nv_mem_context->page_table, nv_mem_dummy_callback, nv_mem_context);
@@ -195,6 +235,62 @@ static int nv_mem_acquire(unsigned long addr, size_t size, void *peer_mem_privat
     return 1;
 
 err:
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
+    kfree(nv_mem_context);
+
+    /* Error case handled as not mine */
+    return 0;
+}
+
+/* acquire return code: 1 mine, 0 - not mine */
+static int nv_mem_acquire_nc(unsigned long addr, size_t size, void *peer_mem_private_data,
+                             char *peer_mem_name, void **client_context)
+{
+
+    int ret = 0;
+    struct nv_mem_context *nv_mem_context;
+
+    nv_mem_context = kzalloc(sizeof *nv_mem_context, GFP_KERNEL);
+    if (!nv_mem_context)
+        /* Error case handled as not mine */
+        return 0;
+
+    nv_mem_context->pad1 = NV_MEM_CONTEXT_MAGIC;
+    nv_mem_context->page_virt_start = addr & GPU_PAGE_MASK;
+    nv_mem_context->page_virt_end   = (addr + size + GPU_PAGE_SIZE - 1) & GPU_PAGE_MASK;
+    nv_mem_context->mapped_size  = nv_mem_context->page_virt_end - nv_mem_context->page_virt_start;
+    nv_mem_context->pad2 = NV_MEM_CONTEXT_MAGIC;
+
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+    ret = nvidia_p2p_get_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->mapped_size,
+                                          &nv_mem_context->page_table, 0);
+#else
+    ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
+                               &nv_mem_context->page_table, NULL, NULL);
+#endif
+    if (ret < 0)
+        goto err;
+
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+    ret = nvidia_p2p_put_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->page_table, 0);
+#else
+    ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                               nv_mem_context->page_table);
+#endif
+    if (ret < 0) {
+        peer_err("nv_mem_acquire -- error %d while calling nvidia_p2p_put_pages()\n", ret);
+        goto err;
+    }
+
+    /* 1 means mine */
+    *client_context = nv_mem_context;
+    __module_get(THIS_MODULE);
+    return 1;
+
+err:
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
     kfree(nv_mem_context);
 
     /* Error case handled as not mine */
@@ -249,8 +345,8 @@ static int nv_dma_map(struct sg_table *sg_head, void *context,
     nv_mem_context->sg_allocated = 1;
     for_each_sg(sg_head->sgl, sg, nv_mem_context->npages, i) {
         sg_set_page(sg, NULL, nv_mem_context->page_size, 0);
-        sg->dma_address = dma_mapping->dma_addresses[i];
-        sg->dma_length = nv_mem_context->page_size;
+        sg_dma_address(sg) = dma_mapping->dma_addresses[i];
+        sg_dma_len(sg) = nv_mem_context->page_size;
     }
     nv_mem_context->sg_head = *sg_head;
     *nmap = nv_mem_context->npages;
@@ -284,8 +380,9 @@ out:
     return 0;
 }
 
-
-static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
+static void nv_mem_put_pages_common(int nc,
+                                    struct sg_table *sg_head,
+                                    void *context)
 {
     int ret = 0;
     struct nv_mem_context *nv_mem_context =
@@ -302,8 +399,18 @@ static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
     if (nv_mem_context->callback_task == current)
         return;
 
-    ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
-                               nv_mem_context->page_table);
+    if (nc) {
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+        ret = nvidia_p2p_put_pages_persistent(nv_mem_context->page_virt_start,
+                                              nv_mem_context->page_table, 0);
+#else
+        ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                                   nv_mem_context->page_table);
+#endif
+    } else {
+        ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                                   nv_mem_context->page_table);
+    }
 
 #ifdef _DEBUG_ONLY_
     /* Here we expect an error in real life cases that should be ignored - not printed.
@@ -318,6 +425,16 @@ static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
     return;
 }
 
+static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
+{
+    nv_mem_put_pages_common(0, sg_head, context);
+}
+
+static void nv_mem_put_pages_nc(struct sg_table *sg_head, void *context)
+{
+    nv_mem_put_pages_common(1, sg_head, context);
+}
+
 static void nv_mem_release(void *context)
 {
     struct nv_mem_context *nv_mem_context =
@@ -326,6 +443,7 @@ static void nv_mem_release(void *context)
         sg_free_table(&nv_mem_context->sg_head);
         nv_mem_context->sg_allocated = 0;
     }
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
     kfree(nv_mem_context);
     module_put(THIS_MODULE);
     return;
@@ -396,8 +514,15 @@ static int nv_mem_get_pages_nc(unsigned long addr,
     nv_mem_context->core_context = core_context;
     nv_mem_context->page_size = GPU_PAGE_SIZE;
 
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
+    ret = nvidia_p2p_get_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->mapped_size,
+                                          &nv_mem_context->page_table, 0);
+#else
     ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
                                &nv_mem_context->page_table, NULL, NULL);
+#endif
+
     if (ret < 0) {
         peer_err("error %d while calling nvidia_p2p_get_pages() with NULL callback\n", ret);
         return ret;
@@ -407,43 +532,17 @@ static int nv_mem_get_pages_nc(unsigned long addr,
 }
 
 static struct peer_memory_client nv_mem_client_nc = {
-	.acquire        = nv_mem_acquire,
-	.get_pages      = nv_mem_get_pages_nc,
-	.dma_map        = nv_dma_map,
-	.dma_unmap      = nv_dma_unmap,
-	.put_pages      = nv_mem_put_pages,
-	.get_page_size  = nv_mem_get_page_size,
-	.release        = nv_mem_release,
+    .acquire        = nv_mem_acquire_nc,
+    .get_pages      = nv_mem_get_pages_nc,
+    .dma_map        = nv_dma_map,
+    .dma_unmap      = nv_dma_unmap,
+    .put_pages      = nv_mem_put_pages_nc,
+    .get_page_size  = nv_mem_get_page_size,
+    .release        = nv_mem_release,
 };
 
-#endif /* NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT */
-
-static int nv_mem_param_conf_check(void)
+static int nv_mem_legacy_client_init(void)
 {
-    int rc = 0;
-    switch (peerdirect_support) {
-    case NV_MEM_PEERDIRECT_SUPPORT_DEFAULT:
-    case NV_MEM_PEERDIRECT_SUPPORT_LEGACY:
-        break;
-    default:
-        peer_err("invalid peerdirect_support param value %d\n", peerdirect_support);
-        rc = -EINVAL;
-        break;
-    }
-    return rc;
-}
-
-static int __init nv_mem_client_init(void)
-{
-    int rc;
-    rc = nv_mem_param_conf_check();
-    if (rc) {
-        return rc;
-    }
-
-#if defined (NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
-    int status = 0;
-
     // off by one, to leave space for the trailing '1' which is flagging
     // the new client type
     BUG_ON(strlen(DRV_NAME) > IB_PEER_MEMORY_NAME_MAX-1);
@@ -472,25 +571,99 @@ static int __init nv_mem_client_init(void)
                          &mem_invalidate_callback);
     if (!reg_handle) {
         peer_err("nv_mem_client_init -- error while registering traditional client\n");
-        status = -EINVAL;
-        goto out;
+        return -EINVAL;
+    }
+    return 0;
+}
+
+static int nv_mem_nc_client_init(void)
+{
+    // The nc client enables support for persistent pages.
+    if (persistent_api_support == NV_MEM_PERSISTENT_API_SUPPORT_LEGACY)
+    {
+        //
+        // If legacy behavior is forced via module param,
+        // both legacy and persistent clients are registered and are named
+        // "nv_mem"(legacy) and "nv_mem_nc"(persistent).
+        //
+        strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
+    }
+    else
+    {
+        //
+        // With default persistent behavior, the client name shall be "nv_mem"
+        // so that libraries can use the persistent client under the same name.
+        //
+        strcpy(nv_mem_client_nc.name, DRV_NAME);
     }
 
-    // The nc client enables support for persistent pages.
-    // Thanks to this check, nvidia-peermem requires the new symbol from nvidia.ko, which 
-    // prevents users to unintentionally load this module with unsupported nvidia.ko.
-    BUG_ON(!nvidia_p2p_cap_persistent_pages);
-    strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
     strcpy(nv_mem_client_nc.version, DRV_VERSION);
     reg_handle_nc = ib_register_peer_memory_client(&nv_mem_client_nc, NULL);
     if (!reg_handle_nc) {
         peer_err("nv_mem_client_init -- error while registering nc client\n");
-        status = -EINVAL;
-        goto out;
+        return -EINVAL;
+    }
+    return 0;
+}
+
+#endif /* NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT */
+
+static int nv_mem_param_peerdirect_conf_check(void)
+{
+    int rc = 0;
+    switch (peerdirect_support) {
+    case NV_MEM_PEERDIRECT_SUPPORT_DEFAULT:
+    case NV_MEM_PEERDIRECT_SUPPORT_LEGACY:
+        break;
+    default:
+        peer_err("invalid peerdirect_support param value %d\n", peerdirect_support);
+        rc = -EINVAL;
+        break;
+    }
+    return rc;
+}
+
+static int nv_mem_param_persistent_api_conf_check(void)
+{
+    int rc = 0;
+    switch (persistent_api_support) {
+    case NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT:
+    case NV_MEM_PERSISTENT_API_SUPPORT_LEGACY:
+        break;
+    default:
+        peer_err("invalid persistent_api_support param value %d\n", persistent_api_support);
+        rc = -EINVAL;
+        break;
+    }
+    return rc;
+}
+
+static int __init nv_mem_client_init(void)
+{
+#if defined (NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
+    int rc;
+    rc = nv_mem_param_peerdirect_conf_check();
+    if (rc) {
+        return rc;
     }
 
+    rc = nv_mem_param_persistent_api_conf_check();
+    if (rc) {
+        return rc;
+    }
+
+    if (persistent_api_support == NV_MEM_PERSISTENT_API_SUPPORT_LEGACY) {
+        rc = nv_mem_legacy_client_init();
+        if (rc)
+            goto out;
+    }
+
+    rc = nv_mem_nc_client_init();
+    if (rc)
+        goto out;
+
 out:
-    if (status) {
+    if (rc) {
         if (reg_handle) {
             ib_unregister_peer_memory_client(reg_handle);
             reg_handle = NULL;
@@ -502,7 +675,7 @@ out:
         }
     }
 
-    return status;
+    return rc;
 #else
     return -EINVAL;
 #endif

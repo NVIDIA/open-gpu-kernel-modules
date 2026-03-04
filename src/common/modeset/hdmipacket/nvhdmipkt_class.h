@@ -47,6 +47,12 @@ typedef enum
     NVHDMIPKT_C371_CLASS = 5, // GV100
     NVHDMIPKT_C571_CLASS = 6, // TU102
     NVHDMIPKT_C671_CLASS = 7, // GA102, T234D
+    NVHDMIPKT_C771_CLASS = 8, // AD10X
+    NVHDMIPKT_C871_CLASS = 9, // T239
+    NVHDMIPKT_C971_CLASS = 10, // NVD5.0
+    NVHDMIPKT_CA71_CLASS = 11,
+    NVHDMIPKT_CB71_CLASS = 12,
+    NVHDMIPKT_CC71_CLASS = 13,
     NVHDMIPKT_INVALID_CLASS   // Not to be used by client, and always the last entry here.
 } NVHDMIPKT_CLASS_ID;
 
@@ -83,6 +89,21 @@ struct tagNVHDMIPKT_CLASS
                                   NVHDMIPKT_TC       transmitControl,
                                   NvU32              packetLen,
                                   NvU8 const *const  pPacket);
+
+    NVHDMIPKT_RESULT
+    (*hdmiPacketRead)            (NVHDMIPKT_CLASS*   pThis,
+                                  NvU32              subDevice,
+                                  NvU32              head,
+                                  NVHDMIPKT_TYPE     packetReg,
+                                  NvU32              bufferLen,
+                                  NvU8 *const        pOutPktBuffer);
+
+    NVHDMIPKT_RESULT
+    (*programAdvancedInfoframe)  (NVHDMIPKT_CLASS*          pThis,
+                                  NvU32                     subDevice,
+                                  NvU32                     head,
+                                  NVHDMIPKT_TYPE            packetReg,
+                                  const ADVANCED_INFOFRAME* pInfoframe);
 
     // HW functions - that read/write registers
     NvBool
@@ -149,12 +170,15 @@ struct tagNVHDMIPKT_CLASS
     // capacity required for target timing.
     //
     NVHDMIPKT_RESULT
-    (*hdmiAssessLinkCapabilities)  (NVHDMIPKT_CLASS             *pThis,
-                                    NvU32                        subDevice,
-                                    NvU32                        displayId,
+    (*hdmiAssessLinkCapabilities)  (NVHDMIPKT_CLASS      *pThis,
+                                    NvU32                 subDevice,
+                                    NvU32                 displayId,
                                     NVT_EDID_INFO         const * const pSinkEdid,
-                                    HDMI_SRC_CAPS               *pSrcCaps,
-                                    HDMI_SINK_CAPS              *pSinkCaps);
+                                    const NvBool          bPerformLinkTrainingToAssess,
+                                    const NvBool          bIsDisplayActive,
+                                    HDMI_FRL_DATA_RATE    currFRLRate,
+                                    HDMI_SRC_CAPS        *pSrcCaps,
+                                    HDMI_SINK_CAPS       *pSinkCaps);
     NVHDMIPKT_RESULT
     (*hdmiQueryFRLConfig)       (NVHDMIPKT_CLASS                     *pThis,
                                  HDMI_VIDEO_TRANSPORT_INFO     const * const pVidTransInfo,

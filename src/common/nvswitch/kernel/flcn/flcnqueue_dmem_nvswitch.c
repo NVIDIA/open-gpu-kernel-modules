@@ -264,13 +264,6 @@ _flcnQueueOpenWrite_dmem
     status = _flcnQueueHasRoom_dmem(device, pFlcn, pQueue, writeSize, &bRewind);
     if (NV_OK != status)
     {
-        if (NV_ERR_INSUFFICIENT_RESOURCES == status)
-        {
-            NVSWITCH_PRINT(device, INFO,
-                "%s: queue is too full to write data (write-size=0x%x).\n",
-                __FUNCTION__, writeSize);
-        }
-
         return status;
     }
 

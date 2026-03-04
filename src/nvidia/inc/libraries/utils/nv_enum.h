@@ -130,7 +130,7 @@
  *       often. There is no such thing as a meta-macro in the c preprocessor, so
  *       we have defined the operations which we use frequently here.
  *
- * @note instead of LISP-style structured lists which are formatted as 
+ * @note instead of LISP-style structured lists which are formatted as
  *       records containing two elements each (e.g. (car, (cdr, ()))), this tool
  *       uses preprocessor argument lists (e.g. (car, cdr, etc)) because the
  *       former require proper recursion to deal with, which this tool does not
@@ -149,8 +149,8 @@
 #define NV_CAADR(l)      NV_ENUM_APPLY(NV_ENUM_A1, NV_ENUM_APPLY(NV_ENUM_A2, l))
 #define NV_CADADR(l)     NV_ENUM_APPLY(NV_ENUM_A2, NV_ENUM_APPLY(NV_ENUM_A2, l))
 #define NV_CADDADR(l)    NV_ENUM_APPLY(NV_ENUM_A3, NV_ENUM_APPLY(NV_ENUM_A2, l))
-#define NV_CADDDADR(l)   NV_ENUM_APPLY(NV_ENUM_A4, NV_ENUM_APPLY(NV_ENUM_A2, l)) 
-#define NV_CADDDDADR(l)  NV_ENUM_APPLY(NV_ENUM_A5, NV_ENUM_APPLY(NV_ENUM_A2, l)) 
+#define NV_CADDDADR(l)   NV_ENUM_APPLY(NV_ENUM_A4, NV_ENUM_APPLY(NV_ENUM_A2, l))
+#define NV_CADDDDADR(l)  NV_ENUM_APPLY(NV_ENUM_A5, NV_ENUM_APPLY(NV_ENUM_A2, l))
 
 /*!
  * @brief Performs per-entry generation function, and either expands or extinguishes it
@@ -160,7 +160,7 @@
  * @param value  Integer Literal - Value for this entry
  *
  * @return the result of the generation function for this table,
- *         or nothing if this layer is being filtered (i.e. nested enum) 
+ *         or nothing if this layer is being filtered (i.e. nested enum)
  */
 #define NV_ENUM_ENTRY(dat__, name, value) \
     NV_ENUM_DAT_ENTRY(dat__) (NV_ENUM_DAT_GEN2(dat__) (dat__, name, value))
@@ -175,7 +175,7 @@
  *
  * @param dat__        Data List - Generation data table
  * @param name             Token - String to append to previous enum name
- * @param res_lo Integer Literal - Min value of this nested enum 
+ * @param res_lo Integer Literal - Min value of this nested enum
  * @param res_hi Integer Literal - Max value of this nested enum
  * @param entries         Macro  - Nested Enum Specification
  */
@@ -189,7 +189,7 @@
     entries(NV_ENUM_APPLY(NV_ENUM_DL_POP, NV_ENUM_NV_ENUM_REPLACE_1(NV_ENUM_NV_ENUM_REPLACE_1(NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), name), NV_ENUM_APPLY(NV_ENUM_A1, dat__)), dat__)))
 
 /*!
- * @brief Performs all enum generation for the given nested enum specification 
+ * @brief Performs all enum generation for the given nested enum specification
  *
  * @note the Current Enum Name is concatenated with parameter `name`
  *       the Nested Enum Name is updated to match the Current Enum Name
@@ -200,29 +200,29 @@
  *
  * @param dat__        Data List - Generation data table
  * @param name             Token - String to append to previous enum name
- * @param res_lo Integer Literal - Min value of this nested enum 
+ * @param res_lo Integer Literal - Min value of this nested enum
  * @param res_hi Integer Literal - Max value of this nested enum
  * @param entries         Macro  - Nested Enum Specification
  */
-#define NV_ENUM_NEST_GEN(dat__, name, res_lo, res_hi, entries) \
-    NV_ENUM_DAT_GEN1(dat__)( \
-        NV_ENUM_APPLY( \
-            NV_ENUM_DL_POP, \
-            NV_ENUM_NV_ENUM_REPLACE_1( \
-                NV_ENUM_REPLACE_4( \
+#define NV_ENUM_NEST_GEN(dat__, name, res_lo, res_hi, entries)               \
+    NV_ENUM_DAT_GEN1(dat__)(                                                 \
+        NV_ENUM_APPLY(                                                       \
+            NV_ENUM_DL_POP,                                                  \
+            NV_ENUM_NV_ENUM_REPLACE_1(                                       \
+                NV_ENUM_REPLACE_4(                                           \
                     NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), name), \
                     NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), name), \
-                    res_lo, \
-                    res_hi, \
-                    NV_ENUM_APPLY( \
-                        NV_ENUM_A1, \
-                        dat__ \
-                    ) \
-                ), \
-                dat__ \
-            ) \
-        ), \
-        entries \
+                    res_lo,                                                  \
+                    res_hi,                                                  \
+                    NV_ENUM_APPLY(                                           \
+                        NV_ENUM_A1,                                          \
+                        dat__                                                \
+                    )                                                        \
+                ),                                                           \
+                dat__                                                        \
+            )                                                                \
+        ),                                                                   \
+        entries                                                              \
     )
 
 /*!
@@ -279,37 +279,37 @@
 /*!
  * @brief constructs a data list to be used for generation of the root enum
  */
-#define NV_ENUM_DEPTH_0(name, prefix, gen1_fn, gen2_fn) \
-    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX) \
+#define NV_ENUM_DEPTH_0(name, prefix, gen1_fn, gen2_fn)                       \
+    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX)                    \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND0, gen1_fn, gen2_fn, unused, unused) \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND1, gen1_fn, gen2_fn, unused, unused) \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND2, gen1_fn, gen2_fn, unused, unused) \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND3, gen1_fn, gen2_fn, unused, unused) \
-    , (unused, unused, unused, unused, unused, unused) \
+    , (unused, unused, unused, unused, unused, unused)                        \
     )
 
 /*!
  * @brief constructs a data list to be used for generation of enums at depth 1
  */
-#define NV_ENUM_DEPTH_1(name, prefix, gen1_fn, gen2_fn) \
-    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX) \
-    , (NV_DISCARD_ONE, NV_ENUM_NEST_GEN, gen1_fn, gen2_fn, unused, unused) \
+#define NV_ENUM_DEPTH_1(name, prefix, gen1_fn, gen2_fn)                       \
+    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX)                    \
+    , (NV_DISCARD_ONE, NV_ENUM_NEST_GEN, gen1_fn, gen2_fn, unused, unused)    \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND0, gen1_fn, gen2_fn, unused, unused) \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND1, gen1_fn, gen2_fn, unused, unused) \
     , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND2, gen1_fn, gen2_fn, unused, unused) \
-    , (unused, unused, unused, unused, unused, unused) \
+    , (unused, unused, unused, unused, unused, unused)                        \
     )
 
 /*!
  * @brief constructs a data list to be used for generation of enums at depth 2
  */
-#define NV_ENUM_DEPTH_2(name, prefix, gen1_fn, gen2_fn) \
-    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX) \
+#define NV_ENUM_DEPTH_2(name, prefix, gen1_fn, gen2_fn)                        \
+    ( (name, name, prefix, name, NV_ENUM_MIN, NV_ENUM_MAX)                     \
     , (NV_DISCARD_ONE, NV_ENUM_NEST_EXPAND0, gen1_fn, gen2_fn, unused, unused) \
-    , (NV_DISCARD_ONE, NV_ENUM_NEST_GEN, gen1_fn, gen2_fn, unused, unused) \
-    , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND1, gen1_fn, gen2_fn, unused, unused) \
-    , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND2, gen1_fn, gen2_fn, unused, unused) \
-    , (unused, unused, unused, unused, unused, unused) \
+    , (NV_DISCARD_ONE, NV_ENUM_NEST_GEN, gen1_fn, gen2_fn, unused, unused)     \
+    , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND1, gen1_fn, gen2_fn, unused, unused)  \
+    , (NV_EXPAND_ONE, NV_ENUM_NEST_EXPAND2, gen1_fn, gen2_fn, unused, unused)  \
+    , (unused, unused, unused, unused, unused, unused)                         \
     )
 
 ///
@@ -344,47 +344,47 @@
 
 
 /*! @brief Generates a conversion function from an enum value to string representation. */
-#define NV_ENUM_GEN_STRING(dat__, entries) \
-    static inline const char * \
-    NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), _TO_STRING) \
-    ( \
-        enum NV_ENUM_DAT_ROOT_NAME(dat__) in \
-    ) \
-    { \
-        switch (in) \
-        { \
-            entries(dat__) \
-            default: \
-                break; \
-        } \
+#define NV_ENUM_GEN_STRING(dat__, entries)                                                      \
+    static inline const char *                                                                  \
+    NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), _TO_STRING)                               \
+    (                                                                                           \
+        enum NV_ENUM_DAT_ROOT_NAME(dat__) in                                                    \
+    )                                                                                           \
+    {                                                                                           \
+        switch (in)                                                                             \
+        {                                                                                       \
+            entries(dat__)                                                                      \
+            default:                                                                            \
+                break;                                                                          \
+        }                                                                                       \
         return NV_ENUM_STRINGIFY(NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __UNKNOWN)); \
     }
 
 /*! @brief Generates a case for the given enum entry, and its string representation. */
-#define NV_ENUM_GEN_STRING_FN(dat__, entry_name, value) \
+#define NV_ENUM_GEN_STRING_FN(dat__, entry_name, value)              \
     case NV_ENUM_CONCATENATE(NV_ENUM_DAT_PREFIX(dat__), entry_name): \
         return NV_ENUM_STRINGIFY(NV_ENUM_CONCATENATE(NV_ENUM_DAT_PREFIX(dat__), entry_name));
 
 
 /*! @brief Generates a conversion function from NvU32 to enum value. */
-#define NV_ENUM_GEN_FROM(dat__, entries) \
-    static inline NV_STATUS \
-    NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), _FROM32) \
-    ( \
-        NvU32 in, \
-        enum NV_ENUM_DAT_ROOT_NAME(dat__) *out \
-    ) \
-    { \
-        switch (in) \
-        { \
-            entries(dat__) \
-            if (out != NULL) \
+#define NV_ENUM_GEN_FROM(dat__, entries)                        \
+    static inline NV_STATUS                                     \
+    NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), _FROM32)  \
+    (                                                           \
+        NvU32 in,                                               \
+        enum NV_ENUM_DAT_ROOT_NAME(dat__) *out                  \
+    )                                                           \
+    {                                                           \
+        switch (in)                                             \
+        {                                                       \
+            entries(dat__)                                      \
+            if (out != NULL)                                    \
                 *out = ((enum NV_ENUM_DAT_ROOT_NAME(dat__))in); \
-            return NV_OK; \
-            default: \
-                break; \
-        } \
-        return NV_ERR_OUT_OF_RANGE; \
+            return NV_OK;                                       \
+            default:                                            \
+                break;                                          \
+        }                                                       \
+        return NV_ERR_OUT_OF_RANGE;                             \
     }
 
 /*! @brief Generates a case for the given enum entry. */
@@ -411,11 +411,11 @@
 
 
 /*! @brief Generates a group of struct constants containing the above generated values. */
-#define NV_ENUM_GEN_META(dat__, entries) \
-    typedef struct  { char          lo[sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __LO) *) NULL)->lo)]; \
-                      char          hi[NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __SIZE)];\
-                      char       count[sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __COUNT) *) NULL)->count)]; \
-                      char        size[NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __SIZE)]; \
+#define NV_ENUM_GEN_META(dat__, entries)                                                                                                                                                                                                                                                \
+    typedef struct  { char          lo[sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __LO) *) NULL)->lo)];                                                                                                                                                                 \
+                      char          hi[NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __SIZE)];                                                                                                                                                                                      \
+                      char       count[sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __COUNT) *) NULL)->count)];                                                                                                                                                           \
+                      char        size[NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __SIZE)];                                                                                                                                                                                      \
                       char bContiguous[(sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __COUNT) *) NULL)->count) == (NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __SIZE) - sizeof(((NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __LO) *) NULL)->lo) + 1)) + 1]; \
                     } NV_ENUM_CONCATENATE(NV_ENUM_DAT_CURR_NAME(dat__), __META) ;
 
@@ -463,9 +463,9 @@
  * @param entries    Macro - Enum Specification
  */
 #define NV_ENUM_GENERATOR(fn1, fn2, enum_name, prefix, entries) \
-    fn1(NV_ENUM_DEPTH_0(enum_name, prefix, fn1, fn2), entries) \
-    entries(NV_ENUM_DEPTH_1(enum_name, prefix, fn1, fn2)) \
-    entries(NV_ENUM_DEPTH_2(enum_name, prefix, fn1, fn2)) \
+    fn1(NV_ENUM_DEPTH_0(enum_name, prefix, fn1, fn2), entries)  \
+    entries(NV_ENUM_DEPTH_1(enum_name, prefix, fn1, fn2))       \
+    entries(NV_ENUM_DEPTH_2(enum_name, prefix, fn1, fn2))       \
 
 //
 // Windows preprocessor crashes with "ran out of heap space" errors if the
@@ -482,15 +482,15 @@
  * @param enum_name  Token - Root Enum Name
  * @param entries    Macro - Enum Specification
  */
-#define NV_ENUM_DEF_PREFIX(prefix, enum_name, entries) \
+#define NV_ENUM_DEF_PREFIX(prefix, enum_name, entries)                                                   \
     NV_ENUM_GEN_MAIN(NV_ENUM_DEPTH_0(enum_name, prefix, NV_ENUM_GEN_MAIN, NV_ENUM_GEN_MAIN_FN), entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_TYPEDEF, NV_ENUM_GEN_TYPEDEF_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_SIZE, NV_ENUM_GEN_SIZE_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_STRING, NV_ENUM_GEN_STRING_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_FROM, NV_ENUM_GEN_FROM_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_LO, NV_ENUM_GEN_LO_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_COUNT, NV_ENUM_GEN_COUNT_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_META, NV_ENUM_GEN_META_FN, enum_name, prefix, entries) \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_TYPEDEF, NV_ENUM_GEN_TYPEDEF_FN, enum_name, prefix, entries)           \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_SIZE, NV_ENUM_GEN_SIZE_FN, enum_name, prefix, entries)                 \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_STRING, NV_ENUM_GEN_STRING_FN, enum_name, prefix, entries)             \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_FROM, NV_ENUM_GEN_FROM_FN, enum_name, prefix, entries)                 \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_LO, NV_ENUM_GEN_LO_FN, enum_name, prefix, entries)                     \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_COUNT, NV_ENUM_GEN_COUNT_FN, enum_name, prefix, entries)               \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_META, NV_ENUM_GEN_META_FN, enum_name, prefix, entries)                 \
 
 #else
 
@@ -501,15 +501,15 @@
  * @param enum_name  Token - Root Enum Name
  * @param entries    Macro - Enum Specification
  */
-#define NV_ENUM_DEF_PREFIX(prefix, enum_name, entries) \
-    NV_ENUM_GEN_MAIN(NV_ENUM_DEPTH_0(enum_name, prefix, NV_ENUM_GEN_MAIN, NV_ENUM_GEN_MAIN_FN), entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_TYPEDEF, NV_ENUM_GEN_TYPEDEF_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_SIZE, NV_ENUM_GEN_SIZE_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_STRING, NV_ENUM_GEN_STRING_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_FROM, NV_ENUM_GEN_FROM_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_LO, NV_ENUM_GEN_LO_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_COUNT, NV_ENUM_GEN_COUNT_FN, enum_name, prefix, entries) \
-    NV_ENUM_GENERATOR(NV_ENUM_GEN_META, NV_ENUM_GEN_META_FN, enum_name, prefix, entries) \
+#define NV_ENUM_DEF_PREFIX(prefix, enum_name, entries)                                                           \
+    NV_ENUM_GEN_MAIN(NV_ENUM_DEPTH_0(enum_name, prefix, NV_ENUM_GEN_MAIN, NV_ENUM_GEN_MAIN_FN), entries)         \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_TYPEDEF, NV_ENUM_GEN_TYPEDEF_FN, enum_name, prefix, entries)                   \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_SIZE, NV_ENUM_GEN_SIZE_FN, enum_name, prefix, entries)                         \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_STRING, NV_ENUM_GEN_STRING_FN, enum_name, prefix, entries)                     \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_FROM, NV_ENUM_GEN_FROM_FN, enum_name, prefix, entries)                         \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_LO, NV_ENUM_GEN_LO_FN, enum_name, prefix, entries)                             \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_COUNT, NV_ENUM_GEN_COUNT_FN, enum_name, prefix, entries)                       \
+    NV_ENUM_GENERATOR(NV_ENUM_GEN_META, NV_ENUM_GEN_META_FN, enum_name, prefix, entries)                         \
     NV_ENUM_GENERATOR(NV_ENUM_GEN_ASSERT_MONOTONIC, NV_ENUM_GEN_ASSERT_MONOTONIC_FN, enum_name, prefix, entries) \
     NV_ENUM_GENERATOR(NV_ENUM_GEN_ASSERT_IN_RANGE, NV_ENUM_GEN_ASSERT_IN_RANGE_FN, enum_name, prefix, entries)
 
@@ -638,16 +638,16 @@
  * @param[in] type   identifier - Enum type name
  * @param[in] value      lvalue - iterator holding current enum value
  */
-#define FOR_EACH_IN_ENUM(type, value) \
-{ \
-    NvU32 localValue; \
+#define FOR_EACH_IN_ENUM(type, value)                                                                            \
+{                                                                                                                \
+    NvU32 localValue;                                                                                            \
     for (localValue = value = NV_ENUM_LO(type); localValue <= NV_ENUM_HI(type); (value) = (type) (++localValue)) \
-    { \
-        if (!NV_ENUM_IS_CONTIGUOUS(type) && !NV_ENUM_IS(type, localValue)) \
+    {                                                                                                            \
+        if (!NV_ENUM_IS_CONTIGUOUS(type) && !NV_ENUM_IS(type, localValue))                                       \
             continue;
 
 #define FOR_EACH_IN_ENUM_END \
-   } \
+   }                         \
 }
 
 /*!

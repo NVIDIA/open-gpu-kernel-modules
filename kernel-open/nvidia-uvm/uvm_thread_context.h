@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -69,6 +69,15 @@ struct uvm_thread_context_struct
     //
     // This field is ignored in interrupt paths
     NvU32 array_index;
+
+    // Set if uvm_hmm_invalidate() callbacks should be ignored on this va_block.
+    // This needs to be set whenever the va_block lock is held and
+    // migrate_vma_setup() needs to be called since the "slow path" which
+    // calls try_to_migrate() doesn't pass the pgmap_owner.
+    uvm_va_block_t *ignore_hmm_invalidate_va_block;
+
+    // Used to filter out invalidations we don't care about.
+    unsigned long hmm_invalidate_seqnum;
 
     // Pointer to enclosing node (if any) in red-black tree
     //

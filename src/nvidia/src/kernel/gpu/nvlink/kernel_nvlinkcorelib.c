@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,10 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -141,8 +143,6 @@ knvlinkCoreAddDevice_IMPL
 #if defined(INCLUDE_NVLINK_LIB)
 
     nvlink_device *dev     = NULL;
-    char          *drvName = NULL;
-    char          *devName = NULL;
     char          *devIdx  = NULL;
 
     // Return if the device is already registered
@@ -154,60 +154,71 @@ knvlinkCoreAddDevice_IMPL
     }
 
     // Set the driver name
-    drvName = portMemAllocNonPaged(NVLINK_DRIVER_NAME_LENGTH);
-    if (drvName == NULL)
+    pKernelNvlink->driverName = portMemAllocNonPaged(NVLINK_DRIVER_NAME_LENGTH);
+    if (pKernelNvlink->driverName == NULL)
     {
         return NV_ERR_NO_MEMORY;
     }
-    portMemSet((void *)drvName, 0, NVLINK_DRIVER_NAME_LENGTH);
-    portMemCopy(drvName, sizeof(NVLINK_NVIDIA_DRIVER), NVLINK_NVIDIA_DRIVER,
+    portMemSet((void *)pKernelNvlink->driverName, 0, NVLINK_DRIVER_NAME_LENGTH);
+    portMemCopy(pKernelNvlink->driverName, sizeof(NVLINK_NVIDIA_DRIVER), NVLINK_NVIDIA_DRIVER,
                 sizeof(NVLINK_NVIDIA_DRIVER));
 
     //
     // Set the temporary device name. The actual device name will be updated
     // after PMU state load completes
     //
-    devName = portMemAllocNonPaged(NVLINK_DEVICE_NAME_LENGTH);
-    if (devName == NULL)
+    pKernelNvlink->deviceName = portMemAllocNonPaged(NVLINK_DEVICE_NAME_LENGTH);
+    if (pKernelNvlink->deviceName == NULL)
     {
-        status = NV_ERR_NO_MEMORY;
-        NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for device name\n");
+        portMemFree(pKernelNvlink->driverName);
 
-        goto knvlinkCoreAddDevice_exit;
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for device name\n");
+        return NV_ERR_NO_MEMORY;
     }
-    portMemSet((void *)devName, 0, NVLINK_DEVICE_NAME_LENGTH);
-    portMemCopy(devName, sizeof("GPU"), "GPU", sizeof("GPU"));
-    devIdx = devName;
+    portMemSet((void *)pKernelNvlink->deviceName, 0, NVLINK_DEVICE_NAME_LENGTH);
+
+    portMemCopy(pKernelNvlink->deviceName, sizeof("GPU"), "GPU", sizeof("GPU"));
+    devIdx = pKernelNvlink->deviceName;
     while (*devIdx != '\0') devIdx++;
     knvlinkUtoa((NvU8 *)devIdx,
-                NVLINK_DEVICE_NAME_LENGTH - (devIdx - devName),
+                NVLINK_DEVICE_NAME_LENGTH - (devIdx - pKernelNvlink->deviceName),
                 gpuGetInstance(pGpu));
+
 
     // Allocate memory for the nvlink_device struct
     dev = portMemAllocNonPaged(sizeof(nvlink_device));
     if (dev == NULL)
     {
-        status = NV_ERR_NO_MEMORY;
+        portMemFree(pKernelNvlink->driverName);
+
+        portMemFree(pKernelNvlink->deviceName);
+
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to create nvlink_device struct for GPU\n");
-
-        goto knvlinkCoreAddDevice_exit;
+        return NV_ERR_NO_MEMORY;
     }
     portMemSet((void *)dev, 0, sizeof(nvlink_device));
 
     // Initialize values for the nvlink_device struct
-    dev->driverName               = drvName;
-    dev->deviceName               = devName;
+    dev->driverName               = pKernelNvlink->driverName;
+    dev->deviceName               = pKernelNvlink->deviceName;
     dev->type                     = NVLINK_DEVICE_TYPE_GPU;
     dev->pciInfo.domain           = gpuGetDomain(pGpu);
     dev->pciInfo.bus              = gpuGetBus(pGpu);
     dev->pciInfo.device           = gpuGetDevice(pGpu);
     dev->pciInfo.function         = 0;
     dev->pciInfo.pciDeviceId      = pGpu->idInfo.PCIDeviceID;
-    dev->pciInfo.bars[0].baseAddr = pGpu->pKernelBus->pciBars[0];
-    dev->pciInfo.bars[0].barSize  = pGpu->pKernelBus->pciBarSizes[0];
+    dev->pciInfo.bars[0].baseAddr = GPU_GET_KERNEL_BUS(pGpu)->pciBars[0];
+    dev->pciInfo.bars[0].barSize  = GPU_GET_KERNEL_BUS(pGpu)->pciBarSizes[0];
     dev->initialized              = 1;
-  
+    dev->enableALI                = pKernelNvlink->bEnableAli;
+    dev->numIoctrls               = nvPopCount32(pKernelNvlink->ioctrlMask);
+    dev->numActiveLinksPerIoctrl  = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
+    dev->numLinksPerIoctrl        = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
+    dev->bReducedNvlinkConfig     = knvlinkIsGpuReducedNvlinkConfig_HAL(pGpu, pKernelNvlink);
+    dev->linkStateSupportedMask   = knvlinkGetSupportedCoreLinkStateMask_HAL(pGpu, pKernelNvlink);
+    dev->bLinkStatesSymmetric     = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_UNILATERAL_LINK_STATE_CHANGE_SUPPORTED);
+
     // Register the GPU in nvlink core
     if (nvlink_lib_register_device(dev) != 0)
     {
@@ -224,9 +235,9 @@ knvlinkCoreAddDevice_IMPL
 
 knvlinkCoreAddDevice_exit:
 
-    portMemFree(drvName);
+    portMemFree(pKernelNvlink->driverName);
 
-    portMemFree(devName);
+    portMemFree(pKernelNvlink->deviceName);
 
     portMemFree(dev);
 
@@ -258,6 +269,7 @@ knvlinkCoreUpdateDeviceUUID_IMPL
     char   *devIdx     = NULL;
     NvU32   flags      = 0;
     NvU32   gidStrLen;
+    nvlink_device_info devInfo;
 
     if (pKernelNvlink->pNvlinkDev)
     {
@@ -273,7 +285,7 @@ knvlinkCoreUpdateDeviceUUID_IMPL
         flags = FLD_SET_DRF_NUM(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT,
                         NV2080_GPU_CMD_GPU_GET_GID_FLAGS_FORMAT_BINARY, flags);
 
-        if (!pKernelNvlink->pNvlinkDev->uuid)
+        if (!pGpu->gpuUuid.isInitialized)
         {
             status = gpuGetGidInfo(pGpu, &pGidString, &gidStrLen, flags);
             if (status != NV_OK)
@@ -282,26 +294,45 @@ knvlinkCoreUpdateDeviceUUID_IMPL
 
                 return status;
             }
-            pKernelNvlink->pNvlinkDev->uuid = (NvU8 *)pGidString;
 
             _knvlinkUpdateRemoteEndUuidInfo(pGpu, pKernelNvlink);
-
         }
 
-        // PMU state load has completed. Update the device name
-        portMemSet((void *)pKernelNvlink->pNvlinkDev->deviceName, 0, NVLINK_DEVICE_NAME_LENGTH);
+        //
+        // PMU state load has completed. Update the device name in RM and then in Core library
+        //
+
+        portMemSet((void *)pKernelNvlink->deviceName, 0, NVLINK_DEVICE_NAME_LENGTH);
         gpuGetNameString(pGpu,
                          NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII,
-                         pKernelNvlink->pNvlinkDev->deviceName);
+                         pKernelNvlink->deviceName);
 
-        devIdx = pKernelNvlink->pNvlinkDev->deviceName;
+        devIdx = pKernelNvlink->deviceName;
         while (*devIdx != '\0') devIdx++;
 
-        NV_ASSERT((devIdx - pKernelNvlink->pNvlinkDev->deviceName) < NVLINK_DEVICE_NAME_LENGTH);
+        NV_ASSERT((devIdx - pKernelNvlink->deviceName) < NVLINK_DEVICE_NAME_LENGTH);
 
         knvlinkUtoa((NvU8 *)devIdx,
-                   NVLINK_DEVICE_NAME_LENGTH - (devIdx - pKernelNvlink->pNvlinkDev->deviceName),
+                   NVLINK_DEVICE_NAME_LENGTH - (devIdx - pKernelNvlink->deviceName),
                    gpuGetInstance(pGpu));
+
+        //
+        // Any Core library Data structure should be updated only within a Core Library function
+        // after aquiring the appropriate locks. Hence the UUID and deviceName are updated 
+        // as part of nvlink_lib_update_uuid_and_device_name.
+        // To identify the device in Core Library we pass its DBDF values.
+        //
+
+        knvlinkCoreGetDevicePciInfo_HAL(pGpu, pKernelNvlink, &devInfo);
+
+        status = nvlink_lib_update_uuid_and_device_name(&devInfo, pGidString, pKernelNvlink->deviceName);
+
+        //
+        // pGidString is malloc'd as part of gpuGetGidInfo_IMPL
+        // Store pGidString within pKernelNvlink so we can free it during
+        // knvlinkStatePostUnload to maintain alloc/free symmetry
+        //
+        pKernelNvlink->pGidString = pGidString;
     }
 
 #endif
@@ -392,6 +423,7 @@ knvlinkCoreAddLink_IMPL
     link->tx_sublink_state = NVLINK_SUBLINK_STATE_TX_OFF;
     link->rx_sublink_state = NVLINK_SUBLINK_STATE_RX_OFF;
     link->bRxDetected      = NV_FALSE;
+    link->bInitphase5Fails = NV_FALSE;
     link->version          = pKernelNvlink->ipVerNvlink;
     link->dev              = pKernelNvlink->pNvlinkDev;
     link->link_info        = &(pKernelNvlink->nvlinkLinks[linkId]);
@@ -518,19 +550,17 @@ knvlinkCoreRemoveDevice_IMPL
     {
         nvlink_device *dev = pKernelNvlink->pNvlinkDev;
         nvlink_lib_unregister_device(dev);
-
-        portMemFree((NvU8 *)dev->driverName);
-        portMemFree((NvU8 *)dev->deviceName);
-
-        if (dev->uuid)
-        {
-            portMemFree((NvU8 *)dev->uuid);
-        }
         portMemFree(dev);
     }
 
     // Update the RM cache of the core lib device
     pKernelNvlink->pNvlinkDev = NULL;
+
+    if (pKernelNvlink->driverName)
+        portMemFree(pKernelNvlink->driverName);
+
+    if (pKernelNvlink->deviceName)
+        portMemFree(pKernelNvlink->deviceName);
 
 #endif
 
@@ -560,7 +590,7 @@ knvlinkIsGpuConnectedToNvswitch_IMPL
     NvU32 i;
     KNVLINK_CONN_INFO remoteEndInfo;
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->enabledLinks)
+    FOR_EACH_IN_BITVECTOR(&pKernelNvlink->enabledLinks, i)
     {
         remoteEndInfo = pKernelNvlink->nvlinkLinks[i].remoteEndInfo;
 
@@ -575,7 +605,7 @@ knvlinkIsGpuConnectedToNvswitch_IMPL
             return NV_FALSE;
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
+    FOR_EACH_IN_BITVECTOR_END();
 
 #endif
 
@@ -639,7 +669,7 @@ _knvlinkUpdateRemoteEndUuidInfo
     unsigned      remoteLinkId;
     unsigned      i, j;
 
-    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->enabledLinks)
+    FOR_EACH_IN_BITVECTOR(&pKernelNvlink->enabledLinks, i)
     {
         if (pKernelNvlink->nvlinkLinks[i].remoteEndInfo.bConnected &&
             (pKernelNvlink->nvlinkLinks[i].remoteEndInfo.deviceType == NVLINK_DEVICE_TYPE_GPU))
@@ -674,7 +704,7 @@ _knvlinkUpdateRemoteEndUuidInfo
             }
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
+    FOR_EACH_IN_BITVECTOR_END();
 }
 
 #endif

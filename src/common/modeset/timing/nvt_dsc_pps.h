@@ -42,28 +42,6 @@
 #define DSC_MAX_PPS_SIZE_DWORD 32
 
 /* ------------------------ Datatypes -------------------------------------- */
-
-#define DSC_CALLBACK_MODIFIED 1
-
-#if defined(DSC_CALLBACK_MODIFIED)
-typedef struct
-{
-    // DSC - Callbacks
-    const void* clientHandle;    // ClientHandle is only used when calling into HDMI lib's mallocCb/freeCb
-    void (*dscPrint) (const char* fmtstring, ...);
-    void *(*dscMalloc)(const void *clientHandle, NvLength size);
-    void (*dscFree) (const void *clientHandle, void * ptr);
-} DSC_CALLBACK;
-#else
-typedef struct
-{
-    // DSC - Callbacks
-    void (*dscPrint) (const char* fmtstring, ...);
-    void *(*dscMalloc)(NvLength size);
-    void (*dscFree) (void * ptr);
-} DSC_CALLBACK;
-#endif // DSC_CALLBACK_MODIFIED
-
 typedef struct
 {
     NvU32 versionMajor;
@@ -172,6 +150,9 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_170           (0x0000000F)
+// Custom definition of peak throughput for HDMI YUV422/YUV420 modes since those are not defined in spec
+// Starting with 0x100 to provide headroom for DSC spec definitions in future
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE0_680           (0x00000100)
 
         // Peak throughput supported for native 422 and 420 modes
         NvU32  peakThroughputMode1;
@@ -191,6 +172,9 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_170           (0x0000000F)
+// Custom definition of peak throughput for HDMI YUV modes since those are not defined in spec
+// Starting with 0x100 to provide headroom for DSC spec definitions in future
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_680           (0x00000100)
 
         // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16
         NvU32  maxBitsPerPixelX16;
@@ -275,8 +259,21 @@ typedef struct
         NvU32 laneCount;
         DSC_DP_MODE dpMode;
         NvU32 hBlank;
+        NvBool bIsEdp;
+        NvBool bDisableDscMaxBppLimit;
+        NvBool bIs128b132bChannelCoding;
+        NvBool bDisableEffBppSST8b10b;
     }dpData;
 } WAR_DATA;
+
+typedef struct {
+    NvU8 data[500U]; // total size of DSC_IN/OUTPUT_PARAMS
+} DSC_GENERATE_PPS_OPAQUE_WORKAREA;
+
+typedef struct
+{
+    NvU32 pPps[DSC_MAX_PPS_SIZE_DWORD]; // Out - PPS SDP data
+} DSCPPSDATA;
 
 /*
  *  Windows testbed compiles are done with warnings as errors
@@ -292,15 +289,6 @@ typedef struct
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
- * @brief Initializes callbacks for print and assert
- *
- * @param[in]   callback   DSC callbacks
- *
- * @returns NVT_STATUS_SUCCESS if successful;
- *          NVT_STATUS_ERR if unsuccessful;
- */
-NVT_STATUS DSC_InitializeCallback(DSC_CALLBACK callback);
 
 /*
  * @brief Calculate PPS parameters based on passed down Sink,
@@ -311,6 +299,8 @@ NVT_STATUS DSC_InitializeCallback(DSC_CALLBACK callback);
  * @param[in]   pWARData       Data required for providing WAR for issues
  * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
  *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[in]   pOpaqueWorkarea  Scratch buffer of sufficient size pre-allocated
+                                 by client for DSC PPS calculations use
  * @param[out]  pps                 Calculated PPS parameter.
  *                                  The data can be send to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
@@ -322,8 +312,42 @@ NVT_STATUS DSC_GeneratePPS(const DSC_INFO *pDscInfo,
                            const MODESET_INFO *pModesetInfo,
                            const WAR_DATA *pWARData,
                            NvU64 availableBandwidthBitsPerSecond,
+                           DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
                            NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
                            NvU32 *pBitsPerPixelX16);
+
+/*
+ * @brief       Calculate PPS parameters and slice count mask based on passed down 
+ *              Sink, GPU capability and modeset info
+ *
+ *
+ * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
+ * @param[in]   pModesetInfo   Modeset related information
+ * @param[in]   pWARData       Data required for providing WAR for issues
+ * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
+ *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[out]  pps                 Calculated PPS parameter.
+ *                                  The data can be send to SetDscPpsData* methods directly.
+ * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ *
+ * @returns NVT_STATUS_SUCCESS if successful;
+ *          NVT_STATUS_ERR if unsuccessful;
+ *          In case this returns failure consider that PPS is not possible.
+ */
+NVT_STATUS
+DSC_GeneratePPSWithSliceCountMask
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU64 availableBandwidthBitsPerSecond,
+    NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
+    NvU32 *pBitsPerPixelX16,
+    NvU32 *sliceCountMask
+);
+
+NVT_STATUS DSC_ValidatePPSData(DSCPPSDATA *pPps);
 
 #ifdef __cplusplus
 }

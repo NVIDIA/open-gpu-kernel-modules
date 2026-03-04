@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,9 +39,7 @@
 #include "mem_mgr/vaspace.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"
-#include "gpu/mem_mgr/heap.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 #include "os/os.h"
 #include "compute/fabric.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -52,19 +50,8 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
-
-#include "published/ampere/ga100/dev_mmu.h"
-
-typedef struct
-{
-    //
-    // TODO: Only sticky non-partial mappings are supported currently, so all
-    // the fabric addrs are mapped to the single vidmem memory object. However,
-    // when partial mappings are supported, we will need a per-fabric memdesc
-    // tree to track the mappings for multiple vidmem memory objects.
-    //
-    NvHandle hDupedVidmem;
-} FABRIC_MEMDESC_DATA;
+#include "kernel/gpu/gpu_fabric_probe.h"
+#include "ctrl/ctrl0041.h"
 
 static NvU32
 _memoryfabricMemDescGetNumAddr
@@ -73,7 +60,7 @@ _memoryfabricMemDescGetNumAddr
 )
 {
     OBJGPU *pGpu     = pMemDesc->pGpu;
-    NvU32   pageSize = 0;
+    NvU64   pageSize = 0;
 
     // Get the page size from the memory descriptor.
     pageSize = memdescGetPageSize(pMemDesc,
@@ -91,6 +78,210 @@ _memoryfabricMemDescGetNumAddr
     return (memdescGetSize(pMemDesc) / pageSize);
 }
 
+static NV_STATUS
+_memoryfabricValidatePhysMem
+(
+    RsClient           *pRsClient,
+    NvHandle            hPhysMem,
+    OBJGPU             *pOwnerGpu,
+    MEMORY_DESCRIPTOR **ppPhysMemDesc,
+    Memory            **ppPhysMemory,
+    NvBool              bForceOwnerGpuCheck
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pOwnerGpu);
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    NvU64 physPageSize;
+    NV_STATUS status;
+    Memory *pMemory;
+
+    status = memGetByHandle(pRsClient, hPhysMem, &pMemory);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid object handle passed\n");
+        return status;
+    }
+
+    pPhysMemDesc = pMemory->pMemDesc;
+
+    if (pPhysMemDesc->pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device-less memory isn't supported yet\n");
+
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (bForceOwnerGpuCheck && (pOwnerGpu != pPhysMemDesc->pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Physmem handle's owner GPU does not match\n");
+
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!memmgrIsMemDescSupportedByFla_HAL(pOwnerGpu, pMemoryManager, pPhysMemDesc))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle passed\n");
+
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    physPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+    if (
+        (physPageSize != RM_PAGE_SIZE_HUGE) &&
+        (physPageSize != RM_PAGE_SIZE_512M))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Physmem page size should be 2MB\n");
+
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    *ppPhysMemDesc = pPhysMemDesc;
+
+    if (ppPhysMemory != NULL)
+        *ppPhysMemory = pMemory;
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_memoryFabricDetachMem
+(
+    MemoryFabric        *pMemoryFabric,
+    NvU64                offset,
+    NvBool               bRemoveInterMapping
+)
+{
+    NV_STATUS status;
+    FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
+    NODE *pNode = NULL;
+    FABRIC_VASPACE *pFabricVAS;
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+
+    status = btreeSearch(offset, &pNode, pMemdescData->pAttachMemInfoTree);
+    if (status != NV_OK)
+        return status;
+
+    pAttachMemInfoNode = (FABRIC_ATTCH_MEM_INFO_NODE *)pNode->Data;
+
+    pFabricVAS = dynamicCast(pFabricMemDesc->pGpu->pFabricVAS, FABRIC_VASPACE);
+
+    fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, offset, pAttachMemInfoNode->physMapLength);
+
+    if (bRemoveInterMapping)
+    {
+        refRemoveInterMapping(RES_GET_REF(pMemoryFabric),
+                              pAttachMemInfoNode->pInterMapping);
+    }
+
+    btreeUnlink(&pAttachMemInfoNode->node, &pMemdescData->pAttachMemInfoTree);
+
+    portMemFree(pAttachMemInfoNode);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_memoryFabricAttachMem
+(
+    MemoryFabric                *pMemoryFabric,
+    NV00F8_CTRL_ATTACH_MEM_INFO *pAttachInfo
+)
+{
+    NV_STATUS status;
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    OBJGPU *pGpu = pMemory->pGpu;
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    FABRIC_ATTCH_MEM_INFO_NODE *pNode;
+    RsInterMapping *pInterMapping;
+    Memory *pPhysMemory;
+
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+
+    if (!(pMemdescData->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unsupported fabric memory type\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    status = _memoryfabricValidatePhysMem(RES_GET_CLIENT(pMemory), pAttachInfo->hMemory,
+                                          pGpu, &pPhysMemDesc, &pPhysMemory, NV_FALSE);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
+    status = refAddInterMapping(RES_GET_REF(pMemoryFabric),
+                                RES_GET_REF(pPhysMemory),
+                                RES_GET_REF(pMemoryFabric)->pParentRef,
+                                &pInterMapping);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
+        return status;
+    }
+
+    status = fabricvaspaceMapPhysMemdesc(pFabricVAS,
+                                         pFabricMemDesc,
+                                         pAttachInfo->offset,
+                                         pPhysMemDesc,
+                                         pAttachInfo->mapOffset,
+                                         pAttachInfo->mapLength,
+                                         0);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to map FLA\n");
+        goto freeInterMapping;
+    }
+
+    pNode = portMemAllocNonPaged(sizeof(*pNode));
+    if (pNode == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto unmapVas;
+    }
+
+    portMemSet(pNode, 0, sizeof(*pNode));
+
+    pNode->node.keyStart = pAttachInfo->offset;
+    pNode->node.keyEnd   = pAttachInfo->offset;
+    pNode->physMapOffset = pAttachInfo->mapOffset;
+    pNode->physMapLength = pAttachInfo->mapLength;
+    pNode->pPhysMemDesc  = pPhysMemDesc;
+    pNode->pInterMapping = pInterMapping;
+    pNode->node.Data     = pNode;
+
+    pInterMapping->dmaOffset = pAttachInfo->offset;
+    pInterMapping->pMemDesc = pPhysMemDesc;
+
+    // No partial unmap supported
+    pInterMapping->size = 0;
+
+    status = btreeInsert(&pNode->node, &pMemdescData->pAttachMemInfoTree);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to track attach mem info\n");
+        goto freeNode;
+    }
+
+    return NV_OK;
+
+freeNode:
+    portMemFree(pNode);
+
+unmapVas:
+    fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, pAttachInfo->offset, pAttachInfo->mapLength);
+
+freeInterMapping:
+    refRemoveInterMapping(RES_GET_REF(pMemoryFabric), pInterMapping);
+
+    return status;
+}
+
 static void
 _memoryfabricMemDescDestroyCallback
 (
@@ -99,20 +290,26 @@ _memoryfabricMemDescDestroyCallback
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    RM_API *pRmApi   = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    RM_API              *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    FABRIC_VASPACE      *pFabricVAS;
+    RmPhysAddr          *pteArray;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    NvU32                numAddr;
+    NvU64                pageSize;
+    NODE                *pNode;
+    NvU32                pageGranularityShift;
 
-    FABRIC_MEMDESC_DATA *pMemdescData =
-                            (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemDesc);
+    NV_ASSERT_OR_RETURN_VOID(pGpu->pFabricVAS != NULL);
 
-    RmPhysAddr *pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu,
+    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemDesc);
+    pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu,
                                     VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
-
-    NvU32 numAddr = _memoryfabricMemDescGetNumAddr(pMemDesc);
-
+    numAddr = _memoryfabricMemDescGetNumAddr(pMemDesc);
     // Get the page size from the memory descriptor.
-    NvU32 pageSize = memdescGetPageSize(pMemDesc,
+    pageSize = memdescGetPageSize(pMemDesc,
                                     VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
+    pageGranularityShift = GET_PAGE_SHIFT(pMemDesc->pageArrayGranularity);
 
     // Remove the fabric memory allocations from the map.
     fabricvaspaceVaToGpaMapRemove(pFabricVAS, pteArray[0]);
@@ -121,112 +318,30 @@ _memoryfabricMemDescDestroyCallback
     {
         //
         // Call fabricvaspaceBatchFree to free the FLA allocations.
-        // _pteArray in memdesc is RM_PAGE_SIZE whereas page size for memory fabric
-        // allocations is either 2MB or 512MB. Pass stride accordingly.
+        // _pteArray in memdesc is pageArrayGranularity(4K, 2MB, etc.) whereas page size for memory
+        // fabric allocations is either 2MB or 512MB. Pass stride accordingly.
         //
-        fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr, (pageSize >> RM_PAGE_SHIFT));
+        fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr,
+                               (pageSize >> pageGranularityShift));
     }
 
-    // Destroy the duped physical video memory handle.
-    if ((pMemdescData != NULL) && (pMemdescData->hDupedVidmem != 0))
+    if (pMemdescData != NULL)
     {
-        NV_ASSERT(pRmApi->Free(pRmApi, pFabricVAS->hClient,
-                               pMemdescData->hDupedVidmem) == NV_OK);
+        // Every attached memory should have been unmapped by now..
+        btreeEnumStart(0, &pNode, pMemdescData->pAttachMemInfoTree);
+        NV_ASSERT(pNode == NULL);
+
+        if (pMemdescData->hDupedPhysMem != 0)
+        {
+            NV_ASSERT(pRmApi->Free(pRmApi, pFabricVAS->hClient,
+                                   pMemdescData->hDupedPhysMem) == NV_OK);
+        }
 
         portMemFree(pMemDesc->_pMemData);
+        memdescSetMemData(pMemDesc, NULL, NULL);
     }
 
     portMemFree(pObject);
-}
-
-static NV_STATUS
-_memoryfabricMapPhysicalMemory
-(
-    NvU64             *vAddr,
-    NvU32              numAddr,
-    NvU64              allocSize,
-    NvU32              pageSize,
-    MEMORY_DESCRIPTOR *pVidMemDesc,
-    NvU64              offset,
-    NvBool             bReadOnly
-)
-{
-    OBJGPU                  *pGpu           = pVidMemDesc->pGpu;
-    VirtMemAllocator        *pDma           = GPU_GET_DMA(pGpu);
-    MemoryManager           *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NV_STATUS                status         = NV_OK;
-    DMA_PAGE_ARRAY           pageArray;
-    NvU64                    mapLength;
-    NvU32                    kind;
-    COMPR_INFO               comprInfo;
-    NvU32                    vidmemPteArraySize;
-    RmPhysAddr               addr;
-    NvU32                    i;
-    FABRIC_VASPACE          *pFabricVAS;
-    NvU32                    mapFlags = DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL |
-                                        DMA_UPDATE_VASPACE_FLAGS_SKIP_4K_PTE_CHECK;
-
-    NV_ASSERT_OR_RETURN(vAddr != NULL,       NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pVidMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    mapFlags |= bReadOnly ? DMA_UPDATE_VASPACE_FLAGS_READ_ONLY : 0;
-
-    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
-
-    if (pFabricVAS->bRpcAlloc)
-        return NV_OK;
-
-    // Get compression attributes for the vidmem memdesc.
-    status = memmgrGetKindComprFromMemDesc(pMemoryManager, pVidMemDesc, offset, &kind, &comprInfo);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to get the compression attributes for the vidmem memdesc\n");
-        return status;
-    }
-
-    portMemSet(&pageArray, 0, sizeof(DMA_PAGE_ARRAY));
-
-    // Get the vidmem pteArray size.
-    vidmemPteArraySize = memdescGetPteArraySize(pVidMemDesc, AT_GPU);
-
-    // Get the fabric addr range to map.
-    mapLength       = (numAddr == 1 ? allocSize : pageSize);
-    pageArray.count = (vidmemPteArraySize == 1 ? 1 : (mapLength / RM_PAGE_SIZE));
-
-    for (i = 0; i < numAddr; i++)
-    {
-        if (pageArray.count == 1)
-        {
-            addr = pVidMemDesc->_pteArray[0] + offset;
-            pageArray.pData = &addr;
-        }
-        else
-        {
-            pageArray.pData = &pVidMemDesc->_pteArray[offset / RM_PAGE_SIZE];
-        }
-
-        // Map the memory fabric object at the given physical video memory offset.
-        status = dmaUpdateVASpace_HAL(pGpu, pDma, pFabricVAS->pGVAS, pVidMemDesc,
-                                      NULL, vAddr[i], vAddr[i] + mapLength - 1,
-                                      mapFlags, &pageArray, 0, &comprInfo, 0,
-                                      NV_MMU_PTE_VALID_TRUE,
-                                      NV_MMU_PTE_APERTURE_VIDEO_MEMORY,
-                                      BUS_INVALID_PEER, NVLINK_INVALID_FABRIC_ADDR,
-                                      DMA_DEFER_TLB_INVALIDATE, NV_FALSE);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed to map fabric addrs starting at 0x%llx\n", vAddr[i]);
-            return status;
-        }
-
-        offset = offset + mapLength;
-    }
-
-    fabricvaspaceInvalidateTlb(pFabricVAS, pVidMemDesc->pGpu, PTE_UPGRADE);
-
-    return NV_OK;
 }
 
 static void
@@ -283,12 +398,14 @@ _memoryfabricAllocFabricVa_VGPU
                            pParams->hResource,
                            pParams->externalClassId,
                            pAllocParams,
+                           sizeof(*pAllocParams),
                            status);
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Alloc NV_MEMORY_FABRIC RPC failed, status: %x\n",
-                    status);
+        NV_PRINTF(LEVEL_ERROR,
+                  "Alloc NV_MEMORY_FABRIC RPC failed, status: %x\n",
+                  status);
         return status;
     }
 
@@ -312,14 +429,16 @@ _memoryfabricAllocFabricVa_VGPU
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "CTRL_CMD_DESCRIBE failed, status: 0x%x, "
-                        "numPfns: 0x%x, totalPfns: 0x%llx, readSoFar: 0x%x \n",
-                        status, pDescribeParams->numPfns, pDescribeParams->totalPfns, idx);
+                      "numPfns: 0x%x, totalPfns: 0x%llx, readSoFar: 0x%x \n",
+                      status, pDescribeParams->numPfns,
+                      pDescribeParams->totalPfns, idx);
             goto cleanup;
         }
 
         if (pAddr == NULL)
         {
-            pAddr = portMemAllocNonPaged(sizeof(NvU64) * pDescribeParams->totalPfns);
+            pAddr = portMemAllocNonPaged(sizeof(NvU64) *
+                                         pDescribeParams->totalPfns);
             if (pAddr == NULL)
             {
                 status = NV_ERR_NO_MEMORY;
@@ -329,7 +448,8 @@ _memoryfabricAllocFabricVa_VGPU
 
         for (i=0; i < pDescribeParams->numPfns; i++)
         {
-            pAddr[idx + i] = (NvU64)((NvU64)pDescribeParams->pfnArray[i] << RM_PAGE_SHIFT_HUGE);
+            pAddr[idx + i] =
+                (NvU64)((NvU64)pDescribeParams->pfnArray[i] << RM_PAGE_SHIFT_HUGE);
         }
 
         idx += pDescribeParams->numPfns;
@@ -363,8 +483,6 @@ _memoryfabricAllocFabricVa
     NvU32                        *pNumAddr
 )
 {
-    OBJVASPACE *pOBJVASPACE = staticCast(pFabricVAS, OBJVASPACE);
-
     if (pFabricVAS->bRpcAlloc)
     {
         return _memoryfabricAllocFabricVa_VGPU(pGpu, pParams,
@@ -376,8 +494,8 @@ _memoryfabricAllocFabricVa
         return fabricvaspaceAllocNonContiguous(pFabricVAS,
                                                pAllocParams->allocSize,
                                                pAllocParams->alignment,
-                                               vaspaceGetVaStart(pOBJVASPACE),
-                                               vaspaceGetVaLimit(pOBJVASPACE),
+                                               fabricvaspaceGetUCFlaStart(pFabricVAS),
+                                               fabricvaspaceGetUCFlaLimit(pFabricVAS),
                                                pAllocParams->pageSize, flags,
                                                ppAddr, pNumAddr);
     }
@@ -391,23 +509,25 @@ memoryfabricConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    Memory                       *pMemory        = staticCast(pMemoryFabric, Memory);
-    OBJGPU                       *pGpu           = pMemory->pGpu;
-    FABRIC_VASPACE               *pFabricVAS     = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    OBJGPU *pGpu = pMemory->pGpu;
+    FABRIC_VASPACE *pFabricVAS  = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     NV00F8_ALLOCATION_PARAMETERS *pAllocParams   = pParams->pAllocParams;
-    RM_API                       *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    MemoryManager                *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    RsResourceRef                *pVidmemRef     = NULL;
-    MEMORY_DESCRIPTOR            *pVidMemDesc    = NULL;
-    NV_STATUS                     status         = NV_OK;
-    MEMORY_DESCRIPTOR            *pMemDesc       = NULL;
-    FABRIC_MEMDESC_DATA          *pMemdescData   = NULL;
-    MEM_DESC_DESTROY_CALLBACK    *pCallback      = NULL;
-    VAS_ALLOC_FLAGS               flags          = {0};
-    NvU64                        *pAddr          = NULL;
-    NvU32                         numAddr        = 0;
-    NvU32                         pteKind        = 0;
-    NvBool                        bReadOnly      = NV_FALSE;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    MEMORY_DESCRIPTOR *pPhysMemDesc = NULL;
+    NV_STATUS status = NV_OK;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    FABRIC_MEMDESC_DATA *pMemdescData = NULL;
+    MEM_DESC_DESTROY_CALLBACK *pCallback = NULL;
+    VAS_ALLOC_FLAGS flags = {0};
+    NvU64   *pAddr = NULL;
+    NvU32    numAddr = 0;
+    NvU32    pteKind = 0;
+    NvBool   bReadOnly = NV_FALSE;
+    NvHandle hPhysMem;
+    NvBool   bFlexible = NV_FALSE;
+    NvU32    mapFlags = 0;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -416,13 +536,29 @@ memoryfabricConstruct_IMPL
                                               pParams);
     }
 
-    // Only page size 512MB and 2MB supported.
-    if ((pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M) &&
-        (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_2M))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Unsupported pageSize: 0x%x\n",
-                  pAllocParams->pageSize);
+    hPhysMem  = pAllocParams->map.hVidMem;
 
+    // Check if fabric vaspace is valid.
+    if (pFabricVAS == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fabric vaspace object not available\n");
+
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // initialize Fabric VAS Unicast range if not already setup
+    if (fabricvaspaceGetUCFlaLimit(pFabricVAS) == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "UC FLA ranges should be initialized by this time!\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+
+    if (!memmgrIsValidFlaPageSize_HAL(pGpu, pMemoryManager, pAllocParams->pageSize, NV_FALSE))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unsupported pageSize: 0x%llx\n",
+                  pAllocParams->pageSize);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -444,18 +580,11 @@ memoryfabricConstruct_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // We don't support flexible mappings yet.
-    if (pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Only sticky mappings are supported\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    bFlexible = !!(pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA);
 
     if (pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_READ_ONLY)
     {
-#if !defined(DEVELOP) && !defined(DEBUG) && !defined(NV_MODS)
+#if !defined(DEVELOP) && !defined(DEBUG) && !RMCFG_FEATURE_MODS_FEATURES
         NV_PRINTF(LEVEL_ERROR,
                   "RO mappings are only supported on non-release builds\n");
 
@@ -465,67 +594,24 @@ memoryfabricConstruct_IMPL
 #endif
     }
 
-    // For sticky mappings, physical video memory handle is needed.
-    if (pAllocParams->map.hVidMem == 0)
+    if (bFlexible && (hPhysMem != 0))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Physical vidmem handle needed for sticky mappings\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    status = serverutilGetResourceRef(pCallContext->pClient->hClient,
-                                      pAllocParams->map.hVidMem, &pVidmemRef);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to get resource in resserv for vidmem handle\n");
-        return status;
-    }
-
-    pVidMemDesc = (dynamicCast(pVidmemRef->pResource, Memory))->pMemDesc;
-
-    if ((memdescGetAddressSpace(pVidMemDesc) != ADDR_FBMEM) ||
-        (pGpu != pVidMemDesc->pGpu))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid physical vidmem handle passed\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (memdescGetPageSize(pVidMemDesc, AT_GPU) != NV_MEMORY_FABRIC_PAGE_SIZE_2M)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Physical vidmem page size should be 2MB\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if ((pAllocParams->map.offset >= pVidMemDesc->Size) ||
-        !NV_IS_ALIGNED64(pAllocParams->map.offset, NV_MEMORY_FABRIC_PAGE_SIZE_2M))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Invalid offset passed for the physical vidmem handle\n");
-
-        return NV_ERR_INVALID_OFFSET;
-    }
-
-    // hVidmem should be big enough to cover allocSize, starting from offset.
-    if (pAllocParams->allocSize >
-        (memdescGetSize(pVidMemDesc) - pAllocParams->map.offset))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Insufficient physical video memory to map the requested "
-                  "memory fabric allocation\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Check if fabric vaspace is valid.
-    if (pFabricVAS == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Fabric vaspace object not available\n");
+                  "Physmem can't be provided during flexible object alloc\n");
 
         return NV_ERR_NOT_SUPPORTED;
+    }
+    else if (!bFlexible)
+    {
+        //
+        // As sticky FLA supposed to dup memory, make its owner GPU matches
+        // with the FLA owner GPU. This avoids cross-duping and the related
+        // undesired lifetime side effects.
+        //
+        status = _memoryfabricValidatePhysMem(pCallContext->pClient, hPhysMem,
+                                              pGpu, &pPhysMemDesc, NULL, NV_TRUE);
+        if (status != NV_OK)
+            return status;
     }
 
     // Set the vaspace alloc flags.
@@ -544,10 +630,10 @@ memoryfabricConstruct_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
-                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%x\n",
+                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx\n",
                   status, pAllocParams->allocSize,
-                  vaspaceGetVaStart(pGpu->pFabricVAS),
-                  vaspaceGetVaLimit(pGpu->pFabricVAS),
+                  fabricvaspaceGetUCFlaStart(pFabricVAS),
+                  fabricvaspaceGetUCFlaLimit(pFabricVAS),
                   pAllocParams->pageSize);
 
         return status;
@@ -623,51 +709,102 @@ memoryfabricConstruct_IMPL
     // Associate the memdescDestroy callback function.
     pCallback->pObject         = (void *)pCallback;
     pCallback->destroyCallback =
-                   (MemDescDestroyCallBack*) &_memoryfabricMemDescDestroyCallback;
+                (MemDescDestroyCallBack*) &_memoryfabricMemDescDestroyCallback;
 
     memdescAddDestroyCallback(pMemDesc, pCallback);
 
-    // Dup the physical video memory handle and cache it in memfabric memdesc.
-    status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient, pFabricVAS->hDevice,
-                        &pMemdescData->hDupedVidmem, pCallContext->pClient->hClient,
-                        pAllocParams->map.hVidMem, 0);
-
-    if (status != NV_OK)
+    //
+    // In case of flexible mappings, we don't support:
+    //
+    // 1. Caching attributes of physical memory
+    // 2. FLA to GPA tracking to allow FLA object to be mapped as local memory
+    //
+    if (hPhysMem != 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to dup physical video memory handle\n");
-        goto freeCallback;
+        // Dup the physical memory handle and cache it in memfabric memdesc.
+        status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient,
+                                   pFabricVAS->hDevice,
+                                   &pMemdescData->hDupedPhysMem,
+                                   pCallContext->pClient->hClient,
+                                   hPhysMem, 0);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to dup physmem handle\n");
+            goto freeCallback;
+        }
+
+        NV0041_CTRL_SURFACE_INFO surfaceInfo[2] = {0};
+        NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParam = {0};
+
+        surfaceInfo[0].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS;
+        surfaceInfoParam.surfaceInfoListSize = 2;
+        surfaceInfoParam.surfaceInfoList = NvP64_VALUE(&surfaceInfo);
+
+        status = pRmApi->Control(pRmApi,
+                                 pFabricVAS->hClient,
+                                 pMemdescData->hDupedPhysMem,
+                                 NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                                 &surfaceInfoParam,
+                                 sizeof(surfaceInfoParam));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to query physmem info\n");
+            goto freeDupedMem;
+        }
+
+        pMemdescData->physAttrs.addressSpace = surfaceInfo[0].data;
+        //
+        // TODO: Bug 4322867: use NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR
+        // instead of NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE.
+        // NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE is buggy and
+        // will be removed soon.
+        //
+        pMemdescData->physAttrs.compressionCoverage =
+            (surfaceInfo[1].data & NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR) ?  0x1 : 0x0;
+
+        mapFlags |= bReadOnly ? FABRIC_VASPACE_MAP_FLAGS_READ_ONLY : 0;
+
+        //
+        // Sticky FLA object should be mapped completely, so pass
+        // pAllocParams->allocSize.as mapLength.
+        //
+        status = fabricvaspaceMapPhysMemdesc(pFabricVAS,
+                                             pMemDesc, 0,
+                                             pPhysMemDesc,
+                                             pAllocParams->map.offset,
+                                             pAllocParams->allocSize,
+                                             mapFlags);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Failed to map FLA at the given physmem offset\n");
+            goto freeDupedMem;
+        }
+
+        //
+        // No need to unmap on failure. Unmap happens implicitly when fabric VA
+        // would be freed.
+        //
+        status = fabricvaspaceVaToGpaMapInsert(pFabricVAS, pAddr[0],
+                                               pPhysMemDesc,
+                                               pAllocParams->map.offset);
+        if (status != NV_OK)
+            goto freeDupedMem;
     }
 
-    status = fabricvaspaceVaToGpaMapInsert(pFabricVAS, pAddr[0], pVidMemDesc,
-                                           pAllocParams->map.offset);
-    if (status != NV_OK)
-        goto freeDupedMem;
-
-    // Map the memory fabric object at the given physical video memory offset.
-    status = _memoryfabricMapPhysicalMemory(pAddr, numAddr, pAllocParams->allocSize,
-                                            pAllocParams->pageSize, pVidMemDesc,
-                                            pAllocParams->map.offset, bReadOnly);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                "Failed to map FLA at the given physical vidmem offset\n");
-        goto memFabricRemoveVaToGpaMap;
-    }
-
-    pMemoryFabric->flags = pAllocParams->allocFlags;
+    pMemdescData->allocFlags = pAllocParams->allocFlags;
     pMemory->bRpcAlloc = pFabricVAS->bRpcAlloc;
 
     portMemFree(pAddr);
 
     return NV_OK;
 
-memFabricRemoveVaToGpaMap:
-    fabricvaspaceVaToGpaMapRemove(pFabricVAS, pAddr[0]);
-
 freeDupedMem:
-    // Free the duped vidmem handle.
+    // Free the duped physmem handle.
     NV_ASSERT(pRmApi->Free(pRmApi, pFabricVAS->hClient,
-                           pMemdescData->hDupedVidmem) == NV_OK);
+                           pMemdescData->hDupedPhysMem) == NV_OK);
 
 freeCallback:
     // Destroy the memdesc destroy callback.
@@ -738,22 +875,6 @@ memoryfabricCopyConstruct_IMPL
     return NV_OK;
 }
 
-NvBool
-memoryfabricCanExport_IMPL
-(
-    MemoryFabric *pMemoryFabric
-)
-{
-    //
-    // Check if FLA->PA mappings are present. Only then allow export.
-    // FLA->PA mappings are guaranteed for STICKY FLA mappings, which is only
-    // what we support currently.
-    // TODO: Re-visit this function when support for FLEXIBLE FLA mappings is
-    // added.
-    //
-    return !(pMemoryFabric->flags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA);
-}
-
 NV_STATUS
 memoryfabricControl_IMPL
 (
@@ -781,13 +902,17 @@ memoryfabricCtrlGetInfo_IMPL
 )
 {
     Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    FABRIC_MEMDESC_DATA *pMemdescData;
 
     if (pMemory->pMemDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+
     pParams->size = memdescGetSize(pMemory->pMemDesc);
     pParams->pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
-    pParams->allocFlags = pMemoryFabric->flags;
+    pParams->allocFlags = pMemdescData->allocFlags;
+    pParams->physAttrs = pMemdescData->physAttrs;
 
     return NV_OK;
 }
@@ -799,5 +924,304 @@ memoryfabricCtrlCmdDescribe_IMPL
     NV00F8_CTRL_DESCRIBE_PARAMS   *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    NV_STATUS status;
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    NvU64  *pFabricArray;
+    NvU64   offset;
+    NvU64   pageSize;
+    NvU32   i;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    OBJGPU *pGpu;
+
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    if (
+        !rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT, pCallContext->secInfo.privLevel)
+    )
+    {
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    if (pMemory->pMemDesc == NULL)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    pGpu = pMemory->pMemDesc->pGpu;
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+
+    pParams->memFlags = pMemdescData->allocFlags;
+    pParams->physAttrs = pMemdescData->physAttrs;
+
+    pParams->attrs.pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
+    pParams->attrs.kind = memdescGetPteKind(pMemory->pMemDesc);
+    pParams->attrs.size = memdescGetSize(pMemory->pMemDesc);
+
+    if (gpuFabricProbeIsSupported(pGpu))
+    {
+        status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                                                 &pParams->attrs.cliqueId);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "unable to query cliqueId 0x%x\n", status);
+            return status;
+        }
+
+        pParams->attrs.bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
+        pParams->attrs.bwModeEpoch = knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
+
+    }
+    else
+    {
+        pParams->attrs.bwMode = 0;
+        pParams->attrs.bwModeEpoch = 0;
+        pParams->attrs.cliqueId = 0;
+    }
+
+    pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
+
+    if (memdescGetContiguity(pMemory->pMemDesc, AT_GPU))
+        pParams->totalPfns = 1;
+    else
+        pParams->totalPfns = memdescGetSize(pMemory->pMemDesc) / pageSize;
+
+    if (pParams->offset >= pParams->totalPfns)
+    {
+        NV_PRINTF(LEVEL_ERROR, "offset: 0x%llx is out of range: 0x%llx\n",
+                  pParams->offset, pParams->totalPfns);
+        return NV_ERR_OUT_OF_RANGE;
+    }
+
+    pParams->numPfns = NV_MIN(pParams->totalPfns - pParams->offset,
+                              NV00F8_CTRL_DESCRIBE_PFN_ARRAY_SIZE);
+
+    pFabricArray = portMemAllocNonPaged(sizeof(NvU64) * pParams->numPfns);
+
+    if (pFabricArray == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    offset = pParams->offset * pageSize;
+
+    memdescGetPtePhysAddrsForGpu(pMemory->pMemDesc, pGpu, AT_GPU, offset,
+                              pageSize, pParams->numPfns, pFabricArray);
+
+    for (i = 0; i < pParams->numPfns; i++)
+    {
+        pParams->pfnArray[i] = (NvU32)(pFabricArray[i] >> RM_PAGE_SHIFT_HUGE);
+    }
+
+    portMemFree(pFabricArray);
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlAttachMem_IMPL
+(
+    MemoryFabric                  *pMemoryFabric,
+    NV00F8_CTRL_ATTACH_MEM_PARAMS *pParams
+)
+{
+    NvU32 i;
+    NV_STATUS status;
+
+    pParams->numAttached = 0;
+
+    if (pParams->flags != 0)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    if ((pParams->numMemInfos == 0) ||
+        (pParams->numMemInfos > NV00F8_MAX_ATTACHABLE_MEM_INFOS))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    for (i = 0; i < pParams->numMemInfos; i++)
+    {
+        status = _memoryFabricAttachMem(pMemoryFabric, &pParams->memInfos[i]);
+        if (status != NV_OK)
+            return status;
+
+        pParams->numAttached++;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlDetachMem_IMPL
+(
+    MemoryFabric                  *pMemoryFabric,
+    NV00F8_CTRL_DETACH_MEM_PARAMS *pParams
+)
+{
+    NvU32 i;
+    NV_STATUS status;
+
+    pParams->numDetached = 0;
+
+    if (pParams->flags != 0)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    if ((pParams->numOffsets == 0) ||
+         pParams->numOffsets > NV00F8_MAX_DETACHABLE_OFFSETS)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    for (i = 0; i < pParams->numOffsets; i++)
+    {
+        // Remove inter mapping on explicit detach by the control call.
+        status = _memoryFabricDetachMem(pMemoryFabric, pParams->offsets[i],
+                                        NV_TRUE);
+        if (status != NV_OK)
+            return status;
+
+        pParams->numDetached++;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlGetNumAttachedMem_IMPL
+(
+    MemoryFabric                            *pMemoryFabric,
+    NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams
+)
+{
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData = \
+                    (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+    NODE *pNode = NULL;
+
+    pParams->numMemInfos = 0;
+
+    btreeEnumStart(pParams->offsetStart, &pNode,
+                   pMemdescData->pAttachMemInfoTree);
+
+    while ((pNode != NULL) && (pNode->keyStart <= pParams->offsetEnd))
+    {
+        pParams->numMemInfos++;
+        btreeEnumNext(&pNode, pMemdescData->pAttachMemInfoTree);
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_memoryfabricGetPhysAttrsUsingFabricMemdesc
+(
+    OBJGPU            *pGpu,
+    FABRIC_VASPACE    *pFabricVAS,
+    MEMORY_DESCRIPTOR *pFabricMemDesc,
+    NvU64              offset,
+    NvU64             *pPhysPageSize
+)
+{
+    NV_STATUS status;
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    NODE *pNode = NULL;
+    FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
+
+    if ((pFabricMemDesc == NULL) || (pPhysPageSize == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    status = fabricvaspaceGetGpaMemdesc(pFabricVAS, pFabricMemDesc, pGpu,
+                                        &pPhysMemDesc);
+    if (status == NV_OK)
+    {
+        *pPhysPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+        if (pPhysMemDesc != pFabricMemDesc)
+            fabricvaspacePutGpaMemdesc(pFabricVAS, pPhysMemDesc);
+        return NV_OK;
+    }
+
+    if (status != NV_ERR_OBJECT_NOT_FOUND)
+        return status;
+
+    // If the object is flexible, check the attach mem info tree.
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(offset, &pNode,
+                          pMemdescData->pAttachMemInfoTree));
+    pAttachMemInfoNode = (FABRIC_ATTCH_MEM_INFO_NODE*)pNode->Data;
+
+    *pPhysPageSize = memdescGetPageSize(pAttachMemInfoNode->pPhysMemDesc,
+                                          AT_GPU);
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlGetPageLevelInfo_IMPL
+(
+    MemoryFabric                           *pMemoryFabric,
+    NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams
+)
+{
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    OBJGPU *pGpu  = pMemory->pGpu;
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS pageLevelInfoParams = {0};
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    NvU64 fabricAddr;
+    NvU64 mappingPageSize;
+    NvU64 physPageSize;
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          _memoryfabricGetPhysAttrsUsingFabricMemdesc(pGpu,
+                          pFabricVAS, pFabricMemDesc, pParams->offset,
+                          &physPageSize));
+
+    mappingPageSize = NV_MIN(physPageSize,
+                             memdescGetPageSize(pFabricMemDesc, AT_GPU));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       NV_IS_ALIGNED64(pParams->offset, mappingPageSize),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       pParams->offset < memdescGetSize(pFabricMemDesc),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    memdescGetPtePhysAddrsForGpu(pFabricMemDesc, pGpu, AT_GPU, pParams->offset,
+                              mappingPageSize, 1, &fabricAddr);
+
+    pageLevelInfoParams.virtAddress = fabricAddr;
+    pageLevelInfoParams.pageSize = mappingPageSize;
+
+    NV_ASSERT_OK_OR_RETURN(fabricvaspaceGetPageLevelInfo(pFabricVAS, pGpu,
+                           &pageLevelInfoParams));
+
+    pParams->numLevels = pageLevelInfoParams.numLevels;
+    for (i = 0; i < pParams->numLevels; i++)
+    {
+        portMemCopy(&pParams->levels[i], sizeof(pParams->levels[i]),
+                    &pageLevelInfoParams.levels[i],
+                    sizeof(pageLevelInfoParams.levels[i]));
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricUnmapFrom_IMPL
+(
+    MemoryFabric             *pMemoryFabric,
+    RS_RES_UNMAP_FROM_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = pParams->pGpu;
+    NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
+
+    NV_ASSERT_OR_RETURN(rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask),
+                        NV_ERR_INVALID_STATE);
+
+    NV_ASSERT_OK_OR_RETURN(_memoryFabricDetachMem(pMemoryFabric,
+                                                  pParams->dmaOffset, NV_FALSE));
+
+    return NV_OK;
 }

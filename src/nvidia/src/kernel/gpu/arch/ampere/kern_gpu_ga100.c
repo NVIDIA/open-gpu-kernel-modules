@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,11 +22,14 @@
  */
 
 #include "gpu/gpu.h"
+#include "gpu/gpu_child_class_defs.h"
 #include "kernel/gpu/intr/intr.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "published/ampere/ga100/dev_bus_addendum.h"
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
 #include "published/ampere/ga100/dev_fuse.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 /*!
  * @brief Read fuse for display supported status.
@@ -50,15 +53,13 @@ gpuFuseSupportsDisplay_GA100
  * @return NV_OK if success, else appropriate NV_STATUS code
  */
 NV_STATUS
-gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL
+gpuClearFbhubPoisonIntrForBug2924523_GA100
 (
     OBJGPU *pGpu
 )
 {
+    // INTR module is not stateloaded at gpuPostConstruct, so use HW default
     NvU32 intrVector = NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT;
-    NvU32 reg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(intrVector);
-    NvU32 bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVector);
-    NvV32 intr = 0;
 
     if (pGpu == NULL)
         return NV_OK;
@@ -67,21 +68,13 @@ gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL
     // Check if FBHUB Poison interrupt got triggered before RM Init due
     // to VBIOS IFR on GA100. If yes, clear the FBHUB Interrupt. This WAR is
     // required for Bug 2924523 as VBIOS IFR causes FBHUB Poison intr.
+    // We can't use intrServiceStall or intrIsPending_HAL here because interrupt table
+    // is not initialized.
     //
-    intr = GPU_VREG_RD32_EX(pGpu,
-                            NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg),
-                            NULL) &
-                            NVBIT(bit);
-
-    if (intr != 0)
+    if (intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), intrVector, NULL))
     {
-        NV_PRINTF(LEVEL_ERROR, "FBHUB Interrupt detected = 0x%X. Clearing it.\n", intr);
-
-        // Clear FBHUB Poison interrupt
-        GPU_VREG_WR32_EX(pGpu,
-                         NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg),
-                         NVBIT(bit),
-                         NULL);
+        NV_PRINTF(LEVEL_ERROR, "FBHUB Interrupt detected. Clearing it.\n");
+        intrClearLeafVector_HAL(pGpu, GPU_GET_INTR(pGpu), intrVector, NULL);
     }
 
     return NV_OK;
@@ -98,12 +91,12 @@ gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL
 NvU64
 gpuGetFlaVasSize_GA100
 (
-    POBJGPU pGpu,
+    OBJGPU *pGpu,
     NvBool  bNvswitchVirtualization
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64  totalFbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+    NvU64          totalFbSize    = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
 
     if (bNvswitchVirtualization || totalFbSize <= NVBIT64(36))
     {
@@ -114,6 +107,26 @@ gpuGetFlaVasSize_GA100
         return (totalFbSize * 2);
     }
 }
+
+/*!
+ * @brief Is ctx buffer allocation in PMA supported
+ */
+NvBool
+gpuIsCtxBufAllocInPmaSupported_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    //
+    // This is supported by default on baremetal RM.
+    // This has no impact in guest-RM since ctxBufPools are disabled on guest.
+    // We leave this disabled on host-RM. TODO: Bug 4066846
+    //
+    if (!hypervisorIsVgxHyper())
+        return NV_TRUE;
+    return NV_FALSE;
+}
+
 
 //
 // List of GPU children that present for the chip. List entries contain$
@@ -130,77 +143,39 @@ gpuGetFlaVasSize_GA100
 
 static const GPUCHILDPRESENT gpuChildrenPresent_GA100[] =
 {
-    { classId(OBJSWENG), 1 },
-    { classId(OBJUVM), 1 },
-    { classId(OBJACR), 1 },
-    { classId(OBJBIF), 1 },
-    { classId(KernelBif), 1 },
-    { classId(OBJBSP), 5 },
-    { classId(OBJBUS), 1 },
-    { classId(KernelBus), 1 },
-    { classId(OBJCE), 10 },
-    { classId(KernelCE), 10 },
-    { classId(OBJCIPHER), 1 },
-    { classId(ClockManager), 1 },
-    { classId(OBJDISP), 1 },
-    { classId(KernelDisplay), 1 },
-    { classId(VirtMemAllocator), 1 },
-    { classId(OBJDPAUX), 1 },
-    { classId(OBJFAN), 1 },
-    { classId(OBJHSHUB), 2 },
-    { classId(MemorySystem), 1 },
-    { classId(KernelMemorySystem), 1 },
-    { classId(MemoryManager), 1 },
-    { classId(OBJFBFLCN), 1 },
-    { classId(KernelFifo), 1 },
-    { classId(OBJFIFO), 1 },
-    { classId(OBJGMMU), 1 },
-    { classId(KernelGmmu), 1},
-    { classId(OBJGPULOG), 1 },
-    { classId(OBJGPUMON), 1 },
-    { classId(GraphicsManager), 1 },
-    { classId(MIGManager), 1},
-    { classId(KernelMIGManager), 1 },
-    { classId(KernelGraphicsManager), 1 },
-    { classId(Graphics), 8 },
-    { classId(KernelGraphics), 8 },
-    { classId(OBJHDACODEC), 1 },
-    { classId(OBJHWPM), 1 },
-    { classId(OBJINFOROM), 1 },
-    { classId(Intr), 1 },
-    { classId(Lpwr   ), 1 },
-    { classId(OBJLSFM), 1 },
-    { classId(OBJMC), 1 },
-    { classId(KernelMc), 1 },
-    { classId(PrivRing), 1 },
-    { classId(SwIntr), 1 },
-    { classId(OBJNVJPG), 1 },
-    { classId(NvDebugDump), 1 },
-    { classId(KernelNvlink), 1 },
-    { classId(Nvlink), 1 },
-    { classId(Perf), 1 },
-    { classId(KernelPerf), 1 },
-    { classId(Pmgr), 1 },
-    { classId(Pmu), 1 },
-    { classId(KernelPmu), 1 },
-    { classId(OBJSEC2), 1 },
-    { classId(Gsp), 1 },
-    { classId(Therm), 1 },
-    { classId(OBJTMR), 1 },
-    { classId(OBJVOLT), 1 },
-    { classId(OBJGRIDDISPLAYLESS), 1 },
-    { classId(OBJFAS), 1 },
-    { classId(OBJVMMU), 1 },
-    { classId(OBJOFA), 1 },
-    { classId(KernelNvdec), 1 },
-    { classId(KernelSec2), 1 },
-    { classId(KernelGsp), 1 },
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 10),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 8),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GA100(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GA100);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA100);
     return gpuChildrenPresent_GA100;
 }
 
@@ -218,78 +193,164 @@ gpuGetChildrenPresent_GA100(OBJGPU *pGpu, NvU32 *pNumEntries)
 //
 static const GPUCHILDPRESENT gpuChildrenPresent_GA102[] =
 {
-    {classId(OBJSWENG), 1},
-    {classId(OBJUVM), 1},
-    {classId(OBJACR), 1},
-    {classId(OBJBIF), 1},
-    {classId(KernelBif), 1},
-    {classId(OBJNNE), 1},
-    {classId(OBJBSP), 2},
-    {classId(OBJBUS), 1},
-    {classId(KernelBus), 1},
-    {classId(OBJCE), 5},
-    {classId(KernelCE), 5},
-    {classId(OBJCIPHER), 1},
-    {classId(ClockManager), 1},
-    {classId(OBJDISP), 1},
-    {classId(KernelDisplay), 1},
-    {classId(VirtMemAllocator), 1},
-    {classId(OBJDPAUX), 1},
-    {classId(OBJFAN), 1},
-    {classId(OBJHSHUB), 2 },
-    {classId(MemorySystem), 1},
-    {classId(KernelMemorySystem), 1},
-    {classId(MemoryManager), 1},
-    {classId(OBJFBFLCN), 1},
-    {classId(KernelFifo), 1 },
-    {classId(OBJFIFO), 1},
-    {classId(OBJGMMU), 1},
-    {classId(KernelGmmu), 1},
-    {classId(OBJGPULOG), 1},
-    {classId(OBJGPUMON), 1},
-    {classId(GraphicsManager), 1 },
-    {classId(MIGManager), 1},
-    {classId(KernelMIGManager), 1},
-    {classId(KernelGraphicsManager), 1},
-    {classId(Graphics), 1},
-    {classId(KernelGraphics), 1},
-    {classId(OBJHDACODEC), 1},
-    {classId(OBJHWPM), 1},
-    {classId(OBJINFOROM), 1},
-    {classId(Intr), 1},
-    {classId(Lpwr   ), 1},
-    {classId(OBJLSFM), 1},
-    {classId(OBJMC), 1},
-    {classId(KernelMc), 1},
-    {classId(PrivRing), 1},
-    {classId(SwIntr), 1},
-    {classId(OBJMSENC), 1},
-    {classId(NvDebugDump), 1},
-    {classId(KernelNvlink), 1},
-    {classId(Nvlink), 1},
-    {classId(Perf), 1},
-    {classId(KernelPerf), 1 },
-    {classId(Pmgr), 1},
-    {classId(Pmu), 1},
-    {classId(KernelPmu), 1},
-    {classId(OBJSEC2), 1},
-    {classId(Gsp), 1},
-    {classId(Therm), 1},
-    {classId(OBJTMR), 1},
-    {classId(OBJVOLT), 1},
-    {classId(OBJGRIDDISPLAYLESS), 1},
-    {classId(OBJFAS), 1},
-    {classId(OBJVMMU), 1},
-    {classId(OBJOFA), 1 },
-    {classId(KernelNvdec), 1},
-    {classId(KernelSec2), 1},
-    {classId(KernelGsp), 1},
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 5),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GA102(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GA102);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA102);
     return gpuChildrenPresent_GA102;
 }
 
+
+//
+// List of GPU children that present for the chip. List entries contain$
+// {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
+// list controls only engine presence. Order is defined by$
+// gpuGetChildrenOrder_HAL.$
+//
+// List entries contain {CLASS-ID, # of instances} pairs.
+//
+static const GPUCHILDPRESENT gpuChildrenPresent_GA10B[] =
+{
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 4),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 2),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
+};
+
+const GPUCHILDPRESENT *
+gpuGetChildrenPresent_GA10B(OBJGPU *pGpu, NvU32 *pNumEntries)
+{
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA10B);
+    return gpuChildrenPresent_GA10B;
+}
+
+
+/*! @brief Returns if a P2P object is allocated in SRIOV mode.
+ *
+ *  @param[in]   pGpu     OBJGPU pointer
+ *
+ *  @returns for baremetal, this should just return NV_TRUE
+             for SRIOV, return the SRIOV Info
+ */
+NvBool
+gpuCheckIsP2PAllocated_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    if (!IS_VIRTUAL(pGpu) && !gpuIsSriovEnabled(pGpu))
+        return NV_TRUE;
+
+    return pGpu->sriovState.bP2PAllocated;
+}
+
+NvBool
+gpuCheckIfFbhubPoisonIntrPending_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
+}
+
+
+/*!
+ * @brief A bit in scratch 30 is reserved to indicate GPU Drain and Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be drained and reset through out of band.
+ * This function sets the bit to the requested value, indicating that a drain and reset is pending or clearing the status.
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] bDrainRecommended  Value to set
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+gpuSetDrainAndResetScratchBit_GA100
+(
+    OBJGPU *pGpu,
+    NvBool  bDrainRecommended
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    scratchRegVal = bDrainRecommended ?
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _YES, scratchRegVal) :
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _NO,  scratchRegVal);
+
+    gpuWritePBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG, scratchRegVal);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief A bit in scratch 30 is reserved to indicate GPU Drain and Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be drained and reset through out of band.
+ * This function reads the value of the bit.
+ *
+ * @param[in]  pGpu                OBJGPU pointer
+ * @param[out] pbDrainRecommended  The value of the scratch bit
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+gpuGetDrainAndResetScratchBit_GA100
+(
+    OBJGPU *pGpu,
+    NvBool *pbDrainRecommended
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    *pbDrainRecommended = FLD_TEST_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _YES, scratchRegVal);
+    return NV_OK;
+}

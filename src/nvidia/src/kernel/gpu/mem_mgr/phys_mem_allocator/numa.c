@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,12 +29,19 @@
  * Linux kernel.
  */
 
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_private.h"
 #include "gpu/mem_mgr/phys_mem_allocator/numa.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_util.h"
 #include "gpu/mem_mgr/mem_scrub.h"
 #include "utils/nvprintf.h"
 #include "utils/nvassert.h"
+
+#if !defined(SRT_BUILD)
 #include "os/os.h"
+#else
+#include "pma_test_stubs.h"
+#endif
 
 //
 // Local helper functions and declarations
@@ -47,7 +54,7 @@ static NV_STATUS _pmaNumaAvailableEvictableRange(PMA *pPma, NvS32 *validRegionLi
 static NV_STATUS _pmaNumaAllocateRange(PMA *pPma, NvU32 numaNodeId, NvLength actualSize,
     NvU64 pageSize, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvS32 *validRegionList,
     NvU64 *allocatedCount);
-static NV_STATUS _pmaNumaAllocatePages (PMA *pPma, NvU32 numaNodeId, NvU32 pageSize,
+static NV_STATUS _pmaNumaAllocatePages (PMA *pPma, NvU32 numaNodeId, NvU64 pageSize,
     NvLength allocationCount, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvS32 *validRegionList,
     NvU64 *allocatedPages);
 
@@ -163,8 +170,37 @@ NV_STATUS _pmaNumaAvailableEvictableRange
  */
 static NvBool _pmaCheckFreeFramesToSkipReclaim(PMA *pPma)
 {
-    return (100 * pPma->pmaStats.numFreeFrames < 
+    return (100 * pPma->pmaStats.numFreeFrames <
              (pPma->pmaStats.num2mbPages * (_PMA_2MB >> PMA_PAGE_SHIFT) * pPma->numaReclaimSkipThreshold));
+}
+
+/*!
+ * Translate a page returned by kernel to internal PMA page offset.
+ * @return NV_OK if the translation is successful.
+ *         NV_ERR_INVALID_STATE if the address is out of bound of PMA region
+ */
+static NV_STATUS
+_pmaTranslateKernelPage
+(
+    PMA   *pPma,
+    NvU64  sysPhysAddr,
+    NvU64  pageSize,
+    NvU64 *pGpaPhysAddr
+)
+{
+    NV_ASSERT_OR_RETURN(pGpaPhysAddr != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Check returned page against online region
+    if ((sysPhysAddr < pPma->coherentCpuFbBase) ||
+        ((sysPhysAddr + pageSize) > (pPma->coherentCpuFbBase + pPma->coherentCpuFbSize)))
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    *pGpaPhysAddr = sysPhysAddr - pPma->coherentCpuFbBase;
+
+    // Check returned page against internal PMA structures
+    return pmaCheckRangeAgainstRegionDesc(pPma, *pGpaPhysAddr, pageSize);
 }
 
 /*!
@@ -189,6 +225,8 @@ NV_STATUS _pmaNumaAllocateRange
     NvU32 flags = OS_ALLOC_PAGES_NODE_NONE;
     *allocatedCount    = 0;
 
+    NV_ASSERT_OR_RETURN(actualSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
+
     // check if numFreeFrames(64KB) are below a certain % of PMA managed memory(indicated by num2mbPages).
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
     {
@@ -202,24 +240,30 @@ NV_STATUS _pmaNumaAllocateRange
 
     if (status == NV_OK)
     {
-        NvU32 j;
-        // j=0 head page is already refcounted  at allocation
-        for (j = 1; j < (actualSize >> PMA_PAGE_SHIFT); j++)
+        NvU8 osPageShift = osGetPageShift();
+
+        // Skip the first page as it is refcounted at allocation.
+        osAllocAcquirePage(sysPhysAddr + (1ULL << osPageShift), (NvU32)((actualSize >> osPageShift) - 1));
+
+        // GPA needs to be acquired by shifting by the ATS aperture base address
+        status = _pmaTranslateKernelPage(pPma, sysPhysAddr, actualSize, &gpaPhysAddr);
+        if (status != NV_OK)
         {
-            osAllocAcquirePage(sysPhysAddr + (j << PMA_PAGE_SHIFT));
+            NV_PRINTF(LEVEL_ERROR, "Alloc from OS invalid for sysPhysAddr = 0x%llx actualSize = 0x%llx!\n",
+                                   sysPhysAddr, actualSize);
+            goto exit;
         }
 
-        gpaPhysAddr = sysPhysAddr - pPma->coherentCpuFbBase;
-        NV_ASSERT(gpaPhysAddr < pPma->coherentCpuFbBase);
         *allocatedCount = 1;
 
         if (bScrubOnAlloc)
         {
             PSCRUB_NODE pPmaScrubList = NULL;
             NvU64 count;
+            NvU32 flags = 0;
 
             if ((status = scrubSubmitPages(pPma->pScrubObj, (NvU32)actualSize, &gpaPhysAddr,
-                                           1, &pPmaScrubList, &count)) != NV_OK)
+                                           1, &pPmaScrubList, &count, flags)) != NV_OK)
             {
                 status = NV_ERR_INSUFFICIENT_RESOURCES;
                 goto scrub_exit;
@@ -246,6 +290,7 @@ scrub_exit:
         goto allocated;
     }
 
+exit:
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
     NV_PRINTF(LEVEL_INFO, "Allocate from OS failed for allocation size = %lld!\n",
@@ -264,11 +309,14 @@ scrub_exit:
     {
         void *pMap = NULL;
         NvU32 regId;
+        MEMORY_PROTECTION prot;
 
         NV_ASSERT((evictEnd - evictStart + 1) ==  actualSize);
         status = NV_ERR_NO_MEMORY;
         regId = findRegionID(pPma, evictStart);
         pMap  = pPma->pRegions[regId];
+        prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                          MEMORY_PROTECTION_UNPROTECTED;
 
         if (pMap != NULL)
         {
@@ -279,7 +327,7 @@ scrub_exit:
             // i.e., region evictStart to evictEnd is marked as 'ATTRIB_EVICTING' and will not
             // be returned to OS.
             //
-            status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd);
+            status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd, prot);
 
             if (status == NV_ERR_NO_MEMORY)
             {
@@ -316,7 +364,7 @@ static NV_STATUS _pmaNumaAllocatePages
 (
     PMA     *pPma,
     NvU32    numaNodeId,
-    NvU32    pageSize,
+    NvU64    pageSize,
     NvLength allocationCount,
     NvU64   *pPages,
     NvBool   bScrubOnAlloc,
@@ -327,10 +375,12 @@ static NV_STATUS _pmaNumaAllocatePages
 {
     NV_STATUS status = NV_ERR_NO_MEMORY;
     NvU64     sysPhysAddr;
-    NvU64     i = 0, j = 0;
-    NvU32 flags = OS_ALLOC_PAGES_NODE_NONE;
+    NvU64     i = 0;
+    NvU32     flags = OS_ALLOC_PAGES_NODE_NONE;
+    NvU8      osPageShift = osGetPageShift();
 
     NV_ASSERT(allocationCount);
+    NV_ASSERT_OR_RETURN(pageSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
 
     // check if numFreeFrames are below certain % of PMA managed memory.
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
@@ -351,23 +401,26 @@ static NV_STATUS _pmaNumaAllocatePages
         }
 
         // GPA needs to be acquired by shifting by the ATS aperture base address
-        NV_ASSERT(sysPhysAddr >= pPma->coherentCpuFbBase);
-        pPages[i] = sysPhysAddr - pPma->coherentCpuFbBase;
-
-        // Skip the head page at offset 0 (j=0) as it is refcounted at allocation
-        for (j = 1; j < (pageSize >> PMA_PAGE_SHIFT); j++)
+        status = _pmaTranslateKernelPage(pPma, sysPhysAddr, pageSize, &pPages[i]);
+        if (status != NV_OK)
         {
-            osAllocAcquirePage(sysPhysAddr + (j << PMA_PAGE_SHIFT));
+            NV_PRINTF(LEVEL_ERROR, "Alloc from OS invalid for i= %lld allocationCount = %lld pageSize = %lld!\n",
+                                   i, (NvU64) allocationCount, (NvU64) pageSize);
+            break;
         }
+
+        // Skip the first page as it is refcounted at allocation.
+        osAllocAcquirePage(sysPhysAddr + (1ULL << osPageShift), (NvU32)((pageSize >> osPageShift) - 1));
     }
 
-    if (bScrubOnAlloc)
+    if (bScrubOnAlloc && (i > 0))
     {
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;
+        NvU32 flags = 0;
 
         if ((status = scrubSubmitPages(pPma->pScrubObj, pageSize, pPages,
-                                       i, &pPmaScrubList, &count)) != NV_OK)
+                                       i, &pPmaScrubList, &count, flags)) != NV_OK)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto scrub_exit;
@@ -413,6 +466,7 @@ scrub_exit:
             NvU32 regId;
             NvU64 addrBase, addrLimit;
             void *pMap = NULL;
+            MEMORY_PROTECTION prot;
 
             if (validRegionList[regionIdx] == -1)
             {
@@ -424,11 +478,13 @@ scrub_exit:
 
             addrBase = pPma->pRegDescriptors[regId]->base;
             addrLimit = pPma->pRegDescriptors[regId]->limit;
+            prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                              MEMORY_PROTECTION_UNPROTECTED;
 
             status = _pmaEvictPages(pPma, pMap,
                                     &pPages[i], (NvU32)(allocationCount - i),
                                     &pPages[0], i,
-                                    pageSize, addrBase, addrLimit);
+                                    pageSize, addrBase, addrLimit, prot);
 
             if (status != NV_ERR_NO_MEMORY)
             {
@@ -459,25 +515,33 @@ NV_STATUS pmaNumaAllocate
 (
     PMA                    *pPma,
     NvLength                allocationCount,
-    NvU32                   pageSize,
+    NvU64                   pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions,
     NvU64                  *pPages
 )
 {
     NvU32    i;
-    NV_STATUS  status    = NV_OK;
-    NvU32    numaNodeId  = pPma->numaNodeId;
+    NV_STATUS  status     = NV_OK;
+    NvU32    numaNodeId   = pPma->numaNodeId;
     NvS32    regionList[PMA_REGION_SIZE];
-    NvU32    flags       = allocationOptions->flags;
-    NvLength allocSize   = 0;
-    NvLength allocCount  = 0;
-    NvU32    contigFlag  = !!(flags & PMA_ALLOCATE_CONTIGUOUS);
+    NvU32    flags        = allocationOptions->flags;
+    NvLength allocSize    = 0;
+    NvU32    contigFlag   = !!(flags & PMA_ALLOCATE_CONTIGUOUS);
     // As per bug #2444368, kernel scrubbing is too slow. Use the GPU scrubber instead
-    NvBool bScrubOnAlloc = !(flags & PMA_ALLOCATE_NO_ZERO);
-    NvBool    allowEvict = !(flags & PMA_ALLOCATE_DONT_EVICT);
-    NvBool   partialFlag = !!(flags & PMA_ALLOCATE_ALLOW_PARTIAL);
+    NvBool bScrubOnAlloc  = !(flags & PMA_ALLOCATE_NO_ZERO);
+    NvBool    allowEvict  = !(flags & PMA_ALLOCATE_DONT_EVICT);
+    NvBool   partialFlag  = !!(flags & PMA_ALLOCATE_ALLOW_PARTIAL);
+    NvBool bSkipScrubFlag = !!(flags & PMA_ALLOCATE_NO_ZERO);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+    NvU32 localizedFlag    = !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) || !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU1);
+    NvU32 localizedUgpuNum = !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) ? 0 : 1;
+    NvU64 pagesPerLocalizedStride = 0;
+    NvU64 pageSizeOrig = pageSize;
+    NvLength allocCountOrig = allocationCount;
 
-    NvU64    finalAllocatedCount = 0;
+    NvU64 finalAllocatedCount = 0;
 
     if (!pPma->bNuma)
     {
@@ -486,9 +550,9 @@ NV_STATUS pmaNumaAllocate
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (pageSize > _PMA_2MB)
+    if (pageSize > _PMA_512MB)
     {
-        NV_PRINTF(LEVEL_FATAL, "Cannot allocate with more than 2MB contiguity.\n");
+        NV_PRINTF(LEVEL_FATAL, "Cannot allocate with more than 512MB contiguity.\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -499,9 +563,63 @@ NV_STATUS pmaNumaAllocate
         return NV_ERR_INVALID_STATE;
     }
 
+    if (localizedFlag)
+    {
+        if (contigFlag && ((allocationCount * pageSize) > PMA_LOCALIZED_MEMORY_ALLOC_STRIDE))
+        {
+            // Allocating contiguous localized >PMA_LOCALIZED_MEMORY_ALLOC_STRIDE is not possible
+            NV_PRINTF(LEVEL_ERROR, "Localized contig allocation size is too large\n");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        if (!!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) == !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU1))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Only one ugpu can be specified for localized allocations\n");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        //
+        // range and alignment are silently ignored for NUMA
+        // TODO: check for all other unsupported flags like PMA_ALLOCATE_SPECIFY_ADDRESS_RANGE
+        //
+        // alignment = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+
+        partialFlag = NV_FALSE;
+
+        if (contigFlag)
+        {
+            //
+            // override allocation options
+            // For now, we will force allocate an entire 64MB chunk
+            //
+            pageSize = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+            // we just reserve one chunk here
+            pagesPerLocalizedStride = 1;
+        }
+        else
+        {
+            //
+            // If discontig in NUMA mode, split the allocation into the number of discontig
+            // localized allocations that would be needed to support it.
+            // Not supporting reuse of localized chunks for now.
+            //
+
+            //
+            // This page size is only used in the lower level functions for the 'size'
+            // to allocate/scrub and not programmed as a page size.
+            // However, UVM SW cannot handle a >2MB page size on evict pages calls
+            //
+            allowEvict = NV_FALSE;
+            allocationCount = NV_CEIL((allocationCount * pageSize), PMA_LOCALIZED_MEMORY_ALLOC_STRIDE);
+            pagesPerLocalizedStride = PMA_LOCALIZED_MEMORY_ALLOC_STRIDE / pageSize;
+            pageSize = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+        }
+    }
+
     if (contigFlag)
     {
-        if (((NvU64)allocationCount) * ((NvU64) pageSize) > NV_U32_MAX)
+        NvU64 contigTotal;
+        if (!portSafeMulU64(allocationCount, pageSize, &contigTotal) || contigTotal > NV_U32_MAX)
         {
             NV_PRINTF(LEVEL_FATAL, "Cannot allocate more than 4GB contiguous memory in one call.\n");
             return NV_ERR_INVALID_ARGUMENT;
@@ -511,7 +629,13 @@ NV_STATUS pmaNumaAllocate
     // We are not changing the state. Can be outside the lock perhaps
     NV_CHECK_OK_OR_RETURN(LEVEL_FATAL, pmaSelector(pPma, allocationOptions, regionList));
 
-    if (pPma->bScrubOnFree)
+    //
+    // Scrub on free is enabled for this allocation request if the feature is enabled and the
+    // caller does not want to skip scrubber.
+    // Caller may want to skip scrubber when it knows the memory is zero'ed or when we are
+    // initializing RM structures needed by the scrubber itself.
+    //
+    if (pPma->bScrubOnFree && !bSkipScrubFlag)
     {
         portSyncMutexAcquire(pPma->pAllocLock);
         portSyncRwLockAcquireRead(pPma->pScrubberValidLock);
@@ -545,15 +669,14 @@ NV_STATUS pmaNumaAllocate
 
     if (contigFlag)
     {
-        allocCount = 1;
         allocSize  = allocationCount * pageSize;
         status     = _pmaNumaAllocateRange(pPma, numaNodeId, allocSize, pageSize, pPages, bScrubOnAlloc, allowEvict, regionList, &finalAllocatedCount);
     }
     else
     {
-        allocCount = allocationCount;
         allocSize  = pageSize;
-        status     = _pmaNumaAllocatePages(pPma, numaNodeId, (NvU32) allocSize, allocCount, pPages, bScrubOnAlloc, allowEvict, regionList, &finalAllocatedCount);
+        // Fill in the page array at later indexes so we can deflate them later
+        status     = _pmaNumaAllocatePages(pPma, numaNodeId, (NvU32) pageSize, allocationCount, pPages + allocCountOrig - allocationCount, bScrubOnAlloc, allowEvict, regionList, &finalAllocatedCount);
     }
 
     if ((status == NV_ERR_NO_MEMORY) && partialFlag && (finalAllocatedCount > 0))
@@ -569,11 +692,13 @@ NV_STATUS pmaNumaAllocate
         NvU64  frameOffset;
         NvU64  frameCount = 0;
         PMA_PAGESTATUS curStatus = STATE_FREE;
-        PMA_PAGESTATUS allocOption = !!(flags & PMA_ALLOCATE_PINNED) ?
+        PMA_PAGESTATUS pinOption = !!(flags & PMA_ALLOCATE_PINNED) ?
                                         STATE_PIN : STATE_UNPIN;
 
-        NV_PRINTF(LEVEL_INFO, "SUCCESS allocCount %lld, allocsize %lld eviction? %s pinned ? %s contig? %s\n",
-                              (NvU64) allocCount,(NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
+        pinOption |= localizedFlag ? ATTRIB_LOCALIZED : 0;
+
+        NV_PRINTF(LEVEL_INFO, "SUCCESS allocCount %lld, allocsize %llx eviction? %s pinned ? %s contig? %s\n",
+                              (NvU64) allocationCount, (NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
                                !!(flags & PMA_ALLOCATE_PINNED) ? "PINNED" : "UNPINNED", contigFlag ? "CONTIG":"DISCONTIG");
 
         for (i = 0; i < finalAllocatedCount; i++)
@@ -587,6 +712,8 @@ NV_STATUS pmaNumaAllocate
 
             for (j = 0; j < frameCount; j++)
             {
+                // This localizes them all for localized
+                // for non-localized, still need to do this for each page
                 frameOffset = PMA_ADDR2FRAME(pPages[i], regAddrBase) + j;
 
                 curStatus = pPma->pMapInfo->pmaMapRead(pMap, frameOffset, NV_TRUE);
@@ -596,11 +723,44 @@ NV_STATUS pmaNumaAllocate
                     status = NV_ERR_NO_MEMORY;
                     break;
                 }
-                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, allocOption, NV_TRUE);
+                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, pinOption, MAP_MASK);
             }
             if (status != NV_OK)
                 break;
         }
+
+        // NUMA-specific: deflate the large page to the requested page size
+        if (localizedFlag)
+        {
+            if (contigFlag)
+            {
+                // Only one allocation
+                pPages[0] = pPages[0] + (localizedUgpuNum * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE);
+            }
+            else
+            {
+                NvU32 p = 0;
+                for (i = 0; i < finalAllocatedCount; i++)
+                {
+                    //
+                    // We consume these from start to end, save off the value
+                    // since the last one will get overwritten.
+                    // also stop once we fill in all requested allocations
+                    //
+                    NvU64 curPage = pPages[allocCountOrig - allocationCount + i];
+
+                    // deflate each PMA_LOCALIZED_MEMORY_ALLOC_STRIDE allocation to the requested page size
+                    for (NvU32 k = 0; (k < pagesPerLocalizedStride) && (p < allocCountOrig); k++, p++)
+                    {
+                        pPages[p] = curPage + (localizedUgpuNum * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE) + (k * pageSizeOrig);
+                    }
+                }
+
+                finalAllocatedCount = allocCountOrig;
+            }
+        }
+
+        pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 
         if (status == NV_OK)
         {
@@ -608,11 +768,10 @@ NV_STATUS pmaNumaAllocate
         }
     }
 
-
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "FAILED allocCount %lld, allocsize %lld eviction? %s pinned ? %s contig? %s\n",
-                              (NvU64) allocCount, (NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
+                              (NvU64) allocationCount, (NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
                               !!(flags & PMA_ALLOCATE_PINNED) ? "PINNED" : "UNPINNED", contigFlag ? "CONTIG":"DISCONTIG");
         //
         // Free the entire allocation if scrubbing failed or if we had allocated evicting allocations.
@@ -626,7 +785,7 @@ NV_STATUS pmaNumaAllocate
 
     portSyncSpinlockRelease(pPma->pPmaLock);
 
-    if (pPma->bScrubOnFree)
+    if (pPma->bScrubOnFree && !bSkipScrubFlag)
     {
         portSyncRwLockReleaseRead(pPma->pScrubberValidLock);
         portSyncMutexRelease(pPma->pAllocLock);
@@ -645,8 +804,31 @@ void pmaNumaFreeInternal
 )
 {
     NvU64 i, j;
+    NvU8 osPageShift = osGetPageShift();
+
+    NV_ASSERT_OR_RETURN_VOID(PMA_PAGE_SHIFT >= osPageShift);
 
     NV_PRINTF(LEVEL_INFO, "Freeing pPage[0] = %llx pageCount %lld\n", pPages[0], pageCount);
+
+    NvBool bLocalized = NV_FALSE;
+    NvU64 nextPage = 0;
+
+    // If localized, it must be the entire 64MB range
+    {
+        NvU32 regId = findRegionID(pPma, pPages[0]);
+        NvU64 addrBase = pPma->pRegDescriptors[regId]->base;
+        NvU64 frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
+        if (pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE) & ATTRIB_LOCALIZED)
+        {
+            bLocalized = NV_TRUE;
+            // This returns the 64MB aligned value to the caller, but that's not concerning..
+            for (i = 0; i < pageCount; i++)
+            {
+                pPages[i] = NV_ALIGN_DOWN64(pPages[i], PMA_LOCALIZED_MEMORY_RESERVE_SIZE);
+            }
+            size = PMA_LOCALIZED_MEMORY_RESERVE_SIZE;
+        }
+    }
 
     for (i = 0; i < pageCount; i++)
     {
@@ -658,6 +840,16 @@ void pmaNumaFreeInternal
 
         // Shift the GPA to acquire the bus address (SPA)
         NV_ASSERT(pPages[i] < pPma->coherentCpuFbSize);
+
+        // skip past localized memory already cleared
+        if (bLocalized)
+        {
+            if (pPages[i] < nextPage)
+            {
+                continue;   
+            }
+            nextPage = NV_ALIGN_UP64(pPages[i] + 1, PMA_LOCALIZED_MEMORY_RESERVE_SIZE);
+        }
 
         regId    = findRegionID(pPma, pPages[i]);
         addrBase = pPma->pRegDescriptors[regId]->base;
@@ -685,16 +877,18 @@ void pmaNumaFreeInternal
                 //
                 if (currentStatus & STATE_UNPIN)
                 {
-                    pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j),
-                                                              ATTRIB_NUMA_REUSE, ATTRIB_NUMA_REUSE);
+                    pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j),
+                                                            ATTRIB_NUMA_REUSE, ATTRIB_NUMA_REUSE);
                 }
                 continue;
             }
             sysPagePhysAddr = sysPhysAddr + (j << PMA_PAGE_SHIFT);
-            osAllocReleasePage(sysPagePhysAddr);
-            pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
+            osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
+            pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
         }
     }
+
+    pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 }
 
 void pmaNumaSetReclaimSkipThreshold(PMA *pPma, NvU32 skipReclaimPercent)

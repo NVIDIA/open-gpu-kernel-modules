@@ -49,54 +49,54 @@
 #define portUtilGetReturnAddress() (NvUPtr)__builtin_return_address(0)
 
 #if NVCPU_IS_X86 || NVCPU_IS_X86_64
-#define NVPORT_DUMMY_LOOP() \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
+#define NVPORT_DUMMY_LOOP()         \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
     __asm__ __volatile__ ("pause");
 #else
-#define NVPORT_DUMMY_LOOP() \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
+#define NVPORT_DUMMY_LOOP()       \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
     __asm__ __volatile__ ("nop");
 #endif
 
@@ -138,7 +138,7 @@ PORT_UTIL_INLINE NvU32 portUtilCountTrailingZeros32(NvU32 n)
 
 
 #if NVCPU_IS_FAMILY_X86 && !defined(NV_MODS)
-PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
+PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 {
     NvU32 lo;
     NvU32 hi;
@@ -148,7 +148,7 @@ PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
 #define portUtilExReadTimestampCounter_SUPPORTED 1
 
 #elif NVCPU_IS_AARCH64 && !defined(NV_MODS)
-PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
+PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 {
     NvU64 ts = 0;
     __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (ts));
@@ -157,7 +157,7 @@ PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
 #define portUtilExReadTimestampCounter_SUPPORTED 1
 
 #elif NVCPU_IS_PPC64LE && !defined(NV_MODS)
-PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
+PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 {
     NvU64 ts;
     __asm__ __volatile__ ("mfspr %0,268" : "=r"(ts));
@@ -166,7 +166,7 @@ PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
 #define portUtilExReadTimestampCounter_SUPPORTED 1
 
 #elif NVCPU_IS_PPC && !defined(NV_MODS)
-PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter()
+PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 {
     NvU32 lo, hi, tmp;
     __asm__ __volatile__ (

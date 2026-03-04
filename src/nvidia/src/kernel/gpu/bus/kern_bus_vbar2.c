@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "mem_mgr/io_vaspace.h"
 #include "vgpu/vgpu_events.h"
+#include "containers/eheap_old.h"
 
 // Prototypes for static functions
 static NV_STATUS _kbusConstructVirtualBar2Heaps(KernelBus *pKernelBus, NvU32 gfid);
@@ -338,7 +339,10 @@ kbusFlushVirtualBar2_VBAR2(OBJGPU *pGpu, KernelBus *pKernelBus, NvBool shutdown,
         return;
     }
 
-    // Enforce RM unmapping up all BAR2 mappings
+    //
+    // There should be no there are no active BAR2 mappings on shutdown. Failure indicates
+    // there is a missing unmap BAR2 call somewhere in RM.
+    //
     NV_ASSERT(listCount(&pKernelBus->virtualBar2[gfid].usedMapList) == 0);
 
     // There should be no unreleased mappings at shutdown
@@ -381,7 +385,7 @@ kbusInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDesc;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus))
+    if (kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -438,7 +442,7 @@ kbusPreInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDescForBootstrap;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus))
+    if (kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -483,7 +487,7 @@ _freeRmApertureMap_VBAR2
 
     listRemove(&pKernelBus->virtualBar2[GPU_GFID_PF].cachedMapList, pMap);
 
-    if (!KBUS_BAR2_TUNNELLED(pKernelBus) && pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
+    if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
     {
         pBlockFree = pVASpaceHeap->eheapGetBlock(pVASpaceHeap, pMap->vAddr, NV_FALSE);
 
@@ -600,7 +604,7 @@ kbusMapBar2ApertureCached_VBAR2
     // Allocate VA SPACE
     //
     pVASpaceHeap = pKernelBus->virtualBar2[GPU_GFID_PF].pVASpaceHeap;
-    allocSize = pMemDesc->PageCount << RM_PAGE_SHIFT;
+    allocSize = GET_SIZE_FROM_PAGE_AND_COUNT(pMemDesc->PageCount, pMemDesc->pageArrayGranularity);
     bEvictNeeded =
         (NV_OK != pVASpaceHeap->eheapAlloc(pVASpaceHeap, VAS_EHEAP_OWNER_NVRM,
                                            &allocFlags, &vAddr, &allocSize,
@@ -621,7 +625,8 @@ kbusMapBar2ApertureCached_VBAR2
              pMap = listPrev(&pKernelBus->virtualBar2[GPU_GFID_PF].cachedMapList, pMap))
         {
             NV_ASSERT(pMap->pMemDesc != NULL);
-            if (pMap->pMemDesc->PageCount >= pMemDesc->PageCount)
+            if ((GET_SIZE_FROM_PAGE_AND_COUNT(pMap->pMemDesc->PageCount, pMap->pMemDesc->pageArrayGranularity)) >=
+                (GET_SIZE_FROM_PAGE_AND_COUNT(pMemDesc->PageCount, pMemDesc->pageArrayGranularity)))
             {
 #if NV_PRINTF_ENABLED
                 pKernelBus->virtualBar2[GPU_GFID_PF].evictions++;
@@ -663,7 +668,6 @@ kbusMapBar2ApertureCached_VBAR2
             NV_PRINTF(LEVEL_ERROR,
                       "Not enough contiguous BAR2 VA space left allocSize %llx!\n",
                       allocSize);
-            DBG_BREAKPOINT();
             return NULL;
         }
     }
@@ -686,9 +690,8 @@ kbusMapBar2ApertureCached_VBAR2
 
     // Update the page tables
     if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping == NULL ||
-        (!KBUS_BAR2_TUNNELLED(pKernelBus) &&
-         NV_OK != kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, vAddr,
-            pMemDesc->PageCount * RM_PAGE_SIZE,
+        (NV_OK != kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, vAddr,
+            pMemDesc->PageCount * pMemDesc->pageArrayGranularity,
             UPDATE_RM_APERTURE_FLAGS_INVALIDATE)))
     {
         pVASpaceHeap->eheapFree(pVASpaceHeap, vAddr);
@@ -848,6 +851,17 @@ kbusValidateBar2ApertureMapping_VBAR2_SRIOV
     return kbusValidateBar2ApertureMapping_VBAR2(pGpu, pKernelBus, pMemDesc, pCpu);
 }
 
+NvBool
+kbusBar2IsReady_SCRATCH
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // The scratch implementation is just an allocation, so it's always ready
+    return NV_TRUE;
+}
+
 /*!
  * @brief Fake BAR2 map API to a scratch buffer.
  *
@@ -862,7 +876,26 @@ kbusMapBar2Aperture_SCRATCH
     NvU32              flags
 )
 {
-    return portMemAllocNonPaged((NvU32)pMemDesc->Size);
+    if (pMemDesc->Size >= NV_U32_MAX)
+    {
+        return NULL;
+    }
+
+    return portMemAllocNonPaged(pMemDesc->Size);
+}
+
+NvBool
+kbusBar2IsReady_VBAR2
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    //
+    // The CPU mapping is the last part of BAR2 to be initialized, so we can
+    // check it here to see if BAR2 is ready
+    //
+    return (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL);
 }
 
 /*!
@@ -889,6 +922,21 @@ kbusMapBar2Aperture_VBAR2
     NvU32              flags
 )
 {
+    //
+    // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
+    // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    // Certain mapping requests which arrive with a specific flag set are allowed
+    // to go through only in HCC devtools mode.
+    //
+    if (kbusIsBarAccessBlocked(pKernelBus) &&
+       (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+    {
+        os_dump_stack();
+        NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");
+        return NULL;
+    }
+
     if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
     {
         //
@@ -930,6 +978,19 @@ kbusMapBar2Aperture_VBAR2
 
     // Call the lower-level routine
     return kbusMapBar2ApertureCached_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
+}
+
+NvBool
+kbusBar2IsReady_VBAR2_SRIOV
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+        return kbusBar2IsReady_SCRATCH(pGpu, pKernelBus);
+
+    return kbusBar2IsReady_VBAR2(pGpu, pKernelBus);
 }
 
 /*!
@@ -998,22 +1059,32 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
     NvU32              flags
 )
 {
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    //
+    // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
+    // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    // Certain mapping requests which arrive with a specific flag set are allowed
+    // to go through only in HCC devtools mode.
+    //
+    if (kbusIsBarAccessBlocked(pKernelBus) &&
+       (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
     {
-        // Free the dummy data we allocated earlier.
-        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
-        {
-            kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
-            memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_FALSE);
-            return;
-        }
-        //
-        // Let a map created before the reset go through the normal path
-        // to clear out the memory.
-        //
+        NV_ASSERT(0);
+        NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");
+        return;
     }
 
-    NV_ASSERT(!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET));
+    //
+    // Free the dummy data we allocated for handling a reset GPU.
+    // Let a map created before the reset go through the normal path
+    // to clear out the memory.
+    //
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
+    {
+        kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_FALSE);
+        return;
+    }
 
     // Call the lower-level routine
     kbusUnmapBar2ApertureCached_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
@@ -1141,7 +1212,7 @@ NV_STATUS kbusMapCpuInvisibleBar2Aperture_VBAR2
     }
 
     status = kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, *pVaddr,
-                pMemDesc->PageCount * RM_PAGE_SIZE, UPDATE_RM_APERTURE_FLAGS_INVALIDATE |
+                pMemDesc->PageCount * pMemDesc->pageArrayGranularity, UPDATE_RM_APERTURE_FLAGS_INVALIDATE |
                                            UPDATE_RM_APERTURE_FLAGS_CPU_INVISIBLE_RANGE);
 
     if (IS_GFID_VF(gfid) && (pKernelBus->virtualBar2[gfid].pPageLevels != NULL))
@@ -1181,3 +1252,46 @@ void kbusUnmapCpuInvisibleBar2Aperture_VBAR2
     pVASpaceHiddenHeap->eheapFree(pVASpaceHiddenHeap, vAddr);
 }
 
+/*
+ * @brief This function simply rewrites the PTEs for an already
+ *        existing mapping cached in the usedMapList.
+ *
+ * This is currently used for updating the PTEs in the BAR2 page
+ * tables at the top of FB after bootstrapping is done. The PTEs
+ * for this mapping may be already existing in the page tables at
+ * the bottom of FB. But those PTEs will be discarded once migration
+ * to the page tables at the top of FB is done. So, before switching
+ * to the new page tables, we should be rewrite the PTEs so that the
+ * cached mapping does not become invalid. The *only* use case currently
+ * is the CPU pointer to the new page tables at the top of FB.
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ * @param[in] pMemDesc    MEMORY_DESCRIPTOR pointer.
+ *
+ * @return NV_OK if operation is OK
+ *         Error otherwise.
+ */
+NV_STATUS
+kbusRewritePTEsForExistingMapping_VBAR2
+(
+    OBJGPU            *pGpu,
+    KernelBus         *pKernelBus,
+    PMEMORY_DESCRIPTOR pMemDesc
+)
+{
+    VirtualBar2MapListIter it;
+
+    it = listIterAll(&pKernelBus->virtualBar2[GPU_GFID_PF].usedMapList);
+    while (listIterNext(&it))
+    {
+        VirtualBar2MapEntry *pMap = it.pValue;
+
+        if (pMap->pMemDesc == pMemDesc)
+        {
+            return kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, pMap->vAddr,
+                                            pMemDesc->Size, 0);
+        }
+    }
+    return NV_ERR_INVALID_OPERATION;
+}

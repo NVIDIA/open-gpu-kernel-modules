@@ -25,11 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0000/ctrl0000base.finn
+// Source file:      ctrl/ctrl0000/ctrl0000base.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV01_ROOT (client) control commands and parameters */
@@ -45,7 +42,6 @@
 #define NV0000_CTRL_EVENT          (0x05)
 #define NV0000_CTRL_NVD            (0x06)
 #define NV0000_CTRL_SWINSTR        (0x07)
-#define NV0000_CTRL_GSPC           (0x08)
 #define NV0000_CTRL_PROC           (0x09)
 #define NV0000_CTRL_SYNC_GPU_BOOST (0x0A)
 #define NV0000_CTRL_GPUACCT        (0x0B)

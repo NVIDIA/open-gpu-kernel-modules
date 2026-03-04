@@ -27,13 +27,76 @@
 #include "nvkms-utils.h"
 #include "nvkms-flip.h"
 #include "nvkms-private.h"
+#include "nvkms-headsurface.h"
+#include "nvkms-headsurface-swapgroup.h"
 #include "nvos.h"
 
 // NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD
 #include "ctrl/ctrl0000/ctrl0000unix.h"
+// NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM
+#include "ctrl/ctrl0000/ctrl0000client.h"
+
+/* NV0041_CTRL_SURFACE_INFO */
+#include "ctrl/ctrl0041.h"
 
 /* NV01_MEMORY_SYSTEM_OS_DESCRIPTOR */
 #include "class/cl0071.h"
+
+static void CpuUnmapSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr pSurfaceEvo)
+{
+    const NvU32 planeIndex = 0;
+    NvU32 sd;
+
+    if (pSurfaceEvo->planes[planeIndex].rmHandle == 0) {
+        return;
+    }
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+
+        if (pSurfaceEvo->cpuAddress[sd] != NULL) {
+            nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
+                               pDevEvo->pSubDevices[sd]->handle,
+                               pSurfaceEvo->planes[planeIndex].rmHandle,
+                               pSurfaceEvo->cpuAddress[sd],
+                               0);
+            pSurfaceEvo->cpuAddress[sd] = NULL;
+        }
+    }
+}
+
+NvBool nvEvoCpuMapSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr pSurfaceEvo)
+{
+    const NvU32 planeIndex = 0;
+    NvU32 sd;
+
+    /*
+     * We should only be called here with surfaces that contain a single plane.
+     */
+    nvAssert(nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format)->numPlanes == 1);
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+
+        NvU32 result = nvRmApiMapMemory(
+                        nvEvoGlobal.clientHandle,
+                        pDevEvo->pSubDevices[sd]->handle,
+                        pSurfaceEvo->planes[planeIndex].rmHandle,
+                        0,
+                        pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes,
+                        (void **) &pSurfaceEvo->cpuAddress[sd],
+                        0);
+
+        if (result != NVOS_STATUS_SUCCESS) {
+            CpuUnmapSurface(pDevEvo, pSurfaceEvo);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
 
 static void FreeSurfaceEvoStruct(NVSurfaceEvoPtr pSurfaceEvo)
 {
@@ -52,7 +115,6 @@ static void FreeSurfaceEvoStruct(NVSurfaceEvoPtr pSurfaceEvo)
 static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
 {
     NvU64 structRefCnt;
-    NvU32 firstPlaneRmHandle;
     NvU8 planeIndex;
 
     if ((pDevEvo == NULL) || (pSurfaceEvo == NULL)) {
@@ -62,28 +124,17 @@ static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
     nvAssert(pSurfaceEvo->rmRefCnt == 0);
 
     FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
-        nvRmEvoFreeDispContextDMA(pDevEvo,
-                                  &pSurfaceEvo->planes[planeIndex].ctxDma);
+        pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                            nvEvoGlobal.clientHandle,
+                                            &pSurfaceEvo->planes[planeIndex].surfaceDesc);
     }
 
-    firstPlaneRmHandle = pSurfaceEvo->planes[0].rmHandle;
+    CpuUnmapSurface(pDevEvo, pSurfaceEvo);
 
-    if (firstPlaneRmHandle != 0) {
-
-        NvU32 sd;
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-            if (pSurfaceEvo->cpuAddress[sd] != NULL) {
-                nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
-                                   pDevEvo->pSubDevices[sd]->handle,
-                                   firstPlaneRmHandle,
-                                   pSurfaceEvo->cpuAddress[sd],
-                                   0);
-                pSurfaceEvo->cpuAddress[sd] = NULL;
-            }
-        }
-
+    if (pSurfaceEvo->planes[0].rmHandle != 0) {
+        nvHsUnmapSurfaceFromDevice(pDevEvo,
+                                   pSurfaceEvo->planes[0].rmHandle,
+                                   pSurfaceEvo->gpuAddress);
     }
 
     FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -323,6 +374,83 @@ static NvBool ValidateRegisterSurfaceRequest(
     return TRUE;
 }
 
+static NvBool ValidateSurfaceAllocation(
+    NVDevEvoPtr pDevEvo,
+    NvU64 rmObjectSizeInBytes,
+    const struct NvKmsRegisterSurfaceRequest *pRequest,
+    NvU32 rmHandle)
+{
+    NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
+    NV0041_CTRL_SURFACE_INFO surfaceInfo[3];
+    enum {
+        PHYS_SIZE_LO = 0,
+        PHYS_SIZE_HI,
+        ADDR_SPACE_TYPE,
+    };
+    NV_STATUS status;
+    NvU64 memSize;
+    /*
+     * Do not require vidmem on tegra. Tegra has different capabilities. Here we
+     * always say display is possible so we never fail framebuffer creation.
+     *
+     * Do not require vidmem for surfaces that do not need access to display
+     * hardware.
+     *
+     * If the memory is not isochronous, the memory will not be scanned out to a
+     * display. The checks are not needed for such memory types.
+     */
+    NvBool requireVidmem = (pRequest->isoType == NVKMS_MEMORY_ISO) &&
+                           !pDevEvo->isSOCDisplay &&
+                           !pRequest->noDisplayHardwareAccess;
+
+    /*
+     * Check if the surface's actual size matches the request's sizeInBytes
+     * specification after duplicating the RM object under the NVKMS RM client.
+     */
+    surfaceInfo[PHYS_SIZE_LO].index = NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_LO;
+    surfaceInfo[PHYS_SIZE_HI].index = NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_SIZE_HI;
+
+    /*
+     * Check if the memory we are registering this surface with is valid. We
+     * cannot scan out sysmem or compressed buffers.
+     *
+     * If we cannot use this memory for display it may be resident in sysmem
+     * or may belong to another GPU.
+     */
+    surfaceInfo[ADDR_SPACE_TYPE].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+
+    surfaceInfoParams.surfaceInfoListSize = requireVidmem ? 3 : 2;
+    surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
+
+    status = nvRmApiControl(nvEvoGlobal.clientHandle,
+                            rmHandle,
+                            NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                            &surfaceInfoParams,
+                            sizeof(surfaceInfoParams));
+    if (status != NV_OK) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Failed to get surface information of RM memory object 0x%x",
+                         rmHandle);
+        return FALSE;
+    }
+
+    memSize = NvU64_BUILD(surfaceInfo[PHYS_SIZE_HI].data,
+                          surfaceInfo[PHYS_SIZE_LO].data);
+    if (memSize < rmObjectSizeInBytes) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Memory allocated is not large enough for the surface");
+        return FALSE;
+    }
+
+    if (requireVidmem &&
+        surfaceInfo[ADDR_SPACE_TYPE].data != NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Memory used for surface not appropriate for scanout");
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                           struct NvKmsPerOpenDev *pOpenDev,
@@ -442,10 +570,16 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                         goto fail;
                 }
 
-                if (nisoMemory) {
-                    allocParams.attr2 =
-                        FLD_SET_DRF(OS32, _ATTR2, _NISO_DISPLAY, _YES,
-                                    allocParams.attr2);
+                if (!pRequest->noDisplayHardwareAccess) {
+                    if (nisoMemory) {
+                        allocParams.attr2 =
+                            FLD_SET_DRF(OS32, _ATTR2, _NISO_DISPLAY, _YES,
+                                        allocParams.attr2);
+                    } else {
+                        allocParams.attr2 =
+                            FLD_SET_DRF(OS32, _ATTR2, _ISO, _YES,
+                                        allocParams.attr2);
+                    }
                 }
 
                 result = nvRmApiAlloc(nvEvoGlobal.clientHandle,
@@ -478,21 +612,40 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
             goto fail;
         }
 
-        /* XXX Validate sizeInBytes: can we query the surface size from RM? */
+        if (!ValidateSurfaceAllocation(pDevEvo,
+                                       pRequest->planes[planeIndex].rmObjectSizeInBytes,
+                                       pRequest,
+                                       planeRmHandle)) {
+            goto fail;
+        }
 
         if (!pRequest->noDisplayHardwareAccess) {
+            NvU32 ret;
 
-            const NvU32 planeCtxDma =
-                nvRmEvoAllocateAndBindDispContextDMA(
-                    pDevEvo,
-                    planeRmHandle,
-                    pRequest->layout,
-                    pRequest->planes[planeIndex].rmObjectSizeInBytes - 1);
-            if (!planeCtxDma) {
-                goto fail;
+            /*
+             * For the surfaces that need display HW access, if the the 'fd' or the
+             * (rmClient, rmObject) tuple from the request is allocated from sysmem,
+             * irrespective of whether it is allocated by the same or a different GPU
+             * than the one nvkms is using for display or is allocated by an external
+             * allocator (like nvmap), map it for access by the GPU device that nvkms
+             * is using for display, using NV0041_CTRL_CMD_MAP_MEMORY_FOR_GPU_ACCESS.
+             * If the mapping is already created, the ctrl call will just refcount it.
+             */
+            if (pDevEvo->isSOCDisplay) {
+                pSurfaceEvo->mapToDisplayRm = TRUE;
             }
 
-            pSurfaceEvo->planes[planeIndex].ctxDma = planeCtxDma;
+            ret =
+                nvRmAllocAndBindSurfaceDescriptor(
+                        pDevEvo,
+                        planeRmHandle,
+                        pRequest->layout,
+                        pRequest->planes[planeIndex].rmObjectSizeInBytes - 1,
+                        &pSurfaceEvo->planes[planeIndex].surfaceDesc,
+                        pSurfaceEvo->mapToDisplayRm);
+            if (ret != NVOS_STATUS_SUCCESS) {
+                goto fail;
+            }
         }
 
         pSurfaceEvo->planes[planeIndex].pitch =
@@ -503,31 +656,43 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                             pRequest->planes[planeIndex].rmObjectSizeInBytes;
     }
 
-    pSurfaceEvo->requireCtxDma = !pRequest->noDisplayHardwareAccess;
+    pSurfaceEvo->requireDisplayHardwareAccess = !pRequest->noDisplayHardwareAccess;
+    pSurfaceEvo->noDisplayCaching = pRequest->noDisplayCaching;
+
+    /*
+     * Map the surface into the GPU's virtual address space, for use with
+     * headSurface.  If the surface may be used for semaphores, headSurface will
+     * need to write to it through the graphics channel.  Force a writable GPU
+     * mapping.
+     *
+     * Map the first plane of the surface only into the GPU's address space.
+     * We would have already rejected multi-planar semaphore requests earlier.
+     */
+    if (nisoMemory) {
+        hsMapPermissions = NvHsMapPermissionsReadWrite;
+    }
+
+    pSurfaceEvo->gpuAddress = nvHsMapSurfaceToDevice(
+                    pDevEvo,
+                    pSurfaceEvo->planes[0].rmHandle,
+                    pRequest->planes[0].rmObjectSizeInBytes,
+                    hsMapPermissions);
+
+    if (pSurfaceEvo->gpuAddress == NV_HS_BAD_GPU_ADDRESS) {
+        goto fail;
+    }
 
     /*
      * Map the first plane of the surface only into the CPU's address space.
      * This is the only valid plane since we would have already rejected
-     * multi-planar semaphore requests earlier.
+     * multi-planar NISO surface requests earlier in
+     *
+     * nvEvoRegisterSurface() => ValidateRegisterSurfaceRequest() =>
+     * ValidatePlaneProperties().
      */
     if (needCpuMapping) {
-
-        NvU32 sd;
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-            result = nvRmApiMapMemory(
-                    nvEvoGlobal.clientHandle,
-                    pDevEvo->pSubDevices[sd]->handle,
-                    pSurfaceEvo->planes[0].rmHandle,
-                    0,
-                    pRequest->planes[0].rmObjectSizeInBytes,
-                    (void **) &pSurfaceEvo->cpuAddress[sd],
-                    0);
-
-            if (result != NVOS_STATUS_SUCCESS) {
-                goto fail;
-            }
+        if (!nvEvoCpuMapSurface(pDevEvo, pSurfaceEvo)) {
+            goto fail;
         }
     }
 
@@ -565,7 +730,7 @@ struct ClearSurfaceUsageCache {
         } layer[NVKMS_MAX_LAYERS_PER_HEAD];
 
         NvBool flipCursorToNull         : 1;
-    } head[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP];
+    } apiHead[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP];
 };
 
 /*
@@ -578,69 +743,67 @@ ClearSurfaceUsageCollect(NVDevEvoPtr pDevEvo,
                          struct ClearSurfaceUsageCache *pCache)
 {
     NVDispEvoPtr pDispEvo;
-    NvU32 head, sd;
+    NvU32 apiHead, sd;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-
-            const NVEvoSubDevHeadStateRec *pSdHeadState =
-                &pDevEvo->gpus[sd].headState[head];
-            const NVFlipChannelEvoHwState *pMainFlipState =
-                &pSdHeadState->layer[NVKMS_MAIN_LAYER];
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            NvU32 usageMaskOneHead = nvCollectSurfaceUsageMaskOneApiHead(pDispEvo,
+                apiHead, pSurfaceEvo);
+            NvU32 usageMaskMainLayer = DRF_IDX_VAL(_SURFACE,
+                _USAGE_MASK, _LAYER, NVKMS_MAIN_LAYER, usageMaskOneHead);
             NvU32 layer;
-
-            if (!nvHeadIsActive(pDispEvo, head)) {
-                continue;
-            }
 
             /*
              * XXX NVKMS TODO: flip across heads/subdevices for all scenarios
              * that are flip locked.
              */
 
-            if (!pMainFlipState->syncObject.usingSyncpt &&
-                (pSurfaceEvo == pMainFlipState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo ||
-                 pSurfaceEvo == pMainFlipState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo)) {
-                pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipSemaphoreToNull = TRUE;
+            if (FLD_TEST_DRF(_SURFACE, _USAGE_MASK_LAYER, _SEMAPHORE,
+                    _ENABLE, usageMaskMainLayer)) {
+                pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].
+                    flipSemaphoreToNull = TRUE;
             }
 
-            if (pSurfaceEvo == pMainFlipState->pSurfaceEvo[NVKMS_LEFT] ||
-                pSurfaceEvo == pMainFlipState->pSurfaceEvo[NVKMS_RIGHT] ||
-                pSurfaceEvo == pMainFlipState->completionNotifier.surface.pSurfaceEvo) {
-                pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipToNull = TRUE;
+            if (FLD_TEST_DRF(_SURFACE, _USAGE_MASK_LAYER, _NOTIFIER,
+                    _ENABLE, usageMaskMainLayer) ||
+                    FLD_TEST_DRF(_SURFACE, _USAGE_MASK_LAYER, _SCANOUT,
+                        _ENABLE, usageMaskMainLayer)) {
+                pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].
+                    flipToNull = TRUE;
             }
 
-            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                const NVFlipChannelEvoHwState *pLayerFlipState =
-                    &pSdHeadState->layer[layer];
+            for (layer = 0;
+                 layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+                NvU32 usageMaskOneLayer = DRF_IDX_VAL(_SURFACE,
+                    _USAGE_MASK, _LAYER, layer, usageMaskOneHead);
 
                 if (layer == NVKMS_MAIN_LAYER) {
                     continue;
                 }
 
-                if (pSurfaceEvo == pLayerFlipState->pSurfaceEvo[NVKMS_LEFT] ||
-                    pSurfaceEvo == pLayerFlipState->pSurfaceEvo[NVKMS_RIGHT] ||
-                    pSurfaceEvo == pLayerFlipState->completionNotifier.surface.pSurfaceEvo ||
-                    (!pLayerFlipState->syncObject.usingSyncpt &&
-                     (pSurfaceEvo == pLayerFlipState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo ||
-                      pSurfaceEvo == pLayerFlipState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo))) {
-                    pCache->head[sd][head].layer[layer].flipToNull = TRUE;
-                }
-
-                /*
-                 * EVO requires that, when flipping the base channel (aka main layer) to
-                 * NULL, overlay channel is also flipped to NULL.
-                 */
-                if (pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipToNull &&
-                    (pLayerFlipState->pSurfaceEvo[NVKMS_LEFT] != NULL ||
-                     pLayerFlipState->pSurfaceEvo[NVKMS_RIGHT] != NULL)) {
-                    pCache->head[sd][head].layer[layer].flipToNull = TRUE;
+                if (usageMaskOneLayer != 0x0) {
+                    pCache->apiHead[sd][apiHead].layer[layer].
+                        flipToNull = TRUE;
+                } if (pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].
+                        flipToNull) {
+                    NVSurfaceEvoPtr pSurfaceEvos[NVKMS_MAX_EYES] = { };
+                    /*
+                     * EVO requires that, when flipping the base channel
+                     * (aka main layer) to NULL, overlay channel is also
+                     * flipped to NULL.
+                     */
+                    if ((pSurfaceEvos[NVKMS_LEFT] != NULL) ||
+                            (pSurfaceEvos[NVKMS_RIGHT] != NULL)) {
+                        pCache->apiHead[sd][apiHead].layer[layer].
+                            flipToNull = TRUE;
+                     }
                 }
             }
 
-            if (pSurfaceEvo == pSdHeadState->cursor.pSurfaceEvo) {
-                pCache->head[sd][head].flipCursorToNull = TRUE;
+            if (FLD_TEST_DRF(_SURFACE, _USAGE_MASK, _CURSOR,
+                    _ENABLE, usageMaskOneHead) != 0x0) {
+                pCache->apiHead[sd][apiHead].flipCursorToNull = TRUE;
             }
         }
     }
@@ -671,11 +834,13 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
                        NvBool skipUpdate)
 {
     NVDispEvoPtr pDispEvo;
-    NvU32 head, sd;
-    NvBool found = FALSE;
-    struct NvKmsFlipRequest *request = nvCalloc(1, sizeof(*request));
+    NvU32 apiHead, sd;
+    const NvU32 maxApiHeads = pDevEvo->numApiHeads * pDevEvo->numSubDevices;
+    struct NvKmsFlipRequestOneHead *pFlipApiHead =
+        nvCalloc(1, sizeof(*pFlipApiHead) * maxApiHeads);
+    NvU32 numFlipApiHeads = 0;
 
-    if (request == NULL) {
+    if (pFlipApiHead == NULL) {
         nvAssert(!"Failed to allocate memory");
         return;
     }
@@ -683,46 +848,58 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
     /* 1. Issue a flip of any overlay layer to NULL */
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
 
-            struct NvKmsFlipCommonParams *pRequestOneHead =
-                &request->sd[sd].head[head];
+            struct NvKmsFlipCommonParams *pRequestOneApiHead =
+                &pFlipApiHead[numFlipApiHeads].flip;
             NvU32 layer;
+            NvBool found = FALSE;
 
-            if (!nvHeadIsActive(pDispEvo, head)) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
                 continue;
             }
 
-            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+            for (layer = 0;
+                 layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
 
                 if (layer == NVKMS_MAIN_LAYER) {
                     continue;
                 }
 
-                if (pCache->head[sd][head].layer[layer].flipToNull) {
-                    pRequestOneHead->layer[layer].surface.specified = TRUE;
+                if (pCache->apiHead[sd][apiHead].layer[layer].flipToNull) {
+                    pRequestOneApiHead->layer[layer].surface.specified = TRUE;
                     // No need to specify sizeIn/sizeOut as we are flipping NULL surface.
-                    pRequestOneHead->layer[layer].compositionParams.specified = TRUE;
-                    pRequestOneHead->layer[layer].syncObjects.specified = TRUE;
-                    pRequestOneHead->layer[layer].completionNotifier.specified = TRUE;
+                    pRequestOneApiHead->layer[layer].compositionParams.specified = TRUE;
+                    pRequestOneApiHead->layer[layer].syncObjects.specified = TRUE;
+                    pRequestOneApiHead->layer[layer].completionNotifier.specified = TRUE;
 
-                    request->sd[sd].requestedHeadsBitMask |= NVBIT(head);
                     found = TRUE;
 
-                    pCache->head[sd][head].layer[layer].needToIdle = TRUE;
+                    pCache->apiHead[sd][apiHead].layer[layer].needToIdle = TRUE;
                 }
+            }
+
+            if (found) {
+                pFlipApiHead[numFlipApiHeads].sd = sd;
+                pFlipApiHead[numFlipApiHeads].head = apiHead;
+                numFlipApiHeads++;
+                nvAssert(numFlipApiHeads <= maxApiHeads);
             }
         }
     }
 
-    if (found) {
-        request->commit = NV_TRUE;
-
-        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev, request, NULL, skipUpdate,
+    if (numFlipApiHeads > 0) {
+        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                  pFlipApiHead,
+                  numFlipApiHeads,
+                  TRUE  /* commit */,
+                  NULL  /* pReply */,
+                  skipUpdate,
                   FALSE /* allowFlipLock */);
 
-        nvkms_memset(request, 0, sizeof(*request));
-        found = FALSE;
+        nvkms_memset(pFlipApiHead, 0,
+            sizeof(pFlipApiHead[0]) * numFlipApiHeads);
+        numFlipApiHeads = 0;
     }
 
     /*
@@ -737,46 +914,57 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
     /* 2. Issue a flip of any main layer to NULL */
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
 
-            struct NvKmsFlipCommonParams *pRequestOneHead =
-                &request->sd[sd].head[head];
+            struct NvKmsFlipCommonParams *pRequestOneApiHead =
+                &pFlipApiHead[numFlipApiHeads].flip;
+            NvBool found = FALSE;
 
-            if (!nvHeadIsActive(pDispEvo, head)) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
                 continue;
             }
 
-            if (pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipToNull ||
-                pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipSemaphoreToNull) {
+            if (pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].flipToNull ||
+                pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].flipSemaphoreToNull) {
 
-                if (pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].flipToNull) {
-                    pRequestOneHead->layer[NVKMS_MAIN_LAYER].surface.specified = TRUE;
+                if (pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].flipToNull) {
+                    pRequestOneApiHead->layer[NVKMS_MAIN_LAYER].surface.specified = TRUE;
                     // No need to specify sizeIn/sizeOut as we are flipping NULL surface.
-                    pRequestOneHead->layer[NVKMS_MAIN_LAYER].completionNotifier.specified = TRUE;
+                    pRequestOneApiHead->layer[NVKMS_MAIN_LAYER].completionNotifier.specified = TRUE;
 
-                    pCache->head[sd][head].layer[NVKMS_MAIN_LAYER].needToIdle = TRUE;
+                    pCache->apiHead[sd][apiHead].layer[NVKMS_MAIN_LAYER].needToIdle = TRUE;
                 }
 
                 /* XXX arguably we should also idle for this case, but we
                  * don't currently have a way to do so without also
                  * clearing the ISO surface */
-                pRequestOneHead->layer[NVKMS_MAIN_LAYER].syncObjects.val.useSyncpt = FALSE;
-                pRequestOneHead->layer[NVKMS_MAIN_LAYER].syncObjects.specified = TRUE;
+                pRequestOneApiHead->layer[NVKMS_MAIN_LAYER].syncObjects.val.useSyncpt = FALSE;
+                pRequestOneApiHead->layer[NVKMS_MAIN_LAYER].syncObjects.specified = TRUE;
 
-                request->sd[sd].requestedHeadsBitMask |= NVBIT(head);
                 found = TRUE;
+            }
+
+            if (found) {
+                pFlipApiHead[numFlipApiHeads].sd = sd;
+                pFlipApiHead[numFlipApiHeads].head = apiHead;
+                numFlipApiHeads++;
+                nvAssert(numFlipApiHeads <= maxApiHeads);
             }
         }
     }
 
-    if (found) {
-        request->commit = NV_TRUE;
-
-        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev, request, NULL, skipUpdate,
+    if (numFlipApiHeads > 0) {
+        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                  pFlipApiHead,
+                  numFlipApiHeads,
+                  TRUE  /* commit */,
+                  NULL  /* pReply */,
+                  skipUpdate,
                   FALSE /* allowFlipLock */);
 
-        nvkms_memset(request, 0, sizeof(*request));
-        found = FALSE;
+        nvkms_memset(pFlipApiHead, 0,
+            sizeof(pFlipApiHead[0]) * numFlipApiHeads);
+        numFlipApiHeads = 0;
     }
 
     /*
@@ -785,111 +973,51 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
      *    forcibly idle any problematic channels.
      */
     if (!skipUpdate) {
-        NvU64 startTime = 0;
-        const NvU32 timeout = 500000; // .5 seconds
-        NvBool allIdle;
-
-        do {
-            allIdle = TRUE;
-            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-
-                for (head = 0; head < pDevEvo->numHeads; head++) {
-                    NvU32 layer;
-
-                    if (!nvHeadIsActive(pDispEvo, head)) {
-                        continue;
+        NvU32 layerMaskPerSdApiHead[NVKMS_MAX_SUBDEVICES]
+            [NVKMS_MAX_HEADS_PER_DISP] = { };
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+                for (NvU32 layer = 0;
+                     layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+                    if (pCache->apiHead[sd][apiHead].layer[layer].needToIdle) {
+                        layerMaskPerSdApiHead[sd][apiHead] |= NVBIT(layer);
                     }
-
-                    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                        NvBool isMethodPending;
-
-                        if (!pCache->head[sd][head].layer[layer].needToIdle) {
-                            continue;
-                        }
-
-                        if (pDevEvo->hal->IsChannelMethodPending(
-                                pDevEvo, pDevEvo->head[head].layer[layer], sd,
-                                &isMethodPending) &&
-                            isMethodPending) {
-
-                            allIdle = FALSE;
-                        } else {
-                            /* This has been completed, no need to keep trying */
-                            pCache->head[sd][head].layer[layer].needToIdle = FALSE;
-                        }
-                    }
-                }
-            }
-
-            if (!allIdle) {
-                if (nvExceedsTimeoutUSec(&startTime, timeout)) {
-                    break;
-                }
-                nvkms_yield();
-            }
-        } while (!allIdle);
-
-        /* If we timed out above, force things to be idle. */
-        if (!allIdle) {
-            NVEvoIdleChannelState idleChannelState = { };
-            NvBool tryToForceIdle = FALSE;
-
-            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-
-                for (head = 0; head < pDevEvo->numHeads; head++) {
-                    NvU32 layer;
-
-                    if (!nvHeadIsActive(pDispEvo, head)) {
-                        continue;
-                    }
-
-                    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                        if (pCache->head[sd][head].layer[layer].needToIdle) {
-                            idleChannelState.subdev[sd].channelMask |=
-                                pDevEvo->head[head].layer[layer]->channelMask;
-                            tryToForceIdle = TRUE;
-                        }
-                    }
-                }
-            }
-
-            if (tryToForceIdle) {
-                NvBool ret = pDevEvo->hal->ForceIdleSatelliteChannel(pDevEvo, &idleChannelState);
-                if (!ret) {
-                    nvAssert(ret);
                 }
             }
         }
+        nvIdleLayerChannels(pDevEvo, layerMaskPerSdApiHead);
     }
 
     /* 4. Issue a flip of any core channels to NULL */
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
 
-            struct NvKmsFlipCommonParams *pRequestOneHead =
-                &request->sd[sd].head[head];
-
-            if (!nvHeadIsActive(pDispEvo, head)) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
                 continue;
             }
 
-            if (pCache->head[sd][head].flipCursorToNull) {
-                pRequestOneHead->cursor.imageSpecified = TRUE;
-                request->sd[sd].requestedHeadsBitMask |= NVBIT(head);
-                found = TRUE;
+            if (pCache->apiHead[sd][apiHead].flipCursorToNull) {
+                pFlipApiHead[numFlipApiHeads].flip.cursor.imageSpecified = TRUE;
+                pFlipApiHead[numFlipApiHeads].sd = sd;
+                pFlipApiHead[numFlipApiHeads].head = apiHead;
+                numFlipApiHeads++;
+                nvAssert(numFlipApiHeads <= maxApiHeads);
             }
         }
     }
 
-    if (found) {
-        request->commit = NV_TRUE;
-
-        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev, request, NULL, skipUpdate,
+    if (numFlipApiHeads > 0) {
+        nvFlipEvo(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                  pFlipApiHead,
+                  numFlipApiHeads,
+                  TRUE  /* commit */,
+                  NULL  /* pReply */,
+                  skipUpdate,
                   FALSE /* allowFlipLock */);
     }
 
-    nvFree(request);
+    nvFree(pFlipApiHead);
 }
 
 /*
@@ -963,7 +1091,7 @@ void nvEvoFreeClientSurfaces(NVDevEvoPtr pDevEvo,
         nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
         if (isOwner) {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
         } else {
             nvEvoDecrementSurfaceStructRefCnt(pSurfaceEvo);
         }
@@ -974,7 +1102,8 @@ void nvEvoFreeClientSurfaces(NVDevEvoPtr pDevEvo,
 void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
                             struct NvKmsPerOpenDev *pOpenDev,
                             NvKmsSurfaceHandle surfaceHandle,
-                            NvBool skipUpdate)
+                            NvBool skipUpdate,
+                            NvBool skipSync)
 {
     NVEvoApiHandlesRec *pOpenDevSurfaceHandles =
         nvGetSurfaceHandlesFromOpenDev(pOpenDev);
@@ -1008,7 +1137,7 @@ void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
     /* Remove the handle from the calling client's namespace. */
     nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCntsWithSync(pDevEvo, pSurfaceEvo, skipSync);
 }
 
 void nvEvoReleaseSurface(NVDevEvoPtr pDevEvo,
@@ -1046,54 +1175,29 @@ void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
     pSurfaceEvo->structRefCnt++;
 }
 
-void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
+void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
+                                  NVSurfaceEvoPtr pSurfaceEvo)
+{
+    nvEvoDecrementSurfaceRefCntsWithSync(pDevEvo, pSurfaceEvo, NV_FALSE);
+}
+
+void nvEvoDecrementSurfaceRefCntsWithSync(NVDevEvoPtr pDevEvo,
+                                          NVSurfaceEvoPtr pSurfaceEvo,
+                                          NvBool skipSync)
 {
     nvAssert(pSurfaceEvo->rmRefCnt >= 1);
     pSurfaceEvo->rmRefCnt--;
 
     if (pSurfaceEvo->rmRefCnt == 0) {
-        NVDevEvoPtr pDevEvo =
-            nvGetDevEvoFromOpenDev(pSurfaceEvo->owner.pOpenDev);
-
         /*
-         * Don't sync if this surface was registered as not requiring display
-         * hardware access, to WAR timeouts that result from OGL unregistering
-         * a deferred request fifo causing a sync here that may timeout if
-         * GLS hasn't had the opportunity to release semaphores with pending
-         * flips. (Bug 2050970)
+         * Don't clear usage/sync if this surface was registered as not
+         * requiring display hardware access, to WAR timeouts that result from
+         * OGL unregistering a deferred request fifo causing a sync here that
+         * may timeout if GLS hasn't had the opportunity to release semaphores
+         * with pending flips. (Bug 2050970)
          */
-        if (pSurfaceEvo->requireCtxDma) {
-            /*
-             * XXX NVKMS TODO
-             * Make the sync more efficient: we only need to sync if the
-             * in-flight methods flip away from this surface.
-             */
-            NvU32 head;
-
-            /*
-             * If the core channel is no longer allocated, we don't need to
-             * sync.  This assumes the channels are allocated/deallocated
-             * together.
-             */
-            if (pDevEvo->core) {
-
-                if (pDevEvo->hal->ClearSurfaceUsage != NULL) {
-                    pDevEvo->hal->ClearSurfaceUsage(pDevEvo, pSurfaceEvo);
-                }
-
-                nvRMSyncEvoChannel(pDevEvo, pDevEvo->core, __LINE__);
-
-                for (head = 0; head < pDevEvo->numHeads; head++) {
-                    NvU32 layer;
-
-                    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                        NVEvoChannelPtr pChannel =
-                            pDevEvo->head[head].layer[layer];
-
-                        nvRMSyncEvoChannel(pDevEvo, pChannel, __LINE__);
-                    }
-                }
-            }
+        if (pSurfaceEvo->requireDisplayHardwareAccess) {
+            nvEvoClearSurfaceUsage(pDevEvo, pSurfaceEvo, skipSync);
         }
 
         FreeSurfaceEvoRm(pDevEvo, pSurfaceEvo);
@@ -1112,13 +1216,15 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask,
-    const NvBool requireCtxDma)
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel,
+    const NvBool requireDisplayHardwareAccess,
+    const NvBool maybeUsedBy3d)
 {
     NVSurfaceEvoPtr pSurfaceEvo =
         nvEvoGetPointerFromApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvAssert(requireCtxDma || !channelMask);
+    nvAssert(requireDisplayHardwareAccess || (!isUsedByCursorChannel && !isUsedByLayerChannel));
 
     if (pSurfaceEvo == NULL) {
         return NULL;
@@ -1128,27 +1234,24 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
         return NULL;
     }
 
-    if (requireCtxDma && !pSurfaceEvo->requireCtxDma) {
+    if (requireDisplayHardwareAccess && !pSurfaceEvo->requireDisplayHardwareAccess) {
         return NULL;
     }
 
     /* Validate that the surface can be used as a cursor image */
-    if ((channelMask &
-         NV_EVO_CHANNEL_MASK_CURSOR_ALL) &&
+    if (isUsedByCursorChannel &&
         !pDevEvo->hal->ValidateCursorSurface(pDevEvo, pSurfaceEvo)) {
         return NULL;
     }
 
     /*
-     * XXX If !requireCtxDma, fetched surfaces aren't going to be accessed by
-     * the display hardware, so they shouldn't need to be checked by
-     * nvEvoGetHeadSetStoragePitchValue(). These surfaces will be used as a
-     * texture by the 3d engine. But previously all surfaces were checked by
+     * XXX If maybeUsedBy3d, the fetched surface may be used as a texture by the
+     * 3d engine.  Previously, all surfaces were checked by
      * nvEvoGetHeadSetStoragePitchValue() at registration time, and we don't
      * know if nvEvoGetHeadSetStoragePitchValue() was protecting us from any
      * surface dimensions that could cause trouble for the 3d engine.
      */
-    if ((channelMask & ~NV_EVO_CHANNEL_MASK_CURSOR_ALL) || !requireCtxDma) {
+    if (isUsedByLayerChannel || maybeUsedBy3d) {
         NvU8 planeIndex;
 
         FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -1168,24 +1271,44 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask)
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel)
 {
     return GetSurfaceFromHandle(pDevEvo,
                                 pOpenDevSurfaceHandles,
                                 surfaceHandle,
-                                channelMask,
-                                TRUE /* requireCtxDma */);
+                                isUsedByCursorChannel,
+                                isUsedByLayerChannel,
+                                TRUE /* requireDisplayHardwareAccess */,
+                                TRUE /* maybeUsedBy3d */);
 }
 
-NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     NvKmsSurfaceHandle surfaceHandle)
 {
     return GetSurfaceFromHandle(pDevEvo,
                                 pOpenDevSurfaceHandles,
-                                surfaceHandle, 0x0 /* channelMask */,
-                                FALSE /* requireCtxDma */);
+                                surfaceHandle,
+                                FALSE /* isUsedByCursorChannel */,
+                                FALSE /* isUsedByLayerChannel */,
+                                FALSE /* requireDisplayHardwareAccess */,
+                                TRUE /* maybeUsedBy3d */);
+}
+
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoHWAccess(
+    const NVDevEvoRec *pDevEvo,
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
+    NvKmsSurfaceHandle surfaceHandle)
+{
+    return GetSurfaceFromHandle(pDevEvo,
+                                pOpenDevSurfaceHandles,
+                                surfaceHandle,
+                                FALSE /* isUsedByCursorChannel */,
+                                FALSE /* isUsedByLayerChannel */,
+                                FALSE /* requireDisplayHardwareAccess */,
+                                FALSE /* maybeUsedBy3d */);
 }
 
 /*!
@@ -1246,6 +1369,8 @@ void nvEvoUnregisterDeferredRequestFifo(
     nvAssert(pDeferredRequestFifo->fifo != NULL);
     nvAssert(pDeferredRequestFifo->pSurfaceEvo != NULL);
 
+    nvHsLeaveSwapGroup(pDevEvo, pDeferredRequestFifo, FALSE /* teardown */);
+
     nvRmApiUnmapMemory(
                     nvEvoGlobal.clientHandle,
                     pDevEvo->deviceHandle,
@@ -1253,7 +1378,7 @@ void nvEvoUnregisterDeferredRequestFifo(
                     pDeferredRequestFifo->fifo,
                     0);
 
-    nvEvoDecrementSurfaceRefCnts(pDeferredRequestFifo->pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCnts(pDevEvo, pDeferredRequestFifo->pSurfaceEvo);
 
     nvFree(pDeferredRequestFifo);
 }

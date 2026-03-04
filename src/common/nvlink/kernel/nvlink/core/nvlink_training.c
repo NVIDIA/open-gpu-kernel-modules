@@ -31,6 +31,44 @@ static void _nvlink_core_set_sublink_pre_hs_settings(nvlink_link *, NvU32);
 static void _nvlink_core_set_link_pre_active_settings(nvlink_link *, NvU32);
 static void _nvlink_core_set_link_post_active_settings(nvlink_link *, NvU32);
 
+NvlStatus
+nvlink_core_train_check_link_ready_ALI
+(
+    nvlink_link **links,
+    NvU32         linkCount
+)
+{
+    NvU32     i      = 0;
+    NvlStatus status = NVL_SUCCESS;
+
+    if (links == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    for (i = 0; i < linkCount; i++)
+    {
+        if (links[i] == NULL)
+            continue;
+
+        if (links[i]->bCciManaged)
+        {
+            continue;
+        }
+
+        if (!nvlink_core_check_link_state(links[i], NVLINK_LINKSTATE_ALI))
+        {
+            // If link is not in active, update status to be error and continue
+            status = NVL_ERR_GENERIC;
+            continue;
+        }
+
+        links[i]->link_handlers->training_complete(links[i]);
+    }
+
+    return status;
+}
+
 /**
  * Link training
  *   Train the internode connection link from SWCFG to ACTIVE
@@ -65,6 +103,9 @@ nvlink_core_train_internode_conns_from_swcfg_to_active
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Don't do anything if the link is already at HS.
         if ((nvlink_core_check_link_state(conns[i]->local_end, NVLINK_LINKSTATE_HS)) &&
             (nvlink_core_check_tx_sublink_state(conns[i]->local_end,
@@ -109,7 +150,7 @@ nvlink_core_train_internode_conns_from_swcfg_to_active
 
     for (i = 0; i < connCount; i++)
     {
-        if (skipConn[i])
+        if ((conns[i] == NULL) || skipConn[i])
         {
             continue;
         }
@@ -127,6 +168,8 @@ nvlink_core_train_internode_conns_from_swcfg_to_active
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
 
         // Wait for the link state to change.
         status = nvlink_core_poll_link_state(conns[i]->local_end,
@@ -177,6 +220,11 @@ nvlink_core_train_internode_conn_sublink_from_safe_to_hs
 )
 {
     NvlStatus status = NVL_SUCCESS;
+
+    if (conn == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
 
     // NVLink 3.0 onwards this is handled through INITOPTIMIZE, return error
     if (conn->local_end->version >= NVLINK_DEVICE_VERSION_30)
@@ -304,6 +352,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 1: Reset all endpoints of the links. This clears any link state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_RESET,
                                                         flags);
@@ -315,6 +366,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 2: NVLink 3 and beyond, we also need to perform INITPHASE1
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_INITPHASE1,
                                                         flags);
@@ -331,6 +385,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -350,6 +407,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // Verify that all the endpoints are now in INIT state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_OFF);
         if (status != NVL_SUCCESS)
         {
@@ -365,6 +425,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 3: Restore all end point state saved while entering SLEEP state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (conns[i]->end0->bStateSaved)
         {
             conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
@@ -385,6 +448,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -404,6 +470,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 4: Initialize RX Termination on all end points
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_rx_mode(conns[i]->end0,
                                                    NVLINK_SUBLINK_STATE_RX_INIT_TERM,
                                                    flags);
@@ -417,6 +486,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -436,6 +508,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 5: Enable Common mode on Tx's of all endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (!((conns[i]->end0->tx_sublink_state == NVLINK_SUBLINK_STATE_TX_COMMON_MODE) ||
               (conns[i]->end0->tx_sublink_state == NVLINK_SUBLINK_STATE_TX_COMMON_MODE_DISABLE) ||
               (conns[i]->end0->tx_sublink_state == NVLINK_SUBLINK_STATE_TX_DATA_READY)))
@@ -459,6 +534,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -478,6 +556,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 6: Put all Rx's in RXCAL
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (conns[i]->end0->rx_sublink_state != NVLINK_SUBLINK_STATE_RX_RXCAL)
         {
             conns[i]->end0->link_handlers->set_rx_mode(conns[i]->end0,
@@ -495,6 +576,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 7: Disable Tx common mode
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (!((conns[i]->end0->tx_sublink_state == NVLINK_SUBLINK_STATE_TX_COMMON_MODE_DISABLE) ||
               (conns[i]->end0->tx_sublink_state == NVLINK_SUBLINK_STATE_TX_DATA_READY)))
         {
@@ -514,6 +598,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 8: Set Data Ready and Enable
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (conns[i]->end0->tx_sublink_state != NVLINK_SUBLINK_STATE_TX_DATA_READY)
         {
             conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
@@ -533,6 +620,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -552,6 +642,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 9: Set link mode to SAFE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_SAFE,
                                                         flags);
@@ -566,6 +659,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // Verify all the endpoints link state now reflect SAFE state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
                                              NVLINK_TRANSITION_SAFE_TIMEOUT);
@@ -610,6 +706,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 9: Set INITNEOGOTIATE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_INITNEGOTIATE,
                                                         flags);
@@ -627,6 +726,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     // STEP 8: Set POST_INITNEGOTIATE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_POST_INITNEGOTIATE,
                                                         flags);
@@ -660,6 +762,9 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
 
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             // Update the power state transition status of the link
             conns[i]->end0->powerStateTransitionStatus = nvlink_power_state_in_L0;
             conns[i]->end1->powerStateTransitionStatus = nvlink_power_state_in_L0;
@@ -669,6 +774,220 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     /***************** End of L2 exit sequence for the connections *****************/
 
     return status;
+}
+
+/**
+ * Train intranode connections associated with a list of links to HS
+ * using non-ALI sequence
+ *
+ * @param[in]  conns      Array of connections to train
+ * @param[in]  connCount  Number of connections in the array
+ * @param[in]  flags      Flags to track if training is sync/async
+ *
+ * return NVL_SUCCESS if the connections train successfully
+ */
+NvlStatus
+nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI
+(
+    nvlink_intranode_conn **conns,
+    NvU32                   connCount,
+    NvU32                   flags
+)
+{
+    NvlStatus status     = NVL_SUCCESS;
+    NvlStatus pollStatus = NVL_SUCCESS;
+    NvU32     i;
+
+    if ((conns == NULL) || (connCount == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No connections to train to ACTIVE\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    // Trigger INITOPTIMIZE on both ends of the connection
+    for (i = 0; i < connCount; i++)
+    {
+        if (conns[i] == NULL)
+            continue;
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_INITOPTIMIZE,
+                                                        flags);
+
+        // On loopback, only send INITOPTIMIZE to one side.
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_INITOPTIMIZE,
+                                                            flags);
+        }
+    }
+
+    // Trigger POST_INITOPTIMIZE (Checks INITOPTIMIZE was successful) on both ends of the connection
+    for (i = 0; i < connCount; i++)
+    {
+        if (conns[i] == NULL)
+            continue;
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_POST_INITOPTIMIZE,
+                                                        flags);
+
+        // On loopback, only send POST_INITOPTIMIZE to one side.
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_POST_INITOPTIMIZE,
+                                                            flags);
+        }
+    }
+
+    // Set link modes to ACTIVE
+    for (i = 0; i < connCount; i++)
+    {
+        if (conns[i] == NULL)
+            continue;
+
+        // Some settings required before moving to ACTIVE
+        _nvlink_core_set_link_pre_active_settings(conns[i]->end0, flags);
+        _nvlink_core_set_link_pre_active_settings(conns[i]->end1, flags);
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_HS,
+                                                        flags);
+
+        // If not in loopback send the dl link mode
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                        NVLINK_LINKSTATE_HS,
+                                                        flags);
+        }
+
+    }
+
+    // Verify link mode HS on the endpoints
+    for (i = 0; i < connCount; i++)
+    {
+        if (conns[i] == NULL)
+            continue;
+
+        pollStatus = nvlink_core_poll_link_state(conns[i]->end0,
+                                                NVLINK_LINKSTATE_HS,
+                                                NVLINK_TRANSITION_HS_TIMEOUT);
+        if (pollStatus != NVL_SUCCESS)
+        {
+            status = pollStatus;
+        }
+
+        pollStatus = nvlink_core_poll_link_state(conns[i]->end1,
+                                                NVLINK_LINKSTATE_HS,
+                                                NVLINK_TRANSITION_HS_TIMEOUT);
+        if (pollStatus != NVL_SUCCESS)
+        {
+            status = pollStatus;
+        }
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_INITTL,
+                                                        flags);
+
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                        NVLINK_LINKSTATE_INITTL,
+                                                        flags);
+        }
+
+        conns[i]->end0->link_handlers->training_complete(conns[i]->end0);
+
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->training_complete(conns[i]->end1);
+        }
+
+        conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
+                                                   NVLINK_SUBLINK_STATE_TX_POST_HS,
+                                                   flags);
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_tx_mode(conns[i]->end1,
+                                                       NVLINK_SUBLINK_STATE_TX_POST_HS,
+                                                       flags);
+        }
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_TRAFFIC_SETUP,
+                                                        flags);
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_TRAFFIC_SETUP,
+                                                            flags);
+        }
+    }
+
+    return status;
+}
+
+/**
+ * Train intranode connections associated with a list of links to HS
+ * using non-ALI sequence
+ *
+ * @param[in]  links      Array of links to train
+ * @param[in]  numLinks   Number of links in the array
+ *
+ * return NVL_SUCCESS if the connections train successfully
+ */
+NvlStatus
+nvlink_core_train_intranode_conns_from_off_to_active_ALI
+(
+    nvlink_link **pLinks,
+    NvU32         numLinks
+)
+{
+    NvlStatus status       = NVL_SUCCESS;
+    NvlStatus returnStatus = NVL_SUCCESS;
+    NvU32     i;
+
+    if ((pLinks == NULL) || (numLinks == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No links to train to ACTIVE\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    for (i = 0; i < numLinks; ++i)
+    {
+        if (pLinks[i] == NULL)
+            continue;
+
+        if (pLinks[i]->bCciManaged)
+        {
+            continue;
+        }
+
+        status = pLinks[i]->link_handlers->ali_training(pLinks[i]);
+        if (status != NVL_SUCCESS)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: failed to send ALI link training on link 0x%x\n",
+            __FUNCTION__, pLinks[i]->linkNumber));
+            returnStatus = status;
+        }
+    }
+
+    return returnStatus;
 }
 
 /**
@@ -706,6 +1025,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
         if (status != NVL_SUCCESS)
         {
@@ -728,7 +1050,7 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT
     // Trigger INITOPTIMIZE on both ends of the connection
     for (i = 0; i < connCount; i++)
     {
-        if (skipConn[i])
+        if ((conns[i] == NULL) || skipConn[i])
         {
             continue;
         }
@@ -749,7 +1071,7 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT
     // Trigger POST_INITOPTIMIZE (Checks INITOPTIMIZE was successful) on both ends of the connection
     for (i = 0; i < connCount; i++)
     {
-        if (skipConn[i])
+        if ((conns[i] == NULL) || skipConn[i])
         {
             continue;
         }
@@ -770,7 +1092,7 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT
     // Set link modes to ACTIVE
     for (i = 0; i < connCount; i++)
     {
-        if (skipConn[i])
+        if ((conns[i] == NULL) || skipConn[i])
         {
             continue;
         }
@@ -791,7 +1113,7 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT
     // Verify link mode HS on the endpoints
     for (i = 0; i < connCount; i++)
     {
-        if (skipConn[i])
+        if ((conns[i] == NULL) || skipConn[i])
         {
             continue;
         }
@@ -892,6 +1214,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy
     // Enable PRBS generator on both ends of the link
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         _nvlink_core_set_sublink_pre_hs_settings(conns[i]->end0, flags);
         _nvlink_core_set_sublink_pre_hs_settings(conns[i]->end1, flags);
     }
@@ -899,6 +1224,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy
     // Put TX sublink on both ends in High Speed
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                    NVLINK_SUBLINK_STATE_TX_HS,
                                                    flags);
@@ -910,6 +1238,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy
     // Wait for sublinks to go in High Speed.
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         pollStatus = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                     NVLINK_SUBLINK_STATE_TX_HS,
                                                     NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
@@ -946,6 +1277,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy
     // Some settings required before moving to ACTIVE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         _nvlink_core_set_link_pre_active_settings(conns[i]->end0, flags);
         _nvlink_core_set_link_pre_active_settings(conns[i]->end1, flags);
 
@@ -961,6 +1295,9 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy
     // Verify link mode HS on the endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         pollStatus = nvlink_core_poll_link_state(conns[i]->end1,
                                                  NVLINK_LINKSTATE_HS,
                                                  NVLINK_TRANSITION_HS_TIMEOUT);
@@ -1023,6 +1360,9 @@ _nvlink_core_set_sublink_pre_hs_settings
     NvU32        flags
 )
 {
+    if (link == NULL)
+        return;
+
     //
     // Before training the sublinks to HS, the PROD values must be loaded.
     // On Volta/NVSwitch, the PROD values get loaded by UCODE during DLPL Init.
@@ -1050,6 +1390,9 @@ _nvlink_core_set_link_pre_active_settings
     NvU32        flags
 )
 {
+    if (link == NULL)
+        return;
+
     // Some settings required before moving to ACTIVE
     link->link_handlers->set_dl_link_mode(link, NVLINK_LINKSTATE_PRE_HS, flags);
 }
@@ -1068,6 +1411,9 @@ _nvlink_core_set_link_post_active_settings
     NvU32        flags
 )
 {
+    if (link == NULL)
+        return;
+
     link->link_handlers->training_complete(link);
 
     link->link_handlers->set_tx_mode(link, NVLINK_SUBLINK_STATE_TX_POST_HS, flags);

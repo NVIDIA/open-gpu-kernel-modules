@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,9 @@ extern "C" {
 #include "utils/nvprintf.h"
 #include "nvlog/nvlog.h"
 
+// TODO Bug 5078337: Move these away from kernel/core
+#include "kernel/diagnostics/xid_context.h"
+
 #define DBG_FILE_LINE_FUNCTION  NV_FILE_STR, __LINE__, NV_FUNCTION_STR
 
 /**
@@ -56,7 +59,7 @@ extern "C" {
 
 // NV_DBG_BREAKPOINT_ALLOWED can be overridden through CFLAGS
 #if !defined(NV_DBG_BREAKPOINT_ALLOWED)
-#if defined(DEBUG) || defined(ASSERT_BUILD) || defined(NV_MODS) || defined(QA_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(DEBUG) || defined(ASSERT_BUILD) || defined(NV_MODS) || defined(QA_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 #define NV_DBG_BREAKPOINT_ALLOWED 1
 #else
 #define NV_DBG_BREAKPOINT_ALLOWED 0
@@ -116,17 +119,17 @@ void osFlushLog(void);
 
 #if NV_DBG_BREAKPOINT_ALLOWED
 
-#if !NVCPU_IS_RISCV64
+#if !NVOS_IS_LIBOS
 
-#define DBG_BREAKPOINT_EX(PGPU, LEVEL)                                         \
-    do                                                                         \
-    {                                                                          \
-        NV_PRINTF(LEVEL_ERROR, "bp @ " NV_FILE_FMT ":%d\n", NV_FILE, __LINE__);\
-        osFlushLog();                                                          \
-        DBG_ROUTINE();                                                         \
+#define DBG_BREAKPOINT_EX(PGPU, LEVEL)                                          \
+    do                                                                          \
+    {                                                                           \
+        NV_PRINTF(LEVEL_ERROR, "bp @ " NV_FILE_FMT ":%d\n", NV_FILE, __LINE__); \
+        osFlushLog();                                                           \
+        DBG_ROUTINE();                                                          \
     } while (0)
 
-#else // !NVCPU_IS_RISCV64
+#else // !NVOS_IS_LIBOS
 
 #define DBG_BREAKPOINT_EX(PGPU, LEVEL)                                         \
     do                                                                         \
@@ -134,11 +137,10 @@ void osFlushLog(void);
         NV_ASSERT_FAILED("DBG_BREAKPOINT");                                    \
     } while (0)
 
-#endif // !NVCPU_IS_RISCV64
+#endif // !NVOS_IS_LIBOS
 
 #define DBG_BREAKPOINT() DBG_BREAKPOINT_EX(NULL, 0)
 
-#define DBG_BREAKPOINT_EX_ARGS_IGNORED 1
 #define REL_DBG_BREAKPOINT_MSG(msg)                                            \
     do                                                                         \
     {                                                                          \
@@ -150,7 +152,6 @@ void osFlushLog(void);
 
 #define DBG_BREAKPOINT()
 #define DBG_BREAKPOINT_EX(PGPU, LEVEL)
-#define DBG_BREAKPOINT_EX_ARGS_IGNORED 1
 
 #define REL_DBG_BREAKPOINT_MSG(msg)                                            \
     do                                                                         \
@@ -172,7 +173,7 @@ void osFlushLog(void);
 
 #include "utils/nvprintf.h"
 
-#define MAX_ERROR_STRING 256
+#define MAX_ERROR_STRING 512
 #ifndef NVPORT_CHECK_PRINTF_ARGUMENTS
 #define NVPORT_CHECK_PRINTF_ARGUMENTS(x,c)
 #endif
@@ -203,6 +204,7 @@ void nvDbgInitRmMsg(struct OBJGPU *);
 #define NVRM_MSG_PREFIX_FUNCTION        NVBIT(2)
 #define NVRM_MSG_PREFIX_LINE            NVBIT(3)
 #define NVRM_MSG_PREFIX_OSTIMESTAMP     NVBIT(4)
+#define NVRM_MSG_PREFIX_GPU_INSTANCE    NVBIT(5)
 NvU32 RmMsgPrefix(NvU32 prefix, const char *filename, NvU32 linenumber, const char *function, char *str, NvU32 len);
 // nvDbgRmMsgCheck return code
 #define NVRM_MSG_NORMAL 0    // Use normal message handling (warnings/errors)
@@ -228,70 +230,6 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 #define DBG_RMMSG_CHECK(level)   (0)
 #endif // NV_PRINTF_STRINGS_ALLOWED
 
-
-
-//******************************************************************************
-//                            POWER SANITY CHECKS
-//******************************************************************************
-//
-// Make sure the GPU is in full power or resuming from D3 state. Else,
-// bailout from the calling function. An exception for systems, which support
-// surprise removal feature. See Bugs 440565, 479003, and 499228.DO NOT IGNORE
-// OR REMOVE THIS ASSERT.  If you have problems with it, please talk to cplummer.
-//
-// bAllowWithoutSysmemAccess: Allow this RM Control when sysmem access is not available
-// from the GPU. SHould be NV_TRUE only for NV2080_CTRL_CMD_BUS_SYSMEM_ACCESS
-//
-// On systems supporting surprise removal, if the GPU is in D3 cold
-// and still attached we would consider it a true D3 cold state
-// and return NOT_FULL_POWER. See bug 1679965.
-//
-//
-#define API_GPU_FULL_POWER_SANITY_CHECK(pGpu, bGpuAccess, bAllowWithoutSysmemAccess)  \
-    if ((!gpuIsGpuFullPower(pGpu)) &&                                       \
-              (!(pGpu)->getProperty((pGpu),                                 \
-                             PDB_PROP_GPU_IN_PM_RESUME_CODEPATH)))          \
-    {                                                                       \
-        DBG_BREAKPOINT();                                                   \
-        if (bGpuAccess || (!gpuIsSurpriseRemovalSupported(pGpu)))           \
-        {                                                                   \
-            return NV_ERR_GPU_NOT_FULL_POWER;                               \
-        }                                                                   \
-        else if (gpuIsSurpriseRemovalSupported(pGpu) &&                     \
-                 (pGpu)->getProperty((pGpu), PDB_PROP_GPU_IS_CONNECTED))    \
-        {                                                                   \
-            return NV_ERR_GPU_NOT_FULL_POWER;                               \
-        }                                                                   \
-    }                                                                       \
-    if (!(bAllowWithoutSysmemAccess) && !gpuCheckSysmemAccess(pGpu))        \
-    {                                                                       \
-        return NV_ERR_GPU_NOT_FULL_POWER;                                   \
-    }
-
-#define API_GPU_FULL_POWER_SANITY_CHECK_OR_GOTO(pGpu, bGpuAccess, bAllowWithoutSysmemAccess, status, tag) \
-    if ((!gpuIsGpuFullPower(pGpu)) &&                                       \
-              (!(pGpu)->getProperty((pGpu),                                 \
-                             PDB_PROP_GPU_IN_PM_RESUME_CODEPATH)))          \
-    {                                                                       \
-        DBG_BREAKPOINT();                                                   \
-        if (bGpuAccess || (!gpuIsSurpriseRemovalSupported(pGpu)))           \
-        {                                                                   \
-            status = NV_ERR_GPU_NOT_FULL_POWER;                             \
-            goto tag;                                                       \
-        }                                                                   \
-        else if (gpuIsSurpriseRemovalSupported(pGpu) &&                     \
-                (pGpu)->getProperty((pGpu), PDB_PROP_GPU_IS_CONNECTED))     \
-        {                                                                   \
-            status = NV_ERR_GPU_NOT_FULL_POWER;                             \
-            goto tag;                                                       \
-        }                                                                   \
-    }                                                                       \
-    if (!(bAllowWithoutSysmemAccess) && !gpuCheckSysmemAccess(pGpu))        \
-    {                                                                       \
-        return NV_ERR_GPU_NOT_FULL_POWER;                                   \
-    }
-
-
 #if defined(PORT_IS_FUNC_SUPPORTED)
 #if PORT_IS_FUNC_SUPPORTED(portMemExValidate)
 #define DBG_VAL_PTR(p) portMemExValidate(p, NV_TRUE)
@@ -301,65 +239,23 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 #define DBG_VAL_PTR(p)
 #endif
 
-
-//********************************************************************************
 //
-//  NVRM_TRACE support
-//    low-overhead runtime state capture
-//    to enable, define USE_NVRM_TRACE (retail or debug builds)
+// TODO Bug 5078337: Move these away from kernel/core and rename to indicate
+// that they emit XIDs
 //
-//********************************************************************************
+#define NV_ERROR_LOG(pGpu, num, fmt, ...)                               \
+    nvErrorLog_va((void*)pGpu, num, fmt, ##__VA_ARGS__);                \
+    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                 NV_PRINTF_ADD_PREFIX("Xid %d: " fmt), num, ##__VA_ARGS__)
 
-#ifdef USE_NVRM_TRACE
+#define NV_ERROR_LOG_DATA(pGpu, num, fmt, ...)                          \
+    portDbgPrintf(NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__);            \
+    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                 NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__)
 
-NvU32 NVRM_TRACE_INIT(void);
-NvU32 NVRM_TRACE_DISABLE(void);
-void NVRM_TRACE_ENABLE(void);
-void NVRM_TRACE_DUMP(void);
-void NVRM_TRACE(NvU32);
-void NVRM_TRACEV(NvU32 *,NvU32);
-void NVRM_TRACE1(NvU32);
-void NVRM_TRACE2(NvU32, NvU32);
-void NVRM_TRACE3(NvU32, NvU32, NvU32);
-void NVRM_TRACE4(NvU32, NvU32, NvU32, NvU32);
-void NVRM_TRACE5(NvU32, NvU32, NvU32, NvU32, NvU32);
-
-// versions of reg read/write that log to trace buffer
-//NvU32 NVRM_TRACE_REG_RD32(OBJGPU *, NvU32);
-//void NVRM_TRACE_REG_WR32(OBJGPU *, NvU32, NvU32);
-
-// fifolog format looks like:
-//  31:28   = unique file number
-//  27:4    = file line number
-//  1:0     = fifo state bits (bit1 = puller, bit0 = reassign)
-#define FIFOLOG(fn,fa,fb) NVRM_TRACE2('FIFO', ((fn << 28) | (__LINE__ << 4) |       \
-                                                    ((fa & 0x1) ? 1 : 0) << 1 |     \
-                                                    ((fb & 0x1) ? 1 : 0)) )
-
-#else  // ! USE_NVRM_TRACE
-
-#define NVRM_TRACE_INIT()
-#define NVRM_TRACE_DISABLE() 0
-#define NVRM_TRACE_ENABLE()
-#define NVRM_TRACE_DUMP()
-#define NVRM_TRACE(c0)
-#define NVRM_TRACE1(c0)
-#define NVRM_TRACE2(c0, c1)
-#define NVRM_TRACE3(c0, c1, c2)
-#define NVRM_TRACE4(c0, c1, c2, c3)
-#define NVRM_TRACE5(c0, c1, c2, c3, c4)
-#define FIFOLOG(a,b,c)
-
-#endif  // ! USE_NVRM_TRACE
-
-#define NVRM_TRACE_ERROR(code, status)   NVRM_TRACE3('EEEE', (code), (status))
-#define NVRM_TRACE_API(code, p0, p1, p2) NVRM_TRACE5('API ', (code), (p0), (p1), (p2))
-
-void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist);
+void nvErrorLog(void *pVoid, XidContext context, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);
-
-// memory allocation tracking data structs and globals
-#define MAX_STACK_LEVEL 6
+void nvErrorLog2_va(void * pGpu, XidContext context, NvBool oobLogging, const char * pFormat, ...);
 
 #ifdef __cplusplus
 }

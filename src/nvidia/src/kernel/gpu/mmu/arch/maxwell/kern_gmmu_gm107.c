@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,10 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
+
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
+#include "vgpu/rpc.h"
 
 #include "published/maxwell/gm107/dev_fb.h"
+#include "published/maxwell/gm107/dev_hubmmu_base_addendum.h"
 #include "published/maxwell/gm107/dev_mmu.h"
 
 /*!
@@ -34,10 +38,45 @@
  *
  * @returns NvU32
  */
-NvU32
+NvU64
 kgmmuGetBigPageSize_GM107(KernelGmmu *pKernelGmmu)
 {
     return pKernelGmmu->defaultBigPageSize;
+}
+
+NV_STATUS
+kgmmuCommitInvalidateTlbTest_GM107
+(
+    OBJGPU                              *pGpu,
+    KernelGmmu                          *pKernelGmmu,
+    COMMIT_TLB_INVALIDATE_TEST_PARAMS   *pTestParams
+)
+{
+    TLB_INVALIDATE_PARAMS params;
+    NvU32 regVal = 0;
+
+    if (pTestParams->invalidateAll != NV_TRUE)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    portMemSet(&params, 0, sizeof(TLB_INVALIDATE_PARAMS));
+    params.gfid = pTestParams->gfid;
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &params.timeout,
+                  GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE |
+                  GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD);
+
+    NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu,
+                                                            &params.timeout));
+
+    // Invalidate all VA and PDB
+    regVal = DRF_DEF(_HUBMMU, _PRI_MMU_INVALIDATE, _ALL_VA, _TRUE) |
+             DRF_DEF(_HUBMMU, _PRI_MMU_INVALIDATE, _ALL_PDB, _TRUE) |
+             DRF_DEF(_HUBMMU, _PRI_MMU_INVALIDATE, _TRIGGER, _TRUE);
+
+    params.regVal = regVal;
+
+    return kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &params);
 }
 
 /*!
@@ -76,6 +115,8 @@ kgmmuInvalidateTlb_GM107
     NV_STATUS             status         = NV_OK;
     TLB_INVALIDATE_PARAMS params;
     NvU32                 flushCount     = 0;
+    NvBool                bDoVgpuRpc     = NV_FALSE;
+    OBJVGPU              *pVgpu          = NULL;
 
     //
     // Bail out early if
@@ -103,47 +144,62 @@ kgmmuInvalidateTlb_GM107
         return;
     }
 
-    //
-    // Originally the flag is 0, but to WAR bug 2909388, add flag
-    // GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE to bypass using threadStateCheckTimeout,
-    // GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD to not wait inside timeout with mutex held.
-    //
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &params.timeout,
-                  GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE |
-                  GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD);
-
-    //
-    // 2. Wait until we can issue an invalidate. On pre-Turing, wait for space
-    // in the PRI FIFO. On Turing, check if an invalidate is already in progress.
-    //
-    // Set the GFID.
-    params.gfid = gfid;
-
-    status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &params.timeout, params.gfid);
-    if (status != NV_OK)
+    pVgpu = GPU_GET_VGPU(pGpu);
+    if (pVgpu && pVgpu->bGspBuffersInitialized)
     {
-       return;
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        if  (pVSI &&
+             FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG,
+                          _PARAMS_VGPU_DEV_CAPS_VF_INVALIDATE_TLB_TRAP_ENABLED,
+                          _TRUE, pVSI->vgpuConfig.vgpuDeviceCapsBits))
+            bDoVgpuRpc = NV_TRUE;
+    }
+
+    if (!bDoVgpuRpc)
+    {
+        //
+        // Originally the flag is 0, but to WAR bug 2909388, add flag
+        // GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE to bypass using threadStateCheckTimeout,
+        // GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD to not wait inside timeout with mutex held.
+        //
+        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &params.timeout,
+                      GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE |
+                      GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD);
+
+        //
+        // 2. Wait until we can issue an invalidate. On pre-Turing, wait for space
+        // in the PRI FIFO. On Turing, check if an invalidate is already in progress.
+        //
+        // Set the GFID.
+        params.gfid = gfid;
+
+        status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &params.timeout);
+        if (status != NV_OK)
+        {
+           return;
+        }
     }
 
     // Trigger an invalidate.
-    params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _TRIGGER, _TRUE, params.regVal);
+    params.regVal = FLD_SET_DRF(_HUBMMU, _PRI_MMU_INVALIDATE, _TRIGGER, _TRUE, params.regVal);
 
     // Not using range-based invalidate.
-    params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _ALL_VA, _TRUE, params.regVal);
+    params.regVal = FLD_SET_DRF(_HUBMMU, _PRI_MMU_INVALIDATE, _ALL_VA, _TRUE, params.regVal);
 
     if (NULL != pRootPageDir)
     {
         // Invalidatating only one VAS.
-        params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _ALL_PDB, _FALSE, params.regVal);
+        params.regVal = FLD_SET_DRF(_HUBMMU, _PRI_MMU_INVALIDATE, _ALL_PDB, _FALSE, params.regVal);
 
         // Setup PDB of VAS to invalidate.
         if (memdescGetAddressSpace(pRootPageDir) == ADDR_FBMEM)
         {
-            params.pdbAperture = NV_PFB_PRI_MMU_INVALIDATE_PDB_APERTURE_VID_MEM;
+            params.pdbAperture = NV_HUBMMU_PRI_MMU_INVALIDATE_PDB_APERTURE_VID_MEM;
         }
         else if (memdescGetAddressSpace(pRootPageDir) == ADDR_SYSMEM)
         {
-            params.pdbAperture = NV_PFB_PRI_MMU_INVALIDATE_PDB_APERTURE_SYS_MEM;
+            params.pdbAperture = NV_HUBMMU_PRI_MMU_INVALIDATE_PDB_APERTURE_SYS_MEM;
         }
         else
         {
@@ -155,7 +211,7 @@ kgmmuInvalidateTlb_GM107
     else
     {
         // Invalidate *ALL* address spaces.
-        params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _ALL_PDB, _TRUE, params.regVal);
+        params.regVal = FLD_SET_DRF(_HUBMMU, _PRI_MMU_INVALIDATE, _ALL_PDB, _TRUE, params.regVal);
         // Override invalidation scope.
         invalidation_scope = NV_GMMU_INVAL_SCOPE_ALL_TLBS;
     }
@@ -163,7 +219,7 @@ kgmmuInvalidateTlb_GM107
     // For host VAS (e.g. BAR) we do not have to invalidate GR.
     if (vaspaceFlags & VASPACE_FLAGS_BAR)
     {
-        params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _HUBTLB_ONLY, _TRUE, params.regVal);
+        params.regVal = FLD_SET_DRF(_HUBMMU, _PRI_MMU_INVALIDATE, _HUBTLB_ONLY, _TRUE, params.regVal);
     }
 
     // Perform membarWAR for non-BAR2 pte downgrades.
@@ -176,16 +232,27 @@ kgmmuInvalidateTlb_GM107
     if (!(status == NV_OK || status == NV_ERR_NOT_SUPPORTED))
         return;
 
-    // 3 and 4. Commit the invalidate and wait for invalidate to complete.
-    status = kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &params);
-    if (status != NV_OK)
+    if (bDoVgpuRpc)
     {
-       return;
+        NV_RM_RPC_INVALIDATE_TLB(pGpu, status, params.pdbAddress, params.regVal);
+        if (status != NV_OK)
+        {
+            return;
+        }
+    }
+    else
+    {
+        // 3 and 4. Commit the invalidate and wait for invalidate to complete.
+        status = kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &params);
+        if (status != NV_OK)
+        {
+            return;
+        }
     }
 
     while (flushCount--)
     {
-        if (kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY) == NV_ERR_TIMEOUT)
+        if (kbusSendSysmembar(pGpu, GPU_GET_KERNEL_BUS(pGpu)) == NV_ERR_TIMEOUT)
         {
             break;
         }
@@ -219,7 +286,7 @@ kgmmuDetermineMaxVASize_GM107
             maxFmtVersionSupported = maxFmtVersionSupported < ver ? ver : maxFmtVersionSupported;
         }
     }
-    
+
     switch (maxFmtVersionSupported)
     {
         case GMMU_FMT_VERSION_1:
@@ -228,42 +295,11 @@ kgmmuDetermineMaxVASize_GM107
         case GMMU_FMT_VERSION_2:
             pKernelGmmu->maxVASize = 1ULL << 49;
         break;
+        case GMMU_FMT_VERSION_3:
+            pKernelGmmu->maxVASize = 1ULL << 57;
+        break;
         default:
             pKernelGmmu->maxVASize = 1ULL << 40;
-    }
-}
-
-/*
- * @brief Checks the system memory address against the PA capabilities of the
- *        GMMU.
- *
- * This will account for the DMA window, if applicable, and strip out any bits
- * that won't fit in the format (since the DMA window will be handling those).
- */
-void
-kgmmuEncodeSysmemAddrs_GM107
-(
-    KernelGmmu *pKernelGmmu,
-    NvU64      *pAddresses,
-    NvU64       count
-)
-{
-    OBJGPU     *pGpu    = ENG_GET_GPU(pKernelGmmu);
-    const NvU32 paWidth = gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM);
-    NvU64 i;
-
-    for (i = 0; i < count; ++i)
-    {
-        NvU64 address = pAddresses[i];
-        NvU64 addressAdjusted = address;
-
-        NV_ASSERT(address >= pKernelGmmu->sysmemBaseAddress);
-        NV_ASSERT(address <= pKernelGmmu->sysmemBaseAddress + (NVBIT64(paWidth) - 1));
-
-        addressAdjusted &= (NVBIT64(paWidth) - 1);
-        NV_ASSERT(addressAdjusted == (address - pKernelGmmu->sysmemBaseAddress));
-
-        pAddresses[i] = addressAdjusted;
     }
 }
 
@@ -279,7 +315,7 @@ kgmmuEncodeSysmemAddrs_GM107
  *
  * @returns    The size of a large page in bytes
  */
-NvU32
+NvU64
 kgmmuGetMaxBigPageSize_GM107(KernelGmmu *pKernelGmmu)
 {
     if (!kgmmuIsPerVaspaceBigPageEn(pKernelGmmu))
@@ -310,9 +346,12 @@ kgmmuGetHwPteApertureFromMemdesc_GM107
                 aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
             }
             break;
-        case ADDR_FBMEM:
-        case ADDR_FABRIC:
         case ADDR_FABRIC_V2:
+        case ADDR_FABRIC_MC:
+        case ADDR_EGM:
+            aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+            break;
+        case ADDR_FBMEM:
             aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
             break;
         default:

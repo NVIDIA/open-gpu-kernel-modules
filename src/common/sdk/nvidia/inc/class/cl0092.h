@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,10 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef SDK_CL0092_H
-#define SDK_CL0092_H
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
+
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl0092.finn
+//
+
+#include "class/cl0092_callback.h"
 
 /*
  * This RgLineCallback class allows RM clients to register/unregister the RG line callback functions.
@@ -50,19 +56,17 @@
  *     Pointer to the ctrl call param struct.
  */
 
-#define NV0092_RG_LINE_CALLBACK 0x0092
+#define NV0092_RG_LINE_CALLBACK (0x92U) /* finn: Evaluated from "NV0092_RG_LINE_CALLBACK_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-typedef void (*NV0092_REGISTER_RG_LINE_CALLBACK_FN)(NvU32 rgIntrLine, void *param1, NvBool bIsIrqlIsr);
+#define NV0092_RG_LINE_CALLBACK_ALLOCATION_PARAMETERS_MESSAGE_ID (0x0092U)
 
-typedef struct
-{
-    NvU32  subDeviceInstance;
-    NvU32  head;
-    NvU32  rgLineNum;
+typedef struct NV0092_RG_LINE_CALLBACK_ALLOCATION_PARAMETERS {
+    NvU32 subDeviceInstance;
+    NvU32 head;
+    NvU32 rgLineNum;
 
-    NV0092_REGISTER_RG_LINE_CALLBACK_FN pCallbkFn;
+    NV_DECLARE_ALIGNED(NvP64 pCallbkFn, 8); /* A function pointer of NV0092_REGISTER_RG_LINE_CALLBACK_FN */
 
-    void  *pCallbkParams;
+    NV_DECLARE_ALIGNED(NvP64 pCallbkParams, 8); /* The param1 in NV0092_REGISTER_RG_LINE_CALLBACK_FN */
 } NV0092_RG_LINE_CALLBACK_ALLOCATION_PARAMETERS;
 
-#endif // SDK_CL0092_H

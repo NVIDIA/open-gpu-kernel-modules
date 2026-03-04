@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "gpu/ce/kernel_ce_context.h"
 #include "gpu/ce/kernel_ce_private.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/device/device.h"
 #include "os/os.h"
 #include "resserv/rs_client.h"
 
@@ -41,6 +42,9 @@
 #include "class/clc6b5sw.h"
 #include "class/clc7b5.h"
 
+#include "class/clc8b5.h"
+#include "class/clc9b5.h"
+#include "class/clcab5.h"
 /*
  * This function returns an engine descriptor corresponding to the class
  * and engine instance passed in.
@@ -56,12 +60,24 @@ ENGDESCRIPTOR
 kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllocParams)
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    NvU32 engineInstance = 0;
+    NvU32 engineIndex = 0;
+    RsResourceRef *pDeviceRef;
+    NV_STATUS status = NV_OK;
+    Device *pDevice;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+                         refFindAncestorOfType(pCallContext->pResourceRef,
+                                               classId(Device), &pDeviceRef),
+                         return ENG_INVALID; );
+
+    pDevice = dynamicCast(pDeviceRef->pResource, Device);
 
     NV_ASSERT(pAllocParams);
 
     if (IsAMODEL(pGpu))
     {
+        RM_ENGINE_TYPE rmEngineType;
+
         // On AMODEL CopyEngine is allocated using OBJGR
         if (IS_MIG_IN_USE(pGpu))
         {
@@ -69,15 +85,14 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
             MIG_INSTANCE_REF ref;
 
             NV_ASSERT_OK(
-                kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                pCallContext->pClient->hClient,
-                                                &ref));
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                pDevice, &ref));
 
             NV_ASSERT_OK(
                 kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                                  NV2080_ENGINE_TYPE_GR(0),
-                                                  &engineInstance));
-            return ENG_GR(NV2080_ENGINE_TYPE_GR_IDX(engineInstance));
+                                                  RM_ENGINE_TYPE_GR(0),
+                                                  &rmEngineType));
+            return ENG_GR(RM_ENGINE_TYPE_GR_IDX(rmEngineType));
         }
         return ENG_GR(0);
     }
@@ -92,6 +107,9 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
         case AMPERE_DMA_COPY_A:
         case AMPERE_DMA_COPY_B:
 
+        case HOPPER_DMA_COPY_A:
+        case BLACKWELL_DMA_COPY_A:
+        case BLACKWELL_DMA_COPY_B:
         {
             NVB0B5_ALLOCATION_PARAMETERS *pNvA0b5CreateParms = pAllocParams;
 
@@ -102,7 +120,9 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
                     NV_PRINTF(LEVEL_INFO,
                               "Version = 0, using engineType (=%d) as CE instance\n",
                               pNvA0b5CreateParms->engineType);
-                    engineInstance = pNvA0b5CreateParms->engineType;
+
+                    // The engineType in VERSION_0 is actually an index
+                    engineIndex = pNvA0b5CreateParms->engineType;
                     break;
                 }
 
@@ -111,17 +131,17 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
                     NvU32 i;
 
                     // Loop over supported engines
-                    for (i = 0; i < NV2080_ENGINE_TYPE_COPY_SIZE; i++)
+                    for (i = 0; i < RM_ENGINE_TYPE_COPY_SIZE; i++)
                     {
-                        if (pNvA0b5CreateParms->engineType == NV2080_ENGINE_TYPE_COPY(i))
+                        if (gpuGetRmEngineType(pNvA0b5CreateParms->engineType) == RM_ENGINE_TYPE_COPY(i))
                         {
-                            engineInstance = i;
+                            engineIndex = i;
                             break;
                         }
                     }
 
                     // Make sure we found something we support
-                    if (i == NV2080_ENGINE_TYPE_COPY_SIZE)
+                    if (i == RM_ENGINE_TYPE_COPY_SIZE)
                     {
                         NV_PRINTF(LEVEL_ERROR,
                                   "Unknown engine type %d requested\n",
@@ -152,12 +172,14 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
         }
     }
 
-    NV_STATUS status = ceIndexFromType(pGpu, pCallContext->pClient->hClient,
-                                       NV2080_ENGINE_TYPE_COPY(engineInstance), &engineInstance);
+    status = ceIndexFromType(pGpu, pDevice,
+                             RM_ENGINE_TYPE_COPY(engineIndex), &engineIndex);
     if (status == NV_OK)
     {
-        NV_PRINTF(LEVEL_INFO, "Class %d, CE%d\n", externalClassId, engineInstance);
-        return ENG_CE(engineInstance);
+        NV_PRINTF(LEVEL_INFO, "Class %d, CE%d\n", externalClassId, engineIndex);
+    // confirm that engine is valid
+        NV_ASSERT_OR_RETURN(GPU_GET_KCE(pGpu, engineIndex), ENG_INVALID);
+        return ENG_CE(engineIndex);
     }
     else
         NV_PRINTF(LEVEL_ERROR, "Failed to determine CE number\n");
@@ -173,20 +195,7 @@ kcectxConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    ChannelDescendant *pChannelDescendant = staticCast(pKCeContext, ChannelDescendant);
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
-    NvU32 ceIdx = GET_CE_IDX(pChannelDescendant->resourceDesc.engDesc);
-
-    //
-    // Don't do anything for AMODEL
-    //
-    if (IsAMODEL(pGpu))
-    {
-        return NV_OK;
-    }
-
-    NV_ASSERT_OR_RETURN(GPU_GET_KCE(pGpu, ceIdx), NV_ERR_INVALID_PARAMETER);
-
+    // stub, initialization done in chandesConstruct
     return NV_OK;
 }
 

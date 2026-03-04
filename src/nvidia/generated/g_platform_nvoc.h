@@ -1,13 +1,22 @@
+
 #ifndef _G_PLATFORM_NVOC_H_
 #define _G_PLATFORM_NVOC_H_
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,31 +38,20 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_platform_nvoc.h"
 
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
-typedef struct OBJPFM *POBJPFM;
-
-#ifndef __NVOC_CLASS_OBJPFM_TYPEDEF__
-#define __NVOC_CLASS_OBJPFM_TYPEDEF__
-typedef struct OBJPFM OBJPFM;
-#endif /* __NVOC_CLASS_OBJPFM_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJPFM
-#define __nvoc_class_id_OBJPFM 0xb543ae
-#endif /* __nvoc_class_id_OBJPFM */
-
-
-
-#include "nvoc/runtime.h"
+#include "nvoc/object.h"
 #include "nvlimits.h" // NV_MAX_DEVICES
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_SPECIFIC_MAX_ACPI_DEVICES
 
 #include "core/core.h"
 
 #include "nvCpuUuid.h"
+#include "platform/nbsi/nbsi_table.h"
 
 /*!
  * Data structure representing single BlobData entry.
@@ -81,16 +79,38 @@ typedef struct
 *       Defines and structures used for the Platform object.                *
 \***************************************************************************/
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_PLATFORM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJPFM;
+struct NVOC_METADATA__Object;
+
+
 struct OBJPFM {
-    const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__OBJPFM *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJPFM *__nvoc_pbase_OBJPFM;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJPFM *__nvoc_pbase_OBJPFM;    // pfm
+
+    // 9 PDB properties
     NvBool PDB_PROP_PFM_SUPPORTS_ACPI;
     NvBool PDB_PROP_PFM_IS_MOBILE;
     NvBool PDB_PROP_PFM_IS_TOSHIBA_MOBILE;
@@ -100,10 +120,17 @@ struct OBJPFM {
     NvBool PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER;
     NvBool PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT;
     NvBool PDB_PROP_PFM_APPLE_EDP_SUPPORTED;
-    NvBool PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED;
-    NvBool PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED;
-    PFM_BLOB_DATA blobData;
+
+    // Data members
+    NBSI_OBJ nbsi;
     ACPI_ID_MAPPING acpiIdMapping[32][16];
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__OBJPFM {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__Object metadata__Object;
 };
 
 #ifndef __NVOC_CLASS_OBJPFM_TYPEDEF__
@@ -115,40 +142,39 @@ typedef struct OBJPFM OBJPFM;
 #define __nvoc_class_id_OBJPFM 0xb543ae
 #endif /* __nvoc_class_id_OBJPFM */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJPFM;
 
 #define __staticCast_OBJPFM(pThis) \
     ((pThis)->__nvoc_pbase_OBJPFM)
 
 #ifdef __nvoc_platform_h_disabled
-#define __dynamicCast_OBJPFM(pThis) ((OBJPFM*)NULL)
+#define __dynamicCast_OBJPFM(pThis) ((OBJPFM*) NULL)
 #else //__nvoc_platform_h_disabled
 #define __dynamicCast_OBJPFM(pThis) \
-    ((OBJPFM*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJPFM)))
+    ((OBJPFM*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJPFM)))
 #endif //__nvoc_platform_h_disabled
 
-#define PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE_BASE_CAST
-#define PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE_BASE_NAME PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE
-#define PDB_PROP_PFM_APPLE_EDP_SUPPORTED_BASE_CAST
-#define PDB_PROP_PFM_APPLE_EDP_SUPPORTED_BASE_NAME PDB_PROP_PFM_APPLE_EDP_SUPPORTED
-#define PDB_PROP_PFM_IS_MOBILE_BASE_CAST
-#define PDB_PROP_PFM_IS_MOBILE_BASE_NAME PDB_PROP_PFM_IS_MOBILE
-#define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_CAST
-#define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_NAME PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER
-#define PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED_BASE_CAST
-#define PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED_BASE_NAME PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED
-#define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_CAST
-#define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_NAME PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM
-#define PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED_BASE_CAST
-#define PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED_BASE_NAME PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED
+// Property macros
 #define PDB_PROP_PFM_SUPPORTS_ACPI_BASE_CAST
 #define PDB_PROP_PFM_SUPPORTS_ACPI_BASE_NAME PDB_PROP_PFM_SUPPORTS_ACPI
+#define PDB_PROP_PFM_IS_MOBILE_BASE_CAST
+#define PDB_PROP_PFM_IS_MOBILE_BASE_NAME PDB_PROP_PFM_IS_MOBILE
 #define PDB_PROP_PFM_IS_TOSHIBA_MOBILE_BASE_CAST
 #define PDB_PROP_PFM_IS_TOSHIBA_MOBILE_BASE_NAME PDB_PROP_PFM_IS_TOSHIBA_MOBILE
-#define PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT_BASE_CAST
-#define PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT_BASE_NAME PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT
 #define PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT_BASE_CAST
 #define PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT_BASE_NAME PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT
+#define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_CAST
+#define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_NAME PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM
+#define PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE_BASE_CAST
+#define PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE_BASE_NAME PDB_PROP_PFM_SKIP_DP_IRQ_HANDLE
+#define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_CAST
+#define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_NAME PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER
+#define PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT_BASE_CAST
+#define PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT_BASE_NAME PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT
+#define PDB_PROP_PFM_APPLE_EDP_SUPPORTED_BASE_CAST
+#define PDB_PROP_PFM_APPLE_EDP_SUPPORTED_BASE_NAME PDB_PROP_PFM_APPLE_EDP_SUPPORTED
+
 
 NV_STATUS __nvoc_objCreateDynamic_OBJPFM(OBJPFM**, Dynamic*, NvU32, va_list);
 
@@ -156,68 +182,73 @@ NV_STATUS __nvoc_objCreate_OBJPFM(OBJPFM**, Dynamic*, NvU32);
 #define __objCreate_OBJPFM(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJPFM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros for implementation functions
 NV_STATUS pfmConstruct_IMPL(struct OBJPFM *arg_pPfm);
 #define __nvoc_pfmConstruct(arg_pPfm) pfmConstruct_IMPL(arg_pPfm)
-void pfmBlobDataDestroy_IMPL(struct OBJPFM *pPfm);
-#define pfmBlobDataDestroy(pPfm) pfmBlobDataDestroy_IMPL(pPfm)
-void pfmUpdateAcpiIdMapping_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5);
+
+void pfmUpdateAcpiIdMapping_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5, NvU32 arg6);
 #ifdef __nvoc_platform_h_disabled
-static inline void pfmUpdateAcpiIdMapping(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5) {
+static inline void pfmUpdateAcpiIdMapping(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5, NvU32 arg6) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
 }
-#else //__nvoc_platform_h_disabled
-#define pfmUpdateAcpiIdMapping(arg0, arg1, arg2, arg3, arg4, arg5) pfmUpdateAcpiIdMapping_IMPL(arg0, arg1, arg2, arg3, arg4, arg5)
-#endif //__nvoc_platform_h_disabled
+#else // __nvoc_platform_h_disabled
+#define pfmUpdateAcpiIdMapping(arg_this, arg2, arg3, arg4, arg5, arg6) pfmUpdateAcpiIdMapping_IMPL(arg_this, arg2, arg3, arg4, arg5, arg6)
+#endif // __nvoc_platform_h_disabled
 
-NvU32 pfmFindAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+NvU32 pfmFindAcpiId_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3);
 #ifdef __nvoc_platform_h_disabled
-static inline NvU32 pfmFindAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
-    return 0;
-}
-#else //__nvoc_platform_h_disabled
-#define pfmFindAcpiId(arg0, arg1, arg2) pfmFindAcpiId_IMPL(arg0, arg1, arg2)
-#endif //__nvoc_platform_h_disabled
-
-NvU32 pfmFindDodIndex_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
-#ifdef __nvoc_platform_h_disabled
-static inline NvU32 pfmFindDodIndex(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
+static inline NvU32 pfmFindAcpiId(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
     return 0;
 }
-#else //__nvoc_platform_h_disabled
-#define pfmFindDodIndex(arg0, arg1, arg2) pfmFindDodIndex_IMPL(arg0, arg1, arg2)
-#endif //__nvoc_platform_h_disabled
+#else // __nvoc_platform_h_disabled
+#define pfmFindAcpiId(arg_this, arg2, arg3) pfmFindAcpiId_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_platform_h_disabled
 
-NvU32 pfmFindDevMaskFromDodIndex_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+NvU32 pfmFindDodIndex_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3);
 #ifdef __nvoc_platform_h_disabled
-static inline NvU32 pfmFindDevMaskFromDodIndex(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
+static inline NvU32 pfmFindDodIndex(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
     return 0;
 }
-#else //__nvoc_platform_h_disabled
-#define pfmFindDevMaskFromDodIndex(arg0, arg1, arg2) pfmFindDevMaskFromDodIndex_IMPL(arg0, arg1, arg2)
-#endif //__nvoc_platform_h_disabled
+#else // __nvoc_platform_h_disabled
+#define pfmFindDodIndex(arg_this, arg2, arg3) pfmFindDodIndex_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_platform_h_disabled
 
-NvU32 pfmFindDevMaskFromAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+NvU32 pfmFindDevMaskFromDodIndex_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3);
 #ifdef __nvoc_platform_h_disabled
-static inline NvU32 pfmFindDevMaskFromAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
+static inline NvU32 pfmFindDevMaskFromDodIndex(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
     return 0;
 }
-#else //__nvoc_platform_h_disabled
-#define pfmFindDevMaskFromAcpiId(arg0, arg1, arg2) pfmFindDevMaskFromAcpiId_IMPL(arg0, arg1, arg2)
-#endif //__nvoc_platform_h_disabled
+#else // __nvoc_platform_h_disabled
+#define pfmFindDevMaskFromDodIndex(arg_this, arg2, arg3) pfmFindDevMaskFromDodIndex_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_platform_h_disabled
 
-void pfmUpdateDeviceAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3);
+NvU32 pfmFindDevMaskFromAcpiId_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3);
 #ifdef __nvoc_platform_h_disabled
-static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3) {
+static inline NvU32 pfmFindDevMaskFromAcpiId(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3) {
+    NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
+    return 0;
+}
+#else // __nvoc_platform_h_disabled
+#define pfmFindDevMaskFromAcpiId(arg_this, arg2, arg3) pfmFindDevMaskFromAcpiId_IMPL(arg_this, arg2, arg3)
+#endif // __nvoc_platform_h_disabled
+
+void pfmUpdateDeviceAcpiId_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3, NvU32 arg4);
+#ifdef __nvoc_platform_h_disabled
+static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
 }
-#else //__nvoc_platform_h_disabled
-#define pfmUpdateDeviceAcpiId(arg0, arg1, arg2, arg3) pfmUpdateDeviceAcpiId_IMPL(arg0, arg1, arg2, arg3)
-#endif //__nvoc_platform_h_disabled
+#else // __nvoc_platform_h_disabled
+#define pfmUpdateDeviceAcpiId(arg_this, arg2, arg3, arg4) pfmUpdateDeviceAcpiId_IMPL(arg_this, arg2, arg3, arg4)
+#endif // __nvoc_platform_h_disabled
 
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
 #undef PRIVATE_FIELD
 
 
@@ -226,4 +257,5 @@ static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU3
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_PLATFORM_NVOC_H_

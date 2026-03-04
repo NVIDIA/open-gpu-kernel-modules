@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,12 @@ struct PORT_MUTEX
 struct PORT_SEMAPHORE
 {
     void *sem;
+    PORT_MEM_ALLOCATOR *pAllocator;
+};
+
+struct PORT_RWLOCK
+{
+    void *rwlock;
     PORT_MEM_ALLOCATOR *pAllocator;
 };
 

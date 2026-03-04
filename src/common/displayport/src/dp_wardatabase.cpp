@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@
 #include "dp_wardatabase.h"
 #include "dp_edid.h"
 #include "dp_connectorimpl.h"
+#include "dp_connectorimpl2x.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -66,21 +68,15 @@ void ConnectorImpl::applyOuiWARs()
         // Synaptics
         case 0x24CC90:
             if ((modelName[0] == 'S') && (modelName[1] == 'Y') && (modelName[2] == 'N') &&
-                (modelName[3] == 'A') && (modelName[4] == 'S') &&
+                (modelName[3] == 'A') && (((modelName[4] == 'S') &&
                 ((modelName[5] == '1') || (modelName[5] == '2') ||
                  (modelName[5] == '3') || (modelName[5] == '#') ||
-                 (modelName[5] == '\"')))
+                 (modelName[5] == '\"')))||((modelName[4] == 0x84) &&
+                 (modelName[5] == '0'))))
             {
                 //
                 // Extended latency from link-train end to FEC enable pattern
                 // to avoid link lost or blank screen with Synaptics branch.
-                // (Bug 2561206)
-                //
-                // Dock SKU ID:
-                // Dell    Salomon-WD19TB SYNAS1
-                // HP      Hook           SYNAS3
-                // HP      Adira-A        SYNAS#
-                // Lenovo                 SYNAS" / SYNAS2
                 //
                 LT2FecLatencyMs = 57;
 
@@ -98,9 +94,43 @@ void ConnectorImpl::applyOuiWARs()
     }
 }
 
+void ConnectorImpl2x::applyOuiWARs()
+{
+    switch (ouiId)
+    {
+        // Novatek Microelectronics Corp.
+        case 0x11EC38:
+            if((modelName[0] == 'N') && (modelName[1] == 'T') && (modelName[2] == '6'))
+            {
+                NvU8 portType;
+                if (hal->getSupportsMultistream() &&
+                    hal->isDp2xChannelCodingCapable() &&
+                    !hal->getDownstreamPort(&portType))
+                {
+                    bMstTimeslotBug4968411 = true;
+                    hal->setMainLinkChannelCoding(ChannelCoding128B132B);
+                }
+            }
+            break;
+        case 0xAD6000:
+            if ((modelName[0] == 'M') &&
+                (modelName[1] == 'C') &&
+                (modelName[2] == '2') &&
+                (modelName[3] == '9') &&
+                (modelName[4] == '0'))
+            {
+                bForceHeadShutdownPerMonitor = true;
+                bApplyStuffDummySymbolsWAR = true;
+                bStuffDummySymbolsFor128b132b = false;
+                bStuffDummySymbolsFor8b10b = true;
+            }
+            break;
+
+    }
+}
+
 void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDenylistData)
 {
-
     unsigned ManufacturerID = this->getManufId();
     unsigned ProductID = this->getProductId();
     unsigned YearWeek = this->getYearWeek();
@@ -116,8 +146,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (0x9227 == ProductID)
             {
                 this->WARFlags.powerOnBeforeLt = true;
-                DP_LOG(("DP-WAR> WAR for Apple thunderbolt J29 panel"));
-                DP_LOG(("DP-WAR>     - Monitor needs to be powered up before LT. Bug 933051"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> WAR for Apple thunderbolt J29 panel");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>     - Monitor needs to be powered up before LT. Bug 933051");
             }
             break;
 
@@ -130,8 +160,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x7E] = 0;
                 this->WARFlags.extensionCountDisabled = true;
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid override on Acer AL1512"));
-                DP_LOG(("DP-WAR>     - Disabling extension count.Bug 451868"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid override on Acer AL1512");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>     - Disabling extension count.Bug 451868");
             }
             break;
 
@@ -155,8 +185,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     buffer.data[0x7E] = 0;
                     this->WARFlags.extensionCountDisabled = true;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on Westinghouse AL1512 LVM- <37/42> w <2/3>"));
-                    DP_LOG(("DP-WAR>     - Disabling extension count."));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on Westinghouse AL1512 LVM- <37/42> w <2/3>");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>     - Disabling extension count.");
                 }
             }
             break;
@@ -176,8 +206,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     buffer.data[0x36] = 0x32;
                     buffer.data[0x37] = 0x3E;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on IBM T210"));
-                    DP_LOG(("DP-WAR>    2048x1536x60Hz(misreported) -> 2048x1536x40Hz. Bug 76347"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on IBM T210");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>    2048x1536x60Hz(misreported) -> 2048x1536x40Hz. Bug 76347");
                 }
             }
             break;
@@ -190,15 +220,15 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID >= 0x0776 ) && (ProductID <= 0x0779)) // Product id's range from decimal 1910 to 1913
             {
                 // if detailed pixel clock frequency = 106.50MHz
-                if ( (buffer.data[0x36] == 0x9A) &&
-                     (buffer.data[0x37] == 0x29) )
+                if ((buffer.data[0x36] == 0x9A) &&
+                    (buffer.data[0x37] == 0x29) )
                 {
                     // then change detailed pixel clock frequency to 106.54MHz to fix bug 343870
                     buffer.data[0x36] = 0x9E;
                     buffer.data[0x37] = 0x29;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on GWY/EMA"));
-                    DP_LOG(("DP-WAR>   106.50MHz(misreported) -> 106.50MHz.Bug 343870"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on GWY/EMA");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   106.50MHz(misreported) -> 106.50MHz.Bug 343870");
                 }
             }
             break;
@@ -213,8 +243,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x6d] = 0x0;
                 buffer.data[0x6e] = 0x0;
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on INX L15CX"));
-                DP_LOG(("DP-WAR>   Removing invalid detailed timing 10x311 @ 78Hz"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on INX L15CX");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>   Removing invalid detailed timing 10x311 @ 78Hz");
             }
             break;
 
@@ -229,19 +259,19 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x39] = 0x4B; // new hblank width: 75
                 buffer.data[0x3F] = 0x1B; // new hsync pulse width: 27
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on AUO eDP panel"));
-                DP_LOG(("DP-WAR> Modifying HBlank and HSync pulse width."));
-                DP_LOG(("DP-WAR> Bugs 907998, 1001160"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on AUO eDP panel");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Modifying HBlank and HSync pulse width.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bugs 907998, 1001160");
             }
             else if (ProductID == 0x109B || ProductID == 0x119B)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> AUO eDP"));
-                DP_LOG(("implements only Legacy interrupt address range"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> AUO eDP");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
 
                 // Bug 1792962 - Panel got glitch on D3 write, apply this WAR.
                 this->WARFlags.disableDpcdPowerOff = true;
-                DP_LOG(("DP-WAR> Disable DPCD Power Off"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DPCD Power Off");
             }
             break;
 
@@ -257,7 +287,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 //    a "Monitor Description" of type FE = "ASCII Data String" which
                 //    has this panel's name = "LP171WX2-A4K5".
                 //
-                if ( (buffer.data[0x71] == 0x4C) &&
+                if ((buffer.data[0x71] == 0x4C) &&
                     (buffer.data[0x72] == 0x50) &&
                     (buffer.data[0x73] == 0x31) &&
                     (buffer.data[0x74] == 0x37) &&
@@ -280,8 +310,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     //
                     buffer.data[0x36] = 0x9F;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on Quanta - Toshiba LG 1440x900"));
-                    DP_LOG(("DP-WAR>   Correcting pclk. Bug 201428"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on Quanta - Toshiba LG 1440x900");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   Correcting pclk. Bug 201428");
                 }
             }
             else
@@ -295,7 +325,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 //    a "Monitor Description" of type FE = "ASCII Data String" which
                 //    has this panel's name = "LP154WX4-TLC3".
                 //
-                if ( (buffer.data[0x71] == 0x4C) &&
+                if ((buffer.data[0x71] == 0x4C) &&
                     (buffer.data[0x72] == 0x50) &&
                     (buffer.data[0x73] == 0x31) &&
                     (buffer.data[0x74] == 0x35) &&
@@ -318,8 +348,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     //
                     buffer.data[0x36] = 0xC7;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on  MSI - LG LPL 1280x800"));
-                    DP_LOG(("DP-WAR>   Correcting pclk. Bug 359313"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on  MSI - LG LPL 1280x800");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   Correcting pclk. Bug 359313");
                 }
             }
             break;
@@ -353,8 +383,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x47] = 0x1E;
 
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on  Haier TV."));
-                DP_LOG(("DP-WAR>   Removing 1366x768. bug 351680 & 327891"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on  Haier TV.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>   Removing 1366x768. bug 351680 & 327891");
 
             }
             break;
@@ -369,8 +399,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // Bug 1559465 will address the right power down sequence. We need to revisit this WAR once Bug 1559465 is fixed.
                     //
                     this->WARFlags.disableDpcdPowerOff = true;
-                    DP_LOG(("DP-WAR> Disable DPCD Power Off"));
-                    DP_LOG(("DP-WAR> HP Z1 G2 (Zeus) AIO Bug 1643712"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DPCD Power Off");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> HP Z1 G2 (Zeus) AIO Bug 1643712");
                     break;
             }
             break;
@@ -385,8 +415,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // after D3 to avoid black screen issues.
                     //
                     this->WARFlags.delayAfterD3 = true;
-                    DP_LOG(("DP-WAR> HP Valor QHD+ N15P-Q3 Sharp EDP needs 50 ms after D3"));
-                    DP_LOG(("DP-WAR> bug 1520011"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> HP Valor QHD+ N15P-Q3 Sharp EDP needs 50 ms after D3");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> bug 1520011");
                     break;
 
                 //Sharp EDPs that declares DP1.2 but doesn't implement ESI address space
@@ -402,7 +432,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // Use Legacy address space for DP1.2 panel
                     //
                     this->WARFlags.useLegacyAddress = true;
-                    DP_LOG(("DP-WAR> Sharp EDP implements only Legacy interrupt address range"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Sharp EDP implements only Legacy interrupt address range");
                     break;
 
                 case 0x143B:
@@ -427,8 +457,13 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                         (buffer.data[0x7D] == 0x20))
                     {
                         this->WARFlags.useLegacyAddress = true;
-                        DP_LOG(("DP-WAR> Sharp EDP implements only Legacy interrupt address range"));
+                        DP_PRINTF(DP_NOTICE, "DP-WAR> Sharp EDP implements only Legacy interrupt address range");
                     }
+                    break;
+
+                    case 0x157F:
+                    // Bug 5317617 - ALPM doesn't work with Sharp panel at lower link rates.
+                    this->WARFlags.forceMaxLinkConfig = true;
                     break;
             }
             break;
@@ -444,8 +479,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 // loop.
                 //
                 this->WARFlags.ignoreRedundantHotplug = true;
-                DP_LOG(("DP-WAR> EIZO FlexScan SX2762W generates redundant"));
-                DP_LOG(("DP-WAR> hotplugs (bug 1048796)"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> EIZO FlexScan SX2762W generates redundant");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> hotplugs (bug 1048796)");
                 break;
             }
             break;
@@ -475,40 +510,40 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     (buffer.data[0x7D] == 0x0A))
                 {
                     this->WARFlags.useLegacyAddress = true;
-                    DP_LOG(("DP-WAR> MEI-Panasonic EDP"));
-                    DP_LOG(("implements only Legacy interrupt address range"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> MEI-Panasonic EDP");
+                    DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
                 }
             }
             break;
 
         // LG
         case 0xE430:
-            if (ProductID == 0x0469)
+            switch (ProductID)
             {
-                //
-                // The LG display can't be driven at FHD with 2*RBR.
-                // Force max link config
-                //
-                this->WARFlags.forceMaxLinkConfig = true;
-                DP_LOG(("DP-WAR> Force maximum link config WAR required on LG panel."));
-                DP_LOG(("DP-WAR>   bug 1649626"));
-                break;
+                case 0x0469:
+                {
+                    //
+                    // The LG display can't be driven at FHD with 2*RBR.
+                    // Force max link config
+                    //
+                    this->WARFlags.forceMaxLinkConfig = true;
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Force maximum link config WAR required on LG panel.");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 1649626");
+                    break;
+                }
+                case 0x06DB:
+                {
+                    this->WARFlags.useLegacyAddress = true;
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> LG eDP implements only Legacy interrupt address range");
+                    break;
+                }
             }
             break;
         case 0x8F34:
             if (ProductID == 0xAA55)
             {
                 this->WARFlags.forceMaxLinkConfig = true;
-                DP_LOG(("DP-WAR> Force maximum link config WAR required on Sharp-CerebrEx panel."));
-            }
-            break;
-
-        // Dell
-        case 0xAC10:
-            // Dell U2713H has problem with LQA. Disable it.
-            if ((ProductID == 0xA092) || (ProductID == 0xF046))
-            {
-                this->WARFlags.reassessMaxLink = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force maximum link config WAR required on Sharp-CerebrEx panel.");
             }
             break;
 
@@ -517,8 +552,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x1747)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> CMN eDP"));
-                DP_LOG(("implements only Legacy interrupt address range"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> CMN eDP");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
             }
             break;
 
@@ -527,7 +562,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID == 0x7F2B) || (ProductID == 0x7F2F))
             {
                 this->WARFlags.ignoreRedundantHotplug = true;
-                DP_LOG(("DP-WAR> BenQ GSync power on/off redundant hotplug"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> BenQ GSync power on/off redundant hotplug");
             }
             break;
 
@@ -536,8 +571,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x4C48)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> MSI eDP\n"));
-                DP_LOG(("implements only Legacy interrupt address range\n"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> MSI eDP\n");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range\n");
             }
             break;
 
@@ -545,7 +580,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
         case 0xC754:
         case 0x1863:
             {
-                DP_LOG(("DP-WAR> Unigraf device, keep link alive during detection\n"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Unigraf device, keep link alive during detection\n");
                 this->WARFlags.keepLinkAlive = true;
             }
             break;
@@ -555,16 +590,16 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID == 0x977) || (ProductID == 0x974) || (ProductID == 0x9D9))
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> BOE panels incorrectly exposing DSC capability. Ignoring it."));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> BOE panels incorrectly exposing DSC capability. Ignoring it.");
             }
             break;
 
         // NCP
         case 0x7038:
-            if ((ProductID == 0x005F))
+            if (ProductID == 0x005F)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> NCP panels incorrectly exposing DSC capability. Ignoring it."));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> NCP panels incorrectly exposing DSC capability. Ignoring it.");
             }
             break;
 
@@ -576,21 +611,90 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x1609)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel."));
-                DP_LOG(("DP-WAR> Bug 3444252"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3444252");
             }
             break;
 
         // Asus
         case 0x6D1E:
-            if(ProductID == 0x7707)
+            if (ProductID == 0x7707)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it."));
-                DP_LOG(("DP-WAR> Bug 3543158"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3543158");
+            }
+            else if (ProductID == 0x5B9A)
+            {
+                this->WARFlags.bDisableDscMaxBppLimit = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
+            }
+            else if (ProductID == 0x5CA7 || ProductID == 0x9E9D || ProductID == 0x9EA0 || ProductID == 0x9EA5 || ProductID == 0x5CB7 ||
+                     ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5 ||
+                     ProductID == 0x77E0 || ProductID == 0x9EB9)
+            {
+                this->WARFlags.bForceHeadShutdownOnModeTransition = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown on Mode transition.");
+            }
+            break;
+        case 0xB306:
+            if (ProductID == 0x3228)
+            {
+                // ASUS PG32UQXR does not set DPCD 0x2217 to reflect correct CableID.
+                this->WARFlags.bSkipCableIdCheck = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel does not expose cable capability. Ignoring it. Bug 4968411");
+            }
+            else if(ProductID == 0x24b5 || ProductID == 0x32f2 || ProductID == 0x27BC)
+            {
+                //
+                // Asus ROG PG248QP  (0x24b5) Bug 5100062
+                // Asus ROG PG32UCDM (0x32f2) Bug 5088957
+                // Asus ROG PG27AQN  (0x27BC) Bug 5300665
+
+                this->WARFlags.bForceHeadShutdown = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown.");
             }
             break;
 
+        // Samsung
+        case 0x2D4C:
+            if (ProductID == 0x7474)
+            {
+                //
+                // Samsung Odyssey Neo 57 G9 needs manual allocation of timeslots when directly connected to upstream source
+                // Do not allocate manual timeslot when under a separate branch. This is checked with branch OUI.
+                //
+                this->WARFlags.bAllocateManualTimeslots = true;
+                this->WARFlags.bDP2XPreferNonDSCForLowPClk = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel needs allocation of manual timeslot. Bug 4958974");
+            }
+            if (ProductID == 0x7256)
+            {
+                this->WARFlags.bDisableDownspread = true;
+            }
+            break;
+        case 0x545A: // VRT Varjo XR3
+            if (ProductID == 0x5841 || ProductID == 0x5842 || ProductID == 0x5843)
+            {
+                this->WARFlags.bDisableDownspread = true;
+                DP_PRINTF(DP_NOTICE, "DP-WAR> VRT monitor does not work with GB20x when downspread is enabled. Disabling downspread.");
+            }
+            break;
+        case 0xAC10:
+            switch (ProductID)
+            {
+                case 0x42AD:
+                case 0x42AC:
+                    this->WARFlags.bApplyStuffDummySymbolsWAR   = true;
+                    this->WARData.bStuffDummySymbolsFor128b132b = true;
+                    this->WARData.bStuffDummySymbolsFor8b10b    = false;
+                    break;
+                case 0xA21F:
+                    this->WARFlags.bForceHeadShutdown = true;
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown for Dell AW2524H.");
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -614,7 +718,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
         {
             // all HP monitors need to be powered up before link training
             this->WARFlags.powerOnBeforeLt = true;
-            DP_LOG(("DP-WAR> HP monitors need to be powered up before LT"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> HP monitors need to be powered up before LT");
         }
 
         if (warFlag & DP_MONITOR_CAPABILITY_DP_OVERRIDE_OPTIMAL_LINK_CONFIG)
@@ -629,8 +733,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             this->WARFlags.forceMaxLinkConfig = true;
             this->WARData.optimalLinkRate = pDenylistData->dpOverrideOptimalLinkConfig.linkRate;
             this->WARData.optimalLaneCount = pDenylistData->dpOverrideOptimalLinkConfig.laneCount;
-            DP_LOG(("DP-WAR> Overriding optimal link config on Dell U2410."));
-            DP_LOG(("DP-WAR>   bug 632801"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> Overriding optimal link config on Dell U2410.");
+            DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 632801");
         }
 
         if (warFlag & DP_MONITOR_CAPABILITY_DP_OVERRIDE_MAX_LANE_COUNT)
@@ -642,14 +746,14 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             //
             this->WARFlags.overrideMaxLaneCount = true;
             this->WARData.maxLaneCount = pDenylistData->dpMaxLaneCountOverride;
-            DP_LOG(("DP-WAR> Overriding max lane count on Lenovo L2440x."));
-            DP_LOG(("DP-WAR>   bug 687952"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> Overriding max lane count on Lenovo L2440x.");
+            DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 687952");
         }
     }
 
     if (this->WARFlags.dataForced)
     {
-        DP_LOG(("DP-WAR> EDID was overridden for some data. Patching CRC."));
+        DP_PRINTF(DP_NOTICE, "DP-WAR> EDID was overridden for some data. Patching CRC.");
         this->patchCrc();
     }
 }

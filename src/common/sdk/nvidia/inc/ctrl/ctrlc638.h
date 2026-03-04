@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc638.finn
+// Source file:      ctrl/ctrlc638.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* AMPERE_SMC_EXEC_PARTITION_REF commands and parameters */
@@ -76,8 +73,6 @@
 
 /* 'M' 'I' 'G' '-'(x5), '\0x0', extra = 9 */
 #define NVC638_UUID_STR_LEN        (0x29) /* finn: Evaluated from "((NVC638_UUID_LEN << 1) + 9)" */
-
-
 
 
 

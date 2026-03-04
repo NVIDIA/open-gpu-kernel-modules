@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2020 NVIDIA Corporation
+    Copyright (c) 2017-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -93,7 +93,7 @@ static NvU64 make_pte_turing(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
         pte_bits |= HWVALUE64(_MMU_VER2, PTE, ADDRESS_VID, addr_lo);
 
         // comptagline 53:36 - this can be overloaded in some cases to reference
-        // a 47-bit physical address.  Currently, the only known cases of this
+        // a 47-bit physical address. Currently, the only known cases of this
         // is for nvswitch, where peer id is the fabric id programmed for
         // such peer mappings
         pte_bits |= HWVALUE64(_MMU_VER2, PTE, COMPTAGLINE, addr_hi);
@@ -103,6 +103,7 @@ static NvU64 make_pte_turing(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
             pte_bits |= HWVALUE64(_MMU_VER2, PTE, ADDRESS_VID_PEER, UVM_APERTURE_PEER_ID(aperture));
     }
 
+    // kind 63:56
     pte_bits |= HWVALUE64(_MMU_VER2, PTE, KIND, NV_MMU_PTE_KIND_GENERIC_MEMORY);
 
     return pte_bits;
@@ -118,7 +119,7 @@ static NvU64 make_sked_reflected_pte_turing(void)
     return pte_bits;
 }
 
-static NvU64 poisoned_pte_turing(void)
+static NvU64 poisoned_pte_turing(uvm_page_tree_t *tree)
 {
     // An invalid PTE won't be fatal from faultable units like SM, which is the
     // most likely source of bad PTE accesses.
@@ -131,14 +132,13 @@ static NvU64 poisoned_pte_turing(void)
     // be aligned to page_size.
     NvU64 phys_addr = 0x1bad000000ULL;
 
-    NvU64 pte_bits = make_pte_turing(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
+    NvU64 pte_bits = tree->hal->make_pte(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
     return WRITE_HWCONST64(pte_bits, _MMU_VER2, PTE, PRIVILEGE, TRUE);
 }
 
-
 static uvm_mmu_mode_hal_t turing_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size)
 {
     static bool initialized = false;
 
@@ -166,19 +166,4 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU32 big_page_size)
     }
 
     return &turing_mmu_mode_hal;
-}
-
-uvm_mmu_engine_type_t uvm_hal_turing_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST14)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE8)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS && mmu_engine_id < NV_PFAULT_MMU_ENG_ID_BAR1,
-                   "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }

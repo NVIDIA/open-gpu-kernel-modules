@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl90ec.finn
+// Source file:      ctrl/ctrl90ec.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* GK104 HDACODEC control commands and parameters */

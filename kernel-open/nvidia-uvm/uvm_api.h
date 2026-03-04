@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -25,13 +25,14 @@
 #define __UVM_API_H__
 
 #include "uvm_types.h"
+#include "uvm_common.h"
 #include "uvm_ioctl.h"
 #include "uvm_linux.h"
 #include "uvm_lock.h"
 #include "uvm_thread_context.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_va_space.h"
-#include "nv_uvm_types.h"
+#include "nv_uvm_user_types.h"
 
 // This weird number comes from UVM_PREVENT_MIGRATION_RANGE_GROUPS_PARAMS. That
 // ioctl is called frequently so we don't want to allocate a copy every time.
@@ -46,18 +47,20 @@
     {                                                                               \
         params_type params;                                                         \
         BUILD_BUG_ON(sizeof(params) > UVM_MAX_IOCTL_PARAM_STACK_SIZE);              \
-        if (nv_copy_from_user(&params, (void __user*)arg, sizeof(params)))          \
+        if (copy_from_user(&params, (void __user*)arg, sizeof(params)))             \
             return -EFAULT;                                                         \
                                                                                     \
         params.rmStatus = uvm_global_get_status();                                  \
         if (params.rmStatus == NV_OK) {                                             \
-            if (do_init_check)                                                      \
-                params.rmStatus = uvm_va_space_initialized(uvm_va_space_get(filp)); \
+            if (do_init_check) {                                                    \
+                if (!uvm_fd_va_space(filp))                                         \
+                    params.rmStatus = NV_ERR_ILLEGAL_ACTION;                        \
+            }                                                                       \
             if (likely(params.rmStatus == NV_OK))                                   \
                 params.rmStatus = function_name(&params, filp);                     \
         }                                                                           \
                                                                                     \
-        if (nv_copy_to_user((void __user*)arg, &params, sizeof(params)))            \
+        if (copy_to_user((void __user*)arg, &params, sizeof(params)))               \
             return -EFAULT;                                                         \
                                                                                     \
         return 0;                                                                   \
@@ -81,20 +84,22 @@
         if (!params)                                                                    \
             return -ENOMEM;                                                             \
         BUILD_BUG_ON(sizeof(*params) <= UVM_MAX_IOCTL_PARAM_STACK_SIZE);                \
-        if (nv_copy_from_user(params, (void __user*)arg, sizeof(*params))) {            \
+        if (copy_from_user(params, (void __user*)arg, sizeof(*params))) {               \
             uvm_kvfree(params);                                                         \
             return -EFAULT;                                                             \
         }                                                                               \
                                                                                         \
         params->rmStatus = uvm_global_get_status();                                     \
         if (params->rmStatus == NV_OK) {                                                \
-            if (do_init_check)                                                          \
-                params->rmStatus = uvm_va_space_initialized(uvm_va_space_get(filp));    \
+            if (do_init_check) {                                                        \
+                if (!uvm_fd_va_space(filp))                                             \
+                    params->rmStatus = NV_ERR_ILLEGAL_ACTION;                           \
+            }                                                                           \
             if (likely(params->rmStatus == NV_OK))                                      \
                 params->rmStatus = function_name(params, filp);                         \
         }                                                                               \
                                                                                         \
-        if (nv_copy_to_user((void __user*)arg, params, sizeof(*params)))                \
+        if (copy_to_user((void __user*)arg, params, sizeof(*params)))                   \
             ret = -EFAULT;                                                              \
                                                                                         \
         uvm_kvfree(params);                                                             \
@@ -184,7 +189,7 @@ static bool uvm_api_range_invalid(NvU64 base, NvU64 length)
 }
 
 // Some APIs can only enforce 4K alignment as it's the smallest GPU page size
-// even when the smallest host page is larger (e.g. 64K on ppc64le).
+// even when the smallest host page is larger.
 static bool uvm_api_range_invalid_4k(NvU64 base, NvU64 length)
 {
     return uvm_api_range_invalid_aligned(base, length, UVM_PAGE_SIZE_4K);
@@ -196,21 +201,24 @@ static bool uvm_api_range_invalid_64k(NvU64 base, NvU64 length)
     return uvm_api_range_invalid_aligned(base, length, UVM_PAGE_SIZE_64K);
 }
 
-// Returns true if the interval [start, start + length -1] is entirely covered
-// by vmas.
-//
-// LOCKING: mm->mmap_lock must be held in at least read mode.
-bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 length);
+typedef enum
+{
+    UVM_API_RANGE_TYPE_MANAGED,
+    UVM_API_RANGE_TYPE_HMM,
+    UVM_API_RANGE_TYPE_ATS,
+    UVM_API_RANGE_TYPE_INVALID
+} uvm_api_range_type_t;
 
-// Check that the interval [base, base + length) is fully covered by UVM
-// managed ranges (NV_OK is returned), or (if ATS is enabled and mm != NULL)
-// fully covered by valid vmas (NV_WARN_NOTHING_TO_DO is returned), or (if HMM
-// is enabled and mm != NULL) fully covered by valid vmas (NV_OK is returned).
-// Any other input results in a return status of NV_ERR_INVALID_ADDRESS.
+// If the interval [base, base + length) is fully covered by VMAs which all have
+// the same uvm_api_range_type_t, that range type is returned.
+//
+// If the platform supports ATS but no GPU has yet been registered and a
+// possible ATS range is identified then the VA space state is updated such that
+// it will only be possible to register GPUs that support ATS.
 //
 // LOCKING: va_space->lock must be held in at least read mode. If mm != NULL,
 //          mm->mmap_lock must also be held in at least read mode.
-NV_STATUS uvm_api_range_type_check(uvm_va_space_t *va_space, struct mm_struct *mm, NvU64 base, NvU64 length);
+uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct mm_struct *mm, NvU64 base, NvU64 length);
 
 NV_STATUS uvm_api_pageable_mem_access_on_gpu(UVM_PAGEABLE_MEM_ACCESS_ON_GPU_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_register_gpu(UVM_REGISTER_GPU_PARAMS *params, struct file *filp);
@@ -224,6 +232,7 @@ NV_STATUS uvm_api_create_external_range(UVM_CREATE_EXTERNAL_RANGE_PARAMS *params
 NV_STATUS uvm_api_map_external_allocation(UVM_MAP_EXTERNAL_ALLOCATION_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_map_external_sparse(UVM_MAP_EXTERNAL_SPARSE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_free(UVM_FREE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_discard(UVM_DISCARD_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_prevent_migration_range_groups(UVM_PREVENT_MIGRATION_RANGE_GROUPS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_allow_migration_range_groups(UVM_ALLOW_MIGRATION_RANGE_GROUPS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS *params, struct file *filp);
@@ -240,6 +249,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_enable_system_wide_atomics(UVM_ENABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_disable_system_wide_atomics(UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_tools_init_event_tracker_v2(UVM_TOOLS_INIT_EVENT_TRACKER_V2_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_set_notification_threshold(UVM_TOOLS_SET_NOTIFICATION_THRESHOLD_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_event_queue_enable_events(UVM_TOOLS_EVENT_QUEUE_ENABLE_EVENTS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_event_queue_disable_events(UVM_TOOLS_EVENT_QUEUE_DISABLE_EVENTS_PARAMS *params, struct file *filp);
@@ -252,5 +262,7 @@ NV_STATUS uvm_api_unmap_external(UVM_UNMAP_EXTERNAL_PARAMS *params, struct file 
 NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_alloc_device_p2p(UVM_ALLOC_DEVICE_P2P_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_clear_all_access_counters(UVM_CLEAR_ALL_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 
 #endif // __UVM_API_H__

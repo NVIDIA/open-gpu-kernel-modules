@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,10 +29,11 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "kernel/gpu/intr/intr.h"
 
+#include "gpu/mem_mgr/channel_utils.h"
 #include "gpu/mem_mgr/mem_scrub.h"
 #include "os/os.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
@@ -44,6 +45,10 @@
 #include "nvstatus.h"
 #include "rmapi/rs_utils.h"
 #include "core/locks.h"
+
+#include "gpu/conf_compute/conf_compute.h"
+
+#include "class/cl0050.h"
 #include "class/clb0b5.h"   // MAXWELL_DMA_COPY_A
 #include "class/clc0b5.h"   // PASCAL_DMA_COPY_A
 #include "class/clc1b5.h"   // PASCAL_DMA_COPY_B
@@ -52,21 +57,30 @@
 #include "class/clc6b5.h"   // AMPERE_DMA_COPY_A
 #include "class/clc7b5.h"   // AMPERE_DMA_COPY_B
 
-static NvU64  _scrubCheckProgress(OBJMEMSCRUB *pScrubber);
-static void   _scrubSetupChannelBufferSizes(OBJCHANNEL *pChannel, NvU32  numCopyBlocks);
-static NvU64  _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 size);
-static void   _waitForPayload(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, RmPhysAddr end);
-static void   _scrubAddWorkToList(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, NvU64  size, NvU64  newId);
-static NvU32  _scrubMemory(OBJCHANNEL *pChannel, RmPhysAddr base, NvU64 size, NV_ADDRESS_SPACE dstAddrSpace,
-                           NvU32 dstCpuCacheAttrib, NvU32 freeToken);
-static void   _scrubWaitAndSave(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength  itemsToSave);
-static NvU64  _scrubGetFreeEntries(OBJMEMSCRUB *pScrubber);
-static NvU64  _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64  chunkSize, NvU64  *pPages,
-                                 NvU64  pageCount, PSCRUB_NODE  pList, NvLength  pagesToScrubCheck);
-static void   _scrubOsSchedule(OBJCHANNEL *pChannel);
+#include "class/clc8b5.h"   // HOPPER_DMA_COPY_A
+
+#include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
+
+#include "class/clc9b5.h"      // BLACKWELL_DMA_COPY_A
+
+#include "class/clcab5.h"      // BLACKWELL_DMA_COPY_B
+
+static NvU64     _scrubCheckProgress(OBJMEMSCRUB *pScrubber);
+static NvU64     _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 size);
+static NV_STATUS _waitForPayload(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, RmPhysAddr end);
+static void      _serviceInterrupts(OBJMEMSCRUB *pScrubber);
+static void      _scrubAddWorkToList(OBJMEMSCRUB  *pScrubber, RmPhysAddr  base, NvU64  size, NvU64  newId);
+static NvU32     _scrubMemory(OBJMEMSCRUB  *pScrubber, RmPhysAddr base, NvU64 size,
+                              NvU32 dstCpuCacheAttrib, NvU32 freeToken, NvU32 flags);
+static NV_STATUS _scrubWaitAndSave(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength  itemsToSave);
+static NvU64     _scrubGetFreeEntries(OBJMEMSCRUB *pScrubber);
+static NvU64     _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64 pageCount, PSCRUB_NODE  pList,
+                                   PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck, NvU32 flags);
 static void   _scrubCopyListItems(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength itemsToSave);
 
 static NV_STATUS _scrubCheckLocked(OBJMEMSCRUB  *pScrubber, PSCRUB_NODE *ppList, NvU64 *pSize);
+static NV_STATUS _scrubCombinePages(NvU64 *pPages, NvU64 pageSize, NvU64 pageCount,
+                                    PSCRUB_NODE *ppScrubList, NvU64 *pSize);
 
 /**
  * Constructs the memory scrubber object and signals
@@ -86,22 +100,20 @@ scrubberConstruct
 )
 {
     OBJMEMSCRUB      *pScrubber;
-    OBJCHANNEL       *pChannel;
-    KernelMIGManager *pKernelMIGManager          = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    MemoryManager    *pMemoryManager             = GPU_GET_MEMORY_MANAGER(pGpu);
-    NV_STATUS         status                     = NV_OK;
-    PMA              *pPma                       = NULL;
-    RM_API           *pRmApi                     = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvBool            bMIGInUse                  = IS_MIG_IN_USE(pGpu);
-    RmClient         *pClient;
+    MemoryManager    *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NV_STATUS         status            = NV_OK;
+    NvBool            bMIGInUse         = IS_MIG_IN_USE(pGpu);
+    PMA              *pPma              = NULL;
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance = NULL;
 
     if (pHeap == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
-    pPma = &pHeap->pmaObject;
+    pPma = pHeap->pPmaObject;
 
-    if (pPma->pScrubObj != NULL)
+    if (pmaGetMemScrub(pPma) != NULL)
         return NV_OK;
 
     pScrubber = (OBJMEMSCRUB *)portMemAllocNonPaged(sizeof(OBJMEMSCRUB));
@@ -131,122 +143,50 @@ scrubberConstruct
     }
     portMemSet(pScrubber->pScrubList, 0, sizeof(SCRUB_NODE) * MAX_SCRUB_ITEMS);
 
+    pScrubber->pGpu = pGpu;
+
     {
-        pChannel = (OBJCHANNEL *) portMemAllocNonPaged(sizeof(OBJCHANNEL));
-        if (pChannel == NULL)
+        NV_PRINTF(LEVEL_INFO, "Starting to init CeUtils for scrubber.\n");
+        NV0050_ALLOCATION_PARAMETERS ceUtilsAllocParams = {0};
+
+        if (memmgrUseVasForCeMemoryOps(pMemoryManager))
         {
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto destroyscrublist;
+            ceUtilsAllocParams.flags = DRF_DEF(0050, _CEUTILS_FLAGS, _VIRTUAL_MODE, _TRUE);
         }
-        portMemSet(pChannel, 0, sizeof(OBJCHANNEL));
-        pScrubber->pChannel = pChannel;
-        pChannel->type      = SCRUBBER_CHANNEL;
-        pChannel->pGpu      = pGpu;
-        pChannel->bUseVasForCeCopy = memmgrUseVasForCeMemoryOps(pMemoryManager);
-        memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pChannel->hTdCopyClass);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                                    NV01_NULL_OBJECT, NV01_ROOT, &pChannel->hClient), freeChannelObject);
-
-        pChannel->bClientAllocated = NV_TRUE;
 
         if (bMIGInUse)
         {
-            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance;
-            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pKernelMIGGPUInstance)
+            KERNEL_MIG_GPU_INSTANCE *pCurrKernelMIGGPUInstance;
+
+            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pCurrKernelMIGGPUInstance)
             {
-                if (pKernelMIGGPUInstance->pMemoryPartitionHeap == pHeap)
+                if (pCurrKernelMIGGPUInstance->pMemoryPartitionHeap == pHeap)
                 {
-                    pChannel->pKernelMIGGpuInstance = pKernelMIGGPUInstance;
+                    pKernelMIGGPUInstance = pCurrKernelMIGGPUInstance;
                     break;
                 }
             }
             FOR_EACH_VALID_GPU_INSTANCE_END();
         }
-
-        // set all the unique ID's for the scrubber channel
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGetClientUnderLock(pChannel->hClient, &pClient), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U), freechannel);
-
-        // set all the unique ID's for the scrubber channel
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->physMemId), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->channelId), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->errNotifierIdVirt), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->errNotifierIdPhys), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->copyObjectId), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->eventId), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->pushBufferId), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->doorbellRegionHandle), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            serverutilGenResourceHandle(pChannel->hClient, &pChannel->hUserD), freechannel);
-
-        //
-        // RM scrubber channel is always created as privileged channels (physical address access) by default
-        // For MMU Bug: 2739505, we need to switch to use channels in non-privileged mode.
-        // We also need a (split) VAS for GSP-RM + MIG, to ensure we don't fall back to the device default
-        // VAS during channel allocation.
-        //
-        // TODO: This is temporary, and should be replaced shortly by enabling VAS allocation unilaterally.
-        //
-        if (pChannel->bUseVasForCeCopy ||
-            (IS_GSP_CLIENT(pGpu) && bMIGInUse))
+        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        if ((pConfCompute != NULL) &&
+            (pConfCompute->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)))
         {
-            NV_ASSERT_OK_OR_GOTO(status,
-                serverutilGenResourceHandle(pChannel->hClient, &pChannel->hVASpaceId), freechannel);
+            NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pSec2Utils, pHeap, Sec2Utils, pGpu, pKernelMIGGPUInstance),
+               destroyscrublist);
+            pScrubber->bIsEngineTypeSec2 = NV_TRUE;
         }
+        else
+        {
+            NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams),
+               destroyscrublist);
 
-        // set sizes for CE Channel
-        _scrubSetupChannelBufferSizes(pChannel, MAX_SCRUB_ITEMS);
-
-        // Allocate Scrubber Channel related objects
-        NV_ASSERT_OK_OR_GOTO(status,
-            memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel), freechannel);
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            memmgrMemUtilsCopyEngineInitialize_HAL(pGpu, pMemoryManager, pChannel), freepartitionref);
-
-         // Initialize semaphore location to 0
-        WRITE_SCRUBBER_PB_SEMA(pChannel, 0);
-        WRITE_SCRUBBER_PAYLOAD_SEMA(pChannel, 0);
-        NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), freepartitionref);
+            pScrubber->bIsEngineTypeSec2 = NV_FALSE;
+        }
+        NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), destroyscrublist);
     }
 
     return status;
-
-freepartitionref:
-    if(bMIGInUse)
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hPartitionRef);
-
-freechannel:
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->channelId);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);
-
-freeChannelObject:
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);
-    portMemFree(pScrubber->pChannel);
 
 destroyscrublist:
     portMemFree(pScrubber->pScrubList);
@@ -277,7 +217,17 @@ _isScrubWorkPending(
     }
     else
     {
-        if (pScrubber->pChannel->lastSubmittedEntry != READ_SCRUBBER_PB_SEMA(pScrubber->pChannel))
+        NvU64 lastCompleted;
+        if (pScrubber->bIsEngineTypeSec2)
+        {
+            lastCompleted = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
+        }
+        else
+        {
+            lastCompleted = ceutilsUpdateProgress(pScrubber->pCeUtils);
+        }
+
+        if (pScrubber->lastSubmittedWorkId != lastCompleted)
             workPending = NV_TRUE;
     }
     return workPending;
@@ -297,30 +247,28 @@ void
 scrubberDestruct
 (
     OBJGPU         *pGpu,
-    Heap           *pHeap,
-    OBJMEMSCRUB    *pScrubber
+    Heap           *pHeap
 )
 {
-    OBJCHANNEL   *pChannel  = NULL;
     PMA          *pPma      = NULL;
-    RM_API       *pRmApi    = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     PSCRUB_NODE   pPmaScrubList = NULL;
     NvU64         count = 0;
     NV_STATUS     status = NV_OK;
+    OBJMEMSCRUB  *pScrubber;
 
     if (pHeap == NULL)
     {
         return;
     }
-    pPma = &pHeap->pmaObject;
+    pPma = pHeap->pPmaObject;
+
+    pScrubber = pmaGetMemScrub(pPma);
 
     if (pScrubber == NULL)
         return;
 
     pmaUnregMemScrub(pPma);
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
-
-    pChannel = pScrubber->pChannel;
 
     if (!API_GPU_IN_RESET_SANITY_CHECK(pGpu))
     {
@@ -355,45 +303,14 @@ scrubberDestruct
 
     portMemFree(pScrubber->pScrubList);
     {
-        // Freeing channel first as in MODS case we don't wait for work to complete. Freeing VAS first causes MMU faults
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->channelId);
-
-        if (pChannel->bClientUserd)
+        if (pScrubber->bIsEngineTypeSec2)
         {
-            // scrub userd memory of scrubber channel as it may be allocated from PMA
-            NvU32 userdSize = 0;
-
-            kfifoGetUserdSizeAlign_HAL(GPU_GET_KERNEL_FIFO(pGpu), &userdSize, NULL);
-            portMemSet((void*)pChannel->pControlGPFifo, 0, userdSize);
-            pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hUserD);
+            objDelete(pScrubber->pSec2Utils);
         }
-
-        if (pChannel->bUseVasForCeCopy)
+        else
         {
-            // unmap the Identity mapping
-            status = pRmApi->Unmap(pRmApi, pChannel->hClient, pChannel->deviceId,
-                                   pChannel->hFbAliasVA, pChannel->hFbAlias, 0, pChannel->fbAliasVA);
-
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Unmapping scrubber 1:1 Mapping, status: %x\n", status);
-            }
-
-            // free the Alias memory in host
-            // this will not trigger scrubber
-            pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hFbAliasVA);
-            pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hFbAlias);
+            objDelete(pScrubber->pCeUtils);
         }
-
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->errNotifierIdPhys);
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->pushBufferId);
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->errNotifierIdVirt);
-        if (pChannel->hVASpaceId)
-            pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hVASpaceId);
-
-
-        pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);
-        portMemFree(pScrubber->pChannel);
     }
 
     portSyncMutexRelease(pScrubber->pScrubberMutex);
@@ -491,76 +408,113 @@ scrubSubmitPages
     NvU64       *pPages,
     NvU64        pageCount,
     PSCRUB_NODE *ppList,
-    NvU64       *pSize
+    NvU64       *pSize,
+    NvU32        flags
 )
 {
     NvU64       curPagesSaved     = 0;
     PSCRUB_NODE pScrubList        = NULL;
+    PSCRUB_NODE pScrubListCopy    = NULL;
+    NvU64       scrubListSize     = 0;
     NvLength    pagesToScrubCheck = 0;
     NvU64       totalSubmitted    = 0;
     NvU64       numFinished       = 0;
     NvU64       freeEntriesInList = 0;
     NvU64       scrubCount        = 0;
-    NvU64       numPagesToScrub   = pageCount;
+    NvU64       numPagesToScrub   = 0;
+    NV_STATUS   status            = NV_OK;
 
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
     *pSize  = 0;
     *ppList = pScrubList;
 
-    NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount:%llx\n", pageCount);
+    NV_CHECK_OR_GOTO(LEVEL_INFO, pageCount > 0, cleanup);
 
-     freeEntriesInList = _scrubGetFreeEntries(pScrubber);
-     if (freeEntriesInList < pageCount)
-     {
-         pScrubList = (PSCRUB_NODE)
-                      portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (pageCount - freeEntriesInList)));
+    NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount = 0x%llx chunkSize = 0x%llx\n", pageCount, chunkSize);
 
-         while (freeEntriesInList < pageCount)
-         {
-             if (pageCount > MAX_SCRUB_ITEMS)
-             {
-                 pagesToScrubCheck = (NvLength)(MAX_SCRUB_ITEMS - freeEntriesInList);
-                 scrubCount        = MAX_SCRUB_ITEMS;
-             }
-             else
-             {
-                 pagesToScrubCheck  = (NvLength)(pageCount - freeEntriesInList);
-                 scrubCount         = pageCount;
-             }
+    freeEntriesInList = _scrubGetFreeEntries(pScrubber);
 
-             numFinished = _scrubCheckAndSubmit(pScrubber, chunkSize, &pPages[totalSubmitted],
-                                                scrubCount, &pScrubList[curPagesSaved],
-                                                pagesToScrubCheck);
+    NV_ASSERT_OK_OR_GOTO(status,
+                         _scrubCombinePages(pPages,
+                                            chunkSize,
+                                            pageCount,
+                                            &pScrubList,
+                                            &scrubListSize),
+                         cleanup);
 
-             pageCount         -= numFinished;
-             curPagesSaved     += pagesToScrubCheck;
-             totalSubmitted    += numFinished;
-             freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
-         }
+    numPagesToScrub = scrubListSize;
 
-         *ppList = pScrubList;
-         *pSize  = curPagesSaved;
-     }
-     else
-     {
+    if (freeEntriesInList < scrubListSize)
+    {
+        pScrubListCopy = (PSCRUB_NODE)
+                          portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (scrubListSize - freeEntriesInList)));
 
-         totalSubmitted = _scrubCheckAndSubmit(pScrubber, chunkSize, pPages,
-                                               pageCount, NULL,
-                                               0);
-          *ppList = NULL;
-          *pSize  = 0;
-      }
+        if (pScrubListCopy == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
 
-     portSyncMutexRelease(pScrubber->pScrubberMutex);
-     if (totalSubmitted == numPagesToScrub)
-         return NV_OK;
-     else
-     {
+        while (freeEntriesInList < scrubListSize)
+        {
+            if (scrubListSize > MAX_SCRUB_ITEMS)
+            {
+                pagesToScrubCheck = (NvLength)(MAX_SCRUB_ITEMS - freeEntriesInList);
+                scrubCount        = MAX_SCRUB_ITEMS;
+            }
+            else
+            {
+                pagesToScrubCheck = (NvLength)(scrubListSize - freeEntriesInList);
+                scrubCount        = scrubListSize;
+            }
+
+            numFinished = _scrubCheckAndSubmit(pScrubber, scrubCount,
+                                               &pScrubList[totalSubmitted],
+                                               &pScrubListCopy[curPagesSaved],
+                                               pagesToScrubCheck,
+                                               flags);
+
+            scrubListSize     -= numFinished;
+            curPagesSaved     += pagesToScrubCheck;
+            totalSubmitted    += numFinished;
+            freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
+        }
+
+        *ppList = pScrubListCopy;
+        *pSize  = curPagesSaved;
+    }
+    else
+    {
+        totalSubmitted = _scrubCheckAndSubmit(pScrubber, scrubListSize,
+                                              pScrubList, NULL, 0, flags);
+        *ppList = NULL;
+        *pSize  = 0;
+    }
+
+cleanup:
+    portSyncMutexRelease(pScrubber->pScrubberMutex);
+
+    if (pScrubList != NULL)
+    {
+        portMemFree(pScrubList);
+        pScrubList = NULL;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
+
+    if (totalSubmitted == numPagesToScrub)
+    {
+        status = NV_OK;
+    }
+    else
+    {
         NV_PRINTF(LEVEL_FATAL, "totalSubmitted :%llx != pageCount: %llx\n",
                   totalSubmitted, pageCount);
         DBG_BREAKPOINT();
-         return NV_ERR_GENERIC;
-     }
+        status = NV_ERR_GENERIC;
+    }
+
+    return status;
 }
 
 /**
@@ -586,15 +540,36 @@ scrubWaitPages
 )
 {
 
-    NvU32     iter   = 0;
-    NV_STATUS status = NV_OK;
+    NvU32       iter          = 0;
+    NV_STATUS   status        = NV_OK;
+    PSCRUB_NODE pScrubList    = NULL;
+    NvU64       scrubListSize = 0;
+
+    NV_ASSERT_OK_OR_RETURN(_scrubCombinePages(pPages,
+                                              chunkSize,
+                                              pageCount,
+                                              &pScrubList,
+                                              &scrubListSize));
 
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
-    for (iter = 0; iter < pageCount; iter++)
+
+    for (iter = 0; iter < scrubListSize; iter++)
     {
-        _waitForPayload(pScrubber, pPages[iter], (pPages[iter] + chunkSize - 1));
+        NV_ASSERT_OK_OR_GOTO(status, 
+                             _waitForPayload(pScrubber,
+                                             pScrubList[iter].base,
+                                             (pScrubList[iter].base + pScrubList[iter].size - 1)),
+                             done);
     }
+done:
     portSyncMutexRelease(pScrubber->pScrubberMutex);
+
+    if (pScrubList != NULL)
+    {
+        portMemFree(pScrubList);
+        pScrubList = NULL;
+    }
+
     return status;
 
 }
@@ -648,7 +623,12 @@ scrubCheckAndWaitForSize
             goto exit;
         }
 
-        _scrubWaitAndSave(pScrubber, pList, requiredItemsToSave);
+        NV_CHECK_OK_OR_GOTO(status,
+                            LEVEL_ERROR,
+                            _scrubWaitAndSave(pScrubber,
+                                              pList,
+                                              requiredItemsToSave),
+                            exit);
     }
     else {
         // since there is no scrub remaining, its upto the user about how to handle that.
@@ -660,6 +640,12 @@ scrubCheckAndWaitForSize
 
 exit:
     portSyncMutexRelease(pScrubber->pScrubberMutex);
+
+    if ((status != NV_OK) && (pList != NULL))
+    {
+        portMemFree(pList);
+        pList = NULL;
+    }
     return status;
 }
 
@@ -723,58 +709,61 @@ _scrubCopyListItems
 /*  This function is used to check and submit work items always within the
  *  available / maximum scrub list size.
  *
- *  @param[in]  pScrubber    OBJMEMSCRUB pointer
- *  @param[in]  chunkSize     size of each page
- *  @param[in]  pPages       Array of base address
- *  @param[in]  pageCount    number of pages in the array
- *  @param[in]  pList        pointer will store the return check array
+ *  @param[in]  pScrubber           OBJMEMSCRUB pointer
+ *  @param[in]  pageCount           number of pages in the array
+ *  @param[in]  pList               pointer will store the return check array
+ *  @param[in]  pScrubListCopy      List where pages are saved
+ *  @param[in]  pagesToScrubCheck   How many pages will need to be saved
  *  @returns the number of work successfully submitted, else 0
  */
 static NvU64
 _scrubCheckAndSubmit
 (
     OBJMEMSCRUB *pScrubber,
-    NvU64        chunkSize,
-    NvU64       *pPages,
     NvU64        pageCount,
     PSCRUB_NODE  pList,
-    NvLength     pagesToScrubCheck
+    PSCRUB_NODE  pScrubListCopy,
+    NvLength     pagesToScrubCheck,
+    NvU32        flags
 )
 {
-    NvU64        iter              = 0;
-    NvU64        newId;
-    OBJCHANNEL  *pChannel;
-    NV_STATUS    status;
+    NvU64     iter = 0;
+    NvU64     newId;
+    NV_STATUS status;
 
-    if (pList == NULL && pagesToScrubCheck != 0)
+    if (pScrubListCopy == NULL && pagesToScrubCheck != 0)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "pages need to be saved off, but stash list is invalid\n");
         goto exit;
     }
 
-    _scrubWaitAndSave(pScrubber, pList, pagesToScrubCheck);
+    NV_CHECK_OK_OR_GOTO(status,
+                        LEVEL_ERROR,
+                        _scrubWaitAndSave(pScrubber,
+                                          pScrubListCopy,
+                                          pagesToScrubCheck),
+                        exit);
 
     for (iter = 0; iter < pageCount; iter++)
     {
-        pChannel = pScrubber->pChannel;
         newId    = pScrubber->lastSubmittedWorkId + 1;
 
         NV_PRINTF(LEVEL_INFO,
                   "Submitting work, Id: %llx, base: %llx, size: %llx\n",
-                  newId, pPages[iter], chunkSize);
+                  newId, pList[iter].base, pList[iter].size);
 
         {
-            status = _scrubMemory(pChannel, pPages[iter], chunkSize, ADDR_FBMEM, NV_MEMORY_DEFAULT,
-                                 (NvU32)newId);
+            status =_scrubMemory(pScrubber, pList[iter].base, pList[iter].size, NV_MEMORY_DEFAULT,
+                                 (NvU32)newId, flags);
         }
 
         if(status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Failing because the work dint submit.\n");
+            NV_PRINTF(LEVEL_ERROR, "Failing because the work didn't submit.\n");
             goto exit;
         }
-        _scrubAddWorkToList(pScrubber, pPages[iter], chunkSize, newId);
+        _scrubAddWorkToList(pScrubber, pList[iter].base, pList[iter].size, newId);
         _scrubCheckProgress(pScrubber);
     }
 
@@ -840,12 +829,33 @@ _searchScrubList
 
 
 /**
+ * helper function to service interrupts
+ */
+static void
+_serviceInterrupts
+(
+    OBJMEMSCRUB *pScrubber
+)
+{
+    {
+        if (pScrubber->bIsEngineTypeSec2)
+        {
+            sec2utilsServiceInterrupts(pScrubber->pSec2Utils);
+        }
+        else
+        {
+            ceutilsServiceInterrupts(pScrubber->pCeUtils);
+        }
+    }
+}
+
+/**
  * helper function which waits for a particular submission to complete and
  * copies the completed work items from scrub list to temporary list
  *
  */
 
-static void
+static NV_STATUS
 _scrubWaitAndSave
 (
     OBJMEMSCRUB *pScrubber,
@@ -853,55 +863,48 @@ _scrubWaitAndSave
     NvLength     itemsToSave
 )
 {
-    NvU64  currentCompletedId = 0;
+    RMTIMEOUT  timeout;
+    OBJGPU    *pGpu   = pScrubber->pGpu;
+    NV_STATUS  status = NV_OK;
 
     if (itemsToSave == 0)
-        return;
+        goto done;
 
-    currentCompletedId = _scrubCheckProgress(pScrubber);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
-    while (currentCompletedId < (pScrubber->lastSeenIdByClient + itemsToSave))
+    while (_scrubCheckProgress(pScrubber) < (pScrubber->lastSeenIdByClient + itemsToSave))
     {
-        _scrubOsSchedule(pScrubber->pChannel);
-        currentCompletedId = _scrubCheckProgress(pScrubber);
+        _serviceInterrupts(pScrubber);
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status != NV_OK)
+        {
+            if (status == NV_ERR_TIMEOUT)
+            {
+                if (_scrubCheckProgress(pScrubber) < (pScrubber->lastSeenIdByClient + itemsToSave))
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Timed out when waiting for scrub jobs to finish.\n");
+                }
+                else
+                {
+                    status = NV_OK;
+                }
+                goto done;
+            }
+        }
     }
 
     _scrubCopyListItems(pScrubber, pList, itemsToSave);
+
+done:
+    return status;
 }
 
-/**
- *  helper function to  yield when we wait for the scrubber to complete a work
- */
-static void
-_scrubOsSchedule(OBJCHANNEL *pChannel)
-{
-    //
-    // FIXME: Bug 2463959: objmemscrub is called with the rmDeviceGpuLock in the
-    // heapFree_IMPL->_stdmemPmaFree->pmaFreePages->scrubSubmitPages path.
-    // Yielding while holding the rmDeviceGpuLock can lead to deadlock. Instead,
-    // if the lock is held, service any interrupts on the owned CE to make progress.
-    // Bug 2527660 is filed to remove this change.
-    //
-    // pChannel is null when PMA scrub requests are handled in vGPU plugin.
-    // In this case vGpu plugin allocates scrubber channel in PF domain so
-    // above mention deadlock is not present here.
-    //
-    if ((pChannel != NULL) && (rmDeviceGpuLockIsOwner(pChannel->pGpu->gpuInstance)))
-    {
-        Intr *pIntr = GPU_GET_INTR(pChannel->pGpu);
-        intrServiceStallSingle_HAL(pChannel->pGpu, pIntr, MC_ENGINE_IDX_CE(pChannel->pKCe->publicID), NV_FALSE);
-    }
-    else
-    {
-        osSchedule();
-    }
-
-}
 
 /**
  *  helper function to find and wait for a specific work to complete
  */
-static void
+static NV_STATUS
 _waitForPayload
 (
     OBJMEMSCRUB  *pScrubber,
@@ -909,21 +912,49 @@ _waitForPayload
     RmPhysAddr    end
 )
 {
-    NvU64     idToWait;
+    NvU64      idToWait;
+    RMTIMEOUT  timeout;
+    NV_STATUS  status        = NV_OK;
+    OBJGPU    *pGpu          = pScrubber->pGpu;
+    NvBool     bGpuLockTaken = (rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)) ||
+                                rmGpuLockIsOwner());
 
     //We need to look up in the range between [lastSeenIdByClient, lastSubmittedWorkId]
     idToWait = _searchScrubList(pScrubber, base, end);
 
     if (idToWait == 0)
     {
-        return;
+        return NV_OK;
     }
 
-    // Loop will break out, when the semaphore is equal to payload
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    // Loop will break out, when the semaphore is equal to payload, or times out
     while (_scrubCheckProgress(pScrubber) < idToWait)
     {
-        portUtilSpin();
+        if (bGpuLockTaken)
+        {
+            _serviceInterrupts(pScrubber);
+        }
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status != NV_OK)
+        {
+            if (status == NV_ERR_TIMEOUT)
+            {
+                if (_scrubCheckProgress(pScrubber) < idToWait)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Timed out when waiting for scrub job %llu to finish.\n", idToWait);
+                }
+                else
+                {
+                    status = NV_OK;
+                }
+            }
+            break;
+        }
     }
+    return status;
 }
 
 /**
@@ -955,76 +986,7 @@ _scrubAddWorkToList
     NV_ASSERT(_scrubGetFreeEntries(pScrubber) <= MAX_SCRUB_ITEMS);
 }
 
-/** helper function to return methods size needed for a single operation in a
-    channel. currently only scrubber channel is supported.
-  */
 
-static NvU32
-_getOptimalMethodSizePerBlock
-(
-    OBJCHANNEL *pChannel
-)
-{
-    NvU32 methodSizePerBlock = 0;
-    switch(pChannel->type)
-    {
-        case SCRUBBER_CHANNEL:
-        {
-            //
-            // 6 1U methods -- 6 * 8 bytes  = 48 bytes
-            // 1 2U methods -- 1 * 12 bytes = 12 bytes
-            // 1 3U methods -- 1 * 16 bytes = 16 bytes
-            // 1 4U methods -- 1 * 20 bytes = 20 bytes
-            //
-            methodSizePerBlock = SIZE_OF_ONE_MEMSET_BLOCK; // 0x60
-            break;
-        }
-        case FAST_SCRUBBER_CHANNEL:
-        {
-            //
-            // 9 1U methods -- 9 * 8 bytes  = 72 bytes
-            // 1 2U methods -- 1 * 12 bytes = 12 bytes
-            // 1 3U methods -- 1 * 16 bytes = 16 bytes
-            // 1 4U methods -- 1 * 20 bytes = 20 bytes
-            //
-            methodSizePerBlock = SIZE_OF_ONE_MEMSET_BLOCK + 24; // 0x78
-            break;
-        }
-        // TODO: add the case for COPY CHANNEL.
-        default:
-            NV_ASSERT(NV_TRUE);
-    }
-    return methodSizePerBlock;
-}
-
-/**
- * helper function to set sizes for CE channel used by memory scrubber.
- * Channel PB, GPFIFO and channel offsets are set for the numCopyBlock size
- */
-
-static void
-_scrubSetupChannelBufferSizes
-(
-    OBJCHANNEL *pChannel,
-    NvU32       numCopyBlocks
-)
-{
-    NV_ASSERT(numCopyBlocks != 0);
-    NvU32 gpFifoSize = NV906F_GP_ENTRY__SIZE * numCopyBlocks;
-
-    // set channel specific sizes
-    pChannel->methodSizePerBlock       = _getOptimalMethodSizePerBlock(pChannel);
-    NV_ASSERT(pChannel->methodSizePerBlock != 0);
-    pChannel->channelPbSize            = numCopyBlocks * (pChannel->methodSizePerBlock);
-    NV_ASSERT(pChannel->channelPbSize <= NV_U32_MAX);
-    pChannel->channelNotifierSize      = SCRUBBER_CHANNEL_NOTIFIER_SIZE;
-    pChannel->channelNumGpFifioEntries = numCopyBlocks;
-    pChannel->channelSize              = pChannel->channelPbSize + gpFifoSize + SCRUBBER_CHANNEL_SEMAPHORE_SIZE;
-    // Semaphore used to track PB and GPFIFO offset
-    pChannel->semaOffset               = pChannel->channelPbSize + gpFifoSize;
-    // Semaphore used in work tracking for clients.
-    pChannel->finishPayloadOffset      = pChannel->semaOffset + 4;
-}
 
 /**
  * Scrubber uses 64 bit index to track the work submitted. But HW supports
@@ -1039,303 +1001,43 @@ _scrubCheckProgress
     OBJMEMSCRUB *pScrubber
 )
 {
-    NvU32       hwCurrentCompletedId;
-    NvU64       lastSWSemaphoreDone;
-    OBJCHANNEL *pChannel;
+    NvU32 hwCurrentCompletedId;
+    NvU64 lastSWSemaphoreDone;
 
     NV_ASSERT(pScrubber != NULL);
 
     if (pScrubber->bVgpuScrubberEnabled)
     {
         hwCurrentCompletedId = pScrubber->vgpuScrubBuffRing.pScrubBuffRingHeader->lastSWSemaphoreDone;
-    } else
-    {
-        NV_ASSERT(pScrubber->pChannel != NULL);
-        pChannel = pScrubber->pChannel;
-        hwCurrentCompletedId = READ_SCRUBBER_PAYLOAD_SEMA(pChannel);
-    }
-    lastSWSemaphoreDone  = pScrubber->lastSWSemaphoreDone;
+        lastSWSemaphoreDone  = pScrubber->lastSWSemaphoreDone;
 
-    if (hwCurrentCompletedId == (NvU32)lastSWSemaphoreDone)
-        return lastSWSemaphoreDone;
+        if (hwCurrentCompletedId == (NvU32)lastSWSemaphoreDone)
+            return lastSWSemaphoreDone;
 
-    // check for wrap around case. Increment the upper 32 bits
-    if (hwCurrentCompletedId < (NvU32)lastSWSemaphoreDone)
-    {
-        lastSWSemaphoreDone += 0x100000000ULL;
-    }
-
-    // update lower 32 bits
-   lastSWSemaphoreDone &= 0xFFFFFFFF00000000ULL;
-   lastSWSemaphoreDone |= (NvU64)hwCurrentCompletedId;
-
-   pScrubber->lastSWSemaphoreDone = lastSWSemaphoreDone;
-
-   return lastSWSemaphoreDone;
-}
-
-/** helper function to push destination memory methods
-  */
-static NvU32
-_memsetPushDstProperties
-(
-    OBJCHANNEL       *pChannel,
-    NV_ADDRESS_SPACE  dstAddressSpace,
-    NvU32             dstCpuCacheAttrib,
-    NvU32             **ppPtr
-)
-{
-    NvU32  data     = 0;
-    NvU32 *pPtr     = *ppPtr;
-    NvU32 retVal    = 0;
-
-    if (dstAddressSpace == ADDR_FBMEM)
-        data = DRF_DEF(B0B5, _SET_DST_PHYS_MODE, _TARGET, _LOCAL_FB);
-    else if (dstCpuCacheAttrib == NV_MEMORY_CACHED)
-        data = DRF_DEF(B0B5, _SET_DST_PHYS_MODE, _TARGET, _COHERENT_SYSMEM);
-    else if (dstCpuCacheAttrib == NV_MEMORY_UNCACHED)
-        data = DRF_DEF(B0B5, _SET_DST_PHYS_MODE, _TARGET, _NONCOHERENT_SYSMEM);
-
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_DST_PHYS_MODE, data);
-
-    if (pChannel->bUseVasForCeCopy)
-    {
-        retVal = DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _VIRTUAL) |
-                 DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _VIRTUAL);
-    }
-    else
-    {
-        retVal = DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _PHYSICAL) |
-                 DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _PHYSICAL);
-    }
-
-    *ppPtr = pPtr;
-    return retVal;
-}
-
-
-/** single helper function to fill the push buffer with the methods needed for
-    memsetting using CE. This function is much more efficient in the sense it
-    decouples the mem(set/copy) operation from managing channel resources.
-    TODO: Add support for memcopy here based on channel type.
-  */
-static NvU32
-_scrubFillPb
-(
-    OBJCHANNEL      *pChannel,
-    RmPhysAddr       base,
-    NvU32            size,
-    NvU32            payload,
-    NvBool           bPipelined,
-    NV_ADDRESS_SPACE dstAddressSpace,
-    NvU32            dstCpuCacheAttrib,
-    NvBool           bInsertFinishpayload,
-    NvBool           bNonStallInterrupt,
-    NvU32            putIndex
-)
-{
-     NvU32   launchDestType = 0;
-     NvU32   semaValue      = 0;
-     NvU32   pipelinedValue = 0;
-     NvU32  *pPtr           =(NvU32 *)((NvU8*)pChannel->pbCpuVA + (putIndex * pChannel->methodSizePerBlock));
-     NvU32  *pStartPtr      = pPtr;
-     NvU32   data           = 0;
-     NvU64   pSemaAddr      = 0;
-     NvU32   disablePlcKind = 0;
-
-     NV_PRINTF(LEVEL_INFO, "PutIndex: %x, PbOffset: %x\n", putIndex,
-               putIndex * pChannel->methodSizePerBlock);
-
-    // SET OBJECT
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NV906F_SET_OBJECT, pChannel->classEngineID);
-    // Set Pattern for Memset
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_REMAP_CONST_A, MEMSET_PATTERN);
-    // Set Component Size to 1
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_REMAP_COMPONENTS,
-                  DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _DST_X, _CONST_A)          |
-                  DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _ONE)     |
-                  DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _NUM_DST_COMPONENTS, _ONE));
-
-    launchDestType = _memsetPushDstProperties
-                        (pChannel, dstAddressSpace, dstCpuCacheAttrib, &pPtr);
-
-    semaValue = (bInsertFinishpayload) ?
-        DRF_DEF(B0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _RELEASE_ONE_WORD_SEMAPHORE) : 0;
-
-    if (bPipelined)
-        pipelinedValue = DRF_DEF(B0B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PIPELINED);
-    else
-        pipelinedValue = DRF_DEF(B0B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _NON_PIPELINED);
-
-    if (pChannel->bUseVasForCeCopy)
-    {
-        base = base + pChannel->fbAliasVA - pChannel->startFbOffset;
-    }
-
-    NV_PUSH_INC_2U(RM_SUBCHANNEL, NVB0B5_OFFSET_OUT_UPPER,
-                   DRF_NUM(B0B5, _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(base)),
-                   NVB0B5_OFFSET_OUT_LOWER,
-                   DRF_NUM(B0B5, _OFFSET_OUT_LOWER, _VALUE,NvU64_LO32(base)));
-
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_LINE_LENGTH_IN, size);
-
-    if (semaValue)
-    {
-        NV_PUSH_INC_3U(RM_SUBCHANNEL, NVB0B5_SET_SEMAPHORE_A,
-            DRF_NUM(B0B5, _SET_SEMAPHORE_A, _UPPER, NvU64_HI32(pChannel->pbGpuVA+pChannel->finishPayloadOffset)),
-            NVB0B5_SET_SEMAPHORE_B,
-            DRF_NUM(B0B5, _SET_SEMAPHORE_B, _LOWER, NvU64_LO32(pChannel->pbGpuVA+pChannel->finishPayloadOffset)),
-            NVB0B5_SET_SEMAPHORE_PAYLOAD,
-            payload);
-    }
-
-    switch (pChannel->hTdCopyClass)
-    {
-        case MAXWELL_DMA_COPY_A:
-        case PASCAL_DMA_COPY_A:
-        case PASCAL_DMA_COPY_B:
-        case VOLTA_DMA_COPY_A:
-            disablePlcKind = 0;
-            break;
-        default: // For anything after Turing, set the kind
-            disablePlcKind = DRF_DEF(C5B5, _LAUNCH_DMA, _DISABLE_PLC, _TRUE);
-            break;
-    }
-
-    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_LAUNCH_DMA,
-        DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_MEMORY_LAYOUT, _PITCH) |
-        DRF_DEF(B0B5, _LAUNCH_DMA, _DST_MEMORY_LAYOUT, _PITCH) |
-        DRF_DEF(B0B5, _LAUNCH_DMA, _MULTI_LINE_ENABLE, _FALSE) |
-        DRF_DEF(B0B5, _LAUNCH_DMA, _REMAP_ENABLE, _TRUE)       |
-        DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE)       |
-        disablePlcKind |
-        launchDestType |
-        pipelinedValue |
-        semaValue);
-
-    data =  DRF_DEF(906F, _SEMAPHORED, _OPERATION, _RELEASE) |
-            DRF_DEF(906F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE) |
-            DRF_DEF(906F, _SEMAPHORED, _RELEASE_WFI, _DIS);
-
-    pSemaAddr = (pChannel->pbGpuVA+pChannel->semaOffset);
-    //
-    // This should always be at the bottom the push buffer segment, since this
-    // denotes that HOST has read all the methods needed for this memory operation
-    // and safely assume that this GPFIFO and PB entry can be reused.
-    //
-    NV_PUSH_INC_4U(RM_SUBCHANNEL, NV906F_SEMAPHOREA,
-            DRF_NUM(906F, _SEMAPHOREA_OFFSET, _UPPER, NvU64_HI32(pSemaAddr)),
-            NV906F_SEMAPHOREB,
-            DRF_NUM(906F, _SEMAPHOREB_OFFSET, _LOWER, NvU64_LO32(pSemaAddr) >> 2),
-            NV906F_SEMAPHOREC,
-            putIndex,
-            NV906F_SEMAPHORED, data
-           );
-    // typecasting to calculate the bytes consumed by this iteration.
-    return (NvU32)((NvU8*)pPtr - (NvU8*)pStartPtr);
-}
-
-/** helper function which waits for a PB & GPFIO entry to be read by HOST.
-  * After the HOST reads GPFIFO and PB entry, the semaphore will be released.
- */
-
-static NvU32
-_scrubWaitForFreeEntry
-(
-    OBJCHANNEL *pChannel
-)
-{
-    NvU32 putIndex = 0;
-    NvU32 getIndex = 0;
-
-    putIndex = (pChannel->lastSubmittedEntry + 1) % MAX_SCRUB_ITEMS;
-    do
-    {
-        getIndex = READ_SCRUBBER_PB_SEMA(pChannel);
-        NV_PRINTF(LEVEL_INFO, "Get Index: %x, PayloadIndex: %x\n", getIndex,
-                  READ_SCRUBBER_PAYLOAD_SEMA(pChannel));
-        if (getIndex != putIndex)
+        // check for wrap around case. Increment the upper 32 bits
+        if (hwCurrentCompletedId < (NvU32)lastSWSemaphoreDone)
         {
-            break;
+            lastSWSemaphoreDone += 0x100000000ULL;
         }
-        _scrubOsSchedule(pChannel);
-    } while(1);
-    return putIndex;
-}
 
-/** helper function to fill GPFIFO entry with a pushbuffer segment. and kick
-    off the executiion by HOST.
-  */
+        // update lower 32 bits
+       lastSWSemaphoreDone &= 0xFFFFFFFF00000000ULL;
+       lastSWSemaphoreDone |= (NvU64)hwCurrentCompletedId;
 
-static NV_STATUS
-_scrubFillGpFifo
-(
-    OBJCHANNEL  *pChannel,
-    NvU32        putIndex,
-    NvU32        methodsLength
-)
-{
-    NvU32  *pGpEntry;
-    NvU32   GpEntry0;
-    NvU32   GpEntry1;
-    NvU64   pbPutOffset;
-    OBJGPU *pGpu;
-    KernelBus *pKernelBus;
-
-    NV_ASSERT(putIndex < pChannel->channelNumGpFifioEntries);
-
-    pbPutOffset  = (pChannel->pbGpuVA + (putIndex * pChannel->methodSizePerBlock));
-
-
-    GpEntry0 =
-       DRF_DEF(906F, _GP_ENTRY0, _NO_CONTEXT_SWITCH, _FALSE) |
-       DRF_NUM(906F, _GP_ENTRY0, _GET, NvU64_LO32(pbPutOffset) >> 2);
-    GpEntry1 =
-       DRF_NUM(906F, _GP_ENTRY1, _GET_HI, NvU64_HI32(pbPutOffset)) |
-       DRF_NUM(906F, _GP_ENTRY1, _LENGTH, methodsLength >> 2) |
-       DRF_DEF(906F, _GP_ENTRY1, _LEVEL, _MAIN);
-
-    pGpEntry = (NvU32 *)(((NvU8*)pChannel->pbCpuVA) + pChannel->channelPbSize +
-        (pChannel->lastSubmittedEntry * NV906F_GP_ENTRY__SIZE));
-
-    MEM_WR32(&pGpEntry[0], GpEntry0);
-    MEM_WR32(&pGpEntry[1], GpEntry1);
-
-    //
-    // need to flush WRC buffer
-    //
-    osFlushCpuWriteCombineBuffer();
-
-    //
-    // write GP put
-    //
-    MEM_WR32(&pChannel->pControlGPFifo->GPPut, putIndex);
-    osFlushCpuWriteCombineBuffer();
-
-    //
-    // On some architectures, if doorbell is mapped via bar0, we need to send
-    // an extra flush
-    //
-    pGpu = pChannel->pGpu;
-    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    if (kbusFlushPcieForBar0Doorbell_HAL(pGpu, pKernelBus)!= NV_OK)
+    }
+    else
     {
-        NV_PRINTF(LEVEL_ERROR, "Busflush failed in _scrubFillGpFifo\n");
-        return NV_ERR_GENERIC;
+        if (pScrubber->bIsEngineTypeSec2)
+            lastSWSemaphoreDone = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
+        else
+            lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
     }
 
-    //
-    // removing the FIFO Lite Mode handling
-    // Refer older _ceChannelUpdateGpFifo_GF100 code for implementation
-    //
-    if (pChannel->bUseDoorbellRegister)
-    {
-        // Use the token from notifier memory for VM migration support.
-        MEM_WR32(pChannel->pDoorbellRegisterOffset,
-                 MEM_RD32(&(pChannel->pTokenFromNotifier->info32)));
-    }
-    return NV_OK;
+    pScrubber->lastSWSemaphoreDone = lastSWSemaphoreDone;
+
+    return lastSWSemaphoreDone;
 }
+
 
 /**  Single function to memset a surface mapped by GPU. This interface supports
      both sysmem and vidmem surface, since it uses CE to memset a surface.
@@ -1344,47 +1046,87 @@ _scrubFillGpFifo
 static NV_STATUS
 _scrubMemory
 (
-    OBJCHANNEL      *pChannel,
-    RmPhysAddr       base,
-    NvU64            size,
-    NV_ADDRESS_SPACE dstAddressSpace,
-    NvU32            dstCpuCacheAttrib,
-    NvU32            payload
+    OBJMEMSCRUB *pScrubber,
+    RmPhysAddr   base,
+    NvU64        size,
+    NvU32        dstCpuCacheAttrib,
+    NvU32        payload,
+    NvU32        flags
 )
 {
-    NvBool      bFirstIteration      = NV_TRUE;
-    NvBool      bNonStallInterrupt   = NV_FALSE;
-    NvU32       tempMemsetSize       = 0; // HW supports copy size 32 bits only
-    NvU32       putIndex             = 0;
-    NV_STATUS   status               = NV_OK;
-    NvU32       methodsLength        = 0;
+    NV_STATUS status = NV_OK;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    NV_ASSERT_OK_OR_RETURN(memdescCreate(&pMemDesc, pScrubber->pGpu, size, 0, NV_TRUE,
+                                          ADDR_FBMEM, dstCpuCacheAttrib, MEMDESC_FLAGS_NONE));
 
-    do
+    memdescDescribe(pMemDesc, ADDR_FBMEM, base, size);
+
+    if ((flags & SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB) != 0)
     {
-        tempMemsetSize = (NvU32)NV_MIN(size, SCRUB_MAX_BYTES_PER_LINE);
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, NV_TRUE);
+        pMemDesc->localizedMask = (GPU_GET_MEMORY_MANAGER(pScrubber->pGpu))->localizedMask;
+    }
 
-        //poll for free entry
-        putIndex = _scrubWaitForFreeEntry(pChannel);
-        NV_PRINTF(LEVEL_INFO, "Put Index: %x\n", putIndex);
+    if (pScrubber->bIsEngineTypeSec2)
+    {
+        SEC2UTILS_MEMSET_PARAMS memsetParams = {0};
+        memsetParams.pMemDesc = pMemDesc;
+        memsetParams.length = size;
 
-        {
-            NV_PRINTF(LEVEL_INFO, "Fast Scrubber not enabled!\n");
-            methodsLength = _scrubFillPb(pChannel, base, tempMemsetSize, payload,
-                        bFirstIteration, dstAddressSpace,
-                        dstCpuCacheAttrib, (tempMemsetSize == size),
-                        bNonStallInterrupt, putIndex);
-        }
+        NV_ASSERT_OK_OR_GOTO(status, sec2utilsMemset(pScrubber->pSec2Utils, &memsetParams), cleanup);
+        pScrubber->lastSubmittedWorkId = memsetParams.submittedWorkId;
+    }
+    else
+    {
+        CEUTILS_MEMSET_PARAMS memsetParams = {0};
+        memsetParams.pMemDesc = pMemDesc;
+        memsetParams.length = size;
+        memsetParams.flags = NV0050_CTRL_MEMSET_FLAGS_ASYNC | NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
 
-        NV_PRINTF(LEVEL_INFO, "MethodLength: %x\n", methodsLength);
-        // Add the PB entry in GP FIFO
-        status = _scrubFillGpFifo(pChannel, putIndex, methodsLength);
+        NV_ASSERT_OK_OR_GOTO(status, ceutilsMemset(pScrubber->pCeUtils, &memsetParams), cleanup);
+        pScrubber->lastSubmittedWorkId = memsetParams.submittedWorkId;
+    }
 
-        pChannel->lastSubmittedEntry = putIndex;
-
-         base          += tempMemsetSize;
-         size          -= tempMemsetSize;
-         bFirstIteration = NV_FALSE;
-    } while (size > 0);
-
+cleanup:
+    memdescDestroy(pMemDesc);
     return status;
+}
+
+static NV_STATUS
+_scrubCombinePages
+(
+    NvU64       *pPages,
+    NvU64        pageSize,
+    NvU64        pageCount,
+    PSCRUB_NODE *ppScrubList,
+    NvU64       *pSize
+)
+{
+    NvU64 i, j;
+
+    *ppScrubList = (PSCRUB_NODE)portMemAllocNonPaged(sizeof(SCRUB_NODE) * pageCount);
+    NV_ASSERT_OR_RETURN(*ppScrubList != NULL, NV_ERR_NO_MEMORY);
+
+    // Copy first element from original list to new list
+    (*ppScrubList)[0].base = pPages[0];
+    (*ppScrubList)[0].size = pageSize;
+
+    for (i = 0, j = 0; i < (pageCount - 1); i++)
+    {
+        if ((((*ppScrubList)[j].size + pageSize) > SCRUB_MAX_BYTES_PER_LINE) ||
+            ((pPages[i] + pageSize) != pPages[i+1]))
+        {
+            j++;
+            (*ppScrubList)[j].base = pPages[i+1];
+            (*ppScrubList)[j].size = pageSize;
+        }
+        else
+        {
+            (*ppScrubList)[j].size += pageSize;
+        }
+    }
+
+    *pSize = j + 1;
+
+    return NV_OK;
 }

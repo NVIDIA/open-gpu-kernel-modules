@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: nv_vgpu_types.finn
+// Source file:      nv_vgpu_types.finn
 //
 
 
@@ -39,8 +39,8 @@
  /* ! XAPIGEN */
 
 #define VM_UUID_SIZE            16
-#define INVALID_VGPU_DEV_INST   0xFFFFFFFF
-#define MAX_VGPU_DEVICES_PER_VM 16
+#define INVALID_VGPU_DEV_INST   0xFFFFFFFFU
+#define MAX_VGPU_DEVICES_PER_VM 16U
 
 /* This enum represents the current state of guest dependent fields */
 typedef enum GUEST_VM_INFO_STATE {

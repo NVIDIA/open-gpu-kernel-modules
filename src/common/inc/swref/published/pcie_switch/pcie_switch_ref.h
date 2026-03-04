@@ -26,6 +26,7 @@
 #include "published/br03/dev_br03_xvd.h"
 #include "published/br03/dev_br03_xvu.h"
 #include "published/br04/br04_ref.h"
+#include "nvdevid.h"
 
 //
 // This file has the vendor and device IDs of all supported PCIe switches

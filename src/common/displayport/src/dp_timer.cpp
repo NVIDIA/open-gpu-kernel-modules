@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 \***************************************************************************/
 #include "dp_internal.h"
 #include "dp_timer.h"
+#include "dp_printf.h"
 using namespace DisplayPort;
 
 void Timer::expired()
@@ -99,8 +100,8 @@ void Timer::queueCallback(Timer::TimerCallback * target, const  void * context, 
     PendingCallback * callback = new PendingCallback();
     if (callback == NULL)
     {
-        DP_LOG(("DP> %s: Failed to allocate callback",
-                    __FUNCTION__));
+        DP_PRINTF(DP_ERROR, "DP> %s: Failed to allocate callback",
+                      __FUNCTION__);
         return;
     }
     callback->target = target;

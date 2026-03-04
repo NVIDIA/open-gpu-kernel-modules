@@ -46,6 +46,11 @@ NvlStatus nvlink_lib_unload(void);
 */
 NvlStatus nvlink_lib_ioctl_ctrl(nvlink_ioctrl_params *ctrl_params);
 
+/*
+* Gets number of devices with type deviceType
+*/
+NvlStatus nvlink_lib_return_device_count_by_type(NvU32 deviceType, NvU32 *numDevices);
+
 #ifdef __cplusplus
 }
 #endif

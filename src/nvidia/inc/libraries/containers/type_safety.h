@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,14 @@
 #else
 #define NV_TYPEOF_SUPPORTED 0
 #endif
+
+//
+// Validate whether a container iterator is valid.
+// In checked builds, a container and its iterator get assigned a versionNumber. pIter gets version
+// number once at the time of construction. pCont's versionNumber is initially zero and changes
+// when pCont is modified. Any container modification invalidates all iterators.
+//
+#define CONT_ITER_IS_VALID(pCont, pIter) ((pCont)->versionNumber == (pIter)->versionNumber)
 
 /**
  * Tag a non-intrusive container union with the following info:
@@ -147,9 +155,15 @@ typename T::IterType CONT_ITER_RANGE_INDEX
     elemType *elem;                                                          \
     iterType *iter
 
-// Argument check uses sizeof to get error message without runtime overhead.
+//
+// sizeof forces this expression to be evaluated at compile-time only.
+//
+// The ternary will always evalute true and passthrough the original pValue.
+// However, the pointer comparison will generate a compile time warning if
+// pValue type differs from the container's element type
+//
 #define CONT_CHECK_ARG(pCont, pValue)                                        \
-    (sizeof((pCont)->elem = (pValue)) ? (pValue) : NULL)
+    (sizeof((pCont)->elem == (pValue)) ? (pValue) : NULL)
 
 //
 // Return checks are more problematic, but typeof is perfect when available.
@@ -207,13 +221,13 @@ typename T::IterType CONT_ITER_RANGE_INDEX
 
 #else
 
-#define CONT_VTABLE_DECL(contType, iterType)                                 \
-    typedef struct                                                           \
-    {                                                                        \
-        void    *(*checkRet)(void *pValue);                                  \
-        iterType (*iterRange)(contType *pCont, void *pFirst, void *pLast);   \
-        iterType (*iterRangeIndex)(contType *pCont, NvU64 first, NvU64 last);\
-    } contType##_VTABLE;                                                     \
+#define CONT_VTABLE_DECL(contType, iterType)                                  \
+    typedef struct                                                            \
+    {                                                                         \
+        void    *(*checkRet)(void *pValue);                                   \
+        iterType (*iterRange)(contType *pCont, void *pFirst, void *pLast);    \
+        iterType (*iterRangeIndex)(contType *pCont, NvU64 first, NvU64 last); \
+    } contType##_VTABLE;                                                      \
 
 #define CONT_VTABLE_DEFN(contType, contIterRange, contIterRangeIndex)        \
     static const contType##_VTABLE g_##contType##_VTABLE =                   \
@@ -223,12 +237,12 @@ typename T::IterType CONT_ITER_RANGE_INDEX
         contIterRangeIndex,                                                  \
     }
 
-#define CONT_VTABLE_TAG(contType, elemType, iterType)                        \
-    const struct                                                             \
-    {                                                                        \
-        elemType *(*checkRet)(void *pValue);                                 \
-        iterType  (*iterRange)(contType *pCont, void *pFirst, void *pLast);  \
-        iterType (*iterRangeIndex)(contType *pCont, NvU64 first, NvU64 last);\
+#define CONT_VTABLE_TAG(contType, elemType, iterType)                         \
+    const struct                                                              \
+    {                                                                         \
+        elemType *(*checkRet)(void *pValue);                                  \
+        iterType  (*iterRange)(contType *pCont, void *pFirst, void *pLast);   \
+        iterType (*iterRangeIndex)(contType *pCont, NvU64 first, NvU64 last); \
     } *vtable
 
 #define CONT_VTABLE_FIELD(contType) const contType##_VTABLE *vtable

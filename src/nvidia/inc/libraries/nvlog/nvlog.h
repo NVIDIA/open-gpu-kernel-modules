@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,13 +42,25 @@ extern "C" {
 // Include printf definitions
 #include "nvlog/nvlog_printf.h"
 
-extern NVLOG_LOGGER             NvLogLogger;
-extern NVLOG_PRINT_LOGGER       NvLogPrintLogger;
+#if defined(NVRM)
+#include "rmconfig.h"
+
+#define NVLOG_MODULE_ENABLED RMCFG_MODULE_NVLOG
+
+#else
+
+#define NVLOG_MODULE_ENABLED 1
+
+#endif
 
 /********************************/
 /*****  Exported functions  *****/
 /********************************/
 
+#if NVLOG_MODULE_ENABLED
+
+extern NVLOG_LOGGER             NvLogLogger;
+extern NVLOG_PRINT_LOGGER       NvLogPrintLogger;
 
 /**
  * @brief Global NvLog initialization function
@@ -86,8 +98,9 @@ NV_STATUS nvlogAllocBuffer(NvU32 size, NvU32 flags, NvU32 tag, NVLOG_BUFFER_HAND
  * @brief Deallocate a buffer with the given handle
  *
  * @param[in]   hBuffer     Handle of the buffer to deallocate
+ * @param[in]   bDeallocPreserved Deallocate preserved buffers
  */
-void nvlogDeallocBuffer(NVLOG_BUFFER_HANDLE hBuffer);
+void nvlogDeallocBuffer(NVLOG_BUFFER_HANDLE hBuffer, NvBool bDeallocPreserved);
 
 /**
  * @brief Write to a buffer with the given handle
@@ -187,7 +200,7 @@ NV_STATUS nvlogGetBufferSnapshot(NVLOG_BUFFER_HANDLE hBuffer, NvU8 *pDest, NvU32
 /**
  * @brief Dumps all logs into the the kernel print log
  *
- * @note this will write to the log even if all other prints are disabled, 
+ * @note this will write to the log even if all other prints are disabled,
  * including external release builds. The output will be base64 encoded and
  * not decodable without the database, and pollute the logs. Use with caution.
  *
@@ -239,12 +252,33 @@ NV_STATUS nvlogPrintUpdate(void);
  */
 NV_STATUS nvlogPrintDestroy(void);
 
+//
+// NvLog ETW functions
+//
+
 /**
  * @brief Global NvLog ETW capture state function
  *
  * @return NV_OK on success
  */
 NV_STATUS nvlogETWCaptureState(void);
+
+/**
+ * @brief Pushes all buffer tags to ETW
+ */
+void nvlogETWPushTags(void);
+
+/**
+ * @brief Pushes an nvlog buffer header to ETW
+ */
+void nvlogETWPushBufferHeader(NVLOG_BUFFER *pBuffer);
+
+/**
+ * @brief Pushes an nvlog entry to ETW
+ *
+ * @return NV_TRUE on success
+ */
+NvBool nvlogETWPush(NVLOG_BUFFER *pBuffer, NvU8 *pData, NvU32 dataSize);
 
 //
 // Global initialization macros
@@ -326,6 +360,38 @@ NvU32 nvlogGetFileLineFilterRules(NVLOG_FILELINE_FILTER *pFileLineFilter, NvU32 
  * @brief Dump nvlog to kernel log only if enabled (performs regkey and platform checks)
  */
 void nvlogDumpToKernelLogIfEnabled(void);
+
+/**
+ * @param[in]   pCb   callback function to be called when nvlog buffers need to be flushed
+ * @param[in]   pData argument to pass to pCb
+ * @param[out]  ppCb  output callback data pointer
+ *
+ * @return NV_OK on success
+ */
+NV_STATUS nvlogRegisterFlushCb(void (*pCb)(void*), void *pData);
+
+/**
+ * @param[in] pCb   callback pCb to be deregistered
+ * @param[in] pData argument that pCb was registered with
+ */
+void nvlogDeregisterFlushCb(void (*pCb)(void*), void *pData);
+
+//
+// Run registered callbacks.
+// All callback list accesses are synchronised.
+//
+void nvlogRunFlushCbs(void);
+
+#else
+
+#define NVLOG_INIT(pData)
+#define NVLOG_UPDATE()
+#define NVLOG_DESTROY()
+
+#define nvlogDumpToKernelLogIfEnabled()
+#define nvlogDumpToKernelLog(bDumpUnchangedBuffersOnlyOnce)
+
+#endif
 
 #ifdef __cplusplus
 } // extern "C"

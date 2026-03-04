@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "mem_mgr/video_mem.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
@@ -32,8 +33,11 @@
 #include "core/locks.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "diagnostics/gpu_acct.h"
+#include "gpu/device/device.h"
 #include "Nvcm.h"
 #include "gpu/bus/third_party_p2p.h"
+#include "gpu/bus/kern_bus.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
@@ -64,7 +68,7 @@ _vidmemQueryAlignment
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NV_STATUS                    rmStatus       = NV_OK;
     NvU64                        size           = pAllocData->size;
-    NvU32                        pageSize       = 0;
+    NvU64                        pageSize       = 0;
     NvU64                        align          = 0;
     NvU32                        retAttr        = pAllocData->attr;
     NvU32                        retAttr2       = pAllocData->attr2;
@@ -122,23 +126,41 @@ _vidmemPmaAllocate
     NV_MEMORY_ALLOCATION_PARAMS *pAllocData     = pAllocRequest->pUserParams;
     OBJGPU                      *pGpu           = pAllocRequest->pGpu;
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    PMA                         *pPma           = &pHeap->pmaObject;
+    PMA                         *pPma           = pHeap->pPmaObject;
     NvU64                        size           = 0;
-    NvU32                        pageCount;
+    NvU32                        pageCount      = 0;
     NvU32                        pmaInfoSize;
-    NvU32                        pageSize;
+    NvU64                        pageSize;
     NV_STATUS                    status;
     NvU64                        sizeAlign    = 0;
     PMA_ALLOCATION_OPTIONS       allocOptions = {0};
-    NvBool                       bContig      = !FLD_TEST_DRF(OS32, _ATTR,
-                                                   _PHYSICALITY, _NONCONTIGUOUS,
-                                                   pAllocData->attr);
+    NvBool                       bContig;
     NvU32                        subdevInst   = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+    NvU32                        pmaConfig    = PMA_QUERY_NUMA_ENABLED;
 
-    // LOCK: acquire device lock
-    status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
-                                     RM_LOCK_MODULES_MEM_PMA);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    status = pmaQueryConfigs(pPma, &pmaConfig);
+    NV_ASSERT(status == NV_OK);
+
+    //
+    // In NUMA platforms, contig memory is allocated using page order from
+    // kernel and that could lead to memory wastage when the size is not
+    // naturally aligned to page order. Prefer non-contig when clients
+    // are okay with NON_CONTIG.
+    //
+    if ((status == NV_OK) && (pmaConfig & PMA_QUERY_NUMA_ENABLED))
+    {
+        bContig =
+            !FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY,
+                                _ALLOW_NONCONTIGUOUS, pAllocData->attr) &&
+            !FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY,
+                          _NONCONTIGUOUS, pAllocData->attr);
+    }
+    else
+    {
+        bContig = !FLD_TEST_DRF(OS32, _ATTR,
+                                _PHYSICALITY, _NONCONTIGUOUS,
+                                pAllocData->attr);
+    }
 
     NV_PRINTF(LEVEL_INFO, "PMA input\n");
     NV_PRINTF(LEVEL_INFO, "          Owner: 0x%x\n", pAllocData->owner);
@@ -164,12 +186,9 @@ _vidmemPmaAllocate
 
     // Get the page size returned by RM.
     pageSize = stdmemQueryPageSize(pMemoryManager, pAllocRequest->hClient, pAllocData);
+    NV_ASSERT_OR_RETURN(pageSize != 0, NV_ERR_INVALID_STATE);
 
-    if (pageSize == 0)
-    {
-        status = NV_ERR_INVALID_STATE;
-    }
-    else if (pageSize == RM_PAGE_SIZE)
+    if (pageSize == RM_PAGE_SIZE)
     {
         //
         // TODO Remove this after the suballocator is in place
@@ -187,15 +206,10 @@ _vidmemPmaAllocate
     // Bug:2451834, gpuCheckPageRetirementSupport should not be called outside
     // RM lock.
     //
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALLOW_PAGE_RETIREMENT) &&
-           gpuCheckPageRetirementSupport_HAL(pGpu) &&
-           FLD_TEST_DRF(OS32, _ATTR2, _BLACKLIST, _OFF, pAllocData->attr2))
+    if (FLD_TEST_DRF(OS32, _ATTR2, _BLACKLIST, _OFF, pAllocData->attr2))
     {
         allocOptions.flags |= PMA_ALLOCATE_TURN_BLACKLIST_OFF;
     }
-
-    // UNLOCK: release device lock
-    rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
 
     NV_ASSERT_OR_RETURN(NV_OK == status, status);
 
@@ -211,6 +225,12 @@ _vidmemPmaAllocate
     if (pAllocData->flags & NVOS32_ALLOC_FLAGS_PROTECTED)
     {
         allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
+    }
+
+    // Check memory alloc direction.
+    if (pAllocData->flags & NVOS32_ALLOC_FLAGS_FORCE_REVERSE_ALLOC)
+    {
+        allocOptions.flags |= PMA_ALLOCATE_REVERSE_ALLOC;
     }
 
     // Fixed address allocations.
@@ -246,8 +266,19 @@ _vidmemPmaAllocate
     allocOptions.flags |= PMA_ALLOCATE_FORCE_ALIGNMENT;
     allocOptions.alignment = NV_MAX(sizeAlign, pageSize);
 
+    if (FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _UGPU0, pAllocData->attr2))
+    {
+        allocOptions.flags |= PMA_ALLOCATE_LOCALIZED_UGPU0;
+    }
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _UGPU1, pAllocData->attr2))
+    {
+        allocOptions.flags |= PMA_ALLOCATE_LOCALIZED_UGPU1;
+    }
 
     // Get the number of pages to be allocated by PMA
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (NV_DIV_AND_CEIL(size, pageSize) <= NV_U32_MAX),
+        NV_ERR_NO_MEMORY);
     pageCount = (NvU32) NV_DIV_AND_CEIL(size, pageSize);
 
 retry_alloc:
@@ -259,7 +290,12 @@ retry_alloc:
     }
     else
     {
-        pmaInfoSize = sizeof(PMA_ALLOC_INFO) + ((pageCount - 1) * sizeof(NvU64));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            portSafeMulU32((pageCount - 1), (sizeof(NvU64)), &pmaInfoSize),
+            NV_ERR_NO_MEMORY);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            portSafeAddU32(pmaInfoSize, (sizeof(PMA_ALLOC_INFO)), &pmaInfoSize),
+            NV_ERR_NO_MEMORY);
     }
 
     // Alloc the tracking structure and store the values in it.
@@ -275,7 +311,7 @@ retry_alloc:
     pAllocRequest->pPmaAllocInfo[subdevInst]->flags     = allocOptions.flags;
 
     NV_PRINTF(LEVEL_INFO, "\nNVRM:  Size requested: 0x%llx bytes\n", size);
-    NV_PRINTF(LEVEL_INFO, "       PageSize: 0x%x bytes\n", pageSize);
+    NV_PRINTF(LEVEL_INFO, "       PageSize: 0x%llx bytes\n", pageSize);
     NV_PRINTF(LEVEL_INFO, "      PageCount: 0x%x\n", pageCount);
     NV_PRINTF(LEVEL_INFO, "    Actual Size: 0x%llx\n",
               pAllocRequest->pPmaAllocInfo[subdevInst]->allocSize);
@@ -337,7 +373,7 @@ vidmemPmaFree
     NvU32           flags
 )
 {
-    PMA   *pPma  = &pHeap->pmaObject;
+    PMA   *pPma  = pHeap->pPmaObject;
     NvU32 pmaFreeFlags = flags;
 
     NV_ASSERT_OR_RETURN_VOID(NULL != pPmaAllocInfo);
@@ -377,8 +413,9 @@ Heap*
 vidmemGetHeap
 (
     OBJGPU  *pGpu,
-    NvHandle hClient,
-    NvBool   bSubheap
+    Device  *pDevice,
+    NvBool   bSubheap,
+    NvBool   bForceGlobalHeap
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -392,12 +429,13 @@ vidmemGetHeap
         return pHeap;
     }
 
-    if (IS_MIG_IN_USE(pGpu))
+    if (IS_MIG_IN_USE(pGpu) && !bForceGlobalHeap)
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         Heap *pMemoryPartitionHeap = NULL;
 
-        status = kmigmgrGetMemoryPartitionHeapFromClient(pGpu, pKernelMIGManager, hClient, &pMemoryPartitionHeap);
+        status = kmigmgrGetMemoryPartitionHeapFromDevice(pGpu, pKernelMIGManager, pDevice,
+                                                         &pMemoryPartitionHeap);
         if (status == NV_OK)
         {
             if (pMemoryPartitionHeap != NULL)
@@ -406,8 +444,8 @@ vidmemGetHeap
         else
         {
             NV_PRINTF(LEVEL_ERROR,
-                "failed to get memory partition heap for hClient = 0x%x\n",
-                hClient);
+                "failed to get memory partition heap for hClient = 0x%x, hDevice = 0x%x\n",
+                RES_GET_CLIENT_HANDLE(pDevice), RES_GET_HANDLE(pDevice));
             return NULL;
         }
     }
@@ -423,20 +461,49 @@ vidmemCopyConstruct
     RS_RES_ALLOC_PARAMS_INTERNAL    *pParams
 )
 {
-    Memory    *pMemorySrc            = dynamicCast(pParams->pSrcRef->pResource, Memory);
-    OBJGPU    *pGpu                  = pMemorySrc->pGpu;
-    NV_STATUS  status;
+    Memory            *pMemorySrc   = dynamicCast(pParams->pSrcRef->pResource, Memory);
+    OBJGPU            *pGpu         = pMemorySrc->pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc     = pMemorySrc->pMemDesc;
+    NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
+    KernelBus         *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
 
-    NV_ASSERT_OR_RETURN(!memdescGetCustomHeap(pMemorySrc->pMemDesc), NV_ERR_INVALID_ARGUMENT);
+    // No flags specified on the initial static BAR1 mapping 
+    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                   pMemDesc, BUS_MAP_FB_FLAGS_NONE);
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
-        status = heapReference(pGpu, pSrcMemDesc->pHeap, pMemorySrc->HeapOwner,
-                               pSrcMemDesc);
-        NV_ASSERT(status == NV_OK);
-    SLI_LOOP_END
+    if (status == NV_OK)
+    {
+        // nothing
+    }
+    else if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        status = NV_OK;
+    }
+    else
+    {
+        return status;
+    }
 
-    return NV_OK;
+    switch (memdescGetCustomHeap(pMemDesc))
+    {
+        case MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT:
+            status = memmgrDuplicateFromScanoutCarveoutRegion(pGpu,
+                        GPU_GET_MEMORY_MANAGER(pGpu), pMemDesc);
+            break;
+        case MEMDESC_CUSTOM_HEAP_NONE:
+            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+                MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
+                status = heapReference(pGpu, pSrcMemDesc->pHeap, pMemorySrc->HeapOwner,
+                                       pSrcMemDesc);
+                NV_ASSERT_OK_OR_RETURN(status);
+            SLI_LOOP_END
+            break;
+        default:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+            break;
+    }
+
+    return status;
 }
 
 /*!
@@ -445,7 +512,6 @@ vidmemCopyConstruct
  * @brief
  *     This routine provides common allocation services used by the
  *     following heap allocation functions:
- *       NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT
  *       NVOS32_FUNCTION_ALLOC_SIZE
  *       NVOS32_FUNCTION_ALLOC_SIZE_RANGE
  *       NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT
@@ -479,13 +545,17 @@ vidmemConstruct_IMPL
     MEMORY_ALLOCATION_REQUEST   *pAllocRequest         = &allocRequest;
     OBJGPU                      *pGpu                  = pMemory->pGpu;
     MemoryManager               *pMemoryManager        = GPU_GET_MEMORY_MANAGER(pGpu);
-    Heap                        *pHeap;
+    Heap                        *pHeap                 = NULL;
     NvBool                       bSubheap              = NV_FALSE;
+    NvBool                       bRsvdHeap             = NV_FALSE;
     MEMORY_DESCRIPTOR           *pTopLevelMemDesc      = NULL;
     MEMORY_DESCRIPTOR           *pTempMemDesc          = NULL;
-    HWRESOURCE_INFO              hwResource;
+    HWRESOURCE_INFO              hwResource            = {0};
     RsClient                    *pRsClient             = pCallContext->pClient;
+    RmClient                    *pRmClient             = dynamicCast(pRsClient, RmClient);
     RsResourceRef               *pResourceRef          = pCallContext->pResourceRef;
+    RsResourceRef               *pDeviceRef;
+    Device                      *pDevice;
     NvU32                        gpuCacheAttrib;
     NvBool                       bIsPmaAlloc           = NV_FALSE;
     NvU64                        sizeOut;
@@ -497,6 +567,14 @@ vidmemConstruct_IMPL
     FB_ALLOC_INFO               *pFbAllocInfo          = NULL;
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat    = NULL;
     NV_STATUS                    rmStatus              = NV_OK;
+    KernelBus                   *pKernelBus            = GPU_GET_KERNEL_BUS(pGpu);
+
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    NV_ASSERT_OK_OR_RETURN(
+        refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef));
+
+    pDevice = dynamicCast(pDeviceRef->pResource, Device);
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -513,7 +591,15 @@ vidmemConstruct_IMPL
         goto done;
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, hClient, pAllocData));
+    if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pAllocData->attr))
+    {
+        pAllocData->attr =
+            FLD_SET_DRF_NUM(OS32, _ATTR, _PHYSICALITY,
+                            pDevice->defaultVidmemPhysicalityOverride,
+                            pAllocData->attr);
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, pRmClient, pAllocData));
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
                        DRF_VAL(OS32, _ATTR, _LOCATION, pAllocData->attr) == NVOS32_ATTR_LOCATION_VIDMEM &&
                            !(pAllocData->flags & NVOS32_ALLOC_FLAGS_VIRTUAL),
@@ -521,9 +607,36 @@ vidmemConstruct_IMPL
 
     stdmemDumpInputAllocParams(pAllocData, pCallContext);
 
+    if (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL)
+    {
+        bRsvdHeap = FLD_TEST_DRF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES, pAllocData->attr);
+    }
+
     bSubheap = FLD_TEST_DRF(OS32, _ATTR2, _ALLOCATE_FROM_SUBHEAP, _YES, pAllocData->attr2);
-    pHeap = vidmemGetHeap(pGpu, hClient, bSubheap);
+    pHeap = vidmemGetHeap(pGpu, pDevice, bSubheap, bRsvdHeap);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pHeap != NULL, NV_ERR_INVALID_STATE);
+
+    attr  = pAllocData->attr;
+    attr2 = pAllocData->attr2;
+
+    if (gpuIsCCorApmFeatureEnabled(pGpu) &&
+        !FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
+    {
+        pAllocData->flags |= NVOS32_ALLOC_FLAGS_PROTECTED;
+    }
+    else if (gpuIsCCFeatureEnabled(pGpu) &&
+             FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
+    {
+        // CC-TODO: Remove this once non-CPR regions are created
+        NV_PRINTF(LEVEL_ERROR, "Non-CPR region not yet created\n");
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+    }
+    else if (!gpuIsCCorApmFeatureEnabled(pGpu) &&
+             FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED, pAllocData->attr2))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Protected memory not enabled but PROTECTED flag is set by client");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     pAllocRequest->classNum = NV01_MEMORY_LOCAL_USER;
     pAllocRequest->pUserParams = pAllocData;
@@ -540,6 +653,8 @@ vidmemConstruct_IMPL
 
     bIsPmaAlloc = memmgrIsPmaInitialized(pMemoryManager) &&
                   !bSubheap &&
+                  !bRsvdHeap &&
+                  !FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, attr2) &&
                   !(pAllocData->flags & NVOS32_ALLOC_FLAGS_WPR1) &&
                   !(pAllocData->flags & NVOS32_ALLOC_FLAGS_WPR2) &&
                   (!(pAllocData->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) ||
@@ -547,15 +662,25 @@ vidmemConstruct_IMPL
 
     // Scrub-on-free is not supported by heap. Make sure clients don't get unscrubbed allocations
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
-        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || RMCFG_FEATURE_PLATFORM_MODS || bIsPmaAlloc || bSubheap,
+        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || bIsPmaAlloc || bSubheap || bRsvdHeap,
         NV_ERR_INVALID_STATE);
+
+    if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pAllocData->attr2))
+    {
+        if (!bIsPmaAlloc)
+        {
+            // heap does not support localized allocations
+            rmStatus = NV_ERR_NOT_SUPPORTED;
+            goto done;
+        }
+    }
 
     // Get the allocation from PMA if enabled.
     if (bIsPmaAlloc)
     {
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
         pAllocRequest->pGpu = pGpu;
-        rmStatus = _vidmemPmaAllocate(vidmemGetHeap(pGpu, hClient, NV_FALSE), pAllocRequest);
+        rmStatus = _vidmemPmaAllocate(vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE), pAllocRequest);
         if (NV_OK != rmStatus)
             SLI_LOOP_GOTO(done);
         SLI_LOOP_END;
@@ -598,6 +723,7 @@ vidmemConstruct_IMPL
 
     // Don't allow FB allocations if FB is broken unless it is a virtual allocation or running in L2 cache only mode
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
+        !FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pAllocData->attr2) &&
         !gpuIsCacheOnlyModeEnabled(pGpu))
     {
         NV_ASSERT_FAILED("Video memory requested despite BROKEN FB");
@@ -623,8 +749,9 @@ vidmemConstruct_IMPL
     {
         MEMORY_DESCRIPTOR *pPrev = NULL;
 
-        // VGPU won't run in SLI. So no need to set subheap flags in memdesc.
+        // VGPU won't run in SLI. So no need to set subheap and bRsvdHeap flags in memdesc.
         NV_ASSERT(!bSubheap);
+        NV_ASSERT(!bRsvdHeap);
 
         // Create dummy top level memdesc
         rmStatus = memdescCreate(&pTopLevelMemDesc, pGpu, RM_PAGE_SIZE, 0,
@@ -657,7 +784,7 @@ vidmemConstruct_IMPL
                 SLI_LOOP_GOTO(done);
 
             rmStatus = vidmemAllocResources(pGpu, pMemoryManager, pAllocRequest, pFbAllocInfo,
-                                            vidmemGetHeap(pGpu, hClient, NV_FALSE));
+                                            vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE));
             if (rmStatus != NV_OK)
                 SLI_LOOP_GOTO(done);
 
@@ -739,48 +866,66 @@ vidmemConstruct_IMPL
     }
 
     //
-    // Video memory is always locally transparently cached.  It does not require
-    // any cache managment.  Marked cached unconditionally.  Non-coherent peer
-    // caching is handled with an override at mapping time.
+    // Set the unprotected flag in memdesc. Some control calls will use
+    // this flag to determine if this memory lies in the protected or
+    // unprotected region and use that to gather statistics like total
+    // protected and unprotected memory usage by different clients, etc
     //
-    if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
-        NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
+    if (gpuIsCCorApmFeatureEnabled(pGpu) &&
+        FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
     {
-        pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _YES,
-                                        pAllocData->attr2);
-    }
-    gpuCacheAttrib = NV_MEMORY_CACHED;
-
-    // ClientDB can set the pagesize for memdesc.
-    // With GPU SMMU mapping, this needs to be set on the SMMU memdesc.
-    // So SMMU allocation should happen before memConstructCommon()
-    // Eventaully SMMU allocation will be part of memdescAlloc().
-
-    //
-    // There are a few cases where the heap will return an existing
-    // memdesc.  Only update attributes if it is new.
-    //
-    // @todo attr tracking should move into heapAlloc
-    //
-    if (pTempMemDesc->RefCount == 1)
-    {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
-        memdescSetGpuCacheAttrib(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu), gpuCacheAttrib);
+        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
+        memdescSetFlag(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu),
+                       MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY, NV_TRUE);
         SLI_LOOP_END;
+    }
 
-
-        // An SMMU mapping will be added to FB allocations in the following cases:
-        // 1. RM clients forcing SMMU mapping via flags
-        //    GPU Arch verification with VPR is one such usecase.
-
-        if (FLD_TEST_DRF(OS32, _ATTR2, _SMMU_ON_GPU, _ENABLE, pAllocData->attr2))
+    if (!memdescGetFlag(pTempMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
+    {
+        //
+        // Video memory is always locally transparently cached.  It does not require
+        // any cache management.  Marked cached unconditionally.  Non-coherent peer
+        // caching is handled with an override at mapping time.
+        //
+        if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
+            NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
         {
-            NV_ASSERT_FAILED("SMMU mapping allocation is not supported for ARMv7");
-            rmStatus = NV_ERR_NOT_SUPPORTED;
+            pAllocData->attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _YES,
+                                            pAllocData->attr2);
+        }
+        gpuCacheAttrib = NV_MEMORY_CACHED;
 
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            goto done;
+        // ClientDB can set the pagesize for memdesc.
+        // With GPU SMMU mapping, this needs to be set on the SMMU memdesc.
+        // So SMMU allocation should happen before memConstructCommon()
+        // Eventually SMMU allocation will be part of memdescAlloc().
+
+        //
+        // There are a few cases where the heap will return an existing
+        // memdesc.  Only update attributes if it is new.
+        //
+        // @todo attr tracking should move into heapAlloc
+        //
+        if (pTempMemDesc->RefCount == 1)
+        {
+            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
+            memdescSetGpuCacheAttrib(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu), gpuCacheAttrib);
+            SLI_LOOP_END;
+
+
+            // An SMMU mapping will be added to FB allocations in the following cases:
+            // 1. RM clients forcing SMMU mapping via flags
+            //    GPU Arch verification with VPR is one such usecase.
+
+            if (FLD_TEST_DRF(OS32, _ATTR2, _SMMU_ON_GPU, _ENABLE, pAllocData->attr2))
+            {
+                NV_ASSERT_FAILED("SMMU mapping allocation is not supported for ARMv7");
+                rmStatus = NV_ERR_NOT_SUPPORTED;
+
+                memdescFree(pTopLevelMemDesc);
+                memdescDestroy(pTopLevelMemDesc);
+                goto done;
+            }
         }
     }
 
@@ -807,6 +952,13 @@ vidmemConstruct_IMPL
     //
     // XXX: This is a hack for now. No Hw resources are assumed to be used in the call.
     // The host is only requested to make an alias to the allocated heap.
+
+    //
+    // Heap alloc may allocate non-contiguous pages when it is not able to
+    // find contiguous pages. Replace this field before passing to RPC.
+    //
+    attr = (pAllocData->attr &  DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY)) |
+           (attr             & ~DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY));
 
     if (!IS_GSP_CLIENT(pGpu))
     {
@@ -869,9 +1021,8 @@ vidmemConstruct_IMPL
             if (bSmcGpuPartitioningEnabled)
             {
                 NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR,
-                                    kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                                    hClient,
-                                                                    &partitionRef),
+                                    kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                                    pDevice, &partitionRef),
                                     done);
                 bGlobalInfo = NV_FALSE;
             }
@@ -892,6 +1043,34 @@ vidmemConstruct_IMPL
             gpuacctUpdateProcPeakFbUsage(pGpuAcct, pGpu->gpuInstance,
                 pClient->ProcID, pClient->SubProcessID,fbUsage);
         }
+    }
+
+    // No flags specified on the initial static BAR1 mapping 
+    rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                   pMemory->pMemDesc, BUS_MAP_FB_FLAGS_NONE);
+
+    if (rmStatus == NV_OK)
+    {
+        // nothing
+    }
+    else if (rmStatus == NV_ERR_NOT_SUPPORTED)
+    {
+        rmStatus = NV_OK;
+    }
+    else
+    {
+        if (pMemory->bRpcAlloc)
+        {
+            NV_STATUS status = NV_OK;
+            NV_RM_RPC_FREE(pGpu, hClient, hParent,
+                           pAllocRequest->hMemory, status);
+            NV_ASSERT(status == NV_OK);
+        }
+        memDestructCommon(pMemory);
+        memdescFree(pTopLevelMemDesc);
+        memdescDestroy(pTopLevelMemDesc);
+        pTopLevelMemDesc = NULL;
+        goto done;
     }
 
     pAllocData->size = sizeOut;
@@ -917,7 +1096,7 @@ done:
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
 
         if (pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)])
-            vidmemPmaFree(pGpu, vidmemGetHeap(pGpu, hClient, NV_FALSE),
+            vidmemPmaFree(pGpu, vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE),
                           pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)], 0);
         SLI_LOOP_END;
     }
@@ -934,15 +1113,26 @@ vidmemDestruct_IMPL
     Memory             *pMemory        = staticCast(pVideoMemory, Memory);
     OBJGPU             *pGpu           = pMemory->pGpu;
     MEMORY_DESCRIPTOR  *pMemDesc       = pMemory->pMemDesc;
+    MEMDESC_CUSTOM_HEAP customHeap;
 
     // Free any association of the memory with existing third-party p2p object
     CliUnregisterMemoryFromThirdPartyP2P(pMemory);
 
     memDestructCommon(pMemory);
 
+    //
+    // static BAR1: memory must be released from the static BAR1 mapping
+    // to restore the static BAR1 mapping to a default state since it can
+    // immediately be allocated by UVM after PMA free
+    //
+    (void)kbusDecreaseStaticBar1Refcount_HAL(pGpu,
+                    GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
+                    NULL);
+
     // free the video memory based on how it was alloced ... a non-zero
     // heapOwner indicates it was heapAlloc-ed.
-    if (!memdescGetCustomHeap(pMemDesc))
+    customHeap = memdescGetCustomHeap(pMemDesc);
+    if (customHeap == MEMDESC_CUSTOM_HEAP_NONE)
     {
         MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         NvHandle            hClient        = RES_GET_CLIENT_HANDLE(pVideoMemory);
@@ -1010,6 +1200,11 @@ vidmemDestruct_IMPL
 
         }
     }
+    else if (customHeap == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT)
+    {
+        MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        memmgrFreeFromScanoutCarveoutRegion(pGpu, pMemoryManager, pMemDesc);
+    }
 }
 
 NV_STATUS
@@ -1058,6 +1253,20 @@ vidmemAllocResources
         status = NV_ERR_INVALID_ARGUMENT;
         goto failed;
     }
+    //
+    // In NUMA systems, the memory allocation comes from kernel
+    // and kernel doesn't support fixed address allocation.
+    //
+    if ((pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
+        bIsPmaOwned &&
+        osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE for PMA cannot be "
+                  "accommodated for NUMA systems\n");
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto failed;
+    }
     if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pVidHeapAlloc->attr2))
     {
         NV_PRINTF(LEVEL_WARNING,
@@ -1071,6 +1280,39 @@ vidmemAllocResources
                   "VA space handle used with physical allocation\n");
         status = NV_ERR_INVALID_ARGUMENT;
         goto failed;
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+    {
+        if (FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pVidHeapAlloc->attr2))
+        {
+            NvU32 heapFlag  = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
+
+            status = memmgrAllocFromScanoutCarveoutRegion(pGpu,
+                    pMemoryManager,
+                    pFbAllocInfo->hClient,
+                    pVidHeapAlloc,
+                    &heapFlag,
+                    &pAllocRequest->pMemDesc);
+
+            if (status == NV_OK)
+            {
+                pMemDesc = pAllocRequest->pMemDesc;
+                pMemDesc->pHeap = (Heap *)pMemoryManager->pScanoutHeap;
+                memdescSetCustomHeap(pMemDesc, MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT);
+                // Force the format to whatever is required by client.
+                memdescSetPteKind(pMemDesc, pFbAllocInfo->format);
+                NV_PRINTF(LEVEL_INFO, "Allocated surface in scanout region\n");
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                        "Failed to allocate surface in scanout region\n");
+                goto failed;
+            }
+
+            goto pre_alloc_done;
+        }
     }
 
     // Prior to this change, heap was silently ignoring non-contig Vidmem allocation requests.
@@ -1096,6 +1338,15 @@ vidmemAllocResources
     {
         pFbAllocInfo->offset = pMemDesc->_pteArray[0];
 
+        if (SYS_GET_INSTANCE()->bEnableDynamicGranularityPageArrays == NV_TRUE)
+        {
+            //
+            // set pagearray granularity if dynamic memdesc pagesize is enabled
+            // this ensures consistency in calculation of page count
+            //
+            pMemDesc->pageArrayGranularity = pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize;
+        }
+
         if (bContig)
         {
                 NV_PRINTF(LEVEL_INFO, "---> PMA Path taken contiguous\n");
@@ -1118,6 +1369,21 @@ vidmemAllocResources
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageArray,
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageCount,
                          pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize);
+        }
+        if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pVidHeapAlloc->attr2))
+        {
+            if (pMemoryManager->bLocalizedMemorySupported &&
+                !IS_MIG_ENABLED(pGpu))
+            {
+                memdescSetFlag(pAllocRequest->pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED, NV_TRUE);
+                pAllocRequest->pMemDesc->localizedMask = pMemoryManager->localizedMask;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Localized memory requested when localized memory not enabled\n");
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto failed;
+            }
         }
     }
     else
@@ -1150,6 +1416,11 @@ vidmemAllocResources
         }
 
         bAllocedMemory = NV_TRUE;
+
+        if (pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM)
+        {
+            memdescSetFlag(pMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND, NV_TRUE);
+        }
     }
 
     if (!bIsPmaOwned && (pVidHeapAlloc->type != NVOS32_TYPE_PMA))
@@ -1222,6 +1493,8 @@ vidmemAllocResources
         pHwResource->ctagOffset = pFbAllocInfo->ctagOffset;
     }
 
+pre_alloc_done:
+
     pVidHeapAlloc->offset = pFbAllocInfo->offset;
 
     if (pAllocRequest->pHwResource != NULL)
@@ -1263,16 +1536,21 @@ vidmemCheckCopyPermissions_IMPL
 (
     VideoMemory        *pVideoMemory,
     OBJGPU             *pDstGpu,
-    NvHandle            hDstClient
+    Device             *pDstDevice
 )
 {
     Memory           *pMemory               = staticCast(pVideoMemory, Memory);
     OBJGPU           *pSrcGpu               = pMemory->pGpu;
-    NvHandle          hSrcClient            = RES_GET_CLIENT_HANDLE(pVideoMemory);
+    RsClient         *pSrcClient            = RES_GET_CLIENT(pVideoMemory);
+    RsClient         *pDstClient            = RES_GET_CLIENT(pDstDevice);
     KernelMIGManager *pSrcKernelMIGManager  = GPU_GET_KERNEL_MIG_MANAGER(pSrcGpu);
     KernelMIGManager *pDstKernelMIGManager  = GPU_GET_KERNEL_MIG_MANAGER(pDstGpu);
-    NvBool            bSrcClientKernel      = (rmclientGetCachedPrivilegeByHandle(hSrcClient) >= RS_PRIV_LEVEL_KERNEL);
-    NvBool            bDstClientKernel      = (rmclientGetCachedPrivilegeByHandle(hDstClient) >= RS_PRIV_LEVEL_KERNEL);
+    NvBool            bSrcClientKernel      =
+        (rmclientGetCachedPrivilege(dynamicCast(pSrcClient, RmClient)) >=
+         RS_PRIV_LEVEL_KERNEL);
+    NvBool            bDstClientKernel      =
+        (rmclientGetCachedPrivilege(dynamicCast(pDstClient, RmClient)) >=
+         RS_PRIV_LEVEL_KERNEL);
 
     //
     // XXX: In case of MIG memory, duping across GPU instances is not allowed
@@ -1297,8 +1575,8 @@ vidmemCheckCopyPermissions_IMPL
             // Get memory partition heap from both clients and compare
             Heap *pDstClientHeap = NULL;
             NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                                  kmigmgrGetMemoryPartitionHeapFromClient(pDstGpu, pDstKernelMIGManager, hDstClient,
-                                                                          &pDstClientHeap));
+                                  kmigmgrGetMemoryPartitionHeapFromDevice(pDstGpu, pDstKernelMIGManager,
+                                                                          pDstDevice, &pDstClientHeap));
 
             // Make sure memory is coming from same heaps
             if (pDstClientHeap != pMemory->pHeap)
@@ -1316,14 +1594,21 @@ vidmemCheckCopyPermissions_IMPL
             //
             MIG_INSTANCE_REF srcInstRef;
             MIG_INSTANCE_REF dstInstRef;
+            RsResourceRef *pSrcDeviceRef;
+            Device *pSrcDevice;
+
+            NV_ASSERT_OK_OR_RETURN(
+                refFindAncestorOfType(RES_GET_REF(pMemory), classId(Device), &pSrcDeviceRef));
+
+            pSrcDevice = dynamicCast(pSrcDeviceRef->pResource, Device);
 
             // Check instance subscription of source and destination clients
             NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                                  kmigmgrGetInstanceRefFromClient(pSrcGpu, pSrcKernelMIGManager, hSrcClient,
-                                                                  &srcInstRef));
+                                  kmigmgrGetInstanceRefFromDevice(pSrcGpu, pSrcKernelMIGManager,
+                                                                  pSrcDevice, &srcInstRef));
             NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                                  kmigmgrGetInstanceRefFromClient(pDstGpu, pDstKernelMIGManager, hDstClient,
-                                                                  &dstInstRef));
+                                  kmigmgrGetInstanceRefFromDevice(pDstGpu, pDstKernelMIGManager,
+                                                                  pDstDevice, &dstInstRef));
 
             //
             // Memory duping is allowed accross compute instances. so ignore

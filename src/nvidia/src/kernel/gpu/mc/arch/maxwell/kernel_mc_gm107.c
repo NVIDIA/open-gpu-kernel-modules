@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "gpu/gpu.h"
+#include "os/os.h"
 
 #include "published/maxwell/gm107/dev_boot.h"
 
@@ -38,7 +39,7 @@
  * @return NV_STATUS
  */
 NV_STATUS
-kmcGetMcBar0MapInfo_GK104
+kmcGetMcBar0MapInfo_GM107
 (
     OBJGPU  *pGpu,
     KernelMc  *pKernelMc,
@@ -56,7 +57,7 @@ kmcGetMcBar0MapInfo_GK104
 // reset.
 //
 NV_STATUS
-kmcPrepareForXVEReset_GK104
+kmcPrepareForXVEReset_GM107
 (
     OBJGPU *pGpu,
     KernelMc *pKernelMc
@@ -81,7 +82,7 @@ kmcPrepareForXVEReset_GK104
  * @return NV_OK
  */
 NV_STATUS
-kmcWritePmcEnableReg_GK104
+kmcWritePmcEnableReg_GM107
 (
     OBJGPU *pGpu,
     KernelMc *pKernelMc,
@@ -107,39 +108,8 @@ kmcWritePmcEnableReg_GK104
 
     GPU_REG_WR32(pGpu, NV_PMC_ENABLE, newPmc);
 
-    //
-    // Read from NV_PMC_ENABLE to create enough delay for engines reset to complete.
-    //
-    GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-    GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-    GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
+    // Delay for engines reset to complete.
+    osDelayUs(NV_PMC_RESET_DELAY_US);
 
     return NV_OK;
-}
-
-/*!
- * @brief  Returns PMC_ENABLE or PMC_DEVICE_ENABLE register based on bIsPmcDeviceEngine.
- *  If bIsPmcDeviceEngine is NV_TRUE, then return 0 on pre-Ampere,
- *                      as NV_PMC_DEVICE_ENABLE is available from Ampere, else
- *  If bIsPmcDeviceEngine is NV_FALSE, then return NV_PMC_ENABLE.
- *
- * @param[in]  pGpu     GPU object pointer
- * @param[in]  pKernelMc
- * @param[in]  bIsPmcDeviceEngine if true return 0 else return PMC_ENABLE register.
- *
- * @return  NvU32 containing register data
- */
-NvU32
-kmcReadPmcEnableReg_GK104
-(
-    OBJGPU *pGpu,
-    KernelMc *pKernelMc,
-    NvBool bIsPmcDeviceEngine
-)
-{
-    // Ensure that caller never sets bIsPmcDeviceEngine = NV_TRUE for pre-Ampere.
-    NV_ASSERT(bIsPmcDeviceEngine == NV_FALSE);
-
-    return bIsPmcDeviceEngine ? 0 :
-           GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
 }

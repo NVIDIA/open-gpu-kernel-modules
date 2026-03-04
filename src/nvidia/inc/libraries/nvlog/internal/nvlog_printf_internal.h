@@ -22,8 +22,7 @@
  */
 
 /**
- * @file
- * @brief Internal macro definitions for NVLOG_PRINTF
+ * Internal macro definitions for NVLOG_PRINTF
  *
  * Macro magic example: (Assuming nothing gets compiled out)
  * 0)  NV_PRINTF(LEVEL_ERROR, "Bla %d %d", arg0, arg1)
@@ -43,6 +42,8 @@
 // Compile time stubbing out output below NVLOG_LEVEL level
 #define _NVLOG_NOTHING(...)        ((void)0)
 
+#include "nvport/nvport.h"
+
 //
 // Use __COUNTER__ if available. If not, we can use __LINE__ since it is also
 // monotonically rising. If __COUNTER__ is unavailable, we can't have inline
@@ -58,6 +59,7 @@
 // NVLOG_PARSING is defined if the file is being compiled for the parser run
 //
 #if defined(NVLOG_PARSING)
+
 //
 // Since the '@' symbol is not found in C code, using it here makes it trivial
 // for the parser code to extract the needed info from preprocessed source.
@@ -69,6 +71,7 @@
      _NVLOG_PRINTF2(_NVLOG_COUNTER, __FILE__, __LINE__, tag, route, level, format, __VA_ARGS__)
 
 #elif !NVLOG_ENABLED
+
 #define _NVLOG_PRINTF _NVLOG_NOTHING
 
 #else // NVLOG_ENABLED && !defined(NVLOG_PARSING)
@@ -84,6 +87,8 @@
 //
 // One for every debug level, needed for compile time filtering.
 //
+#include "nvstatus.h"
+
 typedef NV_STATUS NVLOG_PRINTF_PROTO(NvU32, NvU32, ...);
 NVLOG_PRINTF_PROTO nvlogPrint_printf0;
 NVLOG_PRINTF_PROTO nvlogPrint_printf1;
@@ -97,37 +102,37 @@ NVLOG_PRINTF_PROTO nvlogPrint_printf6;
 NV_STATUS nvlogPrint_printf(NvU32 dbgLevel, NvU32 file, NvU32 line, ...);
 
 
-#if NVLOG_LEVEL <= 0x0
+#if NVLOG_LEVEL <= LEVEL_SILENT
 #define NVLOG_PRINT_LEVEL_0x0 nvlogPrint_printf0
 #else
 #define NVLOG_PRINT_LEVEL_0x0 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x1
+#if NVLOG_LEVEL <= LEVEL_INFO
 #define NVLOG_PRINT_LEVEL_0x1 nvlogPrint_printf1
 #else
 #define NVLOG_PRINT_LEVEL_0x1 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x2
+#if NVLOG_LEVEL <= LEVEL_NOTICE
 #define NVLOG_PRINT_LEVEL_0x2 nvlogPrint_printf2
 #else
 #define NVLOG_PRINT_LEVEL_0x2 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x3
+#if NVLOG_LEVEL <= LEVEL_WARNING
 #define NVLOG_PRINT_LEVEL_0x3 nvlogPrint_printf3
 #else
 #define NVLOG_PRINT_LEVEL_0x3 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x4
+#if NVLOG_LEVEL <= LEVEL_ERROR
 #define NVLOG_PRINT_LEVEL_0x4 nvlogPrint_printf4
 #else
 #define NVLOG_PRINT_LEVEL_0x4 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x5
+#if NVLOG_LEVEL <= LEVEL_HW_ERROR
 #define NVLOG_PRINT_LEVEL_0x5 nvlogPrint_printf5
 #else
 #define NVLOG_PRINT_LEVEL_0x5 _NVLOG_NOTHING
 #endif
-#if NVLOG_LEVEL <= 0x6
+#if NVLOG_LEVEL <= LEVEL_FATAL
 #define NVLOG_PRINT_LEVEL_0x6 nvlogPrint_printf6
 #else
 #define NVLOG_PRINT_LEVEL_0x6 _NVLOG_NOTHING

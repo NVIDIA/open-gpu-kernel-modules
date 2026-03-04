@@ -35,21 +35,10 @@
 //
 NvU32 nvLogBase2(NvU64 val)
 {
-    NvU32 i;
+    NV_ASSERT(val != 0);
+    NV_ASSERT(((val) & (val - 1)) == 0);
 
-    NV_ASSERT(((val)&(val-1)) == 0);
-
-    for (i = 0; i < 64; i++)
-    {
-       if ((1ull << i) == val)
-       {
-           break;
-       }
-    }
-
-    NV_ASSERT(i < 64);
-
-    return i;
+    return portUtilCountTrailingZeros64(val);
 }
 
 
@@ -341,6 +330,44 @@ char * nvU32ToStr(NvU32 value, char *string, NvU32 radix)
   return string;
 }
 
+/*!
+ * @brief Convert unsigned long long hex int to char*
+ *
+ * @param[in]   value        to be converted to string
+ * @param[in]   targetStrLen Denoted the converted string Length
+ * @param[out] *string       is the char array to be have the converted data
+ *
+ * @return the converted string
+ */
+char *
+nvU64ToStr
+(
+    NvU64  value,
+    char  *string,
+    NvU32  targetStrLen
+)
+{
+    char  tempBuffer[65];
+    NvU32 base        = 16;
+    NvU32 rem         = 0;
+    NvU32 inx         = 0;
+
+    for (inx = 0; inx < targetStrLen; inx++)
+    {
+        rem             = value % base;
+        value           = value / base;
+        tempBuffer[inx] = (rem > 9)? (rem - 10) + 'a' : rem + '0';
+    }
+
+    for(inx = 0; inx < targetStrLen; inx++)
+    {
+        string[inx] = tempBuffer[targetStrLen - inx - 1];
+    }
+
+    string[targetStrLen] = '\0';
+
+    return string;
+}
 
 /**
  * @brief Get the string length

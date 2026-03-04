@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2020 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -21,7 +21,6 @@
 
 *******************************************************************************/
 
-
 // For Pascal, UVM page tree 'depth' maps to hardware as follows:
 //
 // UVM depth   HW level                            VA bits
@@ -33,9 +32,11 @@
 
 #include "uvm_types.h"
 #include "uvm_forward_decl.h"
+#include "nv_uvm_interface.h"
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
+#include "uvm_hal.h"
 #include "uvm_push_macros.h"
 #include "uvm_pascal_fault_buffer.h"
 #include "hwref/pascal/gp100/dev_fault.h"
@@ -53,7 +54,7 @@ static NvU32 entries_per_index_pascal(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_pascal(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_pascal(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 3)
@@ -140,10 +141,17 @@ static NvU64 small_half_pde_pascal(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_pascal(void *entry,
+                            uvm_mmu_page_table_alloc_t **phys_allocs,
+                            uvm_page_directory_t *dir,
+                            NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_pascal(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
+
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_pascal(dir->depth);
 
     if (entry_count == 1) {
         *entry_bits = single_pde_pascal(*phys_allocs);
@@ -152,7 +160,8 @@ static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_alloc
         entry_bits[MMU_BIG] = big_half_pde_pascal(phys_allocs[MMU_BIG]);
         entry_bits[MMU_SMALL] = small_half_pde_pascal(phys_allocs[MMU_SMALL]);
 
-        // This entry applies to the whole dual PDE but is stored in the lower bits
+        // This entry applies to the whole dual PDE but is stored in the lower
+        // bits.
         entry_bits[MMU_BIG] |= HWCONST64(_MMU_VER2, DUAL_PDE, IS_PDE, TRUE);
     }
     else {
@@ -169,7 +178,7 @@ static NvLength entry_size_pascal(NvU32 depth)
         return 8;
 }
 
-static NvU32 index_bits_pascal(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_pascal(NvU32 depth, NvU64 page_size)
 {
     static const NvU32 bit_widths[] = {2, 9, 9, 8};
     // some code paths keep on querying this until they get a 0, meaning only the page offset remains.
@@ -195,7 +204,7 @@ static NvU32 num_va_bits_pascal(void)
     return 49;
 }
 
-static NvLength allocation_size_pascal(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_pascal(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (depth == 4 && page_size == UVM_PAGE_SIZE_64K)
@@ -204,7 +213,7 @@ static NvLength allocation_size_pascal(NvU32 depth, NvU32 page_size)
     return 4096;
 }
 
-static NvU32 page_table_depth_pascal(NvU32 page_size)
+static NvU32 page_table_depth_pascal(NvU64 page_size)
 {
     if (page_size == UVM_PAGE_SIZE_2M)
         return 3;
@@ -212,12 +221,12 @@ static NvU32 page_table_depth_pascal(NvU32 page_size)
         return 4;
 }
 
-static NvU32 page_sizes_pascal(void)
+static NvU64 page_sizes_pascal(void)
 {
     return UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU64 unmapped_pte_pascal(NvU32 page_size)
+static NvU64 unmapped_pte_pascal(NvU64 page_size)
 {
     // Setting the privilege bit on an otherwise-zeroed big PTE causes the
     // corresponding 4k PTEs to be ignored. This allows the invalidation of a
@@ -288,7 +297,6 @@ static NvU64 make_pte_pascal(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
         // vid address 32:8
         pte_bits |= HWVALUE64(_MMU_VER2, PTE, ADDRESS_VID, address);
 
-
         // peer id 35:33
         if (aperture != UVM_APERTURE_VID)
             pte_bits |= HWVALUE64(_MMU_VER2, PTE, ADDRESS_VID_PEER, UVM_APERTURE_PEER_ID(aperture));
@@ -297,6 +305,7 @@ static NvU64 make_pte_pascal(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
         pte_bits |= HWVALUE64(_MMU_VER2, PTE, COMPTAGLINE, 0);
     }
 
+    // kind 63:56
     pte_bits |= HWVALUE64(_MMU_VER2, PTE, KIND, NV_MMU_PTE_KIND_PITCH);
 
     return pte_bits;
@@ -318,7 +327,7 @@ static NvU64 make_sparse_pte_pascal(void)
            HWCONST64(_MMU_VER2, PTE, VOL,   TRUE);
 }
 
-static NvU64 poisoned_pte_pascal(void)
+static NvU64 poisoned_pte_pascal(uvm_page_tree_t *tree)
 {
     // An invalid PTE won't be fatal from faultable units like SM, which is the
     // most likely source of bad PTE accesses.
@@ -331,7 +340,7 @@ static NvU64 poisoned_pte_pascal(void)
     // be aligned to page_size.
     NvU64 phys_addr = 0x1bad000000ULL;
 
-    NvU64 pte_bits = make_pte_pascal(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
+    NvU64 pte_bits = tree->hal->make_pte(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
     return WRITE_HWCONST64(pte_bits, _MMU_VER2, PTE, PRIVILEGE, TRUE);
 }
 
@@ -353,7 +362,7 @@ static uvm_mmu_mode_hal_t pascal_mmu_mode_hal =
     .page_sizes = page_sizes_pascal
 };
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU64 big_page_size)
 {
     UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
 
@@ -365,28 +374,45 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size)
     return &pascal_mmu_mode_hal;
 }
 
+static void mmu_set_prefetch_faults(uvm_parent_gpu_t *parent_gpu, bool enable)
+{
+    volatile NvU32 *prefetch_ctrl = parent_gpu->fault_buffer.rm_info.replayable.pPrefetchCtrl;
+
+    // A null prefetch control mapping indicates that UVM should toggle the
+    // register's value using the RM API, instead of performing a direct access.
+    if (prefetch_ctrl == NULL) {
+        NV_STATUS status;
+
+        // Access to the register is currently blocked only in Confidential
+        // Computing.
+        UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+
+        status = nvUvmInterfaceTogglePrefetchFaults(&parent_gpu->fault_buffer.rm_info, (NvBool)enable);
+
+        UVM_ASSERT(status == NV_OK);
+    }
+    else {
+        NvU32 prefetch_ctrl_value = UVM_GPU_READ_ONCE(*prefetch_ctrl);
+
+        if (enable)
+            prefetch_ctrl_value = WRITE_HWCONST(prefetch_ctrl_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_ALL);
+        else
+            prefetch_ctrl_value = WRITE_HWCONST(prefetch_ctrl_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_NONE);
+
+        UVM_GPU_WRITE_ONCE(*prefetch_ctrl, prefetch_ctrl_value);
+    }
+}
+
 void uvm_hal_pascal_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    volatile NvU32 *prefetch_control;
-    NvU32 prefetch_control_value;
+    UVM_ASSERT(parent_gpu->prefetch_fault_supported);
 
-    prefetch_control = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
-
-    prefetch_control_value = UVM_GPU_READ_ONCE(*prefetch_control);
-    prefetch_control_value = WRITE_HWCONST(prefetch_control_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_ALL);
-    UVM_GPU_WRITE_ONCE(*prefetch_control, prefetch_control_value);
+    mmu_set_prefetch_faults(parent_gpu, true);
 }
 
 void uvm_hal_pascal_mmu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    volatile NvU32 *prefetch_control;
-    NvU32 prefetch_control_value;
-
-    prefetch_control = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
-
-    prefetch_control_value = UVM_GPU_READ_ONCE(*prefetch_control);
-    prefetch_control_value = WRITE_HWCONST(prefetch_control_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_NONE);
-    UVM_GPU_WRITE_ONCE(*prefetch_control, prefetch_control_value);
+    mmu_set_prefetch_faults(parent_gpu, false);
 }
 
 NvU16 uvm_hal_pascal_mmu_client_id_to_utlb_id(NvU16 client_id)

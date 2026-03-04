@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,10 @@
 *   The GM107 specific HAL TMR routines reside in this file.                *
 *                                                                           *
 \***************************************************************************/
+#define NVOC_OBJTMR_H_PRIVATE_ACCESS_ALLOWED
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "published/maxwell/gm107/dev_timer.h"
 /* ------------------------- Datatypes -------------------------------------- */
 /* ------------------------- Macros ----------------------------------------- */
@@ -60,10 +61,10 @@ tmrSetCurrentTime_GM107
     // We get the time in seconds and microseconds since 1970
     // Note that we don't really need the real time of day
     //
-    osGetCurrentTime(&seconds, &useconds);
+    osGetSystemTime(&seconds, &useconds);
 
     NV_PRINTF(LEVEL_INFO,
-              "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
+              "osGetSystemTime returns 0x%x seconds, 0x%x useconds\n",
               seconds, useconds);
 
     //
@@ -78,9 +79,6 @@ tmrSetCurrentTime_GM107
     GPU_REG_WR32(pGpu, NV_PTIMER_TIME_1, NvU64_HI32(ns));
     GPU_REG_WR32(pGpu, NV_PTIMER_TIME_0, NvU64_LO32(ns));
 
-    // Mark that time has been initialized
-    pTmr->bInitialized = NV_TRUE;
-
     return NV_OK;
 }
 
@@ -89,8 +87,8 @@ tmrSetCurrentTime_GM107
 NV_STATUS
 tmrGetGpuAndCpuTimestampPair_GM107
 (
-    POBJGPU  pGpu,
-    POBJTMR  pTmr,
+    OBJGPU  *pGpu,
+    OBJTMR  *pTmr,
     NvU64   *pGpuTime,
     NvU64   *pCpuTime
 )
@@ -165,8 +163,8 @@ tmrGetGpuAndCpuTimestampPair_GM107
 NV_STATUS
 tmrGetGpuPtimerOffset_GM107
 (
-    POBJGPU  pGpu,
-    POBJTMR  pTmr,
+    OBJGPU  *pGpu,
+    OBJTMR  *pTmr,
     NvU32   *pGpuTimestampOffsetLo,
     NvU32   *pGpuTimestampOffsetHi
 )
@@ -275,4 +273,112 @@ tmrGetTimeEx_GM107
     Time = (((NvU64)TimeHi) << 32) | TimeLo;
 
     return Time;
+}
+
+NvU32
+tmrGetTmrBaseAddr_GM107
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr
+)
+{
+    return NV_PTIMER_TIME_0;
+}
+
+NvU32
+tmrGetNsecShiftMask_GM107
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr
+)
+{
+    return DRF_SHIFTMASK(NV_PTIMER_TIME_0_NSEC);
+}
+
+//
+// For functions that only need a short delta of time elapsed (~ 4.29 seconds)
+// NOTE: Since it wraps around every 4.29 seconds, for general GetTime purposes,
+//       it's better to use tmrGetTime().
+//
+NvU32
+tmrGetTimeLo_GM107
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr
+)
+{
+    NvU32 lo = 0;
+
+    // read TIME_0
+    lo = tmrReadTimeLoReg_HAL(pGpu, pTmr, NULL);
+    //
+    // check if it's a stable TIME_0, otherwise, we just call a regular
+    // tmrGetTime to handle all error book-keeping, resetting timer, etc.
+    //
+    if ((lo & ~tmrGetNsecShiftMask_HAL(pGpu, pTmr)) != 0)
+    {
+        // let tmrGetTime() handle all the mess..
+        NV_PRINTF(LEVEL_WARNING,
+                  "NVRM-RC: Bad TimeLo value %x, Let's see if it happens again.\n",
+                  lo);
+        DBG_BREAKPOINT();
+
+        return (NvU32) (tmrGetTime_HAL(pGpu, pTmr) & 0xffffffff);
+    }
+    return lo;
+}
+
+NvU64
+tmrGetTime_GM107
+(
+    OBJGPU             *pGpu,
+    OBJTMR             *pTmr
+)
+{
+    return tmrGetTimeEx_HAL(pGpu, pTmr, NULL);
+}
+
+/**
+ * @brief Services the stall interrupt.
+ *
+ * @param[in] pGpu
+ * @param[in] pTmr
+ * @param[in] pParams
+ *
+ * @returns Zero, or any implementation-chosen nonzero value. If the same nonzero value is returned enough
+ *          times the interrupt is considered stuck.
+ */
+NvU32
+tmrServiceInterrupt_GM107
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    IntrServiceServiceInterruptArguments *pParams
+)
+{
+    NvU32 retVal = 0;
+    NV_ASSERT_OR_RETURN(pParams != NULL, 0);
+
+    // Service the countdown timer interrupt.
+    tmrServiceSwrlCallbacksPmcTree(pGpu, pTmr, NULL);
+
+    // Service the timer alarm interrupt.
+    if (tmrGetCallbackInterruptPending(pGpu, pTmr))
+    {
+        tmrResetCallbackInterrupt(pGpu, pTmr);
+
+        // service both normal and self-rescheduling lists
+        (void)tmrCallExpiredCallbacks(pGpu, pTmr);
+
+        // If there are no remaining callbacks then disable the PTIMER interrupt.
+        if (pTmr->pRmActiveEventList == NULL)
+        {
+            // Last one is gone. Disable PTIMER interrupt.
+            tmrRmCallbackIntrDisable(pTmr, pGpu);
+        }
+    }
+
+    tmrGetIntrStatus_HAL(pGpu, pTmr, &retVal, NULL);
+
+    return retVal;
 }

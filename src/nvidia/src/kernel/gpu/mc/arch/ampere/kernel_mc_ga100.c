@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "gpu/gpu.h"
+#include "os/os.h"
 
 #include "published/ampere/ga100/dev_boot.h"
 
@@ -56,11 +57,9 @@ kmcWritePmcEnableReg_GA100
     //
     // If hardware increases the size of this register in future chips, we would
     // need to catch this and fork another HAL.
+    // Already obsoleted by GH100, but keeping the check
     //
-    if ((sizeof(NvU32) * NV_PMC_DEVICE_ENABLE__SIZE_1) > sizeof(NvU32))
-    {
-        NV_ASSERT_FAILED("Assert for Mcheck to catch increase in register size. Fork this HAL");
-    }
+    ct_assert(NV_PMC_DEVICE_ENABLE__SIZE_1 <= 1);
 
     if (bIsPmcDeviceEngine)
     {
@@ -85,45 +84,8 @@ kmcWritePmcEnableReg_GA100
 
     GPU_REG_WR32(pGpu, regAddr, newPmc);
 
-    //
-    // Read from NV_PMC_ENABLE to create enough delay for engines reset to complete.
-    //
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
+    // Delay for engines reset to complete.
+    osDelayUs(NV_PMC_RESET_DELAY_US);
 
     return NV_OK;
-}
-
-/*!
- * @brief  Returns NV_PMC_ENABLE or NV_PMC_DEVICE_ENABLE register based on bIsPmcDeviceEngine.
- *  If bIsPmcDeviceEngine is NV_TRUE, then return NV_PMC_DEVICE_ENABLE (available from Ampere),
- *  If bIsPmcDeviceEngine is NV_FALSE, then return NV_PMC_ENABLE.
- *
- * @param[in]  pGpu     GPU object pointer
- * @param[in]  pKernelMc
- * @param[in]  bIsPmcDeviceEngine if true return NV_PMC_DEVICE_ENABLE else return NV_PMC_ENABLE register.
- *
- * @return  NvU32 containing register data
- */
-NvU32
-kmcReadPmcEnableReg_GA100
-(
-    OBJGPU *pGpu,
-    KernelMc *pKernelMc,
-    NvBool bIsPmcDeviceEngine
-)
-{
-    //
-    // If hardware increases the size of this register in future chips, we would
-    // need to catch this and fork another HAL.
-    //
-    if ((sizeof(NvU32) * NV_PMC_DEVICE_ENABLE__SIZE_1) > sizeof(NvU32))
-    {
-        NV_ASSERT_FAILED("Assert for Mcheck to catch increase in register size. Fork this HAL");
-    }
-
-    return bIsPmcDeviceEngine ?
-           GPU_REG_RD32(pGpu, NV_PMC_DEVICE_ENABLE(0)) :
-           GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
 }

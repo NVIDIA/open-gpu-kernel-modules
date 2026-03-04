@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         Memory Manager Object Function Definitions.                       *
 *                                                                           *
@@ -51,15 +51,6 @@ typedef struct
     const MMU_TRACE_CALLBACKS *pTraceCb;
 } MMU_LAYOUT, *PMMU_LAYOUT;
 
-typedef struct {
-  NvU64  va;
-  NvU64  vaLimit;
-  NvU32  index;
-  NvU32  indexLimit;
-  NvBool bInvalid;
-} MMU_INVALID_RANGE, *PMMU_INVALID_RANGE;
-
-
 typedef NV_STATUS (*MmuTraceCbPte) (OBJGPU *pGpu, const MMU_TRACE_CALLBACKS *pTraceCb, NvU64 va,
                                     const MMU_FMT_LEVEL *pFmtLevel, const void *pFmtPte,
                                     const MMU_ENTRY *pPte, void *pArg, NvBool valid, NvBool *pDone);
@@ -79,14 +70,10 @@ typedef NV_STATUS  (*MmuTraceCbDumpMapping) (OBJGPU *pGpu, const MMU_TRACE_CALLB
                                              const MMU_ENTRY *pPte, void *pArg, NvU64 va, NvU64 vaLimit,
                                              NvBool valid, NvBool *pDone);
 
-typedef NV_STATUS (*MmuTraceCbValidate) (NvBool valid, void *pArg, NvU64 entryVa, NvU64 entryVaLimit,
-                                         NvBool *pDone);
-
 typedef struct {
     MmuTraceCbPte         pteFunc;
     MmuTraceCbTranslate   translateFunc;
     MmuTraceCbDumpMapping dumpMappingFunc;
-    MmuTraceCbValidate    validateFunc;
     MmuTraceCbPde         pdeFunc;
     NvU64                 vaArg;
     PMMU_TRACE_ARG        pArg;
@@ -111,9 +98,6 @@ static NV_STATUS _mmuTraceDumpMappingCallback(OBJGPU *pGpu, const MMU_TRACE_CALL
                                               const MMU_FMT_LEVEL *pFmtLevel, const void *pFmtPte,
                                               const MMU_ENTRY *pPte, void *pArg, NvU64 va, NvU64 vaLimit,
                                               NvBool valid, NvBool *pDone);
-
-static NV_STATUS _mmuTraceValidateCallback(NvBool valid, void *pArg, NvU64 entryVa, NvU64 entryVaLimit,
-                                           NvBool *pDone);
 
 static NV_STATUS
 mmuTraceWalk
@@ -171,15 +155,6 @@ mmuTrace
     NvBool             modeValid;
     MMU_TRACE_MODE     traceMode;
 
-    if (RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        //
-        // All client vaspace is managed by CPU-RM, so MMU_TRACER is not needed
-        // in GSP-RM
-        //
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pVAS != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -200,7 +175,6 @@ mmuTrace
     traceMode = pParams->mode;
 
     switch (traceMode) {
-        case MMU_TRACE_MODE_TRACE:
         case MMU_TRACE_MODE_TRACE_VERBOSE:
             info.pteFunc = _mmuTracePteCallback;
             break;
@@ -209,12 +183,6 @@ mmuTrace
             info.translateFunc = _mmuTraceTranslateCallback;
             info.vaArg = pParams->va;
             pParams->pArg->valid = NV_FALSE;
-            break;
-
-        case MMU_TRACE_MODE_VALIDATE:
-            info.validateFunc = _mmuTraceValidateCallback;
-            pParams->pArg->valid = NV_FALSE;
-            pParams->pArg->validateCount = pParams->vaLimit - pParams->va + 1;
             break;
 
         case MMU_TRACE_MODE_DUMP_RANGE:
@@ -290,6 +258,7 @@ _mmuPrintPte
 
     pageSize = mmuFmtLevelPageSize(pFmtLevel);
     if ((RM_PAGE_SIZE_HUGE != pageSize) &&
+        (RM_PAGE_SIZE_256G != pageSize) &&
         (RM_PAGE_SIZE_512M != pageSize))
     {
         level++; // Indent one more level for PTE
@@ -303,6 +272,9 @@ _mmuPrintPte
 
         switch (pageSize)
         {
+        case RM_PAGE_SIZE_256G:
+            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_256G");
+            break;
         case RM_PAGE_SIZE_512M:
             NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_512M");
             break;
@@ -452,7 +424,7 @@ _mmuTraceWalk
     PMMU_LAYOUT          pLayout,
     MMU_WALK            *pWalk,
     NvU32                level,
-    const MMU_FMT_LEVEL *pFmtLevel,
+    const MMU_FMT_LEVEL *pInitialFmtLevel,
     PMEMORY_DESCRIPTOR   pMemDesc,
     NvU64                va,
     NvU64                vaLimit,
@@ -461,40 +433,57 @@ _mmuTraceWalk
     NvBool               verbose
 )
 {
-    const void                *pFmt         = pLayout->pFmt;
-    const MMU_TRACE_CALLBACKS *pTraceCb     = pLayout->pTraceCb;
-    NvU32                      index        = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
-    NvU64                      offset       = index * pFmtLevel->entrySize;
-    NV_STATUS                  status       = NV_OK;
-    MMU_INVALID_RANGE          invalidRange = {0};
-    NvU64                      entryVa      = va;
-    NvBool                     isPt         = NV_FALSE;
-    NvU8                      *pBase        = NULL;
-    MEMORY_DESCRIPTOR         *pTempMemDesc = NULL;
+    const void                *pFmt              = pLayout->pFmt;
+    const MMU_TRACE_CALLBACKS *pTraceCb          = pLayout->pTraceCb;
+    MMU_FMT_LEVEL             *pFmtLevel         = (MMU_FMT_LEVEL*)pInitialFmtLevel;
+    NvU32                      index             = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
+    NvU32                      offset            = index * pFmtLevel->entrySize;
+    NV_STATUS                  status            = NV_OK;
+    MMU_INVALID_RANGE          invalidRange      = {0};
+    NvU64                      entryVa           = va;
+    NvBool                     isPt              = NV_FALSE;
+    NvU8                      *pBase             = NULL;
+    MEMORY_DESCRIPTOR         *pTempMemDesc      = NULL;
+    MemoryManager             *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvU64                      entryVaLevelLimit = va | mmuFmtEntryVirtAddrMask(pInitialFmtLevel);
+    NvU64                      entryVaLimit      = NV_MIN(entryVaLevelLimit, vaLimit);
+    NvBool                     valid             = NV_FALSE;
+    NvBool                     destroyMemDesc    = NV_FALSE;
+    NvU32                      subLevelIdx       = 0;
+    NvU32                      initialLevel      = level;
+    MMU_TRACE_ITER_INFO        state             = {0};
+    MMU_ENTRY                  entry;
+    NV_STATUS                  savedStatus;
+
+    ct_assert(MMU_WALK_MEMDESC_MAX_SIZE >= sizeof(MEMORY_DESCRIPTOR));
 
     if (pMemDesc == NULL)
     {
         return NV_OK;
     }
 
-    pBase = kbusMapRmAperture_HAL(pGpu, pMemDesc);
+    pBase = memmgrMemDescBeginTransfer(pMemoryManager, pMemDesc,
+                                       TRANSFER_FLAGS_SHADOW_ALLOC |
+                                       TRANSFER_FLAGS_SHADOW_INIT_MEM);
     if (pBase == NULL)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
+
+begin_iteration:
     while (entryVa <= vaLimit && index < mmuFmtLevelEntryCount(pFmtLevel))
-    {
+    {  
         //
         // Determine the highest address that this entry covers. Check if
         // our vaLimit actually covers this entire page or not.
         //
-        NvU64     entryVaLevelLimit = entryVa | mmuFmtEntryVirtAddrMask(pFmtLevel);
-        NvU64     entryVaLimit     = NV_MIN(entryVaLevelLimit, vaLimit);
-        NvBool    valid            = NV_FALSE;
-        MMU_ENTRY entry;
-        NvU32     i;
+        entryVaLevelLimit = entryVa | mmuFmtEntryVirtAddrMask(pFmtLevel);
+        entryVaLimit      = NV_MIN(entryVaLevelLimit, vaLimit);
+        valid             = NV_FALSE;
+        subLevelIdx       = 0;
         NV_ASSERT((offset + pFmtLevel->entrySize) <= pMemDesc->Size);
 
+        NV_ASSERT(pBase != NULL);
         portMemCopy(&entry, pFmtLevel->entrySize, pBase + offset, pFmtLevel->entrySize);
         if (pTraceCb->isPte(pFmt, pFmtLevel, &entry, &valid))
         {
@@ -526,35 +515,29 @@ _mmuTraceWalk
                 status = pInfo->pteFunc(pGpu, pTraceCb, va, pFmtLevel, pFmtPte,
                                         &entry, pInfo->pArg, valid, pDone);
             }
-            else if (pInfo->validateFunc != NULL)
-            {
-                status = pInfo->validateFunc(valid, pInfo->pArg, entryVa, entryVaLimit, pDone);
-            }
 
             if (status != NV_OK || *pDone)
             {
-                goto unmap_and_exit;
+                goto unmap_and_restore;
             }
-            goto update_and_continue;
+            goto update_and_continue_to_next_entry;
         }
-
         status = NV_ERR_INVALID_XLATE;
-        // Attempt translation of each sub-level.
-        for (i = 0; i < pFmtLevel->numSubLevels; i++)
+
+sublevel_loop:
         {
-
-            NvU32    memSize = 0;
-
-            const void *pFmtPde  = pTraceCb->getFmtPde(pFmt, pFmtLevel, i);
+            NvU32       memSize  = 0;
+            const void *pFmtPde  = pTraceCb->getFmtPde(pFmt, pFmtLevel, subLevelIdx);
             NvU64       nextBase = pTraceCb->getPdePa(pGpu, pFmtPde, &entry);
+            destroyMemDesc       = NV_FALSE;
 
             // Entry is invalid
             if (nextBase == MMU_INVALID_ADDR)
             {
-                if (!pTraceCb->isInvalidPdeOk(pGpu, pFmt, pFmtPde, &entry, i))
+                if (!pTraceCb->isInvalidPdeOk(pGpu, pFmt, pFmtPde, &entry, subLevelIdx))
                 {
                     status = NV_ERR_INVALID_XLATE;
-                    goto unmap_and_exit;
+                    goto unmap_and_restore;
                 }
 
                 //
@@ -569,17 +552,35 @@ _mmuTraceWalk
                 }
 
                 // Continue to next sub-level, still assuming a PDE fault so far.
-                continue;
+                goto continue_to_next_sub_level;
             }
+            // When on GSP, read from the physical address to get the next entry.
+            if (RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                NvU32 nextSpace = pTraceCb->pdeAddrSpace(pFmtPde, &entry);
 
-            NV_ASSERT_OK_OR_RETURN(
-                mmuWalkGetPageLevelInfo(pWalk, &pFmtLevel->subLevels[i], entryVa,
-                                (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize));
+                memSize = mmuFmtLevelSize((const MMU_FMT_LEVEL*)&pFmtLevel->subLevels[subLevelIdx]);
+
+                pTempMemDesc = (MEMORY_DESCRIPTOR *)mmuWalkGetTraceInfoMemDesc(pWalk, level + 1);
+                memdescCreateExisting(pTempMemDesc, pGpu, memSize, nextSpace,
+                    NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
+                memdescDescribe(pTempMemDesc, nextSpace, nextBase, memSize);
+                destroyMemDesc = NV_TRUE;
+            }
+            // Otherwise we use the SW maintained MMU table since we don't want to rely on
+            // HW for kernel SW behavior.
+            else
+            {
+                NV_ASSERT_OK_OR_GOTO(status,
+                    mmuWalkGetPageLevelInfo(pWalk, &pFmtLevel->subLevels[subLevelIdx], entryVa,
+                        (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize),
+                    unmap_and_restore);
+            }
 
             // Only print out the PDE the first time we know it's a valid PDE
             if (!valid)
             {
-                _mmuPrintPdeValid(pGpu, pLayout, entryVa, entryVaLimit, level, i, index,
+                _mmuPrintPdeValid(pGpu, pLayout, entryVa, entryVaLimit, level, subLevelIdx, index,
                                   pFmtLevel, &entry, &invalidRange, verbose);
             }
 
@@ -595,45 +596,57 @@ _mmuTraceWalk
                 }
             }
 
-            // Recurse into sub-level translation, 1 OK translation => success
-            if (NV_OK == _mmuTraceWalk(pGpu, pLayout, pWalk, level + 1, &pFmtLevel->subLevels[i],
-                                       pTempMemDesc, entryVa, entryVaLimit, pInfo, pDone, verbose))
+            // Save current state and step into next level
+            portMemSet(&state, 0, sizeof(state));
+            state.pFmtLevel = pFmtLevel;
+            state.pMemDesc = pMemDesc;
+            state.va = va;
+            state.vaLimit = vaLimit;
+            state.index = index;
+            state.offset = offset;
+            state.status = status;
+            state.invalidRange = invalidRange;
+            state.entryVa = entryVa;
+            state.isPt = isPt;
+            state.subLevelIdx = subLevelIdx;
+            state.valid = valid;
+            state.destroyMemDesc = destroyMemDesc;
+            state.pBase = pBase;
+            mmuWalkSetTraceInfo(pWalk, level++, &state);
+            pFmtLevel = &pFmtLevel->subLevels[subLevelIdx];
+            pMemDesc = pTempMemDesc;
+            va = entryVa;
+            vaLimit = entryVaLimit;
+            index = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
+            offset = index * pFmtLevel->entrySize;
+            status = NV_OK;
+            invalidRange.bInvalid = NV_FALSE;
+            invalidRange.va = 0;
+            invalidRange.index = 0;
+            invalidRange.vaLimit = 0;
+            invalidRange.indexLimit = 0;
+            entryVa = va;
+            isPt = NV_FALSE;
+
+            if (pMemDesc == NULL)
             {
                 status = NV_OK;
+                goto unmap_and_restore;
             }
 
-destroy_mem:
-            if (*pDone)
+            pBase = memmgrMemDescBeginTransfer(pMemoryManager, pMemDesc,
+                                               TRANSFER_FLAGS_SHADOW_ALLOC |
+                                               TRANSFER_FLAGS_SHADOW_INIT_MEM);
+            if (pBase == NULL)
             {
-                goto unmap_and_exit;
-            }
-        }
-
-        if (status != NV_OK)
-        {
-            goto unmap_and_exit;
-        }
-
-update_and_continue:
-
-        if (!valid)
-        {
-            if (!invalidRange.bInvalid)
-            {
-                invalidRange.va    = entryVa;
-                invalidRange.index = index;
+                status = NV_ERR_INSUFFICIENT_RESOURCES;
+                goto unmap_and_restore;
             }
 
-            invalidRange.vaLimit    = entryVaLimit;
-            invalidRange.indexLimit = index;
+            destroyMemDesc = NV_FALSE;
+            continue;
         }
-        invalidRange.bInvalid = !valid;
-
-        offset  += pFmtLevel->entrySize;
-        entryVa  = entryVaLevelLimit + 1;
-        index++;
     }
-
     // contiguous invalid range at the end
     if (invalidRange.bInvalid)
     {
@@ -657,10 +670,79 @@ update_and_continue:
         }
     }
 
-unmap_and_exit:
+unmap_and_restore:
+    if (pBase != NULL)
+    {
+        memmgrMemDescEndTransfer(pMemoryManager, pMemDesc, TRANSFER_FLAGS_DEFER_FLUSH);
+        pBase = NULL;
+    }
 
-    kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pBase, NV_FALSE);
+    if (level == initialLevel)
+        goto done;
 
+    //
+    // One sub-level success => success
+    // So save status of current level and update status of previous level accordingly
+    //
+    savedStatus = status;
+    pTempMemDesc = pMemDesc;
+    mmuWalkGetTraceInfo(pWalk, --level, &state);
+    pFmtLevel = state.pFmtLevel;
+    pMemDesc = state.pMemDesc;
+    va = state.va;
+    vaLimit = state.vaLimit;
+    index = state.index;
+    offset = state.offset;
+    entryVa = state.entryVa;
+    invalidRange = state.invalidRange;
+    isPt = state.isPt;
+    subLevelIdx = state.subLevelIdx;
+    valid = state.valid;
+    destroyMemDesc = state.destroyMemDesc;
+    status = state.status;
+    pBase = state.pBase;
+
+    if (savedStatus == NV_OK)
+        status = NV_OK;
+
+destroy_mem:
+    if (destroyMemDesc)
+    {
+        memdescDestroy(pTempMemDesc);
+    }
+    if (*pDone)
+    {
+        goto unmap_and_restore;
+    }
+
+continue_to_next_sub_level:
+    subLevelIdx ++;
+    if (subLevelIdx < pFmtLevel->numSubLevels)
+        goto sublevel_loop;
+
+    if (status != NV_OK)
+        goto unmap_and_restore;
+    
+update_and_continue_to_next_entry:
+    if (!valid)
+    {
+        if (!invalidRange.bInvalid)
+        {
+            invalidRange.va    = entryVa;
+            invalidRange.index = index;
+        }
+
+        invalidRange.vaLimit    = entryVaLimit;
+        invalidRange.indexLimit = index;
+    }
+    invalidRange.bInvalid = !valid;
+
+    offset  += pFmtLevel->entrySize;
+    entryVa  = entryVaLevelLimit + 1;
+    index++;
+    goto begin_iteration;
+
+done:
     return status;
 }
 
@@ -780,44 +862,3 @@ _mmuTraceDumpMappingCallback
     return NV_OK;
 }
 
-
-static NV_STATUS
-_mmuTraceValidateCallback
-(
-    NvBool  valid,
-    void   *pArg,
-    NvU64   entryVa,
-    NvU64   entryVaLimit,
-    NvBool *pDone
-)
-{
-    PMMU_TRACE_ARG pMmuTraceArg = (PMMU_TRACE_ARG)pArg;
-
-    // If the range is valid, then subtract validated range from validateCount
-    if (valid)
-    {
-        NvU64 vaCoverage = entryVaLimit - entryVa;
-        pMmuTraceArg->validateCount -= (NV_MIN(vaCoverage + 1, pMmuTraceArg->validateCount));
-
-        // If we've reached zero, then the range is valid and we're done.
-        if (pMmuTraceArg->validateCount == 0)
-        {
-            *pDone = NV_TRUE;
-            pMmuTraceArg->valid = NV_TRUE;
-        }
-        else
-        {
-            *pDone = NV_FALSE;
-            pMmuTraceArg->valid = NV_FALSE;
-        }
-
-    }
-
-    // If it's not, then continue the search. We're not done.
-    else
-    {
-        *pDone = NV_FALSE;
-    }
-
-    return NV_OK;
-}

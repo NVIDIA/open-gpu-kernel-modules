@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,17 +27,12 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208fgr.finn
+// Source file:      ctrl/ctrl208f/ctrl208fgr.finn
 //
-
-
-
 
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"
-
-
 
 /*
  * NV208F_CTRL_CMD_GR_ECC_INJECT_ERROR
@@ -108,5 +103,67 @@ typedef struct NV208F_CTRL_GR_ECC_INJECTION_SUPPORTED_PARAMS {
     NvBool bUncorrectableSupported;
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
 } NV208F_CTRL_GR_ECC_INJECTION_SUPPORTED_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_GR_ECC_SET_TRANSIENT_CLEARING_POLICY
+ *
+ * Control command to determine whether or not the actions to clear potential transient
+ * errors in the SM should be taken
+ *
+ * Parameters:
+ *
+ * policy
+ *   NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_DISABLED
+ *      Don't attempt to clear a transient error in the SM
+ *   NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_ENABLED
+ *      Attempt to clear a transient error in the SM
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_DISABLED       (0x00000000)
+#define NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_ENABLED        (0x00000001)
+
+#define NV208F_CTRL_CMD_GR_ECC_SET_TRANSIENT_CLEARING_POLICY (0x208f1205) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GR_INTERFACE_ID << 8) | NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS {
+    NvU32 policy;
+} NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_GR_INJECT_CTXSW_UCODE_ERROR
+ *
+ * Control command to inject a CTXSW ucode error
+ *
+ * Parameters:
+ *
+ * errorType
+ *   Warning, Partial GR Reset, Full GR Reset, or GPU Reset
+ *
+ * errorMethod
+ *   Main, Firmware, or Sideband error
+ *
+ * bInjectGpccs
+ *   TRUE  - inject into GPCCS
+ *   FALSE - inject into FECS
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV208F_CTRL_CMD_GR_INJECT_CTXSW_UCODE_ERROR (0x208f1206) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GR_INTERFACE_ID << 8) | NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS {
+    NvU32  errorType;
+    NvU32  errorMethod;
+    NvBool bInjectGpccs;
+} NV208F_CTRL_GR_INJECT_CTXSW_UCODE_ERROR_PARAMS;
+
 
 /* _ctrl208fgr_h_ */

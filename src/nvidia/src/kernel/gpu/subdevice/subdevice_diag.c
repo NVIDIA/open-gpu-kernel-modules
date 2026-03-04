@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,6 @@
 #include "rmapi/rs_utils.h"
 
 #include "gpu/subdevice/subdevice_diag.h"
-#include "gpu/subdevice/subdevice.h"
 
 #include "class/cl208f.h" // NV208F_NOTIFIERS_MAXCOUNT
 #include "ctrl/ctrl208f/ctrl208fevent.h" // NV208F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE
@@ -85,6 +84,24 @@ diagapiControlFilter_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDiagApi);
+    RmCtrlParams *pRmCtrlParams = pParams->pLegacyParams;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        switch (pRmCtrlParams->cmd)
+        {
+            // For Guest OS, only below RM controls are supported.
+            case NV208F_CTRL_CMD_FIFO_CHECK_ENGINE_CONTEXT:
+            case NV208F_CTRL_CMD_DMA_GET_VAS_BLOCK_DETAILS:
+                break;
+
+            // Fall though for unsupported CTRL
+            default:
+                return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
     return NV_OK;
 }
 

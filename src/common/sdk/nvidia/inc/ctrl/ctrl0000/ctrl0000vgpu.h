@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,198 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0000/ctrl0000vgpu.finn
+// Source file:      ctrl/ctrl0000/ctrl0000vgpu.finn
 //
 
+#include "ctrl/ctrl0000/ctrl0000base.h"
+
+#include "ctrl/ctrlxxxx.h"
+#include "ctrl/ctrla081.h"
+#include "class/cl0000.h"
+#include "nv_vgpu_types.h"
+
+/* DRF macros for OBJGPU::gpuId */
+#define NV0000_BUSDEVICE_DOMAIN      31:16
+#define NV0000_BUSDEVICE_BUS         15:8
+#define NV0000_BUSDEVICE_DEVICE       7:0
+
+#define GPU_32_BIT_ID_DECODE_DOMAIN(gpuId)      (NvU16)DRF_VAL(0000, _BUSDEVICE, _DOMAIN, gpuId);
+#define GPU_32_BIT_ID_DECODE_BUS(gpuId)         (NvU8) DRF_VAL(0000, _BUSDEVICE, _BUS,    gpuId);
+#define GPU_32_BIT_ID_DECODE_DEVICE(gpuId)      (NvU8) DRF_VAL(0000, _BUSDEVICE, _DEVICE, gpuId);
+
+/*
+ * NV0000_CTRL_CMD_VGPU_CREATE_DEVICE
+ *
+ * This command informs RM to create a vGPU device on KVM.
+ *
+ *   vgpuName [IN]
+ *     This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *     or vfio-pci-core framework is used. 
+ *
+ *   gpuPciId [IN]
+ *     This parameter provides gpuId of GPU on which vgpu device is created.
+ *
+ *   gpuPciBdf
+ *     This parameter specifies the BDF of the VF. (Same as PF for non-sriov)
+ *
+ *   vgpuTypeId [IN]
+ *     This parameter specifies the vGPU type ID for the device to be created.
+ *
+ *   vgpuId [OUT]
+ *     This parameter returns the vgpu id allocated by RM for the device
+ *
+ *   gpuInstanceId [OUT]
+ *     This parameter returns the swizzId allocated by RM for the device.
+ *
+ *   placementId [OUT]
+ *     This parameter returns the placementId allocated by RM for the device.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_EVENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_CLIENT
+ *
+ */
+
+#define NV0000_CTRL_CMD_VGPU_CREATE_DEVICE (0xc02) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
+    NvU32 gpuPciId;
+    NvU32 gpuPciBdf;
+    NvU32 vgpuTypeId;
+    NvU16 vgpuId;
+    NvU32 gpuInstanceId;
+    NvU32 placementId;
+} NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_GET_INSTANCES
+ *
+ * This command queries RM for available instances for a particular vGPU type ID
+ * on KVM.
+ *
+ *   gpuPciId [IN]
+ *     This parameter specifies gpuId of GPU on which vGPU instances are being
+ *     queried.
+ *
+ *   gpuPciBdf [IN]
+ *     This parameter specifies the BDF of the VF. (Same as PF for non-sriov)
+ *
+ *   numVgpuTypes [IN]
+ *     This parameter specifies the count of vgpuTypeIds supplied and the
+ *     count of availableInstances values to be returned.
+ *
+ *   vgpuTypeIds [IN]
+ *     This parameter specifies a total of numVgpuTypes vGPU type IDs for which
+ *     the available instances are to be queried.
+ *
+ *   availableInstances [OUT]
+ *     This parameter returns a total of numVgpuTypes available instances for
+ *     the respective vGPU type IDs supplied in vgpuTypeIds input parameter.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_EVENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_INVALID_STATE
+ *
+ */
+
+#define NV0000_CTRL_CMD_VGPU_GET_INSTANCES (0xc03) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS {
+    NvU32 gpuPciId;
+    NvU32 gpuPciBdf;
+    NvU32 numVgpuTypes;
+    NvU32 vgpuTypeIds[NVA081_MAX_VGPU_TYPES_PER_PGPU];
+    NvU32 availableInstances[NVA081_MAX_VGPU_TYPES_PER_PGPU];
+} NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_DELETE_DEVICE
+ *
+ * This command informs RM to delete a vGPU device on KVM.
+ *
+ *   vgpuName [IN]
+ *     This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *     or vfio-pci-core framework is used.
+ *
+ *   vgpuId [IN]
+ *     This parameter provides the vgpu id allocated by RM for the device to be
+ *     deleted.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_EVENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_CLIENT
+ *
+ */
+
+#define NV0000_CTRL_CMD_VGPU_DELETE_DEVICE (0xc04) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
+    NvU16 vgpuId;
+} NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS
+ *
+ * This command informs RM the status of vgpu-vfio GPU operations such as probe and unregister.
+ *
+ *   returnStatus [IN]
+ *     This parameter provides the status of vgpu-vfio GPU operation.
+ *
+ *   gpuPciId [IN]
+ *     This parameter provides the gpu id of the GPU
+ */
+
+#define NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS (0xc05) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS {
+    NvU32 returnStatus;
+    NvU32 gpuId;
+} NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_GPU_UPDATE_SYSFS_NODE
+ *
+ * This command will get/set the information of following sysfs node:
+ *      gpuInstanceId
+ *      placementId
+ *
+ * vgpuName [IN]
+ *      This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *      or vfio-pci-core framework is used.
+ *
+ * mode [IN]
+ *      This parameter provides info about the type of operation this cmd will perform.
+ *
+ * sysfs_val [IN/OUT]
+ *      This parameter will store the info of placementID/gpuInstanceId.
+ *
+ */
+
+#define NV0000_CTRL_CMD_GPU_UPDATE_SYSFS_NODE (0x206U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
+    NvU32 mode;
+    NvU32 sysfs_val;
+} NV0000_CTRL_GPU_UPDATE_SYSFS_NODE_PARAMS;
+
+/* _ctrl0000vgpu_h_ */

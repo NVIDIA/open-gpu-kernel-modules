@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,11 +31,12 @@
 #include "rmapi/rs_utils.h"
 
 #include "entry_points.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
-static NvU32
+static NvU64
 _getMappingPageSize
 (
     RsResourceRef *pMappableRef
@@ -65,7 +66,7 @@ serverInterMap_Prologue
     NV_STATUS   rmStatus = NV_OK;
     NvU64       offset = pParams->offset;
     NvU64       length = pParams->length;
-
+    NvU32       gpuMask = 0;
     MEMORY_DESCRIPTOR *pSrcMemDesc = NULL;
     NvHandle    hBroadcastDevice;
     NvBool      bSubdeviceHandleProvided;
@@ -85,6 +86,7 @@ serverInterMap_Prologue
             return NV_ERR_INVALID_OBJECT;
 
         pGpu = GPU_RES_GET_GPU(pSubdevice);
+        pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
         hBroadcastDevice = RES_GET_HANDLE(pSubdevice->pDevice);
@@ -113,7 +115,7 @@ serverInterMap_Prologue
 
         if (pVirtualMemory != NULL)
         {
-            NvU32 pageSize = RM_PAGE_SIZE;
+            NvU64 pageSize = RM_PAGE_SIZE;
 
             if (pVirtualMemory->bOptimizePageTableMempoolUsage)
             {
@@ -121,14 +123,10 @@ serverInterMap_Prologue
             }
 
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-               virtmemReserveMempool(pVirtualMemory, pGpu, hBroadcastDevice,
+               virtmemReserveMempool(pVirtualMemory, pGpu, pDevice,
                                      pParams->length, pageSize));
         }
     }
-
-    rmStatus = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE, pParams->pLockInfo, pReleaseFlags);
-    if (rmStatus != NV_OK)
-        return rmStatus;
 
     pPrivate->pGpu = pGpu;
 
@@ -149,26 +147,37 @@ serverInterMap_Prologue
     pSrcMemDesc = memInterMapParams.pSrcMemDesc;
     NV_ASSERT_OR_RETURN(pSrcMemDesc != NULL, NV_ERR_INVALID_OBJECT_HANDLE);
 
+    if (memInterMapParams.pGpu != NULL)
+    {
+        gpuMask |= gpumgrGetGpuMask(memInterMapParams.pGpu);
+    }
+    if (memInterMapParams.pSrcGpu != NULL)
+    {
+        gpuMask |= gpumgrGetGpuMask(memInterMapParams.pSrcGpu);
+    }
+
+    rmStatus = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE, pParams->pLockInfo, pReleaseFlags, gpuMask);
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
     pPrivate->pSrcGpu = memInterMapParams.pSrcGpu;
     pPrivate->hMemoryDevice = memInterMapParams.hMemoryDevice;
-    pPrivate->bDmaMapNeeded = memInterMapParams.bDmaMapNeeded;
     pPrivate->bFlaMapping   = memInterMapParams.bFlaMapping;
 
     // Check length for overflow and against the physical memory size.
     if (((offset + length) < offset) ||
         ((offset + length) > pSrcMemDesc->Size))
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "Mapping offset 0x%llX or length 0x%llX out of bounds!\n",
                   offset, length);
-        DBG_BREAKPOINT();
         return NV_ERR_INVALID_LIMIT;
     }
 
     if (memdescGetFlag(memdescGetMemDescFromGpu(pSrcMemDesc, pGpu), MEMDESC_FLAGS_DEVICE_READ_ONLY) &&
         !FLD_TEST_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, pParams->flags))
     {
-        NV_PRINTF(LEVEL_ERROR, "Attempting to map READ_ONLY surface as READ_WRITE / WRITE_ONLY!\n");
+        NV_PRINTF(LEVEL_NOTICE, "Attempting to map READ_ONLY surface as READ_WRITE / WRITE_ONLY!\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -280,41 +289,28 @@ serverInterUnmap_Epilogue
 static NV_STATUS
 _rmapiRmUnmapMemoryDma
 (
-    NvHandle            hClient,
-    NvHandle            hDevice,
-    NvHandle            hMemCtx,
-    NvHandle            hMemory,
-    NvU32               flags,
-    NvU64               dmaOffset,
+    NVOS47_PARAMETERS  *pParms,
     RS_LOCK_INFO       *pLockInfo,
     API_SECURITY_INFO  *pSecInfo
 )
 {
     RsClient           *pRsClient   = NULL;
-    MEMORY_DESCRIPTOR  *pMemDesc    = NULL;
-    Memory             *pMemory     = NULL;
 
     RS_INTER_UNMAP_PARAMS params;
     RS_INTER_UNMAP_PRIVATE private;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-
-    // Translate hMemory to pMemDesc
-    if (memGetByHandle(pRsClient, hMemory, &pMemory) == NV_OK)
-    {
-        pMemDesc = pMemory->pMemDesc;
-    }
+    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, pParms->hClient, &pRsClient));
 
     portMemSet(&params, 0, sizeof(params));
-    params.hClient = hClient;
-    params.hMapper = hMemCtx;
-    params.hDevice = hDevice;
-    params.hMappable = hMemory;
-    params.flags = flags;
-    params.dmaOffset = dmaOffset;
-    params.pMemDesc = pMemDesc;
+    params.hClient = pParms->hClient;
+    params.hMapper = pParms->hDma;
+    params.hDevice = pParms->hDevice;
+    params.flags = pParms->flags;
+    params.dmaOffset = pParms->dmaOffset;
     params.pLockInfo = pLockInfo;
     params.pSecInfo = pSecInfo;
+
+    params.size = pParms->size;
 
     portMemSet(&private, 0, sizeof(private));
     params.pPrivate = &private;
@@ -325,36 +321,21 @@ _rmapiRmUnmapMemoryDma
 NV_STATUS
 rmapiMap
 (
-    RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvHandle  hMemory,
-    NvU64     offset,
-    NvU64     length,
-    NvU32     flags,
-    NvU64    *pDmaOffset
+    RM_API            *pRmApi,
+    NVOS46_PARAMETERS *pParms
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->MapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, offset,
-                                  length, flags, pDmaOffset, &pRmApi->defaultSecInfo);
+    return pRmApi->MapWithSecInfo(pRmApi, pParms, &pRmApi->defaultSecInfo);
 }
 
 NV_STATUS
 rmapiMapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -365,35 +346,54 @@ rmapiMapWithSecInfo
     RS_LOCK_INFO lockInfo;
 
     NV_PRINTF(LEVEL_INFO,
-              "Nv04Map: client:0x%x device:0x%x context:0x%x memory:0x%x flags:0x%x\n",
-              hClient, hDevice, hMemCtx, hMemory, flags);
+              "Nv04Map: client:0x%x device:0x%x context:0x%x memory:0x%x flags:0x%x flags2:0x%x\n",
+              pParms->hClient, pParms->hDevice, pParms->hDma, pParms->hMemory, pParms->flags, pParms->flags2);
     NV_PRINTF(LEVEL_INFO,
               "Nv04Map:  offset:0x%llx length:0x%llx dmaOffset:0x%08llx\n",
-              offset, length, *pDmaOffset);
+              pParms->offset, pParms->length, pParms->dmaOffset);
 
-    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04Map 0x%x\n", flags);
+    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04Map 0x%x\n", pParms->flags);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, pParms->hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
+
     lockInfo.flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK |
                       RM_LOCK_FLAGS_NO_GPUS_LOCK;
+
+    //
+    // In the RTD3 case, the API lock isn't taken since it can be initiated
+    // from another thread that holds the API lock and because we now hold
+    // the GPU lock.
+    //
+    if (rmapiInRtd3PmPath())
+    {
+        lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+        lockInfo.state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
+    }
 
     LOCK_METER_DATA(MAPMEM_DMA, flags, 0, 0);
 
 
     portMemSet(&params, 0, sizeof(params));
-    params.hClient = hClient;
-    params.hMapper = hMemCtx;
-    params.hDevice = hDevice;
-    params.hMappable = hMemory;
-    params.offset = offset;
-    params.length = length;
-    params.flags = flags;
-    params.dmaOffset = *pDmaOffset;
+    params.hClient = pParms->hClient;
+    params.hMapper = pParms->hDma;
+    params.hDevice = pParms->hDevice;
+    params.hMappable = pParms->hMemory;
+    params.offset = pParms->offset;
+    params.length = pParms->length;
+    params.flags = pParms->flags;
+    params.flags2 = pParms->flags2;
+    params.kindOverride = pParms->kindOverride;
+    params.dmaOffset = pParms->dmaOffset;
     params.pLockInfo = &lockInfo;
     params.pSecInfo = pSecInfo;
 
@@ -403,18 +403,18 @@ rmapiMapWithSecInfo
     // map DMA memory
     status = serverInterMap(&g_resServ, &params);
 
-    *pDmaOffset = params.dmaOffset;
+    pParms->dmaOffset = params.dmaOffset;
 
     rmapiEpilogue(pRmApi, &rmApiContext);
 
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Nv04Map: map complete\n");
-        NV_PRINTF(LEVEL_INFO, "Nv04Map:  dmaOffset: 0x%08llx\n", *pDmaOffset);
+        NV_PRINTF(LEVEL_INFO, "Nv04Map:  dmaOffset: 0x%08llx\n", pParms->dmaOffset);
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR, "Nv04Map: map failed; status: %s (0x%08x)\n",
+        NV_PRINTF(LEVEL_INFO, "Nv04Map: map failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
     }
 
@@ -425,14 +425,7 @@ NV_STATUS
 rmapiMapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU64              offset,
-    NvU64              length,
-    NvU32              flags,
-    NvU64             *pDmaOffset,
+    NVOS46_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -441,8 +434,7 @@ rmapiMapWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiMapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, offset,
-                                 length, flags, pDmaOffset, pSecInfo);
+    status = rmapiMapWithSecInfo(pRmApi, pParms, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
@@ -452,32 +444,21 @@ rmapiMapWithSecInfoTls
 NV_STATUS
 rmapiUnmap
 (
-    RM_API   *pRmApi,
-    NvHandle  hClient,
-    NvHandle  hDevice,
-    NvHandle  hMemCtx,
-    NvHandle  hMemory,
-    NvU32     flags,
-    NvU64     dmaOffset
+    RM_API            *pRmApi,
+    NVOS47_PARAMETERS *pParms
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->UnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory,
-                                    flags, dmaOffset, &pRmApi->defaultSecInfo);
+    return pRmApi->UnmapWithSecInfo(pRmApi, pParms, &pRmApi->defaultSecInfo);
 }
 
 NV_STATUS
 rmapiUnmapWithSecInfo
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU32              flags,
-    NvU64              dmaOffset,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -486,25 +467,29 @@ rmapiUnmapWithSecInfo
     RS_LOCK_INFO                  lockInfo;
 
     NV_PRINTF(LEVEL_INFO,
-              "Nv04Unmap: client:0x%x device:0x%x context:0x%x memory:0x%x\n",
-              hClient, hDevice, hMemCtx, hMemory);
-    NV_PRINTF(LEVEL_INFO, "Nv04Unmap:  flags:0x%x dmaOffset:0x%08llx\n",
-              flags, dmaOffset);
+              "Nv04Unmap: client:0x%x device:0x%x context:0x%x\n",
+              pParms->hClient, pParms->hDevice, pParms->hDma);
+    NV_PRINTF(LEVEL_INFO, "Nv04Unmap:  flags:0x%x dmaOffset:0x%08llx size:0x%llx\n",
+              pParms->flags, pParms->dmaOffset, pParms->size);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, pParms->hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
     lockInfo.flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK |
                       RM_LOCK_FLAGS_NO_GPUS_LOCK;
 
-    LOCK_METER_DATA(UNMAPMEM_DMA, flags, 0, 0);
+    LOCK_METER_DATA(UNMAPMEM_DMA, pParms->flags, 0, 0);
 
     // Unmap DMA memory
-    status = _rmapiRmUnmapMemoryDma(hClient, hDevice, hMemCtx, hMemory, flags,
-                                    dmaOffset, &lockInfo, pSecInfo);
+    status = _rmapiRmUnmapMemoryDma(pParms, &lockInfo, pSecInfo);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
 
@@ -514,7 +499,7 @@ rmapiUnmapWithSecInfo
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Nv04Unmap: ummap failed; status: %s (0x%08x)\n",
                   nvstatusToString(status), status);
     }
@@ -526,12 +511,7 @@ NV_STATUS
 rmapiUnmapWithSecInfoTls
 (
     RM_API            *pRmApi,
-    NvHandle           hClient,
-    NvHandle           hDevice,
-    NvHandle           hMemCtx,
-    NvHandle           hMemory,
-    NvU32              flags,
-    NvU64              dmaOffset,
+    NVOS47_PARAMETERS *pParms,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -540,7 +520,7 @@ rmapiUnmapWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiUnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, flags, dmaOffset, pSecInfo);
+    status = rmapiUnmapWithSecInfo(pRmApi, pParms, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 

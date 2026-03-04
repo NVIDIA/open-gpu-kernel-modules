@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,38 +21,34 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvtypes.h"
+#pragma once
 
-#ifndef _clc5b5sw_h_
-#define _clc5b5sw_h_
+#include <nvtypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc5b5sw.finn
+//
 
-/* This file is *not* auto-generated. */
+
 
 //
 // Using VERSION_0 will cause the API to interpret
 // engineType as a CE engine instance.  This allows
 // for backward compatibility with 85B5sw and 90B5sw.
 //
-#define NVC5B5_ALLOCATION_PARAMETERS_VERSION_0  0
+#define NVC5B5_ALLOCATION_PARAMETERS_VERSION_0 0
 
 //
 // Using VERSION_1 will cause the API to interpret
 // engineType as an NV2080_ENGINE_TYPE ordinal.
 //
-#define NVC5B5_ALLOCATION_PARAMETERS_VERSION_1  1
+#define NVC5B5_ALLOCATION_PARAMETERS_VERSION_1 1
 
-typedef struct
-{
-    NvU32    version;
-    NvU32    engineType;
+#define NVC5B5_ALLOCATION_PARAMETERS_MESSAGE_ID (0xc5b5U)
+
+typedef struct NVC5B5_ALLOCATION_PARAMETERS {
+    NvU32 version;
+    NvU32 engineType;
 } NVC5B5_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-#endif // _clc5b5sw_h_
 

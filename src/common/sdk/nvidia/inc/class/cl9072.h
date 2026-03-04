@@ -21,33 +21,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl9072_h_
-#define _cl9072_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl9072.finn
+//
 
-#define GF100_DISP_SW                                                0x00009072
+#include "cl9072_notification.h"
 
-#define NV9072_NOTIFIERS_NOTIFY_ON_VBLANK                                   (9)
-#define NV9072_NOTIFICATION_STATUS_DONE_SUCCESS                        (0x0000)
+#define GF100_DISP_SW (0x9072U) /* finn: Evaluated from "NV9072_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
+#define NV9072_ALLOCATION_PARAMETERS_MESSAGE_ID (0x9072U)
 
-typedef struct
-{
-    NvU32   logicalHeadId;
+typedef struct NV9072_ALLOCATION_PARAMETERS {
+    NvU32 logicalHeadId;
     /*
      *  0 implies use Head argument only (i.e. whatever is currently setup on this head)
      */
-    NvU32   displayMask;
-    NvU32   caps;
+    NvU32 displayMask;
+    NvU32 caps;
 } NV9072_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl9072_h_ */

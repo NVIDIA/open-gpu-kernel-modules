@@ -24,12 +24,7 @@
 #ifndef HWBC_H
 #define HWBC_H
 
-#include "gpu/gpu.h"       // NBADDR, POBJGPU
-
-// HWBC_UPSTREAM_BUS_SPEED commands
-#define HWBC_UPSTREAM_BUS_SPEED_GEN1PCIE                   1
-#define HWBC_UPSTREAM_BUS_SPEED_GEN2PCIE                   2
-#define HWBC_UPSTREAM_BUS_SPEED_GEN3PCIE                   3
+#include "gpu/gpu.h"       // NBADDR, OBJGPU
 
 /**************** Resource Manager Defines and Structures ******************\
 *                                                                           *
@@ -38,38 +33,12 @@
 *                                                                           *
 \***************************************************************************/
 struct OBJCL;
-typedef struct OBJHWBC *POBJHWBC;
 typedef struct OBJHWBC OBJHWBC;
-typedef struct HWBC_APERTURE *PHWBC_APERTURE;
-typedef struct HWBC_APERTURE HWBC_APERTURE;
 
-// These values define maximum number of targets/apertures to be supported in
-// the OBJHWBC object.
-#define NUM_HWBC_TARGETS                                            4
-#define NUM_HWBC_APERTURES                                          3
 
-#define PCI_P2P_PRE_BL                                              0x00000024 /* RW-4R */
-#define PCI_P2P_PRE_BL_B64BIT                                              3:0 /* C--VF */
-#define PCI_P2P_PRE_BL_B64BIT_YES                                   0x00000001 /* C---V */
-#define PCI_P2P_PRE_BL_PREFETCH_MEM_BASE                                  15:4 /* RWIUF */
-#define PCI_P2P_PRE_BL_L64BIT                                            19:16 /* C--VF */
-#define PCI_P2P_PRE_BL_L64BIT_YES                                   0x00000001 /* C---V */
-#define PCI_P2P_PRE_BL_PREFETCH_MEM_LIMIT                                31:20 /* RWIUF */
-#define PCI_P2P_PRE_BU32                                            0x00000028 /* RW-4R */
-#define PCI_P2P_PRE_BU32_BASE_UPPER_BITS                                  31:0 /* RWIUF */
-#define PCI_P2P_PRE_LU32                                            0x0000002C /* RW-4R */
-#define PCI_P2P_PRE_LU32_LIMIT_UPPER_BITS                                 31:0 /* RWIUF */
-
-#define BR03_REG(p, i)                                              (p[NV_PES_XVU_ ## i / sizeof(*p)])
-
-#define BR03_BAR0_SIZE                                              (16*1024)
 #define BR03_GPU_REGISTER_ALIAS_OFFSET                              0x4FC000
 
 NvBool  objClSetPcieHWBC(OBJGPU *, OBJCL*); // Find all Broadcast resource in the higher hierarchy of the GPU
-
-// Disables ASPM on downstream ports of any BR04 A03 (or later) that is parent of device at 'bus'.
-NV_STATUS Nvidia_BR04_disableDownstreamASPM(NvU8);
-
 
 //
 // Bridge resource type
@@ -103,20 +72,6 @@ struct OBJHWBC
     NvU32 gpuMask;
 
     RmPhysAddr gpuPhysAddr;
-
-    //
-    // BR04: This array is indexed by GPU instance number.  If the GPU referred
-    // to by that instance is not behind this BR04 -1 is stored at that index;
-    // if it is behind this BR04 the downstream port it's behind is stored
-    // there.  The information is necessary to determine which BR04s must be
-    // involved to broadcast between some set of GPUs, and also to determine
-    // how to program redirection windows for unicast access.
-    //
-    NvS8 dpForGpuInstance[NV_MAX_DEVICES];
-
-    // For mapping state
-    NvS8  mappingTarget;
-    NvU32 mappingCount;
 
     // Private data
     NvBool          hasPlxFirmwareInfo;

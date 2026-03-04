@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -38,23 +38,28 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->utlb_per_gpc_count = uvm_ampere_get_utlbs_per_gpc(parent_gpu);
 
-    parent_gpu->fault_buffer_info.replayable.utlb_count = parent_gpu->rm_info.maxGpcCount * parent_gpu->utlb_per_gpc_count;
+    parent_gpu->fault_buffer.replayable.utlb_count = parent_gpu->rm_info.maxGpcCount * parent_gpu->utlb_per_gpc_count;
     {
         uvm_fault_buffer_entry_t *dummy;
-        UVM_ASSERT(parent_gpu->fault_buffer_info.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
+        UVM_ASSERT(parent_gpu->fault_buffer.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
     }
 
     // A single top level PDE on Ampere covers 128 TB and that's the minimum
     // size that can be used.
     parent_gpu->rm_va_base = 0;
-    parent_gpu->rm_va_size = 128ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->rm_va_size = 128 * UVM_SIZE_1TB;
 
-    parent_gpu->uvm_mem_va_base = 384ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->peer_va_base = parent_gpu->rm_va_base + parent_gpu->rm_va_size;
+    parent_gpu->peer_va_size = NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE;
+
+    parent_gpu->uvm_mem_va_base = 384 * UVM_SIZE_1TB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
-    parent_gpu->flat_vidmem_va_base = 132ull * 1024 * 1024 * 1024 * 1024;
-    parent_gpu->flat_sysmem_va_base = 256ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->flat_vidmem_va_base = 160 * UVM_SIZE_1TB;
+    parent_gpu->flat_sysmem_va_base = 256 * UVM_SIZE_1TB;
+
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     parent_gpu->peer_copy_mode = g_uvm_global.peer_copy_mode;
 
@@ -77,7 +82,7 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = true;
 
-    parent_gpu->access_counters_supported = true;
+    parent_gpu->access_counters_serialize_clear_ops_by_type = false;
 
     parent_gpu->fault_cancel_va_supported = true;
 
@@ -91,12 +96,22 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->sparse_mappings_supported = true;
 
+    parent_gpu->access_bits_supported = false;
+
     UVM_ASSERT(parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100);
     if (parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA100 ||
-        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA000)
+        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GA000) {
         parent_gpu->map_remap_larger_page_promotion = true;
-    else
+    }
+    else {
         parent_gpu->map_remap_larger_page_promotion = false;
+    }
 
     parent_gpu->plc_supported = true;
+
+    parent_gpu->ats.no_ats_range_required = false;
+
+    parent_gpu->ats.gmmu_pt_depth0_init_required = false;
+
+    parent_gpu->conf_computing.per_channel_key_rotation = false;
 }

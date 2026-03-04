@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,7 +83,7 @@
  * e.g. msvc compiler:
  *      error C2118: negative subscript or subscript is too large
  * e.g. gcc 2.95.3:
- *      size of array `_compile_time_assertion_failed_in_line_555' is negative
+ *      size of array '_compile_time_assertion_failed_in_line_555' is negative
  *
  * In case the condition 'b' is not constant, the msvc compiler throws
  * an error:
@@ -139,14 +139,14 @@
 // Adding this macro to fix MISRA 2012 rule 20.12
 #define NV_CTASSERT_STRINGIFY_MACRO(b) #b
 
-#if !defined(NVOC) && ((defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || CLANG_C_STATIC_ASSERT)
- // ISO C11 defines the _Static_assert keyword
-# define ct_assert(b)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b))
-# define ct_assert_i(b,line)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b)NV_CTASSERT_STRINGIFY_MACRO(line))
-#elif (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201103L)
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201103L)
  // ISO C++11 defines the static_assert keyword
 # define ct_assert(b)  static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b))
 # define ct_assert_i(b,line)  static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b)NV_CTASSERT_STRINGIFY_MACRO(line))
+#elif !defined(NVOC) && ((defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || CLANG_C_STATIC_ASSERT)
+ // ISO C11 defines the _Static_assert keyword
+# define ct_assert(b)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b))
+# define ct_assert_i(b,line)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b)NV_CTASSERT_STRINGIFY_MACRO(line))
 #else
  // For compilers which don't support ISO C11 or C++11, we fall back to an
  // array (type) declaration

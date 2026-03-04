@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_resserv_nvoc.h"
 
 #ifndef _RESSERV_H_
@@ -98,8 +99,6 @@ typedef struct RS_INTER_MAP_PRIVATE RS_INTER_MAP_PRIVATE;
 typedef struct RS_INTER_UNMAP_PRIVATE RS_INTER_UNMAP_PRIVATE;
 typedef struct RS_CPU_MAPPING_PRIVATE RS_CPU_MAPPING_PRIVATE;
 
-typedef struct RS_CPU_MAPPING_BACK_REF RS_CPU_MAPPING_BACK_REF;
-typedef struct RS_INTER_MAPPING_BACK_REF RS_INTER_MAPPING_BACK_REF;
 typedef struct RS_FREE_STACK RS_FREE_STACK;
 typedef struct CALL_CONTEXT CALL_CONTEXT;
 typedef struct ACCESS_CONTROL ACCESS_CONTROL;
@@ -118,7 +117,6 @@ class RsShared;
 MAKE_LIST(RsResourceRefList, RsResourceRef*);
 MAKE_LIST(RsResourceList, RsResource*);
 MAKE_LIST(RsHandleList, NvHandle);
-MAKE_LIST(RsClientList, CLIENT_ENTRY*);
 MAKE_LIST(RsShareList, RS_SHARE_POLICY);
 MAKE_MULTIMAP(RsIndex, RsResourceRef*);
 
@@ -136,13 +134,14 @@ typedef void *PUID_TOKEN;
 /// Client handles must start at this base value
 #define RS_CLIENT_HANDLE_BASE           0xC1D00000
 
-///
-/// Internal Client handles must start at this base value
-/// at either of these two bases
-///
+/// Internal Client handles start at this base value
 #define RS_CLIENT_INTERNAL_HANDLE_BASE  0xC1E00000
 
-#define RS_CLIENT_INTERNAL_HANDLE_BASE_EX  0xC1F00000
+/// VF Client handles start at this base value
+#define RS_CLIENT_VF_HANDLE_BASE        0xE0000000
+
+/// Get the VF client handle range for gfid
+#define RS_CLIENT_GET_VF_HANDLE_BASE(gfid) (RS_CLIENT_VF_HANDLE_BASE + ((gfid) - 1) * RS_CLIENT_HANDLE_MAX)
 
 //
 // Print a warning if any client's resource count exceeds this
@@ -150,8 +149,7 @@ typedef void *PUID_TOKEN;
 //
 #define RS_CLIENT_RESOURCE_WARNING_THRESHOLD 100000
 
-
-/// 0xFFFF max client handles.
+#define RS_CLIENT_HANDLE_MAX            0x100000 // Must be power of two
 #define RS_CLIENT_HANDLE_BUCKET_COUNT   0x400  // 1024
 #define RS_CLIENT_HANDLE_BUCKET_MASK    0x3FF
 
@@ -170,6 +168,7 @@ typedef void *PUID_TOKEN;
 #define RS_LOCK_FLAGS_NO_CUSTOM_LOCK_3          NVBIT(4)
 #define RS_LOCK_FLAGS_NO_DEPENDANT_SESSION_LOCK NVBIT(5)
 #define RS_LOCK_FLAGS_FREE_SESSION_LOCK         NVBIT(6)
+#define RS_LOCK_FLAGS_LOW_PRIORITY              NVBIT(7)
 
 /// RS_LOCK_STATE
 #define RS_LOCK_STATE_TOP_LOCK_ACQUIRED        NVBIT(0)
@@ -189,7 +188,7 @@ typedef void *PUID_TOKEN;
 #define RS_LOCK_RELEASE_SESSION_LOCK           NVBIT(5)
 
 /// API enumerations used for locking knobs
-typedef enum 
+typedef enum
 {
     RS_LOCK_CLIENT      =0,
     RS_LOCK_TOP         =1,
@@ -197,7 +196,7 @@ typedef enum
     RS_LOCK_CUSTOM_3    =3,
 } RS_LOCK_ENUM;
 
-typedef enum 
+typedef enum
 {
     RS_API_ALLOC_CLIENT     = 0,
     RS_API_ALLOC_RESOURCE   = 1,
@@ -276,6 +275,13 @@ struct CALL_CONTEXT
     RS_LOCK_INFO  *pLockInfo;       ///< Saved locking context information for the call
     API_SECURITY_INFO secInfo;
     RS_RES_CONTROL_PARAMS_INTERNAL  *pControlParams; ///< parameters of the call [optional]
+
+    void *pSerializedParams;        ///< Serialized version of the params
+    void *pDeserializedParams;      ///< Deserialized version of the params
+    NvU32 serializedSize;           ///< Serialized size
+    NvU32 deserializedSize;         ///< Deserialized size
+    NvBool bReserialize;            ///< Reserialize before calling into GSP
+    NvBool bLocalSerialization;     ///< Serialized internally
 };
 
 typedef enum {
@@ -317,6 +323,12 @@ struct ACCESS_CONTROL
 #define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst) \
     do { NV_ASSERT_OK(lockvalLockInit((lock), (lockClass), (inst))); } while(0)
 
+#define RS_SPINLOCK_ACQUIRE(lock)                            do \
+{                                                               \
+    NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
+    portSyncSpinlockAcquire((lock))  ;                          \
+    lockvalPostAcquire((validator), LOCK_VAL_SPINLOCK);         \
+
 #define RS_RWLOCK_ACQUIRE_READ(lock, validator)              do \
 {                                                               \
     NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
@@ -329,6 +341,17 @@ struct ACCESS_CONTROL
     NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
     portSyncRwLockAcquireWrite((lock));                         \
     lockvalPostAcquire((validator), LOCK_VAL_WLOCK);            \
+} while(0)
+
+#define RS_SPINLOCK_RELEASE_EXT(lock, validator, bOutOfOrder)                                                       do \
+{                                                                                                                      \
+    void *pLockValTlsEntry, *pReleasedLockNode;                                                                        \
+    if (bOutOfOrder)                                                                                                   \
+        NV_ASSERT_OK(lockvalReleaseOutOfOrder((validator), LOCK_VAL_SPINLOCK, &pLockValTlsEntry, &pReleasedLockNode)); \
+    else                                                                                                               \
+        NV_ASSERT_OK(lockvalRelease((validator), LOCK_VAL_SPINLOCK, &pLockValTlsEntry, &pReleasedLockNode));           \
+    portSyncSpinlockRelease((lock));                                                                                   \
+    lockvalMemoryRelease(pLockValTlsEntry, pReleasedLockNode);                                                         \
 } while(0)
 
 #define RS_RWLOCK_RELEASE_READ_EXT(lock, validator, bOutOfOrder)                                                 do \
@@ -354,13 +377,16 @@ struct ACCESS_CONTROL
 } while(0)
 
 #else
-#define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst)    
+#define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst)
+#define RS_SPINLOCK_ACQUIRE(lock, validator)                        do { portSyncSpinlockAcquire((lock)); } while(0)
 #define RS_RWLOCK_ACQUIRE_READ(lock, validator)                     do { portSyncRwLockAcquireRead((lock)); } while(0)
 #define RS_RWLOCK_ACQUIRE_WRITE(lock, validator)                    do { portSyncRwLockAcquireWrite((lock)); } while(0)
+#define RS_SPINLOCK_RELEASE_EXT(lock, validator, bOutOfOrder)       do { portSyncSpinlockRelease((lock)); } while(0)
 #define RS_RWLOCK_RELEASE_READ_EXT(lock, validator, bOutOfOrder)    do { portSyncRwLockReleaseRead((lock)); } while(0)
 #define RS_RWLOCK_RELEASE_WRITE_EXT(lock, validator, bOutOfOrder)   do { portSyncRwLockReleaseWrite((lock)); } while(0)
 #endif
 
+#define RS_SPINLOCK_RELEASE(lock, validator)       RS_SPINLOCK_RELEASE_EXT(lock, validator, NV_FALSE)
 #define RS_RWLOCK_RELEASE_READ(lock, validator)    RS_RWLOCK_RELEASE_READ_EXT(lock, validator, NV_FALSE)
 #define RS_RWLOCK_RELEASE_WRITE(lock, validator)   RS_RWLOCK_RELEASE_WRITE_EXT(lock, validator, NV_FALSE)
 

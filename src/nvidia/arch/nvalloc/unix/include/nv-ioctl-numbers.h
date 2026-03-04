@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,5 +39,6 @@
 #define NV_ESC_QUERY_DEVICE_INTR     (NV_IOCTL_BASE + 13)
 #define NV_ESC_SYS_PARAMS            (NV_IOCTL_BASE + 14)
 #define NV_ESC_EXPORT_TO_DMABUF_FD   (NV_IOCTL_BASE + 17)
+#define NV_ESC_WAIT_OPEN_COMPLETE    (NV_IOCTL_BASE + 18)
 
 #endif

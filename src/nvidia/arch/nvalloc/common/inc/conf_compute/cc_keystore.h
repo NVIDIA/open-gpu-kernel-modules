@@ -1,0 +1,487 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+#ifndef CC_KEYSTORE_H
+#define CC_KEYSTORE_H
+
+//
+// Keys are typically grouped in two's so that the first key is used for CPU-to-GPU encryption
+// and the second key is used for GPU-to-CPU encryption.
+//
+
+// Keyspace identifiers.
+enum
+{
+    CC_KEYSPACE_GSP,
+    CC_KEYSPACE_SEC2,
+    CC_KEYSPACE_LCE0,
+    CC_KEYSPACE_LCE1,
+    CC_KEYSPACE_LCE2,
+    CC_KEYSPACE_LCE3,
+    CC_KEYSPACE_LCE4,
+    CC_KEYSPACE_LCE5,
+    CC_KEYSPACE_LCE6,
+    CC_KEYSPACE_LCE7,
+    CC_KEYSPACE_LCE10,
+    CC_KEYSPACE_LCE11,
+    CC_KEYSPACE_LCE12,
+    CC_KEYSPACE_LCE13,
+    CC_KEYSPACE_LCE14,
+    CC_KEYSPACE_LCE15,
+    CC_KEYSPACE_LCE16,
+    CC_KEYSPACE_LCE17,
+    CC_KEYSPACE_SIZE // This is always the last element.
+};
+
+#define CC_KEYSPACE_SIZE_GH100 (CC_KEYSPACE_LCE7 + 1)
+
+enum
+{
+    CC_LKEYID_CPU_GSP_LOCKED_RPC,
+    CC_LKEYID_GSP_CPU_LOCKED_RPC,
+    CC_LKEYID_CPU_GSP_DMA,
+    CC_LKEYID_GSP_CPU_DMA,
+    CC_LKEYID_CPU_GSP_RESERVED1,
+    CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT,
+    CC_LKEYID_CPU_GSP_RESERVED2,
+    CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT,
+    CC_LKEYID_SEC2_GSP_LOCKED_RPC,
+    CC_LKEYID_GSP_SEC2_LOCKED_RPC,
+    CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING,
+    CC_LKEYID_GSP_CPU_RESERVED_1,
+    CC_KEYSPACE_GSP_SIZE // This is always the last element.
+};
+// The fault buffers only support GPU-to-CPU encryption, so the CPU-to-GPU encryption slot
+// is left reserved.
+
+#define CC_LKEYID_GSP_CPU_LOCKED_RPC_STR           "gsp_cpu_locked_rpc"
+#define CC_LKEYID_CPU_GSP_LOCKED_RPC_STR           "cpu_gsp_locked_rpc"
+#define CC_LKEYID_GSP_CPU_DMA_STR                  "gsp_cpu_dma"
+#define CC_LKEYID_CPU_GSP_DMA_STR                  "cpu_gsp_dma"
+#define CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR     "gsp_cpu_replayable_fault"
+#define CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR "gsp_cpu_non_replayable_fault"
+#define CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR    "cpu_gsp_nvle_p2p_wrapping"
+
+enum
+{
+    CC_LKEYID_CPU_SEC2_DATA_USER,
+    CC_LKEYID_CPU_SEC2_HMAC_USER,
+    CC_LKEYID_CPU_SEC2_DATA_KERN,
+    CC_LKEYID_CPU_SEC2_HMAC_KERN,
+    CC_LKEYID_CPU_SEC2_DATA_SCRUBBER,
+    CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER,
+    CC_KEYSPACE_SEC2_SIZE // This is always the last element.
+};
+
+#define CC_LKEYID_CPU_SEC2_DATA_USER_STR     "cpu_sec2_data_user"
+#define CC_LKEYID_CPU_SEC2_HMAC_USER_STR     "cpu_sec2_hmac_user"
+#define CC_LKEYID_CPU_SEC2_DATA_KERN_STR     "cpu_sec2_data_kernel"
+#define CC_LKEYID_CPU_SEC2_HMAC_KERN_STR     "cpu_sec2_hmac_kernel"
+#define CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR "cpu_sec2_data_scrubber"
+#define CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR "cpu_sec2_hmac_scrubber"
+
+enum
+{
+    CC_LKEYID_LCE_H2D_USER,
+    CC_LKEYID_LCE_D2H_USER,
+    CC_LKEYID_LCE_H2D_KERN,
+    CC_LKEYID_LCE_D2H_KERN,
+    CC_LKEYID_LCE_H2D_P2P,
+    CC_LKEYID_LCE_D2H_P2P,
+    CC_KEYSPACE_LCE_SIZE // This is always the last element.
+};
+
+
+#define CC_KEYSPACE_TOTAL_SIZE (CC_KEYSPACE_GSP_SIZE + CC_KEYSPACE_SEC2_SIZE + (16 * CC_KEYSPACE_LCE_SIZE))
+#define CC_LKEYID_LCE0_H2D_USER_STR "Lce00_h2d_user"
+#define CC_LKEYID_LCE0_D2H_USER_STR "Lce00_d2h_user"
+#define CC_LKEYID_LCE0_H2D_KERN_STR "Lce00_h2d_kernel"
+#define CC_LKEYID_LCE0_D2H_KERN_STR "Lce00_d2h_kernel"
+#define CC_LKEYID_LCE0_H2D_P2P_STR  "Lce00_h2d_p2p"
+#define CC_LKEYID_LCE0_D2H_P2P_STR  "Lce00_d2h_p2p"
+
+#define CC_LKEYID_LCE1_H2D_USER_STR "Lce01_h2d_user"
+#define CC_LKEYID_LCE1_D2H_USER_STR "Lce01_d2h_user"
+#define CC_LKEYID_LCE1_H2D_KERN_STR "Lce01_h2d_kernel"
+#define CC_LKEYID_LCE1_D2H_KERN_STR "Lce01_d2h_kernel"
+#define CC_LKEYID_LCE1_H2D_P2P_STR  "Lce01_h2d_p2p"
+#define CC_LKEYID_LCE1_D2H_P2P_STR  "Lce01_d2h_p2p"
+
+#define CC_LKEYID_LCE2_H2D_USER_STR "Lce02_h2d_user"
+#define CC_LKEYID_LCE2_D2H_USER_STR "Lce02_d2h_user"
+#define CC_LKEYID_LCE2_H2D_KERN_STR "Lce02_h2d_kernel"
+#define CC_LKEYID_LCE2_D2H_KERN_STR "Lce02_d2h_kernel"
+#define CC_LKEYID_LCE2_H2D_P2P_STR  "Lce02_h2d_p2p"
+#define CC_LKEYID_LCE2_D2H_P2P_STR  "Lce02_d2h_p2p"
+
+#define CC_LKEYID_LCE3_H2D_USER_STR "Lce03_h2d_user"
+#define CC_LKEYID_LCE3_D2H_USER_STR "Lce03_d2h_user"
+#define CC_LKEYID_LCE3_H2D_KERN_STR "Lce03_h2d_kernel"
+#define CC_LKEYID_LCE3_D2H_KERN_STR "Lce03_d2h_kernel"
+#define CC_LKEYID_LCE3_H2D_P2P_STR  "Lce03_h2d_p2p"
+#define CC_LKEYID_LCE3_D2H_P2P_STR  "Lce03_d2h_p2p"
+
+#define CC_LKEYID_LCE4_H2D_USER_STR "Lce04_h2d_user"
+#define CC_LKEYID_LCE4_D2H_USER_STR "Lce04_d2h_user"
+#define CC_LKEYID_LCE4_H2D_KERN_STR "Lce04_h2d_kernel"
+#define CC_LKEYID_LCE4_D2H_KERN_STR "Lce04_d2h_kernel"
+#define CC_LKEYID_LCE4_H2D_P2P_STR  "Lce04_h2d_p2p"
+#define CC_LKEYID_LCE4_D2H_P2P_STR  "Lce04_d2h_p2p"
+
+#define CC_LKEYID_LCE5_H2D_USER_STR "Lce05_h2d_user"
+#define CC_LKEYID_LCE5_D2H_USER_STR "Lce05_d2h_user"
+#define CC_LKEYID_LCE5_H2D_KERN_STR "Lce05_h2d_kernel"
+#define CC_LKEYID_LCE5_D2H_KERN_STR "Lce05_d2h_kernel"
+#define CC_LKEYID_LCE5_H2D_P2P_STR  "Lce05_h2d_p2p"
+#define CC_LKEYID_LCE5_D2H_P2P_STR  "Lce05_d2h_p2p"
+
+#define CC_LKEYID_LCE6_H2D_USER_STR "Lce06_h2d_user"
+#define CC_LKEYID_LCE6_D2H_USER_STR "Lce06_d2h_user"
+#define CC_LKEYID_LCE6_H2D_KERN_STR "Lce06_h2d_kernel"
+#define CC_LKEYID_LCE6_D2H_KERN_STR "Lce06_d2h_kernel"
+#define CC_LKEYID_LCE6_H2D_P2P_STR  "Lce06_h2d_p2p"
+#define CC_LKEYID_LCE6_D2H_P2P_STR  "Lce06_d2h_p2p"
+
+#define CC_LKEYID_LCE7_H2D_USER_STR "Lce07_h2d_user"
+#define CC_LKEYID_LCE7_D2H_USER_STR "Lce07_d2h_user"
+#define CC_LKEYID_LCE7_H2D_KERN_STR "Lce07_h2d_kernel"
+#define CC_LKEYID_LCE7_D2H_KERN_STR "Lce07_d2h_kernel"
+#define CC_LKEYID_LCE7_H2D_P2P_STR  "Lce07_h2d_p2p"
+#define CC_LKEYID_LCE7_D2H_P2P_STR  "Lce07_d2h_p2p"
+
+#define CC_LKEYID_LCE10_H2D_USER_STR "Lce10_h2d_user"
+#define CC_LKEYID_LCE10_D2H_USER_STR "Lce10_d2h_user"
+#define CC_LKEYID_LCE10_H2D_KERN_STR "Lce10_h2d_kernel"
+#define CC_LKEYID_LCE10_D2H_KERN_STR "Lce10_d2h_kernel"
+#define CC_LKEYID_LCE10_H2D_P2P_STR  "Lce10_h2d_p2p"
+#define CC_LKEYID_LCE10_D2H_P2P_STR  "Lce10_d2h_p2p"
+
+#define CC_LKEYID_LCE11_H2D_USER_STR "Lce11_h2d_user"
+#define CC_LKEYID_LCE11_D2H_USER_STR "Lce11_d2h_user"
+#define CC_LKEYID_LCE11_H2D_KERN_STR "Lce11_h2d_kernel"
+#define CC_LKEYID_LCE11_D2H_KERN_STR "Lce11_d2h_kernel"
+#define CC_LKEYID_LCE11_H2D_P2P_STR  "Lce11_h2d_p2p"
+#define CC_LKEYID_LCE11_D2H_P2P_STR  "Lce11_d2h_p2p"
+
+#define CC_LKEYID_LCE12_H2D_USER_STR "Lce12_h2d_user"
+#define CC_LKEYID_LCE12_D2H_USER_STR "Lce12_d2h_user"
+#define CC_LKEYID_LCE12_H2D_KERN_STR "Lce12_h2d_kernel"
+#define CC_LKEYID_LCE12_D2H_KERN_STR "Lce12_d2h_kernel"
+#define CC_LKEYID_LCE12_H2D_P2P_STR  "Lce12_h2d_p2p"
+#define CC_LKEYID_LCE12_D2H_P2P_STR  "Lce12_d2h_p2p"
+
+#define CC_LKEYID_LCE13_H2D_USER_STR "Lce13_h2d_user"
+#define CC_LKEYID_LCE13_D2H_USER_STR "Lce13_d2h_user"
+#define CC_LKEYID_LCE13_H2D_KERN_STR "Lce13_h2d_kernel"
+#define CC_LKEYID_LCE13_D2H_KERN_STR "Lce13_d2h_kernel"
+#define CC_LKEYID_LCE13_H2D_P2P_STR  "Lce13_h2d_p2p"
+#define CC_LKEYID_LCE13_D2H_P2P_STR  "Lce13_d2h_p2p"
+
+#define CC_LKEYID_LCE14_H2D_USER_STR "Lce14_h2d_user"
+#define CC_LKEYID_LCE14_D2H_USER_STR "Lce14_d2h_user"
+#define CC_LKEYID_LCE14_H2D_KERN_STR "Lce14_h2d_kernel"
+#define CC_LKEYID_LCE14_D2H_KERN_STR "Lce14_d2h_kernel"
+#define CC_LKEYID_LCE14_H2D_P2P_STR  "Lce14_h2d_p2p"
+#define CC_LKEYID_LCE14_D2H_P2P_STR  "Lce14_d2h_p2p"
+
+#define CC_LKEYID_LCE15_H2D_USER_STR "Lce15_h2d_user"
+#define CC_LKEYID_LCE15_D2H_USER_STR "Lce15_d2h_user"
+#define CC_LKEYID_LCE15_H2D_KERN_STR "Lce15_h2d_kernel"
+#define CC_LKEYID_LCE15_D2H_KERN_STR "Lce15_d2h_kernel"
+#define CC_LKEYID_LCE15_H2D_P2P_STR  "Lce15_h2d_p2p"
+#define CC_LKEYID_LCE15_D2H_P2P_STR  "Lce15_d2h_p2p"
+
+#define CC_LKEYID_LCE16_H2D_USER_STR "Lce16_h2d_user"
+#define CC_LKEYID_LCE16_D2H_USER_STR "Lce16_d2h_user"
+#define CC_LKEYID_LCE16_H2D_KERN_STR "Lce16_h2d_kernel"
+#define CC_LKEYID_LCE16_D2H_KERN_STR "Lce16_d2h_kernel"
+#define CC_LKEYID_LCE16_H2D_P2P_STR  "Lce16_h2d_p2p"
+#define CC_LKEYID_LCE16_D2H_P2P_STR  "Lce16_d2h_p2p"
+
+#define CC_LKEYID_LCE17_H2D_USER_STR "Lce17_h2d_user"
+#define CC_LKEYID_LCE17_D2H_USER_STR "Lce17_d2h_user"
+#define CC_LKEYID_LCE17_H2D_KERN_STR "Lce17_h2d_kernel"
+#define CC_LKEYID_LCE17_D2H_KERN_STR "Lce17_d2h_kernel"
+#define CC_LKEYID_LCE17_H2D_P2P_STR  "Lce17_h2d_p2p"
+#define CC_LKEYID_LCE17_D2H_P2P_STR  "Lce17_d2h_p2p"
+
+// Generate a global key ID from a keyspace (a) and local key ID (b).
+#define CC_GKEYID_GEN(a, b) (NvU32)(((a) << 16) | (b))
+
+// Get the keyspace component from a global key ID.
+#define CC_GKEYID_GET_KEYSPACE(a) (NvU16)((a) >> 16)
+
+// Get the local key ID from a global key ID.
+#define CC_GKEYID_GET_LKEYID(a) (NvU16)((a) & 0xffff)
+
+// Decrement/increment the local key ID portion of a global key ID.
+#define CC_GKEYID_DEC_LKEYID(a) CC_GKEYID_GEN(CC_GKEYID_GET_KEYSPACE((a)), CC_GKEYID_GET_LKEYID((a)) - 1)
+#define CC_GKEYID_INC_LKEYID(a) CC_GKEYID_GEN(CC_GKEYID_GET_KEYSPACE((a)), CC_GKEYID_GET_LKEYID((a)) + 1)
+
+// Get the unqiue string from a global key ID.
+#define CC_GKEYID_GET_STR(a) \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_GSP) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_LOCKED_RPC) ? \
+            CC_LKEYID_GSP_CPU_LOCKED_RPC_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_GSP_LOCKED_RPC) ? \
+            CC_LKEYID_CPU_GSP_LOCKED_RPC_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_DMA) ? \
+            CC_LKEYID_GSP_CPU_DMA_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_GSP_DMA) ? \
+            CC_LKEYID_CPU_GSP_DMA_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT) ? \
+            CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT) ? \
+            CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING) ? \
+            CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_SEC2) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_USER) ? \
+            CC_LKEYID_CPU_SEC2_DATA_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_USER) ? \
+            CC_LKEYID_CPU_SEC2_HMAC_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_KERN) ? \
+            CC_LKEYID_CPU_SEC2_DATA_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_KERN) ? \
+            CC_LKEYID_CPU_SEC2_HMAC_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_SCRUBBER) ? \
+            CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER) ? \
+            CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE0) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE0_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE0_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE0_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE0_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE0_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE0_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE1) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE1_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE1_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE1_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE1_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE1_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE1_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE2) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE2_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE2_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE2_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE2_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE2_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE2_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE3) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE3_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE3_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE3_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE3_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE3_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE3_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE4) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE4_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE4_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE4_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE4_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE4_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE4_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE5) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE5_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE5_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE5_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE5_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE5_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE5_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE6) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE6_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE6_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE6_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE6_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE6_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE6_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE7) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE7_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE7_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE7_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE7_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE7_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE7_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE10) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE10_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE10_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE10_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE10_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE10_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE10_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE11) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE11_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE11_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE11_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE11_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE11_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE11_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE12) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE12_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE12_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE12_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE12_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE12_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE12_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE13) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE13_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE13_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE13_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE13_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE13_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE13_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE14) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE14_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE14_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE14_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE14_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE14_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE14_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE15) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE15_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE15_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE15_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE15_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE15_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE15_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE16) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE16_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE16_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE16_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE16_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE16_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE16_D2H_P2P_STR : NULL : \
+    (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE17) ? \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
+            CC_LKEYID_LCE17_H2D_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_USER) ? \
+            CC_LKEYID_LCE17_D2H_USER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_KERN) ? \
+            CC_LKEYID_LCE17_H2D_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_KERN) ? \
+            CC_LKEYID_LCE17_D2H_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_P2P) ? \
+            CC_LKEYID_LCE17_H2D_P2P_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_D2H_P2P) ? \
+            CC_LKEYID_LCE17_D2H_P2P_STR : NULL : NULL
+
+#define CC_EXPORT_MASTER_KEY_SIZE_BYTES 32
+
+#define CC_KEYID_PERCHANNEL_INITIAL_KEYSEED      "ce_channel"
+#define CC_KEYID_PERCHANNEL_UPDATE_KEYSEED       "update_keyseeed"
+#define CC_KEYID_PERCHANNEL_CPU_GPU_UPDATE_KEY   "update_key1"
+#define CC_KEYID_PERCHANNEL_GPU_CPU_UPDATE_KEY   "update_key2"
+
+#endif // CC_KEYSTORE_H

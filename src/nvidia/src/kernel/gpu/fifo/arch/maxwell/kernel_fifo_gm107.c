@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,10 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
-#include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mmu/kern_gmmu.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "vgpu/rpc.h"
 #include "gpu/bus/kern_bus.h"
@@ -37,15 +36,19 @@
 #include "published/maxwell/gm107/dev_ram.h"
 #include "published/maxwell/gm107/dev_mmu.h"
 
+
+static inline NvBool
+_isEngineInfoTypeValidForOnlyHostDriven(ENGINE_INFO_TYPE type);
+
+
 /*! Construct kfifo object */
 NV_STATUS
 kfifoConstructHal_GM107
 (
-    OBJGPU     *pGpu, 
+    OBJGPU     *pGpu,
     KernelFifo *pKernelFifo
 )
 {
-    NV_STATUS status;
     PREALLOCATED_USERD_INFO *pUserdInfo = &pKernelFifo->userdInfo;
 
     if (FLD_TEST_DRF(_REG_STR_RM, _INST_VPR, _INSTBLK, _TRUE, pGpu->instVprOverrides))
@@ -58,11 +61,7 @@ kfifoConstructHal_GM107
     {
         default:
         case NV_REG_STR_RM_INST_LOC_INSTBLK_DEFAULT:
-            if (kfifoIsMixedInstmemApertureDefAllowed(pKernelFifo))
-                pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_PREFERRED;
-            else
-                pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_ONLY;
-
+            pKernelFifo->pInstAllocList  = ADDRLIST_FBMEM_PREFERRED;
             pKernelFifo->InstAttr        = NV_MEMORY_UNCACHED;
             break;
         case NV_REG_STR_RM_INST_LOC_INSTBLK_VID:
@@ -86,19 +85,6 @@ kfifoConstructHal_GM107
                            "USERD",
                            &pUserdInfo->userdAperture,
                            &pUserdInfo->userdAttr);
-
-    // Create child object KernelSchedMgr
-    if (kfifoIsSchedSupported(pKernelFifo))
-    {
-        pKernelFifo->pKernelSchedMgr = NULL;
-        status = objCreate(&pKernelFifo->pKernelSchedMgr, pKernelFifo, KernelSchedMgr);
-        if (status != NV_OK)
-        {
-            pKernelFifo->pKernelSchedMgr = NULL;
-            return status;
-        }
-        kschedmgrConstructPolicy(pKernelFifo->pKernelSchedMgr, pGpu);
-    }
 
     return NV_OK;
 }
@@ -141,7 +127,8 @@ _kfifoAllocDummyPage
         return status;
     }
 
-    status = memdescAllocList(pKernelFifo->pDummyPageMemDesc, pKernelFifo->pInstAllocList);
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_80, 
+                    pKernelFifo->pDummyPageMemDesc, pKernelFifo->pInstAllocList);
     if (status !=  NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Could not allocate dummy page\n");
@@ -362,33 +349,37 @@ kfifoGetInstBlkSizeAlign_GM107
  *
  * @param[in] pGpu
  * @param[in] pKernelFifo
- * @param[in] engineType      - Engine type of the channel to retrieve default runlist id for
+ * @param[in] rmEngineType      - Engine type of the channel to retrieve default runlist id for
  */
 NvU32
 kfifoGetDefaultRunlist_GM107
 (
     OBJGPU *pGpu,
     KernelFifo *pKernelFifo,
-    NvU32 engineType
+    RM_ENGINE_TYPE rmEngineType
 )
 {
     NvU32 runlistId = INVALID_RUNLIST_ID;
     ENGDESCRIPTOR engDesc = ENG_GR(0);
 
-    if (NV2080_ENGINE_TYPE_IS_VALID(engineType))
+    if (RM_ENGINE_TYPE_IS_VALID(rmEngineType))
     {
         // if translation fails, defualt is ENG_GR(0)
         NV_ASSERT_OK(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                    ENGINE_INFO_TYPE_NV2080, engineType,
-                                    ENGINE_INFO_TYPE_ENG_DESC, &engDesc));
+                ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)rmEngineType,
+                ENGINE_INFO_TYPE_ENG_DESC,       &engDesc));
     }
 
-    // if translation fails, defualt is INVALID_RUNLIST_ID
-    NV_ASSERT_OK(
-        kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                ENGINE_INFO_TYPE_ENG_DESC, engDesc,
-                                ENGINE_INFO_TYPE_RUNLIST, &runlistId));
+    // if translation fails, default is INVALID_RUNLIST_ID
+    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
+                                 ENGINE_INFO_TYPE_ENG_DESC,
+                                 engDesc,
+                                 ENGINE_INFO_TYPE_RUNLIST,
+                                 &runlistId) != NV_OK)
+    {
+        runlistId = INVALID_RUNLIST_ID;
+    }
 
     return runlistId;
 }
@@ -561,8 +552,11 @@ kfifoChannelGetFifoContextMemDesc_GM107
     NV_ASSERT(!memdescHasSubDeviceMemDescs(*ppMemDesc));
 
     NV_PRINTF(LEVEL_INFO,
-              "Channel %d engine 0x%x engineState 0x%x *ppMemDesc %p\n",
-              kchannelGetDebugTag(pKernelChannel), ENG_FIFO, engineState, *ppMemDesc);
+        FMT_CHANNEL_DEBUG_TAG " engine 0x%x engineState 0x%x *ppMemDesc %p\n",
+        kchannelGetDebugTag(pKernelChannel),
+        ENG_FIFO,
+        engineState,
+        *ppMemDesc);
 
     return NV_OK;
 }
@@ -622,12 +616,12 @@ kfifoConvertInstToKernelChannel_GM107
                                NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY);
 
     memdescCreateExisting(&instMemDesc, pGpu, NV_RAMIN_ALLOC_SIZE,
-                          ADDR_UNKNOWN, NV_MEMORY_UNCACHED,
+                          instAperture, NV_MEMORY_UNCACHED,
                           MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     memdescDescribe(&instMemDesc, instAperture, pInst->address, NV_RAMIN_ALLOC_SIZE);
 
-    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
     while (kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK)
     {
         NV_ASSERT_OR_ELSE(pKernelChannel != NULL, continue);
@@ -661,34 +655,54 @@ kfifoConvertInstToKernelChannel_GM107
     return NV_ERR_INVALID_CHANNEL;
 }
 
-/**
- * @brief Translates between 2 engine values
- *
- * To iterate through a value for all engines call with inType of
- * ENGINE_INFO_TYPE_INVALID for 0 through fifoGetNumEngines().
- *
- * @param pGpu
- * @param pKernelFifo
- * @param[in] inType ENGINE_INFO_TYPE_*
- * @param[in] inVal
- * @param[in] outType ENGINE_INFO_TYPE_*
- * @param[out] pOutVal
- */
+static inline NvBool
+_isEngineInfoTypeValidForOnlyHostDriven(ENGINE_INFO_TYPE type)
+{
+    switch (type)
+    {
+        case ENGINE_INFO_TYPE_RUNLIST:
+        case ENGINE_INFO_TYPE_RUNLIST_PRI_BASE:
+        case ENGINE_INFO_TYPE_RUNLIST_ENGINE_ID:
+        case ENGINE_INFO_TYPE_PBDMA_ID:
+        case ENGINE_INFO_TYPE_CHRAM_PRI_BASE:
+        case ENGINE_INFO_TYPE_FIFO_TAG:
+            return NV_TRUE;
+        case ENGINE_INFO_TYPE_ENG_DESC:
+        case ENGINE_INFO_TYPE_RM_ENGINE_TYPE:
+        case ENGINE_INFO_TYPE_MMU_FAULT_ID:
+        case ENGINE_INFO_TYPE_RC_MASK:
+        case ENGINE_INFO_TYPE_RESET:
+        case ENGINE_INFO_TYPE_INTR:
+        case ENGINE_INFO_TYPE_MC:
+        case ENGINE_INFO_TYPE_DEV_TYPE_ENUM:
+        case ENGINE_INFO_TYPE_INSTANCE_ID:
+        case ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE:
+            // The bool itself is valid for non-host-driven engines too.
+        case ENGINE_INFO_TYPE_INVALID:
+            return NV_FALSE;
+        default:
+            // Ensure that this function covers every value in ENGINE_INFO_TYPE
+            NV_ASSERT(0 && "check all ENGINE_INFO_TYPE are classified as host-driven or not");
+            return NV_FALSE;
+    }
+}
+
+
 NV_STATUS
 kfifoEngineInfoXlate_GM107
 (
-    OBJGPU *pGpu,
-    KernelFifo *pKernelFifo,
-    ENGINE_INFO_TYPE inType,
-    NvU32 inVal,
-    ENGINE_INFO_TYPE outType,
-    NvU32 *pOutVal
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    ENGINE_INFO_TYPE  inType,
+    NvU32             inVal,
+    ENGINE_INFO_TYPE  outType,
+    NvU32            *pOutVal
 )
 {
-    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-    NvU32 i;
+    const ENGINE_INFO *pEngineInfo       = kfifoGetEngineInfo(pKernelFifo);
+    FIFO_ENGINE_LIST  *pFoundInputEngine = NULL;
 
-    NV_ASSERT_OR_RETURN(pOutVal, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pOutVal != NULL, NV_ERR_INVALID_ARGUMENT);
 
     // PBDMA_ID can only be inType
     NV_ASSERT_OR_RETURN(outType != ENGINE_INFO_TYPE_PBDMA_ID,
@@ -697,49 +711,70 @@ kfifoEngineInfoXlate_GM107
     if (pEngineInfo == NULL)
     {
         NV_ASSERT_OK_OR_RETURN(kfifoConstructEngineList_HAL(pGpu, pKernelFifo));
-
         pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-        NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
     }
+    NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
 
     if (inType == ENGINE_INFO_TYPE_INVALID)
     {
         NV_ASSERT_OR_RETURN(inVal < pEngineInfo->engineInfoListSize,
                             NV_ERR_INVALID_ARGUMENT);
-        *pOutVal = pEngineInfo->engineInfoList[inVal].engineData[outType];
-        return NV_OK;
+        pFoundInputEngine = &pEngineInfo->engineInfoList[inVal];
     }
-
-    for (i = 0; i < pEngineInfo->engineInfoListSize; ++i)
+    else
     {
-        FIFO_ENGINE_LIST *pFifoEngineList = &pEngineInfo->engineInfoList[i];
-        NvBool bFound = NV_FALSE;
-
-        if (inType == ENGINE_INFO_TYPE_PBDMA_ID)
+        NvU32 i;
+        for (i = 0;
+             (i < pEngineInfo->engineInfoListSize) &&
+             (pFoundInputEngine == NULL);
+             ++i)
         {
-            NvU32 j;
-            for (j = 0; j < pFifoEngineList->numPbdmas; ++j)
+            FIFO_ENGINE_LIST *pThisEngine = &pEngineInfo->engineInfoList[i];
+
+            if (inType == ENGINE_INFO_TYPE_PBDMA_ID)
             {
-                if (pFifoEngineList->pbdmaIds[j] == inVal)
+                NvU32 j;
+                for (j = 0; j < pThisEngine->numPbdmas; ++j)
                 {
-                    bFound = NV_TRUE;
-                    break;
+                    if (pThisEngine->pbdmaIds[j] == inVal)
+                    {
+                        pFoundInputEngine = pThisEngine;
+                        break;
+                    }
                 }
             }
-        }
-        else if (pFifoEngineList->engineData[inType] == inVal)
-        {
-            bFound = NV_TRUE;
-        }
-
-        if (bFound)
-        {
-            *pOutVal = pFifoEngineList->engineData[outType];
-            return NV_OK;
+            else if (pThisEngine->engineData[inType] == inVal)
+            {
+                pFoundInputEngine = pThisEngine;
+            }
         }
     }
 
-    return NV_ERR_INVALID_ARGUMENT;
+    if (pFoundInputEngine == NULL)
+    {
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    if (_isEngineInfoTypeValidForOnlyHostDriven(outType) &&
+        !pFoundInputEngine->engineData[ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE])
+    {
+        //
+        // Bug 3748452 TODO
+        // Bug 3772199 TODO
+        //
+        // We can't easily just return an error here because hundreds of
+        // callsites would fail their asserts. The above two bugs track fixing
+        // all callsites after which, we can uncomment this.
+        //
+        // return NV_ERR_OBJECT_NOT_FOUND;
+        //
+        NV_PRINTF(LEVEL_ERROR,
+            "Asked for host-specific type(0x%x) for non-host engine type(0x%x),val(0x%08x)\n",
+            outType, inType, inVal);
+    }
+
+    *pOutVal = pFoundInputEngine->engineData[outType];
+    return NV_OK;
 }
 
 /**
@@ -761,22 +796,15 @@ kfifoChannelGroupGetLocalMaxSubcontext_GM107
 void
 kfifoSetupUserD_GM107
 (
+    OBJGPU *pGpu,
     KernelFifo *pKernelFifo,
-    NvU8       *pUserD
+    MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(pUserD != NULL);
+    TRANSFER_SURFACE tSurf = {.pMemDesc = pMemDesc, .offset = 0};
 
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_PUT ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GET ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_REF ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_PUT_HI ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_REF_THRESHOLD ),        0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_TOP_LEVEL_GET ),     0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_TOP_LEVEL_GET_HI ),  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GET_HI ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_GET ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_PUT ),               0 );
+    NV_ASSERT_OK(memmgrMemSet(GPU_GET_MEMORY_MANAGER(pGpu), &tSurf, 0,
+        NV_RAMUSERD_CHAN_SIZE, TRANSFER_FLAGS_NONE));
 }
 /**
  * @brief return number of HW engines
@@ -869,9 +897,6 @@ kfifoGetMaxNumRunlists_GM107
 {
     const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
 
-    // We use bit-masks of these values
-    NV_ASSERT(pEngineInfo->maxNumRunlists <= 32);
-
     return pEngineInfo->maxNumRunlists;
 }
 
@@ -941,7 +966,6 @@ kfifoGetEnginePartnerList_GM107
     NvU32 i;
     NvU32 srcRunlist;
     NvU32 runlist;
-    NvU32 nv2080type;
     NvU32 *pSrcPbdmaIds;
     NvU32 numSrcPbdmaIds;
     NvU32 srcPbdmaId;
@@ -949,19 +973,20 @@ kfifoGetEnginePartnerList_GM107
     NvU32 numPbdmaIds;
     NvU32 numClasses = 0;
     ENGDESCRIPTOR engDesc;
+    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pPartnerListParams->engineType);
 
     if (pPartnerListParams->runqueue >= kfifoGetNumRunqueues_HAL(pGpu, pKernelFifo))
         return NV_ERR_INVALID_ARGUMENT;
 
     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                                    ENGINE_INFO_TYPE_NV2080,
-                                                    pPartnerListParams->engineType,
+                                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                    (NvU32)rmEngineType,
                                                     ENGINE_INFO_TYPE_RUNLIST,
                                                     &srcRunlist));
 
     NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
-                                                      ENGINE_INFO_TYPE_NV2080,
-                                                      pPartnerListParams->engineType,
+                                                      ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                      (NvU32)rmEngineType,
                                                       &pSrcPbdmaIds,
                                                       &numSrcPbdmaIds));
 
@@ -1000,6 +1025,7 @@ kfifoGetEnginePartnerList_GM107
         if (runlist == srcRunlist)
         {
             NvU32 j;
+            RM_ENGINE_TYPE localRmEngineType;
 
             NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
                                                               ENGINE_INFO_TYPE_INVALID, i,
@@ -1011,12 +1037,13 @@ kfifoGetEnginePartnerList_GM107
                 {
                     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                                                     ENGINE_INFO_TYPE_INVALID, i,
-                                                                    ENGINE_INFO_TYPE_NV2080, &nv2080type));
+                                                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&localRmEngineType));
 
                     // Don't include input in output list
-                    if (nv2080type != pPartnerListParams->engineType)
+                    if (localRmEngineType != rmEngineType)
                     {
-                        pPartnerListParams->partnerList[pPartnerListParams->numPartners++] = nv2080type;
+                        pPartnerListParams->partnerList[pPartnerListParams->numPartners++] =
+                            gpuGetNv2080EngineType(localRmEngineType);
 
                         if (pPartnerListParams->numPartners >= NV2080_CTRL_GPU_MAX_ENGINE_PARTNERS)
                             return NV_ERR_INVALID_ARGUMENT;
@@ -1195,6 +1222,7 @@ kfifoPreAllocUserD_GM107
         memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager,
                                      pUserdInfo->userdPhysDesc[currentGpuInst],
                                      AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
         if (bFifoFirstInit)
         {
             pUserdInfo->userdBar1MapStartOffset = kfifoGetUserdBar1MapStartOffset_HAL(pGpu, pKernelFifo);
@@ -1202,7 +1230,8 @@ kfifoPreAllocUserD_GM107
     }
     else
     {
-        status = memdescAlloc(pUserdInfo->userdPhysDesc[currentGpuInst]);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_81, 
+                        pUserdInfo->userdPhysDesc[currentGpuInst]);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -1215,6 +1244,7 @@ kfifoPreAllocUserD_GM107
         // Force page size to 4KB in broadcast to match host phys access
         memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUserdInfo->userdPhysDesc[currentGpuInst],
                                      AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
 
         //
         // If coherent link is available, just get a coherent mapping to USERD and
@@ -1225,7 +1255,7 @@ kfifoPreAllocUserD_GM107
             (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
         {
 
-            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link.\n");
+            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in FBMEM).\n");
             NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
             NV_ASSERT(pUserdInfo->userdPhysDesc[currentGpuInst]->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
 
@@ -1233,6 +1263,22 @@ kfifoPreAllocUserD_GM107
             {
                 pUserdInfo->userdBar1MapStartOffset =  pUserdInfo->userdPhysDesc[currentGpuInst]->_pteArray[0] +
                                                        pUserdInfo->userdPhysDesc[currentGpuInst]->PteAdjust;
+            }
+        }
+        //
+        // get sysmem mapping for USERD if USERD is in sysmem and reflected BAR access is not allowed
+        //
+        else if ((bCoherentCpuMapping &&
+                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
+                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
+                 kbusIsBar1Disabled(pKernelBus))
+        {
+            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in SYSMEM).\n");
+
+            if (bFifoFirstInit)
+            {
+                pUserdInfo->userdBar1MapStartOffset =
+                        memdescGetPhysAddr(pUserdInfo->userdPhysDesc[currentGpuInst], AT_CPU, 0);
             }
         }
         else
@@ -1246,20 +1292,20 @@ kfifoPreAllocUserD_GM107
                 goto fail;
             }
             // Now BAR1 map it
-            status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
-                                           &pUserdInfo->userdBar1MapStartOffset,
-                                           &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NV01_NULL_OBJECT);
-        }
+            status = kbusMapFbApertureSingle(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
+                                             &pUserdInfo->userdBar1MapStartOffset,
+                                             &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
 
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Could not map USERD to BAR1\n");
-            DBG_BREAKPOINT();
-            goto fail;
-        }
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Could not map USERD to BAR1\n");
+                DBG_BREAKPOINT();
+                goto fail;
+            }
 
-        // Add current GPU to list of GPUs referencing pFifo userD bar1
-        pUserdInfo->userdBar1RefMask |= NVBIT(pGpu->gpuInstance);
+            // Add current GPU to list of GPUs referencing pFifo userD bar1
+            pUserdInfo->userdBar1RefMask |= NVBIT(pGpu->gpuInstance);
+        }
     }
 
     if (bFifoFirstInit)
@@ -1269,9 +1315,35 @@ kfifoPreAllocUserD_GM107
         if (bCoherentCpuMapping &&
             (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
         {
-            pUserdInfo->userdBar1CpuPtr = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                                             pUserdInfo->userdPhysDesc[currentGpuInst]);
-            status = pUserdInfo->userdBar1CpuPtr == NULL ? NV_ERR_GENERIC : NV_OK;
+            status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
+                                                   pUserdInfo->userdPhysDesc[currentGpuInst],
+                                                   0,
+                                                   pUserdInfo->userdBar1MapSize,
+                                                   NV_PROTECT_READ_WRITE,
+                                                   (void**)&pUserdInfo->userdBar1CpuPtr,
+                                                   (void**)&pUserdInfo->userdBar1Priv);
+        }
+        else if ((bCoherentCpuMapping &&
+                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
+                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) &&
+                 !kbusIsBar1Disabled(pKernelBus))
+        {
+            status = osMapPciMemoryKernelOld(pGpu,
+                                             pUserdInfo->userdBar1MapStartOffset,
+                                             pUserdInfo->userdBar1MapSize,
+                                             NV_PROTECT_READ_WRITE,
+                                             (void**)&pUserdInfo->userdBar1CpuPtr,
+                                             NV_MEMORY_CACHED);
+        }
+        else if (kbusIsBar1Disabled(pKernelBus))
+        {
+            status = memdescMap(pUserdInfo->userdPhysDesc[currentGpuInst],
+                                0,
+                                pUserdInfo->userdBar1MapSize,
+                                NV_TRUE,
+                                NV_PROTECT_READ_WRITE,
+                                (void**)&pUserdInfo->userdBar1CpuPtr,
+                                (void**)&pUserdInfo->userdBar1Priv);
         }
         else
         {
@@ -1351,7 +1423,16 @@ kfifoFreePreAllocUserD_GM107
         if (bCoherentCpuMapping)
         {
             kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                pUserdInfo->userdPhysDesc[currentGpuInst]);
+                pUserdInfo->userdPhysDesc[currentGpuInst],
+                pUserdInfo->userdBar1CpuPtr,
+                pUserdInfo->userdBar1Priv);
+        }
+        else if (kbusIsBar1Disabled(pKernelBus))
+        {
+            memdescUnmap(pUserdInfo->userdPhysDesc[currentGpuInst],
+                            NV_TRUE,
+                            (void*)pUserdInfo->userdBar1CpuPtr,
+                            (void*)pUserdInfo->userdBar1Priv);
         }
         else
         {
@@ -1371,11 +1452,11 @@ kfifoFreePreAllocUserD_GM107
                 // Unmap in UC for each GPU with a pKernelFifo userd
                 // reference mapped through bar1
                 //
-                kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                        pUserdInfo->userdPhysDesc[currentGpuInst],
-                                        pUserdInfo->userdBar1MapStartOffset,
-                                        pUserdInfo->userdBar1MapSize,
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_PRE_INIT);
+                kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                          pUserdInfo->userdPhysDesc[currentGpuInst],
+                                          pUserdInfo->userdBar1MapStartOffset,
+                                          pUserdInfo->userdBar1MapSize,
+                                          BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_PRE_INIT);
                 pUserdInfo->userdBar1RefMask &= (~NVBIT(pGpu->gpuInstance));
             }
 
@@ -1493,14 +1574,14 @@ kfifoCheckEngine_GM107
     NvBool     *pPresent
 )
 {
-    NvU32 tmp;
+    NvU32 bEschedDriven = NV_FALSE;
     NV_STATUS status;
 
     status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                      ENGINE_INFO_TYPE_ENG_DESC, engDesc,
-                                      ENGINE_INFO_TYPE_FIFO_TAG, &tmp);
+        ENGINE_INFO_TYPE_ENG_DESC,              engDesc,
+        ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE, &bEschedDriven);
 
-    *pPresent = (status == NV_OK);
+    *pPresent = (status == NV_OK) && bEschedDriven;
 
     return NV_OK;
 }

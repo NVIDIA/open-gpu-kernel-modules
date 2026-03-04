@@ -1,13 +1,22 @@
+
 #ifndef _G_SWINTR_NVOC_H_
 #define _G_SWINTR_NVOC_H_
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
+#include "nvoc/rtti.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +38,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_swintr_nvoc.h"
 
 #ifndef SWINTR_H
@@ -43,51 +53,76 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
 #include "kernel/gpu/intr/intr_service.h"
-#include "kernel/gpu/intrable/intrable.h"
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SWINTR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__SwIntr;
+struct NVOC_METADATA__OBJENGSTATE;
+struct NVOC_METADATA__IntrService;
+struct NVOC_VTABLE__SwIntr;
+
+
 struct SwIntr {
-    const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__SwIntr *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
-    struct OBJINTRABLE __nvoc_base_OBJINTRABLE;
     struct IntrService __nvoc_base_IntrService;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
-    struct OBJINTRABLE *__nvoc_pbase_OBJINTRABLE;
-    struct IntrService *__nvoc_pbase_IntrService;
-    struct SwIntr *__nvoc_pbase_SwIntr;
-    void (*__swintrRegisterIntrService__)(OBJGPU *, struct SwIntr *, IntrServiceRecord *);
-    NvU32 (*__swintrServiceInterrupt__)(OBJGPU *, struct SwIntr *, IntrServiceServiceInterruptArguments *);
-    NV_STATUS (*__swintrGetKernelIntrVectors__)(OBJGPU *, struct SwIntr *, NvU32, NvU32 *, NvU32 *, NvU32 *);
-    void (*__swintrStateDestroy__)(POBJGPU, struct SwIntr *);
-    void (*__swintrFreeTunableState__)(POBJGPU, struct SwIntr *, void *);
-    NV_STATUS (*__swintrCompareTunableState__)(POBJGPU, struct SwIntr *, void *, void *);
-    NvBool (*__swintrClearInterrupt__)(OBJGPU *, struct SwIntr *, IntrServiceClearInterruptArguments *);
-    NV_STATUS (*__swintrGetNotificationIntrVector__)(OBJGPU *, struct SwIntr *, NvU32 *);
-    NvBool (*__swintrIsPresent__)(POBJGPU, struct SwIntr *);
-    NV_STATUS (*__swintrReconcileTunableState__)(POBJGPU, struct SwIntr *, void *);
-    NV_STATUS (*__swintrStateLoad__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrGetPhysicalIntrVectors__)(OBJGPU *, struct SwIntr *, NvU32, NvU32 *, NvU32 *, NvU32 *);
-    NV_STATUS (*__swintrStateUnload__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrSetNotificationIntrVector__)(OBJGPU *, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrStateInitLocked__)(POBJGPU, struct SwIntr *);
-    NV_STATUS (*__swintrStatePreLoad__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrStatePostUnload__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrStatePreUnload__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrGetTunableState__)(POBJGPU, struct SwIntr *, void *);
-    NV_STATUS (*__swintrStateInitUnlocked__)(POBJGPU, struct SwIntr *);
-    void (*__swintrInitMissing__)(POBJGPU, struct SwIntr *);
-    NV_STATUS (*__swintrStatePreInitLocked__)(POBJGPU, struct SwIntr *);
-    NV_STATUS (*__swintrStatePreInitUnlocked__)(POBJGPU, struct SwIntr *);
-    NV_STATUS (*__swintrServiceNotificationInterrupt__)(OBJGPU *, struct SwIntr *, IntrServiceServiceNotificationInterruptArguments *);
-    NV_STATUS (*__swintrStatePostLoad__)(POBJGPU, struct SwIntr *, NvU32);
-    NV_STATUS (*__swintrAllocTunableState__)(POBJGPU, struct SwIntr *, void **);
-    NV_STATUS (*__swintrSetTunableState__)(POBJGPU, struct SwIntr *, void *);
-    NV_STATUS (*__swintrConstructEngine__)(POBJGPU, struct SwIntr *, ENGDESCRIPTOR);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
+    struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
+    struct SwIntr *__nvoc_pbase_SwIntr;    // swintr
+
+    // 1 PDB property
+//  NvBool PDB_PROP_SWINTR_IS_MISSING inherited from OBJENGSTATE
+};
+
+
+// Vtable with 18 per-class function pointers
+struct NVOC_VTABLE__SwIntr {
+    void (*__swintrRegisterIntrService__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
+    NvU32 (*__swintrServiceInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__swintrConstructEngine__)(struct OBJGPU *, struct SwIntr * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
+    void (*__swintrInitMissing__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreInitLocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreInitUnlocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateInitLocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateInitUnlocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePostLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePostUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__swintrStateDestroy__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__swintrIsPresent__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__swintrClearInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceClearInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
+    NV_STATUS (*__swintrServiceNotificationInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
+};
+
+// Metadata with per-class RTTI and vtable with ancestor(s)
+struct NVOC_METADATA__SwIntr {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
+    const struct NVOC_METADATA__IntrService metadata__IntrService;
+    const struct NVOC_VTABLE__SwIntr vtable;
 };
 
 #ifndef __NVOC_CLASS_SwIntr_TYPEDEF__
@@ -99,20 +134,23 @@ typedef struct SwIntr SwIntr;
 #define __nvoc_class_id_SwIntr 0x5ca633
 #endif /* __nvoc_class_id_SwIntr */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr;
 
 #define __staticCast_SwIntr(pThis) \
     ((pThis)->__nvoc_pbase_SwIntr)
 
 #ifdef __nvoc_swintr_h_disabled
-#define __dynamicCast_SwIntr(pThis) ((SwIntr*)NULL)
+#define __dynamicCast_SwIntr(pThis) ((SwIntr*) NULL)
 #else //__nvoc_swintr_h_disabled
 #define __dynamicCast_SwIntr(pThis) \
-    ((SwIntr*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SwIntr)))
+    ((SwIntr*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SwIntr)))
 #endif //__nvoc_swintr_h_disabled
 
+// Property macros
 #define PDB_PROP_SWINTR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_SWINTR_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
+
 
 NV_STATUS __nvoc_objCreateDynamic_SwIntr(SwIntr**, Dynamic*, NvU32, va_list);
 
@@ -120,154 +158,123 @@ NV_STATUS __nvoc_objCreate_SwIntr(SwIntr**, Dynamic*, NvU32);
 #define __objCreate_SwIntr(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_SwIntr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros for implementation functions
+
+// Wrapper macros for halified functions
+#define swintrRegisterIntrService_FNPTR(pSwIntr) pSwIntr->__nvoc_metadata_ptr->vtable.__swintrRegisterIntrService__
 #define swintrRegisterIntrService(pGpu, pSwIntr, pRecords) swintrRegisterIntrService_DISPATCH(pGpu, pSwIntr, pRecords)
+#define swintrServiceInterrupt_FNPTR(pSwIntr) pSwIntr->__nvoc_metadata_ptr->vtable.__swintrServiceInterrupt__
 #define swintrServiceInterrupt(pGpu, pSwIntr, pParams) swintrServiceInterrupt_DISPATCH(pGpu, pSwIntr, pParams)
-#define swintrGetKernelIntrVectors(pGpu, pSwIntr, maxIntrs, pIntrs, pMcEngineIdxs, pCount) swintrGetKernelIntrVectors_DISPATCH(pGpu, pSwIntr, maxIntrs, pIntrs, pMcEngineIdxs, pCount)
-#define swintrGetKernelIntrVectors_HAL(pGpu, pSwIntr, maxIntrs, pIntrs, pMcEngineIdxs, pCount) swintrGetKernelIntrVectors_DISPATCH(pGpu, pSwIntr, maxIntrs, pIntrs, pMcEngineIdxs, pCount)
-#define swintrStateDestroy(pGpu, pEngstate) swintrStateDestroy_DISPATCH(pGpu, pEngstate)
-#define swintrFreeTunableState(pGpu, pEngstate, pTunableState) swintrFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define swintrCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) swintrCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define swintrClearInterrupt(pGpu, pIntrService, pParams) swintrClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define swintrGetNotificationIntrVector(pGpu, pIntrable, pIntrVector) swintrGetNotificationIntrVector_DISPATCH(pGpu, pIntrable, pIntrVector)
-#define swintrIsPresent(pGpu, pEngstate) swintrIsPresent_DISPATCH(pGpu, pEngstate)
-#define swintrReconcileTunableState(pGpu, pEngstate, pTunableState) swintrReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define swintrStateLoad(pGpu, pEngstate, arg0) swintrStateLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrGetPhysicalIntrVectors(pGpu, pIntrable, maxIntrs, pIntrs, pMcEngineIdxs, pCount) swintrGetPhysicalIntrVectors_DISPATCH(pGpu, pIntrable, maxIntrs, pIntrs, pMcEngineIdxs, pCount)
-#define swintrStateUnload(pGpu, pEngstate, arg0) swintrStateUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrSetNotificationIntrVector(pGpu, pIntrable, intrVector) swintrSetNotificationIntrVector_DISPATCH(pGpu, pIntrable, intrVector)
-#define swintrStateInitLocked(pGpu, pEngstate) swintrStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define swintrStatePreLoad(pGpu, pEngstate, arg0) swintrStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrStatePostUnload(pGpu, pEngstate, arg0) swintrStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrStatePreUnload(pGpu, pEngstate, arg0) swintrStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrGetTunableState(pGpu, pEngstate, pTunableState) swintrGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define swintrStateInitUnlocked(pGpu, pEngstate) swintrStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define swintrConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
+#define swintrConstructEngine(pGpu, pEngstate, arg3) swintrConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define swintrInitMissing(pGpu, pEngstate) swintrInitMissing_DISPATCH(pGpu, pEngstate)
+#define swintrStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define swintrStatePreInitLocked(pGpu, pEngstate) swintrStatePreInitLocked_DISPATCH(pGpu, pEngstate)
+#define swintrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define swintrStatePreInitUnlocked(pGpu, pEngstate) swintrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define swintrStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
+#define swintrStateInitLocked(pGpu, pEngstate) swintrStateInitLocked_DISPATCH(pGpu, pEngstate)
+#define swintrStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
+#define swintrStateInitUnlocked(pGpu, pEngstate) swintrStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define swintrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
+#define swintrStatePreLoad(pGpu, pEngstate, arg3) swintrStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
+#define swintrStateLoad(pGpu, pEngstate, arg3) swintrStateLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__
+#define swintrStatePostLoad(pGpu, pEngstate, arg3) swintrStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__
+#define swintrStatePreUnload(pGpu, pEngstate, arg3) swintrStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
+#define swintrStateUnload(pGpu, pEngstate, arg3) swintrStateUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__
+#define swintrStatePostUnload(pGpu, pEngstate, arg3) swintrStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define swintrStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
+#define swintrStateDestroy(pGpu, pEngstate) swintrStateDestroy_DISPATCH(pGpu, pEngstate)
+#define swintrIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__
+#define swintrIsPresent(pGpu, pEngstate) swintrIsPresent_DISPATCH(pGpu, pEngstate)
+#define swintrClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservClearInterrupt__
+#define swintrClearInterrupt(pGpu, pIntrService, pParams) swintrClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define swintrServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_metadata_ptr->vtable.__intrservServiceNotificationInterrupt__
 #define swintrServiceNotificationInterrupt(pGpu, pIntrService, pParams) swintrServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define swintrStatePostLoad(pGpu, pEngstate, arg0) swintrStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define swintrAllocTunableState(pGpu, pEngstate, ppTunableState) swintrAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define swintrSetTunableState(pGpu, pEngstate, pTunableState) swintrSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define swintrConstructEngine(pGpu, pEngstate, arg0) swintrConstructEngine_DISPATCH(pGpu, pEngstate, arg0)
-void swintrRegisterIntrService_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[155]);
 
-static inline void swintrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[155]) {
-    pSwIntr->__swintrRegisterIntrService__(pGpu, pSwIntr, pRecords);
+// Dispatch functions
+static inline void swintrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[180]) {
+    pSwIntr->__nvoc_metadata_ptr->vtable.__swintrRegisterIntrService__(pGpu, pSwIntr, pRecords);
 }
-
-NvU32 swintrServiceInterrupt_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceServiceInterruptArguments *pParams);
 
 static inline NvU32 swintrServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceServiceInterruptArguments *pParams) {
-    return pSwIntr->__swintrServiceInterrupt__(pGpu, pSwIntr, pParams);
+    return pSwIntr->__nvoc_metadata_ptr->vtable.__swintrServiceInterrupt__(pGpu, pSwIntr, pParams);
 }
 
-static inline NV_STATUS swintrGetKernelIntrVectors_46f6a7(OBJGPU *pGpu, struct SwIntr *pSwIntr, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount) {
-    return NV_ERR_NOT_SUPPORTED;
+static inline NV_STATUS swintrConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrConstructEngine__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrGetKernelIntrVectors_DISPATCH(OBJGPU *pGpu, struct SwIntr *pSwIntr, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount) {
-    return pSwIntr->__swintrGetKernelIntrVectors__(pGpu, pSwIntr, maxIntrs, pIntrs, pMcEngineIdxs, pCount);
+static inline void swintrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    pEngstate->__nvoc_metadata_ptr->vtable.__swintrInitMissing__(pGpu, pEngstate);
 }
 
-static inline void swintrStateDestroy_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    pEngstate->__swintrStateDestroy__(pGpu, pEngstate);
+static inline NV_STATUS swintrStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline void swintrFreeTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    pEngstate->__swintrFreeTunableState__(pGpu, pEngstate, pTunableState);
+static inline NV_STATUS swintrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrCompareTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__swintrCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
+static inline NV_STATUS swintrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStateInitLocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS swintrStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStateInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS swintrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePreLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS swintrStateLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStateLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS swintrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePostLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS swintrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePreUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS swintrStateUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStateUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS swintrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrStatePostUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline void swintrStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    pEngstate->__nvoc_metadata_ptr->vtable.__swintrStateDestroy__(pGpu, pEngstate);
+}
+
+static inline NvBool swintrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__swintrIsPresent__(pGpu, pEngstate);
 }
 
 static inline NvBool swintrClearInterrupt_DISPATCH(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__swintrClearInterrupt__(pGpu, pIntrService, pParams);
-}
-
-static inline NV_STATUS swintrGetNotificationIntrVector_DISPATCH(OBJGPU *pGpu, struct SwIntr *pIntrable, NvU32 *pIntrVector) {
-    return pIntrable->__swintrGetNotificationIntrVector__(pGpu, pIntrable, pIntrVector);
-}
-
-static inline NvBool swintrIsPresent_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    return pEngstate->__swintrIsPresent__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS swintrReconcileTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return pEngstate->__swintrReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS swintrStateLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStateLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swintrGetPhysicalIntrVectors_DISPATCH(OBJGPU *pGpu, struct SwIntr *pIntrable, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount) {
-    return pIntrable->__swintrGetPhysicalIntrVectors__(pGpu, pIntrable, maxIntrs, pIntrs, pMcEngineIdxs, pCount);
-}
-
-static inline NV_STATUS swintrStateUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStateUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swintrSetNotificationIntrVector_DISPATCH(OBJGPU *pGpu, struct SwIntr *pIntrable, NvU32 intrVector) {
-    return pIntrable->__swintrSetNotificationIntrVector__(pGpu, pIntrable, intrVector);
-}
-
-static inline NV_STATUS swintrStateInitLocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    return pEngstate->__swintrStateInitLocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS swintrStatePreLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStatePreLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swintrStatePostUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swintrStatePreUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStatePreUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swintrGetTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return pEngstate->__swintrGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS swintrStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    return pEngstate->__swintrStateInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline void swintrInitMissing_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    pEngstate->__swintrInitMissing__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS swintrStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    return pEngstate->__swintrStatePreInitLocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS swintrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
-    return pEngstate->__swintrStatePreInitUnlocked__(pGpu, pEngstate);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__swintrClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS swintrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__swintrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_metadata_ptr->vtable.__swintrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
-static inline NV_STATUS swintrStatePostLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
-    return pEngstate->__swintrStatePostLoad__(pGpu, pEngstate, arg0);
-}
+void swintrRegisterIntrService_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[180]);
 
-static inline NV_STATUS swintrAllocTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void **ppTunableState) {
-    return pEngstate->__swintrAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS swintrSetTunableState_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return pEngstate->__swintrSetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS swintrConstructEngine_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg0) {
-    return pEngstate->__swintrConstructEngine__(pGpu, pEngstate, arg0);
-}
+NvU32 swintrServiceInterrupt_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceServiceInterruptArguments *pParams);
 
 #undef PRIVATE_FIELD
 
@@ -277,4 +284,5 @@ static inline NV_STATUS swintrConstructEngine_DISPATCH(POBJGPU pGpu, struct SwIn
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SWINTR_NVOC_H_

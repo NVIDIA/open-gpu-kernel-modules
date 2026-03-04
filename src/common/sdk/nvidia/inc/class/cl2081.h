@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,24 +20,21 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
- 
-#ifndef _cl2081_h_
-#define _cl2081_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
 
-#define  NV2081_BINAPI                                          (0x00002081)
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl2081.finn
+//
 
-typedef struct{
-    NvU32   reserved;
-}NV2081_ALLOC_PARAMETERS;
+#define NV2081_BINAPI (0x2081U) /* finn: Evaluated from "NV2081_ALLOC_PARAMETERS_MESSAGE_ID" */
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
+#define NV2081_ALLOC_PARAMETERS_MESSAGE_ID (0x2081U)
 
-#endif
+typedef struct NV2081_ALLOC_PARAMETERS {
+    NvU32 reserved;
+} NV2081_ALLOC_PARAMETERS;
+

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,10 +21,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "os/os.h"
+
+#include "gpu/conf_compute/conf_compute.h"
+#include "gsp/gsp_proxy_reg.h"
 
 /*!
  * @brief Apply NVLink overrides from Registry
@@ -42,6 +47,8 @@ knvlinkApplyRegkeyOverrides_IMPL
 )
 {
     NvU32 regdata;
+    NvU32 tmpRegDisableLinks = 0;
+    NvU32 tmpRegDisableLinks2 = 0;
 
     // Initialize the settings
 
@@ -52,15 +59,16 @@ knvlinkApplyRegkeyOverrides_IMPL
     // Link enable/disable filtering
     pKernelNvlink->bRegistryLinkOverride   = NV_FALSE;
     pKernelNvlink->registryLinkMask        = 0;
-    pKernelNvlink->vbiosDisabledLinkMask   = 0;
-    pKernelNvlink->regkeyDisabledLinksMask = 0;
-
+    bitVectorClrAll(&pKernelNvlink->vbiosDisabledLinkMask);
+    bitVectorClrAll(&pKernelNvlink->regkeyDisabledLinksMask);
     // Clock and speed settings
     pKernelNvlink->nvlinkLinkSpeed = NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_DEFAULT;
 
     // Power management settings
-    pKernelNvlink->bDisableSingleLaneMode = NV_FALSE;
     pKernelNvlink->bDisableL2Mode         = NV_FALSE;
+
+    // Debug Settings
+    pKernelNvlink->bLinkTrainingDebugSpew = NV_FALSE;
 
     // Registry overrides for forcing NVLINK on/off
     if (NV_OK == osReadRegistryDword(pGpu,
@@ -152,6 +160,15 @@ knvlinkApplyRegkeyOverrides_IMPL
         {
             pKernelNvlink->bForceAutoconfig = NV_FALSE;
         }
+
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_CONTROL, _LINK_TRAINING_DEBUG_SPEW, _ON,
+                         pKernelNvlink->registryControl))
+        {
+            pKernelNvlink->bLinkTrainingDebugSpew = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO,
+                "Link training debug spew turned on!\n");
+        }
+
     }
     else if (!knvlinkIsNvlinkDefaultEnabled(pGpu, pKernelNvlink))
     {
@@ -179,11 +196,18 @@ knvlinkApplyRegkeyOverrides_IMPL
     }
 
     // Registry overrides to disable a set of links
-    if (NV_OK == osReadRegistryDword(pGpu,
-        NV_REG_STR_RM_NVLINK_DISABLE_LINKS, &pKernelNvlink->regkeyDisabledLinksMask))
+    osReadRegistryDword(pGpu,
+        NV_REG_STR_RM_NVLINK_DISABLE_LINKS, &tmpRegDisableLinks);
+    osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_DISABLE_LINKS2, &tmpRegDisableLinks2);
+
+    if (tmpRegDisableLinks != 0 || tmpRegDisableLinks2 != 0)
     {
-        NV_PRINTF(LEVEL_INFO, "Disable NvLinks 0x%x via regkey\n",
-                  pKernelNvlink->regkeyDisabledLinksMask);
+        NvU64 tmp = tmpRegDisableLinks2;
+        tmp = (tmp << 32) | tmpRegDisableLinks;
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, convertMaskToBitVector(tmp, &pKernelNvlink->regkeyDisabledLinksMask));
+        NV_BITVECTOR_PRINT(
+            NV_PRINTF(LEVEL_INFO, "disable links regkey set with a value of\n"),
+            &pKernelNvlink->regkeyDisabledLinksMask);
     }
 
     //
@@ -192,10 +216,11 @@ knvlinkApplyRegkeyOverrides_IMPL
     // NOTE: This is used only on Pascal. Volta and beyond, this should not be used
     //
     if (NV_OK == osReadRegistryDword(pGpu,
-                NV_REG_STR_RM_NVLINK_ENABLE, &pKernelNvlink->registryLinkMask))
+                NV_REG_STR_RM_NVLINK_ENABLE, &regdata))
     {
+        pKernelNvlink->registryLinkMask = regdata;
         pKernelNvlink->bRegistryLinkOverride = NV_TRUE;
-        NV_PRINTF(LEVEL_INFO, "Enable NvLinks 0x%x via regkey\n",
+        NV_PRINTF(LEVEL_INFO, "Enable NvLinks 0x%llx via regkey\n",
                   pKernelNvlink->registryLinkMask);
     }
 
@@ -212,15 +237,6 @@ knvlinkApplyRegkeyOverrides_IMPL
                          NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL, &regdata))
     {
         NV_PRINTF(LEVEL_INFO, "RM NVLink Link PM controlled via regkey\n");
-
-        // Whether one-eighth mode has been disabled by regkey
-        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_LINK_PM_CONTROL, _SINGLE_LANE_MODE,
-                        _DISABLE, regdata))
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "NVLink single-lane power state disabled via regkey\n");
-            pKernelNvlink->bDisableSingleLaneMode = NV_TRUE;
-        }
 
         // Whether L2 power state has been disabled by regkey
         if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_LINK_PM_CONTROL, _L2_MODE,
@@ -257,6 +273,125 @@ knvlinkApplyRegkeyOverrides_IMPL
     else
     {
         pKernelNvlink->forcedSysmemDeviceType = NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_EBRIDGE;
+    }
+
+    if (NV_OK == osReadRegistryDword(pGpu,
+                 NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH, &regdata))
+    {
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_FORCED_LOOPBACK_ON_SWITCH, _MODE, _ENABLED, regdata))
+        {
+            pKernelNvlink->setProperty(pGpu, PDB_PROP_KNVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED, NV_TRUE);
+            NV_PRINTF(LEVEL_INFO,
+                      "Forced Loopback on switch is enabled\n");
+        }        
+    }
+
+    // Registry override to enable nvlink encryption
+    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_ENCRYPTION, &regdata))
+    {
+        // If Nvlink encryption is enabled through regkey
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ENCRYPTION, _MODE, _ENABLE, regdata))
+        {
+            if (RMCFG_FEATURE_MODS_FEATURES)
+            {
+                pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+                NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is enabled on MODS via regkey\n");
+            }
+            else
+            {
+                ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+                NvBool bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+                if (bCCFeatureEnabled)
+                {
+                    pKernelNvlink->bNvleModeRegkey = NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_ENABLE;
+                    pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                    NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is enabled via regkey\n");
+                }
+            }
+        }
+        else
+        {
+            // Nvlink encryption is disabled through regkey
+            NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is disabled via regkey\n");
+        }
+    }
+    else
+    {
+        if (RMCFG_FEATURE_MODS_FEATURES)
+        {
+            // Nvlink encryption is default disabled on MODS
+            NV_PRINTF(LEVEL_INFO, "Nvlink Encryption disabled by default on MODS\n");
+        }
+        else
+        {
+            // Nvlink encryption is default enabled on non-MODS platforms if CC is enabled
+            pKernelNvlink->bNvleModeRegkey = NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_DEFAULT;
+
+            // Enable NVLink encryption if CC is enabled
+            ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+            NvBool bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+
+            if (bCCFeatureEnabled && (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu)))
+            {
+                pKernelNvlink->bNvleModeRegkey = NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_ENABLE;
+                pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+                pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is enabled by default\n");
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is disabled by default since CC is disabled\n");
+            }
+        }
+    }
+
+    pKernelNvlink->bNvleKeyRefreshEnabled = NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_ENABLE_DEFAULT;
+    pKernelNvlink->nvleKeyRefreshInterval = NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_DEFAULT;
+
+    // Registry override to set the NVLE key refresh settings
+    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH, &regdata))
+    {
+        pKernelNvlink->bNvleKeyRefreshEnabled =
+                       DRF_VAL(_REG_STR_RM, _NVLINK_NVLE_KEY_REFRESH, _ENABLE, regdata);
+
+        pKernelNvlink->nvleKeyRefreshInterval =
+                       DRF_VAL(_REG_STR_RM, _NVLINK_NVLE_KEY_REFRESH, _INTERVAL, regdata);
+
+        if (pKernelNvlink->bNvleKeyRefreshEnabled == NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_ENABLE_YES)
+        {
+            if ((pKernelNvlink->nvleKeyRefreshInterval < NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_MIN) ||
+                (pKernelNvlink->nvleKeyRefreshInterval > NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_MAX))
+            {
+                pKernelNvlink->bNvleKeyRefreshEnabled = NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_ENABLE_NO;
+                NV_PRINTF(LEVEL_INFO,
+                          "NVLE key refresh is disabled because of incorrect refresh interval via regkey\n");
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "NVLE key refresh is enabled via regkey, key refresh interval is 0x%x seconds\n",
+                          pKernelNvlink->nvleKeyRefreshInterval);
+            }
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "NVLE key refresh is disabled via regkey\n");
+        }
+    }
+    else
+    {
+        if (pKernelNvlink->bNvleKeyRefreshEnabled == NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_ENABLE_YES)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "NVLE key refresh is enabled by default, key refresh interval is 0x%x seconds\n",
+                      pKernelNvlink->nvleKeyRefreshInterval);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "NVLE key refresh is disabled by default\n");
+        }
     }
 
     return NV_OK;

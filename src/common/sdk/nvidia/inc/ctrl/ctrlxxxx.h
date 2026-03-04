@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2008,2013,2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,9 +23,11 @@
 
 #pragma once
 
+#include <nvtypes.h>
+
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlxxxx.finn
+// Source file:      ctrl/ctrlxxxx.finn
 //
 
 
@@ -34,11 +36,11 @@
 
 /* definitions shared by all CTRL interfaces */
 
-/* Basic command format: 
-*   cmd_class       [31:16], 
+/* Basic command format:
+*   cmd_class       [31:16],
 *   cmd_reserved    [15:15],
 *   cmd_reserved    [14:14],
-*   cmd_category    [13:8], 
+*   cmd_category    [13:8],
 *   cmd_index       [7:0]
 */
 
@@ -65,3 +67,8 @@
 
 #define NVxxxx_CTRL_LEGACY_PRIVILEGED     (0xC0)
 #define NVxxxx_CTRL_LEGACY_NON_PRIVILEGED (0x80)
+
+typedef struct NVXXXX_CTRL_XXX_INFO {
+    NvU32 index;
+    NvU32 data;
+} NVXXXX_CTRL_XXX_INFO;

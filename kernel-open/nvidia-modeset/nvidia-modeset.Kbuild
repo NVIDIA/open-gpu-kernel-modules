@@ -40,9 +40,6 @@ NV_KERNEL_MODULE_TARGETS += $(NVIDIA_MODESET_KO)
 NVIDIA_MODESET_BINARY_OBJECT := $(src)/nvidia-modeset/nv-modeset-kernel.o_binary
 NVIDIA_MODESET_BINARY_OBJECT_O := nvidia-modeset/nv-modeset-kernel.o
 
-quiet_cmd_symlink = SYMLINK $@
-cmd_symlink = ln -sf $< $@
-
 targets += $(NVIDIA_MODESET_BINARY_OBJECT_O)
 
 $(obj)/$(NVIDIA_MODESET_BINARY_OBJECT_O): $(NVIDIA_MODESET_BINARY_OBJECT) FORCE
@@ -55,8 +52,20 @@ nvidia-modeset-y += $(NVIDIA_MODESET_BINARY_OBJECT_O)
 # Define nvidia-modeset.ko-specific CFLAGS.
 #
 
-NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset
+NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset -I$(src)/common/inc
 NVIDIA_MODESET_CFLAGS += -UDEBUG -U_DEBUG -DNDEBUG -DNV_BUILD_MODULE_INSTANCES=0
+
+# Some Android kernels prohibit driver use of filesystem functions like
+# filp_open() and kernel_read().  Disable the NVKMS_CONFIG_FILE_SUPPORTED
+# functionality that uses those functions when building for Android.
+
+PLATFORM_IS_ANDROID ?= 0
+
+ifeq ($(PLATFORM_IS_ANDROID),1)
+  NVIDIA_MODESET_CFLAGS += -DNVKMS_CONFIG_FILE_SUPPORTED=0
+else
+  NVIDIA_MODESET_CFLAGS += -DNVKMS_CONFIG_FILE_SUPPORTED=1
+endif
 
 $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_MODESET_OBJECTS), $(NVIDIA_MODESET_CFLAGS))
 
@@ -85,15 +94,11 @@ $(obj)/$(NVIDIA_MODESET_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_MODESET_OBJECTS
 
 NV_OBJECTS_DEPEND_ON_CONFTEST += $(NVIDIA_MODESET_OBJECTS)
 
-NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations
-NV_CONFTEST_TYPE_COMPILE_TESTS += node_states_n_memory
-NV_CONFTEST_TYPE_COMPILE_TESTS += timespec64
 NV_CONFTEST_TYPE_COMPILE_TESTS += proc_ops
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pde_data
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += proc_remove
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += timer_setup
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += kthread_create_on_node
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += list_is_first
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_real_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
-NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_kthread_create_on_node
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_backlight_use_native
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_video_register_backlight
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_timer_delete_sync
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_platform_device_put

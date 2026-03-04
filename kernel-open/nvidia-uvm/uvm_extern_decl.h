@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2019 NVIDIA Corporation
+    Copyright (c) 2019-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -26,8 +26,6 @@
 
 #include "uvm_linux.h"
 #include "uvm_forward_decl.h"
-
-extern int uvm_enable_debug_procfs;
 
 extern unsigned uvm_perf_map_remote_on_native_atomics_fault;
 

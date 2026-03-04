@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #define RMAPI_UTILS_H
 
 #include "rmapi/rmapi.h"
+
 
 //
 // Alloc a client, device and subdevice handle for a gpu
@@ -54,5 +55,13 @@ rmapiutilFreeClientAndDeviceHandles
 // Return NV_TRUE if the given external class ID is an INTERNAL_ONLY class
 //
 NvBool rmapiutilIsExternalClassIdInternalOnly(NvU32 externalClassId);
+
+//
+// Return the flags and access right associated with this RM control command
+//
+NV_STATUS rmapiutilGetControlInfo(NvU32 cmd, NvU32 *pFlags,
+                                  NvU32 *pAccessRight, NvU32 *pParamsSize);
+
+NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(OBJGPU *pGpu, NvU32 cmd);
 
 #endif /* RMAPI_UTILS_H */

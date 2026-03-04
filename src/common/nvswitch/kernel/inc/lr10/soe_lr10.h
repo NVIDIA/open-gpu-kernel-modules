@@ -58,10 +58,10 @@ typedef const struct
 // Internal function declarations
 //
 NvlStatus nvswitch_init_soe_lr10(nvswitch_device *device);
-NvlStatus nvswitch_soe_prepare_for_reset_lr10(nvswitch_device *device);
 void nvswitch_soe_unregister_events_lr10(nvswitch_device *device);
 void nvswitch_therm_soe_callback_lr10(nvswitch_device *device, union RM_FLCN_MSG *pMsg,
          void *pParams, NvU32 seqDesc, NV_STATUS status);
-NvlStatus nvswitch_soe_set_ucode_core_lr10(nvswitch_device *device, NvBool bFalcon);
 NvlStatus nvswitch_soe_register_event_callbacks_lr10(nvswitch_device *device);
+void nvswitch_soe_init_l2_state_lr10(nvswitch_device *device);
+NvlStatus nvswitch_soe_issue_ingress_stop_lr10(nvswitch_device *device, NvU32 nport, NvBool bStop);
 #endif //_SOE_LR10_H_

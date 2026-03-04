@@ -31,6 +31,7 @@
 #include "nvkms-utils.h"
 #include "nvkms-private.h"
 #include "nvkms-evo.h"
+#include "nvkms-hdmi.h"
 
 /*
  * Handle a display device hotplug event.
@@ -180,6 +181,8 @@ nvHandleHotplugEventDeferredWork(void *dataPtr, NvU32 dataU32)
         } else {
             nvSendDpyEventEvo(pDpyEvo, NVKMS_EVENT_TYPE_DPY_CHANGED);
         }
+        
+        pDpyEvo->hotplugged = TRUE;
     }
 }
 
@@ -204,4 +207,15 @@ nvHandleDPIRQEventDeferredWork(void *dataPtr, NvU32 dataU32)
             nvDPSerializerHandleDPIRQ(pDispEvo, pConnectorEvo);
         }
     }
+}
+
+void
+nvHandleHDMIFRLRetrainEventDeferredWork(void *dataPtr, NvU32 dataU32)
+{
+    NVDispEvoPtr pDispEvo = dataPtr;
+    NVDpyId id = nvNvU32ToDpyId(dataU32);
+    NVDpyEvoRec *pDpyEvo = nvGetDpyEvoFromDispEvo(pDispEvo, id);
+
+    nvSendDpyEventEvo(pDpyEvo, NVKMS_EVENT_TYPE_DPY_CHANGED);
+    pDpyEvo->hdmi.reassessFrlLinkCaps = TRUE;
 }

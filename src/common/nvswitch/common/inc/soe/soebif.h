@@ -57,16 +57,6 @@ enum
      * Get UPHY EOM(Eye Opening Measurement) status.
      */
     RM_SOE_BIF_CMD_GET_EOM_STATUS,
-
-    /*!
-     * Signal Lane Margining
-     */
-    RM_SOE_BIF_CMD_SIGNAL_LANE_MARGINING,
-
-    /*!
-     * Handle Margining interrupt
-     */
-    RM_SOE_BIF_CMD_SERVICE_MARGINING_INTERRUPTS,
 };
 
 /*!
@@ -98,12 +88,6 @@ typedef struct
     NvU32 regAddress;
     NvU32 laneSelectMask;
 } RM_SOE_BIF_CMD_UPHY_DLN_CFG_SPACE;
-
-typedef struct
-{
-    NvU8 cmdType;
-    NvU8 laneNum;
-} RM_SOE_BIF_CMD_LANE_MARGINING;
 
 #define RM_SOE_BIF_LINK_SPEED_INVALID      (0x00)
 #define RM_SOE_BIF_LINK_SPEED_GEN1PCIE     (0x01)
@@ -141,7 +125,7 @@ typedef union
     RM_SOE_BIF_CMD_UPHY_DLN_CFG_SPACE cfgctl;
     RM_SOE_BIF_CMD_PCIE_LINK_SPEED speedctl;
     RM_SOE_BIF_CMD_EOM_STATUS eomStatus;
-    RM_SOE_BIF_CMD_LANE_MARGINING laneMargining;
 } RM_SOE_BIF_CMD;
 
 #endif  // _SOEBIF_H_
+

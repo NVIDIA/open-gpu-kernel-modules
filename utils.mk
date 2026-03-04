@@ -40,13 +40,18 @@ AR                    ?= ar
 CFLAGS                ?= -Wall
 # always set these -f CFLAGS
 CFLAGS                += -fno-strict-aliasing -fno-omit-frame-pointer -Wformat=2
-CC_ONLY_CFLAGS        ?=
+CC_ONLY_CFLAGS        ?= -Wstrict-prototypes -Wold-style-definition
 CXX_ONLY_CFLAGS       ?=
 LDFLAGS               ?=
 BIN_LDFLAGS           ?=
+EXTRA_CFLAGS          ?=
+EXTRA_LDFLAGS         ?=
 
 STACK_USAGE_WARNING   ?=
 CFLAGS                += $(if $(STACK_USAGE_WARNING),-Wstack-usage=$(STACK_USAGE_WARNING))
+
+IMPLICIT_FALLTHROUGH_WARNING ?=
+CFLAGS                += $(if $(IMPLICIT_FALLTHROUGH_WARNING),-Wimplicit-fallthrough=$(IMPLICIT_FALLTHROUGH_WARNING))
 
 HOST_CC               ?= $(CC)
 HOST_LD               ?= $(LD)
@@ -84,6 +89,9 @@ ifeq ($(DEVELOP),1)
   CFLAGS              += -DDEVELOP=1
 endif
 
+CFLAGS                += $(EXTRA_CFLAGS)
+LDFLAGS               += $(EXTRA_LDFLAGS)
+
 STRIP_CMD             ?= strip
 DO_STRIP              ?= 1
 
@@ -106,12 +114,10 @@ GZIP_CMD              ?= gzip
 CHMOD                 ?= chmod
 OBJCOPY               ?= objcopy
 XZ                    ?= xz
-WHOAMI                ?= whoami
+PKG_CONFIG            ?= pkg-config
 
-ifndef HOSTNAME
-  HOSTNAME             = $(shell hostname)
-endif
-
+NV_BUILD_USER         ?= $(shell whoami)
+NV_BUILD_HOST         ?= $(shell hostname)
 
 NV_AUTO_DEPEND        ?= 1
 NV_VERBOSE            ?= 0
@@ -133,11 +139,16 @@ ifeq ($(TARGET_OS),SunOS)
 endif
 
 ifndef TARGET_ARCH
-  TARGET_ARCH         := $(shell uname -m)
+  ifneq ($(TARGET_OS),SunOS)
+    TARGET_ARCH       := $(shell uname -m)
+  else
+    TARGET_ARCH       := $(shell isainfo -n)
+  endif
   TARGET_ARCH         := $(subst i386,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i486,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i586,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i686,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst amd64,x86_64,$(TARGET_ARCH))
 endif
 
 ifeq ($(TARGET_ARCH),x86)
@@ -193,9 +204,6 @@ NV_QUIET_COMMAND_REMOVED_TARGET_PREFIX ?=
 
 NV_GENERATED_HEADERS ?=
 
-PCIACCESS_CFLAGS      ?=
-PCIACCESS_LDFLAGS     ?=
-
 ##############################################################################
 # This makefile uses the $(eval) builtin function, which was added in
 # GNU make 3.80.  Check that the current make version recognizes it.
@@ -208,7 +216,6 @@ $(eval _eval_available := T)
 ifneq ($(_eval_available),T)
   $(error This Makefile requires a GNU Make that supports 'eval'.  Please upgrade to GNU make 3.80 or later)
 endif
-
 
 ##############################################################################
 # Test passing $(1) to $(CC).  If $(CC) succeeds, then echo $(1).
@@ -223,6 +230,19 @@ endif
 TEST_CC_ARG = \
  $(shell $(CC) -c -x c /dev/null -Werror $(1) -o /dev/null > /dev/null 2>&1 && \
    $(ECHO) $(1))
+
+
+##############################################################################
+# Test if instruction $(1) is understood by the assembler
+# Returns "1" if the instruction is understood, else returns empty string.
+#
+# Example usage:
+# ENDBR_SUPPORTED := $(call AS_HAS_INSTR, endbr64)
+##############################################################################
+
+AS_HAS_INSTR = \
+ $(shell if ($(ECHO) "$(1)" | $(CC) -c -x assembler - -o /dev/null) >/dev/null 2>&1 ;\
+   then $(ECHO) "1"; else $(ECHO) ""; fi)
 
 
 ##############################################################################
@@ -243,7 +263,7 @@ MANDIR = $(DESTDIR)$(PREFIX)/share/man/man1
 ##############################################################################
 
 default build: all
-
+.PHONY: default build
 
 ##############################################################################
 # get the definition of NVIDIA_VERSION from version.mk
@@ -389,8 +409,6 @@ BUILD_OBJECT_LIST_WITH_DIR = \
 BUILD_OBJECT_LIST = \
   $(call BUILD_OBJECT_LIST_WITH_DIR,$(1),$(OUTPUTDIR))
 
-$(call BUILD_OBJECT_LIST,nvpci-utils.c): CFLAGS += $(PCIACCESS_CFLAGS)
-
 ##############################################################################
 # function to generate a list of dependency files from their
 # corresponding source files using the specified path. The _WITH_DIR
@@ -520,15 +538,23 @@ NVIDSTRING = $(OUTPUTDIR)/g_nvid_string.c
 
 ifeq ($(DEBUG),1)
   NVIDSTRING_BUILD_TYPE_STRING = Debug Build
+else ifeq ($(DEVELOP),1)
+  NVIDSTRING_BUILD_TYPE_STRING = Develop Build
 else
   NVIDSTRING_BUILD_TYPE_STRING = Release Build
 endif
 
 define GENERATE_NVIDSTRING
+  $(1)_BUILD_NVID := NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_NVID_VERSION)
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDSTRING_BUILD_TYPE_STRING)
+  ifneq ($$(NVIDIA_NVID_EXTRA),)
+    $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDIA_NVID_EXTRA)
+  endif
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  ($$(NV_BUILD_USER)@$$(NV_BUILD_HOST))
   # g_nvid_string.c depends on all objects except g_nvid_string.o, and version.mk
   $(NVIDSTRING): $$(filter-out $$(call BUILD_OBJECT_LIST,$$(NVIDSTRING)), $(3)) $$(VERSION_MK)
 	$(at_if_quiet)$$(MKDIR) $$(dir $$@)
-	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_VERSION)  $$(NVIDSTRING_BUILD_TYPE_STRING)  (`$$(WHOAMI)`@$$(HOSTNAME))  `$$(DATE)`\";" > $$@
+	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: $$($$(strip $(1))_BUILD_NVID)  `$$(DATE)`\";" > $$@
 	$(at_if_quiet)$$(ECHO) "const char *const p$$(strip $(1)) = $(1) + 11;" >> $$@;
 endef
 
@@ -550,13 +576,43 @@ endef
 #  $(1): Path to the file to convert
 ##############################################################################
 
+LD_TARGET_EMULATION_FLAG =
+LD_TARGET_EMULATION_FLAG_Linux_x86      = elf_i386
+LD_TARGET_EMULATION_FLAG_Linux_x86_64   = elf_x86_64
+LD_TARGET_EMULATION_FLAG_Linux_aarch64  = aarch64elf
+LD_TARGET_EMULATION_FLAG_Linux_ppc64le  = elf64lppc
+LD_TARGET_EMULATION_FLAG_SunOS_x86      = elf_i386_sol2
+LD_TARGET_EMULATION_FLAG_SunOS_x86_64   = elf_x86_64_sol2
+LD_TARGET_EMULATION_FLAG_FreeBSD_x86    = elf_i386_fbsd
+LD_TARGET_EMULATION_FLAG_FreeBSD_x86_64 = elf_x86_64_fbsd
+
+# Different linkers (GNU ld versus ld.lld versus ld.gold) expect different
+# target architecture values for '-m'.  Empirically, only ld.lld appears to
+# actually need it, so only add the option when linking with ld.lld.  Example
+# `ld.lld -v` output: "LLD 15.0.7 (compatible with GNU linkers)".
+LD_IS_LLD := $(if $(filter LLD,$(shell $(LD) -v)),1)
+
+ifdef LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH)
+  LD_TARGET_EMULATION_FLAG = $(if $(LD_IS_LLD), -m $(LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH)))
+endif
+
 define READ_ONLY_OBJECT_FROM_FILE_RULE
   $$(OUTPUTDIR)/$$(notdir $(1)).o: $(1)
 	$(at_if_quiet)$$(MKDIR) $$(OUTPUTDIR)
 	$(at_if_quiet)cd $$(dir $(1)); \
 	$$(call quiet_cmd_no_at,LD) -r -z noexecstack --format=binary \
+	    $$(LD_TARGET_EMULATION_FLAG) \
 	    $$(notdir $(1)) -o $$(OUTPUTDIR_ABSOLUTE)/$$(notdir $$@)
 	$$(call quiet_cmd,OBJCOPY) \
 	    --rename-section .data=.rodata,contents,alloc,load,data,readonly \
 	    $$@
+endef
+
+define BINARY_DATA_HEADER_RULE
+  $$(OUTPUTDIR)/$(notdir $(1)).h:
+	$(at_if_quiet)$(MKDIR) $$(OUTPUTDIR)
+	$(at_if_quiet){ \
+	  $$(PRINTF) "extern const char _binary_$(subst -,_,$(subst .,_,$(notdir $(1))))_start[];\n"; \
+	  $$(PRINTF) "extern const char _binary_$(subst -,_,$(subst .,_,$(notdir $(1))))_end[];\n"; \
+	} > $$@
 endef

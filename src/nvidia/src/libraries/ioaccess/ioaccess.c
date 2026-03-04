@@ -25,66 +25,21 @@
 #include "utils/nvprintf.h"
 #include "nvport/nvport.h"
 
-/*!
- * @brief: Allocate and initialize an IO_APERTURE instance.
- * 
- * @param[out] ppAperture       pointer to the new IO_APERTURE.
- * @param[in]  pParentAperture  pointer to the parent of the new IO_APERTURE.
- * @param[in]  pDevice          pointer to IO_DEVICE of the APERTURE.
- * @param[in]  offset           offset from the parent APERTURE's baseAddress.
- * @param[in]  length           length of the APERTURE.
- * 
- * @return NV_OK upon success
- *         NV_ERR* otherwise.
- */
-NV_STATUS
-ioaccessCreateIOAperture
-(
-    IO_APERTURE **ppAperture,
-    IO_APERTURE  *pParentAperture,
-    IO_DEVICE    *pDevice,
-    NvU32         offset,
-    NvU32         length
-)
-{
-    NV_STATUS status = NV_OK;
-    IO_APERTURE *pAperture = portMemAllocNonPaged(sizeof(IO_APERTURE));
-
-    if (pAperture == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    portMemSet(pAperture, 0, sizeof(IO_APERTURE));
-
-    status = ioaccessInitIOAperture(pAperture, pParentAperture, pDevice, offset, length);
-    if (status != NV_OK)
-    {
-        portMemFree(pAperture);
-    }
-    else
-    {
-        *ppAperture = pAperture;
-    }
-
-    return status;
-}
-
-
+#if !((defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH))
 /*!
  * Initialize an IO_APERTURE instance. This enables initialization for derived IO_APERTURE instances
  * that are not allocated via CreateIOAperture.
- * 
+ *
  * @param[in,out] pAperture        pointer to IO_APERTURE instance to be initialized.
  * @param[in]     pParentAperture  pointer to parent of the new IO_APERTURE.
  * @param[in]     pDevice          pointer to IO_DEVICE of the APERTURE.
  * @param[in]     offset           offset from the parent APERTURE's baseAddress.
  * @param[in]     length           length of the APERTURE.
- * 
+ *
  * @return NV_OK when inputs are valid.
  */
 NV_STATUS
-ioaccessInitIOAperture 
+ioaccessInitIOAperture
 (
     IO_APERTURE *pAperture,
     IO_APERTURE *pParentAperture,
@@ -120,7 +75,7 @@ ioaccessInitIOAperture
         // Check if the child Aperture strides beyond the parent's boundary.
         if ((length + offset) > pParentAperture->length)
         {
-            NV_PRINTF(LEVEL_WARNING, 
+            NV_PRINTF(LEVEL_WARNING,
                 "Child aperture crosses parent's boundary, length %u offset %u, Parent's length %u\n",
                 length, offset, pParentAperture->length);
         }
@@ -135,12 +90,4 @@ ioaccessInitIOAperture
 
     return NV_OK;
 }
- 
-void
-ioaccessDestroyIOAperture
-(
-    IO_APERTURE *pAperture
-)
-{
-    portMemFree(pAperture);
-}
+#endif // !((defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH))

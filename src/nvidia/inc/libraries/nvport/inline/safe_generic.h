@@ -138,20 +138,20 @@
 
 #define PORT_SAFE_CAST(a, b, t)                       \
     ((a < PORT_SAFE_MIN(t) || a > PORT_SAFE_MAX(t)) ? \
-                                    NV_FALSE : \
+                                    NV_FALSE :        \
                             ((b = (Nv##t) a), NV_TRUE))
 
 
-#define PORT_SAFE_DEFINE_MATH_FUNC(_op_, _US_, _size_)                         \
-    PORT_SAFE_INLINE NvBool                                                    \
-    portSafe##_op_##_US_##_size_                                               \
-    (                                                                          \
-        Nv##_US_##_size_  x,                                                   \
-        Nv##_US_##_size_  y,                                                   \
-        Nv##_US_##_size_ *pRes                                                 \
-    )                                                                          \
-    {                                                                          \
-        return PORT_EXPAND(PORT_SAFE_##_op_##_IMPL_##_US_)(x, y, pRes, _size_);\
+#define PORT_SAFE_DEFINE_MATH_FUNC(_op_, _US_, _size_)                          \
+    PORT_SAFE_INLINE NvBool                                                     \
+    portSafe##_op_##_US_##_size_                                                \
+    (                                                                           \
+        Nv##_US_##_size_  x,                                                    \
+        Nv##_US_##_size_  y,                                                    \
+        Nv##_US_##_size_ *pRes                                                  \
+    )                                                                           \
+    {                                                                           \
+        return PORT_EXPAND(PORT_SAFE_##_op_##_IMPL_##_US_)(x, y, pRes, _size_); \
     }
 
 

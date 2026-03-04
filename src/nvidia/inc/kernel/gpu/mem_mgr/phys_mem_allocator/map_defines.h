@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +22,7 @@
  */
 
 /*!
- *  @brief Contains common defines between addrtree and regmap
+ *  @brief Contains common defines for regmap
  */
 
 #ifndef MAP_DEFINES_H
@@ -35,39 +35,33 @@
 
 #endif
 
+#if defined(SRT_BUILD)
+#define RMCFG_MODULE_x 1
+#define RMCFG_FEATURE_x 1
+#else
+#include "rmconfig.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 // Default page size 64KB
 #define PMA_GRANULARITY 0x10000
 #define PMA_PAGE_SHIFT 16
 
-//
-// _PMA_1GB will cause overflows with an NvU32. It's bigger than NvU32 can store,
-// but compilation still fails when using a NvU64 instead
-// So just use bitshift.
-// 1 << _TREE_64KB == sizeof(1 frame)
-//
-
-#define _TREE_64KB               16
-#define _TREE_128KB              17
-#define _TREE_2MB                21
-#define _TREE_128MB              27
-#define _TREE_512MB              29
-#define _TREE_32GB               35
-#define _TREE_2TB                40
-
 // Defines shared between pma.c and regmap.c
-#define _PMA_64KB               (64 * 1024)
-#define _PMA_128KB              (128 * 1024)
-#define _PMA_2MB                (2 * 1024 * 1024)
-#define _PMA_512MB              (512 * 1024 * 1024)
+#define _PMA_64KB               (64ULL  * 1024)
+#define _PMA_128KB              (128ULL * 1024)
+#define _PMA_2MB                (2ULL   * 1024 * 1024)
+#define _PMA_512MB              (512ULL * 1024 * 1024)
 
-// Scanning function return code
-#define EVICTABLE -2
-#define ALL_FREE  -3
+// Localized memory chunks are 64MB split into 2 32MB chunks
+#define PMA_LOCALIZED_MEMORY_ALLOC_STRIDE   (32ULL * 1024 * 1024)
+#define PMA_LOCALIZED_MEMORY_RESERVE_SIZE   (2 * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
+
+// Same as NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_UGPU_COUNT
+#define PMA_MAX_LOCALIZED_REGION_COUNT      2
 
 typedef NvU32 PMA_PAGESTATUS;
 
@@ -78,6 +72,7 @@ typedef NvU32 PMA_PAGESTATUS;
 #define MAP_IDX_PERSISTENT  4
 #define MAP_IDX_NUMA_REUSE  5
 #define MAP_IDX_BLACKLIST   6
+#define MAP_IDX_LOCALIZED   7
 
 #define STATE_FREE      0x00
 #define STATE_UNPIN     NVBIT(MAP_IDX_ALLOC_UNPIN)
@@ -90,14 +85,17 @@ typedef NvU32 PMA_PAGESTATUS;
 #define ATTRIB_PERSISTENT  NVBIT(MAP_IDX_PERSISTENT)
 #define ATTRIB_NUMA_REUSE  NVBIT(MAP_IDX_NUMA_REUSE)
 #define ATTRIB_BLACKLIST   NVBIT(MAP_IDX_BLACKLIST)
-#define ATTRIB_MASK        (ATTRIB_EVICTING | ATTRIB_SCRUBBING \
+#define ATTRIB_LOCALIZED   NVBIT(MAP_IDX_LOCALIZED)
+
+#define ATTRIB_MASK        (ATTRIB_EVICTING | ATTRIB_SCRUBBING      \
                             | ATTRIB_PERSISTENT | ATTRIB_NUMA_REUSE \
-                            | ATTRIB_BLACKLIST)
+                            | ATTRIB_BLACKLIST | ATTRIB_LOCALIZED)
 
 #define MAP_MASK    (STATE_MASK | ATTRIB_MASK)
 
 #define PMA_STATE_BITS_PER_PAGE     2   // Alloc & pinned state
-#define PMA_ATTRIB_BITS_PER_PAGE    5   // Persistence, Scrubbing, Evicting, Reuse & Blacklisting attributes
+#define PMA_ATTRIB_BITS_PER_PAGE    6   // Persistence, Scrubbing, Evicting, Reuse, Blacklisting, & Localized attributes
+
 #define PMA_BITS_PER_PAGE           (PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE)
 
 //
@@ -114,7 +112,13 @@ typedef struct _PMA_STATS
     NvU64 numFreeFrames;             // PMA-wide free 64KB frame count
     NvU64 numFree2mbPages;           // PMA-wide free 2MB pages count
 #if !defined(NVWATCH)
+    NvU64 num2mbPagesProtected;      // PMA-wide total number of 2MB pages in protected memory
+    NvU64 numFreeFramesProtected;    // PMA-wide free 64KB frame count in protected memory
+    NvU64 numFree2mbPagesProtected;  // PMA-wide free 2MB pages count in protected memory
 #endif // !defined(NVWATCH)
+    NvU64 num2mbPagesLocalizable[PMA_MAX_LOCALIZED_REGION_COUNT];  // PMA-wide free 64KB per-uGPU frame count
+    NvU64 numFreeFramesLocalizable[PMA_MAX_LOCALIZED_REGION_COUNT];  // PMA-wide free 64KB per-uGPU frame count
+    NvU64 numFree2mbPagesLocalizable[PMA_MAX_LOCALIZED_REGION_COUNT];  // PMA-wide free 64KB per-uGPU frame count
 } PMA_STATS;
 
 // Stores blacklisting information passed in from heap layer

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,9 +34,6 @@
 #include <gpu_mgr/gpu_mgr.h>
 #include "kernel/gpu/intr/intr.h"
 #include <gpu/bif/kernel_bif.h>
-#include <objtmr.h>
-
-#include "g_os_private.h"
 
 /*!
  * @brief Wait for interrupt
@@ -111,7 +108,7 @@ NV_STATUS osSanityTestIsr(
 
     osWaitForInterrupt(pGpu, &serviced);
 
-    return (serviced) ? NV_OK : NV_ERR_GENERIC;
+    return (serviced) ? NV_OK : NV_ERR_INVALID_STATE;
 }
 
 //
@@ -123,10 +120,8 @@ static NV_STATUS _osVerifyInterrupts(
     OBJGPU *pGpu
 )
 {
-#if !defined(NV_UNIX) || defined(NV_MODS)
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-#endif
     Intr *pIntr = GPU_GET_INTR(pGpu);
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     OBJGPU *pGpuSaved = pGpu;
     NvU32  *pIntrEn0, *pIntrEn1;
     MC_ENGINE_BITVECTOR intrMask;
@@ -188,7 +183,8 @@ static NV_STATUS _osVerifyInterrupts(
     gpuInstance = i = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
     {
-        if (gpuIsGpuFullPower(pGpu) == NV_FALSE)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+            !gpuIsGpuFullPower(pGpu))
         {
             continue;
         }
@@ -203,13 +199,18 @@ static NV_STATUS _osVerifyInterrupts(
         pIntr = GPU_GET_INTR(pGpu);
         pIntrEn0[i] = intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL /* threadstate */);
         intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
+        intrSetStall_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL /* threadstate */);
         i++;
     }
     pGpu = pGpuSaved;
     pIntr = GPU_GET_INTR(pGpu);
 
+    //
+    // Clear and rearm interrupt before we trigger it in case it were
+    // ever set for some reason (such as previous bad state or programming)
+    //
+    intrClearStallSWIntr_HAL(pGpu, pIntr);
     intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_SOFTWARE, NULL /* threadstate */);
-    intrDisableStallSWIntr_HAL(pGpu, pIntr);
     intrEnableStallSWIntr_HAL(pGpu, pIntr);
     if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
     {
@@ -233,18 +234,15 @@ static NV_STATUS _osVerifyInterrupts(
     interrupt_triggered = 0;
 
     intrSetStallSWIntr_HAL(pGpu, pIntr);
+    kbifCheckAndRearmMSI(pGpu, pKernelBif);
 
     Bailout = 0;
 
     while (!interrupt_triggered)
     {
-#if defined(NV_UNIX) && !defined(NV_MODS)
-        osDelay(50);
-        Bailout += 50 * 1000;
-#else
-        tmrDelay(pTmr, 5 * 1000);
+        osDelayUs(5);
         Bailout += 5;
-#endif
+
         if (Bailout > pGpu->timeoutData.defaultus)
             break;
     }
@@ -253,7 +251,6 @@ static NV_STATUS _osVerifyInterrupts(
     // Message Signalled Interrupt (MSI) support
     // This call checks if MSI is enabled and if it is, we need re-arm it.
     //
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     kbifCheckAndRearmMSI(pGpu, pKernelBif);
 
     pGpu->testIntr = NV_FALSE;
@@ -271,7 +268,8 @@ static NV_STATUS _osVerifyInterrupts(
     gpuInstance = i = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
     {
-        if (gpuIsGpuFullPower(pGpu) == NV_FALSE)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+            !gpuIsGpuFullPower(pGpu))
         {
             continue;
         }
@@ -282,6 +280,7 @@ static NV_STATUS _osVerifyInterrupts(
 
         // Restore the stall interrupt tree enable
         intrSetIntrEnInHw_HAL(pGpu, pIntr, pIntrEn0[i], NULL /* threadstate */);
+        intrSetStall_HAL(pGpu, pIntr, pIntrEn0[i], NULL /* threadstate */);
         i++;
     }
 

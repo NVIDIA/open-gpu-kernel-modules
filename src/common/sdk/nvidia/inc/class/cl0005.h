@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,38 +21,31 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl0005_h_
-#define _cl0005_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl0005.finn
+//
 
-#define  NV01_EVENT                                                (0x00000005)
-/* NvNotification[] fields and values */
-#define NV003_NOTIFICATION_STATUS_ERROR_PROTECTION_FAULT           (0x4000)
-/* pio method data structure */
-typedef volatile struct _cl0005_tag0 {
-    NvV32 Reserved00[0x7c0];
-} Nv005Typedef, Nv01Event;
-#define NV005_TYPEDEF                                              Nv01Event
-/* obsolete stuff */
-#define NV1_TIMER                                                  (0x00000004)
-#define Nv1Event                                                   Nv01Event
-#define nv1Event                                                   Nv01Event
-#define nv01Event                                                  Nv01Event
+#include "cl0005_notification.h"
+
+#define NV01_EVENT (0x5U) /* finn: Evaluated from "NV0005_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* NvRmAlloc() parameters */
-typedef struct {
+#define NV0005_ALLOC_PARAMETERS_MESSAGE_ID (0x0005U)
+
+typedef struct NV0005_ALLOC_PARAMETERS {
     NvHandle hParentClient;
     NvHandle hSrcResource;
 
     NvV32    hClass;
     NvV32    notifyIndex;
-    NvP64    data NV_ALIGN_BYTES(8);
+    NV_DECLARE_ALIGNED(NvP64 data, 8);
 } NV0005_ALLOC_PARAMETERS;
+
 
 /* NV0005_ALLOC_PARAMETERS's notifyIndex field is overloaded to contain the
  * notifyIndex value itself, plus flags, and optionally a subdevice field if
@@ -63,9 +56,3 @@ typedef struct {
 #define NV0005_NOTIFY_INDEX_INDEX     15:0
 #define NV0005_NOTIFY_INDEX_SUBDEVICE 23:16
 #define NV0005_NOTIFY_INDEX_FLAGS     31:24
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl0005_h_ */

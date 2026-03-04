@@ -31,33 +31,26 @@
 #include <drm/drmP.h>
 #endif
 
-#if defined(NV_DRM_DRM_DRV_H_PRESENT)
 #include <drm/drm_drv.h>
+
+#if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE)
+#include <drm/drm_blend.h>
 #endif
 
 /*
- * drm_dev_put() is added by commit 9a96f55034e41b4e002b767e9218d55f03bdff7d
- * (2017-09-26) and drm_dev_unref() is removed by
- * ba1d345401476a5f7fbad622607c5a1f95e59b31 (2018-11-15).
- *
- * drm_dev_unref() has been added and drm_dev_free() removed by commit -
- *
- *      2014-01-29: 099d1c290e2ebc3b798961a6c177c3aef5f0b789
+ * For DRM_MODE_ROTATE_*, DRM_MODE_REFLECT_*, struct drm_color_ctm_3x4, and
+ * struct drm_color_lut.
  */
-static inline void nv_drm_dev_free(struct drm_device *dev)
-{
-#if defined(NV_DRM_DEV_PUT_PRESENT)
-    drm_dev_put(dev);
-#elif defined(NV_DRM_DEV_UNREF_PRESENT)
-    drm_dev_unref(dev);
-#else
-    drm_dev_free(dev);
-#endif
-}
+#include <uapi/drm/drm_mode.h>
 
-#if defined(NV_DRM_DRM_PRIME_H_PRESENT)
+/*
+ * Commit 1e13c5644c44 ("drm/drm_mode_object: increase max objects to
+ * accommodate new color props") in Linux v6.8 increased the pre-object
+ * property limit to from 24 to 64.
+ */
+#define NV_DRM_USE_EXTENDED_PROPERTIES (DRM_OBJECT_MAX_PROPERTY >= 64)
+
 #include <drm/drm_prime.h>
-#endif
 
 static inline struct sg_table*
 nv_drm_prime_pages_to_sg(struct drm_device *dev,
@@ -69,8 +62,6 @@ nv_drm_prime_pages_to_sg(struct drm_device *dev,
     return drm_prime_pages_to_sg(pages, nr_pages);
 #endif
 }
-
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
 /*
  * drm_for_each_connector(), drm_for_each_crtc(), drm_for_each_fb(),
@@ -125,18 +116,6 @@ nv_drm_prime_pages_to_sg(struct drm_device *dev,
     list_for_each_entry(crtc, &(dev)->mode_config.crtc_list, head)
 #endif
 
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
-#define nv_drm_for_each_connector(connector, conn_iter, dev) \
-        drm_for_each_connector_iter(connector, conn_iter)
-#elif defined(drm_for_each_connector)
-#define nv_drm_for_each_connector(connector, conn_iter, dev) \
-    drm_for_each_connector(connector, dev)
-#else
-#define nv_drm_for_each_connector(connector, conn_iter, dev) \
-    WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));      \
-    list_for_each_entry(connector, &(dev)->mode_config.connector_list, head)
-#endif
-
 #if defined(drm_for_each_encoder)
 #define nv_drm_for_each_encoder(encoder, dev) \
     drm_for_each_encoder(encoder, dev)
@@ -159,141 +138,23 @@ nv_drm_prime_pages_to_sg(struct drm_device *dev,
 int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
                                      struct drm_modeset_acquire_ctx *ctx);
 
+#include <drm/drm_auth.h>
+#include <drm/drm_file.h>
+
 /*
- * for_each_connector_in_state(), for_each_crtc_in_state() and
- * for_each_plane_in_state() were added by kernel commit
- * df63b9994eaf942afcdb946d27a28661d7dfbf2a which was Signed-off-by:
- *      Ander Conselvan de Oliveira <ander.conselvan.de.oliveira@intel.com>
- *      Daniel Vetter <daniel.vetter@ffwll.ch>
- *
- * for_each_connector_in_state(), for_each_crtc_in_state() and
- * for_each_plane_in_state() were copied from
- *      include/drm/drm_atomic.h @
- *      21a01abbe32a3cbeb903378a24e504bfd9fe0648
- * which has the following copyright and license information:
- *
- * Copyright (C) 2014 Red Hat
- * Copyright (C) 2014 Intel Corp.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
- * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * Authors:
- * Rob Clark <robdclark@gmail.com>
- * Daniel Vetter <daniel.vetter@ffwll.ch>
+ * drm_file_get_master() added by commit 56f0729a510f ("drm: protect drm_master
+ * pointers in drm_lease.c") in v5.15 (2021-07-20)
  */
-
-/**
- * nv_drm_for_each_connector_in_state - iterate over all connectors in an
- * atomic update
- * @__state: &struct drm_atomic_state pointer
- * @connector: &struct drm_connector iteration cursor
- * @connector_state: &struct drm_connector_state iteration cursor
- * @__i: int iteration cursor, for macro-internal use
- *
- * This iterates over all connectors in an atomic update. Note that before the
- * software state is committed (by calling drm_atomic_helper_swap_state(), this
- * points to the new state, while afterwards it points to the old state. Due to
- * this tricky confusion this macro is deprecated.
- */
-#if !defined(for_each_connector_in_state)
-#define nv_drm_for_each_connector_in_state(__state,                         \
-                                           connector, connector_state, __i) \
-       for ((__i) = 0;                                                      \
-            (__i) < (__state)->num_connector &&                             \
-            ((connector) = (__state)->connectors[__i].ptr,                  \
-            (connector_state) = (__state)->connectors[__i].state, 1);       \
-            (__i)++)                                                        \
-               for_each_if (connector)
-#else
-#define nv_drm_for_each_connector_in_state(__state,                         \
-                                           connector, connector_state, __i) \
-    for_each_connector_in_state(__state, connector, connector_state, __i)
-#endif
-
-
-/**
- * nv_drm_for_each_crtc_in_state - iterate over all CRTCs in an atomic update
- * @__state: &struct drm_atomic_state pointer
- * @crtc: &struct drm_crtc iteration cursor
- * @crtc_state: &struct drm_crtc_state iteration cursor
- * @__i: int iteration cursor, for macro-internal use
- *
- * This iterates over all CRTCs in an atomic update. Note that before the
- * software state is committed (by calling drm_atomic_helper_swap_state(), this
- * points to the new state, while afterwards it points to the old state. Due to
- * this tricky confusion this macro is deprecated.
- */
-#if !defined(for_each_crtc_in_state)
-#define nv_drm_for_each_crtc_in_state(__state, crtc, crtc_state, __i) \
-       for ((__i) = 0;                                                \
-            (__i) < (__state)->dev->mode_config.num_crtc &&           \
-            ((crtc) = (__state)->crtcs[__i].ptr,                      \
-            (crtc_state) = (__state)->crtcs[__i].state, 1);           \
-            (__i)++)                                                  \
-               for_each_if (crtc_state)
-#else
-#define nv_drm_for_each_crtc_in_state(__state, crtc, crtc_state, __i) \
-    for_each_crtc_in_state(__state, crtc, crtc_state, __i)
-#endif
-
-/**
- * nv_drm_for_each_plane_in_state - iterate over all planes in an atomic update
- * @__state: &struct drm_atomic_state pointer
- * @plane: &struct drm_plane iteration cursor
- * @plane_state: &struct drm_plane_state iteration cursor
- * @__i: int iteration cursor, for macro-internal use
- *
- * This iterates over all planes in an atomic update. Note that before the
- * software state is committed (by calling drm_atomic_helper_swap_state(), this
- * points to the new state, while afterwards it points to the old state. Due to
- * this tricky confusion this macro is deprecated.
- */
-#if !defined(for_each_plane_in_state)
-#define nv_drm_for_each_plane_in_state(__state, plane, plane_state, __i) \
-       for ((__i) = 0;                                                   \
-            (__i) < (__state)->dev->mode_config.num_total_plane &&       \
-            ((plane) = (__state)->planes[__i].ptr,                       \
-            (plane_state) = (__state)->planes[__i].state, 1);            \
-            (__i)++)                                                     \
-               for_each_if (plane_state)
-#else
-#define nv_drm_for_each_plane_in_state(__state, plane, plane_state, __i) \
-    for_each_plane_in_state(__state, plane, plane_state, __i)
-#endif
-
-static inline struct drm_crtc *nv_drm_crtc_find(struct drm_device *dev,
-    uint32_t id)
+static inline struct drm_master *nv_drm_file_get_master(struct drm_file *filep)
 {
-#if defined(NV_DRM_MODE_OBJECT_FIND_HAS_FILE_PRIV_ARG)
-    return drm_crtc_find(dev, NULL /* file_priv */, id);
+#if defined(NV_DRM_FILE_GET_MASTER_PRESENT)
+    return drm_file_get_master(filep);
 #else
-    return drm_crtc_find(dev, id);
-#endif
-}
-
-static inline struct drm_encoder *nv_drm_encoder_find(struct drm_device *dev,
-    uint32_t id)
-{
-#if defined(NV_DRM_MODE_OBJECT_FIND_HAS_FILE_PRIV_ARG)
-    return drm_encoder_find(dev, NULL /* file_priv */, id);
-#else
-    return drm_encoder_find(dev, id);
+    if (filep->master) {
+        return drm_master_get(filep->master);
+    } else {
+        return NULL;
+    }
 #endif
 }
 
@@ -301,10 +162,6 @@ static inline struct drm_encoder *nv_drm_encoder_find(struct drm_device *dev,
  * drm_connector_for_each_possible_encoder() is added by commit
  * 83aefbb887b59df0b3520965c3701e01deacfc52 which was Signed-off-by:
  *     Ville Syrjälä <ville.syrjala@linux.intel.com>
- *
- * drm_connector_for_each_possible_encoder() is copied from
- * include/drm/drm_connector.h and modified to use nv_drm_encoder_find()
- * instead of drm_encoder_find().
  *
  * drm_connector_for_each_possible_encoder() is copied from
  *      include/drm/drm_connector.h @
@@ -332,9 +189,7 @@ static inline struct drm_encoder *nv_drm_encoder_find(struct drm_device *dev,
  * OF THIS SOFTWARE.
  */
 
-#if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
 #include <drm/drm_connector.h>
-#endif
 
 /**
  * nv_drm_connector_for_each_possible_encoder - iterate connector's possible
@@ -353,8 +208,9 @@ static inline struct drm_encoder *nv_drm_encoder_find(struct drm_device *dev,
        for ((__i) = 0; (__i) < ARRAY_SIZE((connector)->encoder_ids) &&        \
                     (connector)->encoder_ids[(__i)] != 0; (__i)++)            \
                for_each_if((encoder) =                                        \
-                           nv_drm_encoder_find((connector)->dev,              \
-                                               (connector)->encoder_ids[(__i)]))
+                           drm_encoder_find((connector)->dev, NULL,           \
+                                            (connector)->encoder_ids[(__i)]))
+
 
 #define nv_drm_connector_for_each_possible_encoder(connector, encoder) \
     {                                                                  \
@@ -409,79 +265,13 @@ nv_drm_connector_update_edid_property(struct drm_connector *connector,
 #endif
 }
 
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
-#include <drm/drm_connector.h>
-
-static inline
-void nv_drm_connector_list_iter_begin(struct drm_device *dev,
-                                      struct drm_connector_list_iter *iter)
-{
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_BEGIN_PRESENT)
-    drm_connector_list_iter_begin(dev, iter);
-#else
-    drm_connector_list_iter_get(dev, iter);
-#endif
-}
-
-static inline
-void nv_drm_connector_list_iter_end(struct drm_connector_list_iter *iter)
-{
-#if defined(NV_DRM_CONNECTOR_LIST_ITER_BEGIN_PRESENT)
-    drm_connector_list_iter_end(iter);
-#else
-    drm_connector_list_iter_put(iter);
-#endif
-}
-#endif
-
-/*
- * The drm_format_num_planes() function was added by commit d0d110e09629 drm:
- * Add drm_format_num_planes() utility function in v3.3 (2011-12-20). Prototype
- * was moved from drm_crtc.h to drm_fourcc.h by commit ae4df11a0f53 (drm: Move
- * format-related helpers to drm_fourcc.c) in v4.8 (2016-06-09).
- * drm_format_num_planes() has been removed by commit 05c452c115bf (drm: Remove
- * users of drm_format_num_planes) in v5.3 (2019-05-16).
- *
- * drm_format_info() is available only from v4.10 (2016-10-18), added by commit
- * 84770cc24f3a (drm: Centralize format information).
- */
-#include <drm/drm_crtc.h>
 #include <drm/drm_fourcc.h>
 
 static inline int nv_drm_format_num_planes(uint32_t format)
 {
-#if defined(NV_DRM_FORMAT_NUM_PLANES_PRESENT)
-    return drm_format_num_planes(format);
-#else
     const struct drm_format_info *info = drm_format_info(format);
     return info != NULL ? info->num_planes : 1;
-#endif
 }
-
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
-/*
- * DRM_FORMAT_MOD_LINEAR was also defined after the original modifier support
- * was added to the kernel, as a more explicit alias of DRM_FORMAT_MOD_NONE
- */
-#if !defined(DRM_FORMAT_MOD_VENDOR_NONE)
-#define DRM_FORMAT_MOD_VENDOR_NONE 0
-#endif
-
-#if !defined(DRM_FORMAT_MOD_LINEAR)
-#define DRM_FORMAT_MOD_LINEAR fourcc_mod_code(NONE, 0)
-#endif
-
-/*
- * DRM_FORMAT_MOD_INVALID was defined after the original modifier support was
- * added to the kernel, for use as a sentinel value.
- */
-#if !defined(DRM_FORMAT_RESERVED)
-#define DRM_FORMAT_RESERVED ((1ULL << 56) - 1)
-#endif
-
-#if !defined(DRM_FORMAT_MOD_INVALID)
-#define DRM_FORMAT_MOD_INVALID fourcc_mod_code(NONE, DRM_FORMAT_RESERVED)
-#endif
 
 /*
  * DRM_FORMAT_MOD_VENDOR_NVIDIA was previously called
@@ -505,79 +295,29 @@ static inline int nv_drm_format_num_planes(uint32_t format)
                              (((c) & 0x7) << 23)))
 #endif
 
-#endif /* defined(NV_DRM_FORMAT_MODIFIERS_PRESENT) */
+/*
+ * DRM_UNLOCKED was removed with commit 2798ffcc1d6a ("drm: Remove locking for
+ * legacy ioctls and DRM_UNLOCKED") in v6.8, but it was previously made
+ * implicit for all non-legacy DRM driver IOCTLs since Linux v4.10 commit
+ * fa5386459f06 "drm: Used DRM_LEGACY for all legacy functions" (Linux v4.4
+ * commit ea487835e887 "drm: Enforce unlocked ioctl operation for kms driver
+ * ioctls" previously did it only for drivers that set the DRM_MODESET flag), so
+ * it was effectively a no-op anyway.
+ */
+#if !defined(NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT)
+#define DRM_UNLOCKED 0
+#endif
 
 /*
- * drm_vma_offset_exact_lookup_locked() were added
- * by kernel commit 2225cfe46bcc which was Signed-off-by:
- *      Daniel Vetter <daniel.vetter@intel.com>
- *
- * drm_vma_offset_exact_lookup_locked() were copied from
- *      include/drm/drm_vma_manager.h @ 2225cfe46bcc
- * which has the following copyright and license information:
- *
- * Copyright (c) 2013 David Herrmann <dh.herrmann@gmail.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
- * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * struct drm_color_ctm_3x4 was added by commit 6872a189be50 ("drm/amd/display:
+ * Add 3x4 CTM support for plane CTM") in v6.8. For backwards compatibility,
+ * define it when not present.
  */
-
-#include <drm/drm_vma_manager.h>
-
-/**
- * nv_drm_vma_offset_exact_lookup_locked() - Look up node by exact address
- * @mgr: Manager object
- * @start: Start address (page-based, not byte-based)
- * @pages: Size of object (page-based)
- *
- * Same as drm_vma_offset_lookup_locked() but does not allow any offset into the node.
- * It only returns the exact object with the given start address.
- *
- * RETURNS:
- * Node at exact start address @start.
- */
-static inline struct drm_vma_offset_node *
-nv_drm_vma_offset_exact_lookup_locked(struct drm_vma_offset_manager *mgr,
-                                      unsigned long start,
-                                      unsigned long pages)
-{
-#if defined(NV_DRM_VMA_OFFSET_EXACT_LOOKUP_LOCKED_PRESENT)
-    return drm_vma_offset_exact_lookup_locked(mgr, start, pages);
-#else
-    struct drm_vma_offset_node *node;
-
-    node = drm_vma_offset_lookup_locked(mgr, start, pages);
-    return (node && node->vm_node.start == start) ? node : NULL;
+#if !defined(NV_DRM_COLOR_CTM_3X4_PRESENT)
+struct drm_color_ctm_3x4 {
+    __u64 matrix[12];
+};
 #endif
-}
-
-static inline bool
-nv_drm_vma_node_is_allowed(struct drm_vma_offset_node *node,
-                           struct file *filp)
-{
-#if defined(NV_DRM_VMA_NODE_IS_ALLOWED_HAS_TAG_ARG)
-    return drm_vma_node_is_allowed(node, filp->private_data);
-#else
-    return drm_vma_node_is_allowed(node, filp);
-#endif
-}
-
-#endif /* defined(NV_DRM_ATOMIC_MODESET_AVAILABLE) */
 
 #endif /* defined(NV_DRM_AVAILABLE) */
 

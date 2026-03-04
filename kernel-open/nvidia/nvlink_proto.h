@@ -33,13 +33,11 @@
 int           nvlink_core_init           (void);
 void          nvlink_core_exit           (void);
 
-
 /*
  * Functions defined in nvswitch_linux.c
  */
 int           nvswitch_init        (void);
 void          nvswitch_exit        (void);
-
 
 #if defined(NVCPU_AARCH64)
 /*
@@ -47,7 +45,6 @@ void          nvswitch_exit        (void);
  */
 int           tegrashim_init          (void);
 void          tegrashim_exit          (void);
-NvlStatus     tegrashim_init_device   (struct pci_dev *);
 #endif
 
 #endif /* _NVLINK_PROTO_H_ */

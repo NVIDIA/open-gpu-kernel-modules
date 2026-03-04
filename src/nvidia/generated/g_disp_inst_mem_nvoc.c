@@ -1,4 +1,11 @@
 #define NVOC_DISP_INST_MEM_H_PRIVATE_ACCESS_ALLOWED
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 2
+
 #include "nvoc/runtime.h"
 #include "nvoc/rtti.h"
 #include "nvtypes.h"
@@ -7,40 +14,29 @@
 #include "utils/nvassert.h"
 #include "g_disp_inst_mem_nvoc.h"
 
+
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x8223e2 = 1;
+char __nvoc_class_id_uniqueness_check__0x8223e2 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayInstanceMemory;
-
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner* );
-void __nvoc_init_funcTable_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner* );
-void __nvoc_init_dataField_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner* );
+// Forward declarations for DisplayInstanceMemory
+void __nvoc_init__Object(Object*);
+void __nvoc_init__DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_DisplayInstanceMemory(DisplayInstanceMemory*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_DisplayInstanceMemory(DisplayInstanceMemory*);
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info_DisplayInstanceMemory;
 
-static const struct NVOC_RTTI __nvoc_rtti_DisplayInstanceMemory_DisplayInstanceMemory = {
-    /*pClassDef=*/          &__nvoc_class_def_DisplayInstanceMemory,
-    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DisplayInstanceMemory,
-    /*offset=*/             0,
-};
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DisplayInstanceMemory;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DisplayInstanceMemory;
 
-static const struct NVOC_RTTI __nvoc_rtti_DisplayInstanceMemory_Object = {
-    /*pClassDef=*/          &__nvoc_class_def_Object,
-    /*dtor=*/               &__nvoc_destructFromBase,
-    /*offset=*/             NV_OFFSETOF(DisplayInstanceMemory, __nvoc_base_Object),
-};
+// Down-thunk(s) to bridge DisplayInstanceMemory methods from ancestors (if any)
 
-static const struct NVOC_CASTINFO __nvoc_castinfo_DisplayInstanceMemory = {
-    /*numRelatives=*/       2,
-    /*relatives=*/ {
-        &__nvoc_rtti_DisplayInstanceMemory_DisplayInstanceMemory,
-        &__nvoc_rtti_DisplayInstanceMemory_Object,
-    },
-};
+// Up-thunk(s) to bridge DisplayInstanceMemory methods to ancestors (if any)
 
 const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayInstanceMemory = 
 {
@@ -53,16 +49,38 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayInstanceMemory =
 #endif
     },
     /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DisplayInstanceMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo_DisplayInstanceMemory,
-    /*pExportInfo=*/        &__nvoc_export_info_DisplayInstanceMemory
+    /*pCastInfo=*/          &__nvoc_castinfo__DisplayInstanceMemory,
+    /*pExportInfo=*/        &__nvoc_export_info__DisplayInstanceMemory
 };
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info_DisplayInstanceMemory = 
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__DisplayInstanceMemory __nvoc_metadata__DisplayInstanceMemory = {
+    .rtti.pClassDef = &__nvoc_class_def_DisplayInstanceMemory,    // (instmem) this
+    .rtti.dtor      = (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_DisplayInstanceMemory,
+    .rtti.offset    = 0,
+    .metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super
+    .metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__Object.rtti.offset    = NV_OFFSETOF(DisplayInstanceMemory, __nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DisplayInstanceMemory = {
+    .numRelatives = 2,
+    .relatives = {
+        &__nvoc_metadata__DisplayInstanceMemory.rtti,    // [0]: (instmem) this
+        &__nvoc_metadata__DisplayInstanceMemory.metadata__Object.rtti,    // [1]: (obj) super
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DisplayInstanceMemory = 
 {
     /*numEntries=*/     0,
     /*pExportEntries=*/  0
 };
 
+void __nvoc_instmemDestruct(DisplayInstanceMemory*);
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_DisplayInstanceMemory(DisplayInstanceMemory *pThis) {
     __nvoc_instmemDestruct(pThis);
@@ -98,6 +116,7 @@ __nvoc_ctor_DisplayInstanceMemory_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory *pThis, RmHalspecOwner *pRmhalspecowner) {
     DispIpHal *dispIpHal = &pRmhalspecowner->dispIpHal;
     const unsigned long dispIpHal_HalVarIdx = (unsigned long)dispIpHal->__nvoc_HalVarIdx;
@@ -106,124 +125,134 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     PORT_UNREFERENCED_VARIABLE(dispIpHal);
     PORT_UNREFERENCED_VARIABLE(dispIpHal_HalVarIdx);
 
-    // Hal function -- instmemGetSize
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemGetSize__ = &instmemGetSize_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemGetSize -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemGetSize__ = &instmemGetSize_f2d351;
     }
+    else
+    {
+        pThis->__instmemGetSize__ = &instmemGetSize_v03_00;
+    }
 
-    // Hal function -- instmemGetHashTableBaseAddr
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemGetHashTableBaseAddr__ = &instmemGetHashTableBaseAddr_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemGetHashTableBaseAddr -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemGetHashTableBaseAddr__ = &instmemGetHashTableBaseAddr_4a4dee;
     }
-
-    // Hal function -- instmemIsValid
-    if (0)
+    else
     {
+        pThis->__instmemGetHashTableBaseAddr__ = &instmemGetHashTableBaseAddr_v03_00;
     }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
+
+    // instmemIsValid -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
+    {
+        pThis->__instmemIsValid__ = &instmemIsValid_3dd2c9;
+    }
+    else
     {
         pThis->__instmemIsValid__ = &instmemIsValid_v03_00;
     }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
-    {
-        pThis->__instmemIsValid__ = &instmemIsValid_491d52;
-    }
 
-    // Hal function -- instmemGenerateHashTableData
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemGenerateHashTableData__ = &instmemGenerateHashTableData_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemGenerateHashTableData -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemGenerateHashTableData__ = &instmemGenerateHashTableData_4a4dee;
     }
+    else
+    {
+        pThis->__instmemGenerateHashTableData__ = &instmemGenerateHashTableData_v03_00;
+    }
 
-    // Hal function -- instmemHashFunc
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemHashFunc__ = &instmemHashFunc_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemHashFunc -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemHashFunc__ = &instmemHashFunc_46f6a7;
     }
+    else
+    {
+        pThis->__instmemHashFunc__ = &instmemHashFunc_v03_00;
+    }
 
-    // Hal function -- instmemCommitContextDma
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemCommitContextDma__ = &instmemCommitContextDma_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemCommitContextDma -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemCommitContextDma__ = &instmemCommitContextDma_46f6a7;
     }
+    else
+    {
+        pThis->__instmemCommitContextDma__ = &instmemCommitContextDma_v03_00;
+    }
 
-    // Hal function -- instmemUpdateContextDma
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 */ 
-    {
-        pThis->__instmemUpdateContextDma__ = &instmemUpdateContextDma_v03_00;
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00008000UL) )) /* DispIpHal: DISPv0000 */ 
+    // instmemUpdateContextDma -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00100000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__instmemUpdateContextDma__ = &instmemUpdateContextDma_46f6a7;
     }
-}
+    else
+    {
+        pThis->__instmemUpdateContextDma__ = &instmemUpdateContextDma_v03_00;
+    }
+} // End __nvoc_init_funcTable_DisplayInstanceMemory_1 with approximately 14 basic block(s).
 
+
+// Initialize vtable(s) for 7 virtual method(s).
 void __nvoc_init_funcTable_DisplayInstanceMemory(DisplayInstanceMemory *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 7 per-object function pointer(s).
     __nvoc_init_funcTable_DisplayInstanceMemory_1(pThis, pRmhalspecowner);
 }
 
-void __nvoc_init_Object(Object*);
-void __nvoc_init_DisplayInstanceMemory(DisplayInstanceMemory *pThis, RmHalspecOwner *pRmhalspecowner) {
-    pThis->__nvoc_pbase_DisplayInstanceMemory = pThis;
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
-    __nvoc_init_Object(&pThis->__nvoc_base_Object);
+// Initialize newly constructed object.
+void __nvoc_init__DisplayInstanceMemory(DisplayInstanceMemory *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;    // (obj) super
+    pThis->__nvoc_pbase_DisplayInstanceMemory = pThis;    // (instmem) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__Object(&pThis->__nvoc_base_Object);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DisplayInstanceMemory.metadata__Object;    // (obj) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DisplayInstanceMemory;    // (instmem) this
+
+    // Initialize per-object vtables.
     __nvoc_init_funcTable_DisplayInstanceMemory(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_DisplayInstanceMemory(DisplayInstanceMemory **ppThis, Dynamic *pParent, NvU32 createFlags) {
+NV_STATUS __nvoc_objCreate_DisplayInstanceMemory(DisplayInstanceMemory **ppThis, Dynamic *pParent, NvU32 createFlags)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     DisplayInstanceMemory *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(DisplayInstanceMemory));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    // Don't allocate memory if the caller has already done so.
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        pThis = *ppThis;
+    }
 
+    // Allocate memory
+    else
+    {
+        pThis = portMemAllocNonPaged(sizeof(DisplayInstanceMemory));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DisplayInstanceMemory));
 
-    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DisplayInstanceMemory);
+    pThis->__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_DisplayInstanceMemory_cleanup);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_Object);
@@ -233,20 +262,41 @@ NV_STATUS __nvoc_objCreate_DisplayInstanceMemory(DisplayInstanceMemory **ppThis,
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
+    // HALs are defined by the parent or the first super class.
     if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_DisplayInstanceMemory_cleanup);
 
-    __nvoc_init_DisplayInstanceMemory(pThis, pRmhalspecowner);
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__DisplayInstanceMemory(pThis, pRmhalspecowner);
     status = __nvoc_ctor_DisplayInstanceMemory(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_DisplayInstanceMemory_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
+
+    // Success
     return NV_OK;
 
+    // Do not call destructors here since the constructor already called them.
 __nvoc_objCreate_DisplayInstanceMemory_cleanup:
-    // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DisplayInstanceMemory));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(pThis);
+        *ppThis = NULL;
+    }
+
+    // Failure
     return status;
 }
 

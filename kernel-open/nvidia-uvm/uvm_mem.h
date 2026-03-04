@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2020 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -86,7 +86,7 @@
 // The size of the VA used for mapping uvm_mem_t allocations
 // 128 GBs should be plenty for internal allocations and fits easily on all
 // supported architectures.
-#define UVM_MEM_VA_SIZE (128ull * 1024 * 1024 * 1024)
+#define UVM_MEM_VA_SIZE (128 * UVM_SIZE_1GB)
 
 typedef struct
 {
@@ -126,7 +126,7 @@ typedef struct
     //
     // CPU mappings will always use PAGE_SIZE, so the physical allocation chunk
     // has to be aligned to PAGE_SIZE.
-    NvU32 page_size;
+    NvU64 page_size;
 
     // If true, the allocation is zeroed (scrubbed).
     bool zero;
@@ -142,10 +142,10 @@ typedef struct
 typedef struct
 {
     // Mask of processors the memory is virtually mapped on
-    uvm_global_processor_mask_t mapped_on;
+    uvm_processor_mask_t mapped_on;
 
     // Page table ranges for all GPUs
-    uvm_page_table_range_vec_t *range_vecs[UVM_GLOBAL_ID_MAX_GPUS];
+    uvm_page_table_range_vec_t *range_vecs[UVM_ID_MAX_GPUS];
 
     uvm_va_space_t *va_space;
 
@@ -161,14 +161,9 @@ struct uvm_mem_struct
     // lifetime of the GPU. For CPU allocations there is no lifetime limitation.
     uvm_gpu_t *backing_gpu;
 
-
-
-
-
+    // In Confidential Computing, the accessing GPU needs to be known at alloc
+    // time for sysmem allocations.
     uvm_gpu_t *dma_owner;
-
-    // Size of the physical chunks.
-    NvU32 chunk_size;
 
     union
     {
@@ -183,24 +178,26 @@ struct uvm_mem_struct
             //
             // There is no equivalent mask for vidmem, because only the backing
             // GPU can physical access the memory
-            uvm_global_processor_mask_t mapped_on_phys;
+            //
+            // TODO: Bug 3723779: Share DMA mappings within a single parent GPU
+            uvm_processor_mask_t mapped_on_phys;
 
             struct page **pages;
             void **va;
 
             // Per GPU IOMMU mappings of the pages
-            NvU64 *dma_addrs[UVM_GLOBAL_ID_MAX_GPUS];
+            NvU64 *dma_addrs[UVM_ID_MAX_GPUS];
         } sysmem;
     };
 
     // Count of chunks (vidmem) or CPU pages (sysmem) above
     size_t chunks_count;
 
+    // Size of each physical chunk (vidmem) or CPU page (sysmem)
+    NvU64 chunk_size;
+
     // Size of the allocation
     NvU64 size;
-
-    // Size of the physical allocation backing
-    NvU64 physical_allocation_size;
 
     uvm_mem_user_mapping_t *user;
 
@@ -208,10 +205,10 @@ struct uvm_mem_struct
     struct
     {
         // Mask of processors the memory is virtually mapped on
-        uvm_global_processor_mask_t mapped_on;
+        uvm_processor_mask_t mapped_on;
 
         // Page table ranges for all GPUs
-        uvm_page_table_range_vec_t *range_vecs[UVM_GLOBAL_ID_MAX_GPUS];
+        uvm_page_table_range_vec_t *range_vecs[UVM_ID_MAX_GPUS];
 
         // Range allocation for the GPU VA
         uvm_range_allocation_t range_alloc;
@@ -237,6 +234,20 @@ NV_STATUS uvm_mem_translate_gpu_attributes(const UvmGpuMappingAttributes *attrs,
 
 uvm_chunk_sizes_mask_t uvm_mem_kernel_chunk_sizes(uvm_gpu_t *gpu);
 
+// Size of all the physical allocations backing the given memory.
+static inline NvU64 uvm_mem_physical_size(const uvm_mem_t *mem)
+{
+    NvU64 physical_size = mem->chunks_count * mem->chunk_size;
+
+    UVM_ASSERT(mem->size <= physical_size);
+
+    return physical_size;
+}
+
+// Returns true if the memory is physically contiguous in the
+// [offset, offset + size) interval.
+bool uvm_mem_is_physically_contiguous(uvm_mem_t *mem, NvU64 offset, NvU64 size);
+
 // Allocate memory according to the given allocation parameters.
 //
 // In the case of sysmem, the memory is immediately physically accessible from
@@ -245,6 +256,8 @@ uvm_chunk_sizes_mask_t uvm_mem_kernel_chunk_sizes(uvm_gpu_t *gpu);
 //
 // Unless a specific page size is needed, or the physical pages need to be
 // zeroed, the caller can use the appropriate uvm_mem_alloc* helper instead.
+//
+// If an error is returned, mem_out is guaranteed to not have been modified.
 NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_out);
 
 // Clear all mappings and free the memory
@@ -313,8 +326,7 @@ uvm_gpu_phys_address_t uvm_mem_gpu_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU6
 uvm_gpu_address_t uvm_mem_gpu_address_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU64 offset, NvU64 size);
 
 // Helper to get an address suitable for accessing_gpu (which may be the backing
-// GPU) to access with CE. Note that mappings for indirect peers are not
-// created automatically.
+// GPU) to access with CE.
 uvm_gpu_address_t uvm_mem_gpu_address_copy(uvm_mem_t *mem, uvm_gpu_t *accessing_gpu, NvU64 offset, NvU64 size);
 
 static bool uvm_mem_is_sysmem(uvm_mem_t *mem)
@@ -396,14 +408,12 @@ static NV_STATUS uvm_mem_alloc_sysmem_and_map_cpu_kernel(NvU64 size, struct mm_s
     return NV_OK;
 }
 
-
-
-
-
-
-
-
-
+// Helper for allocating sysmem DMA and mapping it on the CPU. This is useful
+// for certain systems where the main system memory is encrypted
+// (e.g., AMD SEV) and cannot be read from IO devices unless specially
+// allocated using the DMA APIs.
+//
+// See uvm_mem_alloc()
 static NV_STATUS uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(NvU64 size,
                                                              uvm_gpu_t *gpu,
                                                              struct mm_struct *mm,
@@ -427,6 +437,6 @@ static NV_STATUS uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(NvU64 size,
 }
 
 // Helper to map an allocation on the specified processors in the UVM VA space.
-NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_global_processor_mask_t *mask);
+NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_processor_mask_t *mask);
 
 #endif // __UVM_MEM_H__

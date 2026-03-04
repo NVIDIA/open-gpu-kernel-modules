@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,7 +72,7 @@ static NV_STATUS _flcnQueueReaderReadBody     (nvswitch_device *, PFLCN, FLCNQUE
                  "status=0x%x).\n", __FUNCTION__, (id), (status))
 
 #define  NVSWITCH_PRINT_QUEUE_READER_PRINT_HDR_READ_INFO(offset)                \
-             NVSWITCH_PRINT(device, INFO,                                       \
+             NVSWITCH_PRINT(device, MMIO,                                       \
                  "%s: Reading a header from DMEM @ 0x%x.\n",              \
                  __FUNCTION__, (offset))
 

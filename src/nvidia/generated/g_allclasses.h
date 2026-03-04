@@ -31,7 +31,6 @@
  *
  */
 
-
 #if defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)
 
 #include <class/cl0000.h>               // NV01_ROOT
@@ -48,15 +47,26 @@
 #include <class/cl003e.h>               // NV01_MEMORY_SYSTEM
 #include <class/cl003f.h>               // NV01_MEMORY_LOCAL_PRIVILEGED
 #include <class/cl0040.h>               // NV01_MEMORY_LOCAL_USER
+#include <class/cl0042.h>               // NV_MEMORY_EXTENDED_USER
 #include <class/cl0070.h>               // NV01_MEMORY_VIRTUAL
+#include <class/cl00fe.h>               // NV_MEMORY_MAPPER
 #include <class/cl00c2.h>               // NV01_MEMORY_LOCAL_PHYSICAL
+#include <class/cl00c3.h>               // NV01_MEMORY_SYNCPOINT
 #include <class/cl0071.h>               // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 #include <class/cl90ce.h>               // NV01_MEMORY_DEVICELESS
 #include <class/cl0076.h>               // NV01_MEMORY_FRAMEBUFFER_CONSOLE
 #include <class/cl00b1.h>               // NV01_MEMORY_HW_RESOURCES
-#include <class/cl00f3.h>               // NV01_MEMORY_FLA
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_SYSTEM
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_FBMEM
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_OBJECT
+#include <class/cl00f1.h>               // NV_IMEX_SESSION
+#include <class/cl00e0.h>               // NV_MEMORY_EXPORT
+#include <class/cl0050.h>               // NV_CE_UTILS
 #include <class/cl00f8.h>               // NV_MEMORY_FABRIC
+#include <class/cl00f9.h>               // NV_MEMORY_FABRIC_IMPORT_V2
+#include <class/cl00fb.h>               // NV_MEMORY_FABRIC_IMPORTED_REF
 #include <class/cl00fc.h>               // FABRIC_VASPACE_A
+#include <class/cl00fd.h>               // NV_MEMORY_MULTICAST_FABRIC
 #include <class/cl00f2.h>               // IO_VASPACE_A
 #include <class/cl0030.h>               // NV01_NULL
 #include <class/cl0005.h>               // NV01_EVENT
@@ -65,6 +75,9 @@
 #include <nvos.h>                       // NV01_EVENT_KERNEL_CALLBACK_EX
 #include <class/cl0004.h>               // NV01_TIMER
 #include <class/cl0090.h>               // KERNEL_GRAPHICS_CONTEXT
+#include <class/cl008f.h>               // KERNEL_WATCHDOG
+#include <class/cl0100.h>               // LOCK_STRESS_OBJECT
+#include <class/cl0101.h>               // LOCK_TEST_RELAXED_DUP_OBJECT
 #include <class/cl506f.h>               // NV50_CHANNEL_GPFIFO
 #include <class/cl906f.h>               // GF100_CHANNEL_GPFIFO
 #include <class/cla06f.h>               // KEPLER_CHANNEL_GPFIFO_A
@@ -75,14 +88,25 @@
 #include <class/clc36f.h>               // VOLTA_CHANNEL_GPFIFO_A
 #include <class/clc46f.h>               // TURING_CHANNEL_GPFIFO_A
 #include <class/clc56f.h>               // AMPERE_CHANNEL_GPFIFO_A
+#include <class/clc86f.h>               // HOPPER_CHANNEL_GPFIFO_A
+#include <class/clc96f.h>               // BLACKWELL_CHANNEL_GPFIFO_A
+#include <class/clca6f.h>               // BLACKWELL_CHANNEL_GPFIFO_B
 #include <class/cl007d.h>               // NV04_SOFTWARE_TEST
+#include <class/cl30f1.h>               // NV30_GSYNC
 #include <class/clc361.h>               // VOLTA_USERMODE_A
 #include <class/clc461.h>               // TURING_USERMODE_A
 #include <class/clc561.h>               // AMPERE_USERMODE_A
+#include <class/clc661.h>               // HOPPER_USERMODE_A
+#include <class/clc761.h>               // BLACKWELL_USERMODE_A
 #include <class/clc371.h>               // NVC371_DISP_SF_USER
 #include <class/clc372sw.h>             // NVC372_DISPLAY_SW
 #include <class/clc573.h>               // NVC573_DISP_CAPABILITIES
 #include <class/clc673.h>               // NVC673_DISP_CAPABILITIES
+#include <class/clc773.h>               // NVC773_DISP_CAPABILITIES
+#include <class/clc973.h>               // NVC973_DISP_CAPABILITIES
+#include <class/clca73.h>               // NVCA73_DISP_CAPABILITIES
+#include <class/clcb73.h>               // NVCB73_DISP_CAPABILITIES
+#include <class/clcc73.h>               // NVCC73_DISP_CAPABILITIES
 #include <class/cl0073.h>               // NV04_DISPLAY_COMMON
 #include <class/cl5080.h>               // NV50_DEFERRED_API_CLASS
 #include <class/cl900e.h>               // MPS_COMPUTE
@@ -97,11 +121,41 @@
 #include <class/clc67b.h>               // NVC67B_WINDOW_IMM_CHANNEL_DMA
 #include <class/clc67d.h>               // NVC67D_CORE_CHANNEL_DMA
 #include <class/clc67e.h>               // NVC67E_WINDOW_CHANNEL_DMA
+#include <class/clc77f.h>               // NVC77F_ANY_CHANNEL_DMA
+#include <class/clc770.h>               // NVC770_DISPLAY
+#include <class/clc771.h>               // NVC771_DISP_SF_USER
+#include <class/clc77d.h>               // NVC77D_CORE_CHANNEL_DMA
+#include <class/clc970.h>               // NVC970_DISPLAY
+#include <class/clc971.h>               // NVC971_DISP_SF_USER
+#include <class/clc97a.h>               // NVC97A_CURSOR_IMM_CHANNEL_PIO
+#include <class/clc97b.h>               // NVC97B_WINDOW_IMM_CHANNEL_DMA
+#include <class/clc97d.h>               // NVC97D_CORE_CHANNEL_DMA
+#include <class/clc97e.h>               // NVC97E_WINDOW_CHANNEL_DMA
+#include <class/clca70.h>               // NVCA70_DISPLAY
+#include <class/clca71.h>               // NVCA71_DISP_SF_USER
+#include <class/clca7a.h>               // NVCA7A_CURSOR_IMM_CHANNEL_PIO
+#include <class/clca7b.h>               // NVCA7B_WINDOW_IMM_CHANNEL_DMA
+#include <class/clca7d.h>               // NVCA7D_CORE_CHANNEL_DMA
+#include <class/clca7e.h>               // NVCA7E_WINDOW_CHANNEL_DMA
+#include <class/clcb70.h>               // NVCB70_DISPLAY
+#include <class/clcb71.h>               // NVCB71_DISP_SF_USER
+#include <class/clcb7a.h>               // NVCB7A_CURSOR_IMM_CHANNEL_PIO
+#include <class/clcb7b.h>               // NVCB7B_WINDOW_IMM_CHANNEL_DMA
+#include <class/clcb7d.h>               // NVCB7D_CORE_CHANNEL_DMA
+#include <class/clcb7e.h>               // NVCB7E_WINDOW_CHANNEL_DMA
+#include <class/clcc70.h>               // NVCC70_DISPLAY
+#include <class/clcc71.h>               // NVCC71_DISP_SF_USER
+#include <class/clcc7a.h>               // NVCC7A_CURSOR_IMM_CHANNEL_PIO
+#include <class/clcc7b.h>               // NVCC7B_WINDOW_IMM_CHANNEL_DMA
+#include <class/clcc7d.h>               // NVCC7D_CORE_CHANNEL_DMA
+#include <class/clcc7e.h>               // NVCC7E_WINDOW_CHANNEL_DMA
 #include <class/cl9010.h>               // NV9010_VBLANK_CALLBACK
 #include <class/cl90cc.h>               // GF100_PROFILER
 #include <class/clb0cc.h>               // MAXWELL_PROFILER
+#include <class/clb1cc.h>               // MAXWELL_PROFILER_CONTEXT
 #include <class/clb2cc.h>               // MAXWELL_PROFILER_DEVICE
 #include <class/cl90e6.h>               // GF100_SUBDEVICE_MASTER
+#include <class/cl90e7.h>               // GF100_SUBDEVICE_INFOROM
 #include <class/cl9096.h>               // GF100_ZBC_CLEAR
 #include <class/cl9072.h>               // GF100_DISP_SW
 #include <class/cl9074.h>               // GF100_TIMED_SEMAPHORE_SW
@@ -111,16 +165,38 @@
 #include <class/cl503c.h>               // NV50_THIRD_PARTY_P2P
 #include <class/cl902d.h>               // FERMI_TWOD_A
 #include <class/cl90f1.h>               // FERMI_VASPACE_A
+#include <class/clcba2.h>               // HOPPER_SEC2_WORK_LAUNCH_A
 #include <class/cl90ec.h>               // GF100_HDACODEC
+#include <class/clb8b0.h>               // NVB8B0_VIDEO_DECODER
 #include <class/clc4b0.h>               // NVC4B0_VIDEO_DECODER
 #include <class/clc6b0.h>               // NVC6B0_VIDEO_DECODER
 #include <class/clc7b0.h>               // NVC7B0_VIDEO_DECODER
+#include <class/clc9b0.h>               // NVC9B0_VIDEO_DECODER
+#include <class/clcdb0.h>               // NVCDB0_VIDEO_DECODER
+#include <class/clceb0.h>               // NVCEB0_VIDEO_DECODER
+#include <class/clcfb0.h>               // NVCFB0_VIDEO_DECODER
+#include <class/cld1b0.h>               // NVD1B0_VIDEO_DECODER
 #include <class/clc4b7.h>               // NVC4B7_VIDEO_ENCODER
 #include <class/clb4b7.h>               // NVB4B7_VIDEO_ENCODER
 #include <class/clc7b7.h>               // NVC7B7_VIDEO_ENCODER
+#include <class/clc9b7.h>               // NVC9B7_VIDEO_ENCODER
+#include <class/clceb7.h>               // NVCEB7_VIDEO_ENCODER
+#include <class/clcfb7.h>               // NVCFB7_VIDEO_ENCODER
+#include <class/cld1b7.h>               // NVD1B7_VIDEO_ENCODER
+#include <class/clb8d1.h>               // NVB8D1_VIDEO_NVJPG
 #include <class/clc4d1.h>               // NVC4D1_VIDEO_NVJPG
+#include <class/clc9d1.h>               // NVC9D1_VIDEO_NVJPG
+#include <class/clced0.h>               // NVCED0_VIDEO_NVJPG
+#include <class/clcdd1.h>               // NVCDD1_VIDEO_NVJPG
+#include <class/clcfd1.h>               // NVCFD1_VIDEO_NVJPG
+#include <class/clb8fa.h>               // NVB8FA_VIDEO_OFA
 #include <class/clc6fa.h>               // NVC6FA_VIDEO_OFA
 #include <class/clc7fa.h>               // NVC7FA_VIDEO_OFA
+#include <class/clc9fa.h>               // NVC9FA_VIDEO_OFA
+#include <class/clcdfa.h>               // NVCDFA_VIDEO_OFA
+#include <class/clcefa.h>               // NVCEFA_VIDEO_OFA
+#include <class/clcffa.h>               // NVCFFA_VIDEO_OFA
+#include <class/cld1fa.h>               // NVD1FA_VIDEO_OFA
 #include <class/cla140.h>               // KEPLER_INLINE_TO_MEMORY_B
 #include <class/cl9067.h>               // FERMI_CONTEXT_SHARE_A
 #include <class/cla06c.h>               // KEPLER_CHANNEL_GROUP_A
@@ -128,28 +204,53 @@
 #include <class/clc5b5.h>               // TURING_DMA_COPY_A
 #include <class/clc6b5.h>               // AMPERE_DMA_COPY_A
 #include <class/clc7b5.h>               // AMPERE_DMA_COPY_B
+#include <class/clc8b5.h>               // HOPPER_DMA_COPY_A
+#include <class/clc9b5.h>               // BLACKWELL_DMA_COPY_A
+#include <class/clcab5.h>               // BLACKWELL_DMA_COPY_B
 #include <class/clb0b5.h>               // MAXWELL_DMA_COPY_A
 #include <class/clc365.h>               // ACCESS_COUNTER_NOTIFY_BUFFER
 #include <class/clc369.h>               // MMU_FAULT_BUFFER
+#include <class/clc763.h>               // MMU_VIDMEM_ACCESS_BIT_BUFFER
+#include <class/clc863.h>               // HOPPER_MMU_VIDMEM_ACCESS_BIT_BUFFER
 #include <class/clc597.h>               // TURING_A
 #include <class/clc5c0.h>               // TURING_COMPUTE_A
 #include <class/clc697.h>               // AMPERE_A
 #include <class/clc6c0.h>               // AMPERE_COMPUTE_A
 #include <class/clc797.h>               // AMPERE_B
 #include <class/clc7c0.h>               // AMPERE_COMPUTE_B
+#include <class/clc997.h>               // ADA_A
+#include <class/clc9c0.h>               // ADA_COMPUTE_A
 #include <class/clc637.h>               // AMPERE_SMC_PARTITION_REF
 #include <class/clc638.h>               // AMPERE_SMC_EXEC_PARTITION_REF
 #include <class/clc639.h>               // AMPERE_SMC_CONFIG_SESSION
 #include <class/cl0092.h>               // NV0092_RG_LINE_CALLBACK
 #include <class/clc640.h>               // AMPERE_SMC_MONITOR_SESSION
+#include <class/clcb97.h>               // HOPPER_A
+#include <class/clcbc0.h>               // HOPPER_COMPUTE_A
+#include <class/clcd97.h>               // BLACKWELL_A
+#include <class/clcdc0.h>               // BLACKWELL_COMPUTE_A
+#include <class/clce97.h>               // BLACKWELL_B
+#include <class/clcec0.h>               // BLACKWELL_COMPUTE_B
+#include <class/clcd40.h>               // BLACKWELL_INLINE_TO_MEMORY_A
 #include <class/cl00db.h>               // NV40_DEBUG_BUFFER
+#include <class/cl00de.h>               // RM_USER_SHARED_DATA
 #include <class/cl83de.h>               // GT200_DEBUGGER
 #include <class/cl402c.h>               // NV40_I2C
+#include <class/cla080.h>               // KEPLER_DEVICE_VGPU
+#include <class/cla081.h>               // NVA081_VGPU_CONFIG
+#include <class/cla084.h>               // NVA084_KERNEL_HOST_VGPU_DEVICE
 #include <class/cl0060.h>               // NV0060_SYNC_GPU_BOOST
 #include <class/clc076.h>               // GP100_UVM_SW
+#include <class/cla0bc.h>               // NVENC_SW_SESSION
 #include <class/cl90cd.h>               // NV_EVENT_BUFFER
+#include <class/cla0bd.h>               // NVFBC_SW_SESSION
+#include <class/clcb33.h>               // NV_CONFIDENTIAL_COMPUTE
+#include <class/clcbca.h>               // NV_COUNTER_COLLECTION_UNIT
+#include <class/cl00da.h>               // NV_SEMAPHORE_SURFACE
+
 
 #else // defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)
+
 
 #ifndef NV01_ROOT
 #define NV01_ROOT                                (0x00000000)
@@ -240,6 +341,10 @@
 #define NV1_MEMORY_USER                          (0x00000040) // alias
 #endif
 
+#ifndef NV_MEMORY_EXTENDED_USER
+#define NV_MEMORY_EXTENDED_USER                  (0x00000042)
+#endif
+
 #ifndef NV01_MEMORY_VIRTUAL
 #define NV01_MEMORY_VIRTUAL                      (0x00000070)
 #endif
@@ -250,8 +355,16 @@
 #define NV1_MEMORY_SYSTEM_DYNAMIC                (0x00000070) // alias
 #endif
 
+#ifndef NV_MEMORY_MAPPER
+#define NV_MEMORY_MAPPER                         (0x000000fe)
+#endif
+
 #ifndef NV01_MEMORY_LOCAL_PHYSICAL
 #define NV01_MEMORY_LOCAL_PHYSICAL               (0x000000c2)
+#endif
+
+#ifndef NV01_MEMORY_SYNCPOINT
+#define NV01_MEMORY_SYNCPOINT                    (0x000000c3)
 #endif
 
 #ifndef NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
@@ -270,16 +383,48 @@
 #define NV01_MEMORY_HW_RESOURCES                 (0x000000b1)
 #endif
 
-#ifndef NV01_MEMORY_FLA
-#define NV01_MEMORY_FLA                          (0x000000f3)
+#ifndef NV01_MEMORY_LIST_SYSTEM
+#define NV01_MEMORY_LIST_SYSTEM                  (0x00000081)
+#endif
+
+#ifndef NV01_MEMORY_LIST_FBMEM
+#define NV01_MEMORY_LIST_FBMEM                   (0x00000082)
+#endif
+
+#ifndef NV01_MEMORY_LIST_OBJECT
+#define NV01_MEMORY_LIST_OBJECT                  (0x00000083)
+#endif
+
+#ifndef NV_IMEX_SESSION
+#define NV_IMEX_SESSION                          (0x000000f1)
+#endif
+
+#ifndef NV_MEMORY_EXPORT
+#define NV_MEMORY_EXPORT                         (0x000000e0)
+#endif
+
+#ifndef NV_CE_UTILS
+#define NV_CE_UTILS                              (0x00000050)
 #endif
 
 #ifndef NV_MEMORY_FABRIC
 #define NV_MEMORY_FABRIC                         (0x000000f8)
 #endif
 
+#ifndef NV_MEMORY_FABRIC_IMPORT_V2
+#define NV_MEMORY_FABRIC_IMPORT_V2               (0x000000f9)
+#endif
+
+#ifndef NV_MEMORY_FABRIC_IMPORTED_REF
+#define NV_MEMORY_FABRIC_IMPORTED_REF            (0x000000fb)
+#endif
+
 #ifndef FABRIC_VASPACE_A
 #define FABRIC_VASPACE_A                         (0x000000fc)
+#endif
+
+#ifndef NV_MEMORY_MULTICAST_FABRIC
+#define NV_MEMORY_MULTICAST_FABRIC               (0x000000fd)
 #endif
 
 #ifndef IO_VASPACE_A
@@ -338,6 +483,18 @@
 #define KERNEL_GRAPHICS_CONTEXT                  (0x00000090)
 #endif
 
+#ifndef KERNEL_WATCHDOG
+#define KERNEL_WATCHDOG                          (0x0000008f)
+#endif
+
+#ifndef LOCK_STRESS_OBJECT
+#define LOCK_STRESS_OBJECT                       (0x00000100)
+#endif
+
+#ifndef LOCK_TEST_RELAXED_DUP_OBJECT
+#define LOCK_TEST_RELAXED_DUP_OBJECT             (0x00000101)
+#endif
+
 #ifndef NV50_CHANNEL_GPFIFO
 #define NV50_CHANNEL_GPFIFO                      (0x0000506f)
 #endif
@@ -378,11 +535,27 @@
 #define AMPERE_CHANNEL_GPFIFO_A                  (0x0000c56f)
 #endif
 
+#ifndef HOPPER_CHANNEL_GPFIFO_A
+#define HOPPER_CHANNEL_GPFIFO_A                  (0x0000c86f)
+#endif
+
+#ifndef BLACKWELL_CHANNEL_GPFIFO_A
+#define BLACKWELL_CHANNEL_GPFIFO_A               (0x0000c96f)
+#endif
+
+#ifndef BLACKWELL_CHANNEL_GPFIFO_B
+#define BLACKWELL_CHANNEL_GPFIFO_B               (0x0000ca6f)
+#endif
+
 #ifndef NV04_SOFTWARE_TEST
 #define NV04_SOFTWARE_TEST                       (0x0000007d)
 #endif
 #ifndef NV4_SOFTWARE_TEST
 #define NV4_SOFTWARE_TEST                        (0x0000007d) // alias
+#endif
+
+#ifndef NV30_GSYNC
+#define NV30_GSYNC                               (0x000030f1)
 #endif
 
 #ifndef VOLTA_USERMODE_A
@@ -395,6 +568,14 @@
 
 #ifndef AMPERE_USERMODE_A
 #define AMPERE_USERMODE_A                        (0x0000c561)
+#endif
+
+#ifndef HOPPER_USERMODE_A
+#define HOPPER_USERMODE_A                        (0x0000c661)
+#endif
+
+#ifndef BLACKWELL_USERMODE_A
+#define BLACKWELL_USERMODE_A                     (0x0000c761)
 #endif
 
 #ifndef NVC371_DISP_SF_USER
@@ -411,6 +592,26 @@
 
 #ifndef NVC673_DISP_CAPABILITIES
 #define NVC673_DISP_CAPABILITIES                 (0x0000c673)
+#endif
+
+#ifndef NVC773_DISP_CAPABILITIES
+#define NVC773_DISP_CAPABILITIES                 (0x0000c773)
+#endif
+
+#ifndef NVC973_DISP_CAPABILITIES
+#define NVC973_DISP_CAPABILITIES                 (0x0000c973)
+#endif
+
+#ifndef NVCA73_DISP_CAPABILITIES
+#define NVCA73_DISP_CAPABILITIES                 (0x0000ca73)
+#endif
+
+#ifndef NVCB73_DISP_CAPABILITIES
+#define NVCB73_DISP_CAPABILITIES                 (0x0000cb73)
+#endif
+
+#ifndef NVCC73_DISP_CAPABILITIES
+#define NVCC73_DISP_CAPABILITIES                 (0x0000cc73)
 #endif
 
 #ifndef NV04_DISPLAY_COMMON
@@ -469,6 +670,118 @@
 #define NVC67E_WINDOW_CHANNEL_DMA                (0x0000c67e)
 #endif
 
+#ifndef NVC77F_ANY_CHANNEL_DMA
+#define NVC77F_ANY_CHANNEL_DMA                   (0x0000c77f)
+#endif
+
+#ifndef NVC770_DISPLAY
+#define NVC770_DISPLAY                           (0x0000c770)
+#endif
+
+#ifndef NVC771_DISP_SF_USER
+#define NVC771_DISP_SF_USER                      (0x0000c771)
+#endif
+
+#ifndef NVC77D_CORE_CHANNEL_DMA
+#define NVC77D_CORE_CHANNEL_DMA                  (0x0000c77d)
+#endif
+
+#ifndef NVC970_DISPLAY
+#define NVC970_DISPLAY                           (0x0000c970)
+#endif
+
+#ifndef NVC971_DISP_SF_USER
+#define NVC971_DISP_SF_USER                      (0x0000c971)
+#endif
+
+#ifndef NVC97A_CURSOR_IMM_CHANNEL_PIO
+#define NVC97A_CURSOR_IMM_CHANNEL_PIO            (0x0000c97a)
+#endif
+
+#ifndef NVC97B_WINDOW_IMM_CHANNEL_DMA
+#define NVC97B_WINDOW_IMM_CHANNEL_DMA            (0x0000c97b)
+#endif
+
+#ifndef NVC97D_CORE_CHANNEL_DMA
+#define NVC97D_CORE_CHANNEL_DMA                  (0x0000c97d)
+#endif
+
+#ifndef NVC97E_WINDOW_CHANNEL_DMA
+#define NVC97E_WINDOW_CHANNEL_DMA                (0x0000c97e)
+#endif
+
+#ifndef NVCA70_DISPLAY
+#define NVCA70_DISPLAY                           (0x0000ca70)
+#endif
+
+#ifndef NVCA71_DISP_SF_USER
+#define NVCA71_DISP_SF_USER                      (0x0000ca71)
+#endif
+
+#ifndef NVCA7A_CURSOR_IMM_CHANNEL_PIO
+#define NVCA7A_CURSOR_IMM_CHANNEL_PIO            (0x0000ca7a)
+#endif
+
+#ifndef NVCA7B_WINDOW_IMM_CHANNEL_DMA
+#define NVCA7B_WINDOW_IMM_CHANNEL_DMA            (0x0000ca7b)
+#endif
+
+#ifndef NVCA7D_CORE_CHANNEL_DMA
+#define NVCA7D_CORE_CHANNEL_DMA                  (0x0000ca7d)
+#endif
+
+#ifndef NVCA7E_WINDOW_CHANNEL_DMA
+#define NVCA7E_WINDOW_CHANNEL_DMA                (0x0000ca7e)
+#endif
+
+#ifndef NVCB70_DISPLAY
+#define NVCB70_DISPLAY                           (0x0000cb70)
+#endif
+
+#ifndef NVCB71_DISP_SF_USER
+#define NVCB71_DISP_SF_USER                      (0x0000cb71)
+#endif
+
+#ifndef NVCB7A_CURSOR_IMM_CHANNEL_PIO
+#define NVCB7A_CURSOR_IMM_CHANNEL_PIO            (0x0000cb7a)
+#endif
+
+#ifndef NVCB7B_WINDOW_IMM_CHANNEL_DMA
+#define NVCB7B_WINDOW_IMM_CHANNEL_DMA            (0x0000cb7b)
+#endif
+
+#ifndef NVCB7D_CORE_CHANNEL_DMA
+#define NVCB7D_CORE_CHANNEL_DMA                  (0x0000cb7d)
+#endif
+
+#ifndef NVCB7E_WINDOW_CHANNEL_DMA
+#define NVCB7E_WINDOW_CHANNEL_DMA                (0x0000cb7e)
+#endif
+
+#ifndef NVCC70_DISPLAY
+#define NVCC70_DISPLAY                           (0x0000cc70)
+#endif
+
+#ifndef NVCC71_DISP_SF_USER
+#define NVCC71_DISP_SF_USER                      (0x0000cc71)
+#endif
+
+#ifndef NVCC7A_CURSOR_IMM_CHANNEL_PIO
+#define NVCC7A_CURSOR_IMM_CHANNEL_PIO            (0x0000cc7a)
+#endif
+
+#ifndef NVCC7B_WINDOW_IMM_CHANNEL_DMA
+#define NVCC7B_WINDOW_IMM_CHANNEL_DMA            (0x0000cc7b)
+#endif
+
+#ifndef NVCC7D_CORE_CHANNEL_DMA
+#define NVCC7D_CORE_CHANNEL_DMA                  (0x0000cc7d)
+#endif
+
+#ifndef NVCC7E_WINDOW_CHANNEL_DMA
+#define NVCC7E_WINDOW_CHANNEL_DMA                (0x0000cc7e)
+#endif
+
 #ifndef NV9010_VBLANK_CALLBACK
 #define NV9010_VBLANK_CALLBACK                   (0x00009010)
 #endif
@@ -481,12 +794,20 @@
 #define MAXWELL_PROFILER                         (0x0000b0cc)
 #endif
 
+#ifndef MAXWELL_PROFILER_CONTEXT
+#define MAXWELL_PROFILER_CONTEXT                 (0x0000b1cc)
+#endif
+
 #ifndef MAXWELL_PROFILER_DEVICE
 #define MAXWELL_PROFILER_DEVICE                  (0x0000b2cc)
 #endif
 
 #ifndef GF100_SUBDEVICE_MASTER
 #define GF100_SUBDEVICE_MASTER                   (0x000090e6)
+#endif
+
+#ifndef GF100_SUBDEVICE_INFOROM
+#define GF100_SUBDEVICE_INFOROM                  (0x000090e7)
 #endif
 
 #ifndef GF100_ZBC_CLEAR
@@ -525,8 +846,16 @@
 #define FERMI_VASPACE_A                          (0x000090f1)
 #endif
 
+#ifndef HOPPER_SEC2_WORK_LAUNCH_A
+#define HOPPER_SEC2_WORK_LAUNCH_A                (0x0000cba2)
+#endif
+
 #ifndef GF100_HDACODEC
 #define GF100_HDACODEC                           (0x000090ec)
+#endif
+
+#ifndef NVB8B0_VIDEO_DECODER
+#define NVB8B0_VIDEO_DECODER                     (0x0000b8b0)
 #endif
 
 #ifndef NVC4B0_VIDEO_DECODER
@@ -541,6 +870,26 @@
 #define NVC7B0_VIDEO_DECODER                     (0x0000c7b0)
 #endif
 
+#ifndef NVC9B0_VIDEO_DECODER
+#define NVC9B0_VIDEO_DECODER                     (0x0000c9b0)
+#endif
+
+#ifndef NVCDB0_VIDEO_DECODER
+#define NVCDB0_VIDEO_DECODER                     (0x0000cdb0)
+#endif
+
+#ifndef NVCEB0_VIDEO_DECODER
+#define NVCEB0_VIDEO_DECODER                     (0x0000ceb0)
+#endif
+
+#ifndef NVCFB0_VIDEO_DECODER
+#define NVCFB0_VIDEO_DECODER                     (0x0000cfb0)
+#endif
+
+#ifndef NVD1B0_VIDEO_DECODER
+#define NVD1B0_VIDEO_DECODER                     (0x0000d1b0)
+#endif
+
 #ifndef NVC4B7_VIDEO_ENCODER
 #define NVC4B7_VIDEO_ENCODER                     (0x0000c4b7)
 #endif
@@ -553,8 +902,48 @@
 #define NVC7B7_VIDEO_ENCODER                     (0x0000c7b7)
 #endif
 
+#ifndef NVC9B7_VIDEO_ENCODER
+#define NVC9B7_VIDEO_ENCODER                     (0x0000c9b7)
+#endif
+
+#ifndef NVCEB7_VIDEO_ENCODER
+#define NVCEB7_VIDEO_ENCODER                     (0x0000ceb7)
+#endif
+
+#ifndef NVCFB7_VIDEO_ENCODER
+#define NVCFB7_VIDEO_ENCODER                     (0x0000cfb7)
+#endif
+
+#ifndef NVD1B7_VIDEO_ENCODER
+#define NVD1B7_VIDEO_ENCODER                     (0x0000d1b7)
+#endif
+
+#ifndef NVB8D1_VIDEO_NVJPG
+#define NVB8D1_VIDEO_NVJPG                       (0x0000b8d1)
+#endif
+
 #ifndef NVC4D1_VIDEO_NVJPG
 #define NVC4D1_VIDEO_NVJPG                       (0x0000c4d1)
+#endif
+
+#ifndef NVC9D1_VIDEO_NVJPG
+#define NVC9D1_VIDEO_NVJPG                       (0x0000c9d1)
+#endif
+
+#ifndef NVCED0_VIDEO_NVJPG
+#define NVCED0_VIDEO_NVJPG                       (0x0000ced0)
+#endif
+
+#ifndef NVCDD1_VIDEO_NVJPG
+#define NVCDD1_VIDEO_NVJPG                       (0x0000cdd1)
+#endif
+
+#ifndef NVCFD1_VIDEO_NVJPG
+#define NVCFD1_VIDEO_NVJPG                       (0x0000cfd1)
+#endif
+
+#ifndef NVB8FA_VIDEO_OFA
+#define NVB8FA_VIDEO_OFA                         (0x0000b8fa)
 #endif
 
 #ifndef NVC6FA_VIDEO_OFA
@@ -563,6 +952,26 @@
 
 #ifndef NVC7FA_VIDEO_OFA
 #define NVC7FA_VIDEO_OFA                         (0x0000c7fa)
+#endif
+
+#ifndef NVC9FA_VIDEO_OFA
+#define NVC9FA_VIDEO_OFA                         (0x0000c9fa)
+#endif
+
+#ifndef NVCDFA_VIDEO_OFA
+#define NVCDFA_VIDEO_OFA                         (0x0000cdfa)
+#endif
+
+#ifndef NVCEFA_VIDEO_OFA
+#define NVCEFA_VIDEO_OFA                         (0x0000cefa)
+#endif
+
+#ifndef NVCFFA_VIDEO_OFA
+#define NVCFFA_VIDEO_OFA                         (0x0000cffa)
+#endif
+
+#ifndef NVD1FA_VIDEO_OFA
+#define NVD1FA_VIDEO_OFA                         (0x0000d1fa)
 #endif
 
 #ifndef KEPLER_INLINE_TO_MEMORY_B
@@ -593,6 +1002,18 @@
 #define AMPERE_DMA_COPY_B                        (0x0000c7b5)
 #endif
 
+#ifndef HOPPER_DMA_COPY_A
+#define HOPPER_DMA_COPY_A                        (0x0000c8b5)
+#endif
+
+#ifndef BLACKWELL_DMA_COPY_A
+#define BLACKWELL_DMA_COPY_A                     (0x0000c9b5)
+#endif
+
+#ifndef BLACKWELL_DMA_COPY_B
+#define BLACKWELL_DMA_COPY_B                     (0x0000cab5)
+#endif
+
 #ifndef MAXWELL_DMA_COPY_A
 #define MAXWELL_DMA_COPY_A                       (0x0000b0b5)
 #endif
@@ -603,6 +1024,14 @@
 
 #ifndef MMU_FAULT_BUFFER
 #define MMU_FAULT_BUFFER                         (0x0000c369)
+#endif
+
+#ifndef MMU_VIDMEM_ACCESS_BIT_BUFFER
+#define MMU_VIDMEM_ACCESS_BIT_BUFFER             (0x0000c763)
+#endif
+
+#ifndef HOPPER_MMU_VIDMEM_ACCESS_BIT_BUFFER
+#define HOPPER_MMU_VIDMEM_ACCESS_BIT_BUFFER      (0x0000c863)
 #endif
 
 #ifndef TURING_A
@@ -629,6 +1058,14 @@
 #define AMPERE_COMPUTE_B                         (0x0000c7c0)
 #endif
 
+#ifndef ADA_A
+#define ADA_A                                    (0x0000c997)
+#endif
+
+#ifndef ADA_COMPUTE_A
+#define ADA_COMPUTE_A                            (0x0000c9c0)
+#endif
+
 #ifndef AMPERE_SMC_PARTITION_REF
 #define AMPERE_SMC_PARTITION_REF                 (0x0000c637)
 #endif
@@ -649,8 +1086,40 @@
 #define AMPERE_SMC_MONITOR_SESSION               (0x0000c640)
 #endif
 
+#ifndef HOPPER_A
+#define HOPPER_A                                 (0x0000cb97)
+#endif
+
+#ifndef HOPPER_COMPUTE_A
+#define HOPPER_COMPUTE_A                         (0x0000cbc0)
+#endif
+
+#ifndef BLACKWELL_A
+#define BLACKWELL_A                              (0x0000cd97)
+#endif
+
+#ifndef BLACKWELL_COMPUTE_A
+#define BLACKWELL_COMPUTE_A                      (0x0000cdc0)
+#endif
+
+#ifndef BLACKWELL_B
+#define BLACKWELL_B                              (0x0000ce97)
+#endif
+
+#ifndef BLACKWELL_COMPUTE_B
+#define BLACKWELL_COMPUTE_B                      (0x0000cec0)
+#endif
+
+#ifndef BLACKWELL_INLINE_TO_MEMORY_A
+#define BLACKWELL_INLINE_TO_MEMORY_A             (0x0000cd40)
+#endif
+
 #ifndef NV40_DEBUG_BUFFER
 #define NV40_DEBUG_BUFFER                        (0x000000db)
+#endif
+
+#ifndef RM_USER_SHARED_DATA
+#define RM_USER_SHARED_DATA                      (0x000000de)
 #endif
 
 #ifndef GT200_DEBUGGER
@@ -661,6 +1130,18 @@
 #define NV40_I2C                                 (0x0000402c)
 #endif
 
+#ifndef KEPLER_DEVICE_VGPU
+#define KEPLER_DEVICE_VGPU                       (0x0000a080)
+#endif
+
+#ifndef NVA081_VGPU_CONFIG
+#define NVA081_VGPU_CONFIG                       (0x0000a081)
+#endif
+
+#ifndef NVA084_KERNEL_HOST_VGPU_DEVICE
+#define NVA084_KERNEL_HOST_VGPU_DEVICE           (0x0000a084)
+#endif
+
 #ifndef NV0060_SYNC_GPU_BOOST
 #define NV0060_SYNC_GPU_BOOST                    (0x00000060)
 #endif
@@ -669,8 +1150,29 @@
 #define GP100_UVM_SW                             (0x0000c076)
 #endif
 
+#ifndef NVENC_SW_SESSION
+#define NVENC_SW_SESSION                         (0x0000a0bc)
+#endif
+
 #ifndef NV_EVENT_BUFFER
 #define NV_EVENT_BUFFER                          (0x000090cd)
 #endif
+
+#ifndef NVFBC_SW_SESSION
+#define NVFBC_SW_SESSION                         (0x0000a0bd)
+#endif
+
+#ifndef NV_CONFIDENTIAL_COMPUTE
+#define NV_CONFIDENTIAL_COMPUTE                  (0x0000cb33)
+#endif
+
+#ifndef NV_COUNTER_COLLECTION_UNIT
+#define NV_COUNTER_COLLECTION_UNIT               (0x0000cbca)
+#endif
+
+#ifndef NV_SEMAPHORE_SURFACE
+#define NV_SEMAPHORE_SURFACE                     (0x000000da)
+#endif
+
 
 #endif // defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)

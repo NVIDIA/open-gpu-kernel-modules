@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "nvlink_linux.h"
 #include "nvlink_errors.h"
 #include "nvlink_export.h"
+#include "nvlink_proto.h"
 #include "nv-linux.h"
 #include "nv-procfs.h"
 #include "nv-time.h"
@@ -101,7 +102,7 @@ static void nvlink_permissions_exit(void)
         return;
     }
 
-    NV_REMOVE_PROC_ENTRY(nvlink_permissions);
+    proc_remove(nvlink_permissions);
     nvlink_permissions = NULL;
 }
 
@@ -133,7 +134,7 @@ static void nvlink_procfs_exit(void)
         return;
     }
 
-    NV_REMOVE_PROC_ENTRY(nvlink_procfs_dir);
+    proc_remove(nvlink_procfs_dir);
     nvlink_procfs_dir = NULL;
 }
 
@@ -207,7 +208,8 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
 
     nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
 
-    WARN_ON(private == NULL);
+    if (private == NULL)
+        return -ENOMEM;
 
     mutex_lock(&nvlink_drvctx.lock);
 
@@ -306,9 +308,6 @@ static const struct file_operations nvlink_fops = {
     .owner           = THIS_MODULE,
     .open            = nvlink_fops_open,
     .release         = nvlink_fops_release,
-#if defined(NV_FILE_OPERATIONS_HAS_IOCTL)
-    .ioctl           = nvlink_fops_ioctl,   
-#endif    
     .unlocked_ioctl  = nvlink_fops_unlocked_ioctl,
 };
 
@@ -562,7 +561,7 @@ void nvlink_assert(int cond)
     }
 }
 
-void * nvlink_allocLock()
+void * nvlink_allocLock(void)
 {
     struct semaphore *sema;
 
@@ -640,4 +639,9 @@ int nvlink_is_fabric_manager(void *osPrivate)
 int nvlink_is_admin(void)
 {
     return NV_IS_SUSER();
+}
+
+NvU64 nvlink_get_platform_time(void)
+{
+    return nv_ktime_get_raw_ns();
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -38,6 +38,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
+#include "uvm_hal.h"
 #include "uvm_push_macros.h"
 #include "hwref/maxwell/gm107/dev_mmu.h"
 
@@ -52,7 +53,7 @@ static NvU32 entries_per_index_maxwell(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_maxwell(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_maxwell(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 0)
@@ -106,10 +107,16 @@ static NvU64 small_half_pde_maxwell(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_maxwell(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_maxwell(void *entry,
+                             uvm_mmu_page_table_alloc_t **phys_allocs,
+                             uvm_page_directory_t *dir,
+                             NvU32 child_index)
 {
     NvU64 pde_bits = 0;
-    UVM_ASSERT(depth == 0);
+
+    UVM_ASSERT(dir);
+    UVM_ASSERT(dir->depth == 0);
+
     pde_bits |= HWCONST64(_MMU, PDE, SIZE, FULL);
     pde_bits |= big_half_pde_maxwell(phys_allocs[MMU_BIG]) | small_half_pde_maxwell(phys_allocs[MMU_SMALL]);
 
@@ -122,7 +129,7 @@ static NvLength entry_size_maxwell(NvU32 depth)
     return 8;
 }
 
-static NvU32 index_bits_maxwell_64(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_maxwell_64(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     UVM_ASSERT(page_size == UVM_PAGE_SIZE_4K ||
@@ -140,7 +147,7 @@ static NvU32 index_bits_maxwell_64(NvU32 depth, NvU32 page_size)
     }
 }
 
-static NvU32 index_bits_maxwell_128(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_maxwell_128(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     UVM_ASSERT(page_size == UVM_PAGE_SIZE_4K ||
@@ -163,32 +170,32 @@ static NvU32 num_va_bits_maxwell(void)
     return 40;
 }
 
-static NvLength allocation_size_maxwell_64(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_maxwell_64(NvU32 depth, NvU64 page_size)
 {
     return entry_size_maxwell(depth) << index_bits_maxwell_64(depth, page_size);
 }
 
-static NvLength allocation_size_maxwell_128(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_maxwell_128(NvU32 depth, NvU64 page_size)
 {
     return entry_size_maxwell(depth) << index_bits_maxwell_128(depth, page_size);
 }
 
-static NvU32 page_table_depth_maxwell(NvU32 page_size)
+static NvU32 page_table_depth_maxwell(NvU64 page_size)
 {
     return 1;
 }
 
-static NvU32 page_sizes_maxwell_128(void)
+static NvU64 page_sizes_maxwell_128(void)
 {
     return UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU32 page_sizes_maxwell_64(void)
+static NvU64 page_sizes_maxwell_64(void)
 {
     return UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU64 unmapped_pte_maxwell(NvU32 page_size)
+static NvU64 unmapped_pte_maxwell(NvU64 page_size)
 {
     // Setting the privilege bit on an otherwise-zeroed big PTE causes the
     // corresponding 4k PTEs to be ignored. This allows the invalidation of a
@@ -246,7 +253,7 @@ static NvU64 make_pte_maxwell(uvm_aperture_t aperture, NvU64 address, uvm_prot_t
     else
         pte_bits |= HWCONST64(_MMU, PTE, VOL, TRUE);
 
-    // aperture 34:32
+    // aperture 34:33
     if (aperture == UVM_APERTURE_SYS)
         aperture_bits = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
     else if (aperture == UVM_APERTURE_VID)
@@ -289,7 +296,7 @@ static NvU64 make_sked_reflected_pte_maxwell(void)
     return pte_bits;
 }
 
-static NvU64 poisoned_pte_maxwell(void)
+static NvU64 poisoned_pte_maxwell(uvm_page_tree_t *tree)
 {
     // An invalid PTE is also fatal on Maxwell, but a PRIV violation will
     // immediately identify bad PTE usage.
@@ -302,7 +309,7 @@ static NvU64 poisoned_pte_maxwell(void)
     // This address has to fit within 37 bits (max address width of vidmem) and
     // be aligned to page_size.
     NvU64 phys_addr = 0x1bad000000ULL;
-    NvU64 pte_bits = make_pte_maxwell(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
+    NvU64 pte_bits = tree->hal->make_pte(UVM_APERTURE_VID, phys_addr, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
 
     return WRITE_HWCONST64(pte_bits, _MMU, PTE, PRIVILEGE, TRUE);
 }
@@ -310,8 +317,13 @@ static NvU64 poisoned_pte_maxwell(void)
 // Sparse mappings are not supported.
 static NvU64 make_sparse_pte_maxwell_unsupported(void)
 {
+    NvU64 pte_bits;
+
     UVM_ASSERT_MSG(0, "Sparse mappings unsupported on pre-Pascal GPUs\n");
-    return poisoned_pte_maxwell();
+
+    pte_bits = HWCONST64(_MMU, PTE, VALID, FALSE);
+
+    return pte_bits;
 }
 
 static uvm_mmu_mode_hal_t maxwell_64_mmu_mode_hal =
@@ -350,7 +362,7 @@ static uvm_mmu_mode_hal_t maxwell_128_mmu_mode_hal =
     .page_sizes = page_sizes_maxwell_128
 };
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU64 big_page_size)
 {
     UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
     if (big_page_size == UVM_PAGE_SIZE_64K)
@@ -367,12 +379,6 @@ void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *pa
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT_MSG(false, "mmu disable_prefetch_faults called on Maxwell GPU\n");
-}
-
-uvm_mmu_engine_type_t uvm_hal_maxwell_mmu_engine_id_to_type_unsupported(NvU16 mmu_engine_id)
-{
-    UVM_ASSERT(0);
-    return UVM_MMU_ENGINE_TYPE_COUNT;
 }
 
 NvU16 uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported(NvU16 client_id)

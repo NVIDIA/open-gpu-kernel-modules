@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/io_vaspace.h"
 #include "mem_mgr/gpu_vaspace.h"
@@ -32,12 +33,15 @@
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "platform/chipset/chipset.h"
 #include "rmapi/client.h"
+#include "platform/sli/sli.h"
+#include "nvdevid.h"
+#include "containers/eheap_old.h"
+#include "gpu/bus/p2p_api.h"
 
-#include "gpu/subdevice/subdevice.h"
 #include "gpu/gsp/gsp_static_config.h"
 #include "vgpu/rpc.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 static NV_STATUS kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus);
 
@@ -77,6 +81,9 @@ kbusConstructEngine_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, ENGDESCRIPTOR engD
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kbusSetBarsApertureSize_HAL(pGpu, pKernelBus, GPU_GFID_PF));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kbusConstructXalApertures_HAL(pGpu, pKernelBus));
 
     return NV_OK;
 }
@@ -179,7 +186,32 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
             break;
     }
 
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_STATIC_BAR1, &data32) == NV_OK) &&
+        data32 < NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX)
+    {
+        pKernelBus->staticBar1ForceType = data32;
+        NV_PRINTF(LEVEL_WARNING, "Forcing static BAR1 to type %d.\n", data32);
+    }
+    else
+    {
+        pKernelBus->staticBar1ForceType = NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO;
+    }
+
+    //
+    // NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA regkey
+    // is only used on coherent systems with BAR1 enabled.
+    //
+    pKernelBus->bGrdmaForceSpa = NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_DEFAULT;
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_YES)
+        {
+            pKernelBus->bGrdmaForceSpa = NV_TRUE;
+        }
+    }
+
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
     {
         //
         // Aligns to unlinked SLI: Volta and up
@@ -194,31 +226,46 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
         pKernelBus->bP2pMailboxClientAllocated = !!data32;
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_WAR, &data32) == NV_OK)
+    {
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC, &data32) == NV_OK &&
+        data32 == NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_YES  && gpuIsCCDevToolsModeEnabled(pGpu))
+    {
+        pKernelBus->bForceBarAccessOnHcc = NV_TRUE;
+    }
+
     return NV_OK;
 }
 
 /**
- * @brief  Gets the BAR1 VA range for a client
+ * @brief  Gets the BAR1 VA range for a device
  *
  * @param[in] pGpu
  * @param[in] pKernelBus
- * @param[in] hClient               Client handle
+ * @param[in] pDevice               Device pointer
  * @param[out] pBar1VARange         BAR1 VA range
  */
 
 NV_STATUS
-kbusGetBar1VARangeForClient_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, NvHandle hClient, NV_RANGE *pBar1VARange)
+kbusGetBar1VARangeForDevice_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, Device *pDevice, NV_RANGE *pBar1VARange)
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     OBJVASPACE       *pBar1VAS          = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+    RmClient         *pRmClient;
 
     NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
 
    *pBar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
 
+    pRmClient = dynamicCast(RES_GET_CLIENT(pDevice), RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager) &&
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR) &&
-        !kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
+        !rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR) &&
+        !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
@@ -226,8 +273,8 @@ kbusGetBar1VARangeForClient_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, NvHandle h
 
        *pBar1VARange = memmgrGetMIGPartitionableBAR1Range(pGpu, pMemoryManager);
 
-        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                   hClient, &ref));
+        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                   pDevice, &ref));
         NV_ASSERT_OK_OR_RETURN(kmemsysSwizzIdToMIGMemRange(pGpu, pKernelMemorySystem, ref.pKernelMIGGpuInstance->swizzId,
                                    *pBar1VARange, pBar1VARange));
     }
@@ -266,12 +313,15 @@ kbusSetupPeerBarAccess_IMPL
             (memdescGetSize(pMemDesc) == size), ~0ULL);
     }
 
-    //
-    // Even if IOMMU-remapping fails (which it shouldn't), try to continue
-    // using the CPU physical address. In most cases, this is still sufficient.
-    //
-    status = memdescMapIommu(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
-    NV_ASSERT(status == NV_OK);
+    if (pLocalGpu != pRemoteGpu)
+    {
+        status = memdescMapIommu(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
+        if (status != NV_OK)
+        {
+            memdescDestroy(pMemDesc);
+        }
+        NV_ASSERT_OR_RETURN(status == NV_OK, ~0ULL);
+    }
 
     pIovaMapping = memdescGetIommuMap(pMemDesc, pRemoteGpu->busInfo.iovaspaceId);
 
@@ -303,13 +353,40 @@ NvU32 kbusGetFlushAperture_IMPL(KernelBus *pKernelBus, NV_ADDRESS_SPACE addrSpac
 void
 kbusDestruct_IMPL(KernelBus *pKernelBus)
 {
+    NvU32 i;
     OBJGPU *pGpu = ENG_GET_GPU(pKernelBus);
+
+    memdescFree(pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc);
+    memdescDestroy(pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc);
+    pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc = NULL;
+    memdescFree(pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc);
+    memdescDestroy(pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc);
+    pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc = NULL;
+    for (i = 0; i < pKernelBus->xalApertureCount; i++)
+    {
+        objDelete(&pKernelBus->xalApertures[i]);
+    }
+    portMemFree(pKernelBus->xalApertures);
+    pKernelBus->xalApertures = NULL;
+    pKernelBus->xalApertureCount = 0;
 
     //
     // We need to clean-up the memory resources for BAR2 as late as possible,
     // and after all memory descriptors have been reclaimed.
     //
     kbusDestructVirtualBar2_HAL(pGpu, pKernelBus, NV_TRUE, GPU_GFID_PF);
+
+    // Unmap BAR2 mapping that was retained for RPC
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+        IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+        pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL)
+    {
+        // vgpuDestructObject should have been run
+        OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
+        NV_ASSERT(pVGpu == NULL);
+
+        osUnmapPciMemoryKernelOld(pGpu, pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping);
+    }
 
     return;
 }
@@ -327,13 +404,6 @@ kbusSendSysmembar_IMPL
     // Nothing to be done in guest in the paravirtualization case.
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        return NV_OK;
-    }
-
-    if (kbusIsFbFlushDisabled(pKernelBus))
-    {
-        // Eliminate FB flushes, but keep mmu invalidates
-        NV_PRINTF(LEVEL_INFO, "disable_fb_flush flag, skipping flush.\n");
         return NV_OK;
     }
 
@@ -391,10 +461,14 @@ kbusCommitBar2_KERNEL
     NvU32      flags
 )
 {
-    // we will initialize bar2 to the default big page size of the system
-    NV_ASSERT_OK_OR_RETURN(kbusInitVirtualBar2_HAL(pGpu, pKernelBus));
-    NV_ASSERT_OK_OR_RETURN(kbusSetupCpuPointerForBusFlush_HAL(pGpu, pKernelBus));
-
+    if (!KBUS_BAR0_PRAMIN_DISABLED(pGpu) &&
+        !kbusIsBarAccessBlocked(pKernelBus) &&
+        !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
+    {
+        // we will initialize bar2 to the default big page size of the system
+        NV_ASSERT_OK_OR_RETURN(kbusInitVirtualBar2_HAL(pGpu, pKernelBus));
+        NV_ASSERT_OK_OR_RETURN(kbusSetupCpuPointerForBusFlush_HAL(pGpu, pKernelBus));
+    }
     return NV_OK;
 }
 
@@ -609,7 +683,7 @@ kbusCpuOffsetInBar2WindowGet_IMPL
  * @return VA limit of BAR2
  */
 NvU64
-kbusGetVaLimitForBar2_KERNEL
+kbusGetVaLimitForBar2_FWCLIENT
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus
@@ -624,6 +698,56 @@ kbusGetVaLimitForBar2_KERNEL
     // Assert to ensure that this value doesn't get changed.
     //
     NV_ASSERT(pKernelBus->bar2[GPU_GFID_PF].vaLimit == 0 || pKernelBus->bar2[GPU_GFID_PF].vaLimit == limit);
+
+    return limit;
+}
+
+/*!
+ * @brief Calculates the BAR2 VA limit (in Byte units)
+ * Can be safely called only after kbusSetBarsApertureSize_HAL is executed.
+ */
+NvU64 kbusGetVaLimitForBar2_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU64 limit = 0;
+    NvU32 gfid;
+
+    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, 0);
+
+    //
+    // Return zero from the guest in the paravirtualization case or
+    // if guest is running in SRIOV heavy mode.
+    //
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+        (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
+    {
+        return 0;
+    }
+
+    kbusCalcCpuInvisibleBar2Range_HAL(pGpu, pKernelBus, gfid);
+
+    //
+    // we are just accounting here for possibility that
+    // we are on pre_PASCAL and so we set the va limit
+    // to account only for the cpuVisible Aperture
+    //
+    if (pKernelBus->bar2[gfid].cpuInvisibleLimit > pKernelBus->bar2[gfid].cpuInvisibleBase)
+    {
+        limit = pKernelBus->bar2[gfid].cpuInvisibleLimit;
+    }
+    else
+    {
+        limit = pKernelBus->bar2[gfid].cpuVisibleLimit;
+    }
+    NV_PRINTF(LEVEL_INFO, "va limit: 0x%llx\n", limit);
+    //
+    // pKernelBus->bar2.vaLimit is set by this function.
+    // Assert to ensure that this value doesn't get changed.
+    //
+    NV_ASSERT(pKernelBus->bar2[gfid].vaLimit == 0 || pKernelBus->bar2[gfid].vaLimit == limit);
 
     return limit;
 }
@@ -651,7 +775,7 @@ kbusPatchBar1Pdb_GSPCLIENT
     MEMORY_DESCRIPTOR   *pMemDesc  = NULL;
     GVAS_GPU_STATE      *pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
     const MMU_FMT_LEVEL *pRootFmt  = pGpuState->pFmt->pRoot;
-    NvU32                rootSize  = pRootFmt->entrySize;
+    NvU32                rootSize  = mmuFmtLevelSize(pRootFmt);
     MMU_WALK_USER_CTX    userCtx   = {0};
     GspStaticConfigInfo *pGSCI     = GPU_GET_GSP_STATIC_INFO(pGpu);
 
@@ -662,7 +786,9 @@ kbusPatchBar1Pdb_GSPCLIENT
     memdescDescribe(pMemDesc, ADDR_FBMEM, pGSCI->bar1PdeBase, rootSize);
     memdescSetPageSize(pMemDesc, VAS_ADDRESS_TRANSLATION(pKernelBus->bar1[GPU_GFID_PF].pVAS), RM_PAGE_SIZE);
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_GOTO(status,
+        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx),
+        done);
 
     //
     // Modify the CPU-RM's walker state with the new backing memory.
@@ -672,18 +798,22 @@ kbusPatchBar1Pdb_GSPCLIENT
                                         pRootFmt,
                                         vaspaceGetVaStart(pKernelBus->bar1[GPU_GFID_PF].pVAS),
                                         (MMU_WALK_MEMDESC*)pMemDesc,
-                                        mmuFmtLevelSize(pRootFmt),
+                                        rootSize,
                                         NV_TRUE,
                                         NV_TRUE,
                                         NV_FALSE);
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
-    if (NV_OK != status)
+
+done:
+    if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to modify CPU-RM's BAR1 PDB to GSP-RM's BAR1 PDB.\n");
-        return status;
+        memdescDestroy(pMemDesc);
     }
-
-    gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
+    else
+    {
+        gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
+    }
 
     return status;
 }
@@ -713,10 +843,14 @@ kbusPatchBar2Pdb_GSPCLIENT
     KernelBus   *pKernelBus
 )
 {
-    NV_STATUS            status = NV_OK;
+    NV_STATUS            status   = NV_OK;
     PMEMORY_DESCRIPTOR   pMemDesc;
-    GspStaticConfigInfo *pGSCI  = GPU_GET_GSP_STATIC_INFO(pGpu);
+    GspStaticConfigInfo *pGSCI    = GPU_GET_GSP_STATIC_INFO(pGpu);
+    const MMU_FMT_LEVEL *pRootFmt = pKernelBus->bar2[GPU_GFID_PF].pFmt->pRoot;
     NvU64                entryValue;
+    MEMORY_DESCRIPTOR   *pOldPdb;
+
+    pOldPdb = pKernelBus->virtualBar2[GPU_GFID_PF].pPDB;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(&pMemDesc, pGpu, pKernelBus->bar2[GPU_GFID_PF].pageDirSize, RM_PAGE_SIZE, NV_TRUE,
@@ -729,269 +863,34 @@ kbusPatchBar2Pdb_GSPCLIENT
 
     //
     // BAR2 page table is not yet working at this point, so retrieving the
-    // PDE3[0] of BAR2 page table via BAR0_WINDOW
+    // PDE3[0] of BAR2 page table via BAR0_WINDOW or GSP-DMA (in case BARs
+    // are blocked)
     //
-    entryValue = GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window) |
+    if (kbusIsBarAccessBlocked(pKernelBus))
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        TRANSFER_SURFACE surf = {0};
+
+        surf.pMemDesc = pOldPdb;
+        surf.offset = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemRead(pMemoryManager, &surf, &entryValue,
+                          pRootFmt->entrySize, TRANSFER_FLAGS_NONE));
+    }
+    else
+    {
+        entryValue = GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window) |
                  ((NvU64)GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window + 4) << 32);
+    }
 
     //
     // Provide the PDE3[0] value to GSP-RM so that GSP-RM can merge CPU-RM's
     // page table to GSP-RM's page table
     //
-    NV_RM_RPC_UPDATE_BAR_PDE(pGpu, NV_RPC_UPDATE_PDE_BAR_2, entryValue, pKernelBus->bar2[GPU_GFID_PF].pFmt->pRoot->virtAddrBitLo, status);
+    NV_RM_RPC_UPDATE_BAR_PDE(pGpu, NV_RPC_UPDATE_PDE_BAR_2, entryValue, pRootFmt->virtAddrBitLo, status);
 
     return NV_OK;
-}
-
-/*!
- * @brief Helper function to trigger RPC to Physical RM to unbind FLA VASpace
- *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
- *
- * @return NV_OK if successful
- */
-NV_STATUS
-kbusSetupUnbindFla_KERNEL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus
-)
-{
-    NV_STATUS status = NV_OK;
-    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = { 0 };
-
-    if (!pKernelBus->flaInfo.bFlaBind)
-        return NV_OK;
-
-    params.flaAction = NV2080_CTRL_FLA_ACTION_UNBIND;
-
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                      pKernelBus->flaInfo.hSubDevice,
-                      NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
-                      &params, sizeof(params), status);
-
-    pKernelBus->flaInfo.bFlaBind = NV_FALSE;
-    pKernelBus->bFlaEnabled      = NV_FALSE;
-
-    return status;
-}
-
-/*!
- * @brief Helper function to extract information from FLA data structure and
- *        to trigger RPC to Physical RM to BIND FLA VASpace
- *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
- * @param[in]  gfid     GFID
- *
- * @return NV_OK if successful
- */
-NV_STATUS
-kbusSetupBindFla_KERNEL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvU32      gfid
-)
-{
-    NV_STATUS status = NV_OK;
-    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = {0};
-
-    if (!gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-    {
-        MEMORY_DESCRIPTOR  *pMemDesc;
-        RmPhysAddr          imbPhysAddr;
-        NvU32               addrSpace;
-
-        pMemDesc     = pKernelBus->flaInfo.pInstblkMemDesc;
-        imbPhysAddr  = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
-        addrSpace    = memdescGetAddressSpace(pMemDesc);
-        NV2080_CTRL_FLA_ADDRSPACE paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
-
-        switch(addrSpace)
-        {
-            case ADDR_FBMEM:
-                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
-                break;
-            case ADDR_SYSMEM:
-                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_SYSMEM;
-                break;
-        }
-        params.imbPhysAddr = imbPhysAddr;
-        params.addrSpace   = paramAddrSpace;
-    }
-    params.flaAction   = NV2080_CTRL_FLA_ACTION_BIND;
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                        pKernelBus->flaInfo.hSubDevice,
-                        NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
-                        &params, sizeof(params), status);
-    // Since FLA state is tracked in the Guest, Guest RM needs to set it here
-    pKernelBus->flaInfo.bFlaBind = NV_TRUE;
-    pKernelBus->bFlaEnabled      = NV_TRUE;
-
-    return status;
-}
-
-/*!
- * @brief Checks whether an engine is available or not.
- *
- * The 'engine' is an engine descriptor
- * This function is different from busProbeRegister in a sense that it doesn't
- * rely on timeouts after a read of a register in the reg space for engine.
- * Instead, it
- *  - Return TRUE for all engines which are must present in GPU.
- *  - Get information about CE, MSENC, NVJPG and OFA engines from plugin.
- *  - Rest engines are determined from HAL creation data.
- *
- * @param[in] pGpu       OBJGPU pointer
- * @param[in] pKernelBus KernelBus pointer
- * @param[in] engDesc    ENGDESCRIPTOR pointer used to check Engine presence
- *
- * @returns NV_TRUE if engine is available.
- *          NV_FALSE if engine is not available or floorswept.
- *
- */
-NvBool
-kbusCheckEngine_KERNEL
-(
-    OBJGPU *pGpu,
-    KernelBus *pKernelBus,
-    ENGDESCRIPTOR engDesc
-)
-{
-    NvU64    engineList;
-    NvBool   bSupported;
-
-    if (!RMCFG_FEATURE_VIRTUALIZATION && !RMCFG_FEATURE_GSP_CLIENT_RM)
-        return NV_TRUE;
-
-    {
-        GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-        if (pGSCI == NULL)
-        {
-            return NV_FALSE;
-        }
-        engineList = pGSCI->engineCaps;
-    }
-
-    switch (engDesc)
-    {
-        case ENG_LSFM:
-        case ENG_PMU:
-        case ENG_CLK:
-        case ENG_ACR:
-        case ENG_DISP:
-            return NV_FALSE;
-        //
-        // This function is used in two environments:
-        // (a) vGPU where display is not yet supported.
-        // (b) RM offload (Kernel RM) where display is supported.
-        //
-        case ENG_KERNEL_DISPLAY:
-            if (IS_GSP_CLIENT(pGpu))
-                return NV_TRUE;
-            else
-                return NV_FALSE;
-
-        case ENG_BIF:
-        case ENG_KERNEL_BIF:
-        case ENG_MC:
-        case ENG_KERNEL_MC:
-        case ENG_PRIV_RING:
-        case ENG_SW_INTR:
-        case ENG_TMR:
-        case ENG_DMA:
-        case ENG_BUS:
-        case ENG_GR(0):
-        case ENG_CIPHER:
-        case ENG_INTR:
-        case ENG_GPULOG:
-        case ENG_GPUMON:
-        case ENG_FIFO:
-            return NV_TRUE;
-
-        case ENG_CE(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY0))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY1))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY2))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(3):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY3))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(4):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY4))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(5):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY5))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(6):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY6))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(7):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY7))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(8):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY8))) ? NV_TRUE: NV_FALSE);
-        case ENG_CE(9):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY9))) ? NV_TRUE: NV_FALSE);
-        case ENG_MSENC(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC0))) ? NV_TRUE: NV_FALSE);
-        case ENG_MSENC(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC1))) ? NV_TRUE: NV_FALSE);
-        case ENG_MSENC(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC2))) ? NV_TRUE: NV_FALSE);
-        case ENG_SEC2:
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_SEC2))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVDEC(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC0))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVDEC(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC1))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVDEC(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC2))) ? NV_TRUE: NV_FALSE);
-        case ENG_OFA:
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_OFA))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVDEC(3):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC3))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVDEC(4):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC4))) ? NV_TRUE: NV_FALSE);
-        case ENG_NVJPEG(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG0))) ? NV_TRUE: NV_FALSE);
-        case ENG_GR(1):
-        case ENG_GR(2):
-        case ENG_GR(3):
-        case ENG_GR(4):
-        case ENG_GR(5):
-        case ENG_GR(6):
-        case ENG_GR(7):
-        {
-            KernelFifo *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
-
-            NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_FALSE);
-
-            if (kfifoCheckEngine_HAL(pGpu, pKernelFifo, engDesc, &bSupported) == NV_OK)
-                return bSupported;
-            else
-                return NV_FALSE;
-        }
-
-        case ENG_INVALID:
-            NV_PRINTF(LEVEL_ERROR,
-                      "Query for ENG_INVALID considered erroneous: %d\n",
-                      engDesc);
-            return NV_TRUE;
-        //
-        // Check if engine descriptor is supported by current GPU.
-        // Callee must not send engine descriptor which are not on
-        // HAL lists of GPU. So Add ASSERT there.
-        //
-        default:
-            bSupported = gpuIsEngDescSupported(pGpu, engDesc);
-
-            if (!bSupported)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Unable to check engine ID: %d\n",
-                          engDesc);
-                NV_ASSERT(bSupported);
-            }
-            return bSupported;
-    }
 }
 
 //
@@ -1015,24 +914,17 @@ kbusGetDeviceCaps_IMPL
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJCL  *pCl  = SYS_GET_CL(pSys);
     NvU8 tempCaps[NV0080_CTRL_HOST_CAPS_TBL_SIZE], temp;
-    NvBool bVirtualP2P;
     NvBool bExplicitCacheFlushRequired;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
     portMemSet(tempCaps, 0, NV0080_CTRL_HOST_CAPS_TBL_SIZE);
 
-    /*! On KEPLER+, mailbox protocol based P2P transactions goes through virtual to
-     *  physical translation (on request side) */
-    bVirtualP2P = IsdMAXWELLorBetter(pGpu);
-    if (bVirtualP2P)
-        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _VIRTUAL_P2P);
-
     /*! DMAs to/from cached memory need to have the cache flushed explicitly */
-    bExplicitCacheFlushRequired = NVCPU_IS_ARM && 
+    bExplicitCacheFlushRequired = NVCPU_IS_ARM &&
                                   (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS_UNIX);
     if (bExplicitCacheFlushRequired ||
-        (!pCl->getProperty(pCL, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
+        (!pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _EXPLICIT_CACHE_FLUSH_REQD);
 
     if ((pCl->FHBBusInfo.vendorID == PCI_VENDOR_ID_NVIDIA) &&
@@ -1043,9 +935,6 @@ kbusGetDeviceCaps_IMPL
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
     }
 
-    // the RM always supports GPU-coherent mappings
-    RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _GPU_COHERENT_MAPPING_SUPPORTED);
-
     // If we don't have existing caps with which to reconcile, then just return
     if (!bCapsInitialized)
     {
@@ -1053,165 +942,124 @@ kbusGetDeviceCaps_IMPL
         return;
     }
 
-    // factor in this GPUs caps: all these are feature caps, so use AND
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _P2P_4_WAY);
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _P2P_8_WAY);
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _VIRTUAL_P2P);
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _GPU_COHERENT_MAPPING_SUPPORTED);
-
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEMA_ACQUIRE_BUG_105665);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SYS_SEMA_DEADLOCK_BUG_148216);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SLOWSLI);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEMA_READ_ONLY_BUG);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _MEM2MEM_BUG_365782);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _LARGE_NONCOH_UPSTR_WRITE_BUG_114871);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _LARGE_UPSTREAM_WRITE_BUG_115115);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEP_VIDMEM_PB_NOTIFIERS_BUG_83923);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _P2P_DEADLOCK_BUG_203825);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _COMPRESSED_BL_P2P_BUG_257072);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _CROSS_BLITS_BUG_270260);
     RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
                   NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _BAR1_READ_DEADLOCK_BUG_511418);
 
     return;
 }
 
-NV_STATUS
-kbusMapFbApertureByHandle_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvHandle   hClient,
-    NvHandle   hMemory,
-    NvU64      offset,
-    NvU64      size,
-    NvU64     *pBar1Va
-)
+NvU32
+kbusConvertBusMapFlagsToDmaFlags(KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU32 busMapFlags)
 {
-    NV_STATUS status;
-    RsClient *pClient = NULL;
-    RsResourceRef *pSrcMemoryRef = NULL;
-    Memory *pSrcMemory = NULL;
-    MEMORY_DESCRIPTOR *pMemDesc = NULL;
-    NvU64 fbApertureOffset = 0;
-    NvU64 fbApertureLength = size;
+    NvU32 dmaFlags = DRF_DEF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _FALSE);
+    NvBool bPageSizeLocked = NV_FALSE;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    status = clientGetResourceRef(pClient, hMemory, &pSrcMemoryRef);
-    if (status != NV_OK)
+    if (busMapFlags & BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED)
     {
-        return status;
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, dmaFlags);
     }
 
-    pSrcMemory = dynamicCast(pSrcMemoryRef->pResource, Memory);
-    if (pSrcMemory == NULL)
+    if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED)
     {
-        return NV_ERR_INVALID_OBJECT;
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE, dmaFlags);
     }
 
-    pMemDesc = pSrcMemory->pMemDesc;
-
-    if (memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM)
+    if (busMapFlags & BUS_MAP_FB_FLAGS_MAP_DOWNWARDS)
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_GROWS, _DOWN, dmaFlags);
     }
 
-    status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset,
-                                   &fbApertureOffset, &fbApertureLength,
-                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
-    if (status != NV_OK)
+    // Disable the encryption if DIRECT mapping is requested, currently it is just for testing purpose
+    if (busMapFlags & BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION)
     {
-        return status;
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _DISABLE_ENCRYPTION, _TRUE, dmaFlags);
     }
 
-    NV_ASSERT_OR_GOTO(fbApertureLength >= size, failed);
-
-    if ((!NV_IS_ALIGNED64(fbApertureOffset, osGetPageSize())) ||
-        (!NV_IS_ALIGNED64(fbApertureLength, osGetPageSize())))
+    NV_ASSERT(!((busMapFlags & BUS_MAP_FB_FLAGS_READ_ONLY) &&
+                (busMapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)));
+    if (busMapFlags & BUS_MAP_FB_FLAGS_READ_ONLY)
     {
-        status = NV_ERR_NOT_SUPPORTED;
-        goto failed;
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, dmaFlags);
+    }
+    else if (busMapFlags & BUS_MAP_FB_FLAGS_WRITE_ONLY)
+    {
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _ACCESS, _WRITE_ONLY, dmaFlags);
     }
 
-    *pBar1Va = gpumgrGetGpuPhysFbAddr(pGpu) + fbApertureOffset;
-
-    if (!NV_IS_ALIGNED64(*pBar1Va, osGetPageSize()))
+    // Resolve explicit map page size request. Required for fixed offset mapping at specific page size.
+    if (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_4K)
     {
-        status = NV_ERR_INVALID_ADDRESS;
-        goto failed;
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_64K))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _BIG, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_2M))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _HUGE, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
+    }
+    if (!bPageSizeLocked && (busMapFlags & BUS_MAP_FB_FLAGS_PAGE_SIZE_512M))
+    {
+        NV_ASSERT(!bPageSizeLocked);
+        dmaFlags = FLD_SET_DRF(OS46, _FLAGS, _PAGE_SIZE, _512M, dmaFlags);
+        bPageSizeLocked = NV_TRUE;
     }
 
-    return NV_OK;
 
-failed:
-    // Note: fbApertureLength is not used by kbusUnmapFbAperture_HAL(), so it's passed as 0
-    kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                            fbApertureOffset, 0,
-                            BUS_MAP_FB_FLAGS_MAP_UNICAST);
-
-    return status;
+    return dmaFlags;
 }
 
+
 NV_STATUS
-kbusUnmapFbApertureByHandle_IMPL
+kbusMapFbApertureSingle_IMPL
 (
-    OBJGPU    *pGpu,
+    OBJGPU *pGpu,
     KernelBus *pKernelBus,
-    NvHandle   hClient,
-    NvHandle   hMemory,
-    NvU64      bar1Va
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64 offset,
+    NvU64 *pAperOffset,
+    NvU64 *pLength,
+    NvU32 flags,
+    Device *pDevice
 )
 {
-    NV_STATUS status;
-    RsClient *pClient = NULL;
-    RsResourceRef *pSrcMemoryRef = NULL;
-    Memory *pSrcMemory = NULL;
-    MEMORY_DESCRIPTOR *pMemDesc = NULL;
-
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    status = clientGetResourceRef(pClient, hMemory, &pSrcMemoryRef);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    pSrcMemory = dynamicCast(pSrcMemoryRef->pResource, Memory);
-    if (pSrcMemory == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT;
-    }
-
-    pMemDesc = pSrcMemory->pMemDesc;
-
-    // Note: fbApertureLength is not used by kbusUnmapFbAperture_HAL(), so it's passed as 0
-    status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                                     bar1Va - gpumgrGetGpuPhysFbAddr(pGpu),
-                                     0, BUS_MAP_FB_FLAGS_MAP_UNICAST);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
+    MemoryArea memArea;
+    MemoryRange memRange;
+    memArea.numRanges = 1;
+    memArea.pRanges = &memRange;
+    memRange.start = *pAperOffset;
+    NV_ASSERT_OK_OR_RETURN(kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, mrangeMake(offset, *pLength), &memArea,
+        flags | BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA, pDevice));
+    *pLength = memRange.size;
+    *pAperOffset = memRange.start;
     return NV_OK;
+}
+    
+NV_STATUS
+kbusUnmapFbApertureSingle_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64 aperOffset,
+    NvU64 length,
+    NvU32 flags
+)
+{
+    MemoryArea memArea;
+    MemoryRange memRange = mrangeMake(aperOffset, length);
+
+    memArea.numRanges = 1;
+    memArea.pRanges = &memRange;
+
+    return kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, memArea, flags | BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
 }
 
 /*!
@@ -1233,19 +1081,257 @@ kbusSendBusInfo_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS busGetInfoParams = {0};
 
-    busGetInfoParams.busInfoList[0] = *pBusInfo;
-    busGetInfoParams.busInfoListSize = 1;
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
 
-    NV_RM_RPC_CONTROL(pGpu,
-                      pGpu->hInternalClient,
-                      pGpu->hInternalSubdevice,
-                      NV2080_CTRL_CMD_BUS_GET_INFO_V2,
-                      &busGetInfoParams,
-                      sizeof(busGetInfoParams),
-                      status);
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
-    pBusInfo->data = busGetInfoParams.busInfoList[0].data;
+        pBusInfo->data = pVSI->busGetInfoV2.busInfoList[pBusInfo->index].data;
+    }
+    else
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_BUS_GET_INFO_V2_PARAMS busGetInfoParams = {0};
+
+        busGetInfoParams.busInfoList[0] = *pBusInfo;
+        busGetInfoParams.busInfoListSize = 1;
+
+        status = pRmApi->Control(pRmApi,
+                                 pGpu->hInternalClient,
+                                 pGpu->hInternalSubdevice,
+                                 NV2080_CTRL_CMD_BUS_GET_INFO_V2,
+                                 &busGetInfoParams,
+                                 sizeof(busGetInfoParams));
+
+        pBusInfo->data = busGetInfoParams.busInfoList[0].data;
+    }
+
     return status;
+}
+
+/*!
+ * @brief Returns the Nvlink peer ID from pGpu0 to pGpu1
+ *
+ * @param[in]   pGpu0          (local GPU)
+ * @param[in]   pKernelBus0    (local GPU)
+ * @param[in]   pGpu1          (remote GPU)
+ * @param[in]   pKernelBus1    (remote GPU)
+ * @param[out]  nvlinkPeer     NvU32 pointer
+ *
+ * return NV_OK on success
+ */
+NV_STATUS
+kbusGetNvlinkP2PPeerId_VGPU
+(
+    OBJGPU    *pGpu0,
+    KernelBus *pKernelBus0,
+    OBJGPU    *pGpu1,
+    KernelBus *pKernelBus1,
+    NvU32     *nvlinkPeer,
+    NvU32      flags
+)
+{
+    NvBool bEgmPeer = FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES, flags);
+    NvU32 status = NV_OK;
+
+    if (bEgmPeer)
+    {
+        *nvlinkPeer = kbusGetEgmPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+    else
+    {
+        *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+
+    if (*nvlinkPeer != BUS_INVALID_PEER)
+    {
+        return NV_OK;
+    }
+
+    *nvlinkPeer = kbusGetUnusedPeerId_HAL(pGpu0, pKernelBus0);
+
+    // If could not find a free peer ID, return error
+    if (*nvlinkPeer == BUS_INVALID_PEER)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "GPU%d: peerID not available for NVLink P2P\n",
+                  pGpu0->gpuInstance);
+        return NV_ERR_GENERIC;
+    }
+    // Reserve the peer ID for NVLink use
+    status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
+
+    if (status == NV_OK)
+    {
+        pKernelBus0->p2p.bEgmPeer[*nvlinkPeer] = bEgmPeer;
+    }
+
+    return status;
+}
+
+/**
+ * @brief     Check if the static bar1 is enabled
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NvBool
+kbusIsStaticBar1Enabled_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 gfid;
+
+    return ((vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK) &&
+            pKernelBus->bar1[gfid].bStaticBar1Enabled);
+}
+
+/**
+ * @brief     Check for any P2P references in to remote GPUs
+ *            which are still have a P2P api object alive.
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NV_STATUS
+kbusIsGpuP2pAlive_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
+}
+
+/**
+ * @brief     Gets BAR0 size in bytes for VF
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NvU64 kbusGetVfBar0SizeBytes_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // Bar 0 size for VF is always 16MB
+    return 16llu << 20;
+}
+
+/**
+ * @brief Update BAR1 size and availability in RUSD
+ *
+ * @param[in] pGpu
+ */
+NV_STATUS
+kbusUpdateRusdStatistics_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    OBJVASPACE *pBar1VAS;
+    OBJEHEAP *pVASHeap;
+    RUSD_BAR1_MEMORY_INFO *pSharedData;
+    NvU64 bar1Size = 0;
+    NvU64 bar1AvailSize = 0;
+    NV_RANGE bar1VARange = NV_RANGE_EMPTY;
+    NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
+
+    bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
+
+    if (!bZeroRusd)
+    {
+        pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+        NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
+        pVASHeap = vaspaceGetHeap(pBar1VAS);
+        bar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
+
+        bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
+
+        if (pVASHeap != NULL)
+        {
+            NvU64 freeSize = 0;
+
+            pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
+            bar1AvailSize = (NvU32)(freeSize / 1024);
+
+            if (kbusIsStaticBar1Enabled(pGpu, pKernelBus))
+            {
+                RUSD_PMA_MEMORY_INFO *pPmaInfo;
+                NvU64 freeMem = 0;
+                NvU64 totalMem = 0;
+                NvU64 fbInUse;
+                NvU32 gfid = GPU_GFID_PF;
+
+                NV_ASSERT_OK(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+                // Cache off the vasFreeSize for PMA to use when it updates the memory
+                pKernelBus->bar1[gfid].vasFreeSize = freeSize;
+                
+                pPmaInfo = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
+                gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
+                totalMem = MEM_RD64(&pPmaInfo->totalPmaMemory);
+                freeMem = MEM_RD64(&pPmaInfo->freePmaMemory);
+                fbInUse = totalMem - freeMem;
+
+                // Available size in KB
+                bar1AvailSize = (freeSize + pKernelBus->bar1[gfid].staticBar1.size - fbInUse) / 1024;
+            }
+        }
+    }
+
+    // Minimize critical section, write data once we have it.
+    pSharedData = gpushareddataWriteStart(pGpu, bar1MemoryInfo);
+    MEM_WR32(&pSharedData->bar1Size, bar1Size);
+    MEM_WR32(&pSharedData->bar1AvailSize, bar1AvailSize);
+    gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
+
+    return NV_OK;
+}
+
+NV_STATUS
+kbusGetGpuFbPhysAddressForRdma_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvBool     bForcePcie,
+    NvU64     *pPhysAddr
+)
+{
+    if((bForcePcie) &&
+       (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // For forced PCIe mappings on coherent systems, use SPA by default instead of GPA
+    // if the RmGpuDirectRdmaForceSPA regkey is set.
+    // This is a stop-gap measure until hypervisor ensures GPA==SPA.
+    //
+    if (bForcePcie && pKernelBus->bGrdmaForceSpa)
+    {
+        *pPhysAddr = pKernelBus->grdmaBar1Spa;
+    }
+    else
+    {
+        *pPhysAddr = gpumgrGetGpuPhysFbAddr(pGpu);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS kbusGetEffectiveAddressSpace_SOC(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 mapFlags,
+                                       NV_ADDRESS_SPACE *pAddrSpace)
+{
+    if (pAddrSpace != NULL)
+        *pAddrSpace = memdescGetAddressSpace(pMemDesc);
+
+    return NV_OK;
 }

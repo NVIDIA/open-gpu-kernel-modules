@@ -12,7 +12,6 @@
 
 typedef struct DISP_HAL_IFACES    *PDISP_HAL_IFACES;
 typedef struct DPU_HAL_IFACES     *PDPU_HAL_IFACES;
-typedef struct GPIO_HAL_IFACES    *PGPIO_HAL_IFACES;
 typedef struct RPC_HAL_IFACES     *PRPC_HAL_IFACES;
 typedef struct RPCSTRUCTURECOPY_HAL_IFACES *PRPCSTRUCTURECOPY_HAL_IFACES;
 
@@ -25,6 +24,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES *PRPCSTRUCTURECOPY_HAL_IFACES;
 typedef struct {
 
     void (*rpcHalIfacesSetupFn)(PRPC_HAL_IFACES pRpcHal);
+    void (*rpcstructurecopyHalIfacesSetupFn)(PRPCSTRUCTURECOPY_HAL_IFACES pRpcstructurecopyHal);
 
 } HAL_IFACE_SETUP, *PHAL_IFACE_SETUP;
 
@@ -38,7 +38,6 @@ typedef struct IGRP_IP_VERSIONS_TABLE_INFO IGRP_IP_VERSIONS_TABLE_INFO;
 
 // generic form of Head_iGrp_ipVersions_getInfo typedef
 
-typedef NV_STATUS  IGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *);
 typedef void      IGrp_ipVersions_install(IGRP_IP_VERSIONS_TABLE_INFO *);
 typedef NV_STATUS  IGrp_ipVersions_wrapup(IGRP_IP_VERSIONS_TABLE_INFO *);
 
@@ -118,6 +117,24 @@ typedef enum
     HAL_IMPL_GA107,
     HAL_IMPL_GA10B,
     HAL_IMPL_GA102F,
+    HAL_IMPL_AD102,
+    HAL_IMPL_AD103,
+    HAL_IMPL_AD104,
+    HAL_IMPL_AD106,
+    HAL_IMPL_AD107,
+    HAL_IMPL_GH100,
+    HAL_IMPL_GB100,
+    HAL_IMPL_GB102,
+    HAL_IMPL_GB10B,
+    HAL_IMPL_GB110,
+    HAL_IMPL_GB112,
+    HAL_IMPL_GB202,
+    HAL_IMPL_GB203,
+    HAL_IMPL_GB205,
+    HAL_IMPL_GB206,
+    HAL_IMPL_GB207,
+    HAL_IMPL_GB20B,
+    HAL_IMPL_GB20C,
     HAL_IMPL_T001_FERMI_NOT_EXIST,
     HAL_IMPL_T124,
     HAL_IMPL_T132,
@@ -126,7 +143,10 @@ typedef enum
     HAL_IMPL_T194,
     HAL_IMPL_T002_TURING_NOT_EXIST,
     HAL_IMPL_T234,
+    HAL_IMPL_T003_ADA_NOT_EXIST,
+    HAL_IMPL_T004_HOPPER_NOT_EXIST,
     HAL_IMPL_T234D,
+    HAL_IMPL_T264D,
     HAL_IMPL_AMODEL,
 
     HAL_IMPL_MAXIMUM,       // NOTE: this symbol must be at the end of the enum list.
@@ -147,7 +167,27 @@ typedef enum
     { HAL_IMPL_GA103, "GA103" }, \
     { HAL_IMPL_GA104, "GA104" }, \
     { HAL_IMPL_GA106, "GA106" }, \
-    { HAL_IMPL_GA107, "GA107" }
+    { HAL_IMPL_GA107, "GA107" }, \
+    { HAL_IMPL_AD102, "AD102" }, \
+    { HAL_IMPL_AD103, "AD103" }, \
+    { HAL_IMPL_AD104, "AD104" }, \
+    { HAL_IMPL_AD106, "AD106" }, \
+    { HAL_IMPL_AD107, "AD107" }, \
+    { HAL_IMPL_GH100, "GH100" }, \
+    { HAL_IMPL_GB100, "GB100" }, \
+    { HAL_IMPL_GB102, "GB102" }, \
+    { HAL_IMPL_GB10B, "GB10B" }, \
+    { HAL_IMPL_GB110, "GB110" }, \
+    { HAL_IMPL_GB112, "GB112" }, \
+    { HAL_IMPL_GB202, "GB202" }, \
+    { HAL_IMPL_GB203, "GB203" }, \
+    { HAL_IMPL_GB205, "GB205" }, \
+    { HAL_IMPL_GB206, "GB206" }, \
+    { HAL_IMPL_GB207, "GB207" }, \
+    { HAL_IMPL_GB20B, "GB20B" }, \
+    { HAL_IMPL_GB20C, "GB20C" }, \
+    { HAL_IMPL_T234D, "T234D" }, \
+    { HAL_IMPL_T264D, "T264D" }
 
 
 #endif  // _G_RMCFG_HAL_H_

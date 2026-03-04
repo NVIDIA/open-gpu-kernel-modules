@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,7 +45,7 @@ struct OBJGPU;
 #define GPU_TIMEOUT_FLAGS_DEFAULT               NVBIT(0)  //!< default timeout mechanism as set by platform
 #define GPU_TIMEOUT_FLAGS_USE_THREAD_STATE      NVBIT(1)  //!< default timeout time used - use the ThreadState
 #define GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE   NVBIT(2)  //!< even if default time was used - skip the ThreadState
-#define GPU_TIMEOUT_FLAGS_OSTIMER               NVBIT(3)  //!< osGetCurrentTime()
+#define GPU_TIMEOUT_FLAGS_OSTIMER               NVBIT(3)  //!< osGetSystemTime()
 #define GPU_TIMEOUT_FLAGS_OSDELAY               NVBIT(4)  //!< osDelay()
 #define GPU_TIMEOUT_FLAGS_TMR                   NVBIT(5)  //!< tmrGetCurrentTime()
 #define GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG    NVBIT(6)  //!< bypass timeout logging in the RM journal
@@ -79,6 +79,13 @@ typedef struct
     volatile NvBool bScaled;
     volatile NvU32  defaultus;          //!< Default timeout in us
     volatile NvU32  defaultResetus;     //!< Default timeout reset value in us
+    //
+    // Default timeout reset value in Us for the reset FSM state transitions
+    // between ASSERT -> ASSERTED and DEASSERT -> DEASSERTED.
+    // This is for presilicon test only.
+    //
+    volatile NvBool bDefaultResetFSMStateTransitionOverridden;
+    volatile NvU32  defaultResetFSMStateTransitionUs;
     NvU32           defaultFlags;       //!< Default timeout mode
     NvU32           scale;              //!< Emulation/Simulation multiplier
     OBJGPU         *pGpu;
@@ -139,6 +146,10 @@ static NV_INLINE NvU32 timeoutApplyScale(TIMEOUT_DATA *pTD, NvU32 timeout)
 #define gpuScaleTimeout(g,a)         timeoutApplyScale(&(g)->timeoutData, a)
 #define gpuTimeoutCondWait(g,a,b,t)  timeoutCondWait(&(g)->timeoutData, t, a, b, __LINE__)
 
-#define GPU_ENG_RESET_TIMEOUT_VALUE(g, t) (t)
+//
+// In SCSIM simulation platform, both CPU and GPU are simulated and the reg write/read itself
+// takes more time. This helper macro handles it with increased timeout value.
+//
+#define GPU_ENG_RESET_TIMEOUT_VALUE(g, t) ((gpuIsSelfHosted(g) && IS_SIMULATION(g)) ? 1000 : (t))
 
 #endif // _GPU_TIMEOUT_H_

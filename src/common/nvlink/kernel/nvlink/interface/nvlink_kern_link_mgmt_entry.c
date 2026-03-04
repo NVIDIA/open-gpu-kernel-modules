@@ -320,4 +320,68 @@ nvlink_lib_get_link_master
     return status;
 }
 
+/**
+ * Set whether the link is using ALI for training.
+ * 
+ * @param[in]  link       NVLink Link pointer
+ * @param[in]  enableALI  Boolean for whether the link is using
+ *                        ALI to train the link
+ *
+ * return NvlSuccess if setting the variable was successful.
+ */
+NvlStatus
+nvlink_lib_link_set_training_mode
+(
+    nvlink_link  *link,
+    NvBool        enableALI
+)
+{
+    NvlStatus status = NVL_SUCCESS;
+    if (link == NULL)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Bad link pointer specified.\n",
+            __FUNCTION__));
+        return NVL_ERR_GENERIC;
+    }
 
+    // Acquire the top-level lock
+    status = nvlink_lib_top_lock_acquire();
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        return status;
+    }
+
+
+    // Acquire the per-link lock
+    status = nvlink_lib_link_locks_acquire(&link, 1);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire per-link locks\n",
+            __FUNCTION__));
+
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        return status;
+    }
+
+    //
+    // All the required per-link locks are successfully acquired
+    // The connection list traversal is also complete now
+    // Release the top level-lock
+    //
+    nvlink_lib_top_lock_release();
+
+    // TODO: Add Setter for per-link enableALI state variable
+
+    // Release the per-link lock
+    nvlink_lib_link_locks_release(&link, 1);
+
+    return status;
+}

@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl5070/ctrl5070chnc.finn
+// Source file:      ctrl/ctrl5070/ctrl5070chnc.finn
 //
-
-
-
 
 #include "ctrl/ctrl5070/ctrl5070base.h"
 #include "ctrl5070common.h"
@@ -62,59 +59,6 @@ typedef struct NV5070_CTRL_IDLE_CHANNEL_PARAMS {
     NvU32                       timeout;             // For future expansion. Not yet implemented
     NvBool                      restoreDebugMode;
 } NV5070_CTRL_IDLE_CHANNEL_PARAMS;
-
-/*
- * NV5070_CTRL_CMD_STOP_OVERLAY
- *
- * This command tries to turn the overlay off ASAP.
- *
- *      channelInstance
- *          This field indicates which of the two instances of the overlay
- *          channel the cmd is meant for.
- *
- *      notifyMode
- *          This field indicates the action RM should take once the overlay has
- *          been successfully stopped. The options are (1) Set a notifier
- *          (2) Set the notifier and generate and OS event
- *
- *      hNotifierCtxDma
- *          Handle to the ctx dma for the notifier that must be written once
- *          overlay is stopped. The standard NvNotification notifier structure
- *          is used.
- *
- *      offset
- *          Offset within the notifier context dma where the notifier begins
- *          Offset must be 16 byte aligned.
- *
- *      hEvent
- *          Handle to the event that RM must use to awaken the client when
- *          notifyMode is WRITE_AWAKEN.
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT: Invalid notify mode
- *      NV_ERR_INVALID_CHANNEL: When the overlay is unallocated
- *      NV_ERR_INVALID_OWNER: Callee isn't the owner of the channel
- *      NV_ERR_INVALID_OBJECT_HANDLE: Notif ctx dma not found
- *      NV_ERR_INVALID_OFFSET: Bad offset within notif ctx dma
- *      NV_ERR_INSUFFICIENT_RESOURCES
- *      NV_ERR_TIMEOUT: RM timedout waiting to inject methods
- */
-#define NV5070_CTRL_CMD_STOP_OVERLAY                          (0x50700102) /* finn: Evaluated from "(FINN_NV50_DISPLAY_CHNCTL_INTERFACE_ID << 8) | NV5070_CTRL_CMD_STOP_OVERLAY_PARAMS_MESSAGE_ID" */
-
-#define NV5070_CTRL_CMD_STOP_OVERLAY_NOTIFY_MODE_WRITE        (0x00000000)
-#define NV5070_CTRL_CMD_STOP_OVERLAY_NOTIFY_MODE_WRITE_AWAKEN (0x00000001)
-
-#define NV5070_CTRL_CMD_STOP_OVERLAY_PARAMS_MESSAGE_ID (0x2U)
-
-typedef struct NV5070_CTRL_CMD_STOP_OVERLAY_PARAMS {
-    NV5070_CTRL_CMD_BASE_PARAMS base;
-    NvU32                       channelInstance;
-    NvU32                       notifyMode;
-    NvHandle                    hNotifierCtxDma;
-    NvU32                       offset;
-    NV_DECLARE_ALIGNED(NvP64 hEvent, 8);
-} NV5070_CTRL_CMD_STOP_OVERLAY_PARAMS;
 
 
 
@@ -647,8 +591,6 @@ typedef struct NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS {
     NvBool bUseCachedPerfState;
 } NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS;
 
-
-
 /*
  * NV5070_CTRL_CMD_GET_CHANNEL_INFO
  *
@@ -781,59 +723,6 @@ typedef struct NV5070_CTRL_SET_ACCL_PARAMS {
 #define NV5070_CTRL_GET_ACCL_PARAMS_MESSAGE_ID (0xDU)
 
 typedef NV5070_CTRL_SET_ACCL_PARAMS NV5070_CTRL_GET_ACCL_PARAMS;
-
-/*
- * NV5070_CTRL_CMD_STOP_BASE
- *
- * This command tries to turn the base channel off ASAP.
- *
- *      channelInstance
- *          This field indicates which of the two instances of the base
- *          channel the cmd is meant for.
- *
- *      notifyMode
- *          This field indicates the action RM should take once the base
- *          channel has been successfully stopped. The options are (1) Set a
- *          notifier (2) Set the notifier and generate and OS event
- *
- *      hNotifierCtxDma
- *          Handle to the ctx dma for the notifier that must be written once
- *          base channel is stopped. The standard NvNotification notifier
- *          structure is used.
- *
- *      offset
- *          Offset within the notifier context dma where the notifier begins
- *          Offset must be 16 byte aligned.
- *
- *      hEvent
- *          Handle to the event that RM must use to awaken the client when
- *          notifyMode is WRITE_AWAKEN.
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT: Invalid notify mode
- *      NV_ERR_INVALID_CHANNEL: When the overlay is unallocated
- *      NV_ERR_INVALID_OWNER: Callee isn't the owner of the channel
- *      NV_ERR_INVALID_OBJECT_HANDLE: Notif ctx dma not found
- *      NV_ERR_INVALID_OFFSET: Bad offset within notif ctx dma
- *      NV_ERR_INSUFFICIENT_RESOURCES
- *      NV_ERR_TIMEOUT: RM timedout waiting to inject methods
- */
-#define NV5070_CTRL_CMD_STOP_BASE                          (0x5070010e) /* finn: Evaluated from "(FINN_NV50_DISPLAY_CHNCTL_INTERFACE_ID << 8) | NV5070_CTRL_CMD_STOP_BASE_PARAMS_MESSAGE_ID" */
-
-#define NV5070_CTRL_CMD_STOP_BASE_NOTIFY_MODE_WRITE        (0x00000000)
-#define NV5070_CTRL_CMD_STOP_BASE_NOTIFY_MODE_WRITE_AWAKEN (0x00000001)
-
-#define NV5070_CTRL_CMD_STOP_BASE_PARAMS_MESSAGE_ID (0xEU)
-
-typedef struct NV5070_CTRL_CMD_STOP_BASE_PARAMS {
-    NV5070_CTRL_CMD_BASE_PARAMS base;
-    NvU32                       channelInstance;
-    NvU32                       notifyMode;
-    NvHandle                    hNotifierCtxDma;
-    NvU32                       offset;
-    NV_DECLARE_ALIGNED(NvP64 hEvent, 8);
-} NV5070_CTRL_CMD_STOP_BASE_PARAMS;
 
 
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,10 +33,15 @@ void uvm_hal_maxwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     // space for UVM internal mappings.
     // A single top level PDE covers 64 or 128 MB on Maxwell so 128 GB is fine to use.
     parent_gpu->rm_va_base = 0;
-    parent_gpu->rm_va_size = 128ull * 1024 * 1024 * 1024;
+    parent_gpu->rm_va_size = 128 * UVM_SIZE_1GB;
 
-    parent_gpu->uvm_mem_va_base = 768ull * 1024 * 1024 * 1024;
+    parent_gpu->peer_va_base = 0;
+    parent_gpu->peer_va_size = 0;
+
+    parent_gpu->uvm_mem_va_base = 768 * UVM_SIZE_1GB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
+
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     // We don't have a compelling use case in UVM-Lite for direct peer
     // migrations between GPUs, so don't bother setting them up.
@@ -56,7 +61,9 @@ void uvm_hal_maxwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->non_replayable_faults_supported = false;
 
-    parent_gpu->access_counters_supported = false;
+    parent_gpu->access_counters_serialize_clear_ops_by_type = false;
+
+    parent_gpu->access_bits_supported = false;
 
     parent_gpu->fault_cancel_va_supported = false;
 
@@ -69,4 +76,10 @@ void uvm_hal_maxwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->smc.supported = false;
 
     parent_gpu->plc_supported = false;
+
+    parent_gpu->ats.no_ats_range_required = false;
+
+    parent_gpu->ats.gmmu_pt_depth0_init_required = false;
+
+    parent_gpu->conf_computing.per_channel_key_rotation = false;
 }

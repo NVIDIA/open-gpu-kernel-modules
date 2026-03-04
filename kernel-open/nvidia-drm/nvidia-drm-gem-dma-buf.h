@@ -48,12 +48,11 @@ static inline struct nv_drm_gem_dma_buf *to_nv_dma_buf(
 
 static inline
 struct nv_drm_gem_dma_buf *nv_drm_gem_object_dma_buf_lookup(
-    struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
 {
     struct nv_drm_gem_object *nv_gem =
-            nv_drm_gem_object_lookup(dev, filp, handle);
+            nv_drm_gem_object_lookup(filp, handle);
 
     if (nv_gem != NULL && nv_gem->ops != &__nv_gem_dma_buf_ops) {
         nv_drm_gem_object_unreference_unlocked(nv_gem);

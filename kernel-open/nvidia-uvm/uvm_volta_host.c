@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -136,70 +136,12 @@ void uvm_hal_volta_host_clear_faulted_channel_method(uvm_push_t *push,
                                     clear_type_value);
 }
 
-void uvm_hal_volta_access_counter_clear_all(uvm_push_t *push)
-{
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, 0,
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWCONST(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, ALL));
-}
-
-static NvU32 get_access_counter_type_value(uvm_access_counter_type_t type)
-{
-    if (type == UVM_ACCESS_COUNTER_TYPE_MIMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TYPE_MIMC;
-    else if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TYPE_MOMC;
-    else
-        UVM_ASSERT_MSG(false, "Invalid access counter type %u\n", type);
-
-    return 0;
-}
-
-static NvU32 get_access_counter_targeted_type_value(uvm_access_counter_type_t type)
-{
-    if (type == UVM_ACCESS_COUNTER_TYPE_MIMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TARGETED_TYPE_MIMC;
-    else if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
-        return NVC36F_MEM_OP_D_ACCESS_COUNTER_CLR_TARGETED_TYPE_MOMC;
-    else
-        UVM_ASSERT_MSG(false, "Invalid access counter type %u\n", type);
-
-    return 0;
-}
-
-void uvm_hal_volta_access_counter_clear_type(uvm_push_t *push, uvm_access_counter_type_t type)
-{
-    NvU32 type_value = get_access_counter_type_value(type);
-
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, 0,
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, type_value));
-}
-
-void uvm_hal_volta_access_counter_clear_targeted(uvm_push_t *push,
-                                                 const uvm_access_counter_buffer_entry_t *buffer_entry)
-{
-    NvU32 targeted_type_value = get_access_counter_targeted_type_value(buffer_entry->counter_type);
-
-    NV_PUSH_4U(C36F, MEM_OP_A, 0,
-                     MEM_OP_B, 0,
-                     MEM_OP_C, HWVALUE(C36F, MEM_OP_C, ACCESS_COUNTER_CLR_TARGETED_NOTIFY_TAG, buffer_entry->tag),
-                     MEM_OP_D, HWCONST(C36F, MEM_OP_D, OPERATION, ACCESS_COUNTER_CLR) |
-                               HWCONST(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TYPE, TARGETED) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_TYPE, targeted_type_value) |
-                               HWVALUE(C36F, MEM_OP_D, ACCESS_COUNTER_CLR_TARGETED_BANK, buffer_entry->bank));
-}
-
 void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
                                           uvm_gpu_phys_address_t pdb,
                                           NvU32 depth,
                                           NvU64 base,
                                           NvU64 size,
-                                          NvU32 page_size,
+                                          NvU64 page_size,
                                           uvm_membar_t membar)
 {
     NvU32 aperture_value;
@@ -216,9 +158,9 @@ void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
     NvU32 log2_invalidation_size;
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%x\n", page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%x\n", base, page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%x\n", size, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%llx\n", page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%llx\n", base, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%llx\n", size, page_size);
     UVM_ASSERT_MSG(size > 0, "size 0x%llx\n", size);
 
     // The invalidation size must be a power-of-two number of pages containing
@@ -324,6 +266,12 @@ void uvm_hal_volta_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type)
 void uvm_hal_volta_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
     NvU32 sem_lo;
+
+    UVM_ASSERT_MSG(uvm_push_get_gpu(push)->parent->host_hal->semaphore_target_is_valid(push, gpu_va),
+                   "Semaphore target validation failed in channel %s, GPU %s.\n",
+                   push->channel->name,
+                   uvm_gpu_name(uvm_push_get_gpu(push)));
+
     UVM_ASSERT(!(NvOffset_LO32(gpu_va) & ~HWSHIFTMASK(C36F, SEM_ADDR_LO, OFFSET)));
     sem_lo = READ_HWVALUE(NvOffset_LO32(gpu_va), C36F, SEM_ADDR_LO, OFFSET);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,12 @@
 //******************************************************************************
 
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "vgpu/rpc.h"
 #include "os/os.h"
+#include "core/locks.h"
+
+#include "virtualization/kernel_vgpu_mgr.h"
 
 #include "vgpu/vgpu_version.h"
 #include "gpu/gsp/kernel_gsp.h"
@@ -47,7 +51,7 @@
 #undef RPC_MESSAGE_STRUCTURES
 #undef RPC_MESSAGE_GENERIC_UNION
 
-void rpcRmApiSetup(OBJGPU *pGpu)
+static void rpcRmApiSetup(OBJGPU *pGpu)
 {
     //
     // Physical RMAPI is already initialized for monolithic, and this function
@@ -59,6 +63,13 @@ void rpcRmApiSetup(OBJGPU *pGpu)
     if (IS_VIRTUAL(pGpu))
     {
         // none for now
+    }
+    else if (IS_DCE_CLIENT(pGpu))
+    {
+        pRmApi->Control         = rpcRmApiControl_dce;
+        pRmApi->AllocWithHandle = rpcRmApiAlloc_dce;
+        pRmApi->Free            = rpcRmApiFree_dce;
+        pRmApi->DupObject       = rpcRmApiDupObject_dce;
     }
     else if (IS_GSP_CLIENT(pGpu))
     {
@@ -81,14 +92,31 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
                   gpuGetInstance(pGpu));
         return NULL;
     }
+    pRpc->timeoutCount = 0;
+    pRpc->bQuietPrints = NV_FALSE;
 
-    // VIRTUALIZATION is disabled on DCE. Only run the below code on VGPU and GSP.
-    rpcSetIpVersion(pGpu, pRpc,
-                    RPC_VERSION_FROM_VGX_VERSION(VGX_MAJOR_VERSION_NUMBER,
-                                                 VGX_MINOR_VERSION_NUMBER));
-    rpcObjIfacesSetup(pRpc);
+    pRpc->sequence = 0;
+    if (!IS_DCE_CLIENT(pGpu))
+    {
+        // VIRTUALIZATION is disabled on DCE. Only run the below code on VGPU and GSP.
+        rpcSetIpVersion(pGpu, pRpc,
+                        RPC_VERSION_FROM_VGX_VERSION(VGX_MAJOR_VERSION_NUMBER,
+                                                     VGX_MINOR_VERSION_NUMBER));
+        rpcObjIfacesSetup(pRpc);
+    }
 
     rpcRmApiSetup(pGpu);
+
+    if (
+        !IS_FW_CLIENT(pGpu))
+    {
+        if (NV_OK != rpcConstruct(pGpu, pRpc))
+        {
+            NV_PRINTF(LEVEL_ERROR, "rpcConstruct failed\n");
+            portMemFree(pRpc);
+            return NULL;
+        }
+    }
 
     return pRpc;
 }
@@ -96,6 +124,19 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
 NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 paramLength)
 {
     NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    if (IS_VIRTUAL(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        OBJVGPU  *pVGpu = GPU_GET_VGPU(pGpu);
+        if (!pVGpu->bGspBuffersInitialized)
+        {
+            NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: RPC buffer not initialized. Function %d\n", func);
+            return NV_ERR_INVALID_STATE;
+        }
+    }
 
     if (!pRpc)
     {
@@ -105,13 +146,36 @@ NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 par
         return NV_ERR_INVALID_STATE;
     }
 
-    portMemSet(pRpc->message_buffer, 0, pRpc->maxRpcSize);
+    if (func == NV_VGPU_MSG_FUNCTION_RM_API_CONTROL)
+        portMemSet(pRpc->message_buffer, 0, pRpc->largeRpcSize);
+    else
+        portMemSet(pRpc->message_buffer, 0, pRpc->maxRpcSize);
 
     vgpu_rpc_message_header_v->header_version     = DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MAJOR, _TOT) |
                                                     DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MINOR, _TOT);
     vgpu_rpc_message_header_v->signature          = NV_VGPU_MSG_SIGNATURE_VALID;
     vgpu_rpc_message_header_v->rpc_result         = NV_VGPU_MSG_RESULT_RPC_PENDING;
     vgpu_rpc_message_header_v->rpc_result_private = NV_VGPU_MSG_RESULT_RPC_PENDING;
+    if (gpuIsSriovEnabled(pGpu) && IS_GSP_CLIENT(pGpu))
+    {
+        // rpcWriteCommonHeader can be called by NV_RM_RPC_ALLOC_SHARE_DEVICE.
+        // In that moment we have Device with NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE flag
+        // but without HOST_VGPU_DEVICE pointer. Get GFID from pDevice manually
+        // to avoid HOST_VGPU_DEVICE check in vgpuGetCallingContextHostVgpuDevice.
+        Device *pDevice = vgpuGetCallingContextDevice(pGpu);
+
+        vgpu_rpc_message_header_v->u.cpuRmGfid = 0;
+        if (pDevice != NULL)
+        {
+            if (pDevice->pKernelHostVgpuDevice != NULL)
+            {
+                NV_ASSERT_OR_RETURN(pDevice->pKernelHostVgpuDevice->bGspPluginTaskInitialized,
+                                    NV_ERR_INVALID_STATE);
+                vgpu_rpc_message_header_v->u.cpuRmGfid = pDevice->pKernelHostVgpuDevice->gfid;
+            }
+        }
+    }
+    else
     {
         vgpu_rpc_message_header_v->u.spare        = NV_VGPU_MSG_UNION_INIT;
     }

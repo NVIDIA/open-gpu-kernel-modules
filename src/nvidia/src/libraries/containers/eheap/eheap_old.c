@@ -24,36 +24,35 @@
 #if defined(NVRM)
 #   include "os/os.h"
 #else
-#   include "shrdebug.h"
 #   include "nvos.h"
 #endif
+#include "utils/nvassert.h"
 #include "containers/eheap_old.h"
 
 #if !defined(SRT_BUILD)
 #include "os/os.h"
 #endif
 
-static void         initPublicObjectFunctionPointers_EHeap(POBJEHEAP pHeap);
-static NV_STATUS  eheapInit(POBJEHEAP, NvU64, NvU64, NvU32, NvU32);
-static NV_STATUS  eheapDestruct(POBJEHEAP);
-static NV_STATUS  eheapAlloc(POBJEHEAP, NvU32, NvU32 *, NvU64 *, NvU64 *,NvU64, NvU64, PEMEMBLOCK*, void*, EHeapOwnershipComparator*);
-static NV_STATUS  eheapFree(POBJEHEAP, NvU64);
-static void       eheapInfo(POBJEHEAP, NvU64 *, NvU64 *, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
-static void       eheapInfoForRange(POBJEHEAP, NV_RANGE, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
-static NV_STATUS  eheapGetSize(POBJEHEAP, NvU64 *);
-static NV_STATUS  eheapGetFree(POBJEHEAP, NvU64 *);
-static NV_STATUS  eheapGetBase(POBJEHEAP, NvU64 *);
-static PEMEMBLOCK   eheapGetBlock(POBJEHEAP, NvU64, NvBool);
-static NV_STATUS  eheapSetAllocRange(POBJEHEAP, NvU64, NvU64);
-static NV_STATUS  eheapTraverse(POBJEHEAP, void *, EHeapTraversalFn, NvS32);
-static NV_STATUS  _eheapBlockFree(POBJEHEAP pHeap, PEMEMBLOCK block);
-static NvU32        eheapGetNumBlocks(POBJEHEAP);
-static NV_STATUS  eheapGetBlockInfo(POBJEHEAP, NvU32, NVOS32_HEAP_DUMP_BLOCK *);
-static NV_STATUS  eheapSetOwnerIsolation(POBJEHEAP, NvBool, NvU32);
-static NvBool     _eheapCheckOwnership(POBJEHEAP, void*, NvU64, NvU64, PEMEMBLOCK, EHeapOwnershipComparator*);
+static void       initPublicObjectFunctionPointers_EHeap(OBJEHEAP *pHeap);
+static NV_STATUS  eheapInit(OBJEHEAP *, NvU64, NvU64, NvU32, NvU32);
+static NV_STATUS  eheapDestruct(OBJEHEAP *);
+static NV_STATUS  eheapAlloc(OBJEHEAP *, NvU32, NvU32 *, NvU64 *, NvU64 *,NvU64, NvU64, EMEMBLOCK **, void*, EHeapOwnershipComparator*);
+static NV_STATUS  eheapFree(OBJEHEAP *, NvU64);
+static void       eheapInfo(OBJEHEAP *, NvU64 *, NvU64 *, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
+static void       eheapInfoForRange(OBJEHEAP *, NV_RANGE, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
+static NV_STATUS  eheapGetSize(OBJEHEAP *, NvU64 *);
+static NV_STATUS  eheapGetFree(OBJEHEAP *, NvU64 *);
+static NV_STATUS  eheapGetBase(OBJEHEAP *, NvU64 *);
+static EMEMBLOCK *eheapGetBlock(OBJEHEAP *, NvU64, NvBool);
+static NV_STATUS  eheapSetAllocRange(OBJEHEAP *, NvU64, NvU64);
+static NV_STATUS  eheapTraverse(OBJEHEAP *, void *, EHeapTraversalFn, NvS32);
+static NV_STATUS  _eheapBlockFree(OBJEHEAP *pHeap, EMEMBLOCK *block);
+static NvU32      eheapGetNumBlocks(OBJEHEAP *);
+static NV_STATUS  eheapSetOwnerIsolation(OBJEHEAP *, NvBool, NvU32);
+static NvBool     _eheapCheckOwnership(OBJEHEAP *, void*, NvU64, NvU64, EMEMBLOCK *, EHeapOwnershipComparator*);
 
 void
-constructObjEHeap(POBJEHEAP pHeap, NvU64 Base, NvU64 LimitPlusOne, NvU32 sizeofMemBlock, NvU32 numPreAllocMemStruct)
+constructObjEHeap(OBJEHEAP *pHeap, NvU64 Base, NvU64 LimitPlusOne, NvU32 sizeofMemBlock, NvU32 numPreAllocMemStruct)
 {
     initPublicObjectFunctionPointers_EHeap(pHeap);
 
@@ -61,7 +60,7 @@ constructObjEHeap(POBJEHEAP pHeap, NvU64 Base, NvU64 LimitPlusOne, NvU32 sizeofM
 }
 
 static void
-initPublicObjectFunctionPointers_EHeap(POBJEHEAP pHeap)
+initPublicObjectFunctionPointers_EHeap(OBJEHEAP *pHeap)
 {
     pHeap->eheapDestruct              = eheapDestruct;
     pHeap->eheapAlloc                 = eheapAlloc;
@@ -75,15 +74,14 @@ initPublicObjectFunctionPointers_EHeap(POBJEHEAP pHeap)
     pHeap->eheapSetAllocRange         = eheapSetAllocRange;
     pHeap->eheapTraverse              = eheapTraverse;
     pHeap->eheapGetNumBlocks          = eheapGetNumBlocks;
-    pHeap->eheapGetBlockInfo          = eheapGetBlockInfo;
     pHeap->eheapSetOwnerIsolation     = eheapSetOwnerIsolation;
 }
 
 static NV_STATUS
 _eheapAllocMemStruct
 (
-    POBJEHEAP   pHeap,
-    PEMEMBLOCK* ppMemBlock
+    OBJEHEAP   *pHeap,
+    EMEMBLOCK **ppMemBlock
 )
 {
     if (pHeap->numPreAllocMemStruct > 0)
@@ -116,8 +114,8 @@ _eheapAllocMemStruct
 static NV_STATUS
 _eheapFreeMemStruct
 (
-    POBJEHEAP   pHeap,
-    PEMEMBLOCK* ppMemBlock
+    OBJEHEAP   *pHeap,
+    EMEMBLOCK **ppMemBlock
 )
 {
     if (pHeap->numPreAllocMemStruct > 0)
@@ -146,14 +144,14 @@ _eheapFreeMemStruct
 static NV_STATUS
 eheapInit
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64     Base,
     NvU64     LimitPlusOne,
     NvU32     sizeofData,
     NvU32     numPreAllocMemStruct
 )
 {
-    PEMEMBLOCK block;
+    EMEMBLOCK *block;
     NvU32      i;
 
     //
@@ -198,8 +196,8 @@ eheapInit
             //
             for (i = 0; i < numPreAllocMemStruct - 1; i++)
             {
-                ((PEMEMBLOCK)((NvU8 *)pHeap->pFreeMemStructList + (i * pHeap->sizeofMemBlock)))->next
-                    = (PEMEMBLOCK)((NvU8 *)pHeap->pFreeMemStructList + (i + 1) * pHeap->sizeofMemBlock);
+                ((EMEMBLOCK *)((NvU8 *)pHeap->pFreeMemStructList + (i * pHeap->sizeofMemBlock)))->next
+                    = (EMEMBLOCK *)((NvU8 *)pHeap->pFreeMemStructList + (i + 1) * pHeap->sizeofMemBlock);
             }
         }
     }
@@ -243,10 +241,10 @@ eheapInit
 static NV_STATUS
 eheapDestruct
 (
-    POBJEHEAP pHeap
+    OBJEHEAP *pHeap
 )
 {
-    PEMEMBLOCK block, blockFirst, blockNext;
+    EMEMBLOCK *block, *blockFirst, *blockNext;
     NvBool     headptr_updated;
 
     if (!pHeap->pBlockList)
@@ -295,21 +293,21 @@ eheapDestruct
 static NV_STATUS
 eheapAlloc
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU32 owner,
     NvU32 *flags,
     NvU64 *offset,
     NvU64 *size,
     NvU64 offsetAlign,
     NvU64 sizeAlign,
-    PEMEMBLOCK * ppMemBlock, // not generally useful over e.g. a split!
+    EMEMBLOCK **ppMemBlock, // not generally useful over e.g. a split!
     void *pIsolationID,
     EHeapOwnershipComparator *checker
 )
 {
     NvU64      allocLo, allocAl, allocHi;
-    PEMEMBLOCK blockFirstFree, blockFree;
-    PEMEMBLOCK blockNew = NULL, blockSplit = NULL;
+    EMEMBLOCK *blockFirstFree, *blockFree;
+    EMEMBLOCK *blockNew = NULL, *blockSplit = NULL;
     NvU64      desiredOffset;
     NvU64      allocSize;
     NvU64      rangeLo, rangeHi;
@@ -376,19 +374,19 @@ eheapAlloc
         if (blockFree == NULL)
             goto failed;
 
-        do 
+        do
         {
-            desiredOffset = NV_ALIGN_DOWN(blockFree->begin, pHeap->ownerGranularity) + offsetAlign; 
+            desiredOffset = NV_ALIGN_DOWN(blockFree->begin, pHeap->ownerGranularity) + offsetAlign;
 
             while (desiredOffset + allocSize - 1 <= blockFree->end)
             {
                 desiredOffsetLo = NV_ALIGN_DOWN(desiredOffset, pHeap->ownerGranularity);
-                desiredOffsetHi = (((desiredOffset % pHeap->ownerGranularity) == 0) ? 
+                desiredOffsetHi = (((desiredOffset % pHeap->ownerGranularity) == 0) ?
                                     NV_ALIGN_UP((desiredOffset + 1), pHeap->ownerGranularity) :
                                     NV_ALIGN_UP(desiredOffset, pHeap->ownerGranularity));
 
                 if ((desiredOffset >= blockFree->begin) &&
-                    ((desiredOffsetLo >= blockFree->begin) && 
+                    ((desiredOffsetLo >= blockFree->begin) &&
                      (desiredOffsetHi <= blockFree->end)))
                 {
                     if (_eheapCheckOwnership(pHeap, pIsolationID, desiredOffset,
@@ -403,8 +401,8 @@ eheapAlloc
 
                 desiredOffset += pHeap->ownerGranularity;
             }
-                        
-            blockFree = blockFree->nextFree;        
+
+            blockFree = blockFree->nextFree;
 
         } while (blockFree != pHeap->pFreeBlockList);
 
@@ -456,7 +454,7 @@ eheapAlloc
                              desiredOffset + allocSize - 1, blockFree, checker))
                     {
                         break;
-                    }                    
+                    }
                 }
 
                 // we have a match, now remove it from the pool
@@ -571,7 +569,7 @@ eheapAlloc
                     allocLo = allocAl;
                     allocHi = allocAl + allocSize - 1;
 
-                    if (_eheapCheckOwnership(pHeap, pIsolationID, allocLo, allocHi, blockFree, checker)) 
+                    if (_eheapCheckOwnership(pHeap, pIsolationID, allocLo, allocHi, blockFree, checker))
                     {
                         goto alloc_done;
                     }
@@ -840,11 +838,11 @@ next_free:
 static NV_STATUS
 _eheapBlockFree
 (
-    POBJEHEAP  pHeap,
-    PEMEMBLOCK block
+    OBJEHEAP  *pHeap,
+    EMEMBLOCK *block
 )
 {
-    PEMEMBLOCK blockTmp;
+    EMEMBLOCK *blockTmp;
 
     //
     // Check for valid owner.
@@ -990,28 +988,28 @@ _eheapBlockFree
 static NV_STATUS
 eheapFree
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64 offset
 )
 {
-    PEMEMBLOCK block;
+    EMEMBLOCK *block;
 
-    block = (PEMEMBLOCK) eheapGetBlock(pHeap, offset, 0);
+    block = (EMEMBLOCK *) eheapGetBlock(pHeap, offset, 0);
     if (!block)
         return NV_ERR_INVALID_OFFSET;
 
     return _eheapBlockFree(pHeap, block);
 }
 
-static PEMEMBLOCK
+static EMEMBLOCK *
 eheapGetBlock
 (
-    POBJEHEAP  pHeap,
+    OBJEHEAP  *pHeap,
     NvU64      offset,
     NvBool     bReturnFreeBlock
 )
 {
-    PEMEMBLOCK block;
+    EMEMBLOCK *block;
     PNODE pNode;
 
     if (btreeSearch(offset, &pNode, pHeap->pBlockTree) != NV_OK)
@@ -1019,7 +1017,7 @@ eheapGetBlock
         return NULL;
     }
 
-    block = (PEMEMBLOCK)pNode->Data;
+    block = (EMEMBLOCK *)pNode->Data;
     if ((block->owner == NVOS32_BLOCK_TYPE_FREE ) && !bReturnFreeBlock)
     {
         return NULL;
@@ -1031,7 +1029,7 @@ eheapGetBlock
 static NV_STATUS
 eheapGetSize
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64     *size
 )
 {
@@ -1042,7 +1040,7 @@ eheapGetSize
 static NV_STATUS
 eheapGetFree
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64     *free
 )
 {
@@ -1053,7 +1051,7 @@ eheapGetFree
 static NV_STATUS
 eheapGetBase
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64 *base
 )
 {
@@ -1064,7 +1062,7 @@ eheapGetBase
 static void
 eheapInfo
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64 *pBytesFree,           // in all of the space managed
     NvU64 *pBytesTotal,          // in all of the space managed
     NvU64 *pLargestFreeOffset,   // constrained to pHeap->rangeLo, pHeap->rangeHi
@@ -1075,8 +1073,8 @@ eheapInfo
 {
     NV_RANGE range = rangeMake(pHeap->rangeLo, pHeap->rangeHi);
 
-    if (pBytesFree) 
-    {  
+    if (pBytesFree)
+    {
         *pBytesFree  = pHeap->free;
     }
     if (pBytesTotal)
@@ -1089,7 +1087,7 @@ eheapInfo
 static void
 eheapInfoForRange
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NV_RANGE  range,
     NvU64 *pLargestFreeOffset,   // constrained to rangeLo, rangeHi
     NvU64 *pLargestFreeSize,     // constrained to rangeLo, rangeHi
@@ -1097,17 +1095,17 @@ eheapInfoForRange
     NvU64 *pUsableBytesFree      // constrained to rangeLo, rangeHi
 )
 {
-    PEMEMBLOCK blockFirstFree, blockFree;
+    EMEMBLOCK *blockFirstFree, *blockFree;
     NvU64 freeBlockSize = 0;
     NvU64 largestFreeOffset = 0;
-    NvU64 largestFreeSize = 0;  
+    NvU64 largestFreeSize = 0;
     NvU32 numFreeBlocks = 0;
 
     if (pUsableBytesFree)
         *pUsableBytesFree = 0;
 
     blockFirstFree = pHeap->pFreeBlockList;
-    if (blockFirstFree) 
+    if (blockFirstFree)
     {
         NV_ASSERT( range.lo <= range.hi );
 
@@ -1152,7 +1150,7 @@ eheapInfoForRange
 static NV_STATUS
 eheapSetAllocRange
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvU64 rangeLo,
     NvU64 rangeHi
 )
@@ -1176,20 +1174,20 @@ eheapSetAllocRange
 static NV_STATUS
 eheapTraverse
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     void *pEnv,
     EHeapTraversalFn traversalFn,
     NvS32 direction
 )
 {
     NvU32 cont = 1, backAtFirstBlock = 0;
-    PEMEMBLOCK pBlock, pBlockNext;
+    EMEMBLOCK *pBlock, *pBlockNext;
     NV_STATUS rc;
     NvU64 cursorOffset;                   // for dealing with cursor invalidates.
     NvU64 firstBlockBegin, firstBlockEnd; // we'll never call the traversal fn twice on the same (sub)extent.
 
     pBlock = (direction > 0) ? pHeap->pBlockList : pHeap->pBlockList->prev;
-    NV_ASSERT(pBlock);
+    NV_ASSERT_OR_RETURN(pBlock != NULL, NV_ERR_INVALID_STATE);
 
     //
     // Cursor invalidates mean we can't compare with 'pHeap->pBlockList'.
@@ -1238,7 +1236,7 @@ eheapTraverse
 
         }
 
-        NV_ASSERT(pBlock); // 1. list is circular, 2. cursorOffset should always be found unless the list is badly malformed.
+        NV_ASSERT_OR_RETURN(pBlock != NULL, NV_ERR_INVALID_STATE); // 1. list is circular, 2. cursorOffset should always be found unless the list is badly malformed.
 
         //
         // Back to first block?  Defined as being at a block for which the
@@ -1265,59 +1263,10 @@ eheapTraverse
 static NvU32
 eheapGetNumBlocks
 (
-    POBJEHEAP pHeap
+    OBJEHEAP *pHeap
 )
 {
     return pHeap->numBlocks;
-}
-
-/*!
- * @brief Copies over block information for each block
- * in the heap into the provided buffer.
- *
- * @param[in] pHeap: pointer to eHeap struct to get data from
- * @param[in] numBlocks: number of blocks passed in block buffer
- * @param[out] pBlockBuffer: pointer to buffer where info will be copied to
- *
- * @return 'NV_OK' Operation completed successfully
- *         'NV_ERR_INVALID_ARGUMENT' size of buffer passed in is
- *          incorrect
- *         'NV_ERR_INVALID_STATE' if the blocklist doesn't match the
- *          heapSize
- */
-static NV_STATUS
-eheapGetBlockInfo
-(
-    POBJEHEAP pHeap,
-    NvU32 numBlocks,
-    NVOS32_HEAP_DUMP_BLOCK *pBlockBuffer
-)
-{
-    PEMEMBLOCK pBlock;
-    NvU32 heapSize, i;
-    NV_STATUS rmStatus = NV_OK;
-
-    // ensure buffer is the same numBlocks
-    heapSize = eheapGetNumBlocks(pHeap);
-    NV_ASSERT_OR_RETURN(heapSize == numBlocks, NV_ERR_INVALID_ARGUMENT);
-
-    pBlock = pHeap->pBlockList;
-    for (i = 0; i < heapSize; i++)
-    {
-        pBlockBuffer->begin = pBlock->begin;
-        pBlockBuffer->align = pBlock->align;
-        pBlockBuffer->end = pBlock->end;
-        pBlockBuffer->owner = pBlock->owner;
-        pBlockBuffer->format = 0; // EMEMBLOCK does not have format, ignore for now
-        pBlock = pBlock->next;
-        if (pBlock == NULL)
-        {
-            return NV_ERR_INVALID_STATE;
-        }
-        pBlockBuffer++;
-    }
-
-    return rmStatus;
 }
 
 /**
@@ -1334,7 +1283,7 @@ eheapGetBlockInfo
 NV_STATUS
 eheapSetOwnerIsolation
 (
-    POBJEHEAP pHeap,
+    OBJEHEAP *pHeap,
     NvBool    bEnable,
     NvU32     granularity
 )
@@ -1375,17 +1324,17 @@ eheapSetOwnerIsolation
 static NvBool
 _eheapCheckOwnership
 (
-    POBJEHEAP                 pHeap,
+    OBJEHEAP                 *pHeap,
     void                     *pIsolationID,
     NvU64                     allocLo,
     NvU64                     allocHi,
-    PEMEMBLOCK                blockFree,
+    EMEMBLOCK                *blockFree,
     EHeapOwnershipComparator *pComparator
 )
 {
     EMEMBLOCK *pTmpBlock;
     NvU64      checkLo = NV_ALIGN_DOWN(allocLo, pHeap->ownerGranularity);
-    NvU64      checkHi = (((allocHi % pHeap->ownerGranularity) == 0) ? 
+    NvU64      checkHi = (((allocHi % pHeap->ownerGranularity) == 0) ?
                             NV_ALIGN_UP((allocHi + 1), pHeap->ownerGranularity) :
                             NV_ALIGN_UP(allocHi, pHeap->ownerGranularity));
     NvU64      check;
@@ -1407,7 +1356,7 @@ _eheapCheckOwnership
                 if (!pComparator(pIsolationID, pTmpBlock->pData))
                 {
                     return NV_FALSE;
-                }             
+                }
             }
 
             check = pTmpBlock->end + 1;

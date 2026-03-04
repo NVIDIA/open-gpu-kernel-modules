@@ -107,7 +107,7 @@ _prereqArm
     // Put together a mask of PREREQ_IDs which are both satisfied and requested
     // We do not keep track of satisfied prereqs until armed, so we have no existing
     // state to worry about here.
-    // 
+    //
     NV_ASSERT_OK_OR_RETURN(bitVectorAnd(&requestedAndSatisfied,
                                         &pPrereq->requested,
                                         &pTracker->satisfied));
@@ -242,6 +242,8 @@ prereqRetract_IMPL
     PrereqListIter it;
     NV_STATUS   status = NV_OK;
 
+    NV_ASSERT_OR_RETURN(pTracker != NULL,
+                      NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pTracker->bInitialized,
                       NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN((prereqId < PREREQ_ID_VECTOR_SIZE),

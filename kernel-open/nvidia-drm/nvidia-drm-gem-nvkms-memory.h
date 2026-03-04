@@ -25,15 +25,22 @@
 
 #include "nvidia-drm-conftest.h"
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-gem.h"
 
 struct nv_drm_gem_nvkms_memory {
     struct nv_drm_gem_object base;
 
+    /*
+     * Lock to protect concurrent writes to physically_mapped, pPhysicalAddress,
+     * and pWriteCombinedIORemapAddress.
+     *
+     * __nv_drm_gem_nvkms_map(), the sole writer, is structured such that
+     * readers are not required to hold the lock.
+     */
+    struct mutex map_lock;
     bool physically_mapped;
-
     void *pPhysicalAddress;
     void *pWriteCombinedIORemapAddress;
 
@@ -65,12 +72,11 @@ static inline struct nv_drm_gem_nvkms_memory *to_nv_nvkms_memory_const(
 
 static inline
 struct nv_drm_gem_nvkms_memory *nv_drm_gem_object_nvkms_memory_lookup(
-    struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
 {
     struct nv_drm_gem_object *nv_gem =
-            nv_drm_gem_object_lookup(dev, filp, handle);
+            nv_drm_gem_object_lookup(filp, handle);
 
     if (nv_gem != NULL && nv_gem->ops != &nv_gem_nvkms_memory_ops) {
         nv_drm_gem_object_unreference_unlocked(nv_gem);
@@ -97,9 +103,11 @@ int nv_drm_dumb_map_offset(struct drm_file *file,
                            struct drm_device *dev, uint32_t handle,
                            uint64_t *offset);
 
+#if defined(NV_DRM_DRIVER_HAS_DUMB_DESTROY)
 int nv_drm_dumb_destroy(struct drm_file *file,
                         struct drm_device *dev,
                         uint32_t handle);
+#endif /* NV_DRM_DRIVER_HAS_DUMB_DESTROY */
 
 struct drm_gem_object *nv_drm_gem_nvkms_prime_import(
     struct drm_device *dev,

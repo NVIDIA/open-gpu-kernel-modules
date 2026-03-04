@@ -30,6 +30,9 @@ extern "C" {
 
 #include "nvlink_common.h"
 
+#define TOP_LEVEL_LOCKING_DISABLED 1 
+#define PER_LINK_LOCKING_DISABLED 1 
+
 #define NVLINK_FREE(x) nvlink_free((void *)x)
 
 // Memory management functions
@@ -61,6 +64,7 @@ void        nvlink_assert(int expression);
 void        nvlink_sleep(unsigned int ms);
 void        nvlink_print(const char *, int, const char *, int, const char *, ...);
 int         nvlink_is_admin(void);
+NvU64       nvlink_get_platform_time(void);
 
 // Capability functions
 NvlStatus nvlink_acquire_fabric_mgmt_cap(void *osPrivate, NvU64 capDescriptor);

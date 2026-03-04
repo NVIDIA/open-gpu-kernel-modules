@@ -36,6 +36,7 @@
 typedef NvS16                                                         NvSFXP16;
 typedef NvS32                                                         NvSFXP32;
 typedef NvS64                                                         NvSFXP64;
+typedef NvU8                                                          NvUFXP8;
 typedef NvU16                                                         NvUFXP16;
 typedef NvU32                                                         NvUFXP32;
 typedef NvU64                                                         NvUFXP64;
@@ -66,6 +67,7 @@ typedef NvSFXP32                                                    NvSFXP29_3;
 typedef NvSFXP32                                                    NvSFXP31_1;
 typedef NvSFXP64                                                   NvSFXP52_12;
 
+typedef NvUFXP8                                                     NvUFXP0_8;
 typedef NvUFXP16                                                    NvUFXP0_16;
 typedef NvUFXP16                                                    NvUFXP4_12;
 typedef NvUFXP16                                                     NvUFXP8_8;
@@ -84,10 +86,13 @@ typedef NvUFXP32                                                    NvUFXP25_7;
 typedef NvUFXP32                                                    NvUFXP26_6;
 typedef NvUFXP32                                                    NvUFXP28_4;
 
+typedef NvUFXP64                                                   NvUFXP37_27;
 typedef NvUFXP64                                                   NvUFXP40_24;
 typedef NvUFXP64                                                   NvUFXP48_16;
 typedef NvUFXP64                                                   NvUFXP52_12;
-
+typedef NvUFXP64                                                   NvUFXP54_10;
+typedef NvUFXP64                                                    NvUFXP60_4;
+typedef NvUFXP64                                                   NvUFXP36_28;
 /*!
  * Utility macros used in converting between signed integers and fixed-point
  * notation.
@@ -312,6 +317,7 @@ typedef NvUFXP64                                                   NvUFXP52_12;
 #define NV_TYPES_SINGLE_SIGN_NEGATIVE                                 0x00000001
 #define NV_TYPES_SINGLE_EXPONENT                                           30:23
 #define NV_TYPES_SINGLE_EXPONENT_ZERO                                 0x00000000
+#define NV_TYPES_SINGLE_EXPONENT_MAX                                  0x000000FE
 #define NV_TYPES_SINGLE_EXPONENT_BIAS                                 0x0000007F
 #define NV_TYPES_SINGLE_MANTISSA                                            22:0
 
@@ -344,6 +350,19 @@ typedef NvUFXP64                                                   NvUFXP52_12;
         NV_TYPES_SINGLE_EXPONENT_BIAS))
 
 /*!
+ * Helper macro to convert an NvS8 unbiased exponent value to an IEEE 754
+ * single-precision value's exponent, by adding the bias.
+ * Input exponent can range from -127 to 127 which is stored in the range
+ * [0, 254]
+ *
+ * @param[in] single   IEEE 754 single-precision value to manipulate.
+ *
+ * @return Biased exponent value for IEEE 754 single-precision.
+ */
+#define NV_TYPES_NvS32_TO_SINGLE_EXPONENT_BIASED(exponent)                      \
+    ((NvU32)((exponent) + NV_TYPES_SINGLE_EXPONENT_BIAS))
+
+/*!
  * NvTemp - temperature data type introduced to avoid bugs in conversion between
  * various existing notations.
  */
@@ -370,6 +389,16 @@ typedef NvSFXP24_8              NvTemp;
  * Macro to convert SFXP 11.5 to NvTemp.
  */
 #define NV_TYPES_NVSFXP11_5_TO_NV_TEMP(x) ((NvTemp)(x) << 3)
+
+/*!
+ * Macro to convert NvTemp to SFXP 11.5.
+ */
+#define NV_TYPES_NV_TEMP_TO_NVSFXP11_5(x) ((NvSFXP11_5)(x) >> 3)
+
+/*!
+ * Macro to convert UFXP 5.3 to NvTemp.
+ */
+#define NV_TYPES_NVUFXP5_3_TO_NV_TEMP(x) ((NvTemp)(x) << 5)
 
 /*!
  * Macro to convert UFXP11.5 Watts to NvU32 milli-Watts.

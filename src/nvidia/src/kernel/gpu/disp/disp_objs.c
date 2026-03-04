@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "gpu/disp/disp_channel.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "kernel/gpu/intr/intr.h"
 
@@ -63,13 +64,25 @@ dispapiConstruct_IMPL
     NvBool           bBcResource;
     NvU32            i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Use gpuGetByRef instead of GpuResource because it will work even if resource
     // isn't a GpuResource.
     status = gpuGetByRef(pResourceRef, &bBcResource, &pGpu);
     if (status != NV_OK)
         return status;
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) &&
+        pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
+                  pParams->externalClassId);
+
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     // Find class in class db (verifies class is valid for this GPU)
     status = gpuGetClassByClassId(pGpu, pParams->externalClassId, &pClassDescriptor);
@@ -92,8 +105,6 @@ dispapiConstruct_IMPL
     pDisplayApi->pGpuInRmctrl = NULL;
     pDisplayApi->pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
     pDisplayApi->bBcResource = bBcResource;
-    pDisplayApi->hNotifierMemory = NV01_NULL_OBJECT;
-    pDisplayApi->pNotifierMemory = NULL;
 
     gpuSetThreadBcState(pGpu, bBcResource);
 
@@ -203,7 +214,7 @@ dispobjConstructHal_IMPL
     {
         rmStatus = _dispapiNotifierInit(pDisplayApi,
                                         NV5070_NOTIFIERS_MAXCOUNT,
-                                        NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
+                                        NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
     }
 
     return rmStatus;
@@ -224,6 +235,13 @@ dispobjConstruct_IMPL
         NV_PRINTF(LEVEL_ERROR,
                   "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
                   pParams->externalClassId);
+
+        //
+        // GPUSWSEC-1560 introduced a central object privilege check in RS. Please mark derived external classes
+        // of DispObject privileged in their RS_ENTRY. Since DispObject doesn't have an external class of its own
+        // and is used as a base class, leaving this check inline to catch future derivations.
+        //
+        osAssertFailed();
 
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
@@ -282,6 +300,7 @@ dispapiSetUnicastAndSynchronize_KERNEL
     DisplayApi      *pDisplayApi,
     OBJGPUGRP       *pGpuGroup,
     OBJGPU         **ppGpu,
+    OBJDISP        **ppDisp,
     NvU32            subDeviceInstance
 )
 {
@@ -292,6 +311,19 @@ dispapiSetUnicastAndSynchronize_KERNEL
         return nvStatus;
 
     gpumgrSetBcEnabledStatus(*ppGpu, NV_FALSE);
+
+    //
+    // The _KERNEL version of this function is only called from Kernel RM, but
+    // in Kernel RM, OBJDISP is not available, so ppDisp must be NULL. If the
+    // caller needs to access OBJDISP, either the caller code must remove the
+    // OBJDISP dependency, or the caller code must be changed so that
+    // dispapiSetUnicastAndSynchronize is called only from physical or
+    // monolithic RM, never Kernel RM.
+    //
+    if (ppDisp != NULL)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
 
     return nvStatus;
 }
@@ -368,6 +400,7 @@ dispapiControl_Prologue_IMPL
     status = dispapiSetUnicastAndSynchronize_HAL(pDisplayApi,
                                              pRmCtrlParams->pGpuGrp,
                                              &pRmCtrlParams->pGpu,
+                                             NULL,
                                              subdeviceIndex);
 
     if (status == NV_OK)
@@ -413,6 +446,8 @@ dispapiControl_IMPL
     RmCtrlParams     *pRmCtrlParams = pParams->pLegacyParams;
     OBJGPU           *pGpu          = pGpuResource->pGpu;
 
+    NvU32 prevGpuInst = gpumgrSetCurrentGpuInstance(pGpu->gpuInstance);
+
     NV_PRINTF(LEVEL_INFO, "class: 0x%x cmd 0x%x\n",
               RES_GET_EXT_CLASS_ID(pDisplayApi),
               pRmCtrlParams->cmd);
@@ -439,6 +474,8 @@ dispapiControl_IMPL
         bitVectorClrAll(&pIntr->helperEngineMask);
     }
 
+    gpumgrSetCurrentGpuInstance(prevGpuInst);
+
     return status;
 }
 
@@ -450,14 +487,6 @@ dispswobjConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
-                  pParams->externalClassId);
-
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
     return NV_OK;
 }
 
@@ -470,7 +499,7 @@ dispcmnConstruct_IMPL
 )
 {
     DisplayApi *pDisplayApi = staticCast(pDispCommon, DisplayApi);
-    
+
     //
     // Not adding the priv-level check for this class
     // as it is being used by OpenGL from userspace.Once the Cleanup is done from the OpenGL
@@ -482,7 +511,7 @@ dispcmnConstruct_IMPL
 
     return _dispapiNotifierInit(pDisplayApi,
                                 NV0073_NOTIFIERS_MAXCOUNT,
-                                NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
+                                NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE);
 }
 
 NV_STATUS
@@ -598,80 +627,6 @@ CliFindDispChannelInfo
     return NV_OK;
 }
 
-/**
- * @warning This function is deprecated! Please use dispcmnGetByHandle.
- */
-NvBool
-CliGetDispCommonInfo
-(
-    NvHandle     hClient,
-    NvHandle     hDispCommon,
-    DisplayApi **ppDisplayApi
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    DispCommon *pDispCommon;
-
-    *ppDisplayApi = NULL;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    status = dispcmnGetByHandle(pClient, hDispCommon, &pDispCommon);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    *ppDisplayApi = staticCast(pDispCommon, DisplayApi);
-
-    return NV_TRUE;
-}
-
-/**
- * @warning This function is deprecated! Please use dispobjGetByHandle.
- */
-NvBool
-CliGetDispInfo
-(
-    NvHandle     hClient,
-    NvHandle     hObject,
-    DisplayApi **pDisplayApi
-)
-{
-    if (!pDisplayApi)
-        return NV_FALSE;
-
-    *pDisplayApi = CliGetDispFromDispHandle(hClient, hObject);
-
-    return *pDisplayApi ? NV_TRUE : NV_FALSE;
-}
-
-/**
- * @warning This function is deprecated! Please use dispobjGetByHandle.
- */
-DisplayApi *
-CliGetDispFromDispHandle
-(
-    NvHandle hClient,
-    NvHandle hDisp
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    DispObject *pDispObject;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NULL;
-
-    status = dispobjGetByHandle(pClient, hDisp, &pDispObject);
-    if (status != NV_OK)
-        return NULL;
-
-    return staticCast(pDispObject, DisplayApi);
-}
-
 //
 // DISP Event RM Controls
 //
@@ -679,7 +634,7 @@ NV_STATUS
 dispapiCtrlCmdEventSetNotification_IMPL
 (
     DisplayApi *pDisplayApi,
-    NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams
+    NV0073_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams
 )
 {
     OBJGPU *pGpu = DISPAPI_GET_GPU(pDisplayApi);
@@ -690,7 +645,7 @@ dispapiCtrlCmdEventSetNotification_IMPL
     // NV01_EVENT must have been plugged into this subdevice
     if (pEventNotifications == NULL)
     {
-        NV_PRINTF(LEVEL_INFO, "cmd 0x%x: no event list\n", NV5070_CTRL_CMD_EVENT_SET_NOTIFICATION);
+        NV_PRINTF(LEVEL_INFO, "cmd 0x%x: no event list\n", NV0073_CTRL_CMD_EVENT_SET_NOTIFICATION);
         return NV_ERR_INVALID_STATE;
     }
 
@@ -713,11 +668,11 @@ dispapiCtrlCmdEventSetNotification_IMPL
 
     switch (pSetEventParams->action)
     {
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE:
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT:
         {
             // must be in disabled state to transition to an active state
-            if (pNotifyActions[pSetEventParams->event] != NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
+            if (pNotifyActions[pSetEventParams->event] != NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
             {
                 status = NV_ERR_INVALID_STATE;
                 break;
@@ -734,7 +689,7 @@ dispapiCtrlCmdEventSetNotification_IMPL
             break;
         }
 
-        case NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE:
+        case NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE:
         {
             pNotifyActions[pSetEventParams->event] = pSetEventParams->action;
             break;
@@ -747,4 +702,21 @@ dispapiCtrlCmdEventSetNotification_IMPL
     }
 
     return status;
+}
+
+NV_STATUS dispapiValidateRmctrlPriv_IMPL(OBJGPU *pGpu)
+{
+    RS_PRIV_LEVEL minPrivLevel = RS_PRIV_LEVEL_KERNEL;
+
+    // Demote priv level of certain controls to root for MODS on soc-disp. Bug 5117826
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+        minPrivLevel = RS_PRIV_LEVEL_USER_ROOT;
+
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
+
+    if (pCallContext->secInfo.privLevel < minPrivLevel)
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+
+    return NV_OK;
 }

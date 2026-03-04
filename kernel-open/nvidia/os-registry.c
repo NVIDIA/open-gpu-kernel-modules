@@ -317,10 +317,30 @@ NV_STATUS NV_API_CALL os_registry_init(void)
         return NV_ERR_NO_MEMORY;
     }
 
+    if (NVreg_RmNvlinkBandwidth != NULL)
+    {
+        rm_write_registry_string(sp, NULL,
+                                 "RmNvlinkBandwidth",
+                                 NVreg_RmNvlinkBandwidth,
+                                 strlen(NVreg_RmNvlinkBandwidth));
+    }
+
     if (NVreg_RmMsg != NULL)
     {
         rm_write_registry_string(sp, NULL,
                 "RmMsg", NVreg_RmMsg, strlen(NVreg_RmMsg));
+    }
+
+    //
+    // CoherentGPUMemoryMode=driver just implies the older 
+    // EnableUserNUMAManagement=0 option
+    //
+    if (NVreg_CoherentGPUMemoryMode != NULL)
+    {
+        if (strcmp(NVreg_CoherentGPUMemoryMode, "driver") == 0)
+        {
+            NVreg_EnableUserNUMAManagement = 0;
+        }
     }
 
     rm_parse_option_string(sp, NVreg_RegistryDwords);

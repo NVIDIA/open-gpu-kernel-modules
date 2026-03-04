@@ -83,6 +83,7 @@ static const NvKmsSurfaceMemoryFormatInfo nvKmsSurfaceMemoryFormatInfo[] = {
     RGB_ENTRY(A8B8G8R8, 32, 4),
     RGB_ENTRY(X8B8G8R8, 24, 4),
     RGB_ENTRY(RF16GF16BF16AF16, 64, 8),
+    RGB_ENTRY(RF16GF16BF16XF16, 64, 8),
     RGB_ENTRY(R16G16B16A16, 64, 8),
     RGB_ENTRY(RF32GF32BF32AF32, 128, 16),
     YUV_ENTRY(Y8_U8__Y8_V8_N422, 16, 1, 8, 8, 2, 1),

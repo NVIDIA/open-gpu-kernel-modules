@@ -83,6 +83,11 @@ struct _nv_dplibconnector {
     // Connector::resume() and gets updated by
     // Connector::notifyLongPulse().
     NvBool plugged;
+
+    // Indicates whether the HDMI/DVI half of the connector is active
+    // If so link is being driven by HDMI/DVI and avoid LT etc on DP
+    // link of the connector
+    NvBool linkHandoffEnabled;
 };
 
 struct _nv_dplibdevice {

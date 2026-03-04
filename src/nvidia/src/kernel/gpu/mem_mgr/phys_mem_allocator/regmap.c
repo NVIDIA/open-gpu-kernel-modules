@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,12 +35,13 @@
 #include "nvport/nvport.h"
 #include "nvmisc.h"
 
-#define _UINT_SIZE 64
-#define _UINT_SHIFT 6
+#define FRAME_TO_U64_SHIFT 6
+#define FRAME_TO_U64_SIZE  (1llu << FRAME_TO_U64_SHIFT)
+#define FRAME_TO_U64_MASK (FRAME_TO_U64_SIZE - 1llu)
 
-#define PAGE_BITIDX(n)              ((n) & (_UINT_SIZE - 1))
-#define PAGE_MAPIDX(n)              ((n) >> _UINT_SHIFT)
-#define MAKE_BITMASK(n)             ((NvU64)0x1 << (n))
+#define PAGE_BITIDX(n)              ((n) & (FRAME_TO_U64_SIZE - 1llu))
+#define PAGE_MAPIDX(n)              ((n) >> FRAME_TO_U64_SHIFT)
+#define MAKE_BITMASK(n)             (1llu << (n))
 
 #define SETBITS(bits, mask, newVal) ((bits & (~mask)) | (mask & newVal))
 
@@ -67,19 +68,61 @@ pmaRegmapPrint(PMA_REGMAP *pMap)
     }
 }
 
-// Returns the longest string of zeros.
-static NvU32
-maxZerosGet(NvU64 bits)
-{
-    NvU32 y = 0;
+// Returns the longest string of zeros and its starting bit position
+static NvU32 maxZerosGet(NvU64 bits, NvU32* pStartPos) {
+    NvU32 maxZeros = 0;
+    NvU32 bestStartPos = 0;
+    NvU32 currentPos = 0;
+    NvU64 remainingBits = bits;
 
-    bits = ~bits;
-    while (bits != 0)
-    {
-        bits = bits & (bits << 1);
-        y++;
+    if (bits == 0) {
+        *pStartPos = 0;
+        return FRAME_TO_U64_SIZE;
     }
-    return y;
+
+    // First count leading zeros
+    NvU32 leadingZeros = portUtilCountLeadingZeros64(bits);
+    maxZeros = leadingZeros;
+    bestStartPos = FRAME_TO_U64_SIZE - leadingZeros;  // Start from MSB
+    currentPos = leadingZeros;
+    remainingBits <<= leadingZeros;
+
+    // Now look for internal sequences of zeros
+    while (currentPos < FRAME_TO_U64_SIZE) {
+        // Skip ones
+        NvU32 ones = portUtilCountTrailingZeros64(~remainingBits);
+        if (ones == FRAME_TO_U64_SIZE) {
+            // All ones, no more zeros to find
+            break;
+        }
+        currentPos += ones;
+        if (ones < FRAME_TO_U64_SIZE) {
+            remainingBits >>= ones;
+        } else {
+            break;
+        }
+
+        if (currentPos >= FRAME_TO_U64_SIZE) {
+            break;
+        }
+
+        // Count zeros
+        NvU32 zeros = portUtilCountTrailingZeros64(remainingBits);
+        if (zeros > maxZeros) {
+            maxZeros = zeros;
+            bestStartPos = currentPos;  // Start from LSB
+        }
+
+        currentPos += zeros;
+        if (zeros < FRAME_TO_U64_SIZE) {
+            remainingBits >>= zeros;
+        } else {
+            break;
+        }
+    }
+
+    *pStartPos = bestStartPos;
+    return maxZeros;
 }
 
 static NvS64
@@ -105,12 +148,12 @@ _checkOne(NvU64 *bits, NvU64 start, NvU64 end)
             if (bits[mapIdx] != 0)
             {
                 firstSetBit = portUtilCountTrailingZeros64(bits[mapIdx]);
-                return ((mapIdx << _UINT_SHIFT) + firstSetBit);
+                return ((mapIdx << FRAME_TO_U64_SHIFT) + firstSetBit);
             }
         }
 
         // handle edge case
-        endMask = (NV_U64_MAX >> (_UINT_SIZE - endBitIdx - 1));
+        endMask = (NV_U64_MAX >> (FRAME_TO_U64_SIZE - endBitIdx - 1));
 
         if ((bits[endMapIdx] & endMask) == 0)
         {
@@ -140,7 +183,7 @@ _checkOne(NvU64 *bits, NvU64 start, NvU64 end)
         NV_ASSERT(startMapIdx == endMapIdx);
 
         startMask = (NV_U64_MAX << startBitIdx);
-        endMask = (NV_U64_MAX >> (_UINT_SIZE - endBitIdx - 1));
+        endMask = (NV_U64_MAX >> (FRAME_TO_U64_SIZE - endBitIdx - 1));
 
         handle = (startMask & endMask);
         if ((handle & bits[startMapIdx]) == 0)
@@ -159,43 +202,11 @@ _checkOne(NvU64 *bits, NvU64 start, NvU64 end)
 
 static NvU64 alignUpToMod(NvU64 frame, NvU64 alignment, NvU64 mod)
 {
-    if ((frame & (alignment - 1)) <= mod)
-        return NV_ALIGN_DOWN(frame, alignment) + mod;
-    else
-        return NV_ALIGN_UP(frame, alignment) + mod;
+    return ((frame - mod + alignment - 1ll) & ~(alignment - 1ll)) + mod;
 }
-
-//
-// Determine if all frames in the 2MB range is not allocated
-// They could be in scrubbing or eviction state.
-//
-static NvBool _pmaRegmapAllFree2mb(PMA_REGMAP *pRegmap, NvU64 frameNum)
+static NvU64 alignDownToMod(NvU64 frame, NvU64 alignment, NvU64 mod)
 {
-    NvU64 baseFrame = (NV_ALIGN_DOWN((frameNum << PMA_PAGE_SHIFT), _PMA_2MB)) >> PMA_PAGE_SHIFT;
-    NvU32 numFrames = _PMA_2MB >> PMA_PAGE_SHIFT;
-
-    // Always return false if the last 2MB range is incomplete
-    if ((baseFrame + numFrames) >= pRegmap->totalFrames)
-    {
-        return NV_FALSE;
-    }
-
-    //
-    // We only care about STATE_PIN and STATE_UNPIN because:
-    // Even if the page is marked as SCRUBBING for example, we should not report OOM and prevent
-    // the clients from scanning the bitmap.
-    //
-    if (_checkOne(pRegmap->map[MAP_IDX_ALLOC_PIN], baseFrame, (baseFrame + numFrames - 1)) != -1)
-    {
-        return NV_FALSE;
-    }
-
-    if (_checkOne(pRegmap->map[MAP_IDX_ALLOC_UNPIN], baseFrame, (baseFrame + numFrames - 1)) != -1)
-    {
-        return NV_FALSE;
-    }
-
-    return NV_TRUE;
+    return ((frame - mod) & ~(alignment - 1ll)) + mod;
 }
 
 //
@@ -235,7 +246,7 @@ _pmaRegmapScanNumaUnevictable
 
         if (mapIter == endMapIdx)
         {
-            mask = (mask >> (_UINT_SIZE - endBitIdx - 1));
+            mask = (mask >> (FRAME_TO_U64_SIZE - endBitIdx - 1));
         }
 
         if (mapIter == startMapIdx)
@@ -246,7 +257,7 @@ _pmaRegmapScanNumaUnevictable
 #ifdef DEBUG_VERBOSE
 
         NV_PRINTF(LEVEL_INFO, "mapIter %llx frame %llx mask %llx unpinbitmap %llx pinbitmap %llx evictbitmap %llx",
-                 mapIter, (mapIter << _UINT_SHIFT), mask, unpinBitmap[mapIter], pinBitmap[mapIter], evictBitmap[mapIter]);
+                 mapIter, (mapIter << FRAME_TO_U64_SHIFT), mask, unpinBitmap[mapIter], pinBitmap[mapIter], evictBitmap[mapIter]);
 #endif
         // start from the end
         if ((unpinBitmap[mapIter] & mask) == mask)
@@ -259,15 +270,15 @@ _pmaRegmapScanNumaUnevictable
             if (mapIter == endMapIdx)
                 unevictableFrameIndex = frameEnd;
             else
-                unevictableFrameIndex = (mapIter << _UINT_SHIFT) +  (_UINT_SIZE - 1);
+                unevictableFrameIndex = (mapIter << FRAME_TO_U64_SHIFT) +  (FRAME_TO_U64_SIZE - 1);
             break;
         }
 #ifdef DEBUG_VERBOSE
         NV_PRINTF(LEVEL_INFO, "Check leading zero of %llx", ~(unpinBitmap[mapIter] & mask));
 #endif
 
-        unevictableIndex = _UINT_SIZE - portUtilCountLeadingZeros64((~unpinBitmap[mapIter]) & mask) - 1;
-        unevictableFrameIndex = (mapIter << _UINT_SHIFT) + unevictableIndex;
+        unevictableIndex = FRAME_TO_U64_SIZE - portUtilCountLeadingZeros64((~unpinBitmap[mapIter]) & mask) - 1;
+        unevictableFrameIndex = (mapIter << FRAME_TO_U64_SHIFT) + unevictableIndex;
         break;
     }
 
@@ -317,12 +328,13 @@ pmaRegMapScanContiguousNumaEviction
 
     NvU64 alignedAddrBase;
     NvU64 frameNum;
-    NvU64 endFrame, frameStart;
+    NvU64 frameLimit, frameStart;
     NvU64 alignment = pageSize;
     NvU64 frameAlignment, frameAlignmentPadding;
     NvU64 numFrames = actualSize >> PMA_PAGE_SHIFT;
+    NvU64 numFramesLimit = numFrames - 1;
 
-    endFrame = pRegmap->totalFrames - 1;
+    frameLimit = pRegmap->totalFrames - 1;
 
     if (pRegmap->totalFrames < numFrames)
         return status;
@@ -334,14 +346,14 @@ pmaRegMapScanContiguousNumaEviction
     frameStart = alignUpToMod(0, frameAlignment, frameAlignmentPadding);
 
 
-    for (frameNum = frameStart; frameNum <= endFrame; )
+    for (frameNum = frameStart; frameNum <= (frameLimit - numFramesLimit); )
     {
         PMA_PAGESTATUS startFrameAllocState;
         PMA_PAGESTATUS endFrameAllocState;
         NvS64 firstUnevictableFrame;
 
         startFrameAllocState  = pmaRegmapRead(pRegmap, frameNum, NV_TRUE);
-        endFrameAllocState    = pmaRegmapRead(pRegmap, frameNum + numFrames - 1, NV_TRUE);
+        endFrameAllocState    = pmaRegmapRead(pRegmap, frameNum + numFramesLimit, NV_TRUE);
 
         if ((endFrameAllocState & STATE_MASK) != STATE_UNPIN)
         {
@@ -359,8 +371,8 @@ pmaRegMapScanContiguousNumaEviction
         }
 
 
-        // First occurrence of 0 in STATE_UNPIN  from frameNum to frameNum + numFrames - 1
-        firstUnevictableFrame = _pmaRegmapScanNumaUnevictable(pRegmap, frameNum, frameNum + numFrames - 1);
+        // First occurrence of 0 in STATE_UNPIN  from frameNum to frameNum + numFramesLimit
+        firstUnevictableFrame = _pmaRegmapScanNumaUnevictable(pRegmap, frameNum, frameNum + numFramesLimit);
 
         if (firstUnevictableFrame == -1)
         {
@@ -382,119 +394,6 @@ pmaRegMapScanContiguousNumaEviction
     }
 
     return status;
-}
-//
-// Check whether the specified frame range is available for allocation or
-// eviction.
-//
-// Returns:
-//  - NV_OK if the whole range is available and leaves frameIndex unset.
-//
-//  - NV_ERR_IN_USE if some frames would need to be evicted, and sets frameIndex
-//    to the first one.
-//
-//  - NV_ERR_NO_MEMORY if some frames are unavailable, and sets frameIndex to
-//    the first one.
-//
-// TODO: Would it be better to return the last frame index instead, given how the
-// search skips over right past it?
-//
-static NV_STATUS
-_pmaRegmapStatus(PMA_REGMAP *pRegmap, NvU64 start, NvU64 end, NvU64 *frameIndex)
-{
-    NvS64 diff;
-
-    if ((diff = _checkOne(pRegmap->map[MAP_IDX_ALLOC_PIN], start, end)) != -1)
-    {
-        *frameIndex = diff;
-        return NV_ERR_NO_MEMORY;
-    }
-
-    if (pRegmap->frameEvictionsInProcess > 0)
-    {
-        //
-        // Pages that are being evicted may be in the free state so we need to
-        // check for eviction on all frames as long as any eviction is happening
-        // in the region.
-        //
-        if ((diff = _checkOne(pRegmap->map[MAP_IDX_EVICTING], start, end)) != -1)
-        {
-            *frameIndex = diff;
-            return NV_ERR_NO_MEMORY;
-        }
-    }
-
-    //
-    // Check SCRUBBING
-    // TODO: Skip this check if scrubbing has been completed for all frames.
-    //
-    if ((diff = _checkOne(pRegmap->map[MAP_IDX_SCRUBBING], start, end)) != -1)
-    {
-        *frameIndex = diff;
-        return NV_ERR_NO_MEMORY;
-    }
-
-    if ((diff = _checkOne(pRegmap->map[MAP_IDX_NUMA_REUSE], start, end)) != -1)
-    {
-        *frameIndex = diff;
-        return NV_ERR_NO_MEMORY;
-    }
-
-    if ((diff = _checkOne(pRegmap->map[MAP_IDX_ALLOC_UNPIN], start, end)) != -1)
-    {
-        *frameIndex = diff;
-        return NV_ERR_IN_USE;
-    }
-
-    if ((diff = _checkOne(pRegmap->map[MAP_IDX_BLACKLIST], start, end)) != -1)
-    {
-        *frameIndex = diff;
-        return NV_ERR_NO_MEMORY;
-    }
-
-    return NV_OK;
-}
-
-//
-// Return ALL_FREE if all frames in the [start, end] range are available for
-// allocation or the first frame index that isn't.
-//
-static NvS64
-_pmaRegmapAvailable(PMA_REGMAP *pRegmap, NvU64 start, NvU64 end)
-{
-    NvU64 unavailableFrameIndex;
-    NV_STATUS frameStatus = _pmaRegmapStatus(pRegmap, start, end, &unavailableFrameIndex);
-
-    if (frameStatus == NV_OK)
-        return ALL_FREE;
-
-    NV_ASSERT(unavailableFrameIndex >= start);
-    NV_ASSERT(unavailableFrameIndex <= end);
-
-    return unavailableFrameIndex;
-}
-
-//
-// Return ALL_FREE if all frames in the [start, end] range are available for
-// allocation, EVICTABLE if some of them would need to be evicted, or the first
-// frame index that isn't free nor evictable.
-//
-static NvS64
-_pmaRegmapEvictable(PMA_REGMAP *pRegmap, NvU64 start, NvU64 end)
-{
-    NvU64 unavailableFrameIndex;
-    NvS64 frameStatus = _pmaRegmapStatus(pRegmap, start, end, &unavailableFrameIndex);
-
-    if (frameStatus == NV_OK)
-        return ALL_FREE;
-
-    NV_ASSERT(unavailableFrameIndex >= start);
-    NV_ASSERT(unavailableFrameIndex <= end);
-
-    if (frameStatus == NV_ERR_IN_USE)
-        return EVICTABLE;
-
-    return unavailableFrameIndex;
 }
 
 void *
@@ -528,6 +427,13 @@ pmaRegmapInit
     pPmaStats->num2mbPages += num2mbPages;
     pPmaStats->numFree2mbPages += num2mbPages;
 
+    if (bProtected)
+    {
+        pPmaStats->numFreeFramesProtected += newMap->totalFrames;
+        pPmaStats->num2mbPagesProtected += num2mbPages;
+        pPmaStats->numFree2mbPagesProtected += num2mbPages;
+    }
+
     newMap->bProtected = bProtected;
     newMap->pPmaStats = pPmaStats;
     newMap->mapLength = PAGE_MAPIDX(numFrames-1) + 1;
@@ -543,6 +449,16 @@ pmaRegmapInit
             return NULL;
         }
         portMemSet(newMap->map[i], 0, (NvLength) (newMap->mapLength * sizeof(NvU64)));
+    }
+    {
+        //
+        // Simplify logic for 2M tracking. Set the last few nonaligned bits as pinned
+        // so that the XOR logic for delta 2M tracking is never true for an incomplete final page
+        //
+        NvU64 endOffs = (numFrames - 1llu) >> FRAME_TO_U64_SHIFT;
+        NvU64 endBit = (numFrames - 1llu) & FRAME_TO_U64_MASK;
+        NvU64 endMask = endBit == FRAME_TO_U64_MASK ? 0llu : ~(NV_U64_MAX >> (FRAME_TO_U64_MASK - endBit));
+        newMap->map[MAP_IDX_ALLOC_PIN][endOffs] |= endMask;
     }
 
     return (void *)newMap;
@@ -562,8 +478,18 @@ pmaRegmapDestroy(void *pMap)
 
     pRegmap->pPmaStats->numFreeFrames -= pRegmap->totalFrames;
 
+    if (pRegmap->bProtected)
+    {
+        pRegmap->pPmaStats->numFreeFramesProtected -= pRegmap->totalFrames;
+    }
+
     num2mbPages = pRegmap->totalFrames / (_PMA_2MB >> PMA_PAGE_SHIFT);
     pRegmap->pPmaStats->numFree2mbPages -= num2mbPages;
+
+    if (pRegmap->bProtected)
+    {
+        pRegmap->pPmaStats->numFree2mbPagesProtected -= num2mbPages;
+    }
 
     portMemFree(pRegmap);
 }
@@ -578,9 +504,8 @@ pmaRegmapDestroy(void *pMap)
 // Masks:
 //      STATE_MASK, ATTRIB_MASK
 //
-
 void
-pmaRegmapChangeStateAttribEx
+pmaRegmapChangeStateAttrib
 (
     void          *pMap,
     NvU64          frameNum,
@@ -588,133 +513,7 @@ pmaRegmapChangeStateAttribEx
     PMA_PAGESTATUS newStateMask
 )
 {
-    NvU64 mapIndex, mapOffset, bits, newVal, mask;
-    NvU32 i, bitWriteCount;
-    PMA_PAGESTATUS oldState, updatedState;
-    NvBool bUpdate2mbTracking = NV_FALSE;
-    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
-
-    mapIndex = PAGE_MAPIDX(frameNum);
-    mapOffset = PAGE_BITIDX(frameNum);
-
-    NV_ASSERT(pRegmap != NULL); // possible error code return
-    NV_ASSERT(mapIndex < pRegmap->mapLength);
-
-    bitWriteCount = PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE;
-
-    mask = (NvU64)MAKE_BITMASK(mapOffset);
-
-    oldState = pmaRegmapRead(pRegmap, frameNum, NV_TRUE);
-
-    //
-    // If we are going to allocate the 2MB page, we need bookkeeping
-    // before the bitmap is changed
-    //
-    if (((newState & STATE_MASK) != STATE_FREE) && _pmaRegmapAllFree2mb(pRegmap, frameNum))
-    {
-        bUpdate2mbTracking = NV_TRUE;
-    }
-
-    for (i = 0; i < bitWriteCount; i++)
-    {
-        if (NVBIT(i) & newStateMask)
-        {
-            newVal = ((NvU64) (newState & (1 << i)) >> i) << mapOffset;
-            bits = pRegmap->map[i][mapIndex];
-            pRegmap->map[i][mapIndex] = (NvU64) SETBITS(bits, mask, newVal);
-        }
-    }
-
-    // Update some stats for optimization
-    updatedState = pmaRegmapRead(pRegmap, frameNum, NV_TRUE);
-
-    pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFrames, 1,
-                        oldState, updatedState);
-
-    //
-    // If we are freeing a frame, we should check if we need to update the 2MB
-    // page tracking
-    //
-    if (bUpdate2mbTracking ||
-        (((oldState & STATE_MASK) != STATE_FREE) && _pmaRegmapAllFree2mb(pRegmap, frameNum)))
-    {
-        pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPages, 1,
-                            oldState, updatedState);
-
-    }
-}
-
-void
-pmaRegmapChangeStateAttrib
-(
-    void *pMap,
-    NvU64 frameNum,
-    PMA_PAGESTATUS newState,
-    NvBool writeAttrib
-)
-{
-    NvU64 mapIndex, mapOffset, bits, newVal, mask;
-    NvU32 i;
-    NvU32 bitWriteCount;
-    PMA_PAGESTATUS oldState;
-    NvBool bUpdate2mbTracking = NV_FALSE;
-    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
-
-    mapIndex = PAGE_MAPIDX(frameNum);
-    mapOffset = PAGE_BITIDX(frameNum);
-
-    NV_ASSERT(pRegmap != NULL); // possible error code return
-    NV_ASSERT(mapIndex < pRegmap->mapLength);
-
-    bitWriteCount = (writeAttrib ?
-        (PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE) :
-        PMA_STATE_BITS_PER_PAGE);
-
-    mask = (NvU64)MAKE_BITMASK(mapOffset);
-
-    oldState = pmaRegmapRead(pRegmap, frameNum, NV_TRUE);
-
-    //
-    // If we are going to allocate the 2MB page, we need bookkeeping
-    // before the bitmap is changed
-    //
-    if (((newState & STATE_MASK) != STATE_FREE) && _pmaRegmapAllFree2mb(pRegmap, frameNum))
-    {
-        bUpdate2mbTracking = NV_TRUE;
-    }
-
-    for (i = 0; i < bitWriteCount; i++)
-    {
-        newVal = ((NvU64) (newState & (1 << i)) >> i) << mapOffset;
-        bits = pRegmap->map[i][mapIndex];
-        pRegmap->map[i][mapIndex] = (NvU64) SETBITS(bits, mask, newVal);
-    }
-
-    NV_ASSERT(pmaRegmapRead(pRegmap, frameNum, writeAttrib) == newState);
-
-    // Update some stats for optimization
-    pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFrames, 1,
-                        oldState, newState);
-
-    //
-    // If we are freeing a frame, we should check if we need to update the 2MB
-    // page tracking
-    //
-    if (bUpdate2mbTracking ||
-        (((oldState & STATE_MASK) != STATE_FREE) && _pmaRegmapAllFree2mb(pRegmap, frameNum)))
-    {
-        pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPages, 1,
-                                   oldState, newState);
-
-    }
-}
-
-void
-pmaRegmapChangeState(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState)
-{
-    NV_ASSERT(newState <= STATE_PIN);
-    // Write state bits, but not attrib bits
-    pmaRegmapChangeStateAttrib((PMA_REGMAP *)pMap, frameNum, newState, NV_FALSE);
+    pmaRegmapChangeBlockStateAttrib(pMap, frameNum, 1, newState, newStateMask);
 }
 
 void
@@ -722,18 +521,169 @@ pmaRegmapChangePageStateAttrib
 (
     void * pMap,
     NvU64 startFrame,
-    NvU32 pageSize,
+    NvU64 pageSize,
     PMA_PAGESTATUS newState,
-    NvBool writeAttrib
+    PMA_PAGESTATUS newStateMask
 )
 {
-    NvU32 framesPerPage = pageSize >> PMA_PAGE_SHIFT;
-    NvU64 frame;
-    for (frame = startFrame; frame < startFrame + framesPerPage; frame++)
-    {
-        pmaRegmapChangeStateAttrib((PMA_REGMAP *)pMap, frame, newState, writeAttrib);
-    }
+    pmaRegmapChangeBlockStateAttrib(pMap, startFrame, pageSize / _PMA_64KB, newState, newStateMask);
 }
+
+
+static NV_FORCEINLINE
+void
+_pmaRegmapDoSingleStateChange
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 idx,
+    NvU32 newState,
+    NvU32 writeMask,
+    NvU64 bitMask,
+    NvU64 *delta2m,
+    NvU64 *delta64k
+)
+{
+    // get bits from map
+    NvU64 pinIn = pRegmap->map[MAP_IDX_ALLOC_PIN][idx];
+    NvU64 unpinIn = pRegmap->map[MAP_IDX_ALLOC_UNPIN][idx];
+    // Or of state for delta-tracking purposes
+    NvU64 initialState = pinIn | unpinIn;
+    // Mask out bits that are being upda
+    NvU64 maskedPin = pinIn & ~bitMask;
+    NvU64 maskedUnpin = unpinIn & ~bitMask;
+    // Update bits in new with bitMask
+    NvU64 pinRes = ((newState & (1llu << MAP_IDX_ALLOC_PIN)) ? bitMask : 0llu);
+    NvU64 unpinRes = ((newState & (1llu << MAP_IDX_ALLOC_UNPIN)) ? bitMask : 0llu);
+    // Output state based on whether writeMask is set
+    NvU64 pinOut = (writeMask & (1llu << MAP_IDX_ALLOC_PIN))  ? (maskedPin | pinRes) : pinIn;
+    NvU64 unpinOut = (writeMask & (1llu << MAP_IDX_ALLOC_UNPIN)) ? (maskedUnpin | unpinRes) : unpinIn;
+    // Or of final state for delta-tracking purposes
+    NvU64 finalState = pinOut | unpinOut;
+    NvU64 xored = initialState ^ finalState;
+
+    // Write out new bits
+    pRegmap->map[MAP_IDX_ALLOC_PIN][idx] = pinOut;
+    pRegmap->map[MAP_IDX_ALLOC_UNPIN][idx] = unpinOut;
+
+    // Update deltas
+    (*delta64k) += nvPopCount64(xored);
+    // Each 2M page is 32 64K pages, so we check each half of a 64-bit qword and xor them
+    (*delta2m) += ((((NvU32)finalState) == 0) != (((NvU32)initialState) == 0)) +
+                ((((NvU32)(finalState >> 32)) == 0) != (((NvU32)(initialState >> 32)) == 0));
+}
+
+void
+pmaRegmapChangeBlockStateAttrib
+(
+    void *pMap,
+    NvU64 frame,
+    NvU64 len,
+    PMA_PAGESTATUS newState,
+    PMA_PAGESTATUS writeMask
+)
+{
+    NvU64 initialIdx = PAGE_MAPIDX(frame);
+    NvU64 finalIdx = PAGE_MAPIDX(frame + len - 1llu);
+    NvU64 initialOffs = PAGE_BITIDX(frame);
+    NvU64 finalOffs = PAGE_BITIDX(frame + len - 1llu);
+    NvU64 initialMask = NV_U64_MAX << initialOffs;
+    NvU64 finalMask = NV_U64_MAX >> (FRAME_TO_U64_MASK - finalOffs);
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    NvU64 i;
+    NvU64 delta2m = 0, delta64k = 0;
+
+    NV_ASSERT(pRegmap != NULL);
+    NV_ASSERT(frame + len <= pRegmap->totalFrames);
+
+    // Update non-state attributes first in a tight loop.
+    for (i = PMA_STATE_BITS_PER_PAGE; i < PMA_BITS_PER_PAGE; i++)
+    {
+        NvU64 j;
+        NvU64 toWrite = (newState & (1u << i)) ? NV_U64_MAX : 0llu;
+        if (!((1u << i) & writeMask))
+        {
+            continue;
+        }
+        if (initialIdx == finalIdx)
+        {
+            pRegmap->map[i][initialIdx] &= ~(initialMask & finalMask);
+            pRegmap->map[i][initialIdx] |= toWrite & (initialMask & finalMask);
+            continue;
+        }
+       
+        pRegmap->map[i][initialIdx] &= ~initialMask;
+        pRegmap->map[i][initialIdx] |= toWrite & initialMask;
+        
+        for (j = initialIdx + 1; j < finalIdx; j++)
+        {
+            pRegmap->map[i][j] = toWrite;
+            
+        }
+        pRegmap->map[i][finalIdx] &= ~finalMask;
+        pRegmap->map[i][finalIdx] |= toWrite & finalMask;
+        
+    }
+
+    if (!(writeMask & STATE_MASK))
+    {
+        return;
+    }
+
+    // Entire state is in one NvU64, so exit immediately after
+    if (initialIdx == finalIdx)
+    {
+        _pmaRegmapDoSingleStateChange(pRegmap, initialIdx, newState, writeMask, initialMask & finalMask, &delta2m, &delta64k);
+        goto set_regs;
+    }
+
+    // Checks for 64-aligned start/end so we don't have to deal with partial coverage in the main loop
+    if (initialOffs != 0)
+    {
+        // Do first state update with partial NvU64 coverage
+        _pmaRegmapDoSingleStateChange(pRegmap, initialIdx, newState, writeMask, initialMask, &delta2m, &delta64k);
+        initialIdx++;
+    }
+    if (finalOffs != FRAME_TO_U64_MASK)
+    {
+        // Update last partial NvU64
+        _pmaRegmapDoSingleStateChange(pRegmap, finalIdx, newState, writeMask, finalMask, &delta2m, &delta64k);
+        finalIdx--;
+    }
+
+    // Update all full-size 
+    for (i = initialIdx; i <= finalIdx; i++)
+    {
+        _pmaRegmapDoSingleStateChange(pRegmap, i, newState, writeMask, NV_U64_MAX, &delta2m, &delta64k);
+    }
+
+set_regs:
+    if ((newState & writeMask & STATE_MASK) != 0)
+    {
+        pRegmap->pPmaStats->numFreeFrames -= delta64k;
+        pRegmap->pPmaStats->numFree2mbPages -= delta2m;
+    }
+    else
+    {
+        pRegmap->pPmaStats->numFreeFrames += delta64k;
+        pRegmap->pPmaStats->numFree2mbPages += delta2m;
+    }
+    if (!pRegmap->bProtected)
+    {
+        return;
+    }
+    if ((writeMask & newState & STATE_MASK) != 0)
+    {
+        pRegmap->pPmaStats->numFreeFramesProtected -= delta64k;
+        pRegmap->pPmaStats->numFree2mbPagesProtected -= delta2m;
+    }
+    else
+    {
+        pRegmap->pPmaStats->numFreeFramesProtected += delta64k;
+        pRegmap->pPmaStats->numFree2mbPagesProtected += delta2m;
+    }
+    return;
+}
+
 
 PMA_PAGESTATUS
 pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib)
@@ -760,6 +710,708 @@ pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib)
     return (PMA_PAGESTATUS)val;
 }
 
+static NvS64 _scanContiguousSearchLoop
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 numFrames,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvU64 localStride,
+    NvU32 strideStart,
+    NvU64 strideAlignmentPadding,
+    NvU64 strideRegionAlignmentPadding,
+    NvBool bSearchEvictable
+)
+{
+    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding); // this is already done by the caller
+    NvU64 nextStrideStart;
+    NvU64 latestFree[PMA_BITS_PER_PAGE];
+    NvU64 i;
+
+    // _scanContiguousSearchLoop can only be called for <32MB localized memory, enforced by PMA
+
+    // can't allocate contiguous memory > stride. This is guaranteed by the caller, but be sure here
+    if ((localStride != 0) && (numFrames > localStride))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // latestFree stores the highest '0' seen in the given map array in the current run
+    // ie we have the needed pages if frameBaseIdx + numPages == latestFree. Initialize to first aligned frame
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        latestFree[i] = frameBaseIdx;
+    }
+
+loop_begin:
+    if (localStride != 0)
+    {
+        // Put the address into the correct strideStart
+        if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+        {
+            // align up to next stride
+            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+        }
+    }
+
+    if (localStride != 0)
+    {
+        // we're always in the correct stride at this point
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+
+        // Won't fit within current stride, need to align up again.
+        if ((frameBaseIdx + numFrames) > nextStrideStart)
+        {
+            // even if it's in the correct stride, it won't fit here, so force it to the next one
+            frameBaseIdx = nextStrideStart;
+
+            // Put the address into the correct strideStart
+            if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+            {
+                // align up to next stride
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            }
+        }
+    }
+
+    if (localStride != 0)
+    {
+        //
+        // Find a region that is either
+        // 1. already localized or
+        // 2. completely free within the 64MB region
+        //
+        while (frameBaseIdx <= localEnd)
+        {
+            // If one bit is localized, the entire region must be localized
+            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            {
+                break;
+            }
+            else
+            {
+                // check for localized availability. Do a contiguous scan of only the region of interest
+                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
+                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
+                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
+                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+
+                if (frameFound >= 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // align up to the next entire stride region
+                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
+
+                    // Put the address into the correct strideStart
+                    if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+                    {
+                        // align up to next stride
+                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                    }
+                }
+            }
+        }
+    }
+
+    //
+    // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
+    // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        if (latestFree[i] < frameBaseIdx)
+        {
+            latestFree[i] = frameBaseIdx;
+        }
+    }
+    // At the end of memory, pages not available
+    if ((frameBaseIdx + numFrames - 1llu) > localEnd)
+    {
+        return -1;
+    }
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        //
+        // TODO, merge logic so we don't need multiple calls for unpin
+        //
+        // Persistent pages may still be evictable, so skip checking for ATTRIB_PERSISTENT here as well.
+        //
+        if (((i == MAP_IDX_ALLOC_UNPIN) || (i == MAP_IDX_PERSISTENT)) && bSearchEvictable)
+        {
+            continue;
+        }
+
+        // ignore checking localized for localized request
+        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
+        {
+            continue;
+        }
+
+        while (latestFree[i] < (frameBaseIdx + numFrames))
+        {
+            //
+            // All this logic looks complicated, but essentially all it is doing is getting the NvU64 from
+            // the correct index in the array and shifting and masking so that the first bit is latestFree[i].
+            // endOffs is set then to the length of the run of zeros at the beginning
+            //
+            NvU64 curMapIdx = PAGE_MAPIDX(latestFree[i]);
+            NvU64 beginOffs = PAGE_BITIDX(latestFree[i]);
+            NvU64 mask = beginOffs == 0 ? 0 : NV_U64_MAX << (FRAME_TO_U64_SIZE - beginOffs);
+            NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] >> beginOffs) | mask;
+            NvU64 endOffs = portUtilCountTrailingZeros64(curWithOffs);
+            //
+            // If no more are free, we have not hit the needed number of pages. Following loop finds
+            // the next free page
+            //
+            if (endOffs == 0)
+            {
+                mask = beginOffs == 0 ? 0 : NV_U64_MAX >> (FRAME_TO_U64_SIZE - beginOffs);
+                NvU64 curMap = pRegmap->map[i][curMapIdx] | mask;
+                frameBaseIdx = latestFree[i] - beginOffs;
+                if (curMap != NV_U64_MAX)
+                {
+                    goto free_found;
+                }
+                curMapIdx++;
+                frameBaseIdx += FRAME_TO_U64_SIZE;
+                while (frameBaseIdx <= localEnd)
+                {
+                    curMap = pRegmap->map[i][curMapIdx];
+                    if(curMap != NV_U64_MAX)
+                    {
+                        goto free_found;
+                    }
+                    frameBaseIdx += FRAME_TO_U64_SIZE;
+                    curMapIdx++;
+                }
+                // No more free pages, exit
+                return -1;
+free_found:
+                // Found a free page, set frameBaseIdx and go back to the beginning of the loop
+                frameBaseIdx += portUtilCountTrailingZeros64(~curMap);
+                frameBaseIdx = alignUpToMod(frameBaseIdx, frameAlignment, frameAlignmentPadding);
+                goto loop_begin;
+            }
+            latestFree[i] += endOffs;
+        }
+    }
+
+    return frameBaseIdx;
+}
+
+static NvS64 _scanContiguousSearchLoopReverse
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 numFrames,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvBool bSearchEvictable
+)
+{
+    NvU64 realAlign = (frameAlignmentPadding + numFrames) & (frameAlignment - 1ll);
+    NvU64 frameBaseIdx = alignDownToMod(localEnd + 1llu, frameAlignment, realAlign);
+    //
+    // latestFree stores the lowest '0' seen in the given map array in the current run
+    // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
+    //
+    NvU64 latestFree[PMA_BITS_PER_PAGE];
+    NvU64 i;
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+            latestFree[i] = frameBaseIdx;
+    }
+loop_begin:
+    //
+    // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always <= frameBaseIdx
+    // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        if (latestFree[i] > frameBaseIdx)
+        {
+            latestFree[i] = frameBaseIdx;
+        }
+    }
+    // At the beginning of memory, pages not available
+    if ((localStart + numFrames) > frameBaseIdx)
+    {
+        return -1;
+    }
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        //
+        // TODO, merge logic so we don't need multiple calls for unpin
+        //
+        // Persistent pages may still be evictable, so skip checking for ATTRIB_PERSISTENT here as well.
+        //
+        if (((i == MAP_IDX_ALLOC_UNPIN) || (i == MAP_IDX_PERSISTENT)) && bSearchEvictable)
+        {
+            continue;
+        }
+        while (latestFree[i] > (frameBaseIdx - numFrames))
+        {
+            //
+            // All this logic looks complicated, but essentially all it is doing is getting the NvU64 from
+            // the correct index in the array and shifting and masking so that the last bit is latestFree[i].
+            // endOffs is set then to the length of the run of zeros at the end
+            //
+            NvU64 curId = latestFree[i] - 1llu;
+            NvU64 curMapIdx = PAGE_MAPIDX(curId);
+            NvU64 beginOffs = PAGE_BITIDX(curId);
+            NvU64 mask = beginOffs == FRAME_TO_U64_MASK ? 0 : NV_U64_MAX >> (1llu + beginOffs);
+            NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] << (FRAME_TO_U64_MASK - beginOffs)) | mask;
+            NvU64 endOffs = portUtilCountLeadingZeros64(curWithOffs);
+            //
+            // If no more are free, we have not hit the needed number of pages. Following loop finds
+            // the next free page
+            //
+            if (endOffs == 0)
+            {
+                mask = beginOffs == FRAME_TO_U64_MASK ? 0 : NV_U64_MAX << (1llu + beginOffs);
+                NvU64 curMap = (pRegmap->map[i][curMapIdx]) | mask;
+                frameBaseIdx = latestFree[i] + FRAME_TO_U64_MASK - beginOffs;
+                if (curMap != NV_U64_MAX)
+                {
+                    goto free_found;
+                }
+                curMapIdx--;
+                frameBaseIdx -= FRAME_TO_U64_SIZE;
+                while (frameBaseIdx > localStart)
+                {
+                    curMap = pRegmap->map[i][curMapIdx];
+                    if(curMap != NV_U64_MAX)
+                    {
+                        goto free_found;
+                    }
+                    frameBaseIdx -= FRAME_TO_U64_SIZE;
+                    curMapIdx--;
+                }
+                // No more free pages, exit
+                return -1;
+free_found:
+                // Found a free page, set frameBaseIdx and go back to the beginning of the loop
+                frameBaseIdx -= portUtilCountLeadingZeros64(~curMap);
+                frameBaseIdx = alignDownToMod(frameBaseIdx, frameAlignment, realAlign);
+                goto loop_begin;
+            }
+            latestFree[i] -= endOffs;
+        }
+    }
+
+    return frameBaseIdx - numFrames;
+}
+
+static NV_FORCEINLINE
+NvU64
+_scanDiscontiguousSearchLoop
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 numPages,
+    NvU64 framesPerPage,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvU64 localStride,
+    NvU32 strideStart,
+    NvU64 strideAlignmentPadding,
+    NvU64 strideRegionAlignmentPadding,
+    NvU64 *pPages,
+    NvU64 *pNumEvictablePages
+)
+{
+    // discontig doesn't align it before starting the search, should be cleaned up
+    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
+    NvU64 nextStrideStart;
+    NvU64 latestFree[PMA_BITS_PER_PAGE];
+    NvU64 totalFound = 0;
+
+    // Evictable pages count down from end of array
+    NvU64 curEvictPage = numPages;
+    NvBool bEvictablePage = NV_FALSE;
+    NvU64 i;
+
+    //
+    // latestFree stores the lowest '0' seen in the given map array in the current run
+    // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        latestFree[i] = frameBaseIdx;
+    }
+loop_begin:
+    if (localStride != 0)
+    {
+        // Put the address into the correct strideStart
+        if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+        {
+            // align up to next stride
+            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+        }
+    }
+
+    if (localStride != 0)
+    {
+        // we're always in the correct stride at this point
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+
+        // Won't fit within current stride, need to align up again.
+        if ((frameBaseIdx + framesPerPage) > nextStrideStart)
+        {
+            // even if it's in the correct stride, it won't fit here, so force it to the next one
+            frameBaseIdx = nextStrideStart;
+
+            // Put the address into the correct strideStart
+            if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+            {
+                // align up to next stride
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            }
+        }
+    }
+
+    if (localStride != 0)
+    {
+        //
+        // Find a region that is either
+        // 1. already localized or
+        // 2. completely free within the 64MB region
+        //
+        while (frameBaseIdx <= localEnd)
+        {
+            // If one bit is localized, the entire region must be localized
+            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            {
+                break;
+            }
+            else
+            {
+                // check for localized availability. Do a contiguous scan of only the region of interest
+                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
+                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
+                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
+                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+
+                if (frameFound >= 0)
+                {
+                    break;
+                }
+                else
+                {
+                    // align up to the next entire stride region
+                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
+
+                    // Put the address into the correct strideStart
+                    if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+                    {
+                        // align up to next stride
+                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                    }
+                }
+            }
+        }
+    }
+
+    //
+    // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
+    // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        if (latestFree[i] < frameBaseIdx)
+        {
+            latestFree[i] = frameBaseIdx;
+        }
+    }
+
+    // Initialize to standard free page state
+    bEvictablePage = NV_FALSE;
+
+    // At the end of memory, pages not available
+    if ((frameBaseIdx + framesPerPage - 1llu) > localEnd)
+    {
+        *pNumEvictablePages = numPages - curEvictPage;
+        return totalFound;
+    }
+
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        // ignore checking localized for localized request
+        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
+        {
+            continue;
+        }
+
+        //
+        // If array is not already full of evictable and free pages, go to evictable loop
+        //
+        // Persistent pages may still be evictable, so go to evictable loop for ATTRIB_PERSISTENT.
+        //
+        if (((i != MAP_IDX_ALLOC_UNPIN) && (i != MAP_IDX_PERSISTENT)) || (curEvictPage <= totalFound))
+        {
+            while (latestFree[i] < (frameBaseIdx + framesPerPage))
+            {
+                //
+                // All this logic looks complicated, but essentially all it is doing is getting the NvU64 from
+                // the correct index in the array and shifting and masking so that the first bit is latestFree[i].
+                // endOffs is set then to the length of the run of zeros at the beginning
+                //
+                NvU64 curMapIdx = PAGE_MAPIDX(latestFree[i]);
+                NvU64 beginOffs = PAGE_BITIDX(latestFree[i]);
+                NvU64 mask = beginOffs == 0 ? 0 : NV_U64_MAX << (FRAME_TO_U64_SIZE - beginOffs);
+                NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] >> beginOffs) | mask;
+                NvU64 endOffs = portUtilCountTrailingZeros64(curWithOffs);
+                //
+                // If no more are free, we have not hit the needed number of pages. Following loop finds
+                // the next free page
+                //
+                if (endOffs == 0)
+                {
+                    mask = beginOffs == 0 ? 0 : NV_U64_MAX >> (FRAME_TO_U64_SIZE - beginOffs);
+                    NvU64 curMap = pRegmap->map[i][curMapIdx] | mask;
+                    frameBaseIdx = latestFree[i] - beginOffs;
+                    if (curMap != NV_U64_MAX)
+                    {
+                        goto free_found;
+                    }
+                    curMapIdx++;
+                    frameBaseIdx += FRAME_TO_U64_SIZE;
+                    while (frameBaseIdx <= localEnd)
+                    {
+                        curMap =  pRegmap->map[i][curMapIdx];
+                        if(curMap != NV_U64_MAX)
+                        {
+                            goto free_found;
+                        }
+                        frameBaseIdx += FRAME_TO_U64_SIZE;
+                        curMapIdx++;
+                    }
+                    // No more free pages, exit
+                    *pNumEvictablePages = numPages - curEvictPage;
+                    return totalFound;
+free_found:
+                    // Found a free page, set frameBaseIdx and go back to the beginning of the loop
+                    frameBaseIdx += portUtilCountTrailingZeros64(~curMap);
+                    frameBaseIdx = alignUpToMod(frameBaseIdx, frameAlignment, frameAlignmentPadding);
+                    goto loop_begin;
+                }
+                latestFree[i] += endOffs;
+            }
+        }
+        else
+        {
+            // Loop to check if current range has an unpinned page, then it gets stored in the evictable area
+            while (latestFree[i] < (frameBaseIdx + framesPerPage))
+            {
+                // Basically same as above loop, just not exiting if 0 not found, instead setting bEvictablePage
+                NvU64 curMapIdx = PAGE_MAPIDX(latestFree[i]);
+                NvU64 beginOffs = PAGE_BITIDX(latestFree[i]);
+                NvU64 mask = beginOffs == 0 ? 0 : NV_U64_MAX << (FRAME_TO_U64_SIZE - beginOffs);
+                NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] >> beginOffs) | mask;
+                NvU64 endOffs = portUtilCountTrailingZeros64(curWithOffs);
+                latestFree[i] += endOffs;
+                if (endOffs == 0)
+                {
+                    bEvictablePage = NV_TRUE;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Store evictable pages at end of array to not interfere with free pages
+    if (bEvictablePage)
+    {
+        curEvictPage--;
+        pPages[curEvictPage] = frameBaseIdx;
+        frameBaseIdx += framesPerPage;
+        goto loop_begin;
+    }
+
+    pPages[totalFound] = frameBaseIdx;
+    totalFound++;
+    frameBaseIdx += framesPerPage;
+
+    // Found all needed pages (all free and not STATE_UNPIN)
+    if (totalFound == numPages)
+    {
+        *pNumEvictablePages = 0;
+        return numPages;
+    }
+    goto loop_begin;
+}
+
+static NV_FORCEINLINE
+NvU64 
+_scanDiscontiguousSearchLoopReverse
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 numPages,
+    NvU64 framesPerPage,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvU64 *pPages,
+    NvU64 *pNumEvictablePages
+)
+{
+    NvU64 realAlign = (frameAlignmentPadding + framesPerPage) & (frameAlignment - 1ll);
+    NvU64 frameBaseIdx = alignDownToMod(localEnd+1llu, frameAlignment, realAlign);
+
+    //
+    // latestFree stores the lowest '0' seen in the given map array in the current run
+    // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
+    //
+    NvU64 latestFree[PMA_BITS_PER_PAGE];
+    NvU64 totalFound = 0;
+
+    // Evictable pages count down from end of array
+    NvU64 curEvictPage = numPages;
+    NvBool bEvictablePage = NV_FALSE;
+    NvU64 i;
+
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        latestFree[i] = frameBaseIdx;
+    }
+loop_begin:
+    //
+    // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always <= frameBaseIdx
+    // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
+    //
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        if (latestFree[i] > frameBaseIdx)
+        {
+            latestFree[i] = frameBaseIdx;
+        }
+    }
+
+    // Initialize to standard free page state
+    bEvictablePage = NV_FALSE;
+
+    // At the beginning of memory, pages not available
+    if ((localStart + framesPerPage) > frameBaseIdx)
+    {
+        *pNumEvictablePages = numPages - curEvictPage;
+        return totalFound;
+    }
+
+    for (i = 0; i < PMA_BITS_PER_PAGE; i++)
+    {
+        //
+        // If array is not already full of evictable and free pages, go to evictable loop
+        //
+        // Persistent pages may still be evictable, so go to evictable loop for ATTRIB_PERSISTENT.
+        //
+        if (((i != MAP_IDX_ALLOC_UNPIN) && (i != MAP_IDX_PERSISTENT)) || (curEvictPage <= totalFound))
+        {
+            while (latestFree[i] > (frameBaseIdx - framesPerPage))
+            {
+                //
+                // All this logic looks complicated, but essentially all it is doing is getting the NvU64 from
+                // the correct index in the array and shifting and masking so that the last bit is latestFree[i].
+                // endOffs is set then to the length of the run of zeros at the end
+                //
+                NvU64 curId = latestFree[i] - 1llu;
+                NvU64 curMapIdx = PAGE_MAPIDX(curId);
+                NvU64 beginOffs = PAGE_BITIDX(curId);
+                NvU64 mask = beginOffs == FRAME_TO_U64_MASK ? 0 : NV_U64_MAX >> (1llu + beginOffs);
+                NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] << (FRAME_TO_U64_MASK - beginOffs)) | mask;
+                NvU64 endOffs = portUtilCountLeadingZeros64(curWithOffs);
+
+                //
+                // If no more are free, we have not hit the needed number of pages. Following loop finds
+                // the next free page
+                //
+                if (endOffs == 0)
+                {
+                    mask = beginOffs == FRAME_TO_U64_MASK ? 0 : NV_U64_MAX << (1llu + beginOffs);
+                    NvU64 curMap = pRegmap->map[i][curMapIdx] | mask;
+                    frameBaseIdx = latestFree[i] + FRAME_TO_U64_MASK - beginOffs;
+                    if (curMap != NV_U64_MAX)
+                    {
+                        goto free_found;
+                    }
+                    curMapIdx--;
+                    frameBaseIdx -= 64;
+                    while (frameBaseIdx > localStart)
+                    {
+                        curMap = pRegmap->map[i][curMapIdx];
+                        if(curMap != NV_U64_MAX)
+                        {
+                            goto free_found;
+                        }
+                        frameBaseIdx -= 64;
+                        curMapIdx--;
+                    }
+
+                    // No more free pages, exit
+                    *pNumEvictablePages = numPages - curEvictPage;
+                    return totalFound;
+free_found:
+                    // Found a free page, set frameBaseIdx and go back to the beginning of the loop
+                    frameBaseIdx -= portUtilCountLeadingZeros64(~curMap);
+                    frameBaseIdx = alignDownToMod(frameBaseIdx, frameAlignment, realAlign);
+                    goto loop_begin;
+                }
+                latestFree[i] -= endOffs;
+            }
+        }
+        else
+        {
+            // Loop to check if current range has an unpinned page, then it gets stored in the evictable area
+            while (latestFree[i] > (frameBaseIdx - framesPerPage))
+            {
+                // Basically same as above loop, just not exiting if 0 not found, instead setting bEvictablePage
+                NvU64 curId = latestFree[i] - 1llu;
+                NvU64 curMapIdx = PAGE_MAPIDX(curId);
+                NvU64 beginOffs = PAGE_BITIDX(curId);
+                NvU64 mask = beginOffs == FRAME_TO_U64_MASK ? 0 : NV_U64_MAX >> (1llu + beginOffs);
+                NvU64 curWithOffs = (pRegmap->map[i][curMapIdx] << (FRAME_TO_U64_MASK - beginOffs)) | mask;
+                NvU64 endOffs = portUtilCountLeadingZeros64(curWithOffs);
+                latestFree[i] -= endOffs;
+                if (endOffs == 0)
+                {
+                    bEvictablePage = NV_TRUE;
+                    break;
+                }
+            }
+        }
+    }
+
+    frameBaseIdx -= framesPerPage;
+
+    // Store evictable pages at end of array to not interfere with free pages
+    if (bEvictablePage)
+    {
+        curEvictPage--;
+        pPages[curEvictPage] = frameBaseIdx;
+        goto loop_begin;
+    }
+
+    pPages[totalFound] = frameBaseIdx;
+    totalFound++;
+
+    // Found all needed pages (all free and not STATE_UNPIN)
+    if (totalFound == numPages)
+    {
+        *pNumEvictablePages = 0;
+        return numPages;
+    }
+
+    goto loop_begin;
+}
 
 //
 // Note that these functions only return the free regions but doesn't reserve them
@@ -774,28 +1426,55 @@ pmaRegmapScanContiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
+    NvU64 stride,
+    NvU32 strideStart,
     NvU64 *numPagesAlloc,
-    NvBool bSkipEvict
+    NvBool bSkipEvict,
+    NvBool bReverseAlloc
 )
 {
-    NvU64 freeStart, numFrames, localStart, localEnd, framesPerPage;
-    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
-    NvBool found;
-    PMA_PAGESTATUS startStatus, endStatus;
+    NvU64 numFrames, localStart, localEnd, framesPerPage;
+    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding, localStride;
+    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
+    NvS64 frameFound;
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
 
     framesPerPage = pageSize >> PMA_PAGE_SHIFT;
     numFrames = framesPerPage * numPages;
     frameAlignment = alignment >> PMA_PAGE_SHIFT;
+    localStride = stride >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        if (bReverseAlloc)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        // assume stride is larger than alignment. Both must be pow2
+        if (alignment > stride)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
 
     //
-    // Find how much is the base address short of the alignment requirements
+    // Find how much is the base address short of the alignment and stride requirements
     // and adjust that value in the scanning range before starting the scan.
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
+        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
+        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -808,130 +1487,63 @@ pmaRegmapScanContiguous
         localStart = 0;
         localEnd   = pRegmap->totalFrames - 1;
     }
-
     localStart = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
-    freeStart = localStart;
-    found = 0;
 
-    NV_PRINTF(LEVEL_INFO,
-              "Scanning with addrBase 0x%llx in frame range 0x%llx..0x%llx, pages to allocate 0x%llx\n",
-              addrBase, localStart, localEnd, numPages);
-
-    while (!found)
+    if (localStride != 0)
     {
-        if ((freeStart + numFrames - 1) > localEnd)
+        // Put the address into the correct strideStart
+        if ((((localStart - frameAlignmentPadding) / localStride) % 2) != strideStart)
         {
-            // freeStart + numFrames too close to local search end.  Re-starting search
-            break;
-        }
-
-        startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
-        endStatus = pmaRegmapRead(pRegmap, (freeStart + numFrames - 1), NV_TRUE);
-
-        if (endStatus == STATE_FREE)
-        {
-            if (startStatus == STATE_FREE)
-            {
-                NvS64 diff = _pmaRegmapAvailable(pRegmap, freeStart, (freeStart + numFrames - 1));
-                if (diff == ALL_FREE)
-                {
-                    found = NV_TRUE;
-                    *freeList = addrBase + (freeStart << PMA_PAGE_SHIFT);
-                    *numPagesAlloc = numPages;
-                }
-                else
-                {
-                    //
-                    // Find the next aligned free frame and set it as the start
-                    // frame for next iteration's scan.
-                    //
-                    NV_ASSERT(diff >= 0);
-
-                    freeStart = alignUpToMod(diff + 1, frameAlignment, frameAlignmentPadding);
-
-                    NV_ASSERT(freeStart != 0);
-                }
-            }
-            else
-            {
-                // Start point isn't free, so bump to check the next aligned frame
-                freeStart += frameAlignment;
-            }
-        }
-        else
-        {
-            //
-            // End point isn't usable, so jump to after the end to check again
-            // However, align the new start point properly before next iteration.
-            //
-            freeStart += NV_ALIGN_UP(numFrames, frameAlignment);
+            // align up to next stride
+            localStart = alignUpToMod((localStart + 1), localStride, strideAlignmentPadding);
         }
     }
 
-    if (found) return NV_OK;
+    if (!bReverseAlloc)
+    {
+        frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
+                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
+                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_FALSE);
+    }
+    else
+    {
+        frameFound = _scanContiguousSearchLoopReverse(pRegmap, numFrames, localStart, localEnd,
+                                                      frameAlignment, frameAlignmentPadding, NV_FALSE);
+    }
+
+    if (frameFound >= 0)
+    {
+        *freeList = addrBase + ((NvU64)frameFound << PMA_PAGE_SHIFT);
+        *numPagesAlloc = numPages;
+        return NV_OK;
+    }
 
     *numPagesAlloc = 0;
 
     if (bSkipEvict) return NV_ERR_NO_MEMORY;
 
     // Loop back to the beginning and continue searching
-
-    freeStart = localStart;
-    while (!found)
+    if (!bReverseAlloc)
     {
-        if ((freeStart + numFrames - 1) > localEnd)
-        {
-            // Failed searching for STATE_FREE or STATE_UNPIN
-            return NV_ERR_NO_MEMORY;
-        }
-
-        startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
-        endStatus = pmaRegmapRead(pRegmap, (freeStart + numFrames - 1), NV_TRUE);
-
-        if (endStatus == STATE_FREE || endStatus == STATE_UNPIN)
-        {
-            if (startStatus == STATE_FREE || startStatus == STATE_UNPIN)
-            {
-                NvS64 diff = _pmaRegmapEvictable(pRegmap, freeStart, (freeStart + numFrames - 1));
-                if (diff == EVICTABLE)
-                {
-                    found = NV_TRUE;
-                    *freeList = addrBase + (freeStart << PMA_PAGE_SHIFT);
-                }
-                else
-                {
-                    //
-                    // The previous search should have found an all free region
-                    // and we wouldn't be looking for an evictable one.
-                    //
-                    NV_ASSERT(diff != ALL_FREE);
-                    NV_ASSERT(diff >= 0);
-
-                    //
-                    // Find the next aligned free frame and set it as the start
-                    // frame for next iteration's scan.
-                    //
-                    freeStart = alignUpToMod(diff + 1, frameAlignment, frameAlignmentPadding);
-                    NV_ASSERT(freeStart != 0);
-                }
-            }
-            else
-            {
-                // Start point isn't usable, so bump to the next aligned frame to check again
-                freeStart += frameAlignment;
-            }
-        }
-        else
-        {
-            //
-            // End point isn't usable, so jump to after the end to check again
-            // However, align the new start point properly before next iteration.
-            //
-            freeStart += NV_ALIGN_UP(numFrames, frameAlignment);
-        }
+        frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
+                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
+                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_TRUE);
+    }
+    else
+    {
+        frameFound = _scanContiguousSearchLoopReverse(pRegmap, numFrames, localStart, localEnd,
+                                                      frameAlignment, frameAlignmentPadding, NV_TRUE);
     }
 
-    return NV_ERR_IN_USE;
+    if (frameFound >= 0)
+    {
+        *freeList = addrBase + ((NvU64)frameFound << PMA_PAGE_SHIFT);
+        return NV_ERR_IN_USE;
+    }
+    else
+    {
+        return NV_ERR_NO_MEMORY;
+    }
 }
 
 NV_STATUS
@@ -943,27 +1555,57 @@ pmaRegmapScanDiscontiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
+    NvU64 stride,
+    NvU32 strideStart,
     NvU64 *numPagesAlloc,
-    NvBool bSkipEvict
+    NvBool bSkipEvict,
+    NvBool bReverseAlloc
 )
 {
-    NvU64 freeStart, found, framesPerPage, localStart, localEnd;
-    NvU64 alignedAddrBase, frameAlignmentPadding;
-    PMA_PAGESTATUS startStatus, endStatus;
-    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    PMA_REGMAP *pRegmap = (PMA_REGMAP*) pMap;
+    NvU64 localStart, localEnd, framesPerPage, alignedAddrBase, frameAlignmentPadding, localStride;
+    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
+    NvU64 freeFound = 0, evictFound = 0;
+    NvU64 totalFound = 0;
+    NV_STATUS status = NV_OK;
+    NvU64 i;
 
     NV_ASSERT(alignment == pageSize);
 
     framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    localStride = stride >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        if (bReverseAlloc)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        // assume stride is larger than alignment. Both must be pow2
+        if (alignment > stride)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
 
     //
-    // Find how much is the base address short of the alignment requirements
+    // Find how much is the base address short of the alignment and stride requirements
     // and adjust that value in the scanning range before starting the scan.
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
+        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
+        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -980,68 +1622,70 @@ pmaRegmapScanDiscontiguous
     else
     {
         localStart = 0;
-        localEnd   = pRegmap->totalFrames-1;
+        localEnd   = pRegmap->totalFrames - 1;
     }
 
-    localStart = alignUpToMod(localStart, framesPerPage, frameAlignmentPadding);
-    freeStart = localStart;
-    found = 0;
-
-    NV_PRINTF(LEVEL_INFO,
-              "Scanning with addrBase 0x%llx in frame range 0x%llx..0x%llx, pages to allocate 0x%llx\n",
-              addrBase, localStart, localEnd, numPages);
-
-    // scan for allocatable pages
-    // two-pass algorithm
-    while (found != numPages)
+    //
+    // Do the actual scanning here. The scanning functions return free pages at the beginning of
+    // the array, and evictable pages in reverse order at the end of the array
+    //
+    if (!bReverseAlloc)
     {
-        if ((freeStart + framesPerPage - 1) > localEnd) break;
-
-        startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
-        endStatus = pmaRegmapRead(pRegmap, (freeStart + framesPerPage - 1), NV_TRUE);
-
-        if (startStatus == STATE_FREE)
-        {
-            if(endStatus == STATE_FREE)
-            {
-                NvS64 diff = _pmaRegmapAvailable(pRegmap, freeStart, (freeStart + framesPerPage - 1));
-                if (diff == ALL_FREE)
-                {
-                    freeList[found++] = addrBase + (freeStart << PMA_PAGE_SHIFT);
-                }
-            }
-        }
-        freeStart += framesPerPage;
+        freeFound = _scanDiscontiguousSearchLoop(pRegmap, numPages, framesPerPage,
+            localStart, localEnd, alignment >> PMA_PAGE_SHIFT,
+            frameAlignmentPadding, localStride, strideStart, strideAlignmentPadding,
+            strideRegionAlignmentPadding,
+            freeList, &evictFound);
     }
-
-    *numPagesAlloc = found;
-    if(found == numPages) return NV_OK;
-    if(bSkipEvict) return NV_ERR_NO_MEMORY;
-
-    freeStart = localStart;
-    while (found != numPages)
+    else
     {
-        if ((freeStart + framesPerPage - 1) > localEnd) return NV_ERR_NO_MEMORY;
-
-        startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
-        endStatus = pmaRegmapRead(pRegmap, (freeStart + framesPerPage - 1), NV_TRUE);
-
-        if (startStatus == STATE_FREE || startStatus == STATE_UNPIN)
-        {
-            if(endStatus == STATE_FREE || endStatus == STATE_UNPIN)
-            {
-                NvS64 diff = _pmaRegmapEvictable(pRegmap, freeStart, (freeStart + framesPerPage - 1));
-                if (diff == EVICTABLE)
-                {
-                    freeList[found++] = addrBase + (freeStart << PMA_PAGE_SHIFT);
-                }
-            }
-        }
-        freeStart += framesPerPage;
+        freeFound = _scanDiscontiguousSearchLoopReverse(pRegmap, numPages, framesPerPage,
+            localStart, localEnd, alignment >> PMA_PAGE_SHIFT,
+            frameAlignmentPadding, freeList, &evictFound);
     }
 
-    return NV_ERR_IN_USE;
+    *numPagesAlloc = freeFound;
+
+    // Scanning implementations don't actually decrement evictFound, so adjust appropriately here
+    evictFound = freeFound + evictFound > numPages ? numPages - freeFound : evictFound;
+
+    // Not enough pages
+    if (((freeFound + evictFound) != numPages) ||
+        (bSkipEvict && (freeFound != numPages)))
+    {
+        status = NV_ERR_NO_MEMORY;
+    }
+    else if (evictFound != 0)
+    {
+        status = NV_ERR_IN_USE;
+    }
+
+    // Set totalFound appropriately to shift pages at the end of the function
+    totalFound = freeFound + evictFound;
+    if (bSkipEvict)
+    {
+        totalFound = freeFound;
+        goto alignAndReturn;
+    }
+
+    // End of list contains the evictable pages, swap elements from beginning of range to end
+    for (i = (numPages - freeFound) >> 1; i != 0; i--)
+    {
+        NvU64 temp = freeList[freeFound + i - 1llu];
+        freeList[freeFound + i - 1llu] = freeList[numPages - i];
+        freeList[numPages - i] = temp;
+    }
+
+alignAndReturn:
+    while (totalFound != 0)
+    {
+        totalFound--;
+        freeList[totalFound] <<= PMA_PAGE_SHIFT;
+        freeList[totalFound] += addrBase;
+    }
+    return status;
 }
+
 
 void
 pmaRegmapGetSize
@@ -1058,7 +1702,8 @@ void
 pmaRegmapGetLargestFree
 (
     void  *pMap,
-    NvU64 *pLargestFree
+    NvU64 *pLargestFree,
+    NvU64 *pLargestFreeOffset
 )
 {
     NvU64 mapIndex       = 0;
@@ -1067,12 +1712,15 @@ pmaRegmapGetLargestFree
     NvU32 regionMaxZeros = 0;
     NvU64 mapMaxIndex;
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    //global bit offset for the start of the max zero chunk
+    NvU64 regionMaxZeroStartingOffset = 0;
 
     mapMaxIndex = PAGE_MAPIDX(pRegmap->totalFrames - 1);
 
     while (mapIndex <= mapMaxIndex)
     {
         NvU64 bitmap = pRegmap->map[MAP_IDX_ALLOC_UNPIN][mapIndex] | pRegmap->map[MAP_IDX_ALLOC_PIN][mapIndex];
+        NvU32 startingPos;
 
         // If the last map[] is only partially used, mask the valid bits
         if (mapIndex == mapMaxIndex && (PAGE_BITIDX(pRegmap->totalFrames) != 0))
@@ -1080,23 +1728,49 @@ pmaRegmapGetLargestFree
             bitmap |= (~0ULL) << PAGE_BITIDX(pRegmap->totalFrames);
         }
 
-        if (maxZerosGet(bitmap) == _UINT_SIZE)
+        if (maxZerosGet(bitmap, &startingPos) == FRAME_TO_U64_SIZE)
         {
-            mapTrailZeros += _UINT_SIZE;
+            mapTrailZeros += FRAME_TO_U64_SIZE;
         }
         else
         {
+            //max zeros found in current iteration
+            NvU32 currMaxZeros;
+            //indicates if the max zero chunk is in the current bitmap
+            NvBool bMaxInCurrBitmap;
+
             mapTrailZeros += portUtilCountTrailingZeros64(bitmap);
-            mapMaxZeros = maxZerosGet(bitmap);
-            regionMaxZeros = NV_MAX(regionMaxZeros,
-                                    NV_MAX(mapMaxZeros, mapTrailZeros));
+            mapMaxZeros = maxZerosGet(bitmap, &startingPos);
+            currMaxZeros = NV_MAX(mapMaxZeros, mapTrailZeros);
+            bMaxInCurrBitmap = (mapMaxZeros >= mapTrailZeros) ? NV_TRUE : NV_FALSE;
+
+            //new region max found
+            if (currMaxZeros > regionMaxZeros)
+            {
+                regionMaxZeros = currMaxZeros;
+                if (bMaxInCurrBitmap)
+                {
+                    regionMaxZeroStartingOffset = mapIndex * FRAME_TO_U64_SIZE + startingPos;
+                }
+                else
+                {
+                    regionMaxZeroStartingOffset =
+                        mapIndex * FRAME_TO_U64_SIZE - regionMaxZeros + portUtilCountTrailingZeros64(bitmap);
+                }
+            }
             mapTrailZeros = portUtilCountLeadingZeros64(bitmap);
         }
 
         mapIndex++;
     }
-    regionMaxZeros = NV_MAX(regionMaxZeros, mapTrailZeros);
+    //new region max found
+    if (regionMaxZeros < mapTrailZeros)
+    {
+        regionMaxZeros = mapTrailZeros;
+        regionMaxZeroStartingOffset = mapIndex * FRAME_TO_U64_SIZE - regionMaxZeros;
+    }
     *pLargestFree = ((NvU64) regionMaxZeros) << PMA_PAGE_SHIFT;
+    *pLargestFreeOffset = ((NvU64) regionMaxZeroStartingOffset) << PMA_PAGE_SHIFT;
 }
 
 NvU64 pmaRegmapGetEvictingFrames(void *pMap)

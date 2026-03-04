@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,11 +29,12 @@
 #define _NVOC_RTTI_H_
 
 #include "nvtypes.h"
-#include "nvoc/runtime.h"
+#include "nvoc/prelude.h"
 #include "nvport/inline/util_valist.h"
 
 typedef NV_STATUS (*NVOC_DYNAMIC_OBJ_CREATE)(Dynamic**, Dynamic *pParent, NvU32 createFlags, va_list);
 typedef void (*NVOC_DYNAMIC_DTOR)(Dynamic*);
+
 
 // struct NVOC_CLASS_METADATA
 // {
@@ -69,9 +70,11 @@ struct NVOC_RTTI                                  // one per derived-ancestor re
     const NvU32                        offset;    // 0 for derived
 };
 
-
+//! Initialize RTTI structure for older NVOC versions.
+#ifndef NVOC_METADATA_VERSION
 void __nvoc_initRtti(Dynamic *pNewObject, const struct NVOC_CLASS_DEF *pClassDef);
-
-
+#elif NVOC_METADATA_VERSION < 2
+void __nvoc_initRtti(Dynamic *pNewObject, const struct NVOC_CLASS_DEF *pClassDef);
+#endif
 
 #endif

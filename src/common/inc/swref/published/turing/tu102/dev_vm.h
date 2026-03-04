@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,8 @@
 
 #ifndef __tu102_dev_vm_h__
 #define __tu102_dev_vm_h__
+#define NV_VIRTUAL_FUNCTION_PRIV                               0x0002FFFF:0x00000000 /* RW--D */
+#define NV_VIRTUAL_FUNCTION                                    0x0003FFFF:0x00030000 /* RW--D */
 #define NV_VIRTUAL_FUNCTION_FULL_PHYS_OFFSET                   0x00BBFFFF:0x00B80000 /* RW--D */
 #define NV_VIRTUAL_FUNCTION_PRIV_L2_SYSMEM_INVALIDATE                   0x00000F00 /* RW-4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_L2_PEERMEM_INVALIDATE                   0x00000F04 /* RW-4R */
@@ -97,7 +99,23 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_PUT_OVERFLOW_YES                0x00000001 /* R---V */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE(i)            (0x00003010+(i)*32) /* RW-4A */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE__SIZE_1 2 /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_VAL                          19:0 /* RWEVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_VAL_RESET              0x00000000 /* RWE-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_OVERFLOW_INTR               29:29 /* RWEVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_OVERFLOW_INTR_DISABLE  0x00000000 /* RWE-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_OVERFLOW_INTR_ENABLE   0x00000001 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_SET_DEFAULT                 30:30 /* RWEVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_SET_DEFAULT_NO         0x00000000 /* RWE-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_SET_DEFAULT_YES        0x00000001 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_ENABLE                      31:31 /* RWEVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_ENABLE_FALSE           0x00000000 /* RWE-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE_ENABLE_TRUE            0x00000001 /* RW--V */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_PAGE_FAULT_CTRL                                        0x00003070 /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_ADDR_LO                                      0x00003080 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_ADDR_HI                                      0x00003084 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_INST_LO                                      0x00003088 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_INST_HI                                      0x0000308C /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_INFO                                         0x00003090 /* R--4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_STATUS                                           0x00003094 /* RW-4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB                               0x000030A0 /* RW-4R */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_APERTURE                             1:1 /* RWEVF */
@@ -210,4 +228,51 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_DOORBELL                                            0x2200 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_DOORBELL                                                0x30090 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_ERR_CONT                         0x30094 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK                                           0x00000F40 /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK__VFALIAS                    NV_VBUS_VF_BAR1_BLOCK(f) /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_MAP                                             29:0 /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_PTR                                             27:0 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_PTR_0                                     0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_TARGET                                         29:28 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_TARGET_VID_MEM                            0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_TARGET_SYS_MEM_COHERENT                   0x00000002 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_TARGET_SYS_MEM_NONCOHERENT                0x00000003 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_MODE                                           31:31 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_MODE_PHYSICAL                             0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR1_BLOCK_MODE_VIRTUAL                              0x00000001 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK                                           0x00000F48 /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK__VFALIAS                    NV_VBUS_VF_BAR2_BLOCK(f) /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_MAP                                             29:0 /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_PTR                                             27:0 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_PTR_0                                     0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_TARGET                                         29:28 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_TARGET_VID_MEM                            0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_TARGET_SYS_MEM_COHERENT                   0x00000002 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_TARGET_SYS_MEM_NONCOHERENT                0x00000003 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_DEBUG_CYA                                      30:30 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_DEBUG_CYA_OFF                             0x00000001 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_DEBUG_CYA_ON                              0x00000000 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_DEBUG_CYA_INIT                            0x00000001 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_MODE                                           31:31 /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_MODE_PHYSICAL                             0x00000000 /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BAR2_BLOCK_MODE_VIRTUAL                              0x00000001 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS                                          0x00000F50 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS__VFALIAS                  NV_VBUS_VF_BIND_STATUS(f) /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_PENDING                                    0:0 /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_PENDING_EMPTY                       0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_PENDING_BUSY                        0x00000001 /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_OUTSTANDING                                1:1 /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_OUTSTANDING_FALSE                   0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR1_OUTSTANDING_TRUE                    0x00000001 /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_PENDING                                    2:2 /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_PENDING_EMPTY                       0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_PENDING_BUSY                        0x00000001 /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_OUTSTANDING                                3:3 /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_OUTSTANDING_FALSE                   0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_BIND_STATUS_BAR2_OUTSTANDING_TRUE                    0x00000001 /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i)                (0x0001000C+(i)*16) /* RW-4A */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL__SIZE_1                             6 /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT                          0:0 /* RWIVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT_UNMASKED          0x00000000 /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT_MASKED            0x00000001 /* RWI-V */
 #endif // __tu102_dev_vm_h__

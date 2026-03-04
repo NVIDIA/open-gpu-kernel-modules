@@ -25,11 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080base.finn
+// Source file:      ctrl/ctrl0080/ctrl0080base.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV01_DEVICE_XX/NV03_DEVICE control commands and parameters */

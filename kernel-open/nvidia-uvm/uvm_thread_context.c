@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -101,7 +101,7 @@ static DEFINE_PER_CPU(uvm_thread_context_lock_acquired_t, interrupt_thread_conte
 static void thread_context_non_interrupt_remove(uvm_thread_context_t *thread_context,
                                                 uvm_thread_context_table_entry_t *thread_context_entry);
 
-bool uvm_thread_context_wrapper_is_used()
+bool uvm_thread_context_wrapper_is_used(void)
 {
     // The wrapper contains lock information. While uvm_record_lock_X
     // routines are a no-op outside of debug mode, unit tests do invoke their
@@ -430,10 +430,12 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
         if (thread_context->array_index == UVM_THREAD_CONTEXT_ARRAY_SIZE) {
             NvU64 old = atomic64_cmpxchg(&array_entry->task, 0, task);
 
-            // Task already added a different thread context. There is nothing
-            // to undo because the current thread context has not been inserted.
-            if (old == task)
+            // Task already added a different thread context. The current thread
+            // context has not been inserted but needs to be freed.
+            if (old == task) {
+                thread_context_non_interrupt_deinit(thread_context);
                 return false;
+            }
 
             // Speculatively add the current thread context.
             if (old == 0)
@@ -444,6 +446,7 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
             // Task already added a different thread context to the array, so
             // undo the speculative insertion
             atomic64_set(&table_entry->array[thread_context->array_index].task, 0);
+            thread_context_non_interrupt_deinit(thread_context);
 
             return false;
         }
@@ -474,6 +477,9 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
         added = true;
     }
 
+    if (!added)
+        thread_context_non_interrupt_deinit(thread_context);
+
     spin_unlock_irqrestore(&table_entry->tree_lock, flags);
     return added;
 }
@@ -492,6 +498,7 @@ bool uvm_thread_context_add(uvm_thread_context_t *thread_context)
         uvm_thread_context_global_init();
 
     thread_context->task = current;
+    thread_context->ignore_hmm_invalidate_va_block = NULL;
     table_entry = thread_context_non_interrupt_table_entry(&array_index);
     return thread_context_non_interrupt_add(thread_context, table_entry, array_index);
 }

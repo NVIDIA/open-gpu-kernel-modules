@@ -58,7 +58,7 @@ perfbufferConstructHal_KERNEL
     NV_CHECK_OK_OR_RETURN(LEVEL_NOTICE, perfbufferPrivilegeCheck(pResource));
 
     NV_RM_RPC_ALLOC_OBJECT(pGpu, hClient, hParent, hMemory, class,
-        pParams->pAllocParams, status);
+        pParams->pAllocParams, pParams->paramsSize, status);
 
     return status;
 }

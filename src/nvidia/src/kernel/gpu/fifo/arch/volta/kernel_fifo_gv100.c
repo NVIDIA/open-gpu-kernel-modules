@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,9 +28,12 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/gpu/gpu.h"
+#include "kernel/mem_mgr/mem.h"
+#include "containers/eheap_old.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
+#include "published/volta/gv100/dev_fault.h"
 #include "published/volta/gv100/dev_ram.h"
 
 #include "ctrl/ctrlc36f.h"
@@ -92,19 +95,6 @@ kfifoRmctrlGetWorkSubmitToken_GV100
     return NV_OK;
 }
 
-/**
- * @brief Translates between 2 engine values
- *
- * To iterate through a value for all engines call with inType of
- * ENGINE_INFO_TYPE_INVALID for 0 through fifoGetNumEngines().
- *
- * @param pGpu
- * @param pKernelFifo
- * @param[in] inType ENGINE_INFO_TYPE_*
- * @param[in] inVal
- * @param[in] outType ENGINE_INFO_TYPE_*
- * @param[out] pOutVal
- */
 NV_STATUS
 kfifoEngineInfoXlate_GV100
 (
@@ -137,6 +127,9 @@ kfifoEngineInfoXlate_GV100
 
     return kfifoEngineInfoXlate_GM107(pGpu, pKernelFifo, inType, inVal, outType, pOutVal);
 }
+
+// compile time check to ensure RM ctrl call does not support more than what the HW can.
+ct_assert(NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG == NV_RAMRL_ENTRY_TSG_LENGTH_MAX);
 
 /*
  * @brief Gives the maxinum number of channels allowed per channel group
@@ -247,7 +240,7 @@ kfifoGetSubctxType_GV100
     NV_ASSERT(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
 
     KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
-    PEMEMBLOCK pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
+    EMEMBLOCK *pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
         pKernelChannelGroup->pSubctxIdHeap,
         pKernelChannel->subctxId,
         NV_FALSE);
@@ -261,7 +254,7 @@ kfifoGetSubctxType_GV100
 
     pKernelCtxShare = (KernelCtxShare *)pBlock->pData;
     subctxType = DRF_VAL(_CTXSHARE, _ALLOCATION_FLAGS, _SUBCONTEXT, pKernelCtxShare->flags);
-    if (subctxType == NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SPECIFIED)
+    if (subctxType >= NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SPECIFIED)
     {
         subctxType = NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_ASYNC;
     }
@@ -348,4 +341,103 @@ kfifoGetMaxCeChannelGroups_GV100
         numChannels = NV_MIN(pKernelFifo->numChannelsOverride, numChannels);
 
     return numChannels;
+}
+
+/*
+ * Allocate Memory Descriptors for Regmem VF page
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelFifo        KernelFifo pointer
+ */
+NV_STATUS
+kfifoConstructUsermodeMemdescs_GV100
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    NvU32          attr           = 0;
+    NvU32          attr2          = 0;
+    NvU64          offset         = 0;
+    NvU32          size           = 0;
+
+    attr = FLD_SET_DRF(OS32, _ATTR,  _PHYSICALITY, _CONTIGUOUS, attr);
+    attr = FLD_SET_DRF(OS32, _ATTR,  _COHERENCY, _CACHED, attr);
+
+    attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO, attr2);
+
+    NV_ASSERT_OK_OR_RETURN(kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, &offset, &size));
+
+    NV_ASSERT_OK_OR_RETURN(memCreateMemDesc(pGpu, &(pKernelFifo->pRegVF), ADDR_REGMEM,
+                                            offset, size, attr, attr2));
+
+    memdescSetFlag(pKernelFifo->pRegVF, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
+
+    return NV_OK;
+}
+
+/**
+ * @brief Converts a MMU access type type (NV_PFAULT_ACCESS_TYPE_*) into a string.
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param faultId
+ * @returns a string (always non-null)
+ */
+const char*
+kfifoGetFaultAccessTypeString_GV100
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32       accessType
+)
+{
+    switch (accessType)
+    {
+        case NV_PFAULT_ACCESS_TYPE_VIRT_READ:
+            return "ACCESS_TYPE_VIRT_READ";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_WRITE:
+            return "ACCESS_TYPE_VIRT_WRITE";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_ATOMIC_STRONG:
+        case NV_PFAULT_ACCESS_TYPE_VIRT_ATOMIC_WEAK:
+            return "ACCESS_TYPE_VIRT_ATOMIC";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_PREFETCH:
+            return "ACCESS_TYPE_VIRT_PREFETCH";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_READ:
+            return "ACCESS_TYPE_PHYS_READ";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_WRITE:
+            return "ACCESS_TYPE_PHYS_WRITE";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_ATOMIC:
+            return "ACCESS_TYPE_PHYS_ATOMIC";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_PREFETCH:
+            return "ACCESS_TYPE_PHYS_PREFETCH";
+        default:
+            return "UNRECOGNIZED_ACCESS_TYPE";
+    }
+}
+
+/*!
+ * @brief Update the usermode doorbell register with work submit token to notify
+ *        host that work is available on this channel.
+ *
+ * @param[in] pGpu
+ * @param[in] pFifo
+ * @param[in] pKernelChannel  Channel to ring the doorbell for
+ */
+NV_STATUS
+kfifoRingChannelDoorBell_GV100
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    KernelChannel   *pKernelChannel
+)
+{
+    NvU32        workSubmitToken;
+
+    NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo,
+                                                        pKernelChannel, &workSubmitToken,
+                                                        NV_TRUE));
+    NV_ASSERT_OK_OR_RETURN(kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo,
+                                                            workSubmitToken));
+    return NV_OK;
 }

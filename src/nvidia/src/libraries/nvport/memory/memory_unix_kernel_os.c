@@ -104,6 +104,17 @@ portMemCopy
     return os_mem_copy(pDestination, pSource, srcSize);
 }
 
+void *
+portMemCopyAligned
+(
+    void       *pDestination,
+    NvLength    destSize,
+    const void *pSource,
+    NvLength    srcSize
+)
+{
+    return portMemCopy(pDestination, destSize, pSource, srcSize);
+}
 
 void *
 portMemSet
@@ -194,12 +205,12 @@ portMemExGetPageSize(void)
 }
 
 // Large allocations (>KMALLOC_LIMIT) will fail, but it is safe to call
-NvBool 
+NvBool
 portMemExSafeForPagedAlloc(void)
 {
     return NV_TRUE;
 }
-NvBool 
+NvBool
 portMemExSafeForNonPagedAlloc(void)
 {
     return NV_TRUE;

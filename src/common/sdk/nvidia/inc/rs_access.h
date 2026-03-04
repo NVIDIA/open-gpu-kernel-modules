@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: rs_access.finn
+// Source file:      rs_access.finn
 //
 
 
@@ -59,7 +59,8 @@
 #define RS_ACCESS_DUP_OBJECT 0U
 #define RS_ACCESS_NICE       1U
 #define RS_ACCESS_DEBUG      2U
-#define RS_ACCESS_COUNT      3U
+#define RS_ACCESS_PERFMON    3U
+#define RS_ACCESS_COUNT      4U
 
 
 /****************************************************************************/

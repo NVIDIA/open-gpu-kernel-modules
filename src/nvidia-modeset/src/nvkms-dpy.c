@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2013 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,10 @@
 #include "dp/nvdp-device.h"
 #include "dp/nvdp-connector-event-sink.h"
 
+#include "nvkms-api-types.h"
 #include "nvkms-evo.h"
 #include "nvkms-dpy.h"
+#include "nvkms-dpy-override.h"
 #include "nvkms-hdmi.h"
 #include "nvkms-rm.h"
 #include "nvkms-rmapi.h"
@@ -42,6 +44,10 @@
 #include "nvos.h"
 #include "timing/dpsdp.h"
 
+#include "displayport/displayport.h"
+#include "timing/nvtiming.h"
+
+#include <ctrl/ctrl0073/ctrl0073dfp.h> // NV0073_CTRL_DFP_FLAGS_*
 #include <ctrl/ctrl0073/ctrl0073dp.h> // NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_*
 
 #define TMDS_SINGLE_LINK_PCLK_MAX 165000
@@ -51,11 +57,9 @@ static void DpyGetDynamicDfpProperties(
     NVDpyEvoPtr pDpyEvo,
     const NvBool disableACPIBrightnessHotkeys);
 
-static NVEvoPassiveDpDongleType
-DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
-                          NvU32 *passiveDpDongleMaxPclkKHz);
 static void
 CreateParsedEdidFromNVT_TIMING(NVT_TIMING *pTimings,
+                               NvU8 bpc,
                                NVParsedEdidEvoPtr pParsedEdid);
 
 static NvBool ReadEdidFromDP              (const NVDpyEvoRec *pDpyEvo,
@@ -69,7 +73,7 @@ static NvBool ValidateEdid                (const NVDpyEvoRec *pDpyEvo,
                                            const NvBool ignoreEdidChecksum);
 static void LogEdid                       (NVDpyEvoPtr pDpyEvo,
                                            NVEvoInfoStringPtr pInfoString);
-static void ClearEdid                     (NVDpyEvoPtr pDpyEvo);
+static void ClearEdid                     (NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm);
 static void ClearCustomEdid               (const NVDpyEvoRec *pDpyEvo);
 static void WriteEdidToResman             (const NVDpyEvoRec *pDpyEvo,
                                            const NVEdidRec *pEdid);
@@ -79,22 +83,23 @@ static void PatchAndParseEdid             (const NVDpyEvoRec *pDpyEvo,
                                            NVEvoInfoStringPtr pInfoString);
 static void ReadAndApplyEdidEvo           (NVDpyEvoPtr pDpyEvo,
                                            struct NvKmsQueryDpyDynamicDataParams *pParams);
-static NvBool GetFixedModeTimings         (NVDpyEvoPtr pDpyEvo);
+static NvBool GetFixedModeTimings         (NVDpyEvoPtr pDpyEvo, struct NvKmsSuperframeInfo *pSuperframeInfo);
 static NvBool ReadDSITimingsFromResman    (const NVDpyEvoRec *pDpyEvo,
-                                           NVT_TIMING *pTimings);
+                                           NVT_TIMING *pTimings,
+                                           NvU8 *pBpc);
 static void AssignDpyEvoName              (NVDpyEvoPtr pDpyEvo);
 
 static NvBool IsConnectorTMDS             (NVConnectorEvoPtr);
 
 
-static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo)
+static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
 
     pDispEvo->connectedDisplays =
         nvDpyIdListMinusDpyId(pDispEvo->connectedDisplays, pDpyEvo->id);
 
-    ClearEdid(pDpyEvo);
+    ClearEdid(pDpyEvo, bSendHdmiCapsToRm);
 }
 
 static NvBool DpyConnectEvo(
@@ -111,14 +116,14 @@ static NvBool DpyConnectEvo(
 
     if ((pDpyEvo->pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) ||
         nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
-        return GetFixedModeTimings(pDpyEvo);
+        if (!GetFixedModeTimings(pDpyEvo, &pParams->reply.superframeInfo)) {
+            return FALSE;
+        }
     } else {
         ReadAndApplyEdidEvo(pDpyEvo, pParams);
     }
 
-    if (pDpyEvo->head != NV_INVALID_HEAD) {
-        nvUpdateInfoFrames(pDpyEvo->pDispEvo, pDpyEvo->head);
-    }
+    nvUpdateInfoFrames(pDpyEvo);
 
     return TRUE;
 }
@@ -350,6 +355,7 @@ static void ApplyNewEdid(
     NVDpyEvoPtr pDpyEvo,
     const NVEdidRec *pEdid,
     const NVParsedEdidEvoRec *pParsedEdid,
+    const NvBool bSendHdmiCapsToRm,
     NVEvoInfoStringPtr pInfoString)
 {
     if (pDpyEvo->edid.buffer != NULL) {
@@ -391,7 +397,9 @@ static void ApplyNewEdid(
         DpyAssignColorSpaceCaps(pDpyEvo, pInfoString);
     }
 
-    nvUpdateHdmiCaps(pDpyEvo);
+    if (bSendHdmiCapsToRm) {
+        nvSendHdmiCapsToRm(pDpyEvo);
+    }
 
     nvDpyProbeMaxPixelClock(pDpyEvo);
 
@@ -404,17 +412,11 @@ static void ApplyNewEdid(
  */
 static NvBool ReadDSITimingsFromResman(
     const NVDpyEvoRec *pDpyEvo,
-    NVT_TIMING *pTimings)
+    NVT_TIMING *pTimings,
+    NvU8 *pBpc)
 {
     NvU32 ret;
     NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS dsiModeTimingParams = { 0 };
-    // Values are currently hardcoded while waiting for full RM support
-    NvU32 hFrontPorch = 8;
-    NvU32 vFrontPorch = 2;
-    NvU32 hBackPorch = 56;
-    NvU32 vBackPorch = 51;
-    NvU32 hSyncWidth = 96;
-    NvU32 vSyncWidth = 2;
 
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
@@ -442,66 +444,182 @@ static NvBool ReadDSITimingsFromResman(
     // Converts refresh (Hz) into appropriate units for rr1k (units of 0.001Hz)
     pTimings->etc.rrx1k = dsiModeTimingParams.refresh * 1000;
     pTimings->HVisible = dsiModeTimingParams.hActive;
-    pTimings->HFrontPorch = hFrontPorch;
-    pTimings->HSyncWidth = hSyncWidth;
+    pTimings->HFrontPorch = dsiModeTimingParams.hFrontPorch;
+    pTimings->HSyncWidth = dsiModeTimingParams.hSyncWidth;
     pTimings->HTotal = dsiModeTimingParams.hActive +
-                       hFrontPorch + hSyncWidth + hBackPorch;
+                       dsiModeTimingParams.hFrontPorch +
+                       dsiModeTimingParams.hSyncWidth +
+                       dsiModeTimingParams.hBackPorch;
 
     pTimings->VVisible = dsiModeTimingParams.vActive;
-    pTimings->VFrontPorch = vFrontPorch;
-    pTimings->VSyncWidth = vSyncWidth;
+    pTimings->VFrontPorch = dsiModeTimingParams.vFrontPorch;
+    pTimings->VSyncWidth = dsiModeTimingParams.vSyncWidth;
     pTimings->VTotal = dsiModeTimingParams.vActive +
-                       vFrontPorch + vSyncWidth + vBackPorch;
+                       dsiModeTimingParams.vFrontPorch +
+                       dsiModeTimingParams.vSyncWidth +
+                       dsiModeTimingParams.vBackPorch;
 
-    pTimings->pclk = HzToKHz(pTimings->VTotal *
-                             pTimings->HTotal *
-                             dsiModeTimingParams.refresh) / 10;
+    pTimings->pclk = HzToKHz(dsiModeTimingParams.pclkHz) / 10;
+
+    // DSI only supports RGB444
+    *pBpc = dsiModeTimingParams.bpp / 3;
 
     return TRUE;
 }
 
-static NvBool ReadDPSerializerTimings(
-    const NVDpyEvoRec *pDpyEvo,
-    NVT_TIMING *pTimings)
+static NvBool ParseSuperframeInfo(
+    NVDpyEvoRec *pDpyEvo,
+    const NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
 {
-    /*
-     * TODO Add RM control call that will return the fixed timings
-     * that can be used with a given display.
-     */
-    pTimings->HVisible = 1920;
-    pTimings->VVisible = 1080;
-    pTimings->HFrontPorch = 88;
-    pTimings->VFrontPorch = 4;
-    pTimings->HSyncWidth = 44;
-    pTimings->VSyncWidth = 5;
-    pTimings->HTotal = 2200;
-    pTimings->VTotal = 1125;
-    pTimings->HSyncPol = 0;
-    pTimings->VSyncPol = 0;
-    pTimings->interlaced = 0;
-    pTimings->pclk = 14850;
-    pTimings->etc.rrx1k = 60000;
+    NvU8 i;
+
+    if (pParams->superframeInfo.numViews == 0) {
+        return TRUE;
+    }
+
+    // Currently, we support only dual view superframe.
+    if (pParams->superframeInfo.numViews != 2) {
+        nvEvoLog(EVO_LOG_ERROR, "Invalid number of superframe views");
+        return FALSE;
+    }
+
+    // Currently, we support only packed symmetrical side-by-side superframe.
+    if ((pParams->superframeInfo.view[0].width * pParams->superframeInfo.numViews) !=
+        pParams->hActive) {
+        nvEvoLog(EVO_LOG_ERROR, "The width of Superframe view[0] is invalid");
+        return FALSE;
+    }
+
+    if (pParams->superframeInfo.view[0].height != pParams->vActive) {
+        nvEvoLog(EVO_LOG_ERROR, "The height of Superframe view[0] is invalid");
+        return FALSE;
+    }
+
+    pSuperframeInfo->numViews = 0;
+
+    for (i = 0; i < pParams->superframeInfo.numViews; i++) {
+        // All superframe views must not have horizontal spacing in between them.
+        if ((pParams->superframeInfo.view[0].width * i) !=
+            pParams->superframeInfo.view[i].x) {
+            nvEvoLog(EVO_LOG_ERROR, "The x offset of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have y offset as 0.
+        if (pParams->superframeInfo.view[i].y != 0) {
+            nvEvoLog(EVO_LOG_ERROR, "The y offset of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have the same width.
+        if (pParams->superframeInfo.view[0].width !=
+            pParams->superframeInfo.view[i].width) {
+            nvEvoLog(EVO_LOG_ERROR, "The width of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have the same height.
+        if (pParams->superframeInfo.view[0].height !=
+            pParams->superframeInfo.view[i].height) {
+            nvEvoLog(EVO_LOG_ERROR, "The height of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        pSuperframeInfo->view[i].x = pParams->superframeInfo.view[i].x;
+        pSuperframeInfo->view[i].width = pParams->superframeInfo.view[i].width;
+        pSuperframeInfo->view[i].y = pParams->superframeInfo.view[i].y;
+        pSuperframeInfo->view[i].height = pParams->superframeInfo.view[i].height;
+        pSuperframeInfo->numViews++;
+    }
+
+    return TRUE;
+
+fail:
+    nvkms_memset(pSuperframeInfo, 0, sizeof(*pSuperframeInfo));
+    return FALSE;
+}
+
+static NvBool ReadDPSerializerTimings(
+    NVDpyEvoRec *pDpyEvo,
+    NVT_TIMING *pTimings,
+    NvU8 *pBpc,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
+{
+    NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS timingParams = { };
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 ret;
+
+    timingParams.subDeviceInstance = pDispEvo->displayOwner;
+    timingParams.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    timingParams.stream = pDpyEvo->dp.serializerStreamIndex;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_DFP_GET_FIXED_MODE_TIMING,
+                         &timingParams, sizeof(timingParams));
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                     "Unable to read fixed mode timings for display device %s",
+                     pDpyEvo->name);
+        return FALSE;
+    }
+
+    if (!timingParams.valid) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                     "Fixed mode timings are invalid for display device %s",
+                     pDpyEvo->name);
+        return FALSE;
+    }
+
+    if (!ParseSuperframeInfo(pDpyEvo, &timingParams, pSuperframeInfo)) {
+        return FALSE;
+    }
+
+    nvkms_memset(pTimings, 0, sizeof(NVT_TIMING));
+
+    pTimings->HVisible = timingParams.hActive;
+    pTimings->HFrontPorch = timingParams.hFrontPorch;
+    pTimings->HSyncWidth = timingParams.hSyncWidth;
+    pTimings->HTotal = timingParams.hActive + timingParams.hFrontPorch +
+                       timingParams.hSyncWidth + timingParams.hBackPorch;
+
+    pTimings->VVisible = timingParams.vActive;
+    pTimings->VFrontPorch = timingParams.vFrontPorch;
+    pTimings->VSyncWidth = timingParams.vSyncWidth;
+    pTimings->VTotal = timingParams.vActive + timingParams.vFrontPorch +
+                       timingParams.vSyncWidth + timingParams.vBackPorch;
+
+    pTimings->pclk = timingParams.pclkKHz / 10;
+    pTimings->etc.rrx1k = timingParams.rrx1k;
+
+    *pBpc = 0;
 
     return TRUE;
 }
 
 static NvBool GetFixedModeTimings(
-    NVDpyEvoPtr pDpyEvo)
+    NVDpyEvoPtr pDpyEvo,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
 {
     NVT_TIMING timings = { };
     NvBool ret = FALSE;
+    NvU8 bpc;
 
     if (pDpyEvo->pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
-        ret = ReadDSITimingsFromResman(pDpyEvo, &timings);
+        ret = ReadDSITimingsFromResman(pDpyEvo, &timings, &bpc);
     } else if (nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
-        ret = ReadDPSerializerTimings(pDpyEvo, &timings);
+        ret = ReadDPSerializerTimings(pDpyEvo, &timings, &bpc,
+                                      pSuperframeInfo);
     }
 
     if (!ret) {
         return ret;
     }
 
-    CreateParsedEdidFromNVT_TIMING(&timings, &pDpyEvo->parsedEdid);
+    CreateParsedEdidFromNVT_TIMING(&timings, bpc, &pDpyEvo->parsedEdid);
+
     AssignDpyEvoName(pDpyEvo);
     nvDpyProbeMaxPixelClock(pDpyEvo);
 
@@ -533,7 +651,7 @@ static void ReadAndApplyEdidEvo(
     if (pParams != NULL) {
         pParams->reply.edid.valid = readSuccess;
     }
-
+    
     if (EdidHasChanged(pDpyEvo, &edid, pParsedEdid)) {
         /*
          * Do not plumb pRequest into ApplyNewEdid().  This helps ensure that
@@ -543,257 +661,44 @@ static void ReadAndApplyEdidEvo(
          * worrying that this request has different parameters (like CustomEdid
          * or mode validation overrides).
          */
-        ApplyNewEdid(pDpyEvo, &edid, pParsedEdid, &infoString);
+        ApplyNewEdid(pDpyEvo, &edid, pParsedEdid, TRUE /* bSendHdmiCapsToRm */,
+                     &infoString);
     } else {
         nvFree(edid.buffer);
+
+        if (pDpyEvo->hotplugged) {
+            /*
+             * If the display has an unhandled hotplug, re-probe
+             * the maximum pixel clock. This can change even if the
+             * EDID remains the same if e.g. the display becomes FRL
+             * capable, a passive DP adapter is being used, etc. 
+             * Note that this also takes care of HDMI FRL link re-assessment
+             * on hotplugs.
+             */
+            nvDpyProbeMaxPixelClock(pDpyEvo);
+        } else if (nvDpyIsHdmiEvo(pDpyEvo) &&
+            nvHdmiDpySupportsFrl(pDpyEvo) &&
+            pDpyEvo->hdmi.reassessFrlLinkCaps) {
+            /*
+             * Although there’s no change in EDID and no hotplug, if there was 
+             * still a re-training request, reassess the FRL link.
+             */
+            nvHdmiFrlAssessLink(pDpyEvo);
+        }
     }
+
+    pDpyEvo->hdmi.reassessFrlLinkCaps = FALSE;
+    pDpyEvo->hotplugged = FALSE;
+
     nvFree(pParsedEdid);
 }
 
-
-/*!
- * Get the maximum allowed pixel clock for pDpyEvo.
- *
- * This depends on the following conditions:
- *
- * - The RM's returned value is sufficient for non-TMDS connectors
- * - For HDMI, the SOR capabilities exceed the RM's returned value to allow
- *   for HDMI 1.4 modes that exceed 165MHz on a single link, or
- *   for HDMI 2.1 modes if the source and sink is capable of FRL
- * - For DVI, the user is allowed to set an option to exceed the 165MHz
- *   per-TMDS limit if the SOR capabilities allow it
- * - Contrary to the above, passive DP->DVI and DP->HDMI dongles have their
- *   own limits
- */
-void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
-{
-    NvU32 ret;
-    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-    NvU32 displayOwner = pDispEvo->displayOwner;
-    NVEvoPassiveDpDongleType passiveDpDongleType;
-    NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS params = { 0 };
-    NvU32 passiveDpDongleMaxPclkKHz;
-
-    /* First, get the RM-reported value. */
-
-    params.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
-    params.subDeviceInstance = pDispEvo->displayOwner;
-
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         pDevEvo->displayCommonHandle,
-                         NV0073_CTRL_CMD_SPECIFIC_GET_PCLK_LIMIT,
-                         &params, sizeof(params));
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-                     "Failure reading maximum pixel clock value "
-                     "for display device %s.", pDpyEvo->name);
-        pDpyEvo->maxPixelClockKHz = 100000;
-        pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
-        return;
-    }
-
-    pDpyEvo->maxPixelClockKHz = params.orPclkLimit;
-    pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
-
-    /*
-     * The RM's returned max pclk value is sufficient for non-TMDS
-     * connectors
-     */
-    if (!IsConnectorTMDS(pConnectorEvo)) {
-        return;
-    }
-
-    /*
-     * The RM returns a 165MHz max pclk for single link TMDS and 330MHz
-     * max pclk for dual link TMDS.  We can exceed that in the
-     * following cases:
-     *
-     * - HDMI 1.4a 4Kx2K and 1080p60hz frame packed stereo modes
-     *   require a 297MHz single TMDS link pixel clock, and HDMI 2.0
-     *   allows an even higher pixel clock.
-     * - While the DVI spec mandates a limit of 165MHz per TMDS link,
-     *   since certain GPUs and certain displays support DVI
-     *   connections at higher pixel clocks, we allow users to
-     *   override this limit to allow validation of higher maximum
-     *   pixel clocks over DVI.
-     */
-    if (pDevEvo->gpus != NULL) {
-
-        NVEvoSorCaps *sorCaps = pDevEvo->gpus[displayOwner].capabilities.sor;
-        NvU32 orIndex = nvEvoConnectorGetPrimaryOr(pConnectorEvo);
-
-        if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
-                NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED)) {
-            /*
-             * With the SOR crossbar, pConnectorEvo->or.mask is unknown,
-             * and may change at modeset time.  Use the caps of SOR 0
-             * for validation.
-             */
-            orIndex = 0;
-        }
-
-        if (nvDpyIsHdmiEvo(pDpyEvo)) {
-            pDpyEvo->maxPixelClockKHz =
-                pDpyEvo->maxSingleLinkPixelClockKHz =
-                sorCaps[orIndex].maxTMDSClkKHz;
-
-            nvkms_memset(&pDpyEvo->hdmi.srcCaps, 0, sizeof(pDpyEvo->hdmi.srcCaps));
-            nvkms_memset(&pDpyEvo->hdmi.sinkCaps, 0, sizeof(pDpyEvo->hdmi.sinkCaps));
-
-            if (pDevEvo->hal->caps.supportsHDMIFRL) {
-                /*
-                 * This function is called multiple times for each pDpyEvo:
-                 * - Once when the dpy is created
-                 * - Once when the dpy is connected
-                 * - Once when the dpy is disconnected
-                 * In the first and third cases, we don't yet have an EDID so
-                 * we don't know if the sink supports HDMI FRL.  Assume it
-                 * doesn't, since if we try to set a mode anyway there won't be
-                 * a sink to do link training with.
-                 */
-                if (pDpyEvo->parsedEdid.valid &&
-                    pDpyEvo->parsedEdid.info.hdmiForumInfo.max_FRL_Rate) {
-                    /*
-                     * An SOR needs to be assigned temporarily to do FRL
-                     * training.
-                     * Since the only other SORs in use at the moment (if any)
-                     * are those driving heads, we don't need to exclude RM
-                     * from selecting any SOR, so an sorExcludeMask of 0 is
-                     * appropriate.
-                     */
-                    if (nvAssignSOREvo(pConnectorEvo, 0)) {
-                        if (nvHdmiFrlAssessLink(pDpyEvo)) {
-
-                            /*
-                             * Note that although we "assessed" the link above,
-                             * the maximum pixel clock set here doesn't take
-                             * that into account -- it's the maximum the GPU
-                             * hardware is capable of on the most capable link,
-                             * mostly for reporting purposes.
-                             *
-                             * The calculation for if a given mode can fit in
-                             * the assessed FRL configuration is complex and
-                             * depends on things like the amount of blanking,
-                             * rather than a simple pclk cutoff.  So, we query
-                             * the hdmi library when validating each individual
-                             * mode, when we know actual timings.
-                             */
-                            pDpyEvo->maxPixelClockKHz =
-                                /*
-                                 * This comes from the Windows display driver:
-                                 * (4 lanes * 12Gb per lane *
-                                 *  FRL encoding i.e 16/18) / 1K
-                                 */
-                                ((4 * 12 * 1000 * 1000 * 16) / 18);
-                        }
-                    }
-                }
-            }
-        } else {
-            /*
-             * Connector and SOR both must be capable to drive dual-TMDS
-             * resolutions.
-             */
-            NvBool bDualTMDS = sorCaps[orIndex].dualTMDS &&
-                               FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _LINK, _DUAL,
-                               pDpyEvo->pConnectorEvo->dfpInfo);
-
-            pDpyEvo->maxPixelClockKHz = (bDualTMDS ?
-                                         TMDS_DUAL_LINK_PCLK_MAX :
-                                         TMDS_SINGLE_LINK_PCLK_MAX);
-
-            pDpyEvo->maxSingleLinkPixelClockKHz = TMDS_SINGLE_LINK_PCLK_MAX;
-
-            if (pDpyEvo->allowDVISpecPClkOverride) {
-                pDpyEvo->maxPixelClockKHz = sorCaps[orIndex].maxTMDSClkKHz *
-                    (bDualTMDS ? 2 : 1);
-                pDpyEvo->maxSingleLinkPixelClockKHz =
-                    sorCaps[orIndex].maxTMDSClkKHz;
-            }
-        }
-    }
-
-    /*
-     * Passive DP->DVI and DP->HDMI dongles may have a limit more
-     * restrictive than the one described above.  Check whether one of
-     * these dongles is in use, and override the limit accordingly.
-     */
-    passiveDpDongleType = DpyGetPassiveDpDongleType(pDpyEvo,
-        &passiveDpDongleMaxPclkKHz);
-
-    if (passiveDpDongleType != NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
-        pDpyEvo->maxPixelClockKHz = NV_MIN(passiveDpDongleMaxPclkKHz,
-                                           pDpyEvo->maxPixelClockKHz);
-        pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
-    }
-}
-
-static void DpyGetDynamicDfpProperties(
-    NVDpyEvoPtr pDpyEvo,
-    const NvBool disableACPIBrightnessHotkeys)
-{
-    if (disableACPIBrightnessHotkeys) {
-        return;
-    }
-    if (!disableACPIBrightnessHotkeys) {
-        struct NvKmsGetDpyAttributeParams params;
-        nvkms_memset(&params, 0, sizeof(params));
-        params.request.attribute = NV_KMS_DPY_ATTRIBUTE_BACKLIGHT_BRIGHTNESS;
-
-        pDpyEvo->hasBacklightBrightness =
-            nvGetDpyAttributeEvo(pDpyEvo, &params);
-    }
-}
-/*
- * DpyGetDfpProperties() - get DFP properties: reduced blanking flags
- * and general DFP flags
- */
-
-static void DpyGetStaticDfpProperties(NVDpyEvoPtr pDpyEvo)
-{
-    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-
-    if (pConnectorEvo->legacyType != NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP) {
-        return;
-    }
-
-    if (nvDpyEvoIsDPMST(pDpyEvo)) {
-        // None of this stuff can be queried directly for dynamic DP MST
-        // displays.
-        // XXX DP MST: Should we fill in these fields somehow anyway?
-        return;
-    }
-
-    pDpyEvo->internal = FALSE;
-    pDpyEvo->hdmiCapable = FALSE;
-
-    if (pConnectorEvo->dfpInfo == 0x0) {
-        return;
-    }
-    /* Check if the connected DFP is HDMI capable */
-
-    if (FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _HDMI_CAPABLE, _TRUE,
-                     pConnectorEvo->dfpInfo)) {
-        pDpyEvo->hdmiCapable = TRUE;
-    }
-
-    pDpyEvo->internal = nvConnectorIsInternal(pDpyEvo->pConnectorEvo);
-}
-
-/*!
- * Return true if the connector is single or dual link TMDS (not CRT, not DP).
- */
-static NvBool IsConnectorTMDS(NVConnectorEvoPtr pConnectorEvo)
-{
-    NvU32 protocol = pConnectorEvo->or.protocol;
-    return ((pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) &&
-            ((protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A) ||
-             (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B) ||
-             (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS)));
-}
+typedef enum {
+    NV_EVO_PASSIVE_DP_DONGLE_UNUSED,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2DVI,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_1,
+    NV_EVO_PASSIVE_DP_DONGLE_DP2HDMI_TYPE_2,
+} NVEvoPassiveDpDongleType;
 
 /*!
  * Query RM for the passive Displayport dongle type; this can influence
@@ -877,6 +782,236 @@ DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
     return passiveDpDongleType;
 }
 
+/*!
+ * Get the maximum allowed pixel clock for pDpyEvo.
+ *
+ * This depends on the following conditions:
+ *
+ * - The RM's returned value is sufficient for non-TMDS connectors
+ * - For HDMI, the SOR capabilities exceed the RM's returned value to allow
+ *   for HDMI 1.4 modes that exceed 165MHz on a single link, or
+ *   for HDMI 2.1 modes if the source and sink is capable of FRL
+ * - For DVI, the user is allowed to set an option to exceed the 165MHz
+ *   per-TMDS limit if the SOR capabilities allow it
+ * - Contrary to the above, passive DP->DVI and DP->HDMI dongles have their
+ *   own limits
+ */
+void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
+{
+    NvU32 ret;
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+    NvU32 displayOwner = pDispEvo->displayOwner;
+    NVEvoPassiveDpDongleType passiveDpDongleType;
+    NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS params = { 0 };
+    NvU32 passiveDpDongleMaxPclkKHz;
+
+    /* First, get the RM-reported value. */
+
+    params.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    params.subDeviceInstance = pDispEvo->displayOwner;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SPECIFIC_GET_PCLK_LIMIT,
+                         &params, sizeof(params));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                     "Failure reading maximum pixel clock value "
+                     "for display device %s.", pDpyEvo->name);
+        pDpyEvo->maxPixelClockKHz = 100000;
+        pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
+        return;
+    }
+
+    pDpyEvo->maxPixelClockKHz = params.orPclkLimit;
+    pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
+
+    /*
+     * The RM's returned max pclk value is sufficient for non-TMDS
+     * connectors
+     */
+    if (!IsConnectorTMDS(pConnectorEvo)) {
+        return;
+    }
+
+    /*
+     * The RM returns a 165MHz max pclk for single link TMDS and 330MHz
+     * max pclk for dual link TMDS.  We can exceed that in the
+     * following cases:
+     *
+     * - HDMI 1.4a 4Kx2K and 1080p60hz frame packed stereo modes
+     *   require a 297MHz single TMDS link pixel clock, and HDMI 2.0
+     *   allows an even higher pixel clock.
+     * - While the DVI spec mandates a limit of 165MHz per TMDS link,
+     *   since certain GPUs and certain displays support DVI
+     *   connections at higher pixel clocks, we allow users to
+     *   override this limit to allow validation of higher maximum
+     *   pixel clocks over DVI.
+     */
+    if (pDevEvo->gpus != NULL) {
+
+        NVEvoSorCaps *sorCaps = pDevEvo->gpus[displayOwner].capabilities.sor;
+        NvU32 orIndex = pConnectorEvo->or.primary;
+
+        if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
+                NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED)) {
+            /*
+             * With the SOR crossbar, pConnectorEvo->or.mask is unknown,
+             * and may change at modeset time.  Use the caps of SOR 0
+             * for validation.
+             */
+            orIndex = 0;
+        }
+
+        if (nvDpyIsHdmiEvo(pDpyEvo)) {
+            pDpyEvo->maxPixelClockKHz =
+                pDpyEvo->maxSingleLinkPixelClockKHz =
+                sorCaps[orIndex].maxTMDSClkKHz;
+
+            nvkms_memset(&pDpyEvo->hdmi.srcCaps, 0, sizeof(pDpyEvo->hdmi.srcCaps));
+            nvkms_memset(&pDpyEvo->hdmi.sinkCaps, 0, sizeof(pDpyEvo->hdmi.sinkCaps));
+
+            if (nvHdmiDpySupportsFrl(pDpyEvo)) {
+                /*
+                 * An SOR needs to be assigned temporarily to do FRL training.
+                 *
+                 * Since the only other SORs in use at the moment (if any) are
+                 * those driving heads, we don't need to exclude RM from
+                 * selecting any SOR, so an sorExcludeMask of 0 is appropriate.
+                 */
+                if (nvAssignSOREvo(pConnectorEvo,
+                                   nvDpyIdToNvU32(pConnectorEvo->displayId),
+                                   FALSE /* b2Heads1Or */,
+                                   0 /* sorExcludeMask */) &&
+                    nvHdmiFrlAssessLink(pDpyEvo)) {
+                    /*
+                     * Note that although we "assessed" the link above, the
+                     * maximum pixel clock set here doesn't take that into
+                     * account -- it's the maximum the GPU hardware is capable
+                     * of on the most capable link, mostly for reporting
+                     * purposes.
+                     *
+                     * The calculation for if a given mode can fit in the
+                     * assessed FRL configuration is complex and depends on
+                     * things like the amount of blanking, rather than a simple
+                     * pclk cutoff.  So, we query the hdmi library when
+                     * validating each individual mode, when we know actual
+                     * timings.
+                     */
+
+                    /*
+                     * This comes from the Windows display driver: (4 lanes *
+                     * 12Gb per lane * FRL encoding i.e 16/18) / 1K
+                     */
+                    pDpyEvo->maxPixelClockKHz =
+                        ((4 * 12 * 1000 * 1000 * 16) / 18);
+                }
+            }
+        } else {
+            /*
+             * Connector and SOR both must be capable to drive dual-TMDS
+             * resolutions.
+             */
+            NvBool bDualTMDS = sorCaps[orIndex].dualTMDS &&
+                               FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _LINK, _DUAL,
+                               pDpyEvo->pConnectorEvo->dfpInfo);
+
+            pDpyEvo->maxPixelClockKHz = (bDualTMDS ?
+                                         TMDS_DUAL_LINK_PCLK_MAX :
+                                         TMDS_SINGLE_LINK_PCLK_MAX);
+
+            pDpyEvo->maxSingleLinkPixelClockKHz = TMDS_SINGLE_LINK_PCLK_MAX;
+
+            if (pDpyEvo->allowDVISpecPClkOverride) {
+                pDpyEvo->maxPixelClockKHz = sorCaps[orIndex].maxTMDSClkKHz *
+                    (bDualTMDS ? 2 : 1);
+                pDpyEvo->maxSingleLinkPixelClockKHz =
+                    sorCaps[orIndex].maxTMDSClkKHz;
+            }
+        }
+    }
+
+    /*
+     * Passive DP->DVI and DP->HDMI dongles may have a limit more
+     * restrictive than the one described above.  Check whether one of
+     * these dongles is in use, and override the limit accordingly.
+     */
+    passiveDpDongleType =
+        DpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz);
+
+    if (passiveDpDongleType != NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
+        pDpyEvo->maxPixelClockKHz = NV_MIN(passiveDpDongleMaxPclkKHz,
+                                           pDpyEvo->maxPixelClockKHz);
+        pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
+    }
+}
+
+static void DpyGetDynamicDfpProperties(
+    NVDpyEvoPtr pDpyEvo,
+    const NvBool disableACPIBrightnessHotkeys)
+{
+    if (disableACPIBrightnessHotkeys) {
+        return;
+    }
+    if (!disableACPIBrightnessHotkeys) {
+        struct NvKmsGetDpyAttributeParams params;
+        nvkms_memset(&params, 0, sizeof(params));
+        params.request.attribute = NV_KMS_DPY_ATTRIBUTE_BACKLIGHT_BRIGHTNESS;
+
+        pDpyEvo->hasBacklightBrightness =
+            nvGetDpyAttributeEvo(pDpyEvo, &params);
+    }
+}
+/*
+ * DpyGetDfpProperties() - get DFP properties: reduced blanking flags
+ * and general DFP flags
+ */
+
+static void DpyGetStaticDfpProperties(NVDpyEvoPtr pDpyEvo)
+{
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+
+    if (pConnectorEvo->legacyType != NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP) {
+        return;
+    }
+
+    if (nvDpyEvoIsDPMST(pDpyEvo)) {
+        // None of this stuff can be queried directly for dynamic DP MST
+        // displays.
+        // XXX DP MST: Should we fill in these fields somehow anyway?
+        return;
+    }
+
+    pDpyEvo->internal = FALSE;
+    pDpyEvo->hdmiCapable = FALSE;
+
+    if (pConnectorEvo->dfpInfo == 0x0) {
+        return;
+    }
+    /* Check if the connected DFP is HDMI capable */
+
+    if (FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _HDMI_CAPABLE, _TRUE,
+                     pConnectorEvo->dfpInfo)) {
+        pDpyEvo->hdmiCapable = TRUE;
+    }
+
+    pDpyEvo->internal = nvConnectorIsInternal(pDpyEvo->pConnectorEvo);
+}
+
+/*!
+ * Return true if the connector is single or dual link TMDS (not CRT, not DP).
+ */
+static NvBool IsConnectorTMDS(NVConnectorEvoPtr pConnectorEvo)
+{
+    NvU32 protocol = pConnectorEvo->or.protocol;
+    return ((pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) &&
+            ((protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A) ||
+             (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B) ||
+             (protocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS)));
+}
 
 /*!
  * Validate an NVKMS client-specified NvKmsModeValidationFrequencyRanges.
@@ -1166,7 +1301,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                            const NvBool ignoreEdidChecksum)
 {
     NvU32 status, tmpStatus;
-    int errorCount = 0;
 
     status = NvTiming_EDIDValidationMask(pEdid->buffer, pEdid->length, TRUE);
     tmpStatus = status;
@@ -1189,7 +1323,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has an unrecognized version.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
-        errorCount++;
     }
 
     if (status &
@@ -1197,7 +1330,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID is too short.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_SIZE);
-        errorCount++;
     }
 
     if (status &
@@ -1219,7 +1351,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                      "timings beyond the capabilities of your display, and "
                      "could damage your hardware. Please use with care.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_CHECKSUM);
-        errorCount++;
     }
 
     if (status &
@@ -1227,7 +1358,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has a bad range limit.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_RANGE_LIMIT);
-        errorCount++;
     }
 
     if (status &
@@ -1235,7 +1365,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has a bad detailed timing descriptor.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_DTD);
-        errorCount++;
     }
 
     if (status &
@@ -1244,7 +1373,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                      "- The EDID has an extension block with a bad detailed "
                      "timing descriptor.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DTD);
-        errorCount++;
     }
 
     if (status &
@@ -1252,13 +1380,11 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID extension block is invalid.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT);
-        errorCount++;
     }
 
     if (tmpStatus) {
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has an unrecognized error.");
-        errorCount++;
     }
 
     /*
@@ -1365,6 +1491,12 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
         { NVT_TYPE_CUST_AUTO,        "Customized Auto Timings" },
         { NVT_TYPE_CUST_MANUAL,      "Customized Manual Timings" },
         { NVT_TYPE_CVT_RB_2,"Reduced Blanking Coordinated Video Timings, v2" },
+        { NVT_TYPE_DMT_RB_2,         "Display Monitor Timings, V2" },
+        { NVT_TYPE_DISPLAYID_7,      "DisplayID Type 7 Timings" },
+        { NVT_TYPE_DISPLAYID_8,      "DisplayID Type 8 Timings" },
+        { NVT_TYPE_DISPLAYID_9,      "DisplayID Type 9 Timings" },
+        { NVT_TYPE_DISPLAYID_10,     "DisplayID Type 10 Timings" },
+        { NVT_TYPE_CVT_RB_3,         "Reduced Blanking Coordinated Video Timings, v3" },
     };
 
     /*
@@ -1411,6 +1543,16 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
                 case NVT_TYPE_CUST_AUTO:
                 case NVT_TYPE_CUST_MANUAL:
                 case NVT_TYPE_CVT_RB_2:
+                case NVT_TYPE_DMT_RB_2:
+                case NVT_TYPE_DISPLAYID_7:
+                case NVT_TYPE_DISPLAYID_8:
+                case NVT_TYPE_DISPLAYID_9:
+                case NVT_TYPE_DISPLAYID_10:
+                case NVT_TYPE_CVT_RB_3:
+                    /*
+                     * XXX temporarily disable the warning so that additional
+                     * NVT_TYPEs_ can be added to nvtiming.h.  Bug 3849339.
+                     */
                 default:
                     break;
             }
@@ -1548,6 +1690,46 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
         nvEvoLogInfoString(pInfoString,
                            "G-Sync minimum refresh rate  : %d Hz",
                            pParsedEdid->info.nvdaVsdbInfo.vrrData.v1.minRefreshRate);
+    }
+
+    if (pParsedEdid->info.ext_displayid.version) {
+        nvEvoLogInfoString(pInfoString,
+                           "DisplayID vfreq_min          : %d Hz",
+                           pParsedEdid->info.ext_displayid.range_limits[0].vfreq_min);
+    }
+
+    if (pParsedEdid->info.ext_displayid20.version &&
+        pParsedEdid->info.ext_displayid20.range_limits.seamless_dynamic_video_timing_change) {
+        nvEvoLogInfoString(pInfoString,
+                           "DisplayID 2.0 vfreq_min      : %d Hz",
+                           pParsedEdid->info.ext_displayid20.range_limits.vfreq_min);
+    }
+
+    if (pParsedEdid->info.ext_displayid20.version &&
+        pParsedEdid->info.ext_displayid20.total_adaptive_sync_descriptor != 0) {
+        for (k = 0;
+             k < pParsedEdid->info.ext_displayid20.total_adaptive_sync_descriptor &&
+             k < ARRAY_LEN(pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor);
+             k++) {
+            nvEvoLogInfoString(pInfoString,
+                               "DisplayID 2.0 adaptive sync  : %d Hz (max), %d Hz (min)",
+                               pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor[k].max_rr,
+                               pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor[k].min_rr);
+        }
+    }
+
+    for (k = 0; k < ARRAY_LEN(pParsedEdid->info.ldd); k++) {
+        if (pParsedEdid->info.ldd[k].tag == NVT_EDID_DISPLAY_DESCRIPTOR_DRL) {
+            nvEvoLogInfoString(pInfoString,
+                               "min_v_rate                   : %d Hz",
+                               pParsedEdid->info.ldd[k].u.range_limit.min_v_rate);
+        }
+    }
+
+    if (pParsedEdid->info.hdmiForumInfo.vrr_min != 0) {
+        nvEvoLogInfoString(pInfoString,
+                           "HDMI Forum vrr_min           : %d Hz",
+                           pParsedEdid->info.hdmiForumInfo.vrr_min);
     }
 
     nvLogEdidCea861InfoEvo(pDpyEvo, pInfoString);
@@ -1810,14 +1992,15 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
  * structure.
  */
 
-static void ClearEdid(NVDpyEvoPtr pDpyEvo)
+static void ClearEdid(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
     NVEdidRec edid = { };
     NVEvoInfoStringRec infoString;
     nvInitInfoString(&infoString, NULL, 0);
 
     if (EdidHasChanged(pDpyEvo, &edid, NULL)) {
-        ApplyNewEdid(pDpyEvo, &edid, NULL, &infoString);
+        ApplyNewEdid(pDpyEvo, &edid, NULL,
+                     bSendHdmiCapsToRm, &infoString);
     }
 }
 
@@ -1982,6 +2165,7 @@ static void PrePatchEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
  */
 static void CreateParsedEdidFromNVT_TIMING(
     NVT_TIMING *pTimings,
+    NvU8 bpc,
     NVParsedEdidEvoPtr pParsedEdid)
 {
     nvkms_memset(pParsedEdid, 0, sizeof(*pParsedEdid));
@@ -1991,6 +2175,7 @@ static void CreateParsedEdidFromNVT_TIMING(
     pParsedEdid->info.u.feature_ver_1_4_digital.continuous_frequency = FALSE;
     pParsedEdid->info.version = NVT_EDID_VER_1_4;
     pParsedEdid->info.input.isDigital = TRUE;
+    pParsedEdid->info.input.u.digital.bpc = bpc;
     pParsedEdid->limits.min_h_rate_hz = 1;
     pParsedEdid->limits.min_v_rate_hzx1k = 1;
     pParsedEdid->limits.max_h_rate_hz = NV_U32_MAX;
@@ -2192,7 +2377,7 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 
     pDpyEvo->pDispEvo = pDispEvo;
     pDpyEvo->pConnectorEvo = pConnectorEvo;
-    pDpyEvo->head = NV_INVALID_HEAD;
+    pDpyEvo->apiHead = NV_INVALID_HEAD;
     pDpyEvo->id = dpyId;
 
     nvListAdd(&pDpyEvo->dpyListEntry, &pDispEvo->dpyList);
@@ -2247,7 +2432,9 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 
 void nvFreeDpyEvo(NVDispEvoPtr pDispEvo, NVDpyEvoPtr pDpyEvo)
 {
-    DpyDisconnectEvo(pDpyEvo);
+    nvCancelSDRTransitionTimer(pDpyEvo);
+
+    DpyDisconnectEvo(pDpyEvo, FALSE /* bSendHdmiCapsToRm */);
 
     // Let the DP library host implementation handle deleting a pDpy as if the
     // library had notified it of a lost device.
@@ -2297,82 +2484,244 @@ NVConnectorEvoPtr nvGetConnectorFromDisp(NVDispEvoPtr pDispEvo, NVDpyId dpyId)
     return NULL;
 }
 
-/*
- * Construct the DP 1.3 YUV420 infoframe, and toggle it on or off based on
- * whether or not YUV420 mode is in use.
- */
-static void UpdateDpInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head)
+void nvDpyAssignSDRInfoFramePayload(NVT_HDR_INFOFRAME_PAYLOAD *pPayload)
+{
+    nvkms_memset(pPayload, 0, sizeof(*pPayload));
+    pPayload->eotf = NVT_CEA861_HDR_INFOFRAME_EOTF_SDR_GAMMA;
+    pPayload->static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0;
+}
+
+static void ConstructHdrInfoFrameSdp(const NVDispEvoRec *pDispEvo,
+                                     const NvU32 head,
+                                     DPSDP_DESCRIPTOR *sdp)
 {
     const NVDispHeadStateEvoRec *pHeadState =
                                 &pDispEvo->headState[head];
-    const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
+
+    sdp->hb.hb0 = 0;
+    sdp->hb.hb1 = dp_pktType_DynamicRangeMasteringInfoFrame;
+    sdp->hb.hb2 = DP_INFOFRAME_SDP_V1_3_NON_AUDIO_SIZE - 1;
+    sdp->hb.hb3 = DP_INFOFRAME_SDP_V1_3_VERSION <<
+                      DP_INFOFRAME_SDP_V1_3_HB3_VERSION_SHIFT;
+
+    sdp->db.db0 = NVT_VIDEO_INFOFRAME_VERSION_1;
+    sdp->db.db1 = sizeof(NVT_HDR_INFOFRAME_PAYLOAD);
+
+    nvAssert(sizeof(NVT_HDR_INFOFRAME_PAYLOAD) <= (sizeof(sdp->db) - 2));
+
+    if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
+        NVT_HDR_INFOFRAME_PAYLOAD *payload =
+            (NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2;
+
+        payload->eotf = pHeadState->hdrInfoFrame.eotf;
+
+        payload->static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0;
+
+        // payload->type1 = static metadata
+        nvAssert(sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA) ==
+                 (sizeof(struct NvKmsHDRStaticMetadata)));
+        nvkms_memcpy(&payload->type1,
+                     &pHeadState->hdrInfoFrame.staticMetadata,
+                     sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA));
+    } else if (pHeadState->hdrInfoFrame.state ==
+               NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
+        nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
+    } else {
+        nvAssert(pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_DISABLED);
+
+        nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
+    }
+
+    sdp->dataSize = sizeof(NVT_HDR_INFOFRAME_PAYLOAD) + 2;
+}
+
+static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NVDispHeadStateEvoRec *pHeadState =
+                                &pDispEvo->headState[head];
+    DPSDP_DESCRIPTOR sdp = { };
+    NvEvoInfoFrameTransmitControl transmitCtrl =
+        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_INIT;
+
+    ConstructHdrInfoFrameSdp(pDispEvo, head, &sdp);
+
+    switch (pHeadState->hdrInfoFrame.state) {
+        case NVKMS_HDR_INFOFRAME_STATE_DISABLED:
+            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
+            break;
+        case NVKMS_HDR_INFOFRAME_STATE_ENABLED:
+        case NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING:
+            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
+            break;
+    }
+
+    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, transmitCtrl, &sdp);
+}
+
+void nvConstructDpVscSdp(const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
+                         const NVDpyAttributeColor *pDpyColor,
+                         DPSDP_DP_VSC_SDP_DESCRIPTOR *sdp)
+{
+    nvkms_memset(sdp, 0, sizeof(*sdp));
+
+    // Header
+    // Per DP1.3 spec
+    sdp->hb.hb0 = 0;
+    sdp->hb.hb1 = SDP_PACKET_TYPE_VSC;
+    sdp->hb.revisionNumber = SDP_VSC_REVNUM_STEREO_PSR2_COLOR;
+    sdp->hb.numValidDataBytes = SDP_VSC_VALID_DATA_BYTES_PSR2_COLOR;
+
+    sdp->db.stereoInterface = 0;
+    sdp->db.psrState = 0;
+    sdp->db.contentType = SDP_VSC_CONTENT_TYPE_GRAPHICS;
+    switch (pDpyColor->format) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_RGB;
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
+            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR444;
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
+            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR422;
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
+            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR420;
+            break;
+        default:
+            nvAssert(!"unrecognized color format");
+            break;
+    }
+
+    switch (pDpyColor->format) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+            switch (pDpyColor->colorimetry) {
+                case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+                    sdp->db.colorimetryFormat =
+                        SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_ITU_R_BT2020_RGB;
+                    break;
+                case NVKMS_OUTPUT_COLORIMETRY_BT601:
+                case NVKMS_OUTPUT_COLORIMETRY_BT709:
+                case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+                    sdp->db.colorimetryFormat =
+                        SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_SRGB;
+                    break;
+            }
+
+            switch (pDpyColor->bpc) {
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_10BPC;
+                    break;
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
+                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_8BPC;
+                    break;
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6:
+                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_6BPC;
+                    break;
+                default:
+                    nvAssert(!"Invalid bpc value for RBG format");
+                    break;
+            }
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
+            switch (pDpyColor->colorimetry) {
+                case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+                    sdp->db.colorimetryFormat =
+                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT2020_YCBCR;
+                    break;
+                case NVKMS_OUTPUT_COLORIMETRY_BT601:
+                    sdp->db.colorimetryFormat =
+                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601;
+                    break;
+                case NVKMS_OUTPUT_COLORIMETRY_BT709:
+                    sdp->db.colorimetryFormat =
+                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709;
+                    break;
+                case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+                    sdp->db.colorimetryFormat =
+                        (pInfoFrame->hdTimings ?
+                            SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709 :
+                            SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601);
+                    break;
+            }
+
+            switch (pDpyColor->bpc) {
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_10BPC;
+                    break;
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
+                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_8BPC;
+                    break;
+                default:
+                    nvAssert(!"Invalid bpc value for YUV color format");
+                    break;
+            }
+            break;
+        default:
+            nvAssert(!"unrecognized color format");
+            break;
+    }
+
+    switch (pDpyColor->range) {
+        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL:
+            sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_VESA;
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED:
+            sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_CEA;
+            break;
+        default:
+            nvAssert(!"Invalid colorRange value");
+            break;
+    }
+}
+
+/*
+ * Construct the DP 1.3 VSC SDP infoframe, and toggle it on or off based on
+ * whether or not YUV420 mode or BT2100 colorimetry is in use.
+ */
+static void UpdateDpVscSdpInfoFrame(
+    const NVDispEvoRec *pDispEvo,
+    const NvU32 head,
+    const NVDpyAttributeColor *pDpyColor,
+    const NVDispHeadInfoFrameStateEvoRec *pInfoFrame)
+{
+    const NVDispHeadStateEvoRec *pHeadState =
+                                &pDispEvo->headState[head];
     NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS params = { 0 };
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    DPSDP_DP_VSC_SDP_DESCRIPTOR *sdp;
     NvU32 ret;
+
+    /*
+     * If the hardware supports the VSC SDP programming using the core
+     * channel, the VSC SDP is already programmed during modeset.
+     */
+    if (pDevEvo->hal->SetDpVscSdp != NULL) {
+        return;
+    }
 
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId = pHeadState->activeRmId;
 
-    if (pHeadState->attributes.colorSpace ==
-        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) {
+    // DPSDP_DP_VSC_SDP_DESCRIPTOR has a (dataSize, hb, db) layout, while
+    // NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS.aPacket needs to contain
+    // (hb, db) without dataSize, so this makes sdp->hb align with aPacket.
+    sdp = (DPSDP_DP_VSC_SDP_DESCRIPTOR *)(params.aPacket -
+        offsetof(DPSDP_DP_VSC_SDP_DESCRIPTOR, hb));
 
-        // DPSDP_DP_VSC_SDP_DESCRIPTOR has a (dataSize, hb, db) layout, while
-        // NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS.aPacket needs to contain
-        // (hb, db) without dataSize, so this makes sdp->hb align with aPacket.
-        DPSDP_DP_VSC_SDP_DESCRIPTOR *sdp =
-            (DPSDP_DP_VSC_SDP_DESCRIPTOR *)(params.aPacket -
-            offsetof(DPSDP_DP_VSC_SDP_DESCRIPTOR, hb));
+    nvAssert((void *)&sdp->hb == (void *)params.aPacket);
 
-        nvAssert((void *)&sdp->hb == (void *)params.aPacket);
+    nvConstructDpVscSdp(pInfoFrame, pDpyColor, sdp);
 
-        // Header
-        // Per DP1.3 spec
-        sdp->hb.hb0 = 0;
-        sdp->hb.hb1 = SDP_PACKET_TYPE_VSC;
-        sdp->hb.revisionNumber = SDP_VSC_REVNUM_STEREO_PSR2_COLOR;
-        sdp->hb.numValidDataBytes = SDP_VSC_VALID_DATA_BYTES_PSR2_COLOR;
+    params.packetSize = sizeof(sdp->hb) + sdp->hb.numValidDataBytes;
 
-        sdp->db.stereoInterface = 0;
-        sdp->db.psrState = 0;
-        sdp->db.contentType = SDP_VSC_CONTENT_TYPE_GRAPHICS;
-        sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR420;
-        sdp->db.colorimetryFormat = SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709;
-
-        switch (pTimings->pixelDepth) {
-            case NVKMS_PIXEL_DEPTH_30_444:
-                sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_10BPC;
-                break;
-            case NVKMS_PIXEL_DEPTH_24_444:
-                sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_8BPC;
-                break;
-            default:
-                nvAssert(!"Invalid pixelDepth value");
-                break;
-        }
-
-        switch (pHeadState->attributes.colorRange) {
-            case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL:
-                sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_VESA;
-                break;
-            case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED:
-                sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_CEA;
-                break;
-            default:
-                nvAssert(!"Invalid colorRange value");
-                break;
-        }
-
-        params.packetSize = sizeof(sdp->hb) + sdp->hb.numValidDataBytes;
-
-        params.transmitControl =
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ENABLE, _YES) |
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _OTHER_FRAME, _DISABLE) |
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE) |
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ON_HBLANK, _DISABLE);
-    } else {
-        params.transmitControl =
-            DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ENABLE, _NO);
-    }
+    params.transmitControl =
+        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ENABLE, _YES) |
+        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _OTHER_FRAME, _DISABLE) |
+        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE) |
+        DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _ON_HBLANK, _DISABLE);
 
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pDevEvo->displayCommonHandle,
@@ -2385,26 +2734,98 @@ static void UpdateDpInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head)
     }
 }
 
-void nvUpdateInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head)
+static void UpdateDpInfoFrames(const NVDispEvoRec *pDispEvo,
+                               const NvU32 head,
+                               const NVDpyAttributeColor *pDpyColor,
+                               const NVDispHeadInfoFrameStateEvoRec *pInfoFrame)
 {
-    const NVDispHeadStateEvoRec *pHeadState =
-                                 &pDispEvo->headState[head];
-    NVDpyEvoRec *pDpyEvo =
-        nvGetOneArbitraryDpyEvo(pHeadState->activeDpys, pDispEvo);
+    UpdateDpHDRInfoFrame(pDispEvo, head);
 
-    if (pDpyEvo == NULL) {
+    UpdateDpVscSdpInfoFrame(pDispEvo, head, pDpyColor, pInfoFrame);
+}
+
+void nvCancelSDRTransitionTimer(NVDpyEvoRec *pDpyEvo)
+{
+    nvkms_free_timer(pDpyEvo->hdrToSdrTransitionTimer);
+    pDpyEvo->hdrToSdrTransitionTimer = NULL;
+}
+
+static void SDRTransition(void *dataPtr, NvU32 dataU32)
+{
+    NvU32 head;
+    NVDpyEvoRec *pDpyEvo = dataPtr;
+    NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[pDpyEvo->apiHead];
+
+    nvCancelSDRTransitionTimer(pDpyEvo);
+
+    nvAssert(pApiHeadState->hwHeadsMask != 0);
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        NVDispHeadStateEvoRec *pHeadState =
+            &pDispEvo->headState[head];
+        nvAssert(pHeadState->hdrInfoFrame.state ==
+                 NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING);
+        pHeadState->hdrInfoFrame.state = NVKMS_HDR_INFOFRAME_STATE_DISABLED;
+    }
+
+    nvUpdateInfoFrames(pDpyEvo);
+}
+
+static
+void ScheduleSDRTransitionTimer(NVDpyEvoRec *pDpyEvo)
+{
+    if (pDpyEvo->hdrToSdrTransitionTimer) {
         return;
     }
 
+    pDpyEvo->hdrToSdrTransitionTimer =
+        nvkms_alloc_timer(SDRTransition,
+                          pDpyEvo,
+                          0,
+                          2000000 /* 2 seconds */);
+}
+
+void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
+{
+    NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NVDispApiHeadStateEvoRec *pApiHeadState;
+    const NVDispHeadStateEvoRec *pHeadState;
+    NvU32 head;
+
+    if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
+        return;
+    }
+    pApiHeadState = &pDispEvo->apiHeadState[pDpyEvo->apiHead];
+
+    nvAssert((pApiHeadState->hwHeadsMask) != 0x0 &&
+             (nvDpyIdIsInDpyIdList(pDpyEvo->id, pApiHeadState->activeDpys)));
+
+    head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
+
+    nvAssert(head != NV_INVALID_HEAD);
+
+    pHeadState = &pDispEvo->headState[head];
+
     if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
-        UpdateDpInfoFrames(pDispEvo, head);
+        UpdateDpInfoFrames(pDispEvo,
+                           head,
+                           &pApiHeadState->attributes.color,
+                           &pApiHeadState->infoFrame);
     } else {
         nvUpdateHdmiInfoFrames(pDispEvo,
                                head,
-                               &pHeadState->attributes,
-                               nvEvoIsHDQualityVideoTimings(&pHeadState->timings),
-                               &pHeadState->timings.infoFrameCtrl,
+                               &pApiHeadState->attributes.color,
+                               &pApiHeadState->infoFrame,
                                pDpyEvo);
+    }
+
+    if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
+        nvCancelSDRTransitionTimer(pDpyEvo);
+    } else if (pHeadState->hdrInfoFrame.state ==
+               NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
+        ScheduleSDRTransitionTimer(pDpyEvo);
     }
 }
 
@@ -2422,39 +2843,14 @@ void nvUpdateInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head)
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                                 const NVHwModeTimingsEvo *pTimings)
 {
+    const NvU32 pixelClock = (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
+        (pTimings->pixelClock / 2) : pTimings->pixelClock;
+
     // Dual link HDMI is not possible.
     nvAssert(!(nvDpyIsHdmiEvo(pDpyEvo) &&
-               (pTimings->pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz)));
-    return (pTimings->pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz);
+               (pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz)));
+    return (pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz);
 }
-
-
-/*!
- * Return EVO mode timings currently used with the given pDpyEvo.
- *
- * \param[in] pDpyEvo  dpy whose mode timings should be returned.
- *
- * \return NULL if pDpyEvo is not active.  Otherwise, return the mode
- * timings programmed in the head that is driving the dpy.
- */
-NVHwModeTimingsEvoPtr
-nvGetCurrentModeTimingsForDpyEvo(const NVDpyEvoRec *pDpyEvo)
-{
-    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    NVDispHeadStateEvoPtr pHeadState = NULL;
-    const NvU32 head = pDpyEvo->head;
-
-    if (head == NV_INVALID_HEAD) {
-        return NULL;
-    }
-
-    pHeadState = &pDispEvo->headState[head];
-
-    nvAssert(nvDpyIdIsInDpyIdList(pDpyEvo->id, pHeadState->activeDpys));
-
-    return &pHeadState->timings;
-}
-
 
 /*!
  * Return the NVDpyEvoPtr that corresponds to the given dpyId, on the
@@ -2605,13 +3001,48 @@ NvBool nvDpyGetDynamicData(
     struct NvKmsQueryDpyDynamicDataParams *pParams)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    const struct NvKmsQueryDpyDynamicDataRequest *pRequest = &pParams->request;
+    struct NvKmsQueryDpyDynamicDataRequest *pRequest = &pParams->request;
     struct NvKmsQueryDpyDynamicDataReply *pReply = &pParams->reply;
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
     NVDpyIdList connectedList;
     NVDpyIdList oneDpyIdList = nvAddDpyIdToEmptyDpyIdList(pDpyEvo->id);
+    NVDpyOverridePtr pDpyOverride = nvDpyEvoGetOverride(pDpyEvo);
 
     nvkms_memset(pReply, 0, sizeof(*pReply));
+
+    if (pDpyOverride != NULL) {
+        if (pDpyOverride->connected && !pRequest->forceDisconnected) {
+            /*
+             * If display is overridden as connected, treat the request as if it
+             * had both forceConnected and overrideEdid set, unless the request
+             * had forceDisconnected set.
+             *
+             * If the request already had an EDID override, honor that EDID instead
+             * of the display override EDID.
+             */
+            NvBool old = pRequest->forceConnected;
+            pRequest->forceConnected = TRUE;
+
+            if (!pRequest->overrideEdid) {
+                size_t len = nvReadDpyOverrideEdid(pDpyOverride,
+                                                   pRequest->edid.buffer,
+                                                   ARRAY_LEN(pRequest->edid.buffer));
+
+                if (len != 0) {
+                    pRequest->overrideEdid = TRUE;
+                    pRequest->edid.bufferSize = len;
+                } else {
+                    pRequest->forceConnected = old;
+                }
+            }
+        } else if (!pDpyOverride->connected && !pRequest->forceConnected) {
+            /*
+             * If display is overriden as disconnected, treat the request as if it
+             * had forceDisconnected set, unless the request had forceConnected set.
+             */
+            pRequest->forceDisconnected = TRUE;
+        }
+    }
 
     /*
      * Check for the connection state of the dpy.
@@ -2672,7 +3103,7 @@ NvBool nvDpyGetDynamicData(
             return FALSE;
         }
     } else {
-        DpyDisconnectEvo(pDpyEvo);
+        DpyDisconnectEvo(pDpyEvo, TRUE /* bSendHdmiCapsToRm */);
     }
 
     if (nvConnectorUsesDPLib(pConnectorEvo)) {
@@ -2704,6 +3135,7 @@ NvBool nvDpyGetDynamicData(
     pReply->isVirtualRealityHeadMountedDisplay = pDpyEvo->isVrHmd;
 
     pReply->vrrType = pDpyEvo->vrr.type;
+    pReply->supportsHDR = nvDpyIsHDRCapable(pDpyEvo);
 
     pReply->stereo3DVision.supported = pDpyEvo->stereo3DVision.supported;
     pReply->stereo3DVision.isDLP = pDpyEvo->stereo3DVision.isDLP;
@@ -2731,6 +3163,9 @@ NvBool nvDpyGetDynamicData(
         nvkms_memcpy(pReply->edid.buffer, pDpyEvo->edid.buffer, pDpyEvo->edid.length);
     }
 
+    pReply->supportedOutputColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
+
     return TRUE;
 }
 
@@ -2738,31 +3173,32 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
 {
     NVAttributesSetEvoRec newAttributes = pDpyEvo->currentAttributes;
 
-    if (pDpyEvo->head != NV_INVALID_HEAD) {
+    if (pDpyEvo->apiHead != NV_INVALID_HEAD) {
         newAttributes =
-            pDpyEvo->pDispEvo->headState[pDpyEvo->head].attributes;
+            pDpyEvo->pDispEvo->apiHeadState[pDpyEvo->apiHead].attributes;
     } else {
         newAttributes.dithering.enabled = FALSE;
         newAttributes.dithering.depth   = NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_NONE;
         newAttributes.dithering.mode    = NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_MODE_NONE;
         newAttributes.digitalSignal =
             nvGetDefaultDpyAttributeDigitalSignalValue(pDpyEvo->pConnectorEvo);
+        newAttributes.numberOfHardwareHeadsUsed = 0;
     }
 
-    if (newAttributes.colorSpace !=
-        pDpyEvo->currentAttributes.colorSpace) {
+    if (newAttributes.color.format !=
+        pDpyEvo->currentAttributes.color.format) {
         nvSendDpyAttributeChangedEventEvo(
             pDpyEvo,
             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE,
-            newAttributes.colorSpace);
+            newAttributes.color.format);
     }
 
-    if (newAttributes.colorRange !=
-        pDpyEvo->currentAttributes.colorRange) {
+    if (newAttributes.color.range !=
+        pDpyEvo->currentAttributes.color.range) {
         nvSendDpyAttributeChangedEventEvo(
             pDpyEvo,
             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_RANGE,
-            newAttributes.colorRange);
+            newAttributes.color.range);
     }
 
     if (newAttributes.dithering.enabled !=
@@ -2789,14 +3225,6 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
             newAttributes.dithering.mode);
     }
 
-    if (newAttributes.imageSharpening.available !=
-        pDpyEvo->currentAttributes.imageSharpening.available) {
-        nvSendDpyAttributeChangedEventEvo(
-            pDpyEvo,
-            NV_KMS_DPY_ATTRIBUTE_IMAGE_SHARPENING_AVAILABLE,
-            newAttributes.imageSharpening.available);
-    }
-
     if (newAttributes.digitalSignal !=
             pDpyEvo->currentAttributes.digitalSignal) {
         nvSendDpyAttributeChangedEventEvo(
@@ -2805,18 +3233,354 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
             newAttributes.digitalSignal);
     }
 
+    if (newAttributes.numberOfHardwareHeadsUsed !=
+        pDpyEvo->currentAttributes.numberOfHardwareHeadsUsed) {
+        nvSendDpyAttributeChangedEventEvo(
+            pDpyEvo,
+            NV_KMS_DPY_ATTRIBUTE_NUMBER_OF_HARDWARE_HEADS_USED,
+            newAttributes.numberOfHardwareHeadsUsed);
+    }
+
     pDpyEvo->currentAttributes = newAttributes;
 }
 
 // Returns TRUE if this display is capable of Adaptive-Sync
 NvBool nvDpyIsAdaptiveSync(const NVDpyEvoRec *pDpyEvo)
 {
-    return FALSE;
+    return nvIsAdaptiveSyncDpyVrrType(pDpyEvo->vrr.type);
 }
 
 // Returns TRUE if this display is in the Adaptive-Sync defaultlist
-NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVParsedEdidEvoRec *pParsedEdid)
+NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVDpyEvoRec *pDpyEvo)
 {
-    return FALSE;
+    NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS params = { };
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 ret;
+
+    if (!pDpyEvo->parsedEdid.valid) {
+        return FALSE;
+    }
+
+    params.manufacturerID = pDpyEvo->parsedEdid.info.manuf_id;
+    params.productID = pDpyEvo->parsedEdid.info.product_id;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY,
+                         &params, sizeof(params));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                     "Failed to query default adaptivesync listing for %s", pDpyEvo->name);
+        return FALSE;
+    }
+
+    return params.bDefaultAdaptivesync;
 }
 
+static enum NvKmsDpyAttributeColorBpcValue GetYuv422MaxBpc(
+    const NVDpyEvoRec *pDpyEvo)
+{
+    const NVT_EDID_CEA861_INFO *p861Info =
+        &pDpyEvo->parsedEdid.info.ext861;
+
+    nvAssert(nvDpyIsHdmiEvo(pDpyEvo) ||
+             nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo));
+
+    if (!pDpyEvo->parsedEdid.valid ||
+        !pDpyEvo->parsedEdid.info.input.isDigital) {
+        return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+    }
+
+    if (pDpyEvo->parsedEdid.info.version >= NVT_EDID_VER_1_4) {
+        if (pDpyEvo->parsedEdid.info.u.feature_ver_1_4_digital.support_ycrcb_422) {
+            if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 10) {
+                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+            } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 8) {
+                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            }
+        }
+    } else {
+        nvAssert(!nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo));
+
+        if (p861Info->revision >= NVT_CEA861_REV_A &&
+                !!(p861Info->basic_caps & NVT_CEA861_CAP_YCbCr_422)) {
+            return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+        }
+    }
+
+    return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+}
+
+NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
+    const NVDpyEvoRec *pDpyEvo)
+{
+    const NVConnectorEvoRec *pConnectorEvo =
+            pDpyEvo->pConnectorEvo;
+    NvKmsDpyOutputColorFormatInfo colorFormatsInfo = { };
+
+    if (pConnectorEvo->legacyType ==
+            NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_CRT) {
+
+        colorFormatsInfo.rgb444.maxBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+        colorFormatsInfo.rgb444.minBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+
+    } else if (pConnectorEvo->legacyType ==
+                   NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP) {
+
+        if (pConnectorEvo->signalFormat ==
+                NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
+
+            if (pDpyEvo->parsedEdid.valid) {
+                switch (pDpyEvo->parsedEdid.info.input.u.digital.bpc) {
+                    case 10:
+                        colorFormatsInfo.rgb444.maxBpc =
+                            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                        break;
+                    case 6:
+                        colorFormatsInfo.rgb444.maxBpc =
+                            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                        break;
+                    default:
+                        nvAssert(!"Unsupported bpc for DSI");
+                        // fall through
+                    case 8:
+                        colorFormatsInfo.rgb444.maxBpc =
+                            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                        break;
+                }
+
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+            } else {
+                colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            }
+        } else if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
+            const NVT_EDID_INFO *info = &pDpyEvo->parsedEdid.info;
+
+            if (pDpyEvo->parsedEdid.valid &&
+                info->input.isDigital && info->version >= NVT_EDID_VER_1_4) {
+                if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 10) {
+                    colorFormatsInfo.rgb444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
+                    colorFormatsInfo.rgb444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                } else {
+                    colorFormatsInfo.rgb444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                }
+
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                if (colorFormatsInfo.yuv444.maxBpc !=
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                     colorFormatsInfo.yuv444.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv444.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
+
+                colorFormatsInfo.yuv422.maxBpc = GetYuv422MaxBpc(pDpyEvo);
+                if (colorFormatsInfo.yuv422.maxBpc !=
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
+            } else {
+                colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            }
+
+            if (pDpyEvo->parsedEdid.valid && info->input.isDigital &&
+                (info->input.u.digital.video_interface ==
+                 NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_A_SUPPORTED ||
+                 info->input.u.digital.video_interface ==
+                 NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED)) {
+
+                /*
+                 * Prevent RGB 444 @ 6 BPC on active DP-to-HDMI adapters since
+                 * HDMI does not support RGB 444 @ 6 BPC.
+                 */
+                if (colorFormatsInfo.rgb444.minBpc ==
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6) {
+                    colorFormatsInfo.rgb444.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                }
+
+                // Prevent >=10 BPC on active DP-to-HDMI adapters, if the dc_30_bit is not set
+                if ((info->version < NVT_EDID_VER_1_4 ||
+                     !info->hdmiLlcInfo.dc_30_bit) &&
+                    colorFormatsInfo.rgb444.maxBpc !=
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.rgb444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                }
+                if ((info->version < NVT_EDID_VER_1_4 ||
+                     !info->hdmiLlcInfo.dc_30_bit) &&
+                    colorFormatsInfo.yuv444.maxBpc !=
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                }
+            }
+        } else {
+            colorFormatsInfo.rgb444.maxBpc =
+                nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            colorFormatsInfo.rgb444.minBpc =
+                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+
+            if (nvDpyIsHdmiEvo(pDpyEvo)) {
+                colorFormatsInfo.yuv444.maxBpc =
+                    nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                colorFormatsInfo.yuv444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+
+                colorFormatsInfo.yuv422.maxBpc = GetYuv422MaxBpc(pDpyEvo);
+                if (colorFormatsInfo.yuv422.maxBpc !=
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
+            }
+        }
+    }
+
+    switch (nvkms_debug_force_color_space()) {
+    case NVKMS_DEBUG_FORCE_COLOR_SPACE_RGB:
+        colorFormatsInfo.yuv444.maxBpc =
+        colorFormatsInfo.yuv444.minBpc =
+        colorFormatsInfo.yuv422.maxBpc =
+        colorFormatsInfo.yuv422.minBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+        break;
+    case NVKMS_DEBUG_FORCE_COLOR_SPACE_YUV444:
+        colorFormatsInfo.rgb444.maxBpc =
+        colorFormatsInfo.rgb444.minBpc =
+        colorFormatsInfo.yuv422.maxBpc =
+        colorFormatsInfo.yuv422.minBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+        break;
+    case NVKMS_DEBUG_FORCE_COLOR_SPACE_YUV422:
+        colorFormatsInfo.rgb444.maxBpc =
+        colorFormatsInfo.rgb444.minBpc =
+        colorFormatsInfo.yuv444.maxBpc =
+        colorFormatsInfo.yuv444.minBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+        break;
+    default:
+        nvAssert(!"Unrecognzed debug_force_color_space value");
+        // fallthrough
+    case NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE:
+        break;
+    }
+
+    return colorFormatsInfo;
+}
+
+NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo)
+{
+    NvU32 possibleApiHeadMask = 0x0;
+    NvU32 possibleNumLayers = NVKMS_MAX_LAYERS_PER_HEAD;
+    const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
+
+    /*
+     * DSI supports only the hardware head-0 assigment, and the
+     * dp-serializer dpys are bound to the specific hardware head;
+     * the modeset client can be allowed to choose only those
+     * api-heads to drive these dpys which has the number of layers
+     * less than or equal to the number of layers supported by the
+     * bound hardware heads.
+     */
+    if (pDpyEvo->pConnectorEvo->signalFormat ==
+            NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
+        possibleNumLayers = pDevEvo->head[0].numLayers;
+    } else if (nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
+        const NvU32 boundHead = pDpyEvo->dp.serializerStreamIndex;
+        possibleNumLayers = pDevEvo->head[boundHead].numLayers;
+    }
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        if (pDevEvo->apiHead[apiHead].numLayers <= possibleNumLayers) {
+            possibleApiHeadMask |= NVBIT(apiHead);
+        }
+    }
+
+    return possibleApiHeadMask;
+}
+
+NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
+{
+    const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
+    const NVT_HDR_STATIC_METADATA *pHdrInfo =
+        &pInfo->hdr_static_metadata_info;
+
+    // Only supported on DP 1.3+ or HDMI
+    if (nvDpyUsesDPLib(pDpyEvo)) {
+        unsigned int major;
+        unsigned int minor;
+
+        if (!nvDPDpyGetDpcdRevision(pDpyEvo, &major, &minor)) {
+            return FALSE;
+        }
+
+        nvAssert(major >= 1);
+        if ((major == 1) && (minor < 3)) {
+            return FALSE;
+        }
+    } else if (!nvDpyIsHdmiEvo(pDpyEvo)) {
+        return FALSE;
+    }
+
+    if (!pDpyEvo->parsedEdid.valid) {
+        return FALSE;
+    }
+
+    /*
+     * XXX HDR is not supported with HDMI 3D due to both using VSI
+     * infoframes.
+     */
+    if (pInfo->HDMI3DSupported) {
+        return FALSE;
+    }
+
+    // Sink should support ST2084 EOTF.
+    if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf) {
+        return FALSE;
+    }
+
+    /*
+     * Sink should support static metadata type1. Nvtiming sets
+     * static_metadata_type to 1 if the sink supports static metadata type1.
+     */
+    if (pHdrInfo->static_metadata_type != 1) {
+        return FALSE;
+    }
+
+    return TRUE;
+}

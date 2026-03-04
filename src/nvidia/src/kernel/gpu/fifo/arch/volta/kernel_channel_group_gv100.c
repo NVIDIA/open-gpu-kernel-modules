@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,9 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
+#include "gpu/mem_mgr/mem_desc.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "gpu/bus/kern_bus.h"
 
@@ -42,14 +43,16 @@ kchangrpAllocFaultMethodBuffers_GV100
     NV_STATUS                    status         = NV_OK;
     NvU32                        bufSizeInBytes = 0;
     KernelFifo                  *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
+    MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU32                        runQueues      = kfifoGetNumRunqueues_HAL(pGpu, pKernelFifo);
     NvU32                        index          = 0;
     NvU32                        faultBufApert  = ADDR_SYSMEM;
     NvU32                        faultBufAttr   = NV_MEMORY_CACHED;
-    NvU8                        *pRmMapAddr     = NULL;
     NvU64                        memDescFlags   = MEMDESC_FLAGS_LOST_ON_SUSPEND;
     HW_ENG_FAULT_METHOD_BUFFER  *pFaultMthdBuf  = NULL;
     NvU32                        gfid           = pKernelChannelGroup->gfid;
+    TRANSFER_SURFACE             surf           = {0};
+    NvBool                       bReUseInitMem  = pGpu->getProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM);
 
     //
     // Allocate method buffer if applicable
@@ -101,39 +104,40 @@ kchangrpAllocFaultMethodBuffers_GV100
     {
         pFaultMthdBuf = &(pKernelChannelGroup->pMthdBuffers[index]);
 
+retryInFB:
         // Allocate and initialize MEMDESC
         status = memdescCreate(&(pFaultMthdBuf->pMemDesc), pGpu, bufSizeInBytes, 0,
-                               NV_FALSE, faultBufApert, faultBufAttr, memDescFlags);
+                               NV_TRUE, faultBufApert, faultBufAttr, memDescFlags);
         if (status != NV_OK)
         {
             DBG_BREAKPOINT();
             goto fail;
         }
 
-        status = memdescAlloc(pFaultMthdBuf->pMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34,
+                    pFaultMthdBuf->pMemDesc);
         if (status != NV_OK)
         {
-            DBG_BREAKPOINT();
             memdescDestroy(pFaultMthdBuf->pMemDesc);
             pFaultMthdBuf->pMemDesc = NULL;
+            if (bReUseInitMem && (faultBufApert == ADDR_SYSMEM))
+            {
+                 faultBufApert = ADDR_FBMEM;
+                 memDescFlags  |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
+                 goto retryInFB;
+            }
+            DBG_BREAKPOINT();
             goto fail;
         }
 
-        // Map the buffer to RM
-        pRmMapAddr = kbusMapRmAperture_HAL(pGpu, pFaultMthdBuf->pMemDesc);
-        if (!pRmMapAddr)
-        {
-            status = NV_ERR_INVALID_ADDRESS;
-            goto fail;
-        }
+        memdescSetName(pGpu, pFaultMthdBuf->pMemDesc, NV_RM_SURF_NAME_CE_FAULT_METHOD_BUFFER, NULL);
 
-        // Memset to 0
-        portMemSet(pRmMapAddr, 0, bufSizeInBytes);
+        surf.pMemDesc = pFaultMthdBuf->pMemDesc;
+        surf.offset = 0;
 
-        // Unmap the buffer from RM
-        kbusUnmapRmAperture_HAL(pGpu, pFaultMthdBuf->pMemDesc, &(pRmMapAddr),
-                                NV_TRUE);
-        pRmMapAddr = NULL;
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemSet(pMemoryManager, &surf, 0, bufSizeInBytes,
+                         TRANSFER_FLAGS_NONE));
 
         pFaultMthdBuf->bar2Addr = 0;
     }

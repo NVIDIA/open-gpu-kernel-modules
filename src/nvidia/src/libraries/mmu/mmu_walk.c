@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,6 @@
 /*--------------------------------Includes------------------------------------*/
 #if defined(SRT_BUILD)
 
-#include "shrdebug.h"
 #else
 #include "os/os.h"
 #endif
@@ -170,14 +169,17 @@ mmuWalkGetUserCtx
     return pWalk->pUserCtx;
 }
 
-void
+NV_STATUS
 mmuWalkSetUserCtx
 (
     MMU_WALK          *pWalk,
     MMU_WALK_USER_CTX *pUserCtx
 )
 {
+    NV_ASSERT_OR_RETURN(NULL != pWalk, NV_ERR_INVALID_STATE);
+
     pWalk->pUserCtx = pUserCtx;
+    return NV_OK;
 }
 
 const MMU_WALK_CALLBACKS *
@@ -221,9 +223,12 @@ mmuWalkFindLevel
 )
 {
     const MMU_WALK_LEVEL *pLevel = &pWalk->root;
-    while (pLevel->pFmt != pLevelFmt)
+    while (pLevel != NULL && pLevel->pFmt != pLevelFmt)
     {
         NvU32 subLevel;
+
+        NV_ASSERT_OR_RETURN(pLevel->pFmt != NULL, NULL);
+
         // Single sub-level always continues.
         if (1 == pLevel->pFmt->numSubLevels)
         {
@@ -268,431 +273,43 @@ NV_STATUS mmuWalkProcessPdes
     NvU64                     vaHi
 )
 {
+    // Iterative MMU Walk
+    NV_STATUS status = NV_OK;
+    const MMU_WALK_LEVEL *pLevelOrig = pLevel;
+    NV_ASSERT_OR_RETURN(pOpParams != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    if (pWalk->flags.bUseIterative)
+    // Call opFunc inititially to see if we need to walk
+    status = pOpParams->opFunc(pWalk,
+                               pOpParams,
+                               pLevel,
+                               pLevelInst,
+                               vaLo,
+                               vaHi);
+
+    //
+    // If NV_ERR_MORE_PROCESSING_REQUIRED is returned above,
+    // the recursive MMU Walker would have started recursing down,
+    // so here we kick off the iteration.
+    // If NV_OK is returned above, the recursive MMU Walker would
+    // not recurse at all, so return immediately.
+    //
+    if (NV_ERR_MORE_PROCESSING_REQUIRED == status)
     {
-        // Iterative MMU Walker Implementation
-        NV_STATUS status = NV_OK;
-        NV_ASSERT_OR_RETURN(pOpParams != NULL, NV_ERR_INVALID_ARGUMENT);
+        status = NV_OK;
 
-        // Call opFunc inititially to see if we need to walk
-        status = pOpParams->opFunc(pWalk,
-                                   pOpParams,
-                                   pLevel,
-                                   pLevelInst,
-                                   vaLo,
-                                   vaHi);
+        NvU64 vaLevelBase  = mmuFmtLevelVirtAddrLo(pLevel->pFmt, vaLo);
+        NvU32 entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaLo);
+        NvU32 entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaHi);
+        NvU32 entryIndex   = entryIndexLo;
+        NvU32 entryIndexFillStart = 0;
+        NvU32 entryIndexFillEnd   = 0;
+        NvU32 pendingFillCount    = 0;
 
         //
-        // If NV_ERR_MORE_PROCESSING_REQUIRED is returned above,
-        // the recursive MMU Walker would have started recursing down,
-        // so here we kick off the iteration.
-        // If NV_OK is returned above, the recursive MMU Walker would
-        // not recurse at all, so return immediately.
+        // entryIndex, entryIndexHi are modified in the loop itself
+        // as we iterate through levels.
         //
-        if (NV_ERR_MORE_PROCESSING_REQUIRED == status)
-        {
-            status = NV_OK;
-
-            NvU64 vaLevelBase  = mmuFmtLevelVirtAddrLo(pLevel->pFmt, vaLo);
-            NvU32 entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaLo);
-            NvU32 entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaHi);
-            NvU32 entryIndex;
-            NvU32 index;
-            NvU32 entryIndexFillStart;
-            NvU32 entryIndexFillEnd;
-            NvU32 pendingFillCount = 0;
-
-            // Declarations for mmuWalk recursion conversion
-            MMU_WALK_PROCESS_PDES_ENTRY *pProcessPdeEntry;
-            MMU_WALK_RELEASE_PDES_ENTRY *pReleasePdeEntry;
-            PROCESS_PDES_STACK processPdesStack;
-            RELEASE_PDES_STACK releasePdesStack;
-            listInit(&processPdesStack, portMemAllocatorGetGlobalNonPaged());
-            listInit(&releasePdesStack, portMemAllocatorGetGlobalNonPaged());
-
-            //
-            // Walk over each relevant entry (PDE) within this Page Level
-            // Do one initial loop to kick off iteration
-            // Add entries in reverse order because processPdesStack is a stack
-            //
-            for (entryIndex = entryIndexHi; entryIndex >= entryIndexLo; entryIndex--)
-            {
-                pProcessPdeEntry = listPrependNew(&processPdesStack);
-                if (pProcessPdeEntry == NULL)
-                {
-                    status = NV_ERR_NO_MEMORY;
-                    NV_ASSERT_OR_GOTO(0, cleanupIter);
-                }
-
-                //
-                // The values pushed to the stack must NOT be pointers to variables on the stack
-                // All of these are simple values or pointers to a variable allocated by a function
-                // calling the MMU Walker.
-                //
-                pProcessPdeEntry->pLevel       = pLevel;
-                pProcessPdeEntry->pLevelInst   = pLevelInst;
-                pProcessPdeEntry->vaLo         = vaLo;
-                pProcessPdeEntry->vaHi         = vaHi;
-                pProcessPdeEntry->vaLevelBase  = vaLevelBase;
-                pProcessPdeEntry->entryIndexHi = entryIndexHi;
-                pProcessPdeEntry->entryIndex   = entryIndex;
-
-                // Prevent underflow because of adding entries in reverse order
-                if (entryIndex == 0) break;
-            }
-
-            while ((pProcessPdeEntry = listHead(&processPdesStack)) != NULL)
-            {
-                pLevel       = pProcessPdeEntry->pLevel;
-                pLevelInst   = pProcessPdeEntry->pLevelInst;
-                vaLo         = pProcessPdeEntry->vaLo;
-                vaHi         = pProcessPdeEntry->vaHi;
-                vaLevelBase  = pProcessPdeEntry->vaLevelBase;
-                entryIndexHi = pProcessPdeEntry->entryIndexHi;
-                entryIndex   = pProcessPdeEntry->entryIndex;
-
-                listRemove(&processPdesStack, pProcessPdeEntry);
-
-                const NvU64           entryVaLo   = mmuFmtEntryIndexVirtAddrLo(pLevel->pFmt,
-                                                                         vaLevelBase, entryIndex);
-                const NvU64           entryVaHi   = mmuFmtEntryIndexVirtAddrHi(pLevel->pFmt,
-                                                                         vaLevelBase, entryIndex);
-                const NvU64           clippedVaLo = NV_MAX(vaLo, entryVaLo);
-                const NvU64           clippedVaHi = NV_MIN(vaHi, entryVaHi);
-                const MMU_ENTRY_STATE currEntryState = mmuWalkGetEntryState(pLevelInst, entryIndex);
-                NvU32                 subLevel       = 0;
-                MMU_WALK_LEVEL_INST  *pSubLevelInsts[MMU_FMT_MAX_SUB_LEVELS] = {0};
-
-                // Optimizations for release operations.
-                if (pOpParams->bRelease)
-                {
-                    // Skip this entry if it is neither a PDE nor marked as a hybrid entry.
-                    if ((MMU_ENTRY_STATE_IS_PDE != currEntryState) &&
-                        !pLevelInst->pStateTracker[entryIndex].bHybrid)
-                        continue;
-                }
-
-                // Optimizations for fill operations.
-                if (pOpParams->bFill)
-                {
-                    const MMU_FILL_TARGET *pTarget = (const MMU_FILL_TARGET *) pOpParams->pOpCtx;
-
-                    if (pendingFillCount == 0)
-                        entryIndexFillStart = entryIndexFillEnd = entryIndex;
-
-                    //
-                    // Check if the entire entry's coverage is being filled to
-                    // a constant state.
-                    //
-                    // If this entry is not currently a PDE we can
-                    // apply the fill operation directly
-                    // at this level and avoid "splitting" the PDE.
-                    //
-                    // If this entry is currently a PDE we must
-                    // clear the entries of the lower levels to free
-                    // unused level instances.
-                    //
-                    if ((pTarget->entryState != currEntryState) &&
-                        (MMU_ENTRY_STATE_IS_PDE != currEntryState) &&
-                        (entryVaLo == clippedVaLo) &&
-                        (entryVaHi == clippedVaHi))
-                    {
-                        entryIndexFillEnd = entryIndex;
-                        pendingFillCount++;
-
-                        // Not the last iteration, keep batching..
-                        if (entryIndex < entryIndexHi)
-                            continue;
-                    }
-
-                    if (pendingFillCount != 0)
-                    {
-                        NvU32 progress = 0;
-
-                        // Flush pending fills
-                        pWalk->pCb->FillEntries(pWalk->pUserCtx,
-                                                pLevel->pFmt,
-                                                pLevelInst->pMemDesc,
-                                                entryIndexFillStart,
-                                                entryIndexFillEnd,
-                                                pTarget->fillState,
-                                                &progress);
-
-                        if (progress != (entryIndexFillEnd - entryIndexFillStart + 1))
-                        {
-                            status = NV_ERR_INVALID_STATE;
-                            NV_ASSERT_OR_GOTO(0, cleanupIter);
-                        }
-
-                        for (index = entryIndexFillStart; index <= entryIndexFillEnd; index++)
-                            mmuWalkSetEntryState(pLevelInst, index, pTarget->entryState);
-
-                        pendingFillCount = 0;
-                    }
-
-                    // Recheck the state after fill. If nothing to do, continue..
-                    if (pTarget->entryState == mmuWalkGetEntryState(pLevelInst, entryIndex))
-                        continue;
-
-                } // End of fill optimizations.
-
-                // Determine the sublevel we need to operate on.
-                status = pOpParams->selectSubLevel(pOpParams->pOpCtx,
-                                                   pLevel,
-                                                   &subLevel,
-                                                   clippedVaLo,
-                                                   clippedVaHi);
-                NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
-
-                //
-                // Allocate the sublevel instances for the current PDE and update the current
-                // Page Dir (i.e. write the PDE into the Page Dir) if needed.
-                //
-                status = _mmuWalkPdeAcquire(pWalk,
-                                            pOpParams,
-                                            pLevel,
-                                            pLevelInst,
-                                            entryIndex,
-                                            subLevel,
-                                            clippedVaLo,
-                                            clippedVaHi,
-                                            pSubLevelInsts);
-                NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
-
-                // Release op is done if the target sub-level is absent.
-                if (pOpParams->bRelease && (NULL == pSubLevelInsts[subLevel]))
-                {
-                    continue;
-                }
-
-                //
-                // Split sparse PDE's range.
-                // When only a subrange of the original PDE's VA range is being operated
-                // on we sparsify the remaining range lying outside the operational
-                // subrange (clippedVaLo to clippedVaHi)
-                //
-                if (MMU_ENTRY_STATE_SPARSE == currEntryState)
-                {
-                    //
-                    // Sparsify the lower part of the VA range that outside the operational
-                    // subrange.
-                    //
-                    if (clippedVaLo > entryVaLo)
-                    {
-                        status = mmuWalkProcessPdes(pWalk,
-                                                    &g_opParamsSparsify,
-                                                    pLevel->subLevels + subLevel,
-                                                    pSubLevelInsts[subLevel],
-                                                    entryVaLo,
-                                                    clippedVaLo - 1);
-                        NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
-                    }
-
-                    //
-                    // Sparsify the upper part of the VA range that is outside the operational
-                    // subrange.
-                    //
-                    if (clippedVaHi < entryVaHi)
-                    {
-                        status = mmuWalkProcessPdes(pWalk,
-                                                    &g_opParamsSparsify,
-                                                    pLevel->subLevels + subLevel,
-                                                    pSubLevelInsts[subLevel],
-                                                    clippedVaHi + 1,
-                                                    entryVaHi);
-                        NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
-                    }
-                } // Sparse PDE split
-
-                // Resolve potential conflicts in multiple sized page tables
-                if (pLevel->pFmt->numSubLevels != 1 &&
-                    !pOpParams->bIgnoreSubLevelConflicts)
-                {
-                    status = _mmuWalkResolveSubLevelConflicts(pWalk,
-                                                              pOpParams,
-                                                              pLevel,
-                                                              pSubLevelInsts,
-                                                              subLevel,
-                                                              clippedVaLo,
-                                                              clippedVaHi);
-                    NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
-                }
-
-                status = pOpParams->opFunc(pWalk,
-                                           pOpParams,
-                                           pLevel->subLevels + subLevel,
-                                           pSubLevelInsts[subLevel],
-                                           clippedVaLo,
-                                           clippedVaHi);
-
-                if (NV_ERR_MORE_PROCESSING_REQUIRED == status)
-                {
-                    //
-                    // If NV_ERR_MORE_PROCESSING_REQUIRED is returned above,
-                    // the recursive MMU Walker would have recursed down one
-                    // more level. In this code block, we keep the iteration
-                    // going by doing everything the recursion previously did.
-                    //
-                    status = NV_OK;
-                    pReleasePdeEntry = listPrependNew(&releasePdesStack);
-                    if (pReleasePdeEntry == NULL)
-                    {
-                        status = NV_ERR_NO_MEMORY;
-                        NV_ASSERT_OR_GOTO(0, cleanupIter);
-                    }
-
-                    //
-                    // Queue the current level for pdeRelease so that pdeRelease
-                    // can be called AFTER exploring the current level's sublevels.
-                    //
-                    pReleasePdeEntry->pLevel       = pLevel;
-                    pReleasePdeEntry->pLevelInst   = pLevelInst;
-                    pReleasePdeEntry->entryVaLo    = entryVaLo;
-                    pReleasePdeEntry->entryIndexHi = entryIndexHi;
-                    pReleasePdeEntry->entryIndex   = entryIndex;
-
-                    //
-                    // Here use variables that would be used in the next recursion downwards.
-                    // Calculate new vaLevelBase, entryIndexLo, entryIndexHi, entryIndex
-                    //
-                    vaLevelBase  = mmuFmtLevelVirtAddrLo((pLevel->subLevels + subLevel)->pFmt, clippedVaLo);
-                    entryIndexLo = mmuFmtVirtAddrToEntryIndex((pLevel->subLevels + subLevel)->pFmt, clippedVaLo);
-                    entryIndexHi = mmuFmtVirtAddrToEntryIndex((pLevel->subLevels + subLevel)->pFmt, clippedVaHi);
-
-                    for (entryIndex = entryIndexHi; entryIndex >= entryIndexLo; entryIndex--)
-                    {
-                        pProcessPdeEntry = listPrependNew(&processPdesStack);
-                        if (pProcessPdeEntry == NULL)
-                        {
-                            status = NV_ERR_NO_MEMORY;
-                            NV_ASSERT_OR_GOTO(0, cleanupIter);
-                        }
-
-                        pProcessPdeEntry->pLevel       = pLevel->subLevels + subLevel;
-                        pProcessPdeEntry->pLevelInst   = pSubLevelInsts[subLevel];
-                        pProcessPdeEntry->vaLo         = clippedVaLo;
-                        pProcessPdeEntry->vaHi         = clippedVaHi;
-                        pProcessPdeEntry->vaLevelBase  = vaLevelBase;
-                        pProcessPdeEntry->entryIndexHi = entryIndexHi;
-                        pProcessPdeEntry->entryIndex   = entryIndex;
-
-                        if (entryIndex == 0) break;
-                    }
-                }
-                else if (NV_OK == status)
-                {
-                    //
-                    // If NV_OK is returned above, the recursive MMU Walker would have reached
-                    // the target format level and so reached the base case of its recursion.
-                    // It would then return from  recursive function calls an call pdeRelease
-                    // for all levels whose sublevels are done being processed.
-                    //
-
-                    // PdeRelease itself immediately since this level does not recurse.
-                    _mmuWalkPdeRelease(pWalk,
-                                       pOpParams,
-                                       pLevel,
-                                       pLevelInst,
-                                       entryIndex,
-                                       entryVaLo);
-
-                    //
-                    // If this is the last processed sublevel of a level, pdeRelease the level.
-                    // Continue doing so for all parent levels.
-                    //
-                    while (entryIndex == entryIndexHi)
-                    {
-                        if ((pReleasePdeEntry = listHead(&releasePdesStack)) != NULL)
-                        {
-                            // Extract variables for the next loop around.
-                            entryIndexHi = pReleasePdeEntry->entryIndexHi;
-                            entryIndex   = pReleasePdeEntry->entryIndex;
-
-                            _mmuWalkPdeRelease(pWalk,
-                                               pOpParams,
-                                               pReleasePdeEntry->pLevel,
-                                               pReleasePdeEntry->pLevelInst,
-                                               pReleasePdeEntry->entryIndex,
-                                               pReleasePdeEntry->entryVaLo);
-
-                            listRemove(&releasePdesStack, pReleasePdeEntry);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    // Stop processing PDEs if we are in error state.
-                    goto cleanupIter;
-                }
-            } // per entry loop
-
-
-            if (listHead(&processPdesStack) != NULL)
-            {
-                //
-                // If this assertion fails, it is a result of a programming
-                // error in the iterative MMU Walker implementation.
-                //
-                status = NV_ERR_INVALID_STATE;
-                NV_ASSERT_OR_GOTO(0, cleanupIter);
-            }
-
-            //
-            // Note that if releasePdesStack is not empty at this point,
-            // we hit an empty sublevel, but we still need to pdeRelease
-            // the parent sublevels in cleanup below.
-            //
-
-// Temporarily change the name of this label to avoid conflicting with other "cleanup"
-cleanupIter:
-
-            //
-            // In the recrusive MMU Walker, when a sublevel failed, that level would pdeRelease,
-            // return to the parent, and the parent would pdeRelease and return to its parent and so on.
-            // Here emulate that and pdeRelease all parents.
-            //
-
-            while ((pReleasePdeEntry = listHead(&releasePdesStack)) != NULL)
-            {
-                _mmuWalkPdeRelease(pWalk,
-                                   pOpParams,
-                                   pReleasePdeEntry->pLevel ,
-                                   pReleasePdeEntry->pLevelInst,
-                                   pReleasePdeEntry->entryIndex,
-                                   pReleasePdeEntry->entryVaLo);
-
-                listRemove(&releasePdesStack, pReleasePdeEntry);
-            }
-
-            listDestroy(&processPdesStack);
-            listDestroy(&releasePdesStack);
-
-
-        }
-        return status;
-    }
-    else
-    {
-        // Recursive MMU Walker Implementation
-        NV_STATUS    status       = NV_OK;
-        NvU64        vaLevelBase  = mmuFmtLevelVirtAddrLo(pLevel->pFmt, vaLo);
-        NvU32        entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaLo);
-        NvU32        entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, vaHi);
-        NvU32        entryIndex;
-        NvU32        index;
-        NvU32        entryIndexFillStart;
-        NvU32        entryIndexFillEnd;
-        NvU32        pendingFillCount = 0;
-
-        NV_ASSERT_OR_RETURN(NULL != pOpParams, NV_ERR_INVALID_ARGUMENT);
-
-        // Walk over each relevant entry (PDE) within this Page Level
-        for (entryIndex = entryIndexLo; entryIndex <= entryIndexHi; entryIndex++)
+        while (entryIndex <= entryIndexHi)
         {
             const NvU64           entryVaLo   = mmuFmtEntryIndexVirtAddrLo(pLevel->pFmt,
                                                                      vaLevelBase, entryIndex);
@@ -710,7 +327,9 @@ cleanupIter:
                 // Skip this entry if it is neither a PDE nor marked as a hybrid entry.
                 if ((MMU_ENTRY_STATE_IS_PDE != currEntryState) &&
                     !pLevelInst->pStateTracker[entryIndex].bHybrid)
-                    continue;
+                {
+                    goto check_last_entry;
+                }
             }
 
             // Optimizations for fill operations.
@@ -743,12 +362,19 @@ cleanupIter:
 
                     // Not the last iteration, keep batching..
                     if (entryIndex < entryIndexHi)
-                        continue;
+                    {
+                        //
+                        // This won't be the last entry, but we'll
+                        // do the iteration there
+                        //
+                        goto check_last_entry;
+                    }
                 }
 
                 if (pendingFillCount != 0)
                 {
                     NvU32 progress = 0;
+                    NvU32 index;
 
                     // Flush pending fills
                     pWalk->pCb->FillEntries(pWalk->pUserCtx,
@@ -759,9 +385,11 @@ cleanupIter:
                                             pTarget->fillState,
                                             &progress);
 
-                    NV_ASSERT_OR_RETURN(
-                        progress == (entryIndexFillEnd - entryIndexFillStart + 1),
-                        NV_ERR_INVALID_STATE);
+                    if (progress != (entryIndexFillEnd - entryIndexFillStart + 1))
+                    {
+                        status = NV_ERR_INVALID_STATE;
+                        NV_ASSERT_OR_GOTO(0, cleanupIter);
+                    }
 
                     for (index = entryIndexFillStart; index <= entryIndexFillEnd; index++)
                         mmuWalkSetEntryState(pLevelInst, index, pTarget->entryState);
@@ -771,7 +399,9 @@ cleanupIter:
 
                 // Recheck the state after fill. If nothing to do, continue..
                 if (pTarget->entryState == mmuWalkGetEntryState(pLevelInst, entryIndex))
-                    continue;
+                {
+                    goto check_last_entry;
+                }
 
             } // End of fill optimizations.
 
@@ -781,7 +411,7 @@ cleanupIter:
                                                &subLevel,
                                                clippedVaLo,
                                                clippedVaHi);
-            NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+            NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
 
             //
             // Allocate the sublevel instances for the current PDE and update the current
@@ -791,17 +421,17 @@ cleanupIter:
                                         pOpParams,
                                         pLevel,
                                         pLevelInst,
-                                        entryIndex,  //PDE index being processed
-                                        subLevel,    //Sub level processed within the PDE
-                                        clippedVaLo, //Low VA for the PDE
-                                        clippedVaHi, //High VA for the PDE
+                                        entryIndex,
+                                        subLevel,
+                                        clippedVaLo,
+                                        clippedVaHi,
                                         pSubLevelInsts);
-            NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+            NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
 
             // Release op is done if the target sub-level is absent.
             if (pOpParams->bRelease && (NULL == pSubLevelInsts[subLevel]))
             {
-                continue;
+                goto check_last_entry;
             }
 
             //
@@ -818,13 +448,13 @@ cleanupIter:
                 //
                 if (clippedVaLo > entryVaLo)
                 {
-                    status = g_opParamsSparsify.opFunc(pWalk,
-                                                       &g_opParamsSparsify,
-                                                       pLevel->subLevels + subLevel,
-                                                       pSubLevelInsts[subLevel],
-                                                       entryVaLo,
-                                                       clippedVaLo - 1);
-                    NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+                    status = mmuWalkProcessPdes(pWalk,
+                                                &g_opParamsSparsify,
+                                                pLevel->subLevels + subLevel,
+                                                pSubLevelInsts[subLevel],
+                                                entryVaLo,
+                                                clippedVaLo - 1);
+                    NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
                 }
 
                 //
@@ -833,13 +463,13 @@ cleanupIter:
                 //
                 if (clippedVaHi < entryVaHi)
                 {
-                    status = g_opParamsSparsify.opFunc(pWalk,
-                                                       &g_opParamsSparsify,
-                                                       pLevel->subLevels + subLevel,
-                                                       pSubLevelInsts[subLevel],
-                                                       clippedVaHi + 1,
-                                                       entryVaHi);
-                    NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+                    status = mmuWalkProcessPdes(pWalk,
+                                                &g_opParamsSparsify,
+                                                pLevel->subLevels + subLevel,
+                                                pSubLevelInsts[subLevel],
+                                                clippedVaHi + 1,
+                                                entryVaHi);
+                    NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
                 }
             } // Sparse PDE split
 
@@ -854,35 +484,172 @@ cleanupIter:
                                                           subLevel,
                                                           clippedVaLo,
                                                           clippedVaHi);
-                NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+                NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
             }
 
-            // Recurse to update the next level for this PDE
             status = pOpParams->opFunc(pWalk,
                                        pOpParams,
                                        pLevel->subLevels + subLevel,
                                        pSubLevelInsts[subLevel],
                                        clippedVaLo,
                                        clippedVaHi);
-            NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
 
-cleanup:
-            // Free unused sublevel instances. Clear the PDE if all sublevels are deallocated.
-            _mmuWalkPdeRelease(pWalk,
-                               pOpParams,
-                               pLevel,
-                               pLevelInst,
-                               entryIndex,
-                               entryVaLo);
+            if (NV_ERR_MORE_PROCESSING_REQUIRED == status)
+            {
+                //
+                // If NV_ERR_MORE_PROCESSING_REQUIRED is returned above,
+                // the recursive MMU Walker would have recursed down one
+                // more level. In this code block, we keep the iteration
+                // going by doing everything the recursion previously did.
+                //
+                status = NV_OK;
 
-            // Stop processing PDEs if we are in error state.
-            if (NV_OK != status)
-                break;
+                // Save off the current state of iteration for this level
+                pLevel->iterInfo.pLevelInst   = pLevelInst;
+                pLevel->iterInfo.vaLo         = vaLo;
+                pLevel->iterInfo.vaHi         = vaHi;
+                pLevel->iterInfo.vaLevelBase  = vaLevelBase;
+                pLevel->iterInfo.entryIndexHi = entryIndexHi;
+                pLevel->iterInfo.entryIndex   = entryIndex;
+                pLevel->iterInfo.entryIndexFillStart = entryIndexFillStart;
+                pLevel->iterInfo.entryIndexFillEnd   = entryIndexFillEnd;
+                pLevel->iterInfo.pendingFillCount    = pendingFillCount;
+                pLevel->iterInfo.entryVaLo    = entryVaLo;
+
+                //
+                // Here use variables that would be used in the next recursion downwards.
+                // Calculate new vaLevelBase, entryIndexLo, entryIndexHi, entryIndex
+                //
+                pLevel       = pLevel->subLevels + subLevel;
+
+                vaLevelBase  = mmuFmtLevelVirtAddrLo(pLevel->pFmt, clippedVaLo);
+                entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, clippedVaLo);
+                entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, clippedVaHi);
+
+                // Now replace the current stack frame with the frame that is one level down
+                // pLevel, vaLevelBase, entryIndexHi replaced above
+                pLevelInst   = pSubLevelInsts[subLevel];
+                vaLo         = clippedVaLo;
+                vaHi         = clippedVaHi;
+                entryIndex   = entryIndexLo;
+                entryIndexFillStart = 0;
+                entryIndexFillEnd   = 0;
+                pendingFillCount    = 0;
+            }
+            else
+            {
+                NV_ASSERT_OR_GOTO(NV_OK == status, cleanupIter);
+                //
+                // If NV_OK is returned above, the recursive MMU Walker would have reached
+                // the target format level and so reached the base case of its recursion.
+                // It would then return from recursive function calls and call pdeRelease
+                // for all levels whose sublevels are done being processed.
+                //
+
+cleanupIter:
+                // PdeRelease itself immediately since this level does not recurse.
+#if defined(__GNUC__) && !defined(__clang__)
+                // gcc is falsely reporting entryVaLo; entryVaLo is definitely initialized
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+                _mmuWalkPdeRelease(pWalk,
+                                   pOpParams,
+                                   pLevel,
+                                   pLevelInst,
+                                   entryIndex,
+                                   entryVaLo);
+
+check_last_entry:
+                //
+                // If the recursive MMU Walker did a continue on the current level,
+                // then it didn't do a pdeRelease of the current level.
+                // Even with the continue, for the current iteration,
+                // if entryIndex == entryIndexHi, then we're done with this level
+                // and need to do a pdeRelease on the next level up since we would
+                // return from the recursion.
+                //
+
+                //
+                // If we're at the original level and entryIndex = entryIndexHi,
+                // then we're done and need to exit the entire loop.
+                // If this is true, we've already done the _mmuWalkPdeRelease:
+                // Either we already called _mmuWalkPdeRelease right before this
+                // or we skipped it from a goto check_last_entry continue.
+                // The MMU Walker is re-entrant and will otherwise pick up on
+                // parent levels when mmuWalkProcessPdes is called on sublevels
+                //
+                if ((pLevel == pLevelOrig) && (entryIndex == entryIndexHi))
+                {
+                    goto done;
+                }
+
+                //
+                // Now restore and finish previous frame(s)
+                //
+                // If this is the last processed sublevel of a level or an error has
+                // previously occurred, pdeRelease the level.
+                // Continue doing so for all parent levels.
+                // Once we're reached a non-finished level, iterate to the next entry.
+                //
+                while (entryIndex == entryIndexHi || status != NV_OK)
+                {
+                    //
+                    // Now replace the current stack frame with the frame that was one
+                    // level above. This should never be NULL, since we'll already have
+                    // exited after processing the root level. If it is NULL, we can't
+                    // clean up any more anyway, so return immediately.
+                    //
+                    NV_ASSERT_OR_RETURN(pLevel->pParent != NULL, NV_ERR_INVALID_STATE);
+
+                    pLevel       = pLevel->pParent;
+                    pLevelInst   = pLevel->iterInfo.pLevelInst;
+                    vaLo         = pLevel->iterInfo.vaLo;
+                    vaHi         = pLevel->iterInfo.vaHi;
+                    vaLevelBase  = pLevel->iterInfo.vaLevelBase;
+                    entryIndexHi = pLevel->iterInfo.entryIndexHi;
+                    entryIndex   = pLevel->iterInfo.entryIndex;
+                    entryIndexFillStart = pLevel->iterInfo.entryIndexFillStart;
+                    entryIndexFillEnd   = pLevel->iterInfo.entryIndexFillEnd;
+                    pendingFillCount    = pLevel->iterInfo.pendingFillCount;
+
+                    _mmuWalkPdeRelease(pWalk,
+                                       pOpParams,
+                                       pLevel,
+                                       pLevelInst,
+                                       entryIndex,
+                                       pLevel->iterInfo.entryVaLo);
+
+                    //
+                    // If we're at the original level and entryIndex = entryIndexHi,
+                    // then we're done and need to exit the entire loop
+                    //
+                    if ((pLevel == pLevelOrig) && (entryIndex == entryIndexHi))
+                    {
+                        goto done;
+                    }
+                }
+
+                //
+                // Once the above loop is done and we reach here, then we're
+                // ready to process the next entry in the list. Only iterate here,
+                // not in the overall loop since we may have iterated down in the
+                // above else block and don't want to increment before processing
+                // the first entry on a new lower level.
+                //
+                entryIndex++;
+            }
         } // per entry loop
-        return status;
+
+        //
+        // If this assertion fails, it is a result of a programming
+        // error in the iterative MMU Walker implementation. We should
+        // have iterated back updwards through the MMU state to the original
+        // level even on failure.
+        //
+        NV_ASSERT_OR_RETURN(pLevel != pLevelOrig, NV_ERR_INVALID_STATE);
     }
-
-
+done:
+    return status;
 }
 
 /*!
@@ -914,10 +681,10 @@ mmuWalkRootAcquire
     // Acquire root level instance memory.
     NV_ASSERT_OK_OR_RETURN(
         _mmuWalkLevelInstAcquire(pWalk, &pWalk->root, vaLo, vaHi,
-                                 NV_TRUE, NV_FALSE, bCommit, &bChanged, 
+                                 NV_TRUE, NV_FALSE, bCommit, &bChanged,
                                  &pLevelInst, NV_FALSE /*bInitNv4k*/));
 
-    // We check pLevelInst to catch the corner case, where Commit() is called before PDB allocation. 
+    // We check pLevelInst to catch the corner case, where Commit() is called before PDB allocation.
     if (bChanged || (bCommit && pLevelInst))
     {
         NvBool bDone;
@@ -1062,12 +829,12 @@ mmuWalkSetEntryHybrid
 }
 
 /**
- * @brief      Calculate target entry indices that covers VA range for 
+ * @brief      Calculate target entry indices that covers VA range for
  *             source entries
- *             
- * @details    For example, entry 1 in 64K PT is aligned to 4K PT entry 0 to 
+ *
+ * @details    For example, entry 1 in 64K PT is aligned to 4K PT entry 0 to
  *             15. 4K PTE 1 to 18 will be covered by 64K PTE 0 to 1.
- *             
+ *
  *             It is introduced by NV4K encoding. Updating big page table
  *             according to small page table requires index transfering
  *
@@ -1084,7 +851,7 @@ mmuFmtCalcAlignedEntryIndices
     const MMU_FMT_LEVEL *pPageFmtIn,
     const NvU32 indexLoIn,
     const NvU32 indexHiIn,
-    const MMU_FMT_LEVEL *pPageFmtOut, 
+    const MMU_FMT_LEVEL *pPageFmtOut,
     NvU32 *pIndexLoOut,
     NvU32 *pIndexHiOut
 )
@@ -1178,29 +945,29 @@ _mmuWalkLevelDestroy
 
 /**
  * @brief      Resolve upcoming state conflicts before mmu walk operations
- * 
+ *
  * @example    Say we are to mmuWalkMap VA range [vaLo, vaHi] on small PT.
- * Assume we have 4K PT and 64K PT as our small PT and big PT, and [vaLo, vaHi] 
+ * Assume we have 4K PT and 64K PT as our small PT and big PT, and [vaLo, vaHi]
  * is a strict subset of VA range covered by BigPTE[1, 3] and SmallPTE[18, 61].
  * Let's say BigPTE[1, 3] are sparse right now.
- * 
+ *
  * To resolve the conflict, we need to preserve sparse state for part of the
  * VA range that is not going to be mapped. We need to move those states from
  * BigPT to SmallPT.
- * 
+ *
  * Before:
  *  BigPTE[1, 3]: sparse,   SmallPTE[16 - 63]: invalid
  *  (BigPTE[1, 3] and SmallPTE[16 - 63] are VA aligned)
  * After:
  *  BigPTE[1, 3]: invalid,  SmallPTE[16 - 17]: sparse
  *                          SmallPTE[18 - 61]: invalid, will later be mapped
- *                          SmallPTE[62 - 63]: sparse   
+ *                          SmallPTE[62 - 63]: sparse
  *
  * @example    If we are to mmuWalkMap on big PT instead of samll PT,
  * and sparse state was on small PT, we just need to invalidate the small PTEs.
- * 
+ *
  * Before:
- *  BigPTE[1, 3]:       invalid,  
+ *  BigPTE[1, 3]:       invalid,
  *  SmallPTE[16 - 63]:  sparse
  * After:
  *  BigPTE[1, 3]:       invalid, will later be mapped
@@ -1247,7 +1014,7 @@ _mmuWalkResolveSubLevelConflicts
     {
         entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevelFmtSmall, clippedVaLo);
         entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevelFmtSmall, clippedVaHi);
-        mmuFmtCalcAlignedEntryIndices(pLevelFmtSmall, entryIndexLo, 
+        mmuFmtCalcAlignedEntryIndices(pLevelFmtSmall, entryIndexLo,
             entryIndexHi, pLevelFmtBig, &indexLo_Big, &indexHi_Big);
         mmuFmtCalcAlignedEntryIndices(pLevelFmtBig, indexLo_Big, indexHi_Big,
             pLevelFmtSmall, &indexLo_Small, &indexHi_Small);
@@ -1425,11 +1192,11 @@ _mmuWalkLevelInstAcquire
         const NvU32 entryIndexHi = (pLevelInst->memSize / pLevel->pFmt->entrySize) - 1;
         NvU32       progress     = 0;
 
-        // 
+        //
         // default state for new entries
         // NV4K for big page table if ATS is enabled
-        // 
-        MMU_WALK_FILL_STATE newEntryState = bInitNv4k ? MMU_WALK_FILL_NV4K : 
+        //
+        MMU_WALK_FILL_STATE newEntryState = bInitNv4k ? MMU_WALK_FILL_NV4K :
                                                         MMU_WALK_FILL_INVALID;
 
         NV_ASSERT(NULL != pLevelInst->pMemDesc);
@@ -1571,10 +1338,10 @@ _mmuWalkPdeAcquire
         }
     }
 
-    // 
+    //
     // the loop was reversed for NV4K, if there are multiple sublevels
     // handling small PT first, then the big PT
-    // 
+    //
     for (i = numSubLevels; i > 0; --i)
     {
         NvBool bChanged = NV_FALSE;
@@ -1582,12 +1349,12 @@ _mmuWalkPdeAcquire
         NvBool bTarget = (subLevelIdx == subLevel);
         NvBool bInitNv4k = NV_FALSE;
 
-        // 
+        //
         // If NV4K is required (when ATS is enabled), acquire 64K PT
         // whenever the 4K PT has been acquired and 64K PT was not
         // there
-        // 
-        if (pWalk->flags.bAtsEnabled && subLevelIdx == 0 && 
+        //
+        if (pWalk->flags.bAtsEnabled && subLevelIdx == 0 &&
             numSubLevels > 1 && !pOpParams->bRelease)
         {
             if (pSubLevelInsts[1] != NULL)
@@ -1605,7 +1372,7 @@ _mmuWalkPdeAcquire
             _mmuWalkLevelInstAcquire(pWalk, pLevel->subLevels + subLevelIdx,
                                      vaLo, vaLimit, bTarget,
                                      pOpParams->bRelease, pOpParams->bCommit,
-                                     &bChanged, &pSubLevelInsts[subLevelIdx], 
+                                     &bChanged, &pSubLevelInsts[subLevelIdx],
                                      bInitNv4k));
         if (NULL == pSubLevelInsts[subLevelIdx])
         {
@@ -1692,7 +1459,7 @@ _mmuWalkPdeRelease
             {
                 if (pWalk->flags.bAtsEnabled)
                 {
-                    if (pSubLevelInsts[0]->numNv4k == 
+                    if (pSubLevelInsts[0]->numNv4k ==
                             mmuFmtLevelEntryCount(pLevel->subLevels[0].pFmt) &&
                         (0 == pSubLevelInsts[0]->numReserved) &&
                         (pSubMemDescs[1] == NULL || bChanged == NV_TRUE))
@@ -1700,7 +1467,7 @@ _mmuWalkPdeRelease
                         bChanged = NV_TRUE;
                         continue;
                     }
-                    else 
+                    else
                     {
                         state = MMU_ENTRY_STATE_IS_PDE;
                         pSubMemDescs[subLevel] = pSubLevelInst->pMemDesc;
@@ -1822,3 +1589,37 @@ _mmuWalkLevelInstancesForceFree
     }
 }
 
+void
+mmuWalkGetTraceInfo
+(
+    MMU_WALK            *pWalk,
+    NvU32                level,
+    MMU_TRACE_ITER_INFO *pState
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(level < MMU_TRACE_MAX_LEVEL);
+    *pState = pWalk->traceInfo[level];
+}
+
+void
+mmuWalkSetTraceInfo
+(
+    MMU_WALK            *pWalk,
+    NvU32                level,
+    MMU_TRACE_ITER_INFO *pState
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(level < MMU_TRACE_MAX_LEVEL);
+    pWalk->traceInfo[level] = *pState;
+}
+
+void*
+mmuWalkGetTraceInfoMemDesc
+(
+    MMU_WALK *pWalk,
+    NvU32 level
+)
+{
+    NV_ASSERT_OR_RETURN(level < MMU_TRACE_MAX_LEVEL, NULL);
+    return (void *)pWalk->traceInfo[level].memDescBuf;
+}

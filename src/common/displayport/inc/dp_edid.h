@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -124,26 +124,7 @@ namespace DisplayPort
             return this->patchedChecksum;
         }
 
-        bool isValidHeader() const
-        {
-            NvU8 validHeaderData[8] = {
-                0x00, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0x00};
-
-            if (buffer.getLength() < 0x8)
-                return false;
-
-            for (unsigned i = 0; i < 8; i++)
-            {
-                if (buffer.data[i] != validHeaderData[i])
-                {
-                    DP_LOG(("DP-EDID> Invalid EDID Header"));
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        bool isValidHeader() const;
 
         unsigned getManufId() const
         {
@@ -184,8 +165,15 @@ namespace DisplayPort
             bool delayAfterD3;
             bool keepLinkAlive;
             bool useLegacyAddress;
-            bool reassessMaxLink;
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
+            bool bDisableDownspread;
+            bool bForceHeadShutdown;
+            bool bDisableDscMaxBppLimit;
+            bool bApplyStuffDummySymbolsWAR;
+            bool bForceHeadShutdownOnModeTransition;
+            bool bDP2XPreferNonDSCForLowPClk;
+            bool bSkipCableIdCheck;
+            bool bAllocateManualTimeslots;
         }_WARFlags;
 
         _WARFlags WARFlags;
@@ -197,6 +185,8 @@ namespace DisplayPort
             unsigned maxLaneAtLowRate;  // Max lane count supported at RBR
             unsigned optimalLinkRate;   // Optimal link rate value to override
             unsigned optimalLaneCount;  // Optimal lane count value to override
+            bool     bStuffDummySymbolsFor128b132b;
+            bool     bStuffDummySymbolsFor8b10b;
         }_WARData;
 
         _WARData WARData;
@@ -308,7 +298,9 @@ namespace DisplayPort
 
     static const NvU8 ddcAddrList[] = {EDID_DDC_ADR0, EDID_DDC_ADR1, EDID_DDC_ADR2};
     const NvU8 ddcAddrListSize = sizeof(ddcAddrList)/sizeof(NvU8);
-    const NvU8 EDID_READ_MAX_RETRY_COUNT = 6;
+
+    // HDMI 1.4 Section 8.5: HDMI Sink can have up to 100ms to get EDID ready.
+    const NvU8 EDID_READ_RETRY_TIMEOUT_MS = 100;
     const NvU8 EDID_MAX_AUX_RETRIES = 10;
     const NvU8 EDID_AUX_WAIT_TIME = 1;
     NvU8 getEDIDBlockChecksum(const Buffer &);

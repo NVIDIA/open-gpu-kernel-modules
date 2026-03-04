@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080.finn
+// Source file:      ctrl/ctrl0080.finn
 //
 
 
@@ -33,7 +33,6 @@
 
 #include "ctrl0080/ctrl0080bif.h"
 #include "ctrl0080/ctrl0080gpu.h"
-#include "ctrl0080/ctrl0080clk.h"
 #include "ctrl0080/ctrl0080dma.h"
 #include "ctrl0080/ctrl0080gr.h"
 #include "ctrl0080/ctrl0080cipher.h"
@@ -45,7 +44,6 @@
 #include "ctrl0080/ctrl0080perf.h"
 #include "ctrl0080/ctrl0080msenc.h"
 #include "ctrl0080/ctrl0080bsp.h"
-#include "ctrl0080/ctrl0080rc.h"
 #include "ctrl0080/ctrl0080nvjpg.h"
 #include "ctrl0080/ctrl0080unix.h"
 #include "ctrl0080/ctrl0080internal.h"

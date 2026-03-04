@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,9 +31,23 @@
 #define NV_XVE_DEV_CTRL_CMD_IO_SPACE                                   0:0 /* RWIVF */
 #define NV_XVE_DEV_CTRL_CMD_IO_SPACE_DISABLED                   0x00000000 /* RWI-V */
 #define NV_XVE_DEV_CTRL_CMD_IO_SPACE_ENABLED                    0x00000001 /* RW--V */
+#define NV_XVE_DEV_CTRL_CMD_MEMORY_SPACE                               1:1 /* RWIVF */
+#define NV_XVE_DEV_CTRL_CMD_MEMORY_SPACE_DISABLED               0x00000000 /* RWI-V */
+#define NV_XVE_DEV_CTRL_CMD_MEMORY_SPACE_ENABLED                0x00000001 /* RW--V */
+#define NV_XVE_DEV_CTRL_CMD_BUS_MASTER                                 2:2 /* RWIVF */
+#define NV_XVE_DEV_CTRL_CMD_BUS_MASTER_DISABLED                 0x00000000 /* RWI-V */
+#define NV_XVE_DEV_CTRL_CMD_BUS_MASTER_ENABLED                  0x00000001 /* RW--V */
 #define NV_XVE_REV_ID                                 0x00000008 /* R--4R */
 #define NV_XVE_REV_ID_CLASS_CODE                            31:8 /* R-CVF */
 #define NV_XVE_REV_ID_CLASS_CODE_3D                   0x00030200 /* ----V */
+#define NV_XVE_BAR0                                 0x00000010 /* RW-4R */
+#define NV_XVE_BAR0_BASE_ADDRESS                         31:24 /* RWIVF */
+#define NV_XVE_BAR0_BASE_ADDRESS_INIT               0x00000000 /* RWI-V */
+#define NV_XVE_BAR1_LO                                 0x00000014 /* RW-4R */
+#define NV_XVE_BAR1_HI                                 0x00000018 /* RW-4R */
+#define NV_XVE_BAR2_LO                                 0x0000001C /* RW-4R */
+#define NV_XVE_BAR2_HI                                 0x00000020 /* RW-4R */
+#define NV_XVE_BAR3                                 0x00000024 /* RW-4R */
 #define NV_XVE_SUBSYSTEM                      0x0000002C /* R--4R */
 #define NV_XVE_MSI_CTRL                                    0x00000068 /* RW-4R */
 #define NV_XVE_MSI_CTRL_MSI                                     16:16 /* RWIVF */
@@ -146,5 +160,9 @@
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_NOT_ACTIVE         0x00000000 /* R-C-V */
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_ACTIVE             0x00000001 /* R---V */
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_CLEAR              0x00000001 /* -W--C */
-#define NV_XVE_CYA_2                                        0x00000704 /* RW-4R */
+#define NV_XVE_CYA_2                                             0x00000704 /* RW-4R */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2                           0x000000A0 /* RWI4R */
+#define NV_XVE_L1_PM_SUBSTATES_CTRL1                             0x00000260 /* RW-4R */
+#define NV_XVE_SW_RESET                                          0x00000718 /* RW-4R */
+#define NV_XVE_SW_RESET_RESET                                           0:0 /* RWCVF */
 #endif // __gm107_dev_nv_xve_h__

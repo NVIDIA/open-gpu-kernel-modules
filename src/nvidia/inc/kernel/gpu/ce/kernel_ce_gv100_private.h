@@ -24,52 +24,6 @@
 #ifndef KERNEL_CE_GV100_PRIVATE_H
 #define KERNEL_CE_GV100_PRIVATE_H
 
-#define MAX_CE_CNT 15
-
-/*
- * sysmemLinks
- *    Represents the number of sysmem links detected
- *    This affects how many PCEs LCE0(sysmem read CE)
- *    and LCE1(sysmem write CE) should be mapped to
- * maxLinksPerPeer
- *    Represents the maximum number of peer links
- *    between this GPU and all its peers. This affects
- *    how many PCEs LCE3(P2P CE) should be mapped to
- * numPeers
- *    Represents the number of Peer GPUs discovered so far
- * bSymmetric
- *    Represents whether the topology detected so far
- *    is symmetric i.e. has same number of links to all
- *    peers connected through nvlink. This affects how
- *    many PCEs to assign to LCEs3-5 (nvlink P2P CEs)
- * bSwitchConfig
- *    Represents whether the config listed is intended
- *    for use with nvswitch systems
- * pceLceMap
- *    Value of NV_CE_PCE2LCE_CONFIG0 register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * grceConfig
- *    Value of NV_CE_GRCE_CONFIG register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * exposeCeMask
- *    Mask of CEs to expose to clients for the above
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- */
-typedef struct NVLINK_CE_AUTO_CONFIG_TABLE
-{
-    NvU32  sysmemLinks;
-    NvU32  maxLinksPerPeer;
-    NvU32  numPeers;
-    NvBool bSymmetric;
-    NvBool bSwitchConfig;
-    NvU32  pceLceMap[MAX_CE_CNT];
-    NvU32  grceConfig[MAX_CE_CNT];
-    NvU32  exposeCeMask;
-} NVLINK_CE_AUTO_CONFIG_TABLE;
-
 //
 // General convention decided on between HW and SW:
 //  - CE2 is for SYSMEM reads

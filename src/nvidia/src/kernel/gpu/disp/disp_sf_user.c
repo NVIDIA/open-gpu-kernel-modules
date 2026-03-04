@@ -47,15 +47,6 @@ dispsfConstruct_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDispSfUser);
     KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
 
-    if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
-    {
-        NV_PRINTF(LEVEL_ERROR, 
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n", 
-                  pParams->externalClassId);
-
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelDisplay != NULL, NV_ERR_NOT_SUPPORTED);
 
     // Set sf user RegBase offset

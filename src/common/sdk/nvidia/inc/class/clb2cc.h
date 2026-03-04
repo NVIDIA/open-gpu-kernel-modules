@@ -21,22 +21,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clb2cc_h_
-#define _clb2cc_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
+
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clb2cc.finn
+//
 
 #include "clb0cc.h"
 
-#define  MAXWELL_PROFILER_DEVICE                                    (0x0000B2CC)
+#define MAXWELL_PROFILER_DEVICE (0xb2ccU) /* finn: Evaluated from "NVB2CC_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /*
  * Creating the MAXWELL_PROFILER_DEVICE object:
  * - The profiler object is instantiated as a child of subdevice.
  */
-typedef struct {
+#define NVB2CC_ALLOC_PARAMETERS_MESSAGE_ID (0xb2ccU)
+
+typedef struct NVB2CC_ALLOC_PARAMETERS {
     /*
      * This parameter specifies the handle of the client that owns the context
      * specified by hContextTarget. This can set it to 0 where a context
@@ -54,8 +58,3 @@ typedef struct {
     NvHandle hContextTarget;
 } NVB2CC_ALLOC_PARAMETERS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _clb2cc_h_ */

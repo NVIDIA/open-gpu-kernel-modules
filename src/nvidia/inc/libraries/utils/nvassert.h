@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,10 +98,18 @@ extern "C" {
 
 // Hook NV_ASSERT into RCDB.
 #if !defined(NV_JOURNAL_ASSERT_ENABLE)
-#if defined(NVRM) && (NVOS_IS_WINDOWS || NVOS_IS_UNIX || NVCPU_IS_RISCV64) && !defined(NVWATCH) && !defined(NV_MODS)
+#if defined(NVRM) && (NVOS_IS_WINDOWS || NVOS_IS_UNIX || NVOS_IS_LIBOS) && !defined(NVWATCH) && !defined(NV_MODS)
 #define NV_JOURNAL_ASSERT_ENABLE            1
 #else
 #define NV_JOURNAL_ASSERT_ENABLE            0
+#endif
+#endif
+
+#if !defined(NV_ASSERT_FAILED_BACKTRACE_ENABLE)
+#if defined(NVRM) && NVOS_IS_UNIX && !defined(NVWATCH) && defined(DEBUG)
+#define NV_ASSERT_FAILED_BACKTRACE_ENABLE            1
+#else
+#define NV_ASSERT_FAILED_BACKTRACE_ENABLE            0
 #endif
 #endif
 
@@ -113,8 +121,6 @@ void __coverity_panic__(void);
 #define COVERITY_ASSERT_FAIL() ((void) 0)
 #endif // defined(__COVERITY__)
 #endif // !defined(COVERITY_ASSERT_FAIL)
-
-const char *nvAssertStatusToString(NV_STATUS nvStatusIn);
 
 /*
  * NV_ASSERT_FAILED, NV_ASSERT_OK_FAILED, NV_CHECK_FAILED, and NV_CHECK_OK_FAILED
@@ -131,44 +137,6 @@ const char *nvAssertStatusToString(NV_STATUS nvStatusIn);
  *          for both NVLOG and NV_PRINTF.
  *          The _FUNC macros are used for pre-compiled headers on most platforms.
  */
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
-
-void nvAssertInit(void);
-void nvAssertDestroy(void);
-
-#if NV_JOURNAL_ASSERT_ENABLE
-void nvAssertFailed(void);
-void nvAssertOkFailed(NvU32 status);
-#else
-#define nvAssertFailed(...)
-#define nvAssertOkFailed(...)
-#endif
-
-#define NV_ASSERT_FAILED(exprStr)                                              \
-    do {                                                                       \
-        NV_PRINTF(LEVEL_ERROR, "Assertion failed: " exprStr "\n");             \
-        nvAssertFailed();                                                      \
-        COVERITY_ASSERT_FAIL();                                                \
-        PORT_BREAKPOINT();                                                     \
-    } while(0)
-
-#define NV_ASSERT_OK_FAILED(exprStr, status)                                   \
-    do {                                                                       \
-        NV_PRINTF(LEVEL_ERROR, "Assertion failed: %s (0x%08X) returned from "  \
-            exprStr "\n", nvAssertStatusToString(status), status);             \
-        nvAssertOkFailed(status);                                              \
-        COVERITY_ASSERT_FAIL();                                                \
-        PORT_BREAKPOINT();                                                     \
-    } while(0)
-
-#define NV_CHECK_FAILED(level, exprStr)                                        \
-    NV_PRINTF(level, "Check failed: " exprStr "\n")
-
-#define NV_CHECK_OK_FAILED(level, exprStr, status)                             \
-    NV_PRINTF(level, "Check failed: %s (0x%08X) returned from " exprStr "\n",  \
-        nvAssertStatusToString(status), status)
-
-#else // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
 
 #if NV_ASSERT_FAILED_USES_STRINGS
 #define NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr)   , exprStr, __FILE__, __LINE__
@@ -181,6 +149,44 @@ void nvAssertOkFailed(NvU32 status);
 #define NV_ASSERT_FAILED_FUNC_COMMA_TYPE             , NvU32 lineNum
 #define NV_ASSERT_FAILED_FUNC_TYPE                   NvU32 lineNum
 #endif
+
+#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
+
+void nvAssertInit(void);
+void nvAssertDestroy(void);
+
+void nvAssertFailed(NV_ASSERT_FAILED_FUNC_TYPE);
+void nvAssertOkFailed(NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_TYPE);
+
+#define NV_ASSERT_FAILED(exprStr)                                              \
+    do {                                                                       \
+        NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_FAILED,          \
+                       exprStr "\n");                                          \
+        nvAssertFailed(0);                                                     \
+        PORT_BREAKPOINT();                                                     \
+    } while(0)
+
+#define NV_ASSERT_OK_FAILED(exprStr, status)                                   \
+    do {                                                                       \
+        NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_OK_FAILED,       \
+                       exprStr "\n", status);                                  \
+        nvAssertOkFailed(status, 0);                                           \
+        PORT_BREAKPOINT();                                                     \
+    } while(0)
+
+#define NV_CHECK_FAILED(level, exprStr)                                        \
+   do {                                                                        \
+        NV_LOG_SPECIAL(level, RM_GSP_LOG_SPECIAL_CHECK_FAILED,                 \
+                       exprStr "\n");                                          \
+    } while(0)                                                                 \
+
+#define NV_CHECK_OK_FAILED(level, exprStr, status)                             \
+    do {                                                                       \
+        NV_LOG_SPECIAL(level, RM_GSP_LOG_SPECIAL_CHECK_OK_FAILED,              \
+                       exprStr "\n", status);                                  \
+    } while (0)
+
+#else // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 void nvAssertInit(void);
 void nvAssertDestroy(void);
@@ -214,7 +220,6 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
     do {                                                                       \
         NV_ASSERT_LOG(LEVEL_ERROR, "Assertion failed: " exprStr);              \
         nvAssertFailedNoLog(NV_ASSERT_FAILED_FUNC_PARAM(exprStr));             \
-        COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT_CHECKED();                                             \
     } while(0)
 
@@ -224,7 +229,6 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
             exprStr, status);                                                  \
         nvAssertOkFailedNoLog(status                                           \
             NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr));                       \
-        COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT_CHECKED();                                             \
     } while(0)
 
@@ -252,14 +256,12 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
 #define NV_ASSERT_FAILED_FUNC(exprStr)                                         \
     do {                                                                       \
         nvAssertFailed(NV_ASSERT_FAILED_FUNC_PARAM(exprStr));                  \
-        COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT_CHECKED();                                             \
     } while(0)
 
 #define NV_ASSERT_OK_FAILED_FUNC(exprStr, status)                              \
     do {                                                                       \
         nvAssertOkFail(status NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr));     \
-        COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT_CHECKED();                                             \
     } while(0)
 
@@ -276,7 +278,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
             NV_ASSERT_FAILED_FUNC_COMMA_PARAM(exprStr))                        \
     }
 
-#endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 /*
  * Defines for precompiled headers.
@@ -284,7 +286,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * On platforms other than GSP-RM, the _INLINE macros cannot be used inside
  * precompiled headers due to conflicting NVLOG_PRINT_IDs.
  */
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 #define NV_ASSERT_FAILED_PRECOMP    NV_ASSERT_FAILED
 #else
 #define NV_ASSERT_FAILED_PRECOMP    NV_ASSERT_FAILED_FUNC
@@ -300,7 +302,6 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * in NV_ASSERT_FAILED as well as an "other action":
  *   Print an error message in the debug output
  *   Log an error message in NvLog
- *   Mark as an error condition for coverity
  *   Breakpoint
  *   Log an assert record to the journal
  *   "Other action" as defined by each macro below.
@@ -326,7 +327,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * @param[in] expr  Expression that evaluates to a truth value.
  */
 #define NV_ASSERT(expr)                                                        \
-    NV_ASSERT_OR_ELSE_STR(expr, #expr, /* no other action */)
+    NV_ASSERT_OR_ELSE_STR(expr, #expr, COVERITY_ASSERT_FAIL())
 
 /**
  * Assert that an expression is true only in checked builds.
@@ -339,9 +340,9 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  */
 #if PORT_IS_CHECKED_BUILD
 #define NV_ASSERT_CHECKED(expr)                                                \
-    NV_ASSERT_OR_ELSE_STR(expr, #expr, /* no other action */)
+    NV_ASSERT_OR_ELSE_STR(expr, #expr, COVERITY_ASSERT_FAIL())
 #define NV_ASSERT_CHECKED_PRECOMP(expr)                                        \
-    NV_ASSERT_OR_ELSE_STR_PRECOMP(expr, #expr, /* no other action */)
+    NV_ASSERT_OR_ELSE_STR_PRECOMP(expr, #expr, COVERITY_ASSERT_FAIL())
 #else
 #define NV_ASSERT_CHECKED(expr)  ((void)0)
 #define NV_ASSERT_CHECKED_PRECOMP(expr)  ((void)0)
@@ -431,7 +432,6 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * in NV_ASSERT_OK_FAILED as well as an "other action":
  *   Print an error message in the debug output, including decoded NV_STATUS.
  *   Log an error message in NvLog.
- *   Mark as an error condition for coverity.
  *   Breakpoint.
  *   Log an assert record to the journal.
  *   "Other action" as defined by each macro below.
@@ -461,7 +461,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
     {                                                                          \
         NV_STATUS rm_pvt_status;                                               \
         NV_ASSERT_OK_OR_ELSE_STR(rm_pvt_status, expr, #expr,                   \
-                                 /* no other action */);                       \
+                                 COVERITY_ASSERT_FAIL());                      \
     } while(0)
 
 /**
@@ -480,7 +480,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
     {                                                                          \
         NV_STATUS rm_pvt_status;                                               \
         NV_ASSERT_OK_OR_ELSE_STR(rm_pvt_status, expr, #expr,                   \
-            return rm_pvt_status);                                             \
+                                 COVERITY_ASSERT_FAIL());                      \
     } while(0)
 #else
 #define NV_ASSERT_OK_CHECKED(expr)  ((void)0)
@@ -729,7 +729,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * implementations are platform dependent.
  *
  * The expression is always evaluated even if assertion failures are not logged
- * in the environment.  Use @ref NV_ASSERT_OK_CHECKED if the expression should
+ * in the environment.  Use @ref NV_CHECK_OK_CHECKED if the expression should
  * only be evaluated in checked builds.
  *
  * USE FOR error conditions that DO NOT require immediate action from NVIDIA,
@@ -824,6 +824,20 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
     NV_CHECK_OK_OR_ELSE_STR(status, level, expr, #expr, goto label)
 
 /**
+ * Check that an expression evaluates to NV_TRUE or else goto a label.
+ *
+ * @param[in] status The NV_STATUS variable to capture the status
+ * @param[in] level  NV_PRINTF LEVEL to print at
+ * @param[in] expr   Expression that evaluates to either NV_TRUE or NV_FALSE.
+ * @param[in] error  Error to be reflected in @p status when @p expr evaluates
+                     to NV_FALSE.
+ * @param[in] label  Label to jump to when @p expr evaluates to NV_FALSE.
+*/
+#define NV_CHECK_TRUE_OR_GOTO(status, level, expr, error, label)       \
+    NV_CHECK_OK_OR_ELSE_STR(status, level, ((expr) ? NV_OK : (error)), \
+        #expr, goto label);
+
+/**
  * Check that an expression evaluates to NV_OK or return the status.
  *
  * @param[in] level NV_PRINTF LEVEL to print at
@@ -887,7 +901,7 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  * See the NV_ASSERT documentation above for parameters and use cases.
  */
 #define NV_ASSERT_PRECOMP(expr)                                                \
-    NV_ASSERT_OR_ELSE_STR_PRECOMP(expr, #expr, /* no other action */)
+    NV_ASSERT_OR_ELSE_STR_PRECOMP(expr, #expr, COVERITY_ASSERT_FAIL())
 
 #define NV_ASSERT_OR_RETURN_PRECOMP(expr, retval)                              \
     NV_ASSERT_OR_ELSE_STR_PRECOMP(expr, #expr, return (retval))

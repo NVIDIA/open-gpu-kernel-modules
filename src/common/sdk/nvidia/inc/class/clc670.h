@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2018-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,26 +20,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clc670_h_
-#define _clc670_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc670.finn
+//
 
-#define  NVC670_DISPLAY                                             (0x0000C670)
+#define NVC670_DISPLAY (0xc670U) /* finn: Evaluated from "NVC670_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-typedef struct
-{
-    NvU32   numHeads; // Number of HEADs in this chip/display
-    NvU32   numSors;  // Number of SORs in this chip/display
-    NvU32   numDsis;  // Number of DSIs in this chip/display
+#define NVC670_ALLOCATION_PARAMETERS_MESSAGE_ID (0xc670U)
+
+typedef struct NVC670_ALLOCATION_PARAMETERS {
+    NvU32 numHeads; // Number of HEADs in this chip/display
+    NvU32 numSors;  // Number of SORs in this chip/display
+    NvU32 numDsis;  // Number of DSIs in this chip/display
 } NVC670_ALLOCATION_PARAMETERS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _clc670_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/device/device.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/bus/p2p_api.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "rmapi/rmapi.h"
@@ -39,27 +40,26 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
+#include <os/os.h>
+#include "platform/sli/sli.h"
 
+#include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_ram.h"  // NV_RAMIN_ALLOC_SIZE
 #include "ctrl/ctrl2080/ctrl2080fla.h" // NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK
 
 #define NVLNK_FABRIC_ADDR_GRANULARITY                                      36
 
 /*!
- * @brief Sets up the FLA state for the GPU. This function will allocate a RM
- * client, which will allocate the FERMI_VASPACE_A object, and binds the PDB
- * to MMU.
+ * @brief Sets up the Legacy FLA state for the GPU. This function will allocate a RM
+ * client, which will allocate the FERMI_VASPACE_A object with LEGACY_FLA flag.
  *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
  * @param[in]  base       VASpace base
  * @param[in]  size       VASpace size
-
  *
  * @return NV_OK if successful
  */
 NV_STATUS
-kbusAllocateFlaVaspace_GA100
+kbusAllocateLegacyFlaVaspace_GA100
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus,
@@ -67,39 +67,17 @@ kbusAllocateFlaVaspace_GA100
     NvU64      size
 )
 {
-    NV_STATUS    status = NV_OK;
-    OBJVMM      *pVmm   = SYS_GET_VMM(SYS_GET_INSTANCE());
-    KernelGmmu  *pKernelGmmu  = GPU_GET_KERNEL_GMMU(pGpu);
     NV0080_ALLOC_PARAMETERS nv0080AllocParams = {0};
     NV2080_ALLOC_PARAMETERS nv2080AllocParams = {0};
     NV_VASPACE_ALLOCATION_PARAMETERS vaParams = {0};
-    INST_BLK_INIT_PARAMS pInstblkParams = {0};
     RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    RsClient *pClient;
     NvBool    bAcquireLock = NV_FALSE;
-
-    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(!pKernelBus->flaInfo.bFlaAllocated, NV_ERR_INVALID_ARGUMENT);
-
-    pKernelBus->flaInfo.base = base;
-    pKernelBus->flaInfo.size = size;
-
-    if (gpuIsSriovEnabled(pGpu))
-    {
-        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-        if (pKernelNvlink != NULL &&
-            knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
-        {
-            pKernelBus->flaInfo.bFlaRangeRegistered = NV_TRUE;
-            return status;
-        }
-    }
+    RsClient *pClient;
+    NV_STATUS    status = NV_OK;
 
     //Allocate the client in RM which owns the FLAVASpace
     status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                                     NV01_ROOT, &pKernelBus->flaInfo.hClient);
+                                     NV01_ROOT, &pKernelBus->flaInfo.hClient, sizeof(pKernelBus->flaInfo.hClient));
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
 
     status = serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
@@ -112,7 +90,7 @@ kbusAllocateFlaVaspace_GA100
     nv0080AllocParams.deviceId = gpuGetDeviceInstance(pGpu);
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient,
                                      pKernelBus->flaInfo.hDevice, NV01_DEVICE_0,
-                                     &nv0080AllocParams);
+                                     &nv0080AllocParams, sizeof(nv0080AllocParams));
 
     if (status != NV_OK)
     {
@@ -129,7 +107,7 @@ kbusAllocateFlaVaspace_GA100
 
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
                                      pKernelBus->flaInfo.hSubDevice, NV20_SUBDEVICE_0,
-                                     &nv2080AllocParams);
+                                     &nv2080AllocParams, sizeof(nv2080AllocParams));
 
     if (status != NV_OK)
     {
@@ -163,7 +141,7 @@ kbusAllocateFlaVaspace_GA100
     // Allocate a FERMI_VASPACE_A object and associate it with hFlaVASpace
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
                                      pKernelBus->flaInfo.hFlaVASpace, FERMI_VASPACE_A,
-                                     &vaParams);
+                                     &vaParams, sizeof(vaParams));
     if (bAcquireLock)
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
@@ -178,6 +156,78 @@ kbusAllocateFlaVaspace_GA100
                   status);
         goto free_client;
     }
+
+    if (!(IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
+    {
+        // Get the FLA VASpace associated with hFlaVASpace
+        status = vaspaceGetByHandleOrDeviceDefault(pClient,
+                                                   pKernelBus->flaInfo.hDevice,
+                                                   pKernelBus->flaInfo.hFlaVASpace,
+                                                   &pKernelBus->flaInfo.pFlaVAS);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "failed getting the vaspace from handle, status=0x%x\n",
+                    status);
+            goto free_client;
+        }
+    }
+    return NV_OK;
+
+free_client:
+    pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
+    portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
+
+    NV_PRINTF(LEVEL_ERROR, "failed allocating FLA VASpace status=0x%x\n",
+              status);
+    return status;
+}
+
+/*!
+ * @brief Sets up the Fabric FLA state for the GPU. This function will allocate fabric VASpace,
+ *        allocates PDB for both legacy and fabric VAS, allocates instance block and initialize with
+ *        legacy VAS and binds the instance block to HW.
+ *
+ * @param[in]  base       VASpace base
+ * @param[in]  size       VASpace size
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusAllocateFlaVaspace_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64      base,
+    NvU64      size
+)
+{
+    NV_STATUS    status = NV_OK;
+    OBJVMM      *pVmm   = SYS_GET_VMM(SYS_GET_INSTANCE());
+    KernelGmmu  *pKernelGmmu  = GPU_GET_KERNEL_GMMU(pGpu);
+    INST_BLK_INIT_PARAMS pInstblkParams = {0};
+    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(!pKernelBus->flaInfo.bFlaAllocated, NV_ERR_INVALID_ARGUMENT);
+
+    pKernelBus->flaInfo.base = base;
+    pKernelBus->flaInfo.size = size;
+
+    if (gpuIsSriovEnabled(pGpu))
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        if (pKernelNvlink != NULL &&
+            knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+        {
+            pKernelBus->flaInfo.bFlaRangeRegistered = NV_TRUE;
+            return status;
+        }
+    }
+
+    NV_ASSERT_OK_OR_RETURN(kbusAllocateLegacyFlaVaspace_HAL(pGpu, pKernelBus, base, size));
 
     // Allocate a FABRIC_VASPACE_A object
     status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, gpumgrGetGpuMask(pGpu),
@@ -198,6 +248,7 @@ kbusAllocateFlaVaspace_GA100
     if (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
     {
         NV2080_CTRL_FLA_RANGE_PARAMS params = {0};
+        RsClient   *pClient;
         params.mode = NV2080_CTRL_FLA_RANGE_PARAMS_MODE_HOST_MANAGED_VAS_INITIALIZE;
         params.base = base;
         params.size = size;
@@ -210,6 +261,8 @@ kbusAllocateFlaVaspace_GA100
         {
             goto free_client;
         }
+
+        serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
 
         status = vaspaceGetByHandleOrDeviceDefault(pClient,
                                                    pKernelBus->flaInfo.hDevice,
@@ -225,19 +278,6 @@ kbusAllocateFlaVaspace_GA100
     }
     else
     {
-        // Get the FLA VASpace associated with hFlaVASpace
-        status = vaspaceGetByHandleOrDeviceDefault(pClient,
-                                                   pKernelBus->flaInfo.hDevice,
-                                                   pKernelBus->flaInfo.hFlaVASpace,
-                                                   &pKernelBus->flaInfo.pFlaVAS);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                    "failed getting the vaspace from handle, status=0x%x\n",
-                    status);
-            goto free_client;
-        }
-
         // Pin the VASPACE page directory for pFlaVAS before writing the instance block
         status = vaspacePinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
         if (status != NV_OK)
@@ -282,7 +322,15 @@ kbusAllocateFlaVaspace_GA100
             goto free_instblk;
         }
     }
-    pKernelBus->flaInfo.bFlaAllocated = NV_TRUE;
+    pKernelBus->flaInfo.bFlaAllocated    = NV_TRUE;
+    pKernelBus->flaInfo.bToggleBindPoint = NV_TRUE;
+
+    if (pGpu->pFabricVAS != NULL)
+    {
+        NV_ASSERT_OK_OR_GOTO(status, fabricvaspaceInitUCRange(
+                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu,
+                                     base, size), free_instblk);
+    }
 
     //
     // For SRIOV PF/VF system, always check for P2P allocation to determine whether
@@ -391,7 +439,7 @@ kbusAllocateHostManagedFlaVaspace_GA100
 
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(IS_GFID_VF(pGpu), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(IS_GFID_VF(gfid), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(hClient != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(hDevice != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(hSubdevice != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
@@ -466,6 +514,14 @@ kbusAllocateHostManagedFlaVaspace_GA100
     }
 
     pKernelBus->flaInfo.bFlaAllocated = NV_TRUE;
+    pKernelBus->flaInfo.bToggleBindPoint = NV_TRUE;
+
+    if (pGpu->pFabricVAS != NULL)
+    {
+        NV_ASSERT_OK_OR_GOTO(status, fabricvaspaceInitUCRange(
+                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu,
+                                     base, size), free_instblk);
+    }
 
     return status;
 
@@ -496,17 +552,14 @@ cleanup:
 }
 
 /*!
- * @brief Initialize the FLA data structure in OBJGPU
+ * Top level function to check if the platform supports FLA, and initialize if
+ * supported. This function gets called in all the platforms where Nvlink is enabled.
  *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
  * @param[in]  base       VASpace base
  * @param[in]  size       VASpace size
- *
- * @return NV_OK if successful
  */
 NV_STATUS
-kbusInitFla_GA100
+kbusCheckFlaSupportedAndInit_GA100
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus,
@@ -514,12 +567,8 @@ kbusInitFla_GA100
     NvU64      size
 )
 {
-    OBJSYS           *pSys              = SYS_GET_INSTANCE();
-    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    NV_STATUS         status            = NV_OK;
-    KernelNvlink     *pKernelNvlink     = GPU_GET_KERNEL_NVLINK(pGpu);
 
-    NV2080_CTRL_NVLINK_GET_SET_NVSWITCH_FLA_ADDR_PARAMS params;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
     portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
 
@@ -532,7 +581,8 @@ kbusInitFla_GA100
     //       Bug: 2985556, re-enable once we fix this bug.
     //
     if (((NULL != pKernelMIGManager) && !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager)) ||
-        (IsSLIEnabled(pGpu)))
+        (IsSLIEnabled(pGpu)) || pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
     {
         NV_PRINTF(LEVEL_INFO, "FLA is disabled, gpu %x is in MIG/SLI mode \n", pGpu->gpuInstance);
         pKernelBus->bFlaSupported = NV_FALSE;
@@ -550,6 +600,37 @@ kbusInitFla_GA100
     //
     if (RMCFG_FEATURE_PLATFORM_GSP)
         return NV_OK;
+
+    NV_ASSERT_OK_OR_RETURN(kbusDetermineFlaRangeAndAllocate_HAL(pGpu, pKernelBus, base, size));
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Determine FLA Base and Size for NvSwitch Virtualization systems
+ *        from reading the scratch registers. This determines FLA base and size
+ *        GA100 direct connected systems as well as skip allocation of FLA Vaspace
+ *        for vgpu host.
+ *
+ * @param[in]  base       VASpace base
+ * @param[in]  size       VASpace size
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusDetermineFlaRangeAndAllocate_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64      base,
+    NvU64      size
+)
+{
+    OBJSYS           *pSys              = SYS_GET_INSTANCE();
+    NV_STATUS         status            = NV_OK;
+    KernelNvlink     *pKernelNvlink     = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV2080_CTRL_NVLINK_GET_SET_NVSWITCH_FLA_ADDR_PARAMS params;
 
     if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED))
     {
@@ -577,6 +658,7 @@ kbusInitFla_GA100
                 NV_PRINTF(LEVEL_INFO, "Failed to enable FLA for GPU: %x\n", pGpu->gpuInstance);
                 return status;
             }
+
             base = params.addr;
         }
         else
@@ -626,18 +708,7 @@ kbusDestroyFla_GA100
         {
             if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
             {
-                NV_STATUS status = NV_OK;
-                NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = {0};
-
-                params.flaAction   = NV2080_CTRL_FLA_ACTION_UNBIND;
-
-                NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                                  pKernelBus->flaInfo.hSubDevice,
-                                  NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
-                                  &params, sizeof(params), status);
-
-                NV_ASSERT(status == NV_OK);
-                pKernelBus->flaInfo.bFlaBind = NV_FALSE;
+                kbusSetupUnbindFla_HAL(pGpu, pKernelBus);
             }
         }
 
@@ -713,36 +784,34 @@ kbusDestroyHostManagedFlaVaspace_GA100
     NV_PRINTF(LEVEL_INFO, "Freeing the FLA client: 0x%x FLAVASpace:%x, gpu:%x \n",
              pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hFlaVASpace, pGpu->gpuInstance);
 
-    if (pKernelBus->flaInfo.pFlaVAS)
+    if (pKernelBus->flaInfo.bFlaAllocated)
     {
-        NV_ASSERT(pKernelBus->flaInfo.bFlaBind == NV_FALSE);
-        if (pKernelBus->flaInfo.bFlaAllocated)
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        if (pKernelBus->flaInfo.pFlaVAS != NULL)
         {
-            KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
             vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-
-            if (pGpu->pFabricVAS != NULL)
-            {
-                vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
-                vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
-                pGpu->pFabricVAS = NULL;
-            }
-
-            kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
-            pKernelBus->flaInfo.hClient = NV01_NULL_OBJECT;
-            pKernelBus->flaInfo.hDevice = NV01_NULL_OBJECT;
-            pKernelBus->flaInfo.hSubDevice = NV01_NULL_OBJECT;
             pKernelBus->flaInfo.hFlaVASpace = NV01_NULL_OBJECT;
             pKernelBus->flaInfo.pFlaVAS = NULL;
-            pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
+        }
 
-            if (pKernelNvlink == NULL || !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
-            {
-                pKernelBus->flaInfo.bFlaRangeRegistered = NV_FALSE;
-                pKernelBus->flaInfo.base = 0;
-                pKernelBus->flaInfo.size = 0;
-            }
+        if (pGpu->pFabricVAS != NULL)
+        {
+            vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
+            vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
+            pGpu->pFabricVAS = NULL;
+        }
+
+        kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
+        pKernelBus->flaInfo.hClient = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.hDevice = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.hSubDevice = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
+        if (pKernelNvlink == NULL || !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+        {
+            pKernelBus->flaInfo.bFlaRangeRegistered = NV_FALSE;
+            pKernelBus->flaInfo.base = 0;
+            pKernelBus->flaInfo.size = 0;
         }
     }
 }
@@ -750,8 +819,6 @@ kbusDestroyHostManagedFlaVaspace_GA100
 /*!
  * @brief This function will return the OBJVASPACE for the FLA VAS.
  *
- * @param[in]      pGpu
- * @param[in]      pKernelBus
  * @param[in/out]  ppVAS    OBJVASPACE double pointer
  *
  * @return NV_ERR_NOT_SUPPORTED, if FLA is not supported,
@@ -819,8 +886,6 @@ kbusGetFlaVaspace_GA100
  * @brief Constructor for the Instance Memory block for FLA VASpace. This will
  *        allocate the memory descriptor for the IMB.
  *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
  *
  * @return NV_OK, if successful
  */
@@ -859,7 +924,8 @@ kbusConstructFlaInstBlk_GA100
 
     NV_ASSERT(status == NV_OK);
 
-    status = memdescAlloc(pKernelBus->flaInfo.pInstblkMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_89, 
+                        pKernelBus->flaInfo.pInstblkMemDesc);
 
     NV_ASSERT(status == NV_OK);
 
@@ -876,8 +942,6 @@ kbusConstructFlaInstBlk_GA100
 /*!
  * @brief Destruct the Instance memory block allocated for FLA VAS
  *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
  */
 void
 kbusDestructFlaInstBlk_GA100
@@ -898,8 +962,6 @@ kbusDestructFlaInstBlk_GA100
 /*!
  * @brief Function to determine if the mapping can be direct mapped or BAR mapped
  *
- * @param[in]   pGpu
- * @param[in]   pKernelBus
  * @param[in]   pMemDesc    Memory Descriptor pointer
  * @param[in]   mapFlags    Flags used for mapping
  * @param[in]   bDirectSysMappingAllowed boolean to return the result
@@ -954,11 +1016,13 @@ kbusGetNvlinkP2PPeerId_GA100
     KernelBus *pKernelBus0,
     OBJGPU    *pGpu1,
     KernelBus *pKernelBus1,
-    NvU32     *nvlinkPeer
+    NvU32     *nvlinkPeer,
+    NvU32      attributes
 )
 {
     KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
     NV_STATUS     status         = NV_OK;
+    NvBool        bEgmPeer = FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES, attributes);
 
     if (nvlinkPeer == NULL)
     {
@@ -977,19 +1041,16 @@ kbusGetNvlinkP2PPeerId_GA100
     // If NVLINK topology is forced and the forced configuration has peer links,
     // get the peer ID from the table
     //
-    if (knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-        pKernelNvlink0->bRegistryLinkOverride)
+    if ((knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
+        knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) && !bEgmPeer)
     {
-        if (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0)
-        {
-            *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
-                                                     pGpu0->gpuInstance,
-                                                     pGpu1->gpuInstance);
+        *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
+                                                 pGpu0->gpuInstance,
+                                                 pGpu1->gpuInstance);
 
-            if (*nvlinkPeer == BUS_INVALID_PEER)
-            {
-                return NV_ERR_INVALID_REQUEST;
-            }
+        if (*nvlinkPeer == BUS_INVALID_PEER)
+        {
+            return NV_ERR_INVALID_REQUEST;
         }
         return NV_OK;
     }
@@ -999,19 +1060,46 @@ kbusGetNvlinkP2PPeerId_GA100
     // auto-config.
     //
 
+    //
     // Return if there are no NVLink connections to the remote GPU
-    if (pKernelNvlink0->peerLinkMasks[gpuGetInstance(pGpu1)] == 0)
+    //
+    // skipping this check for knvlinkIsForcedConfig case since
+    // peerLinkMasks is not set for knvlinkIsForcedConfig
+    // this will be skipped only for reserving EGM peerId (bEgmPeer is true)
+    // when client has not provided EGM peerId mask in forced config
+    // tests.
+    //
+    if (!(knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
+          knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) &&
+         (knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, gpuGetInstance(pGpu1)) == 0))
     {
         return NV_OK;
     }
 
     // Return if a peer ID is already allocated for P2P from pGpu0 to pGpu1
-    *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    if (bEgmPeer)
+    {
+        *nvlinkPeer = kbusGetEgmPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+    else
+    {
+        *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+
     if (*nvlinkPeer != BUS_INVALID_PEER)
     {
         return NV_OK;
     }
 
+    // Separate peer id required for EGM even in Nvswitch systems.
+    if (bEgmPeer)
+    {
+        if (knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+        {
+            *nvlinkPeer = 1;
+            goto kbusGetNvlinkP2PPeerId_end;
+        }
+    }
     //
     // Peer ID 0 is used for the following use-cases:
     //     1. If the GPU is connected to itself through NVLink (loopback)
@@ -1022,8 +1110,8 @@ kbusGetNvlinkP2PPeerId_GA100
     //     2. Mix of direct NVLink and NVSwitch connections is supported
     //   None of the above hold true currently
     //
-    if ((pGpu0 == pGpu1) ||
-        knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+    else
+    if ((pGpu0 == pGpu1) || knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
     {
         *nvlinkPeer = 0;
 
@@ -1052,6 +1140,11 @@ kbusGetNvlinkP2PPeerId_end:
     // Reserve the peer ID for NVLink use
     status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
 
+    if (status == NV_OK)
+    {
+        pKernelBus0->p2p.bEgmPeer[*nvlinkPeer] = bEgmPeer;
+    }
+
     return status;
 }
 
@@ -1061,8 +1154,6 @@ kbusGetNvlinkP2PPeerId_end:
  *       reflected accesses. RM should select direct mapping for any accesses
  *       other than FB
  *
- * @param[in]     pGpu
- * @param[in]     pKernelBus
  * @param[in]     pMemDesc           MEMORY_DESCRIPTOR pointer
  * @param[in/out] pbAllowDirectMap   NvBool pointer
  *
@@ -1091,8 +1182,6 @@ kbusUseDirectSysmemMap_GA100
 /*!
  * @brief   Validates FLA base address.
  *
- * @param[in]     pGpu
- * @param[in]     pKernelBus
  * @param         flaBaseAddr
  *
  * @returns On success, NV_OK.
@@ -1141,8 +1230,6 @@ kbusValidateFlaBaseAddress_GA100
  *         re-spawn at any point later. We don't do any client validation, since FM is
  *         a privileged process managed by sysadmin.
  *
- * @param[in]    pGpu
- * @param[in]    pKernelBus
  * @param[in]    flaBaseAddr NvU64 address
  * @param[in]    flaSize     NvU64 Size
  *
@@ -1165,3 +1252,275 @@ kbusValidateFlaBaseAddress_GA100
     NV_PRINTF(LEVEL_INFO, "FLA base: %llx, size: %llx is verified \n", flaBaseAddr, flaSize);
     return NV_TRUE;
  }
+
+/*!
+ * @brief Returns the NvSwitch peer ID
+ *
+ *
+ * @returns NvU32 bus peer number
+ */
+NvU32
+kbusGetNvSwitchPeerId_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NvU32 peerId = BUS_INVALID_PEER;
+    NvU32 i;
+
+    if (IS_VIRTUAL(pGpu) && GPU_IS_NVSWITCH_DETECTED(pGpu))
+        goto nvswitch_detected;
+
+    if (pKernelNvlink == NULL)
+        return BUS_INVALID_PEER;
+
+    if (!knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+        return BUS_INVALID_PEER;
+
+nvswitch_detected:
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        peerId = pKernelBus->p2p.busNvlinkPeerNumberMask[i];
+
+        if (peerId == 0)
+            continue;
+
+        LOWESTBITIDX_32(peerId);
+
+        break;
+    }
+
+    return peerId;
+}
+
+/*!
+ * @brief Helper function to extract information from FLA data structure and
+ *        to trigger RPC to Physical RM to BIND FLA VASpace
+ *
+ * @param[in]  gfid     GFID
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusSetupBindFla_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU32      gfid
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = {0};
+
+    if (!gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+    {
+        MEMORY_DESCRIPTOR  *pMemDesc;
+        RmPhysAddr          imbPhysAddr;
+        NvU32               addrSpace;
+
+        pMemDesc     = pKernelBus->flaInfo.pInstblkMemDesc;
+        imbPhysAddr  = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+        addrSpace    = memdescGetAddressSpace(pMemDesc);
+        NV2080_CTRL_FLA_ADDRSPACE paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
+
+        switch(addrSpace)
+        {
+            case ADDR_FBMEM:
+                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
+                break;
+            case ADDR_SYSMEM:
+                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_SYSMEM;
+                break;
+        }
+        params.imbPhysAddr = imbPhysAddr;
+        params.addrSpace   = paramAddrSpace;
+    }
+    params.flaAction   = NV2080_CTRL_FLA_ACTION_BIND;
+
+    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
+                        pKernelBus->flaInfo.hSubDevice,
+                        NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
+                        &params, sizeof(params), status);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FLA bind failed, status: %x \n", status);
+        return status;
+    }
+
+    // Since FLA state is tracked in the Guest, Guest RM needs to set it here
+    pKernelBus->flaInfo.bFlaBind = NV_TRUE;
+    pKernelBus->bFlaEnabled      = NV_TRUE;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Helper function to trigger RPC to Physical RM to unbind FLA VASpace
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusSetupUnbindFla_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = { 0 };
+
+    if (!pKernelBus->flaInfo.bFlaBind)
+        return NV_OK;
+
+    params.flaAction = NV2080_CTRL_FLA_ACTION_UNBIND;
+
+    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
+                      pKernelBus->flaInfo.hSubDevice,
+                      NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
+                      &params, sizeof(params), status);
+
+    pKernelBus->flaInfo.bFlaBind = NV_FALSE;
+    pKernelBus->bFlaEnabled      = NV_FALSE;
+
+    return status;
+}
+
+NV_STATUS
+kbusGetFlaRange_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64     *ucFlaBase,
+    NvU64     *ucFlaSize,
+    NvBool     bIsConntectedToNvswitch
+)
+{
+    if (gpuIsSriovEnabled(pGpu) && bIsConntectedToNvswitch)
+    {
+        if (pKernelBus->flaInfo.bFlaRangeRegistered)
+        {
+            *ucFlaBase = pKernelBus->flaInfo.base;
+            *ucFlaSize = pKernelBus->flaInfo.size;
+        }
+    }
+    else // direct connected system
+    {
+        *ucFlaSize = gpuGetFlaVasSize_HAL(pGpu, NV_FALSE);
+        *ucFlaBase = pGpu->gpuInstance * (*ucFlaSize);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Returns the Nvlink specific peer number from pGpu (Local) to pGpuPeer.
+ *        Used only by VF.
+ *
+ * @param[in] pGpu          Local
+ * @param[in] pKernelBus    Local
+ * @param[in] pGpuPeer      Remote
+ *
+ * @returns NvU32 bus peer number
+ */
+NvU32
+kbusGetNvlinkPeerId_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    OBJGPU    *pGpuPeer
+)
+{
+    NvU32 gpuPeerInst = gpuGetInstance(pGpuPeer);
+    NvU32 peerId = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuPeerInst];
+
+    if (peerId == 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "NVLINK P2P not set up between GPU%u and GPU%u, checking for PCIe P2P...\n",
+                  gpuGetInstance(pGpu), gpuPeerInst);
+        return BUS_INVALID_PEER;
+    }
+
+    LOWESTBITIDX_32(peerId);
+    return peerId;
+}
+
+/*!
+* @brief  Cache the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE
+*
+* @param[in] pGpu       OBJGPU pointer
+* @param[in] pKernelBus KernelBus pointer
+*
+*/
+void
+kbusCacheBAR1ResizeSize_WAR_BUG_3249028_GA100
+(
+   OBJGPU    *pGpu,
+   KernelBus *pKernelBus
+)
+{
+   NvU32 regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL);
+   pKernelBus->bar1ResizeSizeIndex = DRF_VAL(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, regVal);
+}
+
+/*!
+* @brief  Restore the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE if different
+*         from the cached value.
+*         Windows has a strict requirement that the PCIE config has to stay
+*         the same across power transitions.
+*         Early SBIOS implementing resize BAR do not restore properly
+*         the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE.
+*         The reason of this WAR is to not crash the systems that have
+*         not been updated - yet.
+*
+* @param[in] pGpu       OBJGPU pointer
+* @param[in] pKernelBus KernelBus pointer
+*
+* @returns      NV_STATUS
+*
+*/
+NV_STATUS
+kbusRestoreBAR1ResizeSize_WAR_BUG_3249028_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 regVal;
+    NvU32 bar1ResizeSizeIndex;
+
+    if (!pKernelBus->getProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR))
+    {
+        return NV_OK;
+    }
+
+    NV_ASSERT_OR_RETURN(pKernelBus->bar1ResizeSizeIndex >= NV_XVE_RESIZE_BAR1_CTRL_BAR_SIZE_MIN,
+        NV_ERR_INVALID_DATA);
+
+    NV_ASSERT_OR_RETURN(pKernelBus->bar1ResizeSizeIndex <= NV_XVE_RESIZE_BAR1_CTRL_BAR_SIZE_MAX,
+        NV_ERR_INVALID_DATA);
+
+    regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL);
+    bar1ResizeSizeIndex = DRF_VAL(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, regVal);
+
+    if (bar1ResizeSizeIndex == pKernelBus->bar1ResizeSizeIndex)
+    {
+        // BAR1 size match. Nothing to do
+        return NV_OK;
+    }
+
+    // BAR1 size changed. Warn and update
+    NV_PRINTF(LEVEL_WARNING, "BAR1 size mismatch: current: 0x%x, expected: 0x%x\n",
+        bar1ResizeSizeIndex, pKernelBus->bar1ResizeSizeIndex);
+    NV_PRINTF(LEVEL_WARNING, "Most likely SBIOS did not restore the BAR1 size\n");
+    NV_PRINTF(LEVEL_WARNING, "Please update your SBIOS!\n");
+
+    regVal = FLD_SET_DRF_NUM(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, pKernelBus->bar1ResizeSizeIndex, regVal);
+    GPU_REG_WR32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL, regVal);
+
+    return NV_OK;
+}

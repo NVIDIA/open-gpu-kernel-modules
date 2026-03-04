@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,10 +39,74 @@
 // Public interface for accessing the acquired binary data
 //
 
-//
-// Binary data access handler
-//
-typedef struct BINDATA_RUNTIME_INFO BINDATA_RUNTIME_INFO, *PBINDATA_RUNTIME_INFO;
+typedef enum {
+    BINDATA_LABEL_HEADER_DBG,
+    BINDATA_LABEL_HEADER_PROD,
+    BINDATA_LABEL_HS_SIG_PATCH_METADATA,
+    BINDATA_LABEL_IMAGE_DBG,
+    BINDATA_LABEL_IMAGE_PROD,
+    BINDATA_LABEL_LC128_DBG,
+    BINDATA_LABEL_LC128_PROD,
+    BINDATA_LABEL_NUM_SIGS,
+    BINDATA_LABEL_NUM_SIGS_PER_UCODE_DBG,
+    BINDATA_LABEL_NUM_SIGS_PER_UCODE_PROD,
+    BINDATA_LABEL_PATCH_LOC,
+    BINDATA_LABEL_PATCH_META,
+    BINDATA_LABEL_PATCH_SIG,
+    BINDATA_LABEL_SIG_DBG,
+    BINDATA_LABEL_SIG_PROD,
+    BINDATA_LABEL_UCODE_DATA,
+    BINDATA_LABEL_UCODE_DATA_DBG,
+    BINDATA_LABEL_UCODE_DATA_PROD,
+    BINDATA_LABEL_UCODE_DESC,
+    BINDATA_LABEL_UCODE_DESC_DBG,
+    BINDATA_LABEL_UCODE_DESC_PROD,
+    BINDATA_LABEL_UCODE_FALCON_HEADER_DBG,
+    BINDATA_LABEL_UCODE_FALCON_IMAGE_DBG,
+    BINDATA_LABEL_UCODE_HASH,
+    BINDATA_LABEL_UCODE_HEADER,
+    BINDATA_LABEL_UCODE_HEADER_DBG,
+    BINDATA_LABEL_UCODE_HEADER_PROD,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_DBG,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_INDEX_DBG,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_INDEX_PROD,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_PATCH_INDEX_DBG,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_PATCH_INDEX_PROD,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_PATCH_METADATA_DBG,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_PATCH_METADATA_PROD,
+    BINDATA_LABEL_UCODE_HS_OVL_SIG_PROD,
+    BINDATA_LABEL_UCODE_IMAGE,
+    BINDATA_LABEL_UCODE_IMAGE_DBG,
+    BINDATA_LABEL_UCODE_IMAGE_DESC,
+    BINDATA_LABEL_UCODE_IMAGE_PROD,
+    BINDATA_LABEL_UCODE_LSF_DESC,
+    BINDATA_LABEL_UCODE_LSF_DESC_DBG,
+    BINDATA_LABEL_UCODE_LSF_DESC_PROD,
+    BINDATA_LABEL_UCODE_LSF_LSB_HEADER,
+    BINDATA_LABEL_UCODE_MANIFEST,
+    BINDATA_LABEL_UCODE_MANIFEST_DBG,
+    BINDATA_LABEL_UCODE_MANIFEST_PROD,
+    BINDATA_LABEL_UCODE_NUM_SIGS_PER_UCODE,
+    BINDATA_LABEL_UCODE_NUM_SIGS_PER_UCODE_DBG,
+    BINDATA_LABEL_UCODE_NUM_SIGS_PER_UCODE_PROD,
+    BINDATA_LABEL_UCODE_PATCH_LOC,
+    BINDATA_LABEL_UCODE_PATCH_SIG,
+    BINDATA_LABEL_UCODE_PKEY,
+    BINDATA_LABEL_UCODE_RISCV_DESC_DBG,
+    BINDATA_LABEL_UCODE_RISCV_IMAGE_DBG,
+    BINDATA_LABEL_UCODE_RISCV_NO_MANIFEST_DESC_DBG,
+    BINDATA_LABEL_UCODE_RISCV_NO_MANIFEST_IMAGE_DBG,
+    BINDATA_LABEL_UCODE_SIG,
+    BINDATA_LABEL_UCODE_SIG_DBG,
+    BINDATA_LABEL_UCODE_SIG_PATCH_IND,
+    BINDATA_LABEL_UCODE_SIG_PATCH_LOC,
+    BINDATA_LABEL_UCODE_SIG_PATCH_METADATA,
+    BINDATA_LABEL_UCODE_SIG_PROD,
+    BINDATA_LABEL_UCODE_SIG_PATCH_SIG,
+    BINDATA_LABEL_LC128_PATCH_LOC_PROD,
+    BINDATA_LABEL_LC128_PATCH_LOC_DBG,
+    BINDATA_LABEL_CERTIFICATE_PEM,
+} BINDATA_LABEL;
 
 //
 // Public binary storage information
@@ -52,26 +116,22 @@ typedef struct BINDATA_STORAGE BINDATA_STORAGE, *PBINDATA_STORAGE;
 
 
 //
-// Primitives
-//
-NV_STATUS bindataAcquire(const BINDATA_STORAGE *pBinStorage, PBINDATA_RUNTIME_INFO *ppBinInfo);
-NV_STATUS bindataGetNextChunk(PBINDATA_RUNTIME_INFO pBinInfo, NvU8 *pBuffer, NvU32 nBytes);
-void      bindataRelease(PBINDATA_RUNTIME_INFO pBinInfo);
-
-
-//
 // Utilities
 //
 NV_STATUS bindataWriteToBuffer(const BINDATA_STORAGE *pBinStorage, NvU8 *pBuffer, NvU32 bufferSize);
 NvU32     bindataGetBufferSize(const BINDATA_STORAGE *pBinStorage);
+NV_STATUS bindataStorageAcquireData(const BINDATA_STORAGE *pBinStorage, const void **ppData);
+void bindataStorageReleaseData(void *pData);
 
+void bindataInitialize(void);
+void bindataDestroy(void);
 
 //
 // Bindata Archive support
 //
 typedef struct
 {
-    const char*              name;                // string of file name or name tag
+    BINDATA_LABEL            bindataLabel;
     const PBINDATA_STORAGE   pBinStorage;         // pointer to the binary storage
 } BINDATA_ARCHIVE_ENTRY;
 
@@ -83,7 +143,7 @@ typedef struct
 
 
 // Bindata Archive API - get Bindata storage from a Bindata Archive
-const BINDATA_STORAGE * bindataArchiveGetStorage(const BINDATA_ARCHIVE *pBinArchive, const char *bindataName);
+const BINDATA_STORAGE * bindataArchiveGetStorage(const BINDATA_ARCHIVE *pBinArchive, BINDATA_LABEL bindataLabel);
 
 //
 // Iterate over all BINDATA_STORAGE entries that have not been referenced so far
@@ -96,11 +156,11 @@ const BINDATA_STORAGE * bindataArchiveGetStorage(const BINDATA_ARCHIVE *pBinArch
 //        do_stuff(datablock, size);
 //    }
 //
-void* bindataGetNextUnreferencedStorage(const BINDATA_STORAGE **iter, NvU32 *pDataSize);
+void* bindataGetNextUnreferencedStorage(NvU32 *pIdx, NvU32 *pDataSize);
 //
 // Marks a given BINDATA_STORAGE as destroyed, making all subsequent attempts
 // to access it fail and return NULL/0
 //
-void bindataDestroyStorage(BINDATA_STORAGE *storage);
+void bindataDestroyStorage(NvU32 idx);
 
 #endif // _BINDATA_H

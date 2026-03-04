@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,28 +20,31 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #include "nvidia-drm-priv.h"
-#include "nvidia-drm-ioctl.h"
 #include "nvidia-drm-fb.h"
 #include "nvidia-drm-utils.h"
 #include "nvidia-drm-gem.h"
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-format.h"
+#include "nv_drm_common_ioctl.h"
 
 #include <drm/drm_crtc_helper.h>
 
 static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 {
+    struct drm_framebuffer *fb = &nv_fb->base;
     uint32_t i;
 
     /* Unreference gem object */
-    for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
-        if (nv_fb->nv_gem[i] != NULL) {
-            nv_drm_gem_object_unreference_unlocked(nv_fb->nv_gem[i]);
+    for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
+        struct drm_gem_object *gem = fb->obj[i];
+        if (gem != NULL) {
+            struct nv_drm_gem_object *nv_gem = to_nv_gem_object(gem);
+            nv_drm_gem_object_unreference_unlocked(nv_gem);
         }
     }
 
@@ -69,10 +72,8 @@ static int
 nv_drm_framebuffer_create_handle(struct drm_framebuffer *fb,
                                  struct drm_file *file, unsigned int *handle)
 {
-    struct nv_drm_framebuffer *nv_fb = to_nv_framebuffer(fb);
-
     return nv_drm_gem_handle_create(file,
-                                    nv_fb->nv_gem[0],
+                                    to_nv_gem_object(fb->obj[0]),
                                     handle);
 }
 
@@ -82,12 +83,12 @@ static struct drm_framebuffer_funcs nv_framebuffer_funcs = {
 };
 
 static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
-    struct drm_device *dev,
+    struct nv_drm_device *nv_dev,
     struct drm_file *file,
-    struct drm_mode_fb_cmd2 *cmd)
+    const struct drm_mode_fb_cmd2 *cmd)
 {
-    struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
+    struct nv_drm_gem_object *nv_gem;
     const int num_planes = nv_drm_format_num_planes(cmd->pixel_format);
     uint32_t i;
 
@@ -101,21 +102,22 @@ static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
         return ERR_PTR(-ENOMEM);
     }
 
-    if (num_planes > ARRAY_SIZE(nv_fb->nv_gem)) {
+    if (num_planes > NVKMS_MAX_PLANES_PER_SURFACE) {
         NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Unsupported number of planes");
         goto failed;
     }
 
     for (i = 0; i < num_planes; i++) {
-        if ((nv_fb->nv_gem[i] = nv_drm_gem_object_lookup(
-                        dev,
-                        file,
-                        cmd->handles[i])) == NULL) {
+        nv_gem = nv_drm_gem_object_lookup(file, cmd->handles[i]);
+
+        if (nv_gem == NULL) {
             NV_DRM_DEV_DEBUG_DRIVER(
                 nv_dev,
                 "Failed to find gem object of type nvkms memory");
             goto failed;
         }
+
+        nv_fb->base.obj[i] = &nv_gem->base;
     }
 
      return nv_fb;
@@ -135,12 +137,14 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct NvKmsKapiCreateSurfaceParams params = { };
+    struct nv_drm_gem_object *nv_gem;
+    struct drm_framebuffer *fb = &nv_fb->base;
     uint32_t i;
     int ret;
 
     /* Initialize the base framebuffer object and add it to drm subsystem */
 
-    ret = drm_framebuffer_init(dev, &nv_fb->base, &nv_framebuffer_funcs);
+    ret = drm_framebuffer_init(dev, fb, &nv_framebuffer_funcs);
     if (ret != 0) {
         NV_DRM_DEV_DEBUG_DRIVER(
             nv_dev,
@@ -148,15 +152,18 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
         return ret;
     }
 
-    for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
-        if (nv_fb->nv_gem[i] != NULL) {
-            params.planes[i].memory = nv_fb->nv_gem[i]->pMemory;
-            params.planes[i].offset = nv_fb->base.offsets[i];
-            params.planes[i].pitch = nv_fb->base.pitches[i];
+    for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
+        struct drm_gem_object *gem = fb->obj[i];
+        if (gem != NULL) {
+            nv_gem = to_nv_gem_object(gem);
+
+            params.planes[i].memory = nv_gem->pMemory;
+            params.planes[i].offset = fb->offsets[i];
+            params.planes[i].pitch = fb->pitches[i];
         }
     }
-    params.height = nv_fb->base.height;
-    params.width = nv_fb->base.width;
+    params.height = fb->height;
+    params.width = fb->width;
     params.format = format;
 
     if (have_modifier) {
@@ -164,9 +171,57 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
         params.layout = (modifier & 0x10) ?
             NvKmsSurfaceMemoryLayoutBlockLinear :
             NvKmsSurfaceMemoryLayoutPitch;
+
+        // See definition of DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEAR_2D, we are testing
+        // 'c', the lossless compression field of the modifier
+        if (params.layout == NvKmsSurfaceMemoryLayoutBlockLinear &&
+            (modifier >> 23) & 0x7) {
+            NV_DRM_DEV_LOG_ERR(
+                    nv_dev,
+                    "Cannot create FB from compressible surface allocation");
+            goto fail;
+        }
+
         params.log2GobsPerBlockY = modifier & 0xf;
     } else {
         params.explicit_layout = false;
+    }
+
+    /*
+     * XXX work around an invalid pitch assumption in DRM.
+     *
+     * The smallest pitch the display hardware allows is 256.
+     *
+     * If a DRM client allocates a 32x32 cursor surface through
+     * DRM_IOCTL_MODE_CREATE_DUMB, we'll correctly round the pitch to 256:
+     *
+     *     pitch = round(32width * 4Bpp, 256) = 256
+     *
+     * and then allocate an 8k surface:
+     *
+     *     size = pitch * 32height = 8196
+     *
+     * and report the rounded pitch and size back to the client through the
+     * struct drm_mode_create_dumb ioctl params.
+     *
+     * But when the DRM client passes that buffer object handle to
+     * DRM_IOCTL_MODE_CURSOR, the client has no way to specify the pitch.  This
+     * path in drm:
+     *
+     *    DRM_IOCTL_MODE_CURSOR
+     *     drm_mode_cursor_ioctl()
+     *      drm_mode_cursor_common()
+     *       drm_mode_cursor_universal()
+     *
+     * will implicitly create a framebuffer from the buffer object, and compute
+     * the pitch as width x 32 (without aligning to our minimum pitch).
+     *
+     * Intercept this case and force the pitch back to 256.
+     */
+    if ((params.width == 32) &&
+        (params.height == 32) &&
+        (params.planes[0].pitch == 128)) {
+        params.planes[0].pitch = 256;
     }
 
     /* Create NvKmsKapiSurface */
@@ -174,26 +229,30 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
     nv_fb->pSurface = nvKms->createSurface(nv_dev->pDevice, &params);
     if (nv_fb->pSurface == NULL) {
         NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Failed to create NvKmsKapiSurface");
-        drm_framebuffer_cleanup(&nv_fb->base);
-        return -EINVAL;
+        goto fail;
     }
 
     return 0;
+
+fail:
+    drm_framebuffer_cleanup(fb);
+    return -EINVAL;
 }
 
-struct drm_framebuffer *nv_drm_internal_framebuffer_create(
+struct drm_framebuffer *nv_drm_framebuffer_create(
     struct drm_device *dev,
     struct drm_file *file,
-    struct drm_mode_fb_cmd2 *cmd)
+#if defined(NV_DRM_FB_CREATE_TAKES_FORMAT_INFO)
+    const struct drm_format_info *info,
+#endif
+    const struct drm_mode_fb_cmd2 *cmd)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
     uint64_t modifier = 0;
     int ret;
     enum NvKmsSurfaceMemoryFormat format;
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     int i;
-#endif
     bool have_modifier = false;
 
     /* Check whether NvKms supports the given pixel format */
@@ -204,7 +263,6 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
         return ERR_PTR(-EINVAL);
     }
 
-#if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     if (cmd->flags & DRM_MODE_FB_MODIFIERS) {
         have_modifier = true;
         modifier = cmd->modifier[0];
@@ -218,14 +276,13 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
         if (nv_dev->modifiers[i] == DRM_FORMAT_MOD_INVALID) {
             NV_DRM_DEV_DEBUG_DRIVER(
                 nv_dev,
-                "Invalid format modifier for framebuffer object: 0x%016llx",
+                "Invalid format modifier for framebuffer object: 0x%016" NvU64_fmtx,
                 modifier);
             return ERR_PTR(-EINVAL);
         }
     }
-#endif
 
-    nv_fb = nv_drm_framebuffer_alloc(dev, file, cmd);
+    nv_fb = nv_drm_framebuffer_alloc(nv_dev, file, cmd);
     if (IS_ERR(nv_fb)) {
         return (struct drm_framebuffer *)nv_fb;
     }
@@ -233,10 +290,11 @@ struct drm_framebuffer *nv_drm_internal_framebuffer_create(
     /* Fill out framebuffer metadata from the userspace fb creation request */
 
     drm_helper_mode_fill_fb_struct(
-        #if defined(NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_DEV_ARG)
         dev,
-        #endif
         &nv_fb->base,
+#if defined(NV_DRM_FB_CREATE_TAKES_FORMAT_INFO)
+        info,
+#endif
         cmd);
 
     /*

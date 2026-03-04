@@ -86,7 +86,7 @@
 #define PORT_CPU_CPUID_STEPPING_ID_SHIFT                        0U
 #define PORT_CPU_CPUID_GET_STEPPING_ID(a)                       ((a) \
                                                                 & 0x0000000FU)
-                                                               
+
 #define PORT_CPU_CPUID_MODEL_MASK                               0x000000F0U
 #define PORT_CPU_CPUID_MODEL_SHIFT                              4U
 #define PORT_CPU_CPUID_GET_MODEL(a)                             (((a) \
@@ -131,30 +131,30 @@
                                                                 & 0xFF000000U)\
                                                                 >> 24U)
 
-#define PORT_CPU_CPUID_FEATURE_SSE3_BIT                         (1U << 0U)                           
-#define PORT_CPU_CPUID_FEATURE_PCLMULQDQ_BIT                    (1U << 1U)   
+#define PORT_CPU_CPUID_FEATURE_SSE3_BIT                         (1U << 0U)
+#define PORT_CPU_CPUID_FEATURE_PCLMULQDQ_BIT                    (1U << 1U)
 #define PORT_CPU_CPUID_FEATURE_DTES64_BIT                       (1U << 2U)
-#define PORT_CPU_CPUID_FEATURE_MONITOR_BIT                      (1U << 3U) 
-#define PORT_CPU_CPUID_FEATURE_DSCPL_BIT                        (1U << 4U)   
+#define PORT_CPU_CPUID_FEATURE_MONITOR_BIT                      (1U << 3U)
+#define PORT_CPU_CPUID_FEATURE_DSCPL_BIT                        (1U << 4U)
 #define PORT_CPU_CPUID_FEATURE_VMX_BIT                          (1U << 5U)
 #define PORT_CPU_CPUID_FEATURE_SMX_BIT                          (1U << 6U)
-#define PORT_CPU_CPUID_FEATURE_EIST_BIT                         (1U << 7U) 
+#define PORT_CPU_CPUID_FEATURE_EIST_BIT                         (1U << 7U)
 #define PORT_CPU_CPUID_FEATURE_TM2_BIT                          (1U << 8U)
 #define PORT_CPU_CPUID_FEATURE_SSSE3_BIT                        (1U << 9U)
-#define PORT_CPU_CPUID_FEATURE_CNXTID_BIT                       (1U << 10U)    
+#define PORT_CPU_CPUID_FEATURE_CNXTID_BIT                       (1U << 10U)
 #define PORT_CPU_CPUID_FEATURE_SDBG_BIT                         (1U << 11U)
 #define PORT_CPU_CPUID_FEATURE_FMA_BIT                          (1U << 12U)
-#define PORT_CPU_CPUID_FEATURE_CMPXCHG16B_BIT                   (1U << 13U) 
-#define PORT_CPU_CPUID_FEATURE_XTPRUPDATECONTROL_BIT            (1U << 14U)  
-#define PORT_CPU_CPUID_FEATURE_PDCM_BIT                         (1U << 15U) 
+#define PORT_CPU_CPUID_FEATURE_CMPXCHG16B_BIT                   (1U << 13U)
+#define PORT_CPU_CPUID_FEATURE_XTPRUPDATECONTROL_BIT            (1U << 14U)
+#define PORT_CPU_CPUID_FEATURE_PDCM_BIT                         (1U << 15U)
 #define PORT_CPU_CPUID_FEATURE_PCID_BIT                         (1U << 17U)
-#define PORT_CPU_CPUID_FEATURE_DCA_BIT                          (1U << 18U)   
+#define PORT_CPU_CPUID_FEATURE_DCA_BIT                          (1U << 18U)
 #define PORT_CPU_CPUID_FEATURE_SSE41_BIT                        (1U << 19U)
-#define PORT_CPU_CPUID_FEATURE_SSE42_BIT                        (1U << 20U)   
-#define PORT_CPU_CPUID_FEATURE_x2APIC_BIT                       (1U << 21U)   
+#define PORT_CPU_CPUID_FEATURE_SSE42_BIT                        (1U << 20U)
+#define PORT_CPU_CPUID_FEATURE_x2APIC_BIT                       (1U << 21U)
 #define PORT_CPU_CPUID_FEATURE_MOVBE_BIT                        (1U << 22U)
 #define PORT_CPU_CPUID_FEATURE_POPCNT_BIT                       (1U << 23U)
-#define PORT_CPU_CPUID_FEATURE_TSCDEADLINE_BIT                  (1U << 24U) 
+#define PORT_CPU_CPUID_FEATURE_TSCDEADLINE_BIT                  (1U << 24U)
 #define PORT_CPU_CPUID_FEATURE_AES_BIT                          (1U << 25U)
 #define PORT_CPU_CPUID_FEATURE_XSAVE_BIT                        (1U << 26U)
 #define PORT_CPU_CPUID_FEATURE_OSXSAVE_BIT                      (1U << 27U)
@@ -164,30 +164,30 @@
 
 #define PORT_CPU_CPUID_FEATURE_FPU_BIT                          (1U << 0U)
 #define PORT_CPU_CPUID_FEATURE_VME_BIT                          (1U << 1U)
-#define PORT_CPU_CPUID_FEATURE_DE_BIT                           (1U << 2U) 
-#define PORT_CPU_CPUID_FEATURE_PSE_BIT                          (1U << 3U) 
+#define PORT_CPU_CPUID_FEATURE_DE_BIT                           (1U << 2U)
+#define PORT_CPU_CPUID_FEATURE_PSE_BIT                          (1U << 3U)
 #define PORT_CPU_CPUID_FEATURE_TSC_BIT                          (1U << 4U)
-#define PORT_CPU_CPUID_FEATURE_MSR_BIT                          (1U << 5U)  
+#define PORT_CPU_CPUID_FEATURE_MSR_BIT                          (1U << 5U)
 #define PORT_CPU_CPUID_FEATURE_PAE_BIT                          (1U << 6U)
 #define PORT_CPU_CPUID_FEATURE_MCE_BIT                          (1U << 7U)
 #define PORT_CPU_CPUID_FEATURE_CX8_BIT                          (1U << 8U)
-#define PORT_CPU_CPUID_FEATURE_APIC_BIT                         (1U << 9U)  
+#define PORT_CPU_CPUID_FEATURE_APIC_BIT                         (1U << 9U)
 #define PORT_CPU_CPUID_FEATURE_SEP_BIT                          (1U << 11U)
-#define PORT_CPU_CPUID_FEATURE_MTRR_BIT                         (1U << 12U) 
-#define PORT_CPU_CPUID_FEATURE_PGE_BIT                          (1U << 13U)   
+#define PORT_CPU_CPUID_FEATURE_MTRR_BIT                         (1U << 12U)
+#define PORT_CPU_CPUID_FEATURE_PGE_BIT                          (1U << 13U)
 #define PORT_CPU_CPUID_FEATURE_MCA_BIT                          (1U << 14U)
-#define PORT_CPU_CPUID_FEATURE_CMOV_BIT                         (1U << 15U)   
+#define PORT_CPU_CPUID_FEATURE_CMOV_BIT                         (1U << 15U)
 #define PORT_CPU_CPUID_FEATURE_PAT_BIT                          (1U << 16U)
-#define PORT_CPU_CPUID_FEATURE_PSE36_BIT                        (1U << 17U) 
-#define PORT_CPU_CPUID_FEATURE_PSN_BIT                          (1U << 18U)     
+#define PORT_CPU_CPUID_FEATURE_PSE36_BIT                        (1U << 17U)
+#define PORT_CPU_CPUID_FEATURE_PSN_BIT                          (1U << 18U)
 #define PORT_CPU_CPUID_FEATURE_CLFSH_BIT                        (1U << 19U)
-#define PORT_CPU_CPUID_FEATURE_DS_BIT                           (1U << 21U) 
+#define PORT_CPU_CPUID_FEATURE_DS_BIT                           (1U << 21U)
 #define PORT_CPU_CPUID_FEATURE_ACPI_BIT                         (1U << 22U)
-#define PORT_CPU_CPUID_FEATURE_MMX_BIT                          (1U << 23U) 
-#define PORT_CPU_CPUID_FEATURE_FXSR_BIT                         (1U << 24U) 
-#define PORT_CPU_CPUID_FEATURE_SSE_BIT                          (1U << 25U)  
+#define PORT_CPU_CPUID_FEATURE_MMX_BIT                          (1U << 23U)
+#define PORT_CPU_CPUID_FEATURE_FXSR_BIT                         (1U << 24U)
+#define PORT_CPU_CPUID_FEATURE_SSE_BIT                          (1U << 25U)
 #define PORT_CPU_CPUID_FEATURE_SSE2_BIT                         (1U << 26U)
-#define PORT_CPU_CPUID_FEATURE_SS_BIT                           (1U << 27U)  
+#define PORT_CPU_CPUID_FEATURE_SS_BIT                           (1U << 27U)
 #define PORT_CPU_CPUID_FEATURE_HTT_BIT                          (1U << 28U)
 #define PORT_CPU_CPUID_FEATURE_TM_BIT                           (1U << 29U)
 #define PORT_CPU_CPUID_FEATURE_PBE_BIT                          (1U << 31U)
@@ -209,7 +209,7 @@
 #define PORT_CPU_CPUID_TPM_FEATURE_HWPPECI_BIT                  (1U << 15U)
 #define PORT_CPU_CPUID_TPM_FEATURE_FLEXHWP_BIT                  (1U << 16U)
 #define PORT_CPU_CPUID_TPM_FEATURE_FAM_BIT                      (1U << 17U)
-#define PORT_CPU_CPUID_TPM_FEATURE_ILPHWP_REQUEST_BIT           (1U << 18U)    
+#define PORT_CPU_CPUID_TPM_FEATURE_ILPHWP_REQUEST_BIT           (1U << 18U)
 
 #define PORT_CPU_CPUID_TPM_FEATURE_NFITI_DTS_BIT                (1U << 0U)
 
@@ -223,7 +223,7 @@
 // Bits 7:0 of CPUID.0AH.EAX indicate the version of the Performance Monitor
 #define PORT_CPU_ARCH_PERF_MONITOR_VERSION_ID(a)                ((a) & 0xFFU)
 //
-// Bits 15:8 of CPUID.0AH.EAX indicate the number of performance 
+// Bits 15:8 of CPUID.0AH.EAX indicate the number of performance
 // counters available on the logical processor
 //
 #define PORT_CPU_ARCH_PERF_MONITOR_COUNTERS(a)                  (((a) & 0xFF00U)\

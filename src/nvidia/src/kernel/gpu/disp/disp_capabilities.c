@@ -47,14 +47,6 @@ dispcapConstruct_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDispCapabilities);
     KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
 
-    if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
-                  pParams->externalClassId);
-
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
     // Set display caps RegBase offsets
     kdispGetDisplayCapsBaseAndSize_HAL(pGpu, pKernelDisplay,
                                        &pDispCapabilities->ControlOffset,

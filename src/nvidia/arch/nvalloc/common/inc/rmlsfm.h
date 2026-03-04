@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,11 @@
 #define LSF_VPR_REGION_ID           (0x3U)
 
 /*!
+ * Expected REGION ID to be used for the CPR region with conf compute.
+ */
+#define LSF_CPR_REGION_ID           (0x3U)
+
+/*!
  * Size of the separate bootloader data that could be present in WPR region.
  */
 #define LSF_LS_BLDATA_EXPECTED_SIZE (0x100U)
@@ -112,36 +117,58 @@
  * Changes to the define needs to be reflected in path [1]
  * For new Falcon Id adding, we need to append to the end;
  * don't insert the new falcon Id in the middle.
+ *
+ * @note If a newly added Falcon has multiple instances sharing
+ * the same Falcon Id, the LSF_FALCON_USES_INSTANCE macro
+ * need to be updated.
  */
-#define LSF_FALCON_ID_PMU              (0U)
-#define LSF_FALCON_ID_DPU              (1U)
-#define LSF_FALCON_ID_GSPLITE          LSF_FALCON_ID_DPU
-#define LSF_FALCON_ID_FECS             (2U)
-#define LSF_FALCON_ID_GPCCS            (3U)
-#define LSF_FALCON_ID_NVDEC            (4U)
-#define LSF_FALCON_ID_NVENC            (5U)
-#define LSF_FALCON_ID_NVENC0           (5U)
-#define LSF_FALCON_ID_NVENC1           (6U)
-#define LSF_FALCON_ID_SEC2             (7U)
-#define LSF_FALCON_ID_NVENC2           (8U)
-#define LSF_FALCON_ID_MINION           (9U)
-#define LSF_FALCON_ID_FBFALCON         (10U)
-#define LSF_FALCON_ID_XUSB             (11U)
-#define LSF_FALCON_ID_GSP_RISCV        (12U)
-#define LSF_FALCON_ID_PMU_RISCV        (13U)
-#define LSF_FALCON_ID_SOE              (14U)
-#define LSF_FALCON_ID_NVDEC1           (15U)
-#define LSF_FALCON_ID_OFA              (16U)
-#define LSF_FALCON_ID_SEC2_RISCV       (17U)
-#define LSF_FALCON_ID_NVDEC_RISCV      (18U)
-#define LSF_FALCON_ID_NVDEC_RISCV_EB   (19U)
-#define LSF_FALCON_ID_NVJPG            (20U)
-#define LSF_FALCON_ID_END              (21U)
+#define LSF_FALCON_ID_PMU               (0U)
+#define LSF_FALCON_ID_DPU               (1U)
+#define LSF_FALCON_ID_GSPLITE           LSF_FALCON_ID_DPU
+#define LSF_FALCON_ID_FECS              (2U)
+#define LSF_FALCON_ID_GPCCS             (3U)
+#define LSF_FALCON_ID_NVDEC             (4U)
+#define LSF_FALCON_ID_NVENC             (5U)
+#define LSF_FALCON_ID_NVENC0            (5U)
+#define LSF_FALCON_ID_NVENC1            (6U)
+#define LSF_FALCON_ID_SEC2              (7U)
+#define LSF_FALCON_ID_NVENC2            (8U)
+#define LSF_FALCON_ID_MINION            (9U)
+#define LSF_FALCON_ID_FBFALCON          (10U)
+#define LSF_FALCON_ID_XUSB              (11U)
+#define LSF_FALCON_ID_GSP_RISCV         (12U)
+#define LSF_FALCON_ID_PMU_RISCV         (13U)
+#define LSF_FALCON_ID_SOE               (14U)
+#define LSF_FALCON_ID_NVDEC1            (15U)
+#define LSF_FALCON_ID_OFA               (16U)
+#define LSF_FALCON_ID_SEC2_RISCV        (17U)
+#define LSF_FALCON_ID_NVDEC_RISCV       (18U)
+#define LSF_FALCON_ID_NVDEC_RISCV_EB    (19U)
+#define LSF_FALCON_ID_NVJPG             (20U)
+#define LSF_FALCON_ID_FECS_RISCV        (21U)
+#define LSF_FALCON_ID_GPCCS_RISCV       (22U)
+#define LSF_FALCON_ID_NVJPG_RISCV_EB    (23U)
+#define LSF_FALCON_ID_OFA_RISCV_EB      (24U)
+#define LSF_FALCON_ID_NVENC_RISCV_EB    (25U)
+#define LSF_FALCON_ID_PMU_RISCV_EB      (26U)
+#define LSF_FALCON_ID_NVDEC0_RISCV_EB   (27U)
+#define LSF_FALCON_ID_GSPLITE_RISCV_EB  (28U)
+#define LSF_FALCON_ID_DISPLAY_RISCV_EB  (29U)
+#define LSF_FALCON_ID_FBFALCON_RISCV_EB (30U)
+#define LSF_FALCON_ID_END               (31U)
 
 #define LSF_FALCON_ID_INVALID   (0xFFFFFFFFU)
 
 //
-// ************************ NOTIFICATION ********************************* 
+// TODO: Remove below Alias and add _EB Patching to macro LSF_FALCON_ID_FECS_RISCV, similarly for GPCCS,
+// and similar cleanups in RM since RISCV based CTXSW engines are to be booted externally.
+// Tracking in Bug 3808599
+//
+#define LSF_FALCON_ID_FECS_RISCV_EB    (LSF_FALCON_ID_FECS_RISCV)
+#define LSF_FALCON_ID_GPCCS_RISCV_EB   (LSF_FALCON_ID_GPCCS_RISCV)
+
+//
+// ************************ NOTIFICATION *********************************
 // In case anyone needs to add new LSF falconId, please must calculate
 // WPR header size per LSF_FALCON_ID_END. RM needs to call lsfmGetWprHeaderSizeMax_HAL
 // to align with acrReadSubWprHeader_HAL in ACR. Otherwise, ACR can't get correct
@@ -153,15 +180,32 @@
 #define LSF_FALCON_ID_END_17           (17U)
 #define LSF_FALCON_ID_END_18           (18U)
 #define LSF_FALCON_ID_END_21           (21U)
+#define LSF_FALCON_ID_END_30           (30U)
 
-#define LSF_FALCON_INSTANCE_DEFAULT_0           (0x0)
-#define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1)
+#define LSF_FALCON_INSTANCE_DEFAULT_0           (0x0U)
+#define LSF_FALCON_INSTANCE_DEFAULT_4           (0x4U)
+#define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1U)
 
 // Currently max supported instance is 8 for FECS/GPCCS SMC
-#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x8)
+#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x8U)
 #define LSF_FALCON_INSTANCE_INVALID             (0xFFFFFFFFU)
-#define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0)
+#define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0U)
 
+/*!
+ * Checks if the LSF Falcon specified by falconId uses a falconInstance to uniquely identify itself.
+ * Some Falcons (eg: NVENC) use separate FalconId for each instance while some (eg: NVJPG)
+ * shares the same falconId across all instances of that engine. Those engines require a falconInstance
+ * to uniquely identify it.
+ * @note this macro should be updated as needed whenever LSF_FALCON_ID* defines are added. See Bug: 3833461
+ */
+#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB)   ||  \
+                                             (falconId == LSF_FALCON_ID_NVJPG)            ||  \
+                                             (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB)   ||  \
+                                             (falconId == LSF_FALCON_ID_NVENC_RISCV_EB)   ||  \
+                                             (falconId == LSF_FALCON_ID_FECS_RISCV_EB)    ||  \
+                                             (falconId == LSF_FALCON_ID_GPCCS_RISCV_EB)   ||  \
+                                             (falconId == LSF_FALCON_ID_GSPLITE_RISCV_EB) ||  \
+                                             (falconId == LSF_FALCON_ID_OFA_RISCV_EB))
 
 
 /*!
@@ -171,7 +215,7 @@
  *
  * Increasing this number should be done with care.
  */
-#define LSF_FALCON_DEPMAP_SIZE  (11)
+#define LSF_FALCON_DEPMAP_SIZE  (11U)
 
 /*!
  * Falcon Binaries version defines
@@ -358,9 +402,16 @@ typedef struct
 // The PMU supports the ACR task on GM20X_thru_VOLTA profiles only.
 // In order to prevent LSF_FALCON_ID_END changes to affect older / shipped PMU ucodes (increase of DMEM footprint)
 // adding PMU specific ***_END define capturing value covering all PMU profiles that this with the ACR task.
-// 
-#define LSF_FALCON_ID_END_PMU               (LSF_FALCON_ID_FBFALCON + 1) 
+//
+#define LSF_FALCON_ID_END_PMU               (LSF_FALCON_ID_FBFALCON + 1)
 #define LSF_WPR_HEADERS_TOTAL_SIZE_MAX_PMU  (NV_ALIGN_UP((sizeof(LSF_WPR_HEADER) * LSF_FALCON_ID_END_PMU), LSF_WPR_HEADER_ALIGNMENT))
+
+//
+// In order to prevent LSF_FALCON_ID_END changes to affect older / shipped SEC2/ACR ucodes (increase of DMEM footprint)
+// adding SEC2/ACR specific ***_END define covering all supported falcons in pre-hopper SEC2-RTOS/ACR ucode.
+//
+#define LSF_FALCON_ID_END_ACR_ON_SEC2               (LSF_FALCON_ID_NVJPG + 1)
+#define LSF_WPR_HEADERS_TOTAL_SIZE_MAX_ACR_ON_SEC2  (NV_ALIGN_UP((sizeof(LSF_WPR_HEADER) * LSF_FALCON_ID_END_ACR_ON_SEC2), LSF_WPR_HEADER_ALIGNMENT))
 
 // Maximum SUB WPR header size
 #define LSF_SUB_WPR_HEADERS_TOTAL_SIZE_MAX  (NV_ALIGN_UP((sizeof(LSF_SHARED_SUB_WPR_HEADER) * LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_MAX), LSF_SUB_WPR_HEADER_ALIGNMENT))
@@ -484,9 +535,19 @@ typedef struct _def_acr_reserved_dmem
     NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
 } ACR_RESERVED_DMEM, *PACR_RESERVED_DMEM;
 
+typedef struct _def_booter_reserved_dmem
+{
+    NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
+} BOOTER_RESERVED_DMEM;
+
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF           0:0
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF_DISABLE   0
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF_ENABLE    1
+
+// Macro defines to be consumed by RM to get GH100 GSP Inst_in_sys FMC boot status.
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_OK          0x55
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_ERROR       0xAA
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_IN_PROGRESS 0x00
 
 /*!
  * Size of ACR phase in dword

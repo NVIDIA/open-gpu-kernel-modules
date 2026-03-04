@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,7 +73,7 @@ _clearOutstandingComputeChannels(void)
 }
 
 static void
-_clearFmState(void)
+_clearFmState(NvBool bShutdown)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
@@ -93,6 +93,15 @@ _clearFmState(void)
     if (FLD_TEST_REF(NV000F_FLAGS_CHANNEL_RECOVERY, _ENABLED, flags))
     {
         _clearOutstandingComputeChannels();
+
+        if (bShutdown)
+        {
+            NV_PRINTF(LEVEL_ERROR, "nvidia-fabricmanager daemon shutdown detected, robust channel recovery invoked!\n");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "nvidia-fabricmanager daemon has invoked robust channel recovery!\n");
+        }
     }
 }
 
@@ -106,15 +115,17 @@ fmsessionapiConstruct_IMPL
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
-    NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
     NV000F_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
     NV_STATUS status;
 
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
     osRmCapInitDescriptor(&pFmSessionApi->dupedCapDescriptor);
 
-    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL) && !RMCFG_FEATURE_PLATFORM_MODS)
+    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL)
+        && !RMCFG_FEATURE_PLATFORM_MODS)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "only supported for usermode clients\n");
@@ -137,7 +148,7 @@ fmsessionapiConstruct_IMPL
     //
     if (status == NV_ERR_NOT_SUPPORTED)
     {
-        if (rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+        if (rmclientIsAdmin(pRmClient, pCallContext->secInfo.privLevel))
         {
             status = NV_OK;
         }
@@ -155,7 +166,6 @@ fmsessionapiConstruct_IMPL
 
     if (pFabric != NULL)
     {
-
         fabricSetFmSessionFlags(pFabric, pAllocParams->flags);
     }
 
@@ -172,9 +182,7 @@ fmsessionapiDestruct_IMPL
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
-    NV_PRINTF(LEVEL_INFO, "Fabric manager is shutting down.\n");
-
-    _clearFmState();
+    _clearFmState(NV_TRUE);
 
     osRmCapRelease(pFmSessionApi->dupedCapDescriptor);
     pSys->setProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_REGISTERED, NV_FALSE);
@@ -208,8 +216,7 @@ fmsessionapiCtrlCmdClearFmState_IMPL
     FmSessionApi *pFmSessionApi
 )
 {
-    _clearFmState();
+    _clearFmState(NV_FALSE);
 
     return NV_OK;
 }
-

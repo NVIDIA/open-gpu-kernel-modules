@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,16 +27,13 @@
 
 const char *uvm_lock_order_to_string(uvm_lock_order_t lock_order)
 {
-
-
-
-    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 26);
-
+    BUILD_BUG_ON(UVM_LOCK_ORDER_COUNT != 38);
 
     switch (lock_order) {
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_INVALID);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_GLOBAL_PM);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_GLOBAL);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_ACCESS_COUNTERS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_ISR);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_MMAP_LOCK);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_SPACES_LIST);
@@ -47,24 +44,29 @@ const char *uvm_lock_order_to_string(uvm_lock_order_t lock_order)
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_GPU_SEMAPHORE_POOL);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_RM_API);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_RM_GPUS);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_BLOCK_MIGRATE);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_BLOCK);
-
-
-
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CHUNK_MAPPING);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PAGE_TREE);
-
-
-
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_KEY_ROTATION);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CSL_PUSH);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_KEY_ROTATION_WLC);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CSL_WLC_PUSH);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CSL_SEC2_PUSH);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PUSH);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM_PMA);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_PMM_ROOT_CHUNK);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ACCESS_COUNTERS_CLEAR_OPS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CHANNEL);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_WLC_CHANNEL);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_SPACE_EVENTS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_VA_SPACE_TOOLS);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_SEMA_POOL_TRACKER);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_SECURE_SEMAPHORE);
+        UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_CSL_CTX);
         UVM_ENUM_STRING_CASE(UVM_LOCK_ORDER_LEAF);
         UVM_ENUM_STRING_DEFAULT();
     }
@@ -344,31 +346,20 @@ bool __uvm_check_all_unlocked(uvm_thread_context_lock_t *uvm_context)
     return false;
 }
 
-bool __uvm_thread_check_all_unlocked()
+bool __uvm_thread_check_all_unlocked(void)
 {
     return __uvm_check_all_unlocked(uvm_thread_context_lock_get());
 }
 
 NV_STATUS uvm_bit_locks_init(uvm_bit_locks_t *bit_locks, size_t count, uvm_lock_order_t lock_order)
 {
-    // TODO: Bug 1772140: Notably bit locks currently do not work on memory
-    // allocated through vmalloc() (including big allocations created with
-    // uvm_kvmalloc()). The problem is the bit_waitqueue() helper used by the
-    // kernel internally that uses virt_to_page().
-    // To prevent us from using kmalloc() for a huge allocation, warn if the
-    // allocation size gets bigger than what we are comfortable with for
-    // kmalloc() in uvm_kvmalloc().
     size_t size = sizeof(unsigned long) * BITS_TO_LONGS(count);
-    WARN_ON_ONCE(size > UVM_KMALLOC_THRESHOLD);
 
     bit_locks->bits = kzalloc(size, NV_UVM_GFP_FLAGS);
     if (!bit_locks->bits)
         return NV_ERR_NO_MEMORY;
 
-#if UVM_IS_DEBUG()
-    uvm_locking_assert_initialized();
-    bit_locks->lock_order = lock_order;
-#endif
+    uvm_lock_debug_init(bit_locks, lock_order);
 
     return NV_OK;
 }

@@ -145,10 +145,13 @@ static size_t uvm_perf_tree_iter_leaf_to_index_in_level(const uvm_perf_tree_t *t
 }
 
 // Computes the number of nodes in the given level
-static size_t uvm_perf_tree_level_node_count(const uvm_perf_tree_t *tree, size_t level_idx)
+static size_t uvm_perf_tree_level_node_count(const uvm_perf_tree_t *tree, s8 level_idx)
 {
     size_t level_pow2_node_count;
     size_t level_missing_nodes_to_pow2;
+
+    if ((level_idx < 0) || (level_idx >= tree->level_count))
+        return 0;
 
     level_pow2_node_count       = (size_t)1 << level_idx;
     level_missing_nodes_to_pow2 = (tree->pow2_leaf_count - tree->leaf_count) >> ((tree->level_count - 1) - level_idx);

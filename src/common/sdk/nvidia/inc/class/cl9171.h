@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2011, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -13,7 +14,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
  * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
@@ -73,6 +74,27 @@ typedef volatile struct _cl9171_tag0 {
 #define NV9171_SF_HDMI_INFO_STATUS_SENT_INIT                            0x00000000 /* R-I-V */
 #define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL(i)                    (0x00690000-0x00690000+(i)*1024) /* RWX4A */
 #define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1                                   4 /*       */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE                                  0:0 /* RWIVF */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE_NO                        0x00000000 /* RWI-V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE_YES                       0x00000001 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE_DIS                       0x00000000 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_ENABLE_EN                        0x00000001 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_OTHER                                   4:4 /* RWIVF */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_OTHER_DIS                        0x00000000 /* RWI-V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_OTHER_EN                         0x00000001 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_SINGLE                                  8:8 /* RWIVF */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_SINGLE_DIS                       0x00000000 /* RWI-V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_SINGLE_EN                        0x00000001 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_CHKSUM_HW                               9:9 /* RWIVF */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_CHKSUM_HW_ENABLE                 0x00000001 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_CHKSUM_HW_DISABLE                0x00000000 /* RW--V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_CTRL_CHKSUM_HW_INIT                   0x00000001 /* RWI-V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS(i)                  (0x00690004-0x00690000+(i)*1024) /* R--4A */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS__SIZE_1                                 4 /*       */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS_SENT                                  0:0 /* R--VF */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS_SENT_DONE                      0x00000001 /* R---V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS_SENT_WAITING                   0x00000000 /* R---V */
+#define NV9171_SF_HDMI_AVI_INFOFRAME_STATUS_SENT_INIT                      0x00000000 /* R-I-V */
 #define NV9171_SF_HDMI_AVI_INFOFRAME_HEADER(i)                  (0x00690008-0x00690000+(i)*1024) /* RWX4A */
 #define NV9171_SF_HDMI_AVI_INFOFRAME_HEADER__SIZE_1                                 4 /*       */
 #define NV9171_SF_HDMI_AVI_INFOFRAME_HEADER_HB0                                   7:0 /* RWIVF */

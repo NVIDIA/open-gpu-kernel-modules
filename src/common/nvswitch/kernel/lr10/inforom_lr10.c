@@ -24,16 +24,22 @@
 #include "common_nvswitch.h"
 #include "lr10/lr10.h"
 #include "lr10/inforom_lr10.h"
+#include "lr10/therm_lr10.h"
 #include "inforom/ifrstruct.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip_addendum.h"
 #include "nvswitch/lr10/dev_pmgr.h"
+#include "nvVer.h"
+#include "regkey_nvswitch.h"
+#include "inforom/inforom_nvl_v3_nvswitch.h"
+#include "soe/soeififr.h"
 
 //
 // TODO: Split individual object hals to their own respective files
 //
 static void _oms_parse(nvswitch_device *device, INFOROM_OMS_STATE *pOmsState);
 static void _oms_refresh(nvswitch_device *device, INFOROM_OMS_STATE *pOmsState);
+
 NvlStatus
 nvswitch_inforom_nvl_log_error_event_lr10
 (
@@ -43,7 +49,147 @@ nvswitch_inforom_nvl_log_error_event_lr10
     NvBool *bDirty
 )
 {
-    return -NVL_ERR_NOT_SUPPORTED;
+    NvlStatus status;
+    INFOROM_NVL_OBJECT_V3S *pNvlObject = &((PINFOROM_NVL_OBJECT)pNvlGeneric)->v3s;
+    INFOROM_NVLINK_ERROR_EVENT *pErrorEvent = (INFOROM_NVLINK_ERROR_EVENT *)pNvlErrorEvent;
+    INFOROM_NVL_OBJECT_V3_ERROR_ENTRY *pErrorEntry;
+    NvU32 i;
+    NvU32 sec;
+    NvU8  header = 0;
+    NvU16 metadata = 0;
+    NvU8  errorSubtype;
+    NvU64 accumTotalCount;
+    INFOROM_NVL_ERROR_BLOCK_TYPE blockType;
+
+    if (pErrorEvent->nvliptInstance > INFOROM_NVL_OBJECT_V3_NVLIPT_INSTANCE_MAX)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "object cannot log data for more than %u NVLIPTs (NVLIPT = %u requested)\n",
+            INFOROM_NVL_OBJECT_V3_NVLIPT_INSTANCE_MAX, pErrorEvent->nvliptInstance);
+        return -NVL_BAD_ARGS;
+    }
+
+    if (pErrorEvent->localLinkIdx > INFOROM_NVL_OBJECT_V3_BLOCK_ID_MAX)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "object cannot log data for more than %u internal links (internal link = %u requested)\n",
+            INFOROM_NVL_OBJECT_V3_BLOCK_ID_MAX, pErrorEvent->localLinkIdx);
+        return -NVL_BAD_ARGS;
+    }
+
+    sec = (NvU32) (nvswitch_os_get_platform_time_epoch() / NVSWITCH_INTERVAL_1SEC_IN_NS);
+
+    status = inforom_nvl_v3_map_error(pErrorEvent->error, &header, &metadata,
+                                   &errorSubtype, &blockType);
+    if (status != NVL_SUCCESS)
+    {
+        return status;
+    }
+
+    metadata = FLD_SET_DRF_NUM(_INFOROM_NVL_OBJECT_V3, _ERROR_METADATA,
+                               _NVLIPT_INSTANCE_ID, pErrorEvent->nvliptInstance, metadata);
+    if (blockType == INFOROM_NVL_ERROR_BLOCK_TYPE_DL)
+    {
+        metadata = FLD_SET_DRF_NUM(_INFOROM_NVL_OBJECT_V3, _ERROR_METADATA, _BLOCK_ID,
+                NV_INFOROM_NVL_OBJECT_V3_ERROR_METADATA_BLOCK_ID_DL(pErrorEvent->localLinkIdx),
+                metadata);
+    }
+    else if (blockType == INFOROM_NVL_ERROR_BLOCK_TYPE_TLC)
+    {
+        metadata = FLD_SET_DRF_NUM(_INFOROM_NVL_OBJECT_V3, _ERROR_METADATA, _BLOCK_ID,
+                NV_INFOROM_NVL_OBJECT_V3_ERROR_METADATA_BLOCK_ID_TLC(pErrorEvent->localLinkIdx),
+                metadata);
+    }
+    else if (blockType == INFOROM_NVL_ERROR_BLOCK_TYPE_NVLIPT)
+    {
+        metadata = FLD_SET_DRF(_INFOROM_NVL_OBJECT_V3, _ERROR_METADATA,
+                               _BLOCK_ID, _NVLIPT, metadata);
+        status = inforom_nvl_v3_encode_nvlipt_error_subtype(pErrorEvent->localLinkIdx,
+                                           &errorSubtype);
+        if (status != NVL_SUCCESS)
+        {
+            return status;
+        }
+    }
+
+    for (i = 0; i < INFOROM_NVL_OBJECT_V3S_NUM_ERROR_ENTRIES; i++)
+    {
+        pErrorEntry = &pNvlObject->errorLog[i];
+
+        if ((pErrorEntry->header == INFOROM_NVL_ERROR_TYPE_INVALID) ||
+            ((pErrorEntry->metadata == metadata) &&
+                (pErrorEntry->errorSubtype == errorSubtype)))
+        {
+            break;
+        }
+    }
+
+    if (i >= INFOROM_NVL_OBJECT_V3S_NUM_ERROR_ENTRIES)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: NVL error log is full -- unable to log error\n",
+                       __FUNCTION__);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    if (pErrorEntry->header == INFOROM_NVL_ERROR_TYPE_INVALID)
+    {
+        pErrorEntry->header       = header;
+        pErrorEntry->metadata     = metadata;
+        pErrorEntry->errorSubtype = errorSubtype;
+    }
+
+    if (pErrorEntry->header == INFOROM_NVL_ERROR_TYPE_ACCUM)
+    {
+        accumTotalCount = NvU64_ALIGN32_VAL(&pErrorEntry->data.accum.totalCount);
+        if (accumTotalCount != NV_U64_MAX)
+        {
+            if (pErrorEvent->count > NV_U64_MAX - accumTotalCount)
+            {
+                accumTotalCount = NV_U64_MAX;
+            }
+            else
+            {
+                accumTotalCount += pErrorEvent->count;
+            }
+
+            NvU64_ALIGN32_PACK(&pErrorEntry->data.accum.totalCount, &accumTotalCount);
+            if (sec < pErrorEntry->data.accum.lastUpdated)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: System clock reporting earlier time than error timestamp\n",
+                    __FUNCTION__);
+            }
+            pErrorEntry->data.accum.lastUpdated = sec;
+            *bDirty = NV_TRUE;
+        }
+    }
+    else if (pErrorEntry->header == INFOROM_NVL_ERROR_TYPE_COUNT)
+    {
+        if (pErrorEntry->data.event.totalCount != NV_U32_MAX)
+        {
+            pErrorEntry->data.event.totalCount++;
+            if (sec < pErrorEntry->data.event.lastError)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: System clock reporting earlier time than error timestamp\n",
+                    __FUNCTION__);
+            }
+            else
+            {
+                pErrorEntry->data.event.avgEventDelta =
+                    (pErrorEntry->data.event.avgEventDelta + sec -
+                         pErrorEntry->data.event.lastError) >> 1;
+            }
+            pErrorEntry->data.event.lastError = sec;
+            *bDirty = NV_TRUE;
+        }
+    }
+    else
+    {
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    return NVL_SUCCESS;
 }
 
 NvlStatus
@@ -53,7 +199,37 @@ nvswitch_inforom_nvl_get_max_correctable_error_rate_lr10
     NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *params
 )
 {
-    return -NVL_ERR_NOT_SUPPORTED;
+    
+    struct inforom *pInforom = device->pInforom;
+    INFOROM_NVLINK_STATE *pNvlinkState;
+    NvU8 linkID = params->linkId;
+
+    if (linkID >= NVSWITCH_NUM_LINKS_LR10)
+    {
+        return -NVL_BAD_ARGS;
+    }
+    
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    pNvlinkState = pInforom->pNvlinkState;
+    if (pNvlinkState == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    nvswitch_os_memset(params, 0, sizeof(NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS));
+    params->linkId = linkID;
+
+    nvswitch_os_memcpy(&params->dailyMaxCorrectableErrorRates, &pNvlinkState->pNvl->v3s.maxCorrectableErrorRates.dailyMaxCorrectableErrorRates[0][linkID],
+                       sizeof(params->dailyMaxCorrectableErrorRates));
+
+    nvswitch_os_memcpy(&params->monthlyMaxCorrectableErrorRates, &pNvlinkState->pNvl->v3s.maxCorrectableErrorRates.monthlyMaxCorrectableErrorRates[0][linkID],
+                       sizeof(params->monthlyMaxCorrectableErrorRates));
+
+    return NVL_SUCCESS;
 }
 
 NvlStatus
@@ -63,8 +239,64 @@ nvswitch_inforom_nvl_get_errors_lr10
     NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params
 )
 {
-    return -NVL_ERR_NOT_SUPPORTED;
+    struct inforom *pInforom = device->pInforom;
+    INFOROM_NVLINK_STATE *pNvlinkState;
+    NvU32 maxReadSize = sizeof(params->errorLog)/sizeof(NVSWITCH_NVLINK_ERROR_ENTRY);
+    NvU32 errorLeftCount = 0, errorReadCount = 0, errIndx = 0;
+    NvU32 errorStart = params->errorIndex;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    pNvlinkState = pInforom->pNvlinkState;
+    if (pNvlinkState == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (errorStart >= INFOROM_NVL_OBJECT_V3S_NUM_ERROR_ENTRIES)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    nvswitch_os_memset(params->errorLog, 0, sizeof(params->errorLog));
+
+    while (((errorStart + errorLeftCount) < INFOROM_NVL_OBJECT_V3S_NUM_ERROR_ENTRIES) &&
+           (pNvlinkState->pNvl->v3s.errorLog[errorStart + errorLeftCount].header != INFOROM_NVL_ERROR_TYPE_INVALID))
+    {
+        errorLeftCount++;
+    }
+
+    if (errorLeftCount > maxReadSize)
+    {
+        errorReadCount = maxReadSize;
+    }
+    else
+    {
+        errorReadCount = errorLeftCount;
+    }
+
+    params->errorIndex = errorStart + errorReadCount;
+    params->errorCount = errorReadCount;
+
+    if (errorReadCount > 0)
+    {
+        for (errIndx = 0; errIndx < errorReadCount; errIndx++)
+        {
+            if (inforom_nvl_v3_map_error_to_userspace_error(device, 
+                                                            &pNvlinkState->pNvl->v3s.errorLog[errorStart+errIndx],
+                                                            &params->errorLog[errIndx]) != NVL_SUCCESS)
+            {
+                return -NVL_ERR_NOT_SUPPORTED;
+            }
+        }
+    }
+
+    return NVL_SUCCESS;
 }
+
 NvlStatus nvswitch_inforom_nvl_update_link_correctable_error_info_lr10
 (
     nvswitch_device *device,
@@ -77,8 +309,250 @@ NvlStatus nvswitch_inforom_nvl_update_link_correctable_error_info_lr10
     NvBool *bDirty
 )
 {
+    INFOROM_NVL_OBJECT_V3S *pNvlObject = &((PINFOROM_NVL_OBJECT)pNvlGeneric)->v3s;
+    INFOROM_NVL_CORRECTABLE_ERROR_RATE_STATE_V3S *pState =
+                                        &((INFOROM_NVL_CORRECTABLE_ERROR_RATE_STATE *)pData)->v3s;
+    INFOROM_NVLINK_CORRECTABLE_ERROR_COUNTS *pErrorCounts =
+                                            (INFOROM_NVLINK_CORRECTABLE_ERROR_COUNTS *)pNvlErrorCounts;
+
+    NvU32 i;
+    NvU32 sec;
+    NvU32 day, month, currentEntryDay, currentEntryMonth;
+    INFOROM_NVL_OBJECT_V3_CORRECTABLE_ERROR_RATE *pErrorRate;
+    INFOROM_NVL_OBJECT_V3_CORRECTABLE_ERROR_RATE *pOldestErrorRate = NULL;
+    INFOROM_NVL_OBJECT_V3S_MAX_CORRECTABLE_ERROR_RATES *pCorrErrorRates;
+    NvBool bUpdated = NV_FALSE;
+    INFOROM_NVLINK_ERROR_EVENT errorEvent;
+    NvU32 currentFlitCrcRate;
+    NvU32 *pCurrentLaneCrcRates;
+
+    if (bDirty == NULL)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    *bDirty = NV_FALSE;
+
+    if (linkId >= INFOROM_NVL_OBJECT_V3S_NUM_LINKS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "object does not store data for more than %u links (linkId = %u requested)\n",
+             INFOROM_NVL_OBJECT_V3S_NUM_LINKS, linkId);
+        return -NVL_BAD_ARGS;
+    }
+
+    if (nvliptInstance > INFOROM_NVL_OBJECT_V3_NVLIPT_INSTANCE_MAX)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "object cannot log data for more than %u NVLIPTs (NVLIPT = %u requested)\n",
+            INFOROM_NVL_OBJECT_V3_NVLIPT_INSTANCE_MAX, nvliptInstance);
+        return -NVL_BAD_ARGS;
+    }
+
+    if (localLinkIdx > INFOROM_NVL_OBJECT_V3_BLOCK_ID_MAX)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "object cannot log data for more than %u internal links (internal link = %u requested)\n",
+            INFOROM_NVL_OBJECT_V3_BLOCK_ID_MAX, localLinkIdx);
+        return -NVL_BAD_ARGS;
+    }
+
+    sec = (NvU32) (nvswitch_os_get_platform_time_epoch() / NVSWITCH_INTERVAL_1SEC_IN_NS);
+    inforom_nvl_v3_seconds_to_day_and_month(sec, &day, &month);
+
+    inforom_nvl_v3_update_correctable_error_rates(pState, linkId, pErrorCounts);
+    currentFlitCrcRate   = pState->errorsPerMinute[linkId].flitCrc;
+    pCurrentLaneCrcRates = pState->errorsPerMinute[linkId].laneCrc;
+    pCorrErrorRates      = &pNvlObject->maxCorrectableErrorRates;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCorrErrorRates->dailyMaxCorrectableErrorRates); i++)
+    {
+        pErrorRate = &pCorrErrorRates->dailyMaxCorrectableErrorRates[i][linkId];
+        inforom_nvl_v3_seconds_to_day_and_month(pErrorRate->lastUpdated, &currentEntryDay,
+                                                &currentEntryMonth);
+
+        if ((pErrorRate->lastUpdated == 0) || (currentEntryDay == day))
+        {
+            if (inforom_nvl_v3_should_replace_error_rate_entry(pErrorRate,
+                                                             currentFlitCrcRate,
+                                                             pCurrentLaneCrcRates))
+            {
+                inforom_nvl_v3_update_error_rate_entry(pErrorRate, sec,
+                                                       currentFlitCrcRate,
+                                                       pCurrentLaneCrcRates);
+                bUpdated = NV_TRUE;
+            }
+            pOldestErrorRate = NULL;
+            break;
+        }
+        else if ((pOldestErrorRate == NULL) ||
+                 (pErrorRate->lastUpdated < pOldestErrorRate->lastUpdated))
+        {
+            pOldestErrorRate = pErrorRate;
+        }
+    }
+
+    if (pOldestErrorRate != NULL)
+    {
+        inforom_nvl_v3_update_error_rate_entry(pOldestErrorRate, sec,
+                                               currentFlitCrcRate,
+                                               pCurrentLaneCrcRates);
+        bUpdated = NV_TRUE;
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCorrErrorRates->monthlyMaxCorrectableErrorRates); i++)
+    {
+        pErrorRate = &pCorrErrorRates->monthlyMaxCorrectableErrorRates[i][linkId];
+        inforom_nvl_v3_seconds_to_day_and_month(pErrorRate->lastUpdated, &currentEntryDay,
+                                                &currentEntryMonth);
+
+        if ((pErrorRate->lastUpdated == 0) || (currentEntryMonth == month))
+        {
+            if (inforom_nvl_v3_should_replace_error_rate_entry(pErrorRate,
+                                                             currentFlitCrcRate,
+                                                             pCurrentLaneCrcRates))
+            {
+                inforom_nvl_v3_update_error_rate_entry(pErrorRate, sec,
+                                                       currentFlitCrcRate,
+                                                       pCurrentLaneCrcRates);
+                bUpdated = NV_TRUE;
+            }
+            pOldestErrorRate = NULL;
+            break;
+        }
+        else if ((pOldestErrorRate == NULL) ||
+                 (pErrorRate->lastUpdated < pOldestErrorRate->lastUpdated))
+        {
+            pOldestErrorRate = pErrorRate;
+        }
+    }
+
+    if (pOldestErrorRate != NULL)
+    {
+        inforom_nvl_v3_update_error_rate_entry(pOldestErrorRate, sec,
+                                               currentFlitCrcRate,
+                                               pCurrentLaneCrcRates);
+        bUpdated = NV_TRUE;
+    }
+
+    *bDirty = bUpdated;
+
+    // Update aggregate error counts for each correctable error
+
+    errorEvent.nvliptInstance = nvliptInstance;
+    errorEvent.localLinkIdx   = localLinkIdx;
+
+    if (pErrorCounts->flitCrc > 0)
+    {
+        errorEvent.error = INFOROM_NVLINK_DL_RX_FLIT_CRC_CORR;
+        errorEvent.count = pErrorCounts->flitCrc;
+        nvswitch_inforom_nvl_log_error_event_lr10(device,
+                pNvlGeneric, &errorEvent, &bUpdated);
+        *bDirty |= bUpdated;
+    }
+
+    if (pErrorCounts->rxLinkReplay > 0)
+    {
+        errorEvent.error = INFOROM_NVLINK_DL_RX_LINK_REPLAY_EVENTS_CORR;
+        errorEvent.count = pErrorCounts->rxLinkReplay;
+        bUpdated = NV_FALSE;
+        nvswitch_inforom_nvl_log_error_event_lr10(device,
+                pNvlGeneric, &errorEvent, &bUpdated);
+        *bDirty |= bUpdated;
+    }
+
+    if (pErrorCounts->txLinkReplay > 0)
+    {
+        errorEvent.error = INFOROM_NVLINK_DL_TX_LINK_REPLAY_EVENTS_CORR;
+        errorEvent.count = pErrorCounts->txLinkReplay;
+        bUpdated = NV_FALSE;
+        nvswitch_inforom_nvl_log_error_event_lr10(device,
+                pNvlGeneric, &errorEvent, &bUpdated);
+        *bDirty |= bUpdated;
+    }
+
+    if (pErrorCounts->linkRecovery > 0)
+    {
+        errorEvent.error = INFOROM_NVLINK_DL_LINK_RECOVERY_EVENTS_CORR;
+        errorEvent.count = pErrorCounts->linkRecovery;
+        bUpdated = NV_FALSE;
+        nvswitch_inforom_nvl_log_error_event_lr10(device,
+                pNvlGeneric, &errorEvent, &bUpdated);
+        *bDirty |= bUpdated;
+    }
+
+    for (i = 0; i < 4; i++)
+    {
+        if (pErrorCounts->laneCrc[i] == 0)
+        {
+            continue;
+        }
+
+        errorEvent.error = INFOROM_NVLINK_DL_RX_LANE0_CRC_CORR + i;
+        errorEvent.count = pErrorCounts->laneCrc[i];
+        bUpdated = NV_FALSE;
+        nvswitch_inforom_nvl_log_error_event_lr10(device,
+                pNvlGeneric, &errorEvent, &bUpdated);
+        *bDirty |= bUpdated;
+    }
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus nvswitch_inforom_nvl_setL1Threshold_lr10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 word1,
+    NvU32 word2
+)
+{
     return -NVL_ERR_NOT_SUPPORTED;
 }
+
+NvlStatus nvswitch_inforom_nvl_getL1Threshold_lr10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 *word1,
+    NvU32 *word2
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus nvswitch_inforom_nvl_setup_nvlink_state_lr10
+(
+    nvswitch_device *device,
+    INFOROM_NVLINK_STATE *pNvlinkState,
+    NvU8 version
+)
+{
+    if (version != 3)
+    {
+        NVSWITCH_PRINT(device, WARN, "NVL v%u not supported\n", version);
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    pNvlinkState->pFmt = INFOROM_NVL_OBJECT_V3S_FMT;
+    pNvlinkState->pPackedObject = nvswitch_os_malloc(INFOROM_NVL_OBJECT_V3S_PACKED_SIZE);
+    if (pNvlinkState->pPackedObject == NULL)
+    {
+        return -NVL_NO_MEM;
+    }
+
+    pNvlinkState->pNvl = nvswitch_os_malloc(sizeof(INFOROM_NVL_OBJECT));
+    if (pNvlinkState->pNvl == NULL)
+    {
+        nvswitch_os_free(pNvlinkState->pPackedObject);
+        return -NVL_NO_MEM;
+    }
+
+    pNvlinkState->bDisableCorrectableErrorLogging = NV_FALSE;
+
+    return NVL_SUCCESS;
+}
+
 static
 NvlStatus
 _inforom_ecc_find_useable_entry_index
@@ -745,74 +1219,76 @@ nvswitch_oms_set_device_disable_lr10
 }
 
 NvlStatus
-nvswitch_bbx_setup_prologue_lr10
+nvswitch_inforom_load_obd_lr10
 (
-    nvswitch_device    *device,
-    void               *pInforomBbxState
+    nvswitch_device *device
 )
 {
-    return -NVL_ERR_NOT_SUPPORTED;
-}
+    struct inforom *pInforom = device->pInforom;
 
-NvlStatus
-nvswitch_bbx_setup_epilogue_lr10
-(
-    nvswitch_device    *device,
-    void *pInforomBbxState
-)
-{
-    return -NVL_ERR_NOT_SUPPORTED;
-}
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
 
-NvlStatus
-nvswitch_bbx_add_data_time_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-)
-{
-    return -NVL_ERR_NOT_SUPPORTED;
+    return nvswitch_inforom_load_object(device, pInforom, "OBD",
+                                        INFOROM_OBD_OBJECT_V1_XX_FMT,
+                                        pInforom->OBD.packedObject.v1,
+                                        &pInforom->OBD.object.v1);
 }
 
 NvlStatus
 nvswitch_bbx_add_sxid_lr10
 (
     nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    NvU32 exceptionType,
+    NvU32 data0,
+    NvU32 data1,
+    NvU32 data2
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
 
 NvlStatus
-nvswitch_bbx_add_temperature_lr10
+nvswitch_bbx_unload_lr10
 (
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    nvswitch_device *device
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
-}
-void
-nvswitch_bbx_set_initial_temperature_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-)
-{
-    return;
 }
 
 NvlStatus
-nvswitch_inforom_bbx_get_sxid_lr10
+nvswitch_bbx_load_lr10
 (
     nvswitch_device *device,
-    NVSWITCH_GET_SXIDS_PARAMS *params
+    NvU64 time_ns,
+    NvU8 osType,
+    NvU32 osVersion
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
+
+NvlStatus
+nvswitch_bbx_get_sxid_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SXIDS_PARAMS * params
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_bbx_get_data_lr10
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+

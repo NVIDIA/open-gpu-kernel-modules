@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,24 +29,25 @@
 *                                                                           *
 ****************************************************************************/
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "core/core.h"
 #include "os/os.h"
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
 #include "platform/chipset/chipset_info.h"
 #include "nvpcie.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/bif/kernel_bif.h"
-#include "gpu/gpu.h"
 #include "gpu/gsp/gsp_static_config.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h" // NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_*
 #include "core/thread_state.h"
-#include "nveGPUConfig.h"
 #include "Nvcm.h"
+#include "nvdevid.h"
+#include "nvmisc.h"
 
 #include "published/maxwell/gm107/dev_nv_xve.h" // NV_XVE_VCCAP_CTRL0*
 #include "published/pcie_switch/pcie_switch_ref.h"
@@ -56,6 +57,7 @@
 //
 
 static NV_STATUS objClInitPcieChipset(OBJGPU *, OBJCL *);
+static void      objClBuildPcieAtomicsAllowList(OBJGPU *, OBJCL *);
 static NvBool    objClInitGpuPortData(OBJGPU *, OBJCL *pCl);
 static NV_STATUS objClSetPortCapsOffsets(OBJCL *, PORTDATA *);
 static NV_STATUS objClSetPortPcieEnhancedCapsOffsets(OBJCL *, PORTDATA *);
@@ -71,8 +73,12 @@ static void      objClGpuMapEnhCfgSpace(OBJGPU *, OBJCL *);
 static void      objClGpuUnmapEnhCfgSpace(OBJGPU *);
 static NV_STATUS objClGpuIs3DController(OBJGPU *);
 static void      objClLoadPcieVirtualP2PApproval(OBJGPU *);
-static void      objClCheckForExternalGpu(OBJGPU *, OBJCL *);
+static void      objClLoadPcieVirtualConfigBits(OBJGPU *);
 static void      _objClAdjustTcVcMap(OBJGPU *, OBJCL *, PORTDATA *);
+static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
+static void      _objClGetUpstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
+static void      _objClGetDownstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
+static void      _objClIsPciePowerControlPresent(OBJGPU *, KernelBif *);
 
 extern void _Set_ASPM_L0S_L1(OBJCL *, NvBool, NvBool);
 
@@ -189,6 +195,55 @@ addHwbcToList (OBJGPU *pGpu, OBJHWBC *pHWBC)
     return NV_OK;
 }
 
+/*! @brief Build PCIe atomics allow list for x86 CPUs
+ *         using CPU model and family.
+ *         
+ * Building allow list using only CPU model and family helps with
+ * passthrough virtualization where the host and passthrough VM
+ * has the same CPU model and family unlike the chipset.
+ * For non-x86 CPUs, allow list is built only during chipset discovery.
+ *
+ * @param[in]   pGpu              GPU object pointer
+ * @param[in]   pCl               Core logic object pointer
+ * @return None
+ */
+static
+void
+objClBuildPcieAtomicsAllowList(OBJGPU *pGpu, OBJCL *pCl)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    // For non-x86 CPUs, allow list is built during chipset discovery.
+
+    // Intel IceLake
+    if ((pSys->cpuInfo.family == 0x6) &&
+        (pSys->cpuInfo.model == 0x6a) &&
+        (pSys->cpuInfo.stepping == 0x6))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // Intel SapphireRapids
+    else if ((pSys->cpuInfo.family == 0x6) &&
+             (pSys->cpuInfo.model == 0x8f))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Milan
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x1 &&
+             pSys->cpuInfo.stepping == 0x1)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Genoa
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x11)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    return;
+}
+
 //
 // Determine which chipset we're using (from available options)
 // and initialize chipset-specific functions
@@ -196,18 +251,19 @@ addHwbcToList (OBJGPU *pGpu, OBJHWBC *pHWBC)
 NV_STATUS
 objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
 {
-    OBJSYS   *pSys = SYS_GET_INSTANCE();
-    OBJOS    *pOS  = SYS_GET_OS(pSys);
-    OBJPFM   *pPfm = SYS_GET_PFM(pSys);
-    NvU32     i;
-    NvU32     domain;
-    NvU16     chipsetInfoIndex;
-    NvU32     devCap2;
-    NvU32     devCtrl2;
-    NvBool    rootPortLtrSupported;
-    NvBool    tempLtrSupported;
-    NvBool    needsNosnoopWAR = NV_FALSE;
-    NV_STATUS status;
+    OBJSYS    *pSys       = SYS_GET_INSTANCE();
+    OBJOS     *pOS        = SYS_GET_OS(pSys);
+    OBJPFM    *pPfm       = SYS_GET_PFM(pSys);
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+    NvU32      i;
+    NvU32      domain;
+    NvU16      chipsetInfoIndex;
+    NvU32      devCap2;
+    NvU32      devCtrl2;
+    NvBool     rootPortLtrSupported;
+    NvBool     tempLtrSupported;
+    NvBool     needsNosnoopWAR = NV_FALSE;
+    NV_STATUS  status;
 
     if (pGpu != NULL)
     {
@@ -239,8 +295,8 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
         if (clFindFHBAndGetChipsetInfoIndex(pCl, &chipsetInfoIndex) == NV_OK)
         {
             pCl->Chipset = chipsetInfo[chipsetInfoIndex].chipset;
-            // If the chipset info is not found, hipsetInfo[chipsetInfoIndex].setupFunc = NULL
-            if ((!chipsetInfo[chipsetInfoIndex].setupFunc) ||
+            // If the chipset info is not found, chipsetInfo[chipsetInfoIndex].setupFunc = NULL
+            if ((chipsetInfo[chipsetInfoIndex].setupFunc != NULL) &&
                 (chipsetInfo[chipsetInfoIndex].setupFunc(pCl) != NV_OK))
             {
                 NV_PRINTF(LEVEL_ERROR, "*** Chipset Setup Function Error!\n");
@@ -292,8 +348,9 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
         // Skip reading MCFG table for old SLI chipsets.
         //
 
-        if (!(pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) &&
-             (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_SKIP_MCFG_READ))))
+        if (!(pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)       &&
+             (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_SKIP_MCFG_READ))) &&
+             !(IS_SIM_MODS(GPU_GET_OS(pGpu))))
         {
             if (clStorePcieConfigSpaceBaseFromMcfg(pCl) == NV_OK)
             {
@@ -462,7 +519,41 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
         }
     }
 
+    // Cache L1SS enablement info from chipset side
+    kbifCacheChipsetL1SubstatesEnable(pGpu, pKernelBif);
+
     return NV_OK;
+}
+
+/*! @brief Check if we have PciePowerControl present and 
+ *         cache it for ASPM override
+ *
+ * @param[in]   pGpu       GPU object pointer
+ * @param[in]   pKernelBif KernelBif object pointer
+ */
+static void
+_objClIsPciePowerControlPresent
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32      pciePowerControlMask = 0;
+    NV_STATUS  status;
+
+    // Cache PCIe Power Control variable for ASPM override
+    status = kbifGetPciePowerControlValue(pGpu, pKernelBif, &pciePowerControlMask);
+    if (status != NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.bPciePowerControlPresent = NV_FALSE;
+        pKernelBif->pciePowerControlInfo.pciePowerControlValue    = 0;
+        NV_PRINTF(LEVEL_INFO, "None of the PCIe Power Control for ASPM override are available\n");
+    }
+    else
+    {
+        pKernelBif->pciePowerControlInfo.bPciePowerControlPresent = NV_TRUE;
+        pKernelBif->pciePowerControlInfo.pciePowerControlValue    = pciePowerControlMask;
+    }    
 }
 
 /*! @brief Check LTR capability throughout the hierarchy of
@@ -495,7 +586,7 @@ clCheckUpstreamLtrSupport_IMPL
     if (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE))
     {
         {
-            NV_PRINTF(LEVEL_ERROR, "PCIE config space is inaccessible!\n");
+            NV_PRINTF(LEVEL_NOTICE, "PCIE config space is inaccessible!\n");
             status = NV_ERR_NOT_SUPPORTED;
             goto clCheckUpstreamLtrSupport_exit;
         }
@@ -551,6 +642,187 @@ clCheckUpstreamLtrSupport_exit:
     return status;
 }
 
+/*! @brief Check PCIe Atomics capability throughout the hierarchy of
+ *         switches in between root port and endpoint.
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pCl         Core logic object pointer
+ * @param[out] pAtomicMask Mask of supported atomic size, including one or more of:
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_32
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_64
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_128
+ *
+ * @return NV_OK if PCIe Atomics is supported throughout the hierarchy, else
+ *         NV_ERR_NOT_SUPPORTED
+ */
+NV_STATUS
+clGetAtomicTypesSupported_IMPL
+(
+    NvU32  domain,
+    NvU8   bus,
+    OBJCL *pCl,
+    NvU32 *pAtomicMask
+)
+{
+    NvU32      portCaps    = 0;
+    NvBool     bRoutingCap = NV_TRUE;
+    NV_STATUS  status      = NV_OK;
+    NvU32      PCIECapPtr;
+    void      *pHandleUp;
+    NvU8       busUp, devUp, funcUp;
+    NvU16      vendorIDUp, deviceIDUp;
+
+    do
+    {
+        // find virtual P2P bridge
+        pHandleUp = clFindP2PBrdg(pCl, domain, bus,
+                                  &busUp, &devUp, &funcUp,
+                                  &vendorIDUp, &deviceIDUp);
+
+        // make sure handle was found
+        if (!pHandleUp)
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        status = clSetPortPcieCapOffset(pCl, pHandleUp, &PCIECapPtr);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "Capability pointer not found.\n");
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        // Read PCIe Capability
+        portCaps = osPciReadDword(pHandleUp, CL_PCIE_CAP - CL_PCIE_BEGIN + PCIECapPtr);
+
+        if (CL_IS_ROOT_PORT(portCaps))
+        {
+            _objClGetDownstreamAtomicsEnabledMask(pHandleUp, PCIECapPtr, pAtomicMask);
+        }
+        else if (CL_IS_UPSTREAM_PORT(portCaps))
+        {
+            _objClGetUpstreamAtomicRoutingCap(pHandleUp, PCIECapPtr, &bRoutingCap);
+            if (!bRoutingCap)
+            {
+                status = NV_ERR_NOT_SUPPORTED;
+                goto clGetAtomicTypesSupported_exit;
+            }
+        }
+        else if (CL_IS_DOWNSTREAM_PORT(portCaps))
+        {
+            _objClGetDownstreamAtomicRoutingCap(pHandleUp, PCIECapPtr, &bRoutingCap);
+            if (!bRoutingCap)
+            {
+                status = NV_ERR_NOT_SUPPORTED;
+                goto clGetAtomicTypesSupported_exit;
+            }
+        }
+        else
+        {
+            // Invalid port
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        bus = busUp;
+    } while (!CL_IS_ROOT_PORT(portCaps));
+
+clGetAtomicTypesSupported_exit:
+    return status;
+}
+
+/*!
+ * @brief Get the supported Atomics mask bit configuration for root port
+ *
+ * @param[in]  pHandle     Handle for the P2P bridge
+ * @param[in]  PCIECapPtr  PCIe Capability pointer
+ * @param[out] pAtomicMask Mask of supported atomic size
+ */
+static void
+_objClGetDownstreamAtomicsEnabledMask
+(
+    void  *pHandle,
+    NvU32  PCIECapPtr,
+    NvU32 *pAtomicMask
+)
+{
+    NvU32 devCap2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+    if (CL_IS_32BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_32BIT;
+    }
+    if (CL_IS_64BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_64BIT;
+    }
+    if (CL_IS_128BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_128BIT;
+    }
+}
+
+/*!
+ * @brief Check if upstream port is capable of atomic routing
+ *        and whether egress is blocked
+ *
+ * @param[in]  pHandle      Handle for the P2P bridge
+ * @param[in]  PCIECapPtr   PCIe Capability pointer
+ * @param[out] pbRoutingCap Atomic routing capable
+ */
+static void
+_objClGetUpstreamAtomicRoutingCap
+(
+    void   *pHandle,
+    NvU32   PCIECapPtr,
+    NvBool *pbRoutingCap
+)
+{
+    NvU32 devCap2;
+    NvU32 devCtrl2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+    devCtrl2 = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CTRL_2 - CL_PCIE_BEGIN + PCIECapPtr);
+
+    if ((!CL_IS_ATOMICS_SUPPORTED(devCap2)) ||
+        (CL_IS_ATOMICS_EGRESS_BLOCKED(devCtrl2)))
+    {
+        *pbRoutingCap = NV_FALSE;
+    }
+}
+
+/*!
+ * @brief Check if downstream port is capable of atomic routing
+ *
+ * @param[in]  pHandle      Handle for the P2P bridge
+ * @param[in]  PCIECapPtr   PCIe Capability pointer
+ * @param[out] pbRoutingCap Atomic routing capable
+ */
+static void
+_objClGetDownstreamAtomicRoutingCap
+(
+    void   *pHandle,
+    NvU32   PCIECapPtr,
+    NvBool *pbRoutingCap
+)
+{
+    NvU32 devCap2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+
+    if (!CL_IS_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pbRoutingCap = NV_FALSE;
+    }
+}
+
 static void
 _objClAdjustTcVcMap(OBJGPU *pGpu, OBJCL *pCl, PORTDATA *pPort)
 {
@@ -597,6 +869,93 @@ _objClAdjustTcVcMap(OBJGPU *pGpu, OBJCL *pCl, PORTDATA *pPort)
     }
 }
 
+
+#define MAX_MULTI_GPU_BOARD_IDS   4
+typedef struct
+{
+    NvU16 gpuDevIds[MAX_MULTI_GPU_BOARD_IDS];
+    NvU16 gpuSubVenIds[MAX_MULTI_GPU_BOARD_IDS];
+    NvU16 gpuSubDevIds[MAX_MULTI_GPU_BOARD_IDS];
+} NV_MULTI_GPU_BOARD_CONFIGS;
+
+static const NV_MULTI_GPU_BOARD_CONFIGS multiGpuBoards[] =
+{
+// gpuDevIds,                       gpuSubVenIds,                   gpuSubDevIds
+
+// A16 GPUs are 4xGPU boards with no nvlink
+{{NV_PCI_DEVID_DEVICE_PG171_SKU200_PG179_SKU220, 0},
+                                    {NV_PCI_SUBID_VENDOR_NVIDIA,
+                                     0},                            {NV_PCI_SUBID_DEVICE_PG171_SKU200,
+                                                                     0}},
+};
+
+/*!
+ * Searches through multiGpuBoards[] for the specified DEVID and possibly the
+ * SSVID and SSDID to determine if the GPU is in a multi GPU board.
+ *
+ * @param[in]  gpuDevId    DEVID of the GPU
+ * @param[in]  gpuSubVenId The subdevice VENID of the GPU
+ * @param[in]  gpuSubDevId The sbudevice DEVID of the GPU
+ *
+ * @return NV_TRUE if the GPU is in a multigpu board, NV_FALSE otherwise
+ */
+static NvBool
+gpuDevIdIsMultiGpuBoard
+(
+    NvU16   gpuDevId,
+    NvU16   gpuSubVenId,
+    NvU16   gpuSubDevId
+)
+{
+    NvU32 i, j;
+    NvBool bFound = NV_FALSE, bInvalidSubIds = NV_FALSE;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(multiGpuBoards);
+         i++)
+    {
+        bInvalidSubIds = NV_FALSE;
+
+        for (j = 0; j < MAX_MULTI_GPU_BOARD_IDS; j++)
+        {
+            //
+            // As soon as we see a NULL subvenid or subdevid, we stop checking them
+            // for this entry
+            //
+            if ((multiGpuBoards[i].gpuSubVenIds[j] == 0) ||
+                (multiGpuBoards[i].gpuSubDevIds[j] == 0))
+            {
+                bInvalidSubIds = NV_TRUE;
+            }
+
+            // Arrays are NULL terminated
+            if (multiGpuBoards[i].gpuDevIds[j] == 0)
+            {
+                break;
+            }
+            // If the devid matches we might have a match
+            else if (multiGpuBoards[i].gpuDevIds[j] == gpuDevId)
+            {
+                // Do we need to also compare the subdevice ids?
+                if ((bInvalidSubIds) ||
+                    ((multiGpuBoards[i].gpuSubVenIds[j] == gpuSubVenId) &&
+                     (multiGpuBoards[i].gpuSubDevIds[j] == gpuSubDevId)))
+                {
+                    bFound = NV_TRUE;
+                    break;
+                }
+            }
+        }
+
+        if (bFound)
+        {
+            break;
+        }
+    }
+
+    return bFound;
+}
+
+
 //
 // Determine if any updates are needed to the PCI Express
 //
@@ -606,9 +965,8 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     OBJSYS    *pSys       = SYS_GET_INSTANCE();
     OBJPFM    *pPfm       = SYS_GET_PFM(pSys);
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-    NvBool     bIsGemini  = NV_FALSE;
     NvBool     bIsMultiGpu;
-    NvU32      busIntfType = kbifGetBusIntfType_HAL(pKernelBif);
+    NvU32      busIntfType = gpuGetBusIntfType_HAL(pGpu);
 
     // verify we're an PCI Express graphics card
     if (busIntfType != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS &&
@@ -632,6 +990,9 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // Load PCI Express virtual P2P approval config
     objClLoadPcieVirtualP2PApproval(pGpu);
 
+    // Load additional configuraiton bits from virtualized cfg space
+    objClLoadPcieVirtualConfigBits(pGpu);
+
     //
     // Disable NOSNOOP bit for Passthrough.
     //
@@ -640,7 +1001,11 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         pCl->setProperty(pCl, PDB_PROP_CL_NOSNOOP_NOT_CAPABLE, NV_TRUE);
     }
 
+    objClBuildPcieAtomicsAllowList(pGpu, pCl);
+
     objClInitPcieChipset(pGpu, pCl);
+
+    _objClIsPciePowerControlPresent(pGpu, pKernelBif);
 
     //
     // Now that chipset capabilities have been initialized, configure the
@@ -650,6 +1015,20 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
 
     //
+    // Probe root port PCIe atomic capabilities.
+    // kbifProbePcieReqAtomicCaps_HAL should be called from here instead of
+    // kbif construct because of the dependency on the chipset
+    // discovery to build the allow list for enabling PCIe atomics feature.
+    //
+    kbifProbePcieReqAtomicCaps_HAL(pGpu, pKernelBif);
+
+    //
+    // Read device atomic completer capabilities early so they can be
+    // passed to GSP.
+    //
+    kbifProbePcieCplAtomicCaps_HAL(pGpu, pKernelBif);
+
+    //
     // Passthrough configurations do not typically present the upstream
     // bridge required for detecting multi-GPU boards. So for hypervisors
     // with passthrough pretend to separate GPUs.
@@ -657,22 +1036,26 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     if (!pPfm->getProperty(pPfm, PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT))
     {
 
-        //
-        // MultiGpu board includes all Dagwood and Gemini boards
-        // A dagwood board would not have bIsGemini flag set but would have
-        // bIsMultiGpu flag set.
-        //
-        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu, NULL, &bIsGemini);
-        if (bIsGemini)
-        {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_GEMINI, NV_TRUE);
-        }
+        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu);
 
         // Update the board ID only if the Gpu is a multiGpu board
         if (bIsMultiGpu)
         {
             gpumgrUpdateBoardId(pGpu);
+
+            // All multi-GPU boards are Gemini boards.
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_GEMINI, NV_TRUE);
         }
+    }
+
+    // Initialize ASPM L1 mask state for Upstream port
+    if (clIsL1SupportedForUpstreamPort(pGpu, pCl))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ASPM_L1_UPSTREAM_PORT_SUPPORTED, NV_TRUE);
+    }
+    else
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ASPM_L1_UPSTREAM_PORT_SUPPORTED, NV_FALSE);
     }
 
     NV_PRINTF(LEVEL_INFO,
@@ -718,6 +1101,9 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // The GPU's map can be more restrictive than the RP, but it can *never*
     // be larger.
     //
+    // Virtual channel capability is no longer supported for GH100
+    // Bug 200570282, comment#41
+    //
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED))
     {
         _objClAdjustTcVcMap(pGpu, pCl, &pGpu->gpuClData.rootPort);
@@ -754,7 +1140,7 @@ NV_STATUS clInitPcie_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    busIntfType = kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu));
+    busIntfType = gpuGetBusIntfType_HAL(pGpu);
 
     // verify we're an PCI Express graphics card
     if (busIntfType != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS &&
@@ -765,9 +1151,6 @@ NV_STATUS clInitPcie_IMPL
 
     /* enable chipset-specific overrides */
     clUpdatePcieConfig(pGpu, pCl);
-
-    // Bug 200370149 tracks normalizing KMD detection with RM.
-    objClCheckForExternalGpu(pGpu, pCl);
 
     return NV_OK;
 }
@@ -813,7 +1196,7 @@ objClInitGpuPortData
     if (pGpu->gpuClData.upstreamPort.addr.valid)
         return NV_TRUE;
 
-    NV_ASSERT(gpuGetDBDF(pGpu));
+    NV_ASSERT(gpuIsDBDFValid(pGpu));
 
     domain = gpuGetDomain(pGpu);
     gpuBus = gpuGetBus(pGpu);
@@ -843,10 +1226,9 @@ objClInitGpuPortData
         //
         // For MODS debug breakpoints are always fatal and MODS is sometimes run
         // on systems where the up stream port cannot be determined
-        if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
-             NV2080_CTRL_BUS_INFO_TYPE_FPCI) &&
+        if ((gpuGetBusIntfType_HAL(pGpu) != NV2080_CTRL_BUS_INFO_TYPE_FPCI) &&
             (!pHypervisor || !pHypervisor->bDetected) &&
-            !RMCFG_FEATURE_PLATFORM_MODS)
+            !RMCFG_FEATURE_MODS_FEATURES)
         {
             DBG_BREAKPOINT();
             return NV_FALSE;
@@ -1223,7 +1605,7 @@ objClGpuMapEnhCfgSpace
     NV_ASSERT_OR_RETURN_VOID(!pOS->getProperty(pOS, PDB_PROP_OS_DOES_NOT_ALLOW_DIRECT_PCIE_MAPPINGS));
 
     if (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) ||
-        (pGpu->gpuCfgAddr != NULL) || (gpuGetDBDF(pGpu) == 0))
+        (pGpu->gpuCfgAddr != NULL) || !gpuIsDBDFValid(pGpu))
     {
         return;
     }
@@ -1278,9 +1660,11 @@ objClSetPortCapsOffsets
     PORTDATA     *pPort
 )
 {
-    clSetPortPcieCapOffset(pCl, pPort->addr.handle,
-                           &pPort->PCIECapPtr);
-    objClSetPortPcieEnhancedCapsOffsets(pCl, pPort);
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, 
+                          clSetPortPcieCapOffset(pCl, pPort->addr.handle,
+                          &pPort->PCIECapPtr));
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+                          objClSetPortPcieEnhancedCapsOffsets(pCl, pPort));
 
     return NV_OK;
 }
@@ -1370,6 +1754,9 @@ objClSetPortPcieEnhancedCapsOffsets
             case PCIE_CAP_ID_L1_PM_SUBSTATES:
                 pPort->PCIEL1SsCapPtr = cap_next;
                 break;
+            case PCIE_CAP_ID_ACS:
+                pPort->PCIEAcsCapPtr = cap_next;
+                break;
         }
         cap_next = REF_VAL(PCIE_CAP_HEADER_NEXT, value);
     }
@@ -1387,14 +1774,14 @@ clPcieReadPortConfigReg_IMPL
     NvU32    *value
 )
 {
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pPort->addr.valid)
     {
         return NV_ERR_GENERIC;
     }
 
-    if ((offset >= CL_PCIE_BEGIN) && (offset + sizeof(NvU32) <= CL_PCIE_END))
+    if ((offset >= CL_PCIE_BEGIN) && (offset <= CL_PCIE_END))
     {
         if (pPort->PCIECapPtr)
             *value = osPciReadDword(pPort->addr.handle,
@@ -1402,11 +1789,11 @@ clPcieReadPortConfigReg_IMPL
         else
             return NV_ERR_GENERIC;
     }
-    else if ((offset >= CL_AER_BEGIN) && (offset + sizeof(NvU32) <= CL_AER_END))
+    else if ((offset >= CL_AER_BEGIN) && (offset <= CL_AER_END))
     {
         if (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) && pPort->PCIEErrorCapPtr)
             *value = clPcieReadDword(pCl,
-                pPort->addr.domain,
+                                     pPort->addr.domain,
                                      pPort->addr.bus,
                                      pPort->addr.device,
                                      pPort->addr.func,
@@ -1414,7 +1801,7 @@ clPcieReadPortConfigReg_IMPL
         else
             return NV_ERR_GENERIC;
     }
-    else if ((offset >= CL_VC_BEGIN) && (offset + sizeof(NvU32) <= CL_VC_END))
+    else if ((offset >= CL_VC_BEGIN) && (offset <= CL_VC_END))
     {
         if (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) && pPort->PCIEVCCapPtr)
             *value = clPcieReadDword(pCl,
@@ -1426,7 +1813,7 @@ clPcieReadPortConfigReg_IMPL
         else
             return NV_ERR_GENERIC;
     }
-    else if ((offset >= CL_L1_SS_BEGIN) && (offset + sizeof(NvU32) <= CL_L1_SS_END))
+    else if ((offset >= CL_L1_SS_BEGIN) && (offset <= CL_L1_SS_END))
     {
         if (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) && pPort->PCIEL1SsCapPtr)
             *value = clPcieReadDword(pCl,
@@ -1435,6 +1822,39 @@ clPcieReadPortConfigReg_IMPL
                                      pPort->addr.device,
                                      pPort->addr.func,
                                      offset - CL_L1_SS_BEGIN + pPort->PCIEL1SsCapPtr);
+        else
+            return NV_ERR_GENERIC;
+    }
+    else if ((offset >= CL_ACS_BEGIN) && (offset <= CL_ACS_END))
+    {
+        if (pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE) && pPort->PCIEAcsCapPtr)
+        {
+            // ACS config space registers are a mix of 16 and 32 bit registers.
+            switch (offset)
+            {
+                case CL_ACS_BEGIN:
+                case CL_ACS_EGRESS_CTL_V:
+                {
+                    *value = clPcieReadDword(pCl,
+                                             pPort->addr.domain,
+                                             pPort->addr.bus,
+                                             pPort->addr.device,
+                                             pPort->addr.func,
+                                             offset - CL_ACS_BEGIN + pPort->PCIEAcsCapPtr);
+                    break;
+                }
+                case CL_ACS_CAP:
+                case CL_ACS_CTRL:
+                {
+                    *value = (NvU32) clPcieReadWord(pCl,
+                                                    pPort->addr.domain,
+                                                    pPort->addr.bus,
+                                                    pPort->addr.device,
+                                                    pPort->addr.func,
+                                                    offset - CL_ACS_BEGIN + pPort->PCIEAcsCapPtr);
+                }
+            }
+        }
         else
             return NV_ERR_GENERIC;
     }
@@ -1460,7 +1880,7 @@ objClBR03Exists
     NvU32 gpuDomain;
     NvU16 vendor, device;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -1499,7 +1919,7 @@ objClBR04Exists
     NvU32 gpuDomain;
     NvU16 vendor, device;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -1545,7 +1965,7 @@ clFindBrdgUpstreamPort_IMPL
     NvU32 domain = 0;
     NvU16 vendor = 0, device = 0;
 
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.upstreamPort.addr.valid)
     {
@@ -1653,16 +2073,14 @@ objClFindRootPort
 //
 // clCountBR
 //
-// Returns the count of cascaded BR03s and BR04s right under this GPU.
+// Returns the count of cascaded BR04s right under this GPU.
 //
 void
 clCountBR_IMPL
 (
     OBJGPU *pGpu,
     OBJCL *pCl,
-    NvU8 *pBR03Count,
-    NvU8 *pBR04Count,
-    NvU8 *pPLXCount
+    NvU8 *pBR04Count
 )
 {
     void *handleUp;
@@ -1670,9 +2088,7 @@ clCountBR_IMPL
     NvU8 bus = 0xff, busUp, deviceUp, funcUp;
     NvU32 domain;
     NvU8 downstreamPortBus;
-    NvU8 BR03Count = 0;
     NvU8 BR04Count = 0;
-    NvU8 PLXCount = 0;
 
     domain = gpuGetDomain(pGpu);
     handleUp = clFindBrdgUpstreamPort(pGpu, pCl, NV_TRUE,
@@ -1682,17 +2098,9 @@ clCountBR_IMPL
 
     while (handleUp)
     {
-        if ((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && (deviceIDUp == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03))
-        {
-            BR03Count++;
-        }
-        else if((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && IS_DEVID_BR04(deviceIDUp))
+        if ((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && IS_DEVID_BR04(deviceIDUp))
         {
             BR04Count++;
-        }
-        else if((vendorIDUp == PCI_VENDOR_ID_PLX) && IS_DEVID_SUPPORTED_PLX(deviceIDUp))
-        {
-            PLXCount++;
         }
         else
         {
@@ -1712,16 +2120,14 @@ clCountBR_IMPL
         }
     }
 
-    *pBR03Count = BR03Count;
     *pBR04Count = BR04Count;
-    *pPLXCount  = PLXCount;
     return ;
 }
 
 //
 // clSearchBR04() returns the bus, revision of the BR04s in the system,
 // and their count.
-// It ignores the BR04s located in GX2 boards.
+// It ignores the BR04s located in Gemini boards.
 // It includes BR04s located on the motherboard, or on a riser board.
 //
 void
@@ -1759,7 +2165,7 @@ clSearchBR04_IMPL
 
         //
         // Look at the devices connected to this BR04.
-        // If it is a GX2 GPU, then skip.
+        // If it is a Gemini GPU, then skip.
         // BR04 has one upstream port and 2 to 4 downstream ports.
         // We look at the downstream ports of BR04.
         // We explicitely look for at least 2 BR04 downstream ports.
@@ -1773,7 +2179,7 @@ clSearchBR04_IMPL
             {
                 //
                 // We have one potential downstream port
-                // Look to if a GX2 GPU is connected to this BR04
+                // Look to if a Gemini GPU is connected to this BR04
                 //
                 pBusTopologyInfoBR04GPU = pCl->pBusTopologyInfo;
                 while (pBusTopologyInfoBR04GPU)
@@ -1783,6 +2189,17 @@ clSearchBR04_IMPL
                         break;
                     }
                     pBusTopologyInfoBR04GPU = pBusTopologyInfoBR04GPU->next;
+                }
+                if (pBusTopologyInfoBR04GPU)
+                {
+                    // There is something
+                    if ((pBusTopologyInfoBR04GPU->busInfo.vendorID == PCI_VENDOR_ID_NVIDIA) &&
+                        (gpuDevIdIsMultiGpuBoard(pBusTopologyInfoBR04GPU->busInfo.deviceID, 0, 0)))
+                    {
+                        // This is a BR04 in a Gemini, skip this DS port
+                        pBusTopologyInfoBR04DS = pBusTopologyInfoBR04DS->next;
+                        continue;
+                    }
                 }
                 BR04DSPorts++;
             }
@@ -1824,7 +2241,7 @@ clSearchBR04_IMPL
 // Returns the bus number of a common bridge behind the 2 GPUs.
 // The returned values are 0xFF when no bridge is found.
 // This function finds the most upper bridge(s) if bScanAll is set to NV_TRUE.
-// This function finds the first recognized bridge (BR04, BR03, PLX) under the GPUs if bScanAll is set to NV_FALSE.
+// This function finds the first recognized bridge (BR04) under the GPUs if bScanAll is set to NV_FALSE.
 //
 void
 clFindCommonBR_IMPL
@@ -1832,9 +2249,7 @@ clFindCommonBR_IMPL
     OBJGPU *pGpu1,
     OBJGPU *pGpu2,
     OBJCL  *pCl,
-    NvU8   *pBR03Bus,
     NvU8   *pBR04Bus,
-    NvU8   *pPLXBus,
     NvBool  bScanAll
 )
 {
@@ -1843,9 +2258,7 @@ clFindCommonBR_IMPL
     NvU8 bus1 = 0xff, busUp1, deviceUp1, funcUp1, bus2 = 0xff, busUp2, deviceUp2, funcUp2;
     NvU32 domain1, domain2;
     NvU8 downstreamPortBus1, downstreamPortBus2;
-    NvU8 BR03Bus = 0xFF;
     NvU8 BR04Bus = 0xFF;
-    NvU8 PLXBus  = 0xFF;
 
     NV_ASSERT(pGpu1 != pGpu2);
 
@@ -1855,16 +2268,14 @@ clFindCommonBR_IMPL
     if (domain1 != domain2)
     {
         //
-        //1. If two GPUs are from different PCI domains, then there can not be a common BR03/BR04 bridge
+        //1. If two GPUs are from different PCI domains, then there can not be a common BR04 bridge
         //   that connects to both GPUs. Because a new domain will start form a host bridge.
         //2. Returning early when two GPUs are from different PCI domains save significant GPU initialization
         //   time when we have more that 6 GPUs in the system connected to different domains. This function
         //   is called multiple times while searching for 2-way 3-way and 4-way sli combination. (Bug 770154)
         //
 
-        *pBR03Bus = BR03Bus;
         *pBR04Bus = BR04Bus;
-        *pPLXBus  = PLXBus;
         return;
     }
 
@@ -1895,21 +2306,6 @@ clFindCommonBR_IMPL
                         BR04Bus = busUp2;
                         break;
                     }
-
-                    if ((vendorIDUp2 == PCI_VENDOR_ID_NVIDIA) &&
-                        (deviceIDUp1 == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03) &&
-                        (deviceIDUp2 == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03))
-                    {
-                        BR03Bus = busUp2;
-                        break;
-                    }
-                    if ((vendorIDUp2 == PCI_VENDOR_ID_PLX) &&
-                        IS_DEVID_SUPPORTED_PLX(deviceIDUp1) &&
-                        IS_DEVID_SUPPORTED_PLX(deviceIDUp2))
-                    {
-                        PLXBus = busUp2;
-                        break;
-                    }
                 }
 
                 bus2 = busUp2;
@@ -1924,8 +2320,7 @@ clFindCommonBR_IMPL
         // If we requested to not scan all the devices up to the root port,
         // and we found one, stop right here.
         //
-        if (!bScanAll &&
-            ((BR04Bus != 0xFF) || (BR03Bus != 0xFF) || (PLXBus != 0xFF)))
+        if (!bScanAll && (BR04Bus != 0xFF))
         {
             break;
         }
@@ -1937,9 +2332,7 @@ clFindCommonBR_IMPL
                                   &funcUp1, &vendorIDUp1, &deviceIDUp1);
     }
 
-    *pBR03Bus = BR03Bus;
     *pBR04Bus = BR04Bus;
-    *pPLXBus  = PLXBus;
     return ;
 }
 
@@ -2055,8 +2448,7 @@ clFindBR_IMPL
     NvU8   *pBR04Bus,
     NvBool *pBRNot3rdParty,
     NvBool *pNoUnsupportedBRFound,
-    NvBool *pNoOnboardBR04,
-    NvU8   *pPLXBus
+    NvBool *pNoOnboardBR04
 )
 {
     void *handleUp, *br04handle = NULL;
@@ -2067,8 +2459,6 @@ clFindBR_IMPL
     NvU32 regValue = 0;
     NvU32 gpuBrNot3rdPartyCount = 0, gpuBrCount = 0;
     NvBool bGpuIsMultiGpuBoard = NV_FALSE;
-    NvBool bIsGX2                = NV_FALSE;
-    NvBool bIsGemini             = NV_FALSE;
     NvU32  gpuBR04Count          = 0;
     NvU8 BR03Bus = 0xFF;
     NvU8 BR04Bus = 0xFF;
@@ -2085,7 +2475,7 @@ clFindBR_IMPL
                                       &vendorIDUp, &deviceIDUp,
                                       &downstreamPortBus1);
 
-    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu, &bIsGX2, &bIsGemini);
+    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu);
 
     // Traverse the pci tree
     while (handleUp)
@@ -2126,7 +2516,7 @@ clFindBR_IMPL
             PLXBus = busUp;
         }
 
-        // Do not count the BR04A03, PLX, and the bridges behind the dagwoods.
+        // Do not count the BR04A03, PLX, and the bridges behind the multi-GPU boards.
         if ((BR04Rev != 0x3) && (PLXBus == 0xFF) && ((gpuBrCount != 1) || (bGpuIsMultiGpuBoard == NV_FALSE)))
         {
             gpuBrNot3rdPartyCount++;
@@ -2139,9 +2529,9 @@ clFindBR_IMPL
                                  &funcUp, &vendorIDUp, &deviceIDUp);
     }
 
-    if ((bIsGX2 || bIsGemini) && gpuBR04Count)
+    if (bGpuIsMultiGpuBoard && gpuBR04Count)
     {
-        // Ignore one BR04 in case of GX2 or Gemini
+        // Ignore one BR04 in case of Gemini
         gpuBR04Count--;
     }
     if (gpuBR04Count)
@@ -2157,7 +2547,6 @@ clFindBR_IMPL
     *pBRNot3rdParty = brNot3rdParty;
     *pNoOnboardBR04 = bNoOnboardBR04 ;
     *pNoUnsupportedBRFound = bNoUnsupportedBRFound;
-    *pPLXBus = PLXBus;
 
     return ;
 }
@@ -2244,7 +2633,7 @@ clStoreBusTopologyCache_IMPL
                     }
                 }
 
-                if (vendorID == PCI_INVALID_VENDORID)
+                if (!PCI_IS_VENDORID_VALID(vendorID))
                 {
                     break;           // skip to the next device
                 }
@@ -2291,7 +2680,8 @@ clStoreBusTopologyCache_IMPL
                 pBusTopologyInfo->busInfo.revisionID  = osPciReadByte(handle, PCI_HEADER_TYPE0_REVISION_ID);
 
                 if ((pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_P2P) ||
-                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST))
+                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST) ||
+                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_3DCTRL))
                 {
                     pBusTopologyInfo->secBus = (NvU8)osPciReadByte(handle, PCI_TYPE_1_SECONDARY_BUS_NUMBER);
                     pBusTopologyInfo->bVgaAdapter = NV_FALSE;
@@ -2328,7 +2718,7 @@ clPcieWriteRootPortConfigReg_IMPL
     NvU32   value
 )
 {
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+    if ((gpuGetBusIntfType_HAL(pGpu) !=
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
         !pGpu->gpuClData.rootPort.addr.valid)
     {
@@ -2624,7 +3014,7 @@ objClPcieMapEnhCfgSpace
             return pGpu->gpuClData.rootPort.vAddr;
         }
         else if ((pGpu->gpuCfgAddr != NULL) &&
-                 (gpuGetDBDF(pGpu) != 0) &&
+                 (gpuIsDBDFValid(pGpu)) &&
                  (domain == gpuGetDomain(pGpu)) &&
                  (bus == gpuGetBus(pGpu)) &&
                  (device == gpuGetDevice(pGpu)) &&
@@ -2899,7 +3289,6 @@ NV_STATUS Intel_RP0C0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
 NV_STATUS Intel_RP2F0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NvU32 domain;
     // Socket 0 default PCIE location is bus = 0x7f, device = 0x1e, func = 0x3
@@ -2913,7 +3302,7 @@ NV_STATUS Intel_RP2F0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
     NvBool bC0orC1CPUID = NV_FALSE;
 
     // Determine if CPU is C0/C1 Stepping by CPUID
-    if (pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx))
+    if (osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx))
     {
         // CPUID is returned to eax
         bC0orC1CPUID = (eax == INTEL_C0_OR_C1_CPUID);
@@ -3146,6 +3535,16 @@ NV_STATUS AMD_RP1630_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
     return NV_OK;
 }
 
+
+//
+// Setup function for Qualcomm root port 010E
+// Qualcomm Snapdragon Makena
+//
+NV_STATUS Qualcomm_Snapdragon8cx_RP_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
+{
+    return NV_OK;
+}
+
 static NV_STATUS
 objClGpuIs3DController(OBJGPU *pGpu)
 {
@@ -3188,7 +3587,7 @@ clPcieGetMaxCapableLinkWidth_IMPL
     // Taking care only mobile systems about system max capable link width issue
     // of bug 427155.
     //
-    if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) ==
+    if ((gpuGetBusIntfType_HAL(pGpu) ==
          NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
         pGpu->gpuClData.rootPort.addr.valid)
     {
@@ -3225,82 +3624,25 @@ clPcieIsRelaxedOrderingSafe_IMPL
     return NV_OK;
 }
 
-/**
- * Compares two OBJGPUs to see if they are behind the same upstream bridge.
- *     Used for identifying GPUs behind the same lowest level BR04.
- *
- * @param[in] pGpu1 First gpu to compare
- * @param[in] pGpu2 Second gpu to compare
- *
- * @return NV_TRUE if the two GPUs are behind the same bridge.
- */
-NvBool
-clAreGpusBehindSameBridge_IMPL
-(
-    OBJCL  *pCl,
-    OBJGPU *pGpu1,
-    OBJGPU *pGpu2
-)
-{
-    NV_ASSERT((pGpu1 != NULL) &&
-              (pGpu2 != NULL));
-
-    if ((pGpu1->gpuClData.boardUpstreamPort.addr.valid) &&
-        (pGpu2->gpuClData.boardUpstreamPort.addr.valid) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.domain
-            == pGpu2->gpuClData.boardUpstreamPort.addr.domain) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.bus
-            == pGpu2->gpuClData.boardUpstreamPort.addr.bus) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.device
-            == pGpu2->gpuClData.boardUpstreamPort.addr.device) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.func
-            == pGpu2->gpuClData.boardUpstreamPort.addr.func))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-}
-
 /*!
  * Pulls the devid info out of the pGpu to pass to gpuDevIdIsMultiGpuBoard().
  *
  * @param[in]  pGpu       OBJGPU pointer
- * @param[out] pbIsGX2    NvBool pointer in which to store whether GPU an an SLI
- *                        mutliboard config.  May be NULL if caller does not
- *                        care to receive this information.
- * @parma[out] pbIsGemini NvBool pointer in which to store whether GPU is a
- *                        Gemini multiboard config. May be NULL if caller does
- *                        not care to receive this information.
  *
  * @return NV_TRUE if the GPU is in a multigpu board, NV_FALSE otherwise
  */
 NvBool
 gpuIsMultiGpuBoard
 (
-    OBJGPU *pGpu,
-    NvBool *pbIsGX2,
-    NvBool *pbIsGemini
+    OBJGPU *pGpu
 )
 {
 
-    if (pbIsGX2 != NULL)
-        *pbIsGX2 = NV_FALSE;
-    if (pbIsGemini != NULL)
-        *pbIsGemini = NV_FALSE;
-
-    if ((DRF_VAL(_PCI, _DEVID, _DEVICE, pGpu->idInfo.PCIDeviceID) == NV_PCI_DEVID_DEVICE_PG171_SKU200_PG179_SKU220) &&
-        (DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCISubDeviceID) == NV_PCI_SUBID_DEVICE_PG171_SKU200) &&
-        (DRF_VAL(_PCI, _SUBID, _VENDOR, pGpu->idInfo.PCISubDeviceID) == NV_PCI_SUBID_VENDOR_NVIDIA))
-    {
-        if (pbIsGemini != NULL)
-            *pbIsGemini = NV_TRUE;
-
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-
+    return pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_PLX_PRESENT) ||
+        gpuDevIdIsMultiGpuBoard(
+            (NvU16) DRF_VAL(_PCI, _DEVID, _DEVICE, pGpu->idInfo.PCIDeviceID),
+            (NvU16) DRF_VAL(_PCI, _SUBID, _VENDOR, pGpu->idInfo.PCISubDeviceID),
+            (NvU16) DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCISubDeviceID));
 }
 
 /*
@@ -3391,8 +3733,8 @@ static NvBool scanForRsdtXsdtTables(OBJOS *pOS,
  *
  * @returns NV_OK if RDST or XDST table was found, NV_ERR_* otherwise.
  */
-NV_STATUS
-clGetRsdtXsdtTablesAddr_IMPL
+static NV_STATUS
+GetRsdtXsdtTablesAddr
 (
     OBJCL *pCl,
     NvU32 *pRsdtAddr,
@@ -3415,9 +3757,9 @@ clGetRsdtXsdtTablesAddr_IMPL
 
     //
     // It doesn't make sense to search for the ACPI tables in the BIOS area
-    // on ARM, so just skip that here.
+    // on non-X86 CPUs, so just skip that here.
     //
-    if (NVCPU_IS_FAMILY_ARM)
+    if (!NVCPU_IS_FAMILY_X86)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -3455,14 +3797,14 @@ clGetRsdtXsdtTablesAddr_IMPL
         status = osGetAcpiRsdpFromUefi(&startAddr);
         if (status != NV_OK)
         {
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
 
         size = ACPI_RSDP_STRUCT_LEN;
         if (scanForRsdtXsdtTables(pOS , startAddr, size, pRsdtAddr, pXsdtAddr) == NV_TRUE)
         {
             status = NV_OK;
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
     }
 
@@ -3480,7 +3822,7 @@ clGetRsdtXsdtTablesAddr_IMPL
         if (scanForRsdtXsdtTables(pOS , startAddr, size, pRsdtAddr, pXsdtAddr) == NV_TRUE)
         {
             status = NV_OK;
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
     }
 
@@ -3492,7 +3834,7 @@ clGetRsdtXsdtTablesAddr_IMPL
         status = NV_OK;
     }
 
-clGetRsdtXsdtTablesAddr_exit:
+GetRsdtXsdtTablesAddr_exit:
     return status;
 }
 
@@ -3505,8 +3847,8 @@ clGetRsdtXsdtTablesAddr_exit:
  *
  * @returns NV_TRUE the RDST or XDST table has been found, NV_FALSE otherwise.
  */
-NvBool
-clGetMcfgTableFromOS_IMPL
+static NvBool
+GetMcfgTableFromOS
 (
     OBJCL   *pCl,
     OBJOS   *pOS,
@@ -3539,14 +3881,11 @@ clGetMcfgTableFromOS_IMPL
 
             // Second call to actually get the table
             if (osGetAcpiTable(NV_ACPI_TABLE_SIGNATURE_GFCM, ppMcfgTable,
-                               *pTableSize, &retSize) == NV_OK)
-            {
-                pOS->setProperty(pOS, PDB_PROP_OS_GET_ACPI_TABLE_FROM_UEFI, NV_TRUE);
-            }
-            else
+                               *pTableSize, &retSize) != NV_OK)
             {
                 portMemFree(*ppMcfgTable);
                 *pTableSize = 0;
+                return NV_FALSE;
             }
         }
 
@@ -3570,8 +3909,8 @@ clGetMcfgTableFromOS_IMPL
  *
  * @returns the address of the DSDT table, or 0 if an error occurred.
  */
-NvU64
-clScanForTable_IMPL
+static NvU64
+ScanForTable
 (
     OBJCL *pCl,
     OBJOS *pOS,
@@ -3724,13 +4063,12 @@ typedef struct
 /*
  * @brief Store PCI-E config space base addresses for all domain numbers
  *
- * @param[in]  pOS            OBJOS pointer
  * @param[in]  pCl            OBJCL pointer
  * @param[in]  pMcfgTable     Pointer to buffer for MCFG table
  * @param[in]  len            Length of MCFG table
  *
  */
-static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJOS *pOS, OBJCL *pCl, NvU8 *pMcfgTable, NvU32 len)
+static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJCL *pCl, NvU8 *pMcfgTable, NvU32 len)
 {
     MCFG_ADDRESS_ALLOCATION_STRUCTURE *pMcfgAddressAllocationStructure;
     MCFG_ADDRESS_ALLOCATION_STRUCTURE mcfgAddressAllocationStructure;
@@ -3847,19 +4185,25 @@ clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
         return NV_ERR_INVALID_DATA;
     }
 
-    if (clGetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len) == NV_FALSE)
+    if (GetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len))
+    {
+        status = storePcieGetConfigSpaceBaseFromMcfgTable(pCl, pData, len);
+        portMemFree(pData);
+        return status;
+    }
+    else
     {
         //
         // If OS api doesn't provide MCFG table then MCFG table address
         // can be found by parsing RSDT/XSDT tables.
         //
-        status = clGetRsdtXsdtTablesAddr(pCl, (NvU32*)&rsdtAddr, &xsdtAddr);
+        status = GetRsdtXsdtTablesAddr(pCl, (NvU32*)&rsdtAddr, &xsdtAddr);
         if (status != NV_OK)
         {
             goto clStorePcieConfigSpaceBaseFromMcfg_exit;
         }
 
-        mcfgAddr = clScanForTable(pCl, pOS, rsdtAddr, xsdtAddr, NV_ACPI_TABLE_SIGNATURE_GFCM);
+        mcfgAddr = ScanForTable(pCl, pOS, rsdtAddr, xsdtAddr, NV_ACPI_TABLE_SIGNATURE_GFCM);
         if (mcfgAddr == 0)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
@@ -3908,21 +4252,14 @@ clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
             goto clStorePcieConfigSpaceBaseFromMcfg_exit;
         }
 
+        status = storePcieGetConfigSpaceBaseFromMcfgTable(pCl, pData, len);
     }
 
-    status = storePcieGetConfigSpaceBaseFromMcfgTable(pOS, pCl, pData, len);
-
 clStorePcieConfigSpaceBaseFromMcfg_exit:
-    if (pData)
+
+    if (pData != NULL)
     {
-        if (pOS->getProperty(pOS, PDB_PROP_OS_GET_ACPI_TABLE_FROM_UEFI))
-        {
-            portMemFree(pData);
-        }
-        else
-        {
-            osUnmapKernelSpace((void*)pData, len);
-        }
+        osUnmapKernelSpace(pData, len);
     }
 
     return status;
@@ -4078,83 +4415,56 @@ objClLoadPcieVirtualP2PApproval(OBJGPU *pGpu)
               gpuGetInstance(pGpu), pGpu->pciePeerClique.id);
 }
 
-/*!
- * @brief Traverse bus topology till Gpu's root port.
- * If any of the intermediate bridge has TB3 supported vendorId and hotplug
- * capability(not necessarily same bridge), mark the Gpu as External Gpu.
- *
- * @params[in]    pGpu    OBJGPU pointer
- * @params[in]    pCl     OBJCL pointer
- *
- */
-void
-objClCheckForExternalGpu
-(
-    OBJGPU *pGpu,
-    OBJCL *pCl
-)
+static void
+objClLoadPcieVirtualConfigBits(OBJGPU *pGpu)
 {
-    NvU8 bus;
-    NvU32 domain;
-    void *handleUp;
-    NvU8 busUp, devUp, funcUp;
-    NvU16 vendorIdUp, deviceIdUp;
-    NvU32 portCaps, pciCaps, slotCaps;
-    NvU32 PCIECapPtr;
-    NvBool bTb3Bridge = NV_FALSE, bSlotHotPlugSupport = NV_FALSE;
+    void *handle;
+    NvU32 data32;
+    NvU8  cap;
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU32 offset = 0;
+    NvU32 sig    = 0;
 
-    domain = gpuGetDomain(pGpu);
-    bus = gpuGetBus(pGpu);
-
-    do
+    if (!IS_PASSTHRU(pGpu))
     {
-        // Find the upstream bridge
-        handleUp = clFindP2PBrdg(pCl, domain, bus, &busUp, &devUp, &funcUp, &vendorIdUp, &deviceIdUp);
-        if (!handleUp)
-        {
-            return;
-        }
+        NV_PRINTF(LEVEL_INFO,
+                  "Skipping non-pass-through GPU%u\n", gpuGetInstance(pGpu));
+        return;
+    }
 
-        if (vendorIdUp == PCI_VENDOR_ID_INTEL)
-        {
-            // Check for the supported TB3(ThunderBolt 3) bridges.
-            bTb3Bridge = isTB3DeviceID(deviceIdUp);
-        }
+    handle = osPciInitHandle(domain, bus, device, 0, NULL, NULL);
 
-        if (NV_OK != clSetPortPcieCapOffset(pCl, handleUp, &PCIECapPtr))
-        {
-            // PCIE bridge but no cap pointer.
-            return;
-        }
+    //
+    // Walk the list and find enable bits
+    //
+    cap = osPciReadByte(handle, PCI_CAPABILITY_LIST);
+    while ((cap != 0) && (sig != NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE))
+    {
+        offset = cap;
+        data32 = osPciReadDword(handle, offset);
+        cap = (NvU8)((data32 >> 8) & 0xFF);
 
-        // Get the PCIE capabilities.
-        pciCaps = osPciReadDword(handleUp, CL_PCIE_CAP - CL_PCIE_BEGIN + PCIECapPtr);
-        if (CL_PCIE_CAP_SLOT & pciCaps)
-        {
-            // Get the slot capabilities.
-            slotCaps = osPciReadDword(handleUp, CL_PCIE_SLOT_CAP - CL_PCIE_BEGIN + PCIECapPtr);
+        if ((data32 & CAP_ID_MASK) != CAP_ID_VENDOR_SPECIFIC)
+            continue;
 
-            if ((CL_PCIE_SLOT_CAP_HOTPLUG_CAPABLE & slotCaps) &&
-                (CL_PCIE_SLOT_CAP_HOTPLUG_SURPRISE & slotCaps))
-            {
-                bSlotHotPlugSupport = NV_TRUE;
-            }
-        }
+        sig = DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_0, _SIG_LO, data32);
+        data32 = osPciReadDword(handle, offset + 4);
+        sig |= (DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _SIG_HI, data32) << 8);
+    }
 
-        if (bTb3Bridge && bSlotHotPlugSupport)
-        {
-            pCl->setProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU, NV_TRUE);
-            break;
-        }
+    if (sig == NV_PCI_VIRTUAL_CONFIG_BITS_SIGNATURE)
+    {
+        // data32 now contains the second dword of the capability structure.
+        pGpu->virtualConfigBits =
+            (NvU16) DRF_VAL(_PCI, _VIRTUAL_CONFIG_BITS_CAP_1, _VALUE, data32);
 
-        bus = busUp;
-
-        // Get port caps to check if PCIE bridge is the root port
-        portCaps = osPciReadDword(handleUp, CL_PCIE_CAP - CL_PCIE_BEGIN + PCIECapPtr);
-
-    } while (!CL_IS_ROOT_PORT(portCaps));
+        NV_PRINTF(LEVEL_INFO,
+                  "Hypervisor has specified config bits %u for GPU%u\n",
+                  pGpu->virtualConfigBits, gpuGetInstance(pGpu));
+    }
 }
-
 
 /*!
  * @brief : Enable L0s and L1 support for GPU's upstream port
@@ -4197,6 +4507,54 @@ clControlL0sL1LinkControlUpstreamPort_IMPL
 }
 
 /*!
+ * @brief: Enable L0s and L1 support from chipset
+ * Note: This function is used for force enabling ASPM and shouldn't be used
+ * for normal driver operations
+ *
+ * @param[in] pGpu      GPU object pointer
+ * @param[in] pBif      BIF object pointer
+ * @param[in] aspmState L0s/L1 state (enable/disable)
+ *
+ * @return NV_OK if ASPM state updated, else return error
+ */
+NV_STATUS
+clChipsetAspmPublicControl_IMPL
+(
+    OBJGPU *pGpu,
+    OBJCL  *pCl,
+    NvU32   aspmState
+)
+{
+    void  *pHandle             = pGpu->gpuClData.upstreamPort.addr.handle;
+    NvU32 PCIECapPtr           = pGpu->gpuClData.upstreamPort.PCIECapPtr;
+    NvU32 linkControlRegOffset = PCIECapPtr + 0x10;
+    NvU32 regVal;
+
+    // sanity check
+    if (aspmState > CL_PCIE_LINK_CTRL_STATUS_ASPM_MASK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid ASPM state passed.\n");
+        return NV_ERR_INVALID_DATA;
+    }
+
+    regVal = osPciReadDword(pHandle, linkControlRegOffset);
+    if (regVal == 0xFFFF)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Link Control register read failed for upstream port\n");
+        return NV_ERR_GENERIC;
+    }
+
+    // Mask all bits except ASPM control bits and update only ASPM bits (1:0)
+    regVal = (~CL_PCIE_LINK_CTRL_STATUS_ASPM_MASK) & regVal;
+    regVal |= aspmState;
+
+    osPciWriteDword(pHandle, linkControlRegOffset, regVal);
+
+    return NV_OK;
+}
+
+/*!
  * @brief: Returns the gen speed of the root node
  */
 NV_STATUS
@@ -4230,6 +4588,37 @@ clPcieGetRootGenSpeed_IMPL
 }
 
 /*!
+ * @brief: Returns the support for CPM of the root node
+ */
+NvU32
+clGetChipsetL1ClockPMSupport_IMPL
+(
+    OBJGPU  *pGpu,
+    OBJCL   *pCl
+)
+{
+    void  *handle;
+    NvU32  PCIECapPtr;
+    NvU32  linkCaps;
+    NvU32  clockPmSupport;
+
+    handle = pGpu->gpuClData.rootPort.addr.handle;
+    if (handle == NULL)
+    {
+        return 0;
+    }
+
+    PCIECapPtr = pGpu->gpuClData.rootPort.PCIECapPtr;
+
+    linkCaps = osPciReadDword(handle, CL_PCIE_LINK_CAP - CL_PCIE_BEGIN + PCIECapPtr);
+
+    // Read field 18:18 to get clock PM support
+    clockPmSupport = (linkCaps & CL_PCIE_LINK_CAP_CLOCK_PM_BIT);
+
+    return clockPmSupport;
+}
+
+/*!
  * @brief: Returns the value of link_capabilities_2 of the downstream port
  *
  * @param[i]   pGpu       GPU object pointer
@@ -4260,18 +4649,7 @@ clPcieGetDownstreamPortLinkCap2_IMPL
 
     PCIECapPtr = pGpu->gpuClData.upstreamPort.PCIECapPtr;
 
-    //
-    // CL_PCIE_END is a misnomer, we actually want to use CL_PCIE_LINK_CAP_2.
-    // But it is not present in chipset.h and the offset of what-would-be
-    // CL_PCIE_LINK_CAP_2 (0x2c) is overlapping with CL_PCIE_END.
-    // Before replacing CL_PCIE_END with CL_PCIE_LINK_CAP_2, we would need to
-    // first understand why CL_PCIE_END was restricted to 0x2c and then
-    // changing it to CL_PCIE_LINK_CAP_2 would require discussion and time.
-    // Todo by anaikwade: Correct this issue. Bug 200659585.
-    //                    Also investigate more correct way if there is any to
-    //                    check pcie 4.0 spec support
-    //
-    *pLinkCaps2 = osPciReadDword(pHandle, CL_PCIE_END - CL_PCIE_BEGIN + PCIECapPtr);
+    *pLinkCaps2 = osPciReadDword(pHandle, CL_PCIE_LINK_CAP_2 - CL_PCIE_BEGIN + PCIECapPtr);
 
     return NV_OK;
 }
@@ -4283,4 +4661,834 @@ NvBool clRootportNeedsNosnoopWAR_FWCLIENT(OBJGPU *pGpu, OBJCL *pCl)
     NV_ASSERT_OR_RETURN(pSCI != NULL, NV_FALSE);
 
     return pSCI->bClRootportNeedsNosnoopWAR;
+}
+
+/*!
+ * @brief   determine the size of the specified PCI capability on the specified device.
+ *
+ * @param[in]   deviceHandle    handle to the device whose capability we are getting the size for
+ * @param[in]   capId           the ID of the capacity we want to get the size for
+ * @param[in]   capOffset       the offset in the PCIE configuration space where the capacity is located
+ *
+ * @return  NvU16 size of the requested capacity.
+ *
+ */
+static NvU16 _clPcieGetPcieCapSize(void *deviceHandle, NvU16 capType, NvU16 capId, NvU16 capOffset)
+{
+    NvU16 capSize = 0;
+    NvU32 tempDword;
+    NvU16 count;
+    NvU16 idx;
+
+    if (deviceHandle == NULL)
+    {
+        return 0;
+    }
+    switch (capType)
+    {
+    case RM_PCIE_DC_CAP_TYPE_PCI:
+        switch (capId)
+        {
+        case CAP_ID_NULL:
+            capSize = CAP_NULL_SIZE;
+            break;
+
+        case CAP_ID_PMI:
+            capSize = CAP_PMI_SIZE;
+            break;
+
+        case CAP_ID_VPD:
+            capSize = CAP_VPD_SIZE;
+            break;
+
+        case CAP_ID_MSI:
+            capSize = PCI_MSI_BASE_SIZE;
+            tempDword = osPciReadWord(deviceHandle, capOffset + PCI_MSI_CONTROL);
+
+            if (FLD_TEST_REF(PCI_MSI_CONTROL_64BIT_CAPABLE, _TRUE, tempDword))
+            {
+                capSize += PCI_MSI_64BIT_ADDR_CAPABLE_ADJ_SIZE;
+            }
+            if (FLD_TEST_REF(PCI_MSI_CONTROL_PVM_CAPABLE, _TRUE, tempDword))
+            {
+                capSize += PCI_MSI_PVM_CAPABLE_ADJ_SIZE;
+            }
+            break;
+
+        case CAP_ID_PCI_EXPRESS:
+            capSize = CAP_PCI_EXPRESS_SIZE;
+            break;
+
+        case CAP_ID_MSI_X:
+            capSize = PCI_MSI_X_BASE_SIZE;
+            // todo: add table collection
+            break;
+
+        case CAP_ID_ENHANCED_ALLOCATION:
+            tempDword = osPciReadByte(deviceHandle, PCI_HEADER_TYPE0_HEADER_TYPE);
+            switch (tempDword)
+            {
+            case PCI_HEADER_TYPE0_HEADER_TYPE_0:
+                capSize = PCI_ENHANCED_ALLOCATION_TYPE_0_BASE_SIZE;
+                break;
+
+            case PCI_HEADER_TYPE0_HEADER_TYPE_1:
+                capSize = PCI_ENHANCED_ALLOCATION_TYPE_0_BASE_SIZE;
+                break;
+
+            default:
+                break;
+            }
+            // get the entry count.
+            if (capSize != 0)
+            {
+                tempDword = osPciReadDword(deviceHandle, capOffset + PCI_ENHANCED_ALLOCATION_FIRST_DW);
+                count = REF_VAL(PCI_ENHANCED_ALLOCATION_FIRST_DW_NUM_ENTRIES, tempDword);
+                for (idx = 0; idx < count; ++idx)
+                {
+                    tempDword = osPciReadDword(deviceHandle, capOffset + capSize + PCI_ENHANCED_ALLOCATION_ENTRY_HEADER);
+                    tempDword = REF_VAL(PCI_ENHANCED_ALLOCATION_ENTRY_HEADER_ENTRY_SIZE, tempDword);
+                    capSize += (NvU16)((tempDword + 1) * sizeof(NvU32));
+                }
+            }
+            break;
+
+        case CAP_ID_FPB:
+            capSize = CAP_FPB_SIZE;
+            break;
+
+        case CAP_ID_AF:
+            capSize = CAP_AF_SIZE;
+            break;
+
+        case CAP_ID_SUBSYSTEM_ID:
+            capSize = CAP_SUBSYSTEM_ID_SIZE;
+            break;
+
+        case CAP_ID_AGP:
+        case CAP_ID_SLOT_ID:
+        case CAP_ID_HOT_SWAP:
+        case CAP_ID_PCI_X:
+        case CAP_ID_HYPER_TRANSPORT:
+        case CAP_ID_DEBUG_PORT:
+        case CAP_ID_CRC:
+        case CAP_ID_HOT_PLUG:
+        case CAP_ID_AGP8X:
+        case CAP_ID_SECURE:
+            // don't know the sizes of these capabilities right now so just grab 32 bytes;
+            capSize = 32;
+            break;
+
+        default:
+            // this is an unrecognized capability.
+            // Assume it is a Vendor Specific capability
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCI_VENDOR_SPECIFIC_CAP_HEADER);
+            capSize = REF_VAL(PCI_VENDOR_SPECIFIC_CAP_HEADER_LENGTH, tempDword);
+            break;
+        }
+        break;
+
+    case RM_PCIE_DC_CAP_TYPE_PCIE:
+        switch (capId)
+        {
+        case PCIE_CAP_ID_SECONDARY_PCIE_CAPABILITY:
+            capSize = PCIE_CAP_SECONDARY_PCIE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DATA_LINK:
+            capSize = PCIE_CAP_DATA_LINK_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_16_GT:
+            capSize = PCIE_CAP_PHYSLAYER_16_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_32_GT:
+            capSize = PCIE_CAP_PHYSLAYER_32_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_64_GT:
+            capSize = PCIE_CAP_PHYSLAYER_64_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLT_LOGGING:
+            capSize = PCIE_CAP_FLT_LOGGING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DEVICE_3:
+            capSize = PCIE_CAP_DEVICE_3_SIZE;
+            break;
+
+        case PCIE_CAP_ID_LANE_MARGINING_AT_RECEVER:
+            capSize = PCIE_CAP_LANE_MARGINING_AT_RECEVER_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ACS:
+            capSize = PCIE_CAP_ACS_SIZE;
+            break;
+
+        case PCIE_CAP_ID_POWER:
+            capSize = PCIE_CAP_POWER_SIZE;
+            break;
+
+        case PCIE_CAP_ID_LATENCY_TOLERANCE:
+            capSize = PCIE_CAP_LATENCY_TOLERANCE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_L1_PM_SUBSTATES:
+            capSize = PCIE_CAP_L1_PM_SUBSTATE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ERROR:
+            capSize = PCIE_CAP_ERROR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_RESIZABLE_BAR:
+            capSize = PCIE_CAP_RESIZABLE_BAR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VF_RESIZABLE_BAR:
+            capSize = PCIE_CAP_VF_RESIZABLE_BAR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ARI:
+            capSize = PCIE_CAP_ARI_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PASID:
+            capSize = PCIE_CAP_PASID_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FRS_QUEUING:
+            capSize = PCIE_CAP_FRS_QUEUING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLIT_PERF_MEASURMENT:
+            capSize = PCIE_CAP_FLIT_PERF_MEASURMENT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLIT_ERROR_INJECTION:
+            capSize = PCIE_CAP_FLIT_ERROR_INJECTION_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VC:
+            capSize = PCIE_VIRTUAL_CHANNELS_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_VC_REGISTER_1);
+            count = REF_VAL(PCIE_VC_REGISTER_1_EXTENDED_VC_COUNT, tempDword);
+            capSize += count * PCIE_VIRTUAL_CHANNELS_EXTENDED_VC_ENTRY_SIZE;
+            // to do: add arbitration tables.
+            break;
+
+        case PCIE_CAP_ID_PCIE_CAP_ID_MFVC:
+            capSize = PCIE_PCIE_CAP_ID_MFVC_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_MFVC_REGISTER_1);
+            count = REF_VAL(PCIE_MFVC_REGISTER_1_EXTENDED_VC_COUNT, tempDword);
+            capSize += count * PCIE_PCIE_CAP_ID_MFVC_EXTENDED_VC_ENTRY_SIZE;
+            // to do: add arbitration tables.
+            break;
+
+        case PCIE_CAP_ID_SERIAL:
+            capSize = PCIE_CAP_DEV_SERIAL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VENDOR_SPECIFIC:
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_VENDOR_SPECIFIC_HEADER_1);
+            capSize = REF_VAL(PCIE_VENDOR_SPECIFIC_HEADER_1_LENGTH, tempDword);
+            break;
+
+        case PCIE_CAP_ID_RCRB:
+            capSize = PCIE_CAP_RCRB_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX:
+            capSize = PCIE_ROOT_COMPLEX_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER);
+            count = REF_VAL(PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER_NUM_LINK_ENTRIES, tempDword);
+            capSize += count * PCIE_ROOT_COMPLEX_LINK_ENTRY_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX_INTERNAL_LINK_CTRL:
+            capSize = PCIE_CAP_ROOT_COMPLEX_INTERNAL_LINK_CTRL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT:
+            capSize = PCIE_CAP_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_MULTICAST:
+            capSize = PCIE_CAP_MULTICAST_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DYNAMIC_POWER_ALLOCATION:
+            capSize = PCIE_CAP_DYNAMIC_POWER_ALLOCATION_SIZE;
+            break;
+
+        case PCIE_CAP_ID_TPH:
+            capSize = PCIE_TPH_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_TPH_REQUESTOR_REGISTER);
+            count = REF_VAL(PCIE_TPH_REQUESTOR_REGISTER_ST_TABLE_SIZE, tempDword);
+            capSize += count * PCIE_TPH_ST_ENTRY_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DPC:
+            capSize = PCIE_CAP_DPC_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PTM:
+            capSize = PCIE_CAP_PTM_SIZE;
+            break;
+
+        case PCIE_CAP_ID_READINESS_TIME_REPORTING:
+            capSize = PCIE_CAP_READINESS_TIME_REPORTING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_HIERARCHY_ID:
+            capSize = PCIE_CAP_HIERARCHY_ID_SIZE;
+            break;
+
+        case PCIE_CAP_ID_NPEM:
+            capSize = PCIE_CAP_NPEM_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ALTERNATE_PROTOCOL:
+            capSize = PCIE_CAP_ALTERNATE_PROTOCOL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_SFI:
+            capSize = PCIE_CAP_SFI_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DATA_OBJECT_EXCHANGE:
+            capSize = PCIE_CAP_DATA_OBJECT_EXCHANGE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_SHADOW_FUNCTIONS:
+            capSize = PCIE_CAP_SHADOW_FUNCTIONS_SIZE;
+            break;
+
+        case PCIE_CAP_ID_IDE:
+            capSize = PCIE_CAP_IDE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_NULL:
+            capSize = PCIE_CAP_NULL_SIZE;
+            break;
+
+        default:
+            // this is an unrecognized capability.
+            // so just grab the header so we can try to figure out what it is
+            // (unlike PCI Capabilities PCIE has a specific ID for vendor specific capabilities,
+            // so any unrecognized capability is something we do not support)
+            capSize = PCIE_CAP_HEADER_SIZE;
+            break;
+        }
+        break;
+    }
+    return capSize;
+}
+
+/*!
+ * @brief   create a map of the locations of the capabilities of the specified type of the specified type.
+ *
+ * @param[in]   deviceHandle    handle to the device whose capability we are getting the size for
+ * @param[in]   type            the type of capabilities we are mapping (PCI vs PCIE)
+ * @param[out]  capMap          a map of the capabilities found in the configuration space
+ *
+ * @return  NvU16 size of the requested capacity.
+ */
+static NvU16 _clPciePopulateCapMap(void * pDeviceHandle, NvU16 type, CL_PCIE_DC_CAPABILITY_MAP * pCapMap)
+{
+    NvU32 tempDword;
+    NvU16 blkOffset = 0;
+
+    if (pCapMap == NULL)
+    {
+        return 0;
+    }
+    // clear the capability map.
+    portMemSet(pCapMap, 0, sizeof(*pCapMap));
+
+    // if there is not a valid device handle, we are done.
+    if (pDeviceHandle == NULL)
+    {
+        return 0;
+    }
+
+    // get the offset to the first block depending on type
+    switch (type)
+    {
+    case RM_PCIE_DC_CAP_TYPE_PCI:
+        blkOffset = osPciReadByte(pDeviceHandle, PCI_HEADER_TYPE0_CAP_PTR);
+        break;
+    case RM_PCIE_DC_CAP_TYPE_PCIE:
+        blkOffset = PCIE_CAPABILITY_BASE;
+        break;
+    default:
+        return 0;
+        break;
+    }
+    // run thru the capabilities until we run out of capabilities,
+    //   or run out of space
+    while (blkOffset != 0)
+    {
+        // save the offset of the capability
+        pCapMap->entries[pCapMap->count].blkOffset = blkOffset;
+
+        // get the capability id & location of next capability
+        switch (type)
+        {
+        case RM_PCIE_DC_CAP_TYPE_PCI:
+            // read the capability header
+            tempDword = osPciReadWord(pDeviceHandle, blkOffset);
+
+            // extract the capability id
+            pCapMap->entries[pCapMap->count].id = REF_VAL(PCI_CAP_HEADER_ID, tempDword);
+
+            // extract the offset for the next capability
+            blkOffset = REF_VAL(PCI_CAP_HEADER_NEXT, tempDword);
+            break;
+
+        case RM_PCIE_DC_CAP_TYPE_PCIE:
+            // read the capability header
+            tempDword = osPciReadDword(pDeviceHandle, blkOffset);
+
+            // extract the capability id
+            pCapMap->entries[pCapMap->count].id = REF_VAL(PCIE_CAP_HEADER_ID, tempDword);
+
+            // extract the offset for the next capability
+            blkOffset = REF_VAL(PCIE_CAP_HEADER_NEXT, tempDword);
+            break;
+        }
+        // move on to the next entry.
+        pCapMap->count++;
+
+        if (pCapMap->count >= NV_ARRAY_ELEMENTS(pCapMap->entries))
+        {
+            // we've run out of space
+            break;
+        }
+    }
+    return pCapMap->count;
+}
+
+/*!
+ * @brief   copy a block of data from the PCI config space to a buffer.
+ *
+ * @param[out]  pBuffer         a pointer to the buffer that the collected data will be copied to
+ * @param[out]  bufferSz        the size of the buffer the data will be stored in
+ * @param[in]   deviceHandle    handle to the device whose data is being collected
+ * @param[in]   base            the offset of the data to be collected in config space
+ * @param[out]  blockSz         size of the data to be collected.
+ *
+ * @return  NvU16 size of the collected.
+ */
+static NvU16 _clPcieCopyConfigSpaceDiagData(NvU8* pBuffer, NvU32 bufferSz, void *pDeviceHandle, NvU32 base, NvU32 blockSz)
+{
+    NvU32   offset = base;
+    NvU16   dataSz = 0;
+
+    if ((pBuffer == NULL) || (bufferSz == 0) || (pDeviceHandle == NULL) || blockSz > (bufferSz))
+    {
+        return 0;
+    }
+
+    // switch on the boundary we are at so we can do whatever we need to reach a dword boundary.
+    switch (offset & 0x03)
+    {
+    case 0:             // we are at a dword boundary. move on to the DWORD copies
+        break;
+
+    case 1:             // we are on a byte boundary, read a byte to get us to a word boundary
+    case 3:
+        *pBuffer = osPciReadByte(pDeviceHandle, offset);
+        pBuffer += 1;
+        offset += 1;
+        dataSz += 1;
+
+        // did we reach a dword boundary?
+        if ((offset & 0x03) == 0)
+        {
+            break;
+        }
+        // fall thru to read next word & bring us to a DWORD boundary;
+
+    case 2:             // we are on a word boundary,
+        // if we need at least a word of data,
+        // read another word to get us to a dword boundary
+        // if we need less than a word, we will pick it up below.
+        if ((blockSz - dataSz) > 1)
+        {
+            *((NvU16*)pBuffer) = osPciReadWord(pDeviceHandle, offset);
+            pBuffer += 2;
+            offset += 2;
+            dataSz += 2;
+        }
+        break;
+    }
+
+    // do all the full dword reads
+    for (; (blockSz - dataSz) >= sizeof(NvU32); dataSz += sizeof(NvU32))
+    {
+        // read a dword of data
+        *((NvU32*)pBuffer) = osPciReadDword(pDeviceHandle, offset);
+
+        // update the references to the next data to be read/written.
+        pBuffer += sizeof(NvU32);
+        offset += sizeof(NvU32);
+    }
+
+    // we are at the nearest dword boundary to the end of the block.
+    // read any remaining data.
+    switch (blockSz - dataSz)
+    {
+    default:    // something is wrong, we shouldn't have more than 3 bytes to get.
+        break;
+
+    case 0:     // we have everything we want.
+        break;
+
+    case 2:     // we have at least a word left, read the word.
+    case 3:
+        *((NvU16*)pBuffer) = osPciReadWord(pDeviceHandle, offset);
+        pBuffer += 2;
+        offset += 2;
+        dataSz += 2;
+        // did we get everything?
+        if ((blockSz - dataSz) == 0)
+        {
+            break;
+        }
+        // fall thru to grab the last byte.
+
+    case 1:     // we have 1 byte left, read it as a byte.
+        *pBuffer = osPciReadByte(pDeviceHandle, offset);
+        dataSz += 1;
+        break;
+    }
+    return dataSz;
+}
+
+/*!
+ * @brief   Save the header & data for a diagnostic block
+ *
+ * @param[in]   pDeviceHandle   handle of device we are collecting data from
+ *                              if NULL data will not be collected from config space
+ * @param[in]   pScriptEntry    pointer to collection script entry we are collecting data for
+ *                              may be NULL in which case only the data is transferred
+ * @param[in]   blkOffset       offset in PCIE config space we are collecting
+ * @param[in]   blkSize         size of the block in config space we are collecting
+ * @param[out]  pBuffer         pointer to diagnostic output buffer
+ * @param[in]   bufferSize      size of diagnostic output buffer
+ *
+ * @return  NvU16 size of diagnostic data collected.
+ */
+NvU16 _clPcieSavePcieDiagnosticBlock(void *pDeviceHandle, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pScriptEntry, NvU16 blkOffset, NvU16 blkSize, void * pBuffer, NvU32 size)
+{
+    CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pBlkHeader;
+    NvU16 collectedDataSize = 0;
+
+    // do some parameter checks
+    if ((pBuffer == NULL)
+        || ((blkOffset + sizeof(*pBlkHeader) + blkSize) > PCI_EXTENDED_CONFIG_SPACE_LENGTH)
+        || ((sizeof(*pBlkHeader) + blkSize) > size))
+    {
+        return 0;
+    }
+    if (pScriptEntry != NULL)
+    {
+        // copy the block header & update the size
+        pBlkHeader = (CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY*)pBuffer;
+        *pBlkHeader = *pScriptEntry;
+        collectedDataSize += sizeof(*pBlkHeader);
+    }
+    if((pDeviceHandle != NULL)
+        && (0 < blkSize)
+        && (pBuffer != NULL))
+    {
+        // get the data block
+        collectedDataSize += _clPcieCopyConfigSpaceDiagData(&(((NvU8*)pBuffer)[collectedDataSize]), size - collectedDataSize,
+            pDeviceHandle,
+            blkOffset, blkSize);
+    }
+    return collectedDataSize;
+}
+
+/*!
+ * @brief   Retrieve diagnostic information to be used to identify the cause of errors based on a provided script
+ *
+ * @param[in]   pGpu        GPU object pointer
+ * @param[in]   pScript     pointer to collection script
+ * @param[in]   count       number of entries in the collection script
+ * @param[out]  pBuffer     pointer to diagnostic output buffer
+ * @param[in]   bufferSize  size of diagnostic output buffer
+ *
+ * @return  NvU16 size of diagnostic data collected.
+ */
+NvU16 _clPcieGetDiagnosticData(OBJGPU *pGpu, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pScript, NvU16 count, NvU8 * pBuffer, NvU32 size)
+{
+    static volatile NvS32   capMapWriteLock = 0;
+    static volatile NvBool  capMapInitialized = NV_FALSE;
+    static CL_PCIE_DC_CAPABILITY_MAP
+                            capMap[RM_PCIE_DEVICE_COUNT][RM_PCIE_DC_CAP_TYPE_COUNT];
+    NBADDR                  *pUpstreamPort = NULL;
+    NvU32                   domain = 0;
+    NvU8                    bus = 0;
+    NvU8                    device = 0;
+    NvU16                   vendorId, deviceId;
+    void                    *pPCIeHandles[RM_PCIE_DEVICE_COUNT];
+    NvU16                   collectedDataSize = 0;
+    NvU16                   idx;
+    NvU16                   idx2;
+    CL_PCIE_DC_CAPABILITY_MAP
+                            *pActiveMap = NULL;
+    CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY
+                            blkHeader;
+    NvU16                   capType;
+    NvBool                  bCollectAll;
+
+    if ((pGpu == NULL) || (pBuffer == NULL) || (size == 0) || IS_RTLSIM(pGpu))
+    {
+        return 0;
+    }
+    portMemSet(pPCIeHandles, 0, sizeof(pPCIeHandles));
+
+    // get PCIE Handles.
+    pUpstreamPort = &pGpu->gpuClData.upstreamPort.addr;
+    pPCIeHandles[RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE] = osPciInitHandle(pUpstreamPort->domain,
+        pUpstreamPort->bus,
+        pUpstreamPort->device,
+        0,
+        &vendorId,
+        &deviceId);
+    if (osGpuReadReg032(pGpu, PCI_HEADER_TYPE0_VENDOR_ID) == pGpu->chipId0)
+    {
+        domain = gpuGetDomain(pGpu);
+        bus = gpuGetBus(pGpu);
+        device = gpuGetDevice(pGpu);
+        pPCIeHandles[RM_PCIE_DEVICE_TYPE_GPU] = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+    }
+
+    // run thru the collection script entries.
+    for (idx = 0; idx < count; idx++)
+    {
+        blkHeader = pScript[idx];
+        // verify there is space, & we can access the device.
+        if ((size - collectedDataSize) < (sizeof(blkHeader) + blkHeader.length))
+        {
+            // if this block doesn't fit, skip it but continue because another block might.
+            continue;
+        }
+        if ((blkHeader.deviceType == RM_PCIE_DEVICE_TYPE_NONE) || (blkHeader.action == RM_PCIE_ACTION_EOS))
+        {
+            NV_ASSERT(blkHeader.action == RM_PCIE_ACTION_EOS);
+            break;
+        }
+        if (pPCIeHandles[blkHeader.deviceType] == NULL)
+        {
+            continue;
+        }
+        switch (blkHeader.action)
+        {
+        case RM_PCIE_ACTION_NOP:
+            break;
+
+        case RM_PCIE_ACTION_COLLECT_CONFIG_SPACE:
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(pPCIeHandles[blkHeader.deviceType],
+                &blkHeader,
+                blkHeader.locator, blkHeader.length,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+        case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+        case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+        case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+
+            if (portAtomicIncrementS32(&capMapWriteLock) == 1)
+            {
+                if (!capMapInitialized)
+                {
+                    // map out all the capabilities
+                    for (idx = 0; idx < NV_ARRAY_ELEMENTS(capMap); idx++)
+                    {
+                        for (idx2 = 0; idx2 < NV_ARRAY_ELEMENTS(capMap[0]); idx2++)
+                        {
+                            _clPciePopulateCapMap(pPCIeHandles[idx], idx2, &capMap[idx][idx2]);
+                        }
+                    }
+                    capMapInitialized = NV_TRUE;
+                }
+            }
+            portAtomicDecrementS32(&capMapWriteLock);
+
+            if (!capMapInitialized)
+            {
+                break;
+            }
+            // figure out which map to use.
+            switch (blkHeader.action)
+            {
+            case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+                capType = RM_PCIE_DC_CAP_TYPE_PCI;
+                break;
+
+            case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+                capType = RM_PCIE_DC_CAP_TYPE_PCIE;
+                break;
+            default:
+                // will never happen, but having this default handling
+                // deals with Linux compiler capType may not be initialized before use warning.
+                capType = RM_PCIE_DC_CAP_TYPE_NONE;
+                break;
+            }
+
+            // even if I don't think it can happen, need to check for it.
+            if (capType == RM_PCIE_DC_CAP_TYPE_NONE)
+            {
+                break;
+            }
+            pActiveMap = &capMap[blkHeader.deviceType][capType];
+
+            // collect the data using the map determined above
+            switch (blkHeader.action)
+            {
+            default:    // default needed to satisfy Linux compiler.
+            case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+                bCollectAll = NV_FALSE;
+                break;
+
+            case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+                bCollectAll = NV_TRUE;
+                break;
+            }
+            // find the requested capability within the specified type
+            for (idx2 = 0; idx2 < pActiveMap->count; idx2++)
+            {
+                if (bCollectAll || (pActiveMap->entries[idx2].id == blkHeader.locator))
+                {
+                    blkHeader.locator = pActiveMap->entries[idx2].id;
+
+                    // determine the size of the capability
+                    blkHeader.length =
+                        _clPcieGetPcieCapSize(pPCIeHandles[blkHeader.deviceType],
+                            capType, blkHeader.locator, pActiveMap->entries[idx2].blkOffset);
+                    collectedDataSize += _clPcieSavePcieDiagnosticBlock(pPCIeHandles[blkHeader.deviceType],
+                        &blkHeader,
+                        pActiveMap->entries[idx2].blkOffset, blkHeader.length,
+                        &pBuffer[collectedDataSize], size - collectedDataSize);
+                }
+            }
+            break;
+
+        case RM_PCIE_ACTION_REPORT_PCI_CAPS_COUNT:
+            blkHeader.length = capMap[blkHeader.deviceType][RM_PCIE_DC_CAP_TYPE_PCI].count;
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(NULL,
+                &blkHeader,
+                0, 0,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        case RM_PCIE_ACTION_REPORT_PCIE_CAPS_COUNT:
+            blkHeader.length = capMap[blkHeader.deviceType][RM_PCIE_DC_CAP_TYPE_PCIE].count;
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(NULL,
+                &blkHeader,
+                0, 0,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        default:
+            break;
+        }
+    }
+    return collectedDataSize;
+}
+
+/*!
+ * @brief   Retrieve diagnostic information to be used to identify the cause of GPU Lost
+ *
+ * @param[in]   pGpu        GPU object pointer
+ * @param[in]   pCl         CL object pointer
+ * @param[out]  pBuffer     pointer to diagnostic output buffer
+ * @param[in]   bufferSize  size of diagnostic output buffer
+ *
+ * @return  NvU32 size of diagnostic data collected.
+ */
+NvU16 clPcieGetGpuLostDiagnosticData_IMPL(OBJGPU *pGpu, OBJCL *pCl, NvU8 * pBuffer, NvU32 size)
+{
+    static CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY gpuLostCollectionScript[] =
+    {
+        { RM_PCIE_ACTION_COLLECT_CONFIG_SPACE,     RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0x000,                        0x40 },
+        { RM_PCIE_ACTION_COLLECT_CONFIG_SPACE,     RM_PCIE_DEVICE_TYPE_GPU,             0x000,                        0x40 },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS,     RM_PCIE_DEVICE_TYPE_GPU,             0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS,    RM_PCIE_DEVICE_TYPE_GPU,             0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS,     RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS,    RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0,                            0    },
+        { RM_PCIE_ACTION_EOS,                      RM_PCIE_DEVICE_TYPE_NONE,            0,                            0    }
+    };
+
+    return _clPcieGetDiagnosticData(pGpu,
+        gpuLostCollectionScript, NV_ARRAY_ELEMENTS(gpuLostCollectionScript),
+        pBuffer, size);
+}
+
+/*!
+ * @brief Parse config space for ACS redirect configuration.
+ *
+ * @param[in]  pGpu                GPU object pointer
+ * @param[in]  pCl                 CL object pointer
+ * @param[in]  domain              DBDF domain
+ * @param[in]  bus                 DBDF bus
+ * @param[in]  device              DBDF device
+ * @param[in]  func                DBDF function
+ * @param[out] pAcsRoutingConfig  ACS routing ctrl value filtered by capability field.
+ *
+ * @returns NV_OK on success, NV_ERR_INVALID_STATE in case config space is inaccessible, NV_ERR_GENERIC if ACS is unsupported.
+ */
+NV_STATUS
+clGetPortAcsRedirectConfig_IMPL
+(
+    OBJGPU *pGpu,
+    OBJCL  *pCl,
+    NvU32   domain,
+    NvU8    bus,
+    NvU8    device,
+    NvU8    func,
+    NvU32  *pAcsRoutingConfig
+)
+{
+    PORTDATA portData = {0};
+    NvU32 acsCtrl;
+    NvU32 acsCap;
+
+    *pAcsRoutingConfig = 0;
+
+    // Initialize portData struct for the PCI node.
+    portData.addr.domain = domain;
+    portData.addr.bus    = bus;
+    portData.addr.device = device;
+    portData.addr.func   = func;
+    portData.addr.valid  = 0x1;
+    portData.addr.handle = osPciInitHandle(domain, bus, device, func, 0, 0);
+
+    // This could be faster if RM implemented caching of extended config space.
+    NV_ASSERT_OK_OR_RETURN(objClSetPortPcieEnhancedCapsOffsets(pCl, &portData));
+
+    // If ACS is not implemented by the bridge or RC, RM will return here. This is not an error.
+    if (clPcieReadPortConfigReg(pGpu, pCl, &portData, CL_ACS_CAP, &acsCap) != NV_OK)
+    {
+        return NV_OK;
+    }
+    if (clPcieReadPortConfigReg(pGpu, pCl, &portData, CL_ACS_CTRL, &acsCtrl) != NV_OK)
+    {
+        return NV_OK;
+    }
+
+    // Ctrl bits set without a corresponding capability bit are filtered.
+    *pAcsRoutingConfig = acsCtrl & acsCap;
+
+    return NV_OK;
 }

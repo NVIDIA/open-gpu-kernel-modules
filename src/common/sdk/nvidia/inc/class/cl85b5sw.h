@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,25 +21,18 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvtypes.h"
+#pragma once
 
-#ifndef _cl85b5sw_h_
-#define _cl85b5sw_h_
+#include <nvtypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl85b5sw.finn
+//
 
-/* This file is *not* auto-generated. */
+#define NV85B5_ALLOCATION_PARAMETERS_MESSAGE_ID (0x85b5U)
 
-typedef struct
-{
-    NvU32    version;            // set to 0
-    NvU32    engineInstance;     // CE instance
+typedef struct NV85B5_ALLOCATION_PARAMETERS {
+    NvU32 version;            // set to 0
+    NvU32 engineInstance;     // CE instance
 } NV85B5_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-#endif // _cl85b5sw_h_
-

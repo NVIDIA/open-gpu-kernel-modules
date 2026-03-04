@@ -122,6 +122,66 @@ const PRB_FIELD_DESC prb_fields_dcl_dclmsg[] = {
         PRB_MAYBE_FIELD_NAME("engine")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        331,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        RC_RCDIAGRECORD,
+        0,
+        PRB_MAYBE_FIELD_NAME("rc_diag_recs")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        344,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        CRASHCAT_REPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("crashcat_report")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        345,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_RPCDEBUGINFO,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_rpcdebuginfo")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        346,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_XIDREPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_xidreport")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        347,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_RPCPERF,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_rpcperf")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'ErrorBlock' field defaults
@@ -150,7 +210,7 @@ const PRB_MSG_DESC prb_messages_dcl[] = {
         PRB_MAYBE_MESSAGE_NAME("Dcl.Engines")
     },
     {
-        7,
+        12,
         prb_fields_dcl_dclmsg,
         PRB_MAYBE_MESSAGE_NAME("Dcl.DclMsg")
     },

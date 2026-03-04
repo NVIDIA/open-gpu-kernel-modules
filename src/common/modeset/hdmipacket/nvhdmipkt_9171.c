@@ -36,6 +36,8 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h"
 
 #define NVHDMIPKT_9171_INVALID_PKT_TYPE  ((NV9171_SF_HDMI_INFO_IDX_VSI) + 1)
+#define NVHDMIPKT_9171_MAX_PKT_BYTES_AVI    17  // 3 bytes header + 14 bytes data
+
 NVHDMIPKT_RESULT 
 hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
                     NvU32              subDevice,
@@ -53,6 +55,14 @@ hdmiPacketCtrl9171(NVHDMIPKT_CLASS*  pThis,
                    NvU32             head,
                    NVHDMIPKT_TYPE    packetType,
                    NVHDMIPKT_TC      transmitControl);
+
+void 
+hdmiWriteAviPacket9171(NVHDMIPKT_CLASS*   pThis,
+                       NvU32*             pBaseReg,
+                       NvU32              head,
+                       NvU32              packetLen,
+                       NvU8 const *const  pPacket);
+
 /*
  * hdmiReadPacketStatus9171
  */
@@ -135,7 +145,7 @@ hdmiWritePacketCtrl9171(NVHDMIPKT_CLASS*  pThis,
 /*
  * hdmiWriteAviPacket9171
  */
-static void 
+void 
 hdmiWriteAviPacket9171(NVHDMIPKT_CLASS*   pThis,
                        NvU32*             pBaseReg,
                        NvU32              head,
@@ -143,6 +153,11 @@ hdmiWriteAviPacket9171(NVHDMIPKT_CLASS*   pThis,
                        NvU8 const *const  pPacket)
 {
     NvU32 data = 0;
+
+    if (packetLen > NVHDMIPKT_9171_MAX_PKT_BYTES_AVI)
+    {
+        NvHdmiPkt_Print(pThis, "WARNING - input AVI packet length incorrect. Write will be capped to max allowable bytes");
+    }
 
     data = REG_RD32(pBaseReg, NV9171_SF_HDMI_AVI_INFOFRAME_HEADER(head));
     data = FLD_SET_DRF_NUM(9171, _SF_HDMI_AVI_INFOFRAME_HEADER, _HB0,         pPacket[0],  data);
@@ -282,12 +297,9 @@ hdmiWriteVendorPacket9171(NVHDMIPKT_CLASS*   pThis,
                           NvU32*             pBaseReg,
                           NvU32              head,
                           NvU32              packetLen,
-                          NvU8 const *const  pPacketIn)
+                          NvU8 const *const  pPacket)
 {
     NvU32 data = 0;
-    NvU8  pPacket[31] = {0};
-
-    NVMISC_MEMCPY(pPacket, pPacketIn, packetLen);
 
     data = REG_RD32(pBaseReg, NV9171_SF_HDMI_VSI_HEADER(head));
     data = FLD_SET_DRF_NUM(9171, _SF_HDMI_VSI_HEADER, _HB0,         pPacket[0],  data);
@@ -526,7 +538,7 @@ hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
                     NVHDMIPKT_TYPE     packetType,
                     NVHDMIPKT_TC       transmitControl, 
                     NvU32              packetLen, 
-                    NvU8 const *const  pPacket)
+                    NvU8 const *const  pPacketIn)
 {
     NVHDMIPKT_RESULT result = NVHDMIPKT_SUCCESS;
     NvU32* pBaseReg    = (NvU32*)pThis->memMap[subDevice].pMemBase;
@@ -534,12 +546,26 @@ hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
     NvU32  tc          = pThis->translateTransmitControl(pThis, transmitControl);
     NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS params = {0};
 
-    if (pBaseReg == 0 || head >= NV9171_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1 ||
-        packetLen == 0 || pPacket == 0 || pktType9171 == NVHDMIPKT_9171_INVALID_PKT_TYPE)
+    // packetIn can be of varying size. Use a fixed max size buffer for programing hw units to prevent out of bounds access
+    NvU8   pPacket[NVHDMIPKT_CTAIF_MAX_PKT_BYTES] = {0};
+
+    if (pBaseReg == 0  || head >= NV9171_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1 ||
+        packetLen == 0 || pPacketIn == 0 || pktType9171 == NVHDMIPKT_9171_INVALID_PKT_TYPE)
     {
         result = NVHDMIPKT_INVALID_ARG;
+        NvHdmiPkt_Print(pThis, "Invalid arg");
         goto hdmiPacketWrite9171_exit;
     }
+
+    if (packetLen > NVHDMIPKT_CTAIF_MAX_PKT_BYTES)
+    {
+        NvHdmiPkt_Print(pThis, "ERROR - input packet length incorrect %d Packet write will be capped to max allowable bytes", packetLen);
+        packetLen = NVHDMIPKT_CTAIF_MAX_PKT_BYTES;
+        NvHdmiPkt_Assert(0);
+    }
+
+    // input packet looks ok to use, copy over the bytes
+    NVMISC_MEMCPY(pPacket, pPacketIn, packetLen);
 
     // acquire mutex
     pThis->callback.acquireMutex(pThis->cbHandle);
@@ -801,4 +827,8 @@ initializeHdmiPktInterface9171(NVHDMIPKT_CLASS* pClass)
     pClass->hdmiQueryFRLConfig          = hdmiQueryFRLConfigDummy;
     pClass->hdmiSetFRLConfig            = hdmiSetFRLConfigDummy;
     pClass->hdmiClearFRLConfig          = hdmiClearFRLConfigDummy;
+
+    // T239+
+    pClass->hdmiPacketRead              = hdmiPacketReadDummy;
+    pClass->programAdvancedInfoframe    = programAdvancedInfoframeDummy;
 }

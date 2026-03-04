@@ -27,23 +27,30 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc370/ctrlc370event.finn
+// Source file:      ctrl/ctrlc370/ctrlc370event.finn
 //
 
-
-
-
 #include "ctrl/ctrlc370/ctrlc370base.h"
-/* C370 is partially derived from 5070 */
-#include "ctrl/ctrl5070/ctrl5070event.h"
+/* C370 is partially derived from 0073 */
+#include "ctrl/ctrl0073/ctrl0073event.h"
 
+/* 
+* headId
+*   This parameter indicates the ID of head on which we received interrupt
+* RgSemId
+*   This parameter indicates the RG Semaphore Index for given head
+*/
+typedef struct NVC370_RG_SEM_NOTIFICATION_PARAMS {
+    NvU32 headId;
+    NvU32 rgSemId;
+} NVC370_RG_SEM_NOTIFICATION_PARAMS;
 
 
 
 
 /* valid action values */
-#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE
-#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE
-#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  NV5070_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT
+#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE
+#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE
+#define NVC370_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT
 
 /* _ctrlc370event_h_ */

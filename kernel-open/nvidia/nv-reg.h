@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,10 +21,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+//
+// This file holds Unix-specific NVIDIA driver options
+//
+
 #ifndef _RM_REG_H_
 #define _RM_REG_H_
 
 #include "nvtypes.h"
+#include "nv-firmware-registry.h"
 
 /*
  * use NV_REG_STRING to stringify a registry key when using that registry key
@@ -382,32 +387,6 @@
 #define NV_REG_IGNORE_MMIO_CHECK NV_REG_STRING(__NV_IGNORE_MMIO_CHECK)
 
 /*
- * Option: TCEBypassMode
- *
- * Description:
- *
- * When this option is enabled, the NVIDIA kernel module will attempt to setup
- * all GPUs in "TCE bypass mode", in which DMA mappings of system memory bypass
- * the IOMMU/TCE remapping hardware on IBM POWER systems. This is typically
- * necessary for CUDA applications in which large system memory mappings may
- * exceed the default TCE remapping capacity when operated in non-bypass mode.
- *
- * This option has no effect on non-POWER platforms.
- *
- * Possible Values:
- *
- *  0: system default TCE mode on all GPUs
- *  1: enable TCE bypass mode on all GPUs
- *  2: disable TCE bypass mode on all GPUs
- */
-#define __NV_TCE_BYPASS_MODE TCEBypassMode
-#define NV_REG_TCE_BYPASS_MODE NV_REG_STRING(__NV_TCE_BYPASS_MODE)
-
-#define NV_TCE_BYPASS_MODE_DEFAULT  0
-#define NV_TCE_BYPASS_MODE_ENABLE   1
-#define NV_TCE_BYPASS_MODE_DISABLE  2
-
-/*
  * Option: pci
  *
  * Description:
@@ -470,6 +449,26 @@
  */
 #define __NV_ENABLE_USER_NUMA_MANAGEMENT EnableUserNUMAManagement
 #define NV_REG_ENABLE_USER_NUMA_MANAGEMENT NV_REG_STRING(__NV_ENABLE_USER_NUMA_MANAGEMENT)
+
+/*
+ * Option: CoherentGPUMemoryMode
+ *
+ * Description:
+ *
+ * This option can be set to control how GPU Memory is accessed through
+ * the coherent link. 
+ *
+ * This option has no effect on platforms that do not support onlining
+ * device memory to a NUMA node.
+ *
+ * Possible string values:
+ *
+ *  "driver" : disable onlining coherent memory to the OS as a NUMA node. The driver
+ *             will manage it in this case
+ *  "numa" (or unset) : enable onlining coherent memory to the OS as a NUMA node (default)
+ */
+#define __NV_COHERENT_GPU_MEMORY_MODE CoherentGPUMemoryMode
+#define NV_REG_COHERENT_GPU_MEMORY_MODE NV_REG_STRING(__NV_COHERENT_GPU_MEMORY_MODE)
 
 /*
  * Option: GpuBlacklist
@@ -566,7 +565,6 @@
 #define NV_REG_PRESERVE_VIDEO_MEMORY_ALLOCATIONS \
     NV_REG_STRING(__NV_PRESERVE_VIDEO_MEMORY_ALLOCATIONS)
 
-
 /*
  * Option: EnableS0ixPowerManagement
  *
@@ -614,7 +612,6 @@
     S0ixPowerManagementVideoMemoryThreshold
 #define NV_REG_S0IX_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD \
     NV_REG_STRING(__NV_S0IX_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD)
-
 
 /*
  * Option: DynamicPowerManagement
@@ -666,6 +663,16 @@
     NV_REG_STRING(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD)
 
 /*
+ * Option: TegraGpuPgMask
+ *
+ * This option controls the TPC/GPC/FBP power-gating mask for Tegra iGPU.
+ *
+ */
+#define __NV_TEGRA_GPU_PG_MASK TegraGpuPgMask
+#define NV_REG_TEGRA_GPU_PG_MASK \
+    NV_REG_STRING(__NV_TEGRA_GPU_PG_MASK)
+
+/*
  * Option: RegisterPCIDriver
  *
  * Description:
@@ -681,6 +688,23 @@
 
 #define __NV_REGISTER_PCI_DRIVER  RegisterPCIDriver
 #define NV_REG_REGISTER_PCI_DRIVER NV_REG_STRING(__NV_REGISTER_PCI_DRIVER)
+
+/*
+ * Option: RegisterPlatformDeviceDriver
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will register with
+ * platform subsystem.
+ *
+ * Possible values:
+ *
+ *  1 - register as platform driver (default)
+ *  0 - do not register as platform driver
+ */
+
+#define __NV_REGISTER_PLATFORM_DEVICE_DRIVER  RegisterPlatformDeviceDriver
+#define NV_REG_REGISTER_PLATFORM_DEVICE_DRIVER NV_REG_STRING(__NV_REGISTER_PLATFORM_DEVICE_DRIVER)
 
 /*
  * Option: EnablePCIERelaxedOrderingMode
@@ -702,6 +726,22 @@
     NV_REG_STRING(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE)
 
 /*
+ * Option: EnableResizableBar
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will attempt to resize
+ * BAR1 to match framebuffer size, or the next largest available size on
+ * supported machines. This is currently only implemented for Linux.
+ *
+ * Possible values:
+ *  0 - Do not enable PCI BAR resizing
+ *  1 - Enable PCI BAR resizing
+ */
+#define __NV_ENABLE_RESIZABLE_BAR EnableResizableBar
+#define NV_REG_ENABLE_RESIZABLE_BAR NV_REG_STRING(__NV_ENABLE_RESIZABLE_BAR)
+
+/*
  * Option: EnableGpuFirmware
  *
  * Description:
@@ -709,52 +749,21 @@
  * When this option is enabled, the NVIDIA driver will enable use of GPU
  * firmware.
  *
- * Possible mode values:
- *  0 - Do not enable GPU firmware
- *  1 - Enable GPU firmware
- *  2 - (Default) Use the default enablement policy for GPU firmware
- *
- * Setting this to anything other than 2 will alter driver firmware-
- * enablement policies, possibly disabling GPU firmware where it would
- * have otherwise been enabled by default.
- *
  * If this key is set globally to the system, the driver may still attempt
  * to apply some policies to maintain uniform firmware modes across all
  * GPUS.  This may result in the driver failing initialization on some GPUs
  * to maintain such a policy.
- * 
+ *
  * If this key is set using NVreg_RegistryDwordsPerDevice, then the driver 
  * will attempt to honor whatever configuration is specified without applying
  * additional policies.  This may also result in failed GPU initialzations if
  * the configuration is not possible (for example if the firmware is missing 
- * from the filesystem, or the GPU is not capable). 
+ * from the filesystem, or the GPU is not capable).
  *
- * Policy bits:
- *
- * POLICY_ALLOW_FALLBACK:
- *  As the normal behavior is to fail GPU initialization if this registry 
- *  entry is set in such a way that results in an invalid configuration, if 
- *  instead the user would like the driver to automatically try to fallback 
- *  to initializing the failing GPU with firmware disabled, then this bit can 
- *  be set (ex: 0x11 means try to enable GPU firmware but fall back if needed).
- *  Note that this can result in a mixed mode configuration (ex: GPU0 has 
- *  firmware enabled, but GPU1 does not).
- *
+ * NOTE: More details for this regkey can be found in nv-firmware-registry.h
  */
-
 #define __NV_ENABLE_GPU_FIRMWARE  EnableGpuFirmware
 #define NV_REG_ENABLE_GPU_FIRMWARE NV_REG_STRING(__NV_ENABLE_GPU_FIRMWARE)
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_MASK              0x0000000F
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_DISABLED          0x00000000
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_ENABLED           0x00000001
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_DEFAULT           0x00000002
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_MASK            0x000000F0
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK  0x00000010
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT_VALUE          0x00000012
-#define NV_REG_ENABLE_GPU_FIRMWARE_INVALID_VALUE          0xFFFFFFFF
 
 /*
  * Option: EnableGpuFirmwareLogs
@@ -762,18 +771,10 @@
  * When this option is enabled, the NVIDIA driver will send GPU firmware logs
  * to the system log, when possible.
  *
- * Possible values:
- *  0 - Do not send GPU firmware logs to the system log
- *  1 - Enable sending of GPU firmware logs to the system log
- *  2 - (Default) Enable sending of GPU firmware logs to the system log for
- *      the debug kernel driver build only
+ * NOTE: More details for this regkey can be found in nv-firmware-registry.h
  */
 #define __NV_ENABLE_GPU_FIRMWARE_LOGS  EnableGpuFirmwareLogs
 #define NV_REG_ENABLE_GPU_FIRMWARE_LOGS NV_REG_STRING(__NV_ENABLE_GPU_FIRMWARE_LOGS)
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_DISABLE            0x00000000
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE             0x00000001
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG    0x00000002
 
 /*
  * Option: EnableDbgBreakpoint
@@ -791,16 +792,11 @@
 /*
  * Option: OpenRmEnableUnsupportedGpus
  *
- * Open nvidia.ko support for features beyond what is used on Data Center GPUs
- * is still fairly immature, so for now require users to opt into use of open
- * nvidia.ko with a special registry key, if not on a Data Center GPU.
+ * This option to require opt in for use of Open RM on non-Data Center
+ * GPUs is deprecated and no longer required. The kernel module parameter
+ * is left here, though ignored, for backwards compatibility.
  */
-
 #define __NV_OPENRM_ENABLE_UNSUPPORTED_GPUS OpenRmEnableUnsupportedGpus
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS NV_REG_STRING(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS)
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE 0x00000000
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_ENABLE  0x00000001
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE
 
 /*
  * Option: NVreg_DmaRemapPeerMmio
@@ -827,6 +823,157 @@
 #define NV_DMA_REMAP_PEER_MMIO_DISABLE  0x00000000
 #define NV_DMA_REMAP_PEER_MMIO_ENABLE   0x00000001
 
+/*
+ * Option: NVreg_RmNvlinkBandwidthLinkCount
+ *
+ * Description:
+ *
+ * This option allows user to reduce the GPU nvlink bandwidth to save power.
+ *
+ * This option is only for Blackwell+ GPU with NVLINK version 5.0.
+ */
+#define __NV_RM_NVLINK_BW_LINK_COUNT RmNvlinkBandwidthLinkCount
+#define NV_RM_NVLINK_BW_LINK_COUNT NV_REG_STRING(__NV_RM_NVLINK_BW_LINK_COUNT)
+
+/*
+ * Option: NVreg_RmNvlinkBandwidth
+ *
+ * Description:
+ *
+ * This option allows user to reduce the NVLINK P2P bandwidth to save power.
+ * The option is in the string format.
+ *
+ * Possible string values:
+ *   OFF:      0% bandwidth
+ *   MIN:      15%-25% bandwidth depending on the system's NVLink topology
+ *   HALF:     50% bandwidth
+ *   3QUARTER: 75% bandwidth
+ *   FULL:     100% bandwidth (default)
+ *
+ * This option is only for Hopper+ GPU with NVLINK version 4.0.
+ */
+#define __NV_RM_NVLINK_BW RmNvlinkBandwidth
+#define NV_RM_NVLINK_BW NV_REG_STRING(__NV_RM_NVLINK_BW)
+
+/*
+ * Option: NVreg_EnableNonblockingOpen
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will try to perform any
+ * required device initialization in the background when /dev/nvidiaN devices
+ * are opened with the flag O_NONBLOCK.
+ *
+ * Possible Values:
+ *  0 = O_NONBLOCK flag when opening devices is ignored
+ *  1 = O_NONBLOCK flag when opening devices results in background device
+ *      initialization (default)
+ */
+#define __NV_ENABLE_NONBLOCKING_OPEN EnableNonblockingOpen
+#define NV_ENABLE_NONBLOCKING_OPEN NV_REG_STRING(__NV_ENABLE_NONBLOCKING_OPEN)
+
+/*
+ * Option: NVreg_ImexChannelCount
+ *
+ * Description:
+ *
+ * This option allows users to specify the number of IMEX (import/export)
+ * channels. Within an IMEX domain, the channels allow sharing memory
+ * securely in a multi-user environment using the CUDA driver's fabric handle
+ * based APIs.
+ *
+ * An IMEX domain is either an OS instance or a group of securely
+ * connected OS instances using the NVIDIA IMEX daemon. The option must
+ * be set to the same value on each OS instance within the IMEX domain.
+ *
+ * An IMEX channel is a logical entity that is represented by a /dev node.
+ * The IMEX channels are global resources within the IMEX domain. When
+ * exporter and importer CUDA processes have been granted access to the
+ * same IMEX channel, they can securely share memory.
+ *
+ * Note that the NVIDIA driver will not attempt to create the /dev nodes. Thus,
+ * the related CUDA APIs will fail with an insufficient permission error until
+ * the /dev nodes are set up. The creation of these /dev nodes,
+ * /dev/nvidia-caps-imex-channels/channelN, must be handled by the
+ * administrator, where N is the minor number. The major number can be
+ * queried from /proc/devices.
+ *
+ * nvidia-modprobe CLI support is available to set up the /dev nodes.
+ * NVreg_ModifyDeviceFiles, NVreg_DeviceFileGID, NVreg_DeviceFileUID
+ * and NVreg_DeviceFileMode will be honored by nvidia-modprobe.
+ *
+ * Also, refer to the NVreg_CreateImexChannel0 option.
+ *
+ * Possible values:
+ *  0 - Disable IMEX using CUDA driver's fabric handles.
+ *  N - N IMEX channels will be enabled in the driver to facilitate N
+ *      concurrent users. Default value is 2048 channels, and the current
+ *      maximum value is 20-bit, same as Linux dev_t's minor number limit.
+ */
+#define __NV_IMEX_CHANNEL_COUNT ImexChannelCount
+#define NV_REG_IMEX_CHANNEL_COUNT NV_REG_STRING(__NV_IMEX_CHANNEL_COUNT)
+
+/*
+ * Option: NVreg_CreateImexChannel0
+ *
+ * Description:
+ *
+ * This option allows users to specify whether the NVIDIA driver must create
+ * the IMEX channel 0 by default. The channel will be created automatically
+ * when the NVIDIA open GPU kernel module is loaded.
+ *
+ * Note that users are advised to enable this option only in trusted
+ * environments where it is acceptable for applications to share the same
+ * IMEX channel.
+ *
+ * For more details on IMEX channels, refer to the NVreg_ImexChannelCount
+ * option.
+ *
+ * Possible values:
+ *  0 - Do not create IMEX channel 0 (default).
+ *  1 - Create IMEX channel 0.
+ */
+#define __NV_CREATE_IMEX_CHANNEL_0 CreateImexChannel0
+#define NV_CREATE_IMEX_CHANNEL_0 NV_REG_STRING(__CREATE_IMEX_CHANNEL_0)
+
+/*
+ * Option: NVreg_GrdmaPciTopoCheckOverride
+ *
+ * Description:
+ *
+ * This option allows users to override the PCI topology validation enforced by
+ * the GPU driver's dma-buf and nv-p2p subsystems.
+ *
+ * Possible values:
+ * 0 - Driver's topology check to allow or deny access (default).
+ * 1 - Override driver's topology check to allow access.
+ * 2 - Override driver's topology check to deny access.
+ */
+#define __NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE GrdmaPciTopoCheckOverride
+#define NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE NV_REG_STRING(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE)
+#define NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_DEFAULT       0
+#define NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_ALLOW_ACCESS  1
+#define NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_DENY_ACCESS   2
+
+/*
+ * Option: NVreg_EnableSystemMemoryPools
+ *
+ * Description:
+ *
+ * This option controls system memory page pools creation for different page sizes
+ * Pool for pageSize is enabled by setting bit (pageSize >> NV_ENABLE_SYSTEM_MEMORY_POOLS_SHIFT)
+ * The pools keep memory cached once freed to speed-up reallocation
+ * Pools are shared by all adapters
+ *
+ * This feature is only supported by OpenRM driver
+ *
+ * By default 4K, 64K, 2M page size pools are enabled
+ */
+#define __NV_ENABLE_SYSTEM_MEMORY_POOLS EnableSystemMemoryPools
+#define NV_ENABLE_SYSTEM_MEMORY_POOLS NV_REG_STRING(__NV_ENABLE_SYSTEM_MEMORY_POOLS)
+#define NV_ENABLE_SYSTEM_MEMORY_POOLS_DEFAULT 0x00000211
+#define NV_ENABLE_SYSTEM_MEMORY_POOLS_SHIFT 12
+
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
 /*
@@ -843,19 +990,16 @@ NV_DEFINE_REG_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS, 1);
 NV_DEFINE_REG_ENTRY(__NV_USE_PAGE_ATTRIBUTE_TABLE, ~0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_PCIE_GEN3, 0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_MSI, 1);
-NV_DEFINE_REG_ENTRY(__NV_TCE_BYPASS_MODE, NV_TCE_BYPASS_MODE_DEFAULT);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_STREAM_MEMOPS, 0);
 NV_DEFINE_REG_ENTRY(__NV_RM_PROFILING_ADMIN_ONLY_PARAMETER, 1);
 NV_DEFINE_REG_ENTRY(__NV_PRESERVE_VIDEO_MEMORY_ALLOCATIONS, 0);
-
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_S0IX_POWER_MANAGEMENT, 0);
 NV_DEFINE_REG_ENTRY(__NV_S0IX_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD, 256);
-
 NV_DEFINE_REG_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT, 3);
 NV_DEFINE_REG_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD, 200);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE, NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT_VALUE);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS, NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG);
-NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT);
+NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, 1);
 
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_USER_NUMA_MANAGEMENT, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_MEMORY_POOL_SIZE, 0);
@@ -864,13 +1008,14 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_VMALLOC_HEAP_MAX_SIZE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IGNORE_MMIO_CHECK, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_NVLINK_DISABLE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE, 0);
-
-
-
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PCI_DRIVER, 1);
-
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PLATFORM_DEVICE_DRIVER, 1);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_RESIZABLE_BAR, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_DBG_BREAKPOINT, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_TEGRA_GPU_PG_MASK, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_NONBLOCKING_OPEN, 1);
 
+NV_DEFINE_REG_STRING_ENTRY(__NV_COHERENT_GPU_MEMORY_MODE, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS_PER_DEVICE, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_RM_MSG, NULL);
@@ -878,6 +1023,13 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_GPU_BLACKLIST, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_TEMPORARY_FILE_PATH, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_EXCLUDED_GPUS, NULL);
 NV_DEFINE_REG_ENTRY(__NV_DMA_REMAP_PEER_MMIO, NV_DMA_REMAP_PEER_MMIO_ENABLE);
+NV_DEFINE_REG_STRING_ENTRY(__NV_RM_NVLINK_BW, NULL);
+NV_DEFINE_REG_ENTRY(__NV_RM_NVLINK_BW_LINK_COUNT, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IMEX_CHANNEL_COUNT, 2048);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_CREATE_IMEX_CHANNEL_0, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE,
+                           NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_DEFAULT);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_SYSTEM_MEMORY_POOLS, NV_ENABLE_SYSTEM_MEMORY_POOLS_DEFAULT);
 
 /*
  *----------------registry database definition----------------------
@@ -905,26 +1057,30 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_KMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_VMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IGNORE_MMIO_CHECK),
-    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_TCE_BYPASS_MODE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_STREAM_MEMOPS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_USER_NUMA_MANAGEMENT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_NVLINK_DISABLE),
     NV_DEFINE_PARAMS_TABLE_ENTRY_CUSTOM_NAME(__NV_RM_PROFILING_ADMIN_ONLY,
         __NV_RM_PROFILING_ADMIN_ONLY_PARAMETER),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_PRESERVE_VIDEO_MEMORY_ALLOCATIONS),
-
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_S0IX_POWER_MANAGEMENT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_S0IX_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD),
-
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_TEGRA_GPU_PG_MASK),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_REGISTER_PCI_DRIVER),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_RESIZABLE_BAR),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_RM_NVLINK_BW_LINK_COUNT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_DBG_BREAKPOINT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DMA_REMAP_PEER_MMIO),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IMEX_CHANNEL_COUNT),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_CREATE_IMEX_CHANNEL_0),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_GRDMA_PCI_TOPO_CHECK_OVERRIDE),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_SYSTEM_MEMORY_POOLS),
     {NULL, NULL}
 };
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2024-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -20,74 +20,96 @@
     DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
+#include "uvm_api.h"
 #include "uvm_tools.h"
+#include "uvm_va_block_types.h"
 #include "uvm_va_range.h"
+#include "uvm_ats.h"
 #include "uvm_ats_faults.h"
 #include "uvm_migrate_pageable.h"
+#include <linux/nodemask.h>
+#include <linux/mempolicy.h>
+#include <linux/mmu_notifier.h>
+#include <linux/topology.h>
 
-static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
-                                       NvU64 fault_addr,
-                                       uvm_fault_access_type_t access_type)
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
+#include <linux/hmm.h>
+#endif
+
+typedef enum
+{
+    UVM_ATS_SERVICE_TYPE_FAULTS = 0,
+    UVM_ATS_SERVICE_TYPE_ACCESS_COUNTERS,
+    UVM_ATS_SERVICE_TYPE_COUNT
+} uvm_ats_service_type_t;
+
+static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
+                                      struct vm_area_struct *vma,
+                                      NvU64 start,
+                                      size_t length,
+                                      uvm_fault_access_type_t access_type,
+                                      uvm_ats_service_type_t service_type,
+                                      uvm_ats_fault_context_t *ats_context)
 {
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     struct mm_struct *mm = va_space->va_space_mm.mm;
-    bool write = (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE);
     NV_STATUS status;
-    NvU64 start;
-    NvU64 length;
-
-    // Request uvm_migrate_pageable() to touch the corresponding page after
-    // population.
-    // Under virtualization ATS provides two translations:
-    // 1) guest virtual -> guest physical
-    // 2) guest physical -> host physical
-    //
-    // The overall ATS translation will fault if either of those translations is
-    // invalid. The get_user_pages() call above handles translation #1, but not
-    // #2. We don't know if we're running as a guest, but in case we are we can
-    // force that translation to be valid by touching the guest physical address
-    // from the CPU. If the translation is not valid then the access will cause
-    // a hypervisor fault. Note that dma_map_page() can't establish mappings
-    // used by GPU ATS SVA translations. GPU accesses to host physical addresses
-    // obtained as a result of the address translation request uses the CPU
-    // address space instead of the IOMMU address space since the translated
-    // host physical address isn't necessarily an IOMMU address. The only way to
-    // establish guest physical to host physical mapping in the CPU address
-    // space is to touch the page from the CPU.
-    //
-    // We assume that the hypervisor mappings are all VM_PFNMAP, VM_SHARED, and
-    // VM_WRITE, meaning that the mappings are all granted write access on any
-    // fault and that the kernel will never revoke them.
-    // drivers/vfio/pci/vfio_pci_nvlink2.c enforces this. Thus we can assume
-    // that a read fault is always sufficient to also enable write access on the
-    // guest translation.
+    NvU64 user_space_start;
+    NvU64 user_space_length;
+    bool write = (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE);
+    bool is_fault_service_type = (service_type == UVM_ATS_SERVICE_TYPE_FAULTS);
+    bool is_prefetch_faults = (is_fault_service_type && (access_type == UVM_FAULT_ACCESS_TYPE_PREFETCH));
 
     uvm_migrate_args_t uvm_migrate_args =
     {
-        .va_space               = va_space,
-        .mm                     = mm,
-        .start                  = fault_addr,
-        .length                 = PAGE_SIZE,
-        .dst_id                 = gpu_va_space->gpu->parent->id,
-        .dst_node_id            = -1,
-        .populate_permissions   = write ? UVM_POPULATE_PERMISSIONS_WRITE : UVM_POPULATE_PERMISSIONS_ANY,
-        .touch                  = true,
-        .skip_mapped            = true,
-        .user_space_start       = &start,
-        .user_space_length      = &length,
+        .va_space                           = va_space,
+        .mm                                 = mm,
+        .dst_id                             = ats_context->residency_id,
+        .dst_node_id                        = ats_context->residency_node,
+        .start                              = start,
+        .length                             = length,
+        .populate_permissions               = UVM_POPULATE_PERMISSIONS_INHERIT,
+        .populate_flags                     = UVM_POPULATE_PAGEABLE_FLAG_SKIP_PROT_CHECK,
+        .skip_mapped                        = is_fault_service_type,
+        .populate_on_cpu_alloc_failures     = is_fault_service_type,
+        .populate_on_migrate_vma_failures   = is_fault_service_type,
+        .user_space_start                   = &user_space_start,
+        .user_space_length                  = &user_space_length,
+
+        // Potential STO NVLINK errors cannot be resolved in fault or access
+        // counter handlers. If there are GPUs to check for STO, it's either
+        // a) a false positive, and the migration went through ok, or
+        // b) a true positive, and the destination is all zeros, and the
+        //    application will be terminated soon.
+        .gpus_to_check_for_nvlink_errors    = NULL,
+        .fail_on_unresolved_sto_errors      = !is_fault_service_type || is_prefetch_faults,
     };
+
+    if (is_fault_service_type) {
+        uvm_migrate_args.populate_permissions = (write ? UVM_POPULATE_PERMISSIONS_WRITE : UVM_POPULATE_PERMISSIONS_ANY);
+
+        // If we're faulting, let the GPU access special vmas
+        uvm_migrate_args.populate_flags |= UVM_POPULATE_PAGEABLE_FLAG_ALLOW_SPECIAL;
+
+        if (ats_context->client_type == UVM_FAULT_CLIENT_TYPE_GPC)
+            uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_REPLAYABLE_FAULT;
+        else
+            uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_NON_REPLAYABLE_FAULT;
+    }
+    else {
+        uvm_migrate_args.cause = UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER;
+        uvm_migrate_args.access_counters_buffer_index = ats_context->access_counters.buffer_index;
+    }
 
     UVM_ASSERT(uvm_ats_can_service_faults(gpu_va_space, mm));
 
-    // TODO: Bug 2103669: Service more than a single fault at a time
-    //
     // We are trying to use migrate_vma API in the kernel (if it exists) to
     // populate and map the faulting region on the GPU. We want to do this only
     // on the first touch. That is, pages which are not already mapped. So, we
     // set skip_mapped to true. For pages already mapped, this will only handle
     // PTE upgrades if needed.
     status = uvm_migrate_pageable(&uvm_migrate_args);
-    if (status == NV_WARN_NOTHING_TO_DO)
+    if (is_fault_service_type && (status == NV_WARN_NOTHING_TO_DO))
         status = NV_OK;
 
     UVM_ASSERT(status != NV_ERR_MORE_PROCESSING_REQUIRED);
@@ -95,108 +117,598 @@ static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
     return status;
 }
 
-NV_STATUS uvm_ats_service_fault_entry(uvm_gpu_va_space_t *gpu_va_space,
-                                      uvm_fault_buffer_entry_t *current_entry,
-                                      uvm_ats_fault_invalidate_t *ats_invalidate)
+static void flush_tlb_va_region(uvm_gpu_va_space_t *gpu_va_space,
+                                NvU64 addr,
+                                size_t size,
+                                uvm_fault_client_type_t client_type)
 {
-    NvU64 gmmu_region_base;
-    bool in_gmmu_region;
-    NV_STATUS status = NV_OK;
-    uvm_fault_access_type_t service_access_type;
+    uvm_ats_fault_invalidate_t *ats_invalidate;
 
-    UVM_ASSERT(g_uvm_global.ats.enabled);
-    UVM_ASSERT(gpu_va_space->ats.enabled);
-    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
+    if (client_type == UVM_FAULT_CLIENT_TYPE_GPC)
+        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer.replayable.ats_invalidate;
+    else
+        ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer.non_replayable.ats_invalidate;
 
-    UVM_ASSERT(current_entry->fault_access_type ==
-               uvm_fault_access_type_mask_highest(current_entry->access_type_mask));
+    if (!ats_invalidate->tlb_batch_pending) {
+        uvm_tlb_batch_begin(&gpu_va_space->page_tables, &ats_invalidate->tlb_batch);
+        ats_invalidate->tlb_batch_pending = true;
+    }
 
-    service_access_type = current_entry->fault_access_type;
+    uvm_tlb_batch_invalidate(&ats_invalidate->tlb_batch, addr, size, PAGE_SIZE, UVM_MEMBAR_NONE);
+}
 
-    // ATS lookups are disabled on all addresses within the same
-    // UVM_GMMU_ATS_GRANULARITY as existing GMMU mappings (see documentation in
-    // uvm_mmu.h). User mode is supposed to reserve VAs as appropriate to
-    // prevent any system memory allocations from falling within the NO_ATS
-    // range of other GMMU mappings, so this shouldn't happen during normal
-    // operation. However, since this scenario may lead to infinite fault loops,
-    // we handle it by canceling the fault.
-    //
-    // TODO: Bug 2103669: Remove redundant VA range lookups
-    gmmu_region_base = UVM_ALIGN_DOWN(current_entry->fault_address, UVM_GMMU_ATS_GRANULARITY);
-    in_gmmu_region = !uvm_va_space_range_empty(current_entry->va_space,
-                                               gmmu_region_base,
-                                               gmmu_region_base + UVM_GMMU_ATS_GRANULARITY - 1);
-    if (in_gmmu_region) {
-        status = NV_ERR_INVALID_ADDRESS;
+static void ats_batch_select_residency(uvm_gpu_va_space_t *gpu_va_space,
+                                       struct vm_area_struct *vma,
+                                       uvm_ats_fault_context_t *ats_context)
+{
+    uvm_gpu_t *gpu = gpu_va_space->gpu;
+    int residency;
+    bool cdmm_enabled = gpu->parent->cdmm_enabled;
+
+    if (gpu->parent->is_integrated_gpu || cdmm_enabled) {
+        residency = gpu->parent->closest_cpu_numa_node;
     }
     else {
-        // TODO: Bug 2103669: Service more than a single fault at a time
-        status = uvm_ats_service_fault(gpu_va_space, current_entry->fault_address, service_access_type);
+        UVM_ASSERT(gpu->mem_info.numa.enabled);
+        residency = uvm_gpu_numa_node(gpu);
     }
 
-    // Do not flag prefetch faults as fatal unless something fatal happened
-    if (status == NV_ERR_INVALID_ADDRESS) {
-        if (current_entry->fault_access_type != UVM_FAULT_ACCESS_TYPE_PREFETCH) {
-            current_entry->is_fatal = true;
-            current_entry->fatal_reason = uvm_tools_status_to_fatal_fault_reason(status);
+    ats_context->prefetch_state.has_preferred_location = false;
 
-            // Compute cancel mode for replayable faults
-            if (current_entry->is_replayable) {
-                if (service_access_type == UVM_FAULT_ACCESS_TYPE_READ || in_gmmu_region)
-                    current_entry->replayable.cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
-                else
-                    current_entry->replayable.cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_WRITE_AND_ATOMIC;
+#if defined(NV_MEMPOLICY_HAS_UNIFIED_NODES)
+    {
+        struct mempolicy *vma_policy = vma_policy(vma);
+        unsigned short mode;
 
-                // If there are pending read accesses on the same page, we have to
-                // service them before we can cancel the write/atomic faults. So we
-                // retry with read fault access type.
-                if (!in_gmmu_region &&
-                    current_entry->fault_access_type > UVM_FAULT_ACCESS_TYPE_READ &&
-                    uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ)) {
-                    status = uvm_ats_service_fault(gpu_va_space,
-                                                   current_entry->fault_address,
-                                                   UVM_FAULT_ACCESS_TYPE_READ);
+        // It's safe to read vma_policy since the mmap_lock is held in at least
+        // read mode in this path.
+        uvm_assert_mmap_lock_locked(vma->vm_mm);
 
-                    // If read accesses are also invalid, cancel the fault. If a
-                    // different error code is returned, exit
-                    if (status == NV_ERR_INVALID_ADDRESS)
-                        current_entry->replayable.cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
-                    else if (status != NV_OK)
-                        return status;
+        if (vma_policy) {
+            mode = vma_policy->mode;
+
+            if ((mode == MPOL_BIND)
+#if defined(NV_MPOL_PREFERRED_MANY_PRESENT)
+                 || (mode == MPOL_PREFERRED_MANY)
+#endif
+                 || (mode == MPOL_PREFERRED)) {
+                int home_node = NUMA_NO_NODE;
+
+#if defined(NV_MEMPOLICY_HAS_HOME_NODE)
+                if ((mode != MPOL_PREFERRED) && (vma_policy->home_node != NUMA_NO_NODE))
+                    home_node = vma_policy->home_node;
+#endif
+
+                // Prefer home_node if set. Otherwise, prefer the faulting GPU
+                // if it's in the list of preferred nodes, else prefer the
+                // closest_cpu_numa_node to the GPU if closest_cpu_numa_node is
+                // in the list of preferred nodes. Fallback to the faulting GPU
+                // if all else fails.
+                if (home_node != NUMA_NO_NODE) {
+                    residency = home_node;
                 }
+                else if (!node_isset(residency, vma_policy->nodes)) {
+                    int closest_cpu_numa_node = gpu->parent->closest_cpu_numa_node;
+
+                    if ((closest_cpu_numa_node != NUMA_NO_NODE) &&
+                        node_isset(closest_cpu_numa_node, vma_policy->nodes))
+                        residency = gpu->parent->closest_cpu_numa_node;
+                    else
+                        residency = first_node(vma_policy->nodes);
+                }
+
+                if (!nodes_empty(vma_policy->nodes))
+                    ats_context->prefetch_state.has_preferred_location = true;
+            }
+
+            // Update gpu if residency is not the faulting gpu.
+            if (residency != uvm_gpu_numa_node(gpu))
+                gpu = uvm_va_space_find_gpu_with_memory_node_id(gpu_va_space->va_space, residency);
+
+        }
+    }
+#endif
+
+    ats_context->residency_id = gpu && !gpu->parent->is_integrated_gpu && !cdmm_enabled ? gpu->id : UVM_ID_CPU;
+    ats_context->residency_node = residency;
+}
+
+static void get_range_in_vma(struct vm_area_struct *vma, NvU64 base, NvU64 *start, NvU64 *end)
+{
+    *start = max(vma->vm_start, (unsigned long) base);
+    *end = min(vma->vm_end, (unsigned long) (base + UVM_VA_BLOCK_SIZE));
+}
+
+static uvm_page_index_t uvm_ats_cpu_page_index(NvU64 base, NvU64 addr)
+{
+    UVM_ASSERT(addr >= base);
+    UVM_ASSERT(addr <= (base + UVM_VA_BLOCK_SIZE));
+
+    return (addr - base) / PAGE_SIZE;
+}
+
+// start and end must be aligned to PAGE_SIZE and must fall within
+// [base, base + UVM_VA_BLOCK_SIZE]
+static uvm_va_block_region_t uvm_ats_region_from_start_end(NvU64 start, NvU64 end)
+{
+    // base can be greater than, less than or equal to the start of a VMA.
+    NvU64 base = UVM_VA_BLOCK_ALIGN_DOWN(start);
+
+    UVM_ASSERT(start < end);
+    UVM_ASSERT(PAGE_ALIGNED(start));
+    UVM_ASSERT(PAGE_ALIGNED(end));
+    UVM_ASSERT(IS_ALIGNED(base, UVM_VA_BLOCK_SIZE));
+
+    return uvm_va_block_region(uvm_ats_cpu_page_index(base, start), uvm_ats_cpu_page_index(base, end));
+}
+
+static uvm_va_block_region_t uvm_ats_region_from_vma(struct vm_area_struct *vma, NvU64 base)
+{
+    NvU64 start;
+    NvU64 end;
+
+    get_range_in_vma(vma, base, &start, &end);
+
+    return uvm_ats_region_from_start_end(start, end);
+}
+
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
+
+static bool uvm_ats_invalidate_notifier(struct mmu_interval_notifier *mni, unsigned long cur_seq)
+{
+    uvm_ats_fault_context_t *ats_context = container_of(mni, uvm_ats_fault_context_t, prefetch_state.notifier);
+    uvm_va_space_t *va_space = ats_context->prefetch_state.va_space;
+
+    // The following write lock protects against concurrent invalidates while
+    // hmm_range_fault() is being called in ats_compute_residency_mask().
+    uvm_down_write(&va_space->ats.lock);
+
+    mmu_interval_set_seq(mni, cur_seq);
+
+    uvm_up_write(&va_space->ats.lock);
+
+    return true;
+}
+
+static bool uvm_ats_invalidate_notifier_entry(struct mmu_interval_notifier *mni,
+                                              const struct mmu_notifier_range *range,
+                                              unsigned long cur_seq)
+{
+    UVM_ENTRY_RET(uvm_ats_invalidate_notifier(mni, cur_seq));
+}
+
+static const struct mmu_interval_notifier_ops uvm_ats_notifier_ops =
+{
+    .invalidate = uvm_ats_invalidate_notifier_entry,
+};
+
+#endif
+
+static bool resident_policy_match(struct vm_area_struct *vma, int dst_nid, int src_nid)
+{
+#if defined(NV_MEMPOLICY_HAS_UNIFIED_NODES)
+    struct mempolicy *vma_policy = vma_policy(vma);
+
+    // TODO: Bug 4981209: When migrations between CPU numa nodes are supported,
+    // add (dst_nid != closest_cpu_numa_node) to allow migrations between CPU
+    // NUMA nodes when destination is the closest_cpu_numa_node.
+    if (vma_policy &&
+        node_isset(src_nid, vma_policy->nodes) &&
+        node_isset(dst_nid, vma_policy->nodes) &&
+        !cpumask_empty(cpumask_of_node(src_nid)) &&
+        !cpumask_empty(cpumask_of_node(dst_nid))) {
+
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
+                                            struct vm_area_struct *vma,
+                                            NvU64 base,
+                                            uvm_ats_fault_context_t *ats_context)
+{
+    NV_STATUS status = NV_OK;
+    uvm_page_mask_t *residency_mask = &ats_context->prefetch_state.residency_mask;
+
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
+    int ret;
+    NvU64 start;
+    NvU64 end;
+    struct hmm_range range;
+    uvm_page_index_t page_index;
+    uvm_va_block_region_t vma_region;
+    uvm_va_space_t *va_space = gpu_va_space->va_space;
+    struct mm_struct *mm = va_space->va_space_mm.mm;
+
+    uvm_assert_rwsem_locked_read(&va_space->lock);
+
+    ats_context->prefetch_state.first_touch = true;
+
+    uvm_page_mask_zero(residency_mask);
+
+    get_range_in_vma(vma, base, &start, &end);
+
+    vma_region = uvm_ats_region_from_start_end(start, end);
+
+    range.notifier = &ats_context->prefetch_state.notifier;
+    range.start = start;
+    range.end = end;
+    range.hmm_pfns = ats_context->prefetch_state.pfns;
+    range.default_flags = 0;
+    range.pfn_flags_mask = 0;
+    range.dev_private_owner = NULL;
+
+    ats_context->prefetch_state.va_space = va_space;
+
+    // mmu_interval_notifier_insert() will try to acquire mmap_lock for write
+    // and will deadlock since mmap_lock is already held for read in this path.
+    // This is prevented by calling __mmu_notifier_register() during va_space
+    // creation. See the comment in uvm_mmu_notifier_register() for more
+    // details.
+    ret = mmu_interval_notifier_insert(range.notifier, mm, start, end, &uvm_ats_notifier_ops);
+    if (ret)
+        return errno_to_nv_status(ret);
+
+    while (true) {
+        range.notifier_seq = mmu_interval_read_begin(range.notifier);
+        ret = hmm_range_fault(&range);
+        if (ret == -EBUSY)
+            continue;
+        if (ret) {
+            status = errno_to_nv_status(ret);
+            UVM_ASSERT(status != NV_OK);
+            break;
+        }
+
+        uvm_down_read(&va_space->ats.lock);
+
+        // Pages may have been freed or re-allocated after hmm_range_fault() is
+        // called. So the PTE might point to a different page or nothing. In the
+        // memory hot-unplug case it is not safe to call page_to_nid() on the
+        // page as the struct page itself may have been freed. To protect
+        // against these cases, uvm_ats_invalidate_entry() blocks on va_space
+        // ATS write lock for concurrent invalidates since va_space ATS lock is
+        // held for read in this path.
+        if (!mmu_interval_read_retry(range.notifier, range.notifier_seq))
+            break;
+
+        uvm_up_read(&va_space->ats.lock);
+    }
+
+    if (status == NV_OK) {
+        for_each_va_block_page_in_region(page_index, vma_region) {
+            unsigned long pfn = ats_context->prefetch_state.pfns[page_index - vma_region.first];
+
+            if (pfn & HMM_PFN_VALID) {
+                struct page *page = hmm_pfn_to_page(pfn);
+                int resident_node = page_to_nid(page);
+
+                // Set the residency_mask if:
+                // - The page is already resident at the intended destination.
+                //   or
+                // - If both the source and destination nodes are CPU nodes and
+                //   source node is already in the list of preferred nodes for
+                //   the vma. On multi-CPU NUMA node architectures, this avoids
+                //   unnecessary migrations between CPU nodes. Since the
+                //   specific ats_context->residency_node selected by
+                //   ats_batch_select_residency() is just a guess among the list
+                //   of preferred nodes, paying the cost of migration across the
+                //   CPU preferred nodes in this case can't be justified.
+                if ((resident_node == ats_context->residency_node) ||
+                    resident_policy_match(vma, ats_context->residency_node, resident_node)) {
+                    uvm_page_mask_set(residency_mask, page_index);
+                }
+
+                ats_context->prefetch_state.first_touch = false;
             }
         }
-        else {
-            current_entry->is_invalid_prefetch = true;
-        }
 
-        // Do not fail overall fault servicing due to logical errors
-        status = NV_OK;
+        uvm_up_read(&va_space->ats.lock);
     }
 
-    // The Linux kernel never invalidates TLB entries on mapping permission
-    // upgrade. This is a problem if the GPU has cached entries with the old
-    // permission. The GPU will re-fetch the entry if the PTE is invalid and
-    // page size is not 4K (this is the case on P9). However, if a page gets
-    // upgraded from R/O to R/W and GPU has the PTEs cached with R/O
-    // permissions we will enter an infinite loop because we just forward the
-    // fault to the Linux kernel and it will see that the permissions in the
-    // page table are correct. Therefore, we flush TLB entries on ATS write
-    // faults.
-    if (!current_entry->is_fatal && current_entry->fault_access_type > UVM_FAULT_ACCESS_TYPE_READ) {
-        if (!ats_invalidate->write_faults_in_batch) {
-            uvm_tlb_batch_begin(&gpu_va_space->page_tables, &ats_invalidate->write_faults_tlb_batch);
-            ats_invalidate->write_faults_in_batch = true;
-        }
+    mmu_interval_notifier_remove(range.notifier);
 
-        uvm_tlb_batch_invalidate(&ats_invalidate->write_faults_tlb_batch,
-                                 current_entry->fault_address,
-                                 PAGE_SIZE,
-                                 PAGE_SIZE,
-                                 UVM_MEMBAR_NONE);
+#else
+    uvm_page_mask_zero(residency_mask);
+#endif
+
+    return status;
+}
+
+static void ats_compute_prefetch_mask(uvm_gpu_va_space_t *gpu_va_space,
+                                      struct vm_area_struct *vma,
+                                      uvm_ats_service_type_t service_type,
+                                      uvm_ats_fault_context_t *ats_context,
+                                      uvm_va_block_region_t max_prefetch_region)
+{
+    uvm_page_mask_t *accessed_mask;
+    uvm_page_mask_t *residency_mask = &ats_context->prefetch_state.residency_mask;
+    uvm_page_mask_t *prefetch_mask = &ats_context->prefetch_state.prefetch_pages_mask;
+    uvm_perf_prefetch_bitmap_tree_t *bitmap_tree = &ats_context->prefetch_state.bitmap_tree;
+
+    if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS)
+        accessed_mask = &ats_context->faults.accessed_mask;
+    else
+        accessed_mask = &ats_context->access_counters.accessed_mask;
+
+    if (uvm_page_mask_empty(accessed_mask))
+        return;
+
+    uvm_perf_prefetch_compute_ats(gpu_va_space->va_space,
+                                  accessed_mask,
+                                  uvm_va_block_region_from_mask(NULL, accessed_mask),
+                                  max_prefetch_region,
+                                  residency_mask,
+                                  bitmap_tree,
+                                  prefetch_mask);
+}
+
+static NV_STATUS ats_compute_prefetch(uvm_gpu_va_space_t *gpu_va_space,
+                                      struct vm_area_struct *vma,
+                                      NvU64 base,
+                                      uvm_ats_service_type_t service_type,
+                                      uvm_ats_fault_context_t *ats_context)
+{
+    NV_STATUS status;
+    uvm_page_mask_t *accessed_mask;
+    uvm_page_mask_t *prefetch_mask = &ats_context->prefetch_state.prefetch_pages_mask;
+    uvm_va_block_region_t max_prefetch_region = uvm_ats_region_from_vma(vma, base);
+
+    // Residency mask needs to be computed even if prefetching is disabled since
+    // the residency information is also needed by access counters servicing in
+    // uvm_ats_service_access_counters()
+    status = ats_compute_residency_mask(gpu_va_space, vma, base, ats_context);
+    if (status != NV_OK)
+        return status;
+
+    if (!uvm_perf_prefetch_enabled(gpu_va_space->va_space))
+        return status;
+
+    if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS)
+        accessed_mask = &ats_context->faults.accessed_mask;
+    else
+        accessed_mask = &ats_context->access_counters.accessed_mask;
+
+    if (uvm_page_mask_empty(accessed_mask))
+        return status;
+
+    // Prefetch the entire region if none of the pages are resident on any node
+    // and if preferred_location is the faulting GPU.
+    if (ats_context->prefetch_state.has_preferred_location &&
+        (ats_context->prefetch_state.first_touch || (service_type == UVM_ATS_SERVICE_TYPE_ACCESS_COUNTERS)) &&
+        uvm_id_equal(ats_context->residency_id, gpu_va_space->gpu->id)) {
+
+        uvm_page_mask_init_from_region(prefetch_mask, max_prefetch_region, NULL);
+    }
+    else {
+        ats_compute_prefetch_mask(gpu_va_space, vma, service_type, ats_context, max_prefetch_region);
+    }
+
+    if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS) {
+        uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+        uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
+
+        uvm_page_mask_or(read_fault_mask, read_fault_mask, prefetch_mask);
+
+        if (vma->vm_flags & VM_WRITE)
+            uvm_page_mask_or(write_fault_mask, write_fault_mask, prefetch_mask);
+    }
+    else {
+        uvm_page_mask_or(accessed_mask, accessed_mask, prefetch_mask);
     }
 
     return status;
+}
+
+static NV_STATUS uvm_ats_service_faults_region(uvm_gpu_va_space_t *gpu_va_space,
+                                               struct vm_area_struct *vma,
+                                               NvU64 base,
+                                               uvm_va_block_region_t region,
+                                               uvm_fault_access_type_t access_type,
+                                               uvm_ats_fault_context_t *ats_context,
+                                               uvm_page_mask_t *faults_serviced_mask)
+{
+    NvU64 start = base + (region.first * PAGE_SIZE);
+    size_t length = uvm_va_block_region_size(region);
+    NV_STATUS status;
+
+    UVM_ASSERT(start >= vma->vm_start);
+    UVM_ASSERT((start + length) <= vma->vm_end);
+
+    status = service_ats_requests(gpu_va_space,
+                                  vma,
+                                  start,
+                                  length,
+                                  access_type,
+                                  UVM_ATS_SERVICE_TYPE_FAULTS,
+                                  ats_context);
+    if (status != NV_OK) {
+        // This condition can occur if we unexpectedly fault on a vma that
+        // doesn't support faulting (or at least doesn't support
+        // pin_user_pages). This may be an incorrect mapping setup from the
+        // vma's owning driver, a hardware bug, or just that the owning driver
+        // didn't expect a device fault. Either way, we don't want to consider
+        // this a global error so don't propagate it, but also don't indicate
+        // that the faults were serviced. That way the caller knows to cancel
+        // them precisely.
+        if (status == NV_ERR_INVALID_ADDRESS)
+            return NV_OK;
+
+        return status;
+    }
+
+    uvm_page_mask_region_fill(faults_serviced_mask, region);
+
+    // WAR for older kernel versions missing an SMMU invalidate on RO -> RW
+    // transition. The SMMU and GPU could have the stale RO copy cached in their
+    // TLBs, which could have caused this write fault. This operation
+    // invalidates the SMMU TLBs but not the GPU TLBs. That will happen below as
+    // necessary.
+    if (access_type == UVM_FAULT_ACCESS_TYPE_WRITE)
+        uvm_ats_smmu_invalidate_tlbs(gpu_va_space, start, length);
+
+    // The Linux kernel does not invalidate TLB entries on an invalid to valid
+    // PTE transition. The GPU might have the invalid PTE cached in its TLB.
+    // The GPU will re-fetch an entry on access if the PTE is invalid and the
+    // page size is not 4K, but if the page size is 4K no re-fetch will happen
+    // and the GPU will fault despite the CPU PTE being valid. We don't know
+    // whether these faults happened due to stale entries after a transition,
+    // so use the hammer of always invalidating the GPU's TLB on each fault.
+    //
+    // The second case is similar and handles missing ATS invalidations on RO ->
+    // RW transitions for all page sizes. See the uvm_ats_smmu_invalidate_tlbs()
+    // call above.
+    if (PAGE_SIZE == UVM_PAGE_SIZE_4K || (UVM_ATS_SMMU_WAR_REQUIRED() && access_type == UVM_FAULT_ACCESS_TYPE_WRITE)) {
+        flush_tlb_va_region(gpu_va_space, start, length, ats_context->client_type);
+    }
+    else {
+        // ARM requires TLB invalidations on RO -> RW, but not all architectures
+        // do. If we implement ATS support on other architectures, we might need
+        // to issue GPU invalidates.
+        UVM_ASSERT(NVCPU_IS_AARCH64);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
+                                 struct vm_area_struct *vma,
+                                 NvU64 base,
+                                 uvm_ats_fault_context_t *ats_context)
+{
+    NV_STATUS status = NV_OK;
+    uvm_va_block_region_t subregion;
+    uvm_va_block_region_t region = uvm_va_block_region(0, PAGES_PER_UVM_VA_BLOCK);
+    uvm_page_mask_t *prefetch_only_fault_mask = &ats_context->faults.prefetch_only_fault_mask;
+    uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+    uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
+    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults.faults_serviced_mask;
+    uvm_page_mask_t *reads_serviced_mask = &ats_context->faults.reads_serviced_mask;
+
+    UVM_ASSERT(vma);
+    UVM_ASSERT(IS_ALIGNED(base, UVM_VA_BLOCK_SIZE));
+    UVM_ASSERT(g_uvm_global.ats.enabled);
+    UVM_ASSERT(gpu_va_space);
+    UVM_ASSERT(gpu_va_space->ats.enabled);
+    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
+
+    uvm_assert_mmap_lock_locked(vma->vm_mm);
+    uvm_assert_rwsem_locked(&gpu_va_space->va_space->lock);
+
+    uvm_page_mask_zero(faults_serviced_mask);
+    uvm_page_mask_zero(reads_serviced_mask);
+
+    // If the VMA doesn't have read or write permissions then all faults are
+    // fatal so we exit early.
+    // TODO: Bug 5451843: This fix brings to light potential issues in the ATS
+    // fault handling path as described in the bug. Those need to be handled
+    // to avoid any potential permission issues.
+    if (!(vma->vm_flags & (VM_READ | VM_WRITE)))
+        return NV_OK;
+
+    if (!(vma->vm_flags & VM_WRITE)) {
+        // If VMA doesn't have write permissions, all write faults are fatal.
+        // Try servicing such faults for read iff they are also present in
+        // read_fault_mask. This is because for replayable faults, if there are
+        // pending read accesses on the same page, we have to service them
+        // before we can cancel the write/atomic faults. So we try with read
+        // fault access type even though these write faults are fatal.
+        if (ats_context->client_type == UVM_FAULT_CLIENT_TYPE_GPC)
+            uvm_page_mask_and(write_fault_mask, write_fault_mask, read_fault_mask);
+        else
+            uvm_page_mask_zero(write_fault_mask);
+
+        // There are no pending faults beyond write faults to RO region.
+        if (uvm_page_mask_empty(read_fault_mask))
+            return NV_OK;
+    }
+
+    ats_batch_select_residency(gpu_va_space, vma, ats_context);
+
+    ats_compute_prefetch(gpu_va_space, vma, base, UVM_ATS_SERVICE_TYPE_FAULTS, ats_context);
+
+    for_each_va_block_subregion_in_mask(subregion, write_fault_mask, region) {
+        uvm_fault_access_type_t access_type;
+        uvm_page_mask_t *serviced_mask;
+
+        if (vma->vm_flags & VM_WRITE) {
+            access_type = UVM_FAULT_ACCESS_TYPE_WRITE;
+            serviced_mask = faults_serviced_mask;
+        }
+        else {
+            // write_fault_mask contains just the addresses with both read and
+            // fatal write faults, so we need to service the read component.
+            access_type = UVM_FAULT_ACCESS_TYPE_READ;
+            serviced_mask = reads_serviced_mask;
+        }
+
+        status = uvm_ats_service_faults_region(gpu_va_space,
+                                               vma,
+                                               base,
+                                               subregion,
+                                               access_type,
+                                               ats_context,
+                                               serviced_mask);
+        if (status != NV_OK)
+            return status;
+    }
+
+    // Remove write faults from read_fault_mask to avoid double-service
+    uvm_page_mask_andnot(read_fault_mask, read_fault_mask, write_fault_mask);
+
+    for_each_va_block_subregion_in_mask(subregion, read_fault_mask, region) {
+        status = uvm_ats_service_faults_region(gpu_va_space,
+                                               vma,
+                                               base,
+                                               subregion,
+                                               UVM_FAULT_ACCESS_TYPE_READ,
+                                               ats_context,
+                                               faults_serviced_mask);
+        if (status != NV_OK)
+            return status;
+    }
+
+    // Handle HW prefetch only faults
+    for_each_va_block_subregion_in_mask(subregion, prefetch_only_fault_mask, region) {
+        status = uvm_ats_service_faults_region(gpu_va_space,
+                                               vma,
+                                               base,
+                                               subregion,
+                                               UVM_FAULT_ACCESS_TYPE_PREFETCH,
+                                               ats_context,
+                                               faults_serviced_mask);
+        if (status != NV_OK)
+            return status;
+    }
+
+    return status;
+}
+
+bool uvm_ats_check_in_gmmu_region(uvm_va_space_t *va_space, NvU64 address, uvm_va_range_t *next)
+{
+    uvm_va_range_t *prev;
+    NvU64 gmmu_region_base = UVM_ALIGN_DOWN(address, UVM_GMMU_ATS_GRANULARITY);
+
+    UVM_ASSERT(va_space);
+
+    if (next) {
+        if (next->node.start <= gmmu_region_base + UVM_GMMU_ATS_GRANULARITY - 1)
+            return true;
+
+        prev = uvm_va_range_gmmu_mappable_prev(next);
+    }
+    else {
+        // No VA range exists after address, so check the last VA range in the
+        // tree.
+        prev = uvm_va_range_container(uvm_range_tree_last(&va_space->va_range_tree));
+        while (prev && !uvm_va_range_is_gmmu_mappable(prev))
+            prev = uvm_va_range_gmmu_mappable_prev(prev);
+    }
+
+    return prev && (prev->node.end >= gmmu_region_base);
 }
 
 NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
@@ -206,7 +718,7 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
     NV_STATUS status;
     uvm_push_t push;
 
-    if (!ats_invalidate->write_faults_in_batch)
+    if (!ats_invalidate->tlb_batch_pending)
         return NV_OK;
 
     UVM_ASSERT(gpu_va_space);
@@ -218,7 +730,7 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
                             "Invalidate ATS entries");
 
     if (status == NV_OK) {
-        uvm_tlb_batch_end(&ats_invalidate->write_faults_tlb_batch, &push, UVM_MEMBAR_NONE);
+        uvm_tlb_batch_end(&ats_invalidate->tlb_batch, &push, UVM_MEMBAR_NONE);
         uvm_push_end(&push);
 
         // Add this push to the GPU's tracker so that fault replays/clears can
@@ -226,7 +738,79 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
         status = uvm_tracker_add_push_safe(out_tracker, &push);
     }
 
-    ats_invalidate->write_faults_in_batch = false;
+    ats_invalidate->tlb_batch_pending = false;
 
     return status;
+}
+
+NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
+                                          struct vm_area_struct *vma,
+                                          NvU64 base,
+                                          uvm_ats_fault_context_t *ats_context)
+{
+    uvm_va_block_region_t subregion;
+    uvm_va_block_region_t region = uvm_va_block_region(0, PAGES_PER_UVM_VA_BLOCK);
+    uvm_ats_service_type_t service_type = UVM_ATS_SERVICE_TYPE_ACCESS_COUNTERS;
+
+    UVM_ASSERT(vma);
+    UVM_ASSERT(IS_ALIGNED(base, UVM_VA_BLOCK_SIZE));
+    UVM_ASSERT(g_uvm_global.ats.enabled);
+    UVM_ASSERT(gpu_va_space);
+    UVM_ASSERT(gpu_va_space->ats.enabled);
+    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
+
+    uvm_page_mask_zero(&ats_context->access_counters.migrated_mask);
+
+    uvm_assert_mmap_lock_locked(vma->vm_mm);
+    uvm_assert_rwsem_locked(&gpu_va_space->va_space->lock);
+
+    ats_batch_select_residency(gpu_va_space, vma, ats_context);
+
+    // Ignoring the return value of ats_compute_prefetch is ok since prefetching
+    // is just an optimization and servicing access counter migrations is still
+    // worthwhile even without any prefetching added. So, let servicing continue
+    // instead of returning early even if the prefetch computation fails.
+    ats_compute_prefetch(gpu_va_space, vma, base, service_type, ats_context);
+
+    // Remove pages which are already resident at the intended destination from
+    // the accessed_mask.
+    uvm_page_mask_andnot(&ats_context->access_counters.accessed_mask,
+                         &ats_context->access_counters.accessed_mask,
+                         &ats_context->prefetch_state.residency_mask);
+
+    // Pretend that pages that are already resident at the destination GPU were
+    // migrated now. This makes sure that the access counter is cleared even if
+    // the accessed pages, were already resident on the target.
+    // TODO: Bug 5296998: [uvm][ats] Not clearing stale access counter
+    //                     notifications can lead to missed migrations
+    // The same problem of stale notification exists for migration to other
+    // locations than local vidmem. However, stale notifications to data
+    // migrated to another remote location are identical to those triggered
+    // by accessing memory that cannot or should not be migrated.
+    if (uvm_id_equal(ats_context->residency_id, gpu_va_space->gpu->id)) {
+        uvm_page_mask_copy(&ats_context->access_counters.migrated_mask,
+                           &ats_context->prefetch_state.residency_mask);
+    }
+
+    for_each_va_block_subregion_in_mask(subregion, &ats_context->access_counters.accessed_mask, region) {
+        NV_STATUS status;
+        NvU64 start = base + (subregion.first * PAGE_SIZE);
+        size_t length = uvm_va_block_region_num_pages(subregion) * PAGE_SIZE;
+        uvm_fault_access_type_t access_type = UVM_FAULT_ACCESS_TYPE_COUNT;
+        uvm_page_mask_t *migrated_mask = &ats_context->access_counters.migrated_mask;
+
+        UVM_ASSERT(start >= vma->vm_start);
+        UVM_ASSERT((start + length) <= vma->vm_end);
+
+        status = service_ats_requests(gpu_va_space, vma, start, length, access_type, service_type, ats_context);
+
+        // Clear access counters if pages were migrated or migration needs to
+        // be retried
+        if (status == NV_OK || status == NV_ERR_BUSY_RETRY)
+            uvm_page_mask_region_fill(migrated_mask, subregion);
+        else if (status != NV_WARN_NOTHING_TO_DO)
+            return status;
+    }
+
+    return NV_OK;
 }

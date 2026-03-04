@@ -30,36 +30,36 @@ void uvm_tlb_batch_begin(uvm_page_tree_t *tree, uvm_tlb_batch_t *batch)
     batch->tree = tree;
 }
 
-static NvU32 smallest_page_size(NvU32 page_sizes)
+static NvU64 smallest_page_size(NvU64 page_sizes)
 {
     UVM_ASSERT(page_sizes != 0);
 
-    return 1u << __ffs(page_sizes);
+    return 1ULL << __ffs(page_sizes);
 }
 
-static NvU32 biggest_page_size(NvU32 page_sizes)
+static NvU64 biggest_page_size(NvU64 page_sizes)
 {
     UVM_ASSERT(page_sizes != 0);
 
-    return 1u << __fls(page_sizes);
+    return 1ULL << __fls(page_sizes);
 }
 
 static void tlb_batch_flush_invalidate_per_va(uvm_tlb_batch_t *batch, uvm_push_t *push)
 {
     uvm_page_tree_t *tree = batch->tree;
-    uvm_gpu_phys_address_t pdb_addr = uvm_page_tree_pdb(tree)->addr;
+    uvm_gpu_phys_address_t pdb_addr = uvm_page_tree_pdb_address(tree);
     uvm_membar_t membar = UVM_MEMBAR_NONE;
     NvU32 i;
 
     for (i = 0; i < batch->count; ++i) {
         uvm_tlb_batch_range_t *entry = &batch->ranges[i];
-        NvU32 min_page_size = smallest_page_size(entry->page_sizes);
-        NvU32 max_page_size = biggest_page_size(entry->page_sizes);
+        NvU64 min_page_size = smallest_page_size(entry->page_sizes);
+        NvU64 max_page_size = biggest_page_size(entry->page_sizes);
 
         // Use the depth of the max page size as it's the broadest
         NvU32 depth = tree->hal->page_table_depth(max_page_size);
 
-        UVM_ASSERT(hweight32(entry->page_sizes) > 0);
+        UVM_ASSERT(hweight64(entry->page_sizes) > 0);
 
         // Do the required membar only after the last invalidate
         if (i == batch->count - 1)
@@ -83,7 +83,7 @@ static void tlb_batch_flush_invalidate_all(uvm_tlb_batch_t *batch, uvm_push_t *p
     uvm_gpu_t *gpu = tree->gpu;
     NvU32 page_table_depth = tree->hal->page_table_depth(batch->biggest_page_size);
 
-    gpu->parent->host_hal->tlb_invalidate_all(push, uvm_page_tree_pdb(tree)->addr, page_table_depth, batch->membar);
+    gpu->parent->host_hal->tlb_invalidate_all(push, uvm_page_tree_pdb_address(tree), page_table_depth, batch->membar);
 }
 
 static bool tlb_batch_should_invalidate_all(uvm_tlb_batch_t *batch)
@@ -113,7 +113,7 @@ void uvm_tlb_batch_end(uvm_tlb_batch_t *batch, uvm_push_t *push, uvm_membar_t tl
         tlb_batch_flush_invalidate_per_va(batch, push);
 }
 
-void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU32 page_sizes, uvm_membar_t tlb_membar)
+void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU64 page_sizes, uvm_membar_t tlb_membar)
 {
     uvm_tlb_batch_range_t *new_entry;
 

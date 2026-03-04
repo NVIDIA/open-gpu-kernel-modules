@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -46,23 +48,23 @@ knvlinkFilterBridgeLinks_TU102
     NvU32     linkId;
 
     // All links from Turing+ are sensable by receiver detect
-    pKernelNvlink->bridgeSensableLinks = pKernelNvlink->discoveredLinks;
+    bitVectorCopy(&pKernelNvlink->bridgeSensableLinks, &pKernelNvlink->discoveredLinks);
 
     // If connections are forced through chiplib, return enabled links
     if (pKernelNvlink->bRegistryLinkOverride)
     {
-        pKernelNvlink->connectedLinksMask = pKernelNvlink->enabledLinks;
-        pKernelNvlink->bridgedLinks       = pKernelNvlink->enabledLinks;
+        bitVectorCopy(&pKernelNvlink->connectedLinksMask, &pKernelNvlink->enabledLinks);
+        pKernelNvlink->bridgedLinks = KNVLINK_BITVECTOR_TO_MASK(pKernelNvlink, enabledLinks, 32);
 
         NV_PRINTF(LEVEL_INFO,
                   "Connections forced through chiplib. ConnectedLinksMask same as "
-                  "enabledLinks = 0x%x\n", pKernelNvlink->connectedLinksMask);
+                  "enabledLinks = "NV_BITVECTOR_INLINE_FMTX "\n", NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->connectedLinksMask));
 
         goto knvlinkFilterBridgeLinks_end;
     }
 
     // Mark the links as bridged if receiver detect has passed
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->discoveredLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, KNVLINK_BITVECTOR_TO_MASK(pKernelNvlink, discoveredLinks, 32))
     {
 #if defined(INCLUDE_NVLINK_LIB)
 
@@ -70,7 +72,7 @@ knvlinkFilterBridgeLinks_TU102
         if (pKernelNvlink->nvlinkLinks[linkId].core_link == NULL)
         {
             // Link is not registered yet. Connectivity is absent
-            pKernelNvlink->connectedLinksMask &= ~NVBIT(linkId);
+            bitVectorClr(&pKernelNvlink->connectedLinksMask, linkId);
             pKernelNvlink->bridgedLinks       &= ~NVBIT(linkId);
 
             NV_PRINTF(LEVEL_INFO,
@@ -81,12 +83,12 @@ knvlinkFilterBridgeLinks_TU102
 
         if (pKernelNvlink->nvlinkLinks[linkId].core_link->bRxDetected)
         {
-            pKernelNvlink->connectedLinksMask |= NVBIT(linkId);
+            bitVectorSet(&pKernelNvlink->connectedLinksMask, linkId);
             pKernelNvlink->bridgedLinks       |= NVBIT(linkId);
         }
         else
         {
-            pKernelNvlink->connectedLinksMask &= ~NVBIT(linkId);
+            bitVectorClr(&pKernelNvlink->connectedLinksMask, linkId);
             pKernelNvlink->bridgedLinks       &= ~NVBIT(linkId);
         }
 #endif
@@ -111,7 +113,7 @@ knvlinkFilterBridgeLinks_end:
  * @param[in] pGpu           OBJGPU ptr
  * @param[in] pKernelNvlink  KernelNvlink ptr
  */
-NvU32
+NVLINK_BIT_VECTOR *
 knvlinkGetConnectedLinksMask_TU102
 (
     OBJGPU       *pGpu,
@@ -123,7 +125,7 @@ knvlinkGetConnectedLinksMask_TU102
     // This is because the connection cannot be sensed till receiver detect
     // has reported whether or not the connection is present
     //
-    return pKernelNvlink->connectedLinksMask;
+    return &pKernelNvlink->connectedLinksMask;
 }
 
 /*!

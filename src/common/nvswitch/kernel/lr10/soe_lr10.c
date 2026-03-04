@@ -46,23 +46,6 @@
 #include "rmflcncmdif_nvswitch.h"
 
 /*
- * @Brief : Selects SOE core (Falcon or Riscv)
- *
- * @param[in] device Bootstrap SOE on this device
- *
- * Does nothing on LR10
- */
-NvlStatus
-nvswitch_soe_set_ucode_core_lr10
-(
-    nvswitch_device *device,
-    NvBool bFalcon
-)
-{
-    return NVL_SUCCESS;
-}
-
-/*
  * @Brief : Reset SOE at the engine level.
  *
  * @param[in] device Reset SOE on this device
@@ -74,7 +57,6 @@ _nvswitch_reset_soe
 )
 {
     NvU32 value;
-    NvlStatus status;
 
     // Assert reset
     value = NVSWITCH_SOE_RD32_LR10(device, 0, _SOE_FALCON, _ENGINE);
@@ -91,15 +73,6 @@ _nvswitch_reset_soe
     value = NVSWITCH_SOE_RD32_LR10(device, 0, _SOE_FALCON, _ENGINE);
     value = FLD_SET_DRF(_SOE, _FALCON, _ENGINE_RESET, _FALSE, value);
     NVSWITCH_SOE_WR32_LR10(device, 0, _SOE_FALCON, _ENGINE, value);
-
-    // Set SOE ucode core to falcon
-    status = nvswitch_soe_set_ucode_core(device, NV_TRUE);
-    if (status != NVL_SUCCESS)
-    {
-        NVSWITCH_PRINT(device, ERROR,
-            "Failed to set SOE core\n");
-        return status;
-    }
 
     // Wait for reset to complete
     if (flcnWaitForResetToFinish_HAL(device, device->pSoe->pFlcn) != NV_OK)
@@ -257,8 +230,8 @@ _nvswitch_soe_send_test_cmd
     return status;
 }
 
-NvlStatus
-nvswitch_get_soe_ucode_binaries_lr10
+static NvlStatus
+_nvswitch_get_soe_ucode_binaries
 (
     nvswitch_device *device,
     const NvU32 **soe_ucode_data,
@@ -307,7 +280,7 @@ _nvswitch_load_soe_ucode_image
     const NvU32 *soe_ucode_data;
     const NvU32 *soe_ucode_header;
 
-    status = nvswitch_get_soe_ucode_binaries(device, &soe_ucode_data, &soe_ucode_header);
+    status = _nvswitch_get_soe_ucode_binaries(device, &soe_ucode_data, &soe_ucode_header);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -774,8 +747,8 @@ _nvswitch_soe_request_reset_permissions
 /*
  * @Brief : Execute SOE pre-reset sequence for secure reset.
  */
-NvlStatus
-nvswitch_soe_prepare_for_reset_lr10
+static NvlStatus
+_nvswitch_soe_prepare_for_reset
 (
     nvswitch_device *device
 )
@@ -835,7 +808,7 @@ nvswitch_init_soe_lr10
     NvlStatus status;
 
     // Prepare SOE for reset.
-    status = nvswitch_soe_prepare_for_reset(device);
+    status = _nvswitch_soe_prepare_for_reset(device);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_RESET,
@@ -897,6 +870,17 @@ nvswitch_init_soe_lr10
                    __FUNCTION__);
 
     return status;
+}
+
+void
+nvswitch_soe_init_l2_state_lr10
+(
+    nvswitch_device *device
+)
+{
+    NVSWITCH_PRINT(device, WARN,
+        "%s: Function not implemented on lr10\n",
+        __FUNCTION__);
 }
 
 /**
@@ -1086,7 +1070,7 @@ _soeService_LR10
         NVSWITCH_PRINT(device, INFO,
                     "%s: Received a message from SOE via SWGEN0\n",
                     __FUNCTION__);
-        soeProcessMessages(device, pSoe);
+        soeProcessMessages_HAL(device, pSoe);
         bRecheckMsgQ = NV_TRUE;
     }
 
@@ -1611,7 +1595,7 @@ _soeDmaStartTest
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-    cmd.hdr.size   = sizeof(cmd);
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, DMA_TEST);
 
     pDmaCmd = &cmd.cmd.core.dma_test;
     RM_FLCN_U64_PACK(&pDmaCmd->dmaHandle, &dmaHandle);
@@ -2091,7 +2075,7 @@ _soeForceThermalSlowdown_LR10
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
     cmd.hdr.unitId = RM_SOE_UNIT_THERM;
-    cmd.hdr.size = sizeof(cmd);
+    cmd.hdr.size = RM_SOE_CMD_SIZE(THERM, FORCE_SLOWDOWN);
     cmd.cmd.therm.cmdType = RM_SOE_THERM_FORCE_SLOWDOWN;
     cmd.cmd.therm.slowdown.slowdown = slowdown;
     cmd.cmd.therm.slowdown.periodUs = periodUs;
@@ -2162,6 +2146,425 @@ _soeSetPcieLinkSpeed_LR10
 }
 
 /*!
+ * Use the SOE INIT Message to construct and initialize all SOE Queues.
+ *
+ * @param[in]      device nvswitch_device pointer
+ * @param[in]      pSoe   SOE object pointer
+ * @param[in]      pMsg   Pointer to the INIT Message
+ *
+ * @return 'NV_OK' upon successful creation of all SOE Queues
+ */
+static NV_STATUS
+_soeQMgrCreateQueuesFromInitMsg
+(
+    nvswitch_device  *device,
+    PFLCNABLE         pSoe,
+    RM_FLCN_MSG_SOE  *pMsg
+)
+{
+    RM_SOE_INIT_MSG_SOE_INIT *pInit;
+    NvU32                     i;
+    NvU32                     queueLogId;
+    NV_STATUS                 status;
+    FLCNQUEUE                *pQueue;
+    PFLCN                     pFlcn = ENG_GET_FLCN(pSoe);
+    PFALCON_QUEUE_INFO        pQueueInfo;
+
+    NVSWITCH_ASSERT(pFlcn != NULL);
+
+    pQueueInfo = pFlcn->pQueueInfo;
+    NVSWITCH_ASSERT(pQueueInfo != NULL);
+
+    pInit = &pMsg->msg.init.soeInit;
+    NVSWITCH_ASSERT(pInit->numQueues <= pFlcn->numQueues);
+
+    for (i = 0; i < pFlcn->numQueues; i++)
+    {
+        queueLogId = pInit->qInfo[i].queueLogId;
+        NVSWITCH_ASSERT(queueLogId < pFlcn->numQueues);
+        pQueue = &pQueueInfo->pQueues[queueLogId];
+        status = flcnQueueConstruct_dmem_nvswitch(
+                     device,
+                     pFlcn,
+                     &pQueue,                                  // ppQueue
+                     queueLogId,                               // Logical ID of the queue
+                     pInit->qInfo[i].queuePhyId,               // Physical ID of the queue
+                     pInit->qInfo[i].queueOffset,              // offset
+                     pInit->qInfo[i].queueSize,                // size
+                     RM_FLCN_QUEUE_HDR_SIZE);                  // cmdHdrSize
+        if (status != NV_OK)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                        "%s: Error constructing SOE Queue (status="
+                        "0x%08x).\n", __FUNCTION__, status);
+            NVSWITCH_ASSERT(0);
+            return status;
+        }
+    }
+    return NV_OK;
+}
+
+/*!
+ * Purges all the messages from the SOE's message queue.  Each message will
+ * be analyzed, clients will be notified of status, and events will be routed
+ * to all registered event listeners.
+ *
+ * @param[in]  device nvswitch_device pointer
+ * @param[in]  pSoe   SOE object pointer
+ *
+ * @return 'NV_OK' if the message queue was successfully purged.
+ */
+static NV_STATUS
+_soeProcessMessages_LR10
+(
+    nvswitch_device *device,
+    PSOE             pSoe
+)
+{
+    RM_FLCN_MSG_SOE  soeMessage;
+    NV_STATUS        status;
+    PFLCN            pFlcn  = ENG_GET_FLCN(pSoe);
+
+    // keep processing messages until no more exist in the message queue
+    while (NV_OK == (status = flcnQueueReadData(
+                                     device,
+                                     pFlcn,
+                                     SOE_RM_MSGQ_LOG_ID,
+                                     (RM_FLCN_MSG *)&soeMessage, NV_TRUE)))
+    {
+        NVSWITCH_PRINT(device, INFO,
+                    "%s: unitId=0x%02x, size=0x%02x, ctrlFlags=0x%02x, " \
+                    "seqNumId=0x%02x\n",
+                    __FUNCTION__,
+                    soeMessage.hdr.unitId,
+                    soeMessage.hdr.size,
+                    soeMessage.hdr.ctrlFlags,
+                    soeMessage.hdr.seqNumId);
+
+        // check to see if the message is a reply or an event.
+        if ((soeMessage.hdr.ctrlFlags &= RM_FLCN_QUEUE_HDR_FLAGS_EVENT) != 0)
+        {
+            flcnQueueEventHandle(device, pFlcn, (RM_FLCN_MSG *)&soeMessage, NV_OK);
+        }
+        // the message is a response from a previously queued command
+        else
+        {
+            flcnQueueResponseHandle(device, pFlcn, (RM_FLCN_MSG *)&soeMessage);
+        }
+    }
+
+    //
+    // Status NV_ERR_NOT_READY implies, Queue is empty.
+    // Log the message in other error cases.
+    //
+    if (status != NV_ERR_NOT_READY)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: unexpected error while purging message queue (status=0x%x).\n",
+            __FUNCTION__, (status));
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Read the INIT message directly out of the Message Queue.
+ *
+ * This function accesses the Message Queue directly using the HAL.  It does
+ * NOT and may NOT use the queue manager as it has not yet been constructed and
+ * initialized.  The Message Queue may not be empty when this function is called
+ * and the first message in the queue MUST be the INIT message.
+ *
+ * @param[in]   device  nvswitch_device pointer
+ * @param[in]   pSoe    SOE object pointer
+ * @param[out]  pMsg    Message structure to fill with the INIT message data
+ *
+ * @return 'NV_OK' upon successful extraction of the INIT message.
+ * @return
+ *     'NV_ERR_INVALID_STATE' if the first message found was not an INIT
+ *     message or if the message was improperly formatted.
+ */
+static NV_STATUS
+_soeGetInitMessage
+(
+    nvswitch_device  *device,
+    PSOE              pSoe,
+    RM_FLCN_MSG_SOE  *pMsg
+)
+{
+    PFLCN               pFlcn   = ENG_GET_FLCN(pSoe);
+    NV_STATUS           status  = NV_OK;
+    NvU32               tail    = 0;
+    PFALCON_QUEUE_INFO  pQueueInfo;
+    // on the GPU, rmEmemPortId = sec2RmEmemPortIdGet_HAL(...);
+    NvU8                rmEmemPortId = 0;
+
+    if (pFlcn == NULL)
+    {
+        NVSWITCH_ASSERT(pFlcn != NULL);
+        return NV_ERR_INVALID_POINTER;
+    }
+
+    pQueueInfo = pFlcn->pQueueInfo;
+    if (pQueueInfo == NULL)
+    {
+        NVSWITCH_ASSERT(pQueueInfo != NULL);
+        return NV_ERR_INVALID_POINTER;
+    }
+
+    //
+    // Message queue 0 is used by SOE to communicate with RM
+    // Check SOE_CMDMGMT_MSG_QUEUE_RM in //uproc/soe/inc/soe_cmdmgmt.h
+    //
+    pQueueInfo->pQueues[SOE_RM_MSGQ_LOG_ID].queuePhyId = 0;
+
+    // read the header starting at the current tail position
+    (void)flcnMsgQueueTailGet(device, pFlcn,
+        &pQueueInfo->pQueues[SOE_RM_MSGQ_LOG_ID], &tail);
+    if (pFlcn->bEmemEnabled)
+    {
+        //
+        // We use the offset in DMEM for the src address, since
+        // EmemCopyFrom automatically converts it to the offset in EMEM
+        //
+        flcnableEmemCopyFrom(
+            device, pFlcn->pFlcnable,
+            tail,                   // src
+            (NvU8 *)&pMsg->hdr,     // pDst
+            RM_FLCN_QUEUE_HDR_SIZE, // numBytes
+            rmEmemPortId);          // port
+    }
+    else
+    {
+        status = flcnDmemCopyFrom(device,
+                                  pFlcn,
+                                  tail,                     // src
+                                  (NvU8 *)&pMsg->hdr,       // pDst
+                                  RM_FLCN_QUEUE_HDR_SIZE,   // numBytes
+                                  0);                       // port
+        if (status != NV_OK)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Failed to copy from SOE DMEM\n", __FUNCTION__);
+            NVSWITCH_ASSERT(0);
+            goto _soeGetInitMessage_exit;
+        }
+    }
+
+    if (pMsg->hdr.unitId != RM_SOE_UNIT_INIT)
+    {
+        status = NV_ERR_INVALID_STATE;
+        NVSWITCH_ASSERT(0);
+        goto _soeGetInitMessage_exit;
+    }
+
+    // read the message body and update the tail position
+    if (pFlcn->bEmemEnabled)
+    {
+        //
+        // We use the offset in DMEM for the src address, since
+        // EmemCopyFrom automatically converts it to the offset in EMEM
+        //
+        flcnableEmemCopyFrom(
+            device, pFlcn->pFlcnable,
+            tail + RM_FLCN_QUEUE_HDR_SIZE,              // src
+            (NvU8 *)&pMsg->msg,                         // pDst
+            pMsg->hdr.size - RM_FLCN_QUEUE_HDR_SIZE,    // numBytes
+            rmEmemPortId);                              // port
+    }
+    else
+    {
+        status = flcnDmemCopyFrom(device,
+            pFlcn,
+            tail + RM_FLCN_QUEUE_HDR_SIZE,              // src
+            (NvU8 *)&pMsg->msg,                         // pDst
+            pMsg->hdr.size - RM_FLCN_QUEUE_HDR_SIZE,    // numBytes
+            0);                                         // port
+        if (status != NV_OK)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Failed to copy from SOE DMEM\n", __FUNCTION__);
+            NVSWITCH_ASSERT(0);
+            goto _soeGetInitMessage_exit;
+        }
+    }
+
+    tail += NV_ALIGN_UP(pMsg->hdr.size, SOE_DMEM_ALIGNMENT);
+    flcnMsgQueueTailSet(device, pFlcn,
+        &pQueueInfo->pQueues[SOE_RM_MSGQ_LOG_ID], tail);
+
+_soeGetInitMessage_exit:
+    return status;
+}
+
+/*!
+ * This function exists to solve a natural chicken-and-egg problem that arises
+ * due to the fact that queue information (location, size, id, etc...) is
+ * relayed to the RM as a message in a queue.  Queue construction is done when
+ * the message arrives and the normal queue read/write functions are not
+ * available until construction is complete.  Construction cannot be done until
+ * the message is read from the queue.  Therefore, the very first message read
+ * from the Message Queue must be considered as a special-case and must NOT use
+ * any functionality provided by the SOE's queue manager.
+ *
+ * @param[in]  device  nvswitch_device pointer
+ * @param[in]  pSoe    SOE object pointer
+ *
+ * @return 'NV_OK'
+ *     Upon successful extraction and processing of the first SOE message.
+ */
+static NV_STATUS
+_soeProcessMessagesPreInit_LR10
+(
+    nvswitch_device *device,
+    PSOE             pSoe
+)
+{
+    RM_FLCN_MSG_SOE   msg;
+    NV_STATUS        status;
+    PFLCN            pFlcn  = ENG_GET_FLCN(pSoe);
+
+    // extract the "INIT" message (this is never expected to fail)
+    status = _soeGetInitMessage(device, pSoe, &msg);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+                    "%s: Failed to extract the INIT message "
+                    "from the SOE Message Queue (status=0x%08x).",
+                    __FUNCTION__, status);
+        NVSWITCH_ASSERT(0);
+        return status;
+    }
+
+    //
+    // Now hookup the "real" message-processing function and handle the "INIT"
+    // message.
+    //
+    pSoe->base.pHal->processMessages = _soeProcessMessages_LR10;
+    return flcnQueueEventHandle(device, pFlcn, (RM_FLCN_MSG *)&msg, NV_OK);
+}
+
+/*!
+ * @brief Process the "INIT" message sent from the SOE ucode application.
+ *
+ * When the SOE ucode is done initializing, it will post an INIT message in
+ * the Message Queue that contains all the necessary attributes that are
+ * needed to enqueuing commands and extracting messages from the queues.
+ * The packet will also contain the offset and size of portion of DMEM that
+ * the RM must manage.  Upon receiving this message it will be assume that
+ * the SOE is ready to start accepting commands.
+ *
+ * @param[in]  device  nvswitch_device pointer
+ * @param[in]  pSoe    SOE object pointer
+ * @param[in]  pMsg    Pointer to the event's message data
+ *
+ * @return 'NV_OK' if the event was successfully handled.
+ */
+static NV_STATUS
+_soeHandleInitEvent_LR10
+(
+    nvswitch_device  *device,
+    PFLCNABLE         pSoe,
+    RM_FLCN_MSG      *pGenMsg
+)
+{
+    NV_STATUS         status;
+    PFLCN             pFlcn = ENG_GET_FLCN(pSoe);
+    RM_FLCN_MSG_SOE *pMsg  = (RM_FLCN_MSG_SOE *)pGenMsg;
+
+    if (pFlcn == NULL)
+    {
+        NVSWITCH_ASSERT(pFlcn != NULL);
+        return NV_ERR_INVALID_POINTER;
+    }
+
+    NVSWITCH_PRINT(device, INFO,
+                "%s: Received INIT message from SOE\n",
+                __FUNCTION__);
+
+    //
+    // Pass the INIT message to the queue manager to allow it to create the
+    // queues.
+    //
+    status = _soeQMgrCreateQueuesFromInitMsg(device, pSoe, pMsg);
+    if (status != NV_OK)
+    {
+        NVSWITCH_ASSERT(0);
+        return status;
+    }
+
+    flcnDbgInfoDmemOffsetSet(device, pFlcn,
+        pMsg->msg.init.soeInit.osDebugEntryPoint);
+
+    // the SOE ucode is now initialized and ready to accept commands
+    pFlcn->bOSReady = NV_TRUE;
+
+    return NV_OK;
+}
+
+/*!
+ * Loop until SOE RTOS is loaded and gives us an INIT message
+ *
+ * @param[in]  device  nvswitch_device object pointer
+ * @param[in]  pSoe    SOE object pointer
+ */
+static NV_STATUS
+_soeWaitForInitAck_LR10
+(
+    nvswitch_device *device,
+    PSOE             pSoe
+)
+{
+    PFLCN            pFlcn  = ENG_GET_FLCN(pSoe);
+    NVSWITCH_TIMEOUT timeout;
+    NvBool bKeepPolling;
+
+    // If INIT message is already loaded, return.
+    if (pFlcn->bOSReady)
+    {
+        return NV_OK;
+    }
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 5, &timeout);
+    do
+    {
+        bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+        soeService_HAL(device, pSoe);
+        if (pFlcn->bOSReady)
+        {
+            return NV_OK;
+        }
+
+        nvswitch_os_sleep(1);
+    }
+    while (bKeepPolling);
+
+    if (!pFlcn->bOSReady)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s Timeout while waiting for SOE bootup\n",
+            __FUNCTION__);
+        NVSWITCH_ASSERT(0);
+        return NV_ERR_TIMEOUT;
+    }
+
+    return NV_OK;
+}
+
+NvlStatus
+nvswitch_soe_issue_ingress_stop_lr10
+(
+    nvswitch_device *device,
+    NvU32 nport,
+    NvBool bStop
+)
+{
+    // Not supported on LR10
+    return NVL_SUCCESS;
+}
+
+/*!
  * @brief   set hal function pointers for functions defined in LR10 (i.e. this file)
  *
  * this function has to be at the end of the file so that all the
@@ -2182,6 +2585,7 @@ soeSetupHal_LR10
     pParentHal->destruct             = _soeDestruct_LR10;
     pParentHal->getExternalConfig    = _soeGetExternalConfig_LR10;
     pParentHal->fetchEngines         = _soeFetchEngines_LR10;
+    pParentHal->handleInitEvent      = _soeHandleInitEvent_LR10;
 
     // set any functions specific to SOE
     pHal->service               = _soeService_LR10;
@@ -2201,4 +2605,6 @@ soeSetupHal_LR10
     pHal->forceThermalSlowdown  = _soeForceThermalSlowdown_LR10;
     pHal->setPcieLinkSpeed      = _soeSetPcieLinkSpeed_LR10;
     pHal->getPexEomStatus       = _soeGetPexEomStatus_LR10;
+    pHal->processMessages       = _soeProcessMessagesPreInit_LR10;
+    pHal->waitForInitAck        = _soeWaitForInitAck_LR10;
 }

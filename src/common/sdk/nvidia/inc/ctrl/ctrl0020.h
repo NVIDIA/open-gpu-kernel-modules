@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0020.finn
+// Source file:      ctrl/ctrl0020.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 #define NV0020_CTRL_CMD(cat,idx)  \
@@ -72,8 +69,6 @@
  *    NV_OK
  *    NV_ERR_INVALID_ARGUMENT
  */
-
-
 #define NV0020_CTRL_CMD_GPU_MGMT_SET_SHUTDOWN_STATE (0x200101) /* finn: Evaluated from "(FINN_NV0020_GPU_MANAGEMENT_GPU_MGMT_INTERFACE_ID << 8) | NV0020_CTRL_GPU_MGMT_SET_SHUTDOWN_STATE_PARAMS_MESSAGE_ID" */
 
 #define NV0020_CTRL_GPU_MGMT_SET_SHUTDOWN_STATE_PARAMS_MESSAGE_ID (0x1U)

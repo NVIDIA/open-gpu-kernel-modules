@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2008-2013 NVIDIA Corporation
+    Copyright (c) 2008-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -21,26 +21,18 @@
 
 *******************************************************************************/
 
-#include "nvtypes.h"
+#pragma once
 
-#ifndef _clb069_sw_h_
-#define _clb069_sw_h_
+#include <nvtypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clb069sw.finn
+//
 
-/* This file is *not* auto-generated. */
+#define NVB069_ALLOCATION_PARAMETERS_MESSAGE_ID (0xb069U)
 
-
-typedef struct
-{
-    NvU32    flags;            // set to 0
-
+typedef struct NVB069_ALLOCATION_PARAMETERS {
+    NvU32 flags;            // set to 0
 } NVB069_ALLOCATION_PARAMETERS;
 
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-#endif // _clb096_sw_h

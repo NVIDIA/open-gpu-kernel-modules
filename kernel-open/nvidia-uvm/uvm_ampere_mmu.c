@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2020 NVIDIA Corporation
+    Copyright (c) 2018-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -36,22 +36,7 @@
 #include "uvm_ampere_fault_buffer.h"
 #include "hwref/ampere/ga100/dev_fault.h"
 
-uvm_mmu_engine_type_t uvm_hal_ampere_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST31)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE9)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS && mmu_engine_id < NV_PFAULT_MMU_ENG_ID_BAR1,
-                   "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
-}
-
-static NvU32 page_table_depth_ampere(NvU32 page_size)
+static NvU32 page_table_depth_ampere(NvU64 page_size)
 {
     // The common-case is page_size == UVM_PAGE_SIZE_2M, hence the first check
     if (page_size == UVM_PAGE_SIZE_2M)
@@ -62,14 +47,14 @@ static NvU32 page_table_depth_ampere(NvU32 page_size)
         return 4;
 }
 
-static NvU32 page_sizes_ampere(void)
+static NvU64 page_sizes_ampere(void)
 {
     return UVM_PAGE_SIZE_512M | UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
 static uvm_mmu_mode_hal_t ampere_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size)
 {
     static bool initialized = false;
 

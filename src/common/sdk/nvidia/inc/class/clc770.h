@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2021-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,26 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clc770_h_
-#define _clc770_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc770.finn
+//
 
-#define  NVC770_DISPLAY                                             (0x0000C770)
+#define NVC770_DISPLAY (0xc770U) /* finn: Evaluated from "NVC770_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-typedef struct
-{
-    NvU32   numHeads; // Number of HEADs in this chip/display
-    NvU32   numSors;  // Number of SORs in this chip/display
-    NvU32   numDsis;  // Number of DSIs in this chip/display
-} NVC770_ALLOCATION_PARAMETERS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
 
-#endif /* _clc770_h_ */

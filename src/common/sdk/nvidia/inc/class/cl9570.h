@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2013, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,27 +20,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl9570_h_
-#define _cl9570_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl9570.finn
+//
 
-#define  NV9570_DISPLAY                                             (0x00009570)
+#define NV9570_DISPLAY (0x9570U) /* finn: Evaluated from "NV9570_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-typedef struct
-{
-    NvU32   numHeads; // Number of HEADs in this chip/display
-    NvU32   numDacs;  // Number of DACs in this chip/display
-    NvU32   numSors;  // Number of SORs in this chip/display
-    NvU32   numPiors; // Number of PIORs in this chip/display
+#define NV9570_ALLOCATION_PARAMETERS_MESSAGE_ID (0x9570U)
+
+typedef struct NV9570_ALLOCATION_PARAMETERS {
+    NvU32 numHeads; // Number of HEADs in this chip/display
+    NvU32 numDacs;  // Number of DACs in this chip/display
+    NvU32 numSors;  // Number of SORs in this chip/display
+    NvU32 numPiors; // Number of PIORs in this chip/display
 } NV9570_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl9570_h_ */

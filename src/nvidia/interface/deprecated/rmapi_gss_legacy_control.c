@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,9 +22,13 @@
  */
 #include "deprecated/rmapi_deprecated.h"
 
-#include "finn_rm_api.h"
 #include "gpu/gpu.h"
 #include "core/locks.h"
+#include "vgpu/rpc.h"
+#include "rmapi/rmapi_utils.h"
+
+#include "g_finn_rm_api.h"
+#include "core/thread_state.h"
 
 /*!
  * Some clients are still making these legacy GSS controls. We no longer support these in RM,
@@ -43,6 +47,8 @@ NV_STATUS RmGssLegacyRpcCmd
     NV_STATUS  status         = NV_OK;
     GPU_MASK   gpuMaskRelease = 0;
     void      *pKernelParams  = NULL;
+    NvBool     bApiLockTaken  = NV_FALSE;
+    THREAD_STATE_NODE   threadState;
 
     NV_ASSERT_OR_RETURN((pArgs->cmd & RM_GSS_LEGACY_MASK),
                         NV_ERR_INVALID_STATE);
@@ -53,17 +59,7 @@ NV_STATUS RmGssLegacyRpcCmd
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    NV_CHECK_OK_OR_ELSE(status,
-                        LEVEL_ERROR,
-                        serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
-                        return NV_ERR_INVALID_ARGUMENT);
-
-    NV_CHECK_OK_OR_ELSE(status,
-                        LEVEL_ERROR,
-                        gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu),
-                        return NV_ERR_INVALID_ARGUMENT);
-
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_USER)
     {
@@ -83,6 +79,24 @@ NV_STATUS RmGssLegacyRpcCmd
         pKernelParams = (void*)pArgs->params;
     }
 
+    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_CLIENT);
+    if (status != NV_OK)
+        goto done;
+
+    bApiLockTaken = NV_TRUE;
+
+    NV_CHECK_OK_OR_GOTO(status,
+                        LEVEL_NOTICE,
+                        serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
+                        done);
+
+    NV_CHECK_OK_OR_GOTO(status,
+                        LEVEL_NOTICE,
+                        gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu),
+                        done);
+
+    osRefGpuAccessNeeded(pGpu->pOsGpuInfo);
+
     status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
                            GPU_LOCK_GRP_SUBDEVICE,
                            GPUS_LOCK_FLAGS_NONE,
@@ -91,17 +105,41 @@ NV_STATUS RmGssLegacyRpcCmd
     if (status != NV_OK)
         goto done;
 
-    status = pRmApi->Control(pRmApi,
-                             pArgs->hClient,
-                             pArgs->hObject,
-                             pArgs->cmd,
-                             pKernelParams,
-                             pArgs->paramsSize);
+    if (IS_VIRTUAL(pGpu))
+    {
+        NV_RM_RPC_API_CONTROL(pGpu,
+                              pArgs->hClient,
+                              pArgs->hObject,
+                              pArgs->cmd,
+                              pKernelParams,
+                              pArgs->paramsSize,
+                              status);
+    }
+    else
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        status = pRmApi->Control(pRmApi,
+                                 pArgs->hClient,
+                                 pArgs->hObject,
+                                 pArgs->cmd,
+                                 pKernelParams,
+                                 pArgs->paramsSize);
+    }
 
 done:
     if (gpuMaskRelease != 0)
     {
         rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    if (bApiLockTaken)
+    {
+        if (pGpu != NULL)
+        {
+            osUnrefGpuAccessNeeded(pGpu->pOsGpuInfo);
+        }
+
+        rmapiLockRelease();
     }
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_USER)
@@ -112,6 +150,8 @@ done:
         }
         portMemFree(pKernelParams);
     }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     return status;
 }

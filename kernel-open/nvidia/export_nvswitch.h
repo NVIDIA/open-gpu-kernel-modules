@@ -50,10 +50,11 @@ extern "C" {
 #define NVSWITCH_NSEC_PER_SEC           1000000000ULL
 
 #define NVSWITCH_DBG_LEVEL_MMIO         0x0
-#define NVSWITCH_DBG_LEVEL_INFO         0x1
-#define NVSWITCH_DBG_LEVEL_SETUP        0x2
-#define NVSWITCH_DBG_LEVEL_WARN         0x3
-#define NVSWITCH_DBG_LEVEL_ERROR        0x4
+#define NVSWITCH_DBG_LEVEL_NOISY        0x1
+#define NVSWITCH_DBG_LEVEL_INFO         0x2
+#define NVSWITCH_DBG_LEVEL_SETUP        0x3
+#define NVSWITCH_DBG_LEVEL_WARN         0x4
+#define NVSWITCH_DBG_LEVEL_ERROR        0x5
 
 #define NVSWITCH_LOG_BUFFER_SIZE         512
 
@@ -337,7 +338,7 @@ nvswitch_lib_service_interrupts
 );
 
 /*
- * @Brief : Get depth of error logs
+ * @Brief : Get depth of error logs and port event log
  *
  * @Description :
  *
@@ -345,6 +346,7 @@ nvswitch_lib_service_interrupts
  *
  * @param[out] fatal        Count of fatal errors
  * @param[out] nonfatal     Count of non-fatal errors
+ * @param[out] portEvent    Count of port events
  *
  * @returns                 NVL_SUCCESS if there were no errors and interrupts were handled
  *                          -NVL_NOT_FOUND if bad arguments provided
@@ -353,7 +355,7 @@ NvlStatus
 nvswitch_lib_get_log_count
 (
     nvswitch_device *device,
-    NvU32 *fatal, NvU32 *nonfatal
+    NvU32 *fatal, NvU32 *nonfatal, NvU32 *portEvent
 );
 
 /*
@@ -642,6 +644,12 @@ nvswitch_os_get_platform_time
     void
 );
 
+NvU64
+nvswitch_os_get_platform_time_epoch
+(
+    void
+);
+
 #if (defined(_WIN32) || defined(_WIN64))
 #define NVSWITCH_PRINT_ATTRIB(str, arg1)
 #else
@@ -658,6 +666,19 @@ nvswitch_os_print
 (
     int         log_level,
     const char *pFormat,
+    ...
+);
+
+/*
+ * Log the given error code via an OS-specifric programmatic API
+ */
+void
+NVSWITCH_PRINT_ATTRIB(3, 4)
+nvswitch_os_report_error
+(
+    void *os_handle,
+    NvU32 error_code,
+    const char *fmt,
     ...
 );
 
@@ -802,6 +823,14 @@ nvswitch_os_strncmp
     NvLength length
 );
 
+char*
+nvswitch_os_strncat
+(
+    char *s1,
+    const char *s2,
+    NvLength length
+);
+
 void *
 nvswitch_os_memset
 (
@@ -885,7 +914,6 @@ nvswitch_os_vsnprintf
 void
 nvswitch_os_assert_log
 (
-    int cond,
     const char *pFormat,
     ...
 );
@@ -924,6 +952,12 @@ nvswitch_os_get_os_version
     NvU32 *pMajorVer,
     NvU32 *pMinorVer,
     NvU32 *pBuildNum
+);
+
+NvlStatus
+nvswitch_os_get_pid
+(
+    NvU32 *pPid
 );
 
 void
@@ -975,6 +1009,22 @@ nvswitch_os_get_supported_register_events_params
 (
     NvBool *bSupportsManyEvents,
     NvBool *bUserSuppliesOsData
+);
+
+/*
+ * @Brief : Is TNVL mode enabled.
+ *
+ * @Description : Returns if TNVL is enabled for the device
+ *
+ * @param[in] device        a reference to the device
+ *
+ * @returns                 NV_TRUE,  if TNVL is enabled
+ *                          NV_FALSE, if TNVL is disabled
+ */
+NvBool
+nvswitch_lib_is_tnvl_enabled
+(
+    nvswitch_device *device
 );
 
 #ifdef __cplusplus

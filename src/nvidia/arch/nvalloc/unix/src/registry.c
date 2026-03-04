@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -593,6 +593,12 @@ static NV_STATUS regCopyEntriesToPackedBuffer(
                 if (pRegEntry->type == NV_REGISTRY_ENTRY_TYPE_BINARY)
                     pEntry->type = REGISTRY_TABLE_ENTRY_TYPE_BINARY;
 
+                if (pRegEntry->len == 0)
+                {
+                    NV_PRINTF(LEVEL_WARNING,
+                                "Registry Key not sent to GSP-RM because it has 0 DataLength\n");
+                    break;
+                }
                 pEntry->length   = pRegEntry->len;
                 pEntry->data     = dataOffset;
                 portMemCopy(&pByte[dataOffset], pEntry->length,

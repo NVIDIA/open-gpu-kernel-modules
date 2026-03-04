@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,6 +29,9 @@
 #include "uvm_populate_pageable.h"
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
+#include "uvm_va_block_types.h"
+
+#include <linux/nodemask.h>
 
 typedef struct
 {
@@ -41,16 +44,26 @@ typedef struct
     // dst_node_id may be clobbered by uvm_migrate_pageable().
     int                             dst_node_id;
     uvm_populate_permissions_t      populate_permissions;
-    bool                            touch : 1;
+    NvU32                           populate_flags;
     bool                            skip_mapped : 1;
+    uvm_make_resident_cause_t       cause;
+    bool                            populate_on_cpu_alloc_failures : 1;
+    bool                            populate_on_migrate_vma_failures : 1;
+
+    // access_counters_buffer_index is only valid if cause is
+    // UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER.
+    NvU32                           access_counters_buffer_index;
     NvU64                           *user_space_start;
     NvU64                           *user_space_length;
+
+    uvm_processor_mask_t            *gpus_to_check_for_nvlink_errors;
+    bool                            fail_on_unresolved_sto_errors;
 } uvm_migrate_args_t;
 
 #if defined(CONFIG_MIGRATE_VMA_HELPER)
 #define UVM_MIGRATE_VMA_SUPPORTED 1
 #else
-#if defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MIGRATE_VMA_SETUP_PRESENT)
+#if NV_IS_EXPORT_SYMBOL_PRESENT_migrate_vma_setup
 #define UVM_MIGRATE_VMA_SUPPORTED 1
 #endif
 #endif
@@ -58,11 +71,32 @@ typedef struct
 #ifdef UVM_MIGRATE_VMA_SUPPORTED
 #include <linux/migrate.h>
 
-// The calls to migrate_vma are capped at 32MB to set an upper bound on the
+// The calls to migrate_vma are capped at 512 pages to set an upper bound on the
 // amount of metadata that needs to be allocated for the operation. This number
-// was chosen because performance seems to plateau at this size.
-#define UVM_MIGRATE_VMA_MAX_SIZE (32UL * 1024 * 1024)
-#define UVM_MIGRATE_VMA_MAX_PAGES (UVM_MIGRATE_VMA_MAX_SIZE >> PAGE_SHIFT)
+// was chosen because performance seems to plateau at this size on 64K-pages
+// kernels. On kernels with PAGE_SIZE == 4K, 512 pages correspond to 2M VA block,
+// which is also a standard size for batch operations.
+#define UVM_MIGRATE_VMA_MAX_PAGES (512UL)
+#define UVM_MIGRATE_VMA_MAX_SIZE (UVM_MIGRATE_VMA_MAX_PAGES * PAGE_SIZE)
+
+typedef struct
+{
+    DECLARE_BITMAP(page_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+} uvm_migrate_vma_page_mask_t;
+
+typedef struct
+{
+    // Scatter list managing the necessary copying GPU's IOMMU mappings
+    // used to copy pages from a source processor.
+    struct sg_table sgt_from;
+
+    // The copying GPUs that performs the copy from the source processors
+    // for which IOMMU mappings are created.
+    uvm_gpu_t *sgt_from_gpu;
+
+    // Number of DMA mapped pages in this scatterlist.
+    unsigned long dma_count;
+} uvm_sgt_t;
 
 typedef struct
 {
@@ -84,21 +118,21 @@ typedef struct
     // (c) pages are already mapped and such pages were requested to not be
     // migrated via skip_mapped.
     // (d) pages which couldn't be migrated by the kernel.
-    DECLARE_BITMAP(populate_pages_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t populate_pages_mask;
 
     // Mask of pages that failed allocation on the destination
-    DECLARE_BITMAP(allocation_failed_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t allocation_failed_mask;
 
     // Mask of pages which are already resident at the destination.
-    DECLARE_BITMAP(dst_resident_pages_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t dst_resident_pages_mask;
 
     // Global state managed by the caller
     //
     // These are scratch masks that can be used by the migrate_vma caller to
     // save output page masks and orchestrate the migrate_vma
     // retries/population calls if needed.
-    DECLARE_BITMAP(scratch1_mask, UVM_MIGRATE_VMA_MAX_PAGES);
-    DECLARE_BITMAP(scratch2_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+    uvm_migrate_vma_page_mask_t scratch1_mask;
+    uvm_migrate_vma_page_mask_t scratch2_mask;
 
     // Arrays used by migrate_vma to store the src/dst pfns
     unsigned long dst_pfn_array[UVM_MIGRATE_VMA_MAX_PAGES];
@@ -109,34 +143,43 @@ typedef struct
     uvm_tracker_t tracker;
 
     struct {
-        // Array of page IOMMU mappings created during allocate_and_copy.
-        // Required when using SYS aperture. They are freed in
-        // finalize_and_map. Also keep an array with the GPUs for which the
-        // mapping was created.
-        NvU64              addrs[UVM_MIGRATE_VMA_MAX_PAGES];
-        uvm_gpu_t    *addrs_gpus[UVM_MIGRATE_VMA_MAX_PAGES];
+        // Scatter table managing the IOMMU mappings for anonymous pages.
+        uvm_sgt_t anon_sgt;
 
-        // Mask of pages with entries in the dma address arrays above
-        DECLARE_BITMAP(page_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+        // Scatter table managing the IOMMU mappings for pages resident on
+        // GPUs.
+        uvm_sgt_t sgt_gpu[UVM_ID_MAX_GPUS];
 
-        // Number of pages for which IOMMU mapping were created
-        unsigned  long num_pages;
+        // Scatter table managing the IOMMU mappings for pages resident on CPU
+        // NUMA nodes. The array size is num_possible_nodes() and should be
+        // indexed by the position of CPU node ID relative to other set bits
+        // in node_possible_map nodemask.
+        uvm_sgt_t *sgt_cpu;
     } dma;
 
-    // Processors where pages are resident before calling migrate_vma
-    uvm_processor_mask_t src_processors;
+    // GPU processors where pages are resident before calling migrate_vma.
+    uvm_processor_mask_t src_gpus;
+
+    // CPU NUMA nodes where pages are resident before calling migrate_vma.
+    nodemask_t src_cpu_nodemask;
 
     // Array of per-processor page masks with the pages that are resident
     // before calling migrate_vma.
     struct {
-        DECLARE_BITMAP(page_mask, UVM_MIGRATE_VMA_MAX_PAGES);
+        uvm_migrate_vma_page_mask_t proc_page_mask;
     } processors[UVM_ID_MAX_PROCESSORS];
+
+    // CPU Processors where pages are resident before calling migrate_vma
+    uvm_migrate_vma_page_mask_t *cpu_page_mask;
 
     // Number of pages in the migrate_vma call
     unsigned long num_pages;
 
     // Number of pages that are directly populated on the destination
     unsigned long num_populate_anon_pages;
+
+    // Tracks if OOM condition was encountered.
+    bool out_of_memory;
 } migrate_vma_state_t;
 
 #if defined(CONFIG_MIGRATE_VMA_HELPER)
@@ -147,23 +190,6 @@ struct migrate_vma {
     unsigned long           start;
     unsigned long           end;
 };
-
-void uvm_migrate_vma_alloc_and_copy_helper(struct vm_area_struct *vma,
-                                           const unsigned long *src,
-                                           unsigned long *dst,
-                                           unsigned long start,
-                                           unsigned long end,
-                                           void *private);
-
-void uvm_migrate_vma_finalize_and_map_helper(struct vm_area_struct *vma,
-                                             const unsigned long *src,
-                                             const unsigned long *dst,
-                                             unsigned long start,
-                                             unsigned long end,
-                                             void *private);
-#else
-void uvm_migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_t *state);
-void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_state_t *state);
 #endif // CONFIG_MIGRATE_VMA_HELPER
 
 // Populates the given VA range and tries to migrate all the pages to dst_id. If
@@ -205,16 +231,15 @@ void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_stat
 // userspace API callers to complete the whole migration. Kernel callers are
 // expected to handle this error according to their respective usecases.
 //
-// If touch is true, a touch will be attempted on all pages in the requested
-// range. All pages are only guaranteed to have been touched if
-// NV_WARN_NOTHING_TO_DO or NV_OK is returned.
-//
 // Locking: mmap_lock must be held in read or write mode
 NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args);
 
 NV_STATUS uvm_migrate_pageable_init(void);
 
 void uvm_migrate_pageable_exit(void);
+
+NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp);
+
 #else // UVM_MIGRATE_VMA_SUPPORTED
 
 static NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
@@ -227,9 +252,8 @@ static NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
     status = uvm_populate_pageable(uvm_migrate_args->mm,
                                    uvm_migrate_args->start,
                                    uvm_migrate_args->length,
-                                   0,
-                                   uvm_migrate_args->touch,
-                                   uvm_migrate_args->populate_permissions);
+                                   uvm_migrate_args->populate_permissions,
+                                   uvm_migrate_args->populate_flags);
     if (status != NV_OK)
         return status;
 
@@ -248,6 +272,10 @@ static void uvm_migrate_pageable_exit(void)
 {
 }
 
+static inline NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp)
+{
+    return NV_OK;
+}
 #endif // UVM_MIGRATE_VMA_SUPPORTED
 
 #endif

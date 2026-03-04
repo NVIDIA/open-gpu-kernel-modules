@@ -70,13 +70,13 @@ typedef struct
 //
 #define PRB_REGS_MSG_OVERHEAD 13
 
-NV_STATUS prbEncGpuRegs(OBJGPU *pGpu, IO_APERTURE *pAperture, NvU64 offset, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegs(OBJGPU *pGpu, IoAperture *pAperture, NvU64 offset, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS prbEncGpuRegImm(OBJGPU *pGpu, NvU64 offset, NvU32 reg, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
-NV_STATUS prbEncGpuRegOffset(OBJGPU *pGpu, IO_APERTURE *pAperture, const NvU32 *pOffset, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
-NV_STATUS prbEncGpuRegSliceOffset(OBJGPU *pGpu, IO_APERTURE *pAperture, const NvU32 *pOffset, NvU32 numEntries, NvU32 base, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
-NV_STATUS prbEncGpuRegTbl(OBJGPU *pGpu, IO_APERTURE *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
-NV_STATUS prbEncGpuRegSliceTbl(OBJGPU *pGpu, IO_APERTURE *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, NvU32 base, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
-NV_STATUS prbEncGpuRegSliceIndexedTbl(OBJGPU *pGpu, IO_APERTURE *pAperture, const PRB_GPU_REG_INDEXED_TABLE *pTbl, NvU32 numEntries, NvU32 base, NvU32 index, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegOffset(OBJGPU *pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegSliceOffset(OBJGPU *pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries, NvU32 base, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegSliceTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, NvU32 base, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
+NV_STATUS prbEncGpuRegSliceIndexedTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_INDEXED_TABLE *pTbl, NvU32 numEntries, NvU32 base, NvU32 index, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS prbEncMem(NvU64 offset, NvU32 numRegs, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS prbEncInstMem(NvU64 physAddr, NvU8 *pVirtAddr, NvU32 numWords, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS prbEncInstMemImm(NvU64 physAddr, NvU32 data, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc);

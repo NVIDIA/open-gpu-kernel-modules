@@ -77,12 +77,12 @@ typedef struct API_STATE RMAPI_PARAM_COPY;
 // this initialization, there is no need to make it return a status and
 // duplicate error checking.
 //
-#define RMAPI_PARAM_COPY_INIT(paramCopy, pKernelParams, theUserParams, numElems, sizeOfElem) \
-    do {                                                                 \
-        RMAPI_PARAM_COPY_SET_MSG_TAG((paramCopy), __FUNCTION__);                \
-        (paramCopy).ppKernelParams = (void **) &(pKernelParams);         \
-        (paramCopy).pUserParams    = (theUserParams);                    \
-        (paramCopy).flags          = RMAPI_PARAM_COPY_FLAGS_NONE;               \
+#define RMAPI_PARAM_COPY_INIT(paramCopy, pKernelParams, theUserParams, numElems, sizeOfElem)            \
+    do {                                                                                                \
+        RMAPI_PARAM_COPY_SET_MSG_TAG((paramCopy), __FUNCTION__);                                        \
+        (paramCopy).ppKernelParams = (void **) &(pKernelParams);                                        \
+        (paramCopy).pUserParams    = (theUserParams);                                                   \
+        (paramCopy).flags          = RMAPI_PARAM_COPY_FLAGS_NONE;                                       \
         (paramCopy).bSizeValid     = portSafeMulU32((numElems), (sizeOfElem), &(paramCopy).paramsSize); \
     } while(0)
 

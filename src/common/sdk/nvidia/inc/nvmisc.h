@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,43 +33,26 @@ extern "C" {
 
 #include "nvtypes.h"
 
-#if !defined(NVIDIA_UNDEF_LEGACY_BIT_MACROS)
-//
-// Miscellaneous macros useful for bit field manipulations
-//
-// STUPID HACK FOR CL 19434692.  Will revert when fix CL is delivered bfm -> chips_a.
-#ifndef BIT
-#define BIT(b)                  (1U<<(b))
-#endif
-#ifndef BIT32
-#define BIT32(b)                ((NvU32)1U<<(b))
-#endif
-#ifndef BIT64
-#define BIT64(b)                ((NvU64)1U<<(b))
-#endif
-
-#endif
-
-//
-// It is recommended to use the following bit macros to avoid macro name
-// collisions with other src code bases.
-//
+// Miscellaneous macros useful for bit field manipulations.
 #ifndef NVBIT
-#define NVBIT(b)                  (1U<<(b))
+#define NVBIT(b)         (1U<<(b))
 #endif
 #ifndef NVBIT_TYPE
-#define NVBIT_TYPE(b, t)          (((t)1U)<<(b))
+#define NVBIT_TYPE(b, t) (((t)1U)<<(b))
 #endif
 #ifndef NVBIT32
-#define NVBIT32(b)                NVBIT_TYPE(b, NvU32)
+#define NVBIT32(b)       NVBIT_TYPE(b, NvU32)
 #endif
 #ifndef NVBIT64
-#define NVBIT64(b)                NVBIT_TYPE(b, NvU64)
+#define NVBIT64(b)       NVBIT_TYPE(b, NvU64)
 #endif
+
+//Concatenate 2 32bit values to a 64bit value
+#define NV_CONCAT_32_TO_64(hi, lo) ((((NvU64)hi) << 32) | ((NvU64)lo))
 
 // Helper macro's for 32 bit bitmasks
 #define NV_BITMASK32_ELEMENT_SIZE            (sizeof(NvU32) << 3)
-#define NV_BITMASK32_IDX(chId)               (((chId) & ~(0x1F)) >> 5)  
+#define NV_BITMASK32_IDX(chId)               (((chId) & ~(0x1F)) >> 5)
 #define NV_BITMASK32_OFFSET(chId)            ((chId) & (0x1F))
 #define NV_BITMASK32_SET(pChannelMask, chId) \
         (pChannelMask)[NV_BITMASK32_IDX(chId)] |= NVBIT(NV_BITMASK32_OFFSET(chId))
@@ -234,12 +217,14 @@ extern "C" {
 #define DRF_EXTENT(drf)         (drf##_HIGH_FIELD)
 #define DRF_SHIFT(drf)          ((drf##_LOW_FIELD) % 32U)
 #define DRF_SHIFT_RT(drf)       ((drf##_HIGH_FIELD) % 32U)
+#define DRF_SIZE(drf)           ((drf##_HIGH_FIELD)-(drf##_LOW_FIELD)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU >> (31U - ((drf##_HIGH_FIELD) % 32U) + ((drf##_LOW_FIELD) % 32U)))
 #else
 #define DRF_BASE(drf)           (NV_FALSE?drf)  // much better
 #define DRF_EXTENT(drf)         (NV_TRUE?drf)  // much better
 #define DRF_SHIFT(drf)          (((NvU32)DRF_BASE(drf)) % 32U)
 #define DRF_SHIFT_RT(drf)       (((NvU32)DRF_EXTENT(drf)) % 32U)
+#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU>>(31U - DRF_SHIFT_RT(drf) + DRF_SHIFT(drf)))
 #endif
 #define DRF_DEF(d,r,f,c)        (((NvU32)(NV ## d ## r ## f ## c))<<DRF_SHIFT(NV ## d ## r ## f))
@@ -249,12 +234,12 @@ extern "C" {
 #define DRF_EXTENT(drf)         (1?drf)  // much better
 #define DRF_SHIFT(drf)          ((DRF_ISBIT(0,drf)) % 32)
 #define DRF_SHIFT_RT(drf)       ((DRF_ISBIT(1,drf)) % 32)
+#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU>>(31-((DRF_ISBIT(1,drf)) % 32)+((DRF_ISBIT(0,drf)) % 32)))
 #define DRF_DEF(d,r,f,c)        ((NV ## d ## r ## f ## c)<<DRF_SHIFT(NV ## d ## r ## f))
 #define DRF_NUM(d,r,f,n)        (((n)&DRF_MASK(NV ## d ## r ## f))<<DRF_SHIFT(NV ## d ## r ## f))
 #endif
 #define DRF_SHIFTMASK(drf)      (DRF_MASK(drf)<<(DRF_SHIFT(drf)))
-#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 
 #define DRF_VAL(d,r,f,v)        (((v)>>DRF_SHIFT(NV ## d ## r ## f))&DRF_MASK(NV ## d ## r ## f))
 #endif
@@ -492,6 +477,23 @@ do                                                      \
 //
 #define NV_TWO_N_MINUS_ONE(n) (((1ULL<<(n/2))<<((n+1)/2))-1)
 
+//
+// Create a 64b bitmask with n bits set
+// This is the same as ((1ULL<<n) - 1), but it doesn't overflow for n=64
+//
+// ...
+// n=-1, 0x0000000000000000
+// n=0,  0x0000000000000000
+// n=1,  0x0000000000000001
+// ...
+// n=63, 0x7FFFFFFFFFFFFFFF
+// n=64, 0xFFFFFFFFFFFFFFFF
+// n=65, 0xFFFFFFFFFFFFFFFF
+// n=66, 0xFFFFFFFFFFFFFFFF
+// ...
+//
+#define NV_BITMASK64(n) ((n<1) ? 0ULL : (NV_U64_MAX>>((n>64) ? 0 : (64-n))))
+
 #define DRF_READ_1WORD_BS(d,r,f,v) \
     ((DRF_EXTENT_MW(NV##d##r##f)<8)?DRF_READ_1BYTE_BS(NV##d##r##f,(v)): \
     ((DRF_EXTENT_MW(NV##d##r##f)<16)?DRF_READ_2BYTE_BS(NV##d##r##f,(v)): \
@@ -572,6 +574,12 @@ nvMaskPos32(const NvU32 mask, const NvU32 bitIdx)
     n32 = BIT_IDX_32(LOWESTBIT(n32));\
 }
 
+// Destructive operation on n64
+#define LOWESTBITIDX_64(n64)         \
+{                                    \
+    n64 = BIT_IDX_64(LOWESTBIT(n64));\
+}
+
 // Destructive operation on n32
 #define HIGHESTBITIDX_32(n32)   \
 {                               \
@@ -581,6 +589,17 @@ nvMaskPos32(const NvU32 mask, const NvU32 bitIdx)
         count++;                \
     }                           \
     n32 = count;                \
+}
+
+// Destructive operation on n64
+#define HIGHESTBITIDX_64(n64)   \
+{                               \
+    NvU64 count = 0;            \
+    while (n64 >>= 1)           \
+    {                           \
+        count++;                \
+    }                           \
+    n64 = count;                \
 }
 
 // Destructive operation on n32
@@ -692,6 +711,35 @@ nvPrevPow2_U64(const NvU64 x )
     }                                                       \
 }
 
+/*!
+ * Returns the position of nth set bit in the given mask.
+ *
+ * Returns -1 if mask has fewer than n bits set.
+ *
+ * n is 0 indexed and has valid values 0..31 inclusive, so "zeroth" set bit is
+ * the first set LSB.
+ *
+ * Example, if mask = 0x000000F0u and n = 1, the return value will be 5.
+ * Example, if mask = 0x000000F0u and n = 4, the return value will be -1.
+ */
+static NV_FORCEINLINE NvS32
+nvGetNthSetBitIndex32(NvU32 mask, NvU32 n)
+{
+    NvU32 seenSetBitsCount = 0;
+    NvS32 index;
+    FOR_EACH_INDEX_IN_MASK(32, index, mask)
+    {
+        if (seenSetBitsCount == n)
+        {
+            return index;
+        }
+        ++seenSetBitsCount;
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return -1;
+}
+
 //
 // Size to use when declaring variable-sized arrays
 //
@@ -735,11 +783,14 @@ nvPrevPow2_U64(const NvU64 x )
 // Returns the offset (in bytes) of 'member' in struct 'type'.
 #ifndef NV_OFFSETOF
     #if defined(__GNUC__) && (__GNUC__ > 3)
-        #define NV_OFFSETOF(type, member)   ((NvU32)__builtin_offsetof(type, member))
+        #define NV_OFFSETOF(type, member)   ((NvUPtr) __builtin_offsetof(type, member))
     #else
-        #define NV_OFFSETOF(type, member)    ((NvU32)(NvU64)&(((type *)0)->member)) // shouldn't we use PtrToUlong? But will need to include windows header.
+        #define NV_OFFSETOF(type, member)    ((NvUPtr) &(((type *)0)->member))
     #endif
 #endif
+
+// Given a pointer and the member it is of the parent struct, return a pointer to the parent struct
+#define NV_CONTAINEROF(ptr, type, member) ((type *) (((NvUPtr) ptr) - NV_OFFSETOF(type, member)))
 
 //
 // Performs a rounded division of b into a (unsigned). For SIGNED version of
@@ -906,6 +957,40 @@ static NV_FORCEINLINE void *NV_NVUPTR_TO_PTR(NvUPtr address)
     uAddr.v = address;
     return uAddr.p;
 }
+
+// Get bit at pos (k) from x
+#define NV_BIT_GET(k, x)                       (((x) >> (k)) & 1)
+// Get bit at pos (n) from (hi) if >= 64, otherwise from (lo). This is paired with NV_BIT_SET_128 which sets the bit.
+#define NV_BIT_GET_128(n, lo, hi)              (((n) < 64) ? NV_BIT_GET((n), (lo)) : NV_BIT_GET((n) - 64, (hi)))
+//
+// Set the bit at pos (b) for U64 which is < 128. Since the (b) can be >= 64, we need 2 U64 to store this.
+// Use (lo) if (b) is less than 64, and (hi) if >= 64.
+//
+#define NV_BIT_SET_128(b, lo, hi)              { nvAssert( (b) < 128 ); if ( (b) < 64 ) (lo) |= NVBIT64(b); else (hi) |= NVBIT64( b & 0x3F ); }
+//
+// Clear the bit at pos (b) for U64 which is < 128.
+// Use (lo) if (b) is less than 64, and (hi) if >= 64.
+//
+#define NV_BIT_CLEAR_128(b, lo, hi)            { nvAssert( (b) < 128 ); if ( (b) < 64 ) (lo) &= ~NVBIT64(b); else (hi) &= ~NVBIT64( b & 0x3F ); }
+
+// Get the number of elements the specified fixed-size array
+#define NV_ARRAY_ELEMENTS(x)                   ((sizeof(x)/sizeof((x)[0])))
+
+#if !defined(NVIDIA_UNDEF_LEGACY_BIT_MACROS)
+//
+// Deprecated macros whose definition can be removed once the code base no longer references them.
+// Use the NVBIT* macros instead of these macros.
+//
+#ifndef BIT
+#define BIT(b)   (1U<<(b))
+#endif
+#ifndef BIT32
+#define BIT32(b) ((NvU32)1U<<(b))
+#endif
+#ifndef BIT64
+#define BIT64(b) ((NvU64)1U<<(b))
+#endif
+#endif
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,7 @@ swtestDestruct_IMPL
     chandesIsolateOnDestruct(pChannelDescendant);
 }
 
-static METHOD Nv04SoftwareTestMethods[] =
+static const METHOD Nv04SoftwareTestMethods[] =
 {
     {mthdNoOperation,                   0x0100, 0x0103},
 };
@@ -53,12 +53,12 @@ static METHOD Nv04SoftwareTestMethods[] =
 NV_STATUS swtestGetSwMethods_IMPL
 (
     SoftwareMethodTest *pSwTest,
-    METHOD            **ppMethods,
+    const METHOD      **ppMethods,
     NvU32              *pNumMethods
 )
 {
     *ppMethods = Nv04SoftwareTestMethods;
-    *pNumMethods = NV_ARRAY_ELEMENTS32(Nv04SoftwareTestMethods);
+    *pNumMethods = NV_ARRAY_ELEMENTS(Nv04SoftwareTestMethods);
     return NV_OK;
 }
 

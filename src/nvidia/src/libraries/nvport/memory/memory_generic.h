@@ -29,33 +29,6 @@
 
 #include "nvport/nvport.h"
 
-// Define accessor macros if not already defined
-#ifndef PORT_MEM_RD08
-#define PORT_MEM_RD08(p) (*(p))
-#endif
-#ifndef PORT_MEM_RD16
-#define PORT_MEM_RD16(p) (*(p))
-#endif
-#ifndef PORT_MEM_RD32
-#define PORT_MEM_RD32(p) (*(p))
-#endif
-#ifndef PORT_MEM_RD64
-#define PORT_MEM_RD64(p) (*(p))
-#endif
-#ifndef PORT_MEM_WR08
-#define PORT_MEM_WR08(p, v) (*(p) = (v))
-#endif
-#ifndef PORT_MEM_WR16
-#define PORT_MEM_WR16(p, v) (*(p) = (v))
-#endif
-#ifndef PORT_MEM_WR32
-#define PORT_MEM_WR32(p, v) (*(p) = (v))
-#endif
-#ifndef PORT_MEM_WR64
-#define PORT_MEM_WR64(p, v) (*(p) = (v))
-#endif
-
-
 #if defined(PORT_MEM_USE_GENERIC_portMemSetPattern)
 void *
 portMemSetPattern

@@ -116,15 +116,105 @@
 #include <stdio.h>
 #include <string.h>
 
-#define osMemCopy memcpy
-#define portMemSet  memset
+#define portMemCopy(p1, s1, p2, s2) memcpy(p1, p2, ((s1) > (s2)) ? (s2) : (s1))
+#define portMemSet memset
 #define portMemAllocNonPaged malloc
-#define portMemFree  free
-#define sizeof sizeof
+#define portMemFree free
 #define NV_PRINTF(a,b) printf(b)
+#define portMemExAllocStack_SUPPORTED 0
 #endif
 
 #include "lib/zlib/inflate.h"
+
+#define NOMEMCPY 1
+
+typedef NvU8   uch;
+typedef NvU16  ush;
+typedef NvU32  ulg;
+
+#define GZ_SLIDE_WINDOW_SIZE 32768
+
+#define NEXTBYTE()  pGzState->inbuf[pGzState->inptr++]
+#define NEEDBITS(n) {while(k<(n)){b|=((ulg)NEXTBYTE())<<k;k+=8;}}
+#define DUMPBITS(n) {b>>=(n);k-=(n);}
+
+/* If BMAX needs to be larger than 16, then h and x[] should be ulg. */
+#define BMAX 16         /* maximum bit length of any code (16 for explode) */
+#define N_MAX 288       /* maximum number of codes in any set */
+
+/* Huffman code lookup table entry--this entry is four bytes for machines
+   that have 16-bit pointers (e.g. PC's in the small or medium model).
+   Valid extra bits are 0..13.  e == 15 is EOB (end of block), e == 16
+   means that v is a literal, 16 < e < 32 means that v is a pointer to
+   the next table, which codes e - 16 bits, and lastly e == 99 indicates
+   an unused code.  If a code with e == 99 is looked up, this implies an
+   error in the data. */
+struct huft {
+    uch e;                /* number of extra bits or operation */
+    uch b;                /* number of bits in this code or subcode */
+    union {
+        ush n;              /* literal, length base, or distance base */
+        struct huft *t;     /* pointer to next level of table */
+    } v;
+};
+
+/* The inflate algorithm uses a sliding 32K byte window on the uncompressed
+   stream to find repeated byte strings.  This is implemented here as a
+   circular buffer.  The index is updated simply by incrementing and then
+   and'ing with 0x7fff (32K-1). */
+/* It is left to other modules to supply the 32K area.  It is assumed
+   to be usable as if it were declared "uch slide[32768];" or as just
+   "uch *slide;" and then malloc'ed in the latter case.  The definition
+   must be in unzip.h, included above. */
+/* unsigned pGzState->wp;             current position in slide */
+#define WSIZE GZ_SLIDE_WINDOW_SIZE
+#define flush_output(w) (pGzState->wp=(w),flush_window(pGzState))
+#define Tracecv(A,B)
+#define Tracevv(X)
+
+#define GZ_STATE_ITERATOR_OK        0
+#define GZ_STATE_ITERATOR_ERROR     1
+#define GZ_STATE_ITERATOR_END       2
+
+#define GZ_STATE_HUFT_OK            0
+#define GZ_STATE_HUFT_INCOMP        1
+#define GZ_STATE_HUFT_ERROR         2
+
+typedef struct {
+    unsigned int e;  /* table entry flag/number of extra bits */
+    unsigned int n, d;        /* length and index for copy */
+    unsigned int w;           /* current window position */
+    struct huft *t;       /* pointer to table entry */
+    ulg b;       /* bit buffer */
+    unsigned int k;  /* number of bits in bit buffer */
+    int continue_copy;                  /* last flush not finished*/
+    unsigned int sn; /* used by inflated type 0 (stored) block */
+} GZ_INFLATE_CODES_STATE, *PGZ_INFLATE_CODES_STATE;
+
+typedef struct {
+    struct huft *tl;      /* literal/length code table */
+    struct huft *td;      /* distance code table */
+    NvS32 bl;             /* lookup bits for tl */
+    NvS32 bd;             /* lookup bits for td */
+
+    NvU8 *inbuf,*outbuf;
+    NvU32 outBufSize;
+    NvU32 inptr,outptr;
+    NvU32 outLower,outUpper;
+    unsigned int wp;
+    unsigned int wp1;     /* wp1 is index of first unflushed byte in slide window */
+    unsigned int wp2;     /* wp2 is index of last unflushed byte in slide window  */
+    uch *window;
+
+    ulg bb;                         /* bit buffer */
+    unsigned int bk;                /* bits in bit buffer */
+    int e;                          /* last block flag */
+
+    int newblock;                   /* start a new decompression block */
+    NvU32 optSize;
+    GZ_INFLATE_CODES_STATE codesState;
+
+} GZ_INFLATE_STATE, *PGZ_INFLATE_STATE;
 
 /* Function prototypes */
 static NvU32 huft_build(NvU8 *, NvU16, NvU32 , ush *, ush *,
@@ -888,11 +978,10 @@ static NvU32 dynamic_huft_build(PGZ_INFLATE_STATE pGzState)
     return GZ_STATE_HUFT_OK;
 }
 
-static
-NV_STATUS utilGzInit(const NvU8 *zArray, NvU8* oBuffer, NvU32 numTotalBytes, NvU8* window, PGZ_INFLATE_STATE pGzState)
+static void utilGzInit(const NvU8 *zArray, NvU8* oBuffer, NvU32 numTotalBytes, NvU8* window, PGZ_INFLATE_STATE pGzState)
 {
     portMemSet(pGzState, 0, sizeof(GZ_INFLATE_STATE));
-    portMemSet(window, 0, sizeof(GZ_SLIDE_WINDOW_SIZE));
+    portMemSet(window, 0, GZ_SLIDE_WINDOW_SIZE);
 
     pGzState->inbuf  = (NvU8*)zArray;
     pGzState->outbuf = oBuffer;
@@ -901,47 +990,9 @@ NV_STATUS utilGzInit(const NvU8 *zArray, NvU8* oBuffer, NvU32 numTotalBytes, NvU
     pGzState->newblock = 1;
     pGzState->outLower = 0xFFFFFFFF;
     pGzState->outUpper = 0xFFFFFFFF;
-
-    return NV_OK;
 }
 
-/* NVIDIA addition: give pointers to input and known-large-enough output buffers. */
-/* decompress an inflated entry                                                   */
-NV_STATUS utilGzAllocate(const NvU8 *zArray, NvU32 numTotalBytes, PGZ_INFLATE_STATE *ppGzState)
-{
-    PGZ_INFLATE_STATE pGzState = NULL;
-    NvU8 *window = NULL;
-    NV_STATUS status = NV_OK;
-
-    pGzState = portMemAllocNonPaged(sizeof(GZ_INFLATE_STATE));
-    if (pGzState == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto done;
-    }
-
-    window = portMemAllocNonPaged(GZ_SLIDE_WINDOW_SIZE);
-    if (window == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto done;
-    }
-
-    utilGzInit(zArray, 0, numTotalBytes, window, pGzState);
-
-    *ppGzState = pGzState;
-
-done:
-    if (status != NV_OK)
-    {
-        portMemFree(pGzState);
-        portMemFree(window);
-    }
-    return status;
-
-}
-
-NvU32 utilGzIterator(PGZ_INFLATE_STATE pGzState)
+static NvU32 utilGzIterator(PGZ_INFLATE_STATE pGzState)
 {
     NvU32 t;  /* block type */
     NvU32 w;  /* current window position */
@@ -1071,15 +1122,7 @@ NvU32 utilGzIterator(PGZ_INFLATE_STATE pGzState)
     return gzStatus;
 }
 
-NV_STATUS utilGzDestroy(PGZ_INFLATE_STATE pGzState)
-{
-    huft_destroy(pGzState);
-    portMemFree(pGzState->window);
-    portMemFree(pGzState);
-    return NV_OK;
-}
-
-NvU32 utilGzGetData(PGZ_INFLATE_STATE pGzState, NvU32 offset, NvU32 size, NvU8 * outBuffer)
+static NvU32 utilGzGetDataWithGzState(PGZ_INFLATE_STATE pGzState, NvU32 offset, NvU32 size, NvU8 * outBuffer)
 {
     NvU32 sizew = 0, oldOutBufSize;
     NvU8 * oldInBuf, *oldOutBuf;
@@ -1155,3 +1198,44 @@ NvU32 utilGzGetData(PGZ_INFLATE_STATE pGzState, NvU32 offset, NvU32 size, NvU8 *
     return pGzState->optSize;
 }
 
+#if NVOS_IS_LIBOS && portMemExAllocStack_SUPPORTED
+NvBool task_rm_is_whole_stack_in_dmem(void);
+#endif
+
+NvU32 utilGzGetData(const NvU8 *zArray, NvU32 numTotalBytes,
+                    NvU32 offset, NvU32 size, NvU8 *outBuffer)
+{
+    GZ_INFLATE_STATE gzState;
+    NvU8 *window = NULL;
+    NvU32 nBytes;
+#if NVOS_IS_LIBOS && portMemExAllocStack_SUPPORTED
+    NvBool bAllocOnStack = task_rm_is_whole_stack_in_dmem();
+
+    if (bAllocOnStack)
+    {
+        window = portMemExAllocStack(GZ_SLIDE_WINDOW_SIZE);
+    }
+    else
+#endif
+    {
+        window = portMemAllocNonPaged(GZ_SLIDE_WINDOW_SIZE);
+    }
+
+    if (window == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "utilGzGetData: failed to allocate slide window\n");
+        return 0;
+    }
+
+    utilGzInit(zArray, 0, numTotalBytes, window, &gzState);
+
+    nBytes = utilGzGetDataWithGzState(&gzState, offset, size, outBuffer);
+
+    huft_destroy(&gzState);
+#if NVOS_IS_LIBOS && portMemExAllocStack_SUPPORTED
+    if (!bAllocOnStack)
+#endif
+        portMemFree(window);
+
+    return nBytes;
+}

@@ -27,17 +27,12 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080fla.finn
+// Source file:      ctrl/ctrl2080/ctrl2080fla.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_XX FLA control commands and parameters */
-
-#include "ctrl2080common.h"
 
 /*
  * NV2080_CTRL_CMD_FLA_RANGE

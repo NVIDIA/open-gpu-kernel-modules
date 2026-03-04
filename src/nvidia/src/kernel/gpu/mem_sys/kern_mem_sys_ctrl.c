@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,23 +26,125 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/heap.h"
+#include "gpu/uvm/uvm.h"
+#include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/gpu_resource_desc.h"
-#include "gpu/subdevice/subdevice.h"
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/subdevice/subdevice.h"
 #include "platform/chipset/chipset.h"
 #include "ctrl/ctrl0080/ctrl0080fb.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "core/locks.h"
 #include "vgpu/rpc.h"
 #include "rmapi/client.h"
+#include "platform/sli/sli.h"
 
-
-static NV_STATUS
-_fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_INFO *pFbInfos, NvU32 fbInfoListSize)
+NV_STATUS
+kmemsysGetFbInfos_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, RsClient *pClient, Device *pDevice, NvHandle hObject,
+                     NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams, NvU64 *pFbInfoListIndicesUnset)
 {
+    NV2080_CTRL_FB_INFO *pFbInfos = pParams->fbInfoList;
+    NvU32 data = 0;
+    NvU32 i = 0;
+
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    FOR_EACH_INDEX_IN_MASK(64, i, *pFbInfoListIndicesUnset)
+    {
+        switch (pFbInfos[i].index)
+        {
+            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_COUNT:
+            {
+                data = nvPopCount64(pVSI->fbioMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_0:
+            {
+                data = NvU64_LO32((NvU64)pVSI->fbioMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_1:
+            {
+                data = NvU64_HI32((NvU64)pVSI->fbioMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_FBP_MASK:
+            {
+                data = pVSI->fbpMask;
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_BUS_WIDTH:
+            {
+                data = pVSI->fbBusWidth;
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_FBP_COUNT:
+            {
+                data = nvPopCount64(pVSI->fbpMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_LTC_COUNT:
+            {
+                data = nvPopCount64(pVSI->ltcMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_LTS_COUNT:
+            {
+                data = pVSI->ltsCount;
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_0:
+            {
+                data = NvU64_LO32((NvU64)pVSI->ltcMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_1:
+            {
+                data = NvU64_HI32((NvU64)pVSI->ltcMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_L2CACHE_SIZE:
+            {
+                data = pVSI->sizeL2Cache;
+                break;
+            }
+
+            // Indices unknown to this function are handled downstream, so do not modify them.
+            default:
+            {
+                continue;
+            }
+        }
+
+        // save off data value
+        pFbInfos[i].data = data;
+        *pFbInfoListIndicesUnset &= ~NVBIT64(i);
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return NV_OK;
+}
+
+// Clients expect to be able to pass indices 0..NV2080_CTRL_FB_INFO_INDEX_MAX in one call
+ct_assert(NV2080_CTRL_FB_INFO_INDEX_MAX < NV2080_CTRL_FB_INFO_MAX_LIST_SIZE);
+
+// Common logic for all runtimes to populate NV2080_CTRL_FB_INFO array
+static NV_STATUS
+_kmemsysGetFbInfos
+(
+    OBJGPU *pGpu,
+    RsClient *pClient,
+    Device *pDevice,
+    NvHandle hObject,
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams
+)
+{
+    NV2080_CTRL_FB_INFO *pFbInfos = pParams->fbInfoList;
     KernelMemorySystem *pKernelMemorySystem  = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     Heap               *pHeap = GPU_GET_HEAP(pGpu);
@@ -58,28 +160,40 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
     NvU64               heapBase;
     NvU64               largestOffset;
     NvU64               largestFree;
-    NvU64               val;
-    NvU64               routeToPhysicalIdxMask = 0;
     NvBool              bIsClientMIGMonitor = NV_FALSE;
     NvBool              bIsClientMIGProfiler = NV_FALSE;
-
-    ct_assert(NV2080_CTRL_FB_INFO_INDEX_MAX < NV_NBITS_IN_TYPE(routeToPhysicalIdxMask));
+    NvU64               fbInfoListIndicesUnset = 0;
 
     if (!RMCFG_FEATURE_PMA)
         return NV_ERR_NOT_SUPPORTED;
 
     if (bIsMIGInUse)
     {
-        bIsClientMIGMonitor = !RMCFG_FEATURE_PLATFORM_GSP && rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR);
-        bIsClientMIGProfiler = kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient);
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
+        NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+        bIsClientMIGMonitor = !RMCFG_FEATURE_PLATFORM_GSP && rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR);
+        bIsClientMIGProfiler = kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice);
     }
 
+    ct_assert(NV2080_CTRL_FB_INFO_INDEX_MAX <= NV_NBITS_IN_TYPE(fbInfoListIndicesUnset));
+
+    // Construct mask of width fbInfoListSize to track which indices have been handled
+    fbInfoListIndicesUnset = NV_U64_MAX >> (NV_NBITS_IN_TYPE(fbInfoListIndicesUnset) - pParams->fbInfoListSize);
+
     //
-    // Most MIG queries require GPU instance info that is only kept in the Physical RM. Flag
-    // the indices that will need to be fulfilled by the GSP when in offload mode, and
-    // also load the per-GPU instance heap for others.
+    // Populate indices with runtime-specific logic
+    // Return early if this computed all requested indices
     //
-    for (i = 0; i < fbInfoListSize; i++)
+    if (pKernelMemorySystem != NULL)
+    {
+        status = kmemsysGetFbInfos_HAL(pGpu, pKernelMemorySystem, pClient, pDevice, hObject, pParams, &fbInfoListIndicesUnset);
+        if (status == NV_OK && nvPopCount64(fbInfoListIndicesUnset) == 0)
+            return NV_OK;
+    }
+
+    // Load the per-GPU instance heap if MIG is enabled.
+    FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
     {
         switch (pFbInfos[i].index)
         {
@@ -104,35 +218,8 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_SIZE:
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_ALIGNMENT:
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_BAR1_MAX_OFFSET_64KB:
-            {
                 continue;
-            }
-            case NV2080_CTRL_FB_INFO_INDEX_BUS_WIDTH:
-            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_COUNT:
-            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK:
-            case NV2080_CTRL_FB_INFO_INDEX_FBP_MASK:
-            case NV2080_CTRL_FB_INFO_INDEX_FBP_COUNT:
-            case NV2080_CTRL_FB_INFO_INDEX_L2CACHE_SIZE:
-            case NV2080_CTRL_FB_INFO_INDEX_LTC_COUNT:
-            case NV2080_CTRL_FB_INFO_INDEX_LTS_COUNT:
-            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK:
-            case NV2080_CTRL_FB_INFO_INDEX_MEMORYINFO_VENDOR_ID:
-            case NV2080_CTRL_FB_INFO_INDEX_TRAINIG_2T:
-            case NV2080_CTRL_FB_INFO_INDEX_PSEUDO_CHANNEL_MODE:
-            case NV2080_CTRL_FB_INFO_INDEX_COMPRESSION_SIZE:
-            case NV2080_CTRL_FB_INFO_INDEX_DRAM_PAGE_STRIDE:
-            case NV2080_CTRL_FB_INFO_INDEX_RAM_CFG:
-            case NV2080_CTRL_FB_INFO_INDEX_RAM_TYPE:
-            case NV2080_CTRL_FB_INFO_INDEX_ECC_STATUS_SIZE:
-            {
-                // This info is only known by the Physical RM. Redirect it there.
-                if (IS_GSP_CLIENT(pGpu))
-                {
-                    routeToPhysicalIdxMask |= BIT64(i);
-                }
 
-                break;
-            }
             case NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE:
             case NV2080_CTRL_FB_INFO_INDEX_RAM_SIZE:
             {
@@ -147,8 +234,8 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     !bIsClientMIGProfiler && !bIsClientMIGMonitor)
                 {
                     MIG_INSTANCE_REF ref;
-                    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                             hClient, &ref);
+                    status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                             pDevice, &ref);
 
                     if ((status != NV_OK) && !kmigmgrIsMIGReferenceValid(&ref))
                     {
@@ -169,8 +256,8 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 if (bIsMIGInUse &&
                     !bIsClientMIGProfiler && !bIsClientMIGMonitor)
                 {
-                    NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetMemoryPartitionHeapFromClient(pGpu,
-                                       pKernelMIGManager, hClient, &pMemoryPartitionHeap) == NV_OK),
+                    NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetMemoryPartitionHeapFromDevice(pGpu,
+                                       pKernelMIGManager, pDevice, &pMemoryPartitionHeap) == NV_OK),
                                        NV_ERR_INSUFFICIENT_PERMISSIONS);
 
                     //
@@ -184,49 +271,10 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             }
         }
     }
+    FOR_EACH_INDEX_IN_MASK_END;
 
-    // If we have any infos that need to be populated by Physical RM, query now
-    if (routeToPhysicalIdxMask != 0)
+    FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
     {
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-        NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams =
-            portMemAllocNonPaged(sizeof(NV2080_CTRL_FB_GET_INFO_V2_PARAMS));
-        NvU32 physIdx = 0;
-
-        portMemSet(pParams, 0, sizeof(*pParams));
-        FOR_EACH_INDEX_IN_MASK(64, i, routeToPhysicalIdxMask)
-        {
-            pParams->fbInfoList[physIdx++].index = pFbInfos[i].index;
-        }
-        FOR_EACH_INDEX_IN_MASK_END;
-
-        pParams->fbInfoListSize = physIdx;
-
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            pRmApi->Control(pRmApi, hClient, hObject,
-                            NV2080_CTRL_CMD_FB_GET_INFO_V2,
-                            pParams, sizeof(*pParams)),
-            portMemFree(pParams);
-            return status;
-        );
-
-        physIdx = 0;
-        FOR_EACH_INDEX_IN_MASK(64, i, routeToPhysicalIdxMask)
-        {
-            NV_ASSERT(pFbInfos[i].index == pParams->fbInfoList[physIdx].index);
-            pFbInfos[i].data = pParams->fbInfoList[physIdx++].data;
-        }
-        FOR_EACH_INDEX_IN_MASK_END;
-
-        portMemFree(pParams);
-    }
-
-    for (i = 0; i < fbInfoListSize; i++)
-    {
-        // Skip info already populated by Physical RM
-        if ((routeToPhysicalIdxMask & BIT64(i)) != 0)
-            continue;
-
         switch (pFbInfos[i].index)
         {
             case NV2080_CTRL_FB_INFO_INDEX_TILE_REGION_COUNT:
@@ -243,7 +291,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_BAR1_SIZE:
             {
                 GETBAR1INFO bar1Info = {0};
-                status = memmgrGetBAR1InfoForClient_HAL(pGpu, pMemoryManager, hClient, &bar1Info);
+                status = memmgrGetBAR1InfoForDevice(pGpu, pMemoryManager, pDevice, &bar1Info);
                 if (status != NV_OK)
                     data = 0;
                 else
@@ -254,7 +302,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_BAR1_AVAIL_SIZE:
             {
                 GETBAR1INFO bar1Info = {0};
-                status = memmgrGetBAR1InfoForClient_HAL(pGpu, pMemoryManager, hClient, &bar1Info);
+                status = memmgrGetBAR1InfoForDevice(pGpu, pMemoryManager, pDevice, &bar1Info);
                 if (status != NV_OK)
                     data = 0;
                 else
@@ -265,7 +313,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_BAR1_MAX_CONTIGUOUS_AVAIL_SIZE:
             {
                 GETBAR1INFO bar1Info = {0};
-                status = memmgrGetBAR1InfoForClient_HAL(pGpu, pMemoryManager, hClient, &bar1Info);
+                status = memmgrGetBAR1InfoForDevice(pGpu, pMemoryManager, pDevice, &bar1Info);
                 if (status != NV_OK)
                     data = 0;
                 else
@@ -276,7 +324,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_BANK_SWIZZLE_ALIGNMENT:
             {
                 GETBAR1INFO bar1Info = {0};
-                status = memmgrGetBAR1InfoForClient_HAL(pGpu, pMemoryManager, hClient, &bar1Info);
+                status = memmgrGetBAR1InfoForDevice(pGpu, pMemoryManager, pDevice, &bar1Info);
                 if (status != NV_OK)
                     data = 0;
                 else
@@ -286,12 +334,20 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             }
             case NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE:
             {
+                if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                        "[zero-FB, No local RAM] TOTAL_RAM_SIZE = 0\n");
+                    break;
+                }
+
                 if (pMemoryPartitionHeap != NULL)
                 {
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -309,18 +365,28 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 else
                 {
                     NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
-                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10), (pMemoryManager->Ram.fbOverrideSizeMb << 10)));
+                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10),
+                                             (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                             - pKernelMemorySystem->fbOverrideStartKb);
                     break;
                 }
             }
             case NV2080_CTRL_FB_INFO_INDEX_RAM_SIZE:
             {
+                if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                        "[zero-FB, No local RAM] RAM_SIZE = 0\n");
+                    break;
+                }
+
                 if (pMemoryPartitionHeap != NULL)
                 {
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -336,17 +402,27 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     break;
                 }
                 NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
-                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10), (pMemoryManager->Ram.fbOverrideSizeMb << 10)));
+                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10),
+                                         (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                         - pKernelMemorySystem->fbOverrideStartKb);
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_USABLE_RAM_SIZE:
             {
+                if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                        "[zero-FB, No local RAM] USABLE_RAM_SIZE = 0\n");
+                    break;
+                }
+
                 if (pMemoryPartitionHeap != NULL)
                 {
                     NvU32 heapSizeKb;
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                        pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         heapSizeKb = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -362,14 +438,16 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     break;
                 }
                 NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbUsableMemSize >> 10));
-                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbUsableMemSize >> 10), (pMemoryManager->Ram.fbOverrideSizeMb << 10)));
+                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbUsableMemSize >> 10 ),
+                                         (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                         - pKernelMemorySystem->fbOverrideStartKb);
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE:
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                    pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                     NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                     data = NvU64_LO32(bytesTotal >> 10);
                 }
@@ -377,10 +455,19 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 {
                     NvU64 size;
 
+                    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                    {
+                        data = 0;
+                        NV_PRINTF(LEVEL_INFO,
+                            "[zero-FB, No local RAM HEAP] HEAP_SIZE = 0\n");
+                        break;
+                    }
+
                     heapGetUsableSize(pHeap, &size);
                     NV_ASSERT(NvU64_HI32(size >> 10) == 0);
                     data = NvU64_LO32(size >> 10);
                 }
+                data -= pKernelMemorySystem->fbOverrideStartKb;
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_HEAP_START:
@@ -389,7 +476,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                        pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                     }
                     else
                     {
@@ -400,21 +487,57 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 }
                 else
                 {
-                    //
-                    // Returns start of heap in kbytes. This is zero unless
-                    // VGA display memory is reserved.
-                    //
-                    heapGetBase(pHeap, &heapBase);
-                    data = NvU64_LO32(heapBase >> 10);
-                    NV_ASSERT(((NvU64) data << 10ULL) == heapBase);
+                    status = memmgrCalculateHeapOffsetWithGSP_HAL(pGpu, pMemoryManager, &data);
+                    if (status == NV_ERR_NOT_SUPPORTED)
+                    {
+                        // If GSP is not in use, if neither Console nor CBC
+                        // region are present, or if this calculation is done
+                        // in hardware, then heapGetBase() will give the correct
+                        // value and it just needs to be converted to kbytes.
+                        // It will be zero unless VGA display memory is reserved
+                        if (pKernelMemorySystem->fbOverrideStartKb != 0)
+                        {
+                            status = NV_OK;
+                            data = NvU64_LO32(pKernelMemorySystem->fbOverrideStartKb);
+                            NV_ASSERT_OR_ELSE((NvU64) data == pKernelMemorySystem->fbOverrideStartKb,
+                                              status = NV_ERR_INVALID_DATA);
+
+                        }
+                        else
+                        {
+                            //
+                            // Returns start of heap in kbytes. This is zero unless
+                            // VGA display memory is reserved.
+                            //
+                            status = heapGetBase(pHeap, &heapBase);
+                            data = NvU64_LO32(heapBase >> 10);
+                            NV_ASSERT_OR_ELSE(((NvU64) data << 10ULL) == heapBase,
+                                              status = NV_ERR_INVALID_DATA);
+                        }
+                    }
                 }
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE:
             {
+                if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                              "[zero-FB, No local HEAP] HEAP_SIZE = 0\n");
+                    break;
+                }
                 if (bIsClientMIGMonitor || bIsClientMIGProfiler)
                 {
+                    NvU64 val = 0;
                     bytesFree = 0;
+
+                    if (bIsPmaEnabled)
+                        pmaGetFreeMemory(pHeap->pPmaObject, &val);
+                    else
+                        heapGetFree(pHeap, &val);
+
+                    bytesFree = val;
 
                     //
                     // Add free memory across the all valid MIG GPU instances and
@@ -425,23 +548,40 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     //
                     if (kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
                     {
-                        memmgrGetFreeMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &val);
-                        bytesFree = val;
+                        NvU64 partTotalBytesFree = 0;
+                        NvU64 partTotalBytes = 0;
+                        NvU32 config = PMA_QUERY_NUMA_ENABLED;
+
+                        memmgrGetFreeMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytesFree);
+
+                        //
+                        // In the case of MIG+NUMA case(self hosted GPUs), NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE
+                        // is not supported and hence the partition's memory is not accounted in the global PMA.
+                        // This resulted in more free memory than the total memory resulting in the
+                        // used memory(calculated as total - free) showing very large value.
+                        // Now calculating the global free memory in the NUMA case as:
+                        // partitions' free memory + (global total memory - all created partitions' total memory).
+                        //
+                        if (bIsPmaEnabled &&
+                            (pmaQueryConfigs(pHeap->pPmaObject, &config) == NV_OK) &&
+                            (config & PMA_QUERY_NUMA_ENABLED))
+                        {
+                            memmgrGetTotalMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytes);
+                            pmaGetTotalMemory(pHeap->pPmaObject, &val);
+                            bytesFree = partTotalBytesFree + (val - partTotalBytes);
+                        }
+                        else
+                        {
+                            bytesFree += partTotalBytesFree;
+                        }
                     }
-
-                    if (bIsPmaEnabled)
-                        pmaGetFreeMemory(&pHeap->pmaObject, &val);
-                    else
-                        heapGetFree(pHeap, &val);
-
-                    bytesFree += val;
 
                     NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
                     data = NvU64_LO32(bytesFree >> 10);
                 }
                 else if (bIsPmaEnabled)
                 {
-                    pmaGetFreeMemory(&pHeap->pmaObject, &bytesFree);
+                    pmaGetFreeMemory(pHeap->pPmaObject, &bytesFree);
 
                     NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
                     data = NvU64_LO32(bytesFree >> 10);
@@ -478,7 +618,6 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 }
                 else
                 {
-                    memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
                     // heap size in kbytes
                     data = memmgrGetReservedHeapSizeMb_HAL(pGpu, pMemoryManager) << 10;
                 }
@@ -491,7 +630,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                 {
                     NvU32 heapSizeKb;
 
-                    pmaGetTotalMemory(&pHeap->pmaObject, &bytesTotal);
+                    pmaGetTotalMemory(pHeap->pPmaObject, &bytesTotal);
                     NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                     heapSizeKb = NvU64_LO32(bytesTotal >> 10);
 
@@ -512,6 +651,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     if (data > heapSizeKb)
                         data = heapSizeKb;
                 }
+                data -= pKernelMemorySystem->fbOverrideStartKb;
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_BANK_COUNT:
@@ -534,7 +674,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -549,7 +689,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -564,7 +704,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             {
                 if (bIsPmaEnabled)
                 {
-                    pmaGetLargestFree(&pHeap->pmaObject, &largestFree, &heapBase, &largestOffset);
+                    pmaGetLargestFree(pHeap->pPmaObject, &largestFree, &heapBase, &largestOffset);
                 }
                 else
                 {
@@ -583,7 +723,7 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
             case NV2080_CTRL_FB_INFO_INDEX_FB_IS_BROKEN:
             {
                 data = (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
-                        !pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB)) ? 1 : 0;
+                        !pGpu->pGpuArch->bGpuArchIsZeroFb) ? 1 : 0;
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_L2CACHE_ONLY_MODE:
@@ -669,49 +809,199 @@ _fbGetFbInfos(OBJGPU *pGpu, NvHandle hClient, NvHandle hObject, NV2080_CTRL_FB_I
                     kbusGetP2PMailboxAttributes_HAL(pGpu, pKernelBus, NULL, NULL, &data);
                 break;
             }
+            case NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_TOTAL_KB:
+            {
+                if (gpuIsCCorApmFeatureEnabled(pGpu))
+                {
+                    if (bIsPmaEnabled)
+                    {
+                        pmaGetTotalProtectedMemory(pHeap->pPmaObject, &bytesTotal);
+                        NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
+                        data = NvU64_LO32(bytesTotal >> 10);
+                    }
+                    else
+                    {
+                        //
+                        // We should never reach here given that PMA is enabled
+                        // on all platforms where confidential compute is supported
+                        //
+                        NV_ASSERT(0);
+                        data = 0;
+                        status = NV_ERR_INVALID_ARGUMENT;
+                    }
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_FREE_KB:
+            {
+                if (gpuIsCCorApmFeatureEnabled(pGpu))
+                {
+                    if (bIsPmaEnabled)
+                    {
+                        pmaGetFreeProtectedMemory(pHeap->pPmaObject, &bytesFree);
+                        NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
+                        data = NvU64_LO32(bytesFree >> 10);
+                    }
+                    else
+                    {
+                        //
+                        // We should never reach here given that PMA is enabled
+                        // on all platforms where confidential compute is supported
+                        //
+                        NV_ASSERT(0);
+                        data = 0;
+                        status = NV_ERR_INVALID_ARGUMENT;
+                    }
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB:
+            {
+                if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+                {
+                    data = 1;
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_ACCESS_COUNTER_BUFFER_COUNT:
+            {
+                OBJUVM *pUvm = GPU_GET_UVM(pGpu);
+
+                if (pUvm != NULL)
+                {
+                    data = pUvm->accessCounterBufferCount;
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+
+            case NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO:
+            {
+                MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+                if (pMemoryManager != NULL)
+                {
+                    data = pMemoryManager->bPlatformFullyCoherent ?
+                        NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO_FULLY_COHERENT :
+                        NV2080_CTRL_FB_INFO_INDEX_COHERENCE_INFO_NON_FULLY_COHERENT;
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+
+            case NV2080_CTRL_FB_INFO_INDEX_NUMA_NODE_ID:
+            {
+                NvU32 nodeId = NV0000_CTRL_NO_NUMA_NODE;
+
+                if (bIsMIGInUse)
+                {
+                    MIG_INSTANCE_REF ref;
+
+                    if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) == NV_OK)
+                    {
+                        NvU32 swizzId = ref.pKernelMIGGpuInstance->swizzId;
+
+                        if (pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse)
+                        {
+                            nodeId = pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId;
+                        }
+                    }
+                }
+                else
+                {
+                    nodeId = pGpu->numaNodeId;
+                }
+
+                data = nodeId;
+                break;
+            }
+
             default:
             {
-                data = 0;
-                status = NV_ERR_INVALID_ARGUMENT;
-                break;
+                if (status != NV_OK)
+                    break;
+
+                continue;
             }
         }
 
         if (status != NV_OK)
             break;
+
         // save off data value
         pFbInfos[i].data = data;
+        fbInfoListIndicesUnset &= ~NVBIT64(i);
     }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
+    // RPC to host to populate indices that could not be yet computed
+    if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) &&
+        (nvPopCount64(fbInfoListIndicesUnset) > 0))
+    {
+        NvU32 physIdx = 0;
+        NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pRpcParams =
+            portMemAllocNonPaged(sizeof(NV2080_CTRL_FB_GET_INFO_V2_PARAMS));
+
+        portMemSet(pRpcParams, 0, sizeof(*pRpcParams));
+        FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
+        {
+            pRpcParams->fbInfoList[physIdx++].index = pFbInfos[i].index;
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+
+        pRpcParams->fbInfoListSize = physIdx;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pClient->hClient,
+                          hObject,
+                          NV2080_CTRL_CMD_FB_GET_INFO_V2,
+                          pRpcParams,
+                          sizeof(*pRpcParams),
+                          status);
+
+        physIdx = 0;
+        FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
+        {
+            NV_ASSERT(pFbInfos[i].index == pRpcParams->fbInfoList[physIdx].index);
+
+            pFbInfos[i].data = pRpcParams->fbInfoList[physIdx].data;
+
+            //
+            // Assume that the RPC could handle unknown indices. Actual errors will be signaled by
+            // returning status.
+            //
+            fbInfoListIndicesUnset &= ~NVBIT64(i);
+
+            physIdx++;
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+
+        portMemFree(pRpcParams);
+    }
+
+    NV_CHECK(LEVEL_INFO, nvPopCount64(fbInfoListIndicesUnset) == 0);
 
     return status;
-}
-
-//
-// subdeviceCtrlCmdFbGetInfo
-//
-// Lock Requirements:
-//      Assert that API and Gpus lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GET_INFO_PARAMS *pFbInfoParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
-    NvHandle hObject = RES_GET_HANDLE(pSubdevice);
-
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
-
-    if ((pFbInfoParams->fbInfoListSize == 0) ||
-        (NvP64_VALUE(pFbInfoParams->fbInfoList) == NULL))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return _fbGetFbInfos(pGpu, hClient, hObject, NvP64_VALUE(pFbInfoParams->fbInfoList), pFbInfoParams->fbInfoListSize);
 }
 
 //
@@ -728,10 +1018,12 @@ subdeviceCtrlCmdFbGetInfoV2_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    RsClient *pClient = RES_GET_CLIENT(pSubdevice);
     NvHandle hObject = RES_GET_HANDLE(pSubdevice);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if ((pFbInfoParams->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE) ||
         (pFbInfoParams->fbInfoListSize == 0))
@@ -739,118 +1031,7 @@ subdeviceCtrlCmdFbGetInfoV2_IMPL
        return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return _fbGetFbInfos(pGpu, hClient, hObject, pFbInfoParams->fbInfoList, pFbInfoParams->fbInfoListSize);
-}
-
-//
-// subdeviceCtrlCmdFbGetCarveoutAddressInfo
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetCarveoutAddressInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO *pParams
-)
-{
-
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
-
-    pParams->StartAddr = 0x0;
-    pParams->SpaceSize = 0x0;
-
-    return NV_ERR_GENERIC;
-}
-
-//
-// subdeviceCtrlCmdFbSetGpuCacheAllocPolicy
-//
-// Lock Requirements:
-//      Assert that GPUs lock held on entry
-//      Called from SW method w/o API lock
-//
-NV_STATUS
-subdeviceCtrlCmdFbSetGpuCacheAllocPolicy_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS *pParams
-)
-{
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
-
-    // Map engine to FBBA client
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-//
-// subdeviceCtrlCmdFbGetGpuCacheAllocPolicy
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetGpuCacheAllocPolicy_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS *pGpuCacheAllocPolicyParams
-)
-{
-
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
-
-    pGpuCacheAllocPolicyParams->allocPolicy = 0;
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to read Client reads ALLOC policy\n");
-    return status;
-}
-
-//
-// subdeviceCtrlCmdFbSetGpuCacheAllocPolicyV2
-//
-// Lock Requirements:
-//      Assert that GPUs lock held on entry
-//      Called from SW method w/o API lock
-//
-NV_STATUS
-subdeviceCtrlCmdFbSetGpuCacheAllocPolicyV2_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS *pParams
-)
-{
-    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    // Bug 724186 -- Skip this check for deferred API
-    LOCK_ASSERT_AND_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner());
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to set alloc policy\n");
-    return status;
-}
-
-//
-// subdeviceCtrlCmdFbGetGpuCacheAllocPolicyV2
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetGpuCacheAllocPolicyV2_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS *pParams
-)
-{
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    NV_ASSERT_OR_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to get alloc policy.\n");
-    return status;
+    return _kmemsysGetFbInfos(pGpu, pClient, pDevice, hObject, pFbInfoParams);
 }
 
 //
@@ -876,16 +1057,16 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
     NvU32               osBlackListCount    = 0;
     NvU32               chunk;
     NvU64               chunks[NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES];
-    NvU32               pageSize;
+    NvU64               pageSize;
     NvU32               numChunks           = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
     if (!IsSLIEnabled(pGpu))
     {
         if (memmgrIsPmaInitialized(pMemoryManager))
         {
             // If PMA is enabled Client pages are located here.
-            pmaGetClientBlacklistedPages(&pHeap->pmaObject, chunks, &pageSize, &numChunks);
+            pmaGetClientBlacklistedPages(pHeap->pPmaObject, chunks, &pageSize, &numChunks);
 
             NV_ASSERT(numChunks <= NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES);
 
@@ -894,7 +1075,7 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
                 pOsOfflinedParams->offlinedPages[chunk] = (NvU32)(chunks[chunk] >> RM_PAGE_SHIFT);
             }
             pOsOfflinedParams->validEntries = numChunks;
-            pOsOfflinedParams->pageSize     = pageSize;
+            pOsOfflinedParams->pageSize     = (NvU32)pageSize;
         }
         else
         {
@@ -940,13 +1121,13 @@ subdeviceCtrlCmdFbUpdateNumaStatus_IMPL
     OBJGPU             *pGpu                = GPU_RES_GET_GPU(pSubdevice);
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     Heap               *pHeap               = GPU_GET_HEAP(pGpu);
-    PMA                *pPma                = &pHeap->pmaObject;
+    PMA                *pPma                = pHeap->pPmaObject;
     NV_STATUS          status               = NV_OK;
 
     if (!RMCFG_FEATURE_PMA)
         return NV_ERR_NOT_SUPPORTED;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pParams->bOnline)
     {
@@ -989,10 +1170,11 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
     NvU32                idx;
     NV_STATUS            status;
     NvU32                count;
-    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-        kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
+    NvU64                numaMemOffset = 0;
+    NvU64                numaMemSize = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if (pParams->numaOfflineAddressesCount >
         NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses))
@@ -1000,9 +1182,37 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    pParams->numaNodeId = pGpu->numaNodeId;
-    pParams->numaMemAddr = pKernelMemorySystem->coherentCpuFbBase + pKernelMemorySystem->numaOnlineBase;
-    pParams->numaMemSize = pKernelMemorySystem->numaOnlineSize;
+    if (gpuIsSelfHosted(pGpu) && IS_MIG_IN_USE(pGpu))
+    {
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+        Device           *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+        MIG_INSTANCE_REF  ref;
+        NvU32             swizzId;
+
+        pParams->numaNodeId = NV0000_CTRL_NO_NUMA_NODE;
+
+        if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) == NV_OK)
+        {
+            swizzId = ref.pKernelMIGGpuInstance->swizzId;
+
+            if (pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse)
+            {
+                pParams->numaNodeId = pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId;
+                pParams->numaMemAddr = pKernelMemorySystem->coherentCpuFbBase + pKernelMemorySystem->memPartitionNumaInfo[swizzId].offset;
+                pParams->numaMemSize = pKernelMemorySystem->memPartitionNumaInfo[swizzId].size;
+                numaMemOffset  = pKernelMemorySystem->memPartitionNumaInfo[swizzId].offset;
+                numaMemSize = pKernelMemorySystem->memPartitionNumaInfo[swizzId].size;
+            }
+        }
+    }
+    else
+    {
+        pParams->numaNodeId = pGpu->numaNodeId;
+        pParams->numaMemAddr = pKernelMemorySystem->coherentCpuFbBase + pKernelMemorySystem->numaOnlineBase;
+        pParams->numaMemSize = pKernelMemorySystem->numaOnlineSize;
+        numaMemOffset = pKernelMemorySystem->numaOnlineBase;
+        numaMemSize = pKernelMemorySystem->numaOnlineSize;
+    }
 
     if (pParams->numaOfflineAddressesCount == 0)
     {
@@ -1016,7 +1226,7 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
         return NV_OK;
     }
 
-    count = pMemorySystemConfig->maximumBlacklistPages;
+    count = kmemsysGetMaximumBlacklistPages(pGpu, pKernelMemorySystem);
     pBlAddrs = portMemAllocNonPaged(sizeof(BLACKLIST_ADDRESS) * count);
     if (pBlAddrs == NULL)
     {
@@ -1039,9 +1249,9 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
             }
 
             // Only tell the caller about Offline pages in the NUMA region.
-            if (offset < pParams->numaMemSize)
+            if ((offset >= numaMemOffset) && (offset < (numaMemOffset + numaMemSize)))
             {
-                pParams->numaOfflineAddresses[numaOfflineIdx++] = pParams->numaMemAddr + offset;
+                pParams->numaOfflineAddresses[numaOfflineIdx++] = pKernelMemorySystem->coherentCpuFbBase + offset;
             }
             else
             {
@@ -1063,16 +1273,126 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
     return status;
 }
 
+/*!
+ * @brief This call can be used to get static Bar1 related information.
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pParams    pointer to control parameters
+ *
+ * @return NV_OK When successful
+ *         NV_ERR_INVALID_STATE Otherwise
+ */
 NV_STATUS
-subdeviceCtrlCmdFbSetZbcReferenced_IMPL
+subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
 (
     Subdevice *pSubdevice,
-    NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+    NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS *pParams
 )
 {
-    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
-    CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+    OBJGPU             *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelBus          *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+    OBJSYS             *pSys        = SYS_GET_INSTANCE();
+    OBJCL              *pCl         = pSys->pCl;
+    NV_STATUS           status      = NV_OK;
+    NvU32               gfid;
+
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    pParams->bStaticBar1Enabled = pKernelBus->bar1[gfid].bStaticBar1Enabled;
+    pParams->bStaticBar1WriteCombined = !pCl->getProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC);
+
+    if (pParams->bStaticBar1Enabled)
+    {
+        pParams->staticBar1StartOffset = pKernelBus->bar1[gfid].staticBar1.startOffset;
+        pParams->staticBar1Size        = pKernelBus->bar1[gfid].staticBar1.size;
+    }
+    else
+    {
+        pParams->staticBar1StartOffset = 0;
+        pParams->staticBar1Size = 0;
+    }
+
+    return status;
+}
+
+/*!
+ * @brief This call can be used to get uGPU memory info
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pParams    pointer to control parameters
+ *
+ * @return NV_OK When successful
+ *         NV_ERR_INVALID_STATE or NV_ERR_NOT_SUPPORTED Otherwise
+ */
+NV_STATUS
+subdeviceCtrlCmdFbGetUgpuMemoryInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_PARAMS *pParams
+)
+{
+    OBJGPU             *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    // Silence build error, since rmDeviceGpuLockIsOwner does not "use" its parameter.
+    (void)(pGpu);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
+    
+    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    Heap               *pHeap = GPU_GET_HEAP(pGpu);
+    NvBool              bIsPmaEnabled = memmgrIsPmaInitialized(pMemoryManager);
+
+    ct_assert(PMA_MAX_LOCALIZED_REGION_COUNT <= NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_MAX_UGPUS);
+
+    if (bIsPmaEnabled)
+    {
+        pmaGetTotalMemory(pHeap->pPmaObject, &pParams->totalMemory);
+        pmaGetFreeMemory(pHeap->pPmaObject, &pParams->freeMemory);
+        for (NvU32 i = 0; i < NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_MAX_UGPUS; ++i)
+        {
+            if (i < PMA_MAX_LOCALIZED_REGION_COUNT)
+            {
+                pmaGetUgpuTotalMemory(pHeap->pPmaObject, i, &pParams->ugpuTotalMemory[i]);
+                pmaGetUgpuFreeMemory(pHeap->pPmaObject, i, &pParams->ugpuFreeMemory[i]);
+            }
+            else
+            {
+                pParams->ugpuTotalMemory[i] = 0;
+                pParams->ugpuFreeMemory[i] = 0;
+            }
+        }
+    }
+    else
+    {
+        // Localized allocations require PMA.
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
+
+}
+
+static NV_STATUS
+_kmemsysSetZbcReferenced
+(
+    OBJGPU *pGpu,
+    Device *pDevice,
+    NvU32 bZbcSurfacesExist
+)
+{
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     NvU32         gfid;
+    NV_STATUS     status = NV_OK;
 
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
 
@@ -1081,7 +1401,6 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS     status        = NV_OK;
 
         NV_RM_RPC_CONTROL(pGpu,
                           pRmCtrlParams->hClient,
@@ -1094,48 +1413,56 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
         return status;
     }
 
-    return NV_OK;
+    return status;
 }
 
-/*!
- * @brief This call can be used to flush L2 followed by FB or
- * just the FB.
- *
- * If L2 ops are needed, either _INVALIDATE or _WRITE_BACK
- * or both flags set to _YES is required. Specifying both
- * to _YES implies EVICT.
- *
- * If only the FB flush is needed, only the
- * _APERTURE and _FB_FLUSH_YES are needed.
- *
- * If only L2 ops are needed (i.e. no FB flush following
- * it), _FB_FLUSH_NO is needed in addition to the other
- * L2 ops flags.
- *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
- * @param[in] pSubdevice Subdevice
- * @param[in] pCacheFlushParams Various flush flags
- *
- */
 NV_STATUS
-subdeviceCtrlCmdFbFlushGpuCache_IMPL
+deviceCtrlCmdFbSetZbcReferenced_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu;
+    Subdevice *pSubdevice;
+
+    NV_ASSERT_OK_OR_RETURN(subdeviceGetByInstance(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice), pParams->subdevInstance, &pSubdevice));
+
+    pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    return _kmemsysSetZbcReferenced(pGpu, pDevice, pParams->bZbcSurfacesExist);
+}
+
+NV_STATUS
+subdeviceCtrlCmdFbSetZbcReferenced_IMPL
 (
     Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+
+    return _kmemsysSetZbcReferenced(pGpu, pDevice, pParams->bZbcSurfacesExist);
+}
+
+NV_STATUS
+kmemsysFlushGpuCache_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    KernelBus *pKernelBus,
     NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams
 )
 {
-    OBJGPU             *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS           status = NV_OK;
     FB_CACHE_MEMTYPE    memType = FB_CACHE_MEM_UNDEFINED;
     FB_CACHE_OP         cacheOp = FB_CACHE_OP_UNDEFINED;
-    KernelBus          *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvBool              bWriteback = NV_FALSE;
     NvBool              bInvalidate = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     // Either WriteBack or Invalidate are required for Cache Ops
     if (FLD_TEST_DRF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _WRITE_BACK,
@@ -1228,8 +1555,182 @@ subdeviceCtrlCmdFbFlushGpuCache_IMPL
                      _YES, pCacheFlushParams->flags))
     {
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
-                        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY));
+                        kbusSendSysmembar(pGpu, pKernelBus));
     }
 
     return status;
+}
+
+/*!
+ * @brief This call can be used to flush L2 followed by FB or
+ * just the FB.
+ *
+ * If L2 ops are needed, either _INVALIDATE or _WRITE_BACK
+ * or both flags set to _YES is required. Specifying both
+ * to _YES implies EVICT.
+ *
+ * If only the FB flush is needed, only the
+ * _APERTURE and _FB_FLUSH_YES are needed.
+ *
+ * If only L2 ops are needed (i.e. no FB flush following
+ * it), _FB_FLUSH_NO is needed in addition to the other
+ * L2 ops flags.
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pCacheFlushParams Various flush flags
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdFbFlushGpuCache_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams
+)
+{
+    OBJGPU             *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    return kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pCacheFlushParams);
+}
+
+//
+// subdeviceCtrlCmdFbGetGpuCacheInfo
+//
+// Lock Requirements:
+//      Assert that API and GPUs lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdFbGetGpuCacheInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_GPU_CACHE_INFO_PARAMS *pGpuCacheParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    FB_CACHE_WRITE_MODE writeMode = pKernelMemorySystem->l2WriteMode;
+    FB_CACHE_BYPASS_MODE bypassMode = FB_CACHE_BYPASS_MODE_DISABLED;
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    switch (writeMode)
+    {
+        case FB_CACHE_WRITE_MODE_WRITETHROUGH:
+            pGpuCacheParams->writeMode = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_WRITE_MODE_WRITETHROUGH;
+            break;
+        case FB_CACHE_WRITE_MODE_WRITEBACK:
+            pGpuCacheParams->writeMode = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_WRITE_MODE_WRITEBACK;
+            break;
+        default:
+            status = NV_ERR_INVALID_STATE;
+            NV_PRINTF(LEVEL_ERROR, "Invalid write mode : %d\n", writeMode);
+            break;
+    }
+
+    switch (bypassMode)
+    {
+        case FB_CACHE_BYPASS_MODE_DISABLED:
+            pGpuCacheParams->bypassMode = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_BYPASS_MODE_DISABLED;
+            break;
+        case FB_CACHE_BYPASS_MODE_ENABLED:
+            pGpuCacheParams->bypassMode = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_BYPASS_MODE_ENABLED;
+            break;
+        default:
+            status = NV_ERR_INVALID_STATE;
+            NV_PRINTF(LEVEL_ERROR, "Invalid bypass mode : %d\n",
+                      bypassMode);
+            break;
+    }
+
+    pGpuCacheParams->powerState = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_POWER_STATE_ENABLED;
+    pGpuCacheParams->rcmState = NV2080_CTRL_FB_GET_GPU_CACHE_INFO_RCM_STATE_FULL;
+
+    return status;
+}
+
+NV_STATUS subdeviceCtrlCmdMemSysGetStaticConfig_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    portMemCopy(pParams, sizeof(*pParams),
+                &pVSI->memsysStaticConfig, sizeof(pVSI->memsysStaticConfig));
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFbGetDynamicOfflinedPages_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_DYNAMIC_OFFLINED_PAGES_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i = pParams->baseIndex / NV2080_CTRL_FB_DYNAMIC_BLACKLIST_MAX_ENTRIES;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (i >= MAX_ITERATIONS_DYNAMIC_BLACKLIST)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->validEntries = pVSI->fbDynamicBlacklistedPages[i].validEntries;
+    if (pParams->validEntries > NV2080_CTRL_FB_DYNAMIC_BLACKLIST_MAX_ENTRIES)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    portMemCopy(&pParams->offlined,
+                pParams->validEntries * sizeof(NV2080_CTRL_FB_DYNAMIC_OFFLINED_ADDRESS_INFO),
+                &pVSI->fbDynamicBlacklistedPages[i].offlined,
+                pParams->validEntries * sizeof(NV2080_CTRL_FB_DYNAMIC_OFFLINED_ADDRESS_INFO));
+    pParams->bMore = pVSI->fbDynamicBlacklistedPages[i].bMore;
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFbGetLTCInfoForFBP_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (pParams->fbpIndex >= MAX_FBPS)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->ltcCount = pVSI->fbLtcInfoForFbp[pParams->fbpIndex].ltcCount;
+    pParams->ltcMask = pVSI->fbLtcInfoForFbp[pParams->fbpIndex].ltcMask;
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFbGetOfflinedPages_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_OFFLINED_PAGES_PARAMS *pOfflinedParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
 }

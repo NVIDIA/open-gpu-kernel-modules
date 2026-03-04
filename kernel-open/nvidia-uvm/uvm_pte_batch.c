@@ -54,7 +54,7 @@ static void uvm_pte_batch_flush_ptes_inline(uvm_pte_batch_t *batch)
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
     gpu->parent->ce_hal->memcopy(batch->push,
-                                 uvm_gpu_address_from_phys(batch->pte_first_address),
+                                 uvm_mmu_gpu_address(gpu, batch->pte_first_address),
                                  inline_data_addr,
                                  ptes_size);
 }
@@ -62,7 +62,7 @@ static void uvm_pte_batch_flush_ptes_inline(uvm_pte_batch_t *batch)
 static void uvm_pte_batch_flush_ptes_memset(uvm_pte_batch_t *batch)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(batch->push);
-    uvm_gpu_address_t addr = uvm_gpu_address_from_phys(batch->pte_first_address);
+    uvm_gpu_address_t addr = uvm_mmu_gpu_address(gpu, batch->pte_first_address);
     NvU32 i;
 
     UVM_ASSERT(batch->pte_count != 0);
@@ -135,6 +135,8 @@ void uvm_pte_batch_write_ptes(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t fir
 
     // Updating PTEs in sysmem requires a sysmembar after writing them and
     // before any TLB invalidates.
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(first_pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (first_pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 
@@ -165,6 +167,8 @@ void uvm_pte_batch_write_pte(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t pte,
 
     // Updating PTEs in sysmem requires a sysmembar after writing them and
     // before any TLB invalidates.
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 
@@ -201,10 +205,12 @@ void uvm_pte_batch_clear_ptes(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t fir
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
     gpu->parent->ce_hal->memset_8(batch->push,
-                                  uvm_gpu_address_from_phys(first_pte),
+                                  uvm_mmu_gpu_address(gpu, first_pte),
                                   empty_pte_bits,
                                   entry_size * entry_count);
 
+    // PTEs should never be in a location using UVM_APERTURE_SYS_NON_COHERENT.
+    UVM_ASSERT(first_pte.aperture != UVM_APERTURE_SYS_NON_COHERENT);
     if (first_pte.aperture == UVM_APERTURE_SYS)
         batch->membar = UVM_MEMBAR_SYS;
 }

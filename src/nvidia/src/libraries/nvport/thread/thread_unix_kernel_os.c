@@ -46,14 +46,14 @@ const PORT_THREAD PORT_THREAD_INVALID = {0ULL};
 // Invalid value for process.
 const PORT_PROCESS PORT_PROCESS_INVALID = {0ULL};
 
-NvU64 portThreadGetCurrentThreadId()
+NvU64 portThreadGetCurrentThreadId(void)
 {
     NvU64 tid = 0;
     os_get_current_thread(&tid);
     return tid;
 }
 
-void portThreadYield()
+void portThreadYield(void)
 {
     os_schedule();
 }

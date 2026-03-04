@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 \***************************************************************************/
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "published/turing/tu102/dev_vm.h"
 /* ------------------------- Datatypes -------------------------------------- */
 /* ------------------------- Macros ----------------------------------------- */
@@ -38,8 +38,8 @@
 NV_STATUS
 tmrSetCountdown_TU102
 (
-    POBJGPU            pGpu,
-    POBJTMR            pTmr,
+    OBJGPU            *pGpu,
+    OBJTMR            *pTmr,
     NvU32              time,
     NvU32              tmrId,
     THREAD_STATE_NODE *pThreadState
@@ -128,16 +128,14 @@ tmrGetGpuPtimerOffset_TU102
 /*
  * @brief This function returns the PTIMER_TIME_0 register. This function will
  *  work for both Physical function and virtual function in SR-IOV.
- *  @param[in] POBJGPU - GPU Object pointer
- *  @param[in] POBJTMR - Timer Object pointer
  *
  *  @return NvU32
  */
 NvU32
 tmrReadTimeLoReg_TU102
 (
-    POBJGPU             pGpu,
-    POBJTMR             pTmr,
+    OBJGPU             *pGpu,
+    OBJTMR             *pTmr,
     THREAD_STATE_NODE  *pThreadState
 )
 {
@@ -147,18 +145,45 @@ tmrReadTimeLoReg_TU102
 /*
  * @brief This function returns the PTIMER_TIME_1 register. This function will
  *  work for both Physical function and virtual function in SR-IOV.
- *  @param[in] POBJGPU - GPU Object pointer
- *  @param[in] POBJTMR - Timer Object pointer
  *
  *  @return NvU32
  */
 NvU32
 tmrReadTimeHiReg_TU102
 (
-    POBJGPU             pGpu,
-    POBJTMR             pTmr,
+    OBJGPU             *pGpu,
+    OBJTMR             *pTmr,
     THREAD_STATE_NODE  *pThreadState
 )
 {
     return GPU_VREG_RD32_EX(pGpu, NV_VIRTUAL_FUNCTION_TIME_1, pThreadState);
+}
+
+/**
+ * @brief Services the stall interrupt.
+ *
+ * @param[in] pGpu
+ * @param[in] pTmr
+ * @param[in] pParams
+ *
+ * @returns Zero, or any implementation-chosen nonzero value. If the same nonzero value is returned enough
+ *          times the interrupt is considered stuck.
+ */
+NvU32
+tmrServiceInterrupt_TU102
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    IntrServiceServiceInterruptArguments *pParams
+)
+{
+    extern NvU32 tmrServiceInterrupt_GM107(OBJGPU *pGpu, OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
+    NV_ASSERT_OR_RETURN(pParams != NULL, 0);
+    MODS_ARCH_REPORT(NV_ARCH_EVENT_PTIMER, "%s", "processing ptimer interrupt\n");
+
+    // Service countdown timer interrupts
+    (void)tmrCallExpiredCallbacks(pGpu, pTmr);
+
+    // Call the legacy timer service routine to service alarm interrupts
+    return tmrServiceInterrupt_GM107(pGpu, pTmr, pParams);
 }

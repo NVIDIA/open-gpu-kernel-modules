@@ -175,17 +175,17 @@ struct NV_FIELD_BOOL
 #define BEGIN_DISCONTIG_FIELD_DESC64(pField)                         \
     pField->regionCount = 0;
 
-#define DRF_DISCONTIG_FIELD_DESC64(pField, drf)                                      \
-    do {                                                                             \
+#define DRF_DISCONTIG_FIELD_DESC64(pField, drf)                                                 \
+    do {                                                                                        \
         NV_ASSERT_CHECKED_PRECOMP(pField->regionCount < NV_FIELD_DESC64_MAX_DISCONTIG_REGIONS); \
-        (pField)->regions[pField->regionCount].maskPos = DRF_SHIFTMASK64(drf);       \
-        (pField)->regions[pField->regionCount].width   = (1?drf) - (0?drf) + 1;      \
-        (pField)->regions[pField->regionCount].shift   = DRF_SHIFT64(drf);           \
-        (pField)->regions[pField->regionCount].offset  = DRF_OFFSET64(drf);          \
-        pField->regionCount ++;                                                      \
+        (pField)->regions[pField->regionCount].maskPos = DRF_SHIFTMASK64(drf);                  \
+        (pField)->regions[pField->regionCount].width   = (1?drf) - (0?drf) + 1;                 \
+        (pField)->regions[pField->regionCount].shift   = DRF_SHIFT64(drf);                      \
+        (pField)->regions[pField->regionCount].offset  = DRF_OFFSET64(drf);                     \
+        pField->regionCount ++;                                                                 \
     } while(0);
 
-#define END_FIELD_DESC64_DISCONTIGUOUS(pField)          
+#define END_FIELD_DESC64_DISCONTIGUOUS(pField)
 
 
 #define INIT_FIELD_ENUM(pEnum, drf, count, pEntries)        \

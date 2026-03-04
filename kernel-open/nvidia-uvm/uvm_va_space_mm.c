@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -36,70 +36,56 @@
 //
 // ========================= Retain count vs mm_users ==========================
 //
-// uvm_va_space_mm manages its own retained ref count and wait queue. When the
-// mm is disabled via mmu_notifier_release, we use the wait queue to wait for
-// the ref count to go to 0.
+// To guarantee the mm is available and won't be destroyed we require
+// userspace to open a second file descriptor (uvm_mm_fd) and
+// initialize it with uvm_api_mm_initialize(). During initialization
+// we take a mm_users reference to ensure the mm remains valid until
+// the file descriptor is closed.
 //
-// An alternative is to scrap all that and just use mm_users. Retain would call
-// something like mmget_not_zero(mm), and release would use mmput(). No
-// additional count would be needed, since we'd be guaranteed that the mm_struct
-// couldn't start teardown while we have the count.
+// To ensure userspace can't close the file descriptor and drop the
+// mm_users refcount while it is in use threads must call either
+// uvm_va_space_mm_retain() or uvm_va_space_mm_or_current_retain() to
+// increment the retained count. This also checks that userspace has
+// initialized the uvm_mm_fd and therefore holds a valid pagetable
+// pin.
 //
-// There are two reasons we don't take that approach. The first is that we
-// cannot call mmput() on all paths which retain a va_space_mm, particularly the
-// GPU fault handler. mmput() may result in exit_mmap(), which could result in
-// RM calls and VA space destroy. Those need to wait for the GPU fault handler
-// to finish, so if we took that approach we'd deadlock.
-//
-// There is a recent mmput_async() addition to the kernel which would resolve
-// this problem. As of v5.2 it was not exported for drivers, although that
-// appears to be in the works. However, even if exported we would have to
-// implement a fallback path for earlier kernels, and the complexity of such a
-// path would be significant.
-//
-// The second problem is that mmget_not_zero() approach is susceptible to
-// livelock problems. Two threads, say the fault handlers for two GPUs, could
-// conceivably keep mm_users high by constantly retaining and releasing,
-// preventing the mm from ever being torn down. The va_space_mm implementation
-// below does not have this problem because mm shutdown causes later retains to
-// fail, which guarantees that the count will eventually go to 0.
+// Closing uvm_mm_fd will call uvm_va_space_mm_shutdown() prior to
+// mmput() which ensures there are no active users of the mm. This
+// indirection is required because not all threads can call mmput()
+// directly. In particular the replayable GPU fault handling path
+// can't call mmput() because it may result in exit_mmap() which could
+// result in RM calls and VA space destroy and those need to wait for
+// the GPU fault handler to finish.
 //
 // ============================ Handling mm teardown ===========================
 //
-// mmu_notifiers call the mm release callback both when the mm is really getting
-// shut down, and whenever mmu_notifier_unregister is called. This has several
-// consequences, including that these two paths can race. If they do race, they
-// wait for each other to finish (real teardown of the mm won't start until the
-// mmu_notifier_unregister's callback has returned, and mmu_notifier_unregister
-// won't return until the mm release callback has returned).
+// When the process is exiting we will get notified either via an
+// explict close of uvm_mm_fd or implicitly as part of
+// exit_files(). We are guaranteed to get this call because we don't
+// allow mmap on uvm_mm_fd, and the userspace pagetables (mm_users)
+// are guaranteed to exist because we hold a mm_users refcount
+// which is released as part of file close.
 //
-// When the mm is really getting torn down, uvm_va_space_mm_shutdown is expected
-// to stop all GPU memory accesses to that mm and stop servicing faults in that
-// mm. This essentially shuts down the VA space for new work. The VA space
-// object remains valid for most teardown ioctls until the file is closed,
-// because it's legal for the associated process to die then for another process
-// with a reference on the file to perform the unregisters or associated ioctls.
-// This is particularly true for tools users.
+// This allows any outstanding GPU faults to be processed. To prevent
+// new faults occurring uvm_va_space_mm_shutdown() is called to stop
+// all GPU memory accesses to the mm. Once all GPU memory has been
+// stopped no new retainers of the va_space will be allowed and the
+// mm_users reference will be dropped, potentially tearing down the mm
+// and associated pagetables.
+//
+// This essentially shuts down the VA space for new work. The VA space
+// object remains valid for most teardown ioctls until the file is
+// closed, because it's legal for the associated process to die then
+// for another process with a reference on the file to perform the
+// unregisters or associated ioctls.  This is particularly true for
+// tools users.
 //
 // An exception to the above is UvmUnregisterChannel. Since channels are
 // completely removed from the VA space on mm teardown, later channel
 // unregisters will fail to find the handles and will return an error.
 //
-// The UVM driver will only call mmu_notifier_unregister during VA space destroy
-// (file close).
-//
-// Here is a table of the various teardown scenarios:
-//
-//                                                Can race with
-// Scenario                                       mm teardown
-// -----------------------------------------------------------------------------
-// 1) Process exit (mm teardown, file open)            -
-// 2) Explicit file close in original mm               No
-// 3) Explicit file close in different mm              Yes
-// 4) Implicit file close (exit) in original mm        No
-// 5) Implicit file close (exit) in different mm       Yes
-//
-// At a high level, the sequence of operations to perform during mm teardown is:
+// At a high level, the sequence of operations to perform prior to mm
+// teardown is:
 //
 // 1) Stop all channels
 //      - Prevents new faults and accesses on non-MPS
@@ -119,7 +105,7 @@
 //        the case of MPS, cancel real faults after.
 // 4) UnsetPageDir
 //      - Prevents new accesses on MPS
-// 5) Mark the va_space_mm as dead
+// 5) Mark the va_space_mm as released
 //      - Prevents new retainers from using the mm. There won't be any more on
 //        the fault handling paths, but there could be others in worker threads.
 //
@@ -168,7 +154,7 @@
 //
 // =============================================================================
 
-#define UVM_VA_SPACE_MM_SHUTDOWN_DELAY_MAX_MS 100
+static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space);
 
 static int uvm_enable_va_space_mm = 1;
 module_param(uvm_enable_va_space_mm, int, S_IRUGO);
@@ -193,117 +179,41 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space)
     return uvm_va_space_mm_enabled_system();
 }
 
-static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space);
-
-#if UVM_CAN_USE_MMU_NOTIFIERS()
-
-    static uvm_va_space_t *get_va_space(struct mmu_notifier *mn)
-    {
-        // This may be called without a thread context present, so be careful
-        // what is used here.
-        return container_of(mn, uvm_va_space_t, va_space_mm.mmu_notifier);
-    }
-
-    static void uvm_mmu_notifier_release(struct mmu_notifier *mn, struct mm_struct *mm)
-    {
-        UVM_ENTRY_VOID(uvm_va_space_mm_shutdown(get_va_space(mn)));
-    }
-
-    static void uvm_mmu_notifier_invalidate_range_ats(struct mmu_notifier *mn,
-                                                      struct mm_struct *mm,
-                                                      unsigned long start,
-                                                      unsigned long end)
-    {
-        // In most cases ->invalidate_range() is called with exclusive end.
-        // uvm_ats_invalidate() expects an inclusive end so we have to
-        // convert it.
-        //
-        // There's a special case however. Kernel TLB gathering sometimes
-        // identifies "fullmm" invalidates by setting both start and end to ~0.
-        //
-        // It's unclear if there are any other cases in which the kernel will
-        // call us with start == end. Since we can't definitively say no, we
-        // conservatively treat all such calls as full invalidates.
-        if (start == end) {
-            start = 0;
-            end = ~0UL;
-        }
-        else {
-            --end;
-        }
-
-        UVM_ENTRY_VOID(uvm_ats_invalidate(get_va_space(mn), start, end));
-    }
-
-    static struct mmu_notifier_ops uvm_mmu_notifier_ops_release =
-    {
-        .release = uvm_mmu_notifier_release,
-    };
-
-    static struct mmu_notifier_ops uvm_mmu_notifier_ops_ats =
-    {
-        .release          = uvm_mmu_notifier_release,
-        .invalidate_range = uvm_mmu_notifier_invalidate_range_ats,
-    };
-
-    static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(va_space_mm->mm);
-        uvm_assert_mmap_lock_locked_write(va_space_mm->mm);
-
-        if (UVM_ATS_IBM_SUPPORTED_IN_DRIVER() && g_uvm_global.ats.enabled)
-            va_space_mm->mmu_notifier.ops = &uvm_mmu_notifier_ops_ats;
-        else
-            va_space_mm->mmu_notifier.ops = &uvm_mmu_notifier_ops_release;
-
-        return __mmu_notifier_register(&va_space_mm->mmu_notifier, va_space_mm->mm);
-    }
-
-    static void uvm_mmu_notifier_unregister(uvm_va_space_mm_t *va_space_mm)
-    {
-        mmu_notifier_unregister(&va_space_mm->mmu_notifier, va_space_mm->mm);
-    }
-#else
-    static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(0);
-        return 0;
-    }
-
-    static void uvm_mmu_notifier_unregister(uvm_va_space_mm_t *va_space_mm)
-    {
-        UVM_ASSERT(0);
-    }
-#endif // UVM_CAN_USE_MMU_NOTIFIERS()
-
 NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
 {
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    int ret;
 
     uvm_assert_mmap_lock_locked_write(current->mm);
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
-    UVM_ASSERT(uvm_va_space_initialized(va_space) != NV_OK);
+    va_space_mm->state = UVM_VA_SPACE_MM_STATE_UNINITIALIZED;
+
     if (!uvm_va_space_mm_enabled(va_space))
         return NV_OK;
 
     UVM_ASSERT(!va_space_mm->mm);
     va_space_mm->mm = current->mm;
+    uvm_mmgrab(va_space_mm->mm);
 
-    // We must be prepared to handle callbacks as soon as we make this call,
-    // except for ->release() which can't be called since the mm belongs to
-    // current.
-    ret = uvm_mmu_notifier_register(va_space_mm);
-    if (ret) {
-        // Inform uvm_va_space_mm_unregister() that it has nothing to do.
-        va_space_mm->mm = NULL;
-        return errno_to_nv_status(ret);
+    if ((UVM_IS_CONFIG_HMM() || UVM_HMM_RANGE_FAULT_SUPPORTED()) &&
+        uvm_va_space_pageable_mem_access_supported(va_space)) {
+
+        #if UVM_CAN_USE_MMU_NOTIFIERS()
+            int ret;
+
+            // Initialize MMU interval notifiers for this process. This allows
+            // mmu_interval_notifier_insert() to be called without holding the
+            // mmap_lock for write.
+            // Note: there is no __mmu_notifier_unregister(), this call just
+            // allocates memory which is attached to the mm_struct and freed
+            // when the mm_struct is freed.
+            ret = __mmu_notifier_register(NULL, current->mm);
+            if (ret)
+                return errno_to_nv_status(ret);
+        #else
+            UVM_ASSERT(0);
+        #endif
     }
-
-    uvm_spin_lock(&va_space_mm->lock);
-    va_space_mm->alive = true;
-    uvm_spin_unlock(&va_space_mm->lock);
 
     return NV_OK;
 }
@@ -312,25 +222,21 @@ void uvm_va_space_mm_unregister(uvm_va_space_t *va_space)
 {
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
 
-    // We can't hold the VA space lock or mmap_lock across this function since
-    // mmu_notifier_unregister() may trigger uvm_va_space_mm_shutdown(), which
-    // takes those locks and also waits for other threads which may take those
-    // locks.
+    // We can't hold the VA space lock or mmap_lock because
+    // uvm_va_space_mm_shutdown() waits for retainers which may take
+    // these locks.
     uvm_assert_unlocked_order(UVM_LOCK_ORDER_MMAP_LOCK);
     uvm_assert_unlocked_order(UVM_LOCK_ORDER_VA_SPACE);
 
+    uvm_va_space_mm_shutdown(va_space);
+    UVM_ASSERT(va_space_mm->retained_count == 0);
+
+    // Only happens if uvm_va_space_mm_register() fails
     if (!va_space_mm->mm)
         return;
 
-    UVM_ASSERT(uvm_va_space_mm_enabled(va_space));
-    uvm_mmu_notifier_unregister(va_space_mm);
-
-    // We're guaranteed that upon return from mmu_notifier_unregister(),
-    // uvm_va_space_mm_shutdown() will have been called (though perhaps not by
-    // this thread). Therefore all retainers have been flushed.
-    UVM_ASSERT(!va_space_mm->alive);
-    UVM_ASSERT(va_space_mm->retained_count == 0);
-    va_space_mm->mm = NULL;
+    if (uvm_va_space_mm_enabled(va_space))
+        uvm_mmdrop(va_space_mm->mm);
 }
 
 struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space)
@@ -338,18 +244,24 @@ struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space)
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
     struct mm_struct *mm = NULL;
 
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
-
     if (!uvm_va_space_mm_enabled(va_space))
         return NULL;
 
     uvm_spin_lock(&va_space_mm->lock);
 
-    if (va_space_mm->alive) {
-        ++va_space_mm->retained_count;
-        mm = va_space_mm->mm;
-        UVM_ASSERT(mm);
-    }
+    if (!uvm_va_space_mm_alive(va_space_mm))
+        goto out;
+
+    ++va_space_mm->retained_count;
+
+    mm = va_space_mm->mm;
+    UVM_ASSERT(mm);
+
+out:
+
+    // uvm_api_mm_init() holds a reference
+    if (mm)
+        UVM_ASSERT(atomic_read(&mm->mm_users) > 0);
 
     uvm_spin_unlock(&va_space_mm->lock);
 
@@ -358,22 +270,22 @@ struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space)
 
 struct mm_struct *uvm_va_space_mm_or_current_retain(uvm_va_space_t *va_space)
 {
-    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-
     // We should only attempt to use current->mm from a user thread
     UVM_ASSERT(!(current->flags & PF_KTHREAD));
-
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
 
     // current->mm is NULL when we're in process teardown. In that case it
     // doesn't make sense to use any mm.
     if (!current->mm)
         return NULL;
 
-    // If the va_space_mm matches current->mm then it would be safe but sub-
-    // optimal to call uvm_va_space_mm_retain(). current->mm is always valid to
-    // use when non-NULL so there is no need to retain it.
-    if (!uvm_va_space_mm_enabled(va_space) || va_space_mm->mm == current->mm)
+    // If !uvm_va_space_mm_enabled() we use current->mm on the ioctl
+    // paths. In that case we don't need to mmget(current->mm) because
+    // the current thread mm is always valid. On
+    // uvm_va_space_mm_enabled() systems we skip trying to retain the
+    // mm if it is current->mm because userspace may not have
+    // initialised the mm fd but UVM callers on the ioctl path still
+    // assume retaining current->mm will succeed.
+    if (!uvm_va_space_mm_enabled(va_space))
         return current->mm;
 
     return uvm_va_space_mm_retain(va_space);
@@ -382,7 +294,6 @@ struct mm_struct *uvm_va_space_mm_or_current_retain(uvm_va_space_t *va_space)
 void uvm_va_space_mm_release(uvm_va_space_t *va_space)
 {
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    bool do_wake = false;
 
     UVM_ASSERT(uvm_va_space_mm_enabled(va_space));
 
@@ -395,108 +306,34 @@ void uvm_va_space_mm_release(uvm_va_space_t *va_space)
     --va_space_mm->retained_count;
 
     // If we're the last retainer on a dead mm, signal any potential waiters
-    if (va_space_mm->retained_count == 0 && !va_space_mm->alive)
-        do_wake = true;
+    if (va_space_mm->retained_count == 0 && !uvm_va_space_mm_alive(va_space_mm)) {
+        uvm_spin_unlock(&va_space_mm->lock);
 
-    uvm_spin_unlock(&va_space_mm->lock);
-
-    // There could be multiple threads in uvm_va_space_mm_shutdown() waiting on
-    // us, so we have to wake up all waiters.
-    if (do_wake)
-        wake_up_all(&va_space_mm->last_retainer_wait_queue);
+        // There could be a thread in uvm_va_space_mm_shutdown()
+        // waiting on us, so wake it up.
+        wake_up(&va_space_mm->last_retainer_wait_queue);
+    }
+    else {
+        uvm_spin_unlock(&va_space_mm->lock);
+    }
 }
 
 void uvm_va_space_mm_or_current_release(uvm_va_space_t *va_space, struct mm_struct *mm)
 {
-    if (mm && mm != current->mm)
-        uvm_va_space_mm_release(va_space);
-}
-
-static void uvm_va_space_mm_shutdown_delay(uvm_va_space_t *va_space)
-{
-    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    NvU64 start_time;
-    int num_threads;
-    bool timed_out = false;
-
-    if (!va_space_mm->test.delay_shutdown)
+    if (!uvm_va_space_mm_enabled(va_space) || !mm)
         return;
 
-    start_time = NV_GETTIME();
-
-    num_threads = atomic_inc_return(&va_space_mm->test.num_mm_shutdown_threads);
-    UVM_ASSERT(num_threads > 0);
-
-    if (num_threads == 1) {
-        // Wait for another thread to arrive unless we time out
-        while (atomic_read(&va_space_mm->test.num_mm_shutdown_threads) == 1) {
-            if (NV_GETTIME() - start_time >= 1000*1000*UVM_VA_SPACE_MM_SHUTDOWN_DELAY_MAX_MS) {
-                timed_out = true;
-                break;
-            }
-        }
-
-        if (va_space_mm->test.verbose)
-            UVM_TEST_PRINT("Multiple threads: %d\n", !timed_out);
-    }
-
-    // No need to decrement num_mm_shutdown_threads since this va_space_mm is
-    // being shut down.
+    uvm_va_space_mm_release(va_space);
 }
 
-// Handles the va_space's mm being torn down while the VA space still exists.
-// This function won't return until all in-flight retainers have called
-// uvm_va_space_mm_release(). Subsequent calls to uvm_va_space_mm_retain() will
-// return NULL.
-//
-// uvm_va_space_mm_unregister() must still be called. It is guaranteed that
-// uvm_va_space_mm_shutdown() will not be called after
-// uvm_va_space_mm_unregister() returns, though they may execute concurrently.
-// If so, uvm_va_space_mm_unregister() will not return until
-// uvm_va_space_mm_shutdown() is done.
-//
-// After this call returns the VA space is essentially dead. GPUs cannot make
-// any new memory accesses in registered GPU VA spaces, and no more GPU faults
-// which are attributed to this VA space will arrive. Additionally, no more
-// registration within the VA space is allowed (GPU, GPU VA space, or channel).
-//
-// The requirements for this callback are that, once we return, the GPU and
-// driver are completely done using the associated mm_struct. This includes:
-//
-// 1) GPUs will not issue any more memory accesses under this mm
-// 2) [ATS only] GPUs will not issue any more ATRs under this mm
-// 3) The driver will not ask the kernel to service faults on this mm
-//
 static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 {
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_gpu_t *gpu;
-    uvm_global_processor_mask_t gpus_to_flush;
+    uvm_processor_mask_t *retained_gpus = &va_space_mm->scratch_processor_mask;
+    uvm_parent_processor_mask_t flushed_parent_gpus;
     LIST_HEAD(deferred_free_list);
-
-    // The mm must not have been torn down completely yet, but it may have been
-    // marked as dead by a concurrent thread.
-    UVM_ASSERT(uvm_va_space_mm_enabled(va_space));
-    UVM_ASSERT(va_space_mm->mm);
-
-    // Inject a delay for testing if requested
-    uvm_va_space_mm_shutdown_delay(va_space);
-
-    // There can be at most two threads here concurrently:
-    //
-    // 1) Thread A in process teardown of the original process
-    //
-    // 2) Thread B must be in the file close path of another process (either
-    //    implicit or explicit), having already stopped all GPU accesses and
-    //    having called uvm_va_space_mm_unregister.
-    //
-    // This corresponds to scenario #5 in the mm teardown block comment at the
-    // top of the file. We serialize between these threads with the VA space
-    // lock, but otherwise don't have any special handling: both threads will
-    // execute the full teardown sequence below. Also, remember that the threads
-    // won't return to their callers until both threads have returned from this
-    // function (following the rules for mmu_notifier_unregister).
 
     uvm_va_space_down_write(va_space);
 
@@ -518,29 +355,34 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 
     // Detach all channels to prevent pending untranslated faults from getting
     // to this VA space. This also removes those channels from the VA space and
-    // puts them on the deferred free list, so only one thread will do this.
+    // puts them on the deferred free list.
     uvm_va_space_down_write(va_space);
     uvm_va_space_detach_all_user_channels(va_space, &deferred_free_list);
-    uvm_va_space_global_gpus_in_mask(va_space, &gpus_to_flush, &va_space->faultable_processors);
-    uvm_global_mask_retain(&gpus_to_flush);
+    uvm_processor_mask_and(retained_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
+    uvm_global_gpu_retain(retained_gpus);
     uvm_va_space_up_write(va_space);
 
-    // Flush the fault buffer on all GPUs. This will avoid spurious cancels
-    // of stale pending translated faults after we clear va_space_mm->alive
-    // later.
-    for_each_global_gpu_in_mask(gpu, &gpus_to_flush)
-        uvm_gpu_fault_buffer_flush(gpu);
+    // It's ok to use retained_gpus outside the lock since there can only be one
+    // thread executing in uvm_va_space_mm_shutdown at a time.
 
-    uvm_global_mask_release(&gpus_to_flush);
+    // Flush the fault buffer on all registered faultable GPUs.
+    // This will avoid spurious cancels of stale pending translated
+    // faults after we set UVM_VA_SPACE_MM_STATE_RELEASED later.
+    uvm_parent_processor_mask_zero(&flushed_parent_gpus);
+    for_each_gpu_in_mask(gpu, retained_gpus) {
+        if (!uvm_parent_processor_mask_test_and_set(&flushed_parent_gpus, gpu->parent->id))
+            uvm_gpu_fault_buffer_flush(gpu);
+    }
+
+    uvm_global_gpu_release(retained_gpus);
 
     // Call nvUvmInterfaceUnsetPageDirectory. This has no effect on non-MPS.
     // Under MPS this guarantees that no new GPU accesses will be made using
     // this mm.
     //
-    // We need only one thread to make this call, but two threads in here could
-    // race for it, or we could have one thread in here and one in
-    // destroy_gpu_va_space. Serialize these by starting in write mode then
-    // downgrading to read.
+    // We need only one thread to make this call, but we could have one thread
+    // in here and one in destroy_gpu_va_space. Serialize these by starting in
+    // write mode then downgrading to read.
     uvm_va_space_down_write(va_space);
     uvm_va_space_downgrade_write_rm(va_space);
     for_each_gpu_va_space(gpu_va_space, va_space)
@@ -573,7 +415,7 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
     // Now that there won't be any new GPU faults, prevent subsequent retainers
     // from accessing this mm.
     uvm_spin_lock(&va_space_mm->lock);
-    va_space_mm->alive = false;
+    va_space_mm->state = UVM_VA_SPACE_MM_STATE_RELEASED;
     uvm_spin_unlock(&va_space_mm->lock);
 
     // Finish channel destroy. This can be done at any point after detach as
@@ -587,14 +429,13 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 static NV_STATUS mm_read64(struct mm_struct *mm, NvU64 addr, NvU64 *val)
 {
     long ret;
-    int write = 0, force = 0;
     struct page *page;
     NvU64 *mapping;
 
     UVM_ASSERT(IS_ALIGNED(addr, sizeof(*val)));
 
     uvm_down_read_mmap_lock(mm);
-    ret = NV_GET_USER_PAGES_REMOTE(NULL, mm, (unsigned long)addr, 1, write, force, &page, NULL);
+    ret = NV_PIN_USER_PAGES_REMOTE(mm, (unsigned long)addr, 1, 0, &page, NULL);
     uvm_up_read_mmap_lock(mm);
 
     if (ret < 0)
@@ -605,7 +446,7 @@ static NV_STATUS mm_read64(struct mm_struct *mm, NvU64 addr, NvU64 *val)
     mapping = (NvU64 *)((char *)kmap(page) + (addr % PAGE_SIZE));
     *val = *mapping;
     kunmap(page);
-    put_page(page);
+    NV_UNPIN_USER_PAGE(page);
 
     return NV_OK;
 }
@@ -622,7 +463,7 @@ NV_STATUS uvm_test_va_space_mm_retain(UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS *params
     uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
 
     list_for_each_entry(va_space, &g_uvm_global.va_spaces.list, list_node) {
-        if ((uintptr_t)va_space == params->va_space_ptr && uvm_va_space_initialized(va_space) == NV_OK) {
+        if ((uintptr_t)va_space == params->va_space_ptr) {
             mm = uvm_va_space_mm_retain(va_space);
             break;
         }
@@ -647,22 +488,28 @@ NV_STATUS uvm_test_va_space_mm_retain(UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS *params
     return status;
 }
 
-NV_STATUS uvm_test_va_space_mm_delay_shutdown(UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN_PARAMS *params, struct file *filp)
+NV_STATUS uvm_test_va_space_mm_or_current_retain(UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN_PARAMS *params,
+                                                 struct file *filp)
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
-    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
-    NV_STATUS status = NV_ERR_PAGE_TABLE_NOT_AVAIL;
+    struct mm_struct *mm;
+    NV_STATUS status = NV_OK;
 
-    uvm_va_space_down_write(va_space);
+    mm = uvm_va_space_mm_or_current_retain(va_space);
+    if (!mm)
+        return NV_ERR_PAGE_TABLE_NOT_AVAIL;
 
-    if (uvm_va_space_mm_retain(va_space)) {
-        va_space_mm->test.delay_shutdown = true;
-        va_space_mm->test.verbose = params->verbose;
-        uvm_va_space_mm_release(va_space);
-        status = NV_OK;
+    if (params->retain_done_ptr) {
+        NvU64 flag = true;
+
+        if (copy_to_user((void __user *)params->retain_done_ptr, &flag, sizeof(flag)))
+            status = NV_ERR_INVALID_ARGUMENT;
     }
 
-    uvm_va_space_up_write(va_space);
+    if (status == NV_OK && params->sleep_us)
+            usleep_range(params->sleep_us, params->sleep_us + 1000);
+
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     return status;
 }

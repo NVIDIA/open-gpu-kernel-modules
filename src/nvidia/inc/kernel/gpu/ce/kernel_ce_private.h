@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,19 +28,25 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
-#define CE_GET_LOWEST_AVAILABLE_IDX(x) portUtilCountTrailingZeros32(x)
+#define CE_GET_LOWEST_AVAILABLE_IDX(x) \
+    (x == 0 || x == 0xFFFFFFFF) ? 0xFFFFFFFF : portUtilCountTrailingZeros32(x)
 
 /*!
  * @brief Obtain relative CE index.
  *
- * @param localEngType NV2080_ENGINE_TYPE_ for this CE, or partition-local engine type.
+ * @param rmEngineType RM_ENGINE_TYPE_ for this CE, or partition-local engine type.
  * @param ceIdx CE index in 0..GPU_MAX_CES-1
  *
  * @return NV_OK if the conversion is successful.
  */
 static NV_INLINE
-NV_STATUS ceIndexFromType(OBJGPU *pGpu, NvHandle hClient, NvU32 localEngType, NvU32 *ceIdx)
+NV_STATUS ceIndexFromType(OBJGPU *pGpu, Device *pDevice, RM_ENGINE_TYPE rmEngineType, NvU32 *ceIdx)
 {
+    NV_STATUS status = NV_OK;
+    RM_ENGINE_TYPE localRmEngType = rmEngineType;
+
+    *ceIdx = GPU_MAX_CES;
+
     //
     // If MIG is enabled, client passes a logical engineId w.r.t its own partition
     // we need to convert this logical Id to a physical engine Id as we use it
@@ -50,30 +56,28 @@ NV_STATUS ceIndexFromType(OBJGPU *pGpu, NvHandle hClient, NvU32 localEngType, Nv
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        NvBool bEnginePresent;
 
-        NV_CHECK_OK_OR_RETURN(
-            LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            hClient, &ref));
+        status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
+        if (status != NV_OK)
+            return status;
 
-        NV_CHECK_OK_OR_RETURN(
-            LEVEL_ERROR,
-            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              localEngType,
-                                              ceIdx));
-    }
-    else
-    {
-        *ceIdx = localEngType;
+        bEnginePresent = kmigmgrIsLocalEngineInInstance(pGpu, pKernelMIGManager, rmEngineType, ref);
+        if (!bEnginePresent)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        status = kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, rmEngineType, &localRmEngType);
+        if (status != NV_OK)
+            return status;
     }
 
-    if (!NV2080_ENGINE_TYPE_IS_COPY(*ceIdx))
+    if (!RM_ENGINE_TYPE_IS_COPY(localRmEngType))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    *ceIdx = NV2080_ENGINE_TYPE_COPY_IDX(*ceIdx);
-    return NV_OK;
+    *ceIdx = RM_ENGINE_TYPE_COPY_IDX(localRmEngType);
+    return status;
 }
 
 #endif // KERNEL_CE_PRIVATE_H

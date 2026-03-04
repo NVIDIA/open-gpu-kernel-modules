@@ -307,6 +307,10 @@ PORT_DEBUG_INLINE void portDbgExPrintfLevel(NvU32 level, const char *format, ...
 #endif // PORT_IS_KERNEL_BUILD
 #endif // NV_MODS
 
+#if !defined(PORT_DUMP_STACK)
+#define PORT_DUMP_STACK() do {} while (0)
+#endif
+
 #ifdef __cplusplus
 }
 #endif //__cplusplus

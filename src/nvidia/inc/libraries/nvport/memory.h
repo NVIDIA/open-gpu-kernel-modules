@@ -1,5 +1,5 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+    /*
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,16 @@
 #if NVOS_IS_LIBOS
 #include "nvport/inline/memory_libos.h"
 #endif
+
+// Go straight at the memory or hardware.
+#define PORT_MEM_RD08(p) (*(p))
+#define PORT_MEM_RD16(p) (*(p))
+#define PORT_MEM_RD32(p) (*(p))
+#define PORT_MEM_RD64(p) (*(p))
+#define PORT_MEM_WR08(p, v) (*(p) = (v))
+#define PORT_MEM_WR16(p, v) (*(p) = (v))
+#define PORT_MEM_WR32(p, v) (*(p) = (v))
+#define PORT_MEM_WR64(p, v) (*(p) = (v))
 
 /**
  * @defgroup NVPORT_MEMORY Memory
@@ -110,7 +120,7 @@ void portMemShutdown(NvBool bForceSilent);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-void *portMemAllocPaged(NvLength lengthBytes);
+NV_FORCERESULTCHECK void *portMemAllocPaged(NvLength lengthBytes);
 
 /**
  * @brief Allocates non-paged (i.e. pinned) memory.
@@ -127,7 +137,7 @@ void *portMemAllocPaged(NvLength lengthBytes);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-void *portMemAllocNonPaged(NvLength lengthBytes);
+NV_FORCERESULTCHECK void *portMemAllocNonPaged(NvLength lengthBytes);
 
 /**
  * @brief Allocates non-paged (i.e. pinned) memory on the stack or the heap
@@ -138,7 +148,9 @@ void *portMemAllocNonPaged(NvLength lengthBytes);
  * Otherwise it is defined to @ref portMemAllocNonPaged and @ref portMemFree.
  */
 #define portMemExAllocStack(lengthBytes) __builtin_alloca(lengthBytes)
-#define portMemExAllocStack_SUPPORTED PORT_COMPILER_IS_GCC
+// We can't use portMemExAllocStack on kernel as we get the following error:
+// stack usage might be unbounded
+#define portMemExAllocStack_SUPPORTED PORT_COMPILER_IS_GCC && NVOS_IS_LIBOS
 
 #if portMemExAllocStack_SUPPORTED && NVOS_IS_LIBOS
 #define portMemAllocStackOrHeap(lengthBytes) portMemExAllocStack(lengthBytes)
@@ -195,6 +207,32 @@ void portMemFree(void *pData);
  *
  */
 void *portMemCopy(void *pDestination, NvLength destSize, const void *pSource, NvLength srcSize);
+
+/**
+ * @brief Copies data from one address to another.
+ *
+ * Copies srcSize bytes from pSource to pDestination, returning pDestination.
+ * pDestination should be at least destSize bytes, pSource at least srcSize.
+ * destSize should be equal or greater to srcSize.
+ *
+ * This function will also ensure that alignment faults will not be generated
+ * when the device memory is accessed.
+ *
+ * If destSize is 0, it is guaranteed to not access either buffer.
+ *
+ * @par Undefined:
+ * Behavior is undefined if memory regions referred to by pSource and
+ * pDestination overlap.
+ *
+ * @par Checked builds only:
+ * Will assert/breakpoint if the regions overlap. <br>
+ * Will assert/breakpoint if destSize < srcSize <br>
+ * Will assert/breakpoint if either pointer is NULL
+ *
+ * @return pDestination on success, NULL if the operation failed.
+ *
+ */
+void *portMemCopyAligned(void *pDestination, NvLength destSize, const void *pSource, NvLength srcSize);
 
 /**
  * @brief Moves data from one address to another.
@@ -402,7 +440,7 @@ struct PORT_MEM_ALLOCATOR {
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
 
 /**
  * @brief Creates an allocator for non-paged memory.
@@ -417,7 +455,7 @@ PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
 
 /**
  * @brief Creates an allocator over an existing block of memory.
@@ -447,7 +485,7 @@ PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
  * @note Will not put the thread to sleep.
  * @note This allocator is not thread safe.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreateOnExistingBlock(void *pPreallocatedBlock, NvLength blockSizeBytes);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreateOnExistingBlock(void *pPreallocatedBlock, NvLength blockSizeBytes);
 
 /**
  * @brief Extends the given size to fit the required bookkeeping information
@@ -505,12 +543,17 @@ PORT_MEM_ALLOCATOR *portMemAllocatorGetGlobalNonPaged(void);
 PORT_MEM_ALLOCATOR *portMemAllocatorGetGlobalPaged(void);
 /**
  * @brief Prints the memory details gathered by whatever tracking mechanism is
- * enabled. If pAllocator is NULL, it will print data for all allocators.
+ * enabled. If pTracking is NULL, aggregate tracking information from all
+ * allocators will be printed.
  *
- * @note Printing is done using portDbgPrintString, which prints regardless of
+ * @note Printing is done using portDbgPrintf, which prints regardless of
  * build type and debug levels.
  */
-void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR *pAllocator);
+void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking);
+/**
+ * @brief Calls @ref portMemPrintTrackingInfo for all current allocator trackers.
+ */
+void portMemPrintAllTrackingInfo(void);
 
 // @} End core functions
 
@@ -557,6 +600,18 @@ typedef struct PORT_MEM_TRACK_ALLOCATOR_STATS
 NV_STATUS portMemExTrackingGetActiveStats(const PORT_MEM_ALLOCATOR *pAllocator, PORT_MEM_TRACK_ALLOCATOR_STATS *pStats);
 
 /**
+ * @brief Returns the statistics of currently active allocations made with the
+ * given gfid.
+ *
+ * If the corresponding pTracking is not found, it returns
+ * NV_ERR_OBJECT_NOT_FOUND
+ */
+NV_STATUS portMemExTrackingGetGfidActiveStats(
+    NvU32 gfid,
+    PORT_MEM_TRACK_ALLOCATOR_STATS *pStats
+);
+
+/**
  * @brief Returns the statistics of all allocations made with the given
  * allocator since it was created.
  *
@@ -566,19 +621,49 @@ NV_STATUS portMemExTrackingGetActiveStats(const PORT_MEM_ALLOCATOR *pAllocator, 
 NV_STATUS portMemExTrackingGetTotalStats(const PORT_MEM_ALLOCATOR *pAllocator, PORT_MEM_TRACK_ALLOCATOR_STATS *pStats);
 
 /**
+ * @brief Returns the statistics of all allocations made with the given
+ * gfid.
+ *
+ * If the corresponding pTracking is not found, it returns
+ * NV_ERR_OBJECT_NOT_FOUND
+ */
+NV_STATUS portMemExTrackingGetGfidTotalStats(
+    NvU32 gfid,
+    PORT_MEM_TRACK_ALLOCATOR_STATS *pStats
+);
+
+/**
  * @brief Returns the statistics of peak allocations made with the given
  * allocator since it was created.
- * 
- * Peak data reports each field independently. For example, if the peak data
- * reports 100 allocations and 100000 bytes allocated, those two did not
- * necessarily happen *at the same time*. It could also be that the allocator
- * created 100 allocations of 1 byte each, then freed them and allocated a
- * single 100000 bytes block.
+ *
+ * Peak data reports the high-water mark based on the maximum size (the peak
+ * allocations doesn't report the largest number of allocations, it reports
+ * the number of allocations at the time the peak size was achieved). This is
+ * done so that the other peak stats, which are derived from peak size and
+ * peak allocations, are consistent with each other.
  *
  * If pAllocator is NULL, it returns stats for all allocators, as well as the
  * memory allocated with @ref portMemAllocPaged and @ref portMemAllocNonPaged
  */
 NV_STATUS portMemExTrackingGetPeakStats(const PORT_MEM_ALLOCATOR *pAllocator, PORT_MEM_TRACK_ALLOCATOR_STATS *pStats);
+
+/**
+ * @brief Returns the statistics of peak allocations made with the given
+ * gfid since it was created.
+ *
+ * Peak data reports the high-water mark based on the maximum size (the peak
+ * allocations doesn't report the largest number of allocations, it reports
+ * the number of allocations at the time the peak size was achieved). This is
+ * done so that the other peak stats, which are derived from peak size and
+ * peak allocations, are consistent with each other.
+ *
+ * If the corresponding pTracking is not found, it returns
+ * NV_ERR_OBJECT_NOT_FOUND
+ */
+NV_STATUS portMemExTrackingGetGfidPeakStats(
+    NvU32 gfid,
+    PORT_MEM_TRACK_ALLOCATOR_STATS *pStats
+);
 
 /**
  * @brief Cycles through the tracking infos for allocations by pAllocator
@@ -596,6 +681,16 @@ NV_STATUS portMemExTrackingGetPeakStats(const PORT_MEM_ALLOCATOR *pAllocator, PO
  * @return NV_ERR_OBJECT_NOT_FOUND if no allocations exist.
  */
 NV_STATUS portMemExTrackingGetNext(const PORT_MEM_ALLOCATOR *pAllocator, PORT_MEM_TRACK_ALLOC_INFO *pInfo, void **pIterator);
+
+/**
+ * @brief Gets the total size of the underlying heap, in bytes.
+ */
+NvLength portMemExTrackingGetHeapSize(void);
+
+/**
+ * @brief Gets the usable size in bytes (sans metadata/padding) of the given allocation.
+ */
+NvLength portMemExTrackingGetAllocUsableSize(void *pMem);
 
 /**
  * @brief Copies from user memory to kernel memory.
@@ -889,7 +984,7 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
  * Has no effect unless PORT_MEM_TRACK_USE_CALLERINFO is also set.
  */
 #if !defined(PORT_MEM_TRACK_USE_CALLERINFO_IP)
-#if NVCPU_IS_RISCV64
+#if NVOS_IS_LIBOS
 #define PORT_MEM_TRACK_USE_CALLERINFO_IP 1
 #else
 #define PORT_MEM_TRACK_USE_CALLERINFO_IP 0
@@ -904,6 +999,22 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
  */
 #define PORT_MEM_TRACK_USE_LOGGING 0
 #endif
+#if !defined(PORT_MEM_TRACK_USE_LIMIT)
+/**
+ * @brief Track and enforce a heap memory usage limit on processes
+ *        running in GSP-RM.
+ *
+ * Default is on in GSP-RM only.
+ */
+#ifndef GSP_PLUGIN_BUILD
+#define PORT_MEM_TRACK_USE_LIMIT (NVOS_IS_LIBOS)
+#else
+#define PORT_MEM_TRACK_USE_LIMIT 0
+#endif
+#endif // !defined(PORT_MEM_TRACK_USE_LIMIT)
+
+// Memory tracking header can redefine some functions declared here.
+#include "nvport/inline/memory_tracking.h"
 
 /** @brief Nothing is printed unless @ref portMemPrintTrackingInfo is called */
 #define PORT_MEM_TRACK_PRINT_LEVEL_SILENT  0
@@ -913,15 +1024,12 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
 #define PORT_MEM_TRACK_PRINT_LEVEL_VERBOSE 2
 
 #if !defined(PORT_MEM_TRACK_PRINT_LEVEL)
-#if PORT_IS_CHECKED_BUILD
+#if PORT_IS_CHECKED_BUILD || PORT_MEM_TRACK_ALLOC_SIZE
 #define PORT_MEM_TRACK_PRINT_LEVEL PORT_MEM_TRACK_PRINT_LEVEL_BASIC
 #else
 #define PORT_MEM_TRACK_PRINT_LEVEL PORT_MEM_TRACK_PRINT_LEVEL_SILENT
 #endif // PORT_IS_CHECKED_BUILD
 #endif // !defined(PORT_MEM_TRACK_PRINT_LEVEL)
-
-// Memory tracking header can redefine some functions declared here.
-#include "nvport/inline/memory_tracking.h"
 
 /**
  * @brief Single allocation description.

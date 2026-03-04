@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,12 @@
 #include "rmapi/client.h"
 #include "rmapi/resource.h"
 #include "rmapi/rmapi.h"
+#include "rmapi/rmapi_utils.h"
 #include "rmapi/control.h"
 #include "ctrl/ctrlxxxx.h"
 #include "gpu/gpu_resource.h"
 #include "gpu/gpu.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "core/locks.h"
 
@@ -173,27 +175,6 @@ void serverControl_InitCookie
                                     = exportedEntry->accessRight;
 }
 
-//
-// This routine searches through the Resource's NVOC exported methods for an entry
-// that matches the specified command.
-//
-// Same logic as rmControlCmdLookup() in legacy RMCTRL path
-//
-NV_STATUS rmresControlLookup_IMPL
-(
-    RmResource                     *pResource,
-    RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams,
-    const struct NVOC_EXPORTED_METHOD_DEF **ppEntry
-)
-{
-    NvU32 cmd = pRsParams->cmd;
-
-    if (RMCTRL_IS_NULL_CMD(cmd))
-        return NV_WARN_NOTHING_TO_DO;
-
-    return resControlLookup_IMPL(staticCast(pResource, RsResource), pRsParams, ppEntry);
-}
-
 NV_STATUS
 rmresGetMemInterMapParams_IMPL
 (
@@ -225,34 +206,67 @@ rmresGetMemoryMappingDescriptor_IMPL
 }
 
 NV_STATUS
+rmresControlSerialization_Prologue_IMPL
+(
+    RmResource                     *pResource,
+    CALL_CONTEXT                   *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(pResource->rpcGpuInstance);
+
+    if (pGpu != NULL &&
+        ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
+    {
+        return serverSerializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags);
+    }
+    else
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, serverDeserializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
+    }
+
+    return NV_OK;
+}
+
+void
+rmresControlSerialization_Epilogue_IMPL
+(
+    RmResource                     *pResource,
+    CALL_CONTEXT                   *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(pResource->rpcGpuInstance);
+
+    if (pGpu != NULL &&
+        ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
+    {
+        NV_ASSERT_OK(serverDeserializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
+    }
+
+    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
+    serverFreeSerializeStructures(pCallContext, pParams->pParams);
+}
+
+NV_STATUS
 rmresControl_Prologue_IMPL
 (
-    RmResource *pResource, 
-    CALL_CONTEXT *pCallContext, 
+    RmResource *pResource,
+    CALL_CONTEXT *pCallContext,
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
     NV_STATUS status = NV_OK;
     OBJGPU *pGpu = gpumgrGetGpu(pResource->rpcGpuInstance);
 
-    if (pGpu == NULL)
-        return NV_OK;
-
-    if (rmapiControlIsCacheable(pParams->pCookie->ctrlFlags, IS_GSP_CLIENT(pGpu)))
-    {
-        void* cached = rmapiControlCacheGet(pParams->hClient, pParams->hObject, pParams->cmd);
-        if (cached)
-        {
-            portMemCopy(pParams->pParams, pParams->paramsSize, cached, pParams->paramsSize);
-            return NV_WARN_NOTHING_TO_DO;
-        }
-    }
-
-    if ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)) ||
-        (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL)))
+    if (pGpu != NULL &&
+        ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)
+        ) || (IS_FW_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
         //
-        // GPU lock is required to protect the RPC buffers. 
+        // GPU lock is required to protect the RPC buffers.
         // However, some controls have  ROUTE_TO_PHYSICAL + NO_GPUS_LOCK flags set.
         // This is not valid in offload mode, but is in monolithic.
         // In those cases, just acquire the lock for the RPC
@@ -282,6 +296,7 @@ rmresControl_Prologue_IMPL
 
         return (status == NV_OK) ? NV_WARN_NOTHING_TO_DO : status;
     }
+
     return NV_OK;
 }
 
@@ -293,19 +308,4 @@ rmresControl_Epilogue_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    OBJGPU *pGpu = gpumgrGetGpu(pResource->rpcGpuInstance);
-
-    if (pGpu == NULL)
-        return;
-
-    if (rmapiControlIsCacheable(pParams->pCookie->ctrlFlags, IS_GSP_CLIENT(pGpu)))
-    {
-        void* cached = rmapiControlCacheGet(pParams->hClient, pParams->hObject, pParams->cmd);
-        if (!cached)
-        {
-            NV_PRINTF(LEVEL_INFO, "rmControl: caching cmd 0x%x params\n", pParams->cmd);
-            NV_ASSERT_OK(rmapiControlCacheSet(pParams->hClient, pParams->hObject, pParams->cmd,
-                NvP64_VALUE(pParams->pParams), pParams->paramsSize));
-        }
-    }
 }

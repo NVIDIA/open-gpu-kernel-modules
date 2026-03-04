@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,10 +28,13 @@
 #include "ctrl/ctrl2080/ctrl2080bios.h" // NV2080_CTRL_CMD_BIOS_GET_INFO
 #include "ctrl/ctrl2080/ctrl2080bus.h" // NV2080_CTRL_CMD_BUS_GET_INFO
 #include "ctrl/ctrl2080/ctrl2080clk.h" // NV2080_CTRL_CMD_CLK_*
+#include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h" // NV2080_CTRL_CMD_GPU_GET_INFO
 #include "ctrl/ctrl2080/ctrl2080perf.h" // NV2080_CTRL_CMD_PERF_*
-#include "ctrl/ctrl0080/ctrl0080perf.h" // NV0080_CTRL_CMD_PERF_GET_CAPS
 #include "ctrl/ctrl0080/ctrl0080bsp.h" // NV0080_CTRL_CMD_BSP_GET_CAPS
+#include "ctrl/ctrl0080/ctrl0080msenc.h" // NV0080_CTRL_CMD_MSENC_GET_CAPS
+#include "ctrl/ctrl0073/ctrl0073dp.h" // NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES
+#include "rmapi/rmapi_utils.h"
 
 //
 // TODO - deprecation shim shouldn't depend on RM internals 
@@ -61,30 +64,35 @@ static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_BIOS_GET_INFO)(API_SECURITY_INFO 
 static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_BUS_GET_INFO)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
+static NV_STATUS V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
+static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_MSENC_GET_CAPS)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
+static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_FB_GET_INFO)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 
 typedef struct
 {
     NvU32                       cmd;      // NVXXXX_CTRL_CMD_* value
     RmDeprecatedControlHandler  func;     // pointer to handler
-    NvBool                      bSkipVGPU;// Do not apply to vGPU - GSP-TODO for better solution.
 } RmDeprecatedControlEntry;
 
 
 static const RmDeprecatedControlEntry rmDeprecatedControlTable[] =
 {
-    { NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION,     V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION),     NV_FALSE},
-    { NV2080_CTRL_CMD_BIOS_GET_INFO,                V2_CONVERTER(_NV2080_CTRL_CMD_BIOS_GET_INFO),                NV_FALSE},
-    { NV2080_CTRL_CMD_BUS_GET_INFO,                 V2_CONVERTER(_NV2080_CTRL_CMD_BUS_GET_INFO),                 NV_FALSE},
-    { NV0080_CTRL_CMD_BSP_GET_CAPS,                 V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS),                 NV_FALSE},
-    { NV2080_CTRL_CMD_GPU_GET_INFO,                 V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO),                 NV_FALSE},
-    { 0, NULL, NV_FALSE }
+    { NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION,             V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION)             },
+    { NV2080_CTRL_CMD_BIOS_GET_INFO,                        V2_CONVERTER(_NV2080_CTRL_CMD_BIOS_GET_INFO)                        },
+    { NV2080_CTRL_CMD_BUS_GET_INFO,                         V2_CONVERTER(_NV2080_CTRL_CMD_BUS_GET_INFO)                         },
+    { NV0080_CTRL_CMD_BSP_GET_CAPS,                         V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS)                         },
+    { NV2080_CTRL_CMD_GPU_GET_INFO,                         V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO)                         },
+    { NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES,                V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES)                },
+    { NV0080_CTRL_CMD_MSENC_GET_CAPS,                       V2_CONVERTER(_NV0080_CTRL_CMD_MSENC_GET_CAPS)                       },
+    { NV2080_CTRL_CMD_FB_GET_INFO,                          V2_CONVERTER(_NV2080_CTRL_CMD_FB_GET_INFO)                          },
+    { 0, NULL }
 };
 
 /*!
  * Check whether the cmd is part of the GSS legacy
  * commands.
  */
-static NvBool IsGssLegacyCall(NvU32 cmd)
+NvBool IsGssLegacyCall(NvU32 cmd)
 {
     return !!(cmd & RM_GSS_LEGACY_MASK);
 }
@@ -94,14 +102,16 @@ RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArg
     NvU32     i;
     NV_STATUS nvStatus;
     RsClient *pClient     = NULL;
-    POBJGPU   pGpu        = NULL;
+    OBJGPU   *pGpu        = NULL;
+    NvBool gssLegacyVgpuCall = NV_FALSE;
 
     NV_CHECK_OK_OR_ELSE(nvStatus,
                         LEVEL_ERROR,
                         serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
                         return NULL);
 
-    gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu);
+    // pGpu is expected to be NULL on some controls, addi ng a void to avoid coverity failure.
+    (void)gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu);
 
     // search rmDeprecatedControlTable for handler
     for (i = 0; rmDeprecatedControlTable[i].cmd != 0; i++)
@@ -113,22 +123,14 @@ RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArg
             NV_ASSERT_OR_ELSE_STR(pArgs->flags == 0, "IRQL and BYPASS_LOCK control calls currently unsupported for deprecated control calls",
                                   return NULL);
 
-            //
-            // Do not deprecate for vGPU
-            // GSP-TODO: short-term only; we need to find a better way than this exclusion or
-            // updating the ugly file  resman/kernel/inc/vgpu/rm_plugin_shared_code.h
-            //
-            if (pGpu && IS_VIRTUAL(pGpu) && rmDeprecatedControlTable[i].bSkipVGPU)
-            {
-                return NULL;
-            }
-
             return rmDeprecatedControlHandler;
         }
     }
 
+    gssLegacyVgpuCall = ((pGpu != NULL) && IS_VIRTUAL(pGpu));
+
     // Check if the cmd is part of the legacy GSS control.
-    if (pGpu && IS_GSP_CLIENT(pGpu) && IsGssLegacyCall(pArgs->cmd))
+    if (pGpu != NULL && IsGssLegacyCall(pArgs->cmd) && (IS_GSP_CLIENT(pGpu) || gssLegacyVgpuCall))
     {
         extern NV_STATUS RmGssLegacyRpcCmd(API_SECURITY_INFO*, DEPRECATED_CONTEXT*, NVOS54_PARAMETERS*);
         return RmGssLegacyRpcCmd;
@@ -155,6 +157,7 @@ typedef struct
         NvU32 paramStructOffset;
         NvU32 listSizeOffset;
         NvBool bListSizeIsCount;
+        NvU32 maxListSize;
     } params[CONTROL_PARAM_TOKEN_MAX_POINTERS];
     NvU32 paramCount;
 } CONTROL_PARAM_TOKEN;
@@ -173,6 +176,7 @@ static void _ctrlparamsTokenInit
     pToken->params[0].paramStructOffset = 0;
     pToken->params[0].listSizeOffset = (NvU32)~0;
     pToken->params[0].bListSizeIsCount = NV_FALSE;
+    pToken->params[0].maxListSize = 0;
     pToken->paramCount = 1;
 }
 
@@ -182,7 +186,8 @@ static NV_STATUS _ctrlparamsTokenAddEmbeddedPtr
     NvU32 paramStructOffset,
     NvU32 listSizeOffset,
     NvBool bListSizeIsCount,
-    NvU32 listItemSize
+    NvU32 listItemSize,
+    NvU32 maxListSize
 )
 {
     if (pToken->paramCount >= CONTROL_PARAM_TOKEN_MAX_POINTERS)
@@ -198,6 +203,7 @@ static NV_STATUS _ctrlparamsTokenAddEmbeddedPtr
     pToken->params[pToken->paramCount].listSizeOffset = listSizeOffset;
     pToken->params[pToken->paramCount].bListSizeIsCount = bListSizeIsCount;
     pToken->params[pToken->paramCount].paramSize = listItemSize;
+    pToken->params[pToken->paramCount].maxListSize = maxListSize;
     pToken->paramCount++;
     return NV_OK;
 }
@@ -206,10 +212,10 @@ static NV_STATUS _ctrlparamsTokenAddEmbeddedPtr
     _ctrlparamsTokenInit(&token, pArgs->params, sizeof(paramType))
 
 #define CTRL_PARAMS_TOKEN_ADD_EMBEDDED(token, paramType, pArgs, listField, listSizeField, \
-                                       listSizeIsCount, listElemType)                     \
+                                       listSizeIsCount, listElemType, maxListSize)        \
     _ctrlparamsTokenAddEmbeddedPtr(&token, NV_OFFSETOF(paramType, listField),             \
                                    NV_OFFSETOF(paramType, listSizeField),                 \
-                                   listSizeIsCount, sizeof(listElemType))
+                                   listSizeIsCount, sizeof(listElemType), maxListSize)
 
 static NV_STATUS ctrlparamAcquire
 (
@@ -249,6 +255,12 @@ static NV_STATUS ctrlparamAcquire
                 // Let the RM control decide about its parameter policy.
                 //
                 continue;
+            }
+
+            if (listItemCount > pToken->params[i].maxListSize)
+            {
+                status = NV_ERR_OUT_OF_RANGE;
+                goto done;
             }
 
             //
@@ -352,16 +364,19 @@ static void ctrlparamRelease
     do {                                                                                      \
         NV_STATUS status;                                                                     \
         CONTROL_PARAM_TOKEN token;                                                            \
+        newParamsType *pParams2;                                                              \
+        NvU64 maxListSize = sizeof(pParams2->newListField);                                   \
+        if (listSizeIsCount)                                                                  \
+            maxListSize /= sizeof(listElemType);                                              \
         CTRL_PARAMS_TOKEN_INIT(token, oldParamsType, pArgs);                                  \
                                                                                               \
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,                                                    \
             CTRL_PARAMS_TOKEN_ADD_EMBEDDED(token, oldParamsType, pArgs, oldListField,         \
-                                           listSizeField, listSizeIsCount, listElemType));    \
+                                           listSizeField, listSizeIsCount, listElemType, maxListSize)); \
         status = ctrlparamAcquire(pSecInfo, &token, pArgs);                                   \
         if (status == NV_OK)                                                                  \
         {                                                                                     \
             oldParamsType *pParams = NvP64_VALUE(pArgs->params);                              \
-            newParamsType *pParams2;                                                          \
             NvU32 listSize = listSizeIsCount ? /* overflow checked in ctrlparamAcquire() */   \
                 pParams->listSizeField * sizeof(listElemType) :                               \
                 pParams->listSizeField;                                                       \
@@ -605,14 +620,15 @@ static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS)
                      NV_TRUE, // return path, ie, copy out back to user
                      // Custom data in from user
                      {
-                         if (pParams->capsTblSize != NV0080_CTRL_BSP_CAPS_TBL_SIZE)
-                         {
-                             NV_PRINTF(LEVEL_ERROR, "pParams capsTblSize %d invalid\n",
-                                       pParams->capsTblSize);
-                             portMemFree(pParams2);
-                             return NV_ERR_INVALID_ARGUMENT;
-                         }
-                         pParams2->instanceId = pParams->instanceId;
+                        if (pParams->capsTblSize != NV0080_CTRL_BSP_CAPS_TBL_SIZE)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "pParams capsTblSize %d invalid\n",
+                                   pParams->capsTblSize);
+                            portMemFree(pParams2);
+                            ctrlparamRelease(pSecInfo, &token, pArgs);
+                            return NV_ERR_INVALID_ARGUMENT;
+                        }
+                        pParams2->instanceId = pParams->instanceId;
                      },
                      // Custom data out back to user
                      {}   // array has been filled. 
@@ -637,4 +653,157 @@ static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO)
                   NV_TRUE, // Command SETs which info to fetch, do copy-in
                   NV_TRUE  // Command GETs info, do copy-out
                  );
+}
+
+static NV_STATUS V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES)
+(
+    API_SECURITY_INFO *pSecInfo,
+    DEPRECATED_CONTEXT *pContextInternal,
+    NVOS54_PARAMETERS *pArgs
+)
+{
+    NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *pParams = NULL;
+    NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams2 = NULL;
+    NV_STATUS status;
+
+    pParams = portMemAllocNonPaged(sizeof(*pParams));
+    if (pParams == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No memory for pParams\n");
+        return NV_ERR_NO_MEMORY;
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYIN,
+                                   RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                   pArgs->params,
+                                   sizeof(*pParams),
+                                   (void**)&pParams,
+                                   pSecInfo->paramLocation == PARAM_LOCATION_USER),
+        done);
+
+    pParams2 = portMemAllocNonPaged(sizeof(*pParams2));
+    if (pParams2 == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No memory for pParams2\n");
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    NVMISC_MEMSET(pParams2, 0, sizeof(*pParams2));
+
+    pParams2->subDeviceInstance = pParams->subDeviceInstance;
+    pParams2->displayId = pParams->displayId;
+    pParams2->bEnableMSA = pParams->bEnableMSA;
+    pParams2->bStereoPhaseInverse = pParams->bStereoPhaseInverse;
+    pParams2->bCacheMsaOverrideForNextModeset = pParams->bCacheMsaOverrideForNextModeset;
+    pParams2->featureMask = pParams->featureMask;
+    pParams2->featureValues = pParams->featureValues;
+
+    if (pParams->pFeatureDebugValues != NULL)
+    {
+        pParams2->bDebugValues = NV_TRUE;
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYIN,
+                                       RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                       pParams->pFeatureDebugValues,
+                                       sizeof(pParams2->featureDebugValues),
+                                       (void**)&pParams2->featureDebugValues,
+                                       pSecInfo->paramLocation != PARAM_LOCATION_KERNEL),
+            done);
+    }
+    status = pContextInternal->RmControl(pContextInternal, pArgs->hClient,
+                                         pArgs->hObject,
+                                         NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2,
+                                         pParams2,
+                                         sizeof(NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS));
+    if (status == NV_OK)
+    {
+        if (pParams->pFeatureDebugValues != NULL)
+        {
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYOUT,
+                                           RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                           pParams->pFeatureDebugValues,
+                                           sizeof(pParams2->featureDebugValues),
+                                           (void**)&pParams2->featureDebugValues,
+                                           pSecInfo->paramLocation != PARAM_LOCATION_KERNEL),
+                done);
+        }
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+             RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYOUT,
+                                        RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                        pArgs->params,
+                                        sizeof(*pParams),
+                                        (void**)&pParams,
+                                        pSecInfo->paramLocation == PARAM_LOCATION_USER),
+             done);
+    }
+
+done:
+    if (pParams2 != NULL)
+    {
+        portMemFree(pParams2);
+    }
+    if (pParams != NULL)
+    {
+        portMemFree(pParams);
+    }
+
+    return status;
+}
+
+static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_MSENC_GET_CAPS)
+(
+    API_SECURITY_INFO *pSecInfo,
+    DEPRECATED_CONTEXT *pContextInternal,
+    NVOS54_PARAMETERS *pArgs
+)
+{
+    CONVERT_TO_V2_EX(NV0080_CTRL_CMD_MSENC_GET_CAPS_V2,   // newCmd
+                     NV0080_CTRL_MSENC_GET_CAPS_PARAMS,   // oldParamsType
+                     NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS,// newParamsType
+                     capsTbl,                           // oldListField
+                     capsTbl,                           // newListField
+                     capsTblSize,                       // listSizeField
+                     NV_TRUE,                           // listSizeIsCount
+                     NvU8,                              // listElemType
+                     NV_TRUE, // for below custom to run, this must be TRUE.
+                     NV_TRUE, // return path, ie, copy out back to user
+                     // Custom data in from user
+                     {
+                        if (pParams->capsTblSize != NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
+                        {
+                            NV_PRINTF(LEVEL_NOTICE, "pParams capsTblSize %d invalid\n",
+                                       pParams->capsTblSize);
+                            portMemFree(pParams2);
+                            ctrlparamRelease(pSecInfo, &token, pArgs);
+                            return NV_ERR_INVALID_ARGUMENT;
+                        }
+                        pParams2->instanceId = 0;
+                     },
+                     // Custom data out back to user
+                     {}   // array has been filled.
+                    );
+}
+
+static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_FB_GET_INFO)
+(
+    API_SECURITY_INFO *pSecInfo,
+    DEPRECATED_CONTEXT *pContextInternal,
+    NVOS54_PARAMETERS *pArgs
+)
+{
+    CONVERT_TO_V2(NV2080_CTRL_CMD_FB_GET_INFO_V2,   // newCmd
+                     NV2080_CTRL_FB_GET_INFO_PARAMS,   // oldParamsType
+                     NV2080_CTRL_FB_GET_INFO_V2_PARAMS,// newParamsType
+                     fbInfoList,                           // oldListField
+                     fbInfoList,                           // newListField
+                     fbInfoListSize,                       // listSizeField
+                     NV_TRUE,                           // listSizeIsCount
+                     NV2080_CTRL_FB_INFO,               // listElemType
+                     NV_TRUE, // for below custom to run, this must be TRUE.
+                     NV_TRUE // return path, ie, copy out back to user
+                    );
 }

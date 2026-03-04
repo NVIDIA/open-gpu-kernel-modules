@@ -114,7 +114,7 @@ _btreeNodeValidate
 )
 {
     NV_STATUS status;
-    
+
     status = NV_OK;
     if (pNode == NULL)
     {
@@ -157,7 +157,7 @@ _btreeNodeValidate
         }
     }
 
-    // red black tree property: Every red node that is not a leaf has only black children. 
+    // red black tree property: Every red node that is not a leaf has only black children.
     if (pNode->isRed)
     {
         if (pNode->left && pNode->left->isRed)
@@ -182,7 +182,7 @@ _btreeBranchValidate
     NODE *pNode
 )
 {
-    NV_STATUS status;   
+    NV_STATUS status;
     status = NV_OK;
     if (pNode)
     {
@@ -206,7 +206,7 @@ _btreeTreeValidate
 )
 {
     NV_STATUS status;
-    
+
     status = NV_OK;
     if (pRoot)
     {
@@ -227,7 +227,7 @@ _btreeTreeValidate
     }
     return (status);
 }
-   
+
 #else
 //
 // Validate nothing.
@@ -460,7 +460,7 @@ static void _deleteFixup(NODE **pRoot, NODE *parentOfX, NODE *x)
     {
         NV_ASSERT (!(x == NULL && parentOfX == NULL));
         // NULL nodes are sentinel nodes.  If we delete a sentinel node (x==NULL) it
-        // must have a parent node (or be the root). Hence, parentOfX == NULL with 
+        // must have a parent node (or be the root). Hence, parentOfX == NULL with
         // x==NULL is never possible (tree invariant)
 
         if ((parentOfX != NULL) && (x == parentOfX->left))
@@ -755,7 +755,7 @@ btreeEnumNext
     PNODE *pNode,
     PNODE  root
 )
-{   
+{
     // no nodes ?
     NODE *current = NULL;
     VALIDATE_NODE(*pNode);
@@ -821,7 +821,7 @@ btreeDestroyData
 
 //
 // Frees all the nodes and data stored in them.
-// Don't use if the nodes were allocated within other structs 
+// Don't use if the nodes were allocated within other structs
 // (e.g. if the Node is embedded within the struct pointed by its "Data" field)
 //
 NV_STATUS

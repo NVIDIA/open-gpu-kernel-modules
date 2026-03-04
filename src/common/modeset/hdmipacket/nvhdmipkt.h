@@ -56,7 +56,9 @@ typedef enum
     NVHDMIPKT_TIMEOUT                = 4,
     NVHDMIPKT_ERR_GENERAL            = 5,
     NVHDMIPKT_INSUFFICIENT_BANDWIDTH = 6,
-    NVHDMIPKT_RETRY                  = 7
+    NVHDMIPKT_RETRY                  = 7,
+    NVHDMIPKT_INSUFFICIENT_BUFFER    = 8,
+    NVHDMIPKT_DSC_PPS_ERROR          = 9
 } NVHDMIPKT_RESULT;
 
 // NVHDMIPKT_TYPE: HDMI Packet Enums
@@ -69,8 +71,17 @@ typedef enum _NVHDMIPKT_TYPE
     NVHDMIPKT_TYPE_GENERAL_CONTROL            = 3,  // GCP
     NVHDMIPKT_TYPE_VENDOR_SPECIFIC_INFOFRAME  = 4,  // VSI
     NVHDMIPKT_TYPE_AUDIO_INFOFRAME            = 5,  // Audio InfoFrame
-    NVHDMIPKT_TYPE_EXTENDED_METADATA_PACKET   = 6,  // Extended Metadata Packet (HDMI 2.1)
-    NVHDMIPKT_INVALID_PKT_TYPE                = 13
+    NVHDMIPKT_TYPE_SHARED_GENERIC1            = 6,  // ADA+ Specifc shared generic infoframe 1~6
+    NVHDMIPKT_TYPE_SHARED_GENERIC2            = 7,
+    NVHDMIPKT_TYPE_SHARED_GENERIC3            = 8,
+    NVHDMIPKT_TYPE_SHARED_GENERIC4            = 9,
+    NVHDMIPKT_TYPE_SHARED_GENERIC5            = 10,
+    NVHDMIPKT_TYPE_SHARED_GENERIC6            = 11,
+    NVHDMIPKT_TYPE_SHARED_GENERIC7            = 12,
+    NVHDMIPKT_TYPE_SHARED_GENERIC8            = 13,
+    NVHDMIPKT_TYPE_SHARED_GENERIC9            = 14,
+    NVHDMIPKT_TYPE_SHARED_GENERIC10           = 15,
+    NVHDMIPKT_INVALID_PKT_TYPE                = 16
 } NVHDMIPKT_TYPE;
 
 // Hdmi packet TransmitControl defines. These definitions reflect the
@@ -99,6 +110,11 @@ typedef enum _NVHDMIPKT_TYPE
 #define NV_HDMI_PKT_TRANSMIT_CTRL_VIDEO_FMT_SW_CTRL     0x00000000
 #define NV_HDMI_PKT_TRANSMIT_CTRL_VIDEO_FMT_HW_CTRL     0x00000001
 
+#define NV_HDMI_PKT_TRANSMIT_CTRL_LOC                   7:6
+#define NV_HDMI_PKT_TRANSMIT_CTRL_LOC_VBLANK            0x00000000
+#define NV_HDMI_PKT_TRANSMIT_CTRL_LOC_VSYNC             0x00000001
+#define NV_HDMI_PKT_TRANSMIT_CTRL_LOC_LOADV             0x00000002
+
 // NVHDMIPKT_TC: HDMI Packet Transmit Control
 // NOTE: Client should use these defines below for transmit control, and avoid using the ones
 //       above. Use only if client knows and wants fine control. And in that case the value
@@ -117,6 +133,12 @@ typedef enum _NVHDMIPKT_TC
      DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _SINGLE,    _DIS)  |
      DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _EN)),
 
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME_SW_CHECKSUM =
+    (DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _ENABLE,    _EN)   |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _OTHER,     _DIS)  |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _SINGLE,    _DIS)  |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _CHKSUM_HW, _DIS)),
+
     NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME         =
     (DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _ENABLE,    _EN)   |
      DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _OTHER,     _DIS)  |
@@ -132,7 +154,47 @@ typedef enum _NVHDMIPKT_TC
     NVHDMIPKT_TRANSMIT_CONTROL_VIDEO_FMT_HW_CTRL           =
     (DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _VIDEO_FMT, _HW_CTRL)),
 
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME_LOC_LOADV=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME   |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _LOADV)),
+
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME_LOC_LOADV=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME  |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _LOADV)),
+
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME_LOC_VSYNC=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME   |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _VSYNC)),
+
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME_LOC_VSYNC=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME  |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _VSYNC)),
+
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME_LOC_VBLANK=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME   |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _VBLANK)),
+
+    NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME_LOC_VBLANK=
+    (NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME  |
+     DRF_DEF(_HDMI_PKT, _TRANSMIT_CTRL, _LOC, _VBLANK)),
 } NVHDMIPKT_TC;
+
+typedef enum _INFOFRAME_CTRL_RUN_MODE
+{
+    INFOFRAME_CTRL_RUN_MODE_ALWAYS = 0,
+    INFOFRAME_CTRL_RUN_MODE_ONCE,
+    INFOFRAME_CTRL_RUN_MODE_FID_ALWAYS,
+    INFOFRAME_CTRL_RUN_MODE_FID_ONCE,
+    INFOFRAME_CTRL_RUN_MODE_FID_TRIGGER
+} INFOFRAME_CTRL_RUN_MODE;
+
+typedef enum _INFOFRAME_CTRL_LOC
+{
+    INFOFRAME_CTRL_LOC_VBLANK = 0,
+    INFOFRAME_CTRL_LOC_VSYNC,
+    INFOFRAME_CTRL_LOC_LINE,
+    INFOFRAME_CTRL_LOC_LOADV
+} INFOFRAME_CTRL_LOC;
 
 // RM client handles. Used when client chooses that hdmi library make RM calls.
 // NOTE: NVHDMIPKT_RM_CALLS_INTERNAL macro should be define to use it.
@@ -216,9 +278,45 @@ typedef struct _tagNVHDMIPKT_CALLBACK
                         ;
 
     void
-    (*assert)          (NvHdmiPkt_CBHandle handle,
-                        NvBool             expression);
+    (*assert)          (const char        *expression,
+                        const char        *filename,
+                        const char        *function,
+                        unsigned int       line);
 } NVHDMIPKT_CALLBACK;
+
+
+/************************************************************************************************
+ * runMode  - specify one of the modes of operation*
+ * location - vsync/line/vblank     *
+ * flipId   - client to provide if FID mode of operation, 0 otherwise *
+ * lineNum  - if infoframe is sent at line border specify lineNum. 0 is default *
+ *                                                                                              *
+ * T239 chip more infoframe support *
+  ************************************************************************************************/
+typedef struct tagADVANCED_INFOFRAME
+{
+    INFOFRAME_CTRL_RUN_MODE    runMode;
+    INFOFRAME_CTRL_LOC         location;
+
+    NvU32                      flipId;
+    NvU32                      lineNum;
+    NvU32                      numAdditionalInfoframes;
+
+    NvU32                      packetLen;     // client is expected to fill in 9 DWs for each infoframe, leaving unused bytes 0
+    NvU8 const *               pPacket;       // (4 bytes header, 32 bytes max payload per infoframe) For SIZE > 0, pPacket is
+                                              // continuous array of multiple infoframes each 9DW in size
+
+    // flags
+    NvU32                      isLargeInfoframe         :  1;       // set if client wants SIZE > 0. Default 0 = normal infoframe
+    NvU32                      lineIdReversed           :  1;       // set if client wants line Id reversed. Default 0 = not reversed
+    NvU32                      crcOverride              :  1;       // set if client uses CRC override. Default 0 = CRC override not used
+    NvU32                      asSdpOverride            :  1;       // set if client wants to enable AS SDP override in infoframe HW
+    NvU32                      hwChecksum               :  1;       // set if client wants HW checksum. Default 0 = SW checksum
+    NvU32                      matchFidMethodArmState   :  1;       // set if client wants HW to send infoframe when FID method's ARM state matches. Default 0 = send only when FID method Active state
+    NvU32                      winMethodCyaBroadcast    :  1;       // set if client will set up CYA reg for SF to decode directly. Default 0 = private precalc decode (SF decodes from precalc)
+    NvU32                      highAudioPriority        :  1;       // set if client wants high priority for audio. Default 0 = audio low priority
+    NvU32                      reserved                 : 24;
+} ADVANCED_INFOFRAME;
 
 /*********************** HDMI Library interface to write hdmi ctrl/packet ***********************/
 typedef void* NvHdmiPkt_Handle;
@@ -265,6 +363,45 @@ NvHdmiPkt_PacketWrite(NvHdmiPkt_Handle   libHandle,
                       NVHDMIPKT_TC       transmitControl,
                       NvU32              packetLen,
                       NvU8 const *const  pPacket);
+
+
+/************************************************************************************************
+ * NvHdmiPkt_PacketRead - Returns HDMI NVHDMIPKT_RESULT.                                        *
+ *                                                                                              *
+ * Parameters:                                                                                  *
+ * libHandle - Hdmi library handle, provided on initializing the library.                       *
+ * subDevice - Sub Device ID.                                                                   *
+ * head      - Head number.                                                                     *
+ * packetReg       - One of the NVHDMIPKT_TYPE types.                                           *
+ * bufferLen       - Size of the client provided read out buffer                                *
+ * pOutPktBuffer   - buffer into which read packet data is to be written.                       *
+ ************************************************************************************************/
+NVHDMIPKT_RESULT
+NvHdmiPkt_PacketRead(NvHdmiPkt_Handle    libHandle,
+                     NvU32               subDevice,
+                     NvU32               head,
+                     NVHDMIPKT_TYPE      packetReg,
+                     NvU32               bufferLen,
+                     NvU8 *const         pOutPktBuffer);
+
+
+/************************************************************************************************
+ * NvHdmiPkt_SetupAdvancedInfoframe - Returns HDMI NVHDMIPKT_RESULT.                            *
+ *                                                                                              *
+ * Parameters:                                                                                  *
+ * libHandle  - Hdmi library handle, provided on initializing the library.                      *
+ * subDevice  - Sub Device ID.                                                                  *
+ * head       - Head number.                                                                    *
+ * packetType - One of the NVHDMIPKT_TYPE types.                                                *
+ * pInfoframe - details about infoframe to be programmed - run mode/loc/etc and pkt bytes       *
+ ************************************************************************************************/
+NVHDMIPKT_RESULT
+NvHdmiPkt_SetupAdvancedInfoframe(NvHdmiPkt_Handle          libHandle,
+                                 NvU32                     subDevice,
+                                 NvU32                     head,
+                                 NVHDMIPKT_TYPE            packetReg,
+                                 ADVANCED_INFOFRAME const *pInfoframe);
+
 
 /***************************** Interface to initialize HDMI Library *****************************/
 

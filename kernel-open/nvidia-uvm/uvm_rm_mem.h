@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
 #include "uvm_test_ioctl.h"
+#include "uvm_hal_types.h"
 
 typedef enum
 {
@@ -41,11 +42,11 @@ struct uvm_rm_mem_struct
     uvm_rm_mem_type_t type;
 
     // Mask of processors the memory is mapped on
-    uvm_global_processor_mask_t mapped_on;
+    uvm_processor_mask_t mapped_on;
 
     // VA of the memory on the UVM internal address space of each processor. If
     // the memory has not been mapped on a given processor, the VA is zero.
-    NvU64 vas[UVM_GLOBAL_ID_MAX_PROCESSORS];
+    NvU64 vas[UVM_ID_MAX_PROCESSORS];
 
     // VA of the memory in the proxy address space of each processor. If
     // the memory has not been mapped on a given processor, the VA is zero.
@@ -71,11 +72,18 @@ struct uvm_rm_mem_struct
 // mapping created and removed dynamically with the uvm_rm_mem_(un)map_gpu()
 // functions.
 //
+// Alignment affects only the GPU VA mapping. If gpu_alignment is 0, then 4K
+// alignment is enforced.
+//
 // Locking:
 //  - Internally acquires:
 //    - RM API lock
 //    - RM GPUs lock
-NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out);
+NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu,
+                           uvm_rm_mem_type_t type,
+                           NvLength size,
+                           NvU64 gpu_alignment,
+                           uvm_rm_mem_t **rm_mem_out);
 
 // Free the memory.
 // Clear all mappings and free the memory
@@ -89,25 +97,36 @@ NV_STATUS uvm_rm_mem_map_cpu(uvm_rm_mem_t *rm_mem);
 void uvm_rm_mem_unmap_cpu(uvm_rm_mem_t *rm_mem);
 
 // Shortcut for uvm_rm_mem_alloc() + uvm_rm_mem_map_cpu().
-// The function fails and nothing is allocated if any of the intermediate steps fail.
+// The function fails and nothing is allocated if any of the intermediate steps
+// fail.
 //
 // Locking same as uvm_rm_mem_alloc()
-NV_STATUS uvm_rm_mem_alloc_and_map_cpu(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out);
+NV_STATUS uvm_rm_mem_alloc_and_map_cpu(uvm_gpu_t *gpu,
+                                       uvm_rm_mem_type_t type,
+                                       NvLength size,
+                                       NvU64 gpu_alignment,
+                                       uvm_rm_mem_t **rm_mem_out);
 
 // Shortcut for uvm_rm_mem_alloc_and_map_cpu() + uvm_rm_mem_map_all_gpus()
-// The function fails and nothing is allocated if any of the intermediate steps fail.
+// The function fails and nothing is allocated if any of the intermediate steps
+// fail.
 //
 // Locking same as uvm_rm_mem_alloc()
-NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out);
+NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu,
+                                       uvm_rm_mem_type_t type,
+                                       NvLength size,
+                                       NvU64 gpu_alignment,
+                                       uvm_rm_mem_t **rm_mem_out);
 
 // Map/Unmap on UVM's internal address space of a GPU. In SR-IOV heavy the
 // operation is also applied on the GPU's proxy address space.
 //
-// Supported only for sysmem (UVM_RM_MEM_TYPE_SYS). The GPU has to be different
-// from the one the memory was originally allocated for.
+// Mapping/unmapping on the GPU owner, or mapping on an already mapped GPU, are
+// no-ops. Mapping/unmapping on a GPU different from the owner is only supported
+// for system memory.
 //
 // Locking same as uvm_rm_mem_alloc()
-NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
+NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 gpu_alignment);
 void uvm_rm_mem_unmap_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 
 // Map on UVM's internal address space of all GPUs retained by the UVM driver
@@ -115,7 +134,7 @@ void uvm_rm_mem_unmap_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 // also mapped on the proxy address space of all GPUs.
 //
 // Locking same as uvm_rm_mem_alloc()
-NV_STATUS uvm_rm_mem_map_all_gpus(uvm_rm_mem_t *rm_mem);
+NV_STATUS uvm_rm_mem_map_all_gpus(uvm_rm_mem_t *rm_mem, NvU64 gpu_alignment);
 
 // Get the CPU VA, GPU VA (UVM internal/kernel address space), or GPU (proxy
 // address space)
@@ -125,7 +144,7 @@ NvU64 uvm_rm_mem_get_gpu_proxy_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 
 // Get the GPU VA of the given memory in UVM's internal address space (if the
 // flag is false), or proxy address space (if flag is true).
-NvU64 uvm_rm_mem_get_gpu_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, bool is_proxy_va_space);
+uvm_gpu_address_t uvm_rm_mem_get_gpu_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, bool is_proxy_va_space);
 
 // Query if the memory is mapped on the CPU, GPU (UVM internal/kernel address
 // space), or GPU (proxy address space)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,14 +39,22 @@
 #include "diagnostics/tracer.h"
 #include "nvpcie.h"
 #include "vgpu/vgpu_events.h"
+#include "lib/base_utils.h"
+#include "gpu/device/device.h"
 
 /* ------------------------ Macros ------------------------------------------ */
 /* ------------------------ Compile Time Checks ----------------------------- */
 /* ------------------------ Static Function Prototypes ---------------------- */
-static void _kbifInitRegistryOverrides(OBJGPU *, KernelBif *);
-static void _kbifCheckIfGpuExists(OBJGPU *, void*);
-static NV_STATUS _kbifSetPcieRelaxedOrdering(OBJGPU *, KernelBif *, NvBool);
+static void       _kbifInitRegistryOverrides(OBJGPU *, KernelBif *);
+static void       _kbifCheckIfGpuExists(OBJGPU *, void*);
+static NV_STATUS  _kbifSetPcieRelaxedOrdering(OBJGPU *, KernelBif *, NvBool);
+static void       _kbifCreateChipsetPayloadStr(OBJGPU *pGpu, KernelBif *pKernelBif, char *pChipsetPayloadStr);
+static void       _kbifCreateChipsetGpuPayloadStr(OBJGPU *pGpu, KernelBif *pKernelBif, char *pChipsetPayloadStr, char *pChipsetGpuPayloadStr);
+static NV_STATUS  _kbifParsePciePowerControl(OBJGPU *pGpu, KernelBif *pKernelBif, const char *pChipsetPayloadStr, const char *pChipsetGpuPayloadStr, NvU32 *pPciePowerControlValue);
 
+static NV_STATUS _kbifNbsiReadRTD3RegistryDword(OBJGPU *pGpu, KernelBif *pKernelBif, const char *pRegParmStr,NvU32 *pData);
+
+extern const GUID NV_GUID_UEFI_VARIABLE;
 /* ------------------------ Public Functions -------------------------------- */
 
 /*!
@@ -73,8 +81,26 @@ kbifConstructEngine_IMPL
     // Disables P2P on VF
     kbifDisableP2PTransactions_HAL(pGpu, pKernelBif);
 
+    // Cache MNOC interface support
+    kbifCacheMnocSupport_HAL(pGpu, pKernelBif);
+
+    // Cache FLR support
+    kbifCacheFlrSupport_HAL(pGpu, pKernelBif);
+
+    // Cache 64B BAR0 support
+    kbifCache64bBar0Support_HAL(pGpu, pKernelBif);
+
+    // Cache VF info
+    kbifCacheVFInfo_HAL(pGpu, pKernelBif);
+
+    // Cache GPU link capabilities
+    kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
+
+    // Default scale is 1 and could be overriden by registry
+    pKernelBif->flrDevInitTimeoutScale = 1;
 
     return NV_OK;
 }
@@ -92,15 +118,24 @@ kbifStateInitLocked_IMPL
     KernelBif *pKernelBif
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS  *pOS  = SYS_GET_OS(pSys);
-    OBJCL  *pCl  = SYS_GET_CL(pSys);
+    OBJSYS    *pSys   = SYS_GET_INSTANCE();
+    OBJOS     *pOS    = SYS_GET_OS(pSys);
+    OBJCL     *pCl    = SYS_GET_CL(pSys);
+
+    kbifInitXveRegMap_HAL(pGpu, pKernelBif, 1);
+    kbifInitXveRegMap_HAL(pGpu, pKernelBif, 0);
+
+    // Do the HAL dependent init
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifInit_HAL(pGpu, pKernelBif));
 
     // Return early if GPU is connected to an unsupported chipset
     if (pCl->getProperty(pCl, PDB_PROP_CL_UNSUPPORTED_CHIPSET))
     {
         return NV_ERR_NOT_COMPATIBLE;
     }
+
+    // Initialize OS mapping and core logic
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, osInitMapping(pGpu));
 
     // Initialize BIF static info
     kbifStaticInfoInit(pGpu, pKernelBif);
@@ -109,8 +144,7 @@ kbifStateInitLocked_IMPL
     kbifInitDmaCaps(pGpu, pKernelBif);
 
     // Check for OS w/o usable PAT support
-    if ((kbifGetBusIntfType_HAL(pKernelBif) ==
-         NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
+    if ((gpuGetBusIntfType_HAL(pGpu) == NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
         pOS->getProperty(pOS, PDB_PROP_OS_PAT_UNSUPPORTED))
     {
         NV_PRINTF(LEVEL_INFO,
@@ -145,7 +179,14 @@ kbifStateLoad_IMPL
     // Check for stale PCI-E dev ctrl/status errors and AER errors
     kbifClearConfigErrors(pGpu, pKernelBif, NV_TRUE, KBIF_CLEAR_XVE_AER_ALL_MASK);
 
-    kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
+    // Initialize LTR from config space
+    kbifInitLtr_HAL(pGpu, pKernelBif);
+
+    //  Cache PCI config registers to be restored during resume
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
+    {
+        kbifSavePcieConfigRegisters_HAL(pGpu, pKernelBif);
+    }
 
     //
     // A vGPU cannot disappear and these accesses are
@@ -154,10 +195,411 @@ kbifStateLoad_IMPL
     if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF) &&
         !IS_VIRTUAL(pGpu))
     {
-        osSchedule1SecondCallback(pGpu, _kbifCheckIfGpuExists, NULL, NV_OS_1HZ_REPEAT);
+        osSchedule1HzCallback(pGpu, _kbifCheckIfGpuExists, NULL, NV_OS_1HZ_REPEAT);
     }
 
     return NV_OK;
+}
+
+/*!
+ * @brief Helper function to create chipset payload string
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelBif         Kernel BIF Object pointer
+ * @param[out]  pChipsetPayloadStr Holds the complete PCIePowerControl chipset payload string
+ *                                 (PCIePowerControl_VVVVDDDDddddvvvv)
+ */
+static void
+_kbifCreateChipsetPayloadStr
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    char      *pChipsetPayloadStr
+)
+{
+    char    chipsetFourPartIdStr[17];
+    NvU32   offsetFromBase     = 0;
+    NvU64   chipsetFourpartIds = 0;
+    OBJSYS *pSys               = SYS_GET_INSTANCE();
+    OBJCL  *pCl                = SYS_GET_CL(pSys);
+
+    chipsetFourpartIds = (NvU64)  pCl->FHBBusInfo.vendorID << 48 |
+                         (NvU64)  pCl->FHBBusInfo.deviceID << 32 |
+                         (NvU64)  pCl->FHBBusInfo.subdeviceID << 16 |
+                         (NvU64)  pCl->FHBBusInfo.subvendorID;
+
+    // Convert the chipsetIds to string format
+    nvU64ToStr(chipsetFourpartIds, chipsetFourPartIdStr, 16);
+
+    portMemSet(pChipsetPayloadStr, '\0', NV_REG_STR_PCIPOWERCONTROL_CHIPSET_LENGTH);
+
+    // Copy the PCIePowerControl suffix
+    portMemCopy(pChipsetPayloadStr,
+                nvStringLen(NV_REG_STR_ENABLE_PCIPOWERCONTROL_WITHOUT_SUFFIX),
+                NV_REG_STR_ENABLE_PCIPOWERCONTROL_WITHOUT_SUFFIX,
+                nvStringLen(NV_REG_STR_ENABLE_PCIPOWERCONTROL_WITHOUT_SUFFIX));
+    offsetFromBase = nvStringLen(NV_REG_STR_ENABLE_PCIPOWERCONTROL_WITHOUT_SUFFIX);
+
+    portMemCopy(pChipsetPayloadStr + offsetFromBase, 1, "_", 1);
+    offsetFromBase += 1;
+
+    // Copy the chipset four part Ids
+    portMemCopy(pChipsetPayloadStr + offsetFromBase,
+                nvStringLen(chipsetFourPartIdStr),
+                chipsetFourPartIdStr,
+                nvStringLen(chipsetFourPartIdStr));
+}
+
+/*!
+ * @brief Helper function to create chipset+GPU payload string.
+ *
+ * @param[in]   pGpu                  OBJGPU pointer
+ * @param[in]   pKernelBif            Kernel BIF Object pointer
+ * @param[in]   pChipsetPayloadStr    Chipset payload string
+ * @param[out]  pChipsetGpuPayloadStr Holds the complete PCIePowerControl chipset+GPU payload string
+ *                                    (PCIePowerControl_VVVVDDDDddddvvvv_VVVVDDDDddddvvvv)
+ */
+static void
+_kbifCreateChipsetGpuPayloadStr
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    char      *pChipsetPayloadStr,
+    char      *pChipsetGpuPayloadStr
+)
+{
+    char    gpuFourPartIdStr[17];
+    NvU32   offsetFromBase = 0;
+    NvU64   gpuFourPartIds = 0;
+
+    gpuFourPartIds = (((NvU64) pGpu->idInfo.PCIDeviceID & 0xffff) << 48) |
+                     ((((NvU64) pGpu->idInfo.PCIDeviceID >> 16) & 0xffff) << 32) |
+                     ((((NvU64) pGpu->idInfo.PCISubDeviceID >> 16) & 0xffff) << 16) |
+                     ((NvU64) pGpu->idInfo.PCISubDeviceID & 0xffff);
+
+    // Convert the gpu four part ids to string format
+    nvU64ToStr(gpuFourPartIds, gpuFourPartIdStr, 16);
+
+    portMemSet(pChipsetGpuPayloadStr, '\0', NV_REG_STR_PCIPOWERCONTROL_CHIPSET_GPU_LENGTH);
+
+    // Copy the chipset payload string
+    portMemCopy(pChipsetGpuPayloadStr,
+                nvStringLen(pChipsetPayloadStr),
+                pChipsetPayloadStr,
+                nvStringLen(pChipsetPayloadStr));
+    offsetFromBase = nvStringLen(pChipsetPayloadStr);
+
+    portMemCopy(pChipsetGpuPayloadStr + offsetFromBase, 1, "_", 1);
+    offsetFromBase += 1;
+
+    // Copy the gpu four part Ids
+    portMemCopy(pChipsetGpuPayloadStr + offsetFromBase,
+                nvStringLen(gpuFourPartIdStr),
+                gpuFourPartIdStr,
+                nvStringLen(gpuFourPartIdStr));
+}
+
+/*!
+ * @brief Helper function to parse RTD3 DR Key
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelBif         KernelBif Object pointer
+ * @param[in]   pRegParmStr        PCIePowerControl  payload string
+ * @param[out]  pData              DR key value
+ *
+ * @return the NV_OK if DR key was found and data returned in pData
+ */
+static NV_STATUS
+_kbifNbsiReadRTD3RegistryDword
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif,
+    const char *pRegParmStr,
+    NvU32      *pData
+)
+{
+    NBSI_OBJ  *pNbsiObj = getNbsiObject();
+    NvU32      nbsiDword;
+    NvU16      pathHash;
+    NvU8      *pRetBuf;
+    NvU32      retSize;
+    NvU32      errorCode;
+    NvU16      module   = NV2080_CTRL_BIOS_NBSI_MODULE_DISPLAYDRIVER;
+    NV_STATUS  status;
+    NvU32      elementHashArray[MAX_NBSI_OS];
+    NvU8       maxOSndx;
+
+    NV_ASSERT_OR_RETURN(pRegParmStr != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pData != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    if ((pGpu == NULL) || (pNbsiObj == NULL))
+    {
+        return NV_ERR_INVALID_OBJECT;
+    }
+
+    // Check to make sure we are not in the power management code path
+    if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH))
+        && (!pGpu->getProperty(pGpu, PDB_PROP_GPU_DO_NOT_CHECK_REG_ACCESS_IN_PM_CODEPATH))
+       )
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "osReadRegistryDword called in Sleep path can cause excessive delays!\n");
+
+        NV_ASSERT(0);
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    pathHash = pNbsiObj->nbsiBlankPathHash;
+    maxOSndx = pNbsiObj->curMaxNbsiOSes;
+
+    // The RM module uses a blank (relative path) so just do element.
+    fnv1Hash20Array((const NvU8 *) pRegParmStr,
+                    nvStringLen(pRegParmStr),
+                    elementHashArray,
+                    maxOSndx);
+
+    retSize = sizeof(nbsiDword);
+    pRetBuf = (NvU8 *) &nbsiDword;
+
+    //
+    // Read from both NBSI table and os reg tables... then decide what
+    // to return.
+    //
+    status = getNbsiValue(pGpu,
+                          module,
+                          pathHash,
+                          maxOSndx,
+                          elementHashArray,
+                          pRetBuf,
+                          &retSize,
+                          &errorCode);
+    if (status == NV_OK)
+    {
+        if (errorCode == NV2080_CTRL_BIOS_GET_NBSI_SUCCESS)
+        {
+            *pData = nbsiDword;
+        }
+        else
+        {
+            //
+            // assert if we didn't have enough room to hold the returned data.
+            // Since we define the return as a dword here, this could only be
+            // because the registry has the key but it's defined longer than a
+            // dword. i.e. byte array or extended byte array.
+            //
+            NV_ASSERT(errorCode != NV2080_CTRL_BIOS_GET_NBSI_INCOMPLETE);
+            status = NV_ERR_GENERIC;
+        }
+    }
+
+    return status;
+}
+
+/*!
+ * @brief      Helper function to parse unified PCIE power control based on below priority order
+ *
+ *  1. HKR Key Dual MB+GPU
+ *  2. NVGlobal Key Dual MB+GPU
+ *  3. UEFI variable Dual MB+GPU
+ *  4. DR Key Dual MB+GPU
+ *  5. HKR Key MB
+ *  6. NVGlobal Key MB
+ *  7. UEFI variable MB
+ *  8. DR Key MB
+ *  9. HKR Key wildcard
+ * 10. NVGlobal Key wildcard
+ * 11. UEFI variable wildcard
+ * 12. DR Key wildcard
+ * 13. SBIOS cookie - legacy mechanism (should not be used anymore, here for completeness
+ *
+ * @param[in]  pGpu                   OBJGPU pointer
+ * @param[in]  pKernelBif             KernelBif Object pointer
+ * @param[in]  pChipsetPayloadStr     Chipset payload string
+ * @param[in]  pChipsetGpuPayloadStr  Chipset+GPU payload string
+ * @param[out] pPciePowerControlValue pciePowerControlValue pointer
+ *
+ * @return     NV_OK on success, otherwise an error code.
+ */
+static NV_STATUS
+_kbifParsePciePowerControl
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif,
+    const char *pChipsetPayloadStr,
+    const char *pChipsetGpuPayloadStr,
+    NvU32      *pPciePowerControlValue
+)
+{
+    NV_STATUS   status      = NV_OK;
+    NvU32       uefiSize    = sizeof(NvU32);
+    NvU32       cookieSize  = sizeof(NvU8);
+    NvU8        aspmCookie  = 0;
+    const char *wildcardVar = NV_REG_STR_ENABLE_PCIPOWERCONTROL_WITHOUT_SUFFIX;
+
+    // Read the HKR Key with Chipset + GPU 4-part ID
+    if (osReadRegistryDword(pGpu, pChipsetGpuPayloadStr,
+                            pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_GPU_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_ADAPTER;
+    }
+    // Read the NvGlobal Key with Chipset + GPU 4-part ID
+    else if (osGetNvGlobalRegistryDword(pGpu, pChipsetGpuPayloadStr,
+                                        pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_GPU_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_GLOBAL;
+    }
+    // Read the UEFI variable with Chipset + GPU 4-part ID
+    else if (osGetUefiVariable(pChipsetGpuPayloadStr,
+                               (LPGUID)&NV_GUID_UEFI_VARIABLE,
+                               (NvU8 *)pPciePowerControlValue, &uefiSize) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_GPU_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_UEFI;
+    }
+    // Read the DR Key with Chipset + GPU 4-part ID
+    else if (_kbifNbsiReadRTD3RegistryDword(pGpu, pKernelBif, pChipsetGpuPayloadStr,
+                                            pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_GPU_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_DR;
+    }
+    // Read the HKR Key with Chipset 4-part ID
+    else if (osReadRegistryDword(pGpu, pChipsetPayloadStr,
+                                 pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_ADAPTER;
+    }
+    // Read the NvGlobal Key with Chipset 4-part ID
+    else if (osGetNvGlobalRegistryDword(pGpu,pChipsetPayloadStr,
+                                        pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_GLOBAL;
+    }
+    // Read the UEFI variable with Chipset 4-part ID
+    else if (osGetUefiVariable(pChipsetPayloadStr,
+                               (LPGUID)&NV_GUID_UEFI_VARIABLE,
+                               (NvU8 *)pPciePowerControlValue, &uefiSize) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_UEFI;
+    }
+    // Read the DR Key with Chipset 4-part ID
+    else if (_kbifNbsiReadRTD3RegistryDword(pGpu, pKernelBif, pChipsetPayloadStr,
+                                            pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_CHIPSET_ID;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_DR;
+    }
+    // Read the wildcard HKR Key
+    else if (osReadRegistryDword(pGpu, wildcardVar,
+                                 pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_WILDCARD;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_ADAPTER;
+    }
+    // Read the wildcard NvGlobal Key
+    else if (osGetNvGlobalRegistryDword(pGpu, wildcardVar,
+                                        pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_WILDCARD;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_GLOBAL;
+    }
+    // Read the wildcard UEFI variable
+    else if (osGetUefiVariable(wildcardVar,
+                               (LPGUID)&NV_GUID_UEFI_VARIABLE,
+                               (NvU8 *)pPciePowerControlValue, &uefiSize) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_WILDCARD;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_UEFI;
+    }
+    // Read the wildcard DR Key
+    else if (_kbifNbsiReadRTD3RegistryDword(pGpu, pKernelBif, wildcardVar,
+                                            pPciePowerControlValue) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_WILDCARD;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_DR;
+    }
+    // SBIOS cookie legacy mechanisms support
+    else if (nbsiReadRegistryString(pGpu, NV_REG_STR_RM_SBIOS_ENABLE_ASPM_DT,
+                                    &aspmCookie, &cookieSize) == NV_OK)
+    {
+        pKernelBif->pciePowerControlInfo.identifiedKeyOrder    = PCIEPOWERCONTROL_KEY_ORDER_WILDCARD;
+        pKernelBif->pciePowerControlInfo.identifiedKeyLocation = PCIEPOWERCONTROL_KEY_LOCATION_COOKIE;
+
+        // Left shift by 4 to match the bit field mapping of pciePowerControlValue
+        aspmCookie = (aspmCookie << 4);
+       *pPciePowerControlValue = (NvU32) aspmCookie;
+    }
+    else
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Cache PCIe Power Control variables
+ *
+ * @param[in] pGpu                  GPU object pointer
+ * @param[in] pKernelBif            Kernel BIF object pointer
+ * @param[in] pPciePowerControlValue Pcie Power Control mask
+ * 
+ * return     NV_OK                 on successfully caching UEFI variables
+ */
+NV_STATUS
+kbifGetPciePowerControlValue_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU32     *pPciePowerControlValue
+)
+{
+    char       chipsetPayloadStr[NV_REG_STR_PCIPOWERCONTROL_CHIPSET_LENGTH];
+    char       chipsetGpuPayloadStr[NV_REG_STR_PCIPOWERCONTROL_CHIPSET_GPU_LENGTH];
+    NV_STATUS  status = NV_OK;
+
+    // Create chipset payload string (PCIePowerControl_VVVVDDDDddddvvvv)
+    _kbifCreateChipsetPayloadStr(pGpu, pKernelBif, chipsetPayloadStr);
+
+    // Create chipset+GPU payload string (PCIePowerControl_VVVVDDDDddddvvvv_VVVVDDDDddddvvvv)
+    _kbifCreateChipsetGpuPayloadStr(pGpu, pKernelBif, chipsetPayloadStr, chipsetGpuPayloadStr);
+
+    // Parse PCIePowerControl mask
+    status = _kbifParsePciePowerControl(pGpu, pKernelBif,
+                                        chipsetPayloadStr,
+                                        chipsetGpuPayloadStr,
+                                        pPciePowerControlValue);
+
+    return status;
+}
+
+/*!
+ * @brief: Control call to get RTD3+ASPM override mask
+ *
+ * @return
+ *   NV_OK on Success
+ */
+NV_STATUS
+deviceCtrlCmdBifGetPciePowerControlMask_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_CMD_BIF_GET_PCIE_POWER_CONTROL_MASK_PARAMS *pBifPciePowerControlParams
+)
+{
+    NV_STATUS  status               = NV_OK;
+    OBJGPU    *pGpu                 = GPU_RES_GET_GPU(pDevice);
+    KernelBif *pKernelBif           = GPU_GET_KERNEL_BIF(pGpu);
+
+    pBifPciePowerControlParams->pciePowerControlMask                  = pKernelBif->pciePowerControlInfo.pciePowerControlValue;
+    pBifPciePowerControlParams->pciePowerControlIdentifiedKeyOrder    = pKernelBif->pciePowerControlInfo.identifiedKeyOrder;
+    pBifPciePowerControlParams->pciePowerControlIdentifiedKeyLocation = pKernelBif->pciePowerControlInfo.identifiedKeyLocation;
+
+    return status;
 }
 
 /*!
@@ -239,7 +681,66 @@ kbifStateUnload_IMPL
     NvU32      flags
 )
 {
+
     return NV_OK;
+}
+
+
+/*!
+ * @brief Cache L1substates info from chipset or bridge behind the GPUs.
+ *
+ * @param[in]  pGpu       GPU object pointer
+ * @param[in]  pKernelBif Kernel BIF object pointer
+ */
+void
+kbifCacheChipsetL1SubstatesEnable_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    OBJSYS                  *pSys = SYS_GET_INSTANCE();
+    OBJCL                   *pCl  = SYS_GET_CL(pSys);
+    PexL1SubstateCapability  L1SsCap;
+    NvBool                   bChipsetPcipmL12Enabled;
+    NvBool                   bChipsetPcipmL11Enabled;
+    NvBool                   bChipsetAspmL12Enabled;
+    NvBool                   bChipsetAspmL11Enabled;
+
+    if (pGpu->gpuClData.upstreamPort.addr.valid)
+    {
+        if (pCl && (clPcieReadL1SsCapability(pGpu, pCl, &L1SsCap) == NV_OK))
+        {
+            pKernelBif->chipsetL1ssEnable = L1SsCap.Control1Reg;
+
+            bChipsetPcipmL12Enabled = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _PCIPM_L1_2_ENABLED, _YES, L1SsCap.Control1Reg);
+            bChipsetPcipmL11Enabled = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _PCIPM_L1_1_ENABLED, _YES, L1SsCap.Control1Reg);
+            bChipsetAspmL12Enabled  = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _ASPM_L1_2_ENABLED,  _YES, L1SsCap.Control1Reg);
+            bChipsetAspmL11Enabled  = FLD_TEST_DRF(2080, _CTRL_BUS_INFO_PCIE_L1_SS_CTRL1, _ASPM_L1_1_ENABLED,  _YES, L1SsCap.Control1Reg);
+
+            //
+            // L1 PM substates can be done with ASPM or PCI-PM
+            // Its supported if any of L1.1/L1.2 PCI-PM/ASPM susbtates is enabled
+            //
+            if (bChipsetPcipmL12Enabled || bChipsetPcipmL11Enabled || bChipsetAspmL12Enabled || bChipsetAspmL11Enabled)
+            {
+                // Chipset Supports L1 PM Substates
+                NV_PRINTF(LEVEL_INFO,
+                          "Chipset supports L1 PM substates.\n      L1 PM Capabilities Register 0x%x\n      L1 PM Control 1 Register 0x%x\n      L1 PM Control 2 Register 0x%x\n",
+                          L1SsCap.Capabilities, L1SsCap.Control1Reg, L1SsCap.Control1Reg);
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "L1 PM susbstates is not enabled in RootPort. L1 PM Control 1 Register 0x%x \n",
+                          L1SsCap.Control1Reg);
+            }
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Failed to get L1 PM substates capabilites from Root Port\n");
+        }
+    }
 }
 
 /*!
@@ -328,7 +829,10 @@ kbifStaticInfoInit_IMPL
                             pStaticInfo->bPcieGen4Capable);
     pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP,
                             pStaticInfo->bIsC2CLinkUp);
-    pKernelBif->dmaWindowStartAddress = pStaticInfo->dmaWindowStartAddress;
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION,
+                            pStaticInfo->bIsDeviceMultiFunction);
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_GCX_PMU_CFG_SPACE_RESTORE,
+                            pStaticInfo->bGcxPmuCfgSpaceRestore);
 
 kBifStaticInfoInit_IMPL_exit:
     portMemFree(pStaticInfo);
@@ -340,7 +844,7 @@ kBifStaticInfoInit_IMPL_exit:
  * @brief Initialize PCI-E config space bits based on chipset and GPU support.
  */
 void
-kbifInitPcieDeviceControlStatus
+kbifInitPcieDeviceControlStatus_IMPL
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -364,6 +868,15 @@ kbifInitPcieDeviceControlStatus
     else
     {
         kbifPcieConfigDisableRelaxedOrdering_HAL(pGpu, pKernelBif);
+    }
+
+    //
+    // WAR for bug 3661529. All GH100 SKUs will need the NoSnoop WAR.
+    // But currently GSP-RM does not detect this correctly,
+    //
+    if (IsGH100(pGpu))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ROOTPORT_NEEDS_NOSNOOP_WAR, NV_TRUE);
     }
 
     if (!pCl->getProperty(pCl, PDB_PROP_CL_NOSNOOP_NOT_CAPABLE) &&
@@ -402,7 +915,8 @@ kbifCheckAndRearmMSI_IMPL
 
     if (kbifIsMSIEnabled(pGpu, pKernelBif))
     {
-        if (!IS_VIRTUAL(pGpu))
+        if (!IS_VIRTUAL(pGpu) ||
+            pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_ALLOW_REARM_MSI_FOR_VF))
         {
             // Send EOI to rearm
             if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_USE_CONFIG_SPACE_TO_REARM_MSI))
@@ -500,7 +1014,7 @@ kbifIsMSIXEnabled_IMPL
 }
 
 /*!
- * @brief Clear PCIe HW PCIe config space error counters. 
+ * @brief Clear PCIe HW PCIe config space error counters.
  * All of these should be cleared using config cycles.
  *
  * @param[in]   pGpu          GPU object pointer
@@ -634,23 +1148,6 @@ kbifClearConfigErrors_IMPL
 }
 
 /*!
- * @brief The PCI bus family means it has the concept of bus/dev/func
- *        and compatible PCI config space.
- */
-NvBool
-kbifIsPciBusFamily_IMPL
-(
-    KernelBif *pKernelBif
-)
-{
-    NvU32 busType = kbifGetBusIntfType_HAL(pKernelBif);
-
-    return ((busType == NV2080_CTRL_BUS_INFO_TYPE_PCI) ||
-            (busType == NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) ||
-            (busType == NV2080_CTRL_BUS_INFO_TYPE_FPCI));
-}
-
-/*!
  * @brief Regkey Overrides for Bif
  *
  * @param[in]   pGpu          GPU object pointer
@@ -682,6 +1179,12 @@ _kbifInitRegistryOverrides
         pKernelBif->forceP2PType = data32;
     }
 
+    pKernelBif->pcieP2PType = NV_REG_STR_RM_PCIEP2P_TYPE_DEFAULT;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_PCIEP2P_TYPE, &data32) == NV_OK)
+    {
+        pKernelBif->pcieP2PType = data32;
+    }
+
     // Peer Mapping override
     pKernelBif->peerMappingOverride = NV_REG_STR_PEERMAPPING_OVERRIDE_DEFAULT;
     if (osReadRegistryDword(pGpu, NV_REG_STR_PEERMAPPING_OVERRIDE, &data32) == NV_OK)
@@ -689,6 +1192,66 @@ _kbifInitRegistryOverrides
         NV_PRINTF(LEVEL_INFO, "allow peermapping reg key = %d\n", data32);
         pKernelBif->peerMappingOverride = !!data32;
     }
+
+    // Check if the PCIe SBR recovery feature is enabled.
+    if (osReadRegistryDword(pGpu, NV_REG_STR_SECONDARY_BUS_RESET_ENABLED, &data32) == NV_OK)
+    {
+        if (data32)
+        {
+            // The regkey was set to a non-zero value, enable the feature.
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SECONDARY_BUS_RESET_ENABLED, NV_TRUE);
+        }
+        else
+        {
+            // The regkey was set to 0, disable the feature.
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SECONDARY_BUS_RESET_ENABLED, NV_FALSE);
+        }
+    }
+
+    // Check if saving of the PCIe config space during SBR is enabled.
+    if (osReadRegistryDword(pGpu, NV_REG_STR_FORCE_PCIE_CONFIG_SAVE, &data32) == NV_OK)
+    {
+        if (data32)
+        {
+            // The regkey was set to a non-zero value, enable config save
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE, NV_TRUE);
+        }
+        else
+        {
+            // The regkey was set to a 0, disable config save
+            pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE, NV_FALSE);
+        }
+    }
+
+    // Check if Function Level Reset(FLR) is disabled
+    pKernelBif->bForceDisableFLR = NV_REG_STR_RM_PCIE_FLR_POLICY_DEFAULT;
+    if (osReadRegistryDword(pGpu,
+           NV_REG_STR_RM_PCIE_FLR_POLICY, &data32) == NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO, "Pcie FLR Policy reg key = %d\n", data32);
+
+        if (data32 == NV_REG_STR_RM_PCIE_FLR_POLICY_FORCE_DISABLE)
+        {
+            pKernelBif->bForceDisableFLR = NV_TRUE;
+        }
+        // There might be a requirement to handle (data32 == NV_REG_STR_RM_PCIE_FLR_POLICY_DEFAULT) case as per platform's policy
+        else
+        {
+            pKernelBif->bForceDisableFLR = NV_FALSE;
+        }
+    }
+
+    // Check for FLR timeout scale override
+    if (osReadRegistryDword(pGpu,
+           NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE, &data32) == NV_OK)
+    {
+        if ((data32 >= NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE_MIN_ALLOWED) &&
+            (data32 <= NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE_MAX_ALLOWED))
+        {
+            pKernelBif->flrDevInitTimeoutScale = data32;
+        }
+    }
+
 }
 
 /*!
@@ -708,13 +1271,21 @@ _kbifCheckIfGpuExists
     {
         if (gpuVerifyExistence_HAL(pGpu) != NV_OK)
         {
-            osRemove1SecondRepeatingCallback(pGpu, _kbifCheckIfGpuExists, NULL);
+            osRemove1HzCallback(pGpu, _kbifCheckIfGpuExists, NULL);
         }
     }
 }
 
-static NvU32
-kbifGetGpuLinkCapabilities
+/*!
+ * @brief Get link capabilities register value
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    Register value
+ */
+NvU32
+kbifGetGpuLinkCapabilities_IMPL
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -731,14 +1302,25 @@ kbifGetGpuLinkCapabilities
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrLinkCap, &data))
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrLinkCap);
-        return 0;
+        data = 0;
     }
+
+    // Cache link capabilities here to be used by GSP-RM
+    pKernelBif->pcieConfigReg.linkCap = data;
 
     return data;
 }
 
-static NvU32
-kbifGetGpuLinkControlStatus
+/*!
+ * @brief Get link control status register value
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    Register value
+ */
+NvU32
+kbifGetGpuLinkControlStatus_IMPL
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -754,7 +1336,103 @@ kbifGetGpuLinkControlStatus
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrLinkControlStatus, &data ))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrLinkControlStatus);
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrLinkControlStatus);
+        return 0;
+    }
+
+    return data;
+}
+
+/*!
+ * @brief Get device control status register value
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    Register value
+ */
+NvU32
+kbifGetGpuDevControlStatus_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 addrDevControlStatus = 0;
+    NvU32 data                 = 0;
+
+    if (NV_OK != kbifGetBusOptionsAddr_HAL(pGpu, pKernelBif, BUS_OPTIONS_DEV_CONTROL_STATUS, &addrDevControlStatus))
+    {
+        return 0;
+    }
+
+    if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrDevControlStatus, &data ))
+    {
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrDevControlStatus);
+        return 0;
+    }
+
+    return data;
+}
+
+/*!
+ * @brief Get device control status 2 register value
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    Register value
+ */
+NvU32
+kbifGetGpuDevControlStatus2_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 addrDevControlStatus2 = 0;
+    NvU32 data                  = 0;
+
+    if (NV_OK != kbifGetBusOptionsAddr_HAL(pGpu, pKernelBif, BUS_OPTIONS_DEV_CONTROL_STATUS_2, &addrDevControlStatus2))
+    {
+        return 0;
+    }
+
+    if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrDevControlStatus2, &data ))
+    {
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrDevControlStatus2);
+        return 0;
+    }
+
+    return data;
+}
+
+/*!
+ * @brief Get L1 Substates control register value
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    Register value
+ */
+NvU32
+kbifGetGpuL1PmSubstatesCtrl1_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 addrL1PmSubstatesCtrl1 = 0;
+    NvU32 data                   = 0;
+
+    if (NV_OK != kbifGetBusOptionsAddr_HAL(pGpu, pKernelBif, BUS_OPTIONS_L1_PM_SUBSTATES_CTRL_1, &addrL1PmSubstatesCtrl1))
+    {
+        return 0;
+    }
+
+    if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrL1PmSubstatesCtrl1, &data ))
+    {
+        NV_PRINTF(LEVEL_INFO, "Unable to read %x\n", addrL1PmSubstatesCtrl1);
         return 0;
     }
 
@@ -764,7 +1442,7 @@ kbifGetGpuLinkControlStatus
 static NvBool
 _doesBoardHaveMultipleGpusAndSwitch(OBJGPU *pGpu)
 {
-    if (((gpuIsMultiGpuBoard(pGpu, NULL, NULL)) ||
+    if (((gpuIsMultiGpuBoard(pGpu)) ||
         (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_GEMINI)))&&
         ((pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_PLX_PRESENT))  ||
          (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_BR03_PRESENT)) ||
@@ -791,10 +1469,10 @@ kbifControlGetPCIEInfo_IMPL
     NvU32   index = pBusInfo->index;
     NvU32   data  = 0;
 
-    if (kbifGetBusIntfType_HAL(pKernelBif) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
+    if (gpuGetBusIntfType_HAL(pGpu) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
     {
-        // KMD cannot handle error codes for this ctrl call, hence returning 
-        // NV_OK, once KMD fixes the bug:3545197, RM can return NV_ERR_NOT_SUPPORTED 
+        // KMD cannot handle error codes for this ctrl call, hence returning
+        // NV_OK, once KMD fixes the bug:3545197, RM can return NV_ERR_NOT_SUPPORTED
         return NV_OK;
     }
 
@@ -840,7 +1518,12 @@ kbifControlGetPCIEInfo_IMPL
                 else
                 {
                     temp = REF_VAL(NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED, temp);
-                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_32000MBPS)
+                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_64000MBPS)
+                    {
+                        data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
+                                           _CURR_LEVEL, _GEN6, data);
+                    }
+                    else if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_32000MBPS)
                     {
                         data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
                                            _CURR_LEVEL, _GEN5, data);
@@ -877,7 +1560,12 @@ kbifControlGetPCIEInfo_IMPL
                 else
                 {
                     temp = REF_VAL(NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED, temp);
-                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS)
+                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_64000MBPS)
+                    {
+                        data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
+                                           _GEN, _GEN6, data);
+                    }
+                    else if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS)
                     {
                         data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
                                            _GEN, _GEN5, data);
@@ -918,7 +1606,7 @@ kbifControlGetPCIEInfo_IMPL
                         NV_PRINTF(LEVEL_INFO, "Squashing rmStatus: %x \n", rmStatus);
                         rmStatus = NV_OK;
                         busInfo.data = 0;
-                    }                    
+                    }
                     data = busInfo.data;
                 }
             }
@@ -1088,3 +1776,195 @@ kbifControlGetPCIEInfo_IMPL
     pBusInfo->data = data;
     return NV_OK;
 }
+
+/*!
+ * @brief To ensure GPU is back on bus and accessible by polling device ID
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ *
+ * @returns NV_OK
+ * @returns NV_ERR_TIMEOUT
+ */
+NV_STATUS
+kbifPollDeviceOnBus_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif
+)
+{
+    RMTIMEOUT timeout;
+
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    while (osPciInitHandle(gpuGetDomain(pGpu),
+                           gpuGetBus(pGpu),
+                           gpuGetDevice(pGpu), 0, NULL, NULL) == NULL)
+    {
+        if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Timeout polling GPU back on bus\n");
+            DBG_BREAKPOINT();
+            return NV_ERR_TIMEOUT;
+        }
+        osDelayUs(100);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief To get PCI link max spead from PCI link Gen info
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ * @param[in]  pciLinkGenInfo   PCI link Gen info
+ * @param[in]  pciLinkMaxSpeed  pointer to PCI link max spead
+
+ * @returns NV_OK
+ * @returns NV_ERR_INVALID_STATE
+ */
+NV_STATUS
+kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif,
+    NvU32      pciLinkGenInfo,
+    NvU32      *pciLinkMaxSpeed
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+
+    switch (pciLinkGenInfo)
+    {
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN1:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_2500MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN2:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_5000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN3:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_8000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN4:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_16000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN5:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN6:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_64000MBPS;
+            break;
+
+        default:
+            rmStatus = NV_ERR_INVALID_STATE;
+            NV_PRINTF(LEVEL_ERROR, "Unknown PCIe Gen Info\n");
+    }
+
+    return rmStatus;
+}
+
+NV_STATUS
+kbifResetFromTimeoutFullChip_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL  *pCl = SYS_GET_CL(pSys);
+    NV_STATUS status;
+
+    if (pCl == NULL || 
+        (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)
+       ))
+    {
+        //
+        // We can not issue SW_RESET as we are not able to access PCI config
+        // space.
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // Execute any workarounds or changes needed to make sure we can reset
+    // properly.
+    //
+    kbifPrepareForFullChipReset_HAL(pGpu, pKernelBif);
+
+    // Reset the gpu.
+    NV_ASSERT_OK(status = kbifDoFullChipReset_HAL(pGpu, pKernelBif));
+
+    //
+    // This 100ms wait is only required for legacy FLR where RM itself
+    // triggers FLR and it also does save/restore of config space.
+    // For hopper and later, HW will keep sending CRS status to OS
+    // until FWSEC boot sequence is not complete
+    //
+    if (!(pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_HANDLED_BY_OS)))
+    {
+        // Wait 100ms after GPU is reset to ensure Pre-OS completion.
+        osDelay(100);
+    }
+
+    return status;
+}
+
+
+NV_STATUS
+kbifWaitForConfigAccessAfterReset_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+
+    NvU32 waitCount = 20; // iterations of the osDelayUs statements
+    while (NV_TRUE)
+    {
+        NvU16 vendorId;
+        NvU16 deviceId;
+        void *pGpuHandle = osPciInitHandle(domain,
+                                           bus,
+                                           device,
+                                           0 /* Function */,
+                                           &vendorId,
+                                           &deviceId);
+
+        NvU32 id = osPciReadDword(pGpuHandle, 0 /* Offset */);
+        if (id == pGpu->idInfo.PCIDeviceID)
+        {
+            // Found it.  Config space is accessible.  Break out.
+            return NV_OK;
+        }
+
+        if (waitCount == 0)
+        {
+            break;
+        }
+        waitCount--;
+
+        //
+        // Keep trying for at least 1 second.  Note that completion timeouts
+        // here can extend the amount of time we are in this loop.  But they are
+        // not fatal.
+        //
+        {
+            // Wait 50ms
+            osDelayUs(50000);
+        }
+    }
+
+    return NV_ERR_GENERIC;
+}
+

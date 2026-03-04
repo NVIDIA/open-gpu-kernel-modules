@@ -27,9 +27,18 @@
 
 #if defined(NV_DRM_AVAILABLE)
 
+struct NvKmsKapiGpuInfo;
+
 int nv_drm_probe_devices(void);
 
+void nv_drm_remove(NvU32 gpuId);
 void nv_drm_remove_devices(void);
+
+void nv_drm_suspend_resume(NvBool suspend);
+
+void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *);
+
+void nv_drm_update_drm_driver_features(void);
 
 #endif /* defined(NV_DRM_AVAILABLE) */
 

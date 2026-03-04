@@ -89,7 +89,7 @@ static inline NvU16 NV_NVT_TIMING_VVISIBLE(const NVT_TIMING *pTiming)
  * When non-zero, NVT_TIMING::etc::aspect contains bytes 12, 13, and
  * 14 from the Detailed Timing Definition of the EDID.  This contains
  * a packed width and height.  The width and height is either an
- * aspect ratio (16:9 or 4:3), or a physical image size in
+ * aspect ratio (e.g., 16:9 or 4:3), or a physical image size in
  * millimeters.  See Table 3.21, and the subsequent notes, in the
  * E-EDID 1.4 specification.
  */
@@ -108,8 +108,14 @@ static inline NvBool NV_NVT_TIMING_HAS_ASPECT_RATIO(const NVT_TIMING *pTiming)
     NvU16 w = NV_NVT_TIMING_IMAGE_SIZE_WIDTH(pTiming);
     NvU16 h = NV_NVT_TIMING_IMAGE_SIZE_HEIGHT(pTiming);
 
-    return (((w == 16) && (h == 9)) ||
-            ((w ==  4) && (h == 3)));
+    return (((w ==   1) && (h ==   1)) ||
+            ((w ==   5) && (h ==   4)) ||
+            ((w ==   4) && (h ==   3)) ||
+            ((w ==  15) && (h ==   9)) ||
+            ((w ==  16) && (h ==   9)) ||
+            ((w ==  16) && (h ==  10)) ||
+            ((w ==  64) && (h ==  27)) ||
+            ((w == 256) && (h == 135)));
 }
 
 static inline NvBool NV_NVT_TIMING_HAS_IMAGE_SIZE(const NVT_TIMING *pTiming)

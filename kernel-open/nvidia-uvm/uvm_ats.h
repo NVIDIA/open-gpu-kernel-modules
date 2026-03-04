@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -26,16 +26,32 @@
 
 #include "uvm_linux.h"
 #include "uvm_forward_decl.h"
-#include "uvm_ats_ibm.h"
 #include "nv_uvm_types.h"
+#include "uvm_lock.h"
+#include "uvm_ats_sva.h"
 
+#define UVM_ATS_SUPPORTED() UVM_ATS_SVA_SUPPORTED()
 
+typedef enum
+{
+    // The VA space has been initialized on a system that supports ATS but it is
+    // unknown yet whether it will hold ATS capable GPUs or not.
+    UVM_ATS_VA_SPACE_ATS_UNSET = 0,
 
+    // The VA space only allows registering GPUs that support ATS. This state is
+    // entered on a system that supports ATS by:
+    //   - Registering an ATS capable GPU
+    //   - Migrating or setting a policy on pageable memory
+    // Once entered, this state is never left.
+    UVM_ATS_VA_SPACE_ATS_SUPPORTED,
 
-
-
-    #define UVM_ATS_SUPPORTED() (UVM_ATS_IBM_SUPPORTED())
-
+    // The VA space only allows registering GPUs that do not support ATS. This
+    // state is entered by:
+    //   - Initialization on platforms that do not support ATS
+    //   - Registering a non ATS capable GPU on platforms that do support ATS
+    // Once entered, this state is never left.
+    UVM_ATS_VA_SPACE_ATS_UNSUPPORTED
+} uvm_ats_va_space_state_t;
 
 typedef struct
 {
@@ -43,16 +59,24 @@ typedef struct
     // indexed by gpu->id. This mask is protected by the VA space lock.
     uvm_processor_mask_t registered_gpu_va_spaces;
 
-    union
-    {
-        uvm_ibm_va_space_t ibm;
+    // Protects racing invalidates in the VA space while hmm_range_fault() is
+    // being called in ats_compute_residency_mask().
+    uvm_rw_semaphore_t lock;
 
+    uvm_sva_va_space_t sva;
 
-
-
-
-
-    };
+    // Tracks if ATS is supported in this va_space. The state is set during GPU
+    // registration or some ATS related calls, and is protected as an atomic.
+    // This is because during some ATS related API calls a VA space can
+    // transition from UNSET to ATS_SUPPORTED. In these cases the va_space's
+    // semaphore is only held in a read-locked state. A race results in the
+    // duplicate writing of ATS_SUPPORTED to the state value. 
+    // This OK as the only possible transition here is
+    // UVM_ATS_VA_SPACE_ATS_UNSET -> UVM_ATS_VA_SPACE_ATS_SUPPORTED.
+    // Entering UVM_ATS_VA_SPACE_ATS_UNSUPPORTED requires registering a
+    // GPU in the VA space which must hold the lock in write mode.
+    // Enums from uvm_ats_va_space_state_t are stored in this atomic_t value.
+    atomic_t state;
 } uvm_ats_va_space_t;
 
 typedef struct
@@ -65,27 +89,13 @@ typedef struct
 
     NvU32 pasid;
 
-    union
-    {
-        uvm_ibm_gpu_va_space_t ibm;
-
-
-
-
-
-
-    };
+    uvm_sva_gpu_va_space_t sva;
 } uvm_ats_gpu_va_space_t;
 
 // Initializes driver-wide ATS state
 //
 // LOCKING: None
 void uvm_ats_init(const UvmPlatformInfo *platform_info);
-
-// Initializes ATS specific GPU state
-//
-// LOCKING: None
-void uvm_ats_init_va_space(uvm_va_space_t *va_space);
 
 // Enables ATS feature on the GPU.
 //
@@ -106,10 +116,8 @@ void uvm_ats_remove_gpu(uvm_parent_gpu_t *parent_gpu);
 // LOCKING: mmap_lock must be lockable.
 //          VA space lock must be lockable.
 //          gpu_va_space->gpu must be retained.
-
-
-
-
+//          mm must be retained with uvm_va_space_mm_retain() iff
+//          UVM_ATS_SVA_SUPPORTED() is 1
 NV_STATUS uvm_ats_bind_gpu(uvm_gpu_va_space_t *gpu_va_space);
 
 // Decrements the refcount on the {gpu, mm} pair. Removes the binding from the
@@ -125,8 +133,6 @@ void uvm_ats_unbind_gpu(uvm_gpu_va_space_t *gpu_va_space);
 //
 // LOCKING: The VA space lock must be held in write mode.
 //          mm has to be retained prior to calling this function.
-//          current->mm->mmap_lock must be held in write mode iff
-//          UVM_ATS_IBM_SUPPORTED_IN_KERNEL() is 1.
 NV_STATUS uvm_ats_register_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space);
 
 // Disables ATS access for the gpu_va_space. Prior to calling this function,
@@ -134,19 +140,8 @@ NV_STATUS uvm_ats_register_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space);
 // accesses in this GPU VA space, and that no ATS fault handling for this
 // GPU will be attempted.
 //
-// LOCKING: This function may block on mmap_lock and will acquire the VA space
-// lock, so neither lock must be held.
+// LOCKING: This function will acquire the VA space lock, so it must not be
+// held.
 void uvm_ats_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space);
-
-// Synchronously invalidate ATS translations cached by GPU TLBs. The
-// invalidate applies to all GPUs with active GPU VA spaces in va_space, and
-// covers all pages touching any part of the given range. end is inclusive.
-//
-// GMMU translations in the given range are not guaranteed to be
-// invalidated.
-//
-// LOCKING: No locks are required, but this function may be called with
-//          interrupts disabled.
-void uvm_ats_invalidate(uvm_va_space_t *va_space, NvU64 start, NvU64 end);
 
 #endif // __UVM_ATS_H__

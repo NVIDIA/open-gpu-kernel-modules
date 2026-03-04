@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,9 @@
 
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/mem_mgr/mem.h"
+#include "kernel/mem_mgr/os_desc_mem.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
+#include "platform/sli/sli.h"
 
 #include "published/volta/gv100/dev_pbdma.h"
 #include "rmapi/rs_utils.h"
@@ -97,7 +99,7 @@ kchannelCreateUserdMemDescBc_GV100
                       "User provided memory info for index %d is NULL\n",
                       iter);
             NV_PRINTF(LEVEL_ERROR,
-                      "NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS needs to have all subdevice info\n");
+                      "NV_CHANNEL_ALLOC_PARAMS needs to have all subdevice info\n");
 
             hUserdMemory = phUserdMemory[0];
             userdOffset  = pUserdOffset[0];
@@ -170,7 +172,7 @@ kchannelCreateUserdMemDesc_GV100
     NvU32                   userdAddrLo;
     NvU32                   userdAddrHi;
     NvU32                   userdAlignment;
-    NvU32                   pageSize;
+    NvU64                   pageSize;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
     pKernelChannel->pUserdSubDeviceMemDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = NULL;
@@ -241,6 +243,16 @@ kchannelCreateUserdMemDesc_GV100
         return status;
     }
 
+    //
+    // For some memory types, just creating submem is not enough to ensure
+    // proper lifetimes. Make the channel dependant on this memory object,
+    // so that it gets released before memory itself.
+    //
+    if (dynamicCast(pUserdMemoryRef->pResource, OsDescMemory) != NULL)
+    {
+        refAddDependant(pUserdMemoryRef, RES_GET_REF(pKernelChannel));
+    }
+
     // check alignment
     if ((pUserdMemory->pMemDesc->Alignment < userdAlignment) &&
         (pUserdMemory->pMemDesc->Alignment  != 0))
@@ -269,7 +281,7 @@ kchannelCreateUserdMemDesc_GV100
  * @brief Delete the memory descriptors for userd memory allocated
  *        by client
  */
-NV_STATUS
+void
 kchannelDestroyUserdMemDesc_GV100
 (
     OBJGPU           *pGpu,
@@ -278,11 +290,6 @@ kchannelDestroyUserdMemDesc_GV100
 {
     NvU32 subdevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
-    if (pKernelChannel->pUserdSubDeviceMemDesc[subdevInst])
-    {
-        memdescDestroy(pKernelChannel->pUserdSubDeviceMemDesc[subdevInst]);
-        pKernelChannel->pUserdSubDeviceMemDesc[subdevInst] = NULL;
-    }
-
-    return NV_OK;
+    memdescDestroy(pKernelChannel->pUserdSubDeviceMemDesc[subdevInst]);
+    pKernelChannel->pUserdSubDeviceMemDesc[subdevInst] = NULL;
 }

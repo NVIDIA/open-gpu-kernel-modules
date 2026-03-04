@@ -12,17 +12,13 @@
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef __lr10_dev_minion_ip_addendum_h__
 #define __lr10_dev_minion_ip_addendum_h__
+
+#define NV_MINION_NVLINK_DL_CMD_COMMAND_INITRXTXTERM 0x12
+
 #define NV_NVLSTAT                                                    0x00000103:0x00000000 /* RW--D */
 #define NV_NVLSTAT_UC01                                                          0x00000001 /* R--4R */
 #define NV_NVLSTAT_UC01_PM_STATE                                                      31:31 /* R---F */

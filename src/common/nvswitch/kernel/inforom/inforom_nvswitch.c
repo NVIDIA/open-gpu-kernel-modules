@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,7 +36,6 @@
 // Interface functions
 static NvlStatus _nvswitch_inforom_unpack_object(const char *, NvU8 *, NvU32 *);
 static NvlStatus _nvswitch_inforom_pack_object(const char *, NvU32 *, NvU8 *);
-static void _nvswitch_inforom_string_copy(inforom_U008 *pSrc, NvU8 *pDst, NvU32 size);
 static NvlStatus _nvswitch_inforom_read_file(nvswitch_device *device,
                                             const char objectName[INFOROM_FS_FILE_NAME_SIZE],
                                             NvU32 packedObjectSize, NvU8 *pPackedObject);
@@ -44,31 +43,6 @@ static NvlStatus _nvswitch_inforom_write_file(nvswitch_device *device,
                                             const char objectName[INFOROM_FS_FILE_NAME_SIZE],
                                             NvU32 packedObjectSize,
                                             NvU8 *pPackedObject);
-
-/*!
- * Interface to copy string of inforom object.
- * inforom_U008 is NvU32, and we use 0xff bits to store the character.
- * Therefore we need a special copy API.
- *
- * @param[in]       pSrc          Source pointer
- * @param[out]      pDst          Destination pointer
- * @param[in]       length        Length of the string
- */
-static void
-_nvswitch_inforom_string_copy
-(
-    inforom_U008   *pSrc,
-    NvU8           *pDst,
-    NvU32           length
-)
-{
-    NvU32 i;
-
-    for (i = 0; i < length; ++i)
-    {
-        pDst[i] = (NvU8)(pSrc[i] & 0xff);
-    }
-}
 
 static NvlStatus
 _nvswitch_inforom_calc_packed_object_size
@@ -338,6 +312,31 @@ _nvswitch_inforom_pack_object
 }
 
 /*!
+ * Interface to copy string of inforom object.
+ * inforom_U008 is NvU32, and we use 0xff bits to store the character.
+ * Therefore we need a special copy API.
+ *
+ * @param[in]       pSrc          Source pointer
+ * @param[out]      pDst          Destination pointer
+ * @param[in]       length        Length of the string
+ */
+void
+nvswitch_inforom_string_copy
+(
+    inforom_U008   *pSrc,
+    NvU8           *pDst,
+    NvU32           length
+)
+{
+    NvU32 i;
+
+    for (i = 0; i < length; ++i)
+    {
+        pDst[i] = (NvU8)(pSrc[i] & 0xff);
+    }
+}
+
+/*!
  * Read and unpack an object from the InfoROM filesystem.
  *
  * @param[in]  device           switch device pointer
@@ -494,7 +493,7 @@ _nvswitch_inforom_read_file
     nvswitch_os_memset(pDmaBuf, 0, transferSize);
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS * 100, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)
@@ -517,6 +516,7 @@ _nvswitch_inforom_read_file
     fsRet = *(NvU32*)pDmaBuf;
     if (fsRet != NV_OK)
     {
+        status = -NVL_IO_ERROR;
         NVSWITCH_PRINT(device, ERROR, "%s: FS error %x. Filename: %3s\n", __FUNCTION__, fsRet,
                         pParams->fileName);
     }
@@ -592,7 +592,8 @@ _nvswitch_inforom_write_file
     }
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS * 100, &timeout);
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)
@@ -613,6 +614,7 @@ _nvswitch_inforom_write_file
     fsRet = *(NvU32*)pDmaBuf;
     if (fsRet != NV_OK)
     {
+        status = -NVL_IO_ERROR;
         NVSWITCH_PRINT(device, ERROR, "%s: FS returned %x. Filename: %3s\n", __FUNCTION__, fsRet,
                         pParams->fileName);
     }
@@ -622,11 +624,6 @@ ifr_dma_unmap_and_exit:
                                         packedObjectSize, NVSWITCH_DMA_DIR_FROM_SYSMEM);
 ifr_dma_free_and_exit:
     nvswitch_os_free_contig_memory(device->os_handle, pDmaBuf, transferSize);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     return status;
 }
@@ -900,6 +897,7 @@ done:
 /*!
  *  Fill in the static identification data structure for the use by the SOE
  *  to be passed on to a BMC over the I2CS interface.
+ *  For LR10 only so no HAL is needed.
  *
  * @param[in]      device       switch device pointer
  * @param[in]      pInforom     INFOROM object pointer
@@ -917,13 +915,13 @@ nvswitch_inforom_read_static_data
 #define _INFOROM_TO_SOE_STRING_COPY(obj, irName, soeName)                                   \
 {                                                                                           \
     NvU32   _i;                                                                             \
-    ct_assert(NV_ARRAY_ELEMENTS(pInforom->obj.object.irName) <=                             \
+    ct_assert(NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName) <=                             \
               NV_ARRAY_ELEMENTS(pData->obj.soeName));                                       \
-    for (_i = 0; _i < NV_ARRAY_ELEMENTS(pInforom->obj.object.irName); ++_i)                 \
+    for (_i = 0; _i < NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName); ++_i)                 \
     {                                                                                       \
-        pData->obj.soeName[_i] = (NvU8)(pInforom->obj.object.irName[_i] & 0xff);            \
+        pData->obj.soeName[_i] = (NvU8)(pInforom->obj.object.v1.irName[_i] & 0xff);            \
     }                                                                                       \
-    if (NV_ARRAY_ELEMENTS(pInforom->obj.object.irName) <                                    \
+    if (NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName) <                                    \
         NV_ARRAY_ELEMENTS(pData->obj.soeName))                                              \
     {                                                                                       \
         do                                                                                  \
@@ -936,27 +934,31 @@ nvswitch_inforom_read_static_data
 
     if (pInforom->OBD.bValid)
     {
-        pData->OBD.bValid = NV_TRUE;
-        pData->OBD.buildDate = (NvU32)pInforom->OBD.object.buildDate;
-        _nvswitch_inforom_string_copy(pInforom->OBD.object.marketingName,
-                                      pData->OBD.marketingName,
-                                      NV_ARRAY_ELEMENTS(pData->OBD.marketingName));
+        /* This should be called for LR10 (i.e., version 1.xx) only */
+        if ((pInforom->OBD.object.header.version & 0xFF) == 1)
+        {
+            pData->OBD.bValid = NV_TRUE;
+            pData->OBD.buildDate = (NvU32)pInforom->OBD.object.v1.buildDate;
+            nvswitch_inforom_string_copy(pInforom->OBD.object.v1.marketingName,
+                                          pData->OBD.marketingName,
+                                          NV_ARRAY_ELEMENTS(pData->OBD.marketingName));
 
-        _nvswitch_inforom_string_copy(pInforom->OBD.object.serialNumber,
-                                      pData->OBD.serialNum,
-                                      NV_ARRAY_ELEMENTS(pData->OBD.serialNum));
+            nvswitch_inforom_string_copy(pInforom->OBD.object.v1.serialNumber,
+                                          pData->OBD.serialNum,
+                                          NV_ARRAY_ELEMENTS(pData->OBD.serialNum));
 
-        //
-        // boardPartNum requires special handling, as its size exceeds that
-        // of its InfoROM representation
-        //
-        _INFOROM_TO_SOE_STRING_COPY(OBD, productPartNumber, boardPartNum);
+            //
+            // boardPartNum requires special handling, as its size exceeds that
+            // of its InfoROM representation
+            //
+            _INFOROM_TO_SOE_STRING_COPY(OBD, productPartNumber, boardPartNum);
+        }
     }
 
     if (pInforom->OEM.bValid)
     {
         pData->OEM.bValid = NV_TRUE;
-        _nvswitch_inforom_string_copy(pInforom->OEM.object.oemInfo,
+        nvswitch_inforom_string_copy(pInforom->OEM.object.oemInfo,
                                       pData->OEM.oemInfo,
                                       NV_ARRAY_ELEMENTS(pData->OEM.oemInfo));
     }
@@ -964,7 +966,7 @@ nvswitch_inforom_read_static_data
     if (pInforom->IMG.bValid)
     {
         pData->IMG.bValid = NV_TRUE;
-        _nvswitch_inforom_string_copy(pInforom->IMG.object.version,
+        nvswitch_inforom_string_copy(pInforom->IMG.object.version,
                                       pData->IMG.inforomVer,
                                       NV_ARRAY_ELEMENTS(pData->IMG.inforomVer));
     }
@@ -1144,7 +1146,7 @@ nvswitch_initialize_inforom_objects
                     status);
     }
 
-    status = nvswitch_inforom_dem_load(device);
+    status = device->hal.nvswitch_smbpbi_dem_load(device);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, INFO, "Failed to load DEM object, rc: %d\n",

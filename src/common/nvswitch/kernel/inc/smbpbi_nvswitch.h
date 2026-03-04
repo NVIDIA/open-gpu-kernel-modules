@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,7 @@ struct smbpbi
 {
     SOE_SMBPBI_SHARED_SURFACE       *sharedSurface;
     NvU64                           dmaHandle;
+    NvU32                           logMessageNesting;
 };
 
 NvlStatus nvswitch_smbpbi_init(nvswitch_device *);
@@ -55,6 +56,5 @@ NvlStatus nvswitch_smbpbi_set_link_error_info(nvswitch_device *,
 void nvswitch_smbpbi_unload(nvswitch_device *);
 void nvswitch_smbpbi_destroy(nvswitch_device *);
 NvlStatus nvswitch_smbpbi_refresh_ecc_counts(nvswitch_device *);
-void nvswitch_smbpbi_log_message(nvswitch_device *device, NvU32 num, NvU32 msglen, NvU8 *osErrorString);
 
 #endif //_SMBPBI_NVSWITCH_H_

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,18 +23,18 @@
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
-#include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 
+#include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "class/cl2080.h"
 
 static void _kfifoPreConstructRegistryOverrides(OBJGPU *pGpu, KernelFifo *pKernelFifo);
 
-NV_STATUS 
+NV_STATUS
 kfifoConstructEngine_IMPL
 (
     OBJGPU        *pGpu,
@@ -50,7 +50,7 @@ kfifoConstructEngine_IMPL
 
     portMemSet((void *)&pKernelFifo->userdInfo, 0, sizeof(PREALLOCATED_USERD_INFO));
 
-    for (i = 0; i < NV2080_ENGINE_TYPE_LAST; i++)
+    for (i = 0; i < RM_ENGINE_TYPE_LAST; i++)
     {
         pKernelFifo->pRunlistBufPool[i] = NULL;
     }
@@ -66,6 +66,58 @@ kfifoConstructEngine_IMPL
              portMemAllocatorGetGlobalNonPaged());
 
     return NV_OK;
+}
+
+NV_STATUS
+kfifoStateLoad_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 flags
+)
+{
+    NV_STATUS status = NV_OK;
+    if (
+        (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING)) ||
+        (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
+    {
+        NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
+        fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_FALSE;
+
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                         &fifoToggleActiveChannelSchedulingParam,
+                         sizeof(fifoToggleActiveChannelSchedulingParam), status);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+    }
+
+    return status;
+}
+
+NV_STATUS
+kfifoStateUnload_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 flags
+)
+{
+    NV_STATUS status = NV_OK;
+    if (
+        (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING)) ||
+        (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
+    {
+        NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
+        fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_TRUE;
+
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                         &fifoToggleActiveChannelSchedulingParam,
+                         sizeof(fifoToggleActiveChannelSchedulingParam), status);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+    }
+
+    return status;
 }
 
 static void
@@ -86,12 +138,26 @@ _kfifoPreConstructRegistryOverrides
 
     pKernelFifo->bPerRunlistChramOverride = NV_FALSE;
 
+    if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo))
+    {
+        if ((osReadRegistryDword(pGpu,
+                 NV_REG_STR_RM_DEBUG_OVERRIDE_PER_RUNLIST_CHANNEL_RAM,
+                 &data32) == NV_OK))
+        {
+            NV_PRINTF(LEVEL_INFO, "%s per runlist channel RAM\n",
+                                   !!data32 ? "Enabling" : "Disabling");
+            pKernelFifo->bUsePerRunlistChram = !!data32;
+            pKernelFifo->bPerRunlistChramOverride = NV_TRUE;
+        }
+    }
+
     if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_SUPPORT_USERD_MAP_DMA,
                             &data32) == NV_OK) && data32)
     {
         NV_PRINTF(LEVEL_ERROR, "Enabling MapMemoryDma of USERD\n");
         pKernelFifo->bUserdMapDmaSupported = NV_TRUE;
     }
+
 
     return;
 }
@@ -108,10 +174,11 @@ kfifoDestruct_IMPL
     listDestroy(&pKernelFifo->postSchedulingEnableHandlerList);
     listDestroy(&pKernelFifo->preSchedulingDisableHandlerList);
 
-    if (pKernelFifo->pKernelSchedMgr != NULL)
+    // Destroy the Runlist write lock.
+    if (pKernelFifo->pLockRunlistWriteVfs != NULL)
     {
-        objDelete(pKernelFifo->pKernelSchedMgr);
-        pKernelFifo->pKernelSchedMgr = NULL;
+        portSyncSpinlockDestroy(pKernelFifo->pLockRunlistWriteVfs);
+        pKernelFifo->pLockRunlistWriteVfs = NULL;
     }
 
     portMemFree(pEngineInfo->engineInfoList);
@@ -138,6 +205,14 @@ kfifoStateInitLocked_IMPL
         // only on host RM for SR-IOV capable SKUs (See gpuInitRegistryOverrides).
         // On MODS, the tests use the regkey to turn on SR-IOV
         //
+        if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+        {
+            VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+            pKernelFifo->bUsePerRunlistChram = pVSI->bPerRunlistChannelRamEnabled;
+            NV_PRINTF(LEVEL_INFO, "%s per runlist channel RAM in guest RM\n",
+                      pVSI->bPerRunlistChannelRamEnabled ? "Enabling" : "Disabling");
+        }
+        else
         {
             if (gpuIsSriovEnabled(pGpu))
             {
@@ -147,12 +222,24 @@ kfifoStateInitLocked_IMPL
         }
     }
 
+    //
+    // If bUsePerRunlistChram is set, RM cannot feasibly pre-allocate USERD for
+    // such a large number of channels. We expect clients to have already
+    // migrated to using client allocated USERD.
+    //
+    pKernelFifo->bDisablePreAllocatedUserD = pKernelFifo->bUsePerRunlistChram;
+
+    NV_ASSERT_OK_OR_RETURN(kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo));
+
     NV_ASSERT_OK_OR_RETURN(kfifoChidMgrConstruct(pGpu, pKernelFifo));
 
     if (pKernelRc != NULL)
     {
         krcInitRegistryOverridesDelayed(pGpu, pKernelRc);
     }
+
+    // Get maximum number of secure channels when APM/HCC is enabled
+    NV_ASSERT_OK_OR_RETURN(kfifoGetMaxSecureChannels(pGpu, pKernelFifo));
 
     return NV_OK;
 }
@@ -170,17 +257,17 @@ kfifoStateDestroy_IMPL
     // On LDDM, we don't free these during freechannel because it's possible
     // we wouldn't be able to reallocate them (we want to keep them preallocated
     // from boot time). But we need to free before shutdown, so do that here.
-    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
     while ((kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK))
     {
-        NvU32 engineType;
+        RM_ENGINE_TYPE rmEngineType;
 
-        engineType = kchannelGetEngineType(pKernelChannel);
+        rmEngineType = kchannelGetEngineType(pKernelChannel);
 
-        if (NV2080_ENGINE_TYPE_IS_GR(engineType))
+        if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
         {
             MEMORY_DESCRIPTOR *grCtxBufferMemDesc = NULL;
-            NvU32 grIdx = NV2080_ENGINE_TYPE_GR_IDX(engineType);
+            NvU32 grIdx = RM_ENGINE_TYPE_GR_IDX(rmEngineType);
 
             NV_ASSERT_OK(
                 kchangrpGetEngineContextMemDesc(pGpu,
@@ -211,6 +298,11 @@ kfifoStateDestroy_IMPL
     // Free up allocated memory.
     //
     kfifoChidMgrDestruct(pKernelFifo);
+
+    // Destroy regardless of NULL, if pointers are null, is just a NOP
+    memdescDestroy(pKernelFifo->pRegVF);
+    memdescDestroy(pKernelFifo->pBar1VF);
+    memdescDestroy(pKernelFifo->pBar1PrivVF);
 
     return;
 }

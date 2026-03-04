@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,10 +34,17 @@
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "virtualization/hypervisor/hypervisor.h"
+#include "kernel/virtualization/kernel_vgpu_mgr.h"
+#include "vgpu/rpc.h"
 
+#if defined(NV_UNIX)
+#include "os-interface.h"
+#endif
 
-
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 //
 // This rmctrl MUST NOT touch hw since it's tagged as NO_GPUS_ACCESS in ctrl0080.def
 // RM allow this type of rmctrl to go through when GPU is not available.
@@ -54,7 +61,7 @@ deviceCtrlCmdGpuGetClasslist_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetClassList(pGpu, &pClassListParams->numClasses,
                            NvP64_VALUE(pClassListParams->classList), ENG_INVALID);
@@ -76,7 +83,7 @@ deviceCtrlCmdGpuGetClasslistV2_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pClassListParams->numClasses = NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE;
 
@@ -200,6 +207,10 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+#if defined(NV_UNIX) && !RMCFG_FEATURE_MODS_FEATURES
+    pParams->isGridBuild = os_is_grid_supported();
+#endif
+
     if (IS_VIRTUAL(pGpu))
     {
         pParams->virtualizationMode =
@@ -209,6 +220,29 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
     {
         pParams->virtualizationMode =
             NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NMOS;
+    }
+    else if (hypervisorIsVgxHyper() && (gpuIsSriovEnabled(pGpu)
+    ))
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU))
+        {
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST_VGPU;
+        }
+        else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VSGA))
+        {
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST_VSGA;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "invalid virtualization Mode: %x. Returning NONE!\n",
+                      pParams->virtualizationMode);
+
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NONE;
+        }
     }
     else
     {
@@ -220,6 +254,53 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
               pParams->virtualizationMode);
 
     return NV_OK;
+}
+
+/*!
+ * @brief   This Command issues an RPC call to the host to switch the "backdoor
+ *          VNC" view to the console.
+ *
+ * @return  Returns NV_STATUS
+ *          NV_ERR_NOT_SUPPORTED      If GPU is not present under host hypervisor.
+ *          NV_OK                     If GPU is present under host hypervisor.
+ *          NV_ERR_INVALID_ARGUMENT   If GPU is not present.
+ *
+ */
+NV_STATUS
+deviceCtrlCmdGpuVirtualizationSwitchToVga_IMPL
+(
+    Device *pDevice
+)
+{
+    OBJGPU   *pGpu   = GPU_RES_GET_GPU(pDevice);
+    NV_STATUS status = NV_OK;
+
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV_RM_RPC_SWITCH_TO_VGA(pGpu, status);
+    return status;
+}
+
+/*!
+ * @brief   This Command is used to get GPU SRIOV capabilities
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+deviceCtrlCmdGpuGetSriovCaps_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    return gpuGetSriovCaps_HAL(pGpu, pParams);
 }
 
 /*!
@@ -246,6 +327,225 @@ deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL
     }
 
     return status;
+}
+
+NV_STATUS
+deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams
+)
+{
+    OBJGPU                                  *pGpu           = GPU_RES_GET_GPU(pDevice);
+    OBJSYS                                  *pSys           = SYS_GET_INSTANCE();
+    KernelVgpuMgr                           *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
+    NvU32                                    pgpuIndex;
+    KERNEL_PHYS_GPU_INFO                    *pPgpuInfo;
+    NvU32                                    i, j;
+    NvU32                                    vgpuCount      = 0;
+    VGPU_TYPE                               *pVgpuTypeInfo;
+    VGPU_TYPE_SUPPORTED_PLACEMENT_INFO      *pVgpuTypeSupportedPlacementInfo;
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO  *pVgpuInstanceSupportedPlacementInfo;
+    KERNEL_VGPU_TYPE_PLACEMENT_INFO         *pKernelVgpuTypePlacementInfo;
+    VGPU_TYPE_PLACEMENT_INFO                *pVgpuTypePlacementInfo;
+    VGPU_INSTANCE_PLACEMENT_INFO            *pVgpuInstancePlacementInfo;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    if (!kvgpumgrIsMigTimeslicingModeEnabled(pGpu) && IS_MIG_ENABLED(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Call not supported with SMC enabled\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &pgpuIndex));
+
+    pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        pKernelVgpuTypePlacementInfo = kvgpuMgrGetVgpuPlacementInfo(pGpu, pPgpuInfo, pParams->gpuInstanceId);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelVgpuTypePlacementInfo != NULL, NV_ERR_OBJECT_NOT_FOUND);
+    }
+    else if (IS_MIG_ENABLED(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "No Graphic Instance created\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else
+    {
+        pKernelVgpuTypePlacementInfo = &pPgpuInfo->kernelVgpuTypePlacementInfo;
+    }
+
+    if (pPgpuInfo->heterogeneousTimesliceSizesSupported == NV_FALSE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU does not support heterogenenous vGPU mode\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        vgpuCount = pPgpuInfo->assignedSwizzIdVgpuCount[pParams->gpuInstanceId];
+    }
+    else
+    {
+        if (osIsVgpuVfioPresent() == NV_OK)
+            vgpuCount = pPgpuInfo->numCreatedVgpu;
+        else
+            vgpuCount = pPgpuInfo->numActiveVgpu;
+    }
+
+    if (vgpuCount != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to set heterogeneous vGPU mode as vGPU instance is active\n");
+        return NV_ERR_IN_USE;
+    }
+
+    kvgpumgrSetVgpuType(pGpu, pPgpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE, pParams->gpuInstanceId);
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        RM_API                                                          *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV_STATUS                                                        rmStatus = NV_OK;
+        NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS params   = {0};
+        NvHandle hClient, hSubDevice;
+
+        params.bHeterogeneousMode = pParams->bHeterogeneousMode;
+
+        if (IS_MIG_IN_USE(pGpu))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
+
+            NV_ASSERT_OK_OR_RETURN(kmigmgrGetGPUInstanceInfo(pGpu,
+                                                            pKernelMIGManager,
+                                                            pParams->gpuInstanceId,
+                                                            &pKernelMIGGpuInstance));
+
+            hClient = pKernelMIGGpuInstance->instanceHandles.hClient;
+            hSubDevice = pKernelMIGGpuInstance->instanceHandles.hSubdevice;
+        }
+        else
+        {
+            hClient = pGpu->hInternalClient;
+            hSubDevice = pGpu->hInternalSubdevice;
+        }
+
+        rmStatus = pRmApi->Control(pRmApi,
+                                   hClient,
+                                   hSubDevice,
+                                   NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE,
+                                   &params,
+                                   sizeof(NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS));
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to set heterogeneous vGPU mode in GSP RM. status: 0x%x\n", rmStatus);
+            return rmStatus;
+        }
+    }
+    if (IS_MIG_IN_USE(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpuMgrSetHeterogeneousModePerGI(pGpu,
+                        pParams->gpuInstanceId, pParams->bHeterogeneousMode));
+    }
+    else
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
+    }
+
+    if (pParams->bHeterogeneousMode)
+    {
+        for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
+        {
+            pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
+
+            if (pVgpuTypeInfo == NULL)
+                continue;
+
+            pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
+            pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
+
+            for (j = 0; j < pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount; j++)
+            {
+                /*
+                 * When heterogeneous vGPU mode is enabled, initially all
+                 * supported placement IDs are creatable placement IDs
+                 */
+                pVgpuInstanceSupportedPlacementInfo = &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+                pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+
+                pVgpuInstancePlacementInfo->creatablePlacementId =
+                    pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId; 
+           }
+
+            /* No vGPU instances running, so placement region is empty. */
+            bitVectorClrAll(&pKernelVgpuTypePlacementInfo->usedPlacementRegionMap);
+        }
+    }
+
+    /*
+     * When heterogeneous vGPU mode is disabled, if vGPU supports homogeneous
+     * placement ID, initially all homogeneous supported placement IDs are
+     * creatable placement IDs.
+     */
+    if (kvgpumgrCheckHomogeneousPlacementSupported(pGpu, pParams->gpuInstanceId) == NV_OK)
+    {
+        for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
+        {
+            pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
+
+            if (pVgpuTypeInfo == NULL)
+                continue;
+
+            pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
+            pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
+
+            for (j = 0; j < pVgpuTypeSupportedPlacementInfo->homogeneousPlacementCount; j++)
+            {
+                pVgpuInstanceSupportedPlacementInfo = &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+                pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+
+                pVgpuInstancePlacementInfo->creatablePlacementId =
+                    pVgpuInstanceSupportedPlacementInfo->homogeneousSupportedPlacementId;
+            }
+        }
+
+        /* No vGPU instances running, so placement region is empty. */
+        bitVectorClrAll(&pKernelVgpuTypePlacementInfo->usedPlacementRegionMap);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdGpuGetVgpuHeterogeneousMode_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        if (kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kvgpuMgrGetHeterogeneousMode(pGpu, pParams->gpuInstanceId, &pParams->bHeterogeneousMode));
+        }
+        else
+        {
+            pParams->bHeterogeneousMode = NV_FALSE;
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+    else
+    {
+        pParams->bHeterogeneousMode = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE);
+    }
+    return NV_OK;
+
 }
 
 /*!
@@ -277,7 +577,7 @@ deviceCtrlCmdGpuGetSparseTextureComputeMode_IMPL
     NV_STATUS status;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = gpuGetSparseTextureComputeMode(pGpu,
                                            &pModeParams->defaultSetting,
@@ -313,7 +613,7 @@ deviceCtrlCmdGpuSetSparseTextureComputeMode_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // In SLI, both GPUs will have the same setting for sparse texture/compute
@@ -341,30 +641,54 @@ deviceCtrlCmdGpuGetVgxCaps_IMPL
     NV0080_CTRL_GPU_GET_VGX_CAPS_PARAMS *pParams
 )
 {
-    pParams->isVgx = NV_FALSE;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    pParams->isVgx = gpuIsVgxBranded(pGpu);
 
     return NV_OK;
 }
 
-/*
- * @brief Request per-VF BAR1 resizing and, subsequently, the number
- *        of VFs that can be created. The request will take a per-VF
- *        BAR1 size in MB and calculate the number of possible VFs
+/*!
+ * @brief Get the GPU's branding information.
  *
- * @param[in] pParams  NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS
- *                     pointer detailing the per-VF BAR1 size and
- *                     number of VFs
+ * @returns NV_STATUS
+ *          NV_OK                   Success
  */
-
 NV_STATUS
-deviceCtrlCmdGpuSetVgpuVfBar1Size_IMPL
+deviceCtrlCmdGpuGetBrandCaps_VF
 (
     Device *pDevice,
-    NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS *pParams
+    NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
 
-    return gpuSetVFBarSizes_HAL(pGpu, pParams);
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        NV_STATUS     status        = NV_OK;
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        NvU32         gpuMask       = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                  GPU_LOCK_GRP_DEVICE,
+                                  GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                  RM_LOCK_MODULES_GPU,
+                                  &gpuMask));
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+
+        rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+
+        return status;
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
 }

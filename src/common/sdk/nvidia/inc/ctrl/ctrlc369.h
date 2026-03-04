@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc369.finn
+// Source file:      ctrl/ctrlc369.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* MMU_FAULT_BUFFER control commands and parameters */
@@ -83,6 +80,7 @@
 typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
     NV_DECLARE_ALIGNED(NvP64 pShadowBufferContext, 8);
+    NV_DECLARE_ALIGNED(NvP64 pShadowBufferMetadata, 8);
     NvU32 bufferSize;
 } NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS;
 
@@ -108,5 +106,52 @@ typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS {
 typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
 } NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS;
+
+/*
+ * NVC369_CTRL_CMD_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUFFER
+ *
+ * This call creates and registers a client buffer for the replayable faults
+ *
+ *    pShadowBuffer [OUT]
+ *       This parameter represents the pointer to the shadow buffer
+ *
+ *    bufferSize [OUT]
+ *       Size in bytes of the shadow buffer for non replayable faults
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+
+#define NVC369_CTRL_CMD_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF (0xc3690103) /* finn: Evaluated from "(FINN_MMU_FAULT_BUFFER_MMU_FAULT_BUFFER_INTERFACE_ID << 8) | NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS_MESSAGE_ID" */
+
+#define NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS {
+    NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
+    NV_DECLARE_ALIGNED(NvP64 pShadowBufferMetadata, 8);
+    NvU32 bufferSize;
+} NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS;
+
+/*
+ * NVC369_CTRL_CMD_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUFFER
+ *
+ * This call unregisters and destroys a client buffer for the replayable
+ * faults
+ * 
+ *    pShadowBuffer [IN]
+ *       This parameter represents the pointer to the shadow buffer
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NVC369_CTRL_CMD_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF (0xc3690104) /* finn: Evaluated from "(FINN_MMU_FAULT_BUFFER_MMU_FAULT_BUFFER_INTERFACE_ID << 8) | NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS_MESSAGE_ID" */
+
+#define NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS {
+    NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
+} NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS;
 
 /* _ctrlc369_h_ */

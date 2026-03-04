@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,19 +24,19 @@
 
 
 static NV_STATUS _rmapiAlloc_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                       NvHandle *phObject, NvU32 hClass, void *pAllocParams)
+                       NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 static NV_STATUS _rmapiAllocWithHandle_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                 NvHandle hObject, NvU32 hClass, void *pAllocParams)
+                                 NvHandle hObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 static NV_STATUS _rmapiAllocWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams,
+                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams, NvU32 paramsSize,
                                   NvU32 flags, NvP64 pRightsRequested, API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -53,12 +53,12 @@ static NV_STATUS _rmapiFreeWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, Nv
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiFreeClientList_STUB(RM_API *pRmApi, NvHandle *phClientList, NvU32 numClients)
+static NV_STATUS _rmapiDisableClients_STUB(RM_API *pRmApi, NvHandle *phClientList, NvU32 numClients)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiFreeClientListWithSecInfo_STUB(RM_API *pRmApi, NvHandle *phClientList,
+static NV_STATUS _rmapiDisableClientsWithSecInfo_STUB(RM_API *pRmApi, NvHandle *phClientList,
                                         NvU32 numClients, API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -130,26 +130,24 @@ static NV_STATUS _rmapiUnmapFromCpuWithSecInfo_STUB(RM_API *pRmApi, NvHandle hCl
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiMap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                     NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset)
+static NV_STATUS _rmapiMap_STUB(RM_API *pRmApi, NVOS46_PARAMETERS *pParms)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiMapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset, API_SECURITY_INFO *pSecInfo)
+static NV_STATUS _rmapiMapWithSecInfo_STUB(RM_API *pRmApi, NVOS46_PARAMETERS *pParms,
+                                           API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                       NvU32 flags, NvU64 dmaOffset)
+static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NVOS47_PARAMETERS *pParms)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                  NvU32 flags, NvU64 dmaOffset, API_SECURITY_INFO *pSecInfo)
+static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NVOS47_PARAMETERS *pParms,
+                                             API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -163,8 +161,8 @@ void rmapiInitStubInterface(RM_API *pRmApi)
     pRmApi->AllocWithSecInfo             = _rmapiAllocWithSecInfo_STUB;
     pRmApi->Free                         = _rmapiFree_STUB;
     pRmApi->FreeWithSecInfo              = _rmapiFreeWithSecInfo_STUB;
-    pRmApi->FreeClientList               = _rmapiFreeClientList_STUB;
-    pRmApi->FreeClientListWithSecInfo    = _rmapiFreeClientListWithSecInfo_STUB;
+    pRmApi->DisableClients               = _rmapiDisableClients_STUB;
+    pRmApi->DisableClientsWithSecInfo    = _rmapiDisableClientsWithSecInfo_STUB;
     pRmApi->Control                      = _rmapiControl_STUB;
     pRmApi->ControlWithSecInfo           = _rmapiControlWithSecInfo_STUB;
     pRmApi->ControlPrefetch              = _rmapiControlPrefetch_STUB;

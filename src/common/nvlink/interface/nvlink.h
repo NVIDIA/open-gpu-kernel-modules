@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,11 +67,13 @@ extern "C" {
 #define NVLINK_DEVICE_VERSION_30           0x00000005
 #define NVLINK_DEVICE_VERSION_31           0x00000006
 #define NVLINK_DEVICE_VERSION_40           0x00000007
+#define NVLINK_DEVICE_VERSION_50           0x00000008
 
 // Link Transition Timeouts in miliseconds
 #define NVLINK_TRANSITION_OFF_TIMEOUT        1
-#define NVLINK_TRANSITION_SAFE_TIMEOUT       300
-#define NVLINK_TRANSITION_HS_TIMEOUT         8000
+#define NVLINK_TRANSITION_SAFE_TIMEOUT       70
+#define NVLINK_TRANSITION_HS_TIMEOUT         7000
+#define NVLINK_TRANSITION_ACTIVE_PENDING     2000
 #define NVLINK_TRANSITION_POST_HS_TIMEOUT    70
 
 // Link training seed values
@@ -108,12 +110,32 @@ struct nvlink_device
     // Device type and status
     NvU64  type;
     NvBool initialized;
+    
+    // Training type: ALI or Non-ALI
+    NvBool enableALI;
 
     // fabric node id
     NvU16  nodeId;
 
+    // per Ioctrl data
+    NvU32 numIoctrls;
+    NvU32 numLinksPerIoctrl;
+    NvU32 numActiveLinksPerIoctrl;
+
+    //
+    // boolean indicating if a given device
+    // is a reduced nvlink config
+    //
+    NvBool bReducedNvlinkConfig;
+
     // Client private information
     void *pDevInfo;
+
+    // mask of link states supported by this device / NVLINK version
+    NvU32 linkStateSupportedMask;
+
+    // Are link state transitions unilateral?
+    NvBool bLinkStatesSymmetric;
 };
 
 // nvlink link change type
@@ -131,6 +153,20 @@ struct nvlink_link_change
     struct nvlink_link *slave;
 
     enum nvlink_link_change_type change_type;
+};
+
+//
+// Structure representing Nvlink Error Threshold
+//
+struct nvlink_link_error_threshold
+{
+    NvU8 thresholdMan;
+    NvU8 thresholdExp;
+    NvU8 timescaleMan;
+    NvU8 timescaleExp;
+    NvBool bInterruptEn;
+    NvBool bUserConfig;
+    NvBool bInterruptTrigerred; // Error threshold interrupt generated
 };
 
 // nvlink link state
@@ -205,6 +241,8 @@ struct nvlink_link
     // Has INITNEGOTIATE received CONFIG_GOOD (NVL3.0+)
     NvBool bInitnegotiateConfigGood;
 
+    NvBool bCciManaged;
+
     // Power state transition status
     enum
     {
@@ -225,6 +263,8 @@ struct nvlink_link
 
     //seed data for given nvlink
     NvU32 seedData[NVLINK_MAX_SEED_BUFFER_SIZE];
+
+    struct nvlink_link_error_threshold errorThreshold;
 };
 
 // nvlink link handler ops
@@ -249,6 +289,8 @@ struct nvlink_link_handlers
     NV_API_CALL NvlStatus (*read_discovery_token)       (struct nvlink_link *link, NvU64 *token);
     NV_API_CALL void      (*training_complete)          (struct nvlink_link *link);
     NV_API_CALL void      (*get_uphy_load)              (struct nvlink_link *link, NvBool* bUnlocked);
+    NV_API_CALL NvlStatus (*get_cci_link_mode)          (struct nvlink_link *link, NvU64 *mode);
+    NV_API_CALL NvlStatus (*ali_training)               (struct nvlink_link *link);
 };
 
 //
@@ -318,11 +360,16 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 #define NVLINK_LINKSTATE_DISABLE_HEARTBEAT              0x18   // Disables the heartbeat errors
 #define NVLINK_LINKSTATE_CONTAIN                        0x19   // TL is in contain mode
 #define NVLINK_LINKSTATE_INITTL                         0x1A   // INITTL
+#define NVLINK_LINKSTATE_INITPHASE5                     0x1B   // INITPHASE5
+#define NVLINK_LINKSTATE_ALI                            0x1C   // ALI 
+#define NVLINK_LINKSTATE_ACTIVE_PENDING                 0x1D   // Intermediate state for a link going to active
+#define NVLINK_LINKSTATE_TRAINING_CCI                   0x1E   // Intermediate state for a link that is still training
 #define NVLINK_LINKSTATE_INVALID                        0xFF   // Invalid state
 
 // NVLINK TX SUBLINK states
 #define NVLINK_SUBLINK_STATE_TX_HS                      0x0   // TX High Speed
 #define NVLINK_SUBLINK_STATE_TX_SINGLE_LANE             0x4   // TX Single Lane (1/8th or 1/4th) Mode (Deprecated)
+#define NVLINK_SUBLINK_STATE_TX_LOW_POWER               0x4   // TX Single Lane Mode / L1
 #define NVLINK_SUBLINK_STATE_TX_TRAIN                   0x5   // TX training
 #define NVLINK_SUBLINK_STATE_TX_SAFE                    0x6   // TX Safe Mode
 #define NVLINK_SUBLINK_STATE_TX_OFF                     0x7   // TX OFF
@@ -336,6 +383,7 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 // NVLINK RX SUBLINK states
 #define NVLINK_SUBLINK_STATE_RX_HS                      0x0   // RX High Speed
 #define NVLINK_SUBLINK_STATE_RX_SINGLE_LANE             0x4   // RX Single Lane (1/8th or 1/4th) Mode (Deprecated)
+#define NVLINK_SUBLINK_STATE_RX_LOW_POWER               0x4   // RX Single Lane Mode / L1
 #define NVLINK_SUBLINK_STATE_RX_TRAIN                   0x5   // RX training
 #define NVLINK_SUBLINK_STATE_RX_SAFE                    0x6   // RX Safe Mode
 #define NVLINK_SUBLINK_STATE_RX_OFF                     0x7   // RX OFF
@@ -367,6 +415,10 @@ NvBool nvlink_lib_is_initialized(void);
  */
 NvBool nvlink_lib_is_device_list_empty(void);
 
+/*
+ * Get if a device registerd to the nvlink corelib has a reduced nvlink config
+ */
+NvBool nvlink_lib_is_registerd_device_with_reduced_config(void);
 
 /************************************************************************************************/
 /************************** NVLink library driver-side interface ********************************/
@@ -399,6 +451,23 @@ NvlStatus nvlink_lib_register_link(nvlink_device *dev, nvlink_link *link);
  */
 NvlStatus nvlink_lib_unregister_link(nvlink_link *link);
 
+/*
+* Gets number of devices with type deviceType
+*/
+NvlStatus nvlink_lib_return_device_count_by_type(NvU32 deviceType, NvU32 *numDevices);
+
+
+/************************************************************************************************/
+/***************************** NVLink device management functions ******************************/
+/************************************************************************************************/
+
+/*
+ * Update UUID and deviceName in core library
+ */
+NvlStatus nvlink_lib_update_uuid_and_device_name(nvlink_device_info *devInfo, 
+                                                 NvU8 *uuid, 
+                                                 char *deviceName);
+
 
 /************************************************************************************************/
 /******************************* NVLink link management functions *******************************/
@@ -426,6 +495,11 @@ NvlStatus nvlink_lib_set_link_master(nvlink_link *link);
  */
 NvlStatus nvlink_lib_get_link_master(nvlink_link *link, nvlink_link **master);
 
+/*
+ * Set the training state for the given link as non-ALI or ALI
+ */
+NvlStatus nvlink_lib_link_set_training_mode(nvlink_link *link, NvBool enableALI);
+
 /************************************************************************************************/
 /*************************** NVLink topology discovery functions ********************************/
 /************************************************************************************************/
@@ -449,7 +523,8 @@ NvlStatus nvlink_lib_get_remote_conn_info(nvlink_link *link, nvlink_conn_info *c
  */
 NvlStatus nvlink_lib_discover_and_get_remote_conn_info(nvlink_link      *end,
                                                        nvlink_conn_info *conn_info,
-                                                       NvU32             flags);
+                                                       NvU32             flags,
+                                                       NvBool            bForceDiscovery);
 
 
 /************************************************************************************************/
@@ -508,6 +583,7 @@ void nvlink_lib_restore_training_seeds(nvlink_link * link,
 NvlStatus nvlink_lib_check_training_complete(nvlink_link **links,
                                              NvU32 linkCount);
 
+
 /************************************************************************************************/
 /********************************** NVLink shutdown functions ***********************************/
 /************************************************************************************************/
@@ -542,21 +618,26 @@ NvlStatus nvlink_lib_reset_links(nvlink_link **links,
                                  NvU32         numLinks,
                                  NvU32         flags);
 
+/*
+ * Floorsweep the necessary links and set buffer ready on the active links
+ */
+NvlStatus nvlink_lib_powerdown_floorswept_links_to_off(nvlink_device *pDevice);
+
 
 /*
  * Nvlink core library structure iterators
  */
 
-#define FOR_EACH_DEVICE_REGISTERED(dev, head, node)                \
+#define FOR_EACH_DEVICE_REGISTERED(dev, head, node)  \
         nvListForEachEntry(dev, &head.node, node)
 
-#define FOR_EACH_LINK_REGISTERED(link, dev, node)                  \
+#define FOR_EACH_LINK_REGISTERED(link, dev, node)    \
         nvListForEachEntry(link, &dev->link_list, node)
 
 #define FOR_EACH_LINK_REGISTERED_SAFE(link, next, dev, node)       \
         nvListForEachEntry_safe(link, next, &dev->link_list, node)
 
-#define FOR_EACH_CONNECTION(conn, head, node)                      \
+#define FOR_EACH_CONNECTION(conn, head, node)        \
         nvListForEachEntry(conn, &head.node, node)
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,9 @@
 #define NV_IOCTL_H
 
 #include <nv-ioctl-numbers.h>
+#include <nv-ioctl-numa.h>
 #include <nvtypes.h>
+
 
 typedef struct {
     NvU32    domain;        /* PCI domain number   */
@@ -104,7 +106,7 @@ typedef struct nv_ioctl_rm_api_version
 
 #define NV_RM_API_VERSION_CMD_STRICT         0
 #define NV_RM_API_VERSION_CMD_RELAXED       '1'
-#define NV_RM_API_VERSION_CMD_OVERRIDE      '2'
+#define NV_RM_API_VERSION_CMD_QUERY         '2'
 
 #define NV_RM_API_VERSION_REPLY_UNRECOGNIZED 0
 #define NV_RM_API_VERSION_REPLY_RECOGNIZED   1
@@ -113,7 +115,7 @@ typedef struct nv_ioctl_query_device_intr
 {
     NvU32 intrStatus NV_ALIGN_BYTES(4);
     NvU32 status;
-} nv_ioctl_query_device_intr;
+} nv_ioctl_query_device_intr_t;
 
 /* system parameters that the kernel driver may use for configuration */
 typedef struct nv_ioctl_sys_params
@@ -128,6 +130,9 @@ typedef struct nv_ioctl_register_fd
 
 #define NV_DMABUF_EXPORT_MAX_HANDLES 128
 
+#define NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT        0
+#define NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE     1
+
 typedef struct nv_ioctl_export_to_dma_buf_fd
 {
     int         fd;
@@ -136,10 +141,18 @@ typedef struct nv_ioctl_export_to_dma_buf_fd
     NvU32       numObjects;
     NvU32       index;
     NvU64       totalSize NV_ALIGN_BYTES(8);
+    NvU8        mappingType;
+    NvBool      bAllowMmap;
     NvHandle    handles[NV_DMABUF_EXPORT_MAX_HANDLES];
     NvU64       offsets[NV_DMABUF_EXPORT_MAX_HANDLES] NV_ALIGN_BYTES(8);
     NvU64       sizes[NV_DMABUF_EXPORT_MAX_HANDLES] NV_ALIGN_BYTES(8);
     NvU32       status;
 } nv_ioctl_export_to_dma_buf_fd_t;
+
+typedef struct nv_ioctl_wait_open_complete
+{
+    int rc;
+    NvU32 adapterStatus;
+} nv_ioctl_wait_open_complete_t;
 
 #endif

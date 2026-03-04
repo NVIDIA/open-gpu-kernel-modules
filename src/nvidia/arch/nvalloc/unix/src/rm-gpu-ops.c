@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,14 +84,15 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_create (
     gpuDeviceHandle device,
     NvU64 vaBase,
     NvU64 vaSize,
+    NvU32 enableAts,
     gpuAddressSpaceHandle *vaSpace,
     gpuAddressSpaceInfo *vaSpaceInfo)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsAddressSpaceCreate(device, vaBase, vaSize, vaSpace,
-                                          vaSpaceInfo);
+    rmStatus = nvGpuOpsAddressSpaceCreate(device, vaBase, vaSize, enableAts,
+                                          vaSpace, vaSpaceInfo);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -214,7 +215,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_get_pma_object(
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_alloc_pages(
     nvidia_stack_t *sp, void *pPma,
-    NvLength pageCount, NvU32 pageSize,
+    NvLength pageCount, NvU64 pageSize,
     nvgpuPmaAllocationOptions_t pPmaAllocOptions,
     NvU64 *pPages)
 {
@@ -229,7 +230,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_alloc_pages(
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_pin_pages(
     nvidia_stack_t *sp, void *pPma,
-    NvU64 *pPages, NvLength pageCount, NvU32 pageSize, NvU32 flags)
+    NvU64 *pPages, NvLength pageCount, NvU64 pageSize, NvU32 flags)
 {
     NV_STATUS rmStatus;
     void *fp;
@@ -239,21 +240,9 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_pin_pages(
     return rmStatus;
 }
 
-NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_unpin_pages(
-    nvidia_stack_t *sp, void *pPma,
-    NvU64 *pPages, NvLength pageCount, NvU32 pageSize)
-{
-    NV_STATUS rmStatus;
-    void *fp;
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsPmaUnpinPages(pPma, pPages, pageCount, pageSize);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-    return rmStatus;
-}
-
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_map(
     nvidia_stack_t *sp, gpuAddressSpaceHandle vaspace,
-    NvU64 gpuOffset, NvLength length, void **cpuPtr, NvU32 pageSize)
+    NvU64 gpuOffset, NvLength length, void **cpuPtr, NvU64 pageSize)
 {
     NV_STATUS rmStatus;
     void *fp;
@@ -274,8 +263,31 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_ummap(
     return NV_OK;
 }
 
+NV_STATUS  NV_API_CALL  rm_gpu_ops_tsg_allocate(nvidia_stack_t *sp,
+                                                gpuAddressSpaceHandle vaspace,
+                                                const gpuTsgAllocParams *allocParams,
+                                                gpuTsgHandle *tsg)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsTsgAllocate(vaspace, allocParams, tsg);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_tsg_destroy(nvidia_stack_t * sp,
+                                             nvgpuTsgHandle_t tsg)
+{
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    nvGpuOpsTsgDestroy(tsg);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return NV_OK;
+}
+
 NV_STATUS  NV_API_CALL  rm_gpu_ops_channel_allocate(nvidia_stack_t *sp,
-                                                    gpuAddressSpaceHandle vaspace,
+                                                    const gpuTsgHandle tsg,
                                                     const gpuChannelAllocParams *allocParams,
                                                     gpuChannelHandle *channel,
                                                     gpuChannelInfo *channelInfo)
@@ -283,7 +295,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_channel_allocate(nvidia_stack_t *sp,
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsChannelAllocate(vaspace, allocParams, channel,
+    rmStatus = nvGpuOpsChannelAllocate(tsg, allocParams, channel,
                                        channelInfo);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
@@ -300,7 +312,7 @@ NV_STATUS NV_API_CALL rm_gpu_ops_channel_destroy(nvidia_stack_t * sp,
 }
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_free_pages(nvidia_stack_t *sp,
-    void *pPma, NvU64 *pPages, NvLength pageCount, NvU32 pageSize, NvU32 flags)
+    void *pPma, NvU64 *pPages, NvLength pageCount, NvU64 pageSize, NvU32 flags)
 {
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -370,13 +382,14 @@ NV_STATUS NV_API_CALL rm_gpu_ops_service_device_interrupts_rm(nvidia_stack_t *sp
 NV_STATUS  NV_API_CALL  rm_gpu_ops_set_page_directory (nvidia_stack_t *sp,
                                          gpuAddressSpaceHandle vaSpace,
                                          NvU64 physAddress, unsigned numEntries,
-                                         NvBool bVidMemAperture, NvU32 pasid)
+                                         NvBool bVidMemAperture, NvU32 pasid,
+                                         NvU64 *dmaAddress)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
     rmStatus = nvGpuOpsSetPageDirectory(vaSpace, physAddress, numEntries,
-                                        bVidMemAperture, pasid);
+                                        bVidMemAperture, pasid, dmaAddress);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -396,12 +409,13 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_dup_allocation(nvidia_stack_t *sp,
                                                   gpuAddressSpaceHandle srcVaSpace,
                                                   NvU64 srcAddress,
                                                   gpuAddressSpaceHandle dstVaSpace,
+                                                  NvU64 dstVaAlignment,
                                                   NvU64 *dstAddress)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsDupAllocation(srcVaSpace, srcAddress, dstVaSpace, dstAddress);
+    rmStatus = nvGpuOpsDupAllocation(srcVaSpace, srcAddress, dstVaSpace, dstVaAlignment, dstAddress);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -569,14 +583,76 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_get_non_replayable_faults(nvidia_stack_t *sp,
     return rmStatus;
 }
 
-NV_STATUS  NV_API_CALL  rm_gpu_ops_init_access_cntr_info(nvidia_stack_t *sp,
-                                                         gpuDeviceHandle device,
-                                                         gpuAccessCntrInfo *accessCntrInfo)
+NV_STATUS  NV_API_CALL rm_gpu_ops_flush_replayable_fault_buffer(nvidia_stack_t *sp,
+                                                                gpuFaultInfo *pFaultInfo,
+                                                                NvBool bCopyAndFlush)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsInitAccessCntrInfo(device, accessCntrInfo);
+    rmStatus = nvGpuOpsFlushReplayableFaultBuffer(pFaultInfo, bCopyAndFlush);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_toggle_prefetch_faults(nvidia_stack_t *sp,
+                                                         gpuFaultInfo *pFaultInfo,
+                                                         NvBool bEnable)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsTogglePrefetchFaults(pFaultInfo, bEnable);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL  rm_gpu_ops_access_bits_buffer_alloc(nvidia_stack_t *sp,
+                                                            gpuDeviceHandle device,
+                                                            gpuAccessBitsBufferAlloc *accessBitsInfo)
+{
+    NV_STATUS rmStatus;
+    void* fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsAccessBitsBufAlloc(device, accessBitsInfo);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL  rm_gpu_ops_access_bits_buffer_free(nvidia_stack_t *sp,
+                                                           gpuDeviceHandle device,
+                                                           gpuAccessBitsBufferAlloc *accessBitsInfo)
+{
+    NV_STATUS rmStatus;
+    void* fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsAccessBitsBufFree(device, accessBitsInfo);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL  rm_gpu_ops_access_bits_dump(nvidia_stack_t *sp,
+                                                    gpuDeviceHandle device,
+                                                    gpuAccessBitsBufferAlloc *accessBitsInfo,
+                                                    UVM_ACCESS_BITS_DUMP_MODE mode)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsAccessBitsDump(device, accessBitsInfo, mode);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL  rm_gpu_ops_init_access_cntr_info(nvidia_stack_t *sp,
+                                                         gpuDeviceHandle device,
+                                                         gpuAccessCntrInfo *accessCntrInfo,
+                                                         NvU32 accessCntrIndex)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsInitAccessCntrInfo(device, accessCntrInfo, accessCntrIndex);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -614,6 +690,18 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_disable_access_cntr(nvidia_stack_t *sp,
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
     rmStatus = nvGpuOpsDisableAccessCntr(device, accessCntrInfo);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL  rm_gpu_ops_get_nvlink_info (nvidia_stack_t *sp,
+                                                    gpuDeviceHandle device,
+                                                    gpuNvlinkInfo *nvlinkInfo)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsGetNvlinkInfo(device, nvlinkInfo);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -656,6 +744,23 @@ rm_gpu_ops_get_external_alloc_ptes(nvidia_stack_t* sp,
     NV_ENTER_RM_RUNTIME(sp, fp);
     rmStatus = nvGpuOpsGetExternalAllocPtes(vaSpace, hDupedMemory, offset, size,
                                             gpuExternalMappingInfo);
+    NV_EXIT_RM_RUNTIME(sp, fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL
+rm_gpu_ops_get_external_alloc_phys_addrs(nvidia_stack_t* sp,
+                                         nvgpuAddressSpaceHandle_t vaSpace,
+                                         NvHandle hDupedMemory,
+                                         NvU64 offset,
+                                         NvU64 size,
+                                         nvgpuExternalPhysAddrInfo_t gpuExternalPhysAddrsInfo)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp, fp);
+    rmStatus = nvGpuOpsGetExternalAllocPhysAddrs(vaSpace, hDupedMemory, offset, size,
+                                                 gpuExternalPhysAddrsInfo);
     NV_EXIT_RM_RUNTIME(sp, fp);
     return rmStatus;
 }
@@ -810,3 +915,165 @@ rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *sp,
     return rmStatus;
 }
 
+void NV_API_CALL
+rm_gpu_ops_report_fatal_error(nvidia_stack_t *sp,
+                              NV_STATUS error)
+{
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    nvGpuOpsReportFatalError(error);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *sp,
+                                                   struct ccslContext_t **ctx,
+                                                   gpuChannelHandle channel)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslContextInit(ctx, channel);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *sp,
+                                                    struct ccslContext_t *ctx)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslContextClear(ctx);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_rotate_key(nvidia_stack_t *sp,
+                                                 UvmCslContext *contextList[],
+                                                 NvU32 contextListCount)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslRotateKey(contextList, contextListCount);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_rotate_iv(nvidia_stack_t *sp,
+                                                struct ccslContext_t *ctx,
+                                                NvU8 direction)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslRotateIv(ctx, direction);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_encrypt_with_iv(nvidia_stack_t *sp,
+                                                      struct ccslContext_t *ctx,
+                                                      NvU32 bufferSize,
+                                                      NvU8 const *inputBuffer,
+                                                      NvU8 *encryptIv,
+                                                      NvU8 *outputBuffer,
+                                                      NvU8 *authTagData)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, outputBuffer, authTagData);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_encrypt(nvidia_stack_t *sp,
+                                              struct ccslContext_t *ctx,
+                                              NvU32 bufferSize,
+                                              NvU8 const *inputBuffer,
+                                              NvU8 *outputBuffer,
+                                              NvU8 *authTagData)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslEncrypt(ctx, bufferSize, inputBuffer, outputBuffer, authTagData);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_decrypt(nvidia_stack_t *sp,
+                                              struct ccslContext_t *ctx,
+                                              NvU32 bufferSize,
+                                              NvU8 const *inputBuffer,
+                                              NvU8 const *decryptIv,
+                                              NvU32 keyRotationId,
+                                              NvU8 *outputBuffer,
+                                              NvU8 const *addAuthData,
+                                              NvU32 addAuthDataSize,
+                                              NvU8 const *authTagData)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, keyRotationId, outputBuffer,
+                                   addAuthData, addAuthDataSize, authTagData);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_sign(nvidia_stack_t *sp,
+                                           struct ccslContext_t *ctx,
+                                           NvU32 bufferSize,
+                                           NvU8 const *inputBuffer,
+                                           NvU8 *authTagData)
+
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsCcslSign(ctx, bufferSize, inputBuffer, authTagData);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_query_message_pool(nvidia_stack_t *sp,
+                                                          struct ccslContext_t *ctx,
+                                                          NvU8 direction,
+                                                          NvU64 *messageNum)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsQueryMessagePool(ctx, direction, messageNum);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_increment_iv(nvidia_stack_t *sp,
+                                                    struct ccslContext_t *ctx,
+                                                    NvU8 direction,
+                                                    NvU64 increment,
+                                                    NvU8 *iv)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsIncrementIv(ctx, direction, increment, iv);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_log_encryption(nvidia_stack_t *sp,
+                                                      struct ccslContext_t *ctx,
+                                                      NvU8 direction,
+                                                      NvU32 bufferSize)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsLogEncryption(ctx, direction, bufferSize);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}

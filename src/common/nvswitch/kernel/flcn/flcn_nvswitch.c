@@ -409,6 +409,11 @@ flcnSetupHal
         flcnSetupHal_LR10(pFlcn);
         goto _flcnSetupHal_success;
     }
+    if (nvswitch_is_ls10_device_id(pci_device_id))
+    {
+        flcnSetupHal_LS10(pFlcn);
+        goto _flcnSetupHal_success;
+    }
 
     NVSWITCH_PRINT(NULL, ERROR,
         "Flcn hal can't be setup due to unknown device id\n");

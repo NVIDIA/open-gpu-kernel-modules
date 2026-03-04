@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080unix.finn
+// Source file:      ctrl/ctrl0080/ctrl0080unix.finn
 //
-
-
-
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
@@ -62,21 +59,10 @@
  */
 #define NV0080_CTRL_CMD_OS_UNIX_VT_SWITCH (0x801e01) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_OS_UNIX_INTERFACE_ID << 8) | NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS_MESSAGE_ID" */
 
-typedef struct NV0080_CTRL_OS_UNIX_VT_SWITCH_FB_INFO {
-    NvU32 subDeviceInstance;
-
-    NvU16 width;
-    NvU16 height;
-    NvU16 depth;
-    NvU16 pitch;
-} NV0080_CTRL_OS_UNIX_VT_SWITCH_FB_INFO;
-
 #define NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS_MESSAGE_ID (0x1U)
 
 typedef struct NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS {
-    NvU32                                 cmd;                                    /* in */
-
-    NV0080_CTRL_OS_UNIX_VT_SWITCH_FB_INFO fbInfo;   /* out */
+    NvU32 cmd;                                    /* in */
 } NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS;
 
 /* Called when the display driver needs RM to save the console data,
@@ -102,6 +88,8 @@ typedef struct NV0080_CTRL_OS_UNIX_VT_GET_FB_INFO_PARAMS {
     NvU16 height; /* out */
     NvU16 depth; /* out */
     NvU16 pitch; /* out */
+    NV_DECLARE_ALIGNED(NvU64 baseAddress, 8); /* out */
+    NV_DECLARE_ALIGNED(NvU64 size, 8); /* out */
 } NV0080_CTRL_OS_UNIX_VT_GET_FB_INFO_PARAMS;
 
 /* _ctrl0080unix_h_ */

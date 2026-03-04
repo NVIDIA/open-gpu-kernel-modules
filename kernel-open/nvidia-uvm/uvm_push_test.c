@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -38,61 +38,141 @@
 
 #define TEST_PUSH_INTERLEAVING_NUM_PAUSED_PUSHES 2
 
-static NvU32 get_push_end_size(uvm_channel_t *channel)
+static NvU32 get_push_begin_size(uvm_channel_t *channel)
 {
-    if (uvm_channel_is_ce(channel))
-        return UVM_PUSH_CE_END_SIZE;
-
-
-
-
+    // SEC2 channels allocate CSL signature buffer at the beginning.
+    if (uvm_channel_is_sec2(channel))
+        return UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE + UVM_METHOD_SIZE;
 
     return 0;
 }
 
+// This is the storage required by a semaphore release.
+static NvU32 get_push_end_min_size(uvm_channel_t *channel)
+{
+    if (g_uvm_global.conf_computing_enabled) {
+        if (uvm_channel_is_ce(channel)) {
+            // Space (in bytes) used by uvm_push_end() on a CE channel when
+            // the Confidential Computing feature is enabled.
+            //
+            // Note that CE semaphore release pushes two memset and one
+            // encryption method on top of the regular release.
+            // Memset size
+            // -------------
+            // PUSH_2U (SET_REMAP)              :   3 Words
+            // PUSH_2U (OFFSET_OUT)             :   3 Words
+            // PUSH_1U (LINE_LENGTH_IN)         :   2 Words
+            // PUSH_1U (LAUNCH_DMA)             :   2 Words
+            // Total 10 * UVM_METHOD_SIZE       :  40 Bytes
+            //
+            // Encrypt size
+            // -------------
+            // PUSH_1U (SET_SECURE_COPY_MODE)   :   2 Words
+            // PUSH_4U (ENCRYPT_AUTH_TAG + IV)  :   5 Words
+            // PUSH_4U (OFFSET_IN_OUT)          :   5 Words
+            // PUSH_2U (LINE_LENGTH_IN)         :   2 Words
+            // PUSH_2U (LAUNCH_DMA)             :   2 Words
+            // Total 16 * UVM_METHOD_SIZE       :  64 Bytes
+            //
+            // TOTAL                            : 144 Bytes
 
+            if (uvm_channel_is_wlc(channel)) {
+                // Same as CE + LCIC GPPut update + LCIC doorbell
+                return 24 + 144 + 24 + 24;
+            }
 
+            return 24 + 144;
+        }
+
+        UVM_ASSERT(uvm_channel_is_sec2(channel));
+
+        // A perfectly aligned inline buffer in SEC2 semaphore release.
+        // We add UVM_METHOD_SIZE because of the NOP method to reserve
+        // UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES (the inline buffer.)
+        return 48 + UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES + UVM_METHOD_SIZE;
+    }
+
+    UVM_ASSERT(uvm_channel_is_ce(channel));
+
+    // Space (in bytes) used by uvm_push_end() on a CE channel.
+    return 24;
+}
+
+static NvU32 get_push_end_max_size(uvm_channel_t *channel)
+{
+    // WLC pushes are always padded to UVM_MAX_WLC_PUSH_SIZE
+    if (uvm_channel_is_wlc(channel))
+        return UVM_MAX_WLC_PUSH_SIZE;
+
+    // Space (in bytes) used by uvm_push_end() on a SEC2 channel.
+    // Note that SEC2 semaphore release uses an inline buffer with alignment
+    // requirements. This is the "worst" case semaphore_release storage.
+    if (uvm_channel_is_sec2(channel))
+        return 48 + UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES + UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT;
+
+    UVM_ASSERT(uvm_channel_is_ce(channel));
+
+    // Space (in bytes) used by uvm_push_end() on a CE channel.
+    return get_push_end_min_size(channel);
+}
 
 static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
 {
-    NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu;
-    NvU32 push_size;
-    NvU32 i;
 
     for_each_va_space_gpu(gpu, va_space) {
-        for (i = 0; i < UVM_CHANNEL_TYPE_COUNT; ++i) {
+        uvm_channel_type_t type;
+
+        for (type = 0; type < UVM_CHANNEL_TYPE_COUNT; ++type) {
             uvm_push_t push;
-            NvU32 push_end_size;
-            uvm_channel_type_t type = i;
+            NvU32 push_size_before;
+            NvU32 push_end_size_observed;
+            NvU32 push_end_size_expected[2];
 
+            // SEC2 is only available when Confidential Computing is enabled
+            if ((type == UVM_CHANNEL_TYPE_SEC2) && !g_uvm_global.conf_computing_enabled)
+                continue;
 
+            // WLC is only available when Confidential Computing is enabled
+            if ((type == UVM_CHANNEL_TYPE_WLC) && !g_uvm_global.conf_computing_enabled)
+                continue;
 
+            // LCIC doesn't accept pushes
+            if (type == UVM_CHANNEL_TYPE_LCIC)
+                continue;
 
+            TEST_NV_CHECK_RET(uvm_push_begin(gpu->channel_manager,
+                                             type,
+                                             &push,
+                                             "type %s",
+                                             uvm_channel_type_to_string(type)));
 
-            status = uvm_push_begin(gpu->channel_manager, type, &push, "type %u\n", (unsigned)type);
-            TEST_CHECK_GOTO(status == NV_OK, done);
-
-            push_end_size = get_push_end_size(push.channel);
-            push_size = uvm_push_get_size(&push);
+            push_size_before = uvm_push_get_size(&push);
             uvm_push_end(&push);
-            if (uvm_push_get_size(&push) - push_size != push_end_size) {
-                UVM_TEST_PRINT("push_end_size incorrect, %u instead of %u for GPU %s\n",
-                               uvm_push_get_size(&push) - push_size,
-                               push_end_size,
+            push_end_size_observed = uvm_push_get_size(&push) - push_size_before;
+
+            push_end_size_expected[0] = get_push_end_min_size(push.channel);
+            push_end_size_expected[1] = get_push_end_max_size(push.channel);
+
+            if (push_end_size_observed < push_end_size_expected[0] ||
+                push_end_size_observed > push_end_size_expected[1]) {
+                UVM_TEST_PRINT("push_end_size incorrect, %u instead of [%u:%u] on channel type %s for GPU %s\n",
+                               push_end_size_observed,
+                               push_end_size_expected[0],
+                               push_end_size_expected[1],
+                               uvm_channel_type_to_string(type),
                                uvm_gpu_name(gpu));
-                status = NV_ERR_INVALID_STATE;
-                goto done;
+                // The size mismatch error gets precedence over a wait error
+                (void) uvm_push_wait(&push);
+
+                return NV_ERR_INVALID_STATE;
             }
+
+            TEST_NV_CHECK_RET(uvm_push_wait(&push));
         }
     }
 
-done:
-    for_each_va_space_gpu(gpu, va_space) {
-        uvm_channel_manager_wait(gpu->channel_manager);
-    }
-
-    return status;
+    return NV_OK;
 }
 
 typedef enum {
@@ -111,6 +191,11 @@ static NV_STATUS test_push_inline_data_gpu(uvm_gpu_t *gpu)
     uvm_push_t push;
     uvm_mem_t *mem = NULL;
     char *verif;
+
+    // TODO: Bug 3839176: test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
 
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(UVM_PUSH_INLINE_DATA_MAX_SIZE, current->mm, &mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
@@ -157,7 +242,10 @@ static NV_STATUS test_push_inline_data_gpu(uvm_gpu_t *gpu)
                         inline_buf[j] = 1 + i + j;
                     break;
                 case TEST_INLINE_SINGLE_BUFFER:
-                    inline_buf = (char*)uvm_push_get_single_inline_buffer(&push, test_size, &data_gpu_address);
+                    inline_buf = (char*)uvm_push_get_single_inline_buffer(&push,
+                                                                          test_size,
+                                                                          UVM_METHOD_SIZE,
+                                                                          &data_gpu_address);
                     inline_data_size = test_size;
                     for (j = 0; j < test_size; ++j)
                         inline_buf[j] = 1 + i + j;
@@ -209,9 +297,17 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
 {
     NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu;
-    NvU32 i;
     uvm_push_t *pushes;
-    uvm_tracker_t tracker = UVM_TRACKER_INIT();
+    uvm_tracker_t tracker;
+
+    // When the Confidential Computing feature is enabled, a channel reserved at
+    // the start of a push cannot be reserved again until that push ends. The
+    // test is waived, because the number of pushes it starts per pool exceeds
+    // the number of channels in the pool, so it would block indefinitely.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
+
+    uvm_tracker_init(&tracker);
 
     // As noted above, this test does unsafe things that would be detected by
     // lock tracking, opt-out.
@@ -224,9 +320,11 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
     }
 
     for_each_va_space_gpu(gpu, va_space) {
+        NvU32 i;
+
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {
             uvm_push_t *push = &pushes[i];
-            status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, push, "concurrent push %u", i);
+            status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, push, "concurrent push %u", i);
             TEST_CHECK_GOTO(status == NV_OK, done);
         }
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {
@@ -281,6 +379,11 @@ static NV_STATUS test_push_interleaving_on_gpu(uvm_gpu_t* gpu)
     uvm_rm_mem_t *mem = NULL;
     atomic_t on_complete_counter = ATOMIC_INIT(0);
 
+    // TODO: Bug 3839176: test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
+
     // This test issues virtual memcopies/memsets, which in SR-IOV heavy cannot
     // be pushed to a proxy channel. Pushing to a UVM internal CE channel works
     // in all scenarios.
@@ -297,15 +400,15 @@ static NV_STATUS test_push_interleaving_on_gpu(uvm_gpu_t* gpu)
     num_non_paused_pushes = channel->num_gpfifo_entries;
 
     // The UVM driver only allows push interleaving across separate threads, but
-    // it is hard to consistenly replicate the interleaving. Instead, we
+    // it is hard to consistently replicate the interleaving. Instead, we
     // temporarily disable lock tracking, so we can interleave pushes from a
     // single thread.
     uvm_thread_context_lock_disable_tracking();
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, &mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_va = (NvU32*)uvm_rm_mem_get_cpu_va(mem);
-    gpu_va = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(channel));
+    gpu_va = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(channel)).address;
     memset(host_va, 0, size);
 
     // Begin a few pushes on the channel, but do not end them yet.
@@ -437,14 +540,14 @@ static NV_STATUS test_push_exactly_max_push(uvm_gpu_t *gpu,
     if (status != NV_OK)
         return status;
 
-    TEST_CHECK_RET(uvm_push_has_space(push, UVM_MAX_PUSH_SIZE));
-    TEST_CHECK_RET(!uvm_push_has_space(push, UVM_MAX_PUSH_SIZE + 1));
+    TEST_CHECK_RET(uvm_push_has_space(push, UVM_MAX_PUSH_SIZE - get_push_begin_size(push->channel)));
+    TEST_CHECK_RET(!uvm_push_has_space(push, UVM_MAX_PUSH_SIZE - get_push_begin_size(push->channel) + 1));
 
     semaphore_gpu_va = uvm_gpu_semaphore_get_gpu_va(sema_to_acquire, gpu, uvm_channel_is_proxy(push->channel));
     gpu->parent->host_hal->semaphore_acquire(push, semaphore_gpu_va, value);
 
     // Push a noop leaving just push_end_size in the pushbuffer.
-    push_end_size = get_push_end_size(push->channel);
+    push_end_size = get_push_end_max_size(push->channel);
     gpu->parent->host_hal->noop(push, UVM_MAX_PUSH_SIZE - uvm_push_get_size(push) - push_end_size);
 
     TEST_CHECK_RET(uvm_push_has_space(push, push_end_size));
@@ -458,20 +561,12 @@ static NV_STATUS test_push_exactly_max_push(uvm_gpu_t *gpu,
 
 static NvU32 test_count_idle_chunks(uvm_pushbuffer_t *pushbuffer)
 {
-    NvU32 i;
-    NvU32 count = 0;
-    for (i = 0; i < UVM_PUSHBUFFER_CHUNKS; ++i)
-        count += test_bit(i, pushbuffer->idle_chunks) ? 1 : 0;
-    return count;
+    return bitmap_weight(pushbuffer->idle_chunks, UVM_PUSHBUFFER_CHUNKS);
 }
 
 static NvU32 test_count_available_chunks(uvm_pushbuffer_t *pushbuffer)
 {
-    NvU32 i;
-    NvU32 count = 0;
-    for (i = 0; i < UVM_PUSHBUFFER_CHUNKS; ++i)
-        count += test_bit(i, pushbuffer->available_chunks) ? 1 : 0;
-    return count;
+    return bitmap_weight(pushbuffer->available_chunks, UVM_PUSHBUFFER_CHUNKS);
 }
 
 // Reuse the whole pushbuffer 4 times, one UVM_MAX_PUSH_SIZE at a time
@@ -479,7 +574,7 @@ static NvU32 test_count_available_chunks(uvm_pushbuffer_t *pushbuffer)
 
 // Test doing pushes of exactly UVM_MAX_PUSH_SIZE size and only allowing them to
 // complete one by one.
-static NV_STATUS test_max_pushes_on_gpu_and_channel_type(uvm_gpu_t *gpu, uvm_channel_type_t channel_type)
+static NV_STATUS test_max_pushes_on_gpu(uvm_gpu_t *gpu)
 {
     NV_STATUS status;
 
@@ -488,6 +583,7 @@ static NV_STATUS test_max_pushes_on_gpu_and_channel_type(uvm_gpu_t *gpu, uvm_cha
     NvU32 total_push_size = 0;
     NvU32 push_count = 0;
     NvU32 i;
+    uvm_channel_type_t channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
 
     uvm_tracker_init(&tracker);
 
@@ -495,6 +591,12 @@ static NV_STATUS test_max_pushes_on_gpu_and_channel_type(uvm_gpu_t *gpu, uvm_cha
     TEST_CHECK_GOTO(status == NV_OK, done);
 
     uvm_gpu_semaphore_set_payload(&sema, 0);
+
+    // Use SEC2 channel when Confidential Compute is enabled since all other
+    // channel types need extra space for work launch, and the channel type
+    // really doesn't matter for this test.
+    if (g_uvm_global.conf_computing_enabled)
+        channel_type = UVM_CHANNEL_TYPE_SEC2;
 
     // Need to wait for all channels to completely idle so that the pushbuffer
     // is in completely idle state when we begin.
@@ -556,18 +658,6 @@ done:
     return status;
 }
 
-static NV_STATUS test_max_pushes_on_gpu(uvm_gpu_t *gpu)
-{
-
-
-
-
-
-    TEST_NV_CHECK_RET(test_max_pushes_on_gpu_and_channel_type(gpu, UVM_CHANNEL_TYPE_GPU_INTERNAL));
-
-    return NV_OK;
-}
-
 // Test doing UVM_PUSHBUFFER_CHUNKS independent pushes expecting each one to use
 // a different chunk in the pushbuffer.
 static NV_STATUS test_idle_chunks_on_gpu(uvm_gpu_t *gpu)
@@ -577,6 +667,13 @@ static NV_STATUS test_idle_chunks_on_gpu(uvm_gpu_t *gpu)
     uvm_gpu_semaphore_t sema;
     uvm_tracker_t tracker = UVM_TRACKER_INIT();
     NvU32 i;
+    uvm_channel_type_t channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
+
+    // Use SEC2 channel when Confidential Compute is enabled since all other
+    // channel types need extra space for work launch, and the channel type
+    // really doesn't matter for this test.
+    if (g_uvm_global.conf_computing_enabled)
+        channel_type = UVM_CHANNEL_TYPE_SEC2;
 
     uvm_tracker_init(&tracker);
 
@@ -594,7 +691,7 @@ static NV_STATUS test_idle_chunks_on_gpu(uvm_gpu_t *gpu)
         NvU64 semaphore_gpu_va;
         uvm_push_t push;
 
-        status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, &push, "Push using chunk %u", i);
+        status = uvm_push_begin(gpu->channel_manager, channel_type, &push, "Push using chunk %u", i);
         TEST_CHECK_GOTO(status == NV_OK, done);
 
         semaphore_gpu_va = uvm_gpu_semaphore_get_gpu_va(&sema, gpu, uvm_channel_is_proxy(push.channel));
@@ -755,10 +852,6 @@ static bool can_do_peer_copies(uvm_va_space_t *va_space, uvm_gpu_t *gpu_a, uvm_g
 
     UVM_ASSERT(uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(gpu_b->id)], gpu_a->id));
 
-    // TODO: Bug 2028875. Indirect peers are not supported for now.
-    if (uvm_gpus_are_indirect_peers(gpu_a, gpu_b))
-        return false;
-
     return true;
 }
 
@@ -769,10 +862,15 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
     NvU32 i;
     NV_STATUS status;
     uvm_gpu_t *gpu, *gpu_a, *gpu_b;
-    uvm_mem_t *mem[UVM_ID_MAX_PROCESSORS] = {NULL};
+    uvm_mem_t **mem;
     NvU32 *host_ptr;
     const size_t size = 1024 * 1024;
     bool waive = true;
+
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
 
     for_each_va_space_gpu(gpu_a, va_space) {
         for_each_va_space_gpu(gpu_b, va_space) {
@@ -785,6 +883,10 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
 
     if (waive)
         return NV_OK;
+
+    mem = uvm_kvmalloc_zero(sizeof(*mem) * UVM_ID_MAX_PROCESSORS);
+    if (!mem)
+        return NV_ERR_NO_MEMORY;
 
     // Alloc and initialize host buffer
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, &mem[UVM_ID_CPU_VALUE]);
@@ -853,6 +955,7 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
         uvm_mem_free(mem[uvm_id_value(gpu->id)]);
 
     uvm_mem_free(mem[UVM_ID_CPU_VALUE]);
+    uvm_kvfree(mem);
 
     return status;
 }

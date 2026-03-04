@@ -39,10 +39,13 @@
 namespace DisplayPort
 {
     #define PREDEFINED_DSC_MST_BPPX16 160;
+    #define MAX_DSC_COMPRESSION_BPPX16 128;
     #define HDCP_BCAPS_DDC_OFFSET 0x40
     #define HDCP_BCAPS_DDC_EN_BIT 0x80
     #define HDCP_BCAPS_DP_EN_BIT  0x01
     #define HDCP_I2C_CLIENT_ADDR  0x74
+    #define DEVICE_OUI_SIZE       3
+    #define DSC_CAPS_SIZE         16
 
     struct GroupImpl;
     struct ConnectorImpl;
@@ -76,9 +79,10 @@ namespace DisplayPort
         {
             struct _Enum_Path
             {
-                unsigned total, free;
+                unsigned availableStreams, total, free, dfpLinkAvailable;
                 bool     bPathFECCapable;
                 bool     dataValid;                     // Is the cache valid?
+                bool     availablePbnUpdated;
             } enum_path;
 
             struct Compound_Query_State
@@ -107,6 +111,7 @@ namespace DisplayPort
 
         void                resetCacheInferredLink();
         LinkConfiguration * inferLeafLink(unsigned * totalLinkSlots);
+        void                inferPathConstraints();
 
 
         DeviceImpl      * parent;               // Upstream parent device
@@ -130,7 +135,7 @@ namespace DisplayPort
         bool              multistream;
         bool              videoSink, audioSink;
         bool              plugged;
-
+        bool              bApplyPclkWarBug4949066;
 
         AuxRetry          friendlyAux;
         bool              payloadAllocated;             // did the allocate payload go through?
@@ -167,12 +172,15 @@ namespace DisplayPort
         NvU8    rawDscCaps[16];
         DscCaps dscCaps;
 
-        // Panel replay Caps 
+        // Panel replay Caps
         PanelReplayCaps prCaps;
-
+        // ALPM caps
+        AlpmCaps alpmCaps;
         bool bIsFakedMuxDevice;
         bool bIsPreviouslyFakedMuxDevice;
         bool bisMarkedForDeletion;
+        bool bIgnoreMsaCap;
+        bool bIgnoreMsaCapCached;
 
         //
         // Device doing the DSC decompression for this device. This could be device itself
@@ -193,7 +201,11 @@ namespace DisplayPort
         bool bFECParitySupported;
 
         TriState bSdpExtCapable;
+        TriState bAsyncSDPCapable;
         bool bMSAOverMSTCapable;
+        bool bDscPassThroughColorFormatWar;
+
+        NvU64 maxModeBwRequired;
 
         DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent);
         ~DeviceImpl();
@@ -250,13 +262,13 @@ namespace DisplayPort
 
         virtual bool isLoop()
         {
-            DP_LOG(("isLoop implementation is pending (bug 791059)"));
+           // implementation is pending (bug 791059)
             return false;
         }
 
         virtual bool isRedundant()
         {
-            DP_LOG(("isRedundant implementation is pending (bug 791059)"));
+            // implementation is pending (bug 791059)
             return false;
         }
 
@@ -349,15 +361,9 @@ namespace DisplayPort
             return true;
         }
 
-        bool getIgnoreMSACap()
-        {
-            return hal->getMsaTimingparIgnored();
-        }
+        bool getIgnoreMSACap();
 
-        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn)
-        {
-            return hal->setIgnoreMSATimingParamters(msaTimingParamIgnoreEn);
-        }
+        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn);
 
         bool isVirtualPeerDevice()
         {
@@ -380,9 +386,21 @@ namespace DisplayPort
             return dpcdRevisionMinor >= minor;
         }
 
+        NvU64 getMaxModeBwRequired()
+        {
+            return maxModeBwRequired;
+        }
+
+        bool getStuffDummySymbolsFor128b132b() const { return processedEdid.WARData.bStuffDummySymbolsFor128b132b; }
+        bool getStuffDummySymbolsFor8b10b() const { return processedEdid.WARData.bStuffDummySymbolsFor8b10b; }
+        bool getApplyStuffDummySymbolsWAR() const { return processedEdid.WARFlags.bApplyStuffDummySymbolsWAR; }
+
         virtual void queryGUID2();
 
         virtual bool getSDPExtnForColorimetrySupported();
+        virtual bool getAsyncSDPSupported();
+
+        virtual bool getPanelFwRevision(NvU16 *revision);
 
         virtual bool isPowerSuspended();
 
@@ -418,6 +436,9 @@ namespace DisplayPort
         virtual void    markDeviceForDeletion() {bisMarkedForDeletion = true;};
         virtual bool    isMarkedForDeletion() {return bisMarkedForDeletion;};
         virtual bool    getRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    setRawDscCaps(const NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    setValidatedRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    validatePPSData(DSCPPSDATA *pPps);
 
         virtual AuxBus::status dscCrcControl(NvBool bEnable, gpuDscCrc *dataGpu, sinkDscCrc *dataSink);
 
@@ -442,11 +463,27 @@ namespace DisplayPort
         bool isPanelReplaySupported(void);
         void getPanelReplayCaps(void);
         bool setPanelReplayConfig(panelReplayConfig prcfg);
+        bool getPanelReplayConfig(panelReplayConfig *pPrcfg);
+        bool getPanelReplayStatus(PanelReplayStatus *pPrStatus);
+        NvBool isSelectiveUpdateSupported(void);
+        NvBool isEarlyRegionTpSupported(void);
+        NvBool enableAdaptiveSyncSdp(NvBool enable);
+        SelectiveUpdateCaps getSelectiveUpdateCaps(void);
+        NvBool isAdaptiveSyncSdpNotSupportedInPr(void);
+        NvBool isdscDecodeNotSupportedInPr(void);
+        NvBool isLinkOffSupportedAfterAsSdpInPr(void);
+        void getAlpmCaps(void);
+        NvBool setAlpmConfig(AlpmConfig alpmcfg);
+        NvBool getAlpmStatus(AlpmStatus *pAlpmStatus);
+        NvBool isAuxLessAlpmSupported(void);
 
         NvBool getDSCSupport();
         bool getFECSupport();
         NvBool isDSCPassThroughSupported();
+        NvBool isDynamicPPSSupported();
+        NvBool isDynamicDscToggleSupported();
         NvBool isDSCSupported();
+        NvBool isDSCDecompressionSupported();
         NvBool isDSCPossible();
         bool isFECSupported();
         bool readAndParseDSCCaps();
@@ -454,6 +491,7 @@ namespace DisplayPort
         bool parseDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool parseBranchSpecificDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool setDscEnable(bool enable);
+        bool setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThroughForPCON);
         bool getDscEnable(bool *pEnable);
         unsigned getDscVersionMajor();
         unsigned getDscVersionMinor();
@@ -473,6 +511,14 @@ namespace DisplayPort
         unsigned getDscMaxSliceWidth();
         unsigned getDscDecoderColorDepthSupportMask();
         void setDscDecompressionDevice(bool bDscCapBasedOnParent);
+        virtual bool getDeviceSpecificData(NvU8 *oui, NvU8 *deviceIdString,
+                                           NvU8 *hwRevision, NvU8 *swMajorRevision,
+                                           NvU8 *swMinorRevision);
+        virtual bool getParentSpecificData(NvU8 *oui, NvU8 *deviceIdString,
+                                           NvU8 *hwRevision, NvU8 *swMajorRevision,
+                                           NvU8 *swMinorRevision);
+
+        virtual bool setModeList(DisplayPort::DpModesetParams *pModeList, unsigned numModes);
     };
     class DeviceHDCPDetection : public Object, MessageManager::Message::MessageEventSink, Timer::TimerCallback
     {
@@ -492,6 +538,7 @@ namespace DisplayPort
             bool                     retryRemoteBKSVReadMessage;
             bool                     retryRemoteBCapsReadMessage;
             bool                     retryRemote22BCapsReadMessage;
+            bool                     tryRemote1XCaps;
             bool                     bBKSVReadMessagePending;
             bool                     bBCapsReadMessagePending;
 
@@ -517,6 +564,7 @@ namespace DisplayPort
 
             bool hdcpValidateKsv(const NvU8 *ksv, NvU32 Size);
             void handleRemoteDpcdReadDownReply(MessageManager::Message * from);
+            void readRemoteHdcp1xCaps(void);
             void messageFailed(MessageManager::Message * from, NakData * nakData);
             void messageCompleted(MessageManager::Message * from);
     };

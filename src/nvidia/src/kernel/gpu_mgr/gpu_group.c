@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         GpuGrp Object Function Definitions.                               *
 *                                                                           *
@@ -217,14 +217,14 @@ gpugrpCreateGlobalVASpace_IMPL
     gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
     vaspaceFlags |= VASPACE_FLAGS_ENABLE_VMM;
     rmStatus = vmmCreateVaspace(pVmm, vaspaceClass, 0x0, gpuMask, vaStart,
-                                      vaLimit, 0, 0, NULL, vaspaceFlags, ppGlobalVASpace);
+                                      vaLimit, 0, 0, NULL, vaspaceFlags, &pGpuGrp->pGlobalVASpace);
     gpumgrSetBcEnabledStatus(pGpu, bcState);
     if (NV_OK != rmStatus)
     {
-        *ppGlobalVASpace = NULL;
+        pGpuGrp->pGlobalVASpace = NULL;
         return rmStatus;
     }
-    pGpuGrp->pGlobalVASpace = (*ppGlobalVASpace);
+    *ppGlobalVASpace = pGpuGrp->pGlobalVASpace ;
 
     return rmStatus;
 }

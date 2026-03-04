@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,22 +19,27 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
-*/
+ */
 
-#include "nvtypes.h"
+#pragma once
+
+#include <nvtypes.h>
+
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl00f8.finn
+//
+
+
+
+#include "nvcfg_sdk.h"
+
 
 /*
  * Class definition for allocating a contiguous or discontiguous FLA.
  */
 
-#ifndef _cl00f8_h_
-#define _cl00f8_h_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define NV_MEMORY_FABRIC (0x000000f8)
+#define NV_MEMORY_FABRIC                (0xf8U) /* finn: Evaluated from "NV00F8_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /*
  *  alignment [IN]
@@ -75,32 +80,37 @@ extern "C" {
  *    Must be physical memory page size aligned.
  *
  *  map.hVidMem [IN]
- *    Handle to the physical video memory. Must be passed when the sticky flag is set so that the
- *    FLA -> PA mapping can happen during object creation.
- *    Phys memory with 2MB pages is supported.
- *    Phys memory handle can be NV01_NULL_OBJECT if FLEXIBLE_FLA flag is passed.
- *    hVidMem should belong the same device and client which is allocating FLA.
+ *    - Handle to the physical memory.
+ *    - Must be passed so that the FLA -> GPA mapping can happen during object creation.
+ *    - For sticky allocations, physical memory being mapped should be large enough
+ *      (accounting map.offset) to cover the whole fabric object allocation size.
+ *    - For flexible allocations, physical memory handle should be zero.
+ *    - Phys memory with 2MB and 512MB pages is supported.
+ *    - hVidMem should belong the same device and client which is allocating FLA.
  *
  *  map.flags [IN]
  *    Reserved for future use.
  *    Clients should pass 0 as of now.
  */
 
-#define NV_MEMORY_FABRIC_PAGE_SIZE_2M        0x200000
-#define NV_MEMORY_FABRIC_PAGE_SIZE_512M      0x20000000
+#define NV_MEMORY_FABRIC_PAGE_SIZE_2M   0x200000
+#define NV_MEMORY_FABRIC_PAGE_SIZE_512M 0x20000000
+#define NV_MEMORY_FABRIC_PAGE_SIZE_256G 0x4000000000
 
-#define NV00F8_ALLOC_FLAGS_DEFAULT             0
+#define NV00F8_ALLOC_FLAGS_DEFAULT      0
 #define NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA        NVBIT(0)
 #define NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS NVBIT(1)
 #define NV00F8_ALLOC_FLAGS_FORCE_CONTIGUOUS    NVBIT(2)
 #define NV00F8_ALLOC_FLAGS_READ_ONLY           NVBIT(3)
 
-typedef struct {
+#define NV00F8_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00f8U)
+
+typedef struct NV00F8_ALLOCATION_PARAMETERS {
 
     NV_DECLARE_ALIGNED(NvU64 alignment, 8);
     NV_DECLARE_ALIGNED(NvU64 allocSize, 8);
 
-    NvU32 pageSize;
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NvU32 allocFlags;
 
     struct {
@@ -109,10 +119,5 @@ typedef struct {
         NvHandle hVidMem;
         NvU32    flags;
     } map;
-
 } NV00F8_ALLOCATION_PARAMETERS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-#endif /* _cl00f8_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,5 +48,22 @@
 // RO to be requested through this emulated config space bit.
 //
 #define NV_XVE_PASSTHROUGH_EMULATED_CONFIG_RELAXED_ORDERING_ENABLE       4:4
+
+//
+// While the following defines are not register addresses/bit fields, the BAR
+// indices(currently arranged in serial fashion) could be changed for future
+// chips and therefore keeping it chip specific
+//
+#define NV_XVE_BAR0_LO_INDEX 0x0
+#define NV_XVE_BAR0_HI_INDEX 0x1
+#define NV_XVE_BAR1_LO_INDEX 0x2
+#define NV_XVE_BAR1_HI_INDEX 0x3
+#define NV_XVE_BAR2_LO_INDEX 0x4
+#define NV_XVE_BAR2_HI_INDEX 0x5
+#define NV_XVE_BAR3_INDEX    0x6
+
+
+#define NV_PCFG                             0x00088FFF:0x00088000 /* RW--D */
+#define NV_XVE_DEV_CTRL                     0x00000004 /* RW-4R */
 
 #endif

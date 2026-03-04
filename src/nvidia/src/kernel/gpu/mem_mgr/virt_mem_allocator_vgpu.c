@@ -30,9 +30,28 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
+#include "vgpu/rpc.h"
+#include "gpu/device/device.h"
 
 NV_STATUS
-dmaConstructHal_VGPUSTUB(OBJGPU *pGpu, VirtMemAllocator *pDma)
+dmaConstructHal_VF(OBJGPU *pGpu, VirtMemAllocator *pDma)
 {
     return NV_OK;
+}
+
+//
+// deviceCtrlCmdDmaFlush_VF
+//
+// Lock Requirements:
+//      Assert that API lock and GPUs lock held on entry
+//
+NV_STATUS
+deviceCtrlCmdDmaFlush_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams
+)
+{
+    NV_STATUS status = NV_OK;
+    return status;
 }

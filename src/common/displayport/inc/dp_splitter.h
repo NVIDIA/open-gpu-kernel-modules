@@ -44,10 +44,13 @@ namespace DisplayPort
 
     class MessageTransactionSplitter
     {
-        EncodedMessage * messageOutstanding;  // If set we've pulled an item out of the downQueue queue.
+        //
+        // If set we've pulled an item out of the downQueue queue.
         // One or more transactions have been sent as a result
         // messageOutstanding->messageOffset show how far into
         // the message we are.
+        //
+        EncodedMessage * messageOutstanding;
         unsigned assemblyTransmitted;
     public:
         void set(EncodedMessage * messageOutstanding)
@@ -62,7 +65,7 @@ namespace DisplayPort
         //
         bool get(Buffer & assemblyBuffer);
 
-        MessageTransactionSplitter()
+        MessageTransactionSplitter() : messageOutstanding(0), assemblyTransmitted(0)
         {}
     };
 

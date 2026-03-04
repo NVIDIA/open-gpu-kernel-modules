@@ -109,6 +109,12 @@ hdmiPacketWrite0073(NVHDMIPKT_CLASS*   pThis,
                     NvU8 const *const  pPacket)
 {
     NVHDMIPKT_RESULT result = NVHDMIPKT_SUCCESS;
+
+    if (packetLen > NV0073_CTRL_SET_OD_MAX_PACKET_SIZE)
+    {
+        return NVHDMIPKT_INVALID_ARG;
+    }
+
     NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS params = {0};
 
     NVMISC_MEMSET(&params, 0, sizeof(params));
@@ -302,12 +308,15 @@ hdmiWriteDummyPacketCtrl(NVHDMIPKT_CLASS*  pThis,
 }
 
 NVHDMIPKT_RESULT
-hdmiAssessLinkCapabilitiesDummy(NVHDMIPKT_CLASS             *pThis,
-                                NvU32                        subDevice,
-                                NvU32                        displayId,
+hdmiAssessLinkCapabilitiesDummy(NVHDMIPKT_CLASS      *pThis,
+                                NvU32                 subDevice,
+                                NvU32                 displayId,
                                 NVT_EDID_INFO         const * const pSinkEdid,
-                                HDMI_SRC_CAPS               *pSrcCaps,
-                                HDMI_SINK_CAPS              *pSinkCaps)
+                                const NvBool          bPerformLinkTrainingToAssess,
+                                const NvBool          bIsDisplayActive,
+                                HDMI_FRL_DATA_RATE    currFRLRate,
+                                HDMI_SRC_CAPS        *pSrcCaps,
+                                HDMI_SINK_CAPS       *pSinkCaps)
 {
     NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiAssessLinkCapabilitiesDummy called. "
                            "Should never be called.");
@@ -331,10 +340,10 @@ hdmiQueryFRLConfigDummy(NVHDMIPKT_CLASS                     *pThis,
 
 NVHDMIPKT_RESULT
 hdmiSetFRLConfigDummy(NVHDMIPKT_CLASS               *pThis,
-                       NvU32                         subDevice,
-                       NvU32                         displayId,
-                       NvBool                        bFakeLt,
-                       HDMI_FRL_CONFIG              *pFRLConfig)
+                      NvU32                         subDevice,
+                      NvU32                         displayId,
+                      NvBool                        bFakeLt,
+                      HDMI_FRL_CONFIG              *pFRLConfig)
 {
     NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiSetFRLConfigDummy called. "
                            "Should never be called.");
@@ -344,10 +353,37 @@ hdmiSetFRLConfigDummy(NVHDMIPKT_CLASS               *pThis,
 
 NVHDMIPKT_RESULT
 hdmiClearFRLConfigDummy(NVHDMIPKT_CLASS                   *pThis,
-                       NvU32                              subDevice,
-                       NvU32                              displayId)
+                        NvU32                              subDevice,
+                        NvU32                              displayId)
 {
     NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiClearFRLConfigDummy called. "
+                           "Should never be called.");
+    NvHdmiPkt_Assert(0);
+    return NVHDMIPKT_SUCCESS;
+}
+
+NVHDMIPKT_RESULT
+hdmiPacketReadDummy(NVHDMIPKT_CLASS*   pThis,
+                    NvU32              subDevice,
+                    NvU32              head,
+                    NVHDMIPKT_TYPE     packetReg,
+                    NvU32              bufferLen,
+                    NvU8 *const        pOutPktBuffer)
+{
+    NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiPacketReadDummy called. "
+                           "Should never be called.");
+    NvHdmiPkt_Assert(0);
+    return NVHDMIPKT_SUCCESS;
+}
+
+NVHDMIPKT_RESULT
+programAdvancedInfoframeDummy(NVHDMIPKT_CLASS*          pThis,
+                              NvU32                     subDevice,
+                              NvU32                     head,
+                              NVHDMIPKT_TYPE            packetReg,
+                              const ADVANCED_INFOFRAME* pInfoframe)
+{
+    NvHdmiPkt_Print(pThis, "ERROR - Dummy function programAdvancedInfoframeDummy called. "
                            "Should never be called.");
     NvHdmiPkt_Assert(0);
     return NVHDMIPKT_SUCCESS;
@@ -382,4 +418,8 @@ initializeHdmiPktInterface0073(NVHDMIPKT_CLASS* pClass)
     pClass->hdmiQueryFRLConfig          = hdmiQueryFRLConfigDummy;
     pClass->hdmiSetFRLConfig            = hdmiSetFRLConfigDummy;
     pClass->hdmiClearFRLConfig          = hdmiClearFRLConfigDummy;
+
+    // More (generic) infoframe support on T239+
+    pClass->hdmiPacketRead              = hdmiPacketReadDummy;
+    pClass->programAdvancedInfoframe    = programAdvancedInfoframeDummy;
 }

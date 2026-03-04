@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,6 +67,18 @@ namespace DisplayPort
         LINK_QUAL_80BIT_CUST,
         LINK_QUAL_HBR2_COMPLIANCE_EYE,
         LINK_QUAL_CP2520PAT3,
+        LINK_QUAL_128B132B_TPS1,
+        LINK_QUAL_128B132B_TPS2,
+        LINK_QUAL_PRBS9,
+        LINK_QUAL_PRBS11,
+        LINK_QUAL_PRBS15,
+        LINK_QUAL_PRBS23,
+        LINK_QUAL_PRBS31,
+        LINK_QUAL_264BIT_CUST,
+        LINK_QUAL_SQUARE_SEQ_WITH_PRESHOOT_ON_DE_EMPHASIS_ON,
+        LINK_QUAL_SQUARE_SEQ_WITH_PRESHOOT_OFF_DE_EMPHASIS_ON,
+        LINK_QUAL_SQUARE_SEQ_WITH_PRESHOOT_ON_DE_EMPHASIS_OFF,
+        LINK_QUAL_SQUARE_SEQ_WITH_PRESHOOT_OFF_DE_EMPHASIS_OFF,
     };
 
     typedef struct
@@ -86,6 +98,19 @@ namespace DisplayPort
 
     typedef struct
     {
+        LinkQualityPatternType lqsPattern;
+
+        //
+        // DP CSTM Test Pattern data
+        //   For 264 bits: ctsmData[0]-ctsmData[32]
+        //        padding: ctsmData[33-35]
+        //
+        NvU8    ctsmData[36];
+        NvU8    sqNum;
+    } DP2xPatternInfo;
+
+    typedef struct
+    {
         unsigned char       bcaps;
         unsigned char       bksv[5];
         bool                hdcpCapable;
@@ -99,15 +124,18 @@ namespace DisplayPort
         FAST_LINK_TRAINING,
     }LinkTrainingType;
 
+    typedef enum
+    {
+        FlushModePhase1,
+        FlushModePhase2,
+    } FlushModePhase;
+
     class MainLink : virtual public Object
     {
-    private:
-        virtual void initializeRegkeyDatabase() = 0;
-        virtual void applyRegkeyOverrides() = 0;
-
     public:
         virtual bool physicalLayerSetTestPattern(PatternInfo * patternInfo) = 0;
-
+        virtual bool physicalLayerSetDP2xTestPattern(DP2xPatternInfo * patternInfo) = 0;
+        virtual bool getUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) = 0;
         //
         //  Wrappers for existing link training RM control calls
         //
@@ -129,7 +157,7 @@ namespace DisplayPort
         virtual NvU32 getSorIndex() = 0;
         virtual bool isInbandStereoSignalingSupported() = 0;
 
- 
+
         virtual bool isEDP() = 0;
         virtual bool supportMSAOverMST() = 0;
         virtual bool isForceRmEdidRequired() = 0;
@@ -148,6 +176,9 @@ namespace DisplayPort
         // Check if we should skip power down eDP when head detached.
         virtual bool skipPowerdownEdpPanelWhenHeadDetach() = 0;
 
+        // Check if we should skip reading PCON Caps in MST case.
+        virtual bool isMSTPCONCapsReadDisabled() = 0;
+
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported = NULL,
                                 unsigned *pEncoderColorFormatMask = NULL,
@@ -164,7 +195,9 @@ namespace DisplayPort
         //       we cannot rely on the DPCD registers being correct or sane)
         //
         virtual void getLinkConfig(unsigned &laneCount, NvU64 & linkRate) = 0;
-
+        
+        // Get the current link config with FEC
+        virtual void getLinkConfigWithFEC(unsigned &laneCount, NvU64 &linkRate, bool &bFECEnable) {};
         // Get the max link config from UEFI.
         virtual bool getMaxLinkConfigFromUefi(NvU8 &linkRate, NvU8 &laneCount) = 0;
         //
@@ -175,9 +208,11 @@ namespace DisplayPort
         virtual bool hasIncreasedWatermarkLimits() = 0;
         virtual bool hasMultistream() = 0;
         virtual bool isPC2Disabled() = 0;
-        virtual bool isDP1_2Supported() = 0;
-        virtual bool isDP1_4Supported() = 0;
+        virtual NvU32 getGpuDpSupportedVersions() = 0;
+        virtual NvU32 getUHBRSupported() {return 0;}
+        virtual bool  isRgFlushSequenceUsed() {return false;}
         virtual bool isStreamCloningEnabled() = 0;
+        virtual bool isDpTunnelingHwBugWarEnabled() = 0;
         virtual NvU32 maxLinkRateSupported() = 0;
         virtual bool isLttprSupported() = 0;
         virtual bool isFECSupported() = 0;
@@ -194,9 +229,7 @@ namespace DisplayPort
         virtual void triggerACT() = 0;
         virtual void configureHDCPGetHDCPState(HDCPState &hdcpState) = 0;
 
-        virtual NvU32 streamToHead(NvU32 streamId,
-            DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY) = 0;
-        virtual NvU32 headToStream(NvU32 head,
+        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported,
             DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY) = 0;
 
         virtual void configureSingleStream(NvU32 head,
@@ -247,8 +280,19 @@ namespace DisplayPort
         virtual NvU32 getRootDisplayId() = 0;
         virtual NvU32 allocDisplayId() = 0;
         virtual bool freeDisplayId(NvU32 displayId) = 0;
-        virtual void queryGPUCapability() = 0;
+        virtual bool queryGPUCapability() {return false;}
+        virtual bool isAvoidHBR3WAREnabled() = 0;
         virtual bool queryAndUpdateDfpParams() = 0;
+        virtual void updateFallbackMap(NvU32 maxLaneCount, LinkRate maxLinkRate, NvU32 sinkUhbrCaps = 0) { return; }
+        virtual bool isConnectorUSBTypeC() { return false; }
+        virtual bool isCableVconnSourceUnknown() { return false; }
+        virtual void invalidateLinkRatesInFallbackTable(const LinkRate linkRate) { return; }
+
+        virtual bool setFlushMode(FlushModePhase phase) { return false; }
+        virtual bool clearFlushMode(FlushModePhase phase, NvU32 attachFailedHeadMask = 0, NvU32 headIndex = 0) { return false; }
+        virtual bool getDp2xLaneData(NvU32 *numLanes, NvU32 *data) { return false; }
+        virtual bool setDp2xLaneData(NvU32 numLanes, NvU32 *data) { return false; }
+        virtual bool isSupportedDPLinkConfig(LinkConfiguration &link) {return false; }
         virtual bool getEdpPowerData(bool *panelPowerOn, bool *bDPCDPowerStateD0) = 0;
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status) = 0;
 
@@ -259,6 +303,7 @@ namespace DisplayPort
         virtual bool dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *headIndex){ return false; }
         virtual bool configureLinkRateTable(const NvU16 *pLinkRateTable, LinkRates *pLinkRates) = 0;
         virtual bool configureFec(const bool bEnableFec) = 0;
+        virtual void applyStuffDummySymbolWAR(NvU32 head, bool enable) = 0;
     };
 }
 

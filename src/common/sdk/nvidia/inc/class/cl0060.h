@@ -21,26 +21,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvtypes.h"
+#pragma once
 
-#ifndef _cl0060_h_
-#define _cl0060_h_
+#include <nvtypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl0060.finn
+//
 
-#define NV0060_SYNC_GPU_BOOST                                       (0x00000060)
+#define NV0060_SYNC_GPU_BOOST (0x60U) /* finn: Evaluated from "NV0060_ALLOC_PARAMETERS_MESSAGE_ID" */
 
-/*! 
- */
-typedef struct {
+#define NV0060_ALLOC_PARAMETERS_MESSAGE_ID (0x0060U)
+
+typedef struct NV0060_ALLOC_PARAMETERS {
     NvU32 gpuBoostGroupId;
 } NV0060_ALLOC_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif // _cl0060_h
-

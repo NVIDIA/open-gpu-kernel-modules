@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlb0cc/ctrlb0ccprofiler.finn
+// Source file:      ctrl/ctrlb0cc/ctrlb0ccprofiler.finn
 //
-
-
-
 
 #include "ctrl/ctrlb0cc/ctrlb0ccbase.h"
 
@@ -112,7 +109,7 @@ typedef struct NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS {
  * for streaming the updated bytes available in the buffer.
  *
  */
-#define NVB0CC_CTRL_CMD_ALLOC_PMA_STREAM     (0xb0cc0105) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0x5" */
+#define NVB0CC_CTRL_CMD_ALLOC_PMA_STREAM     (0xb0cc0105) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID" */
 
 /*!
  * Defines the maximum size of PMA buffer for streamout. It can be up to 4GB minus one page
@@ -120,6 +117,8 @@ typedef struct NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS {
  */
 #define NVB0CC_PMA_BUFFER_SIZE_MAX           (0xffe00000ULL) /* finn: Evaluated from "(4 * 1024 * 1024 * 1024 - 2 * 1024 * 1024)" */
 #define NVB0CC_PMA_BYTES_AVAILABLE_SIZE      (0x1000) /* finn: Evaluated from "(4 * 1024)" */
+
+#define NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID (0x5U)
 
 typedef struct NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS {
     /*!
@@ -183,6 +182,8 @@ typedef struct NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS {
      */
     NvU32 pmaChannelIdx;
 } NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS;
+
+
 
 /*!
  * NVB0CC_CTRL_CMD_BIND_PM_RESOURCES
@@ -261,6 +262,11 @@ typedef struct NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS {
      * [in] The PMA Channel Index associated with a given PMA stream.
      */
     NvU32  pmaChannelIdx;
+
+    /*!
+     * [out] Set to TRUE if PMA buffer has overflowed.
+     */
+    NvBool bOverflowStatus;
 } NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS;
 
 /*!
@@ -390,13 +396,14 @@ typedef struct NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS {
  *        if programming fails, it will reset credits to 0 for all the chiplets.
  *
  */
-#define NVB0CC_CTRL_CMD_SET_HS_CREDITS (0xb0cc010e) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0xE" */
+#define NVB0CC_CTRL_CMD_SET_HS_CREDITS (0xb0cc010e) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_MESSAGE_ID" */
 
 typedef enum NVB0CC_CHIPLET_TYPE {
     NVB0CC_CHIPLET_TYPE_INVALID = 0,
     NVB0CC_CHIPLET_TYPE_FBP = 1,
     NVB0CC_CHIPLET_TYPE_GPC = 2,
     NVB0CC_CHIPLET_TYPE_SYS = 3,
+
 } NVB0CC_CHIPLET_TYPE;
 
 typedef enum NVB0CC_HS_CREDITS_CMD_STATUS {
@@ -443,7 +450,7 @@ typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_STATUS {
 
 #define NVB0CC_MAX_CREDIT_INFO_ENTRIES (63)
 
-typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
+typedef struct NVB0CC_CTRL_HS_CREDITS_PARAMS {
     /*!
      * [in] The PMA Channel Index associated with a given PMA stream.
      */
@@ -463,7 +470,11 @@ typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
      * [in] Credit programming per chiplet
      */
     NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO   creditInfo[NVB0CC_MAX_CREDIT_INFO_ENTRIES];
-} NVB0CC_CTRL_SET_HS_CREDITS_PARAMS;
+} NVB0CC_CTRL_HS_CREDITS_PARAMS;
+
+#define NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_MESSAGE_ID (0xEU)
+
+typedef NVB0CC_CTRL_HS_CREDITS_PARAMS NVB0CC_CTRL_SET_HS_CREDITS_PARAMS;
 
 /*!
  * NVB0CC_CTRL_CMD_GET_HS_CREDITS
@@ -471,9 +482,228 @@ typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
  * Gets per chiplet (pmm router) high speed streaming credits for a pma channel.
  *
  */
-#define NVB0CC_CTRL_CMD_GET_HS_CREDITS (0xb0cc010f) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0xF" */
+#define NVB0CC_CTRL_CMD_GET_HS_CREDITS (0xb0cc010f) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_MESSAGE_ID" */
 
-typedef NVB0CC_CTRL_SET_HS_CREDITS_PARAMS NVB0CC_CTRL_GET_HS_CREDITS_PARAMS;
+#define NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_MESSAGE_ID (0xFU)
+
+typedef NVB0CC_CTRL_HS_CREDITS_PARAMS NVB0CC_CTRL_GET_HS_CREDITS_PARAMS;
+
+
+
+typedef enum NVB0CC_CTRL_HES_TYPE {
+    NVB0CC_CTRL_HES_INVALID = 0,
+    NVB0CC_CTRL_HES_CWD = 1,
+} NVB0CC_CTRL_HES_TYPE;
+
+typedef struct NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS {
+    /*!
+     * [in] Enable ctxsw for HES_CWD.
+     */
+    NvBool ctxsw;
+} NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS;
+
+/*
+ * NVB0CC_CTRL_HES_RESERVATION_UNION
+ *
+ * Union of all HES reservation params
+ *
+ */
+typedef union NVB0CC_CTRL_HES_RESERVATION_UNION {
+    NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS cwd;
+} NVB0CC_CTRL_HES_RESERVATION_UNION;
+
+/*!
+ * NVB0CC_CTRL_CMD_RESERVE_HES
+ *
+ * Reserves HES for use by the calling client.
+ * This PM system will only be accessible if this reservation is
+ * taken.
+ *
+ * This reservation can be released with @ref NVB0CC_CTRL_CMD_RELEASE_HES.
+ *
+ * Reservation scope and rules are same as for @ref NVB0CC_CTRL_CMD_RESERVE_HWPM_LEGACY.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RESERVE_HES (0xb0cc0113) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RESERVE_HES_PARAMS_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_RESERVE_HES_PARAMS_MESSAGE_ID (0x13U)
+
+typedef struct NVB0CC_CTRL_RESERVE_HES_PARAMS {
+    /*!
+     * [in] Denotes the HES reservation type. Choose from @NVB0CC_CTRL_HES_TYPE.
+     */
+    NvU32                             type;
+
+    /*!
+     * [in] Union of all possible reserve param structs. Initialize the reserveParams corresponding to the chosen type.
+     */
+    NVB0CC_CTRL_HES_RESERVATION_UNION reserveParams;
+} NVB0CC_CTRL_RESERVE_HES_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_RELEASE_HES
+ *
+ * Releases the reservation taken with @ref NVB0CC_CTRL_CMD_RESERVE_HES.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RELEASE_HES (0xb0cc0114) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RELEASE_HES_PARAMS_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_RELEASE_HES_PARAMS_MESSAGE_ID (0x14U)
+
+typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
+    /*!
+     * [in] type of @NVB0CC_CTRL_HES_TYPE needs to be released.
+     */
+    NVB0CC_CTRL_HES_TYPE type;
+} NVB0CC_CTRL_RELEASE_HES_PARAMS;
+
+/*!
+ * Defines the maximum count of output credit pools.
+ * 30 is estimate based on the # of PMAs (2) and chiplet types(3),
+ * which should be big enough to accommodate the required number of credit pools
+ */
+#define NVB0CC_CREDIT_POOL_MAX_COUNT 30
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL
+ *
+ * Gets the total high speed streaming credits available for the client
+ * in each chiplet pool.
+ *
+ * This command is similar to @ref NVB0CC_CTRL_CMD_GET_TOTAL_HS_CREDITS but
+ * supports multiple chiplet credit pools.
+ *
+ */
+typedef struct NVB0CC_CTRL_CREDIT_POOL_INFO {
+    /*!
+     * [out] number of credits.
+     */
+    NvU16 numCredits;
+
+    /*!
+     * [out] index of credit pool.
+     */
+    NvU8  poolIndex;
+
+    /*!
+     * [out] chiplet type of credit pool.
+     */
+    NvU8  chipletType;
+} NVB0CC_CTRL_CREDIT_POOL_INFO;
+#define NVB0CC_CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL (0xb0cc0115) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_MESSAGE_ID (0x15U)
+
+typedef struct NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL {
+    /*!
+     * [out] chiplet-level credit pool.
+     */
+    NVB0CC_CTRL_CREDIT_POOL_INFO poolInfos[NVB0CC_CREDIT_POOL_MAX_COUNT];
+
+    /*!
+     * [out] number of credit pools.
+     */
+    NvU32                        poolInfosCount;
+} NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL;
+
+typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO {
+    /*!
+     * [in] Specifies the chiplet type @ref NVB0CC_CHIPLET_TYPE.
+     */
+    NvU8 chipletType;
+
+    /*!
+     * [in] Specifies the logical index of the chiplet.
+     */
+    NvU8 chipletIndex;
+
+    /*!
+     * [out] Specifies the index of credits pool for the chiplet.
+     */
+    NvU8 poolIndex;
+} NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO;
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_HS_CREDITS_MAPPING
+ *
+ * Query the associated PMA credit pool index for given chiplet.
+ *
+ */
+#define NVB0CC_CTRL_CMD_GET_HS_CREDITS_MAPPING (0xb0cc0116) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_MESSAGE_ID (0x16U)
+
+typedef struct NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS {
+    /*!
+     * [in]: number of input queries.
+     */
+    NvU16                                          numQueries;
+
+    /*!
+     * [out] Provides status for the entire operation.
+     */
+    NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_STATUS       statusInfo;
+
+    /*!
+     * [in/out]: Used to query the PMA credit pool index of specified chiplet.
+     */
+    NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO queries[NVB0CC_MAX_CREDIT_INFO_ENTRIES];
+} NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS;
+
+
+/*!
+ * NVB0CC_CTRL_CMD_DISABLE_DYNAMIC_MMA_BOOST
+ *
+ * Disable the Dynamic MMA clock boost during profiler lifetime.
+ *
+ */
+#define NVB0CC_CTRL_CMD_DISABLE_DYNAMIC_MMA_BOOST (0xb0cc0117) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS_MESSAGE_ID (0x17U)
+
+typedef struct NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS {
+    /*!
+     * [in]: En/Disable Dynamic MMA Boost.  True = disable Boost; False = re-enable Boost.
+     */
+    NvBool disable;
+} NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_DYNAMIC_MMA_BOOST_STATUS
+ *
+ * Request the Dynamic MMA clock boost feature enablement status.
+ *
+ */
+#define NVB0CC_CTRL_CMD_GET_DYNAMIC_MMA_BOOST_STATUS (0xb0cc0118) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS_MESSAGE_ID (0x18U)
+
+typedef struct NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS {
+    /*!
+     * [out]: Dynamic MMA Boost status: true = boost enabled/available; False = Boost disabled/unavailable.
+     */
+    NvBool enabled;
+} NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS;
+
+
+/*!
+ * NVB0CC_CTRL_CMD_RESERVE_CCU_PROF
+ *
+ * Reserves CCU Prof resource for use by the calling client.
+ * This CCU prof resource will be accessible only if this reservation is
+ * taken.
+ *
+ * This reservation can be released with @ref NVB0CC_CTRL_CMD_RELEASE_CCU_PROF.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RESERVE_CCU_PROF (0xb0cc0119) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS {
+    /*!
+     * [in] Enable ctxsw for CCU prof.
+     */
+    NvBool ctxsw;
+} NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS;
+
+#define NVB0CC_CTRL_CMD_RELEASE_CCU_PROF (0xb0cc011a) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0x1a" */
 
 
 

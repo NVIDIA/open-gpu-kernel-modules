@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,14 +29,17 @@
 #include "core/locks.h"
 #include "rmapi/rs_utils.h"
 
+#include "virtualization/kernel_hostvgpudeviceapi.h"
+
+#include "gpu/external_device/gsync_api.h"
+
 #include "resserv/rs_client.h"
 #include "class/cl0005.h"
 
 #include "ctrl/ctrl0000/ctrl0000event.h" // NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_*
 
-#if (!NV_RM_STUB_RPC)
 static NV_STATUS _eventRpcForType(NvHandle hClient, NvHandle hObject);
-#endif
+static void eventSystemDequeueEventLatest(SystemEventQueueList *pQueue);
 
 NV_STATUS
 eventConstruct_IMPL
@@ -56,6 +59,16 @@ eventConstruct_IMPL
     OBJGPU *pGpu = NULL;
     RS_PRIV_LEVEL privLevel = pParams->pSecInfo->privLevel;
     NvBool bUserOsEventHandle = NV_FALSE;
+    NvHandle hParentClient = pNv0050AllocParams->hParentClient;
+
+    //
+    // Allow hParentClient being zero to imply the allocating client should be
+    // the parent client of this event.
+    //
+    if (hParentClient == NV01_NULL_OBJECT)
+    {
+        hParentClient = pRsClient->hClient;
+    }
 
     // never allow user mode/non-root clients to create ring0 callbacks as
     // we can not trust the function pointer (encoded in data).
@@ -75,13 +88,12 @@ eventConstruct_IMPL
         }
     }
 
-#if (!NV_RM_STUB_RPC)
-    if (_eventRpcForType(pNv0050AllocParams->hParentClient, pNv0050AllocParams->hSrcResource))
+    if (_eventRpcForType(hParentClient, pNv0050AllocParams->hSrcResource))
     {
         RsResourceRef *pSrcRef;
         NV_STATUS tmpStatus;
 
-        tmpStatus = serverutilGetResourceRef(pNv0050AllocParams->hParentClient,
+        tmpStatus = serverutilGetResourceRef(hParentClient,
                                              pNv0050AllocParams->hSrcResource,
                                              &pSrcRef);
 
@@ -98,14 +110,13 @@ eventConstruct_IMPL
             }
         }
     }
-#endif
 
     NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, pRsClient->hClient, &pClientRef));
 
     // add event to client and parent object
     rmStatus = eventInit(pEvent,
                         pCallContext,
-                        pNv0050AllocParams->hParentClient,
+                        hParentClient,
                         pNv0050AllocParams->hSrcResource,
                         &ppEventNotification);
     if (rmStatus == NV_OK)
@@ -125,19 +136,20 @@ eventConstruct_IMPL
         //
         if (pGpu != NULL)
         {
-            RsResourceRef *pSourceRef;
+            RsResourceRef *pSourceRef = NULL;
 
-            if (IS_GSP_CLIENT(pGpu))
+            if (IS_FW_CLIENT(pGpu))
             {
                 NV_ASSERT_OK_OR_RETURN(
-                    serverutilGetResourceRef(pNv0050AllocParams->hParentClient,
+                    serverutilGetResourceRef(hParentClient,
                                              pNv0050AllocParams->hSrcResource,
                                              &pSourceRef));
             }
 
             if (
+                !(IS_FW_CLIENT(pGpu) && (pSourceRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
                 (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
-                (IS_GSP_CLIENT(pGpu) && pSourceRef->internalClassId != classId(ContextDma)) ||
+                (IS_FW_CLIENT(pGpu) && pSourceRef->internalClassId != classId(ContextDma)) ||
                 (IS_VIRTUAL_WITH_SRIOV(pGpu) && !(pNv0050AllocParams->notifyIndex & NV01_EVENT_NONSTALL_INTR))))
             {
                 //
@@ -173,7 +185,7 @@ eventConstruct_IMPL
 
         if (rmStatus == NV_OK)
             rmStatus = registerEventNotification(ppEventNotification,
-                                                 pRsClient->hClient,
+                                                 pRsClient,
                                                  pEvent->hNotifierResource,
                                                  pResourceRef->hResource,
                                                  pNv0050AllocParams->notifyIndex,
@@ -249,7 +261,6 @@ NV_STATUS notifyUnregisterEvent_IMPL
     if (*ppEventNotification != NULL)
     {
 
-#if (!NV_RM_STUB_RPC)
         if (_eventRpcForType(hNotifierClient, hNotifierResource))
         {
             OBJGPU *pGpu = CliGetGpuFromHandle(hNotifierClient, hNotifierResource, NULL);
@@ -258,7 +269,7 @@ NV_STATUS notifyUnregisterEvent_IMPL
             {
                 RsResourceRef *pNotifierRef = NULL;
 
-                if (IS_GSP_CLIENT(pGpu))
+                if (IS_FW_CLIENT(pGpu))
                 {
                     NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRef(hNotifierClient, hNotifierResource, &pNotifierRef));
                 }
@@ -270,9 +281,11 @@ NV_STATUS notifyUnregisterEvent_IMPL
                 // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
                 // do an RPC to the host to do the hardware update.
                 //
-                if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
-                    (IS_GSP_CLIENT(pGpu) && pNotifierRef->internalClassId != classId(ContextDma)) ||
-                    (IS_VIRTUAL_WITH_SRIOV(pGpu) && !((*ppEventNotification)->bNonStallIntrEvent)))
+                if (
+                    !(IS_FW_CLIENT(pGpu) && (pNotifierRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
+                    (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+                    (IS_FW_CLIENT(pGpu) && pNotifierRef->internalClassId != classId(ContextDma)) ||
+                    (IS_VIRTUAL_WITH_SRIOV(pGpu) && !((*ppEventNotification)->bNonStallIntrEvent))))
                 {
                     //
                     // In SR-IOV enabled systems, nonstall events are registered
@@ -292,13 +305,34 @@ NV_STATUS notifyUnregisterEvent_IMPL
                           hNotifierClient, hNotifierResource);
             }
         }
-#endif
 
         unregisterEventNotification(ppEventNotification,
                           hEventClient,
                           hNotifierResource,
                           hEvent);
 
+    }
+
+    // Gsync needs special event handling (ugh).
+    //
+    GSyncApi *pGSyncApi = dynamicCast(pNotifier, GSyncApi);
+    if (pGSyncApi != NULL)
+    {
+        NvU32          eventNum;
+
+        // check all events bound to this gsync object
+        for (eventNum = 0; eventNum < NV30F1_CTRL_GSYNC_EVENT_TYPES; eventNum++)
+        {
+            if ((pGSyncApi->pEventByType[eventNum]) &&
+                (pGSyncApi->pEventByType[eventNum]->hEventClient == hEventClient) &&
+                (pGSyncApi->pEventByType[eventNum]->hEvent == hEvent))
+            {
+                unregisterEventNotification(&pGSyncApi->pEventByType[eventNum],
+                        hEventClient,
+                        hNotifierResource,
+                        hEvent);
+            }
+        }
     }
 
     return status;
@@ -457,11 +491,11 @@ CliGetEventInfo
     Event          **ppEvent
 )
 {
-    RmClient       *pClient;
     RsClient       *pRsClient;
     RsResourceRef  *pResourceRef;
+    RmClient       *pClient = serverutilGetClientUnderLock(hClient);
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    if (pClient == NULL)
         return NV_FALSE;
 
     pRsClient = staticCast(pClient, RsClient);
@@ -478,32 +512,23 @@ CliGetEventInfo
 
 }
 
-NvBool
+void
 CliDelObjectEvents
 (
-    NvHandle hClient,
-    NvHandle hResource
+    RsResourceRef *pResourceRef
 )
 {
     NotifShare    *pNotifierShare;
     INotifier     *pNotifier;
-    RsClient      *pRsClient;
-    NV_STATUS      status = NV_OK;
-    RsResourceRef *pResourceRef;
 
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pRsClient);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    status = clientGetResourceRef(pRsClient, hResource, &pResourceRef);
-    if (status != NV_OK)
-        return NV_FALSE;
+    if (pResourceRef == NULL)
+        return;
 
     // If not a notifier object, there aren't any events to free
     pNotifier = dynamicCast(pResourceRef->pResource, INotifier);
 
     if (pNotifier == NULL)
-        return NV_TRUE;
+        return;
 
     pNotifierShare = inotifyGetNotificationShare(pNotifier);
     if (pNotifierShare != NULL)
@@ -511,7 +536,7 @@ CliDelObjectEvents
         while(pNotifierShare->pEventList != NULL)
         {
             PEVENTNOTIFICATION pEventNotif = pNotifierShare->pEventList;
-            status = inotifyUnregisterEvent(pNotifier,
+            inotifyUnregisterEvent(pNotifier,
                     pNotifierShare->hNotifierClient,
                     pNotifierShare->hNotifierResource,
                     pEventNotif->hEventClient,
@@ -519,9 +544,6 @@ CliDelObjectEvents
         }
         pNotifierShare->pNotifier = NULL;
     }
-
-    return NV_TRUE;
-
 } // end of CliDelObjectEvents()
 
 // ****************************************************************************
@@ -530,10 +552,10 @@ CliDelObjectEvents
 
 void CliAddSystemEvent(
     NvU32 event,
-    NvU32 status
+    void *pEventData,
+    NvBool *isEventNotified
 )
 {
-    NvU32 temp;
     PEVENTNOTIFICATION pEventNotification = NULL;
     RmClient **ppClient;
     RmClient  *pClient;
@@ -541,6 +563,9 @@ void CliAddSystemEvent(
     RsResourceRef *pCliResRef;
     NV_STATUS      rmStatus = NV_OK;
     Notifier  *pNotifier;
+
+    if (isEventNotified != NULL)
+        *isEventNotified = NV_FALSE;
 
     for (ppClient = serverutilGetFirstClientUnderLock();
          ppClient;
@@ -553,18 +578,6 @@ void CliAddSystemEvent(
         {
             continue;
         }
-
-        temp = (pClient->CliSysEventInfo.systemEventsQueue.Head + 1) % NV_SYSTEM_EVENT_QUEUE_SIZE;
-
-        if (temp == pClient->CliSysEventInfo.systemEventsQueue.Tail)
-        {
-            NV_PRINTF(LEVEL_ERROR, "system event queue is full");
-            return;
-        }
-
-        pClient->CliSysEventInfo.systemEventsQueue.EventQueue[pClient->CliSysEventInfo.systemEventsQueue.Head].event  = event;
-        pClient->CliSysEventInfo.systemEventsQueue.EventQueue[pClient->CliSysEventInfo.systemEventsQueue.Head].status = status;
-        pClient->CliSysEventInfo.systemEventsQueue.Head = temp;
 
         rmStatus = clientGetResourceRef(staticCast(pClient, RsClient), pRsClient->hClient, &pCliResRef);
         if (rmStatus != NV_OK)
@@ -585,10 +598,29 @@ void CliAddSystemEvent(
             {
                 if (pEventNotification->NotifyIndex == event)
                 {
+                    // only log the system event that has data
+                    if (pEventData != NULL)
+                    {
+                        if (eventSystemEnqueueEvent(&pClient->CliSysEventInfo.eventQueue,
+                                                    event, pEventData) != NV_OK)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "fails to add event=%d\n", event);
+                            return;
+                        }
+                    }
+
                     if (osNotifyEvent(NULL, pEventNotification, 0, 0, 0) != NV_OK)
                     {
+                        if (pEventData != NULL)
+                            eventSystemDequeueEventLatest(&pClient->CliSysEventInfo.eventQueue);
+
                         NV_PRINTF(LEVEL_ERROR, "failed to deliver event 0x%x",
                                   event);
+                    }
+                    else
+                    {
+                        if (isEventNotified != NULL)
+                            *isEventNotified = NV_TRUE;
                     }
                 }
                 pEventNotification = pEventNotification->Next;
@@ -604,7 +636,6 @@ void CliAddSystemEvent(
     return;
 }
 
-#if (!NV_RM_STUB_RPC)
 static NV_STATUS
 _eventRpcForType(NvHandle hClient, NvHandle hObject)
 {
@@ -619,9 +650,11 @@ _eventRpcForType(NvHandle hClient, NvHandle hObject)
     }
 
     if (objDynamicCastById(pResourceRef->pResource, classId(Subdevice)) ||
+        objDynamicCastById(pResourceRef->pResource, classId(KernelHostVgpuDeviceApi)) ||
         objDynamicCastById(pResourceRef->pResource, classId(ChannelDescendant)) ||
         objDynamicCastById(pResourceRef->pResource, classId(ContextDma)) ||
         objDynamicCastById(pResourceRef->pResource, classId(DispChannel)) ||
+        objDynamicCastById(pResourceRef->pResource, classId(DispCommon)) ||        
         objDynamicCastById(pResourceRef->pResource, classId(TimerApi)) ||
         objDynamicCastById(pResourceRef->pResource, classId(KernelSMDebuggerSession)))
     {
@@ -630,4 +663,120 @@ _eventRpcForType(NvHandle hClient, NvHandle hObject)
 
     return NV_FALSE;
 }
-#endif
+
+NV_STATUS
+eventGetByHandle_IMPL
+(
+    RsClient *pClient,
+    NvHandle hEvent,
+    NvU32 *pNotifyIndex
+)
+{
+    RsResourceRef  *pEventResourceRef;
+    NV_STATUS status;
+    Event *pEvent;
+    NotifShare *pNotifierShare;
+    PEVENTNOTIFICATION  pEventNotification;
+
+    *pNotifyIndex = NV2080_NOTIFIERS_MAXCOUNT;
+
+    status = clientGetResourceRef(pClient, hEvent, &pEventResourceRef);
+    if (status != NV_OK)
+        return status;
+
+    pEvent = dynamicCast(pEventResourceRef->pResource, Event);
+    if (pEvent == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Event is null \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // TODO: Check existing notifiers in that event
+    pNotifierShare = pEvent->pNotifierShare;
+    if ((pNotifierShare == NULL) || (pNotifierShare->pNotifier == NULL))
+    {
+        NV_PRINTF(LEVEL_ERROR, "pNotifierShare or pNotifier is NULL \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pEventNotification = inotifyGetNotificationList(pNotifierShare->pNotifier);
+    if (pEventNotification == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "pEventNotification is NULL \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    *pNotifyIndex = pEventNotification->NotifyIndex;
+
+    return status;
+}
+
+void eventSystemInitEventQueue(SystemEventQueueList *pQueue)
+{
+    listInit(pQueue, portMemAllocatorGetGlobalNonPaged());
+}
+
+NV_STATUS eventSystemEnqueueEvent(SystemEventQueueList *pQueue, NvU32 event, void *pEventData)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS newNode = { 0 };
+
+    newNode.event = event;
+    switch (event)
+    {
+        case NV0000_NOTIFIERS_DISPLAY_CHANGE:
+            newNode.data.display = *((NV0000_CTRL_SYSTEM_EVENT_DATA_DISPLAY_CHANGE *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_VGPU_UNBIND_EVENT:
+            newNode.data.vgpuUnbind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_UNBIND *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_VGPU_BIND_EVENT:
+            newNode.data.vgpuBind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_VGPU_BIND *)pEventData);
+            break;
+
+        case NV0000_NOTIFIERS_GPU_BIND_UNBIND_EVENT:
+            newNode.data.gpuBindUnbind = *((NV0000_CTRL_SYSTEM_EVENT_DATA_GPU_BIND_UNBIND *)pEventData);
+            break;
+
+        default:
+            return NV_ERR_INVALID_EVENT;
+    }
+
+    if (listAppendValue(pQueue, &newNode) == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    return NV_OK;
+}
+
+static void eventSystemDequeueEventLatest(SystemEventQueueList *pQueue)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pLastNode = listTail(pQueue);
+
+    if (pLastNode == NULL)
+        return;
+
+    listRemove(pQueue, pLastNode);
+}
+
+NV_STATUS eventSystemDequeueEvent(SystemEventQueueList *pQueue, NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pEvent)
+{
+    NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pFirstNode = listHead(pQueue);
+
+    if (pFirstNode == NULL)
+    {
+        // Queue is empty
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    *pEvent = *pFirstNode;
+
+    listRemove(pQueue, pFirstNode);
+
+    return NV_OK;
+}
+
+void eventSystemClearEventQueue(SystemEventQueueList *pQueue)
+{
+    listClear(pQueue);
+}

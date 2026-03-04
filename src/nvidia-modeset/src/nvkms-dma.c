@@ -27,7 +27,6 @@
 #include "nvkms-utils.h"
 #include "nvkms-rmapi.h"
 #include "class/cl917d.h" // NV917DDispControlDma, NV917D_DMA_*
-#include <ctrl/ctrl0080/ctrl0080dma.h> // NV0080_CTRL_CMD_DMA_FLUSH
 #include "nvos.h"
 
 #define NV_DMA_PUSHER_CHASE_PAD 5
@@ -49,61 +48,10 @@ void nvDmaKickoffEvo(NVEvoChannelPtr pChannel)
 
 static void EvoCoreKickoff(NVDmaBufferEvoPtr push_buffer, NvU32 putOffset)
 {
-    NVEvoDmaPtr pDma = &push_buffer->dma;
     int i;
 
     nvAssert(putOffset % 4 == 0);
     nvAssert(putOffset <= push_buffer->offset_max);
-
-    /* If needed, copy the chunk to be kicked off into each GPU's FB */
-    if (pDma->isBar1Mapping) {
-        NVDevEvoPtr pDevEvo = push_buffer->pDevEvo;
-        int sd;
-
-        NV0080_CTRL_DMA_FLUSH_PARAMS flushParams = { 0 };
-        NvU32 ret;
-
-        NvU32 *endAddress;
-
-        if (putOffset < push_buffer->put_offset) {
-            /* If we've wrapped, copy to the end of the pushbuffer */
-            nvAssert(putOffset == 0);
-            endAddress = push_buffer->base + push_buffer->offset_max /
-                                             sizeof(NvU32);
-        } else {
-            endAddress = push_buffer->buffer;
-        }
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-            NvU32 startOffset = push_buffer->put_offset / sizeof(NvU32);
-
-            NvU32 *src = push_buffer->base;
-            NvU32 *dst = pDma->subDeviceAddress[sd];
-
-            nvAssert(dst != NULL);
-
-            src += startOffset;
-            dst += startOffset;
-            while (src < endAddress) {
-                *dst++ = *src++;
-            }
-        }
-
-        /*
-         * Finally, tell RM to flush so that the data actually lands in FB
-         * before telling the GPU to fetch it.
-         */
-        flushParams.targetUnit = DRF_DEF(0080_CTRL_DMA, _FLUSH_TARGET,
-                                         _UNIT_FB, _ENABLE);
-
-        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                             pDevEvo->deviceHandle,
-                             NV0080_CTRL_CMD_DMA_FLUSH,
-                             &flushParams, sizeof(flushParams));
-        if (ret != NVOS_STATUS_SUCCESS) {
-            nvAssert(!"NV0080_CTRL_CMD_DMA_FLUSH failed");
-        }
-    }
 
 #if NVCPU_IS_X86_64
     __asm__ __volatile__ ("sfence\n\t" : : : "memory");
@@ -155,6 +103,26 @@ static NvU32 EvoReadGetOffset(NVDmaBufferEvoPtr push_buffer, NvBool minimum)
         }
     }
     return bestGet;
+}
+
+NvBool nvEvoPollForEmptyChannel(NVEvoChannelPtr pChannel, NvU32 sd,
+                                NvU64 *pStartTime, const NvU32 timeout)
+{
+    NVDmaBufferEvoPtr push_buffer = &pChannel->pb;
+
+    do {
+        if (EvoCoreReadGet(push_buffer, sd) == push_buffer->put_offset) {
+            break;
+        }
+
+        if (nvExceedsTimeoutUSec(push_buffer->pDevEvo, pStartTime, timeout)) {
+            return FALSE;
+        }
+
+        nvkms_yield();
+   } while (TRUE);
+
+    return TRUE;
 }
 
 void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
@@ -215,7 +183,7 @@ void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
          * isn't much we can do as currently structured, so just reset
          * startTime.
          */
-        if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+        if (nvExceedsTimeoutUSec(push_buffer->pDevEvo, &startTime, timeout)) {
             nvEvoLogDev(push_buffer->pDevEvo, EVO_LOG_ERROR,
                 "Error while waiting for GPU progress: "
                 "0x%08x:%d %d:%d:%d:%d",
@@ -250,7 +218,7 @@ void nvWriteEvoCoreNotifier(
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const NvU32 sd = pDispEvo->displayOwner;
     NVEvoDmaPtr pSubChannel = &pDevEvo->core->notifiersDma[sd];
-    volatile NvU32 *pNotifiers = pSubChannel->subDeviceAddress[sd];
+    volatile NvU32 *pNotifiers = pSubChannel->cpuAddress;
 
     EvoWriteNotifier(pNotifiers + offset, value);
 }
@@ -267,7 +235,7 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
     volatile NvU32 *pNotifier;
     NvU64 startTime = 0;
 
-    pNotifier = pSubChannel->subDeviceAddress[sd];
+    pNotifier = pSubChannel->cpuAddress;
 
     nvAssert(pNotifier != NULL);
     pNotifier += offset;
@@ -286,8 +254,8 @@ static NvBool EvoCheckNotifier(const NVDispEvoRec *pDispEvo,
             return FALSE;
         }
 
-        if (!nvIsEmulationEvo(pDevEvo) &&
-            nvExceedsTimeoutUSec(
+        if (nvExceedsTimeoutUSec(
+                pDevEvo,
                 &startTime,
                 NV_EVO_NOTIFIER_SHORT_TIMEOUT_USEC) &&
             (p->put_offset == EvoCoreReadGet(p, sd)))
@@ -450,7 +418,8 @@ void nvEvoResetCRC32Notifier(volatile NvU32 *pCRC32Notifier,
     EvoWriteNotifier(pCRC32Notifier, reset_val);
 }
 
-NvBool nvEvoWaitForCRC32Notifier(volatile NvU32 *pCRC32Notifier,
+NvBool nvEvoWaitForCRC32Notifier(const NVDevEvoPtr pDevEvo,
+                                 volatile NvU32 *pCRC32Notifier,
                                  NvU32 offset,
                                  NvU32 done_base_bit,
                                  NvU32 done_extent_bit,
@@ -471,6 +440,7 @@ NvBool nvEvoWaitForCRC32Notifier(volatile NvU32 *pCRC32Notifier,
         }
 
         if (nvExceedsTimeoutUSec(
+                pDevEvo,
                 &startTime,
                 NV_EVO_NOTIFIER_SHORT_TIMEOUT_USEC)) {
             return FALSE;

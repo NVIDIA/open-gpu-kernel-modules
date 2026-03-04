@@ -38,5 +38,22 @@
 #define NV_PGSP_QUEUE_HEAD(i)                                                                            (0x110c00+(i)*8) /* RW-4A */
 #define NV_PGSP_QUEUE_HEAD__SIZE_1                                                                       8              /*       */
 #define NV_PGSP_QUEUE_HEAD_ADDRESS                                                                       31:0           /* RWIVF */
+#define NV_PGSP_EMEMC(i)                                                                                 (0x110ac0+(i)*8) /* RW-4A */
+#define NV_PGSP_EMEMC__SIZE_1                                                                            4              /*       */
+#define NV_PGSP_EMEMC_OFFS                                                                               7:2            /* RWIVF */
+#define NV_PGSP_EMEMC_OFFS_INIT                                                                          0x00000000     /* RWI-V */
+#define NV_PGSP_EMEMC_BLK                                                                                15:8           /* RWIVF */
+#define NV_PGSP_EMEMC_BLK_INIT                                                                           0x00000000     /* RWI-V */
+#define NV_PGSP_EMEMC_AINCW                                                                              24:24          /* RWIVF */
+#define NV_PGSP_EMEMC_AINCW_INIT                                                                         0x00000000     /* RWI-V */
+#define NV_PGSP_EMEMC_AINCW_TRUE                                                                         0x00000001     /* RW--V */
+#define NV_PGSP_EMEMC_AINCW_FALSE                                                                        0x00000000     /* RW--V */
+#define NV_PGSP_EMEMC_AINCR                                                                              25:25          /* RWIVF */
+#define NV_PGSP_EMEMC_AINCR_INIT                                                                         0x00000000     /* RWI-V */
+#define NV_PGSP_EMEMC_AINCR_TRUE                                                                         0x00000001     /* RW--V */
+#define NV_PGSP_EMEMC_AINCR_FALSE                                                                        0x00000000     /* RW--V */
+#define NV_PGSP_EMEMD(i)                                                                                 (0x110ac4+(i)*8) /* RW-4A */
+#define NV_PGSP_EMEMD__SIZE_1                                                                            4              /*       */
+#define NV_PGSP_EMEMD_DATA                                                                               31:0           /* RW-VF */
 
 #endif // __tu102_dev_gsp_h__

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "common_nvswitch.h"
 #include "error_nvswitch.h"
 #include "pmgr_nvswitch.h"
+#include "soe/soeifcore.h"
 
 void
 nvswitch_i2c_init
@@ -32,6 +33,12 @@ nvswitch_i2c_init
 )
 {
     PNVSWITCH_OBJI2C pI2c = nvswitch_os_malloc(sizeof(struct NVSWITCH_OBJI2C));
+
+    if (pI2c == NULL)
+    {
+        device->pI2c = NULL;
+        return;
+    }
     nvswitch_os_memset(pI2c, 0, sizeof(struct NVSWITCH_OBJI2C));
     device->pI2c = pI2c;
 }
@@ -43,7 +50,18 @@ nvswitch_i2c_destroy
 )
 {
     if (device->pI2c == NULL)
+    {
         return;
+    }
+
+    if (device->pI2c->soeI2CSupported)
+    {
+        nvswitch_os_unmap_dma_region(device->os_handle, device->pI2c->pCpuAddr, device->pI2c->dmaHandle,
+                                 SOE_I2C_DMA_BUF_SIZE, NVSWITCH_DMA_DIR_BIDIRECTIONAL);
+        nvswitch_os_free_contig_memory(device->os_handle, device->pI2c->pCpuAddr, SOE_I2C_DMA_BUF_SIZE);
+        device->pI2c->pCpuAddr = NULL;
+        device->pI2c->dmaHandle = 0;
+    }
 
     nvswitch_os_free(device->pI2c);
     device->pI2c = NULL;

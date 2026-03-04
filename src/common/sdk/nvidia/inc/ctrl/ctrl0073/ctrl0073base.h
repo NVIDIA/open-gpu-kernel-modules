@@ -25,11 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073base.finn
+// Source file:      ctrl/ctrl0073/ctrl0073base.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV04_DISPLAY_COMMON control commands and parameters */
@@ -42,6 +39,7 @@
 #define NV0073_CTRL_SPECIFIC (0x02U)
 #define NV0073_CTRL_EVENT    (0x03U)
 #define NV0073_CTRL_INTERNAL (0x04U)
+#define NV0073_CTRL_COMMON   (0x05U)
 #define NV0073_CTRL_DFP      (0x11U)
 #define NV0073_CTRL_DP       (0x13U)
 #define NV0073_CTRL_SVP      (0x14U)

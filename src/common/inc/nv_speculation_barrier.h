@@ -82,7 +82,7 @@
  /* aarch64(ARMv8) mode */
  #define NV_SPECULATION_BARRIER_ARM_COMMON
  #define NV_SPEC_BARRIER_CSDB "HINT #20\n"
-#elif defined(NVCPU_NVRISCV64) && NVOS_IS_LIBOS
+#elif defined(NVCPU_IS_RISCV64)
 #   define nv_speculation_barrier()
 #else
  #error "Unknown compiler/chip family"

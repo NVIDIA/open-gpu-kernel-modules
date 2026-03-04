@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,58 +33,15 @@
 #include "nvtypes.h"
 #include "nvgputypes.h"
 #include "nvstatus.h"
+#include "resserv/rs_client.h"
+#include "gpu/mem_mgr/rm_page_size.h"
 
 typedef struct OBJGPU OBJGPU;
 typedef struct ChannelDescendant ChannelDescendant;
 typedef struct ContextDma ContextDma;
 typedef struct Memory Memory;
 typedef struct EVENTNOTIFICATION EVENTNOTIFICATION;
-//---------------------------------------------------------------------------
-//
-//  Memory page defines.
-//
-//  These correspond to the granularity understood by the hardware
-//  for address mapping; the system page size can be larger.
-//
-//---------------------------------------------------------------------------
-#define RM_PAGE_SIZE        4096
-#define RM_PAGE_SIZE_64K    (64 * 1024)
-#define RM_PAGE_SIZE_128K   (128 * 1024)
-#define RM_PAGE_MASK        0x0FFF
-#define RM_PAGE_SHIFT       12
-#define RM_PAGE_SHIFT_64K   16
-
-// Huge page size is 2 MB
-#define RM_PAGE_SHIFT_HUGE 21
-#define RM_PAGE_SIZE_HUGE  (1 << RM_PAGE_SHIFT_HUGE)
-#define RM_PAGE_MASK_HUGE  ((1 << RM_PAGE_SHIFT_HUGE) - 1)
-
-// 512MB page size
-#define RM_PAGE_SHIFT_512M 29
-#define RM_PAGE_SIZE_512M  (1 << RM_PAGE_SHIFT_512M)
-#define RM_PAGE_MASK_512M  (RM_PAGE_SIZE_512M - 1)
-
-//---------------------------------------------------------------------------
-//
-//  Memory page attributes.
-//
-//  These attributes are used by software for page size mapping;
-//  Big pages can be of 64/128KB[Fermi/Kepler/Pascal]
-//  Huge page is 2 MB[Pascal+]
-//  512MB page is Ampere+
-//  Default page attribute lets driver decide the optimal page size
-//
-//---------------------------------------------------------------------------
-typedef enum
-{
-    RM_ATTR_PAGE_SIZE_DEFAULT = 0x0,
-    RM_ATTR_PAGE_SIZE_4KB     = 0x1,
-    RM_ATTR_PAGE_SIZE_BIG     = 0x2,
-    RM_ATTR_PAGE_SIZE_HUGE    = 0x3,
-    RM_ATTR_PAGE_SIZE_512MB   = 0x4,
-    RM_ATTR_PAGE_SIZE_INVALID = 0x5
-}
-RM_ATTR_PAGE_SIZE;
+typedef struct Device Device;
 
 //---------------------------------------------------------------------------
 //
@@ -131,8 +88,8 @@ void notifyFillNOTIFICATION(OBJGPU       *pGpu,
                             NV_STATUS     CompletionStatus,
                             NvBool        TimeSupplied,
                             NvU64         Time);
-NV_STATUS notifyFillNotifierGPUVA          (OBJGPU*, NvHandle, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32);
-NV_STATUS notifyFillNotifierGPUVATimestamp (OBJGPU*, NvHandle, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
+NV_STATUS notifyFillNotifierGPUVA          (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32);
+NV_STATUS notifyFillNotifierGPUVATimestamp (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
 NV_STATUS notifyFillNotifierMemory         (OBJGPU*, Memory *, NvV32, NvV16, NV_STATUS, NvU32);
 NV_STATUS notifyFillNotifierMemoryTimestamp(OBJGPU*, Memory *, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
 void notifyFillNvNotification(OBJGPU         *pGpu,
@@ -143,8 +100,8 @@ void notifyFillNvNotification(OBJGPU         *pGpu,
                               NvBool          TimeSupplied,
                               NvU64           Time);
 
-NV_STATUS semaphoreFillGPUVA         (OBJGPU*, NvHandle, NvHandle, NvU64, NvV32, NvV32, NvBool);
-NV_STATUS semaphoreFillGPUVATimestamp(OBJGPU*, NvHandle, NvHandle, NvU64, NvV32, NvV32, NvBool, NvU64);
+NV_STATUS semaphoreFillGPUVA         (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV32, NvBool);
+NV_STATUS semaphoreFillGPUVATimestamp(OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV32, NvBool, NvU64);
 
 RM_ATTR_PAGE_SIZE dmaNvos32ToPageSizeAttr(NvU32 attr, NvU32 attr2);
 

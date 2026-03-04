@@ -33,6 +33,12 @@ static struct NvKmsKapiFunctionsTable nvKmsFuncsTable = {
 
 const struct NvKmsKapiFunctionsTable* const nvKms = &nvKmsFuncsTable;
 
+const struct NvKmsKapiCallbacks nv_drm_kapi_callbacks = {
+    .suspendResume = nv_drm_suspend_resume,
+    .remove = nv_drm_remove,
+    .probe = nv_drm_register_drm_device,
+};
+
 #endif
 
 int nv_drm_init(void)
@@ -45,6 +51,7 @@ int nv_drm_init(void)
         return -EINVAL;
     }
 
+    nvKms->setCallbacks(&nv_drm_kapi_callbacks);
     return nv_drm_probe_devices();
 #else
     return 0;
@@ -54,6 +61,7 @@ int nv_drm_init(void)
 void nv_drm_exit(void)
 {
 #if defined(NV_DRM_AVAILABLE)
+    nvKms->setCallbacks(NULL);
     nv_drm_remove_devices();
 #endif
 }

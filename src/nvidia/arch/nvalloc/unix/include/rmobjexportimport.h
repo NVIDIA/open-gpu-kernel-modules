@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,7 +36,5 @@ void RmFreeObjExportHandle(RmObjExportHandle hObject);
 NV_STATUS RmImportObject(NvHandle hDstClient, NvHandle hDstParent,
                          NvHandle *phDstObject, RmObjExportHandle hSrcObject,
                          NvU8 *pObjectType);
-
-NV_STATUS RmGetExportObjectInfo(RmObjExportHandle hSrcObject, NvU32 *deviceInstance);
 #endif // _RMOBJEXPORTIMPORT_H_
 

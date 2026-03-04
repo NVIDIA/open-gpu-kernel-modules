@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "os/os.h"
@@ -50,12 +52,6 @@ faultbufConstruct_IMPL
         NV_PRINTF(LEVEL_ERROR, "class %x not supported\n",
                   pParams->externalClassId);
         return NV_ERR_INVALID_CLASS;
-    }
-
-    if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Client is not privileged\n");
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     NV_ASSERT_OR_RETURN(pKernelGmmu != NULL, NV_ERR_NOT_SUPPORTED);
@@ -165,7 +161,6 @@ faultbufUnmap_IMPL
     // Unmap it
     memdescUnmap(pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[REPLAYABLE_FAULT_BUFFER].pFaultBufferMemDesc,
                  bKernel,
-                 pCpuMapping->processId,
                  pCpuMapping->pLinearAddress,
                  pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[REPLAYABLE_FAULT_BUFFER].hCpuFaultBuffer);
 

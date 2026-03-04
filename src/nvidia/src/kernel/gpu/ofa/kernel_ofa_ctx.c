@@ -39,6 +39,9 @@ ofactxConstructHal_KERNEL
     KernelFalcon      *pKernelFalcon = kflcnGetKernelFalconForEngine(pGpu, pChannelDescendant->resourceDesc.engDesc);
     KernelChannel     *pKernelChannel = pChannelDescendant->pKernelChannel;
 
+    if (pKernelFalcon == NULL)
+        return NV_ERR_GENERIC;
+
     NV_PRINTF(LEVEL_INFO, "ofactxConstruct for 0x%x\n", pChannelDescendant->resourceDesc.engDesc);
 
     return kflcnAllocContext(pGpu, pKernelFalcon, pKernelChannel, RES_GET_EXT_CLASS_ID(pChannelDescendant));

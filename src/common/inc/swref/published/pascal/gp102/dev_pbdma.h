@@ -23,5 +23,5 @@
 
 #ifndef __gp102_dev_pbdma_h__
 #define __gp102_dev_pbdma_h__
-#define NV_PPBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1          0x00000001 /*       */
+#define NV_PBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1          0x00000001 /*       */
 #endif // __gp102_dev_pbdma_h__

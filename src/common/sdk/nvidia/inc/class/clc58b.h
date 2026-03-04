@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,16 +21,18 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clc58b_h_
-#define _clc58b_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#define TURING_VMMU_A   (0x0000c58b)
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc58b.finn
+//
 
-/**
+#define TURING_VMMU_A (0xc58bU) /* finn: Evaluated from "TURING_VMMU_A_ALLOCATION_PARAMETERS_MESSAGE_ID" */
+
+/*
  * @brief NvAlloc parameters for TuringVmmuA class
  *
  * This class represents mapping between guest physical and system physical.
@@ -38,17 +40,11 @@ extern "C" {
  *
  * gfid [in]
  *       GFID of VF
- **/
+ */
 
-typedef struct
-{
+#define TURING_VMMU_A_ALLOCATION_PARAMETERS_MESSAGE_ID (0xc58bU)
+
+typedef struct TURING_VMMU_A_ALLOCATION_PARAMETERS {
     NvHandle hHostVgpuDevice;
 } TURING_VMMU_A_ALLOCATION_PARAMETERS;
-
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif // _clc58b_h
 

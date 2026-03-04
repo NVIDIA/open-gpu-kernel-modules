@@ -40,17 +40,39 @@
 #include "nv_stdarg.h"
 
 enum NvKmsSyncPtOp {
+    /*
+     * Call into Tegra's kernel nvhost driver, and allocate a syncpoint that can
+     * be exclusively used by the caller. Internally, this operation will call
+     * get() to set the initial refcount of the syncpoint to 1.
+     */
     NVKMS_SYNCPT_OP_ALLOC,
-    NVKMS_SYNCPT_OP_GET,
+    /*
+     * Decrease the refcount of an already allocated syncpoint. Once the
+     * refcount drops to 0, the syncpoint will be returned to the free pool that
+     * nvhost manages, so PUT can also be used to balance out an ALLOC.
+     */
     NVKMS_SYNCPT_OP_PUT,
-    NVKMS_SYNCPT_OP_INCR_MAX,
-    NVKMS_SYNCPT_OP_CPU_INCR,
+    /*
+     * Extract syncpt id and thresh from the sync-file file descriptor
+     */
     NVKMS_SYNCPT_OP_FD_TO_ID_AND_THRESH,
+    /*
+     * Create dma-fence from syncpt id and thresh value and create sync_file
+     * file descriptor for the dma-fence handle created.
+     */
     NVKMS_SYNCPT_OP_ID_AND_THRESH_TO_FD,
+    /*
+     * read syncpt minimum value of given syncpt
+     */
     NVKMS_SYNCPT_OP_READ_MINVAL,
-    NVKMS_SYNCPT_OP_READ_MAXVAL,
-    NVKMS_SYNCPT_OP_SET_MIN_EQ_MAX,
-    NVKMS_SYNCPT_OP_SET_MAXVAL,
+};
+
+enum NvKmsDebugForceColorSpace {
+    NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE,
+    NVKMS_DEBUG_FORCE_COLOR_SPACE_RGB,
+    NVKMS_DEBUG_FORCE_COLOR_SPACE_YUV444,
+    NVKMS_DEBUG_FORCE_COLOR_SPACE_YUV422,
+    NVKMS_DEBUG_FORCE_COLOR_SPACE_MAX,
 };
 
 typedef struct {
@@ -62,21 +84,7 @@ typedef struct {
 
     struct {
         NvU32 id;                       /*  in   */
-    } get;
-
-    struct {
-        NvU32 id;                       /*  in   */
     } put;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 incr;                     /*  in   */
-        NvU32 value;                    /*  out  */
-    } incr_max;
-
-    struct {
-        NvU32 id;                       /*  in   */
-    } cpu_incr;
 
     struct {
         NvS32 fd;                       /*  in   */
@@ -94,22 +102,25 @@ typedef struct {
         NvU32 id;                       /*  in   */
         NvU32 minval;                   /*  out  */
     } read_minval;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 maxval;                   /*  out  */
-    } read_maxval;
-
-    struct {
-        NvU32 id;                       /*  in   */
-    } set_min_eq_max;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 val;                      /*  in   */
-    } set_maxval;
 } NvKmsSyncPtOpParams;
 
+enum FailAllocCoreChannelMethod {
+    FAIL_ALLOC_CORE_CHANNEL_RM_SETUP_CORE_CHANNEL = 0,
+    FAIL_ALLOC_CORE_CHANNEL_RESTORE_CONSOLE = 1,
+    FAIL_ALLOC_CORE_CHANNEL_NO_CLASS = 2,
+};
+
+NvBool nvkms_test_fail_alloc_core_channel(enum FailAllocCoreChannelMethod method);
+NvBool nvkms_conceal_vrr_caps(void);
+NvBool nvkms_output_rounding_fix(void);
+NvBool nvkms_disable_hdmi_frl(void);
+NvBool nvkms_disable_vrr_memclk_switch(void);
+NvBool nvkms_hdmi_deepcolor(void);
+NvBool nvkms_vblank_sem_control(void);
+NvBool nvkms_opportunistic_display_sync(void);
+enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void);
+NvBool nvkms_enable_overlay_layers(void);
+NvBool nvkms_debug_logging(void);
 
 void   nvkms_call_rm    (void *ops);
 void*  nvkms_alloc      (size_t size,
@@ -313,6 +324,11 @@ NvU32 nvkms_enumerate_gpus(nv_gpu_info_t *gpu_info);
 NvBool nvkms_allow_write_combining(void);
 
 /*!
+ * Check if OS supports syncpoints.
+ */
+NvBool nvkms_kernel_supports_syncpts(void);
+
+/*!
  * Checks whether the fd is associated with an nvidia character device.
  */
 NvBool nvkms_fd_is_nvidia_chardev(int fd);
@@ -331,6 +347,16 @@ struct nvkms_per_open* nvkms_open_from_kapi
 void nvkms_close_from_kapi(struct nvkms_per_open *popen);
 
 NvBool nvkms_ioctl_from_kapi
+(
+    struct nvkms_per_open *popen,
+    NvU32 cmd, void *params_address, const size_t params_size
+);
+
+/*!
+ * Like nvkms_ioctl_from_kapi, but return NV_FALSE instead of waiting if the
+ * power management read lock cannot be acquired.
+ */
+NvBool nvkms_ioctl_from_kapi_try_pmlock
 (
     struct nvkms_per_open *popen,
     NvU32 cmd, void *params_address, const size_t params_size

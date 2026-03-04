@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 
 #include "os-interface.h"
 #include "nv-linux.h"
+#include "nvi2c.h"
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 
@@ -140,8 +141,9 @@ static int nv_i2c_algo_smbus_xfer(
         case I2C_SMBUS_WORD_DATA:
             if (read_write != I2C_SMBUS_READ)
             {
-                data->block[1] = (data->word & 0xff);
-                data->block[2] = (data->word >> 8);
+                u16 word = data->word;
+                data->block[1] = (word & 0xff);
+                data->block[2] = (word >> 8);
             }
 
             rmStatus = rm_i2c_transfer(sp, nv, (void *)adapter,
@@ -167,6 +169,17 @@ static int nv_i2c_algo_smbus_xfer(
                                         sizeof(data->block),
                                         (NvU8 *)data->block);
             break;
+
+        case I2C_SMBUS_I2C_BLOCK_DATA:
+            rmStatus = rm_i2c_transfer(sp, nv, (void *)adapter,
+                                       (read_write == I2C_SMBUS_READ) ?
+                                           NV_I2C_CMD_BLOCK_READ :
+                                           NV_I2C_CMD_BLOCK_WRITE,
+                                       (NvU8)(addr & 0x7f), (NvU8)command,
+                                       (NvU8)data->block[0],
+                                       (NvU8 *)&data->block[1]);
+            break;
+
         default:
             rc = -EINVAL;
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -194,7 +207,8 @@ static u32 nv_i2c_algo_functionality(struct i2c_adapter *adapter)
                 I2C_FUNC_SMBUS_BYTE |
                 I2C_FUNC_SMBUS_BYTE_DATA |
                 I2C_FUNC_SMBUS_WORD_DATA |
-                I2C_FUNC_SMBUS_BLOCK_DATA);
+                I2C_FUNC_SMBUS_BLOCK_DATA |
+                I2C_FUNC_SMBUS_I2C_BLOCK);
     }
 
     nv_kmem_cache_free_stack(sp);
@@ -235,13 +249,13 @@ void* NV_API_CALL nv_i2c_add_adapter(nv_state_t *nv, NvU32 port)
     if (nvl->pci_dev != NULL)
     {
         snprintf(pI2cAdapter->name, sizeof(pI2cAdapter->name),
-            "NVIDIA i2c adapter %u at %x:%02x.%u", port, nv->pci_info.bus,
+            "NVIDIA i2c adapter %u at %x:%02x.%u\n", port, nv->pci_info.bus,
              nv->pci_info.slot, PCI_FUNC(nvl->pci_dev->devfn));
     }
     else
     {
         snprintf(pI2cAdapter->name, sizeof(pI2cAdapter->name),
-            "NVIDIA SOC i2c adapter %u", port);
+            "NVIDIA SOC i2c adapter %u\n", port);
     }
 
     // add our data to the structure
@@ -273,247 +287,234 @@ void NV_API_CALL nv_i2c_del_adapter(nv_state_t *nv, void *data)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#else // defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+#if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+static struct i2c_client * nv_i2c_register_client(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvU8 address)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct i2c_adapter *i2c_adapter;
+    struct i2c_client *client;
+    int c_index;
+    struct i2c_board_info i2c_dev_info = {
+        .type = "tegra_display",
+        .addr = address,
+    };
+
+    /* Get the adapter using i2c port */
+    i2c_adapter = i2c_get_adapter(linuxI2CSwPort);
+    if (i2c_adapter == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to get i2c adapter for port(%d)\n",
+                  linuxI2CSwPort);
+        return NULL;
+    }
+
+#if defined(NV_I2C_NEW_CLIENT_DEVICE_PRESENT)
+    client = i2c_new_client_device(i2c_adapter, &i2c_dev_info);
+#else
+    nv_printf(NV_DBG_ERRORS, "NVRM: nv_i2c_new_device not present\n");
+    client = NULL;
+#endif
+    if (client == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to register client for address(0x%x)\n",
+                  address);
+        i2c_put_adapter(i2c_adapter);
+        return NULL;
+    }
+    i2c_put_adapter(i2c_adapter);
+
+    /* Save the Port and i2c client */
+    nvl->i2c_clients[linuxI2CSwPort].port = linuxI2CSwPort;
+    for (c_index = 0; c_index < MAX_CLIENTS_PER_ADAPTER; c_index++)
+    {
+        if (nvl->i2c_clients[linuxI2CSwPort].pOsClient[c_index] == NULL)
+        {
+            nvl->i2c_clients[linuxI2CSwPort].pOsClient[c_index] = client;
+            break;
+        }
+    }
+
+    return client;
+}
+
+static struct i2c_client *nv_i2c_get_registered_client(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvU8 address)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    int c_index;
+
+    for (c_index = 0; c_index < MAX_CLIENTS_PER_ADAPTER; c_index++)
+    {
+        struct i2c_client *client;
+
+        client = (struct i2c_client *)nvl->i2c_clients[linuxI2CSwPort].pOsClient[c_index];
+        if (client)
+        {
+            if (address == (NvU8)client->addr)
+            {
+                return client;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return NULL;
+}
+
+NV_STATUS NV_API_CALL nv_i2c_transfer(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvU8 address,
+    nv_i2c_msg_t *nv_msgs,
+    int num_msgs
+)
+{
+    struct i2c_client *client;
+    struct i2c_msg *msgs;
+    int count;
+    int rc;
+    NV_STATUS status = NV_OK;
+
+    //
+    // RM style client address is 8-bit addressing, but Linux use 7-bit
+    // addressing, so convert to 7-bit addressing format.
+    //
+    address = address >> 1;
+
+    //
+    // Check if its valid port
+    //
+    if (!(linuxI2CSwPort >= 0 && linuxI2CSwPort < MAX_TEGRA_I2C_PORTS))
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid I2C port:%d\n", linuxI2CSwPort);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    for (count = 0; count < num_msgs; count++) {
+        //
+        // RM style client address is 8-bit addressing, but Linux use 7-bit
+        // addressing, so convert to 7-bit addressing format.
+        //
+        nv_msgs[count].addr = nv_msgs[count].addr >> 1;
+
+        client = nv_i2c_get_registered_client(nv, linuxI2CSwPort, nv_msgs[count].addr);
+        if (client == NULL)
+        {
+            client = nv_i2c_register_client(nv, linuxI2CSwPort, nv_msgs[count].addr);
+            if (client == NULL)
+            {
+                nv_printf(NV_DBG_ERRORS, "NVRM: i2c client register failed for addr:0x%x\n",
+                          nv_msgs[count].addr);
+                return NV_ERR_GENERIC;
+            }
+        }
+    }
+
+    msgs = kzalloc((num_msgs * sizeof(*msgs)), GFP_KERNEL);
+    if (msgs == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c message allocation failed\n");
+        return NV_ERR_NO_MEMORY;
+    }
+
+    for (count = 0; count < num_msgs; count++) {
+        msgs[count].addr = nv_msgs[count].addr;
+        msgs[count].flags = nv_msgs[count].flags;
+        msgs[count].len = nv_msgs[count].len;
+        msgs[count].buf = nv_msgs[count].buf;
+    }
+
+    rc = i2c_transfer(client->adapter, msgs, num_msgs);
+    if (rc != num_msgs)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c transfer failed for addr: 0x%x\n",
+                  address);
+        status = NV_ERR_GENERIC;
+    }
+
+    kfree(msgs);
+
+    return status;
+}
+
+void NV_API_CALL nv_i2c_unregister_clients(nv_state_t *nv)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    int p_index, c_index;
+
+    for (p_index = 0; p_index < MAX_TEGRA_I2C_PORTS; p_index++)
+    {
+        for (c_index = 0;
+             c_index < MAX_CLIENTS_PER_ADAPTER;
+             c_index++)
+        {
+            struct i2c_client *client;
+
+            client = (struct i2c_client *)nvl->i2c_clients[p_index].pOsClient[c_index];
+            if (client)
+            {
+                i2c_unregister_device(client);
+                nvl->i2c_clients[p_index].pOsClient[c_index] = NULL;
+            }
+        }
+    }
+}
+
+NV_STATUS NV_API_CALL nv_i2c_bus_status(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvS32 *scl,
+    NvS32 *sda)
+{
+#if NV_IS_EXPORT_SYMBOL_PRESENT_i2c_bus_status
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct i2c_adapter *i2c_adapter;
+    int ret;
+
+    //
+    // Check if its valid port
+    //
+    if (!(linuxI2CSwPort >= 0 && linuxI2CSwPort < MAX_TEGRA_I2C_PORTS))
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid I2C port:%d\n", linuxI2CSwPort);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    /* Get the adapter using i2c port */
+    i2c_adapter = i2c_get_adapter(linuxI2CSwPort);
+    if (i2c_adapter == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to get i2c adapter for port(%d)\n",
+                  linuxI2CSwPort);
+        return NULL;
+    }
+
+
+    ret = i2c_bus_status(i2c_adapter, scl, sda);
+    if (ret < 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: i2c_bus_status failed:%d\n", ret);
+        return NV_ERR_GENERIC;
+    }
+    i2c_put_adapter(i2c_adapter);
+
+    return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
+}
+#endif // NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+#endif // defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+
+#if !defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)
 
 void NV_API_CALL nv_i2c_del_adapter(nv_state_t *nv, void *data)
 {
@@ -523,30 +524,35 @@ void* NV_API_CALL nv_i2c_add_adapter(nv_state_t *nv, NvU32 port)
 {
     return NULL;
 }
+#endif
 
 
+#if !NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE || \
+    (NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE && \
+    (!defined(CONFIG_I2C) && !defined(CONFIG_I2C_MODULE)))
 
+NV_STATUS NV_API_CALL nv_i2c_transfer(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvU8 address,
+    nv_i2c_msg_t *nv_msgs,
+    int num_msgs
+)
+{
+    return NV_OK;
+}
 
+void NV_API_CALL nv_i2c_unregister_clients(nv_state_t *nv)
+{
+}
 
+NV_STATUS NV_API_CALL nv_i2c_bus_status(
+    nv_state_t *nv,
+    NvU32 linuxI2CSwPort,
+    NvS32 *scl,
+    NvS32 *sda)
+{
+    return NV_ERR_GENERIC;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif // defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+#endif

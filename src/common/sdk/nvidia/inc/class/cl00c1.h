@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2018, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2018-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,50 +20,46 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl00c1_h_
-#define _cl00c1_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/cl00c1.finn
+//
+
 #include "nvlimits.h"
-
-#define   NV_FB_SEGMENT                         (0x000000C1)
+#define NV_FB_SEGMENT (0xc1U) /* finn: Evaluated from "NV_FB_SEGMENT_ALLOCATION_PARAMS_MESSAGE_ID" */
 
 /*
  * NV_FB_SEGMENT_ALLOCATION_PARAMS - Allocation params to create FB segment through
  * NvRmAlloc.
  */
-typedef struct
-{
-    NvHandle    hCtxDma;
-    NvU32       subDeviceIDMask NV_ALIGN_BYTES(8);
-    NvU64       dmaOffset       NV_ALIGN_BYTES(8);
-    NvU64       VidOffset       NV_ALIGN_BYTES(8);
-    NvU64       Offset          NV_ALIGN_BYTES(8); // To be deprecated
-    NvU64       pOffset[NV_MAX_SUBDEVICES] NV_ALIGN_BYTES(8);
-    NvU64       Length          NV_ALIGN_BYTES(8);
-    NvU64       ValidLength     NV_ALIGN_BYTES(8);
-    NvP64       pPageArray      NV_ALIGN_BYTES(8);
-    NvU32       startPageIndex;
-    NvHandle    AllocHintHandle;
-    NvU32       Flags;
-    NvHandle    hMemory; // Not used in NvRmAlloc path; only used in CTRL path
-    NvHandle    hClient; // Not used in NvRmAlloc path; only used in CTRL path
-    NvHandle    hDevice; // Not used in NvRmAlloc path; only used in CTRL path
-    NvP64       pCpuAddress     NV_ALIGN_BYTES(8); // To be deprecated
-    NvP64       ppCpuAddress[NV_MAX_SUBDEVICES] NV_ALIGN_BYTES(8);
-    NvU64       GpuAddress      NV_ALIGN_BYTES(8); // To be deprecated
-    NvU64       pGpuAddress[NV_MAX_SUBDEVICES] NV_ALIGN_BYTES(8);
-    NvHandle    hAllocHintClient;
-    NvU32       kind;
-    NvU32       compTag;
+#define NV_FB_SEGMENT_ALLOCATION_PARAMS_MESSAGE_ID (0x00C1U)
+
+typedef struct NV_FB_SEGMENT_ALLOCATION_PARAMS {
+    NvHandle hCtxDma;                       // unused
+    NvU32    subDeviceIDMask;
+    NV_DECLARE_ALIGNED(NvU64 dmaOffset, 8); // unused
+    NV_DECLARE_ALIGNED(NvU64 VidOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 Offset, 8);    // To be deprecated
+    NV_DECLARE_ALIGNED(NvU64 pOffset[NV_MAX_SUBDEVICES], 8);
+    NV_DECLARE_ALIGNED(NvU64 Length, 8);
+    NV_DECLARE_ALIGNED(NvU64 ValidLength, 8);
+    NV_DECLARE_ALIGNED(NvP64 pPageArray, 8);
+    NvU32    startPageIndex;
+    NvHandle AllocHintHandle;
+    NvU32    Flags;
+    NvHandle hMemory; // Not used in NvRmAlloc path; only used in CTRL path
+    NvHandle hClient; // Not used in NvRmAlloc path; only used in CTRL path
+    NvHandle hDevice; // Not used in NvRmAlloc path; only used in CTRL path
+    NV_DECLARE_ALIGNED(NvP64 pCpuAddress, 8); // To be deprecated
+    NV_DECLARE_ALIGNED(NvP64 ppCpuAddress[NV_MAX_SUBDEVICES], 8);
+    NV_DECLARE_ALIGNED(NvU64 GpuAddress, 8); // To be deprecated
+    NV_DECLARE_ALIGNED(NvU64 pGpuAddress[NV_MAX_SUBDEVICES], 8);
+    NvHandle hAllocHintClient;
+    NvU32    kind;
+    NvU32    compTag;
 } NV_FB_SEGMENT_ALLOCATION_PARAMS;
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl00c1_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,14 +27,11 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080internal.finn
+// Source file:      ctrl/ctrl0080/ctrl0080internal.finn
 //
 
-#include "nvlimits.h"
 #include "ctrl0080gr.h"
-
-
-
+#include "ctrl0080fifo.h"
 #include "ctrl/ctrl0080/ctrl0080base.h"
 #include "ctrl/ctrl0080/ctrl0080perf.h"
 
@@ -91,16 +88,64 @@ typedef struct NV0080_CTRL_CMD_INTERNAL_GR_SET_TPC_PARTITION_MODE_FINN_PARAMS {
 
 
 
-/*!
- * @ref NV0080_CTRL_CMD_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT
+/*
+ * NV0080_CTRL_CMD_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS
+ *
+ * This command will RC and disable channels permanently for the given clients.
+ *
+ *  numClients
+ *      Number of clients
+ *  clientHandles
+ *      List of client handles
+ *
+ * Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_STATE
  */
-#define NV0080_CTRL_CMD_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT     (0x802006) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS_MESSAGE_ID" */
 
-#define NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS_MESSAGE_ID (0x6U)
+#define NV0080_CTRL_CMD_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS (0x802008) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PARAMS_MESSAGE_ID" */
 
-typedef struct NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS {
-    NvU8 powerDisconnectedGpuBus[NV_MAX_DEVICES];
-    NvU8 powerDisconnectedGpuCount;
-} NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS;
+#define NV_FIFO_PERMANENTLY_DISABLE_CHANNELS_MAX_CLIENTS                  200U
+
+#define NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PARAMS_MESSAGE_ID (0x08U)
+
+typedef struct NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PARAMS {
+    NvU32    numClients;
+    NvHandle clientHandles[NV_FIFO_PERMANENTLY_DISABLE_CHANNELS_MAX_CLIENTS];
+} NV0080_CTRL_INTERNAL_FIFO_RC_AND_PERMANENTLY_DISABLE_CHANNELS_PARAMS;
+
+/*!
+ * NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED
+ *
+ * Tell Physical RM whether any ZBC-kind surfaces are allocated.
+ * If PF and all VFs report false, ZBC table can be flushed by Physical RM.
+ *
+ *   subdevInstance [IN]
+ *     Subdevice instance of the GPU to be checked with
+ *   bZbcReferenced [IN]
+ *     NV_TRUE -> ZBC-kind (and no _SKIP_ZBCREFCOUNT flag) are allocated in Kernel RM
+ *
+ */
+#define NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED (0x80200a) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS_MESSAGE_ID (0x0AU)
+
+typedef struct NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS {
+    NvU32  subdevInstance;
+    NvBool bZbcSurfacesExist;
+} NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS;
+
+
+
+#define NV0080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID (0x45U)
+
+typedef struct NV0080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS {
+    NvBool bTeardown;
+} NV0080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS;
+
+#define NV0080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR (0x802046) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID" */
+#define NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID (0x46U)
+
+typedef NV0080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS;
 
 /* ctrl0080internal_h */

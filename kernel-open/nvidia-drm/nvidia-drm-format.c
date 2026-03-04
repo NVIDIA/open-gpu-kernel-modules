@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,9 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm-conftest.h" /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+#include "nvidia-drm-conftest.h" /* NV_DRM_AVAILABLE */
 
-#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+#if defined(NV_DRM_AVAILABLE)
 
 #if defined(NV_DRM_DRMP_H_PRESENT)
 #include <drm/drmP.h>
@@ -35,14 +35,28 @@
 
 static const u32  nvkms_to_drm_format[] = {
     /* RGB formats */
-    [NvKmsSurfaceMemoryFormatA1R5G5B5]    = DRM_FORMAT_ARGB1555,
-    [NvKmsSurfaceMemoryFormatX1R5G5B5]    = DRM_FORMAT_XRGB1555,
-    [NvKmsSurfaceMemoryFormatR5G6B5]      = DRM_FORMAT_RGB565,
-    [NvKmsSurfaceMemoryFormatA8R8G8B8]    = DRM_FORMAT_ARGB8888,
-    [NvKmsSurfaceMemoryFormatX8R8G8B8]    = DRM_FORMAT_XRGB8888,
-    [NvKmsSurfaceMemoryFormatA2B10G10R10] = DRM_FORMAT_ABGR2101010,
-    [NvKmsSurfaceMemoryFormatX2B10G10R10] = DRM_FORMAT_XBGR2101010,
-    [NvKmsSurfaceMemoryFormatA8B8G8R8]    = DRM_FORMAT_ABGR8888,
+    [NvKmsSurfaceMemoryFormatA1R5G5B5]     = DRM_FORMAT_ARGB1555,
+    [NvKmsSurfaceMemoryFormatX1R5G5B5]     = DRM_FORMAT_XRGB1555,
+    [NvKmsSurfaceMemoryFormatR5G6B5]       = DRM_FORMAT_RGB565,
+    [NvKmsSurfaceMemoryFormatA8R8G8B8]     = DRM_FORMAT_ARGB8888,
+    [NvKmsSurfaceMemoryFormatX8R8G8B8]     = DRM_FORMAT_XRGB8888,
+    [NvKmsSurfaceMemoryFormatX8B8G8R8]     = DRM_FORMAT_XBGR8888,
+    [NvKmsSurfaceMemoryFormatA2B10G10R10]  = DRM_FORMAT_ABGR2101010,
+    [NvKmsSurfaceMemoryFormatX2B10G10R10]  = DRM_FORMAT_XBGR2101010,
+    [NvKmsSurfaceMemoryFormatA8B8G8R8]     = DRM_FORMAT_ABGR8888,
+#if defined(DRM_FORMAT_ABGR16161616)
+    /*
+     * DRM_FORMAT_ABGR16161616 was introduced by Linux kernel commit
+     * ff92ecf575a92 (v5.14).
+     */
+    [NvKmsSurfaceMemoryFormatR16G16B16A16] = DRM_FORMAT_ABGR16161616,
+#endif
+#if defined(DRM_FORMAT_ABGR16161616F)
+    [NvKmsSurfaceMemoryFormatRF16GF16BF16AF16] = DRM_FORMAT_ABGR16161616F,
+#endif
+#if defined(DRM_FORMAT_XBGR16161616F)
+    [NvKmsSurfaceMemoryFormatRF16GF16BF16XF16] = DRM_FORMAT_XBGR16161616F,
+#endif
 
     [NvKmsSurfaceMemoryFormatY8_U8__Y8_V8_N422] = DRM_FORMAT_YUYV,
     [NvKmsSurfaceMemoryFormatU8_Y8__V8_Y8_N422] = DRM_FORMAT_UYVY,
@@ -157,6 +171,39 @@ uint32_t *nv_drm_format_array_alloc(
     }
 
     return array;
+}
+
+bool nv_drm_format_is_yuv(u32 format)
+{
+#if defined(NV_DRM_FORMAT_INFO_HAS_IS_YUV)
+    const struct drm_format_info *format_info = drm_format_info(format);
+    return (format_info != NULL) && format_info->is_yuv;
+#else
+    switch (format) {
+        case DRM_FORMAT_YUYV:
+        case DRM_FORMAT_UYVY:
+
+        case DRM_FORMAT_NV24:
+        case DRM_FORMAT_NV42:
+        case DRM_FORMAT_NV16:
+        case DRM_FORMAT_NV61:
+        case DRM_FORMAT_NV12:
+        case DRM_FORMAT_NV21:
+
+#if defined(DRM_FORMAT_P210)
+        case DRM_FORMAT_P210:
+#endif
+#if defined(DRM_FORMAT_P010)
+        case DRM_FORMAT_P010:
+#endif
+#if defined(DRM_FORMAT_P012)
+        case DRM_FORMAT_P012:
+#endif
+            return true;
+        default:
+            return false;
+    }
+#endif
 }
 
 #endif

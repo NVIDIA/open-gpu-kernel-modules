@@ -41,7 +41,7 @@ extern "C" {
 
 //
 // Separate files for the types as they're included by CTRL definitions
-// 
+//
 #include "mmu_fmt_types.h"
 
 /*!
@@ -102,6 +102,17 @@ const MMU_FMT_LEVEL *mmuFmtFindLevelParent(
 const MMU_FMT_LEVEL *mmuFmtGetNextLevel(
                         const MMU_FMT_LEVEL *pLevelFmt,
                         const MMU_FMT_LEVEL *pTargetFmt);
+
+/*!
+ * Return a level description from the format. Used for Verif.
+ *
+ * @returns const char* string description of the level.
+ */
+const char*
+mmuFmtConvertLevelIdToSuffix
+(
+    const MMU_FMT_LEVEL *pLevelFmt
+);
 
 /*!
  * Bitmask of VA covered by a given level.

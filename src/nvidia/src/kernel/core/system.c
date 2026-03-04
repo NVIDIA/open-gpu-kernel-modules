@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         System Object Function Definitions.                               *
 *                                                                           *
@@ -47,11 +47,20 @@
 #include "platform/cpu.h"
 #include "platform/platform.h"
 #include "diagnostics/gpu_acct.h"
+#include "platform/platform_request_handler.h"
+#include "gpu/external_device/gsync.h"
+#include "virtualization/kernel_vgpu_mgr.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include "diagnostics/journal.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "power/gpu_boost_mgr.h"
 #include "compute/fabric.h"
 #include "gpu_mgr/gpu_db.h"
+#include "core/bin_data.h"
+
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#include "diagnostics/instrumentation_manager.h"
+#endif
 
 // local static functions
 static NV_STATUS    _sysCreateOs(OBJSYS *);
@@ -74,22 +83,103 @@ static sysChildObject sysChildObjects[] =
 {
     { NV_OFFSETOF(OBJSYS, pHalMgr),         classInfo(OBJHALMGR),       NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pPfm),            classInfo(OBJPFM),          NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pHypervisor),     classInfo(OBJHYPERVISOR),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pOS),             classInfo(OBJOS),           NV_FALSE }, //  OS: Wrapper macros must be enabled to use :CONSTRUCT.
     { NV_OFFSETOF(OBJSYS, pCl),             classInfo(OBJCL),           NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuMgr),         classInfo(OBJGPUMGR),       NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pGsyncMgr),       classInfo(OBJGSYNCMGR),     NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuAcct),        classInfo(GpuAccounting),   NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pPlatformRequestHandler), classInfo(PlatformRequestHandler),  NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pRcDB),           classInfo(OBJRCDB),         NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pVmm),            classInfo(OBJVMM),          NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pKernelVgpuMgr),  classInfo(KernelVgpuMgr),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuBoostMgr),    classInfo(OBJGPUBOOSTMGR),  NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pFabric),         classInfo(Fabric),          NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuDb),          classInfo(GpuDb),           NV_TRUE },
+#if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+    { NV_OFFSETOF(OBJSYS, pInstrumentationManager),     classInfo(InstrumentationManager),  NV_TRUE },
+#endif
 };
+
+static void
+_sysDestroyMemExportCache(OBJSYS *pSys)
+{
+    if (pSys->pSysMemExportModuleLock != NULL)
+    {
+        portSyncRwLockDestroy(pSys->pSysMemExportModuleLock);
+        pSys->pSysMemExportModuleLock = NULL;
+    }
+
+    NV_ASSERT(multimapCountItems(&pSys->sysMemExportCache) == 0);
+
+    multimapDestroy(&pSys->sysMemExportCache);
+}
+
+static NV_STATUS
+_sysInitMemExportCache(OBJSYS *pSys)
+{
+    multimapInit(&pSys->sysMemExportCache, portMemAllocatorGetGlobalNonPaged());
+
+    pSys->pSysMemExportModuleLock =
+                    portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pSys->pSysMemExportModuleLock == NULL)
+    {
+        _sysDestroyMemExportCache(pSys);
+        return NV_ERR_NO_MEMORY;
+    }
+
+    return NV_OK;
+}
+
+static void
+_sysDestroyMemExportClient(OBJSYS *pSys)
+{
+    RM_API *pRmApi;
+
+    if (pSys->hSysMemExportClient == 0)
+        return;
+
+    // Acquire lock to keep rmapiGetInterface() happy.
+    NV_ASSERT(rmapiLockAcquire(API_LOCK_FLAGS_NONE,
+                               RM_LOCK_MODULES_DESTROY) == NV_OK);
+
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV_ASSERT(pRmApi->Free(pRmApi, pSys->hSysMemExportClient,
+                           pSys->hSysMemExportClient) == NV_OK);
+
+    rmapiLockRelease();
+
+    pSys->hSysMemExportClient = 0;
+}
+
+static NV_STATUS
+_sysInitMemExportClient(OBJSYS *pSys)
+{
+    RM_API *pRmApi;
+    NV_STATUS status;
+
+    // Acquire lock to keep rmapiGetInterface() happy.
+    status = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
+    if (status != NV_OK)
+        return status;
+
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT,
+                                     NV01_NULL_OBJECT, NV01_NULL_OBJECT,
+                                     NV01_ROOT, &pSys->hSysMemExportClient,
+                                     sizeof(pSys->hSysMemExportClient));
+
+    rmapiLockRelease();
+
+    return status;
+}
 
 NV_STATUS
 sysConstruct_IMPL(OBJSYS *pSys)
 {
     NV_STATUS          status;
-    OBJOS             *pOS;
     NvU32              sec = 0;
     NvU32              uSec = 0;
 
@@ -107,15 +197,20 @@ sysConstruct_IMPL(OBJSYS *pSys)
     }
 
     // Use the monotonic system clock for a unique value
-    pOS = SYS_GET_OS(pSys);
-    osGetCurrentTime(&sec, &uSec);
+    osGetSystemTime(&sec, &uSec);
     pSys->rmInstanceId = (NvU64)sec * 1000000 + (NvU64)uSec;
 
-    if (!pOS->osRmInitRm(pOS))
     {
-        status = NV_ERR_GENERIC;
-        goto failed;
+        // Using Hypervisor native interface to detect
+        OBJOS         *pOS         = SYS_GET_OS(pSys);
+        OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
+        if (pHypervisor)
+            hypervisorDetection(pHypervisor, pOS);
     }
+
+    status = osRmInitRm();
+    if (status != NV_OK)
+        goto failed;
 
     _sysNvSwitchDetection(pSys);
 
@@ -135,9 +230,22 @@ sysConstruct_IMPL(OBJSYS *pSys)
     if (status != NV_OK)
         goto failed;
 
+    status = _sysInitMemExportCache(pSys);
+    if (status != NV_OK)
+        goto failed;
+
+    status = _sysInitMemExportClient(pSys);
+    if (status != NV_OK)
+        goto failed;
+
+    bindataInitialize();
+
     return NV_OK;
 
 failed:
+
+    _sysDestroyMemExportCache(pSys);
+
     _sysDeleteChildObjects(pSys);
 
     g_pSys = NULL;
@@ -153,12 +261,19 @@ failed:
 void
 sysDestruct_IMPL(OBJSYS *pSys)
 {
+
+    pSys->setProperty(pSys, PDB_PROP_SYS_DESTRUCTING, NV_TRUE);
+
+    _sysDestroyMemExportCache(pSys);
+    _sysDestroyMemExportClient(pSys);
+
     //
     // Any of these operations might fail but go ahead and
     // attempt to free remaining resources before complaining.
     //
     listDestroy(&g_clientListBehindGpusLock);
     listDestroy(&g_userInfoList);
+    multimapDestroy(&g_osInfoList);
 
     rmapiShutdown();
     osSyncWithRmDestroy();
@@ -175,6 +290,7 @@ sysDestruct_IMPL(OBJSYS *pSys)
     RMTRACE_DESTROY();
     RMTRACE_DESTROY_NEW();
 
+    bindataDestroy();
 }
 
 //
@@ -186,7 +302,7 @@ _sysCreateChildObjects(OBJSYS *pSys)
     NV_STATUS status = NV_OK;
     NvU32 i, n;
 
-    n = NV_ARRAY_ELEMENTS32(sysChildObjects);
+    n = NV_ARRAY_ELEMENTS(sysChildObjects);
 
     for (i = 0; i < n; i++)
     {
@@ -238,7 +354,7 @@ _sysDeleteChildObjects(OBJSYS *pSys)
 
     osRmCapUnregister(&pSys->pOsRmCaps);
 
-    for (i = NV_ARRAY_ELEMENTS32(sysChildObjects) - 1; i >= 0; i--)
+    for (i = NV_ARRAY_ELEMENTS(sysChildObjects) - 1; i >= 0; i--)
     {
         NvLength offset = sysChildObjects[i].childOffset;
         Dynamic **ppChild = reinterpretCast(reinterpretCast(pSys, NvU8*) + offset, Dynamic**);
@@ -304,6 +420,24 @@ _sysRegistryOverrideResourceServer
     else
     {
         pSys->apiLockModuleMask = RM_LOCK_MODULE_GRP(RM_LOCK_MODULES_CLIENT);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_LOCK_TIME_COLLECT,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE,
+                            &data32) == NV_OK)
+    {
+        pSys->bUseDeferredClientListFree = !!data32;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE_LIMIT,
+                            &data32) == NV_OK)
+    {
+        pSys->clientListDeferredFreeLimit = data32;
     }
 }
 
@@ -448,7 +582,7 @@ coreShutdownRm(void)
     objDelete(pSys);
 
     //
-    // Deinitalize libraries used by RM
+    // Deinitialize libraries used by RM
     //
     nvAssertDestroy();
 
@@ -639,26 +773,47 @@ sysInitRegistryOverrides_IMPL
     _sysRegistryOverrideExternalFabricMgmt(pSys, pGpu);
     _sysRegistryOverrideResourceServer(pSys, pGpu);
 
-    if ((data32 = osGetReleaseAssertBehavior()) != 0)
-    {
-        NvBool bRmAssertBehaviorBugcheck = NV_FALSE;
-#if defined(DEVELOP)
-            bRmAssertBehaviorBugcheck = ((data32 & RM_ASSERT_BEHAVIOR_BUGCHECK_DEVELOP) == RM_ASSERT_BEHAVIOR_BUGCHECK_DEVELOP);
-#elif !defined(DEBUG)  // !DEVELOP and !DEBUG = RELEASE
-        bRmAssertBehaviorBugcheck = ((data32 & RM_ASSERT_BEHAVIOR_BUGCHECK_RELEASE) == RM_ASSERT_BEHAVIOR_BUGCHECK_RELEASE);
-#endif
-        pSys->setProperty(pSys, PDB_PROP_SYS_BSOD_ON_ASSERT, bRmAssertBehaviorBugcheck);
-    }
-
     if (osBugCheckOnTimeoutEnabled())
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_BUGCHECK_ON_TIMEOUT, NV_TRUE);
     }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_ROUTE_TO_PHYSICAL_LOCK_BYPASS,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_LOCK_MIDPATH, &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_RM_TEST_ONLY_CODE,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_FORCE_SHARED_LOCK, &data32)
+            == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ALLOW_UNKNOWN_4PART_IDS, &data32)
+            == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ALLOW_UNKNOWN_4PART_IDS, !!data32);
+    }
+
+    gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);
 }
 
 void
 sysApplyLockingPolicy_IMPL(OBJSYS *pSys)
 {
+    g_resServ.bRouteToPhysicalLockBypass = pSys->getProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS);
     g_resServ.roTopLockApiMask = pSys->apiLockMask;
 }
 
@@ -682,3 +837,48 @@ sysSyncExternalFabricMgmtWAR_IMPL
 
     return status;
 }
+
+static void
+_sysRefreshAllGpuRecoveryAction
+(
+    void      *pData
+)
+{
+    NV_STATUS  status;
+    OBJGPU    *pGpu;
+    NvU32      i;
+    NvU32      gpuCount;
+    NvU32      gpuIndex;
+    NvU32      gpuMask;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        rmGpuGroupLockAcquire(0, GPU_LOCK_GRP_ALL, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_NONE, &gpuMask),
+        return);
+
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    for (i = 0, gpuIndex = 0; i < gpuCount; i++)
+    {
+        pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+        if (pGpu)
+        {
+            gpuRefreshRecoveryAction(pGpu, NV_TRUE);
+        }
+    }
+
+    rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+}
+
+void
+sysSetRecoveryRebootRequired_IMPL
+(
+    OBJSYS  *pSys,
+    NvBool   bRebootRequired
+)
+{
+    if (!!pSys->getProperty(pSys, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED) != !!bRebootRequired)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED, bRebootRequired);
+        osQueueSystemWorkItem(_sysRefreshAllGpuRecoveryAction, NULL);
+    }
+}
+

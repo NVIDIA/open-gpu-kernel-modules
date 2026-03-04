@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2025, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -32,9 +32,11 @@
 *
 ******************************************************************************/
 
+#include "nvcfg_sdk.h"
+
 #define ROBUST_CHANNEL_GR_EXCEPTION                     (13)
-#define ROBUST_CHANNEL_GR_ERROR_SW_NOTIFY               (13)
 #define ROBUST_CHANNEL_FAKE_ERROR                       (14)
+#define ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT          (16)
 #define ROBUST_CHANNEL_DISP_MISSED_NOTIFIER             (19)
 #define ROBUST_CHANNEL_MPEG_ERROR_SW_METHOD             (20)
 #define ROBUST_CHANNEL_ME_ERROR_SW_METHOD               (21)
@@ -43,7 +45,7 @@
 #define ROBUST_CHANNEL_VP_ERROR                         (27)
 #define ROBUST_CHANNEL_VP2_ERROR                        (28)
 #define ROBUST_CHANNEL_BSP_ERROR                        (29)
-#define ROBUST_CHANNEL_BAD_ADDR_ACCESS                  (30)
+#define ROBUST_CHANNEL_UNUSED_ERROR_30                  (30)
 #define ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT           (31)
 #define ROBUST_CHANNEL_PBDMA_ERROR                      (32)
 #define ROBUST_CHANNEL_SEC_ERROR                        (33)
@@ -59,14 +61,15 @@
 #define ROBUST_CHANNEL_PREEMPTIVE_REMOVAL               (45)
 #define ROBUST_CHANNEL_NVENC0_ERROR                     (47)
 #define ROBUST_CHANNEL_GPU_ECC_DBE                      (48)
+#define FB_MEMORY_ERROR                                 (58)
 #define PMU_ERROR                                       (59)
 #define ROBUST_CHANNEL_SEC2_ERROR                       (60)
 #define PMU_BREAKPOINT                                  (61)
 #define PMU_HALT_ERROR                                  (62)
 #define INFOROM_PAGE_RETIREMENT_EVENT                   (63)
+#define INFOROM_DRAM_RETIREMENT_EVENT                   INFOROM_PAGE_RETIREMENT_EVENT
 #define INFOROM_PAGE_RETIREMENT_FAILURE                 (64)
-#define INFOROM_DRAM_RETIREMENT_EVENT                   (63)
-#define INFOROM_DRAM_RETIREMENT_FAILURE                 (64)
+#define INFOROM_DRAM_RETIREMENT_FAILURE                 INFOROM_PAGE_RETIREMENT_FAILURE
 #define ROBUST_CHANNEL_NVENC1_ERROR                     (65)
 #define ROBUST_CHANNEL_NVDEC0_ERROR                     (68)
 #define ROBUST_CHANNEL_GR_CLASS_ERROR                   (69)
@@ -96,6 +99,18 @@
 #define INFOROM_ERASE_LIMIT_EXCEEDED                    (93)
 #define ROBUST_CHANNEL_CONTAINED_ERROR                  (94)
 #define ROBUST_CHANNEL_UNCONTAINED_ERROR                (95)
+#define ROBUST_CHANNEL_NVDEC5_ERROR                     (96)
+#define ROBUST_CHANNEL_NVDEC6_ERROR                     (97)
+#define ROBUST_CHANNEL_NVDEC7_ERROR                     (98)
+#define ROBUST_CHANNEL_NVJPG1_ERROR                     (99)
+#define ROBUST_CHANNEL_NVJPG2_ERROR                     (100)
+#define ROBUST_CHANNEL_NVJPG3_ERROR                     (101)
+#define ROBUST_CHANNEL_NVJPG4_ERROR                     (102)
+#define ROBUST_CHANNEL_NVJPG5_ERROR                     (103)
+#define ROBUST_CHANNEL_NVJPG6_ERROR                     (104)
+#define ROBUST_CHANNEL_NVJPG7_ERROR                     (105)
+#define NVLINK_REMOTE_TRANSLATION_ERROR                 (108)
+#define SEC_FAULT_ERROR                                 (110)
 #define GSP_RPC_TIMEOUT                                 (119)
 #define GSP_ERROR                                       (120)
 #define C2C_ERROR                                       (121)
@@ -103,178 +118,182 @@
 #define SPI_PMU_RPC_WRITE_FAIL                          (123)
 #define SPI_PMU_RPC_ERASE_FAIL                          (124)
 #define INFOROM_FS_ERROR                                (125)
-#define ROBUST_CHANNEL_LAST_ERROR                       (INFOROM_FS_ERROR)
-
+#define ROBUST_CHANNEL_CE10_ERROR                       (126)
+#define ROBUST_CHANNEL_CE11_ERROR                       (127)
+#define ROBUST_CHANNEL_CE12_ERROR                       (128)
+#define ROBUST_CHANNEL_CE13_ERROR                       (129)
+#define ROBUST_CHANNEL_CE14_ERROR                       (130)
+#define ROBUST_CHANNEL_CE15_ERROR                       (131)
+#define ROBUST_CHANNEL_CE16_ERROR                       (132)
+#define ROBUST_CHANNEL_CE17_ERROR                       (133)
+#define ROBUST_CHANNEL_CE18_ERROR                       (134)
+#define ROBUST_CHANNEL_CE19_ERROR                       (135)
+#define ALI_TRAINING_FAIL                               (136)
+#define NVLINK_PRIV_ERR                                 (137)
+#define ROBUST_CHANNEL_DLA_ERROR                        (138)
+#define ROBUST_CHANNEL_OFA1_ERROR                       (139)
+#define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
+#define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
+#define ROBUST_CHANNEL_NVENC3_ERROR                     (142)
+#define GPU_INIT_ERROR                                  (143)
+#define NVLINK_SAW_ERROR                                (144)
+#define NVLINK_RLW_ERROR                                (145)
+#define NVLINK_TLW_ERROR                                (146)
+#define NVLINK_TREX_ERROR                               (147)
+#define NVLINK_NVLPW_CTRL_ERROR                         (148)
+#define NVLINK_NETIR_ERROR                              (149)
+#define NVLINK_MSE_ERROR                                (150)
+#define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (151)
+#define RESERVED7_ERROR                                 (152)
+#define RESERVED8_ERROR                                 (153)
+#define GPU_RECOVERY_ACTION_CHANGED                     (154)
+#define NVLINK_SW_DEFINED_ERROR                         (155)
+#define RESOURCE_RETIREMENT_EVENT                       (156)
+#define RESOURCE_RETIREMENT_FAILURE                     (157)
+#define GPU_FATAL_TIMEOUT                               (158)
+#define ROBUST_CHANNEL_CHI_NON_DATA_ERROR               (159)
+#define CHANNEL_RETIREMENT_EVENT                        (160)
+#define CHANNEL_RETIREMENT_FAILURE                      (161)
+#define ISINK_REENGAGED                                 (162)
+#define ISINK_DISENGAGED                                (163)
+#define ISINK_LOW_LIFETIME                              (164)
+#define ISINK_ZERO_LIFETIME                             (165)
+#define NVLINK_SECURE_NVLE_ERROR                        (166)
+#define PCIE_FATAL_TIMEOUT                              (167)
+#define REDUCED_GPU_MEMORY_CAPACITY                     (168)
+#define SEC2_HALT_ERROR                                 (169)
+#define NVLINK_SECURE_ERROR                             (170)
+#define UNCORRECTABLE_DRAM_ERROR                        (171)
+#define UNCORRECTABLE_SRAM_ERROR                        (172)
+#define C2C_FATAL_LINK_FAILURE                          (173)
+#define ROBUST_CHANNEL_RESETCHANNEL_KILL_PROCESS_SILENT (174)
+#define ROBUST_CHANNEL_LAST_ERROR                       (174)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \
-    (x < 3 ? ROBUST_CHANNEL_CE0_ERROR + (x) :                             \
-             ((x < 6) ? (ROBUST_CHANNEL_CE3_ERROR + (x - 3)) :            \
-                        ((x < 9) ? (ROBUST_CHANNEL_CE6_ERROR + (x - 6)) : \
-                                   ROBUST_CHANNEL_CE9_ERROR)))
+    ((x < 3) ?                                                            \
+        (ROBUST_CHANNEL_CE0_ERROR + (x)) :                                \
+     ((x < 6) ?                                                           \
+        (ROBUST_CHANNEL_CE3_ERROR + (x - 3)) :                            \
+     ((x < 9) ?                                                           \
+        (ROBUST_CHANNEL_CE6_ERROR + (x - 6)) :                            \
+     ((x == 9) ?                                                          \
+        (ROBUST_CHANNEL_CE9_ERROR) :                                      \
+        (ROBUST_CHANNEL_CE10_ERROR + (x - 10))))))
 
-#define ROBUST_CHANNEL_IS_CE_ERROR(x)                                      \
-    ((x == ROBUST_CHANNEL_CE0_ERROR) || (x == ROBUST_CHANNEL_CE1_ERROR) || \
-     (x == ROBUST_CHANNEL_CE2_ERROR) || (x == ROBUST_CHANNEL_CE3_ERROR) || \
-     (x == ROBUST_CHANNEL_CE4_ERROR) || (x == ROBUST_CHANNEL_CE5_ERROR) || \
-     (x == ROBUST_CHANNEL_CE6_ERROR) || (x == ROBUST_CHANNEL_CE7_ERROR) || \
-     (x == ROBUST_CHANNEL_CE8_ERROR) || (x == ROBUST_CHANNEL_CE9_ERROR))
+#define ROBUST_CHANNEL_IS_CE_ERROR(x)                                        \
+    ((x == ROBUST_CHANNEL_CE0_ERROR) || (x == ROBUST_CHANNEL_CE1_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE2_ERROR) || (x == ROBUST_CHANNEL_CE3_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE4_ERROR) || (x == ROBUST_CHANNEL_CE5_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE6_ERROR) || (x == ROBUST_CHANNEL_CE7_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE8_ERROR) || (x == ROBUST_CHANNEL_CE9_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE10_ERROR) || (x == ROBUST_CHANNEL_CE11_ERROR) || \
+     (x == ROBUST_CHANNEL_CE12_ERROR) || (x == ROBUST_CHANNEL_CE13_ERROR) || \
+     (x == ROBUST_CHANNEL_CE14_ERROR) || (x == ROBUST_CHANNEL_CE15_ERROR) || \
+     (x == ROBUST_CHANNEL_CE16_ERROR) || (x == ROBUST_CHANNEL_CE17_ERROR) || \
+     (x == ROBUST_CHANNEL_CE18_ERROR) || (x == ROBUST_CHANNEL_CE19_ERROR))
 
-#define ROBUST_CHANNEL_CE_ERROR_IDX(x)                                      \
-    (((x >= ROBUST_CHANNEL_CE0_ERROR) && (x <= ROBUST_CHANNEL_CE2_ERROR)) ? \
-         (x - ROBUST_CHANNEL_CE0_ERROR) :                                   \
-         (((x >= ROBUST_CHANNEL_CE3_ERROR) &&                               \
-           (x <= ROBUST_CHANNEL_CE5_ERROR)) ?                               \
-              (x - ROBUST_CHANNEL_CE3_ERROR) :                              \
-              (((x >= ROBUST_CHANNEL_CE6_ERROR) &&                          \
-                (x <= ROBUST_CHANNEL_CE8_ERROR)) ?                          \
-                   (x - ROBUST_CHANNEL_CE6_ERROR) :                         \
-                   (x - ROBUST_CHANNEL_CE9_ERROR))))
+#define ROBUST_CHANNEL_CE_ERROR_IDX(x)                                       \
+    (((x >= ROBUST_CHANNEL_CE0_ERROR) && (x <= ROBUST_CHANNEL_CE2_ERROR)) ?  \
+         (x - ROBUST_CHANNEL_CE0_ERROR) :                                    \
+     (((x >= ROBUST_CHANNEL_CE3_ERROR) && (x <= ROBUST_CHANNEL_CE5_ERROR)) ? \
+         (x - ROBUST_CHANNEL_CE3_ERROR + 3) :                                \
+     (((x >= ROBUST_CHANNEL_CE6_ERROR) && (x <= ROBUST_CHANNEL_CE8_ERROR)) ? \
+         (x - ROBUST_CHANNEL_CE6_ERROR + 6) :                                \
+     ((x == ROBUST_CHANNEL_CE9_ERROR) ?                                      \
+         (x - ROBUST_CHANNEL_CE9_ERROR + 9) :                                \
+         (x - ROBUST_CHANNEL_CE10_ERROR + 10)))))
 
 // Indexed NVDEC reference
-#define ROBUST_CHANNEL_NVDEC_ERROR(x)                                      \
-    ((x == 0) ?                                                            \
-         (ROBUST_CHANNEL_NVDEC0_ERROR) :                                   \
-         (((x >= 1) && (x <= 2)) ? (ROBUST_CHANNEL_NVDEC1_ERROR + x - 1) : \
-                                   (ROBUST_CHANNEL_NVDEC3_ERROR + x - 3)))
+#define ROBUST_CHANNEL_NVDEC_ERROR(x)                   \
+    ((x < 1) ?                                          \
+        (ROBUST_CHANNEL_NVDEC0_ERROR) :                 \
+      ((x < 3) ?                                        \
+        (ROBUST_CHANNEL_NVDEC1_ERROR + (x - 1)) :       \
+      ((x < 5) ?                                        \
+        (ROBUST_CHANNEL_NVDEC3_ERROR + (x - 3)):        \
+        (ROBUST_CHANNEL_NVDEC5_ERROR + (x - 5)))))
 
 #define ROBUST_CHANNEL_IS_NVDEC_ERROR(x)   \
     ((x == ROBUST_CHANNEL_NVDEC0_ERROR) || \
      (x == ROBUST_CHANNEL_NVDEC1_ERROR) || \
      (x == ROBUST_CHANNEL_NVDEC2_ERROR) || \
      (x == ROBUST_CHANNEL_NVDEC3_ERROR) || \
-     (x == ROBUST_CHANNEL_NVDEC4_ERROR))
+     (x == ROBUST_CHANNEL_NVDEC4_ERROR) || \
+     (x == ROBUST_CHANNEL_NVDEC5_ERROR) || \
+     (x == ROBUST_CHANNEL_NVDEC6_ERROR) || \
+     (x == ROBUST_CHANNEL_NVDEC7_ERROR))
 
-#define ROBUST_CHANNEL_NVDEC_ERROR_IDX(x)             \
-    (((x == ROBUST_CHANNEL_NVDEC0_ERROR)) ?           \
-         (x - ROBUST_CHANNEL_NVDEC0_ERROR) :          \
-         (((x >= ROBUST_CHANNEL_NVDEC1_ERROR) &&      \
-           (x <= ROBUST_CHANNEL_NVDEC2_ERROR)) ?      \
-              (x - ROBUST_CHANNEL_NVDEC1_ERROR + 1) : \
-              (x - ROBUST_CHANNEL_NVDEC3_ERROR + 3)))
+#define ROBUST_CHANNEL_NVDEC_ERROR_IDX(x)                                           \
+    ((x == ROBUST_CHANNEL_NVDEC0_ERROR) ?                                           \
+         (x - ROBUST_CHANNEL_NVDEC0_ERROR) :                                        \
+     (((x >= ROBUST_CHANNEL_NVDEC1_ERROR) && (x <= ROBUST_CHANNEL_NVDEC2_ERROR)) ?  \
+         (x - ROBUST_CHANNEL_NVDEC1_ERROR + 1) :                                    \
+     (((x >= ROBUST_CHANNEL_NVDEC3_ERROR) && (x <= ROBUST_CHANNEL_NVDEC4_ERROR)) ?  \
+         (x - ROBUST_CHANNEL_NVDEC3_ERROR + 3) :                                    \
+         (x - ROBUST_CHANNEL_NVDEC5_ERROR + 5))))
 
 // Indexed NVENC reference
 #define ROBUST_CHANNEL_NVENC_ERROR(x)                       \
     ((x == 0) ? (ROBUST_CHANNEL_NVENC0_ERROR) :             \
                 ((x == 1) ? (ROBUST_CHANNEL_NVENC1_ERROR) : \
-                            (ROBUST_CHANNEL_NVENC2_ERROR)))
+                ((x == 2) ? (ROBUST_CHANNEL_NVENC2_ERROR) : \
+                            (ROBUST_CHANNEL_NVENC3_ERROR))))
 
 #define ROBUST_CHANNEL_IS_NVENC_ERROR(x)   \
     ((x == ROBUST_CHANNEL_NVENC0_ERROR) || \
      (x == ROBUST_CHANNEL_NVENC1_ERROR) || \
-     (x == ROBUST_CHANNEL_NVENC2_ERROR))
+     (x == ROBUST_CHANNEL_NVENC2_ERROR) || \
+     (x == ROBUST_CHANNEL_NVENC3_ERROR))
 
-#define ROBUST_CHANNEL_NVENC_ERROR_IDX(x)             \
-    (((x == ROBUST_CHANNEL_NVENC0_ERROR)) ?           \
-         (x - ROBUST_CHANNEL_NVENC0_ERROR) :          \
-         (((x == ROBUST_CHANNEL_NVENC1_ERROR)) ?      \
-              (x - ROBUST_CHANNEL_NVENC1_ERROR + 1) : \
-              (x - ROBUST_CHANNEL_NVENC2_ERROR + 2)))
+#define ROBUST_CHANNEL_NVENC_ERROR_IDX(x)                       \
+    ((x == ROBUST_CHANNEL_NVENC0_ERROR) ?                       \
+         (x - ROBUST_CHANNEL_NVENC0_ERROR) :                    \
+         ((x == ROBUST_CHANNEL_NVENC1_ERROR) ?                  \
+              (x - ROBUST_CHANNEL_NVENC1_ERROR + 1) :           \
+                   ((x == ROBUST_CHANNEL_NVENC2_ERROR) ?        \
+                        (x - ROBUST_CHANNEL_NVENC2_ERROR + 2) : \
+                        (x - ROBUST_CHANNEL_NVENC3_ERROR + 3))))
+
+// Indexed NVJPG reference
+#define ROBUST_CHANNEL_NVJPG_ERROR(x)                   \
+    ((x < 1) ?                                          \
+        (ROBUST_CHANNEL_NVJPG0_ERROR) :                 \
+        (ROBUST_CHANNEL_NVJPG1_ERROR + (x - 1)))
+
+#define ROBUST_CHANNEL_IS_NVJPG_ERROR(x)                \
+    ((x == ROBUST_CHANNEL_NVJPG0_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG1_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG2_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG3_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG4_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG5_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG6_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG7_ERROR))
+
+#define ROBUST_CHANNEL_NVJPG_ERROR_IDX(x)               \
+    ((x == ROBUST_CHANNEL_NVJPG0_ERROR) ?               \
+         (x - ROBUST_CHANNEL_NVJPG0_ERROR) :            \
+         (x - ROBUST_CHANNEL_NVJPG1_ERROR + 1))
+
+// Indexed OFA reference
+#define ROBUST_CHANNEL_OFA_ERROR(x)                    \
+    ((x == 0) ?                                        \
+        (ROBUST_CHANNEL_OFA0_ERROR) :                  \
+        (ROBUST_CHANNEL_OFA1_ERROR))
+
+#define ROBUST_CHANNEL_IS_OFA_ERROR(x)                 \
+    ((x == ROBUST_CHANNEL_OFA0_ERROR) ||               \
+     (x == ROBUST_CHANNEL_OFA1_ERROR))
+
+#define ROBUST_CHANNEL_OFA_ERROR_IDX(x)                 \
+    ((x == ROBUST_CHANNEL_OFA0_ERROR) ?                 \
+        (x - ROBUST_CHANNEL_OFA0_ERROR) :               \
+        (x - ROBUST_CHANNEL_OFA1_ERROR + 1))
 
 // Error Levels
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_INFO      (0)
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_NON_FATAL (1)
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_FATAL     (2)
-
-#define ROBUST_CHANNEL_ERROR_STR_PUBLIC_PUBLISHED  \
-       {"Unknown Error",                         \
-        "DMA Engine Error (FIFO Error 1)",       \
-        "DMA Engine Error (FIFO Error 2)",       \
-        "DMA Engine Error (FIFO Error 3)",       \
-        "DMA Engine Error (FIFO Error 4)",       \
-        "DMA Engine Error (FIFO Error 5)",       \
-        "DMA Engine Error (FIFO Error 6)",       \
-        "DMA Engine Error (FIFO Error 7)",       \
-        "DMA Engine Error (FIFO Error 8)",       \
-        "Graphics Engine Error (GR Error 1)",    \
-        "Graphics Engine Error (GR Error 2)",    \
-        "Graphics Engine Error (GR Error 3)",    \
-        "Graphics Engine Error (GR Error 4)",    \
-        "Graphics Engine Error (GR Exception Error)",\
-        "Fake Error",                            \
-        "Display Engine Error (CRTC Error 1)",   \
-        "Display Engine Error (CRTC Error 2)",   \
-        "Display Engine Error (CRTC Error 3)",   \
-        "Bus Interface Error (BIF Error)",       \
-        "Client Reported Error",                 \
-        "Video Engine Error (MPEG Error)",       \
-        "Video Engine Error (ME Error)",         \
-        "Video Engine Error (VP Error 1)",       \
-        "Error Reporting Enabled",               \
-        "Graphics Engine Error (GR Error 6)",    \
-        "Graphics Engine Error (GR Error 7)",    \
-        "DMA Engine Error (FIFO Error 9)",       \
-        "Video Engine Error (VP Error 2)",       \
-        "Video Engine Error (VP2 Error)",        \
-        "Video Engine Error (BSP Error)",        \
-        "Access Violation Error (MMU Error 1)",  \
-        "Access Violation Error (MMU Error 2)",  \
-        "DMA Engine Error (PBDMA Error)",        \
-        "Security Engine Error (SEC Error)",     \
-        "Video Engine Error (MSVLD Error)",      \
-        "Video Engine Error (MSPDEC Error)",     \
-        "Video Engine Error (MSPPP Error)",      \
-        "Graphics Engine Error (FECS Error 1)",  \
-        "Graphics Engine Error (FECS Error 2)",  \
-        "DMA Engine Error (CE Error 1)",         \
-        "DMA Engine Error (CE Error 2)",         \
-        "DMA Engine Error (CE Error 3)",         \
-        "Video Engine Error (VIC Error)",        \
-        "Verification Error",                    \
-        "Access Violation Error (MMU Error 3)",  \
-        "Operating System Error (OS Error 1)",   \
-        "Operating System Error (OS Error 2)",   \
-        "Video Engine Error (MSENC/NVENC0 Error)",\
-        "ECC Error (DBE Error)",                 \
-        "Power State Locked",                    \
-        "Power State Event (RC Error)",          \
-        "Power State Event (Stress Test Error)", \
-        "Power State Event (Thermal Event 1)",   \
-        "Power State Event (Thermal Event 2)",   \
-        "Power State Event (Power Event)",       \
-        "Power State Event (Thermal Event 3)",   \
-        "Display Engine Error (EVO Error)",      \
-        "FB Interface Error (FBPA Error 1)",     \
-        "FB Interface Error (FBPA Error 2)",     \
-        "PMU error",                             \
-        "SEC2 error",                            \
-        "PMU Breakpoint (non-fatal)",            \
-        "PMU Halt Error",                        \
-        "INFOROM Page Retirement Event",         \
-        "INFOROM Page Retirement Failure",       \
-        "Video Engine Error (NVENC1 Error)",     \
-        "Graphics Engine Error (FECS Error 3)",  \
-        "Graphics Engine Error (FECS Error 4)",  \
-        "Video Engine Error (NVDEC0 Error)",     \
-        "Graphics Engine Error (GR Class Error)",\
-        "DMA Engine Error (CE Error 4)",         \
-        "DMA Engine Error (CE Error 5)",         \
-        "DMA Engine Error (CE Error 6)",         \
-        "Video Engine Error (NVENC2 Error)",     \
-        "NVLink Error",                          \
-        "DMA Engine Error (CE Error 6)",         \
-        "DMA Engine Error (CE Error 7)",         \
-        "DMA Engine Error (CE Error 8)",         \
-        "vGPU device cannot be started",         \
-        "GPU has fallen off the bus",            \
-        "DMA Engine Error (Pushbuffer CRC mismatch)",\
-        "VGA Subsystem Error",                   \
-        "Video JPEG Engine Error (NVJPG Error)", \
-        "Video Engine Error (NVDEC1 Error)",     \
-        "Video Engine Error (NVDEC2 Error)",     \
-        "DMA Engine Error (CE Error 9)",         \
-        "Video OFA Engine Error (OFA0 Error)",   \
-        "NvTelemetry Driver Reoprt",             \
-        "Video Engine Error (NVDEC3 Error)",     \
-        "Video Engine Error (NVDEC4 Error)",     \
-        "FB Interface Error (FBPA Error 3)",     \
-        "Reserved Xid",                          \
-        "Excessive SBE interrupts",              \
-        "INFOROM Erase Limit Exceeded",          \
-        "Contained error",                       \
-        "Uncontained error"
-
-#define ROBUST_CHANNEL_ERROR_STR_PUBLIC             \
-        ROBUST_CHANNEL_ERROR_STR_PUBLIC_PUBLISHED}
 
 #endif  // NVERROR_H

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,7 +44,7 @@
 
 #define WATCHDOG_RESET_QUEUE_SIZE (4)
 
-// KernelWatchdog.flags
+// KernelWatchdogState.flags
 #define WATCHDOG_FLAGS_INITIALIZED        NVBIT(0) // Fully initialized and ready
 #define WATCHDOG_FLAGS_DISABLED           NVBIT(1) // Disabled
 #define WATCHDOG_FLAGS_ALLOC_UNCACHED_PCI NVBIT(2) // Alloc cached / uncached pushbuffer
@@ -79,7 +79,8 @@ typedef struct {
     NvNotification *notifiers[NV_MAX_SUBDEVICES];
     NvNotification *errorContext;
     NvNotification *notifierToken;
-} KernelWatchdog;
+    NvBool bHandleValid;
+} KernelWatchdogState;
 
 
 /*! Persistent watchdog state preserved across watchdog shutdowns */

@@ -25,11 +25,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl503c/ctrl503cbase.finn
+// Source file:      ctrl/ctrl503c/ctrl503cbase.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* NV50_THIRD_PARTY_P2P control commands and parameters */

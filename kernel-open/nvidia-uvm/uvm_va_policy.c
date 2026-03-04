@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022 NVIDIA Corporation
+    Copyright (c) 2022-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,28 +29,92 @@
 #include "uvm_va_space.h"
 #include "uvm_va_range.h"
 
-uvm_va_policy_t uvm_va_policy_default __read_mostly = {
+const uvm_va_policy_t uvm_va_policy_default = {
     .preferred_location = UVM_ID_INVALID,
+    .preferred_nid = NUMA_NO_NODE,
     .read_duplication = UVM_READ_DUPLICATION_UNSET,
 };
 
-bool uvm_va_policy_is_read_duplicate(uvm_va_policy_t *policy, uvm_va_space_t *va_space)
+bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space_t *va_space)
 {
     return policy->read_duplication == UVM_READ_DUPLICATION_ENABLED &&
            uvm_va_space_can_read_duplicate(va_space, NULL);
 }
 
-uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
+const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
 {
     uvm_assert_mutex_locked(&va_block->lock);
 
     if (uvm_va_block_is_hmm(va_block)) {
-        uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, addr);
+        const uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, addr);
 
         return node ? &node->policy : &uvm_va_policy_default;
     }
-    else
-        return uvm_va_range_get_policy(va_block->va_range);
+    else {
+        return &va_block->managed_range->policy;
+    }
+}
+
+// HMM va_blocks can have different polices for different regions withing the
+// va_block. This function checks the given region is covered by the same policy
+// and asserts if the region is covered by different policies.
+// This always returns true and is intended to only be used with UVM_ASSERT() to
+// avoid calling it on release builds.
+// Locking: the va_block lock must be held.
+static bool uvm_hmm_va_block_assert_policy_is_valid(uvm_va_block_t *va_block,
+                                                    const uvm_va_policy_t *policy,
+                                                    uvm_va_block_region_t region)
+{
+    const uvm_va_policy_node_t *node;
+
+    if (uvm_va_policy_is_default(policy)) {
+        // There should only be the default policy within the region.
+        node = uvm_va_policy_node_iter_first(va_block,
+                                             uvm_va_block_region_start(va_block, region),
+                                             uvm_va_block_region_end(va_block, region));
+        UVM_ASSERT(!node);
+    }
+    else {
+        // The policy node should cover the region.
+        node = uvm_va_policy_node_from_policy(policy);
+        UVM_ASSERT(node->node.start <= uvm_va_block_region_start(va_block, region));
+        UVM_ASSERT(node->node.end >= uvm_va_block_region_end(va_block, region));
+    }
+
+    return true;
+}
+
+const uvm_va_policy_t *uvm_va_policy_get_region(uvm_va_block_t *va_block, uvm_va_block_region_t region)
+{
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    if (uvm_va_block_is_hmm(va_block)) {
+        const uvm_va_policy_t *policy;
+        const uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, uvm_va_block_region_start(va_block, region));
+
+        policy = node ? &node->policy : &uvm_va_policy_default;
+        UVM_ASSERT(uvm_hmm_va_block_assert_policy_is_valid(va_block, policy, region));
+        return policy;
+    }
+    else {
+        return &va_block->managed_range->policy;
+    }
+}
+
+bool uvm_va_policy_preferred_location_equal(const uvm_va_policy_t *policy, uvm_processor_id_t proc, int cpu_numa_id)
+{
+    bool equal = uvm_id_equal(policy->preferred_location, proc);
+
+    if (!UVM_ID_IS_CPU(policy->preferred_location))
+        UVM_ASSERT(policy->preferred_nid == NUMA_NO_NODE);
+
+    if (!UVM_ID_IS_CPU(proc))
+        UVM_ASSERT(cpu_numa_id == NUMA_NO_NODE);
+
+    if (equal && UVM_ID_IS_CPU(policy->preferred_location))
+        equal = uvm_numa_id_eq(policy->preferred_nid, cpu_numa_id);
+
+    return equal;
 }
 
 #if UVM_IS_CONFIG_HMM()
@@ -60,14 +124,6 @@ static struct kmem_cache *g_uvm_va_policy_node_cache __read_mostly;
 static uvm_va_policy_node_t *uvm_va_policy_node_container(uvm_range_tree_node_t *tree_node)
 {
     return container_of(tree_node, uvm_va_policy_node_t, node);
-}
-
-static uvm_va_policy_t *uvm_va_policy_container(uvm_range_tree_node_t *tree_node)
-{
-    if (!tree_node)
-        return NULL;
-
-    return &uvm_va_policy_node_container(tree_node)->policy;
 }
 
 NV_STATUS uvm_va_policy_init(void)
@@ -172,6 +228,102 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block,
     return uvm_va_policy_node_container(tree_node);
 }
 
+const uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                                NvU64 start,
+                                                NvU64 end,
+                                                uvm_va_policy_node_t **out_node,
+                                                uvm_va_block_region_t *out_region)
+{
+    uvm_range_tree_node_t *tree_node;
+    uvm_va_policy_node_t *node;
+    const uvm_va_policy_t *policy;
+    uvm_va_block_region_t region;
+
+    UVM_ASSERT(uvm_va_block_is_hmm(va_block));
+    uvm_assert_mutex_locked(&va_block->lock);
+    UVM_ASSERT(start >= va_block->start);
+    UVM_ASSERT(end <= va_block->end);
+    UVM_ASSERT(start < end);
+
+    region.first = uvm_va_block_cpu_page_index(va_block, start);
+
+    // Even if no policy is found, we return the default policy and loop
+    // one time.
+    tree_node = uvm_range_tree_iter_first(&va_block->hmm.va_policy_tree, start, end);
+    if (tree_node) {
+        node = uvm_va_policy_node_container(tree_node);
+        if (node->node.start <= start) {
+            policy = &node->policy;
+            region.outer = uvm_va_block_cpu_page_index(va_block, min(end, node->node.end)) + 1;
+        }
+        else {
+            // This node starts after the requested start so use the default,
+            // then use this policy node.
+            policy = &uvm_va_policy_default;
+            region.outer = uvm_va_block_cpu_page_index(va_block, node->node.start - 1) + 1;
+        }
+    }
+    else {
+        node = NULL;
+        policy = &uvm_va_policy_default;
+        region.outer = uvm_va_block_cpu_page_index(va_block, end) + 1;
+    }
+
+    *out_node = node;
+    *out_region = region;
+    return policy;
+}
+
+const uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                               const uvm_va_policy_t *policy,
+                                               NvU64 end,
+                                               uvm_va_policy_node_t **inout_node,
+                                               uvm_va_block_region_t *inout_region)
+{
+    uvm_va_policy_node_t *node = *inout_node;
+    uvm_va_policy_node_t *next;
+    uvm_va_block_region_t region;
+
+    if (!node)
+        return NULL;
+
+    next = uvm_va_policy_node_iter_next(va_block, node, end);
+
+    if (uvm_va_policy_is_default(policy)) {
+        // We haven't used the current policy node yet so use it now.
+        next = node;
+        policy = &node->policy;
+        region = uvm_va_block_region_from_start_end(va_block,
+                                                    node->node.start,
+                                                    min(end, node->node.end));
+    }
+    else if (!next) {
+        if (node->node.end >= end)
+            return NULL;
+        policy = &uvm_va_policy_default;
+        region.first = inout_region->outer;
+        region.outer = uvm_va_block_cpu_page_index(va_block, end) + 1;
+    }
+    else {
+        region.first = inout_region->outer;
+
+        if (next->node.start <= uvm_va_block_region_start(va_block, region)) {
+            policy = &next->policy;
+            region.outer = uvm_va_block_cpu_page_index(va_block, min(end, next->node.end)) + 1;
+        }
+        else {
+            // There is a gap between the last node and next so use the
+            // default policy.
+            policy = &uvm_va_policy_default;
+            region.outer = uvm_va_block_cpu_page_index(va_block, next->node.start - 1) + 1;
+        }
+    }
+
+    *inout_node = next;
+    *inout_region = region;
+    return policy;
+}
+
 NV_STATUS uvm_va_policy_node_split(uvm_va_block_t *va_block,
                                    uvm_va_policy_node_t *old,
                                    NvU64 new_end,
@@ -265,12 +417,14 @@ void uvm_va_policy_clear(uvm_va_block_t *va_block, NvU64 start, NvU64 end)
 static void uvm_va_policy_node_set(uvm_va_policy_node_t *node,
                                    uvm_va_policy_type_t which,
                                    uvm_processor_id_t processor_id,
+                                   int cpu_numa_nid,
                                    uvm_read_duplication_policy_t new_policy)
 {
     switch (which) {
         case UVM_VA_POLICY_PREFERRED_LOCATION:
             UVM_ASSERT(!UVM_ID_IS_INVALID(processor_id));
             node->policy.preferred_location = processor_id;
+            node->policy.preferred_nid = cpu_numa_nid;
             break;
 
         case UVM_VA_POLICY_ACCESSED_BY:
@@ -300,6 +454,7 @@ static void uvm_va_policy_node_clear(uvm_va_block_t *va_block,
         case UVM_VA_POLICY_PREFERRED_LOCATION:
             UVM_ASSERT(UVM_ID_IS_INVALID(processor_id));
             node->policy.preferred_location = processor_id;
+            node->policy.preferred_nid = NUMA_NO_NODE;
             break;
 
         case UVM_VA_POLICY_ACCESSED_BY:
@@ -328,6 +483,7 @@ static uvm_va_policy_node_t *create_node_and_set(uvm_va_block_t *va_block,
                                                  NvU64 end,
                                                  uvm_va_policy_type_t which,
                                                  uvm_processor_id_t processor_id,
+                                                 int cpu_numa_nid,
                                                  uvm_read_duplication_policy_t new_policy)
 {
     uvm_va_policy_node_t *node;
@@ -337,7 +493,7 @@ static uvm_va_policy_node_t *create_node_and_set(uvm_va_block_t *va_block,
     if (!node)
         return node;
 
-    uvm_va_policy_node_set(node, which, processor_id, new_policy);
+    uvm_va_policy_node_set(node, which, processor_id, cpu_numa_nid, new_policy);
 
     return node;
 }
@@ -348,6 +504,7 @@ static bool va_policy_node_split_needed(uvm_va_policy_node_t *node,
                                         uvm_va_policy_type_t which,
                                         bool is_default,
                                         uvm_processor_id_t processor_id,
+                                        int cpu_numa_nid,
                                         uvm_read_duplication_policy_t new_policy)
 {
     // If the node doesn't extend beyond the range being set, it doesn't need
@@ -358,7 +515,7 @@ static bool va_policy_node_split_needed(uvm_va_policy_node_t *node,
     // If the new policy value doesn't match the old value, a split is needed.
     switch (which) {
         case UVM_VA_POLICY_PREFERRED_LOCATION:
-            return !uvm_id_equal(node->policy.preferred_location, processor_id);
+            return !uvm_va_policy_preferred_location_equal(&node->policy, processor_id, cpu_numa_nid);
 
         case UVM_VA_POLICY_ACCESSED_BY:
             if (is_default)
@@ -381,6 +538,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                   uvm_va_policy_type_t which,
                                   bool is_default,
                                   uvm_processor_id_t processor_id,
+                                  int cpu_numa_nid,
                                   uvm_read_duplication_policy_t new_policy)
 {
     uvm_va_policy_node_t *node, *next, *new;
@@ -412,6 +570,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                    end,
                                    which,
                                    processor_id,
+                                   cpu_numa_nid,
                                    new_policy);
         if (!node)
             return NV_ERR_NO_MEMORY;
@@ -424,7 +583,14 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
         node_end = node->node.end;
 
         // Nodes should have been split before setting policy so verify that.
-        UVM_ASSERT(!va_policy_node_split_needed(node, start, end, which, is_default, processor_id, new_policy));
+        UVM_ASSERT(!va_policy_node_split_needed(node,
+                                                start,
+                                                end,
+                                                which,
+                                                is_default,
+                                                processor_id,
+                                                cpu_numa_nid,
+                                                new_policy));
 
         next = uvm_va_policy_node_iter_next(va_block, node, end);
 
@@ -433,7 +599,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
             // Note that node may have been deleted.
         }
         else {
-            uvm_va_policy_node_set(node, which, processor_id, new_policy);
+            uvm_va_policy_node_set(node, which, processor_id, cpu_numa_nid, new_policy);
 
             // TODO: Bug 1707562: Add support for merging policy ranges.
         }
@@ -445,6 +611,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                       node_start - 1,
                                       which,
                                       processor_id,
+                                      cpu_numa_nid,
                                       new_policy);
             if (!new)
                 return NV_ERR_NO_MEMORY;
@@ -456,6 +623,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                       end,
                                       which,
                                       processor_id,
+                                      cpu_numa_nid,
                                       new_policy);
             if (!new)
                 return NV_ERR_NO_MEMORY;
@@ -464,6 +632,43 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
     }
 
     return NV_OK;
+}
+
+const uvm_va_policy_t *uvm_va_policy_set_preferred_location(uvm_va_block_t *va_block,
+                                                            uvm_va_block_region_t region,
+                                                            uvm_processor_id_t processor_id,
+                                                            int cpu_node_id,
+                                                            const uvm_va_policy_t *old_policy)
+{
+    NvU64 start = uvm_va_block_region_start(va_block, region);
+    NvU64 end = uvm_va_block_region_end(va_block, region);
+    uvm_va_policy_node_t *node;
+
+    if (uvm_va_policy_is_default(old_policy)) {
+
+        UVM_ASSERT(!UVM_ID_IS_INVALID(processor_id));
+        UVM_ASSERT(!uvm_range_tree_iter_first(&va_block->hmm.va_policy_tree, start, end));
+
+        node = uvm_va_policy_node_create(va_block, start, end);
+        if (!node)
+            return NULL;
+    }
+    else {
+        // Since the old_policy isn't the constant default policy, we know it
+        // is an allocated uvm_va_policy_node_t and can be cast.
+        node = container_of((uvm_va_policy_t *)old_policy, uvm_va_policy_node_t, policy);
+
+        // The caller guarantees that the policy node doesn't require splitting
+        // and that the policy is changing.
+        UVM_ASSERT(node->node.start >= start);
+        UVM_ASSERT(node->node.end <= end);
+        UVM_ASSERT(!uvm_va_policy_preferred_location_equal(&node->policy, processor_id, cpu_node_id));
+    }
+
+    node->policy.preferred_location = processor_id;
+    node->policy.preferred_nid = cpu_node_id;
+
+    return &node->policy;
 }
 
 #endif // UVM_IS_CONFIG_HMM()

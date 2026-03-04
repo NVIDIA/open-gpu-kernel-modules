@@ -32,6 +32,14 @@ body:
     description: "Which kernel are you running? (output of `uname -a`, say if you built it yourself)."
   validations:
     required: true
+- type: checkboxes
+  id: sw_host_kernel_stable
+  attributes:
+    label: "Please confirm you are running a stable release kernel (e.g. not a -rc). We do not accept bug reports for unreleased kernels."
+    options:
+    - label: "I am running on a stable kernel release."
+  validations:
+    required: true
 - type: textarea
   id: bug_description
   attributes:

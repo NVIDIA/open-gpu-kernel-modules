@@ -27,11 +27,8 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlb069.finn
+// Source file:      ctrl/ctrlb069.finn
 //
-
-
-
 
 #include "ctrl/ctrlxxxx.h"
 /* MAXWELL_FAULT_BUFFER_A control commands and parameters */
@@ -164,6 +161,8 @@ typedef struct NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS {
  *      Mapping for PMC intr clear register - used to disable an intr (NV_PMC_INTR_EN_CLEAR(0))
  *    replayableFaultMask
  *      Mask for the replayable fault bit(NV_PMC_INTR_REPLAYABLE_FAULT)
+ *    faultBufferType
+ *      This is an input param denoting replayable/non-replayable fault buffer
  */
 #define NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS (0xb0690106) /* finn: Evaluated from "(FINN_MAXWELL_FAULT_BUFFER_A_FAULTBUFFER_INTERFACE_ID << 8) | NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS_MESSAGE_ID" */
 
@@ -178,6 +177,7 @@ typedef struct NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pPmcIntrEnClear, 8);
     NvU32 replayableFaultMask;
     NV_DECLARE_ALIGNED(NvP64 pPrefetchCtrl, 8);
+    NvU32 faultBufferType;
 } NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS;
 
 /* _ctrlb069_h_ */

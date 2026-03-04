@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,8 +128,8 @@ nvlink_lib_unload(void)
         }
 
         // Release and free top-level lock
-        nvlink_lib_top_lock_release(); 
-        nvlink_lib_top_lock_free(); 
+        nvlink_lib_top_lock_release();
+        nvlink_lib_top_lock_free();
     }
 
     return NVL_SUCCESS;
@@ -161,3 +161,90 @@ nvlink_lib_is_device_list_empty(void)
     return isEmpty;
 }
 
+/*
+ * Get if a device registerd to the nvlink corelib has a reduced nvlink config
+ *
+ * return NV_TRUE if there is a device registered to the core library that is a reduced
+ * nvlink config device
+ */
+NvBool
+nvlink_lib_is_registerd_device_with_reduced_config(void)
+{
+    NvlStatus lock_status           = NVL_SUCCESS;
+    nvlink_device *dev              = NULL;
+    NvBool         bIsReducedConfig = NV_FALSE;
+
+    // Acquire top-level lock
+    lock_status = nvlink_lib_top_lock_acquire();
+    if (lock_status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        return NV_FALSE;
+     }
+
+    FOR_EACH_DEVICE_REGISTERED(dev, nvlinkLibCtx.nv_devicelist_head, node)
+    {
+        //
+        // If the device is a reduced config set bIsReducedConfig to NV_TRUE
+        // and break to ensure that top level lock is released below
+        //
+        if (dev->bReducedNvlinkConfig == NV_TRUE)
+        {
+            bIsReducedConfig = NV_TRUE;
+            break;
+        }
+    }
+
+    // Release top-level lock
+    nvlink_lib_top_lock_release();
+
+    return bIsReducedConfig;
+}
+
+/*
+* Get the number of devices that have the device type deviceType
+*/
+NvlStatus
+nvlink_lib_return_device_count_by_type
+(
+    NvU32 deviceType,
+    NvU32 *numDevices
+)
+{
+    NvlStatus lock_status = NVL_SUCCESS;
+    nvlink_device *dev = NULL;
+    NvU32 device_count = 0;
+
+    if (nvlink_lib_is_initialized())
+    {
+        // Acquire top-level lock
+        lock_status = nvlink_lib_top_lock_acquire();
+        if (lock_status != NVL_SUCCESS)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                "%s: Failed to acquire top-level lock\n",
+                __FUNCTION__));
+
+            return lock_status;
+         }
+
+        // Top-level lock is now acquired
+
+        // Loop through device list
+        FOR_EACH_DEVICE_REGISTERED(dev, nvlinkLibCtx.nv_devicelist_head, node)
+        {
+            if (dev->type == deviceType)
+            {
+                device_count++;
+            }
+        }
+
+        // Release top-level lock
+        nvlink_lib_top_lock_release(); 
+    }
+    *numDevices = device_count;
+    return NVL_SUCCESS;
+}

@@ -29,25 +29,39 @@
 #include "nvkms-types.h"
 
 typedef struct {
-    NVHwModeTimingsEvo timings;
-    NVDpyIdList dpyIdList;
-    NVConnectorEvoRec *pConnectorEvo;
-    NvU32 activeRmId;
-    struct NvKmsSetLutCommonParams lut;
-    NvU8 allowFlipLockGroup;
-    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-    enum NvKmsDpyAttributeColorRangeValue colorRange;
+    NvU32 hwHeadsMask;
     struct NvKmsModeValidationParams modeValidationParams;
-    NvBool changed                       : 1;
-    NvBool allowGsync                    : 1;
-    NvBool hs10bpcHint                   : 1;
-    enum NvKmsAllowAdaptiveSync allowAdaptiveSync;
-    NvU32 vrrOverrideMinRefreshRate;
+    NVHwModeTimingsEvo timings;
+    struct NvKmsPoint viewPortPointIn;
+    NvU32 activeRmId;
+    NVDpyIdList dpyIdList;
+    NVAttributesSetEvoRec attributes;
+    struct NvKmsSetLutCommonParams lut;
+    NVDispStereoParamsEvoRec stereo;
+    NVDscInfoEvoRec dscInfo;
+    NVDispHeadInfoFrameStateEvoRec infoFrame;
+    enum NvKmsOutputTf tf;
+    NvBool hdrInfoFrameOverride;
+    NvU32 hdrStaticMetadataLayerMask;
+    NvBool colorSpaceSpecified : 1;
+    NvBool colorBpcSpecified   : 1;
+    NvBool colorRangeSpecified : 1;
+    NvBool hs10bpcHint         : 1;
+    NvBool changed             : 1;
+} NVProposedModeSetStateOneApiHead;
+
+typedef struct {
+    NvU8 mergeHeadSection;
+    NVHwModeTimingsEvo timings;
+    NVConnectorEvoRec *pConnectorEvo;
+    HDMI_FRL_CONFIG hdmiFrlConfig;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
+    NVHwHeadMultiTileConfigRec multiTileConfig;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {
+    NVProposedModeSetStateOneApiHead apiHead[NVKMS_MAX_HEADS_PER_DISP];
     NVProposedModeSetHwStateOneHead head[NVKMS_MAX_HEADS_PER_DISP];
 } NVProposedModeSetHwStateOneDisp;
 
@@ -63,12 +77,13 @@ typedef struct {
     NvBool allowHeadSurfaceInNvKms       : 1;
 } NVProposedModeSetHwState;
 
-struct _NVEvoModesetUpdateState {
-    NVEvoUpdateState updateState;
-    NVDpyIdList connectorIds;
-    const NVDPLibModesetStateRec
-        *pDpLibModesetState[NVKMS_MAX_HEADS_PER_DISP];
-    NvBool windowMappingChanged;
-};
+static inline void nvAssignHwHeadsMaskProposedApiHead(
+    NVProposedModeSetStateOneApiHead *pProposedApiHead,
+    const NvU32 hwHeadsMask)
+{
+    pProposedApiHead->hwHeadsMask = hwHeadsMask;
+    pProposedApiHead->attributes.numberOfHardwareHeadsUsed =
+        nvPopCount32(hwHeadsMask);
+}
 
 #endif /* __NVKMS_MODESET_TYPES_H__ */

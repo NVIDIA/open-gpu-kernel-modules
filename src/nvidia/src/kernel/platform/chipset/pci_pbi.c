@@ -60,9 +60,9 @@
 // Check to see if Post-box interface is found in PCI config space at the
 // specified base address
 //
-// If the PBI capability was found in the PCI cap list then cap_base is the 
+// If the PBI capability was found in the PCI cap list then cap_base is the
 // PCI config offset of the capability.
-// If the capability was not found in the PCI cap list then cap_base is zero, but 
+// If the capability was not found in the PCI cap list then cap_base is zero, but
 // we still check for PBI at a static location to support certain GPUs in the field.
 //
 static NV_STATUS pciPbiCheck(void *handle, NvU32 cap_base)
@@ -76,7 +76,7 @@ static NV_STATUS pciPbiCheck(void *handle, NvU32 cap_base)
 }
 
 //
-// Find the base of the PCI PBI capability and return the base.  
+// Find the base of the PCI PBI capability and return the base.
 // Returns 0 if PBI is not found in the PCI cap list.
 //
 static NvU32 pciPbiFindCapability(void *handle)
@@ -87,7 +87,7 @@ static NvU32 pciPbiFindCapability(void *handle)
     // Walk the PCI capability list looking for a match for PBI
     while (cap_base != 0 && pciPbiCheck(handle, cap_base) != NV_OK)
         cap_base = osPciReadByte(handle, cap_base + 1);
-        
+
     return cap_base;
 }
 
@@ -183,7 +183,7 @@ static NV_STATUS pciPbiCheckStatusWait(void *handle, NvU32 cap_base)
     {
         poll_limit = PCI_PBI_POLL_STATIC;
 
-        // WAR for 2844918, extra delay is needed for early Ampere GA100 devices 
+        // WAR for 2844918, extra delay is needed for early Ampere GA100 devices
         // which do not have PBI correctly linked in the PCI Capability list
         devid = osPciReadWord(handle, 0x2);
         for (i = 0; ampere_devid[i] != 0; i++)

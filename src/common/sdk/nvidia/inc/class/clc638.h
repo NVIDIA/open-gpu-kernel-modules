@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,20 +21,21 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 
-#ifndef _clc638_h_
-#define _clc638_h_
+#include <nvtypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clc638.finn
+//
 
-#include "nvtypes.h"
-
-#define AMPERE_SMC_EXEC_PARTITION_REF    (0x0000c638)
+#define AMPERE_SMC_EXEC_PARTITION_REF (0xc638U) /* finn: Evaluated from "NVC638_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /* NvRmAlloc parameters */
-typedef struct {
+#define NVC638_ALLOCATION_PARAMETERS_MESSAGE_ID (0xc638U)
+
+typedef struct NVC638_ALLOCATION_PARAMETERS {
     //
     // capDescriptor is a file descriptor for unix RM clients, but a void
     // pointer for windows RM clients.
@@ -46,10 +47,4 @@ typedef struct {
 
     NvU32 execPartitionId;
 } NVC638_ALLOCATION_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _clc638_h_ */
 

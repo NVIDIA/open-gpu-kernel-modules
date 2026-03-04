@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: mmu_fmt_types.finn
+// Source file:      mmu_fmt_types.finn
 //
 
 
@@ -98,6 +98,13 @@ typedef struct MMU_FMT_LEVEL {
     NvU8   numSubLevels;
 
     /*!
+     * Information tag used to decode internal level naming.
+     * Used for verif.
+     * */
+    NvU32  pageLevelIdTag;
+
+
+    /*!
      * Array of sub-level formats of length numSubLevels.
      *
      * @warning This array results in a circular reference to MMU_FMT_LEVEL.
@@ -129,3 +136,16 @@ typedef struct MMU_FMT_LEVEL {
  * simplify SW handling, encouraging loops over "dual copy-paste."
  */
 #define MMU_FMT_MAX_SUB_LEVELS 2
+
+/*!
+ * Valid values for the pageLevelIdTag field.
+ * These values are used to identify the internal naming of the page level.
+ * Used for verif purposes.
+ */
+#define MMU_FMT_PT_SURF_ID_PD0           0
+#define MMU_FMT_PT_SURF_ID_PD1           1
+#define MMU_FMT_PT_SURF_ID_PD2           2
+#define MMU_FMT_PT_SURF_ID_PD3           3
+#define MMU_FMT_PT_SURF_ID_PD4           4
+#define MMU_FMT_PT_SURF_ID_PT_4K         5
+#define MMU_FMT_PT_SURF_ID_PT_BIG        6
