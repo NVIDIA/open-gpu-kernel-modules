@@ -1822,7 +1822,7 @@ tmrCtrlCmdEventCreate
 )
 {
     NV_STATUS         rc;
-    TMR_EVENT        *pEvent;
+    TMR_EVENT        *pEvent = NULL;
     wrapperStorage_t *pWrapper;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
