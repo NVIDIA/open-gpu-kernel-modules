@@ -40,7 +40,7 @@ else ifeq ($(ARCH), powerpc)
 else
     OFA_ARCH := $(ARCH)
 endif
-OFA_DIR := /usr/src/ofa_kernel
+OFA_DIR := $(if $(wildcard /usr/src/ofa_kernel-dkms),/usr/src/ofa_kernel-dkms,/usr/src/ofa_kernel)
 OFA_CANDIDATES = $(OFA_DIR)/$(OFA_ARCH)/$(KERNELRELEASE) $(OFA_DIR)/$(KERNELRELEASE) $(OFA_DIR)/default /var/lib/dkms/mlnx-ofed-kernel
 MLNX_OFED_KERNEL := $(shell for d in $(OFA_CANDIDATES); do \
                               if [ -d "$$d" ]; then \
