@@ -283,7 +283,7 @@ NvBool nvlogETWPush(NVLOG_BUFFER *pBuffer, NvU8 *pData, NvU32 dataSize);
 //
 // Global initialization macros
 //
-extern volatile NvU32 nvlogInitCount;
+extern PORT_ATOMIC NvU32 nvlogInitCount;
 #define NVLOG_INIT(pData)                                 \
     do                                                    \
     {                                                     \

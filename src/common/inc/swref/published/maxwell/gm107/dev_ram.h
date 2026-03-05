@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,4 +66,9 @@
 #define NV_RAMIN_PAGE_DIR_BASE_HI                   (129*32+7):(129*32+0) /* RWXUF */
 #define NV_RAMIN_ADR_LIMIT_LO                     (130*32+31):(130*32+12) /* RWXUF */
 #define NV_RAMIN_ADR_LIMIT_HI                       (131*32+7):(131*32+0) /* RWXUF */
+#define NV_RAMFC                                                    /* ----G */
+#define NV_RAMFC_GP_PUT                          (0*32+31):(0*32+0) /* RWXUF */
+#define NV_RAMFC_GP_GET                          (5*32+31):(5*32+0) /* RWXUF */
+#define NV_RAMFC_GP_BASE                       (18*32+31):(18*32+0) /* RWXUF */
+#define NV_RAMFC_GP_BASE_HI                    (19*32+31):(19*32+0) /* RWXUF */
 #endif // __gm107_dev_ram_h__

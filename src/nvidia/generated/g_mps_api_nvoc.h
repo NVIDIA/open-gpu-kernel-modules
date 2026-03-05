@@ -136,13 +136,9 @@ struct NVOC_METADATA__MpsApi {
     const struct NVOC_VTABLE__MpsApi vtable;
 };
 
-#ifndef __NVOC_CLASS_MpsApi_TYPEDEF__
-#define __NVOC_CLASS_MpsApi_TYPEDEF__
-typedef struct MpsApi MpsApi;
-#endif /* __NVOC_CLASS_MpsApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MpsApi
-#define __nvoc_class_id_MpsApi 0x22ce42
+#define __nvoc_class_id_MpsApi 0x22ce42u
+typedef struct MpsApi MpsApi;
 #endif /* __nvoc_class_id_MpsApi */
 
 // Casting support
@@ -160,14 +156,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi;
 
 NV_STATUS __nvoc_objCreateDynamic_MpsApi(MpsApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MpsApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MpsApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MpsApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MpsApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *arg_pMpsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_mpsApiConstruct(arg_pMpsApi, arg_pCallContext, arg_pParams) mpsApiConstruct_IMPL(arg_pMpsApi, arg_pCallContext, arg_pParams)
+NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *pMpsApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_mpsApiConstruct(pMpsApi, pCallContext, pParams) mpsApiConstruct_IMPL(pMpsApi, pCallContext, pParams)
 
 void mpsApiDestruct_IMPL(struct MpsApi *pMpsApi);
 #define __nvoc_mpsApiDestruct(pMpsApi) mpsApiDestruct_IMPL(pMpsApi)
@@ -302,6 +298,12 @@ static inline void mpsApiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__mpsApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

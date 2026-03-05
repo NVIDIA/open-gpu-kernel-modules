@@ -118,7 +118,8 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, NV_TRUE);
     }
 
-    if (gpuIsMultiGpuNvleEnabledInHw_HAL(pGpu))
+    if (gpuIsMultiGpuNvleEnabledInHw_HAL(pGpu)
+       )
     {
         NV_PRINTF(LEVEL_INFO, "Enabling NVlink encryption with multi GPU mode. \n");
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);

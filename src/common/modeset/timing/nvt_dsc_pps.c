@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,13 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
-//=============================================================================
-//
-//  Provide function to calculate PPS(Picture Parameter Set)
-//
-//
-//==============================================================================
+/** @file  nvt_dsc_pps.c
+ *  @brief Provide function to calculate PPS (Picture Parameter Set)
+ */
 
 /* ------------------------ Includes --------------------------------------- */
 #include "nvt_dsc_pps.h"
@@ -580,13 +576,13 @@ DSC_PpsCalcRcInitValue
 
     if (out->native_420 || out->native_422)
     {
-	    NvU32 slicew = (out->native_420 || out->native_422) ? out->slice_width / 2 : out->slice_width;
-	    NvU32 padding_pixels = ((slicew % 3) ? (3 - (slicew % 3)) : 0) * (xmit_delay / slicew);
-	    if (3 * bitsPerPixel >= ((xmit_delay + 2) / 3) * (out->native_422 ? 4 : 3) * BPP_UNIT &&
-			    (((xmit_delay + padding_pixels) % 3) == 1))
+        NvU32 slicew = (out->native_420 || out->native_422) ? out->slice_width / 2 : out->slice_width;
+        NvU32 padding_pixels = ((slicew % 3) ? (3 - (slicew % 3)) : 0) * (xmit_delay / slicew);
+        if (3 * bitsPerPixel >= ((xmit_delay + 2) / 3) * (out->native_422 ? 4 : 3) * BPP_UNIT &&
+                (((xmit_delay + padding_pixels) % 3) == 1))
         {
-		    xmit_delay++;
-	    }
+            xmit_delay++;
+        }
     }
     out->initial_xmit_delay = xmit_delay;
     RANGE_CHECK("initial_xmit_delay", out->initial_xmit_delay, 0, 1023);
@@ -596,30 +592,30 @@ DSC_PpsCalcRcInitValue
 
 static NvU32 DSC_PpsCalcComputeOffset(DSC_OUTPUT_PARAMS *out, NvU32 grpcnt)
 {
-	NvU32 offset = 0;
-	NvU32 groupsPerLine = out->groups_per_line;
-	NvU32 grpcnt_id = (out->initial_xmit_delay + PIXELS_PER_GROUP - 1) / PIXELS_PER_GROUP;
+    NvU32 offset = 0;
+    NvU32 groupsPerLine = out->groups_per_line;
+    NvU32 grpcnt_id = (out->initial_xmit_delay + PIXELS_PER_GROUP - 1) / PIXELS_PER_GROUP;
 
-	if(grpcnt <= grpcnt_id)
-		offset = (grpcnt * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT;
-	else
-		offset = (grpcnt_id * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT - (((grpcnt-grpcnt_id) * out->slice_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+    if(grpcnt <= grpcnt_id)
+        offset = (grpcnt * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT;
+    else
+        offset = (grpcnt_id * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT - (((grpcnt-grpcnt_id) * out->slice_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
 
-	if(grpcnt <= groupsPerLine)
-		offset += grpcnt * out->first_line_bpg_offset;
-	else
-		offset += groupsPerLine * out->first_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nfl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+    if(grpcnt <= groupsPerLine)
+        offset += grpcnt * out->first_line_bpg_offset;
+    else
+        offset += groupsPerLine * out->first_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nfl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
 
-	if(out->native_420)
-	{
-		if(grpcnt <= groupsPerLine)
-			offset -= (grpcnt * out->nsl_bpg_offset) >> OFFSET_FRACTIONAL_BITS;
-		else if(grpcnt <= 2*groupsPerLine)
-			offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - ((groupsPerLine * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
-		else
-			offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
-	}
-	return(offset);
+    if(out->native_420)
+    {
+        if(grpcnt <= groupsPerLine)
+            offset -= (grpcnt * out->nsl_bpg_offset) >> OFFSET_FRACTIONAL_BITS;
+        else if(grpcnt <= 2*groupsPerLine)
+            offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - ((groupsPerLine * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+        else
+            offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+    }
+    return(offset);
 }
 
 /*
@@ -2750,14 +2746,23 @@ DSC_GeneratePPS
         in->eDP = (pWARData->dpData.bIsEdp == NV_TRUE) ? 1 : 0;
     }
 
-    // 
-    // bits per pixel upper limit is minimum of 3 times bits per component or 32
-    //
-    if (in->bits_per_pixel > MIN((3 * in->bits_per_component * BPP_UNIT), (MAX_BITS_PER_PIXEL * BPP_UNIT)))
+    if (in->native_422)
     {
-        in->bits_per_pixel = MIN((3 * in->bits_per_component * BPP_UNIT), (MAX_BITS_PER_PIXEL * BPP_UNIT));
+        // bits per pixel upper limit is minimum of 2 times bits per component for native_422 case
+        if (in->bits_per_pixel > 2 * in->bits_per_component * BPP_UNIT)
+        {
+            in->bits_per_pixel = 2 * in->bits_per_component * BPP_UNIT;
+        }
     }
-
+    else
+    {
+        // bits per pixel upper limit is minimum of 3 times bits per component or 32
+        if (in->bits_per_pixel > MIN((3 * in->bits_per_component * BPP_UNIT), (MAX_BITS_PER_PIXEL * BPP_UNIT)))
+        {
+            in->bits_per_pixel = MIN((3 * in->bits_per_component * BPP_UNIT), (MAX_BITS_PER_PIXEL * BPP_UNIT));
+        }
+    }
+    
     in->bits_per_pixel =  DSC_AlignDownForBppPrecision(in->bits_per_pixel, pDscInfo->sinkCaps.bitsPerPixelPrecision);
 
     if (pWARData && (pWARData->connectorType == DSC_DP) && in->multi_tile)

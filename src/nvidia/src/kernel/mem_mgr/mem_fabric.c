@@ -45,7 +45,6 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/gpu.h"
 #include "class/cl00f8.h"
-#include "Nvcm.h"
 #include "vgpu/rpc.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
@@ -173,8 +172,11 @@ _memoryFabricDetachMem
 
     if (bRemoveInterMapping)
     {
-        refRemoveInterMapping(RES_GET_REF(pMemoryFabric),
-                              pAttachMemInfoNode->pInterMapping);
+        RsResourceRef *pMemoryFabricRef = RES_GET_REF(pMemoryFabric);
+        RsInterMapping *pInterMapping = pAttachMemInfoNode->pInterMapping;
+
+        refRemoveInterMapping(pMemoryFabricRef, pInterMapping, NV_FALSE);
+        refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
     }
 
     btreeUnlink(&pAttachMemInfoNode->node, &pMemdescData->pAttachMemInfoTree);
@@ -200,6 +202,7 @@ _memoryFabricAttachMem
     FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     FABRIC_ATTCH_MEM_INFO_NODE *pNode;
     RsInterMapping *pInterMapping;
+    RsResourceRef *pMemoryFabricRef = RES_GET_REF(pMemoryFabric);
     Memory *pPhysMemory;
 
     pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
@@ -215,13 +218,20 @@ _memoryFabricAttachMem
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
 
-    status = refAddInterMapping(RES_GET_REF(pMemoryFabric),
+    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(pMemoryFabricRef, &pInterMapping));
+
+    // No partial unmap supported
+    pInterMapping->size = 0;
+
+    status = refAddInterMapping(pMemoryFabricRef,
                                 RES_GET_REF(pPhysMemory),
+                                pAttachInfo->offset,
                                 RES_GET_REF(pMemoryFabric)->pParentRef,
-                                &pInterMapping);
+                                pInterMapping);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
+        refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
         return status;
     }
 
@@ -255,11 +265,7 @@ _memoryFabricAttachMem
     pNode->pInterMapping = pInterMapping;
     pNode->node.Data     = pNode;
 
-    pInterMapping->dmaOffset = pAttachInfo->offset;
     pInterMapping->pMemDesc = pPhysMemDesc;
-
-    // No partial unmap supported
-    pInterMapping->size = 0;
 
     status = btreeInsert(&pNode->node, &pMemdescData->pAttachMemInfoTree);
     if (status != NV_OK)
@@ -277,7 +283,8 @@ unmapVas:
     fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, pAttachInfo->offset, pAttachInfo->mapLength);
 
 freeInterMapping:
-    refRemoveInterMapping(RES_GET_REF(pMemoryFabric), pInterMapping);
+    refRemoveInterMapping(pMemoryFabricRef, pInterMapping, NV_FALSE);
+    refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
 
     return status;
 }
@@ -316,13 +323,14 @@ _memoryfabricMemDescDestroyCallback
 
     if (!pFabricVAS->bRpcAlloc)
     {
-        //
-        // Call fabricvaspaceBatchFree to free the FLA allocations.
-        // _pteArray in memdesc is pageArrayGranularity(4K, 2MB, etc.) whereas page size for memory
-        // fabric allocations is either 2MB or 512MB. Pass stride accordingly.
-        //
-        fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr,
-                               (pageSize >> pageGranularityShift));
+        {
+            //
+            // Call fabricvaspaceBatchFree to free the FLA allocations.
+            // _pteArray in memdesc is pageArrayGranularity(4K, 2MB, etc.) whereas page size for memory
+            // fabric allocations is either 2MB or 512MB. Pass stride accordingly.
+            //
+            fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr, (pageSize >> pageGranularityShift));
+        }
     }
 
     if (pMemdescData != NULL)
@@ -501,6 +509,47 @@ _memoryfabricAllocFabricVa
     }
 }
 
+static void
+_memoryfabricAllowLoopbackMapping
+(
+    MEMORY_DESCRIPTOR *pFabricMemDesc,
+    NvBool             bAllowLoopback
+)
+{
+    OBJGPU *pMappingGpu = pFabricMemDesc->pGpu;
+    NvBool bLoopback = NV_FALSE;
+    NvU64 fmCaps;
+
+    //
+    // This override is applicable to all FLA flavors, thus takes precedence.
+    //
+    // TODO: currently the override is only applicable to bringup/verif platforms, but
+    // if ever needed for prod, it should be moved to GPU/NVLink init sequence rather
+    // than invoking the RPC on every fabric allocation.
+    //
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+
+        bLoopback = (pKernelNvlink != NULL) &&
+                    (knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink) ||
+                     knvlinkIsForcedConfig(pMappingGpu, pKernelNvlink));
+    }
+
+    //
+    // In case of flexible FLA or when requested, as there is no way to fallback
+    // to GPAs when mapping fabric mem on the owner GPU, allow fabric loopback
+    // mappings if supported.
+    //
+    if (bAllowLoopback &&
+        (gpuFabricProbeGetfmCaps(pMappingGpu->pGpuFabricProbeInfoKernel, &fmCaps) == NV_OK) &&
+        (fmCaps & NVLINK_INBAND_FM_CAPS_UC_LOOPBACK_ENABLED))
+    {
+        bLoopback = NV_TRUE;
+    }
+
+    memdescSetFlag(pFabricMemDesc, MEMDESC_FLAGS_ALLOW_FABRIC_LOOPBACK_MAPPING, bLoopback);
+}
+
 NV_STATUS
 memoryfabricConstruct_IMPL
 (
@@ -528,6 +577,7 @@ memoryfabricConstruct_IMPL
     NvHandle hPhysMem;
     NvBool   bFlexible = NV_FALSE;
     NvU32    mapFlags = 0;
+    NV_ADDRESS_SPACE addrSpace;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -623,25 +673,30 @@ memoryfabricConstruct_IMPL
     flags.bForceNonContig = !!(pAllocParams->allocFlags &
                                NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS);
 
-    status = _memoryfabricAllocFabricVa(pFabricVAS, pGpu,
-                                        pParams, pAllocParams,
-                                        flags, &pAddr, &numAddr);
-    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
-                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx\n",
-                  status, pAllocParams->allocSize,
-                  fabricvaspaceGetUCFlaStart(pFabricVAS),
-                  fabricvaspaceGetUCFlaLimit(pFabricVAS),
-                  pAllocParams->pageSize);
+        addrSpace = ADDR_FABRIC_V2;
 
-        return status;
+        status = _memoryfabricAllocFabricVa(pFabricVAS, pGpu,
+                                            pParams, pAllocParams,
+                                            flags, &pAddr, &numAddr);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
+                      "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx\n",
+                      status, pAllocParams->allocSize,
+                      fabricvaspaceGetUCFlaStart(pFabricVAS),
+                      fabricvaspaceGetUCFlaLimit(pFabricVAS),
+                      pAllocParams->pageSize);
+
+            return status;
+        }
+
     }
 
     // Create a memdesc to associate with the above allocation.
     status = memdescCreate(&pMemDesc, pGpu, pAllocParams->allocSize,
-                           0, (numAddr == 1), ADDR_FABRIC_V2, NV_MEMORY_UNCACHED,
+                           0, (numAddr == 1), addrSpace, NV_MEMORY_UNCACHED,
                            MEMDESC_FLAGS_NONE);
     if (status != NV_OK)
     {
@@ -797,6 +852,9 @@ memoryfabricConstruct_IMPL
     pMemdescData->allocFlags = pAllocParams->allocFlags;
     pMemory->bRpcAlloc = pFabricVAS->bRpcAlloc;
 
+    _memoryfabricAllowLoopbackMapping(pMemDesc,
+            (bFlexible || (pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_FORCE_UC_LOOPBACK)));
+
     portMemFree(pAddr);
 
     return NV_OK;
@@ -826,8 +884,9 @@ freeMemdesc:
     pMemDesc = NULL;
 
 freeVaspace:
-    _memoryfabricFreeFabricVa(pFabricVAS, pGpu,
-                              pParams, pAddr, numAddr);
+    {
+        _memoryfabricFreeFabricVa(pFabricVAS, pGpu, pParams, pAddr, numAddr);
+    }
 
     // Free memory allocated for vaspace allocations.
     portMemFree(pAddr);

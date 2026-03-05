@@ -79,13 +79,9 @@ struct NVOC_METADATA__OBJTRACEABLE {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_OBJTRACEABLE_TYPEDEF__
-#define __NVOC_CLASS_OBJTRACEABLE_TYPEDEF__
-typedef struct OBJTRACEABLE OBJTRACEABLE;
-#endif /* __NVOC_CLASS_OBJTRACEABLE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJTRACEABLE
-#define __nvoc_class_id_OBJTRACEABLE 0x6305d2
+#define __nvoc_class_id_OBJTRACEABLE 0x6305d2u
+typedef struct OBJTRACEABLE OBJTRACEABLE;
 #endif /* __nvoc_class_id_OBJTRACEABLE */
 
 // Casting support
@@ -104,9 +100,15 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE;
 NV_STATUS __nvoc_objCreateDynamic_OBJTRACEABLE(OBJTRACEABLE**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJTRACEABLE(OBJTRACEABLE**, Dynamic*, NvU32);
-#define __objCreate_OBJTRACEABLE(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJTRACEABLE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJTRACEABLE(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJTRACEABLE((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

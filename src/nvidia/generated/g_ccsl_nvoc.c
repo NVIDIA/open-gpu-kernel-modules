@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x9bf1a1 = 1;
+char __nvoc_class_id_uniqueness_check__9bf1a1 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl;
@@ -36,20 +36,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Ccsl;
 
 // Up-thunk(s) to bridge Ccsl methods to ancestors (if any)
 
+// Class-specific details for Ccsl
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(Ccsl),
-        /*classId=*/            classId(Ccsl),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(Ccsl),
+    .classInfo.classId =            classId(Ccsl),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "Ccsl",
+    .classInfo.name =               "Ccsl",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__Ccsl,
-    /*pExportInfo=*/        &__nvoc_export_info__Ccsl
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__Ccsl,
+    .pExportInfo =        &__nvoc_export_info__Ccsl
 };
 
 
@@ -71,25 +70,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__Ccsl = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__Ccsl = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_Ccsl(Ccsl *pThis) {
+
+// Destruct Ccsl object.
+void __nvoc_dtor_Ccsl(Ccsl* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_Ccsl(Ccsl *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct Ccsl object.
 NV_STATUS __nvoc_ctor_Ccsl(Ccsl *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_Ccsl(pThis);
     goto __nvoc_ctor_Ccsl_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_Ccsl_exit:
-
     return status;
 }
 

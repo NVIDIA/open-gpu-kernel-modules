@@ -47,16 +47,11 @@ extern "C" {
 #include "class/cl0092.h"
 #include "gpu/gpu_resource.h"
 
-
 struct DispCommon;
 
-#ifndef __NVOC_CLASS_DispCommon_TYPEDEF__
-#define __NVOC_CLASS_DispCommon_TYPEDEF__
-typedef struct DispCommon DispCommon;
-#endif /* __NVOC_CLASS_DispCommon_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispCommon
-#define __nvoc_class_id_DispCommon 0x41f4f2
+#define __nvoc_class_id_DispCommon 0x41f4f2u
+typedef struct DispCommon DispCommon;
 #endif /* __nvoc_class_id_DispCommon */
 
 
@@ -147,13 +142,9 @@ struct NVOC_METADATA__RgLineCallback {
     const struct NVOC_VTABLE__RgLineCallback vtable;
 };
 
-#ifndef __NVOC_CLASS_RgLineCallback_TYPEDEF__
-#define __NVOC_CLASS_RgLineCallback_TYPEDEF__
-typedef struct RgLineCallback RgLineCallback;
-#endif /* __NVOC_CLASS_RgLineCallback_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RgLineCallback
-#define __nvoc_class_id_RgLineCallback 0xa3ff1c
+#define __nvoc_class_id_RgLineCallback 0xa3ff1cu
+typedef struct RgLineCallback RgLineCallback;
 #endif /* __nvoc_class_id_RgLineCallback */
 
 // Casting support
@@ -171,14 +162,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RgLineCallback;
 
 NV_STATUS __nvoc_objCreateDynamic_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RgLineCallback(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_RgLineCallback((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RgLineCallback(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_RgLineCallback((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS rglcbConstruct_IMPL(struct RgLineCallback *arg_pRgLineCallback, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_rglcbConstruct(arg_pRgLineCallback, arg_pCallContext, arg_pParams) rglcbConstruct_IMPL(arg_pRgLineCallback, arg_pCallContext, arg_pParams)
+NV_STATUS rglcbConstruct_IMPL(struct RgLineCallback *pRgLineCallback, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_rglcbConstruct(pRgLineCallback, pCallContext, pParams) rglcbConstruct_IMPL(pRgLineCallback, pCallContext, pParams)
 
 void rglcbDestruct_IMPL(struct RgLineCallback *pRgLineCallback);
 #define __nvoc_rglcbDestruct(pRgLineCallback) rglcbDestruct_IMPL(pRgLineCallback)
@@ -346,6 +337,12 @@ static inline void rglcbAddAdditionalDependants_DISPATCH(struct RsClient *pClien
     pResource->__nvoc_metadata_ptr->vtable.__rglcbAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

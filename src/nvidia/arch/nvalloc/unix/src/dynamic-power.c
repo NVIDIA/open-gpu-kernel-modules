@@ -106,6 +106,18 @@ static NvU32 dynamicPowerSupportGpuMask = 0;
 #define GC6_PRECONDITION_CHECK_TIME    ((NvU64)5 * 1000 * 1000 * 1000)
 
 //
+// iGPU needs a more aggressive timeout value of precondition
+// check to quickly engage the Rail-Gating state on an embedded
+// system.
+// Considering some basic scenarios like GPU monitoring which could
+// poll the GPU every 1 second, Rail-Gating cycle should not be triggered
+// in between the pollings. So the timeout value is set to 500 ms.
+// and the shortest duration to trigger Deferred-Idle would be
+// IGPU_RG_PRECONDITION_CHECK_TIME + IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME
+//
+#define IGPU_RG_PRECONDITION_CHECK_TIME    ((NvU64)500 * 1000 * 1000)
+
+//
 // Timeout needed for back to back GC6 cycles.
 // Timeout is kept same as the timeout selected for GC6 precondition check.
 // There are cases where GPU is in GC6 and then kernel wakes GPU out of GC6
@@ -126,6 +138,21 @@ static NvU32 dynamicPowerSupportGpuMask = 0;
 // idle upon consumption.
 //
 #define GC6_BAR1_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME (200 * 1000 * 1000)
+
+//
+// The purpose of this timeout value is similar to
+// GC6_BAR1_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME.
+// The difference between iGPU Rail-Gating and GC6 is that iGPU RG has a more
+// aggressive timeout value of precondition check to quickly engage the
+// Rail-Gating state on an embedded system. Meanwhile, the overall duration
+// of Deferred-Idle should be larger than 1 second considering some polling
+// scenarios which happens every 1 second.
+// The value here is extended to 700 ms so the overall Deferred-Idle duration.
+// could be keep within within the range:
+// - Lower Bound: IGPU_RG_PRECONDITION_CHECK_TIME + IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME
+// - Upper Bound: IGPU_RG_PRECONDITION_CHECK_TIME * 2 + IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME
+//
+#define IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME (700 * 1000 * 1000)
 
 //
 // Cap Maximum FB allocation size for GCOFF. If regkey value is greater
@@ -229,8 +256,8 @@ NvBool nv_dynamic_power_state_transition(
     NV_ASSERT(old_state != new_state);
 
     ct_assert(sizeof(nv_dynamic_power_state_t) == sizeof(NvS32));
-    NvBool ret = portAtomicCompareAndSwapS32((NvS32*)&nvp->dynamic_power.state,
-                                             new_state, old_state);
+    NvBool ret = portAtomicCompareAndSwapS32((PORT_ATOMIC NvS32*)&nvp->dynamic_power.state,
+                                             (NvS32)new_state, (NvS32)old_state);
 
     if (ret)
     {
@@ -271,10 +298,11 @@ static NvBool RmCanEnterGcxUnderGpuLock(
 
     /*
      * If GC6 cannot be achieved (either GC6 is unsupported or the upstream port is not configured),
-     * Check for GCOFF prerequisites
+     * Check for GCOFF prerequisites. Exclude the check for IGPU which has RG support.
      */
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED) ||
-        !nvp->gc6_upstream_port_configured)
+    if ((!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED) ||
+         !nvp->gc6_upstream_port_configured) &&
+        (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED)))
     {
         NvU64          usedFbSize     = 0;
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -792,8 +820,11 @@ void NV_API_CALL rm_init_tegra_dynamic_power_management(
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
     void *fp;
 
-    if (!nv->supports_tegra_igpu_rg)
+    if (!nv->supports_tegra_igpu_rg) {
+        NV_PRINTF(LEVEL_INFO,
+            "NVRM: Tegra PCI iGPU Rail-Gating is not supported on this platform.\n");
         return;
+    }
 
     NV_ENTER_RM_RUNTIME(sp,fp);
 
@@ -1549,7 +1580,8 @@ static void timerCallbackForIdlePreConditions(
     {
         if (RmCanEnterGcxUnderGpuLock(pGpu))
         {
-            switch (nvp->dynamic_power.state)
+            nv_dynamic_power_state_t state = nvp->dynamic_power.state;
+            switch (state)
             {
             case NV_DYNAMIC_POWER_STATE_UNKNOWN:
                 NV_ASSERT(0);
@@ -1884,8 +1916,20 @@ static void RmScheduleCallbackForIdlePreConditionsUnderGpuLock(
         portMemSet(&scheduleEventParams, 0, sizeof(scheduleEventParams));
 
         scheduleEventParams.pEvent = nvp->dynamic_power.idle_precondition_check_event;
-        scheduleEventParams.timeNs = GC6_PRECONDITION_CHECK_TIME;
         scheduleEventParams.bUseTimeAbs = NV_FALSE;
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED))
+        {
+            /*
+             * iGPU which supports Rail-Gating may want shorter idleness
+             * threshold to engage the deferred-idle transition.
+             * Set the threshold for precondition check to 500 ms.
+             */
+            scheduleEventParams.timeNs = IGPU_RG_PRECONDITION_CHECK_TIME;
+        }
+        else
+        {
+            scheduleEventParams.timeNs = GC6_PRECONDITION_CHECK_TIME;
+        }
 
         status = tmrCtrlCmdEventSchedule(pGpu, &scheduleEventParams);
 
@@ -1951,8 +1995,20 @@ static void RmScheduleCallbackToIndicateIdle(
         portMemSet(&scheduleEventParams, 0, sizeof(scheduleEventParams));
 
         scheduleEventParams.pEvent = nvp->dynamic_power.indicate_idle_event;
-        scheduleEventParams.timeNs = GC6_BAR1_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME;
         scheduleEventParams.bUseTimeAbs = NV_FALSE;
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED))
+        {
+            /*
+             * iGPU which supports Rail-Gating may want shorter idleness
+             * threshold to engage the deferred-idle transition.
+             * Set the threshold for idle indicate to 700 ms.
+             */
+            scheduleEventParams.timeNs = IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME;
+        }
+        else
+        {
+            scheduleEventParams.timeNs = GC6_BAR1_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME;
+        }
 
         status = tmrCtrlCmdEventSchedule(pGpu, &scheduleEventParams);
 
@@ -2027,11 +2083,15 @@ static NvBool RmCheckRtd3GcxSupport(
     *bGCOFFSupport = nvp->b_mobile_config_enabled ? *bGC6Support :
                      pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED);
 
-    if (!(*bGC6Support) && !(*bGCOFFSupport))
+    if (!(*bGC6Support) &&
+        !(*bGCOFFSupport) &&
+        !(pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED)))
     {
         NV_PRINTF(LEVEL_NOTICE,
-                  "Disabling RTD3. [GC6 support=%d GCOFF support=%d]\n",
-                  *bGC6Support, *bGCOFFSupport);
+                  "Disabling RTD3. [GC6 support=%d GCOFF support=%d RG support=%d]\n",
+                  *bGC6Support,
+                  *bGCOFFSupport,
+                  pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED));
         return NV_FALSE;
     }
 
@@ -2054,7 +2114,8 @@ static NvBool RmCheckRtd3GcxSupport(
         return NV_FALSE;
     }
 
-    if (!nvp->pr3_acpi_method_present)
+    if (!nvp->pr3_acpi_method_present &&
+        !(pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED)))
     {
         NV_PRINTF(LEVEL_NOTICE, "RTD3 ACPI support is not available.\n");
         return NV_FALSE;
@@ -2333,11 +2394,21 @@ NV_STATUS RmGcxPowerManagement(
             bCanUseGc6 = bIsDynamicPM ? NV_TRUE : nv_s2idle_pm_configured();
         }
 
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED))
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_RG_STATE_ENTERING, NV_TRUE);
+            status = RmPowerManagement(pGpu, NV_PM_ACTION_STANDBY);
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_RG_STATE_ENTERING, NV_FALSE);
+            if (status == NV_OK)
+            {
+                pGpu->setProperty(pGpu, PDB_PROP_GPU_RG_STATE_ENTERED, NV_TRUE);
+            }
+        }
         //
         // If GC6 cannot be used, then no need to compare the used FB size with
         // threshold value and select GCOFF irrespective of FB size.
         //
-        if ((memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize) == NV_OK) &&
+        else if ((memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize) == NV_OK) &&
             (!bCanUseGc6 || RmCheckForGcOffPM(pGpu, usedFbSize, bIsDynamicPM)) &&
             ((fbsrStatus = fbsrReserveSysMemoryForPowerMgmt(pGpu, pMemoryManager->pFbsr[FBSR_TYPE_DMA],
                                              usedFbSize)) == NV_OK))
@@ -2446,6 +2517,14 @@ NV_STATUS RmGcxPowerManagement(
             pGpu->setProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERED, NV_FALSE);
             pKernelMemorySystem->bPreserveComptagBackingStoreOnSuspend = NV_FALSE;
         }
+        else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RG_STATE_ENTERED))
+        {
+            status = RmPowerManagement(pGpu, NV_PM_ACTION_RESUME);
+            if (status == NV_OK)
+            {
+                pGpu->setProperty(pGpu, PDB_PROP_GPU_RG_STATE_ENTERED, NV_FALSE);
+            }
+        }
         else
         {
             NV2080_CTRL_GC6_EXIT_PARAMS exitParams;
@@ -2471,12 +2550,19 @@ NV_STATUS NV_API_CALL rm_power_management(
     NV_STATUS rmStatus = NV_OK;
     void *fp;
     NvBool bTryAgain = NV_FALSE;
-    NvBool bConsoleDisabled = NV_FALSE;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_DEVICE_INIT);
 
     NV_ASSERT_OK(os_flush_work_queue(pNv->queue, pmAction != NV_PM_ACTION_RESUME));
+    //
+    // For GPU driving console, disable console access here, to ensure no console
+    // writes through BAR1 can interfere with physical RM's setup of BAR1
+    //
+    if (pNv->client_managed_console && !pNv->sysmem_mapped_console)
+    {
+        os_disable_console_access();
+    }
 
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
@@ -2514,16 +2600,6 @@ NV_STATUS NV_API_CALL rm_power_management(
                     }
                     else
                     {
-                        //
-                        // For GPU driving console, disable console access here, to ensure no console
-                        // writes through BAR1 can interfere with physical RM's setup of BAR1
-                        //
-                        if (pNv->client_managed_console)
-                        {
-                            os_disable_console_access();
-                            bConsoleDisabled = NV_TRUE;
-                        }
-
                         nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
 
                         //
@@ -2557,11 +2633,6 @@ NV_STATUS NV_API_CALL rm_power_management(
                         {
                             rmStatus = RmPowerManagement(pGpu, pmAction);
                         }
-
-                        if (bConsoleDisabled)
-                        {
-                            os_enable_console_access();
-                        }
                     }
 
                     // UNLOCK: release GPUs lock
@@ -2572,6 +2643,11 @@ NV_STATUS NV_API_CALL rm_power_management(
         }
         // UNLOCK: release API lock
         rmapiLockRelease();
+    }
+
+    if (pNv->client_managed_console && !pNv->sysmem_mapped_console)
+    {
+        os_enable_console_access();
     }
 
     NV_ASSERT_OK(os_flush_work_queue(pNv->queue, pmAction != NV_PM_ACTION_RESUME));
@@ -2647,6 +2723,24 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
+    if (!bEnter &&
+        !threadState.bValid &&
+        (threadState.threadId == 0) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_RG_SUPPORTED))
+    {
+        /*
+         * If the thread node is already present in the database,
+         * reset the thread timeout before the resume operation starts
+         * for IGPU.
+         */
+        threadStateResetTimeout(pGpu);
+    }
+
+    if (nv->client_managed_console && !nv->sysmem_mapped_console)
+    {
+        os_disable_console_access();
+    }
+
     // LOCK: acquire GPUs lock
     status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER);
     if (status == NV_OK)
@@ -2659,6 +2753,11 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    if (nv->client_managed_console && !nv->sysmem_mapped_console)
+    {
+        os_enable_console_access();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);

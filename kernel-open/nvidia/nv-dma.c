@@ -736,32 +736,6 @@ static NvBool nv_dma_use_map_resource
 #endif
 }
 
-/* DMA-map a peer device's C2C aperture for peer access. */
-NV_STATUS NV_API_CALL nv_dma_map_non_pci_peer
-(
-    nv_dma_device_t *dma_dev,
-    NvU64            page_count,
-    NvU64           *va
-)
-{
-    NV_STATUS status;
-
-    if (nv_dma_use_map_resource(dma_dev))
-    {
-        status = nv_dma_map_mmio(dma_dev, page_count, va);
-    }
-    else
-    {
-        /*
-         * Best effort - can't map through the iommu but at least try to
-         * use SPA as is.
-         */
-        status = NV_OK;
-    }
-
-    return status;
-}
-
 /* DMA-map a peer PCI device's BAR for peer access. */
 NV_STATUS NV_API_CALL nv_dma_map_peer
 (
@@ -920,6 +894,45 @@ void NV_API_CALL nv_dma_cache_invalidate
                                    submap->sgt.orig_nents,
                                    DMA_FROM_DEVICE);
         }
+    }
+#endif
+}
+
+//
+// Note: For mapping GPU memory on third-party devices using dma-buf/nv-p2p in CDMM,
+// there isn't a kernel API that can be used for page-less coherent memory
+// on pre-6.18 kernels. Kernel 6.18 introduces dma_map_phys which doesn't require
+// struct page and uses physical addresses directly.
+// So this is only a WAR on CDMM for kernels older than 6.18. UVM creates
+// ZONE_DEVICE coherent pages for GPU memory in CDMM. RM uses these for DMA mapping.
+//
+// nv_dma_get_dev_pagemap adds a reference on the ZONE_DEVICE pagemap so the pages
+// don't go away when the DMA mapping is in progress.
+//
+void* NV_API_CALL nv_dma_get_dev_pagemap
+(
+    NvU64 phys_addr
+)
+{
+#if defined(NV_MEMORY_DEVICE_COHERENT_PRESENT)
+    return NV_GET_DEV_PAGEMAP(PHYS_PFN(phys_addr));
+#else
+    return NULL;
+#endif
+}
+
+//
+// nv_dma_put_dev_pagemap removes the reference on the ZONE_DEVICE pagemap.
+//
+void NV_API_CALL nv_dma_put_dev_pagemap
+(
+    void *pgmap
+)
+{
+#if defined(NV_MEMORY_DEVICE_COHERENT_PRESENT)
+    if (pgmap != NULL)
+    {
+        put_dev_pagemap((struct dev_pagemap*) pgmap);
     }
 #endif
 }

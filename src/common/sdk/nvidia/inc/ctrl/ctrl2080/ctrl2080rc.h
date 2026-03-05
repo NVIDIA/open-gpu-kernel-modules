@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -380,5 +380,35 @@ typedef NV2080_CTRL_CMD_RC_INFO_PARAMS NV2080_CTRL_GET_RC_INFO_PARAMS;
 /* valid rcBreak values */
 #define NV2080_CTRL_CMD_RC_INFO_BREAK_DISABLE (0x00000000)
 #define NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE  (0x00000001)
+
+/*
+ * NV2080_CTRL_CMD_GET_RC_WATCHDOG_INFO/NV2080_CTRL_CMD_SET_RC_WATCHDOG_INFO
+ *
+ * This command can be used to set RC watchdog parameters.
+ * This control is supported only on MODS.
+ *
+ * Possible status return values are:
+ *   NV_OK
+ */
+typedef struct NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS {
+    NvU32 channelTestInterval;
+    NvU32 thwapChannelMask;
+    NvU32 stompChannelMask;
+    NvU32 thwapRepeatMask;
+    NvU32 stompRepeatMask;
+    NvU32 allocFailMask;
+} NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS;
+
+#define NV2080_CTRL_CMD_SET_RC_WATCHDOG_INFO (0x20802214) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_RC_INTERFACE_ID << 8) | NV2080_CTRL_SET_RC_WATCHDOG_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_SET_RC_WATCHDOG_INFO_PARAMS_MESSAGE_ID (0x14U)
+
+typedef NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS NV2080_CTRL_SET_RC_WATCHDOG_INFO_PARAMS;
+
+#define NV2080_CTRL_CMD_GET_RC_WATCHDOG_INFO (0x20802215) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_RC_INTERFACE_ID << 8) | NV2080_CTRL_GET_RC_WATCHDOG_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GET_RC_WATCHDOG_INFO_PARAMS_MESSAGE_ID (0x15U)
+
+typedef NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS NV2080_CTRL_GET_RC_WATCHDOG_INFO_PARAMS;
 
 /* _ctrl2080rc_h_ */

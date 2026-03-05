@@ -190,4 +190,25 @@ typedef struct NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS {
     NvU8 poolCount;
 } NV2080_CTRL_CMD_GSP_GET_LIBOS_HEAP_STATS_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST
+ *
+ * This control spams GDMA requests of random size, location, and source memory.
+ *
+ * iters
+ *     Number of DMA requests to send. Large values should be paired with RmDefaultTimeout
+ *     increase in order to avoid XID 119.
+ *
+ * pSysmemPA
+ *     Internal param
+ *
+ */
+#define NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST (0x20803605) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GSP_INTERFACE_ID << 8) | NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 iters, 8);
+    NV_DECLARE_ALIGNED(NvU64 pSysmemPA, 8);
+} NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST_PARAMS;
+
 // _ctrl2080gsp_h_

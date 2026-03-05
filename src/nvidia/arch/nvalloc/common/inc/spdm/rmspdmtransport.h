@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,9 @@
 #define NV_SPDM_SECRET_TEARDOWN_SUCCESS          (0x59D35EDE)
 #define NV_SPDM_SECRET_TEARDOWN_FAILURE          (0x59D35EFA)
 #define NV_SPDM_SECRET_TEARDOWN_ACK              (0x59D35EAC)
+
+// TDISP Defines for polling-based communication between Kernel-RM and GSP.
+#define NV_TDISP_PARTITION_BOOT_SUCCESS          (0x59D4B001)
 
 //
 // The SPDM communication between Kernel-RM and GSP utilizes a buffer in sysmem accessible

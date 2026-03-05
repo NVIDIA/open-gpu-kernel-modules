@@ -65,6 +65,11 @@ typedef struct _NVLOG_RING_BUFFER_EXTRA_FIELDS
 } NVLOG_RING_BUFFER_EXTRA_FIELDS;
 
 
+// For offline tools
+#if !defined(PORT_IS_KERNEL_BUILD) || PORT_IS_KERNEL_BUILD == 0
+#define PORT_ATOMIC volatile
+#endif
+
 /**
  * @brief Struct representing a buffer in NvLog
  *
@@ -90,7 +95,7 @@ struct _NVLOG_BUFFER
     /** Position of the next available byte in the buffer */
     NvU32                   pos;
     /** Number of threads currently writing to this buffer */
-    volatile NvS32          threadCount;
+    PORT_ATOMIC NvS32       threadCount;
     /** Specific buffer types will define their fields here */
     union
     {

@@ -27,7 +27,6 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/gsp/gsp_static_config.h"
-#include "vgpu/vgpu_events.h"
 #include <ctrl/ctrl2080/ctrl2080fb.h>
 #include "gpu/mem_mgr/fermi_dma.h"
 #include "nvoc/prelude.h"

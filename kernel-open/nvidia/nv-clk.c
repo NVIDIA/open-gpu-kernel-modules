@@ -241,8 +241,7 @@ NV_STATUS NV_API_CALL nv_clk_get_handles(
         }
         if (j == TEGRASOC_WHICH_CLK_MAX)
         {
-            nv_printf(NV_DBG_ERRORS,"NVRM: nv_clk_get_handles, failed to find TEGRA_SOC_WHICH_CLK for %s\n", clks[i].id);
-            return NV_ERR_OBJECT_NOT_FOUND;
+            nv_printf(NV_DBG_INFO,"NVRM: nv_clk_get_handles, failed to find TEGRA_SOC_WHICH_CLK for %s\n", clks[i].id);
         }
     }
 #else

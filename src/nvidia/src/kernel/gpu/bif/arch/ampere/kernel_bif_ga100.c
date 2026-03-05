@@ -94,26 +94,6 @@ kbifInitXveRegMap_GA100
 }
 
 /*!
- * @brief Apply WAR for bug 3208922 - disable P2P on Ampere NB
- *
- * @param[in]  pGpu        GPU object pointer
- * @param[in]  pKernelBif  BIF object pointer
- */
-void
-kbifApplyWARBug3208922_GA100
-(
-    OBJGPU    *pGpu,
-    KernelBif *pKernelBif
-)
-{
-    if (IsMobile(pGpu))
-    {
-        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED,  NV_TRUE);
-        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED, NV_TRUE);
-    }
-}
-
-/*!
  * @brief Check for RO enablement request in emulated config space.
  *
  * @param[in]  pGpu        GPU object pointer

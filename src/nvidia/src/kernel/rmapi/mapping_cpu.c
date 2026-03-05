@@ -125,9 +125,11 @@ memMap_IMPL
 )
 {
     OBJGPU *pGpu = NULL;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     KernelBus *pKernelBus = NULL;
     MemoryManager *pMemoryManager = NULL;
     KernelMemorySystem *pKernelMemorySystem = NULL;
+    NvBool bIsForcePcie = NV_FALSE;
     RmClient *pClient;
     RsResourceRef *pContextRef;
     RsResourceRef *pMemoryRef;
@@ -139,7 +141,6 @@ memMap_IMPL
     NV_ADDRESS_SPACE effectiveAddrSpace;
     NvBool bBroadcast;
     NvU64 mapLimit;
-    NvBool bIsSysmem = NV_FALSE;
     NvBool bSkipSizeCheck = (DRF_VAL(OS33, _FLAGS, _SKIP_SIZE_CHECK, pMapParams->flags) ==
                              NVOS33_FLAGS_SKIP_SIZE_CHECK_ENABLE);
 
@@ -165,6 +166,16 @@ memMap_IMPL
     pMemoryInfo = dynamicCast(pMemoryRef->pResource, Memory);
     NV_ASSERT_OR_RETURN(pMemoryInfo != NULL, NV_ERR_NOT_SUPPORTED);
     pMemDesc = pMemoryInfo->pMemDesc;
+
+    if ((DRF_VAL(OS33, _FLAGS, _BUS, pMapParams->flags) == NVOS33_FLAGS_BUS_PCIE))
+    {
+        if(!(pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE)) && gpuIsSelfHosted(pGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR, "In Selfhosted system Pcie bus path cannot be enabled without enabling RM_TEST_ONLY_CODE\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+        bIsForcePcie = NV_TRUE;
+    }
 
     if (pMemoryInfo->categoryClassId == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR)
     {
@@ -276,8 +287,6 @@ memMap_IMPL
         effectiveAddrSpace = ADDR_SYSMEM;
     }
 
-    bIsSysmem = (effectiveAddrSpace == ADDR_SYSMEM) || (effectiveAddrSpace == ADDR_EGM);
-
     //
     // MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1 indicates a special mapping type of HW registers,
     // so map it as device memory (uncached).
@@ -294,7 +303,7 @@ memMap_IMPL
     //    doesn't specifically request PCI-E and if the surface is pitch.
     //
     if ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-        (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
+        (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
     {
         NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
         if ((memdescGetPteKind(pMemDesc) ==
@@ -356,41 +365,33 @@ memMap_IMPL
                                                        pMapParams->offset)))
                 {
                     MemoryArea memArea;
-                    NvU64    i;
-                    NvU64    mapGranularity;
-                    NvU64    offset;
-                    NvU64    mapRangeEndPlus1;
-                    NvU64    numRanges = 0;
                     MemoryRange mapRange = mrangeMake(pMapParams->offset, pMapParams->length);
+                    MemoryRange curRange;
+                    MemoryIterator iterator;
 
-                    mapRangeEndPlus1 = mapRange.start + mapRange.size;
-                    // TODO: simplify for dynamic page granularity
-                    mapGranularity = bContigDesc ? mapRange.size : pageSize;
+                    memArea.numRanges = 0;
 
-                    NV_CHECK_OR_RETURN(LEVEL_INFO,
-                                        mapRangeEndPlus1 <= memdescGetSize(pMemDesc),
-                                        NV_ERR_OUT_OF_RANGE);
+                    iterator = memdescIteratorInit(pMemDesc, addressTranslation, mapRange);
 
-                    for (offset = mapRange.start; offset < mapRangeEndPlus1; numRanges++)
+                    while (memoryIteratorNext(&iterator, &curRange))
                     {
-                        offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);
+                        memArea.numRanges++;
                     }
 
-                    memArea.pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * numRanges);
+                    memArea.pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * memArea.numRanges);
                     NV_CHECK_OR_RETURN(LEVEL_INFO, memArea.pRanges != NULL, NV_ERR_NO_MEMORY);
 
-                    memArea.numRanges = numRanges;
+                    memArea.numRanges = 0;
+                    iterator = memdescIteratorInit(pMemDesc, addressTranslation, mapRange);
 
-                    for (i = 0, offset = mapRange.start; offset < mapRangeEndPlus1; i++)
+                    while (memoryIteratorNext(&iterator, &curRange))
                     {
-                        memArea.pRanges[i].start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset) + pKernelMemorySystem->coherentCpuFbBase;
-                        memArea.pRanges[i].size  = bContigDesc ? mapGranularity : NV_MIN(mapRangeEndPlus1, NV_ALIGN_UP(offset + 1, mapGranularity)) - offset;
-
-                        offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);
+                        memArea.pRanges[memArea.numRanges] = curRange;
+                        memArea.pRanges[memArea.numRanges].start += pKernelMemorySystem->coherentCpuFbBase;
+                        memArea.numRanges++;
                     }
 
-                    // memArea.pRanges[0].start is the same as what is stored in the pMapParams->ppCpuVirtAddr above
-
+                    // TODO: add an API that takes in an iterator instead of a memArea.
                     rmStatus = osMapPciMemoryAreaUser(pGpu->pOsGpuInfo,
                                                       memArea,
                                                       pMapParams->protect,
@@ -400,7 +401,7 @@ memMap_IMPL
 
                     // Coherent path doesn't need the memArea stored off for unmap
                     portMemFree(memArea.pRanges);
-
+                    
                     if (rmStatus != NV_OK)
                         return rmStatus;
                 }
@@ -631,7 +632,7 @@ memMap_IMPL
         }
     }
     else
-    if (bIsSysmem)
+    if (effectiveAddrSpace == ADDR_SYSMEM)
     {
         // A client can specify not to map memory by default when
         // calling into RmAllocMemory. In those cases, we don't have
@@ -737,6 +738,8 @@ memUnmap_IMPL
     OBJGPU             *pGpu                = pCpuMapping->pPrivate->pGpu;
     MEMORY_DESCRIPTOR  *pMemDesc            = pMemory->pMemDesc;
 
+    OBJSYS             *pSys                = SYS_GET_INSTANCE();
+    NvBool              bIsForcePcie        = NV_FALSE;
     KernelBus          *pKernelBus          = NULL;
     MemoryManager      *pMemoryManager      = NULL;
 
@@ -746,12 +749,22 @@ memUnmap_IMPL
         pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     }
 
+    if ((DRF_VAL(OS33, _FLAGS, _BUS, pCpuMapping->flags) == NVOS33_FLAGS_BUS_PCIE))
+    {
+        if(!(pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE)) && gpuIsSelfHosted(pGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR, "In Selfhosted system Pcie bus path cannot be enabled without enabling RM_TEST_ONLY_CODE\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+        bIsForcePcie = NV_TRUE;
+    }
+
     if (FLD_TEST_DRF(OS33, _FLAGS, _OS_DESCRIPTOR, _ENABLE, pCpuMapping->flags))
     {
         // Nothing more to do
     }
     else if ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-             (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
+             (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
     {
         NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
         NV_ASSERT((memdescGetPteKind(pMemDesc) ==
@@ -787,8 +800,7 @@ memUnmap_IMPL
         //
     }
     // System Memory case
-    else if ((pGpu == NULL) || (((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) ||
-                                  (memdescGetAddressSpace(pMemDesc) == ADDR_EGM)) &&
+    else if ((pGpu == NULL) || ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
                                  FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags)))
     {
         if (FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags))

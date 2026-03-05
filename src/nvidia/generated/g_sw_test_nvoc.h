@@ -134,13 +134,9 @@ struct NVOC_METADATA__SoftwareMethodTest {
     const struct NVOC_VTABLE__SoftwareMethodTest vtable;
 };
 
-#ifndef __NVOC_CLASS_SoftwareMethodTest_TYPEDEF__
-#define __NVOC_CLASS_SoftwareMethodTest_TYPEDEF__
-typedef struct SoftwareMethodTest SoftwareMethodTest;
-#endif /* __NVOC_CLASS_SoftwareMethodTest_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SoftwareMethodTest
-#define __nvoc_class_id_SoftwareMethodTest 0xdea092
+#define __nvoc_class_id_SoftwareMethodTest 0xdea092u
+typedef struct SoftwareMethodTest SoftwareMethodTest;
 #endif /* __nvoc_class_id_SoftwareMethodTest */
 
 // Casting support
@@ -158,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SoftwareMethodTest;
 
 NV_STATUS __nvoc_objCreateDynamic_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_SoftwareMethodTest(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_SoftwareMethodTest((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_SoftwareMethodTest(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_SoftwareMethodTest((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS swtestConstruct_IMPL(struct SoftwareMethodTest *arg_pSwTest, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_swtestConstruct(arg_pSwTest, arg_pCallContext, arg_pParams) swtestConstruct_IMPL(arg_pSwTest, arg_pCallContext, arg_pParams)
+NV_STATUS swtestConstruct_IMPL(struct SoftwareMethodTest *pSwTest, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_swtestConstruct(pSwTest, pCallContext, pParams) swtestConstruct_IMPL(pSwTest, pCallContext, pParams)
 
 void swtestDestruct_IMPL(struct SoftwareMethodTest *pSwTest);
 #define __nvoc_swtestDestruct(pSwTest) swtestDestruct_IMPL(pSwTest)
@@ -366,8 +362,14 @@ static inline NV_STATUS swtestGetOrAllocNotifShare_DISPATCH(struct SoftwareMetho
     return pNotifier->__nvoc_metadata_ptr->vtable.__swtestGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS swtestGetSwMethods_IMPL(struct SoftwareMethodTest *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

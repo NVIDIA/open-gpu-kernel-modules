@@ -371,8 +371,6 @@ static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine
         name = NULL;
     }
 
-    decodedLine[decodedLineSize - 1U] = '\0';
-
     bResolved = LibosDwarfResolveLine(resolver, addr, &directory, &filename, &outputLine,
                                       &outputColumn, &matchedAddress);
 
@@ -397,6 +395,10 @@ static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine
     else if (name)
     {
         snprintf(decodedLine, decodedLineSize - 1, "%s+%lld", name, offset);
+    }
+    else
+    {
+        portStringCopy(decodedLine, decodedLineSize, "???", decodedLineSize);
     }
 
     bResolved |= (name != NULL);
@@ -1286,14 +1288,16 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
         if (logDecode->bSynchronousBuffer || (taskId == LIBOS_LOG_TASK_UNKNOWN))
         {
             LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-                "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", pLog->putIter - previousPut,
-                logDecode->sourceName, pLog->taskPrefix);
+                "**** Bad metadata.  Lost %lld entries from GPU %d %s-%s. putIter: 0x%llx previousPut: 0x%llx ****\n",
+                pLog->putIter - previousPut, pLog->gpuInstance, logDecode->sourceName,
+                pLog->taskPrefix, pLog->putIter, pLog->previousPut);
             goto error_ret;
         }
 
         LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-            "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", logEntrySize,
-            logDecode->sourceName, pLog->taskPrefix);
+            "**** Bad metadata.  Lost %lld entries from GPU %d %s-%s. putIter: 0x%llx previousPut: 0x%llx ****\n",
+            logEntrySize, pLog->gpuInstance, logDecode->sourceName, pLog->taskPrefix,
+            pLog->putIter, pLog->previousPut);
         pLog->putIter -= logEntrySize;
     }
 
@@ -1328,8 +1332,8 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
 buffer_wrapped:
     // Put pointer wrapped and caught up to us.  This means we lost entries.
     LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-        "**** Buffer wrapped. Lost %lld entries from %s-%s ****\n", pLog->putIter - pLog->previousPut,
-        logDecode->sourceName, pLog->taskPrefix);
+        "**** Buffer wrapped. Lost %lld entries from GPU %d %s-%s ****\n", pLog->putIter - pLog->previousPut,
+        pLog->gpuInstance, logDecode->sourceName, pLog->taskPrefix);
 
 error_ret:
     pLog->record.timeStamp = LIBOS_LOG_TIMESTAMP_END;
@@ -1801,57 +1805,6 @@ static void libosExtractLogs_nvlog(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLo
         libosExtractLogs_mergeNvlog(logDecode);
 }
 
-void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode)
-{
-    NvU64 i;
-    for (i = 0; i < pLogDecode->numLogBuffers; i++)
-    {
-        LIBOS_LOG_DECODE_LOG *pLog = &pLogDecode->log[i];
-
-        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
-            continue;
-
-        if (pLog->bDidPush)
-        {
-            NvHandle hNvlog = pLog->hNvLogNoWrap;
-            NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[hNvlog];
-
-            if (hNvlog == 0 || pNvLogBuffer == NULL)
-                continue;
-
-            pNvLogBuffer->flags |= DRF_DEF(LOG, _BUFFER_FLAGS, _PRESERVE, _YES);
-        }
-    }
-}
-
-NvBool isLibosPreserveLogBufferFull(LIBOS_LOG_DECODE *pLogDecode, NvU32 gpuInstance)
-{
-    NvU64 i = (NvU32)(pLogDecode->numLogBuffers);
-    NvU32 tag = LIBOS_LOG_NVLOG_BUFFER_TAG(pLogDecode->sourceName, i * 2);
-
-    //
-    // Cannot use nvlogGetBufferHandleFromTag here since in multi GPU case,
-    // we can have multiple buffers with exact same tag, only differentiable
-    // from gpuInstance
-    //
-    for (i = 0; i < NVLOG_MAX_BUFFERS; i++)
-    {
-        if (NvLogLogger.pBuffers[i] != NULL)
-        {
-            NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[i];
-            if ((pNvLogBuffer->tag == tag) &&
-                (DRF_VAL(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, pNvLogBuffer->flags) == gpuInstance) &&
-                FLD_TEST_DRF(LOG_BUFFER, _FLAGS, _PRESERVE, _YES, pNvLogBuffer->flags) &&
-                (pNvLogBuffer->pos >= pNvLogBuffer->size - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) - sizeof(NvU64)))
-            {
-                return NV_TRUE;
-            }
-        }
-    }
-
-    return NV_FALSE;
-}
-
 static NvBool findPreservedNvlogBuffer(NvU32 tag, NvU32 gpuInstance, NVLOG_BUFFER_HANDLE *pHandle)
 {
     NvU64 i;
@@ -1868,8 +1821,7 @@ static NvBool findPreservedNvlogBuffer(NvU32 tag, NvU32 gpuInstance, NVLOG_BUFFE
             NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[i];
             if ((pNvLogBuffer->tag == tag) &&
                 (DRF_VAL(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, pNvLogBuffer->flags) == gpuInstance) &&
-                FLD_TEST_DRF(LOG_BUFFER, _FLAGS, _PRESERVE, _YES, pNvLogBuffer->flags) &&
-                (pNvLogBuffer->pos < pNvLogBuffer->size - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) - sizeof(NvU64)))
+                FLD_TEST_DRF(LOG_BUFFER, _FLAGS, _PRESERVE, _YES, pNvLogBuffer->flags))
             {
                 *pHandle = i;
                 return NV_TRUE;
@@ -1878,6 +1830,56 @@ static NvBool findPreservedNvlogBuffer(NvU32 tag, NvU32 gpuInstance, NVLOG_BUFFE
     }
 
     return NV_FALSE;
+}
+
+void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode, NvBool bPreserveNoWrap, NvBool bPreserveWrap)
+{
+    NvU64 i;
+    for (i = 0; i < pLogDecode->numLogBuffers; i++)
+    {
+        LIBOS_LOG_DECODE_LOG *pLog = &pLogDecode->log[i];
+
+        if (pLog->libosLogDecodeFlags & LIBOS_LOG_DECODE_LOG_FLAG_NVLOG_DISABLED)
+            continue;
+
+        if (pLog->bDidPush && bPreserveNoWrap)
+        {
+            NvHandle hNvlog = pLog->hNvLogNoWrap;
+            NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[hNvlog];
+
+            if (hNvlog == 0 || pNvLogBuffer == NULL)
+                continue;
+
+            pNvLogBuffer->flags |= DRF_DEF(LOG, _BUFFER_FLAGS, _PRESERVE, _YES);
+        }
+
+        //
+        // WAR: This is not a full implementation of preserve wrap and only preserves one wrap buffer at at time.
+        //      It is a necessary WAR for capturing the end of the RM log when nowrap buffer is already full.
+        //      (e.g. in order to capture malloc heap reports on unload)
+        // Note: nvidia-bug-report.sh with no args triggers RM unload several times. To avoid overwriting desired
+        //       logs with logs from bug report collection, use nvidia-bug-report.sh --safe-mode or
+        //       nvidia-debugdump --ioctl --nvlogonly for best results.
+        //
+        if (bPreserveWrap)
+        {
+            NvHandle hNvlog = pLog->hNvLogWrap;
+            NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[hNvlog];
+
+            if (hNvlog == 0 || pNvLogBuffer == NULL)
+                continue;
+
+            NvHandle hNvlogExistingPreservedWrap;
+            if (findPreservedNvlogBuffer(pNvLogBuffer->tag,
+                                         DRF_VAL(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, pNvLogBuffer->flags),
+                                         &hNvlogExistingPreservedWrap))
+            {
+                nvlogDeallocBuffer(hNvlogExistingPreservedWrap, NV_TRUE);
+            }
+
+            pNvLogBuffer->flags |= DRF_DEF(LOG, _BUFFER_FLAGS, _PRESERVE, _YES);
+        }
+    }
 }
 
 #endif // LIBOS_LOG_TO_NVLOG

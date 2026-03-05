@@ -723,11 +723,6 @@ kdispServiceAwakenIntr_v03_00
     NvU32  intrCtrlDisp;
     NvBool bAwakenIntrPending = NV_FALSE;
 
-    if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR))
-        return awakenWinChannelNumMask;
-
-    pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR, NV_TRUE);
-
     intrCtrlDisp = GPU_REG_RD32_EX(pGpu, DISP_INTR_REG(STAT_CTRL_DISP), pThreadState);
 
     // Handle awaken interrupts
@@ -752,8 +747,6 @@ kdispServiceAwakenIntr_v03_00
         // HW reported AWAKEN interrupt, we should not end up with no channel having AWAKEN pending
         NV_ASSERT(bAwakenIntrPending);
     }
-
-    pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_IN_AWAKEN_INTR, NV_FALSE);
 
     return awakenWinChannelNumMask;
 }

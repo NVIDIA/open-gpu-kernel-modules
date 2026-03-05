@@ -32,36 +32,12 @@
 #include <keys/asymmetric-type.h>
 #endif
 
-bool libspdm_x509_construct_certificate(const uint8_t *cert, size_t cert_size,
-                                        uint8_t **single_x509_cert)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
-bool libspdm_x509_construct_certificate_stack(uint8_t **x509_stack, ...)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
-void libspdm_x509_free(void *x509_cert)
-{
-    LIBSPDM_ASSERT(false);
-}
-
-void libspdm_x509_stack_free(void *x509_stack)
-{
-    LIBSPDM_ASSERT(false);
-}
-
 #ifdef USE_LKCA
 bool libspdm_encode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen)
 {
     static const uint8_t base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     size_t i;
     size_t tmp;
-    size_t size;
     uint8_t *ptr = dst;
 
     for (i = 0; (i + 2) < srclen; i += 3)
@@ -334,23 +310,6 @@ bool libspdm_x509_get_subject_name(const uint8_t *cert, size_t cert_size,
     return false;
 }
 
-bool libspdm_x509_get_common_name(const uint8_t *cert, size_t cert_size,
-                                  char *common_name,
-                                  size_t *common_name_size)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
-bool
-libspdm_x509_get_organization_name(const uint8_t *cert, size_t cert_size,
-                                   char *name_buffer,
-                                   size_t *name_buffer_size)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
 #if (LIBSPDM_RSA_SSA_SUPPORT) || (LIBSPDM_RSA_PSS_SUPPORT)
 bool libspdm_rsa_get_public_key_from_x509(const uint8_t *cert, size_t cert_size,
                                           void **rsa_context)
@@ -410,20 +369,6 @@ err:
 #else
     return false;
 #endif
-}
-
-bool libspdm_ecd_get_public_key_from_x509(const uint8_t *cert, size_t cert_size,
-                                          void **ecd_context)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
-bool libspdm_sm2_get_public_key_from_x509(const uint8_t *cert, size_t cert_size,
-                                          void **sm2_context)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
 }
 
 static int lkca_x509_verify_cert(const uint8_t *cert, size_t cert_size,
@@ -563,13 +508,6 @@ bool libspdm_x509_get_cert_from_cert_chain(const uint8_t *cert_chain,
     return false;
 }
 
-bool libspdm_x509_get_tbs_cert(const uint8_t *cert, size_t cert_size,
-                               uint8_t **tbs_cert, size_t *tbs_cert_size)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
 bool libspdm_x509_get_version(const uint8_t *cert, size_t cert_size,
                               size_t *version)
 {
@@ -593,24 +531,7 @@ bool libspdm_x509_get_issuer_name(const uint8_t *cert, size_t cert_size,
     return false;
 }
 
-bool
-libspdm_x509_get_issuer_common_name(const uint8_t *cert, size_t cert_size,
-                                    char *common_name,
-                                    size_t *common_name_size)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
-bool
-libspdm_x509_get_issuer_orgnization_name(const uint8_t *cert, size_t cert_size,
-                                         char *name_buffer,
-                                         size_t *name_buffer_size)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
-}
-
+#if LIBSPDM_ADDITIONAL_CHECK_CERT
 bool libspdm_x509_get_signature_algorithm(const uint8_t *cert,
                                           size_t cert_size, uint8_t *oid,
                                           size_t *oid_size)
@@ -618,6 +539,7 @@ bool libspdm_x509_get_signature_algorithm(const uint8_t *cert,
     LIBSPDM_ASSERT(false);
     return false;
 }
+#endif /* LIBSPDM_ADDITIONAL_CHECK_CERT */
 
 bool libspdm_x509_get_extension_data(const uint8_t *cert, size_t cert_size,
                                      const uint8_t *oid, size_t oid_size,
@@ -670,13 +592,4 @@ int32_t libspdm_x509_compare_date_time(const void *date_time1, const void *date_
 {
     LIBSPDM_ASSERT(false);
     return -3;
-}
-
-bool libspdm_gen_x509_csr(size_t hash_nid, size_t asym_nid,
-                          uint8_t *requester_info, size_t requester_info_length,
-                          void *context, char *subject_name,
-                          size_t *csr_len, uint8_t **csr_pointer)
-{
-    LIBSPDM_ASSERT(false);
-    return false;
 }

@@ -350,7 +350,7 @@ static void root_chunk_unlock(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chu
 // have an opt-out.
 static bool gpu_supports_pma_eviction(uvm_gpu_t *gpu)
 {
-    return uvm_global_oversubscription && uvm_parent_gpu_supports_eviction(gpu->parent);
+    return uvm_global_oversubscription;
 }
 
 uvm_gpu_t *uvm_pmm_to_gpu(uvm_pmm_gpu_t *pmm)
@@ -415,8 +415,11 @@ static void chunk_pin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk->state != UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED);
     chunk->state = UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED;
 
-    if (chunk_is_root_chunk(chunk))
+
+    if (chunk_is_root_chunk(chunk)) {
+        ++pmm->root_chunks.pinned_count;
         return;
+    }
 
     // For subchunks, update the pinned leaf chunks count tracked in the
     // suballoc of the root chunk.
@@ -444,8 +447,10 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
 
     chunk->state = new_state;
 
-    if (chunk_is_root_chunk(chunk))
+    if (chunk_is_root_chunk(chunk)) {
+        --pmm->root_chunks.pinned_count;
         return;
+    }
 
     // For subchunks, update the pinned leaf chunks count tracked in the
     // suballoc of the root chunk.
@@ -464,7 +469,7 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
     UVM_ASSERT(uvm_gpu_chunk_is_user(chunk));
-    UVM_ASSERT(uvm_gpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_MAX);
+    UVM_ASSERT(chunk_is_root_chunk(chunk));
 
     chunk->in_eviction = in_eviction;
 }
@@ -801,6 +806,8 @@ static void merge_gpu_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         UVM_ASSERT(root_chunk->chunk.suballoc->pinned_leaf_chunks >= num_sub);
         root_chunk->chunk.suballoc->pinned_leaf_chunks += 1 - num_sub;
         chunk->va_block = subchunk->va_block;
+        if (chunk_is_root_chunk(chunk))
+            ++pmm->root_chunks.pinned_count;
     }
 
     chunk->state = child_state;
@@ -1322,6 +1329,7 @@ static NV_STATUS evict_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root
 
     UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED);
     uvm_gpu_chunk_set_in_eviction(chunk, false);
+    --pmm->root_chunks.in_eviction_count;
 
     chunk->is_zero = false;
 
@@ -1354,6 +1362,7 @@ error:
     uvm_spin_lock(&pmm->list_lock);
 
     uvm_gpu_chunk_set_in_eviction(chunk, false);
+    --pmm->root_chunks.in_eviction_count;
 
     // In case we didn't manage to evict any chunks and hence the root is still
     // unpinned, we need to put it back on an eviction list.
@@ -1405,6 +1414,7 @@ static void chunk_start_eviction(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
     list_del_init(&chunk->list);
     uvm_gpu_chunk_set_in_eviction(chunk, true);
+    ++pmm->root_chunks.in_eviction_count;
 }
 
 static void root_chunk_update_eviction_list(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_alloc_list_t alloc_list)
@@ -1519,18 +1529,25 @@ static NV_STATUS pick_and_evict_root_chunk(uvm_pmm_gpu_t *pmm,
                                            uvm_pmm_context_t pmm_context,
                                            uvm_gpu_chunk_t **out_chunk)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     NV_STATUS status;
     uvm_gpu_chunk_t *chunk;
     uvm_gpu_root_chunk_t *root_chunk;
 
-    UVM_ASSERT(uvm_parent_gpu_supports_eviction(gpu->parent));
-
     uvm_assert_mutex_locked(&pmm->lock);
 
     root_chunk = pick_root_chunk_to_evict(pmm);
-    if (!root_chunk)
+    if (!root_chunk) {
+        if (pmm_context == PMM_CONTEXT_DEFAULT && type == UVM_PMM_GPU_MEMORY_TYPE_USER && \
+            (READ_ONCE(pmm->root_chunks.pinned_count) > 0 || READ_ONCE(pmm->root_chunks.in_eviction_count) > 0)) {
+
+            // There are UVM managed root chunks that are currently 'in-flight'
+            // and not tracked on any of the lists. Try again after returning
+            // from PMM.
+            return NV_ERR_MORE_PROCESSING_REQUIRED;
+        }
+
         return NV_ERR_NO_MEMORY;
+    }
 
     status = evict_root_chunk(pmm, root_chunk, pmm_context);
     if (status != NV_OK)
@@ -1678,13 +1695,12 @@ static NV_STATUS alloc_or_evict_root_chunk(uvm_pmm_gpu_t *pmm,
                                            uvm_pmm_alloc_flags_t flags,
                                            uvm_gpu_chunk_t **chunk_out)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     NV_STATUS status;
     uvm_gpu_chunk_t *chunk;
 
     status = alloc_root_chunk(pmm, type, flags, &chunk);
     if (status != NV_OK) {
-        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_parent_gpu_supports_eviction(gpu->parent))
+        if (flags & UVM_PMM_ALLOC_FLAGS_EVICT)
             status = pick_and_evict_root_chunk_retry(pmm, type, PMM_CONTEXT_DEFAULT, chunk_out);
 
         return status;
@@ -1700,13 +1716,12 @@ static NV_STATUS alloc_or_evict_root_chunk_unlocked(uvm_pmm_gpu_t *pmm,
                                                     uvm_pmm_alloc_flags_t flags,
                                                     uvm_gpu_chunk_t **chunk_out)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     NV_STATUS status;
     uvm_gpu_chunk_t *chunk;
 
     status = alloc_root_chunk(pmm, type, flags, &chunk);
     if (status != NV_OK) {
-        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_parent_gpu_supports_eviction(gpu->parent)) {
+        if (flags & UVM_PMM_ALLOC_FLAGS_EVICT) {
             uvm_mutex_lock(&pmm->lock);
             status = pick_and_evict_root_chunk_retry(pmm, type, PMM_CONTEXT_DEFAULT, chunk_out);
             uvm_mutex_unlock(&pmm->lock);
@@ -1896,6 +1911,9 @@ static void init_root_chunk(uvm_pmm_gpu_t *pmm,
     chunk->type = type;
     chunk->state = initial_state;
     chunk->is_zero = is_zero;
+
+    if (initial_state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED)
+        ++pmm->root_chunks.pinned_count;
 
     chunk_update_lists_locked(pmm, chunk);
 
@@ -2165,8 +2183,10 @@ NV_STATUS split_gpu_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
         // When a pinned root chunk gets split, the count starts at 0 not
         // accounting for the root chunk itself so add the 1 back.
-        if (chunk_is_root_chunk(chunk))
+        if (chunk_is_root_chunk(chunk)) {
             root_chunk->chunk.suballoc->pinned_leaf_chunks += 1;
+            --pmm->root_chunks.pinned_count;
+        }
 
         chunk->va_block = NULL;
         chunk->is_referenced = false;
@@ -2960,7 +2980,7 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
     unsigned long devmem_end;
     unsigned long pfn;
 
-    if (!pmm->initialized || !uvm_hmm_is_enabled_system_wide())
+    if (!pmm->initialized || !uvm_hmm_is_enabled_system_wide() || !gpu->parent->devmem)
         return ret;
 
     devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
@@ -3042,6 +3062,11 @@ static void devmem_page_free(struct page *page)
                                  &gpu->pmm.root_chunks.va_block_lazy_free_q_item);
 }
 
+static void devmem_folio_free(struct folio *folio)
+{
+    devmem_page_free(&folio->page);
+}
+
 // This is called by HMM when the CPU faults on a ZONE_DEVICE private entry.
 static vm_fault_t devmem_fault(struct vm_fault *vmf)
 {
@@ -3060,7 +3085,11 @@ static vm_fault_t devmem_fault_entry(struct vm_fault *vmf)
 
 static const struct dev_pagemap_ops uvm_pmm_devmem_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = devmem_folio_free,
+#else
     .page_free = devmem_page_free,
+#endif
     .migrate_to_ram = devmem_fault_entry,
 };
 
@@ -3141,6 +3170,100 @@ static void *devmem_alloc_pagemap(unsigned long size) { return NULL; }
 static void *devmem_reuse_pagemap(unsigned long size) { return NULL; }
 #endif // UVM_IS_CONFIG_HMM()
 
+#if defined(CONFIG_PCI_P2PDMA)
+// PCI P2PDMA device caching functions
+// Similar to devmem caching, we cache PCI devices to avoid expensive
+// registration/unregistration cycles during GPU add/remove operations.
+
+// This function tries to find an existing PCI device registration and if
+// available returns it for reuse.
+static uvm_pmm_gpu_pci_dev_list_t *uvm_pmm_pci_p2pdma_reuse_device(struct pci_dev *pdev)
+{
+    uvm_pmm_gpu_pci_dev_list_t *pci_dev_entry;
+
+    list_for_each_entry(pci_dev_entry, &g_uvm_global.pci_p2pdma_devices.list, list_node) {
+        if (pci_dev_entry->pdev == pdev) {
+            struct dev_pagemap *pgmap = NV_GET_DEV_PAGEMAP(pci_dev_entry->dev_start_pfn);
+
+            // If a valid pagemap is present for the start pfn, the p2pdma registration
+            // is valid and can be reused.
+            if (pgmap) {
+                put_dev_pagemap(pgmap);
+                return pci_dev_entry;
+            }
+            else {
+                // The device was present, but hotplug or another event such as unbind
+                // removed the device from underneath, start fresh.
+                list_del_init(&pci_dev_entry->list_node);
+                uvm_kvfree(pci_dev_entry);
+                break;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+// This function caches a PCI device registration for later reuse.
+static void uvm_pmm_pci_p2pdma_cache_device(struct pci_dev *pdev, unsigned long dev_start_pfn)
+{
+    uvm_pmm_gpu_pci_dev_list_t *pci_dev_entry;
+
+    pci_dev_entry = uvm_kvmalloc_zero(sizeof(*pci_dev_entry));
+    if (!pci_dev_entry) {
+        // If we can't allocate memory for caching, we'll just skip caching
+        // This is not a fatal error, just means we'll have to re-register next time
+        return;
+    }
+
+    pci_dev_entry->pdev = pdev;
+    pci_dev_entry->func = NV_PCI_DEVFN(pdev);
+    pci_dev_entry->bus = NV_PCI_BUS_NUMBER(pdev);
+    pci_dev_entry->domain = NV_PCI_DOMAIN_NUMBER(pdev);
+    pci_dev_entry->dev_start_pfn = dev_start_pfn;
+
+    list_add_tail(&pci_dev_entry->list_node, &g_uvm_global.pci_p2pdma_devices.list);
+}
+
+// PCI P2PDMA cleanup function
+void uvm_pmm_pci_p2pdma_cache_exit(void)
+{
+    uvm_pmm_gpu_pci_dev_list_t *pci_dev_entry, *pci_dev_next;
+
+    list_for_each_entry_safe(pci_dev_entry, pci_dev_next, &g_uvm_global.pci_p2pdma_devices.list, list_node) {
+
+        // If there was a race with PCI hotplug, the devm release action would free the
+        // memory associated with the pci p2p dma memory. Otherwise get a reference
+        // to the device and ensure it's still present before freeing pages
+        if (pci_device_is_present(pci_dev_entry->pdev)) {
+            struct pci_dev *pdev = NV_GET_DOMAIN_BUS_AND_SLOT(pci_dev_entry->domain, pci_dev_entry->bus, pci_dev_entry->func);
+
+            if (pdev) {
+                struct dev_pagemap *pgmap;
+
+                UVM_ASSERT(pdev == pci_dev_entry->pdev);
+
+                pgmap = NV_GET_DEV_PAGEMAP(pci_dev_entry->dev_start_pfn);
+                if (pgmap) {
+                    put_dev_pagemap(pgmap);
+                    devm_memunmap_pages(&pdev->dev, pgmap);
+                }
+
+                pci_dev_put(pdev);
+            }
+
+            list_del(&pci_dev_entry->list_node);
+            uvm_kvfree(pci_dev_entry);
+        }
+    }
+}
+#else // CONFIG_PCI_P2PDMA
+void uvm_pmm_pci_p2pdma_cache_exit(void)
+{
+
+}
+#endif // CONFIG_PCI_P2PDMA
+
 #if (UVM_CDMM_PAGES_SUPPORTED() || defined(CONFIG_PCI_P2PDMA)) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
 static void device_p2p_page_free_wake(struct nv_kref *ref)
 {
@@ -3155,6 +3278,11 @@ static void device_p2p_page_free(struct page *page)
     page->zone_device_data = NULL;
     nv_kref_put(&p2p_mem->refcount, device_p2p_page_free_wake);
 }
+
+static void device_p2p_folio_free(struct folio *folio)
+{
+    device_p2p_page_free(&folio->page);
+}
 #endif
 
 #if UVM_CDMM_PAGES_SUPPORTED()
@@ -3163,9 +3291,18 @@ static void device_coherent_page_free(struct page *page)
     device_p2p_page_free(page);
 }
 
+static void device_coherent_folio_free(struct folio *folio)
+{
+    device_p2p_page_free(&folio->page);
+}
+
 static const struct dev_pagemap_ops uvm_device_coherent_pgmap_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = device_coherent_folio_free,
+#else
     .page_free = device_coherent_page_free,
+#endif
 };
 
 static NV_STATUS uvm_pmm_cdmm_init(uvm_parent_gpu_t *parent_gpu)
@@ -3245,12 +3382,15 @@ NV_STATUS uvm_pmm_devmem_init(uvm_parent_gpu_t *gpu)
         return NV_OK;
     }
 
+    if (gpu->test.inject_error.disable_devmem)
+        return NV_ERR_BUSY_RETRY;
+
     gpu->devmem = devmem_reuse_pagemap(size);
     if (!gpu->devmem)
         gpu->devmem = devmem_alloc_pagemap(size);
 
     if (!gpu->devmem)
-        return NV_ERR_NO_MEMORY;
+        return NV_ERR_BUSY_RETRY;
 
     return NV_OK;
 }
@@ -3302,7 +3442,11 @@ static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 
 static const struct dev_pagemap_ops uvm_device_p2p_pgmap_ops =
 {
+#if defined(NV_PAGEMAP_OPS_HAS_FOLIO_FREE)
+    .folio_free = device_p2p_folio_free,
+#else
     .page_free = device_p2p_page_free,
+#endif
 };
 
 void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
@@ -3311,6 +3455,7 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
                                                      uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT;
     unsigned long pci_end_pfn = pci_start_pfn + (parent_gpu->static_bar1_size >> PAGE_SHIFT);
     struct page *p2p_page;
+    uvm_pmm_gpu_pci_dev_list_t *cached_pci_dev;
 
     if (uvm_parent_gpu_is_coherent(parent_gpu)) {
         // P2PDMA support with CDMM enabled requires special
@@ -3339,9 +3484,17 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
     if (!parent_gpu->static_bar1_size || parent_gpu->static_bar1_write_combined)
         return;
 
-    if (pci_p2pdma_add_resource(parent_gpu->pci_dev, uvm_device_p2p_static_bar(parent_gpu), 0, 0)) {
-        UVM_ERR_PRINT("Unable to initialse PCI P2PDMA pages\n");
-        return;
+    // Try to reuse a cached PCI device registration first
+    cached_pci_dev = uvm_pmm_pci_p2pdma_reuse_device(parent_gpu->pci_dev);
+
+    // If we didn't find a cached registration or couldn't reuse it, register now
+    if (!cached_pci_dev) {
+        if (pci_p2pdma_add_resource(parent_gpu->pci_dev, uvm_device_p2p_static_bar(parent_gpu), 0, 0)) {
+            UVM_ERR_PRINT("Unable to initialse PCI P2PDMA pages\n");
+            return;
+        }
+        // Cache once and reuse till the driver is unloaded
+        uvm_pmm_pci_p2pdma_cache_device(parent_gpu->pci_dev, pci_start_pfn);
     }
 
     // The current upstream PCIe P2PDMA architecture does not allow drivers to
@@ -3360,13 +3513,6 @@ void uvm_pmm_gpu_device_p2p_init(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_pmm_gpu_device_p2p_deinit(uvm_parent_gpu_t *parent_gpu)
 {
-    if (parent_gpu->device_p2p_initialised && !uvm_parent_gpu_is_coherent(parent_gpu)) {
-        struct page *p2p_page = pfn_to_page(pci_resource_start(parent_gpu->pci_dev,
-                                            uvm_device_p2p_static_bar(parent_gpu)) >> PAGE_SHIFT);
-
-        devm_memunmap_pages(&parent_gpu->pci_dev->dev, page_pgmap(p2p_page));
-    }
-
     parent_gpu->device_p2p_initialised = false;
 }
 #else // CONFIG_PCI_P2PDMA
@@ -3448,6 +3594,8 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
 
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_lazy_free);
     nv_kthread_q_item_init(&pmm->root_chunks.va_block_lazy_free_q_item, process_lazy_free_entry, pmm);
+    pmm->root_chunks.pinned_count = 0;
+    pmm->root_chunks.in_eviction_count = 0;
 
     uvm_mutex_init(&pmm->lock, UVM_LOCK_ORDER_PMM);
     uvm_init_rwsem(&pmm->pma_lock, UVM_LOCK_ORDER_PMM_PMA);
@@ -3616,7 +3764,7 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
-    if (!gpu || !uvm_parent_gpu_supports_eviction(gpu->parent)) {
+    if (!gpu) {
         uvm_va_space_up_read(va_space);
         uvm_va_space_mm_or_current_release_unlock(va_space, mm);
         return NV_ERR_INVALID_DEVICE;

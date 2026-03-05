@@ -33,6 +33,7 @@
 
 #include "published/blackwell/gb100/dev_gsp.h"
 #include "published/blackwell/gb100/dev_fuse_zb.h"
+#include "published/blackwell/gb100/dev_hubmmu_base.h"
 #include "published/blackwell/gb100/hwproject.h"
 
 #include "gpu/conf_compute/conf_compute.h"
@@ -248,7 +249,7 @@ kgspIsDebugModeEnabled_GB100
     KernelGsp *pKernelGsp
 )
 {
-    NvU32 data = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_OPT_SECURE_GSP_DEBUG_DIS);
+    NvU32 data = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_OPT_SECURE_GSP_DEBUG_DIS);
     return FLD_TEST_DRF(_FUSE_ZB, _OPT_SECURE_GSP_DEBUG_DIS, _DATA, _NO, data);
 }
 
@@ -272,7 +273,7 @@ kgspReadUcodeFuseVersion_GB100
 
     if (index < DRF_SIZE(NV_FUSE_ZB_OPT_FPF_GSP_UCODE1_VERSION_DATA))
     {
-        fuseVal = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_OPT_FPF_GSP_UCODE1_VERSION + (4 * index));
+        fuseVal = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_OPT_FPF_GSP_UCODE1_VERSION + (4 * index));
         if (fuseVal)
         {
             HIGHESTBITIDX_32(fuseVal);
@@ -281,4 +282,25 @@ kgspReadUcodeFuseVersion_GB100
     }
 
     return fuseVal;
+}
+
+NvBool
+kgspIsWpr2Up_GB100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    NvU32 data = GPU_REG_RD32(pGpu, NV_HUBMMU0_PRI_BASE + NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI);
+    NvU32 wpr2HiVal = DRF_VAL(_HUBMMU, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    {
+        //
+        // Due to BAR0 decoupler, we may not be able to read WPR2 MMU regs.
+        // Assume WPR2 is down.
+        //
+        return NV_FALSE;
+    }
+    return (wpr2HiVal != 0);
 }

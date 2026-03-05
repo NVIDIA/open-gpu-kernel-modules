@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xcf1b25 = 1;
+char __nvoc_class_id_uniqueness_check__cf1b25 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMGR;
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGPUMGR;
 
 // Up-thunk(s) to bridge OBJGPUMGR methods to ancestors (if any)
 
+// Class-specific details for OBJGPUMGR
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMGR = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(OBJGPUMGR),
-        /*classId=*/            classId(OBJGPUMGR),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(OBJGPUMGR),
+    .classInfo.classId =            classId(OBJGPUMGR),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "OBJGPUMGR",
+    .classInfo.name =               "OBJGPUMGR",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJGPUMGR,
-    /*pCastInfo=*/          &__nvoc_castinfo__OBJGPUMGR,
-    /*pExportInfo=*/        &__nvoc_export_info__OBJGPUMGR
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJGPUMGR,
+    .pCastInfo =          &__nvoc_castinfo__OBJGPUMGR,
+    .pExportInfo =        &__nvoc_export_info__OBJGPUMGR
 };
 
 
@@ -76,38 +75,51 @@ const struct NVOC_CASTINFO __nvoc_castinfo__OBJGPUMGR = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGPUMGR = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct OBJGPUMGR object.
 void __nvoc_gpumgrDestruct(OBJGPUMGR*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_OBJGPUMGR(OBJGPUMGR *pThis) {
+void __nvoc_dtor_OBJGPUMGR(OBJGPUMGR* pThis) {
+
+// Call destructor.
     __nvoc_gpumgrDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_OBJGPUMGR(OBJGPUMGR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_OBJGPUMGR(OBJGPUMGR *pThis) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_OBJGPUMGR_fail_Object;
-    __nvoc_init_dataField_OBJGPUMGR(pThis);
 
-    status = __nvoc_gpumgrConstruct(pThis);
+// Construct OBJGPUMGR object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_OBJGPUMGR(OBJGPUMGR *arg_this) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&arg_this->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_OBJGPUMGR_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_OBJGPUMGR(arg_this);
+
+    // Call the constructor for this class.
+    status = __nvoc_gpumgrConstruct(arg_this);
     if (status != NV_OK) goto __nvoc_ctor_OBJGPUMGR_fail__init;
     goto __nvoc_ctor_OBJGPUMGR_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_OBJGPUMGR_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&arg_this->__nvoc_base_Object);
 __nvoc_ctor_OBJGPUMGR_fail_Object:
 __nvoc_ctor_OBJGPUMGR_exit:
-
     return status;
 }
 
@@ -140,49 +152,49 @@ void __nvoc_init__OBJGPUMGR(OBJGPUMGR *pThis) {
     __nvoc_init_funcTable_OBJGPUMGR(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_OBJGPUMGR(OBJGPUMGR **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_OBJGPUMGR(OBJGPUMGR **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    OBJGPUMGR *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    OBJGPUMGR *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(OBJGPUMGR));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(OBJGPUMGR));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(OBJGPUMGR));
+    portMemSet(__nvoc_pThis, 0, sizeof(OBJGPUMGR));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__OBJGPUMGR(pThis);
-    status = __nvoc_ctor_OBJGPUMGR(pThis);
-    if (status != NV_OK) goto __nvoc_objCreate_OBJGPUMGR_cleanup;
+    __nvoc_init__OBJGPUMGR(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_OBJGPUMGR(__nvoc_pThis);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_OBJGPUMGR_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -191,29 +203,29 @@ NV_STATUS __nvoc_objCreate_OBJGPUMGR(OBJGPUMGR **ppThis, Dynamic *pParent, NvU32
 __nvoc_objCreate_OBJGPUMGR_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(OBJGPUMGR));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(OBJGPUMGR));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_OBJGPUMGR(OBJGPUMGR **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_OBJGPUMGR(OBJGPUMGR **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_OBJGPUMGR(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_OBJGPUMGR(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

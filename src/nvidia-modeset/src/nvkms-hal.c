@@ -36,6 +36,7 @@
 #include "class/clcb70.h" // NVCB70_DISPLAY
 #include "class/clcc70.h" // NVCC70_DISPLAY
 
+#include "class/cla083.h" // NVA083_GRID_DISPLAYLESS
 #include "class/clc57d.h" // NVC57D_CORE_CHANNEL_DMA
 #include "class/clc57e.h" // NVC57E_WINDOW_CHANNEL_DMA
 #include "class/clc67d.h" // NVC67D_CORE_CHANNEL_DMA
@@ -54,6 +55,7 @@ extern NVEvoHAL nvEvoC5;
 extern NVEvoHAL nvEvoC6;
 extern NVEvoHAL nvEvoC9;
 extern NVEvoHAL nvEvoCA;
+extern NVEvoHAL nvDisplayless;
 
 enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
 {
@@ -148,6 +150,22 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
         ENTRY_NVD(C6, C6, &nvEvoC6, 324, 1),
         /* Turing */
         ENTRY_NVD(C5, C5, &nvEvoC5, 0,   1),
+        /* GRID displayless */
+        {
+            .class = NVA083_GRID_DISPLAYLESS,
+            .pEvoHal = &nvDisplayless,
+            .coreChannelDma = { },
+            .evoCaps = {
+                .validNIsoFormatMask     = (1 << NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY),
+                .maxPitchValue           = DRF_MASK(12:0),
+                .maxWidthInBytes         = 0,
+                .maxWidthInPixels        = 0,
+                .maxHeight               = 0,
+                .maxRasterWidth          = DRF_MASK(15:0),
+                .maxRasterHeight         = DRF_MASK(31:16),
+                .hdmiTmds10BpcMaxPClkMHz = 0,
+            }
+        },
     };
 
     int i;

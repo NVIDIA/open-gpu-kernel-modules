@@ -156,13 +156,9 @@ struct NVOC_METADATA__OBJFBSR {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJFBSR_TYPEDEF__
-#define __NVOC_CLASS_OBJFBSR_TYPEDEF__
-typedef struct OBJFBSR OBJFBSR;
-#endif /* __NVOC_CLASS_OBJFBSR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJFBSR
-#define __nvoc_class_id_OBJFBSR 0xa30fe6
+#define __nvoc_class_id_OBJFBSR 0xa30fe6u
+typedef struct OBJFBSR OBJFBSR;
 #endif /* __nvoc_class_id_OBJFBSR */
 
 // Casting support
@@ -181,8 +177,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJFBSR;
 NV_STATUS __nvoc_objCreateDynamic_OBJFBSR(OBJFBSR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR**, Dynamic*, NvU32);
-#define __objCreate_OBJFBSR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJFBSR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJFBSR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJFBSR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -221,7 +217,7 @@ static inline NV_STATUS fbsrExecuteSaveRestore(struct OBJGPU *pGpu, struct OBJFB
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_fbsr_h_disabled
-#define fbsrExecuteSaveRestore(pGpu, pFbsr) fbsrExecuteSaveRestore_46f6a7(pGpu, pFbsr)
+#define fbsrExecuteSaveRestore(pGpu, pFbsr) fbsrExecuteSaveRestore_395e98(pGpu, pFbsr)
 #endif // __nvoc_fbsr_h_disabled
 
 #ifdef __nvoc_fbsr_h_disabled
@@ -230,7 +226,7 @@ static inline NV_STATUS fbsrRestoreNonWprRegion(struct OBJGPU *pGpu, struct OBJF
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_fbsr_h_disabled
-#define fbsrRestoreNonWprRegion(pGpu, pFbsr) fbsrRestoreNonWprRegion_46f6a7(pGpu, pFbsr)
+#define fbsrRestoreNonWprRegion(pGpu, pFbsr) fbsrRestoreNonWprRegion_395e98(pGpu, pFbsr)
 #endif // __nvoc_fbsr_h_disabled
 
 
@@ -281,56 +277,60 @@ static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_DISPATCH(struct 
     return pFbsr->__fbsrSendMemsysProgramRawCompressionMode__(pGpu, pFbsr, bRawMode);
 }
 
-static inline NV_STATUS fbsrExecuteSaveRestore_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS fbsrRestoreNonWprRegion_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS fbsrInit_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
-static inline NV_STATUS fbsrInit_56cd7a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_OK;
-}
-
 void fbsrDestroy_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
-
-static inline void fbsrDestroy_b3696a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return;
-}
 
 NV_STATUS fbsrBegin_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op);
 
 NV_STATUS fbsrBegin_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op);
 
-static inline NV_STATUS fbsrBegin_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS fbsrEnd_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
 NV_STATUS fbsrEnd_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
-static inline NV_STATUS fbsrEnd_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 void fbsrCopyMemoryMemDesc_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc);
-
-static inline void fbsrCopyMemoryMemDesc_f2d351(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc) {
-    NV_ASSERT_PRECOMP(0);
-}
 
 NV_STATUS fbsrSendMemsysProgramRawCompressionMode_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode);
 
-static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_56cd7a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode) {
+// Inline HAL method definitions
+static inline NV_STATUS fbsrInit_ac1694(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
     return NV_OK;
 }
 
+static inline void fbsrDestroy_d44104(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
+    return;
+}
+
+static inline NV_STATUS fbsrBegin_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, FBSR_OP_TYPE op){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS fbsrEnd_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void fbsrCopyMemoryMemDesc_f2d351(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline NV_STATUS fbsrExecuteSaveRestore_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS fbsrRestoreNonWprRegion_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_ac1694(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode){
+    return NV_OK;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

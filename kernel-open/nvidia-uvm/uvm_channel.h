@@ -725,6 +725,7 @@ const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool
 // acquires the channel pool lock.
 NvU32 uvm_channel_get_available_gpfifo_entries(uvm_channel_t *channel);
 
+void uvm_gpu_print_ce_mapping(const uvm_gpu_t *gpu, struct seq_file *s);
 void uvm_channel_print_pending_pushes(uvm_channel_t *channel);
 
 bool uvm_channel_is_locked_for_push(uvm_channel_t *channel);

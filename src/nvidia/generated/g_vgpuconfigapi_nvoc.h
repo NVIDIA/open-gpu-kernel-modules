@@ -47,7 +47,7 @@ extern "C" {
 #include "class/cla081.h"
 #include "rmapi/client.h"
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 
 #include "ctrl/ctrla081.h" // rmcontrol params
 
@@ -142,13 +142,9 @@ struct NVOC_METADATA__VgpuConfigApi {
     const struct NVOC_VTABLE__VgpuConfigApi vtable;
 };
 
-#ifndef __NVOC_CLASS_VgpuConfigApi_TYPEDEF__
-#define __NVOC_CLASS_VgpuConfigApi_TYPEDEF__
-typedef struct VgpuConfigApi VgpuConfigApi;
-#endif /* __NVOC_CLASS_VgpuConfigApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VgpuConfigApi
-#define __nvoc_class_id_VgpuConfigApi 0x4d560a
+#define __nvoc_class_id_VgpuConfigApi 0x4d560au
+typedef struct VgpuConfigApi VgpuConfigApi;
 #endif /* __nvoc_class_id_VgpuConfigApi */
 
 // Casting support
@@ -166,14 +162,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VgpuConfigApi;
 
 NV_STATUS __nvoc_objCreateDynamic_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VgpuConfigApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VgpuConfigApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VgpuConfigApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VgpuConfigApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vgpuconfigapiConstruct_IMPL(struct VgpuConfigApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_vgpuconfigapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) vgpuconfigapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS vgpuconfigapiConstruct_IMPL(struct VgpuConfigApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_vgpuconfigapiConstruct(pResource, pCallContext, pParams) vgpuconfigapiConstruct_IMPL(pResource, pCallContext, pParams)
 
 void vgpuconfigapiDestruct_IMPL(struct VgpuConfigApi *pResource);
 #define __nvoc_vgpuconfigapiDestruct(pResource) vgpuconfigapiDestruct_IMPL(pResource)
@@ -622,6 +618,8 @@ static inline NV_STATUS vgpuconfigapiGetOrAllocNotifShare_DISPATCH(struct VgpuCo
     return pNotifier->__nvoc_metadata_ptr->vtable.__vgpuconfigapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetInfo_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_INFO_PARAMS *pParams);
 
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerPgpu_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_PGPU_PARAMS *pParams);
@@ -674,6 +672,10 @@ NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth_IMPL(struct VgpuCo
 
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerGpuInstance_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_ENUMERATE_VGPU_PER_GPU_INSTANCE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

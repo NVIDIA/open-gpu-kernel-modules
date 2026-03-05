@@ -34,7 +34,9 @@
 #include "dp_edid.h"
 #include "dp_list.h"
 #include "dp_auxdefs.h"
+#include "dp_qse.h"
 #include "dp_vrr.h"
+#include "dp_displayid2.h"
 
 namespace DisplayPort
 {
@@ -121,6 +123,8 @@ namespace DisplayPort
         Edid              rawEDID;
         Edid              processedEdid;
         Edid              ddcEdid;
+
+        DisplayID2x       displayId2x;
         DPCDHAL         * hal;
         GroupImpl       * activeGroup;
         ConnectorImpl   * connector;
@@ -202,6 +206,7 @@ namespace DisplayPort
 
         TriState bSdpExtCapable;
         TriState bAsyncSDPCapable;
+
         bool bMSAOverMSTCapable;
         bool bDscPassThroughColorFormatWar;
 
@@ -219,6 +224,8 @@ namespace DisplayPort
         virtual unsigned    getRawEDIDSize() const;
         virtual bool        getRawEDID(char * buffer, unsigned size) const;
 
+        virtual unsigned    getDisplayId2xSize() const;
+        virtual bool        getDisplayId2x(char * buffer, unsigned size) const;
         virtual bool getPCONCaps(PCONCaps *pPCONCaps);
 
         virtual Group * getOwningGroup()

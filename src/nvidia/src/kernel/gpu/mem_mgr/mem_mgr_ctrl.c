@@ -768,3 +768,18 @@ subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
     return NV_OK;
 }
 
+NV_STATUS subdeviceCtrlCmdFbGetCpuCoherentRange_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS *pParams
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE), NV_ERR_NOT_SUPPORTED);
+
+    return kmemsysGetCpuCoherentFbRange_IMPL(pGpu, pKernelMemorySystem, &pParams->coherentCpuFbBase, &pParams->coherentCpuFbEnd);
+}
+

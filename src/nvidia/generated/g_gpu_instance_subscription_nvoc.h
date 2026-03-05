@@ -166,13 +166,9 @@ struct NVOC_METADATA__GPUInstanceSubscription {
     const struct NVOC_VTABLE__GPUInstanceSubscription vtable;
 };
 
-#ifndef __NVOC_CLASS_GPUInstanceSubscription_TYPEDEF__
-#define __NVOC_CLASS_GPUInstanceSubscription_TYPEDEF__
-typedef struct GPUInstanceSubscription GPUInstanceSubscription;
-#endif /* __NVOC_CLASS_GPUInstanceSubscription_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GPUInstanceSubscription
-#define __nvoc_class_id_GPUInstanceSubscription 0x91fde7
+#define __nvoc_class_id_GPUInstanceSubscription 0x91fde7u
+typedef struct GPUInstanceSubscription GPUInstanceSubscription;
 #endif /* __nvoc_class_id_GPUInstanceSubscription */
 
 // Casting support
@@ -190,9 +186,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GPUInstanceSubscription;
 
 NV_STATUS __nvoc_objCreateDynamic_GPUInstanceSubscription(GPUInstanceSubscription**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GPUInstanceSubscription(GPUInstanceSubscription**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_GPUInstanceSubscription(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_GPUInstanceSubscription((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_GPUInstanceSubscription(GPUInstanceSubscription**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_GPUInstanceSubscription(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_GPUInstanceSubscription((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -205,8 +201,8 @@ NvBool gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL(NvU32 internalClassId)
 void gisubscriptionCleanupOnUnsubscribe_IMPL(CALL_CONTEXT *arg1);
 #define gisubscriptionCleanupOnUnsubscribe(arg1) gisubscriptionCleanupOnUnsubscribe_IMPL(arg1)
 
-NV_STATUS gisubscriptionConstruct_IMPL(struct GPUInstanceSubscription *arg_pGPUInstanceSubscription, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_gisubscriptionConstruct(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams) gisubscriptionConstruct_IMPL(arg_pGPUInstanceSubscription, arg_pCallContext, arg_pParams)
+NV_STATUS gisubscriptionConstruct_IMPL(struct GPUInstanceSubscription *pGPUInstanceSubscription, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_gisubscriptionConstruct(pGPUInstanceSubscription, pCallContext, pParams) gisubscriptionConstruct_IMPL(pGPUInstanceSubscription, pCallContext, pParams)
 
 NV_STATUS gisubscriptionCopyConstruct_IMPL(struct GPUInstanceSubscription *arg_this, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3);
 #ifdef __nvoc_gpu_instance_subscription_h_disabled
@@ -465,30 +461,36 @@ static inline void gisubscriptionAddAdditionalDependants_DISPATCH(struct RsClien
     pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NvBool gisubscriptionCanCopy_IMPL(struct GPUInstanceSubscription *arg1);
+// Virtual method declarations and/or inline definitions
+NvBool gisubscriptionCanCopy_IMPL(struct GPUInstanceSubscription *arg_this);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsCreate_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *arg2);
+// Exported method declarations and/or inline definitions
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsCreate_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsDelete_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsDelete_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsGet_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGet_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsExport_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsExport_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdExecPartitionsImport_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdExecPartitionsImport_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS *arg2);
 
-NV_STATUS gisubscriptionCtrlCmdGetUuid_IMPL(struct GPUInstanceSubscription *arg1, NVC637_CTRL_GET_UUID_PARAMS *arg2);
+NV_STATUS gisubscriptionCtrlCmdGetUuid_IMPL(struct GPUInstanceSubscription *arg_this, NVC637_CTRL_GET_UUID_PARAMS *arg2);
 
-static inline NvBool gisubscriptionIsDeviceProfiling(struct GPUInstanceSubscription *pGPUInstanceSubscription) {
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvBool gisubscriptionIsDeviceProfiling(struct GPUInstanceSubscription *pGPUInstanceSubscription){
     struct GPUInstanceSubscription_PRIVATE *pGPUInstanceSubscription_PRIVATE = (struct GPUInstanceSubscription_PRIVATE *)pGPUInstanceSubscription;
     return pGPUInstanceSubscription_PRIVATE->bDeviceProfiling;
 }
 
-static inline KERNEL_MIG_GPU_INSTANCE *gisubscriptionGetMIGGPUInstance(struct GPUInstanceSubscription *pGPUInstanceSubscription) {
+static inline KERNEL_MIG_GPU_INSTANCE * gisubscriptionGetMIGGPUInstance(struct GPUInstanceSubscription *pGPUInstanceSubscription){
     struct GPUInstanceSubscription_PRIVATE *pGPUInstanceSubscription_PRIVATE = (struct GPUInstanceSubscription_PRIVATE *)pGPUInstanceSubscription;
     return pGPUInstanceSubscription_PRIVATE->pKernelMIGGpuInstance;
 }

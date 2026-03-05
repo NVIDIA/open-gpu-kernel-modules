@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x9e2f3e = 1;
+char __nvoc_class_id_uniqueness_check__9e2f3e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine;
@@ -26,7 +26,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 void __nvoc_init__Object(Object*);
 void __nvoc_init__KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc);
 void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine*);
 
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelVideoEngine;
 
 // Up-thunk(s) to bridge KernelVideoEngine methods to ancestors (if any)
 
+// Class-specific details for KernelVideoEngine
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelVideoEngine),
-        /*classId=*/            classId(KernelVideoEngine),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelVideoEngine),
+    .classInfo.classId =            classId(KernelVideoEngine),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelVideoEngine",
+    .classInfo.name =               "KernelVideoEngine",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelVideoEngine,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelVideoEngine,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelVideoEngine
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelVideoEngine,
+    .pCastInfo =          &__nvoc_castinfo__KernelVideoEngine,
+    .pExportInfo =        &__nvoc_export_info__KernelVideoEngine
 };
 
 
@@ -76,16 +75,20 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelVideoEngine = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelVideoEngine = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelVideoEngine object.
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine *pThis) {
+void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -95,22 +98,29 @@ void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspec
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_KernelVideoEngine_fail_Object;
-    __nvoc_init_dataField_KernelVideoEngine(pThis, pRmhalspecowner);
 
-    status = __nvoc_kvidengConstruct(pThis, arg_pGpu, arg_physEngDesc);
+// Construct KernelVideoEngine object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine *pKernelVideoEngine, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&pKernelVideoEngine->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_KernelVideoEngine_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_KernelVideoEngine(pKernelVideoEngine, pRmhalspecowner);
+
+    // Call the constructor for this class.
+    status = __nvoc_kvidengConstruct(pKernelVideoEngine, pGpu, physEngDesc);
     if (status != NV_OK) goto __nvoc_ctor_KernelVideoEngine_fail__init;
     goto __nvoc_ctor_KernelVideoEngine_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelVideoEngine_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&pKernelVideoEngine->__nvoc_base_Object);
 __nvoc_ctor_KernelVideoEngine_fail_Object:
 __nvoc_ctor_KernelVideoEngine_exit:
-
     return status;
 }
 
@@ -134,15 +144,15 @@ NvBool kvidengIsVideoTraceLogSupported_STATIC_DISPATCH(struct OBJGPU *pGpu) {
     ChipHal *chipHal = &staticCast(pGpu, GpuHalspecOwner)->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
 
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         return kvidengIsVideoTraceLogSupported_IMPL(pGpu);
     }
     // default
     else
     {
-        return kvidengIsVideoTraceLogSupported_3dd2c9(pGpu);
+        return kvidengIsVideoTraceLogSupported_d69453(pGpu);
     }
 
     NV_ASSERT_FAILED("No hal impl found for kvidengIsVideoTraceLogSupported");
@@ -168,58 +178,58 @@ void __nvoc_init__KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pR
     __nvoc_init_funcTable_KernelVideoEngine(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc)
+NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    KernelVideoEngine *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    KernelVideoEngine *__nvoc_pThis;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(KernelVideoEngine));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(KernelVideoEngine));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(KernelVideoEngine));
+    portMemSet(__nvoc_pThis, 0, sizeof(KernelVideoEngine));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelVideoEngine_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelVideoEngine_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelVideoEngine_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelVideoEngine_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelVideoEngine(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelVideoEngine(pThis, pRmhalspecowner, arg_pGpu, arg_physEngDesc);
-    if (status != NV_OK) goto __nvoc_objCreate_KernelVideoEngine_cleanup;
+    __nvoc_init__KernelVideoEngine(__nvoc_pThis, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelVideoEngine(__nvoc_pThis, pRmhalspecowner, pGpu, physEngDesc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelVideoEngine_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -228,31 +238,31 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic
 __nvoc_objCreate_KernelVideoEngine_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(KernelVideoEngine));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(KernelVideoEngine));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct OBJGPU *arg_pGpu = va_arg(args, struct OBJGPU *);
-    ENGDESCRIPTOR arg_physEngDesc = va_arg(args, ENGDESCRIPTOR);
+NV_STATUS __nvoc_objCreateDynamic_KernelVideoEngine(KernelVideoEngine **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct OBJGPU *pGpu = va_arg(__nvoc_args, struct OBJGPU *);
+    ENGDESCRIPTOR physEngDesc = va_arg(__nvoc_args, ENGDESCRIPTOR);
 
-    status = __nvoc_objCreate_KernelVideoEngine(ppThis, pParent, createFlags, arg_pGpu, arg_physEngDesc);
+    __nvoc_status = __nvoc_objCreate_KernelVideoEngine(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pGpu, physEngDesc);
 
-    return status;
+    return __nvoc_status;
 }
 

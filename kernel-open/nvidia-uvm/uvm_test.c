@@ -40,6 +40,8 @@
 #include "uvm_pmm_sysmem.h"
 #include "uvm_migrate_pageable.h"
 #include "uvm_test_file.h"
+#include "uvm_user_channel.h"
+#include "uvm_gpu_non_replayable_faults.h"
 
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
@@ -145,33 +147,29 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
         goto unlock;
     }
 
-    if (gpu->parent->replayable_faults_supported) {
-        UVM_ASSERT(gpu->parent->isr.access_counters);
-        UVM_ASSERT(gpu->parent->access_counters.buffer);
+    UVM_ASSERT(gpu->parent->isr.access_counters);
+    UVM_ASSERT(gpu->parent->access_counters.buffer);
 
-        uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
-        status = uvm_test_verify_bh_affinity(&gpu->parent->isr.replayable_faults,
+    uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
+    status = uvm_test_verify_bh_affinity(&gpu->parent->isr.replayable_faults,
+                                          gpu->parent->closest_cpu_numa_node);
+    uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
+    if (status != NV_OK)
+        goto unlock;
+
+    uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
+    status = uvm_test_verify_bh_affinity(&gpu->parent->isr.non_replayable_faults,
+                                          gpu->parent->closest_cpu_numa_node);
+    uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
+    if (status != NV_OK)
+        goto unlock;
+
+    if (gpu->parent->access_counters_supported) {
+        // We only need to test one notification buffer, we pick index 0.
+        uvm_access_counters_isr_lock(&gpu->parent->access_counters.buffer[0]);
+        status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters[0],
                                               gpu->parent->closest_cpu_numa_node);
-        uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
-        if (status != NV_OK)
-            goto unlock;
-
-        if (gpu->parent->non_replayable_faults_supported) {
-            uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
-            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.non_replayable_faults,
-                                                  gpu->parent->closest_cpu_numa_node);
-            uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
-            if (status != NV_OK)
-                goto unlock;
-        }
-
-        if (gpu->parent->access_counters_supported) {
-            // We only need to test one notification buffer, we pick index 0.
-            uvm_access_counters_isr_lock(&gpu->parent->access_counters.buffer[0]);
-            status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters[0],
-                                                  gpu->parent->closest_cpu_numa_node);
-            uvm_access_counters_isr_unlock(&gpu->parent->access_counters.buffer[0]);
-        }
+        uvm_access_counters_isr_unlock(&gpu->parent->access_counters.buffer[0]);
     }
 
 unlock:
@@ -360,6 +358,8 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_BLOCK_DISCARD_STATUS,      uvm_test_va_block_discard_status);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_GET_ALLOC_LIST,           uvm_test_pmm_get_alloc_list);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DUMP_ACCESS_BITS,             uvm_test_dump_access_bits);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DEAD_CHANNEL,                 uvm_test_dead_channel);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_NON_REPLAYABLE_DELAY,     uvm_test_set_non_replayable_delay);
     }
 
     return -EINVAL;

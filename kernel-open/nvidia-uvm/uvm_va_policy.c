@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2024 NVIDIA Corporation
+    Copyright (c) 2022-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -35,10 +35,9 @@ const uvm_va_policy_t uvm_va_policy_default = {
     .read_duplication = UVM_READ_DUPLICATION_UNSET,
 };
 
-bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space_t *va_space)
+bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy)
 {
-    return policy->read_duplication == UVM_READ_DUPLICATION_ENABLED &&
-           uvm_va_space_can_read_duplicate(va_space, NULL);
+    return policy->read_duplication == UVM_READ_DUPLICATION_ENABLED;
 }
 
 const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)

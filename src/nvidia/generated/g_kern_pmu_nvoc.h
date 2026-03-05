@@ -147,13 +147,9 @@ struct NVOC_METADATA__KernelPmu {
     const struct NVOC_VTABLE__KernelPmu vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelPmu_TYPEDEF__
-#define __NVOC_CLASS_KernelPmu_TYPEDEF__
-typedef struct KernelPmu KernelPmu;
-#endif /* __NVOC_CLASS_KernelPmu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelPmu
-#define __nvoc_class_id_KernelPmu 0xab9d7d
+#define __nvoc_class_id_KernelPmu 0xab9d7du
+typedef struct KernelPmu KernelPmu;
 #endif /* __nvoc_class_id_KernelPmu */
 
 // Casting support
@@ -177,8 +173,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPmu;
 NV_STATUS __nvoc_objCreateDynamic_KernelPmu(KernelPmu**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelPmu(KernelPmu**, Dynamic*, NvU32);
-#define __objCreate_KernelPmu(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelPmu((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelPmu(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelPmu((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -358,20 +354,26 @@ static inline NvBool kpmuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelPm
     return pEngstate->__nvoc_metadata_ptr->vtable.__kpmuIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kpmuConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc);
 
 void kpmuStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
 
 NV_STATUS kpmuStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
 
-static inline NvBool kpmuGetIsSelfInit_88bc07(struct KernelPmu *pKernelPmu) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+static inline NvBool kpmuGetIsSelfInit_e661f0(struct KernelPmu *pKernelPmu){
     return NV_TRUE;
 }
 
-static inline NvBool kpmuGetIsSelfInit_3dd2c9(struct KernelPmu *pKernelPmu) {
+static inline NvBool kpmuGetIsSelfInit_d69453(struct KernelPmu *pKernelPmu){
     return NV_FALSE;
 }
 
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

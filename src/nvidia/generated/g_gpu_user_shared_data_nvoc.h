@@ -136,13 +136,9 @@ struct NVOC_METADATA__GpuUserSharedData {
     const struct NVOC_VTABLE__GpuUserSharedData vtable;
 };
 
-#ifndef __NVOC_CLASS_GpuUserSharedData_TYPEDEF__
-#define __NVOC_CLASS_GpuUserSharedData_TYPEDEF__
-typedef struct GpuUserSharedData GpuUserSharedData;
-#endif /* __NVOC_CLASS_GpuUserSharedData_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GpuUserSharedData
-#define __nvoc_class_id_GpuUserSharedData 0x5e7d1f
+#define __nvoc_class_id_GpuUserSharedData 0x5e7d1fu
+typedef struct GpuUserSharedData GpuUserSharedData;
 #endif /* __nvoc_class_id_GpuUserSharedData */
 
 // Casting support
@@ -160,14 +156,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuUserSharedData;
 
 NV_STATUS __nvoc_objCreateDynamic_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_GpuUserSharedData(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_GpuUserSharedData((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_GpuUserSharedData(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_GpuUserSharedData((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *arg_pData, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_gpushareddataConstruct(arg_pData, arg_pCallContext, arg_pParams) gpushareddataConstruct_IMPL(arg_pData, arg_pCallContext, arg_pParams)
+NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *pData, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_gpushareddataConstruct(pData, pCallContext, pParams) gpushareddataConstruct_IMPL(pData, pCallContext, pParams)
 
 void gpushareddataDestruct_IMPL(struct GpuUserSharedData *pData);
 #define __nvoc_gpushareddataDestruct(pData) gpushareddataDestruct_IMPL(pData)
@@ -352,12 +348,18 @@ static inline void gpushareddataAddAdditionalDependants_DISPATCH(struct RsClient
     pResource->__nvoc_metadata_ptr->vtable.__gpushareddataAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool gpushareddataCanCopy_IMPL(struct GpuUserSharedData *pData);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
 
 NV_STATUS gpushareddataCtrlCmdRequestPollInterval_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_POLL_INTERVAL_PARAM *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

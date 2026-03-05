@@ -52,7 +52,6 @@
 #include "ctrl/ctrl0000/ctrl0000nvd.h"
 
 #include "nvlimits.h"
-#include "Nvcm.h"
 
 #include "lib/protobuf/prb_util.h"
 #include "g_all_dcl_pb.h"
@@ -86,12 +85,12 @@ static void nvdDebuggerControlFunc(void);
 #if !defined(DEBUG) && !defined(QA_BUILD)
 static NvBool rcdProbeGpuPresent(OBJGPU *pGpu, NvU64 ip);
 static NvBool rcdProbeAllGpusPresent(NvU64 ip);
-static volatile NvS32 probeGpuRecursion = 0;
+static PORT_ATOMIC NvS32 probeGpuRecursion = 0;
 #endif
 #endif
 static NvU32 _rcdbGetOcaRecordSize(Journal *pRcDB, RMCD_RECORD_TYPE type);
-static volatile NvS32 concurrentRingBufferAccess = 0;
-static volatile NvS32 assertListRecursion = 0;
+static PORT_ATOMIC NvS32 concurrentRingBufferAccess = 0;
+static PORT_ATOMIC NvS32 assertListRecursion = 0;
 static void rcdbFindRingBufferForType(Journal *pRcDB, RMCD_RECORD_TYPE recType, RING_BUFFER_LOG **ppRingBuffer);
 static NV_STATUS _rcdbGetNocatJournalRecord(OBJRCDB* pRcdb,
     NvU32 id, NvBool bExactMatch,
@@ -100,8 +99,8 @@ static NV_STATUS _rcdbReleaseNocatJournalRecord(RM_NOCAT_JOURNAL_ENTRY* pReturne
 static NV_STATUS _rcdbNocatReportAssert(OBJGPU* pGpu, RmRCCommonAssert_RECORD* pAssert);
 
 // Global flag to make sure we never re-enter the nvLog code.
-#if defined(DEBUG) || defined(ASSERT_BUILD) || defined(QA_BUILD) || ((defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX)) && !defined(NV_MODS))
-static volatile NvS32 nvLogRecursion = 0;
+#if (defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX) || RMCFG_FEATURE_PLATFORM_GSP) && !defined(NV_MODS)
+static PORT_ATOMIC NvS32 nvLogRecursion = 0;
 #endif
 
 // NvDump interface config - communicates with external kernel debuggers
@@ -985,7 +984,7 @@ NV_STATUS rcdbClearErrorHistory_IMPL(Journal *pRcDB)
     RMFIFOERRORELEMENT_V3* pFreeErrorInfo;
 
     // Wait until any errors currently being reported are complete
-    while (!portAtomicCompareAndSwapU32(&pSysErrorInfo->InUse, 1, 0))
+    while (!portAtomicCompareAndSwapU32(&pSysErrorInfo->InUse, 1U, 0U))
     {
         // We're not going to sleep, but safe to sleep also means safe to spin..
         NV_ASSERT_OR_RETURN(portSyncExSafeToSleep(), NV_ERR_INVALID_STATE);
@@ -2397,6 +2396,8 @@ static void _rcdbRmAssert(NvU32 level, NvU32 lineNum, NvU64 ip)
     {
         pRec->level = level;
     }
+
+    PORT_UNREFERENCED_VARIABLE(nvLogRecursion);
 
 #if !defined(DEBUG) && !defined(QA_BUILD)
     {

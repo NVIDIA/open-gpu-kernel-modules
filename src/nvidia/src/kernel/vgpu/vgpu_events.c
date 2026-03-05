@@ -38,7 +38,7 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
-#include "kernel/rmapi/event.h"
+#include "kernel/rmapi/event_api.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/gpu_fabric_probe.h"
 #include "gpu/bus/kern_bus.h"
@@ -47,7 +47,6 @@
 #include "gpu/timer/objtmr.h"
 #include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 
-#include "Nvcm.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "os/os.h"
 #include "vgpu/dev_vgpu.h"
@@ -350,7 +349,7 @@ void vgpuServiceEventInbandResponse(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pData = NULL;
     NvBool more = NV_TRUE;
 
-    if (!pVGpu->bGspPlugin)
+    if (!pRpc || !pVGpu->bGspPlugin)
         return;
 
     while (more)

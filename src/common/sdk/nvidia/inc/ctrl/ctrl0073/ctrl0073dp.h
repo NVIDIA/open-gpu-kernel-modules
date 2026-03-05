@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -932,13 +932,6 @@ typedef struct NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_1 {
     NvU32 TxPu;
 } NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_1;
 
-typedef NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_1 NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_SLICE1[NV0073_CTRL_MAX_PREEMPHASIS_LEVELS];
-
-typedef NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_SLICE1 NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_SLICE2[NV0073_CTRL_MAX_DRIVECURRENT_LEVELS];
-
-typedef NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_SLICE2 NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA[NV0073_CTRL_MAX_POSTCURSOR2_LEVELS];
-
-
 /*
  * NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA
  *
@@ -972,9 +965,9 @@ typedef NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_SLICE2 NV0073_CTRL_D
 #define NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS_MESSAGE_ID (0x51U)
 
 typedef struct NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS {
-    NvU32                                                    subDeviceInstance;
-    NvU32                                                    displayId;
-    NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA dpData;
+    NvU32                                                 subDeviceInstance;
+    NvU32                                                 displayId;
+    NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_1 dpData[NV0073_CTRL_MAX_POSTCURSOR2_LEVELS][NV0073_CTRL_MAX_DRIVECURRENT_LEVELS][NV0073_CTRL_MAX_PREEMPHASIS_LEVELS];
 } NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS;
 
 #define NV0073_CTRL_CMD_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA (0x731351U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS_MESSAGE_ID" */
@@ -1007,9 +1000,9 @@ typedef struct NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARA
 #define NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS_MESSAGE_ID (0x52U)
 
 typedef struct NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS {
-    NvU32                                                    subDeviceInstance;
-    NvU32                                                    displayId;
-    NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA dpData;
+    NvU32                                                 subDeviceInstance;
+    NvU32                                                 displayId;
+    NV0073_CTRL_DP_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_1 dpData[NV0073_CTRL_MAX_POSTCURSOR2_LEVELS][NV0073_CTRL_MAX_DRIVECURRENT_LEVELS][NV0073_CTRL_MAX_PREEMPHASIS_LEVELS];
 } NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS;
 
 #define NV0073_CTRL_CMD_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA (0x731352U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS_MESSAGE_ID" */
@@ -3418,7 +3411,7 @@ typedef struct NV0073_CTRL_DP2X_GET_LEVEL_INFO_TABLE_DATA_PARAMS {
  *     If more than one displayId bit is set or the displayId is not a DP,
  *     this call will return NV_ERR_INVALID_ARGUMENT.
  *   bEnable
- *     This parameter will be used by RM to set the PDB property. Later that PDB 
+ *     This parameter will be used by RM to set the PDB property. Later that PDB
  *     property will be used for applying the WAR
  *   head
  *     This parameter specify for which head RM need to apply the WAR
@@ -3570,21 +3563,21 @@ typedef struct NV0073_CTRL_CMD_CALCULATE_DP_IMP_PARAMS {
  *
  * This command is used to read cable ID Information from USB-C Cable for
  *   DP configuration purposes.
- *  
+ *
  *   subDeviceInstance [in]
  *     This parameter specifies the subdevice instance within the
  *     NV04_DISPLAY_COMMON parent device to which the operation should be
  *     directed. This parameter must specify a value between zero and the
  *     total number of subdevices within the parent device.  This parameter
  *     should be set to zero for default behavior.
- *   
+ *
  *   displayId [in]
  *     This parameter specifies the ID of the DP display which owns
  *     the Main Link to be adjusted.  The display ID must a DP display
  *     as determined with the NV0073_CTRL_CMD_SPECIFIC_GET_TYPE command.
  *     If more than one displayId bit is set or the displayId is not a DP,
  *     this call will return NV_ERR_INVALID_PARAMETER.
- * 
+ *
  *   cableIDInfo [out]
  *      This parameter reflects the result of the cable ID read from the cable
  *
@@ -3656,6 +3649,38 @@ typedef struct NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS {
 #define NV0073_CTRL_CMD_STUFF_DUMMY_SYMBOL_WAR (0x73138eU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS_MESSAGE_ID" */
 
 /*
+ * NV0073_CTRL_CMD_DP_NOTIFY_LT
+ *
+ * This is called to inform RM when LT starts / ends.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the ID of the display for which the control
+ *     is being issued.  The display ID must be valid.
+ *   bLTInProgress
+ *     Boolean to indicate if link training is in progress.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV0073_CTRL_DP_NOTIFY_LT_PARAMS_MESSAGE_ID (0x8FU)
+
+typedef struct NV0073_CTRL_DP_NOTIFY_LT_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvBool bLTInProgress;
+} NV0073_CTRL_DP_NOTIFY_LT_PARAMS;
+
+#define NV0073_CTRL_CMD_DP_NOTIFY_LT          (0x73138fU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_NOTIFY_LT_PARAMS_MESSAGE_ID" */
+
+/*
  * NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO
  *
  * Get USB4 DP_IN Adapter number from RM
@@ -3680,7 +3705,7 @@ typedef struct NV0073_CTRL_STUFF_DUMMY_SYMBOL_WAR_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NV0073_CTRL_DP_USB_TOPOLOGY_ID_LENGTH  5
+#define NV0073_CTRL_DP_USB_TOPOLOGY_ID_LENGTH 5
 
 typedef struct NV0073_CTRL_DP_USB4_INFO {
     NvU8 driverId;
@@ -3688,7 +3713,7 @@ typedef struct NV0073_CTRL_DP_USB4_INFO {
     NvU8 topologyId[NV0073_CTRL_DP_USB_TOPOLOGY_ID_LENGTH];
 } NV0073_CTRL_DP_USB4_INFO;
 
-#define NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS_MESSAGE_ID (0x8FU)
+#define NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS_MESSAGE_ID (0x90U)
 
 typedef struct NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS {
     NvU32                    subDeviceInstance;
@@ -3696,6 +3721,6 @@ typedef struct NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS {
     NV0073_CTRL_DP_USB4_INFO usb4Info;
 } NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS;
 
-#define NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO (0x73138fU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO (0x731390U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS_MESSAGE_ID" */
 
 /* _ctrl0073dp_h_ */

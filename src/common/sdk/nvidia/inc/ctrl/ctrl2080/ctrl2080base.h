@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,6 +93,8 @@
 #define NV2080_CTRL_UCODE_FUZZER                  (0x39)
 #define NV2080_CTRL_DMABUF                        (0x3A)
 #define NV2080_CTRL_BIF                           (0x3B)
+
+
 
 // per-OS categories start at highest category and work backwards
 #define NV2080_CTRL_OS_WINDOWS                    (0x3F)

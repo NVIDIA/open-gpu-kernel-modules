@@ -262,8 +262,7 @@ static NvBool osInterruptPending(
     NvU32  isDispPendingPerGpu = 0, isDispLowLatencyPendingPerGpu = 0;
     NvU32  isTmrPendingPerGpu     = 0;
 
-    if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
-        pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
+    if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
     {
         threadStateInitISRLockless(&threadState, pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
         bIsAnyStallIntrPending = NV_FALSE;
@@ -398,8 +397,7 @@ static NvBool osInterruptPending(
                 // contains whether any stall interrupts are still pending, so check both to determine if
                 // we need a bottom half.
                 //
-                if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
-                    pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
+                if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
                 {
                     bitVectorClrAll(&intr0Pending);
 
@@ -498,8 +496,7 @@ static NvBool osInterruptPending(
                     NV_ASSERT_OK(intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE));
                 }
 
-                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
-                    !pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
+                if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
                 {
                     pIntr = GPU_GET_INTR(pGpu);
                     if (pIntr != NULL)
@@ -612,13 +609,6 @@ NV_STATUS osIsr(
  *     on the bus, while passive-level threads need to grab the GPUs
  *     lock, or other GPUs are being resumed and triggering interrupts.
  *
- *   - SLI state transitions: interrupts are disabled manually prior to
- *     removing GPUs from the lock mask leading up to SLI link/unlink
- *     operations on UNIX, but since the GPUs lock is not held by design in
- *     these paths, it needs to be ensured that GPUs lock acquisitions
- *     occurring aynchronously do not re-enable interrupts on any of the
- *     GPUs undergoing the SLI state transition.
- *
  * @param[in] pGpu  OBJGPU pointer
  *
  * @return NV_TRUE if the RM SEMA/GPUS LOCK should toggle interrupts, NV_FALSE
@@ -632,19 +622,15 @@ NvBool osLockShouldToggleInterrupts(OBJGPU *pGpu)
     }
 
     return (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH) &&
-             gpuIsStateLoaded(pGpu) &&
-            !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_SLI_LINK_CODEPATH));
+             gpuIsStateLoaded(pGpu));
 }
 
 void osEnableInterrupts(OBJGPU *pGpu)
 {
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
     {
-        if (!IS_DCE_CLIENT(pGpu))
-        {
-            // enable irq through os call
-            nv_control_soc_irqs(NV_GET_NV_STATE(pGpu), NV_TRUE);
-        }
+        // enable irq through os call
+        nv_control_soc_irqs(NV_GET_NV_STATE(pGpu), NV_TRUE);
         return;
     }
     else
@@ -659,10 +645,7 @@ void osEnableInterrupts(OBJGPU *pGpu)
         intrSetIntrEnInHw_HAL(pGpu, pIntr, intrEn, NULL);
         intrSetStall_HAL(pGpu, pIntr, intrEn, NULL);
 
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
-        {
-            intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
-        }
+        intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
     }
 }
 
@@ -673,11 +656,8 @@ void osDisableInterrupts(
 {
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
     {
-        if (!IS_DCE_CLIENT(pGpu))
-        {
-            // disable irq through os call
-            nv_control_soc_irqs(NV_GET_NV_STATE(pGpu), NV_FALSE);
-        }
+        // disable irq through os call
+        nv_control_soc_irqs(NV_GET_NV_STATE(pGpu), NV_FALSE);
         return;
     }
     else
@@ -688,16 +668,13 @@ void osDisableInterrupts(
         intrSetIntrEnInHw_HAL(pGpu, pIntr, new_intr_en_0, NULL);
         intrSetStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
 
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
         {
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
-            {
-                intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
-            }
-            else
-            {
-                intrRestoreNonStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
-            }
+            intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
+        }
+        else
+        {
+            intrRestoreNonStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
         }
     }
 }
@@ -757,8 +734,7 @@ static void RmIsrBottomHalf(
         {
             intrServiceStall_HAL(pGpu, pIntr);
 
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
-                !pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
+            if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
             {
                 MC_ENGINE_BITVECTOR intrPending;
                 intrServiceNonStall_HAL(pGpu, pIntr, &intrPending, pGpu->pDpcThreadState);

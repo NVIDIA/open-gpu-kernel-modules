@@ -37,6 +37,8 @@
 #include "uvm_perf_thrashing.h"
 #include "nv_uvm_interface.h"
 
+#include <linux/sched.h>
+
 static struct kmem_cache *g_uvm_va_range_managed_cache __read_mostly;
 static struct kmem_cache *g_uvm_va_range_external_cache __read_mostly;
 static struct kmem_cache *g_uvm_va_range_channel_cache __read_mostly;
@@ -482,8 +484,16 @@ static void uvm_va_range_destroy_managed(uvm_va_range_managed_t *managed_range)
 
     if (managed_range->blocks) {
         // Unmap and drop our ref count on each block
-        for_each_va_block_in_va_range_safe(managed_range, block, block_tmp)
+        for_each_va_block_in_va_range_safe(managed_range, block, block_tmp) {
             uvm_va_block_kill(block);
+
+            // During tear down and with CONFIG_PREEMPT_NONE or an equivalent
+            // configuration, uvm_va_block_kill() will not yield, and its mutex
+            // acquisitions for va_blocks/chunks are unlikely to block due to
+            // lack of contention. Conditionally yield per block to avoid
+            // soft-lockup.
+            cond_resched();
+        }
 
         uvm_kvfree(managed_range->blocks);
     }
@@ -777,16 +787,10 @@ static NV_STATUS va_range_add_gpu_va_space_managed(uvm_va_range_managed_t *manag
     NV_STATUS status = NV_OK;
     const bool should_add_remote_mappings =
         uvm_processor_mask_test(&managed_range->policy.accessed_by, gpu->id) ||
-        uvm_processor_mask_test(&managed_range->uvm_lite_gpus, gpu->id) ||
         gpu->parent->is_integrated_gpu;
 
-    // By this time, the gpu is already in the registration mask.
-    const bool should_disable_read_duplication =
-        managed_range->policy.read_duplication == UVM_READ_DUPLICATION_ENABLED &&
-        (uvm_va_space_can_read_duplicate(va_space, NULL) != uvm_va_space_can_read_duplicate(va_space, gpu));
-
     // Combine conditions to perform a single VA block traversal
-    if (gpu_va_space->ats.enabled || should_add_remote_mappings || should_disable_read_duplication) {
+    if (gpu_va_space->ats.enabled || should_add_remote_mappings) {
         uvm_va_block_t *va_block;
         uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
 
@@ -805,14 +809,8 @@ static NV_STATUS va_range_add_gpu_va_space_managed(uvm_va_range_managed_t *manag
 
             if (should_add_remote_mappings) {
                 // Now that we have a GPU VA space, map any VA ranges for which
-                // this GPU is a UVM-Lite GPU or has accessed_by set.
+                // this GPU has accessed_by set.
                 status = uvm_va_block_set_accessed_by(va_block, va_block_context, gpu->id);
-                if (status != NV_OK)
-                    break;
-            }
-
-            if (should_disable_read_duplication) {
-                status = uvm_va_block_unset_read_duplication(va_block, va_block_context);
                 if (status != NV_OK)
                     break;
             }
@@ -866,20 +864,12 @@ static void va_range_remove_gpu_va_space_managed(uvm_va_range_managed_t *managed
 {
     uvm_va_block_t *va_block;
     uvm_va_space_t *va_space = managed_range->va_range.va_space;
-    bool should_enable_read_duplicate;
     uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
-
-    should_enable_read_duplicate =
-        managed_range->policy.read_duplication == UVM_READ_DUPLICATION_ENABLED &&
-        uvm_va_space_can_read_duplicate(va_space, NULL) != uvm_va_space_can_read_duplicate(va_space, gpu_va_space->gpu);
 
     for_each_va_block_in_va_range(managed_range, va_block) {
         uvm_mutex_lock(&va_block->lock);
         uvm_va_block_remove_gpu_va_space(va_block, gpu_va_space, va_block_context);
         uvm_mutex_unlock(&va_block->lock);
-
-        if (should_enable_read_duplicate)
-            uvm_va_block_set_read_duplication(va_block, va_block_context);
     }
 }
 
@@ -961,8 +951,6 @@ static NV_STATUS uvm_va_range_enable_peer_managed(uvm_va_range_managed_t *manage
 
 
     for_each_va_block_in_va_range(managed_range, va_block) {
-        // For UVM-Lite at most one GPU needs to map the peer GPU if it's the
-        // preferred location, but it doesn't hurt to just try mapping both.
         if (gpu0_accessed_by) {
             status = uvm_va_block_set_accessed_by(va_block,
                                                   va_block_context,
@@ -1029,42 +1017,11 @@ static void uvm_va_range_disable_peer_external(uvm_va_range_external_t *external
 static void uvm_va_range_disable_peer_managed(uvm_va_range_managed_t *managed_range, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
     uvm_va_block_t *va_block;
-    uvm_gpu_t *uvm_lite_gpu_to_unmap = NULL;
-
-    bool uvm_lite_mode = uvm_processor_mask_test(&managed_range->uvm_lite_gpus, gpu0->id) &&
-                         uvm_processor_mask_test(&managed_range->uvm_lite_gpus, gpu1->id);
-
-    if (uvm_lite_mode) {
-        // In UVM-Lite mode, the UVM-Lite GPUs can only have mappings to the the
-        // preferred location. If peer mappings are being disabled to the
-        // preferred location, then unmap the other GPU.
-        // Nothing to do otherwise.
-        if (uvm_va_policy_preferred_location_equal(&managed_range->policy, gpu0->id, NUMA_NO_NODE))
-            uvm_lite_gpu_to_unmap = gpu1;
-        else if (uvm_va_policy_preferred_location_equal(&managed_range->policy, gpu1->id, NUMA_NO_NODE))
-            uvm_lite_gpu_to_unmap = gpu0;
-        else
-            return;
-    }
 
     for_each_va_block_in_va_range(managed_range, va_block) {
         uvm_mutex_lock(&va_block->lock);
-        if (uvm_lite_mode)
-            uvm_va_block_unmap_preferred_location_uvm_lite(va_block, uvm_lite_gpu_to_unmap);
-        else
-            uvm_va_block_disable_peer(va_block, gpu0, gpu1);
+        uvm_va_block_disable_peer(va_block, gpu0, gpu1);
         uvm_mutex_unlock(&va_block->lock);
-    }
-
-    if (uvm_lite_mode && !uvm_range_group_all_migratable(managed_range->va_range.va_space,
-                                                         managed_range->va_range.node.start,
-                                                         managed_range->va_range.node.end)) {
-        UVM_ASSERT(uvm_lite_gpu_to_unmap);
-
-        // Migration is prevented, but we had to unmap a UVM-Lite GPU. Update
-        // the accessed by and UVM-Lite GPUs masks as it cannot be considered a
-        // UVM-Lite GPU any more.
-        uvm_va_range_unset_accessed_by(managed_range, uvm_lite_gpu_to_unmap->id, NULL);
     }
 }
 
@@ -1365,7 +1322,6 @@ NV_STATUS uvm_va_range_split(uvm_va_range_managed_t *existing_managed_range,
     new_policy->preferred_nid = existing_policy->preferred_nid;
     uvm_processor_mask_copy(&new_policy->accessed_by,
                             &existing_policy->accessed_by);
-    uvm_processor_mask_copy(&new->uvm_lite_gpus, &existing_managed_range->uvm_lite_gpus);
 
     status = uvm_va_range_split_blocks(existing_managed_range, new);
     if (status != NV_OK) {
@@ -1514,128 +1470,6 @@ uvm_va_block_t *uvm_va_range_block_next(uvm_va_range_managed_t *managed_range, u
     return NULL;
 }
 
-static NV_STATUS range_unmap_mask(uvm_va_range_managed_t *managed_range,
-                                  const uvm_processor_mask_t *mask,
-                                  uvm_tracker_t *out_tracker)
-{
-    uvm_va_space_t *va_space = managed_range->va_range.va_space;
-    uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
-    uvm_va_block_t *block;
-
-    if (uvm_processor_mask_empty(mask))
-        return NV_OK;
-
-    for_each_va_block_in_va_range(managed_range, block) {
-        NV_STATUS status;
-        uvm_va_block_region_t region = uvm_va_block_region_from_block(block);
-
-        uvm_mutex_lock(&block->lock);
-        status = uvm_va_block_unmap_mask(block, block_context, mask, region, NULL);
-        if (out_tracker)
-            uvm_tracker_add_tracker_safe(out_tracker, &block->tracker);
-
-        uvm_mutex_unlock(&block->lock);
-        if (status != NV_OK)
-            return status;
-    }
-
-    return NV_OK;
-}
-
-static NV_STATUS range_unmap(uvm_va_range_managed_t *managed_range,
-                             uvm_processor_id_t processor,
-                             uvm_tracker_t *out_tracker)
-{
-    uvm_processor_mask_t *mask;
-    uvm_va_space_t *va_space = managed_range->va_range.va_space;
-
-    uvm_assert_rwsem_locked_write(&va_space->lock);
-
-    mask = &va_space->unmap_mask;
-
-    uvm_processor_mask_zero(mask);
-    uvm_processor_mask_set(mask, processor);
-
-    return range_unmap_mask(managed_range, mask, out_tracker);
-}
-
-static NV_STATUS range_map_uvm_lite_gpus(uvm_va_range_managed_t *managed_range, uvm_tracker_t *out_tracker)
-{
-    NV_STATUS status = NV_OK;
-    uvm_va_block_t *va_block;
-    uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(managed_range->va_range.va_space, NULL);
-
-    if (uvm_processor_mask_empty(&managed_range->uvm_lite_gpus))
-        return NV_OK;
-
-
-    for_each_va_block_in_va_range(managed_range, va_block) {
-        // UVM-Lite GPUs always map with RWA
-        uvm_mutex_lock(&va_block->lock);
-        status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, NULL,
-                uvm_va_block_map_mask(va_block,
-                                      va_block_context,
-                                      &managed_range->uvm_lite_gpus,
-                                      uvm_va_block_region_from_block(va_block),
-                                      NULL,
-                                      UVM_PROT_READ_WRITE_ATOMIC,
-                                      UvmEventMapRemoteCauseCoherence));
-        if (status == NV_OK && out_tracker)
-            status = uvm_tracker_add_tracker(out_tracker, &va_block->tracker);
-
-        uvm_mutex_unlock(&va_block->lock);
-        if (status != NV_OK)
-            break;
-    }
-
-    return status;
-}
-
-// Calculate the mask of GPUs that should follow the UVM-Lite behaviour
-static void calc_uvm_lite_gpus_mask(uvm_va_space_t *va_space,
-                                    uvm_processor_id_t preferred_location,
-                                    const uvm_processor_mask_t *accessed_by_mask,
-                                    uvm_processor_mask_t *uvm_lite_gpus)
-{
-    uvm_gpu_id_t gpu_id;
-
-    uvm_assert_rwsem_locked_write(&va_space->lock);
-
-    // Zero out the mask first
-    uvm_processor_mask_zero(uvm_lite_gpus);
-
-    // If no preferred location is set then there are no GPUs following the UVM-Lite behavior
-    if (UVM_ID_IS_INVALID(preferred_location))
-        return;
-
-    // If the preferred location is a faultable GPU, then no GPUs should follow
-    // the UVM-Lite behaviour.
-    if (UVM_ID_IS_GPU(preferred_location) &&
-        uvm_processor_mask_test(&va_space->faultable_processors, preferred_location)) {
-        return;
-    }
-
-    // Otherwise add all non-faultable GPUs to the UVM-Lite mask that have
-    // accessed by set.
-    for_each_gpu_id_in_mask(gpu_id, accessed_by_mask) {
-        if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu_id))
-            uvm_processor_mask_set(uvm_lite_gpus, gpu_id);
-    }
-
-    // And the preferred location if it's a GPU
-    if (UVM_ID_IS_GPU(preferred_location))
-        uvm_processor_mask_set(uvm_lite_gpus, preferred_location);
-}
-
-// Update the mask of GPUs that follow the UVM-Lite behaviour
-static void range_update_uvm_lite_gpus_mask(uvm_va_range_managed_t *managed_range)
-{
-    calc_uvm_lite_gpus_mask(managed_range->va_range.va_space,
-                            managed_range->policy.preferred_location,
-                            &managed_range->policy.accessed_by,
-                            &managed_range->uvm_lite_gpus);
-}
-
 NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_range,
                                               uvm_processor_id_t preferred_location,
                                               int preferred_cpu_nid,
@@ -1643,8 +1477,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
                                               uvm_tracker_t *out_tracker)
 {
     NV_STATUS status = NV_OK;
-    uvm_processor_mask_t *all_uvm_lite_gpus = NULL;
-    uvm_processor_mask_t *new_uvm_lite_gpus = NULL;
     uvm_processor_mask_t *set_accessed_by_processors = NULL;
     uvm_range_group_range_iter_t iter;
     uvm_range_group_range_t *rgr = NULL;
@@ -1655,18 +1487,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
     NvU64 start, end;
 
     uvm_assert_rwsem_locked_write(&va_space->lock);
-
-    all_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
-    if (!all_uvm_lite_gpus) {
-        status = NV_ERR_NO_MEMORY;
-        goto out;
-    }
-
-    new_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
-    if (!new_uvm_lite_gpus) {
-        status = NV_ERR_NO_MEMORY;
-        goto out;
-    }
 
     set_accessed_by_processors = uvm_processor_mask_cache_alloc();
     if (!set_accessed_by_processors) {
@@ -1689,20 +1509,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
         uvm_spin_unlock(&rgr->range_group->migrated_ranges_lock);
     }
 
-    // Calculate the new UVM-Lite GPUs mask, but don't update managed_range
-    // state so that we can keep block_page_check_mappings() happy while
-    // updating the mappings.
-    calc_uvm_lite_gpus_mask(va_space, preferred_location, &va_range_policy->accessed_by, new_uvm_lite_gpus);
-
-    // If the range contains non-migratable range groups, check that new
-    // UVM-Lite GPUs can all map the new preferred location.
-    if (!uvm_range_group_all_migratable(va_space, start, end) &&
-        UVM_ID_IS_VALID(preferred_location) &&
-        !uvm_processor_mask_subset(new_uvm_lite_gpus, &va_space->accessible_from[uvm_id_value(preferred_location)])) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto out;
-    }
-
     if (UVM_ID_IS_INVALID(preferred_location)) {
         uvm_range_group_for_each_migratability_in_safe(&iter, va_space, start, end) {
             if (!iter.migratable) {
@@ -1715,27 +1521,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
         }
     }
 
-    // Unmap all old and new UVM-Lite GPUs
-    //  - GPUs that stop being UVM-Lite need to be unmapped so that they don't
-    //    have stale mappings to the old preferred location.
-    //  - GPUs that will continue to be UVM-Lite GPUs or are new UVM-Lite GPUs
-    //    need to be unmapped so that the new preferred location can be mapped.
-    uvm_processor_mask_or(all_uvm_lite_gpus, &managed_range->uvm_lite_gpus, new_uvm_lite_gpus);
-    status = range_unmap_mask(managed_range, all_uvm_lite_gpus, out_tracker);
-    if (status != NV_OK)
-        goto out;
-
-    // GPUs that stop being UVM-Lite, but are in the accessed_by mask need to
-    // have any possible mappings established.
-    uvm_processor_mask_andnot(set_accessed_by_processors, &managed_range->uvm_lite_gpus, new_uvm_lite_gpus);
-
-    // A GPU which had been in UVM-Lite mode before must still be in UVM-Lite
-    // mode if it is the new preferred location. Otherwise we'd have to be more
-    // careful below to not establish remote mappings to the new preferred
-    // location.
-    if (UVM_ID_IS_GPU(preferred_location))
-        UVM_ASSERT(!uvm_processor_mask_test(set_accessed_by_processors, preferred_location));
-
     // The old preferred location should establish new remote mappings if it has
     // accessed-by set.
     if (UVM_ID_IS_VALID(va_range_policy->preferred_location))
@@ -1746,7 +1531,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
     // Now update the managed_range state
     va_range_policy->preferred_location = preferred_location;
     va_range_policy->preferred_nid = preferred_cpu_nid;
-    uvm_processor_mask_copy(&managed_range->uvm_lite_gpus, new_uvm_lite_gpus);
 
     va_block_context = uvm_va_space_block_context(va_space, mm);
 
@@ -1760,8 +1544,7 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
                 goto out;
         }
 
-        // Also, mark CPU pages as dirty and remove remote mappings from the new
-        // preferred location
+        // Also, remove remote mappings from the new preferred location.
         uvm_mutex_lock(&va_block->lock);
         status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
                                            NULL,
@@ -1783,15 +1566,8 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
             goto out;
     }
 
-    // And lastly map all of the current UVM-Lite GPUs to the resident pages on
-    // the new preferred location. Anything that's not resident right now will
-    // get mapped on the next PreventMigration().
-    status = range_map_uvm_lite_gpus(managed_range, out_tracker);
-
 out:
     uvm_processor_mask_cache_free(set_accessed_by_processors);
-    uvm_processor_mask_cache_free(new_uvm_lite_gpus);
-    uvm_processor_mask_cache_free(all_uvm_lite_gpus);
 
     return status;
 }
@@ -1806,57 +1582,15 @@ NV_STATUS uvm_va_range_set_accessed_by(uvm_va_range_managed_t *managed_range,
     uvm_va_space_t *va_space = managed_range->va_range.va_space;
     uvm_va_policy_t *policy = &managed_range->policy;
     uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
-    uvm_processor_mask_t *new_uvm_lite_gpus;
-
-    // va_block_context->scratch_processor_mask cannot be used since
-    // range_unmap() calls uvm_va_space_block_context(), which re-
-    // initializes the VA block context structure.
-    new_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
-    if (!new_uvm_lite_gpus)
-        return NV_ERR_NO_MEMORY;
-
-    // If the range belongs to a non-migratable range group and that
-    // processor_id is a non-faultable GPU, check it can map the preferred
-    // location
-    if (!uvm_range_group_all_migratable(va_space,
-                                        managed_range->va_range.node.start,
-                                        managed_range->va_range.node.end) &&
-        UVM_ID_IS_GPU(processor_id) &&
-        !uvm_processor_mask_test(&va_space->faultable_processors, processor_id) &&
-        !uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(policy->preferred_location)], processor_id)) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto out;
-    }
 
     uvm_processor_mask_set(&policy->accessed_by, processor_id);
-
-    // If a GPU is already a UVM-Lite GPU then there is nothing else to do.
-    if (uvm_processor_mask_test(&managed_range->uvm_lite_gpus, processor_id))
-        goto out;
-
-    // Calculate the new UVM-Lite GPUs mask, but don't update it in the managed
-    // range yet so that we can keep block_page_check_mappings() happy while
-    // updating the mappings.
-    calc_uvm_lite_gpus_mask(va_space, policy->preferred_location, &policy->accessed_by, new_uvm_lite_gpus);
-
-    if (uvm_processor_mask_test(new_uvm_lite_gpus, processor_id)) {
-        // GPUs that become UVM-Lite GPUs need to unmap everything so that they
-        // can map the preferred location.
-        status = range_unmap(managed_range, processor_id, out_tracker);
-        if (status != NV_OK)
-            goto out;
-    }
-
-    uvm_processor_mask_copy(&managed_range->uvm_lite_gpus, new_uvm_lite_gpus);
 
     for_each_va_block_in_va_range(managed_range, va_block) {
         status = uvm_va_block_set_accessed_by(va_block, va_block_context, processor_id);
         if (status != NV_OK)
-            goto out;
+            break;
     }
 
-out:
-    uvm_processor_mask_cache_free(new_uvm_lite_gpus);
     return status;
 }
 
@@ -1880,15 +1614,6 @@ void uvm_va_range_unset_accessed_by(uvm_va_range_managed_t *managed_range,
     }
 
     uvm_processor_mask_clear(&managed_range->policy.accessed_by, processor_id);
-
-    // If a UVM-Lite GPU is being removed from the accessed_by mask, it will
-    // also stop being a UVM-Lite GPU unless it's also the preferred location.
-    if (uvm_processor_mask_test(&managed_range->uvm_lite_gpus, processor_id) &&
-        !uvm_va_policy_preferred_location_equal(&managed_range->policy, processor_id, NUMA_NO_NODE)) {
-        range_unmap(managed_range, processor_id, out_tracker);
-    }
-
-    range_update_uvm_lite_gpus_mask(managed_range);
 }
 
 NV_STATUS uvm_va_range_set_read_duplication(uvm_va_range_managed_t *managed_range, struct mm_struct *mm)

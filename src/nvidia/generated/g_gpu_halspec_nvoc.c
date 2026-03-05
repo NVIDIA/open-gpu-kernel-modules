@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x34a6d6 = 1;
+char __nvoc_class_id_uniqueness_check__34a6d6 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmHalspecOwner;
@@ -38,20 +38,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RmHalspecOwner;
 
 // Up-thunk(s) to bridge RmHalspecOwner methods to ancestors (if any)
 
+// Class-specific details for RmHalspecOwner
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_RmHalspecOwner = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RmHalspecOwner),
-        /*classId=*/            classId(RmHalspecOwner),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RmHalspecOwner),
+    .classInfo.classId =            classId(RmHalspecOwner),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RmHalspecOwner",
+    .classInfo.name =               "RmHalspecOwner",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__RmHalspecOwner,
-    /*pExportInfo=*/        &__nvoc_export_info__RmHalspecOwner
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__RmHalspecOwner,
+    .pExportInfo =        &__nvoc_export_info__RmHalspecOwner
 };
 
 
@@ -73,25 +72,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__RmHalspecOwner = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RmHalspecOwner = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_RmHalspecOwner(RmHalspecOwner *pThis) {
+
+// Destruct RmHalspecOwner object.
+void __nvoc_dtor_RmHalspecOwner(RmHalspecOwner* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RmHalspecOwner(RmHalspecOwner *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct RmHalspecOwner object.
 NV_STATUS __nvoc_ctor_RmHalspecOwner(RmHalspecOwner *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_RmHalspecOwner(pThis);
     goto __nvoc_ctor_RmHalspecOwner_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RmHalspecOwner_exit:
-
     return status;
 }
 
@@ -127,7 +131,7 @@ void __nvoc_init__RmHalspecOwner(RmHalspecOwner *pThis,
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x74bc71 = 1;
+char __nvoc_class_id_uniqueness_check__74bc71 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuHalspecOwner;
@@ -149,20 +153,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuHalspecOwner;
 
 // Up-thunk(s) to bridge GpuHalspecOwner methods to ancestors (if any)
 
+// Class-specific details for GpuHalspecOwner
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_GpuHalspecOwner = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(GpuHalspecOwner),
-        /*classId=*/            classId(GpuHalspecOwner),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(GpuHalspecOwner),
+    .classInfo.classId =            classId(GpuHalspecOwner),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "GpuHalspecOwner",
+    .classInfo.name =               "GpuHalspecOwner",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__GpuHalspecOwner,
-    /*pExportInfo=*/        &__nvoc_export_info__GpuHalspecOwner
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__GpuHalspecOwner,
+    .pExportInfo =        &__nvoc_export_info__GpuHalspecOwner
 };
 
 
@@ -184,25 +187,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__GpuHalspecOwner = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuHalspecOwner = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_GpuHalspecOwner(GpuHalspecOwner *pThis) {
+
+// Destruct GpuHalspecOwner object.
+void __nvoc_dtor_GpuHalspecOwner(GpuHalspecOwner* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_GpuHalspecOwner(GpuHalspecOwner *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct GpuHalspecOwner object.
 NV_STATUS __nvoc_ctor_GpuHalspecOwner(GpuHalspecOwner *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_GpuHalspecOwner(pThis);
     goto __nvoc_ctor_GpuHalspecOwner_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_GpuHalspecOwner_exit:
-
     return status;
 }
 

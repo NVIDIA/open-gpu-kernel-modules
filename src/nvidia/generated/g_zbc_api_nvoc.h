@@ -132,13 +132,9 @@ struct NVOC_METADATA__ZbcApi {
     const struct NVOC_VTABLE__ZbcApi vtable;
 };
 
-#ifndef __NVOC_CLASS_ZbcApi_TYPEDEF__
-#define __NVOC_CLASS_ZbcApi_TYPEDEF__
-typedef struct ZbcApi ZbcApi;
-#endif /* __NVOC_CLASS_ZbcApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ZbcApi
-#define __nvoc_class_id_ZbcApi 0x397ee3
+#define __nvoc_class_id_ZbcApi 0x397ee3u
+typedef struct ZbcApi ZbcApi;
 #endif /* __nvoc_class_id_ZbcApi */
 
 // Casting support
@@ -156,9 +152,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ZbcApi;
 
 NV_STATUS __nvoc_objCreateDynamic_ZbcApi(ZbcApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ZbcApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ZbcApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ZbcApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ZbcApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -168,10 +164,10 @@ static inline NV_STATUS zbcapiConstructHal(struct ZbcApi *pZbcApi, struct CALL_C
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_zbc_api_h_disabled
-#define zbcapiConstructHal(pZbcApi, pCallContext, pParams) zbcapiConstructHal_56cd7a(pZbcApi, pCallContext, pParams)
+#define zbcapiConstructHal(pZbcApi, pCallContext, pParams) zbcapiConstructHal_ac1694(pZbcApi, pCallContext, pParams)
 #endif // __nvoc_zbc_api_h_disabled
 
-#define __nvoc_zbcapiDestruct(pZbcApi) zbcapiDestruct_b3696a(pZbcApi)
+#define __nvoc_zbcapiDestruct(pZbcApi) zbcapiDestruct_d44104(pZbcApi)
 
 NV_STATUS zbcapiCtrlCmdSetZbcColorClear_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS *pSetZBCClearParams);
 #ifdef __nvoc_zbc_api_h_disabled
@@ -395,20 +391,8 @@ static inline void zbcapiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__zbcapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS zbcapiConstructHal_56cd7a(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    return NV_OK;
-}
-
-NV_STATUS zbcapiConstructHal_IMPL(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-
-static inline void zbcapiDestruct_b3696a(struct ZbcApi *pZbcApi) {
-    return;
-}
-
-void zbcapiDestruct_IMPL(struct ZbcApi *pZbcApi);
-
-
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS zbcapiCtrlCmdSetZbcColorClear_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS *pSetZBCClearParams);
 
 NV_STATUS zbcapiCtrlCmdSetZbcDepthClear_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS *pSetZBCClearParams);
@@ -419,16 +403,32 @@ NV_STATUS zbcapiCtrlCmdSetZbcClearTable_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL
 
 NV_STATUS zbcapiCtrlCmdSetZbcStencilClear_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS *pSetZBCClearParams);
 
+NV_STATUS zbcapiCtrlCmdGetZbcClearTableEntry_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS *pGetZBCClearTableEntryParams);
+
+// HAL method declarations without bodies
+NV_STATUS zbcapiConstructHal_IMPL(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
+void zbcapiDestruct_IMPL(struct ZbcApi *pZbcApi);
+
 NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_VF(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams);
 
-static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_5baef9(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams) {
+// Inline HAL method definitions
+static inline NV_STATUS zbcapiConstructHal_ac1694(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return NV_OK;
+}
+
+static inline void zbcapiDestruct_d44104(struct ZbcApi *pZbcApi){
+    return;
+}
+
+static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_5baef9(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-NV_STATUS zbcapiCtrlCmdGetZbcClearTableEntry_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS *pGetZBCClearTableEntryParams);
-
-static inline NV_STATUS __nvoc_zbcapiConstruct(struct ZbcApi *arg_pZbcApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return zbcapiConstructHal(arg_pZbcApi, arg_pCallContext, arg_pParams);
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_zbcapiConstruct(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return zbcapiConstructHal(pZbcApi, pCallContext, pParams);
 }
 
 #undef PRIVATE_FIELD

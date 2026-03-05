@@ -184,9 +184,6 @@ static NvU32 GetSmVersion(
          * the SM version based on NVAModelConfig.
          */
         static const NvU32 table[] = {
-            [NV_AMODEL_MAXWELL]     = NV2080_CTRL_GR_INFO_SM_VERSION_5_0,
-            [NV_AMODEL_PASCAL]      = NV2080_CTRL_GR_INFO_SM_VERSION_6_0,
-            [NV_AMODEL_VOLTA]       = NV2080_CTRL_GR_INFO_SM_VERSION_7_0,
             [NV_AMODEL_TURING]      = NV2080_CTRL_GR_INFO_SM_VERSION_7_5,
             [NV_AMODEL_AMPERE]      = NV2080_CTRL_GR_INFO_SM_VERSION_8_2,
             [NV_AMODEL_ADA]         = NV2080_CTRL_GR_INFO_SM_VERSION_8_9,
@@ -258,20 +255,6 @@ static NvBool GetSpaVersion(
         NvU32 smVersion;
         Nv3dDeviceSpaVersionRec spaVersion;
     } table[] = {
-        /* Maxwell */
-        { NV2080_CTRL_GR_INFO_SM_VERSION_5_0, { 5,0 } },
-        { NV2080_CTRL_GR_INFO_SM_VERSION_5_2, { 5,2 } },
-        { NV2080_CTRL_GR_INFO_SM_VERSION_5_3, { 5,3 } },
-
-        /* Pascal */
-        { NV2080_CTRL_GR_INFO_SM_VERSION_6_0, { 5,5 } },
-        { NV2080_CTRL_GR_INFO_SM_VERSION_6_1, { 5,5 } },
-        { NV2080_CTRL_GR_INFO_SM_VERSION_6_2, { 5,6 } },
-
-        /* Volta */
-        { NV2080_CTRL_GR_INFO_SM_VERSION_7_0, { 7,0 } },
-        { NV2080_CTRL_GR_INFO_SM_VERSION_7_2, { 7,2 } },
-
         /* Turing */
         { NV2080_CTRL_GR_INFO_SM_VERSION_7_3, { 7,3 } },
         { NV2080_CTRL_GR_INFO_SM_VERSION_7_5, { 7,5 } },

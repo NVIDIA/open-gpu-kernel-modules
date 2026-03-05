@@ -88,13 +88,9 @@ struct NVOC_METADATA__SpdmProxy {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_SpdmProxy_TYPEDEF__
-#define __NVOC_CLASS_SpdmProxy_TYPEDEF__
-typedef struct SpdmProxy SpdmProxy;
-#endif /* __NVOC_CLASS_SpdmProxy_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SpdmProxy
-#define __nvoc_class_id_SpdmProxy 0x5b722d
+#define __nvoc_class_id_SpdmProxy 0x5b722du
+typedef struct SpdmProxy SpdmProxy;
 #endif /* __nvoc_class_id_SpdmProxy */
 
 // Casting support
@@ -113,8 +109,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SpdmProxy;
 NV_STATUS __nvoc_objCreateDynamic_SpdmProxy(SpdmProxy**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_SpdmProxy(SpdmProxy**, Dynamic*, NvU32);
-#define __objCreate_SpdmProxy(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_SpdmProxy((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_SpdmProxy(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_SpdmProxy((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -125,9 +121,14 @@ NV_STATUS __nvoc_objCreate_SpdmProxy(SpdmProxy**, Dynamic*, NvU32);
 #define spdmProxyCtrlSpdmPartition_HAL(pGpu, pSpdmPartitionParams) spdmProxyCtrlSpdmPartition(pGpu, pSpdmPartitionParams)
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS spdmProxyCtrlSpdmPartition_IMPL(struct OBJGPU *pGpu, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pSpdmPartitionParams);
 
-
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

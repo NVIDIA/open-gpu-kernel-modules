@@ -40,11 +40,10 @@
  * can be validated later on within a test executable to ensure that all accesses to
  * these global integers were synchronous.
  * 
- * The lock stress object is not allocatable without the "RmEnableLockStress" registry
+ * The lock stress object is not allocatable without the "EnableRmTestOnlyCode" registry
  * key being turned on, which is off by default. The creation/destruction of the object
- * does not accomplish anything useful but simply serves as a way to check for the
- * registry key's enablement before allowing executing any of the test API's this object
- * provides.
+ * has no functional impact to RM. The constructor simply allocate test only resources
+ * and checks for the regisry enablement.
  */
 
 #define LOCK_STRESS_OBJECT 0x0100U

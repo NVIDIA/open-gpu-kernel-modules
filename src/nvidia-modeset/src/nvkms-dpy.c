@@ -50,6 +50,10 @@
 #include <ctrl/ctrl0073/ctrl0073dfp.h> // NV0073_CTRL_DFP_FLAGS_*
 #include <ctrl/ctrl0073/ctrl0073dp.h> // NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_*
 
+
+
+#include "ctrl/ctrla083.h" // NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_DEFAULT_EDID
+
 #define TMDS_SINGLE_LINK_PCLK_MAX 165000
 #define TMDS_DUAL_LINK_PCLK_MAX 330000
 
@@ -300,6 +304,10 @@ static void AssignIsVrHmd(NVDpyEvoRec *pDpyEvo)
     NvU32 ret;
 
     pDpyEvo->isVrHmd = FALSE;
+
+    if (pDevEvo->displaylessHw) {
+        return;
+    }
 
     if (!pDpyEvo->parsedEdid.valid) {
         return;
@@ -807,6 +815,12 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
     NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS params = { 0 };
     NvU32 passiveDpDongleMaxPclkKHz;
 
+    if (pDevEvo->displaylessHw) {
+        pDpyEvo->maxPixelClockKHz = pDpyEvo->parsedEdid.limits.max_pclk_10khz * 10;
+        pDpyEvo->maxSingleLinkPixelClockKHz = pDpyEvo->maxPixelClockKHz;
+        return;
+    }
+
     /* First, get the RM-reported value. */
 
     params.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
@@ -1208,7 +1222,68 @@ static NvBool ReadEdidFromDP(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid)
 
 } // ReadEdidFromDP()
 
+static NvBool DisplaylessReadEdidFromResman(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
+                                            NvKmsEdidReadMode readMode)
+{
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS getDefaultEdidParams = { 0 };
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvBool success = FALSE;
+    NvU32 ret;
 
+    getDefaultEdidParams.pEdidBuffer = NULL;
+    getDefaultEdidParams.edidSize = 0;
+    getDefaultEdidParams.connectorType = 0;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                     pDevEvo->displaylessHandle,
+                     NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_DEFAULT_EDID,
+                     &getDefaultEdidParams, sizeof(getDefaultEdidParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+            "Failed to fetch default displayless EDID, error %d", ret);
+        goto done;
+    }
+
+    getDefaultEdidParams.pEdidBuffer = nvCalloc(getDefaultEdidParams.edidSize, 1);
+    if (getDefaultEdidParams.pEdidBuffer == NULL) {
+        goto done;
+    }
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                     pDevEvo->displaylessHandle,
+                     NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_DEFAULT_EDID,
+                     &getDefaultEdidParams, sizeof(getDefaultEdidParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+            "Failed to fetch default displayless EDID, error %d", ret);
+        goto done;
+    }
+
+    pEdid->buffer = nvCalloc(getDefaultEdidParams.edidSize, 1);
+    if (pEdid->buffer == NULL) {
+        goto done;
+    }
+
+    nvkms_memcpy(pEdid->buffer, (NvU8 *)getDefaultEdidParams.pEdidBuffer,
+                 getDefaultEdidParams.edidSize);
+    pEdid->length = getDefaultEdidParams.edidSize;
+
+    success = TRUE;
+
+ done:
+
+    nvFree(getDefaultEdidParams.pEdidBuffer);
+
+    if (!success) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                     "Unable to read EDID for display device %s",
+                     pDpyEvo->name);
+    }
+    return success;
+}
 
 /*
  * ReadEdidFromResman() - query the EDID for the specified display device
@@ -1223,6 +1298,10 @@ static NvBool ReadEdidFromResman(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
     NV0073_CTRL_SPECIFIC_GET_EDID_V2_PARAMS *getEdidParams;
     int retryEdidReadCount = 0;
     NvBool success = FALSE;
+
+    if (pDevEvo->displaylessHw) {
+        return DisplaylessReadEdidFromResman(pDpyEvo, pEdid, readMode);
+    }
 
     if (nvDpyEvoIsDPMST(pDpyEvo)) {
         // RM doesn't track this device, so leave the EDID alone.
@@ -3129,6 +3208,9 @@ NvBool nvDpyGetDynamicData(
      */
     pReply->maxPixelClockKHz = pDpyEvo->maxPixelClockKHz;
 
+    pReply->maxWidthInPixels  = pDispEvo->pDevEvo->caps.maxWidthInPixels;
+    pReply->maxHeightInPixels = pDispEvo->pDevEvo->caps.maxHeight;
+
     pReply->connected =
         nvDpyIdIsInDpyIdList(pDpyEvo->id, pDispEvo->connectedDisplays);
 
@@ -3549,7 +3631,12 @@ NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
             return FALSE;
         }
 
-        nvAssert(major >= 1);
+        if (major == 0) {
+            nvEvoLogDisp(pDpyEvo->pDispEvo, EVO_LOG_WARN,
+                         "Got unknown DPCD revision %d.%d for %s, HDR may not work",
+                         major, minor, pDpyEvo->name);
+        }
+
         if ((major == 1) && (minor < 3)) {
             return FALSE;
         }

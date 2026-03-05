@@ -41,11 +41,10 @@
 
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 
-static NV_STATUS _gpushareddataInitGsp(OBJGPU *pGpu);
 static void _gpushareddataDestroyGsp(OBJGPU *pGpu);
 static NV_STATUS _gpushareddataSendDataPollRpc(OBJGPU *pGpu, NvU64 polledDataMask, NvU32 pollingIntervalMs);
-static inline void _gpushareddataUpdateSeqOpen(volatile NvU64 *pSeq);
-static inline void _gpushareddataUpdateSeqClose(volatile NvU64 *pSeq);
+static inline void _gpushareddataUpdateSeqOpen(PORT_ATOMIC NvU64 *pSeq);
+static inline void _gpushareddataUpdateSeqClose(PORT_ATOMIC NvU64 *pSeq);
 static NV_STATUS _handlePollMaskHelper(OBJGPU *, NvBool, NvBool);
 
 //
@@ -159,15 +158,18 @@ gpushareddataDestruct_IMPL(GpuUserSharedData *pData)
 static inline void
 _gpushareddataUpdateSeqOpen
 (
-    volatile NvU64 *pSeq
+    PORT_ATOMIC NvU64 *pSeq
 )
 {
     NvU64 seqVal;
 
+    ct_assert(sizeof(PORT_ATOMIC NvU64) == sizeof(NvU64));
+    ct_assert(_Alignof(PORT_ATOMIC NvU64) == _Alignof(NvU64));
+
     // Initialize seq to RUSD_SEQ_START at first write. If never written before, seq is treated as an invalid timestamp
     if (MEM_RD64(pSeq) == 0LLU)
     {
-        portAtomicExSetU64(pSeq, RUSD_SEQ_START + 1);
+        portAtomicExSetU64(pSeq, RUSD_SEQ_START + 1ULL);
     }
     else
     {
@@ -185,7 +187,7 @@ _gpushareddataUpdateSeqOpen
 static inline void
 _gpushareddataUpdateSeqClose
 (
-    volatile NvU64 *pSeq
+    PORT_ATOMIC NvU64 *pSeq
 )
 {
     NvU64 seqVal;
@@ -214,7 +216,7 @@ NV00DE_SHARED_DATA * gpushareddataWriteStart_INTERNAL(OBJGPU *pGpu, NvU64 offset
         pSharedData = &pGpu->userSharedData.data;
     }
     
-    _gpushareddataUpdateSeqOpen((volatile NvU64*)(((NvU8*)pSharedData) + offset));
+    _gpushareddataUpdateSeqOpen((PORT_ATOMIC NvU64*)(((NvU8*)pSharedData) + offset));
 
     return pSharedData;
 }
@@ -228,7 +230,7 @@ void gpushareddataWriteFinish_INTERNAL(OBJGPU *pGpu, NvU64 offset)
         pSharedData = &pGpu->userSharedData.data;
     }
 
-    _gpushareddataUpdateSeqClose((volatile NvU64*)(((NvU8*)pSharedData) + offset));
+    _gpushareddataUpdateSeqClose((PORT_ATOMIC NvU64*)(((NvU8*)pSharedData) + offset));
 }
 static void
 _gpushareddataDestroyGsp
@@ -250,8 +252,37 @@ _gpushareddataDestroyGsp
                                 &params, sizeof(params)));
 }
 
-static NV_STATUS
-_gpushareddataInitGsp
+NV_STATUS
+gpuHandleRusdPollingRegistry_KERNEL
+(
+    OBJGPU *pGpu
+)
+{
+    if (!_rusdSupported(pGpu))
+    {
+        return NV_OK;
+    }
+
+    //
+    // The function is called in state load, which is called on both driver init
+    // and resume. Only handle registry override in the init path by checking
+    // the lastPolledDataMask. If the registry is force enabled, the
+    // lastPolledDataMask will be set in the init path.
+    //
+    if ((pGpu->userSharedData.pollingRegistryOverride ==
+            NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE) &&
+        (pGpu->userSharedData.lastPolledDataMask == 0))
+    {
+        // If polling is forced always on, start polling during init and never stop
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            _gpushareddataSendDataPollRpc(pGpu, ~0ULL, pGpu->userSharedData.pollingIntervalMs));
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuRusdInitPhysical_KERNEL
 (
     OBJGPU *pGpu
 )
@@ -268,35 +299,33 @@ _gpushareddataInitGsp
                                            NV2080_CTRL_CMD_INTERNAL_INIT_USER_SHARED_DATA,
                                            &params, sizeof(params)));
 
-    // TODO: JIRA CORERM-7317 this runs only on Kernel RM. Need to support Monolithic RM..
-    if (pGpu->userSharedData.pollingRegistryOverride ==
-        NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE)
-    {
-        // Value should already be initialized by registry override
-        if (pGpu->userSharedData.pollingIntervalMs == 0)
-        {
-            NV_ASSERT(0);
-            // as a safety measure, initialize to default value.
-            if (gpuIsTeslaBranded(pGpu))
-            {
-                pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA;
-            }
-            else if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
-            {
-                pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_WINDOWS_GSP;
-            }
-            else
-            {
-                pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
-            }
-        }
-
-        // If polling is forced always on, start polling during init and never stop
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            _gpushareddataSendDataPollRpc(pGpu, ~0ULL, pGpu->userSharedData.pollingIntervalMs));
-    }
-
     return NV_OK;
+}
+
+static void
+_gpusharedataPollingIntervalSanityCheck
+(
+    OBJGPU *pGpu
+)
+{
+    // Value should have already been initialized in registry handling
+    if (pGpu->userSharedData.pollingIntervalMs == 0)
+    {
+        NV_ASSERT(0);
+        // as a safety measure, initialize to default value.
+        if (gpuIsTeslaBranded(pGpu))
+        {
+            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA;
+        }
+        else if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
+        {
+            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_WINDOWS_GSP;
+        }
+        else
+        {
+            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
+        }
+    }
 }
 
 static NV_STATUS
@@ -314,6 +343,7 @@ _gpushareddataInitPollingFrequency
     //
     if (!RMCFG_FEATURE_PLATFORM_GSP && !IS_VIRTUAL(pGpu))
     {
+        _gpusharedataPollingIntervalSanityCheck(pGpu);
         if (!pGpu->userSharedData.bPollIntervalOverridden && gpuIsTeslaBranded(pGpu))
         {
             pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA;
@@ -321,10 +351,13 @@ _gpushareddataInitPollingFrequency
 
         pGpu->userSharedData.defaultPollingIntervalMs = pGpu->userSharedData.pollingIntervalMs;
 
-        NV_PRINTF(LEVEL_INFO, "Default RUSD polling frequency: %d ms\n", pGpu->userSharedData.defaultPollingIntervalMs);
+        NV_PRINTF(LEVEL_INFO, "Default RUSD polling frequency: %d ms\n",
+                  pGpu->userSharedData.defaultPollingIntervalMs);
 
         params.polledDataMask = pGpu->userSharedData.lastPolledDataMask;
         params.pollIntervalMs = pGpu->userSharedData.pollingIntervalMs;
+
+        NV_ASSERT(pGpu->userSharedData.lastPolledDataMask == 0);
 
         NV_ASSERT_OK_OR_RETURN(
             pRmApi->Control(pRmApi, pGpu->hInternalClient,
@@ -367,11 +400,7 @@ gpuCreateRusdMemory_IMPL
 
     portMemSet(pGpu->userSharedData.pMapBuffer, 0, sizeof(NV00DE_SHARED_DATA));
 
-    if (IS_GSP_CLIENT(pGpu))
-    {
-       // Init system memdesc on GSP
-       _gpushareddataInitGsp(pGpu);
-    }
+    gpuRusdInitPhysical_HAL(pGpu);
 
     _gpushareddataInitPollingFrequency(pGpu);
 
@@ -399,6 +428,18 @@ gpuDestroyRusdMemory_IMPL
     {
        // Destroy system memdesc on GSP
        _gpushareddataDestroyGsp(pGpu);
+    }
+
+    if (pData->pRusdQueryCache != NULL)
+    {
+        portMemFree(pData->pRusdQueryCache);
+        pData->pRusdQueryCache = NULL;
+    }
+
+    if (pData->pRusdStaticQueryCache != NULL)
+    {
+        portMemFree(pData->pRusdStaticQueryCache);
+        pData->pRusdStaticQueryCache = NULL;
     }
 
     NV_ASSERT(pGpu->userSharedData.pMemDesc->RefCount == 1);

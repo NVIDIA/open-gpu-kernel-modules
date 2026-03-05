@@ -127,13 +127,9 @@ struct NVOC_METADATA__KernelCcuApi {
     const struct NVOC_VTABLE__KernelCcuApi vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelCcuApi_TYPEDEF__
-#define __NVOC_CLASS_KernelCcuApi_TYPEDEF__
-typedef struct KernelCcuApi KernelCcuApi;
-#endif /* __NVOC_CLASS_KernelCcuApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCcuApi
-#define __nvoc_class_id_KernelCcuApi 0x3abed3
+#define __nvoc_class_id_KernelCcuApi 0x3abed3u
+typedef struct KernelCcuApi KernelCcuApi;
 #endif /* __nvoc_class_id_KernelCcuApi */
 
 // Casting support
@@ -151,14 +147,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcuApi;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelCcuApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelCcuApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelCcuApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelCcuApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kccuapiConstruct_IMPL(struct KernelCcuApi *arg_pKernelCcuApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kccuapiConstruct(arg_pKernelCcuApi, arg_pCallContext, arg_pParams) kccuapiConstruct_IMPL(arg_pKernelCcuApi, arg_pCallContext, arg_pParams)
+NV_STATUS kccuapiConstruct_IMPL(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kccuapiConstruct(pKernelCcuApi, pCallContext, pParams) kccuapiConstruct_IMPL(pKernelCcuApi, pCallContext, pParams)
 
 void kccuapiDestruct_IMPL(struct KernelCcuApi *pKernelCcuApi);
 #define __nvoc_kccuapiDestruct(pKernelCcuApi) kccuapiDestruct_IMPL(pKernelCcuApi)
@@ -357,6 +353,7 @@ static inline void kccuapiAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__kccuapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kccuapiMap_IMPL(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS kccuapiUnmap_IMPL(struct KernelCcuApi *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);
@@ -365,6 +362,7 @@ NV_STATUS kccuapiGetMapAddrSpace_IMPL(struct KernelCcuApi *pKernelCcuApi, struct
 
 NV_STATUS kccuapiGetMemoryMappingDescriptor_IMPL(struct KernelCcuApi *pKernelCcuApi, struct MEMORY_DESCRIPTOR **ppMemDesc);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS kccuapiCtrlCmdSubscribe_IMPL(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_SUBSCRIBE_PARAMS *pParams);
 
 NV_STATUS kccuapiCtrlCmdUnsubscribe_IMPL(struct KernelCcuApi *pKernelCcuApi);
@@ -373,6 +371,10 @@ NV_STATUS kccuapiCtrlCmdSetStreamState_IMPL(struct KernelCcuApi *pKernelCcuApi, 
 
 NV_STATUS kccuapiCtrlCmdGetStreamState_IMPL(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #endif // KERNEL_CCU_API_H

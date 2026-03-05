@@ -113,3 +113,13 @@ kmcWritePmcEnableReg_GM107
 
     return NV_OK;
 }
+
+NvU32
+kmcReadPmcBoot0_GM107
+(
+    OBJGPU  *pGpu,
+    KernelMc  *pKernelMc
+)
+{
+    return GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+}

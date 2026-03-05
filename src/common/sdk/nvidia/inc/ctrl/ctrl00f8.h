@@ -155,7 +155,7 @@ typedef struct NV_FABRIC_MEMORY_ATTRS {
     NV_DECLARE_ALIGNED(NvU64 size, 8);
     NvU32 cliqueId;
     NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
-    NvU8  bwMode;
+    NvU16 bwMode;
 } NV_FABRIC_MEMORY_ATTRS;
 
 #define NV00F8_CTRL_DESCRIBE_PARAMS_MESSAGE_ID (0x2U)
@@ -308,7 +308,7 @@ typedef struct NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS {
  *
  *  levelFmt
  *    Same as NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS.
- * 
+ *
  *  sublevelFmt
  *    Same as NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS.
  *

@@ -37,11 +37,6 @@
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
-#include "class/cla16f.h" // KEPLER_CHANNEL_GPFIFO_B
-#include "class/cla26f.h" // KEPLER_CHANNEL_GPFIFO_C
-#include "class/clb06f.h" // MAXWELL_CHANNEL_GPFIFO_A
-#include "class/clc06f.h" // PASCAL_CHANNEL_GPFIFO_A
-#include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
@@ -634,31 +629,6 @@ static NvBool GetChannelClassAndUserDSize(
         { TURING_CHANNEL_GPFIFO_A,
           NV_AMODEL_TURING },
         sizeof(TuringAControlGPFifo)
-    },
-    {
-        { VOLTA_CHANNEL_GPFIFO_A,
-          NV_AMODEL_VOLTA },
-        sizeof(VoltaAControlGPFifo)
-    },
-    {
-        { PASCAL_CHANNEL_GPFIFO_A,
-          NV_AMODEL_PASCAL },
-        sizeof(PascalAControlGPFifo)
-    },
-    {
-        { MAXWELL_CHANNEL_GPFIFO_A,
-          NV_AMODEL_MAXWELL },
-        sizeof(MaxwellAControlGPFifo)
-    },
-    {
-        { KEPLER_CHANNEL_GPFIFO_C,
-          NV_AMODEL_KEPLER_SM35 },
-        sizeof(KeplerCControlGPFifo)
-    },
-    {
-        { KEPLER_CHANNEL_GPFIFO_B,
-          NV_AMODEL_KEPLER },
-        sizeof(KeplerBControlGPFifo)
     },
 
     };

@@ -26,12 +26,16 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
+#include "lib/base_utils.h"
 
 #include "published/blackwell/gb100/dev_fault.h"
 #include "published/blackwell/gb100/dev_vm.h"
+#include "published/blackwell/gb100/dev_ram.h"
+#include "published/blackwell/gb100/dev_esched_pbdma.h"
 #include "published/blackwell/gb100/hwproject.h"
 
-#include "vgpu/vgpu_events.h"
+#include "kernel/gpu/conf_compute/conf_compute.h"
+#include "nvrm_registry.h"
 
 /*
  * @brief Reserve PBDMA fault IDs to support subcontexts
@@ -214,4 +218,121 @@ kfifoGetClientIdString_GB100
 
     // Fallback if the above doesn't cover the given client ID
     return kfifoGetClientIdStringCommon_HAL(pGpu, pKernelFifo, pMmuExceptInfo);
+}
+
+/*
+ * @  Function to write gpfifo info in RAMFC
+ * @param[in] pGpu           - GPU object pointer
+ * @param[in] pKernelFifo    - KernelFifo pointer
+ * @param[in] pInstMem       - CPU pointer to instance mem
+ * @param[in] gpFifoOffset   - GPFIFO virtual address
+ * @param[in] gpFifoEntries  - GPFIFO entries
+ */
+void
+kfifoWriteRamfcGpfifo_GB100
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    NvU8          *pInstMem,
+    NvU64         gpFifoOffset,
+    NvU32         gpFifoEntries
+)
+{
+    NvU32   fetchState;
+
+    // GPBASE
+    NV_ASSERT(FLD_TEST_DRF(_PBDMA, _GP_BASE, _RSVD, _ZERO, NvU64_LO32(gpFifoOffset)));
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_BASE), NvU64_LO32(gpFifoOffset));
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_BASE_HI),
+             DRF_NUM(_PBDMA, _GP_BASE_HI, _OFFSET, NvU64_HI32(gpFifoOffset)));
+
+    // Checking LIMIT2 width is sufficient to store nvLogBase2(gpFifoEntries)
+    NV_ASSERT_OR_RETURN_VOID((nvLogBase2(gpFifoEntries) &
+                DRF_MASK(NV_PBDMA_MISC_FETCH_STATE_GP_INFO_LIMIT2)) == nvLogBase2(gpFifoEntries));
+
+    fetchState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE));
+    fetchState = FLD_SET_DRF_NUM(_PBDMA, _MISC_FETCH_STATE, _GP_INFO_LIMIT2, nvLogBase2(gpFifoEntries), fetchState);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE), fetchState);
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_PB_SEGMENT_EXTENDED_BASE),
+             DRF_NUM(_PBDMA, _PB_SEGMENT_EXTENDED_BASE, _VALUE, 0));
+
+    // Assuming RAMFC debug state is enabled
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_DEBUG_STATE(NV_RAMFC_DEBUG_STATE_RAMFC_INDEX_gp_put)), 0);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_GET), 0);
+}
+
+NV_STATUS
+kfifoDisableChannelsForKeyRotation_GB100
+(
+    OBJGPU         *pGpu,
+    KernelFifo     *pKernelFifo,
+    RmCtrlParams   *pRmCtrlParams,
+    NvBool          bEnableAfterKeyRotation,
+    NvBool          bForceKeyRotation,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams
+)
+{
+    NvU32                i;
+    NvU32                h2dKey, d2hKey;
+    RsClient            *pClient        = NULL;
+    NV_STATUS            status         = NV_OK;
+    KernelChannel       *pKernelChannel = NULL;
+    ConfidentialCompute *pConfCompute   = GPU_GET_CONF_COMPUTE(pGpu);
+
+    (void)(pKernelFifo);
+
+    if (!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto done;
+    }
+
+    for (i = 0; i < pParams->numChannels; i++)
+    {
+        status = serverGetClientUnderLock(&g_resServ,
+                                          pParams->hClientList[i], &pClient);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to get client with hClient = 0x%x status = 0x%x\n",
+                                    pParams->hClientList[i], status);
+            goto done;
+        }
+
+        status = CliGetKernelChannel(pClient,
+                                     pParams->hChannelList[i], &pKernelChannel);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n",
+                                    pParams->hClientList[i], pParams->hChannelList[i], status);
+            goto done;
+        }
+
+        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel,
+                                                                    &h2dKey, &d2hKey));
+
+        NvU32 keySpace = CC_GKEYID_GET_KEYSPACE(h2dKey);
+        if (!(pConfCompute->keyRotationEnableMask & NVBIT(keySpace)))
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto done;
+        }
+
+        // Only CEs support per channel key rotation on BCC.
+        if (RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
+        {
+            NV_ASSERT_OK_OR_RETURN(confComputeUpdatePerChannelSecrets_HAL(pConfCompute, pKernelChannel));
+        }
+        else
+        {
+            // SEC2 and Internal keys need to go the HCC way for key rotation.
+            NV_ASSERT_OK_OR_RETURN(confComputeUpdateSecrets_HAL(pConfCompute, h2dKey));
+        }
+        NV_PRINTF(LEVEL_INFO, "Key rotation successful for key IDs 0x%x and 0x%x\n", h2dKey, d2hKey);
+    }
+
+done:
+    return status;
 }

@@ -81,6 +81,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB20B[] =
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 1),
     GPU_CHILD_PRESENT(KernelHFRP, 1),
@@ -167,7 +168,7 @@ gpuHandleSecFault_GB20B
     // handleGpuLost first to setGpuDisconnectedProperties so that another reg read does not
     // happen when the notifier is sent below.
     //
-    osHandleGpuLost(pGpu);
+    osHandleGpuLost(pGpu, NV_FALSE);
 
     //
     // Send SEC_FAULT notification. This should tells any MODS test testing for this
@@ -413,7 +414,6 @@ gpuPowerOffHda_GB20B(OBJGPU *pGpu)
     return status;
 }
 
-
 /* @brief This function returns if SDM mode is enabled on iGPU
  *
  * @param[in]  pGpu   OBJGPU pointer
@@ -426,3 +426,4 @@ gpuIsSocSdmEnabled_GB20B(OBJGPU *pGpu)
 
     return NV_TRUE;
 }
+

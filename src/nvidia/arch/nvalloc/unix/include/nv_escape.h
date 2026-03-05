@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,17 +24,17 @@
 #ifndef NV_ESCAPE_H_INCLUDED
 #define NV_ESCAPE_H_INCLUDED
 
+/* 
+ * NOTE: Any new ioctls added here should also be added to RmValidateIoctl() in escape.c
+ * or rm_validate_ioctls() in osapi.c
+ */
 #define NV_ESC_RM_ALLOC_MEMORY                      0x27
 #define NV_ESC_RM_ALLOC_OBJECT                      0x28
 #define NV_ESC_RM_FREE                              0x29
 #define NV_ESC_RM_CONTROL                           0x2A
 #define NV_ESC_RM_ALLOC                             0x2B
-#define NV_ESC_RM_CONFIG_GET                        0x32
-#define NV_ESC_RM_CONFIG_SET                        0x33
 #define NV_ESC_RM_DUP_OBJECT                        0x34
 #define NV_ESC_RM_SHARE                             0x35
-#define NV_ESC_RM_CONFIG_GET_EX                     0x37
-#define NV_ESC_RM_CONFIG_SET_EX                     0x38
 #define NV_ESC_RM_I2C_ACCESS                        0x39
 #define NV_ESC_RM_IDLE_CHANNELS                     0x41
 #define NV_ESC_RM_VID_HEAP_CONTROL                  0x4A

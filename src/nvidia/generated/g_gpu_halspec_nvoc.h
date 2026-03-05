@@ -83,13 +83,9 @@ struct NVOC_METADATA__RmHalspecOwner {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_RmHalspecOwner_TYPEDEF__
-#define __NVOC_CLASS_RmHalspecOwner_TYPEDEF__
-typedef struct RmHalspecOwner RmHalspecOwner;
-#endif /* __NVOC_CLASS_RmHalspecOwner_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RmHalspecOwner
-#define __nvoc_class_id_RmHalspecOwner 0x34a6d6
+#define __nvoc_class_id_RmHalspecOwner 0x34a6d6u
+typedef struct RmHalspecOwner RmHalspecOwner;
 #endif /* __nvoc_class_id_RmHalspecOwner */
 
 // Casting support
@@ -110,9 +106,15 @@ NV_STATUS __nvoc_objCreateDynamic_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU
 NV_STATUS __nvoc_objCreate_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU32,
         RM_RUNTIME_VARIANT RmVariantHal_rmVariant,
         NvU32 DispIpHal_ipver);
-#define __objCreate_RmHalspecOwner(ppNewObj, pParent, createFlags, RmVariantHal_rmVariant, DispIpHal_ipver) \
-    __nvoc_objCreate_RmHalspecOwner((ppNewObj), staticCast((pParent), Dynamic), (createFlags), RmVariantHal_rmVariant, DispIpHal_ipver)
+#define __objCreate_RmHalspecOwner(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, RmVariantHal_rmVariant, DispIpHal_ipver) \
+    __nvoc_objCreate_RmHalspecOwner((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), RmVariantHal_rmVariant, DispIpHal_ipver)
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -153,13 +155,9 @@ struct NVOC_METADATA__GpuHalspecOwner {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_GpuHalspecOwner_TYPEDEF__
-#define __NVOC_CLASS_GpuHalspecOwner_TYPEDEF__
-typedef struct GpuHalspecOwner GpuHalspecOwner;
-#endif /* __NVOC_CLASS_GpuHalspecOwner_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GpuHalspecOwner
-#define __nvoc_class_id_GpuHalspecOwner 0x74bc71
+#define __nvoc_class_id_GpuHalspecOwner 0x74bc71u
+typedef struct GpuHalspecOwner GpuHalspecOwner;
 #endif /* __nvoc_class_id_GpuHalspecOwner */
 
 // Casting support
@@ -180,9 +178,15 @@ NV_STATUS __nvoc_objCreateDynamic_GpuHalspecOwner(GpuHalspecOwner**, Dynamic*, N
 NV_STATUS __nvoc_objCreate_GpuHalspecOwner(GpuHalspecOwner**, Dynamic*, NvU32,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         TEGRA_CHIP_TYPE TegraChipHal_tegraType);
-#define __objCreate_GpuHalspecOwner(ppNewObj, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType) \
-    __nvoc_objCreate_GpuHalspecOwner((ppNewObj), staticCast((pParent), Dynamic), (createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType)
+#define __objCreate_GpuHalspecOwner(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType) \
+    __nvoc_objCreate_GpuHalspecOwner((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType)
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

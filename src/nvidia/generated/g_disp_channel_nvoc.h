@@ -52,31 +52,21 @@ extern "C" {
 #define DISP_CHANNEL_H
 
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
-
+#include "rmapi/event_api.h"
 
 struct ContextDma;
 
-#ifndef __NVOC_CLASS_ContextDma_TYPEDEF__
-#define __NVOC_CLASS_ContextDma_TYPEDEF__
-typedef struct ContextDma ContextDma;
-#endif /* __NVOC_CLASS_ContextDma_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ContextDma
-#define __nvoc_class_id_ContextDma 0x88441b
+#define __nvoc_class_id_ContextDma 0x88441bu
+typedef struct ContextDma ContextDma;
 #endif /* __nvoc_class_id_ContextDma */
-
 
 
 struct DispObject;
 
-#ifndef __NVOC_CLASS_DispObject_TYPEDEF__
-#define __NVOC_CLASS_DispObject_TYPEDEF__
-typedef struct DispObject DispObject;
-#endif /* __NVOC_CLASS_DispObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispObject
-#define __nvoc_class_id_DispObject 0x999839
+#define __nvoc_class_id_DispObject 0x999839u
+typedef struct DispObject DispObject;
 #endif /* __nvoc_class_id_DispObject */
 
 
@@ -178,13 +168,9 @@ struct NVOC_METADATA__DispChannel {
     const struct NVOC_VTABLE__DispChannel vtable;
 };
 
-#ifndef __NVOC_CLASS_DispChannel_TYPEDEF__
-#define __NVOC_CLASS_DispChannel_TYPEDEF__
-typedef struct DispChannel DispChannel;
-#endif /* __NVOC_CLASS_DispChannel_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispChannel
-#define __nvoc_class_id_DispChannel 0xbd2ff3
+#define __nvoc_class_id_DispChannel 0xbd2ff3u
+typedef struct DispChannel DispChannel;
 #endif /* __nvoc_class_id_DispChannel */
 
 // Casting support
@@ -202,14 +188,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
 
 NV_STATUS __nvoc_objCreateDynamic_DispChannel(DispChannel**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
-#define __objCreate_DispChannel(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams, arg_isDma) \
-    __nvoc_objCreate_DispChannel((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams, arg_isDma)
+NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma);
+#define __objCreate_DispChannel(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams, isDma) \
+    __nvoc_objCreate_DispChannel((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams, isDma)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispchnConstruct_IMPL(struct DispChannel *arg_pDispChannel, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
-#define __nvoc_dispchnConstruct(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma) dispchnConstruct_IMPL(arg_pDispChannel, arg_pCallContext, arg_pParams, arg_isDma)
+NV_STATUS dispchnConstruct_IMPL(struct DispChannel *pDispChannel, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma);
+#define __nvoc_dispchnConstruct(pDispChannel, pCallContext, pParams, isDma) dispchnConstruct_IMPL(pDispChannel, pCallContext, pParams, isDma)
 
 void dispchnDestruct_IMPL(struct DispChannel *pDispChannel);
 #define __nvoc_dispchnDestruct(pDispChannel) dispchnDestruct_IMPL(pDispChannel)
@@ -438,8 +424,14 @@ static inline NV_STATUS dispchnGetOrAllocNotifShare_DISPATCH(struct DispChannel 
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispchnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS dispchnGetRegBaseOffsetAndSize_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -528,13 +520,9 @@ struct NVOC_METADATA__DispChannelPio {
     const struct NVOC_VTABLE__DispChannelPio vtable;
 };
 
-#ifndef __NVOC_CLASS_DispChannelPio_TYPEDEF__
-#define __NVOC_CLASS_DispChannelPio_TYPEDEF__
-typedef struct DispChannelPio DispChannelPio;
-#endif /* __NVOC_CLASS_DispChannelPio_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispChannelPio
-#define __nvoc_class_id_DispChannelPio 0x10dec3
+#define __nvoc_class_id_DispChannelPio 0x10dec3u
+typedef struct DispChannelPio DispChannelPio;
 #endif /* __nvoc_class_id_DispChannelPio */
 
 // Casting support
@@ -552,14 +540,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio;
 
 NV_STATUS __nvoc_objCreateDynamic_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DispChannelPio(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DispChannelPio((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DispChannelPio(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DispChannelPio((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispchnpioConstruct_IMPL(struct DispChannelPio *arg_pDispChannelPio, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dispchnpioConstruct(arg_pDispChannelPio, arg_pCallContext, arg_pParams) dispchnpioConstruct_IMPL(arg_pDispChannelPio, arg_pCallContext, arg_pParams)
+NV_STATUS dispchnpioConstruct_IMPL(struct DispChannelPio *pDispChannelPio, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dispchnpioConstruct(pDispChannelPio, pCallContext, pParams) dispchnpioConstruct_IMPL(pDispChannelPio, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -745,6 +733,12 @@ static inline NV_STATUS dispchnpioGetOrAllocNotifShare_DISPATCH(struct DispChann
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispchnpioGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -833,13 +827,9 @@ struct NVOC_METADATA__DispChannelDma {
     const struct NVOC_VTABLE__DispChannelDma vtable;
 };
 
-#ifndef __NVOC_CLASS_DispChannelDma_TYPEDEF__
-#define __NVOC_CLASS_DispChannelDma_TYPEDEF__
-typedef struct DispChannelDma DispChannelDma;
-#endif /* __NVOC_CLASS_DispChannelDma_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispChannelDma
-#define __nvoc_class_id_DispChannelDma 0xfe3d2e
+#define __nvoc_class_id_DispChannelDma 0xfe3d2eu
+typedef struct DispChannelDma DispChannelDma;
 #endif /* __nvoc_class_id_DispChannelDma */
 
 // Casting support
@@ -857,14 +847,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma;
 
 NV_STATUS __nvoc_objCreateDynamic_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DispChannelDma(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DispChannelDma((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DispChannelDma(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DispChannelDma((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispchndmaConstruct_IMPL(struct DispChannelDma *arg_pDispChannelDma, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dispchndmaConstruct(arg_pDispChannelDma, arg_pCallContext, arg_pParams) dispchndmaConstruct_IMPL(arg_pDispChannelDma, arg_pCallContext, arg_pParams)
+NV_STATUS dispchndmaConstruct_IMPL(struct DispChannelDma *pDispChannelDma, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dispchndmaConstruct(pDispChannelDma, pCallContext, pParams) dispchndmaConstruct_IMPL(pDispChannelDma, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -1050,6 +1040,12 @@ static inline NV_STATUS dispchndmaGetOrAllocNotifShare_DISPATCH(struct DispChann
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispchndmaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

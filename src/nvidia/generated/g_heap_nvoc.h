@@ -63,16 +63,11 @@ extern "C" {
 
 typedef struct _PMA PMA;
 
-
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
@@ -214,7 +209,7 @@ struct MEM_BLOCK
     NvU32 pitch;     // allocated surface pitch, needed for realloc
     NvU32 height;    // allocated surface height, needed for realloc
     NvU32 width;     // allocated surface width, needed for realloc
-    NvU32 refCount;
+    PORT_ATOMIC NvU32 refCount;
     NODE node;
     MEMORY_DESCRIPTOR *pMemDesc;    // Back pointer to the memory descriptor for this allocation
     HWRESOURCE_INFO hwResource;
@@ -308,7 +303,7 @@ struct Heap {
     // Data members
     HEAP_TYPE_INTERNAL heapType;
     void *pHeapTypeSpecificData;
-    NvU64 refCount;
+    _Atomic(NvU64) refCount;
     NvBool bHasFbRegions;
     NvU64 base;
     NvU64 total;
@@ -336,13 +331,9 @@ struct NVOC_METADATA__Heap {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_Heap_TYPEDEF__
-#define __NVOC_CLASS_Heap_TYPEDEF__
-typedef struct Heap Heap;
-#endif /* __NVOC_CLASS_Heap_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Heap
-#define __nvoc_class_id_Heap 0x556e9a
+#define __nvoc_class_id_Heap 0x556e9au
+typedef struct Heap Heap;
 #endif /* __nvoc_class_id_Heap */
 
 // Casting support
@@ -368,8 +359,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Heap;
 NV_STATUS __nvoc_objCreateDynamic_Heap(Heap**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Heap(Heap**, Dynamic*, NvU32);
-#define __objCreate_Heap(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_Heap((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_Heap(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_Heap((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -618,6 +609,12 @@ static inline NV_STATUS heapStorePendingBlackList(struct OBJGPU *arg1, struct He
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

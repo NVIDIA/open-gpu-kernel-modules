@@ -144,13 +144,9 @@ struct NVOC_METADATA__KernelHwpm {
     const struct NVOC_VTABLE__KernelHwpm vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelHwpm_TYPEDEF__
-#define __NVOC_CLASS_KernelHwpm_TYPEDEF__
-typedef struct KernelHwpm KernelHwpm;
-#endif /* __NVOC_CLASS_KernelHwpm_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHwpm
-#define __nvoc_class_id_KernelHwpm 0xc8c00f
+#define __nvoc_class_id_KernelHwpm 0xc8c00fu
+typedef struct KernelHwpm KernelHwpm;
 #endif /* __nvoc_class_id_KernelHwpm */
 
 // Casting support
@@ -184,8 +180,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm;
 NV_STATUS __nvoc_objCreateDynamic_KernelHwpm(KernelHwpm**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelHwpm(KernelHwpm**, Dynamic*, NvU32);
-#define __objCreate_KernelHwpm(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelHwpm((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelHwpm(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelHwpm((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -235,7 +231,7 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHw
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kern_hwpm_h_disabled
-#define khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid_56cd7a(pGpu, pKernelHwpm, arg3, arg4)
+#define khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid_ac1694(pGpu, pKernelHwpm, arg3, arg4)
 #endif // __nvoc_kern_hwpm_h_disabled
 
 
@@ -334,36 +330,41 @@ static inline NvBool khwpmIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelH
     return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmIsPresent__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS khwpmPmaStreamSriovSetGfid_56cd7a(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4) {
-    return NV_OK;
-}
-
-NV_STATUS khwpmPmaStreamSriovSetGfid_GA100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
-
-NV_STATUS khwpmPmaStreamSriovSetGfid_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
-
-NV_STATUS khwpmPmaStreamSriovSetGfid_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
-
-static inline NV_STATUS khwpmPmaStreamSriovSetGfid_92bfc3(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS khwpmStateInitUnlocked_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm);
 
 void khwpmStateDestroy_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm);
 
-void khwpmGetCblockInfo_GM107(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
-
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 void khwpmGetCblockInfo_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
-
-void khwpmGetCblockInfo_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 void khwpmGetCblockInfo_GB10B(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 void khwpmGetCblockInfo_GB20B(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
+void khwpmGetCblockInfo_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
+
+void khwpmGetCblockInfo_GM107(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
+
+NV_STATUS khwpmPmaStreamSriovSetGfid_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
+
+NV_STATUS khwpmPmaStreamSriovSetGfid_GA100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
+
+NV_STATUS khwpmPmaStreamSriovSetGfid_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
+
+// Inline HAL method definitions
+static inline NV_STATUS khwpmPmaStreamSriovSetGfid_92bfc3(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS khwpmPmaStreamSriovSetGfid_ac1694(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4){
+    return NV_OK;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

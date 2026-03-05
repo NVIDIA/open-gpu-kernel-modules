@@ -49,29 +49,19 @@ extern "C" {
 #include "nvport/inline/util_valist.h"
 #include "nv-crashcat.h"
 
-
 struct CrashCatReport;
 
-#ifndef __NVOC_CLASS_CrashCatReport_TYPEDEF__
-#define __NVOC_CLASS_CrashCatReport_TYPEDEF__
-typedef struct CrashCatReport CrashCatReport;
-#endif /* __NVOC_CLASS_CrashCatReport_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatReport
-#define __nvoc_class_id_CrashCatReport 0xde4777
+#define __nvoc_class_id_CrashCatReport 0xde4777u
+typedef struct CrashCatReport CrashCatReport;
 #endif /* __nvoc_class_id_CrashCatReport */
-
 
 
 struct CrashCatWayfinder;
 
-#ifndef __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__
-#define __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__
-typedef struct CrashCatWayfinder CrashCatWayfinder;
-#endif /* __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatWayfinder
-#define __nvoc_class_id_CrashCatWayfinder 0x085e32
+#define __nvoc_class_id_CrashCatWayfinder 0x085e32u
+typedef struct CrashCatWayfinder CrashCatWayfinder;
 #endif /* __nvoc_class_id_CrashCatWayfinder */
 
 
@@ -126,11 +116,12 @@ struct CrashCatEngine {
 };
 
 
-// Vtable with 10 per-class function pointers
+// Vtable with 11 per-class function pointers
 struct NVOC_VTABLE__CrashCatEngine {
     void (*__crashcatEngineUnload__)(struct CrashCatEngine * /*this*/);  // virtual
     NvBool (*__crashcatEngineConfigured__)(struct CrashCatEngine * /*this*/);  // pure virtual
-    void (*__crashcatEngineVprintf__)(struct CrashCatEngine * /*this*/, NvBool, const char *, va_list);  // pure virtual
+    void (*__crashcatEngineVprintf__)(struct CrashCatEngine * /*this*/, NvU64, const char *, va_list);  // pure virtual
+    void (*__crashcatEngineResetLog__)(struct CrashCatEngine * /*this*/);  // pure virtual
     NvU32 (*__crashcatEnginePriRead__)(struct CrashCatEngine * /*this*/, NvU32);  // pure virtual
     void (*__crashcatEnginePriWrite__)(struct CrashCatEngine * /*this*/, NvU32, NvU32);  // pure virtual
     void * (*__crashcatEngineMapBufferDescriptor__)(struct CrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // pure virtual
@@ -146,13 +137,9 @@ struct NVOC_METADATA__CrashCatEngine {
     const struct NVOC_VTABLE__CrashCatEngine vtable;
 };
 
-#ifndef __NVOC_CLASS_CrashCatEngine_TYPEDEF__
-#define __NVOC_CLASS_CrashCatEngine_TYPEDEF__
-typedef struct CrashCatEngine CrashCatEngine;
-#endif /* __NVOC_CLASS_CrashCatEngine_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatEngine
-#define __nvoc_class_id_CrashCatEngine 0x654166
+#define __nvoc_class_id_CrashCatEngine 0x654166u
+typedef struct CrashCatEngine CrashCatEngine;
 #endif /* __nvoc_class_id_CrashCatEngine */
 
 // Casting support
@@ -171,13 +158,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine;
 NV_STATUS __nvoc_objCreateDynamic_CrashCatEngine(CrashCatEngine**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_CrashCatEngine(CrashCatEngine**, Dynamic*, NvU32);
-#define __objCreate_CrashCatEngine(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_CrashCatEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_CrashCatEngine(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_CrashCatEngine((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS crashcatEngineConstruct_IMPL(struct CrashCatEngine *arg_);
-#define __nvoc_crashcatEngineConstruct(arg_) crashcatEngineConstruct_IMPL(arg_)
+NV_STATUS crashcatEngineConstruct_IMPL(struct CrashCatEngine *arg_this);
+#define __nvoc_crashcatEngineConstruct(arg_this) crashcatEngineConstruct_IMPL(arg_this)
 
 void crashcatEngineDestruct_IMPL(struct CrashCatEngine *arg_this);
 #define __nvoc_crashcatEngineDestruct(arg_this) crashcatEngineDestruct_IMPL(arg_this)
@@ -256,7 +243,9 @@ static inline NV_STATUS crashcatEngineLoadWayfinder(struct CrashCatEngine *arg_t
 #define crashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineConfigured__
 #define crashcatEngineConfigured(arg_this) crashcatEngineConfigured_DISPATCH(arg_this)
 #define crashcatEngineVprintf_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineVprintf__
-#define crashcatEngineVprintf(arg_this, bReportStart, fmt, args) crashcatEngineVprintf_DISPATCH(arg_this, bReportStart, fmt, args)
+#define crashcatEngineVprintf(arg_this, errorId, fmt, args) crashcatEngineVprintf_DISPATCH(arg_this, errorId, fmt, args)
+#define crashcatEngineResetLog_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineResetLog__
+#define crashcatEngineResetLog(arg_this) crashcatEngineResetLog_DISPATCH(arg_this)
 #define crashcatEnginePriRead_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEnginePriRead__
 #define crashcatEnginePriRead(arg_this, offset) crashcatEnginePriRead_DISPATCH(arg_this, offset)
 #define crashcatEnginePriWrite_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__crashcatEnginePriWrite__
@@ -281,8 +270,12 @@ static inline NvBool crashcatEngineConfigured_DISPATCH(struct CrashCatEngine *ar
     return arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineConfigured__(arg_this);
 }
 
-static inline void crashcatEngineVprintf_DISPATCH(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineVprintf__(arg_this, bReportStart, fmt, args);
+static inline void crashcatEngineVprintf_DISPATCH(struct CrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineVprintf__(arg_this, errorId, fmt, args);
+}
+
+static inline void crashcatEngineResetLog_DISPATCH(struct CrashCatEngine *arg_this) {
+    arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineResetLog__(arg_this);
 }
 
 static inline NvU32 crashcatEnginePriRead_DISPATCH(struct CrashCatEngine *arg_this, NvU32 offset) {
@@ -313,8 +306,14 @@ static inline NvU32 crashcatEngineGetWFL0Offset_DISPATCH(struct CrashCatEngine *
     return arg_this->__nvoc_metadata_ptr->vtable.__crashcatEngineGetWFL0Offset__(arg_this);
 }
 
-void crashcatEngineUnload_IMPL(struct CrashCatEngine *arg1);
+// Virtual method declarations and/or inline definitions
+void crashcatEngineUnload_IMPL(struct CrashCatEngine *arg_this);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CRASHCAT_ENGINE_H_PRIVATE_ACCESS_ALLOWED
@@ -329,7 +328,7 @@ NV_STATUS NVOC_PRIVATE_FUNCTION(crashcatEngineLoadWayfinder)(struct CrashCatEngi
 #define CRASHCAT_GET_ENGINE(pCrashCatObj) objFindAncestorOfType(CrashCatEngine, pCrashCatObj)
 
 // Non-NVOC wrapper for handling variadic arguments
-void crashcatEnginePrintf(struct CrashCatEngine *, NvBool, const char *, ...);
+void crashcatEnginePrintf(struct CrashCatEngine *, NvU64 errorId, const char *, ...);
 
 #endif // CRASHCAT_ENGINE_H
 

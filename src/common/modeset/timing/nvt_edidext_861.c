@@ -1,31 +1,29 @@
-//*****************************************************************************
-//
-//  SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-//  SPDX-License-Identifier: MIT
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
-//  File:       nvt_edidext_861.c
-//
-//  Purpose:    the provide edid 861 extension related services
-//
-//*****************************************************************************
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/** @file  nvt_edidext_861.c
+ *  @brief provide edid 861 extension related services
+ */
 
 #include "nvBinSegment.h"
 #include "nvmisc.h"
@@ -284,7 +282,8 @@ static const NVT_TIMING EIA861B[]=
     // the end
     EIA_TIMING(0,0,0,0,'-',0,0,0,0,'-',0,'p',4:3,0,0)
 };
-static NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
+
+static const NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
 
 static const NvU32 EIA861B_DUAL_ASPECT_VICS[][2] =
 {
@@ -969,6 +968,40 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
                 break;
             }
         }
+    }
+}
+
+// If a timing is present in the YUV420 VDB, consider it
+// incompatible with other sampling modes
+CODE_SEGMENT(PAGE_DD_CODE)
+void updateBpcForYuv420OnlyTiming(NVT_TIMING *pT,
+                                  const NVT_EDID_CEA861_INFO *p861Info)
+{
+    NvU32 i;
+    const NvU8 *pYuv420Vic = p861Info->svd_y420vdb;
+    NvBool yuv420Only = NV_FALSE;
+
+    for (i = 0; i < p861Info->total_y420vdb; i++)
+    { 
+        NVT_TIMING y420vdbTiming;
+        NvU8 vic = NVT_GET_CTA_8BIT_VIC(pYuv420Vic[i]);
+        if (vic == 0 || vic > MAX_CEA861B_FORMAT)
+            continue;
+
+        y420vdbTiming = EIA861B[vic-1]; 
+
+        if (NvTiming_IsTimingExactEqual(pT, &y420vdbTiming))
+        {
+            yuv420Only = NV_TRUE;
+            break; 
+        }
+    }
+    
+    if (yuv420Only)
+    {
+        pT->etc.rgb444.bpcs = 0;
+        pT->etc.yuv444.bpcs = 0;
+        pT->etc.yuv422.bpcs = 0;
     }
 }
 

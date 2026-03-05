@@ -31,7 +31,7 @@
 \***************************************************************************/
 
 #include "rmapi/client.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/event_buffer.h"
 #include "resserv/rs_server.h"
 #include "gpu_mgr/gpu_mgr.h"
@@ -224,6 +224,7 @@ _videoEventBufferAdd
             videoRecord.session.engine_type = pRecord->event_start.engine_type;
             videoRecord.session.engine_id = pRecord->event_start.engine_id;
             videoRecord.session.codec_id = pRecord->event_start.codec_id;
+            videoRecord.session.status = pRecord->event_start.sessionInfo;
             break;
         case VIDEO_ENGINE_EVENT_ID__SESSION_END:
             videoRecord.session.engine_type = pRecord->event_end.engine_type;

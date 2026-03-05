@@ -59,55 +59,35 @@ extern "C" {
 
 #include "ctrl/ctrl2080/ctrl2080gr.h" // NV2080_CTRL_GR_FECS_BIND_EVTBUF_LOD
 
-
 struct KernelGraphics;
 
-#ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphics_TYPEDEF__
-typedef struct KernelGraphics KernelGraphics;
-#endif /* __NVOC_CLASS_KernelGraphics_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphics
-#define __nvoc_class_id_KernelGraphics 0xea3fa9
+#define __nvoc_class_id_KernelGraphics 0xea3fa9u
+typedef struct KernelGraphics KernelGraphics;
 #endif /* __nvoc_class_id_KernelGraphics */
-
 
 
 struct KernelGraphicsManager;
 
-#ifndef __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-typedef struct KernelGraphicsManager KernelGraphicsManager;
-#endif /* __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsManager
-#define __nvoc_class_id_KernelGraphicsManager 0xd22179
+#define __nvoc_class_id_KernelGraphicsManager 0xd22179u
+typedef struct KernelGraphicsManager KernelGraphicsManager;
 #endif /* __nvoc_class_id_KernelGraphicsManager */
-
 
 
 struct EventBuffer;
 
-#ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
-#define __NVOC_CLASS_EventBuffer_TYPEDEF__
-typedef struct EventBuffer EventBuffer;
-#endif /* __NVOC_CLASS_EventBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_EventBuffer
-#define __nvoc_class_id_EventBuffer 0x63502b
+#define __nvoc_class_id_EventBuffer 0x63502bu
+typedef struct EventBuffer EventBuffer;
 #endif /* __nvoc_class_id_EventBuffer */
-
 
 
 struct Subdevice;
 
-#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
-#define __NVOC_CLASS_Subdevice_TYPEDEF__
-typedef struct Subdevice Subdevice;
-#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Subdevice
-#define __nvoc_class_id_Subdevice 0x4b01b3
+#define __nvoc_class_id_Subdevice 0x4b01b3u
+typedef struct Subdevice Subdevice;
 #endif /* __nvoc_class_id_Subdevice */
 
 

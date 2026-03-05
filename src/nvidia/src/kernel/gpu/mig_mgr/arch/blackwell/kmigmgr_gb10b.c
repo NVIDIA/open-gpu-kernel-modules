@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,8 @@
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+
+#include "kernel/core/locks.h"
 
 /*!
  * @brief   Peforms checks to determine whether instancing can be enabled on
@@ -113,7 +115,33 @@ kmigmgrIsGPUInstanceCombinationValid_GB10B
     NvU32 gpuInstanceFlag
 )
 {
+    NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _COMPUTE_SIZE, gpuInstanceFlag);
+    NvU32 smallestComputeSizeFlag;
+
     if (!kmigmgrIsGPUInstanceFlagValid_HAL(pGpu, pKernelMIGManager, gpuInstanceFlag))
+    {
+        return NV_FALSE;
+    }
+
+    smallestComputeSizeFlag = kmigmgrSmallestComputeProfileSize(pGpu, pKernelMIGManager);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, smallestComputeSizeFlag != KMIGMGR_COMPUTE_SIZE_INVALID, NV_FALSE);
+
+    // JPG_OFA profile is only available on the smallest available partition
+    if (FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA, _ENABLE, gpuInstanceFlag))
+    {
+        if (computeSizeFlag != smallestComputeSizeFlag)
+        {
+            return NV_FALSE;
+        }
+    }
+
+    //
+    // MEMORY=_FULL/COMPUTE=_FULL implicitly includes OFA=_ENABLE so need to
+    // report this profile separately.
+    //
+    if (FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA, _ENABLE, gpuInstanceFlag) &&
+        FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE, _FULL, gpuInstanceFlag) &&
+        FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE, _FULL, gpuInstanceFlag))
     {
         return NV_FALSE;
     }
@@ -288,10 +316,10 @@ kmigmgrSwizzIdToSpan_GB10B
             ret = rangeMake(0, spanLen - 1);
             break;
         case 1:
-            ret = rangeMake(0, (spanLen/2) - 1);
+            ret = rangeMake(0, ((spanLen - 1)/2));
             break;
         case 2:
-            ret = rangeMake(spanLen/2, spanLen - 1);
+            ret = rangeMake((spanLen - 1), (spanLen - 1));
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Unsupported swizzid 0x%x\n", swizzId);
@@ -340,4 +368,106 @@ kmigmgrSwizzIdToGrSpan_GB10B
     }
 
     return ret;
+}
+
+/*!
+ * @brief  Patch the CI capacity based on the GR count
+ */
+NV_STATUS
+kmigmgrPatchCICapacity_GB10B
+(
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager,
+    const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *pProfile,
+    NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *pParams,
+    NvU32 veidSlotCount
+)
+{
+    NV_ASSERT_OR_RETURN(pProfile != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_STATE);
+
+    /*
+     * Max syspipe for any GI is 1. CI capacity is calculated based on
+     * VEID mask which could result in the following condition passing
+     * for a FULL GI with HALF/MINI_HALF CI combination.
+     * If a CI is already created in the GI, veidSlotCount will have a
+     * value less than the totalSpansCount which indicates that the only
+     * available syspipe is already occupied. Clear the profileCount and
+     * availableSpansCount in that case.
+     */
+    if (pParams->totalSpansCount > pProfile->grCount)
+    {
+        NV_PRINTF(LEVEL_INFO, "Total Span count:0x%x more than GR Count:0x%x\n",
+                  pParams->totalSpansCount, pProfile->grCount);
+        if (veidSlotCount < pParams->totalSpansCount)
+        {
+            NV_PRINTF(LEVEL_INFO, "Clear profile and available spans count\n");
+            pParams->profileCount = 0;
+            pParams->availableSpansCount = 0;
+        }
+    }
+    return NV_OK;
+}
+
+/*
+ * @brief   Function to configure PM settings for current MIG mode
+ *
+ * This workaround handles configuring dynamic PM for the current MIG
+ * mode.  When MIG is enabled, then dynamic PM is disabled and vice versa.
+ *
+ * @param[IN]   pGpu
+ * @param[IN]   pMIGManager
+ */
+NV_STATUS
+kmigmgrConfigurePMSettings_GB10B
+(
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager
+)
+{
+    NvBool bDisablePM = NV_FALSE;
+    NvBool bEnablePM = NV_FALSE;
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsWriteOwner() && rmGpuLockIsOwner(),
+                        NV_ERR_INVALID_LOCK_STATE);
+
+    //
+    // Nothing prevents redundant calls to enable/disable MIG from
+    // userspace.  To avoid repeat (and unnecessary) updates to the
+    // dynamic PM refcnt we only do them when the MIG mode actually
+    // changes.
+    //
+    bDisablePM = (pKernelMIGManager->bMIGEnabled &&
+                  !pKernelMIGManager->bIsDynamicPMDisabled);
+    bEnablePM = (!pKernelMIGManager->bMIGEnabled &&
+                  pKernelMIGManager->bIsDynamicPMDisabled);
+
+    if (bDisablePM)
+    {
+        pKernelMIGManager->bIsDynamicPMDisabled = NV_TRUE;
+    }
+    else if (bEnablePM)
+    {
+        pKernelMIGManager->bIsDynamicPMDisabled = NV_FALSE;
+    }
+
+    //
+    // We need to drop (and reacquire) the GPU locks around the dynamic PM
+    // refcnt calls.
+    //
+    rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+
+    if (bDisablePM)
+    {
+        osRefGpuAccessNeeded(pGpu->pOsGpuInfo);
+    }
+    else if (bEnablePM)
+    {
+        osUnrefGpuAccessNeeded(pGpu->pOsGpuInfo);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
+                                             RM_LOCK_MODULES_NONE));
+
+    return NV_OK;
 }

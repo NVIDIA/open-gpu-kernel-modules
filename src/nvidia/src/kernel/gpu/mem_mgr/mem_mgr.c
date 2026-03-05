@@ -1012,6 +1012,7 @@ memmgrStateDestroy_IMPL
             memmgrPreSchedulingDisableHandler, NULL);
     }
     memmgrScrubDestroy_HAL(pGpu, pMemoryManager);
+
 }
 
 static NV_STATUS
@@ -1115,7 +1116,14 @@ memmgrCreateHeap_IMPL
 
         NV_ASSERT_OK_OR_RETURN(memmgrValidateFBEndReservation_HAL(pGpu, pMemoryManager));
 
-        NV_ASSERT_OK_OR_RETURN(memmgrReserveMemoryForFakeWPR_HAL(pGpu, pMemoryManager));
+        //
+        // In case of Inst-in-sys boot by ACR we should not reserve memory in FB for WPR
+        // since neither exists
+        //
+        if (!gpuIsInstInSysBootByAcrEnabled(pGpu))
+        {
+            NV_ASSERT_OK_OR_RETURN(memmgrReserveMemoryForFakeWPR_HAL(pGpu, pMemoryManager));
+        }
 
         NV_ASSERT_OK_OR_RETURN(memmgrReserveMemoryForPmu_HAL(pGpu, pMemoryManager));
 
@@ -1613,7 +1621,7 @@ memmgrFillMemdescForPhysAttr_IMPL
     NvU64 *pOffset,
     NvU32 *pMemAperture,
     NvU32 *pMemKind,
-    NvU32 *pZCullId,
+    NvS32 *pZCullId,
     NvU32 *pGpuCacheAttr,
     NvU32 *pGpuP2PCacheAttr,
     NvU64 *contigSegmentSize
@@ -1631,8 +1639,6 @@ memmgrFillMemdescForPhysAttr_IMPL
     if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM )
         *pMemAperture = NV0041_CTRL_CMD_GET_SURFACE_PHYS_ATTR_APERTURE_VIDMEM;
     else if (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)
-        *pMemAperture = NV0041_CTRL_CMD_GET_SURFACE_PHYS_ATTR_APERTURE_SYSMEM;
-    else if (memdescGetAddressSpace(pMemDesc) == ADDR_EGM)
         *pMemAperture = NV0041_CTRL_CMD_GET_SURFACE_PHYS_ATTR_APERTURE_SYSMEM;
     else if (memdescGetAddressSpace(pMemDesc) == ADDR_VIRTUAL )
     {
@@ -3153,7 +3159,8 @@ memmgrPageLevelPoolsGetInfo_IMPL
     }
 
     // If memory partitioning is enabled, then use per-partition pool allocator
-    if (bMemPartitioningEnabled)
+    if (bMemPartitioningEnabled &&
+        !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
         MIG_INSTANCE_REF ref;
         NV_ASSERT_OK_OR_RETURN(
@@ -4191,9 +4198,11 @@ memmgrGetInternalClientHandles_IMPL
     NvHandle *phSubdevice
 )
 {
-    if (IS_MIG_IN_USE(pGpu))
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+
+    if (IS_MIG_IN_USE(pGpu) &&
+       !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pExternalDevice))
     {
-        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF pMigInstanceRef;
         KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
 

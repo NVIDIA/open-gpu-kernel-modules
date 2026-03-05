@@ -209,6 +209,7 @@ struct NvKmsKapiConnectorInfo {
     NvU32        numIncompatibleConnectors;
     NvKmsKapiConnector incompatibleConnectorHandles[NVKMS_KAPI_MAX_CONNECTORS];
 
+    NvBool dynamicDpyIdListValid;
     NVDpyIdList dynamicDpyIdList;
 };
 
@@ -517,6 +518,10 @@ struct NvKmsKapiDynamicDisplayParams {
         NvU16  bufferSize;
         NvU8   buffer[NVKMS_KAPI_EDID_BUFFER_SIZE];
     } edid;
+
+    /* [OUT] Max resolution allowed for modelist */
+    NvU32 maxWidthInPixels;
+    NvU32 maxHeightInPixels;
 
     /* [IN] Set true to override EDID */
     NvBool overrideEdid;
@@ -1026,6 +1031,30 @@ struct NvKmsKapiFunctionsTable {
      */
     NvBool (*isVidmem)(
         const struct NvKmsKapiMemory *memory
+    );
+
+    /*!
+     * Increment the GC6 blocker reference count to prevent the GPU from
+     * entering GC6 power state.
+     *
+     * \param [in]  device           A device allocated using allocateDevice().
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*gc6BlockerRefCntInc)(
+        const struct NvKmsKapiDevice *device
+    );
+
+    /*!
+     * Decrement the GC6 blocker reference count to allow the GPU to
+     * enter GC6 power state.
+     *
+     * \param [in]  device           A device allocated using allocateDevice().
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*gc6BlockerRefCntDec)(
+        const struct NvKmsKapiDevice *device
     );
 
     /*!

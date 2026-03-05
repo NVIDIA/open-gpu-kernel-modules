@@ -40,6 +40,7 @@ gpuGetGenericClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV01_EVENT_KERNEL_CALLBACK,
         NV01_EVENT_KERNEL_CALLBACK_EX,
         NV01_EVENT_OS_EVENT,
+        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_LIST_SYSTEM,
         NV01_MEMORY_SYSTEM,
         NV01_MEMORY_SYSTEM_OS_DESCRIPTOR,
@@ -48,7 +49,7 @@ gpuGetGenericClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV01_ROOT_NON_PRIV,
         NV20_SUBDEVICE_0,
     };
-    *pNumClassDescriptors = 15;
+    *pNumClassDescriptors = 16;
     return genericClassDescriptorList;
 }
 
@@ -68,7 +69,6 @@ gpuGetNoEngClassList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -82,6 +82,8 @@ gpuGetNoEngClassList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -89,7 +91,7 @@ gpuGetNoEngClassList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 32;
+    *pNumClassDescriptors = 33;
     return halTU102ClassDescriptorList;
 }
 
@@ -126,6 +128,7 @@ gpuGetEngClassDescriptorList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC371_DISP_SF_USER, ENG_KERNEL_DISPLAY },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
@@ -170,7 +173,6 @@ gpuGetNoEngClassList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -184,6 +186,8 @@ gpuGetNoEngClassList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -191,7 +195,7 @@ gpuGetNoEngClassList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 32;
+    *pNumClassDescriptors = 33;
     return halTU104ClassDescriptorList;
 }
 
@@ -228,6 +232,7 @@ gpuGetEngClassDescriptorList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC371_DISP_SF_USER, ENG_KERNEL_DISPLAY },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
@@ -273,7 +278,6 @@ gpuGetNoEngClassList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -287,6 +291,8 @@ gpuGetNoEngClassList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -294,7 +300,7 @@ gpuGetNoEngClassList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 32;
+    *pNumClassDescriptors = 33;
     return halTU106ClassDescriptorList;
 }
 
@@ -331,6 +337,7 @@ gpuGetEngClassDescriptorList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC371_DISP_SF_USER, ENG_KERNEL_DISPLAY },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
@@ -377,7 +384,6 @@ gpuGetNoEngClassList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -391,6 +397,8 @@ gpuGetNoEngClassList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -398,7 +406,7 @@ gpuGetNoEngClassList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 32;
+    *pNumClassDescriptors = 33;
     return halTU116ClassDescriptorList;
 }
 
@@ -435,6 +443,7 @@ gpuGetEngClassDescriptorList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC371_DISP_SF_USER, ENG_KERNEL_DISPLAY },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
@@ -479,7 +488,6 @@ gpuGetNoEngClassList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -493,6 +501,8 @@ gpuGetNoEngClassList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -500,7 +510,7 @@ gpuGetNoEngClassList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 32;
+    *pNumClassDescriptors = 33;
     return halTU117ClassDescriptorList;
 }
 
@@ -537,6 +547,7 @@ gpuGetEngClassDescriptorList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVB4B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC371_DISP_SF_USER, ENG_KERNEL_DISPLAY },
@@ -585,7 +596,6 @@ gpuGetNoEngClassList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -599,6 +609,8 @@ gpuGetNoEngClassList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -610,7 +622,7 @@ gpuGetNoEngClassList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 40;
+    *pNumClassDescriptors = 41;
     return halGA100ClassDescriptorList;
 }
 
@@ -666,6 +678,7 @@ gpuGetEngClassDescriptorList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC4D1_VIDEO_NVJPG, ENG_NVJPG },
         { NVC6B0_VIDEO_DECODER, ENG_NVDEC(0) },
@@ -706,7 +719,6 @@ gpuGetNoEngClassList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -720,6 +732,8 @@ gpuGetNoEngClassList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -731,7 +745,7 @@ gpuGetNoEngClassList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halGA102ClassDescriptorList;
 }
 
@@ -778,6 +792,7 @@ gpuGetEngClassDescriptorList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC670_DISPLAY, ENG_KERNEL_DISPLAY },
@@ -824,7 +839,6 @@ gpuGetNoEngClassList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -838,6 +852,8 @@ gpuGetNoEngClassList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -849,7 +865,7 @@ gpuGetNoEngClassList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halGA103ClassDescriptorList;
 }
 
@@ -896,6 +912,7 @@ gpuGetEngClassDescriptorList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC670_DISPLAY, ENG_KERNEL_DISPLAY },
@@ -942,7 +959,6 @@ gpuGetNoEngClassList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -956,6 +972,8 @@ gpuGetNoEngClassList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -967,7 +985,7 @@ gpuGetNoEngClassList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halGA104ClassDescriptorList;
 }
 
@@ -1014,6 +1032,7 @@ gpuGetEngClassDescriptorList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC670_DISPLAY, ENG_KERNEL_DISPLAY },
@@ -1060,7 +1079,6 @@ gpuGetNoEngClassList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1074,6 +1092,8 @@ gpuGetNoEngClassList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1085,7 +1105,7 @@ gpuGetNoEngClassList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halGA106ClassDescriptorList;
 }
 
@@ -1132,6 +1152,7 @@ gpuGetEngClassDescriptorList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC670_DISPLAY, ENG_KERNEL_DISPLAY },
@@ -1178,7 +1199,6 @@ gpuGetNoEngClassList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1192,6 +1212,8 @@ gpuGetNoEngClassList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1203,7 +1225,7 @@ gpuGetNoEngClassList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halGA107ClassDescriptorList;
 }
 
@@ -1250,6 +1272,7 @@ gpuGetEngClassDescriptorList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC670_DISPLAY, ENG_KERNEL_DISPLAY },
@@ -1296,7 +1319,6 @@ gpuGetNoEngClassList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1310,6 +1332,8 @@ gpuGetNoEngClassList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1321,7 +1345,7 @@ gpuGetNoEngClassList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halAD102ClassDescriptorList;
 }
 
@@ -1368,6 +1392,7 @@ gpuGetEngClassDescriptorList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC67A_CURSOR_IMM_CHANNEL_PIO, ENG_KERNEL_DISPLAY },
@@ -1422,7 +1447,6 @@ gpuGetNoEngClassList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1436,6 +1460,8 @@ gpuGetNoEngClassList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1447,7 +1473,7 @@ gpuGetNoEngClassList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halAD103ClassDescriptorList;
 }
 
@@ -1494,6 +1520,7 @@ gpuGetEngClassDescriptorList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC67A_CURSOR_IMM_CHANNEL_PIO, ENG_KERNEL_DISPLAY },
@@ -1548,7 +1575,6 @@ gpuGetNoEngClassList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1562,6 +1588,8 @@ gpuGetNoEngClassList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1573,7 +1601,7 @@ gpuGetNoEngClassList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halAD104ClassDescriptorList;
 }
 
@@ -1620,6 +1648,7 @@ gpuGetEngClassDescriptorList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC67A_CURSOR_IMM_CHANNEL_PIO, ENG_KERNEL_DISPLAY },
@@ -1674,7 +1703,6 @@ gpuGetNoEngClassList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1688,6 +1716,8 @@ gpuGetNoEngClassList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1699,7 +1729,7 @@ gpuGetNoEngClassList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halAD106ClassDescriptorList;
 }
 
@@ -1746,6 +1776,7 @@ gpuGetEngClassDescriptorList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC67A_CURSOR_IMM_CHANNEL_PIO, ENG_KERNEL_DISPLAY },
@@ -1800,7 +1831,6 @@ gpuGetNoEngClassList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1814,6 +1844,8 @@ gpuGetNoEngClassList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1825,7 +1857,7 @@ gpuGetNoEngClassList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 42;
     return halAD107ClassDescriptorList;
 }
 
@@ -1872,6 +1904,7 @@ gpuGetEngClassDescriptorList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC67A_CURSOR_IMM_CHANNEL_PIO, ENG_KERNEL_DISPLAY },
@@ -1927,7 +1960,6 @@ gpuGetNoEngClassList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -1941,12 +1973,13 @@ gpuGetNoEngClassList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2014,6 +2047,7 @@ gpuGetEngClassDescriptorList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVB8B0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVB8B0_VIDEO_DECODER, ENG_NVDEC(1) },
@@ -2065,7 +2099,6 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2079,12 +2112,13 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2163,6 +2197,7 @@ gpuGetEngClassDescriptorList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
@@ -2215,7 +2250,6 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2229,12 +2263,13 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2303,6 +2338,7 @@ gpuGetEngClassDescriptorList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
@@ -2346,7 +2382,6 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2361,12 +2396,13 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2424,6 +2460,7 @@ gpuGetEngClassDescriptorList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -2474,7 +2511,6 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2488,12 +2524,13 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2572,6 +2609,7 @@ gpuGetEngClassDescriptorList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
@@ -2624,7 +2662,6 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2638,12 +2675,13 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2712,6 +2750,7 @@ gpuGetEngClassDescriptorList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
@@ -2755,7 +2794,6 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2769,12 +2807,13 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -2861,6 +2900,7 @@ gpuGetEngClassDescriptorList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -2917,7 +2957,6 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -2931,12 +2970,13 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3023,6 +3063,7 @@ gpuGetEngClassDescriptorList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3074,7 +3115,6 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -3088,12 +3128,13 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3180,6 +3221,7 @@ gpuGetEngClassDescriptorList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3227,7 +3269,6 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -3241,12 +3282,13 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3333,6 +3375,7 @@ gpuGetEngClassDescriptorList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3380,7 +3423,6 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -3394,12 +3436,13 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3486,6 +3529,7 @@ gpuGetEngClassDescriptorList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3532,7 +3576,6 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -3547,12 +3590,13 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3642,6 +3686,7 @@ gpuGetEngClassDescriptorList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3697,7 +3742,6 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV0020_GPU_MANAGEMENT,
         NV0092_RG_LINE_CALLBACK,
         NV01_MEMORY_DEVICELESS,
-        NV01_MEMORY_FRAMEBUFFER_CONSOLE,
         NV01_MEMORY_HW_RESOURCES,
         NV01_MEMORY_LIST_FBMEM,
         NV01_MEMORY_LIST_OBJECT,
@@ -3712,12 +3756,13 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
         NV_MEMORY_EXPORT,
-        NV_MEMORY_EXTENDED_USER,
         NV_MEMORY_FABRIC,
         NV_MEMORY_FABRIC_IMPORTED_REF,
         NV_MEMORY_FABRIC_IMPORT_V2,
@@ -3807,6 +3852,7 @@ gpuGetEngClassDescriptorList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NV50_P2P, ENG_BUS },
         { NV50_THIRD_PARTY_P2P, ENG_BUS },
         { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA083_GRID_DISPLAYLESS, ENG_GPU },
         { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
         { NVC372_DISPLAY_SW, ENG_KERNEL_DISPLAY },
         { NVC77F_ANY_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
@@ -3905,4 +3951,4 @@ gpuGetEngClassDescriptorList_T264D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
     return halT264DClassDescriptorList;
 }
 
-ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= (15 /* generic */ + 114 /* GB20B */));
+ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= (16 /* generic */ + 115 /* GB20B */));

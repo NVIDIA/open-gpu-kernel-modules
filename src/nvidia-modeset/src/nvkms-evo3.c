@@ -1327,6 +1327,9 @@ void nvEvoInitWindowMappingC5(const NVDispEvoRec *pDispEvo,
 
         nvDmaSetStartEvoMethod(pChannel, NVC57D_WINDOW_SET_WINDOW_USAGE_BOUNDS(win), 1);
         nvDmaSetEvoMethodData(pChannel, bounds);
+
+        nvDmaSetStartEvoMethod(pChannel, NVC37D_WINDOW_SET_WINDOW_FORMAT_USAGE_BOUNDS(win), 1);
+        nvDmaSetEvoMethodData(pChannel, 0);
     }
     nvPopEvoSubDevMask(pDevEvo);
 }
@@ -1545,23 +1548,10 @@ static NvU32 GetHdmiDscHBlankPixelTarget(const NVHwModeTimingsEvo *pTimings,
     return hBlankPixelTarget;
 }
 
-static void EvoSetRasterParamsC6(NVDevEvoPtr pDevEvo, int head,
-                                 const NVHwModeTimingsEvo *pTimings,
-                                 const NvU8 tilePosition,
-                                 const NVDscInfoEvoRec *pDscInfo,
-                                 const NVEvoColorRec *pOverscanColor,
-                                 NVEvoUpdateState *updateState)
+NvU32 nvEvoGetRasterParamsHBlankDelayC6(const NVHwModeTimingsEvo *pTimings,
+                                        const NVDscInfoEvoRec *pDscInfo)
 {
     NvU32 rasterHBlankDelay;
-    NVEvoChannelPtr pChannel = pDevEvo->core;
-
-    /* These methods should only apply to a single pDpy */
-    nvAssert(pDevEvo->subDevMaskStackDepth > 0);
-
-    nvUpdateUpdateState(pDevEvo, updateState, pChannel);
-
-    EvoSetRasterParams5(pDevEvo, head, pTimings, tilePosition, pOverscanColor,
-                        updateState);
 
     if (pDscInfo->type == NV_DSC_INFO_EVO_TYPE_HDMI) {
         const NvU32 hBlank = pTimings->rasterSize.x -
@@ -1583,6 +1573,28 @@ static void EvoSetRasterParamsC6(NVDevEvoPtr pDevEvo, int head,
     } else {
         rasterHBlankDelay = 0;
     }
+    
+    return rasterHBlankDelay;
+} 
+
+static void EvoSetRasterParamsC6(NVDevEvoPtr pDevEvo, int head,
+                                 const NVHwModeTimingsEvo *pTimings,
+                                 const NvU8 tilePosition,
+                                 const NVDscInfoEvoRec *pDscInfo,
+                                 const NVEvoColorRec *pOverscanColor,
+                                 NVEvoUpdateState *updateState)
+{
+    NVEvoChannelPtr pChannel = pDevEvo->core;   
+    const NvU32 rasterHBlankDelay =
+        nvEvoGetRasterParamsHBlankDelayC6(pTimings, pDscInfo);
+
+    /* These methods should only apply to a single pDpy */
+    nvAssert(pDevEvo->subDevMaskStackDepth > 0);
+
+    nvUpdateUpdateState(pDevEvo, updateState, pChannel);
+
+    EvoSetRasterParams5(pDevEvo, head, pTimings, tilePosition, pOverscanColor,
+                        updateState);
 
     nvDmaSetStartEvoMethod(pChannel, NVC67D_HEAD_SET_RASTER_HBLANK_DELAY(head), 1);
     nvDmaSetEvoMethodData(pChannel, rasterHBlankDelay);
@@ -2040,7 +2052,6 @@ static void EvoSetHeadControlC3(NVDevEvoPtr pDevEvo, int sd, int head,
     }
 
     // Convert head control state to EVO method values.
-    nvAssert(!pHC->interlaced);
     data |= DRF_DEF(C37D, _HEAD_SET_CONTROL, _STRUCTURE, _PROGRESSIVE);
 
     nvAssert(pHC->serverLockPin != NV_EVO_LOCK_PIN_ERROR);
@@ -3049,8 +3060,6 @@ static NvBool AssignPerHeadImpParams(NVC372_CTRL_IMP_HEAD *pImpHead,
     pImpHead->rasterBlankStart.Y         = pTimings->rasterBlankStart.y;
     pImpHead->rasterBlankEnd.X           = pTimings->rasterBlankEnd.x;
     pImpHead->rasterBlankEnd.Y           = pTimings->rasterBlankEnd.y;
-    pImpHead->rasterVertBlank2.yStart    = pTimings->rasterVertBlank2Start;
-    pImpHead->rasterVertBlank2.yEnd      = pTimings->rasterVertBlank2End;
 
     /* XXX TODO: Fill in correct scanlock information (only needed for
      * MIN_VPSTATE). */
@@ -5119,10 +5128,6 @@ static void EvoParseCapabilityNotifier3(NVDevEvoPtr pDevEvo,
     if (QueryStereoPinC3(pDevEvo, pEvoSubDev, &stereoPin)) {
         pEvoCaps->pin[stereoPin].stereo = TRUE;
     }
-
-    // Miscellaneous capabilities
-    // NVDisplay does not support interlaced modes.
-    pEvoCaps->misc.supportsInterlaced = FALSE;
 
 /* XXX temporary WAR; see bug 4028718 */
 #if !defined(NVC373_HEAD_CLK_CAP)

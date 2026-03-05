@@ -145,6 +145,9 @@ void nvEvoParseCapabilityNotifier6(NVDevEvoPtr pDevEvo,
 
 NvU32 nvHwFormatFromKmsFormatC6(const enum NvKmsSurfaceMemoryFormat format);
 
+NvU32 nvEvoGetRasterParamsHBlankDelayC6(const NVHwModeTimingsEvo *pTimings,
+                                        const NVDscInfoEvoRec *pDscInfo);
+
 NvBool nvEvoGetCapabilitiesC6(NVDevEvoPtr pDevEvo);
 
 void

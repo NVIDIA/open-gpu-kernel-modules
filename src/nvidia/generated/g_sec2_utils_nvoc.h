@@ -125,13 +125,9 @@ struct NVOC_METADATA__Sec2Utils {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_Sec2Utils_TYPEDEF__
-#define __NVOC_CLASS_Sec2Utils_TYPEDEF__
-typedef struct Sec2Utils Sec2Utils;
-#endif /* __NVOC_CLASS_Sec2Utils_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Sec2Utils
-#define __nvoc_class_id_Sec2Utils 0x7716b1
+#define __nvoc_class_id_Sec2Utils 0x7716b1u
+typedef struct Sec2Utils Sec2Utils;
 #endif /* __nvoc_class_id_Sec2Utils */
 
 // Casting support
@@ -149,14 +145,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Utils;
 
 NV_STATUS __nvoc_objCreateDynamic_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance);
-#define __objCreate_Sec2Utils(ppNewObj, pParent, createFlags, arg_pGpu, arg_pKernelMIGGPUInstance) \
-    __nvoc_objCreate_Sec2Utils((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pKernelMIGGPUInstance)
+NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils**, Dynamic*, NvU32, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance);
+#define __objCreate_Sec2Utils(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pGpu, pKernelMIGGPUInstance) \
+    __nvoc_objCreate_Sec2Utils((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pGpu, pKernelMIGGPUInstance)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS sec2utilsConstruct_IMPL(struct Sec2Utils *arg_psec2utils, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance);
-#define __nvoc_sec2utilsConstruct(arg_psec2utils, arg_pGpu, arg_pKernelMIGGPUInstance) sec2utilsConstruct_IMPL(arg_psec2utils, arg_pGpu, arg_pKernelMIGGPUInstance)
+NV_STATUS sec2utilsConstruct_IMPL(struct Sec2Utils *psec2utils, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance);
+#define __nvoc_sec2utilsConstruct(psec2utils, pGpu, pKernelMIGGPUInstance) sec2utilsConstruct_IMPL(psec2utils, pGpu, pKernelMIGGPUInstance)
 
 void sec2utilsDestruct_IMPL(struct Sec2Utils *psec2utils);
 #define __nvoc_sec2utilsDestruct(psec2utils) sec2utilsDestruct_IMPL(psec2utils)
@@ -194,6 +190,12 @@ static inline void sec2utilsServiceInterrupts(struct Sec2Utils *psec2utils) {
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

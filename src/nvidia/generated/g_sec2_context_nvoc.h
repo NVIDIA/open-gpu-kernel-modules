@@ -136,13 +136,9 @@ struct NVOC_METADATA__Sec2Context {
     const struct NVOC_VTABLE__Sec2Context vtable;
 };
 
-#ifndef __NVOC_CLASS_Sec2Context_TYPEDEF__
-#define __NVOC_CLASS_Sec2Context_TYPEDEF__
-typedef struct Sec2Context Sec2Context;
-#endif /* __NVOC_CLASS_Sec2Context_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Sec2Context
-#define __nvoc_class_id_Sec2Context 0x4c3439
+#define __nvoc_class_id_Sec2Context 0x4c3439u
+typedef struct Sec2Context Sec2Context;
 #endif /* __nvoc_class_id_Sec2Context */
 
 // Casting support
@@ -160,9 +156,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Context;
 
 NV_STATUS __nvoc_objCreateDynamic_Sec2Context(Sec2Context**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_Sec2Context(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_Sec2Context((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_Sec2Context(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_Sec2Context((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -381,17 +377,21 @@ static inline NV_STATUS sec2ctxGetOrAllocNotifShare_DISPATCH(struct Sec2Context 
     return pNotifier->__nvoc_metadata_ptr->vtable.__sec2ctxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS sec2ctxConstructHal_KERNEL(struct Sec2Context *pSec2Context, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
 
 void sec2ctxDestructHal_KERNEL(struct Sec2Context *pSec2Context);
 
-
-static inline NV_STATUS __nvoc_sec2ctxConstruct(struct Sec2Context *arg_pSec2Context, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return sec2ctxConstructHal(arg_pSec2Context, arg_pCallContext, arg_pParams);
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_sec2ctxConstruct(struct Sec2Context *pSec2Context, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return sec2ctxConstructHal(pSec2Context, pCallContext, pParams);
 }
 
-static inline void __nvoc_sec2ctxDestruct(struct Sec2Context *pSec2Context) {
+static inline void __nvoc_sec2ctxDestruct(struct Sec2Context *pSec2Context){
     sec2ctxDestructHal(pSec2Context);
 }
 

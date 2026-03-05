@@ -304,7 +304,10 @@ pfmreqhndlrOperatingLimitUpdate_IMPL
         status = osQueueWorkItem(pGpu,
                                  _pfmreqhndlrUpdateSystemParamLimitWorkItem,
                                  NULL,
-                                 (OsQueueWorkItemFlags){0});
+                                 (OsQueueWorkItemFlags){
+                                     .bLockSema = NV_TRUE,
+                                     .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                     .bLockGpus = NV_TRUE,});
 
         if (status != NV_OK)
         {
@@ -728,7 +731,11 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
                 status = osQueueWorkItem(pGpu,
                     _pfmreqhndlrUpdatePlatformPowerModeWorkItem,
                     NULL,
-                    (OsQueueWorkItemFlags){0});
+                    (OsQueueWorkItemFlags){
+                        .bLockSema = NV_TRUE,
+                        .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                        .bLockGpus = NV_TRUE,});
+
                 if (status == NV_OK)
                 {
                     // Queing workitem succeeded, mark it as pending.
@@ -1116,6 +1123,11 @@ pfmreqhndlrInitSensors
     {
         pPfmreqhndlrData->PFMREQHNDLRACPIData.acpiVersionSw =
             NV0000_CTRL_PFM_REQ_HNDLR_ACPI_REVISION_SW_2X;
+    }
+    else
+    {
+        pPfmreqhndlrData->PFMREQHNDLRACPIData.acpiVersionSw =
+            NV0000_CTRL_PFM_REQ_HNDLR_ACPI_REVISION_SW_1X;
     }
 
     // Cache the current timestamp
@@ -1770,7 +1782,13 @@ pfmreqhndlrHandlePlatformSetEdppLimitInfo_IMPL
         status = osQueueWorkItem(pGpu,
             _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem,
             NULL,
-            (OsQueueWorkItemFlags){0});
+            (OsQueueWorkItemFlags){
+             .bLockSema = NV_TRUE,
+             .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+             .bLockGpus = NV_TRUE,});
+
+        // Sema, API, and all GPUs with RM_LOCK_MODULES_PFM_REQ_HNDLR
+
         if(status == NV_OK)
         {
             pEdppLimit->bWorkItemPending = NV_TRUE;
@@ -2229,18 +2247,9 @@ _pfmreqhndlrUpdatePlatformPowerModeWorkItem
     OBJGPU                             *pGpu           = pfmreqhndlrGetGpu(pPlatformRequestHandler);
     NvU32                               status         = NV_OK;
     NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS_EX acpiParamsEx   = {0};
-    NvU32                               gpuLockFlag    = GPUS_LOCK_FLAGS_NONE;
 
     if (FULL_GPU_SANITY_CHECK(pGpu))
     {
-        // Attempt to acquire locks/semaphore
-        if (pfmreqhndlrPassiveModeTransition(NV_TRUE, API_LOCK_FLAGS_NONE,
-                gpuLockFlag) != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to acquire the locks/semaphore!\n");
-            goto pfmreqhndlrUpdatePlatformPowerModeWorkItemExit;
-        }
-
         // Call ACPI to set the new platform power mode
         acpiParamsEx.inSize = NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_COUNT * sizeof(NvU32);
         acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_VERSION_IDX] =
@@ -2273,12 +2282,8 @@ _pfmreqhndlrUpdatePlatformPowerModeWorkItem
 
             gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_PLATFORM_POWER_MODE_CHANGE, &params, sizeof(params), info32, 0);
         }
-
-        // Release locks/semaphore
-        pfmreqhndlrPassiveModeTransition(NV_FALSE, API_LOCK_FLAGS_NONE, gpuLockFlag);
     }
 
-pfmreqhndlrUpdatePlatformPowerModeWorkItemExit:
     // Reset on exit
     pPlatformRequestHandler->ppmData.ppmIdxRequested  = NV0000_CTRL_PFM_REQ_HNDLR_PPM_INDEX_INVALID;
     pPlatformRequestHandler->ppmData.bWorkItemPending = NV_FALSE;
@@ -2301,15 +2306,6 @@ _pfmreqhndlrUpdateSystemParamLimitWorkItem
     PlatformRequestHandler       *pPlatformRequestHandler    = SYS_GET_PFM_REQ_HNDLR(pSys);
     NvU32      id;
 
-    // Attempt to acquire locks/semaphore
-    if (pfmreqhndlrPassiveModeTransition(NV_TRUE, API_LOCK_FLAGS_NONE, GPUS_LOCK_FLAGS_NONE) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to acquire the locks/semaphore!\n");
-
-        pPlatformRequestHandler->sysControlData.bWorkItemPending = NV_FALSE;
-        return;
-    }
-
     FOR_EACH_INDEX_IN_MASK(32, id,  pPlatformRequestHandler->sysControlData.queuedCounterMask)
     {
         _pfmreqhndlrUpdateSystemParamLimit(pPlatformRequestHandler, id);
@@ -2318,9 +2314,6 @@ _pfmreqhndlrUpdateSystemParamLimitWorkItem
 
     pPlatformRequestHandler->sysControlData.bWorkItemPending = NV_FALSE;
     pPlatformRequestHandler->sysControlData.queuedCounterMask = 0;
-
-    // Release locks/semaphore
-    pfmreqhndlrPassiveModeTransition(NV_FALSE, API_LOCK_FLAGS_NONE, GPUS_LOCK_FLAGS_NONE);
 }
 
 /*!
@@ -2828,8 +2821,6 @@ _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem
     PFM_REQ_HNDLR_EDPP_DATA *pEdppLimit              =
         &pPlatformRequestHandler->controlData.edppLimit;
     NvU32   status       = NV_OK;
-    NvU32   gpuLockFlag  = GPUS_LOCK_FLAGS_NONE;
-    NvBool lockAcquired  = NV_FALSE;
     NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS
             acpiParams;
     NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1
@@ -2837,15 +2828,6 @@ _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem
 
     if (FULL_GPU_SANITY_CHECK(pGpu))
     {
-        // Attempt to acquire locks/semaphore
-        if (pfmreqhndlrPassiveModeTransition(NV_TRUE, API_LOCK_FLAGS_NONE,
-            gpuLockFlag) != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to acquire the locks/semaphore!\n");
-            goto _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem_exit;
-        }
-        lockAcquired = NV_TRUE;
-
         portMemSet((void*)&acpiParams, 0, sizeof(NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS));
         portMemSet((void*)&edppLimitInfo, 0, sizeof(NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1));
 
@@ -2883,11 +2865,7 @@ _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem_exit:
 
     // Make workitem available
     pEdppLimit->bWorkItemPending = NV_FALSE;
-    if (lockAcquired)
-    {
-        // Release locks/semaphore
-        pfmreqhndlrPassiveModeTransition(NV_FALSE, API_LOCK_FLAGS_NONE, gpuLockFlag);
-    }
+
     return;
 }
 

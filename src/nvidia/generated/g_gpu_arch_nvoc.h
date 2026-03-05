@@ -80,9 +80,10 @@ struct GpuArch {
     struct GpuHalspecOwner *__nvoc_pbase_GpuHalspecOwner;    // gpuhalspecowner super
     struct GpuArch *__nvoc_pbase_GpuArch;    // gpuarch
 
-    // Vtable with 2 per-object function pointers
+    // Vtable with 3 per-object function pointers
     NvU32 (*__gpuarchGetSystemPhysAddrWidth__)(struct GpuArch * /*this*/);  // halified (4 hals)
     NvU32 (*__gpuarchGetDmaAddrWidth__)(struct GpuArch * /*this*/);  // halified (2 hals) body
+    NvU32 (*__gpuarchGetGpcFuseStatusOffset__)(struct GpuArch * /*this*/);  // halified (2 hals) body
 
     // Data members
     NvBool bGpuArchIsZeroFb;
@@ -101,13 +102,9 @@ struct NVOC_METADATA__GpuArch {
     const struct NVOC_METADATA__GpuHalspecOwner metadata__GpuHalspecOwner;
 };
 
-#ifndef __NVOC_CLASS_GpuArch_TYPEDEF__
-#define __NVOC_CLASS_GpuArch_TYPEDEF__
-typedef struct GpuArch GpuArch;
-#endif /* __NVOC_CLASS_GpuArch_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GpuArch
-#define __nvoc_class_id_GpuArch 0x4b33af
+#define __nvoc_class_id_GpuArch 0x4b33afu
+typedef struct GpuArch GpuArch;
 #endif /* __nvoc_class_id_GpuArch */
 
 // Casting support
@@ -127,14 +124,14 @@ NV_STATUS __nvoc_objCreateDynamic_GpuArch(GpuArch**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_GpuArch(GpuArch**, Dynamic*, NvU32,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
-        TEGRA_CHIP_TYPE TegraChipHal_tegraType, NvU32 arg_chipArch, NvU32 arg_chipImpl, NvU32 arg_hidrev, TEGRA_CHIP_TYPE arg_tegraType);
-#define __objCreate_GpuArch(ppNewObj, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType) \
-    __nvoc_objCreate_GpuArch((ppNewObj), staticCast((pParent), Dynamic), (createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType)
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType, NvU32 chipArch, NvU32 chipImpl, NvU32 hidrev, TEGRA_CHIP_TYPE tegraType);
+#define __objCreate_GpuArch(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, chipArch, chipImpl, hidrev, tegraType) \
+    __nvoc_objCreate_GpuArch((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, chipArch, chipImpl, hidrev, tegraType)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gpuarchConstruct_IMPL(struct GpuArch *arg_pGpuArch, NvU32 arg_chipArch, NvU32 arg_chipImpl, NvU32 arg_hidrev, TEGRA_CHIP_TYPE arg_tegraType);
-#define __nvoc_gpuarchConstruct(arg_pGpuArch, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType) gpuarchConstruct_IMPL(arg_pGpuArch, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType)
+NV_STATUS gpuarchConstruct_IMPL(struct GpuArch *pGpuArch, NvU32 chipArch, NvU32 chipImpl, NvU32 hidrev, TEGRA_CHIP_TYPE tegraType);
+#define __nvoc_gpuarchConstruct(pGpuArch, chipArch, chipImpl, hidrev, tegraType) gpuarchConstruct_IMPL(pGpuArch, chipArch, chipImpl, hidrev, tegraType)
 
 
 // Wrapper macros for halified functions
@@ -144,6 +141,9 @@ NV_STATUS gpuarchConstruct_IMPL(struct GpuArch *arg_pGpuArch, NvU32 arg_chipArch
 #define gpuarchGetDmaAddrWidth_FNPTR(pGpuArch) pGpuArch->__gpuarchGetDmaAddrWidth__
 #define gpuarchGetDmaAddrWidth(pGpuArch) gpuarchGetDmaAddrWidth_DISPATCH(pGpuArch)
 #define gpuarchGetDmaAddrWidth_HAL(pGpuArch) gpuarchGetDmaAddrWidth_DISPATCH(pGpuArch)
+#define gpuarchGetGpcFuseStatusOffset_FNPTR(pGpuArch) pGpuArch->__gpuarchGetGpcFuseStatusOffset__
+#define gpuarchGetGpcFuseStatusOffset(pGpuArch) gpuarchGetGpcFuseStatusOffset_DISPATCH(pGpuArch)
+#define gpuarchGetGpcFuseStatusOffset_HAL(pGpuArch) gpuarchGetGpcFuseStatusOffset_DISPATCH(pGpuArch)
 
 // Dispatch functions
 static inline NvU32 gpuarchGetSystemPhysAddrWidth_DISPATCH(struct GpuArch *pGpuArch) {
@@ -154,20 +154,36 @@ static inline NvU32 gpuarchGetDmaAddrWidth_DISPATCH(struct GpuArch *pGpuArch) {
     return pGpuArch->__gpuarchGetDmaAddrWidth__(pGpuArch);
 }
 
+static inline NvU32 gpuarchGetGpcFuseStatusOffset_DISPATCH(struct GpuArch *pGpuArch) {
+    return pGpuArch->__gpuarchGetGpcFuseStatusOffset__(pGpuArch);
+}
+
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NvU32 gpuarchGetSystemPhysAddrWidth_T234D(struct GpuArch *pGpuArch);
+
+NvU32 gpuarchGetSystemPhysAddrWidth_GB10B(struct GpuArch *pGpuArch);
+
 NvU32 gpuarchGetSystemPhysAddrWidth_TU102(struct GpuArch *pGpuArch);
 
 NvU32 gpuarchGetSystemPhysAddrWidth_GH100(struct GpuArch *pGpuArch);
 
-NvU32 gpuarchGetSystemPhysAddrWidth_GB10B(struct GpuArch *pGpuArch);
-
-NvU32 gpuarchGetSystemPhysAddrWidth_T234D(struct GpuArch *pGpuArch);
-
 NvU32 gpuarchGetDmaAddrWidth_GB10B(struct GpuArch *pGpuArch);
 
-static inline NvU32 gpuarchGetDmaAddrWidth_4a4dee(struct GpuArch *pGpuArch) {
+NvU32 gpuarchGetGpcFuseStatusOffset_GB10B(struct GpuArch *pGpuArch);
+
+// Inline HAL method definitions
+static inline NvU32 gpuarchGetDmaAddrWidth_b2b553(struct GpuArch *pGpuArch){
     return 0;
 }
 
+static inline NvU32 gpuarchGetGpcFuseStatusOffset_b2b553(struct GpuArch *pGpuArch){
+    return 0;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

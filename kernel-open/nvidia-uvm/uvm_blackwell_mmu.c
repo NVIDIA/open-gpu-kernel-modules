@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2024 NVIDIA Corporation
+    Copyright (c) 2022-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -65,14 +65,11 @@ static NvU64 page_sizes_blackwell_integrated(void)
     return UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
-static uvm_mmu_mode_hal_t *__uvm_hal_mmu_mode_blackwell(uvm_mmu_mode_hal_t *mmu_mode_hal,
-                                                        NvU64 big_page_size)
+static uvm_mmu_mode_hal_t *__uvm_hal_mmu_mode_blackwell(uvm_mmu_mode_hal_t *mmu_mode_hal)
 {
     uvm_mmu_mode_hal_t *hopper_mmu_mode_hal;
 
-    UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
-
-    hopper_mmu_mode_hal = uvm_hal_mmu_mode_hopper(big_page_size);
+    hopper_mmu_mode_hal = uvm_hal_mmu_mode_hopper();
     UVM_ASSERT(hopper_mmu_mode_hal);
 
     // The assumption made is that arch_hal->mmu_mode_hal() will be called
@@ -85,19 +82,14 @@ static uvm_mmu_mode_hal_t *__uvm_hal_mmu_mode_blackwell(uvm_mmu_mode_hal_t *mmu_
     return mmu_mode_hal;
 }
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(void)
 {
     static bool initialized = false;
-
-    // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
-    // 128K big page size for Pascal+ GPUs
-    if (big_page_size == UVM_PAGE_SIZE_128K)
-        return NULL;
 
     if (!initialized) {
         uvm_mmu_mode_hal_t *mmu_mode_hal;
 
-        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_mmu_mode_hal, big_page_size);
+        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_mmu_mode_hal);
         mmu_mode_hal->page_sizes = page_sizes_blackwell;
         initialized = true;
     }
@@ -105,19 +97,14 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size)
     return &blackwell_mmu_mode_hal;
 }
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(NvU64 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(void)
 {
     static bool initialized = false;
-
-    // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
-    // 128K big page size for Pascal+ GPUs
-    if (big_page_size == UVM_PAGE_SIZE_128K)
-        return NULL;
 
     if (!initialized) {
         uvm_mmu_mode_hal_t *mmu_mode_hal;
 
-        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_integrated_mmu_mode_hal, big_page_size);
+        mmu_mode_hal = __uvm_hal_mmu_mode_blackwell(&blackwell_integrated_mmu_mode_hal);
         mmu_mode_hal->page_sizes = page_sizes_blackwell_integrated;
         initialized = true;
     }

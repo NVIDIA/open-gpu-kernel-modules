@@ -459,7 +459,7 @@ NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU3
                        access_counters->max_batch_size);
     }
 
-    if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_batch_context_notification_cache) {
+    if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.access_counters_batch_context_notification_cache) {
         status = NV_ERR_NO_MEMORY;
         goto fail;
     }
@@ -471,7 +471,7 @@ NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU3
         goto fail;
     }
 
-    if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_batch_context_notifications) {
+    if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.access_counters_batch_context_notifications) {
         status = NV_ERR_NO_MEMORY;
         goto fail;
     }

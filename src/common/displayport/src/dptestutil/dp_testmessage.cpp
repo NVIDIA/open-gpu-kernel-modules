@@ -39,6 +39,11 @@ void DPTestMessageCompletion::messageFailed(MessageManager::Message * from, NakD
 {
     parent->testMessageStatus = DP_TESTMESSAGE_REQUEST_STATUS_DONE;
 
+    if (from->getMsgType() == NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS)
+    {
+        delete (QueryStreamEncryptionMessage *)from;
+    }
+    else 
     {
         {
             DP_ASSERT(0 && "unknown msg type when msg failed");
@@ -50,6 +55,12 @@ void DPTestMessageCompletion::messageCompleted(MessageManager::Message * from)
 {
     parent->testMessageStatus = DP_TESTMESSAGE_REQUEST_STATUS_DONE;
 
+    if (from->getMsgType() == NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS)
+    {
+        ((QueryStreamEncryptionMessage *)from)->getReply(&parent->qsesReply);
+        delete (QueryStreamEncryptionMessage *)from;
+    }
+    else
     {
         {
             DP_ASSERT(0 && "unknown msg type when msg complete");
@@ -60,6 +71,31 @@ void DPTestMessageCompletion::messageCompleted(MessageManager::Message * from)
 MessageManager * TestMessage::getMessageManager()
 {
     return pMsgManager;
+}
+
+//pBuffer should point to a DP_TESTMESSAGE_REQUEST_QSES_INPUT structure
+void TestMessage::sendTestMsgQSES(void *pBuffer)
+{
+    //Generate the Pseudo Random number
+    QSENonceGenerator qseNonceGenerator;
+
+    //for qses, send to the root branch
+    Address address(0);
+    CLIENTID clientId;
+    QueryStreamEncryptionMessage *pQseMessage = new QueryStreamEncryptionMessage();
+
+    DP_TESTMESSAGE_REQUEST_QSES_INPUT *pQSES =
+                                (DP_TESTMESSAGE_REQUEST_QSES_INPUT *)pBuffer;
+
+    pQseMessage->set(address,
+                    pQSES->streamID,
+                    clientId.data,
+                    CP_IRQ_ON,
+                    STREAM_EVENT_MASK_ON,
+                    Force_Reauth,
+                    STREAM_BEHAVIOUR_MASK_ON);
+
+    pMsgManager->post(pQseMessage, &diagCompl);
 }
 
 //
@@ -88,7 +124,45 @@ DP_TESTMESSAGE_STATUS TestMessage::sendDPTestMessage
     if (!isValidStruct(type, requestSize))
         return DP_TESTMESSAGE_STATUS_ERROR_INVALID_PARAM;
 
-    *pDpStatus = DP_TESTMESSAGE_REQUEST_STATUS_ERROR;
-    return DP_TESTMESSAGE_STATUS_ERROR;
+    switch (type)
+    {
+        case DP_TESTMESSAGE_REQUEST_TYPE_QSES:
+            // new request, try send message
+            if (*pDpStatus == DP_TESTMESSAGE_REQUEST_STATUS_NEWREQUEST)
+            {
+                //there is still processing request, new one not allow now
+                if (testMessageStatus == DP_TESTMESSAGE_REQUEST_STATUS_PENDING)
+                {
+                    *pDpStatus = DP_TESTMESSAGE_REQUEST_STATUS_ERROR;
+                    return DP_TESTMESSAGE_STATUS_ERROR;
+                }
+                else
+                {
+                    sendTestMsgQSES(pBuffer);
+                    //need change the DP lib status accordingly
+                    *pDpStatus = DP_TESTMESSAGE_REQUEST_STATUS_PENDING;
+                    testMessageStatus = DP_TESTMESSAGE_REQUEST_STATUS_PENDING;
+                }
+            }
+            //old request, check if request finished
+            else if(*pDpStatus == DP_TESTMESSAGE_REQUEST_STATUS_PENDING)
+            {
+                //already finished, fill in the data
+                if (testMessageStatus == DP_TESTMESSAGE_REQUEST_STATUS_DONE)
+                {
+                    DP_TESTMESSAGE_REQUEST_QSES_INPUT *p =
+                                  (DP_TESTMESSAGE_REQUEST_QSES_INPUT *)pBuffer;
+                    p->reply = *(DP_TESTMESSAGE_REQUEST_QSES_OUTPUT *)&qsesReply;
+                    *pDpStatus = DP_TESTMESSAGE_REQUEST_STATUS_DONE;
+                }
+                //otherwise, just return and ask the user try again
+            }
+            break;
+        default:
+            *pDpStatus = DP_TESTMESSAGE_REQUEST_STATUS_ERROR;
+            return DP_TESTMESSAGE_STATUS_ERROR;
+    }
+
+    return DP_TESTMESSAGE_STATUS_SUCCESS;
 }
 

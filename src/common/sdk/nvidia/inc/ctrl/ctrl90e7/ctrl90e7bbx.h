@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,6 +62,36 @@ typedef struct NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS {
 } NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS;
 
 
+
+/*
+ * NV90E7_CTRL_CMD_BBX_GET_TIME_DATA
+ *
+ * This command is used to query BBX recorded timing data.
+ *
+ *   timeStart
+ *     First time (since EPOCH in sec) when RM was loaded and BBX was updated.
+ *
+ *   timeEnd
+ *     Last time (since EPOCH in sec) when BBX was updated.
+ *
+ *   timeRun
+ *     Total time (in sec) the GPU was running.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV90E7_CTRL_CMD_BBX_GET_TIME_DATA (0x90e70102) /* finn: Evaluated from "(FINN_GF100_SUBDEVICE_INFOROM_BBX_INTERFACE_ID << 8) | NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS {
+    NvU32 timeStart;
+    NvU32 timeEnd;
+    NvU32 timeRun;
+    NvU32 time24Hours;
+    NvU32 time100Hours;
+} NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS;
 
 /*
  * NV90E7_CTRL_CMD_BBX_IS_NVM_FLUSH_ENABLED

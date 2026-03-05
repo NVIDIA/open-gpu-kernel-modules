@@ -49,8 +49,8 @@
 
 #define PAGES_PER_UVM_VA_BLOCK          (UVM_VA_BLOCK_SIZE / PAGE_SIZE)
 
-#define UVM_MIN_BIG_PAGE_SIZE           UVM_PAGE_SIZE_64K
-#define MAX_BIG_PAGES_PER_UVM_VA_BLOCK  (UVM_VA_BLOCK_SIZE / UVM_MIN_BIG_PAGE_SIZE)
+#define UVM_BIG_PAGE_SIZE               UVM_PAGE_SIZE_64K
+#define UVM_BIG_PAGES_PER_UVM_VA_BLOCK  (UVM_VA_BLOCK_SIZE / UVM_BIG_PAGE_SIZE)
 
 // Prefetch heuristics shift the VA Block page mask so that it is always
 // aligned to big page granularity. Big page is guaranteed not to exceed
@@ -101,14 +101,14 @@ typedef struct
     // it contains both those big PTEs which are being modified by the
     // operation, and any pre-existing big PTEs which remain unchanged. The
     // latter will not have the corresponding bit set in big_ptes_covered.
-    DECLARE_BITMAP(big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
+    DECLARE_BITMAP(big_ptes, UVM_BIG_PAGES_PER_UVM_VA_BLOCK);
 
     // These are the big PTE regions which the operation is touching. These may
     // or may not be big PTEs: use the big_ptes bitmap to determine that. For
     // example, a bit set here but not in big_ptes means that the PTE size for
     // that region should be 4k, and that some of those 4k PTEs will be written
     // by the operation.
-    DECLARE_BITMAP(big_ptes_covered, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
+    DECLARE_BITMAP(big_ptes_covered, UVM_BIG_PAGES_PER_UVM_VA_BLOCK);
 } uvm_va_block_new_pte_state_t;
 
 // Event that triggered the call to uvm_va_block_make_resident/
@@ -259,11 +259,6 @@ typedef struct
         // splitting of big PTEs but they are never called concurrently. This
         // mask can be used concurrently with other page masks.
         uvm_page_mask_t big_split_page_mask;
-
-        // Mask used by block_unmap_gpu to track non_uvm_lite_gpus which have
-        // this block mapped. This mask can be used concurrently with other page
-        // masks.
-        uvm_processor_mask_t non_uvm_lite_gpus;
 
         uvm_page_mask_t page_mask;
         uvm_page_mask_t filtered_page_mask;

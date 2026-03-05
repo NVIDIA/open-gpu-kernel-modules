@@ -27,7 +27,6 @@
  */
 
 #include "os/os.h"
-#include "platform/acpi_common.h"
 #include "acpidsmguids.h"
 #include "nvhybridacpi.h"
 #include "nbci.h"
@@ -809,6 +808,7 @@ _acpiDsmSupportedFuncCacheInit
             //
             // If GPS_2X is supported, skip checking leagacy GPS 1X.
             //
+            pGpu->acpi.dsm[func].suppFuncStatus = DSM_FUNC_STATUS_FAILED;
             continue;
         }
 
@@ -1282,23 +1282,3 @@ getAcpiDsmObjectData
     return status;
 }
 
-/*
- * Clear DSM function cache status
- *
- * @param[in] pGpu                  OBJGPU
- * @param[in] acpiDsmFunction       ACPI_DSM_FUNCTION DSM function
- * @param[in] acpiDsmSubFunction    NvU32
- */
-void uncacheDsmFuncStatus
-(
-    OBJGPU              *pGpu,
-    ACPI_DSM_FUNCTION    acpiDsmFunction,
-    NvU32                acpiDsmSubFunction
-)
-{
-    if (acpiDsmSubFunction == NV_ACPI_ALL_FUNC_SUPPORT)
-    {
-        pGpu->acpi.dsm[acpiDsmFunction].suppFuncsLen = 0;
-        pGpu->acpi.dsm[acpiDsmFunction].suppFuncStatus = DSM_FUNC_STATUS_UNKNOWN;
-    }
-}

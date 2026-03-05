@@ -29,7 +29,7 @@
 #include "gpu/gsp/kernel_gsp_trace_rats.h"
 
 #include "rmapi/client.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/event_buffer.h"
 #include "core/locks.h"
 #include "class/cl90cdtypes.h"

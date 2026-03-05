@@ -127,13 +127,9 @@ struct NVOC_METADATA__SystemMemory {
     const struct NVOC_VTABLE__SystemMemory vtable;
 };
 
-#ifndef __NVOC_CLASS_SystemMemory_TYPEDEF__
-#define __NVOC_CLASS_SystemMemory_TYPEDEF__
-typedef struct SystemMemory SystemMemory;
-#endif /* __NVOC_CLASS_SystemMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SystemMemory
-#define __nvoc_class_id_SystemMemory 0x007a98
+#define __nvoc_class_id_SystemMemory 0x007a98u
+typedef struct SystemMemory SystemMemory;
 #endif /* __nvoc_class_id_SystemMemory */
 
 // Casting support
@@ -151,14 +147,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SystemMemory;
 
 NV_STATUS __nvoc_objCreateDynamic_SystemMemory(SystemMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_SystemMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_SystemMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_SystemMemory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_SystemMemory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS sysmemConstruct_IMPL(struct SystemMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_sysmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) sysmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
+NV_STATUS sysmemConstruct_IMPL(struct SystemMemory *pStandardMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_sysmemConstruct(pStandardMemory, pCallContext, pParams) sysmemConstruct_IMPL(pStandardMemory, pCallContext, pParams)
 
 NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams);
 #ifdef __nvoc_system_mem_h_disabled
@@ -350,14 +346,20 @@ static inline void sysmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__sysmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS *pParams);
 
 NV_STATUS sysmemCtrlCmdGetSurfacePhysPages_IMPL(struct SystemMemory *pStandardMemory, NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS *pParams);
 
-NV_STATUS sysmemInitAllocRequest_HMM(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
-
+// HAL method declarations without bodies
 NV_STATUS sysmemInitAllocRequest_SOC(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
 
+NV_STATUS sysmemInitAllocRequest_HMM(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
+
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

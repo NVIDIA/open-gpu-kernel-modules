@@ -127,42 +127,27 @@ typedef struct RS_LOCK_INFO RS_LOCK_INFO;
 typedef struct RS_CONTROL_COOKIE RS_CONTROL_COOKIE;
 typedef NV_STATUS RsCtrlFunc(struct RS_RES_CONTROL_PARAMS_INTERNAL*);
 
-
 struct RsClient;
 
-#ifndef __NVOC_CLASS_RsClient_TYPEDEF__
-#define __NVOC_CLASS_RsClient_TYPEDEF__
-typedef struct RsClient RsClient;
-#endif /* __NVOC_CLASS_RsClient_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsClient
-#define __nvoc_class_id_RsClient 0x8f87e5
+#define __nvoc_class_id_RsClient 0x8f87e5u
+typedef struct RsClient RsClient;
 #endif /* __nvoc_class_id_RsClient */
-
 
 
 struct RsResource;
 
-#ifndef __NVOC_CLASS_RsResource_TYPEDEF__
-#define __NVOC_CLASS_RsResource_TYPEDEF__
-typedef struct RsResource RsResource;
-#endif /* __NVOC_CLASS_RsResource_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsResource
-#define __nvoc_class_id_RsResource 0xd551cb
+#define __nvoc_class_id_RsResource 0xd551cbu
+typedef struct RsResource RsResource;
 #endif /* __nvoc_class_id_RsResource */
-
 
 
 struct RsShared;
 
-#ifndef __NVOC_CLASS_RsShared_TYPEDEF__
-#define __NVOC_CLASS_RsShared_TYPEDEF__
-typedef struct RsShared RsShared;
-#endif /* __NVOC_CLASS_RsShared_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsShared
-#define __nvoc_class_id_RsShared 0x830542
+#define __nvoc_class_id_RsShared 0x830542u
+typedef struct RsShared RsShared;
 #endif /* __nvoc_class_id_RsShared */
 
 

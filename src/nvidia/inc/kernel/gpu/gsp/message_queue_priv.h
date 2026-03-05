@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,6 +55,11 @@ typedef struct _message_queue_info
     // Parameters
     NvLength               commandQueueSize;
     NvLength               statusQueueSize;
+    NvLength               queueElementHdrSize;
+    NvLength               queueElementSizeMin;
+    NvLength               queueElementSizeMax;
+    NvU32                  queueHeaderAlign;
+    NvU32                  queueElementAlign;
 
     // Shared memory area.
     void                  *pCommandQueue;
@@ -70,6 +75,7 @@ typedef struct _message_queue_info
     NvU32                  rxSeqNum;            // Next sequence number for rx.
     NvU32                  txBufferFull;
     NvU32                  queueIdx;            // QueueIndex used to identify which task the message is supposed to be sent to.
+    NvBool                 bErrorInjectionEnabled;
 } MESSAGE_QUEUE_INFO;
 
 typedef struct MESSAGE_QUEUE_COLLECTION
@@ -85,24 +91,18 @@ typedef struct MESSAGE_QUEUE_COLLECTION
     MESSAGE_QUEUE_INFO rpcQueues[RPC_QUEUE_COUNT];
 } MESSAGE_QUEUE_COLLECTION;
 
-//
-// Most of the following defines resolve to compile-time constants.
-//
-#define GSP_MSG_QUEUE_ELEMENT_SIZE_MIN                              RM_PAGE_SIZE
-#define GSP_MSG_QUEUE_ELEMENT_SIZE_MAX     (GSP_MSG_QUEUE_ELEMENT_SIZE_MIN * 16)
-#define GSP_MSG_QUEUE_ELEMENT_HDR_SIZE   NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, rpc)
+static NV_INLINE NvLength
+gspMsgQueueGetMaxRpcSize(NvLength queueElementSizeMax, NvLength queueElementHdrSize)
+{
+    return queueElementSizeMax - queueElementHdrSize;
+}
 
-#define GSP_MSG_QUEUE_RPC_SIZE_MAX                                             \
-    (GSP_MSG_QUEUE_ELEMENT_SIZE_MAX - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE)
-
-#define GSP_MSG_QUEUE_BYTES_TO_ELEMENTS(b)                                     \
-        NV_DIV_AND_CEIL(b, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN)
-
-#define GSP_MSG_QUEUE_ALIGN                                        RM_PAGE_SHIFT   // 2 ^ 12 = 4096
-#define GSP_MSG_QUEUE_ELEMENT_ALIGN                                RM_PAGE_SHIFT   // 2 ^ 12 = 4096
-#define GSP_MSG_QUEUE_HEADER_SIZE                                   RM_PAGE_SIZE
-#define GSP_MSG_QUEUE_HEADER_ALIGN                                             4   // 2 ^ 4 = 16
-
+static NV_INLINE NvU32
+gspMsgQueueBytesToElements(NvU32 bytes, NvLength queueElementSizeMin)
+{
+    return NV_DIV_AND_CEIL(bytes, queueElementSizeMin);
+}
+ 
 /*!
  * Calculate 32-bit checksum
  *

@@ -121,13 +121,9 @@ struct NVOC_METADATA__SyncGpuBoost {
     const struct NVOC_VTABLE__SyncGpuBoost vtable;
 };
 
-#ifndef __NVOC_CLASS_SyncGpuBoost_TYPEDEF__
-#define __NVOC_CLASS_SyncGpuBoost_TYPEDEF__
-typedef struct SyncGpuBoost SyncGpuBoost;
-#endif /* __NVOC_CLASS_SyncGpuBoost_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SyncGpuBoost
-#define __nvoc_class_id_SyncGpuBoost 0xc7e30b
+#define __nvoc_class_id_SyncGpuBoost 0xc7e30bu
+typedef struct SyncGpuBoost SyncGpuBoost;
 #endif /* __nvoc_class_id_SyncGpuBoost */
 
 // Casting support
@@ -145,14 +141,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SyncGpuBoost;
 
 NV_STATUS __nvoc_objCreateDynamic_SyncGpuBoost(SyncGpuBoost**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_SyncGpuBoost(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_SyncGpuBoost((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_SyncGpuBoost(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_SyncGpuBoost((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS syncgpuboostConstruct_IMPL(struct SyncGpuBoost *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_syncgpuboostConstruct(arg_pResource, arg_pCallContext, arg_pParams) syncgpuboostConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS syncgpuboostConstruct_IMPL(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_syncgpuboostConstruct(pResource, pCallContext, pParams) syncgpuboostConstruct_IMPL(pResource, pCallContext, pParams)
 
 void syncgpuboostDestruct_IMPL(struct SyncGpuBoost *pResource);
 #define __nvoc_syncgpuboostDestruct(pResource) syncgpuboostDestruct_IMPL(pResource)
@@ -287,6 +283,12 @@ static inline void syncgpuboostAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__syncgpuboostAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

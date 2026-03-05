@@ -136,6 +136,11 @@ typedef struct NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS {
     NvBool bDevProfilingPermitted;
 
     /*!
+     * [in] Is Device tracing permitted
+     */
+    NvBool bDevTracePermitted;
+
+    /*!
      * [in] Is Context profiling permitted
      */
     NvBool bCtxProfilingPermitted;

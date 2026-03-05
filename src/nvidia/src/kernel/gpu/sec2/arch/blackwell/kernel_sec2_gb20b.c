@@ -40,8 +40,9 @@
 #include "published/blackwell/gb20b/dev_sec_pri.h"
 #include "published/blackwell/gb20b/dev_boot_zb.h"
 #include "published/blackwell/gb20b/dev_falcon_v4.h"
-#include "published/blackwell/gb20b/dev_bus.h"
+#include "published/blackwell/gb20b/dev_bus_zb.h"
 #include "published/blackwell/gb20b/hwproject.h"
+#include "published/blackwell/gb20b/dev_top_zb.h"
 #include "sec2/sec2_nvdm_format.h"
 #include "os/os.h"
 #include "nvRmReg.h"
@@ -66,6 +67,9 @@ static NV_STATUS _ksec2ConfigEmemc_GB20B(OBJGPU *pGpu, KernelSec2 *pKernelSec2,
 static NvBool _ksec2WaitBootCond_GB20B(OBJGPU *pGpu, void *pArg);
 
 static const BINDATA_ARCHIVE *_ksec2GetGspUcodeArchive(OBJGPU *pGpu, KernelSec2 *pKernelSec2);
+
+#define GET_DEVICE_ENTRY(gpu, type, instance, global, local, entry) \
+    gpuGetOneDeviceEntry(gpu, type, instance, global, local, entry)
 
 /*!
  * @brief Update message queue head and tail pointers
@@ -854,17 +858,26 @@ ksec2DumpDebugState_GB20B
 )
 {
     NvU32 scratchReg = 0;
+    const DEVICE_INFO_ENTRY *pEntry;
+    NV_STATUS status = GET_DEVICE_ENTRY(pGpu,
+                                        NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_PBUS,
+                                        DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                        0,
+                                        DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                        &pEntry);
+
+    NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
 
     NV_PRINTF(LEVEL_ERROR, "GPU %04x:%02x:%02x\n",
               gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(12));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(12));
     NV_PRINTF(LEVEL_ERROR, "Devinit Boot Status = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(54));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(54));
     NV_PRINTF(LEVEL_ERROR, "COT Polling Status = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(52));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(52));
     NV_PRINTF(LEVEL_ERROR, "FRTS Completion = 0x%x\n", scratchReg);
 
     scratchReg = GPU_REG_RD32(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_SCRATCH_RESET_PLUS_2);
@@ -882,19 +895,19 @@ ksec2DumpDebugState_GB20B
     scratchReg = GPU_REG_RD32(pGpu, NV_PSEC_FALCON_COMMON_SCRATCH_GROUP_2(3));
     NV_PRINTF(LEVEL_ERROR, "FWSEC Additional info = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(0));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(0));
     NV_PRINTF(LEVEL_ERROR, "FWSEC version = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(2));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(2));
     NV_PRINTF(LEVEL_ERROR, "Devinit version = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(15));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(15));
     NV_PRINTF(LEVEL_ERROR, "Failing Register Addr = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(16));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(16));
     NV_PRINTF(LEVEL_ERROR, "Devinit PC = 0x%x\n", scratchReg);
 
-    scratchReg = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(28));
+    scratchReg = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_SCRATCH(28));
     NV_PRINTF(LEVEL_ERROR, "PRI error code = 0x%x\n", scratchReg);
 
 }

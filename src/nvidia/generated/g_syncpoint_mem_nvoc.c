@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x529def = 1;
+char __nvoc_class_id_uniqueness_check__529def = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_SyncpointMemory;
@@ -30,7 +30,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Memory;
 void __nvoc_init__Memory(Memory*);
 void __nvoc_init__SyncpointMemory(SyncpointMemory*);
 void __nvoc_init_funcTable_SyncpointMemory(SyncpointMemory*);
-NV_STATUS __nvoc_ctor_SyncpointMemory(SyncpointMemory*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_SyncpointMemory(SyncpointMemory*, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_SyncpointMemory(SyncpointMemory*);
 void __nvoc_dtor_SyncpointMemory(SyncpointMemory*);
 
@@ -107,19 +107,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_syncpointUnmapFrom(struct SyncpointMemory *
 NvU32 __nvoc_up_thunk_RsResource_syncpointGetRefCount(struct SyncpointMemory *pResource);    // this
 void __nvoc_up_thunk_RsResource_syncpointAddAdditionalDependants(struct RsClient *pClient, struct SyncpointMemory *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for SyncpointMemory
 const struct NVOC_CLASS_DEF __nvoc_class_def_SyncpointMemory = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(SyncpointMemory),
-        /*classId=*/            classId(SyncpointMemory),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(SyncpointMemory),
+    .classInfo.classId =            classId(SyncpointMemory),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "SyncpointMemory",
+    .classInfo.name =               "SyncpointMemory",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_SyncpointMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo__SyncpointMemory,
-    /*pExportInfo=*/        &__nvoc_export_info__SyncpointMemory
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_SyncpointMemory,
+    .pCastInfo =          &__nvoc_castinfo__SyncpointMemory,
+    .pExportInfo =        &__nvoc_export_info__SyncpointMemory
 };
 
 
@@ -389,36 +388,47 @@ void __nvoc_up_thunk_RsResource_syncpointAddAdditionalDependants(struct RsClient
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__SyncpointMemory = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct SyncpointMemory object.
 void __nvoc_dtor_Memory(Memory*);
-void __nvoc_dtor_SyncpointMemory(SyncpointMemory *pThis) {
+void __nvoc_dtor_SyncpointMemory(SyncpointMemory* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_SyncpointMemory(SyncpointMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Memory(Memory* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_SyncpointMemory(SyncpointMemory *pThis, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Memory(&pThis->__nvoc_base_Memory, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_SyncpointMemory_fail_Memory;
-    __nvoc_init_dataField_SyncpointMemory(pThis);
 
-    status = __nvoc_syncpointConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct SyncpointMemory object.
+NV_STATUS __nvoc_ctor_Memory(Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_SyncpointMemory(SyncpointMemory *pSyncpointMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Memory(&pSyncpointMemory->__nvoc_base_Memory, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_SyncpointMemory_fail_Memory;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_SyncpointMemory(pSyncpointMemory);
+
+    // Call the constructor for this class.
+    status = __nvoc_syncpointConstruct(pSyncpointMemory, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_SyncpointMemory_fail__init;
     goto __nvoc_ctor_SyncpointMemory_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_SyncpointMemory_fail__init:
-    __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
+    __nvoc_dtor_Memory(&pSyncpointMemory->__nvoc_base_Memory);
 __nvoc_ctor_SyncpointMemory_fail_Memory:
 __nvoc_ctor_SyncpointMemory_exit:
-
     return status;
 }
 
@@ -459,49 +469,49 @@ void __nvoc_init__SyncpointMemory(SyncpointMemory *pThis) {
     __nvoc_init_funcTable_SyncpointMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_SyncpointMemory(SyncpointMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_SyncpointMemory(SyncpointMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    SyncpointMemory *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    SyncpointMemory *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(SyncpointMemory));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SyncpointMemory));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(SyncpointMemory));
+    portMemSet(__nvoc_pThis, 0, sizeof(SyncpointMemory));
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__SyncpointMemory(pThis);
-    status = __nvoc_ctor_SyncpointMemory(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_SyncpointMemory_cleanup;
+    __nvoc_init__SyncpointMemory(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SyncpointMemory(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SyncpointMemory_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -510,31 +520,31 @@ NV_STATUS __nvoc_objCreate_SyncpointMemory(SyncpointMemory **ppThis, Dynamic *pP
 __nvoc_objCreate_SyncpointMemory_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(SyncpointMemory));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(SyncpointMemory));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_SyncpointMemory(SyncpointMemory **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    CALL_CONTEXT *arg_pCallContext = va_arg(args, CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_SyncpointMemory(SyncpointMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_SyncpointMemory(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_SyncpointMemory(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

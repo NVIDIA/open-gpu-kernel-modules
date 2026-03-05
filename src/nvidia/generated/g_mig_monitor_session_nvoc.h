@@ -135,13 +135,9 @@ struct NVOC_METADATA__MIGMonitorSession {
     const struct NVOC_VTABLE__MIGMonitorSession vtable;
 };
 
-#ifndef __NVOC_CLASS_MIGMonitorSession_TYPEDEF__
-#define __NVOC_CLASS_MIGMonitorSession_TYPEDEF__
-typedef struct MIGMonitorSession MIGMonitorSession;
-#endif /* __NVOC_CLASS_MIGMonitorSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MIGMonitorSession
-#define __nvoc_class_id_MIGMonitorSession 0x29e15c
+#define __nvoc_class_id_MIGMonitorSession 0x29e15cu
+typedef struct MIGMonitorSession MIGMonitorSession;
 #endif /* __nvoc_class_id_MIGMonitorSession */
 
 // Casting support
@@ -159,14 +155,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MIGMonitorSession;
 
 NV_STATUS __nvoc_objCreateDynamic_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MIGMonitorSession(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MIGMonitorSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MIGMonitorSession(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MIGMonitorSession((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS migmonitorsessionConstruct_IMPL(struct MIGMonitorSession *arg_pMIGMonitorSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_migmonitorsessionConstruct(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams) migmonitorsessionConstruct_IMPL(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams)
+NV_STATUS migmonitorsessionConstruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_migmonitorsessionConstruct(pMIGMonitorSession, pCallContext, pParams) migmonitorsessionConstruct_IMPL(pMIGMonitorSession, pCallContext, pParams)
 
 void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession);
 #define __nvoc_migmonitorsessionDestruct(pMIGMonitorSession) migmonitorsessionDestruct_IMPL(pMIGMonitorSession)
@@ -301,6 +297,12 @@ static inline void migmonitorsessionAddAdditionalDependants_DISPATCH(struct RsCl
     pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

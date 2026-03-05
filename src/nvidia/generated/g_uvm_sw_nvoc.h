@@ -141,13 +141,9 @@ struct NVOC_METADATA__UvmSwObject {
     const struct NVOC_VTABLE__UvmSwObject vtable;
 };
 
-#ifndef __NVOC_CLASS_UvmSwObject_TYPEDEF__
-#define __NVOC_CLASS_UvmSwObject_TYPEDEF__
-typedef struct UvmSwObject UvmSwObject;
-#endif /* __NVOC_CLASS_UvmSwObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_UvmSwObject
-#define __nvoc_class_id_UvmSwObject 0xc35503
+#define __nvoc_class_id_UvmSwObject 0xc35503u
+typedef struct UvmSwObject UvmSwObject;
 #endif /* __nvoc_class_id_UvmSwObject */
 
 // Casting support
@@ -165,14 +161,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_UvmSwObject;
 
 NV_STATUS __nvoc_objCreateDynamic_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_UvmSwObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_UvmSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_UvmSwObject(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_UvmSwObject((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS uvmswConstruct_IMPL(struct UvmSwObject *arg_pUvmSw, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_uvmswConstruct(arg_pUvmSw, arg_pCallContext, arg_pParams) uvmswConstruct_IMPL(arg_pUvmSw, arg_pCallContext, arg_pParams)
+NV_STATUS uvmswConstruct_IMPL(struct UvmSwObject *pUvmSw, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_uvmswConstruct(pUvmSw, pCallContext, pParams) uvmswConstruct_IMPL(pUvmSw, pCallContext, pParams)
 
 void uvmswDestruct_IMPL(struct UvmSwObject *pUvmSw);
 #define __nvoc_uvmswDestruct(pUvmSw) uvmswDestruct_IMPL(pUvmSw)
@@ -383,10 +379,16 @@ static inline NV_STATUS uvmswGetOrAllocNotifShare_DISPATCH(struct UvmSwObject *p
     return pNotifier->__nvoc_metadata_ptr->vtable.__uvmswGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS uvmswGetSwMethods_56cd7a(struct UvmSwObject *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+static inline NV_STATUS uvmswGetSwMethods_ac1694(struct UvmSwObject *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods){
     return NV_OK;
 }
 
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

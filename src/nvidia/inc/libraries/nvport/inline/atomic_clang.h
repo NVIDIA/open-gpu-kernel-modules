@@ -34,6 +34,8 @@
 #error "Unsupported compiler: This file can only be compiled by clang"
 #endif
 
+#define PORT_ATOMIC volatile
+
 
 PORT_INLINE void
 portAtomicMemoryFenceLoad(void)
@@ -66,13 +68,7 @@ portAtomicTimerBarrier(void)
 #endif
 }
 
-#if PORT_COMPILER_HAS_INTRINSIC_ATOMICS && !defined(NV_MODS) && !NVOS_IS_LIBOS
-
-PORT_ATOMIC_INLINE void
-portAtomicInit(void)
-{
-
-}
+#if PORT_COMPILER_HAS_INTRINSIC_ATOMICS && !NVOS_IS_LIBOS
 
 PORT_ATOMIC_INLINE NvS32
 portAtomicAddS32

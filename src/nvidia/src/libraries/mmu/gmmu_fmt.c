@@ -117,7 +117,8 @@ const GMMU_FIELD_ADDRESS *
 gmmuFmtPtePhysAddrFld
 (
     const GMMU_FMT_PTE *pPte,
-    const GMMU_APERTURE aperture
+    const GMMU_APERTURE aperture,
+    const GMMU_PEER_TYPE peerType
 )
 {
     switch (aperture)
@@ -126,7 +127,9 @@ gmmuFmtPtePhysAddrFld
         case GMMU_APERTURE_SYS_NONCOH:
             return &pPte->fldAddrSysmem;
         case GMMU_APERTURE_PEER:
-            return &pPte->fldAddrPeer;
+            {
+                return &pPte->fldAddrPeer;
+            }
         case GMMU_APERTURE_VIDEO:
             return &pPte->fldAddrVidmem;
         default:

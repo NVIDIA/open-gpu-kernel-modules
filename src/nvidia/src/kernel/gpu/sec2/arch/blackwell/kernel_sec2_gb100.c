@@ -48,7 +48,7 @@ ksec2ReadUcodeFuseVersion_GB100
 
     if (index < DRF_SIZE(NV_FUSE_ZB_OPT_FPF_SEC2_UCODE1_VERSION_DATA))
     {
-        fuseVal = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_OPT_FPF_SEC2_UCODE1_VERSION + (4 * index));
+        fuseVal = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_OPT_FPF_SEC2_UCODE1_VERSION + (4 * index));
         if (fuseVal)
         {
             HIGHESTBITIDX_32(fuseVal);

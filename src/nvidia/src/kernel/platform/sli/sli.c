@@ -280,12 +280,14 @@ void RmInitScalability
     NvU32 idx = 0;
     NvU32 gpuLockMask = 0;
 
-    if (IS_GSP_CLIENT(pGpu) && !rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
+    if (IS_GSP_CLIENT(pGpu) && !rmGpuLockIsOwner())
+    {
         NV_ASSERT_OR_RETURN_VOID(rmGpuGroupLockAcquire(pGpu->gpuInstance,
-                                                       GPU_LOCK_GRP_SUBDEVICE,
+                                                       GPU_LOCK_GRP_ALL,
                                                        GPUS_LOCK_FLAGS_NONE,
                                                        RM_LOCK_MODULES_RPC,
                                                        &gpuLockMask) == NV_OK);
+    }
 
     // determine the supported SLI configurations.
     numValidConfigs = RmRunSLISupportCheck(pGpu);
@@ -301,13 +303,4 @@ void RmInitScalability
 
     if (gpuLockMask != 0)
         rmGpuGroupLockRelease(gpuLockMask, GPUS_LOCK_FLAGS_NONE);
-}
-
-
-NV_STATUS RmShutdownScalability
-(
-    OBJGPU *pGpu
-)
-{
-    return NV_OK;
 }

@@ -57,6 +57,7 @@ lockTestRelaxedDupObjConstruct_IMPL
     NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pParams->pClient, pParams->hParent, &pParentRef));
     NV_ASSERT_OR_RETURN(pParentRef != NULL, NV_ERR_INVALID_PARAMETER);
 
+    // Parent is a subdevice or device, must be a GpuResource.
     pParentGpuRes = dynamicCast(pParentRef->pResource, GpuResource);
     NV_ASSERT_OR_RETURN(pParentGpuRes != NULL, NV_ERR_INVALID_PARAMETER);
 
@@ -65,15 +66,16 @@ lockTestRelaxedDupObjConstruct_IMPL
     if (RS_IS_COPY_CTOR(pParams))
     {
         NvU32 gpuMask = 0;
+        GpuResource *pSrcGpuRes;
 
-        LockTestRelaxedDupObject *pSrcObj = dynamicCast(pParams->pSrcRef->pResource, LockTestRelaxedDupObject);
-        if (pSrcObj == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Invalid source object\n");
-            return NV_ERR_INVALID_PARAMETER;
-        }
+        NV_ASSERT_OR_RETURN(pParams->pSrcRef != NULL, NV_ERR_INVALID_PARAMETER);
+        NV_ASSERT_OR_RETURN(pParams->pSrcRef->pParentRef != NULL, NV_ERR_INVALID_PARAMETER);
+        NV_ASSERT_OR_RETURN(pParams->pSrcRef->pParentRef->pResource != NULL, NV_ERR_INVALID_PARAMETER);
 
-        if (pParentGpu == GPU_RES_GET_GPU(pSrcObj))
+        pSrcGpuRes = dynamicCast(pParams->pSrcRef->pParentRef->pResource, GpuResource);
+        NV_ASSERT_OR_RETURN(pSrcGpuRes != NULL, NV_ERR_INVALID_PARAMETER);
+
+        if (pParentGpu == GPU_RES_GET_GPU(pSrcGpuRes))
         {
             NV_ASSERT_OR_RETURN(
                 rmGpuGroupLockIsOwner(pParentGpu->gpuInstance, GPU_LOCK_GRP_DEVICE, &gpuMask),

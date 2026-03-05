@@ -54,8 +54,6 @@
 #include "gpu/conf_compute/ccsl.h"
 #include "gpu/conf_compute/conf_compute.h"
 
-ct_assert(GSP_MSG_QUEUE_HEADER_SIZE > sizeof(msgqTxHeader) + sizeof(msgqRxHeader));
-
 static void _gspMsgQueueCleanup(MESSAGE_QUEUE_INFO *pMQI);
 
 static void
@@ -71,6 +69,12 @@ _getMsgQueueParams
     const NvLength defaultCommandQueueSize = 0x40000; // 256 KB
     const NvLength defaultStatusQueueSize  = 0x40000; // 256 KB
     NvU32 regStatusQueueSize;
+
+    pRmQueueInfo->queueElementHdrSize = NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, rpc);
+    pRmQueueInfo->queueElementSizeMin = RM_PAGE_SIZE;
+    pRmQueueInfo->queueElementSizeMax = RM_PAGE_SIZE * 16;
+    pRmQueueInfo->queueHeaderAlign    = 4;
+    pRmQueueInfo->queueElementAlign   = RM_PAGE_SHIFT;
 
     // RmQueue sizes
     if (IS_SILICON(pGpu))
@@ -90,14 +94,15 @@ _getMsgQueueParams
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE, &regStatusQueueSize) == NV_OK)
     {
         regStatusQueueSize *= 1024; // to bytes
-        regStatusQueueSize = NV_MAX(GSP_MSG_QUEUE_ELEMENT_SIZE_MAX, regStatusQueueSize);
-        regStatusQueueSize = NV_ALIGN_UP(regStatusQueueSize, 1 << GSP_MSG_QUEUE_ALIGN);
+        regStatusQueueSize = NV_MAX(pRmQueueInfo->queueElementSizeMax, regStatusQueueSize);
+        regStatusQueueSize = NV_ALIGN_UP(regStatusQueueSize, 1 << RM_PAGE_SHIFT);
         pRmQueueInfo->statusQueueSize = regStatusQueueSize;
     }
     else
     {
         pRmQueueInfo->statusQueueSize = defaultStatusQueueSize;
     }
+    pRmQueueInfo->bErrorInjectionEnabled = NV_FALSE;
 
     //
     // Calculate the number of entries required to map both queues in addition
@@ -129,8 +134,8 @@ _gspMsgQueueInit
     int nRet;
 
     // Allocate work area.
-    workAreaSize = (1 << GSP_MSG_QUEUE_ELEMENT_ALIGN) +
-                   GSP_MSG_QUEUE_ELEMENT_SIZE_MAX + msgqGetMetaSize();
+    workAreaSize = (1 << pMQI->queueElementAlign) +
+                   pMQI->queueElementSizeMax + msgqGetMetaSize();
     pMQI->pWorkArea = portMemAllocNonPaged(workAreaSize);
     if (pMQI->pWorkArea == NULL)
     {
@@ -141,8 +146,8 @@ _gspMsgQueueInit
     portMemSet(pMQI->pWorkArea, 0, workAreaSize);
 
     pMQI->pCmdQueueElement = (GSP_MSG_QUEUE_ELEMENT *)
-        NV_ALIGN_UP((NvUPtr)pMQI->pWorkArea, 1 << GSP_MSG_QUEUE_ELEMENT_ALIGN);
-    pMQI->pMetaData = (void *)((NvUPtr)pMQI->pCmdQueueElement + GSP_MSG_QUEUE_ELEMENT_SIZE_MAX);
+        NV_ALIGN_UP((NvUPtr)pMQI->pWorkArea, 1 << pMQI->queueElementAlign);
+    pMQI->pMetaData = (void *)((NvUPtr)pMQI->pCmdQueueElement + pMQI->queueElementSizeMax);
 
     nRet = msgqInit(&pMQI->hQueue, pMQI->pMetaData);
     if (nRet < 0)
@@ -155,9 +160,9 @@ _gspMsgQueueInit
     nRet = msgqTxCreate(pMQI->hQueue,
                 pMQI->pCommandQueue,
                 pMQI->commandQueueSize,
-                GSP_MSG_QUEUE_ELEMENT_SIZE_MIN,
-                GSP_MSG_QUEUE_HEADER_ALIGN,
-                GSP_MSG_QUEUE_ELEMENT_ALIGN,
+                pMQI->queueElementSizeMin,
+                pMQI->queueHeaderAlign,
+                pMQI->queueElementAlign,
                 MSGQ_FLAGS_SWAP_RX);
     if (nRet < 0)
     {
@@ -350,7 +355,7 @@ NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI)
         portAtomicMemoryFenceFull();
 
         nRet = msgqRxLink((*ppMQI)->hQueue, (*ppMQI)->pStatusQueue,
-            (*ppMQI)->statusQueueSize, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+                          (*ppMQI)->statusQueueSize, (*ppMQI)->queueElementSizeMin);
 
         if (nRet == 0)
         {
@@ -462,11 +467,11 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     NvU32      i;
     RMTIMEOUT  timeout;
     NV_STATUS  nvStatus         = NV_OK;
-    NvU32      msgLen           = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE +
+    NvU32      msgLen           = pMQI->queueElementHdrSize +
                                   pMQI->pCmdQueueElement->rpc.length;
 
     if ((msgLen < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
-        (msgLen > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
+        (msgLen > pMQI->queueElementSizeMax))
     {
         NV_PRINTF(LEVEL_ERROR, "Incorrect message length %u\n",
             pMQI->pCmdQueueElement->rpc.length);
@@ -479,7 +484,7 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         portMemSet(pSrc + msgLen, 0, 8 - (msgLen & 7));
 
     pCQE->seqNum    = pMQI->txSeqNum;
-    pCQE->elemCount = GSP_MSG_QUEUE_BYTES_TO_ELEMENTS(msgLen);
+    pCQE->elemCount = gspMsgQueueBytesToElements(msgLen, pMQI->queueElementSizeMin);
     pCQE->checkSum  = 0; // The checkSum field is included in the checksum calculation, so zero it.
 
     if (gpuIsCCFeatureEnabled(pGpu))
@@ -491,11 +496,11 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
 
         // We need to encrypt the full queue elements to obscure the data.
         nvStatus = ccslEncryptWithRotationChecks(pCC->pRpcCcslCtx,
-                               (pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN) - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
-                               pSrc + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
+                               (pCQE->elemCount * pMQI->queueElementSizeMin) - pMQI->queueElementHdrSize,
+                               pSrc + pMQI->queueElementHdrSize,
                                (NvU8*)pCQE->aadBuffer,
                                sizeof(pCQE->aadBuffer),
-                               pSrc + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
+                               pSrc + pMQI->queueElementHdrSize,
                                pCQE->authTagBuffer);
 
         if (nvStatus != NV_OK)
@@ -512,11 +517,17 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         }
 
         // Now that encryption covers elements completely, include them in checksum.
-        pCQE->checkSum = _checkSum32(pSrc, pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+        pCQE->checkSum = _checkSum32(pSrc, pCQE->elemCount * pMQI->queueElementSizeMin);
     }
     else
     {
         pCQE->checkSum = _checkSum32(pSrc, msgLen);
+    }
+
+    if (pMQI->bErrorInjectionEnabled)
+    {
+        NvU32 *pData = (NvU32 *)pSrc;
+        *pData = 0xFFFFFFFF;
     }
 
     for (i = 0; i < pCQE->elemCount; i++)
@@ -560,9 +571,9 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             pMQI->txBufferFull = 0;
         }
 
-        portMemCopy(pNextElement, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN,
-                    pSrc,         GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
-        pSrc += GSP_MSG_QUEUE_ELEMENT_SIZE_MIN;
+        portMemCopy(pNextElement, pMQI->queueElementSizeMin,
+                    pSrc, pMQI->queueElementSizeMin);
+        pSrc += pMQI->queueElementSizeMin;
     }
 
     //
@@ -645,9 +656,9 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             }
 
             // Copy the next element to our staging area.
-            portMemCopy(pTgt, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN,
-                        pNextElement, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
-            pTgt += GSP_MSG_QUEUE_ELEMENT_SIZE_MIN;
+            portMemCopy(pTgt, pMQI->queueElementSizeMin,
+                        pNextElement, pMQI->queueElementSizeMin);
+            pTgt += pMQI->queueElementSizeMin;
 
             if (i == 0)
             {
@@ -674,11 +685,11 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             // because messages are typically much smaller than element size.
             //
             checkSum = _checkSum32(pMQI->pCmdQueueElement,
-                                   (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN));
+                                   (nElements * pMQI->queueElementSizeMin));
         } else
         {
             checkSum = _checkSum32(pMQI->pCmdQueueElement,
-                                   (GSP_MSG_QUEUE_ELEMENT_HDR_SIZE +
+                                   (pMQI->queueElementHdrSize +
                                     pMQI->pCmdQueueElement->rpc.length));
         }
 
@@ -739,12 +750,12 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     {
         ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
         nvStatus = ccslDecryptWithRotationChecks(pCC->pRpcCcslCtx,
-                               (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN) - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
-                               ((NvU8*)pMQI->pCmdQueueElement) + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
+                               (nElements * pMQI->queueElementSizeMin) - pMQI->queueElementHdrSize,
+                               ((NvU8*)pMQI->pCmdQueueElement) + pMQI->queueElementHdrSize,
                                NULL,
                                (NvU8*)pMQI->pCmdQueueElement->aadBuffer,
                                sizeof(pMQI->pCmdQueueElement->aadBuffer),
-                               ((NvU8*)pMQI->pCmdQueueElement) + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
+                               ((NvU8*)pMQI->pCmdQueueElement) + pMQI->queueElementHdrSize,
                                ((NvU8*)pMQI->pCmdQueueElement->authTagBuffer));
 
         if (nvStatus != NV_OK)
@@ -757,10 +768,10 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     }
 
     // Sanity check for the given RPC length
-    msgLen = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE + pMQI->pCmdQueueElement->rpc.length;
+    msgLen = pMQI->queueElementHdrSize + pMQI->pCmdQueueElement->rpc.length;
 
     if ((msgLen < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
-        (msgLen > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
+        (msgLen > pMQI->queueElementSizeMax))
     {
         // The length is not valid.  If we are running without a fence,
         // this could mean that the data is still in flight from the CPU.
@@ -770,6 +781,7 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     }
 
 exit:
+    pMQI->rxSeqNum++;
 
     nRet = msgqRxMarkConsumed(pMQI->hQueue, nElements);
     if (nRet < 0)
@@ -777,11 +789,6 @@ exit:
         NV_PRINTF(LEVEL_ERROR, "msgqRxMarkConsumed failed: %d\n", nRet);
         nvStatus = NV_ERR_GENERIC;
     }
-    else
-    {
-        pMQI->rxSeqNum++;
-    }
 
     return nvStatus;
 }
-

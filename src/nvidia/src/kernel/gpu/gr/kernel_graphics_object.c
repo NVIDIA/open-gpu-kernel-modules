@@ -521,8 +521,10 @@ kgrobjShouldCleanup_PHYSICAL
     ChannelDescendant *pChannelDescendant = staticCast(pKernelGraphicsObject, ChannelDescendant);
     NvU32              gfid = kchannelGetGfid(pChannelDescendant->pKernelChannel);
 
-    return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || (gpuIsSriovEnabled(pGpu) && IS_GFID_PF(gfid) &&
-                                                             !(IS_MIG_IN_USE(pGpu) && hypervisorIsType(OS_HYPERVISOR_VMWARE)));
+    if (gpuIsSriovEnabled(pGpu) && !RMCFG_FEATURE_PLATFORM_GSP)
+        return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || IS_GFID_PF(gfid);
+    else
+        return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu);
 }
 
 /*!

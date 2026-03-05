@@ -60,6 +60,23 @@
  * Behavior is undefined if str1, str2 is NULL. <br>
  */
 NvS32 portStringCompare(const char *str1, const char *str2, NvLength length);
+
+/**
+ * @brief Compare two strings, character by character, ignoring case.
+ *
+ * Will compare the first 'length' chars of each string, or until
+ * the nul-terminator is reached in either string, whichever comes first.
+ * Case differences between A-Z and a-z are ignored.
+ *
+ * @returns:
+ * - 0 if all bytes are equal (ignoring case)
+ * - <0 if str1 is less than str2 for the first unequal byte.
+ * - >0 if str1 is greater than str2 for the first unequal byte.
+ * @par Undefined:
+ * Behavior is undefined if str1, str2 is NULL. <br>
+ */
+NvS32 portStringCompareIgnoreCase(const char *str1, const char *str2, NvLength length);
+
 /**
  * @brief Copy a string.
  *

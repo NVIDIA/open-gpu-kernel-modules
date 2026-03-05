@@ -43,7 +43,7 @@ static NV_STATUS _allocateNvlogBuffer(NvU32 size, NvU32 flags, NvU32 tag,
                                       NVLOG_BUFFER **ppBuffer);
 static void _deallocateNvlogBuffer(NVLOG_BUFFER *pBuffer);
 
-volatile NvU32 nvlogInitCount;
+PORT_ATOMIC NvU32 nvlogInitCount;
 static void *nvlogRegRoot;
 
 // Zero (null) buffer definition.

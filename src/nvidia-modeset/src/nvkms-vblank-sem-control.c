@@ -187,10 +187,6 @@ static NvBool EnableVblankSemControlValidate(
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset)
 {
-    if (!pDevEvo->supportsVblankSemControl) {
-        return FALSE;
-    }
-
     /*
      * We cannot enable VblankSemControl if the requested offset within the
      * surface is too large.
@@ -231,21 +227,16 @@ static void DisableVblankSemControl(
     }
 }
 
-NvBool nvEvoDisableVblankSemControl(
+void nvEvoDisableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVVblankSemControl *pVblankSemControl)
 {
     NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[pVblankSemControl->dispIndex];
 
-    if (!pDevEvo->supportsVblankSemControl) {
-        return FALSE;
-    }
-
     DisableVblankSemControl(pDispEvo, pVblankSemControl);
 
     nvEvoDecrementSurfaceRefCnts(pDevEvo, pVblankSemControl->pSurfaceEvo);
     nvFree(pVblankSemControl);
-    return TRUE;
 }
 
 NVVblankSemControl *nvEvoEnableVblankSemControl(
@@ -306,16 +297,12 @@ NVVblankSemControl *nvEvoEnableVblankSemControl(
     return pVblankSemControl;
 }
 
-NvBool nvEvoAccelVblankSemControls(
+void nvEvoAccelVblankSemControls(
     NVDevEvoPtr pDevEvo,
     NVDispEvoRec *pDispEvo,
     NvU32 apiHeadMask)
 {
     NvU32 apiHead;
-
-    if (!pDevEvo->supportsVblankSemControl) {
-        return FALSE;
-    }
 
     FOR_ALL_HEADS(apiHead, apiHeadMask) {
 
@@ -332,6 +319,4 @@ NvBool nvEvoAccelVblankSemControls(
                 TRUE /* bAccel */);
         }
     }
-
-    return TRUE;
 }

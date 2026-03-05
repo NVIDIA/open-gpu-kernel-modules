@@ -22,22 +22,30 @@
  */
 #include "nvport/nvport.h"
 
-typedef struct _PORT_STATE
-{
-    NvU32 initCount;
-} PORT_STATE;
-static PORT_STATE portState;
+#if NVOS_IS_LIBOS
+#include "libos_interface.h"
+#endif
 
 // RISC-V implementation of atomics requires initialization
 // Disable initCount atomic operations for RISC-V builds
 #if PORT_IS_MODULE_SUPPORTED(atomic) && !NVCPU_IS_RISCV64
-#define PORT_DEC(x) portAtomicDecrementS32((volatile NvS32 *)&x)
-#define PORT_INC(x) portAtomicIncrementS32((volatile NvS32 *)&x)
+#define PORT_DEC(x) portAtomicDecrementS32((PORT_ATOMIC NvS32 *)&x)
+#define PORT_INC(x) portAtomicIncrementS32((PORT_ATOMIC NvS32 *)&x)
 #else
 #define PORT_DEC(x) --x
 #define PORT_INC(x) ++x
 #endif
 
+#if !defined(PORT_ATOMIC)
+#define PORT_ATOMIC
+#endif
+
+typedef struct _PORT_STATE
+{
+    PORT_ATOMIC NvU32 initCount;
+} PORT_STATE;
+
+static PORT_STATE portState;
 
 /// @todo Add better way to initialize all modules
 NV_STATUS portInitialize(void)
@@ -47,8 +55,8 @@ NV_STATUS portInitialize(void)
 #if PORT_IS_MODULE_SUPPORTED(debug)
         portDbgInitialize();
 #endif
-#if PORT_IS_MODULE_SUPPORTED(atomic)
-        portAtomicInit();
+#if PORT_IS_MODULE_SUPPORTED(atomic) && NVOS_IS_LIBOS
+        libosInterfaceCreateLock(&gLibosAtomicLock);
 #endif
 #if PORT_IS_MODULE_SUPPORTED(sync)
         portSyncInitialize();

@@ -58,29 +58,19 @@ extern "C" {
 #include "containers/btree.h"
 
 // Forward declaration
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct KernelCtxShareApi;
 
-#ifndef __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
-#define __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
-typedef struct KernelCtxShareApi KernelCtxShareApi;
-#endif /* __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCtxShareApi
-#define __nvoc_class_id_KernelCtxShareApi 0x1f9af1
+#define __nvoc_class_id_KernelCtxShareApi 0x1f9af1u
+typedef struct KernelCtxShareApi KernelCtxShareApi;
 #endif /* __nvoc_class_id_KernelCtxShareApi */
 
 
@@ -138,13 +128,9 @@ struct NVOC_METADATA__KernelCtxShare {
     const struct NVOC_METADATA__RsShared metadata__RsShared;
 };
 
-#ifndef __NVOC_CLASS_KernelCtxShare_TYPEDEF__
-#define __NVOC_CLASS_KernelCtxShare_TYPEDEF__
-typedef struct KernelCtxShare KernelCtxShare;
-#endif /* __NVOC_CLASS_KernelCtxShare_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCtxShare
-#define __nvoc_class_id_KernelCtxShare 0x5ae2fe
+#define __nvoc_class_id_KernelCtxShare 0x5ae2feu
+typedef struct KernelCtxShare KernelCtxShare;
 #endif /* __nvoc_class_id_KernelCtxShare */
 
 // Casting support
@@ -163,13 +149,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCtxShare;
 NV_STATUS __nvoc_objCreateDynamic_KernelCtxShare(KernelCtxShare**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelCtxShare(KernelCtxShare**, Dynamic*, NvU32);
-#define __objCreate_KernelCtxShare(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelCtxShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelCtxShare(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelCtxShare((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kctxshareConstruct_IMPL(struct KernelCtxShare *arg_pKernelCtxShare);
-#define __nvoc_kctxshareConstruct(arg_pKernelCtxShare) kctxshareConstruct_IMPL(arg_pKernelCtxShare)
+NV_STATUS kctxshareConstruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
+#define __nvoc_kctxshareConstruct(pKernelCtxShare) kctxshareConstruct_IMPL(pKernelCtxShare)
 
 NV_STATUS kctxshareInitCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi);
 #ifdef __nvoc_kernel_ctxshare_h_disabled
@@ -200,7 +186,7 @@ static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, st
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_ctxshare_h_disabled
-#define kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
+#define kctxshareInit(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock) kctxshareInit_ac1694(pKernelCtxShare, pKernelCtxShareApi, pGpu, pVAS, pKernelChannelGroupApi, offset, pBlock)
 #endif // __nvoc_kernel_ctxshare_h_disabled
 
 #ifdef __nvoc_kernel_ctxshare_h_disabled
@@ -209,7 +195,7 @@ static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare,
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_ctxshare_h_disabled
-#define kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy_56cd7a(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
+#define kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy_ac1694(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
 #endif // __nvoc_kernel_ctxshare_h_disabled
 
 
@@ -218,16 +204,20 @@ static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare,
 #define kctxshareDestroy_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
 
 // Dispatch functions
-static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+static inline NV_STATUS kctxshareInit_ac1694(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock){
     return NV_OK;
 }
 
-
-static inline NV_STATUS kctxshareDestroy_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease) {
+static inline NV_STATUS kctxshareDestroy_ac1694(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease){
     return NV_OK;
 }
 
-
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -309,13 +299,9 @@ struct NVOC_METADATA__KernelCtxShareApi {
     const struct NVOC_VTABLE__KernelCtxShareApi vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
-#define __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
-typedef struct KernelCtxShareApi KernelCtxShareApi;
-#endif /* __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCtxShareApi
-#define __nvoc_class_id_KernelCtxShareApi 0x1f9af1
+#define __nvoc_class_id_KernelCtxShareApi 0x1f9af1u
+typedef struct KernelCtxShareApi KernelCtxShareApi;
 #endif /* __nvoc_class_id_KernelCtxShareApi */
 
 // Casting support
@@ -333,14 +319,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCtxShareApi;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelCtxShareApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelCtxShareApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelCtxShareApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelCtxShareApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kctxshareapiConstruct_IMPL(struct KernelCtxShareApi *arg_pKernelCtxShareApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kctxshareapiConstruct(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams) kctxshareapiConstruct_IMPL(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams)
+NV_STATUS kctxshareapiConstruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kctxshareapiConstruct(pKernelCtxShareApi, pCallContext, pParams) kctxshareapiConstruct_IMPL(pKernelCtxShareApi, pCallContext, pParams)
 
 NV_STATUS kctxshareapiCopyConstruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 #ifdef __nvoc_kernel_ctxshare_h_disabled
@@ -539,14 +525,20 @@ static inline void kctxshareapiAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__kctxshareapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool kctxshareapiCanCopy_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS kctxshareapiCtrlCmdSetTpcPartitionTable_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *pParams);
 
 NV_STATUS kctxshareapiCtrlCmdGetCwdWatermark_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams);
 
 NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_CWD_WATERMARK_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

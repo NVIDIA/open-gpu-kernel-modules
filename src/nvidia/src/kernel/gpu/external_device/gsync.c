@@ -1160,9 +1160,11 @@ gsyncGetGpuTopology(OBJGSYNC *pGsync,
         if (i < pGsync->gpuCount &&
             pGsync->gpus[i].connector <= NV30F1_GSYNC_CONNECTOR_COUNT)
         {
+
             pParams->gpus[i].gpuId      = pGsync->gpus[i].gpuId;
             pParams->gpus[i].connector  = pGsync->gpus[i].connector;
             pParams->gpus[i].proxyGpuId = pGsync->gpus[i].proxyGpuId;
+
         }
         else
         {

@@ -148,7 +148,7 @@ _gmmuGetPtePa
 
     if (aperture != GMMU_APERTURE_INVALID)
     {
-        const GMMU_FIELD_ADDRESS *pAddrFld = gmmuFmtPtePhysAddrFld(pFmt, aperture);
+        const GMMU_FIELD_ADDRESS *pAddrFld = gmmuFmtPtePhysAddrFld(pFmt, aperture, GMMU_PEER_TYPE_LEGACY);
         if (pAddrFld)
         {
             return gmmuFieldGetAddress(pAddrFld, pGmmuEntry->v8);

@@ -125,13 +125,9 @@ struct NVOC_METADATA__I2cApi {
     const struct NVOC_VTABLE__I2cApi vtable;
 };
 
-#ifndef __NVOC_CLASS_I2cApi_TYPEDEF__
-#define __NVOC_CLASS_I2cApi_TYPEDEF__
-typedef struct I2cApi I2cApi;
-#endif /* __NVOC_CLASS_I2cApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_I2cApi
-#define __nvoc_class_id_I2cApi 0xceb8f6
+#define __nvoc_class_id_I2cApi 0xceb8f6u
+typedef struct I2cApi I2cApi;
 #endif /* __nvoc_class_id_I2cApi */
 
 // Casting support
@@ -149,14 +145,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_I2cApi;
 
 NV_STATUS __nvoc_objCreateDynamic_I2cApi(I2cApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_I2cApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_I2cApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_I2cApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_I2cApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS i2capiConstruct_IMPL(struct I2cApi *arg_pI2cApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_i2capiConstruct(arg_pI2cApi, arg_pCallContext, arg_pParams) i2capiConstruct_IMPL(arg_pI2cApi, arg_pCallContext, arg_pParams)
+NV_STATUS i2capiConstruct_IMPL(struct I2cApi *pI2cApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_i2capiConstruct(pI2cApi, pCallContext, pParams) i2capiConstruct_IMPL(pI2cApi, pCallContext, pParams)
 
 void i2capiDestruct_IMPL(struct I2cApi *pI2cApi);
 #define __nvoc_i2capiDestruct(pI2cApi) i2capiDestruct_IMPL(pI2cApi)
@@ -365,6 +361,8 @@ static inline void i2capiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__i2capiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS i2capiCtrlCmdI2cGetPortInfo_IMPL(struct I2cApi *pI2cApi, NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS *pParams);
 
 NV_STATUS i2capiCtrlCmdI2cIndexed_IMPL(struct I2cApi *pI2cApi, NV402C_CTRL_I2C_INDEXED_PARAMS *pParams);
@@ -375,6 +373,10 @@ NV_STATUS i2capiCtrlCmdI2cTableGetDevInfo_IMPL(struct I2cApi *pI2cApi, NV402C_CT
 
 NV_STATUS i2capiCtrlCmdI2cTransaction_IMPL(struct I2cApi *pI2cApi, NV402C_CTRL_I2C_TRANSACTION_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #endif // _I2CAPI_H_

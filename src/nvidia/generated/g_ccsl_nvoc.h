@@ -90,13 +90,9 @@ struct NVOC_METADATA__Ccsl {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_Ccsl_TYPEDEF__
-#define __NVOC_CLASS_Ccsl_TYPEDEF__
-typedef struct Ccsl Ccsl;
-#endif /* __NVOC_CLASS_Ccsl_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Ccsl
-#define __nvoc_class_id_Ccsl 0x9bf1a1
+#define __nvoc_class_id_Ccsl 0x9bf1a1u
+typedef struct Ccsl Ccsl;
 #endif /* __nvoc_class_id_Ccsl */
 
 // Casting support
@@ -115,8 +111,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl;
 NV_STATUS __nvoc_objCreateDynamic_Ccsl(Ccsl**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Ccsl(Ccsl**, Dynamic*, NvU32);
-#define __objCreate_Ccsl(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_Ccsl((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_Ccsl(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_Ccsl((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -149,7 +145,7 @@ void ccslContextClear_IMPL(pCcslContext ctx);
 
 #define ccslLogEncryption(pCtx, direction, bufferSize) ccslLogEncryption_IMPL(pCtx, direction, bufferSize)
 
-#define ccslUpdateRotationThreshold(threshold) ccslUpdateRotationThreshold_b3696a(threshold)
+#define ccslUpdateRotationThreshold(threshold) ccslUpdateRotationThreshold_d44104(threshold)
 
 NV_STATUS ccslIncrementCounter_IMPL(pCcslContext pCtx, NvU8 *ctr, NvU64 increment);
 #define ccslIncrementCounter(pCtx, ctr, increment) ccslIncrementCounter_IMPL(pCtx, ctr, increment)
@@ -172,50 +168,42 @@ NV_STATUS ccslIncrementCounter_IMPL(pCcslContext pCtx, NvU8 *ctr, NvU64 incremen
 #define ccslUpdateRotationThreshold_HAL(threshold) ccslUpdateRotationThreshold(threshold)
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS ccslContextInitViaChannel_IMPL(pCcslContext *ppCtx, NvHandle hClient, NvHandle hSubdevice, NvHandle hChannel);
-
 
 NV_STATUS ccslContextInitViaKeyId_KERNEL(struct ConfidentialCompute *pConfCompute, pCcslContext *ppCtx, NvU32 globalKeyId);
 
-
 NV_STATUS ccslContextUpdate_KERNEL(pCcslContext ctx);
-
 
 NV_STATUS ccslRotateIv_IMPL(pCcslContext ctx, NvU8 direction);
 
-
 NV_STATUS ccslEncryptWithIv_IMPL(pCcslContext ctx, NvU32 bufferSize, const NvU8 *inputBuffer, NvU8 *encryptIv, const NvU8 *aadBuffer, NvU32 aadSize, NvU8 *outputBuffer, NvU8 *authTagBuffer);
-
 
 NV_STATUS ccslEncrypt_KERNEL(pCcslContext ctx, NvU32 bufferSize, const NvU8 *inputBuffer, const NvU8 *aadBuffer, NvU32 aadSize, NvU8 *outputBuffer, NvU8 *authTagBuffer);
 
-
 NV_STATUS ccslEncryptWithRotationChecks_KERNEL(pCcslContext pCtx, NvU32 bufferSize, const NvU8 *inputBuffer, const NvU8 *aadBuffer, NvU32 aadSize, NvU8 *outputBuffer, NvU8 *authTagBuffer);
-
 
 NV_STATUS ccslDecrypt_KERNEL(pCcslContext ctx, NvU32 bufferSize, const NvU8 *inputBuffer, const NvU8 *decryptIv, NvU32 keyRotationId, const NvU8 *aadBuffer, NvU32 aadSize, NvU8 *outputBuffer, const NvU8 *authTagBuffer);
 
-
 NV_STATUS ccslDecryptWithRotationChecks_KERNEL(pCcslContext pCtx, NvU32 bufferSize, const NvU8 *inputBuffer, const NvU8 *decryptIv, const NvU8 *aadBuffer, NvU32 aadSize, NvU8 *outputBuffer, const NvU8 *authTagBuffer);
-
 
 NV_STATUS ccslSign_IMPL(pCcslContext ctx, NvU32 bufferSize, const NvU8 *inputBuffer, NvU8 *authTagBuffer);
 
-
 NV_STATUS ccslQueryMessagePool_IMPL(pCcslContext ctx, NvU8 direction, NvU64 *messageNum);
-
 
 NV_STATUS ccslIncrementIv_IMPL(pCcslContext pCtx, NvU8 direction, NvU64 increment, NvU8 *iv);
 
-
 NV_STATUS ccslLogEncryption_IMPL(pCcslContext pCtx, NvU8 direction, NvU32 bufferSize);
 
-
-static inline void ccslUpdateRotationThreshold_b3696a(NvU64 threshold) {
+// Inline HAL method definitions
+static inline void ccslUpdateRotationThreshold_d44104(NvU64 threshold){
     return;
 }
 
-
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CCSL_H_PRIVATE_ACCESS_ALLOWED

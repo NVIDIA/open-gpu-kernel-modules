@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x6305d2 = 1;
+char __nvoc_class_id_uniqueness_check__6305d2 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE;
@@ -36,20 +36,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJTRACEABLE;
 
 // Up-thunk(s) to bridge OBJTRACEABLE methods to ancestors (if any)
 
+// Class-specific details for OBJTRACEABLE
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(OBJTRACEABLE),
-        /*classId=*/            classId(OBJTRACEABLE),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(OBJTRACEABLE),
+    .classInfo.classId =            classId(OBJTRACEABLE),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "OBJTRACEABLE",
+    .classInfo.name =               "OBJTRACEABLE",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__OBJTRACEABLE,
-    /*pExportInfo=*/        &__nvoc_export_info__OBJTRACEABLE
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__OBJTRACEABLE,
+    .pExportInfo =        &__nvoc_export_info__OBJTRACEABLE
 };
 
 
@@ -71,25 +70,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__OBJTRACEABLE = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJTRACEABLE = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_OBJTRACEABLE(OBJTRACEABLE *pThis) {
+
+// Destruct OBJTRACEABLE object.
+void __nvoc_dtor_OBJTRACEABLE(OBJTRACEABLE* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_OBJTRACEABLE(OBJTRACEABLE *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct OBJTRACEABLE object.
 NV_STATUS __nvoc_ctor_OBJTRACEABLE(OBJTRACEABLE *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_OBJTRACEABLE(pThis);
     goto __nvoc_ctor_OBJTRACEABLE_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_OBJTRACEABLE_exit:
-
     return status;
 }
 

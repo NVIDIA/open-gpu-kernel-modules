@@ -102,6 +102,7 @@ typedef struct NVA081_CTRL_VGPU_INFO {
     NvU32 cudaEnabled;
     NvU32 eccSupported;
     NvU32 gpuInstanceSize;
+    NvU32 nominalFbRegionSize;
     NvU32 multiVgpuSupported;
     NV_DECLARE_ALIGNED(NvU64 vdevId, 8);
     NV_DECLARE_ALIGNED(NvU64 pdevId, 8);

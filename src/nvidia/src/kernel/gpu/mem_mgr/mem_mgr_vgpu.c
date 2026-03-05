@@ -24,7 +24,7 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "vgpu/vgpu_events.h"
+#include "vgpu/sdk-structures.h"
 
 /*!
  *  @@brief get FB tax size

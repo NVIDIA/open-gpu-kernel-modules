@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,18 +98,16 @@ RmSaveDisplayState
         return;
     }
 
-    os_disable_console_access();
-
     preUnixConsoleParams.bSave     = NV_TRUE;
     preUnixConsoleParams.bUseVbios = use_vbios;
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
                         NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
-                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
+                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), return);
 
     if (preUnixConsoleParams.bReturnEarly)
     {
-        goto done;
+        return;
     }
 
     if (use_vbios)
@@ -137,9 +135,6 @@ RmSaveDisplayState
                 pRmApi->Control(pRmApi, nv->rmapi.hClient,nv->rmapi.hSubDevice,
                                 NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
                                 &postUnixConsoleParams, sizeof(postUnixConsoleParams)));
-
-done:
-    os_enable_console_access();
 }
 
 static void RmRestoreDisplayState
@@ -182,19 +177,17 @@ static void RmRestoreDisplayState
         return;
     }
 
-    os_disable_console_access();
-
     preUnixConsoleParams.bUseVbios = use_vbios;
     preUnixConsoleParams.bSave = NV_FALSE;
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
                         nv->rmapi.hSubDevice,
                         NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
-                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
+                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), return);
 
     if (preUnixConsoleParams.bReturnEarly)
     {
-        goto done;
+        return;
     }
 
     if (use_vbios)
@@ -215,9 +208,6 @@ static void RmRestoreDisplayState
                 pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
                                 NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
                                 &postUnixConsoleParams, sizeof(postUnixConsoleParams)));
-
-done:
-    os_enable_console_access();
 }
 
 static void

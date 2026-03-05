@@ -53,68 +53,43 @@ extern "C" {
 
 #include "ctrl/ctrl0041.h"
 
-
 struct Device;
 
-#ifndef __NVOC_CLASS_Device_TYPEDEF__
-#define __NVOC_CLASS_Device_TYPEDEF__
-typedef struct Device Device;
-#endif /* __NVOC_CLASS_Device_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Device
-#define __nvoc_class_id_Device 0xe0ac20
+#define __nvoc_class_id_Device 0xe0ac20u
+typedef struct Device Device;
 #endif /* __nvoc_class_id_Device */
-
 
 
 struct Subdevice;
 
-#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
-#define __NVOC_CLASS_Subdevice_TYPEDEF__
-typedef struct Subdevice Subdevice;
-#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Subdevice
-#define __nvoc_class_id_Subdevice 0x4b01b3
+#define __nvoc_class_id_Subdevice 0x4b01b3u
+typedef struct Subdevice Subdevice;
 #endif /* __nvoc_class_id_Subdevice */
-
 
 
 struct RsClient;
 
-#ifndef __NVOC_CLASS_RsClient_TYPEDEF__
-#define __NVOC_CLASS_RsClient_TYPEDEF__
-typedef struct RsClient RsClient;
-#endif /* __NVOC_CLASS_RsClient_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsClient
-#define __nvoc_class_id_RsClient 0x8f87e5
+#define __nvoc_class_id_RsClient 0x8f87e5u
+typedef struct RsClient RsClient;
 #endif /* __nvoc_class_id_RsClient */
-
 
 
 struct Heap;
 
-#ifndef __NVOC_CLASS_Heap_TYPEDEF__
-#define __NVOC_CLASS_Heap_TYPEDEF__
-typedef struct Heap Heap;
-#endif /* __NVOC_CLASS_Heap_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Heap
-#define __nvoc_class_id_Heap 0x556e9a
+#define __nvoc_class_id_Heap 0x556e9au
+typedef struct Heap Heap;
 #endif /* __nvoc_class_id_Heap */
-
 
 
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
@@ -253,13 +228,9 @@ struct NVOC_METADATA__Memory {
     const struct NVOC_VTABLE__Memory vtable;
 };
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 // Casting support
@@ -277,14 +248,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Memory;
 
 NV_STATUS __nvoc_objCreateDynamic_Memory(Memory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_Memory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_Memory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_Memory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_Memory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memConstruct_IMPL(struct Memory *arg_pMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memConstruct(arg_pMemory, arg_pCallContext, arg_pParams) memConstruct_IMPL(arg_pMemory, arg_pCallContext, arg_pParams)
+NV_STATUS memConstruct_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memConstruct(pMemory, pCallContext, pParams) memConstruct_IMPL(pMemory, pCallContext, pParams)
 
 NV_STATUS memCopyConstruct_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 #ifdef __nvoc_mem_h_disabled
@@ -599,6 +570,7 @@ static inline void memAddAdditionalDependants_DISPATCH(struct RsClient *pClient,
     pResource->__nvoc_metadata_ptr->vtable.__memAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS memIsDuplicate_IMPL(struct Memory *pMemory, NvHandle hMemory, NvBool *pDuplicate);
 
 NV_STATUS memGetMapAddrSpace_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
@@ -611,26 +583,27 @@ NV_STATUS memUnmap_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, RsCp
 
 NV_STATUS memGetMemInterMapParams_IMPL(struct Memory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams);
 
-static inline NV_STATUS memCheckMemInterUnmap_ac1694(struct Memory *pMemory, NvBool bSubdeviceHandleProvided) {
+static inline NV_STATUS memCheckMemInterUnmap_ac1694(struct Memory *pMemory, NvBool bSubdeviceHandleProvided){
     return NV_OK;
 }
 
 NV_STATUS memGetMemoryMappingDescriptor_IMPL(struct Memory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc);
 
-static inline NV_STATUS memCheckCopyPermissions_ac1694(struct Memory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+static inline NV_STATUS memCheckCopyPermissions_ac1694(struct Memory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice){
     return NV_OK;
 }
 
 NV_STATUS memIsReady_IMPL(struct Memory *pMemory, NvBool bCopyConstructorContext);
 
-static inline NvBool memIsGpuMapAllowed_e661f0(struct Memory *pMemory, struct OBJGPU *pGpu) {
+static inline NvBool memIsGpuMapAllowed_e661f0(struct Memory *pMemory, struct OBJGPU *pGpu){
     return NV_TRUE;
 }
 
-static inline NvBool memIsExportAllowed_e661f0(struct Memory *pMemory) {
+static inline NvBool memIsExportAllowed_e661f0(struct Memory *pMemory){
     return NV_TRUE;
 }
 
+// Exported method declarations and/or inline definitions
 NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams);
 
 NV_STATUS memCtrlCmdSurfaceFlushGpuCache_IMPL(struct Memory *pMemory, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *pCacheFlushParams);
@@ -649,6 +622,10 @@ NV_STATUS memCtrlCmdMapMemoryForGpuAccess_IMPL(struct Memory *pMemory, NV0041_CT
 
 NV_STATUS memCtrlCmdUnmapMemoryForGpuAccess_IMPL(struct Memory *pMemory, NV0041_CTRL_UNMAP_MEMORY_FOR_GPU_ACCESS_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

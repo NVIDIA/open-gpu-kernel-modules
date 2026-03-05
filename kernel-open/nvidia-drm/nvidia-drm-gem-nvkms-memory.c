@@ -57,6 +57,11 @@ static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
         nvKms->freeMemoryPages((NvU64 *)nv_nvkms_memory->pages);
     }
 
+    /* Decrement GC6 blocker if it's still held */
+    if (nv_nvkms_memory->was_mmapped) {
+        nvKms->gc6BlockerRefCntDec(nv_dev->pDevice);
+    }
+
     /* Free NvKmsKapiMemory handle associated with this gem object */
 
     nvKms->freeMemory(nv_dev->pDevice, nv_nvkms_memory->base.pMemory);
@@ -76,6 +81,23 @@ static int __nv_drm_gem_nvkms_mmap(struct nv_drm_gem_object *nv_gem,
     int ret = __nv_drm_gem_nvkms_map(nv_nvkms_memory);
     if (ret) {
        return ret;
+    }
+
+    if (nvKms->isVidmem(nv_nvkms_memory->base.pMemory)) {
+        /*
+         * Usermode clients can't be trusted not to access mappings while the GPU
+         * is in GC6. Increment the GC6 blocker refcount to keep the GPU awake
+         * while this mapping is active.
+         */
+        mutex_lock(&nv_nvkms_memory->map_lock);
+        if (!nv_nvkms_memory->was_mmapped) {
+            if (!nvKms->gc6BlockerRefCntInc(nv_gem->nv_dev->pDevice)) {
+                mutex_unlock(&nv_nvkms_memory->map_lock);
+                return -ENOMEM;
+            }
+            nv_nvkms_memory->was_mmapped = true;
+        }
+        mutex_unlock(&nv_nvkms_memory->map_lock);
     }
 
     return drm_gem_mmap_obj(&nv_gem->base,
@@ -218,6 +240,14 @@ static void *__nv_drm_gem_nvkms_prime_vmap(
     }
 
     if (nv_nvkms_memory->physically_mapped) {
+        /*
+         * For CPU mappings of vidmem, increment the GC6 blocker refcount to
+         * keep the GPU awake while the kernel is using the mapping.
+         */
+        if (nvKms->isVidmem(nv_gem->pMemory) &&
+            !nvKms->gc6BlockerRefCntInc(nv_gem->nv_dev->pDevice)) {
+            return ERR_PTR(-ENOMEM);
+        }
         return nv_nvkms_memory->pWriteCombinedIORemapAddress;
     }
 
@@ -245,6 +275,15 @@ static void __nv_drm_gem_nvkms_prime_vunmap(
     if (!nv_nvkms_memory->physically_mapped &&
         nv_nvkms_memory->pages_count > 0) {
         nv_drm_vunmap(address);
+    }
+
+    if (nv_nvkms_memory->physically_mapped &&
+        nvKms->isVidmem(nv_gem->pMemory)) {
+        /*
+         * Decrement the GC6 blocker refcount now that the mapping is no longer
+         * needed.
+         */
+        nvKms->gc6BlockerRefCntDec(nv_gem->nv_dev->pDevice);
     }
 }
 
@@ -312,6 +351,7 @@ static int __nv_drm_nvkms_gem_obj_init(
     nv_nvkms_memory->pPhysicalAddress = NULL;
     nv_nvkms_memory->pWriteCombinedIORemapAddress = NULL;
     nv_nvkms_memory->physically_mapped = false;
+    nv_nvkms_memory->was_mmapped = false;
 
     if (!nvKms->isVidmem(pMemory) &&
         !nvKms->getMemoryPages(nv_dev->pDevice,

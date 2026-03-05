@@ -28,7 +28,7 @@
 *           Stubs for all the public stub routines                          *
 \***************************************************************************/
 
-#include "os/os_stub.h"
+#include "os/os.h"
 
 void osQADbgRegistryInit(void)
 {

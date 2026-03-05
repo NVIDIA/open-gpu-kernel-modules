@@ -162,13 +162,12 @@ static void grow_fault_granularity_if_no_thrashing(uvm_perf_prefetch_bitmap_tree
 }
 
 static void grow_fault_granularity(uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
-                                   NvU64 big_page_size,
                                    uvm_va_block_region_t big_pages_region,
                                    uvm_va_block_region_t max_prefetch_region,
                                    const uvm_page_mask_t *faulted_pages,
                                    const uvm_page_mask_t *thrashing_pages)
 {
-    uvm_page_index_t pages_per_big_page = big_page_size / PAGE_SIZE;
+    const uvm_page_index_t pages_per_big_page = UVM_BIG_PAGE_SIZE / PAGE_SIZE;
     uvm_page_index_t page_index;
 
     // Migrate whole block if no big pages and no page in it is thrashing
@@ -245,7 +244,6 @@ static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bi
                                              uvm_va_block_region_t max_prefetch_region)
 
 {
-    NvU64 big_page_size;
     uvm_va_block_region_t big_pages_region;
     uvm_va_space_t *va_space;
     const uvm_page_mask_t *thrashing_pages;
@@ -255,28 +253,15 @@ static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bi
 
     va_space = uvm_va_block_get_va_space(va_block);
 
-    // Get the big page size for the new residency.
-    // Assume 64K size if the new residency is the CPU or no GPU va space is
-    // registered in the current process for this GPU.
-    if (UVM_ID_IS_GPU(new_residency) &&
-        uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, new_residency)) {
-        uvm_gpu_t *gpu = uvm_gpu_get(new_residency);
-
-        big_page_size = uvm_va_block_gpu_big_page_size(va_block, gpu);
-    }
-    else {
-        big_page_size = UVM_PAGE_SIZE_64K;
-    }
-
-    big_pages_region = uvm_va_block_big_page_region_subset(va_block, max_prefetch_region, big_page_size);
+    big_pages_region = uvm_va_block_big_page_region_subset(va_block, max_prefetch_region);
 
     // Adjust the prefetch tree to big page granularity to make sure that we
     // get big page-friendly prefetching hints
     if (big_pages_region.first - max_prefetch_region.first > 0) {
-        bitmap_tree->offset = big_page_size / PAGE_SIZE - (big_pages_region.first - max_prefetch_region.first);
+        bitmap_tree->offset = UVM_BIG_PAGE_SIZE / PAGE_SIZE - (big_pages_region.first - max_prefetch_region.first);
         bitmap_tree->leaf_count = uvm_va_block_region_num_pages(max_prefetch_region) + bitmap_tree->offset;
 
-        UVM_ASSERT(bitmap_tree->offset < big_page_size / PAGE_SIZE);
+        UVM_ASSERT(bitmap_tree->offset < UVM_BIG_PAGE_SIZE / PAGE_SIZE);
         UVM_ASSERT(bitmap_tree->leaf_count <= PAGES_PER_UVM_VA_BLOCK);
 
         uvm_page_mask_shift_left(&bitmap_tree->pages, &bitmap_tree->pages, bitmap_tree->offset);
@@ -289,7 +274,6 @@ static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bi
     // Assume big pages by default. Prefetch the rest of 4KB subregions within
     // the big page region unless there is thrashing.
     grow_fault_granularity(bitmap_tree,
-                           big_page_size,
                            big_pages_region,
                            max_prefetch_region,
                            faulted_pages,

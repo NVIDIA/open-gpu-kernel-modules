@@ -37,10 +37,9 @@
 bool uvm_hal_method_is_valid_stub(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
 
 typedef void (*uvm_hal_init_t)(uvm_push_t *push);
-void uvm_hal_maxwell_ce_init(uvm_push_t *push);
-void uvm_hal_maxwell_host_init_noop(uvm_push_t *push);
-void uvm_hal_pascal_host_init(uvm_push_t *push);
-void uvm_hal_maxwell_sec2_init_noop(uvm_push_t *push);
+void uvm_hal_turing_ce_init(uvm_push_t *push);
+void uvm_hal_turing_host_init(uvm_push_t *push);
+void uvm_hal_turing_sec2_init_noop(uvm_push_t *push);
 void uvm_hal_hopper_sec2_init(uvm_push_t *push);
 
 // Host method validation
@@ -53,21 +52,20 @@ bool uvm_hal_ampere_host_sw_method_is_valid(uvm_push_t *push, NvU32 method_addre
 
 // Wait for idle
 typedef void (*uvm_hal_wait_for_idle_t)(uvm_push_t *push);
-void uvm_hal_maxwell_host_wait_for_idle(uvm_push_t *push);
+void uvm_hal_turing_host_wait_for_idle(uvm_push_t *push);
 
 // Membar SYS
 typedef void (*uvm_hal_membar_sys_t)(uvm_push_t *push);
-void uvm_hal_maxwell_host_membar_sys(uvm_push_t *push);
-void uvm_hal_pascal_host_membar_sys(uvm_push_t *push);
+void uvm_hal_turing_host_membar_sys(uvm_push_t *push);
 
 // Membar GPU
 typedef void (*uvm_hal_membar_gpu_t)(uvm_push_t *push);
-void uvm_hal_pascal_host_membar_gpu(uvm_push_t *push);
+void uvm_hal_turing_host_membar_gpu(uvm_push_t *push);
 
 // Put a noop in the pushbuffer of the given size in bytes.
 // The size needs to be a multiple of 4.
 typedef void (*uvm_hal_noop_t)(uvm_push_t *push, NvU32 size);
-void uvm_hal_maxwell_host_noop(uvm_push_t *push, NvU32 size);
+void uvm_hal_turing_host_noop(uvm_push_t *push, NvU32 size);
 
 // Host-generated interrupt method. This will generate a call to
 // uvm_isr_top_half_entry.
@@ -80,7 +78,7 @@ void uvm_hal_maxwell_host_noop(uvm_push_t *push, NvU32 size);
 // We must set up software state before pushing the interrupt, and check any
 // possible interrupt condition on receiving an interrupt callback.
 typedef void (*uvm_hal_interrupt_t)(uvm_push_t *push);
-void uvm_hal_maxwell_host_interrupt(uvm_push_t *push);
+void uvm_hal_turing_host_interrupt(uvm_push_t *push);
 
 // Issue a TLB invalidate applying to all VAs in a PDB.
 //
@@ -88,9 +86,9 @@ void uvm_hal_maxwell_host_interrupt(uvm_push_t *push);
 // the PDB are invalidated from the specified depth down to the PTEs. This
 // allows for optimizations if the caller isn't writing all levels of the PDEs.
 // Depth follows the MMU code convention where depth 0 is the top level and here
-// means to invalidate everything. See uvm_pascal_mmu.c for an example of depth
+// means to invalidate everything. See uvm_turing_mmu.c for an example of depth
 // mapping to HW PDE levels. Notably 2M PTEs are considered PDEs as far as the
-// TLBs are concerned and hence on Pascal the depth needs to be at most 3 for
+// TLBs are concerned and hence on Turing the depth needs to be at most 3 for
 // them to be included in the invalidation.
 //
 // If the membar parameter is not UVM_MEMBAR_NONE, the specified membar is
@@ -100,18 +98,6 @@ typedef void (*uvm_hal_host_tlb_invalidate_all_t)(uvm_push_t *push,
                                                   uvm_gpu_phys_address_t pdb,
                                                   NvU32 depth,
                                                   uvm_membar_t membar);
-void uvm_hal_maxwell_host_tlb_invalidate_all_a16f(uvm_push_t *push,
-                                                  uvm_gpu_phys_address_t pdb,
-                                                  NvU32 depth,
-                                                  uvm_membar_t membar);
-void uvm_hal_maxwell_host_tlb_invalidate_all_b06f(uvm_push_t *push,
-                                                  uvm_gpu_phys_address_t pdb,
-                                                  NvU32 depth,
-                                                  uvm_membar_t membar);
-void uvm_hal_pascal_host_tlb_invalidate_all(uvm_push_t *push,
-                                            uvm_gpu_phys_address_t pdb,
-                                            NvU32 depth,
-                                            uvm_membar_t membar);
 void uvm_hal_turing_host_tlb_invalidate_all(uvm_push_t *push,
                                             uvm_gpu_phys_address_t pdb,
                                             NvU32 depth,
@@ -140,9 +126,9 @@ void uvm_hal_blackwell_host_tlb_invalidate_all(uvm_push_t *push,
 // invalidated.
 //
 // Depth follows the MMU code convention where depth 0 is the top level and here
-// means to invalidate all levels. See uvm_pascal_mmu.c for an example of depth
+// means to invalidate all levels. See uvm_turing_mmu.c for an example of depth
 // mapping to HW PDE levels. Notably 2M PTEs are considered PDEs as far as the
-// TLBs are concerned and hence on Pascal the depth needs to be at most 3 for
+// TLBs are concerned and hence on Turing the depth needs to be at most 3 for
 // them to be included in the invalidation.
 //
 // If the membar parameter is not UVM_MEMBAR_NONE, the specified membar is
@@ -159,27 +145,6 @@ typedef void (*uvm_hal_host_tlb_invalidate_va_t)(uvm_push_t *push,
                                                  NvU64 size,
                                                  NvU64 page_size,
                                                  uvm_membar_t membar);
-void uvm_hal_maxwell_host_tlb_invalidate_va(uvm_push_t *push,
-                                            uvm_gpu_phys_address_t pdb,
-                                            NvU32 depth,
-                                            NvU64 base,
-                                            NvU64 size,
-                                            NvU64 page_size,
-                                            uvm_membar_t membar);
-void uvm_hal_pascal_host_tlb_invalidate_va(uvm_push_t *push,
-                                           uvm_gpu_phys_address_t pdb,
-                                           NvU32 depth,
-                                           NvU64 base,
-                                           NvU64 size,
-                                           NvU64 page_size,
-                                           uvm_membar_t membar);
-void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
-                                          uvm_gpu_phys_address_t pdb,
-                                          NvU32 depth,
-                                          NvU64 base,
-                                          NvU64 size,
-                                          NvU64 page_size,
-                                          uvm_membar_t membar);
 void uvm_hal_turing_host_tlb_invalidate_va(uvm_push_t *push,
                                            uvm_gpu_phys_address_t pdb,
                                            NvU32 depth,
@@ -215,18 +180,12 @@ typedef void (*uvm_hal_host_tlb_invalidate_phys_t)(uvm_push_t *push);
 
 // Volta was the first GPU which enabled caching of physical translations, but
 // we have no need to invalidate manually until Blackwell.
-void uvm_hal_maxwell_host_tlb_invalidate_phys_unsupported(uvm_push_t *push);
+void uvm_hal_turing_host_tlb_invalidate_phys_unsupported(uvm_push_t *push);
 void uvm_hal_blackwell_host_tlb_invalidate_phys(uvm_push_t *push);
 
 typedef void (*uvm_hal_host_tlb_invalidate_test_t)(uvm_push_t *push,
                                                    uvm_gpu_phys_address_t pdb,
                                                    UVM_TEST_INVALIDATE_TLB_PARAMS *params);
-void uvm_hal_maxwell_host_tlb_invalidate_test(uvm_push_t *push,
-                                              uvm_gpu_phys_address_t pdb,
-                                              UVM_TEST_INVALIDATE_TLB_PARAMS *params);
-void uvm_hal_pascal_host_tlb_invalidate_test(uvm_push_t *push,
-                                             uvm_gpu_phys_address_t pdb,
-                                             UVM_TEST_INVALIDATE_TLB_PARAMS *params);
 void uvm_hal_turing_host_tlb_invalidate_test(uvm_push_t *push,
                                              uvm_gpu_phys_address_t pdb,
                                              UVM_TEST_INVALIDATE_TLB_PARAMS *params);
@@ -245,7 +204,7 @@ void uvm_hal_blackwell_host_tlb_invalidate_test(uvm_push_t *push,
 typedef void (*uvm_hal_host_tlb_flush_prefetch_t)(uvm_push_t *push);
 
 // Blackwell is the first GPU which needs prefetch flushing
-void uvm_hal_maxwell_host_tlb_flush_prefetch_unsupported(uvm_push_t *push);
+void uvm_hal_turing_host_tlb_flush_prefetch_unsupported(uvm_push_t *push);
 void uvm_hal_blackwell_host_tlb_flush_prefetch(uvm_push_t *push);
 
 // Performs L2 cache invalidation for peer or system memory.
@@ -259,12 +218,9 @@ void uvm_hal_host_l2_invalidate_unsupported(uvm_push_t *push, uvm_aperture_t ape
 // operation. This can be affected by using UVM_PUSH_FLAG_NEXT_* flags with
 // uvm_push_set_flag().
 typedef void (*uvm_hal_semaphore_release_t)(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_maxwell_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_maxwell_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_maxwell_sec2_semaphore_release_unsupported(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_pascal_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_volta_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_turing_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
+void uvm_hal_turing_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
+void uvm_hal_turing_sec2_semaphore_release_unsupported(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_sec2_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
@@ -275,20 +231,16 @@ void uvm_hal_hopper_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32
 // aligned. The value of the released payload is unspecified and shouldn't be
 // relied on, only the timestamp should be of interest.
 typedef void (*uvm_hal_semaphore_timestamp_t)(uvm_push_t *push, NvU64 gpu_va);
-void uvm_hal_maxwell_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
-void uvm_hal_pascal_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
-void uvm_hal_volta_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
+void uvm_hal_turing_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_hopper_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 
-void uvm_hal_maxwell_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
-void uvm_hal_volta_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
+void uvm_hal_turing_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_hopper_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 
-void uvm_hal_maxwell_sec2_semaphore_timestamp_unsupported(uvm_push_t *push, NvU64 gpu_va);
+void uvm_hal_turing_sec2_semaphore_timestamp_unsupported(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_hopper_sec2_semaphore_timestamp_unsupported(uvm_push_t *push, NvU64 gpu_va);
 
 typedef void (*uvm_hal_semaphore_acquire_t)(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_maxwell_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_turing_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 
@@ -299,16 +251,12 @@ void uvm_hal_hopper_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32
 // reduction operations, semaphore acquire, and semaphore release
 // operations with timestamp.
 typedef bool (*uvm_hal_semaphore_target_is_valid_t)(uvm_push_t *push, NvU64 gpu_va);
-bool uvm_hal_maxwell_semaphore_target_is_valid(uvm_push_t *push, NvU64 gpu_va);
+bool uvm_hal_turing_semaphore_target_is_valid(uvm_push_t *push, NvU64 gpu_va);
 
 typedef void (*uvm_hal_host_set_gpfifo_entry_t)(NvU64 *fifo_entry,
                                                 NvU64 pushbuffer_va,
                                                 NvU32 pushbuffer_length,
                                                 uvm_gpfifo_sync_t sync_flag);
-void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry,
-                                           NvU64 pushbuffer_va,
-                                           NvU32 pushbuffer_length,
-                                           uvm_gpfifo_sync_t sync_flag);
 void uvm_hal_turing_host_set_gpfifo_entry(NvU64 *fifo_entry,
                                           NvU64 pushbuffer_va,
                                           NvU32 pushbuffer_length,
@@ -319,43 +267,40 @@ void uvm_hal_hopper_host_set_gpfifo_entry(NvU64 *fifo_entry,
                                           uvm_gpfifo_sync_t sync_flag);
 
 typedef void (*uvm_hal_host_set_gpfifo_noop_t)(NvU64 *fifo_entry);
-void uvm_hal_maxwell_host_set_gpfifo_noop(NvU64 *fifo_entry);
+void uvm_hal_turing_host_set_gpfifo_noop(NvU64 *fifo_entry);
 
 typedef void (*uvm_hal_host_set_gpfifo_pushbuffer_segment_base_t)(NvU64 *fifo_entry, NvU64 pushbuffer_va);
-void uvm_hal_maxwell_host_set_gpfifo_pushbuffer_segment_base_unsupported(NvU64 *fifo_entry, NvU64 pushbuffer_va);
+void uvm_hal_turing_host_set_gpfifo_pushbuffer_segment_base_unsupported(NvU64 *fifo_entry, NvU64 pushbuffer_va);
 void uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base(NvU64 *fifo_entry, NvU64 pushbuffer_va);
 
 typedef void (*uvm_hal_host_write_gpu_put_t)(uvm_channel_t *channel, NvU32 gpu_put);
-void uvm_hal_maxwell_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put);
-void uvm_hal_volta_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put);
+void uvm_hal_turing_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put);
 
 // Return the current GPU time in nanoseconds
 typedef NvU64 (*uvm_hal_get_time_t)(uvm_gpu_t *gpu);
-NvU64 uvm_hal_maxwell_get_time(uvm_gpu_t *gpu);
+NvU64 uvm_hal_turing_get_time(uvm_gpu_t *gpu);
 
 // Internal helpers used by the CE hal
 // Used to handle the offset encoding differences between architectures
 typedef void (*uvm_hal_ce_offset_out_t)(uvm_push_t *push, NvU64 offset);
-void uvm_hal_maxwell_ce_offset_out(uvm_push_t *push, NvU64 offset);
-void uvm_hal_pascal_ce_offset_out(uvm_push_t *push, NvU64 offset);
+void uvm_hal_turing_ce_offset_out(uvm_push_t *push, NvU64 offset);
 void uvm_hal_hopper_ce_offset_out(uvm_push_t *push, NvU64 offset);
 
 typedef void (*uvm_hal_ce_offset_in_out_t)(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
-void uvm_hal_maxwell_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
-void uvm_hal_pascal_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
+void uvm_hal_turing_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
 void uvm_hal_hopper_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
 
 typedef NvU32 (*uvm_hal_ce_phys_mode_t)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-NvU32 uvm_hal_maxwell_ce_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+NvU32 uvm_hal_turing_ce_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 NvU32 uvm_hal_ampere_ce_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 NvU32 uvm_hal_hopper_ce_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 
 typedef NvU32 (*uvm_hal_ce_plc_mode_t)(void);
-NvU32 uvm_hal_maxwell_ce_plc_mode(void);
+NvU32 uvm_hal_turing_ce_plc_mode(void);
 NvU32 uvm_hal_ampere_ce_plc_mode_c7b5(void);
 
 typedef NvU32 (*uvm_hal_ce_memcopy_type_t)(uvm_gpu_address_t dst, uvm_gpu_address_t src);
-NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src);
+NvU32 uvm_hal_turing_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src);
 NvU32 uvm_hal_hopper_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src);
 
 // CE method validation
@@ -366,7 +311,7 @@ bool uvm_hal_ampere_ce_method_is_valid_c6b5(uvm_push_t *push, NvU32 method_addre
 // The validation happens at the start of the memcopy (uvm_hal_memcopy_t)
 // execution.
 typedef bool (*uvm_hal_ce_memcopy_is_valid)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-bool uvm_hal_maxwell_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+bool uvm_hal_turing_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 bool uvm_hal_hopper_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 bool uvm_hal_blackwell_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
@@ -383,12 +328,11 @@ void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_
 // operation and are not pipelined. This can be affected by using
 // UVM_PUSH_FLAG_NEXT_CE_* flags with uvm_push_set_flag().
 typedef void (*uvm_hal_memcopy_t)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
-void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
-void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
+void uvm_hal_turing_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
 
 // Simple wrapper for uvm_hal_memcopy_t with both addresses being virtual
 typedef void (*uvm_hal_memcopy_v_to_v_t)(uvm_push_t *push, NvU64 dst, NvU64 src, size_t size);
-void uvm_hal_maxwell_ce_memcopy_v_to_v(uvm_push_t *push, NvU64 dst, NvU64 src, size_t size);
+void uvm_hal_turing_ce_memcopy_v_to_v(uvm_push_t *push, NvU64 dst, NvU64 src, size_t size);
 
 // Memset validation.
 // The validation happens at the start of the memset (uvm_hal_memset_*_t)
@@ -397,10 +341,10 @@ typedef bool (*uvm_hal_ce_memset_is_valid)(uvm_push_t *push,
                                            uvm_gpu_address_t dst,
                                            size_t num_elements,
                                            size_t element_size);
-bool uvm_hal_maxwell_ce_memset_is_valid(uvm_push_t *push,
-                                        uvm_gpu_address_t dst,
-                                        size_t num_elements,
-                                        size_t element_size);
+bool uvm_hal_turing_ce_memset_is_valid(uvm_push_t *push,
+                                       uvm_gpu_address_t dst,
+                                       size_t num_elements,
+                                       size_t element_size);
 bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push,
                                             uvm_gpu_address_t dst,
                                             size_t num_elements,
@@ -425,14 +369,10 @@ typedef void (*uvm_hal_memset_8_t)(uvm_push_t *push, uvm_gpu_address_t dst, NvU6
 // Simple wrapper for uvm_hal_memset_4_t with the address being virtual.
 typedef void (*uvm_hal_memset_v_4_t)(uvm_push_t *push, NvU64 dst_va, NvU32 value, size_t size);
 
-void uvm_hal_maxwell_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
-void uvm_hal_maxwell_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
-void uvm_hal_maxwell_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
-void uvm_hal_maxwell_ce_memset_v_4(uvm_push_t *push, NvU64 dst_va, NvU32 value, size_t size);
-
-void uvm_hal_volta_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
-void uvm_hal_volta_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
-void uvm_hal_volta_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
+void uvm_hal_turing_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
+void uvm_hal_turing_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
+void uvm_hal_turing_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
+void uvm_hal_turing_ce_memset_v_4(uvm_push_t *push, NvU64 dst_va, NvU32 value, size_t size);
 
 void uvm_hal_hopper_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
 void uvm_hal_hopper_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
@@ -465,16 +405,16 @@ typedef void (*uvm_hal_ce_decrypt_t)(uvm_push_t *push,
                                      NvU32 size,
                                      uvm_gpu_address_t auth_tag);
 
-void uvm_hal_maxwell_ce_encrypt_unsupported(uvm_push_t *push,
-                                            uvm_gpu_address_t dst,
-                                            uvm_gpu_address_t src,
-                                            NvU32 size,
-                                            uvm_gpu_address_t auth_tag);
-void uvm_hal_maxwell_ce_decrypt_unsupported(uvm_push_t *push,
-                                            uvm_gpu_address_t dst,
-                                            uvm_gpu_address_t src,
-                                            NvU32 size,
-                                            uvm_gpu_address_t auth_tag);
+void uvm_hal_turing_ce_encrypt_unsupported(uvm_push_t *push,
+                                           uvm_gpu_address_t dst,
+                                           uvm_gpu_address_t src,
+                                           NvU32 size,
+                                           uvm_gpu_address_t auth_tag);
+void uvm_hal_turing_ce_decrypt_unsupported(uvm_push_t *push,
+                                           uvm_gpu_address_t dst,
+                                           uvm_gpu_address_t src,
+                                           NvU32 size,
+                                           uvm_gpu_address_t auth_tag);
 void uvm_hal_hopper_ce_encrypt(uvm_push_t *push,
                                uvm_gpu_address_t dst,
                                uvm_gpu_address_t src,
@@ -493,16 +433,11 @@ void uvm_hal_hopper_ce_decrypt(uvm_push_t *push,
 // semaphore operation. This can be affected by using UVM_PUSH_FLAG_NEXT_CE_*
 // flags with uvm_push_set_flag().
 typedef void (*uvm_hal_semaphore_reduction_inc_t)(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_maxwell_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_pascal_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-void uvm_hal_volta_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
+void uvm_hal_turing_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 
 // Initialize GPU architecture dependent properties
 typedef void (*uvm_hal_arch_init_properties_t)(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_ada_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
@@ -510,27 +445,20 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 
 // Retrieve the page-tree HAL for a given big page size
-typedef uvm_mmu_mode_hal_t *(*uvm_hal_lookup_mode_hal_t)(NvU64 big_page_size);
+typedef uvm_mmu_mode_hal_t *(*uvm_hal_lookup_mode_hal_t)(void);
 typedef void (*uvm_hal_mmu_enable_prefetch_faults_t)(uvm_parent_gpu_t *parent_gpu);
 typedef void (*uvm_hal_mmu_disable_prefetch_faults_t)(uvm_parent_gpu_t *parent_gpu);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(NvU64 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(void);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(void);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(void);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell(void);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_blackwell_integrated(void);
 
-void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_mmu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
+void uvm_hal_turing_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
+void uvm_hal_turing_mmu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
 
 typedef NvU16 (*uvm_hal_mmu_client_id_to_utlb_id_t)(NvU16 client_id);
-NvU16 uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported(NvU16 client_id);
-NvU16 uvm_hal_pascal_mmu_client_id_to_utlb_id(NvU16 client_id);
-NvU16 uvm_hal_volta_mmu_client_id_to_utlb_id(NvU16 client_id);
+NvU16 uvm_hal_turing_mmu_client_id_to_utlb_id(NvU16 client_id);
 NvU16 uvm_hal_ampere_mmu_client_id_to_utlb_id(NvU16 client_id);
 NvU16 uvm_hal_hopper_mmu_client_id_to_utlb_id(NvU16 client_id);
 NvU16 uvm_hal_blackwell_mmu_client_id_to_utlb_id(NvU16 client_id);
@@ -553,17 +481,9 @@ typedef NV_STATUS (*uvm_hal_fault_buffer_parse_replayable_entry_t)(uvm_parent_gp
                                                                    NvU32 index,
                                                                    uvm_fault_buffer_entry_t *buffer_entry);
 
-NV_STATUS uvm_hal_maxwell_fault_buffer_parse_replayable_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
-                                                                          NvU32 index,
-                                                                          uvm_fault_buffer_entry_t *buffer_entry);
-
-NV_STATUS uvm_hal_pascal_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+NV_STATUS uvm_hal_turing_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
                                                              NvU32 index,
                                                              uvm_fault_buffer_entry_t *buffer_entry);
-
-NV_STATUS uvm_hal_volta_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
-                                                            NvU32 index,
-                                                            uvm_fault_buffer_entry_t *buffer_entry);
 
 typedef bool (*uvm_hal_fault_buffer_entry_is_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 typedef void (*uvm_hal_fault_buffer_entry_clear_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
@@ -576,41 +496,20 @@ typedef void (*uvm_hal_fault_cancel_targeted_t)(uvm_push_t *push,
                                                 NvU32 gpc_id,
                                                 NvU32 client_id);
 
-void uvm_hal_maxwell_enable_replayable_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_disable_replayable_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_clear_replayable_faults_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 get);
-NvU32 uvm_hal_maxwell_fault_buffer_read_put_unsupported(uvm_parent_gpu_t *parent_gpu);
-NvU32 uvm_hal_maxwell_fault_buffer_read_get_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_fault_buffer_write_get_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-NvU8 uvm_hal_maxwell_fault_buffer_get_ve_id_unsupported(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
-uvm_mmu_engine_type_t uvm_hal_maxwell_fault_buffer_get_mmu_engine_type_unsupported(NvU16 mmu_engine_id,
-                                                                                   uvm_fault_client_type_t client_type,
-                                                                                   NvU16 client_id);
-uvm_fault_type_t uvm_hal_maxwell_fault_buffer_get_fault_type_unsupported(const NvU32 *fault_entry);
-
-void uvm_hal_pascal_enable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_clear_replayable_faults(uvm_parent_gpu_t *parent_gpu, NvU32 get);
-NvU32 uvm_hal_pascal_fault_buffer_read_put(uvm_parent_gpu_t *parent_gpu);
-NvU32 uvm_hal_pascal_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_pascal_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-
-uvm_fault_type_t uvm_hal_pascal_fault_buffer_get_fault_type(const NvU32 *fault_entry);
-
-NvU32 uvm_hal_volta_fault_buffer_read_put(uvm_parent_gpu_t *parent_gpu);
-NvU32 uvm_hal_volta_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_volta_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-NvU8 uvm_hal_volta_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
-uvm_mmu_engine_type_t uvm_hal_volta_fault_buffer_get_mmu_engine_type(NvU16 mmu_engine_id,
-                                                                     uvm_fault_client_type_t client_type,
-                                                                     NvU16 client_id);
-uvm_fault_type_t uvm_hal_volta_fault_buffer_get_fault_type(const NvU32 *fault_entry);
-
+void uvm_hal_turing_enable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_clear_replayable_faults(uvm_parent_gpu_t *parent_gpu, NvU32 get);
+NvU32 uvm_hal_turing_fault_buffer_read_put(uvm_parent_gpu_t *parent_gpu);
+NvU32 uvm_hal_turing_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu);
+void uvm_hal_turing_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+NvU8 uvm_hal_turing_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
 uvm_mmu_engine_type_t uvm_hal_turing_fault_buffer_get_mmu_engine_type(NvU16 mmu_engine_id,
-                                                                      uvm_fault_client_type_t client_type,
-                                                                      NvU16 client_id);
+                                                                     uvm_fault_client_type_t client_type,
+                                                                     NvU16 client_id);
+bool uvm_hal_turing_fault_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+void uvm_hal_turing_fault_buffer_entry_clear_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
+NvU32 uvm_hal_turing_fault_buffer_entry_size(uvm_parent_gpu_t *parent_gpu);
+uvm_fault_type_t uvm_hal_turing_fault_buffer_get_fault_type(const NvU32 *fault_entry);
 
 uvm_mmu_engine_type_t uvm_hal_ampere_fault_buffer_get_mmu_engine_type(NvU16 mmu_engine_id,
                                                                       uvm_fault_client_type_t client_type,
@@ -626,34 +525,17 @@ uvm_mmu_engine_type_t uvm_hal_blackwell_fault_buffer_get_mmu_engine_type(NvU16 m
                                                                          NvU16 client_id);
 uvm_fault_type_t uvm_hal_blackwell_fault_buffer_get_fault_type(const NvU32 *fault_entry);
 
-bool uvm_hal_maxwell_fault_buffer_entry_is_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-void uvm_hal_maxwell_fault_buffer_entry_clear_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-NvU32 uvm_hal_maxwell_fault_buffer_entry_size_unsupported(uvm_parent_gpu_t *parent_gpu);
-bool uvm_hal_pascal_fault_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-void uvm_hal_pascal_fault_buffer_entry_clear_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-NvU32 uvm_hal_pascal_fault_buffer_entry_size(uvm_parent_gpu_t *parent_gpu);
-
 typedef void (*uvm_hal_fault_buffer_parse_non_replayable_entry_t)(uvm_parent_gpu_t *parent_gpu,
                                                                   void *fault_packet,
                                                                   uvm_fault_buffer_entry_t *buffer_entry);
-void uvm_hal_maxwell_fault_buffer_parse_non_replayable_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
-                                                                         void *fault_packet,
-                                                                         uvm_fault_buffer_entry_t *buffer_entry);
-void uvm_hal_volta_fault_buffer_parse_non_replayable_entry(uvm_parent_gpu_t *parent_gpu,
-                                                           void *fault_packet,
-                                                           uvm_fault_buffer_entry_t *buffer_entry);
+void uvm_hal_turing_fault_buffer_parse_non_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+                                                            void *fault_packet,
+                                                            uvm_fault_buffer_entry_t *buffer_entry);
 
-void uvm_hal_maxwell_cancel_faults_global_unsupported(uvm_push_t *push, uvm_gpu_phys_address_t instance_ptr);
-void uvm_hal_pascal_cancel_faults_global(uvm_push_t *push, uvm_gpu_phys_address_t instance_ptr);
+void uvm_hal_turing_cancel_faults_global(uvm_push_t *push, uvm_gpu_phys_address_t instance_ptr);
 
 // Trigger fault replay on the GPU where the given pushbuffer is located.
-void uvm_hal_maxwell_replay_faults_unsupported(uvm_push_t *push, uvm_fault_replay_type_t type);
-void uvm_hal_maxwell_cancel_faults_targeted_unsupported(uvm_push_t *push,
-                                                        uvm_gpu_phys_address_t instance_ptr,
-                                                        NvU32 gpc_id,
-                                                        NvU32 client_id);
-void uvm_hal_pascal_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type);
-void uvm_hal_pascal_cancel_faults_targeted(uvm_push_t *push,
+void uvm_hal_turing_cancel_faults_targeted(uvm_push_t *push,
                                            uvm_gpu_phys_address_t instance_ptr,
                                            NvU32 gpc_id,
                                            NvU32 client_id);
@@ -663,13 +545,8 @@ typedef void (*uvm_hal_fault_cancel_va_t)(uvm_push_t *push,
                                           const uvm_fault_buffer_entry_t *fault_entry,
                                           uvm_fault_cancel_va_mode_t cancel_va_mode);
 
-void uvm_hal_maxwell_cancel_faults_va_unsupported(uvm_push_t *push,
-                                                  uvm_gpu_phys_address_t pdb,
-                                                  const uvm_fault_buffer_entry_t *fault_entry,
-                                                  uvm_fault_cancel_va_mode_t cancel_va_mode);
-
-void uvm_hal_volta_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type);
-void uvm_hal_volta_cancel_faults_va(uvm_push_t *push,
+void uvm_hal_turing_replay_faults(uvm_push_t *push, uvm_fault_replay_type_t type);
+void uvm_hal_turing_cancel_faults_va(uvm_push_t *push,
                                     uvm_gpu_phys_address_t pdb,
                                     const uvm_fault_buffer_entry_t *fault_entry,
                                     uvm_fault_cancel_va_mode_t cancel_va_mode);
@@ -683,26 +560,20 @@ typedef void (*uvm_hal_host_clear_faulted_channel_method_t)(uvm_push_t *push,
                                                             uvm_user_channel_t *user_channel,
                                                             const uvm_fault_buffer_entry_t *buffer_entry);
 
-void uvm_hal_maxwell_host_clear_faulted_channel_method_unsupported(uvm_push_t *push,
-                                                                   uvm_user_channel_t *user_channel,
-                                                                   const uvm_fault_buffer_entry_t *buffer_entry);
-void uvm_hal_volta_host_clear_faulted_channel_method(uvm_push_t *push,
-                                                     uvm_user_channel_t *user_channel,
-                                                     const uvm_fault_buffer_entry_t *buffer_entry);
 void uvm_hal_turing_host_clear_faulted_channel_method(uvm_push_t *push,
                                                       uvm_user_channel_t *user_channel,
                                                       const uvm_fault_buffer_entry_t *buffer_entry);
 typedef void (*uvm_hal_host_clear_faulted_channel_register_t)(uvm_user_channel_t *user_channel,
                                                               const uvm_fault_buffer_entry_t *buffer_entry);
-void uvm_hal_maxwell_host_clear_faulted_channel_register_unsupported(uvm_user_channel_t *user_channel,
-                                                                     const uvm_fault_buffer_entry_t *buffer_entry);
+void uvm_hal_turing_host_clear_faulted_channel_register_unsupported(uvm_user_channel_t *user_channel,
+                                                                    const uvm_fault_buffer_entry_t *buffer_entry);
 void uvm_hal_ampere_host_clear_faulted_channel_register(uvm_user_channel_t *user_channel,
                                                         const uvm_fault_buffer_entry_t *buffer_entry);
 
 typedef void (*uvm_hal_host_clear_faulted_channel_sw_method_t)(uvm_push_t *push,
                                                                uvm_user_channel_t *user_channel,
                                                                const uvm_fault_buffer_entry_t *buffer_entry);
-void uvm_hal_maxwell_host_clear_faulted_channel_sw_method_unsupported(uvm_push_t *push,
+void uvm_hal_turing_host_clear_faulted_channel_sw_method_unsupported(uvm_push_t *push,
                                                                      uvm_user_channel_t *user_channel,
                                                                      const uvm_fault_buffer_entry_t *buffer_entry);
 void uvm_hal_ampere_host_clear_faulted_channel_sw_method(uvm_push_t *push,
@@ -734,26 +605,6 @@ typedef uvm_access_counter_clear_op_t
         (*uvm_hal_access_counter_query_clear_op_t)(uvm_parent_gpu_t *parent_gpu,
                                                    uvm_access_counter_buffer_entry_t **buffer_entries,
                                                    NvU32 num_entries);
-
-void uvm_hal_maxwell_enable_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters);
-void uvm_hal_maxwell_disable_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters);
-void uvm_hal_maxwell_clear_access_counter_notifications_unsupported(uvm_access_counter_buffer_t *access_counters,
-                                                                    NvU32 get);
-void uvm_hal_maxwell_access_counter_buffer_parse_entry_unsupported(uvm_access_counter_buffer_t *access_counters,
-                                                                   NvU32 index,
-                                                                   uvm_access_counter_buffer_entry_t *buffer_entry);
-bool uvm_hal_maxwell_access_counter_buffer_entry_is_valid_unsupported(uvm_access_counter_buffer_t *access_counters,
-                                                                      NvU32 index);
-void uvm_hal_maxwell_access_counter_buffer_entry_clear_valid_unsupported(uvm_access_counter_buffer_t *access_counters,
-                                                                         NvU32 index);
-NvU32 uvm_hal_maxwell_access_counter_buffer_entry_size_unsupported(uvm_parent_gpu_t *parent_gpu);
-void uvm_hal_maxwell_access_counter_clear_all_unsupported(uvm_push_t *push);
-void uvm_hal_maxwell_access_counter_clear_targeted_unsupported(uvm_push_t *push,
-                                                               const uvm_access_counter_buffer_entry_t *buffer_entry);
-uvm_access_counter_clear_op_t
-uvm_hal_maxwell_access_counter_query_clear_op_unsupported(uvm_parent_gpu_t *parent_gpu,
-                                                          uvm_access_counter_buffer_entry_t **buffer_entries,
-                                                          NvU32 num_entries);
 
 void uvm_hal_turing_enable_access_counter_notifications(uvm_access_counter_buffer_t *access_counters);
 void uvm_hal_turing_disable_access_counter_notifications(uvm_access_counter_buffer_t *access_counters);
@@ -795,11 +646,11 @@ uvm_hal_blackwell_access_counter_query_clear_op_gb20x(uvm_parent_gpu_t *parent_g
 // Note: SEC2 does not support encryption.
 typedef void (*uvm_hal_sec2_decrypt_t)(uvm_push_t *push, NvU64 dst_va, NvU64 src_va, NvU32 size, NvU64 auth_tag_va);
 
-void uvm_hal_maxwell_sec2_decrypt_unsupported(uvm_push_t *push,
-                                              NvU64 dst_va,
-                                              NvU64 src_va,
-                                              NvU32 size,
-                                              NvU64 auth_tag_va);
+void uvm_hal_turing_sec2_decrypt_unsupported(uvm_push_t *push,
+                                             NvU64 dst_va,
+                                             NvU64 src_va,
+                                             NvU32 size,
+                                             NvU64 auth_tag_va);
 void uvm_hal_hopper_sec2_decrypt(uvm_push_t *push, NvU64 dst_va, NvU64 src_va, NvU32 size, NvU64 auth_tag_va);
 
 struct uvm_host_hal_struct

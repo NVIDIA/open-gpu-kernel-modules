@@ -116,7 +116,6 @@ NvBool nvkms_output_rounding_fix(void);
 NvBool nvkms_disable_hdmi_frl(void);
 NvBool nvkms_disable_vrr_memclk_switch(void);
 NvBool nvkms_hdmi_deepcolor(void);
-NvBool nvkms_vblank_sem_control(void);
 NvBool nvkms_opportunistic_display_sync(void);
 enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void);
 NvBool nvkms_enable_overlay_layers(void);
@@ -307,8 +306,8 @@ void* nvkms_get_per_open_data(int fd);
 /*!
  * Raise and lower the reference count of the specified GPU.
  */
-NvBool nvkms_open_gpu(NvU32 gpuId);
-void nvkms_close_gpu(NvU32 gpuId);
+NvBool nvkms_open_gpu(NvU32 gpuId, NvBool reset_aware);
+void nvkms_close_gpu(NvU32 gpuId, NvBool reset_aware);
 
 
 /*!

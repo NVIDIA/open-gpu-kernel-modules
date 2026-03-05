@@ -67,9 +67,7 @@ tmrGetNsecShiftMask_GB100
     OBJTMR *pTmr
 )
 {
-    NvU32 tmrBaseAddr = tmrGetTmrBaseAddr_HAL(pGpu, pTmr);
-
-    return DRF_SHIFTMASK(tmrBaseAddr + NV_TMR_TIME_0_NSEC);
+    return DRF_SHIFTMASK(NV_TMR_TIME_0_NSEC);
 }
 
 /*!

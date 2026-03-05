@@ -48,15 +48,9 @@ struct uvm_tlb_batch_struct
 {
     uvm_page_tree_t *tree;
 
-    union
-    {
-        // Total number of pages covered by the queued up ranges so far
-        NvU32 total_pages;
-
-        // Total number of ranges that have been invalidated so far
-        // Each range can be invalidated using a single Host method on supported GPUs
-        NvU32 total_ranges;
-    };
+    // Total number of ranges that have been invalidated so far
+    // Each range can be invalidated using a single Host method on supported GPUs
+    NvU32 total_ranges;
 
     // Queued up ranges to invalidate
     uvm_tlb_batch_range_t ranges[UVM_TLB_BATCH_MAX_ENTRIES];

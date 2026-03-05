@@ -1480,7 +1480,6 @@ kbifDoFullChipReset_GM107
     OBJCL *pCl = SYS_GET_CL(pSys);
     NvU32  tempRegVal;
     NvU32  oldPmc, newPmc;
-    NV_STATUS status;
 
     // First Reset PMC
     oldPmc = GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
@@ -1533,46 +1532,6 @@ kbifDoFullChipReset_GM107
     clPcieWriteDword(pCl, gpuGetDomain(pGpu), gpuGetBus(pGpu),
                      gpuGetDevice(pGpu), 0, NV_XVE_SW_RESET, tempRegVal);
 
-
-    //
-    // When bug 1511451 is present, SW_RESET will clear BAR3, and IO accesses
-    // will fail when legacy VBIOS is called. Apply the related SW WAR now.
-    //
-    status = kbifApplyWarForBug1511451_HAL(pGpu, pKernelBif);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed while applying WAR for Bug 1511451\n");
-        NV_ASSERT(0);
-    }
-
-    return status;
-}
-
-NV_STATUS
-kbifApplyWarForBug1511451_GM107
-(
-    OBJGPU    *pGpu,
-    KernelBif  *pKernelBif
-)
-{
-    NvU32      domain = gpuGetDomain(pGpu);
-    NvU8       bus    = gpuGetBus(pGpu);
-    NvU8       device = gpuGetDevice(pGpu);
-    NvU16      vendorId;
-    NvU16      deviceId;
-    void      *handle;
-
-    // If SBR is not supported, BAR3 will have not been saved and we are at risk.
-    if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_SECONDARY_BUS_RESET_SUPPORTED))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "SBR not supported so saved BAR3 is not valid, skipping restore!!!\n");
-        return NV_ERR_INVALID_STATE;
-    }
-
-    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
-
-    osPciWriteDword(handle, NV_XVE_BAR3, pKernelBif->cacheData.gpuBootConfigSpace[NV_XVE_BAR3/sizeof(NvU32)]);
 
     return NV_OK;
 }
@@ -1655,5 +1614,75 @@ kbifDoSecondaryBusHotReset_GM107
     return kbifWaitForConfigAccessAfterReset(pGpu, pKernelBif);
 }
 
+/*!
+ * @brief Set LTR enable
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KernelBIF object pointer
+ * @param[in] bEnable     Enable/disable LTR
+ */
+NV_STATUS
+kbifSetLtrEnable_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool     bEnable
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32     regVal;
 
+    status = GPU_BUS_CFG_RD32(pGpu, NV_XVE_DEVICE_CONTROL_STATUS_2, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_XVE_DEVICE_CONTROL_STATUS_2\n");
+        return NV_ERR_GENERIC;
+    }
 
+    if (bEnable)
+    {
+        regVal = FLD_SET_DRF_NUM(_XVE, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, 0x1, regVal);
+    }
+    else
+    {
+        regVal = FLD_SET_DRF_NUM(_XVE, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, 0x0, regVal);
+    }
+
+    GPU_BUS_CFG_WR32(pGpu, NV_XVE_DEVICE_CONTROL_STATUS_2, regVal);
+
+    return status;
+}
+
+/*!
+ * @brief Get LTR enable state
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  KernelBIF object pointer
+ * @param[out] pBEnable    True if LTR is enabled
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifGetLtrEnable_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool    *pBEnable
+)
+{
+    NvU32     regVal = 0;
+    NV_STATUS status = NV_OK;
+
+    status = GPU_BUS_CFG_RD32(pGpu, NV_XVE_DEVICE_CONTROL_STATUS_2, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_XVE_DEVICE_CONTROL_STATUS_2\n");
+        status    = NV_ERR_GENERIC;
+        *pBEnable = NV_FALSE;
+        return status;
+    }
+
+    *pBEnable = (NvBool) FLD_TEST_DRF(_XVE, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, _ENABLED, regVal);
+
+    return status;
+}

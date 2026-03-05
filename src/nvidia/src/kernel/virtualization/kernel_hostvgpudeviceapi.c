@@ -230,7 +230,7 @@ _kernelhostvgpudeviceInvalidateGpuTLBL2Cache(OBJGPU *pGpu, Device *pDevice)
     /* Invalidate TLBs for non SR-IOV vGPUs */
     if (!gpuIsSriovEnabled(pGpu))
         kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL, VASPACE_FLAGS_NONE,
-                               PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS);
+                               PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS, NV_FALSE);
 
     /* Invalidate L2 cache for sysmem */
     pl2_params->flags =
@@ -882,7 +882,6 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
     NvU32 i;
     NvU64 vmmuSegmentSize;
     RsClient *pClient = NULL;
-    NvBool bPreserveLogBufferFull = NV_FALSE;
 
     if (!IS_GSP_CLIENT(pGpu))
         return NV_ERR_NOT_SUPPORTED;
@@ -1031,8 +1030,7 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
                                                              pBootloadParams->vgpuTaskLogBuffOffset,
                                                              pBootloadParams->vgpuTaskLogBuffSize,
                                                              pBootloadParams->kernelLogBuffOffset,
-                                                             pBootloadParams->kernelLogBuffSize,
-                                                             &bPreserveLogBufferFull),
+                                                             pBootloadParams->kernelLogBuffSize),
                             done);
     }
 
@@ -1058,11 +1056,8 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
                              NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK,
                              pBootloadParams, sizeof(*pBootloadParams));
 
-    if (!bPreserveLogBufferFull)
-    {
-        // Preserve any captured vGPU Partition logs
-        NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pKernelHostVgpuDevice->gfid));
-    }
+    // Preserve any captured vGPU Partition logs
+    NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pKernelHostVgpuDevice->gfid));
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
     OBJSYS *pSys = SYS_GET_INSTANCE();

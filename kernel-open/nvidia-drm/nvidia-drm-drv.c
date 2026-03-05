@@ -283,6 +283,10 @@ static int nv_drm_get_mst_display_infos
         goto done;
     }
 
+    if (!connectorInfo->dynamicDpyIdListValid) {
+        ret = -ETIMEDOUT;
+        goto done;
+    }
 
     *nDynamicDisplays = nvCountDpyIdsInDpyIdList(connectorInfo->dynamicDpyIdList);
 
@@ -444,9 +448,11 @@ static void nv_drm_enumerate_encoders_and_connectors
 
                     if (nv_drm_get_mst_display_infos(nv_dev, hDisplays[i],
                             &displayInfos, &nDynamicDisplays)) {
-                        NV_DRM_DEV_LOG_ERR(
+                        NV_DRM_DEV_LOG_INFO(
                                 nv_dev,
-                                "Failed to get dynamic displays");
+                                "Failed to get dynamic displays during device "
+                                "registration. Dynamic displays may be probed in "
+                                "non-deterministic order.");
                     } else if (nDynamicDisplays) {
                         nv_drm_sort_dynamic_displays_by_dp_addr(displayInfos, nDynamicDisplays);
 
@@ -2059,6 +2065,7 @@ void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
 #elif defined(NV_APERTURE_REMOVE_CONFLICTING_DEVICES_PRESENT)
                 aperture_remove_conflicting_devices(base, size, nv_drm_driver.name);
 #endif
+                nvKms->framebufferConsoleDisabled(nv_dev->pDevice);
             } else {
                 NV_DRM_DEV_LOG_INFO(nv_dev, "Invalid framebuffer console info");
             }
@@ -2070,6 +2077,13 @@ void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
         #elif defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
         drm_fbdev_generic_setup(dev, 32);
         #endif
+
+        /*
+         * The fbdev setup functions above may override the
+         * `pm_vt_switch_required` state of our PCI device. For now, a VT switch
+         * is required during suspend and resume.
+         */
+        pm_vt_switch_required(dev->dev, true);
     }
 #endif /* defined(NV_DRM_FBDEV_AVAILABLE) */
 

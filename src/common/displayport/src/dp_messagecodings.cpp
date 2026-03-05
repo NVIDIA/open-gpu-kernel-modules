@@ -669,6 +669,63 @@ bool SinkEventNotifyMessage::processByType(EncodedMessage * message, BitStreamRe
 }
 
 
+//
+// QUERY_STREAM_ENCRYPTION_STATUS 0x38
+// Follow the SCR DP1.2 Query Stream Encryption Status Definition v0.4
+//
+void QueryStreamEncryptionMessage::set
+(
+    const Address & target,
+    unsigned streamId,
+    NvU8* clientId,
+    StreamEvent streamEvent,
+    bool streamEventMask,
+    StreamBehavior streamBehavior,
+    bool streamBehaviorMask
+)
+{
+    clear();
+
+    BitStreamWriter writer(&encodedMessage.buffer, 0);
+
+    // Write request identifier
+    writer.write(0/*zero*/, 1);
+    writer.write(requestIdentifier, 7);
+
+    // Write message request body
+    writer.write(streamId, 8);
+    for (unsigned i=0; i<7; i++)
+    {
+        writer.write(clientId[i], 8);
+    }
+
+    writer.write(streamEvent, 2);
+    writer.write(streamEventMask?1:0, 1);
+    writer.write(streamBehavior, 2);
+    writer.write(streamBehaviorMask?1:0, 1);
+    writer.write(0 /*zeroes*/, 2);
+
+    encodedMessage.isPathMessage = false;
+    encodedMessage.isBroadcast  = false;
+    encodedMessage.address = target;
+}
+
+ParseResponseStatus QueryStreamEncryptionMessage::parseResponseAck(EncodedMessage * message, BitStreamReader * reader)
+{
+    reply.streamState = (StreamState)reader->readOrDefault(2 /*Stream_State*/, 0x0);
+    reply.repeaterFuncPresent = !!reader->readOrDefault(1 /*Stream_Repeater_Function*/, 0x0);
+    reply.encryption = !!reader->readOrDefault(1 /*Stream_Encryption */, 0x0);
+    reply.authentication = !!reader->readOrDefault(1 /*Stream_Authentication */, 0x0);
+    reader->readOrDefault(3 /*zero*/, 0);
+    reply.sinkType = (OutputSinkType)reader->readOrDefault(3 /*Stream_Output_Sink_Type*/, 0x0);
+    reply.cpType = (OutputCPType)reader->readOrDefault(2 /*Stream_Output_CP_Type*/, 0x0);
+    reader->readOrDefault(2 /*zeroes*/, 0);
+    reply.signedLPrime = !!reader->readOrDefault(1 /*Signed*/, 0x0);
+    reply.streamId = (NvU8)reader->readOrDefault(8/*Stream_ID*/, 0x0);
+
+    return ParseResponseSuccess;
+}
+
 I2cWriteTransaction::I2cWriteTransaction
 (
     unsigned WriteI2cDeviceId,

@@ -834,7 +834,8 @@ NvBool nvHsConfigInitModeset(
             if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
                                     pTimings, NULL /* pDpyColor */,
                                     NULL /* pInfoFrameCtrl */,
-                                    NULL /* pVSInfoFrameCtrl */)) {
+                                    NULL /* pVSInfoFrameCtrl */,
+                                    NULL /* pEmpInfoFrameCtrl */)) {
                 nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
                 return FALSE;
             }
@@ -1252,7 +1253,8 @@ NvBool nvHsConfigDowngrade(
                     if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
                                             pTimings, NULL /* pDpyColor */,
                                             NULL /* pInfoFrameCtrl */,
-                                            NULL /* pVSInfoFrameCtrl */)) {
+                                            NULL /* pVSInfoFrameCtrl */,
+                                            NULL /* pEmpInfoFrameCtrl */)) {
                         nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
                         return FALSE;
                     }

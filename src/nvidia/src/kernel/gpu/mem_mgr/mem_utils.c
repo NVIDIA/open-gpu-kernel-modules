@@ -80,7 +80,7 @@ memmgrGetMemTransferType
     }
     else if (flags & TRANSFER_FLAGS_PREFER_CE)
     {
-        if (IS_SIMULATION(pGpu) && pSrc != NULL)
+        if (IS_SIMULATION(pGpu) && pSrc != NULL && !KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             //
             // This is significantly faster on fmodel for S/R (5min vs. 5sec) because of the
@@ -1714,10 +1714,6 @@ memUtilsAllocMemDesc
             {
                 memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
             }
-        }
-        if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pFbAllocInfo->retAttr2))
-        {
-            memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_EGM;
         }
 
         //

@@ -163,13 +163,9 @@ struct NVOC_METADATA__TimedSemaSwObject {
     const struct NVOC_VTABLE__TimedSemaSwObject vtable;
 };
 
-#ifndef __NVOC_CLASS_TimedSemaSwObject_TYPEDEF__
-#define __NVOC_CLASS_TimedSemaSwObject_TYPEDEF__
-typedef struct TimedSemaSwObject TimedSemaSwObject;
-#endif /* __NVOC_CLASS_TimedSemaSwObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_TimedSemaSwObject
-#define __nvoc_class_id_TimedSemaSwObject 0x335775
+#define __nvoc_class_id_TimedSemaSwObject 0x335775u
+typedef struct TimedSemaSwObject TimedSemaSwObject;
 #endif /* __nvoc_class_id_TimedSemaSwObject */
 
 // Casting support
@@ -187,14 +183,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_TimedSemaSwObject;
 
 NV_STATUS __nvoc_objCreateDynamic_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_TimedSemaSwObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_TimedSemaSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_TimedSemaSwObject(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_TimedSemaSwObject((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS tsemaConstruct_IMPL(struct TimedSemaSwObject *arg_pTimedSemSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_tsemaConstruct(arg_pTimedSemSw, arg_pCallContext, arg_pParams) tsemaConstruct_IMPL(arg_pTimedSemSw, arg_pCallContext, arg_pParams)
+NV_STATUS tsemaConstruct_IMPL(struct TimedSemaSwObject *pTimedSemSw, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_tsemaConstruct(pTimedSemSw, pCallContext, pParams) tsemaConstruct_IMPL(pTimedSemSw, pCallContext, pParams)
 
 void tsemaDestruct_IMPL(struct TimedSemaSwObject *pTimedSemSw);
 #define __nvoc_tsemaDestruct(pTimedSemSw) tsemaDestruct_IMPL(pTimedSemSw)
@@ -438,17 +434,22 @@ static inline NV_STATUS tsemaGetOrAllocNotifShare_DISPATCH(struct TimedSemaSwObj
     return pNotifier->__nvoc_metadata_ptr->vtable.__tsemaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS tsemaRelease_KERNEL(OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, struct Device *pDevice);
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS tsemaCtrlCmdFlush_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_FLUSH_PARAMS *pFlushParams);
 
 NV_STATUS tsemaCtrlCmdGetTime_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_GET_TIME_PARAMS *pGetTimeParams);
 
 NV_STATUS tsemaCtrlCmdRelease_IMPL(struct TimedSemaSwObject *pTimedSemaSwObject, NV9074_CTRL_CMD_RELEASE_PARAMS *pReleaseParams);
 
+// HAL method declarations without bodies
+NV_STATUS tsemaRelease_KERNEL(OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, struct Device *pDevice);
+
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

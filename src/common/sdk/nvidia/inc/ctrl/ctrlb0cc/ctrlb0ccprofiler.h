@@ -490,10 +490,10 @@ typedef NVB0CC_CTRL_HS_CREDITS_PARAMS NVB0CC_CTRL_GET_HS_CREDITS_PARAMS;
 
 
 
-typedef enum NVB0CC_CTRL_HES_TYPE {
-    NVB0CC_CTRL_HES_INVALID = 0,
-    NVB0CC_CTRL_HES_CWD = 1,
-} NVB0CC_CTRL_HES_TYPE;
+#define NVB0CC_CTRL_HES_INVALID (0x00000000)
+#define NVB0CC_CTRL_HES_CWD     (0x00000001)
+
+
 
 typedef struct NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS {
     /*!
@@ -501,6 +501,8 @@ typedef struct NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS {
      */
     NvBool ctxsw;
 } NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS;
+
+
 
 /*
  * NVB0CC_CTRL_HES_RESERVATION_UNION
@@ -510,6 +512,7 @@ typedef struct NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS {
  */
 typedef union NVB0CC_CTRL_HES_RESERVATION_UNION {
     NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS cwd;
+
 } NVB0CC_CTRL_HES_RESERVATION_UNION;
 
 /*!
@@ -552,9 +555,9 @@ typedef struct NVB0CC_CTRL_RESERVE_HES_PARAMS {
 
 typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
     /*!
-     * [in] type of @NVB0CC_CTRL_HES_TYPE needs to be released.
+     * [in] type of HES needs to be released.
      */
-    NVB0CC_CTRL_HES_TYPE type;
+    NvU32 type;
 } NVB0CC_CTRL_RELEASE_HES_PARAMS;
 
 /*!

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -376,6 +376,32 @@ serverInitGlobalSharePolicies
     return NV_OK;
 }
 
+static OBJGPU *
+findParentGpu(RsResourceRef *pResourceRef)
+{
+    GpuResource *pGpuResource;
+
+    if (pResourceRef == NULL || pResourceRef->pResource == NULL)
+        return NULL;
+
+    pGpuResource = dynamicCast(pResourceRef->pResource, GpuResource);
+
+    if (pGpuResource == NULL)
+    {
+        RsResourceRef *pResRef;
+
+        if (refFindAncestorOfType(pResourceRef, classId(Device), &pResRef) != NV_OK)
+            return NULL;
+
+        pGpuResource = dynamicCast(pResRef->pResource, GpuResource);
+    }
+
+    if (pGpuResource == NULL)
+        return NULL;
+    else
+        return pGpuResource->pGpu;
+}
+
 // Called with both src/dst client lock held
 NV_STATUS serverUpdateLockFlagsForCopy(RsServer *pServer, RS_RES_DUP_PARAMS *pParams)
 {
@@ -404,12 +430,10 @@ NV_STATUS serverUpdateLockFlagsForCopy(RsServer *pServer, RS_RES_DUP_PARAMS *pPa
         // Holding both client lock and the at least RO API lock. Safe to access the resource
         if (rmapiLockIsOwner())
         {
-            GpuResource *pGpuResSrc = dynamicCast(pParams->pSrcRef->pResource, GpuResource);
-            GpuResource *pGpuResDst = dynamicCast(pParams->pDstParentRef->pResource, GpuResource);
+            OBJGPU *pGpuSrc = findParentGpu(pParams->pSrcRef);
+            OBJGPU *pGpuDst = findParentGpu(pParams->pDstParentRef);
 
-            if ((pGpuResSrc != NULL) &&
-                (pGpuResDst != NULL) &&
-                (pGpuResSrc->pGpu == pGpuResDst->pGpu))
+            if ((pGpuSrc != NULL) && (pGpuDst != NULL) && (pGpuSrc == pGpuDst))
             {
                 pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
             }

@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x0ac791 = 1;
+char __nvoc_class_id_uniqueness_check__0ac791 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Fabric;
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Fabric;
 
 // Up-thunk(s) to bridge Fabric methods to ancestors (if any)
 
+// Class-specific details for Fabric
 const struct NVOC_CLASS_DEF __nvoc_class_def_Fabric = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(Fabric),
-        /*classId=*/            classId(Fabric),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(Fabric),
+    .classInfo.classId =            classId(Fabric),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "Fabric",
+    .classInfo.name =               "Fabric",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Fabric,
-    /*pCastInfo=*/          &__nvoc_castinfo__Fabric,
-    /*pExportInfo=*/        &__nvoc_export_info__Fabric
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Fabric,
+    .pCastInfo =          &__nvoc_castinfo__Fabric,
+    .pExportInfo =        &__nvoc_export_info__Fabric
 };
 
 
@@ -76,38 +75,51 @@ const struct NVOC_CASTINFO __nvoc_castinfo__Fabric = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__Fabric = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct Fabric object.
 void __nvoc_fabricDestruct(Fabric*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_Fabric(Fabric *pThis) {
+void __nvoc_dtor_Fabric(Fabric* pThis) {
+
+// Call destructor.
     __nvoc_fabricDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_Fabric(Fabric *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_Fabric(Fabric *pThis) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_Fabric_fail_Object;
-    __nvoc_init_dataField_Fabric(pThis);
 
-    status = __nvoc_fabricConstruct(pThis);
+// Construct Fabric object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_Fabric(Fabric *pFabric) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&pFabric->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_Fabric_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_Fabric(pFabric);
+
+    // Call the constructor for this class.
+    status = __nvoc_fabricConstruct(pFabric);
     if (status != NV_OK) goto __nvoc_ctor_Fabric_fail__init;
     goto __nvoc_ctor_Fabric_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_Fabric_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&pFabric->__nvoc_base_Object);
 __nvoc_ctor_Fabric_fail_Object:
 __nvoc_ctor_Fabric_exit:
-
     return status;
 }
 
@@ -140,49 +152,49 @@ void __nvoc_init__Fabric(Fabric *pThis) {
     __nvoc_init_funcTable_Fabric(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_Fabric(Fabric **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_Fabric(Fabric **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    Fabric *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    Fabric *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(Fabric));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(Fabric));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(Fabric));
+    portMemSet(__nvoc_pThis, 0, sizeof(Fabric));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__Fabric(pThis);
-    status = __nvoc_ctor_Fabric(pThis);
-    if (status != NV_OK) goto __nvoc_objCreate_Fabric_cleanup;
+    __nvoc_init__Fabric(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_Fabric(__nvoc_pThis);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_Fabric_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -191,29 +203,29 @@ NV_STATUS __nvoc_objCreate_Fabric(Fabric **ppThis, Dynamic *pParent, NvU32 creat
 __nvoc_objCreate_Fabric_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(Fabric));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(Fabric));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_Fabric(Fabric **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_Fabric(Fabric **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_Fabric(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_Fabric(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

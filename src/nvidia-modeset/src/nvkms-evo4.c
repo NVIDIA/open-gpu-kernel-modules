@@ -313,8 +313,15 @@ static void EvoSetRasterParamsC9(NVDevEvoPtr pDevEvo, int head,
                                  const NVEvoColorRec *pOverscanColor,
                                  NVEvoUpdateState *updateState)
 {
+    NVEvoChannelPtr pChannel = pDevEvo->core;
+    const NvU32 rasterHBlankDelay =
+        nvEvoGetRasterParamsHBlankDelayC6(pTimings, pDscInfo);
+
     nvAssert(tilePosition == 0);
     EvoSetRasterParams9(pDevEvo, head, pTimings, pOverscanColor, updateState);
+
+    nvDmaSetStartEvoMethod(pChannel, NVC97D_HEAD_SET_RASTER_HBLANK_DELAY(head), 1);
+    nvDmaSetEvoMethodData(pChannel, rasterHBlankDelay);
 }
 
 static void EvoSetOCsc1C9(NVDispEvoPtr pDispEvo, const NvU32 head)
@@ -491,7 +498,6 @@ static void EvoSetHeadControlC9(NVDevEvoPtr pDevEvo, int sd, int head,
     }
 
     // Convert head control state to EVO method values.
-    nvAssert(!pHC->interlaced);
     data |= DRF_DEF(C97D, _HEAD_SET_CONTROL, _STRUCTURE, _PROGRESSIVE);
 
     nvAssert(pHC->serverLockPin != NV_EVO_LOCK_PIN_ERROR);
@@ -2463,8 +2469,15 @@ static void EvoSetRasterParamsCA(NVDevEvoPtr pDevEvo, int head,
                                  const NVEvoColorRec *pOverscanColor,
                                  NVEvoUpdateState *updateState)
 {
+    NVEvoChannelPtr pChannel = pDevEvo->core;
+    const NvU32 rasterHBlankDelay =
+        nvEvoGetRasterParamsHBlankDelayC6(pTimings, pDscInfo);
+
     nvAssert(tilePosition == 0);
     EvoSetRasterParams9(pDevEvo, head, pTimings, pOverscanColor, updateState);
+
+    nvDmaSetStartEvoMethod(pChannel, NVC97D_HEAD_SET_RASTER_HBLANK_DELAY(head), 1);
+    nvDmaSetEvoMethodData(pChannel, rasterHBlankDelay);
 }
 
 static void EvoInitWindowMappingCA(const NVDispEvoRec *pDispEvo,

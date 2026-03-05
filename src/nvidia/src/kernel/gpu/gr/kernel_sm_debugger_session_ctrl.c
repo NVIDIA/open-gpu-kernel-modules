@@ -546,14 +546,17 @@ cleanup_mapping:
         // Force BAR instead of GSP-DMA copy in CC case
         NvU32 transferFlags = TRANSFER_FLAGS_PREFER_PROCESSOR;
 
-        if (!IsMAXWELL(pTargetGpu))
+        if (gpuIsCCFeatureEnabled(pTargetGpu))
         {
-            // Prefer CE, but use BAR2 if not available; disable for maxwell due to undebugged issues in specific tests
-            transferFlags |= TRANSFER_FLAGS_PREFER_CE;
-            if (gpuIsCCFeatureEnabled(pTargetGpu))
+            if (!gpuIsCCDevToolsModeEnabled(pTargetGpu))
             {
+                // BAR access would be blocked in CC prod mode
                 transferFlags = TRANSFER_FLAGS_NONE;
             }
+        }
+        else
+        {
+            transferFlags |= TRANSFER_FLAGS_PREFER_CE;
         }
 
         if (accessType == GRDBG_MEM_ACCESS_TYPE_READ)

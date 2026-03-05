@@ -124,6 +124,9 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
         return false;
     }
 
+    dev->mode_config.max_width  = pDetectParams->maxWidthInPixels;
+    dev->mode_config.max_height = pDetectParams->maxHeightInPixels;
+
 #if defined(NV_DRM_CONNECTOR_HAS_VRR_CAPABLE_PROPERTY)
     drm_connector_attach_vrr_capable_property(&nv_connector->base);
     drm_connector_set_vrr_capable_property(&nv_connector->base, pDetectParams->vrrSupported ? true : false);
@@ -216,6 +219,52 @@ done:
     return status;
 }
 
+static void nv_drm_connector_reset(struct drm_connector *connector)
+{
+    struct nv_drm_connector_state  * nv_connector_state =
+            nv_drm_calloc(1, sizeof(*nv_connector_state));
+
+    if (!nv_connector_state) {
+        return;
+    }
+
+    if (connector->state)
+    {
+        struct nv_drm_connector_state *nv_drm_connector_state_old =
+                to_nv_drm_connector_state(connector->state);
+        __drm_atomic_helper_connector_destroy_state(connector->state);
+        nv_drm_free(nv_drm_connector_state_old);
+    }
+
+    __drm_atomic_helper_connector_reset(connector, &nv_connector_state->base);
+}
+
+static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struct drm_connector *connector)
+{
+    struct nv_drm_connector_state *nv_drm_new_connector_state =
+           nv_drm_calloc(1, sizeof(*nv_drm_new_connector_state));
+
+    if (!nv_drm_new_connector_state) {
+        return NULL;
+    }
+
+    __drm_atomic_helper_connector_duplicate_state(connector, &nv_drm_new_connector_state->base);
+
+    return &nv_drm_new_connector_state->base;
+}
+
+static void nv_drm_connector_atomic_destroy_state(
+            struct drm_connector *connector,
+            struct drm_connector_state *state)
+{
+    struct nv_drm_connector_state *nv_drm_connector_state =
+           to_nv_drm_connector_state(state);
+
+    __drm_atomic_helper_connector_destroy_state(state);
+
+    nv_drm_free(nv_drm_connector_state);
+}
+
 static void __nv_drm_connector_force(struct drm_connector *connector)
 {
     __nv_drm_connector_detect_internal(connector);
@@ -229,12 +278,12 @@ nv_drm_connector_detect(struct drm_connector *connector, bool force)
 
 static struct drm_connector_funcs nv_connector_funcs = {
     .destroy                = nv_drm_connector_destroy,
-    .reset                  = drm_atomic_helper_connector_reset,
+    .reset                  = nv_drm_connector_reset,
     .force                  = __nv_drm_connector_force,
     .detect                 = nv_drm_connector_detect,
     .fill_modes             = drm_helper_probe_single_connector_modes,
-    .atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
-    .atomic_destroy_state   = drm_atomic_helper_connector_destroy_state,
+    .atomic_duplicate_state = nv_drm_connector_atomic_duplicate_state,
+    .atomic_destroy_state   = nv_drm_connector_atomic_destroy_state,
 };
 
 static int nv_drm_connector_get_modes(struct drm_connector *connector)
@@ -487,16 +536,19 @@ nv_drm_connector_new(struct drm_device *dev,
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_connector *nv_connector = NULL;
+    struct nv_drm_connector_state *nv_connector_state = NULL;
     int ret = -ENOMEM;
 
     if ((nv_connector = nv_drm_calloc(1, sizeof(*nv_connector))) == NULL) {
         goto failed;
     }
 
-    if ((nv_connector->base.state =
-            nv_drm_calloc(1, sizeof(*nv_connector->base.state))) == NULL) {
+    if ((nv_connector_state =
+            nv_drm_calloc(1, sizeof(*nv_connector_state))) == NULL) {
         goto failed_state_alloc;
     }
+
+    nv_connector->base.state = &nv_connector_state->base;
     nv_connector->base.state->connector = &nv_connector->base;
 
     nv_connector->physicalIndex = physicalIndex;

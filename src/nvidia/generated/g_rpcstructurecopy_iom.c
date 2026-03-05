@@ -69,16 +69,14 @@ static const struct NVOC_CASTINFO __iom_castinfo_OBJRPCSTRUCTURECOPY =
 extern const NVOC_RTTI_PROVIDER __iom_rtti_provider;
 const struct NVOC_CLASS_DEF __iom_class_def_OBJRPCSTRUCTURECOPY =
 {
-    {
-        sizeof(OBJRPCSTRUCTURECOPY),
-        classId(OBJRPCSTRUCTURECOPY),
-        &__iom_rtti_provider,
+    .classInfo.size =       sizeof(OBJRPCSTRUCTURECOPY),
+    .classInfo.classId =    classId(OBJRPCSTRUCTURECOPY),
+    .classInfo.providerId = &__iom_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        "OBJRPCSTRUCTURECOPY",
+    .classInfo.name =       "OBJRPCSTRUCTURECOPY",
 #endif
-    },
-    NULL,
-    &__iom_castinfo_OBJRPCSTRUCTURECOPY,
+    .objCreatefn = NULL,
+    .pCastInfo =   &__iom_castinfo_OBJRPCSTRUCTURECOPY,
 };
 
 

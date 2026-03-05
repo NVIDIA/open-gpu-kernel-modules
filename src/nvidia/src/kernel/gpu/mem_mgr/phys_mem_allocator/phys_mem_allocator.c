@@ -43,7 +43,7 @@
 #define PMA_DEBUG 0
 #endif
 
-typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU64, NvU64, NvU64, NvU32, NvU64*, NvBool, NvBool);
+typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU64, NvU64, NvBool, NvU32, NvU64*, NvBool, NvBool);
 
 static void
 _pmaRollback
@@ -207,10 +207,16 @@ pmaInitialize(PMA **ppPma, NvU32 initFlags)
     pMapInfo->pmaMapChangeStateAttrib = pmaRegmapChangeStateAttrib;
     pMapInfo->pmaMapChangePageStateAttrib = pmaRegmapChangePageStateAttrib;
     pMapInfo->pmaMapChangeBlockStateAttrib = pmaRegmapChangeBlockStateAttrib;
+    pMapInfo->pmaMapChangeLocalizationState = pmaRegmapChangeLocalizationState;
+    pMapInfo->pmaMapChangeBlockLocalizationState = pmaRegmapChangeBlockLocalizationState;
     pMapInfo->pmaMapRead = pmaRegmapRead;
+    pMapInfo->pmaMapReadLocalizationInfo = pmaRegmapReadLocalizationInfo;
+    pMapInfo->pmaMapReadLocalizationStatus = pmaRegmapReadLocalizationStatus;
+    pMapInfo->pmaMapGetLocalizedRegionAllocationCount = pmaRegmapGetLocalizedRegionAllocationCount;
     pMapInfo->pmaMapScanContiguous = pmaRegmapScanContiguous;
     pMapInfo->pmaMapScanDiscontiguous = pmaRegmapScanDiscontiguous;
     pMapInfo->pmaMapGetSize = pmaRegmapGetSize;
+    pMapInfo->pmaMapGetLocalizableSize = pmaRegmapGetLocalizableSize;
     pMapInfo->pmaMapGetLargestFree = pmaRegmapGetLargestFree;
     pMapInfo->pmaMapScanContiguousNumaEviction = pmaRegMapScanContiguousNumaEviction;
     pMapInfo->pmaMapGetEvictingFrames = pmaRegmapGetEvictingFrames;
@@ -246,7 +252,6 @@ pmaInitialize(PMA **ppPma, NvU32 initFlags)
     pPma->pmaStats.numFree2mbPagesProtected = 0;
     for (NvU32 i = 0; i < PMA_MAX_LOCALIZED_REGION_COUNT; ++i)
     {
-        // Not implemented yet. Returning 0 for now.
         pPma->pmaStats.num2mbPagesLocalizable[i] = 0;
         pPma->pmaStats.numFreeFramesLocalizable[i] = 0;
         pPma->pmaStats.numFree2mbPagesLocalizable[i] = 0;
@@ -282,7 +287,7 @@ pmaQueryConfigs(PMA *pPma, NvU32 *pConfig)
         config |= PMA_QUERY_SCRUB_ENABLED;
 
         portSyncRwLockAcquireRead(pPma->pScrubberValidLock);
-        if (pmaPortAtomicGet(&pPma->scrubberValid) == PMA_SCRUBBER_VALID)
+        if (portAtomicGetSize(&pPma->scrubberValid) == PMA_SCRUBBER_VALID)
         {
             config |= PMA_QUERY_SCRUB_VALID;
         }
@@ -414,7 +419,7 @@ pmaDestroy(PMA *pPma)
 
     NV_ASSERT(pmaStateCheck(pPma));
 
-    if (pmaPortAtomicGet(&pPma->initScrubbing) == PMA_SCRUB_IN_PROGRESS)
+    if (portAtomicGetSize(&pPma->initScrubbing) == PMA_SCRUB_IN_PROGRESS)
     {
         pmaScrubComplete(pPma);
     }
@@ -555,7 +560,7 @@ pmaRegisterRegion
         // Scrubbing cannot be done before we start. This is to protect against spurious pmaScrubComplete
         // calls from RM
         //
-        NV_ASSERT(pmaPortAtomicGet(&pPma->initScrubbing) != PMA_SCRUB_DONE);
+        NV_ASSERT(portAtomicGetSize(&pPma->initScrubbing) != PMA_SCRUB_DONE);
 
         // Mark region as "scrubbing" until background scrubbing completes
         pmaSetBlockStateAttrib(pPma, physBase, physLimit - physBase + 1, ATTRIB_SCRUBBING, ATTRIB_SCRUBBING);
@@ -602,15 +607,13 @@ pmaAllocatePages
     NvU32 flags;
     NvBool evictFlag, contigFlag, persistFlag, alignFlag, pinFlag, rangeFlag, blacklistOffFlag, partialFlag, skipScrubFlag, reverseFlag;
 
-    NvBool localizedFlag;
-    NvU32 localizedUgpuNum;
+    NvBool localizedFlag = 0;
+    NvU32 localizedUgpuNum = 0;
 
     NvU32 regId, regionIdx;
     NvU64 numPagesAllocatedThisTime, numPagesLeftToAllocate, numPagesAllocatedSoFar;
     NvU64 addrBase, addrLimit;
     NvU64 rangeStart, rangeEnd;
-    NvU64 stride = 0;
-    NvU32 strideStart = 0;
     NvU64 *curPages;
     NvBool blacklistOffPerRegion[PMA_REGION_SIZE]={NV_FALSE};
     NvU64 blacklistOffAddrStart[PMA_REGION_SIZE] = {0}, blacklistOffRangeSize[PMA_REGION_SIZE] = {0};
@@ -618,7 +621,8 @@ pmaAllocatePages
 
     void *pMap = NULL;
     scanFunc useFunc;
-    PMA_PAGESTATUS pinOption;
+    PMA_PAGESTATUS pageState;
+    PMA_PAGESTATUS pageStateMask;
     NvU64 alignment = pageSize;
     NvU32 framesPerPage;
     NvU64 numFramesToAllocateTotal;
@@ -750,18 +754,14 @@ pmaAllocatePages
             NV_PRINTF(LEVEL_ERROR, "Only one ugpu can be specified for localized allocations\n");
             return NV_ERR_INVALID_ARGUMENT;
         }
-
-        stride = PMA_LOCALIZED_MEMORY_ALLOC_STRIDE;
-        strideStart = localizedUgpuNum;
     }
 
     framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
     numFramesToAllocateTotal = framesPerPage * allocationCount;
 
-    pinOption = pinFlag ? STATE_PIN : STATE_UNPIN;
-    pinOption |= persistFlag ? ATTRIB_PERSISTENT : 0;
-
-    pinOption |= localizedFlag ? ATTRIB_LOCALIZED : 0;
+    pageState = pinFlag ? STATE_PIN : STATE_UNPIN;
+    pageState |= persistFlag ? ATTRIB_PERSISTENT : 0;
+    pageStateMask = MAP_MASK;
 
     useFunc = contigFlag ? (pPma->pMapInfo->pmaMapScanContiguous) :
                            (pPma->pMapInfo->pmaMapScanDiscontiguous);
@@ -778,7 +778,7 @@ pmaAllocatePages
     {
         portSyncMutexAcquire(pPma->pAllocLock);
         portSyncRwLockAcquireRead(pPma->pScrubberValidLock);
-        if (pmaPortAtomicGet(&pPma->scrubberValid) != PMA_SCRUBBER_VALID)
+        if (portAtomicGetSize(&pPma->scrubberValid) != PMA_SCRUBBER_VALID)
         {
             NV_PRINTF(LEVEL_WARNING, "PMA object is not valid\n");
             portSyncRwLockReleaseRead(pPma->pScrubberValidLock);
@@ -886,7 +886,7 @@ pmaAllocatePages_retry:
 
         numPagesAllocatedThisTime = 0;
         status = (*useFunc)(pMap, addrBase, rangeStart, rangeEnd, numPagesLeftToAllocate,
-            curPages, pageSize, alignment, stride, strideStart, &numPagesAllocatedThisTime, !tryEvict, reverseFlag);
+            curPages, pageSize, alignment, localizedFlag, localizedUgpuNum, &numPagesAllocatedThisTime, !tryEvict, reverseFlag);
 
         NV_ASSERT(numPagesAllocatedThisTime <= numPagesLeftToAllocate);
 
@@ -1024,13 +1024,13 @@ pmaAllocatePages_retry:
     // completes, then re-try.
     //
     if ((status == NV_ERR_NO_MEMORY) &&
-        (pmaPortAtomicGet(&pPma->initScrubbing) == PMA_SCRUB_IN_PROGRESS))
+        (portAtomicGetSize(&pPma->initScrubbing) == PMA_SCRUB_IN_PROGRESS))
     {
         // Release the spinlock before attempting a semaphore acquire.
         portSyncSpinlockRelease(pPma->pPmaLock);
 
         // Wait until scrubbing is complete.
-        while (pmaPortAtomicGet(&pPma->initScrubbing) != PMA_SCRUB_DONE)
+        while (portAtomicGetSize(&pPma->initScrubbing) != PMA_SCRUB_DONE)
         {
             // Deschedule without PMA lock
             pmaOsSchedule();
@@ -1113,14 +1113,14 @@ pmaAllocatePages_retry:
 
     if (status == NV_OK)
     {
-        NvU32 i;
+        NvU64 i;
 
         //
         // Here we need to double check if the scrubber was valid because the contiguous eviction
         // which called pmaFreePages could have had a fatal failure that resulted in some
         // pages being unscrubbed.
         //
-        if (bScrubOnFree && (pmaPortAtomicGet(&pPma->scrubberValid) != PMA_SCRUBBER_VALID))
+        if (bScrubOnFree && (portAtomicGetSize(&pPma->scrubberValid) != PMA_SCRUBBER_VALID))
         {
             portSyncSpinlockRelease(pPma->pPmaLock);
             NV_PRINTF(LEVEL_FATAL, "Failing allocation because the scrubber is not valid.\n");
@@ -1139,6 +1139,7 @@ pmaAllocatePages_retry:
             regId = findRegionID(pPma, pPages[0]);
             pMap  = pPma->pRegions[regId];
             addrBase = pPma->pRegDescriptors[regId]->base;
+            addrLimit = pPma->pRegDescriptors[regId]->limit;
             frameBase = PMA_ADDR2FRAME(pPages[0], addrBase);
 
 #if PMA_DEBUG
@@ -1150,28 +1151,22 @@ pmaAllocatePages_retry:
             if (localizedFlag)
             {
                 //
-                // check if the region is already localized. If not, localize the entire region
-                // Holding pPmaLock allows modification of any frames, so we're fine to modify
-                // frames outside of our actual allocation
+                // Set localization state for the frame and surrounding region.
+                // 
+                // Note: There is no need to account for the number of frames allocated here, since a single contiguous
+                //       localized allocation cannot span multiple regions. The scan loop will have already verified
+                //       that the region is either localized (in which case this will have no effect) or free of other
+                //       allocations and may be localized here.
                 //
-                if (pPma->pMapInfo->pmaMapRead(pMap, frameBase, ATTRIB_LOCALIZED) == 0)
-                {
-                    NvU64 localizedFrameBase = PMA_ADDR2FRAME(NV_ALIGN_DOWN64(pPages[0], PMA_LOCALIZED_MEMORY_RESERVE_SIZE), addrBase);
-                    NvU64 numFramesLocalized = PMA_LOCALIZED_MEMORY_RESERVE_SIZE >> PMA_PAGE_SHIFT;
-
+                    
 #if PMA_DEBUG
-                    NV_PRINTF(LEVEL_INFO, "Localizing frames 0x%llx through 0x%llx\n",
-                                          localizedFrameBase,
-                                          localizedFrameBase + numFramesLocalized - 1);
+                NV_PRINTF(LEVEL_INFO, "Marking region containing frame 0x%llx as localized\n", frameBase);
 #endif
-
-                    pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, localizedFrameBase, numFramesLocalized,
-                                                                 ATTRIB_LOCALIZED, ATTRIB_LOCALIZED);
-                }
+                pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameBase, LOCALIZATION_STATE_IS_LOCALIZED, LOCALIZATION_STATE_IS_LOCALIZED);
             }
 
-            pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, frameBase, numPagesAllocatedSoFar * framesPerPage,
-                                                         pinOption, MAP_MASK);
+            pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, frameBase, numFramesAllocated,
+                                                         pageState, pageStateMask);
 
             pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 
@@ -1205,6 +1200,7 @@ pmaAllocatePages_retry:
                 regId = findRegionID(pPma, pPages[i]);
                 pMap  = pPma->pRegions[regId];
                 addrBase = pPma->pRegDescriptors[regId]->base;
+                addrLimit = pPma->pRegDescriptors[regId]->limit;
                 frameBase =  PMA_ADDR2FRAME(pPages[i], addrBase);
 
 #if PMA_DEBUG
@@ -1231,29 +1227,18 @@ pmaAllocatePages_retry:
                 if (localizedFlag)
                 {
                     //
-                    // for every allocated page,
-                    // check if the region is already localized. If not, localize the entire region
-                    // Holding pPmaLock allows modification of any frames, so we're fine to modify
-                    // frames outside of our actual allocation
+                    // Set localization state for the frame and surrounding region.
                     //
-                    if (pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameBase, ATTRIB_LOCALIZED) == 0)
-                    {
-                        NvU64 localizedFrameBase = PMA_ADDR2FRAME(NV_ALIGN_DOWN64(pPages[i], PMA_LOCALIZED_MEMORY_RESERVE_SIZE), addrBase);
-                        NvU64 numFramesLocalized = PMA_LOCALIZED_MEMORY_RESERVE_SIZE >> PMA_PAGE_SHIFT;
-
+                    
 #if PMA_DEBUG
-                        NV_PRINTF(LEVEL_INFO, "Localizing frames 0x%llx through 0x%llx\n",
-                                              localizedFrameBase,
-                                              localizedFrameBase + numFramesLocalized - 1);
+                    NV_PRINTF(LEVEL_INFO, "Marking region containing frame 0x%llx as localized\n", frameBase);
 #endif
 
-                        pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, localizedFrameBase, numFramesLocalized,
-                                                                     ATTRIB_LOCALIZED, ATTRIB_LOCALIZED);
-                    }
+                    pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameBase, LOCALIZATION_STATE_IS_LOCALIZED, LOCALIZATION_STATE_IS_LOCALIZED);
                 }
 
                 pPma->pMapInfo->pmaMapChangePageStateAttrib(pMap, frameBase,
-                                                            pageSize, pinOption, MAP_MASK);
+                                                            pageSize, pageState, pageStateMask);
 
             }
 
@@ -1329,12 +1314,14 @@ pmaPinPages
 
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
+    PMA_LOCALIZATION_STATUS localizationState;
+
     {
         regId = findRegionID(pPma, pPages[0]);
         addrBase = pPma->pRegDescriptors[regId]->base;
         frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
-        state = pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE);
-        if (state & ATTRIB_LOCALIZED)
+        localizationState = pPma->pMapInfo->pmaMapReadLocalizationStatus(pPma->pRegions[regId], frameNum);
+        if (localizationState & LOCALIZATION_STATE_IS_LOCALIZED)
         {
             NV_PRINTF(LEVEL_ERROR, "Localized allocations cannot change pin state\n");
             status = NV_ERR_INVALID_ARGUMENT;
@@ -1407,6 +1394,7 @@ pmaFreePages
     // TODO Support free of multiple regions in one call??
     NvU64 i, j, frameNum, framesPerPage, addrBase;
     NvU32 regId;
+    void *pMap = NULL;
     NvU32 scrubFlags = 0;
     NvBool bScrubValid = NV_TRUE;
     NvBool bNeedScrub = pPma->bScrubOnFree && !(flag & PMA_FREE_SKIP_SCRUB);
@@ -1437,7 +1425,7 @@ pmaFreePages
     if (bNeedScrub)
     {
         portSyncRwLockAcquireRead(pPma->pScrubberValidLock);
-        if (pmaPortAtomicGet(&pPma->scrubberValid) == PMA_SCRUBBER_VALID)
+        if (portAtomicGetSize(&pPma->scrubberValid) == PMA_SCRUBBER_VALID)
         {
             if (_pmaCheckScrubbedPages(pPma, 0, NULL, 0) != NV_OK)
             {
@@ -1464,6 +1452,7 @@ pmaFreePages
     for (i = 0; i < pageCount; i++)
     {
         regId    = findRegionID(pPma, pPages[i]);
+        pMap     = pPma->pRegions[regId];
         addrBase = pPma->pRegDescriptors[regId]->base;
         frameNum = PMA_ADDR2FRAME(pPages[i], addrBase);
 
@@ -1474,101 +1463,55 @@ pmaFreePages
             PMA_PAGESTATUS newStatus = (bScrubValid && bNeedScrub) ? ATTRIB_SCRUBBING : STATE_FREE;
             PMA_PAGESTATUS exceptedMask = ATTRIB_EVICTING | ATTRIB_BLACKLIST;
 
-            exceptedMask |= ATTRIB_LOCALIZED;
-
             //
             // Reset everything except for the (ATTRIB_EVICTING and ATTRIB_BLACKLIST) state to support memory being freed
             // after being picked for eviction.
             //
-            pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j), newStatus, ~(exceptedMask));
+            pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, (frameNum + j), newStatus, ~(exceptedMask));
         }
     }
 
-    {
-        // Localized memory reclaim
-        PMA_PAGESTATUS state;
-
-        //
-        // Optimization: the first one is expected to be the same as the rest of them.
-        // If no localized pages, then don't spend time checking through the
-        // rest of them
-        //
-        if (pageCount < 1)
-        {
-            goto localized_done;
-        }
-
-        regId = findRegionID(pPma, pPages[0]);
-        addrBase = pPma->pRegDescriptors[regId]->base;
-        frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
-        state = pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE);
-        if ((state & ATTRIB_LOCALIZED) == 0)
-        {
-            goto localized_done;
-        }
-    }
-
-    scrubFlags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
-
+    //
+    // Must scan the entire reserved region surrounding each freed page to see whether we can clear
+    // ATTRIB_LOCALIZED / ATTRIB_NONLOCALIZED and adjust free counts.
+    // 
+    //  - Simplify pmaMapRead loop to read only ATTRIB_(NON)LOCALIZED; read state for multiple pages at once.
+    //  - Skip any further pages in same region after pmaMapChangeBlockStateAttrib without further pmaMapRead.
+    //
     for (i = 0; i < pageCount; i++)
     {
-        PMA_PAGESTATUS state;
-        void *pMap = NULL;
+
+        PMA_LOCALIZATION_INFO localizationInfo;
 
         regId = findRegionID(pPma, pPages[i]);
         pMap = pPma->pRegions[regId];
         addrBase = pPma->pRegDescriptors[regId]->base;
         frameNum = PMA_ADDR2FRAME(pPages[i], addrBase);
-        state = pPma->pMapInfo->pmaMapRead(pMap, frameNum, NV_TRUE);
-        if ((state & ATTRIB_LOCALIZED) == 0)
+
+        localizationInfo = pPma->pMapInfo->pmaMapReadLocalizationInfo(pMap, frameNum);
+    
+        if ((localizationInfo.status & LOCALIZATION_STATE_IS_LOCALIZED) == 0)
         {
             //
-            // May have already freed this region,
-            // but keep going to find any more localized regions
+            // May have already cleared this region,
+            // but keep going to find any more flagged regions
             // in the allocation being freed.
             //
             continue;
         }
 
-        //
-        // Check if the entire chunk if there's still some localized state
-        // Ignore the scrub bit for now since. Do not ignore the eviction since that would cause UVM bugs
-        //
-        if (state & ATTRIB_EVICTING)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Localizing and evicting state is undefined, exiting\n");
-            goto localized_done;
-        }
+        scrubFlags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
 
-        state &= ~ATTRIB_SCRUBBING;
-
-        // Read the state of the entire block to see if we can reclaim it
-        NvU64 localizedFrameBase = PMA_ADDR2FRAME(NV_ALIGN_DOWN64(pPages[i], PMA_LOCALIZED_MEMORY_RESERVE_SIZE), addrBase);
-        NvU64 numFramesLocalized = PMA_LOCALIZED_MEMORY_RESERVE_SIZE >> PMA_PAGE_SHIFT;
-
-        for (j = 0; j < numFramesLocalized; j++)
-        {
-            state = pPma->pMapInfo->pmaMapRead(pMap, (localizedFrameBase + j), NV_FALSE);
-            if (state != STATE_FREE)
-            {
-                break;
-            }
-        }
-
-        if (j == numFramesLocalized)
+        if (localizationInfo.allocatedFrameCount == 0)
         {
 #if PMA_DEBUG
-            NV_PRINTF(LEVEL_INFO, "Reclaiming localized frames 0x%llx through 0x%llx\n",
-                                  localizedFrameBase,
-                                  localizedFrameBase + numFramesLocalized - 1);
+            NV_PRINTF(LEVEL_INFO, "Reclaiming localized region containing frame 0x%llx\n", frameNum);
 #endif
 
-            pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, localizedFrameBase, numFramesLocalized,
-                                                         0, ATTRIB_LOCALIZED);
+
+            pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameNum, 0, LOCALIZATION_STATE_IS_LOCALIZED);
         }
     }
-
-localized_done:
 
     pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 
@@ -1642,7 +1585,7 @@ pmaScrubComplete
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (pmaPortAtomicGet(&pPma->initScrubbing) != PMA_SCRUB_IN_PROGRESS)
+    if (portAtomicGetSize(&pPma->initScrubbing) != PMA_SCRUB_IN_PROGRESS)
     {
         return NV_ERR_GENERIC;
     }
@@ -1902,6 +1845,9 @@ pmaGetUgpuTotalMemory
     NvU64           *pBytesTotal
 )
 {
+    void *pMap;
+    NvU64 totalBytesInRegion;
+
     *pBytesTotal = 0;
 
     if (ugpuId >= PMA_MAX_LOCALIZED_REGION_COUNT)
@@ -1920,7 +1866,13 @@ pmaGetUgpuTotalMemory
     NV_ASSERT_OR_RETURN_VOID(!nodeOnlined);
 #endif
 
-    *pBytesTotal = 0;
+    for (NvU32 i = 0; i < pPma->regSize; i++)
+    {
+        pMap = pPma->pRegions[i];
+        pPma->pMapInfo->pmaMapGetLocalizableSize(pMap, ugpuId, &totalBytesInRegion);
+
+        *pBytesTotal += totalBytesInRegion;
+    }
 }
 
 void

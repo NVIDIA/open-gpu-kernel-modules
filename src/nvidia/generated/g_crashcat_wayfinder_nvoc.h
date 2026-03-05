@@ -47,29 +47,19 @@ extern "C" {
 #include "nvoc/object.h"
 #include "nv-crashcat.h"
 
-
 struct CrashCatQueue;
 
-#ifndef __NVOC_CLASS_CrashCatQueue_TYPEDEF__
-#define __NVOC_CLASS_CrashCatQueue_TYPEDEF__
-typedef struct CrashCatQueue CrashCatQueue;
-#endif /* __NVOC_CLASS_CrashCatQueue_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatQueue
-#define __nvoc_class_id_CrashCatQueue 0xbaa900
+#define __nvoc_class_id_CrashCatQueue 0xbaa900u
+typedef struct CrashCatQueue CrashCatQueue;
 #endif /* __nvoc_class_id_CrashCatQueue */
-
 
 
 struct CrashCatReport;
 
-#ifndef __NVOC_CLASS_CrashCatReport_TYPEDEF__
-#define __NVOC_CLASS_CrashCatReport_TYPEDEF__
-typedef struct CrashCatReport CrashCatReport;
-#endif /* __NVOC_CLASS_CrashCatReport_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatReport
-#define __nvoc_class_id_CrashCatReport 0xde4777
+#define __nvoc_class_id_CrashCatReport 0xde4777u
+typedef struct CrashCatReport CrashCatReport;
 #endif /* __nvoc_class_id_CrashCatReport */
 
 
@@ -130,13 +120,9 @@ struct NVOC_METADATA__CrashCatWayfinder {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__
-#define __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__
-typedef struct CrashCatWayfinder CrashCatWayfinder;
-#endif /* __NVOC_CLASS_CrashCatWayfinder_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatWayfinder
-#define __nvoc_class_id_CrashCatWayfinder 0x085e32
+#define __nvoc_class_id_CrashCatWayfinder 0x085e32u
+typedef struct CrashCatWayfinder CrashCatWayfinder;
 #endif /* __nvoc_class_id_CrashCatWayfinder */
 
 // Casting support
@@ -155,14 +141,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatWayfinder;
 NV_STATUS __nvoc_objCreateDynamic_CrashCatWayfinder(CrashCatWayfinder**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_CrashCatWayfinder(CrashCatWayfinder**, Dynamic*, NvU32,
-        NV_CRASHCAT_WAYFINDER_VERSION CrashCatWayfinderHal_version, NvU32 arg_wfl0);
-#define __objCreate_CrashCatWayfinder(ppNewObj, pParent, createFlags, CrashCatWayfinderHal_version, arg_wfl0) \
-    __nvoc_objCreate_CrashCatWayfinder((ppNewObj), staticCast((pParent), Dynamic), (createFlags), CrashCatWayfinderHal_version, arg_wfl0)
+        NV_CRASHCAT_WAYFINDER_VERSION CrashCatWayfinderHal_version, NvU32 wfl0);
+#define __objCreate_CrashCatWayfinder(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, CrashCatWayfinderHal_version, wfl0) \
+    __nvoc_objCreate_CrashCatWayfinder((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), CrashCatWayfinderHal_version, wfl0)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS crashcatWayfinderConstruct_IMPL(struct CrashCatWayfinder *arg_, NvU32 arg_wfl0);
-#define __nvoc_crashcatWayfinderConstruct(arg_, arg_wfl0) crashcatWayfinderConstruct_IMPL(arg_, arg_wfl0)
+NV_STATUS crashcatWayfinderConstruct_IMPL(struct CrashCatWayfinder *arg_this, NvU32 wfl0);
+#define __nvoc_crashcatWayfinderConstruct(arg_this, wfl0) crashcatWayfinderConstruct_IMPL(arg_this, wfl0)
 
 void crashcatWayfinderDestruct_IMPL(struct CrashCatWayfinder *arg_this);
 #define __nvoc_crashcatWayfinderDestruct(arg_this) crashcatWayfinderDestruct_IMPL(arg_this)
@@ -190,12 +176,16 @@ static inline void crashcatWayfinderSetWFL0(struct CrashCatWayfinder *arg_this, 
 #define crashcatWayfinderSetWFL0_HAL(arg_this, wfl0) crashcatWayfinderSetWFL0(arg_this, wfl0)
 
 // Dispatch functions
-struct CrashCatQueue *crashcatWayfinderGetReportQueue_V1(struct CrashCatWayfinder *arg1);
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+struct CrashCatQueue * crashcatWayfinderGetReportQueue_V1(struct CrashCatWayfinder *arg_this);
 
+void crashcatWayfinderSetWFL0_V1(struct CrashCatWayfinder *arg_this, NvU32 wfl0);
 
-void crashcatWayfinderSetWFL0_V1(struct CrashCatWayfinder *arg1, NvU32 wfl0);
-
-
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CRASHCAT_WAYFINDER_H_PRIVATE_ACCESS_ALLOWED

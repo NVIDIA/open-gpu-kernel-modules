@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -839,7 +839,6 @@ instmemBindContextDma_IMPL
     {
         if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
         {
-            instmemDecommitContextDma_HAL(pGpu, pInstMem, pContextDma);
             _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
             pContextDma->Instance[gpuSubDevInst] = 0;
         }
@@ -875,7 +874,6 @@ _instmemRemoveReference
         // Remove DMA object if this is the last binding
         if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
         {
-            instmemDecommitContextDma_HAL(pGpu, pInstMem, pContextDma);
             _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
             pContextDma->Instance[gpuSubDevInst] = 0;
         }

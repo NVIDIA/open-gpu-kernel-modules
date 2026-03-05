@@ -45,7 +45,7 @@ extern "C" {
 #define MMU_FAULT_BUFFER_H
 
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "ctrl/ctrlb069.h"
 #include "ctrl/ctrlc369.h"
 #include "rmapi/control.h" // for macro RMCTRL_EXPORT etc.
@@ -137,13 +137,9 @@ struct NVOC_METADATA__MmuFaultBuffer {
     const struct NVOC_VTABLE__MmuFaultBuffer vtable;
 };
 
-#ifndef __NVOC_CLASS_MmuFaultBuffer_TYPEDEF__
-#define __NVOC_CLASS_MmuFaultBuffer_TYPEDEF__
-typedef struct MmuFaultBuffer MmuFaultBuffer;
-#endif /* __NVOC_CLASS_MmuFaultBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MmuFaultBuffer
-#define __nvoc_class_id_MmuFaultBuffer 0x7e1829
+#define __nvoc_class_id_MmuFaultBuffer 0x7e1829u
+typedef struct MmuFaultBuffer MmuFaultBuffer;
 #endif /* __nvoc_class_id_MmuFaultBuffer */
 
 // Casting support
@@ -161,14 +157,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuFaultBuffer;
 
 NV_STATUS __nvoc_objCreateDynamic_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MmuFaultBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MmuFaultBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MmuFaultBuffer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MmuFaultBuffer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS faultbufConstruct_IMPL(struct MmuFaultBuffer *arg_pMmuFaultBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_faultbufConstruct(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams) faultbufConstruct_IMPL(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams)
+NV_STATUS faultbufConstruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_faultbufConstruct(pMmuFaultBuffer, pCallContext, pParams) faultbufConstruct_IMPL(pMmuFaultBuffer, pCallContext, pParams)
 
 void faultbufDestruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer);
 #define __nvoc_faultbufDestruct(pMmuFaultBuffer) faultbufDestruct_IMPL(pMmuFaultBuffer)
@@ -417,12 +413,14 @@ static inline NV_STATUS faultbufGetOrAllocNotifShare_DISPATCH(struct MmuFaultBuf
     return pNotifier->__nvoc_metadata_ptr->vtable.__faultbufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS faultbufMap_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS faultbufUnmap_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS faultbufGetMapAddrSpace_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS faultbufCtrlCmdFaultbufferGetSize_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *pGetParams);
 
 NV_STATUS faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *pParams);
@@ -435,6 +433,10 @@ NV_STATUS faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL(struct MmuFaultBuf
 
 NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -52,14 +52,16 @@ _krcThwapChannel
 (
     OBJGPU   *pGpu,
     KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog,
     NvU32     chid
 )
 {
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
 
     KernelChannel *pKernelChannel = kfifoChidMgrGetKernelChannel(
         pGpu, pKernelFifo,
-        kfifoGetChidMgr(pGpu, pKernelFifo, pKernelRc->watchdog.runlistId),
+        kfifoGetChidMgr(pGpu, pKernelFifo, pWatchdogState->runlistId),
         chid);
 
     if (pKernelChannel == NULL)
@@ -102,30 +104,32 @@ static void
 _krcTestChannelRecovery
 (
     OBJGPU   *pGpu,
-    KernelRc *pKernelRc
+    KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog
 )
 {
     NvU32 chid;
+    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
 
     for (chid = 0; chid < 32; chid++)
     {
-        if (pKernelRc->watchdog.thwapChannelMask & (1 << chid))
+        if (pWatchdogState->thwapChannelMask & (1 << chid))
         {
 
-            _krcThwapChannel(pGpu, pKernelRc, chid);
+            _krcThwapChannel(pGpu, pKernelRc, pKernelWatchdog, chid);
 
             // Unless this channel is marked for repeat, clear its thwap bit.
-            if (0 == (pKernelRc->watchdog.thwapRepeatMask & (1 << chid)))
+            if (0 == (pWatchdogState->thwapRepeatMask & (1 << chid)))
             {
-                pKernelRc->watchdog.thwapChannelMask &= ~(1 << chid);
+                pWatchdogState->thwapChannelMask &= ~(1 << chid);
             }
         }
-        if (pKernelRc->watchdog.stompChannelMask & (1 << chid))
+        if (pWatchdogState->stompChannelMask & (1 << chid))
         {
             // Unless this channel is marked for repeat, clear its stomp bit.
-            if (0 == (pKernelRc->watchdog.stompRepeatMask & (1 << chid)))
+            if (0 == (pWatchdogState->stompRepeatMask & (1 << chid)))
             {
-                pKernelRc->watchdog.stompChannelMask &= ~(1 << chid);
+                pWatchdogState->stompChannelMask &= ~(1 << chid);
             }
         }
     }
@@ -152,9 +156,9 @@ void krcWatchdogTimerProc
         {
             KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
 
-            krcWatchdog_HAL(pGpu, pKernelRc);
-            krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc);
-            krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc);
+            krcWatchdog_HAL(pGpu, pKernelRc, pKernelWatchdog);
+            krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc, pKernelWatchdog);
+            krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc, pKernelWatchdog);
         }
     }
 }
@@ -168,13 +172,16 @@ void
 krcWatchdog_IMPL
 (
     OBJGPU   *pGpu,
-    KernelRc *pKernelRc
+    KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog
 )
 {
     NvU32 usec, sec;
     NvU64 currentTime;
     NvBool allNotifiersWritten = NV_TRUE;
     NV_STATUS rmStatus;
+    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
+    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
 
     // Do nothing if robust channels are not enabled
     if (!pKernelRc->bRobustChannelsEnabled)
@@ -184,27 +191,27 @@ krcWatchdog_IMPL
     // If the device has been reset then we can skip this sometimes after a
     // reset we can have a reenable make sure that this is a one time event
     //
-    if (pKernelRc->watchdog.deviceResetRd != pKernelRc->watchdog.deviceResetWr)
+    if (pWatchdogState->deviceResetRd != pWatchdogState->deviceResetWr)
     {
-        if (pKernelRc->watchdog.deviceReset[pKernelRc->watchdog.deviceResetRd])
-            pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
+        if (pWatchdogState->deviceReset[pWatchdogState->deviceResetRd])
+            pWatchdogState->flags |= WATCHDOG_FLAGS_DISABLED;
 
-        pKernelRc->watchdog.deviceResetRd = (
-            (pKernelRc->watchdog.deviceResetRd + 1) &
+        pWatchdogState->deviceResetRd = (
+            (pWatchdogState->deviceResetRd + 1) &
             (WATCHDOG_RESET_QUEUE_SIZE - 1));
     }
 
     if ((WATCHDOG_FLAGS_DISABLED !=
-         (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED)) &&
+         (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED)) &&
         gpuIsGpuFullPower(pGpu))
     {
         //
         // Make sure we're initialized.  If not, initialize and wait for the
         // next watchdog call.
         //
-        if (!(pKernelRc->watchdog.flags & WATCHDOG_FLAGS_INITIALIZED))
+        if (!(pWatchdogState->flags & WATCHDOG_FLAGS_INITIALIZED))
         {
-            rmStatus = krcWatchdogInit_HAL(pGpu, pKernelRc, NULL);
+            rmStatus = krcWatchdogInit_HAL(pGpu, pKernelRc, pKernelWatchdog);
 
             if (rmStatus!= NV_OK)
             {
@@ -214,37 +221,37 @@ krcWatchdog_IMPL
         }
 
         // Count the number of invocations of the callback.
-        pKernelRc->watchdog.count++;
+        pWatchdogState->count++;
 
         // Check if, for some reason, the watchdog triggered an error
-        if ((pKernelRc->watchdog.errorContext->status & 0xFFFF) != 0)
+        if ((pWatchdogState->errorContext->status & 0xFFFF) != 0)
         {
             NV_PRINTF(LEVEL_WARNING,
                       "RC watchdog: error on our channel (reinitializing).\n");
 
             // reset allows enough time to restart
-            pKernelRc->watchdog.errorContext->status = 0;
+            pWatchdogState->errorContext->status = 0;
 
             // reinit the pushbuffer image and kickoff again
-            krcWatchdogInitPushbuffer_HAL(pGpu, pKernelRc, NULL);
+            krcWatchdogInitPushbuffer_HAL(pGpu, pKernelRc, pKernelWatchdog);
 
             // Run Immediately
-            pKernelRc->watchdogPersistent.nextRunTime = 0;
+            pWatchdogPersistent->nextRunTime = 0;
         }
 
         // Handle robust channel testing, if necessary.
-        if (pKernelRc->watchdog.channelTestCountdown != 0)
+        if (pWatchdogState->channelTestCountdown != 0)
         {
-            pKernelRc->watchdog.channelTestCountdown--;
-            if (pKernelRc->watchdog.channelTestCountdown == 0)
+            pWatchdogState->channelTestCountdown--;
+            if (pWatchdogState->channelTestCountdown == 0)
             {
-                if ((pKernelRc->watchdog.thwapChannelMask != 0) ||
-                    (pKernelRc->watchdog.stompChannelMask != 0))
+                if ((pWatchdogState->thwapChannelMask != 0) ||
+                    (pWatchdogState->stompChannelMask != 0))
                 {
-                    _krcTestChannelRecovery(pGpu, pKernelRc);
+                    _krcTestChannelRecovery(pGpu, pKernelRc, pKernelWatchdog);
                 }
-                pKernelRc->watchdog.channelTestCountdown =
-                    pKernelRc->watchdog.channelTestInterval;
+                pWatchdogState->channelTestCountdown =
+                    pWatchdogState->channelTestInterval;
             }
         }
 
@@ -258,14 +265,14 @@ krcWatchdog_IMPL
         SLI_LOOP_START(SLI_LOOP_FLAGS_NONE);
         {
             NvU32 subdeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-            if (pKernelRc->watchdog.notifiers[subdeviceId]->status != 0)
+            if (pWatchdogState->notifiers[subdeviceId]->status != 0)
                 allNotifiersWritten = NV_FALSE;
         }
         SLI_LOOP_END;
 
         if (!allNotifiersWritten)
         {
-            if (currentTime >= pKernelRc->watchdogPersistent.notifyLimitTime)
+            if (currentTime >= pWatchdogPersistent->notifyLimitTime)
             {
                 //
                 // If the card hasn't gotten around to us for many seconds,
@@ -273,35 +280,35 @@ krcWatchdog_IMPL
                 //
                 NV_PRINTF(LEVEL_ERROR,
                     "RC watchdog: GPU is probably locked!  Notify Timeout Seconds: %d\n",
-                    pKernelRc->watchdogPersistent.timeoutSecs);
+                    pWatchdogPersistent->timeoutSecs);
 
                 // Disable the watchdog for now, and drop the critical section.
-                pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
+                pWatchdogState->flags |= WATCHDOG_FLAGS_DISABLED;
 
                 //
                 // Attempt to clean up the mess.
                 // This should probably be in an SLI loop when a GSP client
                 //
-                krcWatchdogRecovery_HAL(pGpu, pKernelRc);
+                krcWatchdogRecovery_HAL(pGpu, pKernelRc, pKernelWatchdog);
 
                 // Re-enable.
-                pKernelRc->watchdog.flags &= ~WATCHDOG_FLAGS_DISABLED;
+                pWatchdogState->flags &= ~WATCHDOG_FLAGS_DISABLED;
 
                 SLI_LOOP_START(SLI_LOOP_FLAGS_NONE);
                 {
                     NvU32 subdeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-                    pKernelRc->watchdog.notifiers[subdeviceId]->status = 0;
+                    pWatchdogState->notifiers[subdeviceId]->status = 0;
                 }
                 SLI_LOOP_END;
 
-                pKernelRc->watchdogPersistent.nextRunTime = 0;
+                pWatchdogPersistent->nextRunTime = 0;
 
                 NV_PRINTF(LEVEL_WARNING, "RC watchdog: Trying to recover.\n");
 
                 return;
             }
             else if (currentTime >=
-                     pKernelRc->watchdogPersistent.resetLimitTime)
+                     pWatchdogPersistent->resetLimitTime)
             {
                 //
                 // It's entirely possible that the card is extremely busy and
@@ -324,26 +331,26 @@ krcWatchdog_IMPL
             }
         }
 
-        if (currentTime >= pKernelRc->watchdogPersistent.nextRunTime)
+        if (currentTime >= pWatchdogPersistent->nextRunTime)
         {
             // Stored as microseconds (1000000 of a second)
-            pKernelRc->watchdogPersistent.nextRunTime = currentTime +
-                (pKernelRc->watchdogPersistent.intervalSecs * 1000000);
-            pKernelRc->watchdogPersistent.notifyLimitTime = currentTime +
-                (pKernelRc->watchdogPersistent.timeoutSecs * 1000000);
-            pKernelRc->watchdogPersistent.resetLimitTime = currentTime +
+            pWatchdogPersistent->nextRunTime = currentTime +
+                (pWatchdogPersistent->intervalSecs * 1000000);
+            pWatchdogPersistent->notifyLimitTime = currentTime +
+                (pWatchdogPersistent->timeoutSecs * 1000000);
+            pWatchdogPersistent->resetLimitTime = currentTime +
                 (WATCHDOG_RESET_SECONDS * 1000000);
 
             // Reset the status to a known value.
             SLI_LOOP_START(SLI_LOOP_FLAGS_NONE);
             {
                 NvU32 subdeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-                pKernelRc->watchdog.notifiers[subdeviceId]->status = 0xFFFF;
+                pWatchdogState->notifiers[subdeviceId]->status = 0xFFFF;
             }
             SLI_LOOP_END;
 
             // Set the put pointer on our buffer.
-            krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc, NULL);
+            krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc, pKernelWatchdog);
         }
     }
 }
@@ -353,11 +360,13 @@ void
 krcWatchdogRecovery_KERNEL
 (
     OBJGPU   *pGpu,
-    KernelRc *pKernelRc
+    KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog
 )
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     pRmApi->Control(pRmApi,
                     pGpu->hInternalClient,
                     pGpu->hInternalSubdevice,
@@ -373,15 +382,18 @@ krcWatchdogRecovery_KERNEL
 void krcWatchdogCallbackVblankRecovery_IMPL
 (
     OBJGPU   *pGpu,
-    KernelRc *pKernelRc
+    KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog
 )
 {
     NvU32           head;
     KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     MC_ENGINE_BITVECTOR intrDispPending;
+    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
+    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
 
     if (!pKernelRc->bRobustChannelsEnabled ||
-        (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED) ||
+        (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED) ||
         !gpuIsGpuFullPower(pGpu) || (pKernelDisplay == NULL))
     {
         return;
@@ -417,14 +429,14 @@ void krcWatchdogCallbackVblankRecovery_IMPL
         // since vblank and watchdog are async to each other. This will
         // dispose of these.
         //
-        if (pKernelRc->watchdog.oldVblank[head] ==
+        if (pWatchdogState->oldVblank[head] ==
             kheadGetVblankTotalCounter_HAL(pKernelHead))
         {
             // VBlank Failed to Advance
-            pKernelRc->watchdog.vblankFailureCount[head]++;
+            pWatchdogState->vblankFailureCount[head]++;
 
-            if (pKernelRc->watchdog.vblankFailureCount[head] >
-                pKernelRc->watchdogPersistent.timeoutSecs)
+            if (pWatchdogState->vblankFailureCount[head] >
+                pWatchdogPersistent->timeoutSecs)
             {
                 Journal        *pRcDB = SYS_GET_RCDB(SYS_GET_INSTANCE());
                 SYS_ERROR_INFO *pSysErrorInfo = &pRcDB->ErrorInfo;
@@ -437,12 +449,12 @@ void krcWatchdogCallbackVblankRecovery_IMPL
                                   ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT,
                                   "Head %08x Count %08x",
                                   head,
-                                  pKernelRc->watchdog.oldVblank[head]);
+                                  pWatchdogState->oldVblank[head]);
                 }
 
                 NV_PRINTF(LEVEL_ERROR,
                     "NVRM-RC: RM has detected that %x Seconds without a Vblank Counter Update on head:%c%d\n",
-                    pKernelRc->watchdogPersistent.timeoutSecs,
+                    pWatchdogPersistent->timeoutSecs,
                     'A' + head,
                     gpuGetInstance(pGpu));
 
@@ -458,18 +470,18 @@ void krcWatchdogCallbackVblankRecovery_IMPL
                                                 NULL /* vblankIntrServicedHeadMask */,
                                                 &intrDispPending);
 
-                pKernelRc->watchdog.vblankFailureCount[head] = 0;
+                pWatchdogState->vblankFailureCount[head] = 0;
             }
         }
         else
         {
-            if (pKernelRc->watchdog.vblankFailureCount[head] > 0)
+            if (pWatchdogState->vblankFailureCount[head] > 0)
             {
-                pKernelRc->watchdog.vblankFailureCount[head]--;
+                pWatchdogState->vblankFailureCount[head]--;
             }
         }
 
-        pKernelRc->watchdog.oldVblank[head] = kheadGetVblankTotalCounter_HAL(
+        pWatchdogState->oldVblank[head] = kheadGetVblankTotalCounter_HAL(
             pKernelHead);
     }
 }

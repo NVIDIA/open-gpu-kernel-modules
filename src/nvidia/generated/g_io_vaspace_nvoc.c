@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x28ed9c = 1;
+char __nvoc_class_id_uniqueness_check__28ed9c = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJIOVASPACE;
@@ -66,19 +66,18 @@ NV_STATUS __nvoc_up_thunk_OBJVASPACE_iovaspaceGetPteInfo(struct OBJIOVASPACE *pV
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_iovaspaceSetPteInfo(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *pParams);    // this
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_iovaspaceFreeV2(struct OBJIOVASPACE *pVAS, NvU64 vAddr, NvU64 *pSize);    // this
 
+// Class-specific details for OBJIOVASPACE
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJIOVASPACE = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(OBJIOVASPACE),
-        /*classId=*/            classId(OBJIOVASPACE),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(OBJIOVASPACE),
+    .classInfo.classId =            classId(OBJIOVASPACE),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "OBJIOVASPACE",
+    .classInfo.name =               "OBJIOVASPACE",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJIOVASPACE,
-    /*pCastInfo=*/          &__nvoc_castinfo__OBJIOVASPACE,
-    /*pExportInfo=*/        &__nvoc_export_info__OBJIOVASPACE
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_OBJIOVASPACE,
+    .pCastInfo =          &__nvoc_castinfo__OBJIOVASPACE,
+    .pExportInfo =        &__nvoc_export_info__OBJIOVASPACE
 };
 
 
@@ -304,33 +303,45 @@ NV_STATUS __nvoc_up_thunk_OBJVASPACE_iovaspaceFreeV2(struct OBJIOVASPACE *pVAS, 
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJIOVASPACE = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct OBJIOVASPACE object.
 void __nvoc_iovaspaceDestruct(OBJIOVASPACE*);
 void __nvoc_dtor_OBJVASPACE(OBJVASPACE*);
-void __nvoc_dtor_OBJIOVASPACE(OBJIOVASPACE *pThis) {
+void __nvoc_dtor_OBJIOVASPACE(OBJIOVASPACE* pThis) {
+
+// Call destructor.
     __nvoc_iovaspaceDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_OBJVASPACE(&pThis->__nvoc_base_OBJVASPACE);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_OBJIOVASPACE(OBJIOVASPACE *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_OBJVASPACE(OBJVASPACE* );
+
+// Construct OBJIOVASPACE object.
+NV_STATUS __nvoc_ctor_OBJVASPACE(OBJVASPACE *);
 NV_STATUS __nvoc_ctor_OBJIOVASPACE(OBJIOVASPACE *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_OBJVASPACE(&pThis->__nvoc_base_OBJVASPACE);
     if (status != NV_OK) goto __nvoc_ctor_OBJIOVASPACE_fail_OBJVASPACE;
+
+    // Initialize data fields.
     __nvoc_init_dataField_OBJIOVASPACE(pThis);
     goto __nvoc_ctor_OBJIOVASPACE_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_OBJIOVASPACE_fail_OBJVASPACE:
 __nvoc_ctor_OBJIOVASPACE_exit:
-
     return status;
 }
 
@@ -365,49 +376,49 @@ void __nvoc_init__OBJIOVASPACE(OBJIOVASPACE *pThis) {
     __nvoc_init_funcTable_OBJIOVASPACE(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    OBJIOVASPACE *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    OBJIOVASPACE *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(OBJIOVASPACE));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(OBJIOVASPACE));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(OBJIOVASPACE));
+    portMemSet(__nvoc_pThis, 0, sizeof(OBJIOVASPACE));
 
-    pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__OBJIOVASPACE(pThis);
-    status = __nvoc_ctor_OBJIOVASPACE(pThis);
-    if (status != NV_OK) goto __nvoc_objCreate_OBJIOVASPACE_cleanup;
+    __nvoc_init__OBJIOVASPACE(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_OBJIOVASPACE(__nvoc_pThis);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_OBJIOVASPACE_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -416,29 +427,29 @@ NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE **ppThis, Dynamic *pParent,
 __nvoc_objCreate_OBJIOVASPACE_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJVASPACE.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(OBJIOVASPACE));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(OBJIOVASPACE));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_OBJIOVASPACE(OBJIOVASPACE **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_OBJIOVASPACE(OBJIOVASPACE **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_OBJIOVASPACE(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_OBJIOVASPACE(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

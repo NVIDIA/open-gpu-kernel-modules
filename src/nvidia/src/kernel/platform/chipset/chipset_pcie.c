@@ -45,7 +45,6 @@
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h" // NV2080_CTRL_BUS_INFO_PCIE_LINK_ERRORS_*
 #include "core/thread_state.h"
-#include "Nvcm.h"
 #include "nvdevid.h"
 #include "nvmisc.h"
 
@@ -1013,6 +1012,12 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // happen before any DMA.
     //
     kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
+
+    // Initialize LTR from config space
+    kbifInitLtr_HAL(pGpu, pKernelBif);
+
+    // Cache the device control status 2 register in the global variable.
+    kbifCacheDeviceControlStatus2Reg_HAL(pGpu, pKernelBif);
 
     //
     // Probe root port PCIe atomic capabilities.
@@ -5226,7 +5231,7 @@ NvU16 _clPcieSavePcieDiagnosticBlock(void *pDeviceHandle, CL_PCIE_DC_DIAGNOSTIC_
  */
 NvU16 _clPcieGetDiagnosticData(OBJGPU *pGpu, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pScript, NvU16 count, NvU8 * pBuffer, NvU32 size)
 {
-    static volatile NvS32   capMapWriteLock = 0;
+    static PORT_ATOMIC NvS32   capMapWriteLock = 0;
     static volatile NvBool  capMapInitialized = NV_FALSE;
     static CL_PCIE_DC_CAPABILITY_MAP
                             capMap[RM_PCIE_DEVICE_COUNT][RM_PCIE_DC_CAP_TYPE_COUNT];

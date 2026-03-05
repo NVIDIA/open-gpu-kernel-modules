@@ -1940,6 +1940,11 @@ memmgrCalcReservedFbSpaceHal_GM107
         // smallPagePte = FBSize /4k * 8 (Small page PTE for whole FB)
         smallPagePte = NV_ROUNDUP((pMemoryManager->Ram.fbUsableMemSize / FERMI_SMALL_PAGESIZE) * 8, RM_PAGE_SIZE);
 
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU) &&  IsADAorBetter(pGpu))
+        {
+            smallPagePte = NV_ROUNDUP (smallPagePte / 8, RM_PAGE_SIZE);
+        }
+
         // bigPagePte = FBSize /bigPageSize * 8 (Big page PTE for whole FB)
         bigPagePte = NV_ROUNDUP((pMemoryManager->Ram.fbUsableMemSize / (kgmmuGetMaxBigPageSize_HAL(pKernelGmmu))) * 8,
                                      RM_PAGE_SIZE);

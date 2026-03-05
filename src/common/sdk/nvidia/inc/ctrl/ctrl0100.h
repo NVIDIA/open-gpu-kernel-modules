@@ -235,3 +235,29 @@ typedef struct NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS {
     NvS32 internalClientLockStressCounter;
 } NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS;
 
+/* 
+ * NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST*
+ *
+ * @brief Testing the recursive GPU lock acquisition
+ *
+ * bLeaf [IN] Indicate that this is a leaf node to check the held lock only,
+ *            insted of running a full test. This parameter is used internally
+ *            to test locking for recursive RMCTRLs.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_NOT_SUPPORTED
+ *  NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *  NV_ERR_INVALID_LOCK_STATE
+ */
+
+#define NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM_MESSAGE_ID (0xBU)
+
+typedef struct NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM {
+    NvBool bLeaf;
+} NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM;
+
+#define NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_NO_LOCK     (0x100010bU) /* finn: Evaluated from "(FINN_LOCK_STRESS_OBJECT_LOCK_STRESS_INTERFACE_ID << 8) | NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM_MESSAGE_ID" */
+#define NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_ALL_LOCK    (0x100010cU) /* finn: Evaluated from "(FINN_LOCK_STRESS_OBJECT_LOCK_STRESS_INTERFACE_ID << 8) | (NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM_MESSAGE_ID + 1)" */
+#define NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_DEVICE_LOCK (0x100010dU) /* finn: Evaluated from "(FINN_LOCK_STRESS_OBJECT_LOCK_STRESS_INTERFACE_ID << 8) | (NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM_MESSAGE_ID + 2)" */
+

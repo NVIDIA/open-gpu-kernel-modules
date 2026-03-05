@@ -38,8 +38,8 @@
 /* ---------------------- Static Function Prototypes ----------------------- */
 static NV_STATUS         _pfmreqhndlrSupportExists               (PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu);
 static NvBool            _pfmreqhndlrCheckAndGetPM1ForcedOffState(PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu);
-static GpuPrereqCallback _pfmreqhndlrPmgrPmuPostLoadPrereqCallback;
-static GpuPrereqCallback _pfmreqhndlrThermPmuPostInitPrereqCallback;
+static NV_STATUS         _pfmreqhndlrPmgrPmuPostLoadPrereqCallback(OBJGPU *pGpu, NvBool bSatisfied);
+static NV_STATUS         _pfmreqhndlrThermPmuPostInitPrereqCallback(OBJGPU *pGpu, NvBool bSatisfied);
 
 /* ---------------------- Extern Function Prototypes ----------------------- */
 extern NV_STATUS pfmreqhndlrCallback(OBJGPU *pGpu, OBJTMR *pTmr, void *pVoid);
@@ -90,8 +90,7 @@ pfmreqhndlrInitGpu
     }
     else
     {
-        while (((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL) &&
-               (pGpu->pPrereqTracker != NULL))
+        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
         {
             // get pfmreqhndlr support option.
             if(testIfDsmSubFunctionEnabled(pGpu, ACPI_DSM_FUNCTION_GPS_2X, GPS_FUNC_SUPPORT) == NV_OK)
@@ -109,22 +108,25 @@ pfmreqhndlrInitGpu
             {
                 RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
+                //
                 // Check if PRH dependent modules have been initialized and in a valid state
-                if (pRmApi->Control(pRmApi,
-                                    pGpu->hInternalClient,
-                                    pGpu->hInternalSubdevice,
-                                    NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_DEPENDENCY_CHECK,
-                                    NULL,
-                                    0) == NV_OK)
-                {
-                    //
-                    // Store the GPU index of the current GPU.
-                    // gpumgrGetNextGpu() increments gpuIndex to point to the next
-                    // GPU, so need to subtract 1 to get the current GPU index.
-                    //
-                    pPlatformRequestHandler->pfmreqhndlrSupportedGpuIdx = gpuIndex - 1;
-                    break;
-                }
+                // If we get here, we expect this function to suceed, assert so.
+                // Not doing so would lead to silent failures and lower performance (bug 4732855)
+                //
+                NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                       pGpu->hInternalClient,
+                                       pGpu->hInternalSubdevice,
+                                       NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_DEPENDENCY_CHECK,
+                                       NULL,
+                                       0));
+
+                //
+                // Store the GPU index of the current GPU.
+                // gpumgrGetNextGpu() increments gpuIndex to point to the next
+                // GPU, so need to subtract 1 to get the current GPU index.
+                //
+                pPlatformRequestHandler->pfmreqhndlrSupportedGpuIdx = gpuIndex - 1;
+                break;
             }
         }
     }
@@ -162,98 +164,6 @@ pfmreqhndlrGetGpu
     }
 
     return pGpu;
-}
-
-/*!
- * Acquire/release all locks/semaphores before executing passive mode code.
- *
- * @param[in]   bEnter  specify if this call was invoked prior (NV_TRUE) or
- *                      after (NV_FALSE) executing passive mode code
- * @param[in]   APILockFlag  flag for the RM API lock
- * @param[in]   GPULockFlag  flag for RM GPU lock
- *
- * @return  NV_ERR_INVALID_OBJECT   failed to look-up system object
- * @return  propagates an error code of other interfaces called within
- */
-NV_STATUS
-pfmreqhndlrPassiveModeTransition
-(
-    NvBool  bEnter,
-    NvU32   apiLockFlag,
-    NvU32   gpuLockFlag
-)
-{
-    OBJSYS     *pSys            = SYS_GET_INSTANCE();
-    NvBool      bReleaseRmSema  = NV_FALSE;
-    NvBool      bReleaseApiLock = NV_FALSE;
-    NvBool      bReleaseGpuLock = NV_FALSE;
-    NV_STATUS   status          = NV_OK;
-
-    NV_ASSERT_OR_RETURN(pSys != NULL, NV_ERR_INVALID_OBJECT);
-
-    if (bEnter)
-    {
-        if (status == NV_OK)
-        {
-            status = osCondAcquireRmSema(pSys->pSema);
-
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Error acquiring semaphore!\n");
-                DBG_BREAKPOINT();
-            }
-        }
-
-        if (status == NV_OK)
-        {
-            status = rmapiLockAcquire(apiLockFlag, RM_LOCK_MODULES_PFM_REQ_HNDLR);
-
-            if (status != NV_OK)
-            {
-                bReleaseRmSema  = NV_TRUE;
-
-                NV_PRINTF(LEVEL_ERROR, "Error acquiring API lock!\n");
-                DBG_BREAKPOINT();
-            }
-        }
-
-        if (status == NV_OK)
-        {
-            status = rmGpuLocksAcquire(gpuLockFlag, RM_LOCK_MODULES_PFM_REQ_HNDLR);
-
-            if (status != NV_OK)
-            {
-                bReleaseApiLock = NV_TRUE;
-                bReleaseRmSema  = NV_TRUE;
-
-                NV_PRINTF(LEVEL_ERROR, "Error acquiring GPUs lock!\n");
-                DBG_BREAKPOINT();
-            }
-        }
-    }
-    else
-    {
-        bReleaseRmSema  = NV_TRUE;
-        bReleaseApiLock = NV_TRUE;
-        bReleaseGpuLock = NV_TRUE;
-    }
-
-    if (bReleaseGpuLock)
-    {
-        rmGpuLocksRelease(gpuLockFlag, NULL);
-    }
-
-    if (bReleaseApiLock)
-    {
-        rmapiLockRelease();
-    }
-
-    if (bReleaseRmSema)
-    {
-        osReleaseRmSema(pSys->pSema, NULL);
-    }
-
-    return status;
 }
 
 /*!
@@ -875,13 +785,18 @@ _pfmreqhndlrCheckAndGetPM1ForcedOffState
 }
 
 /*!
- * @copydoc GpuPrereqCallback
+ * @copydoc _pfmreqhndlrUpdateSystemParamLimitWorkItem
+ * 
+ *          Perform the work of _pfmreqhndlrThermPmuPostInitPrereqCallback
+ *          in a workitem to avoid a circular dependency to GSP.
+ * 
+ *          gpuInstance, pParams unused
  */
-static NV_STATUS
-_pfmreqhndlrThermPmuPostInitPrereqCallback
+static void
+_pfmreqhndlrThermPmuPostInitWorkItem
 (
-    OBJGPU *pGpu,
-    NvBool  bSatisfied
+    NvU32 gpuInstance,
+    void  *pParams
 )
 {
     OBJSYS                 *pSys                    = SYS_GET_INSTANCE();
@@ -890,7 +805,91 @@ _pfmreqhndlrThermPmuPostInitPrereqCallback
     NvU32                   data32                  = 0;
     NvTemp                  targetTemp;
     NvBool                  bPM1Available           = NV_FALSE;
-    RM_API                 *pRmApi                  = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    OBJGPU                 *pGpu;
+    RM_API                 *pRmApi;
+
+    // pGpu acquiring must happen after acquiring locks for it.
+    pGpu = pfmreqhndlrGetGpu(pPlatformRequestHandler);
+    NV_ASSERT(pGpu != NULL);
+    // Keep going so that we find bugs where this doesn't succeed..
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    // Find default Temp for Thermal Controller from SBIOS.
+    status = pfmreqhndlrGetPerfSensorCounterById(pPlatformRequestHandler, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR),
+                                         &data32);
+
+    if (status == NV_OK)
+    {
+        // Overrride with system Temp
+        targetTemp = NV_TYPES_CELSIUS_TO_NV_TEMP(data32);
+    }
+    else
+    {
+        // Override value is set to 0C
+        targetTemp = PFM_REQ_HNDLR_TEMP_0_C;
+
+        // Fall back to legacy implementation
+        status = NV_OK;
+    }
+
+    if (targetTemp != PFM_REQ_HNDLR_TEMP_0_C)
+    {
+        if (pPlatformRequestHandler->controlData.bTGPUOverrideRequired)
+        {
+            NV2080_CTRL_CMD_INTERNAL_THERM_PFM_REQ_HNDLR_UPDATE_TGPU_LIMIT_PARAMS  params = { 0 };
+            params.targetTemp = targetTemp;
+
+            status = pRmApi->Control(pRmApi,
+                                     pGpu->hInternalClient,
+                                     pGpu->hInternalSubdevice,
+                                     NV2080_CTRL_CMD_INTERNAL_THERM_PFM_REQ_HNDLR_UPDATE_TGPU_LIMIT,
+                                     &params,
+                                     sizeof(params));
+
+            if (status == NV_OK)
+            {
+                pPlatformRequestHandler->controlData.bTGPUOverrideRequired = NV_FALSE;
+            }
+            else
+            {
+                NV_ASSERT_FAILED("PRH failed to update thermal limit!");
+
+                // Fall back to legacy implementation
+                status = NV_OK;
+            }
+        }
+
+        if (!pPlatformRequestHandler->controlData.bPM1ForcedOff)
+        {
+            if (pfmreqhndlrHandleCheckPM1Available(pPlatformRequestHandler, pGpu, &bPM1Available) == NV_OK)
+            {
+                pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, bPM1Available);
+            }
+            else
+            {
+                pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, NV_FALSE);
+            }
+        }
+        else
+        {
+            pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, NV_FALSE);
+        }
+    }
+}
+
+
+/*!
+ * @copydoc pfmreqhndlrOperatingLimitUpdate_IMPL
+ */
+static NV_STATUS
+_pfmreqhndlrThermPmuPostInitPrereqCallback
+(
+    OBJGPU *pGpu,
+    NvBool  bSatisfied
+)
+{
+    NV_STATUS status = NV_OK;
+
     //
     // bSatisfied handling:
     // Only needs to be applied after THERM post pmu init bSatisfied = NV_TRUE
@@ -902,72 +901,108 @@ _pfmreqhndlrThermPmuPostInitPrereqCallback
     //
     if (bSatisfied)
     {
-        // Find default Temp for Thermal Controller from SBIOS.
-        status = pfmreqhndlrGetPerfSensorCounterById(pPlatformRequestHandler, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR),
-                                             &data32);
-        if (status == NV_OK)
-        {
-            // Overrride with system Temp
-            targetTemp = NV_TYPES_CELSIUS_TO_NV_TEMP(data32);
-        }
-        else
-        {
-            // Override value is set to 0C
-            targetTemp = PFM_REQ_HNDLR_TEMP_0_C;
+        status = osQueueWorkItem(pGpu,
+                                 _pfmreqhndlrThermPmuPostInitWorkItem,
+                                 NULL,
+                                 (OsQueueWorkItemFlags){
+                                     .bLockSema = NV_TRUE,
+                                     .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                     .bLockGpus = NV_TRUE,});
 
-            // Fall back to legacy implementation
-            status = NV_OK;
-        }
-        if (targetTemp != PFM_REQ_HNDLR_TEMP_0_C)
-        {
-            if (pPlatformRequestHandler->controlData.bTGPUOverrideRequired)
-            {
-                NV2080_CTRL_CMD_INTERNAL_THERM_PFM_REQ_HNDLR_UPDATE_TGPU_LIMIT_PARAMS  params = { 0 };
-                params.targetTemp = targetTemp;
-
-                status = pRmApi->Control(pRmApi,
-                                         pGpu->hInternalClient,
-                                         pGpu->hInternalSubdevice,
-                                         NV2080_CTRL_CMD_INTERNAL_THERM_PFM_REQ_HNDLR_UPDATE_TGPU_LIMIT,
-                                         &params,
-                                         sizeof(params));
-
-                if (status == NV_OK)
-                {
-                    pPlatformRequestHandler->controlData.bTGPUOverrideRequired = NV_FALSE;
-                }
-                else
-                {
-                    NV_ASSERT_FAILED("PRH failed to update thermal limit!");
-
-                // Fall back to legacy implementation
-                    status = NV_OK;
-                }
-            }
-
-            if (!pPlatformRequestHandler->controlData.bPM1ForcedOff)
-            {
-                if (pfmreqhndlrHandleCheckPM1Available(pPlatformRequestHandler, pGpu, &bPM1Available) == NV_OK)
-                {
-                    pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, bPM1Available);
-                }
-                else
-                {
-                    pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, NV_FALSE);
-                }
-            }
-            else
-            {
-                pfmreqhndlrUpdatePerfCounter(pPlatformRequestHandler, PFM_REQ_HNDLR_PM1_STATE_AVAIL, NV_FALSE);
-            }
-        }
+        // We need this to succeed so that we don't have a recursive GSP RPC.
+        NV_ASSERT_OK(status);
     }
 
     return status;
 }
 
 /*!
- * @copydoc GpuPrereqCallback
+ * @copydoc _pfmreqhndlrThermPmuPostInitWorkItem
+ * 
+ */
+static void
+_pfmreqhndlrPmgrPmuPostLoadWorkItem
+(
+    NvU32 gpuInstance,
+    void  *pParams
+)
+{
+    OBJSYS                 *pSys                    = SYS_GET_INSTANCE();
+    PlatformRequestHandler *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+    OBJGPU                 *pGpu;
+
+    NV_STATUS  status = NV_OK;
+    NV_STATUS  lcstatus;
+
+    // pGpu acquiring must happen after acquiring locks for it.
+    pGpu = pfmreqhndlrGetGpu(pPlatformRequestHandler);
+    NV_ASSERT(pGpu != NULL);
+    // Keep going so that we find bugs where this doesn't succeed..
+
+    //
+    // EDPpeak event update, at this point SBIOS requested state should match
+    // with current control state if not trigger an update.
+    //
+    if (pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bEDPpeakLimitUpdateRequest !=
+        pPlatformRequestHandler->controlData.bEDPpeakUpdateEnabled)
+    {
+        // Update or Reset the EDPp limit if needed
+        lcstatus = pfmreqhndlrHandleEdppeakLimitUpdate(pPlatformRequestHandler, pGpu,
+                    pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bEDPpeakLimitUpdateRequest);
+        if ((lcstatus != NV_OK) && (lcstatus != NV_ERR_NOT_SUPPORTED))
+        {
+            NV_ASSERT_OK_FAILED("Failed to apply the EDPpeak limit from system", status);
+            status = lcstatus;
+            goto _pfmreqhndlrPmgrPmuPostLoadWorkItem_exit;
+        }
+    }
+
+    //
+    // User configurable TGP mode (Turbo) event update, at this point SBIOS requested
+    // state should match with current control state if not trigger an update.
+    //
+    if (pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bUserConfigTGPmodeRequest !=
+        pPlatformRequestHandler->controlData.bUserConfigTGPmodeEnabled)
+    {
+        // Enable or Reset the use configurable TGP mode (TGP Turbo mode) if needed.
+        lcstatus = pfmreqhndlrHandleUserConfigurableTgpMode(pPlatformRequestHandler, pGpu,
+                    pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bUserConfigTGPmodeRequest);
+        if ((lcstatus != NV_OK) && (lcstatus != NV_ERR_NOT_SUPPORTED))
+        {
+            NV_ASSERT_OK_FAILED("Failed to update user configurable TGP (Turbo) mode from system",
+                status);
+            status = lcstatus;
+            goto _pfmreqhndlrPmgrPmuPostLoadWorkItem_exit;
+        }
+    }
+
+    //
+    // Platform EDPp limit if differed apply it after prereq is satisfied
+    //
+    if (pPlatformRequestHandler->controlData.edppLimit.bDifferPlatformEdppLimit)
+    {
+        lcstatus = pfmreqhndlrHandlePlatformEdppLimitUpdate(pPlatformRequestHandler, pGpu,
+            pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.platformEdppLimit);
+        if ((NV_OK != lcstatus) &&
+            (NV_ERR_NOT_SUPPORTED != lcstatus))
+        {
+            NV_ASSERT_OK_FAILED("Failed to update platform EDPpeak limit",
+                status);
+            status = lcstatus;
+            goto _pfmreqhndlrPmgrPmuPostLoadWorkItem_exit;
+        }
+
+        // Reset the differ update flag
+        pPlatformRequestHandler->controlData.edppLimit.bDifferPlatformEdppLimit = NV_FALSE;
+    }
+
+_pfmreqhndlrPmgrPmuPostLoadWorkItem_exit:
+    return;
+}
+
+
+/*!
+ * @copydoc pfmreqhndlrOperatingLimitUpdate_IMPL
  */
 NV_STATUS
 _pfmreqhndlrPmgrPmuPostLoadPrereqCallback
@@ -976,12 +1011,7 @@ _pfmreqhndlrPmgrPmuPostLoadPrereqCallback
     NvBool  bSatisfied
 )
 {
-    OBJSYS    *pSys   = SYS_GET_INSTANCE();
-    PlatformRequestHandler
-              *pPlatformRequestHandler
-                      = SYS_GET_PFM_REQ_HNDLR(pSys);
-    NV_STATUS  status = NV_OK;
-    NV_STATUS  lcstatus;
+    NV_STATUS status = NV_OK;
 
     //
     // bSatisfied handling:
@@ -994,65 +1024,18 @@ _pfmreqhndlrPmgrPmuPostLoadPrereqCallback
     //
     if (bSatisfied)
     {
-        //
-        // EDPpeak event update, at this point SBIOS requested state should match
-        // with current control state if not trigger an update.
-        //
-        if (pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bEDPpeakLimitUpdateRequest !=
-            pPlatformRequestHandler->controlData.bEDPpeakUpdateEnabled)
-        {
-            // Update or Reset the EDPp limit if needed
-            lcstatus = pfmreqhndlrHandleEdppeakLimitUpdate(pPlatformRequestHandler, pGpu,
-                        pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bEDPpeakLimitUpdateRequest);
-            if ((lcstatus != NV_OK) && (lcstatus != NV_ERR_NOT_SUPPORTED))
-            {
-                NV_ASSERT_OK_FAILED("Failed to apply the EDPpeak limit from system", status);
-                status = lcstatus;
-                goto _pfmreqhndlrPmgrPmuPostLoadPrereqCallback_exit;
-            }
-        }
+        status = osQueueWorkItem(pGpu,
+                                 _pfmreqhndlrPmgrPmuPostLoadWorkItem,
+                                 NULL,
+                                 (OsQueueWorkItemFlags){
+                                     .bLockSema = NV_TRUE,
+                                     .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                     .bLockGpus = NV_TRUE,});
 
-        //
-        // User configurable TGP mode (Turbo) event update, at this point SBIOS requested
-        // state should match with current control state if not trigger an update.
-        //
-        if (pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bUserConfigTGPmodeRequest !=
-            pPlatformRequestHandler->controlData.bUserConfigTGPmodeEnabled)
-        {
-            // Enable or Reset the use configurable TGP mode (TGP Turbo mode) if needed.
-            lcstatus = pfmreqhndlrHandleUserConfigurableTgpMode(pPlatformRequestHandler, pGpu,
-                        pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.bUserConfigTGPmodeRequest);
-            if ((lcstatus != NV_OK) && (lcstatus != NV_ERR_NOT_SUPPORTED))
-            {
-                NV_ASSERT_OK_FAILED("Failed to update user configurable TGP (Turbo) mode from system",
-                    status);
-                status = lcstatus;
-                goto _pfmreqhndlrPmgrPmuPostLoadPrereqCallback_exit;
-            }
-        }
-
-        //
-        // Platform EDPp limit if differed apply it after prereq is satisfied
-        //
-        if (pPlatformRequestHandler->controlData.edppLimit.bDifferPlatformEdppLimit)
-        {
-            lcstatus = pfmreqhndlrHandlePlatformEdppLimitUpdate(pPlatformRequestHandler, pGpu,
-                pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.platformEdppLimit);
-            if ((NV_OK != lcstatus) &&
-                (NV_ERR_NOT_SUPPORTED != lcstatus))
-            {
-                NV_ASSERT_OK_FAILED("Failed to update platform EDPpeak limit",
-                    status);
-                status = lcstatus;
-                goto _pfmreqhndlrPmgrPmuPostLoadPrereqCallback_exit;
-            }
-
-            // Reset the differ update flag
-            pPlatformRequestHandler->controlData.edppLimit.bDifferPlatformEdppLimit = NV_FALSE;
-        }
+        // We need this to succeed so that we don't have a recursive GSP RPC.
+        NV_ASSERT_OK(status);
     }
 
-_pfmreqhndlrPmgrPmuPostLoadPrereqCallback_exit:
     return status;
 }
 

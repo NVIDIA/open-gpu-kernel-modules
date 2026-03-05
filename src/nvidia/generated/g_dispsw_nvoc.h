@@ -60,13 +60,9 @@ extern "C" {
 /* ------------------------ Types definitions ------------------------------ */
 typedef struct DispSwObject *PDISP_EVENT_SW_OBJECT;
 
-#ifndef __NVOC_CLASS_DispSwObject_TYPEDEF__
-#define __NVOC_CLASS_DispSwObject_TYPEDEF__
-typedef struct DispSwObject DispSwObject;
-#endif /* __NVOC_CLASS_DispSwObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispSwObject
-#define __nvoc_class_id_DispSwObject 0x99ad6d
+#define __nvoc_class_id_DispSwObject 0x99ad6du
+typedef struct DispSwObject DispSwObject;
 #endif /* __nvoc_class_id_DispSwObject */
 
 
@@ -204,13 +200,9 @@ struct NVOC_METADATA__DispSwObject {
     const struct NVOC_VTABLE__DispSwObject vtable;
 };
 
-#ifndef __NVOC_CLASS_DispSwObject_TYPEDEF__
-#define __NVOC_CLASS_DispSwObject_TYPEDEF__
-typedef struct DispSwObject DispSwObject;
-#endif /* __NVOC_CLASS_DispSwObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispSwObject
-#define __nvoc_class_id_DispSwObject 0x99ad6d
+#define __nvoc_class_id_DispSwObject 0x99ad6du
+typedef struct DispSwObject DispSwObject;
 #endif /* __nvoc_class_id_DispSwObject */
 
 // Casting support
@@ -228,14 +220,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispSwObject;
 
 NV_STATUS __nvoc_objCreateDynamic_DispSwObject(DispSwObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DispSwObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DispSwObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DispSwObject(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DispSwObject((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispswConstruct_IMPL(struct DispSwObject *arg_pDispSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dispswConstruct(arg_pDispSw, arg_pCallContext, arg_pParams) dispswConstruct_IMPL(arg_pDispSw, arg_pCallContext, arg_pParams)
+NV_STATUS dispswConstruct_IMPL(struct DispSwObject *pDispSw, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dispswConstruct(pDispSw, pCallContext, pParams) dispswConstruct_IMPL(pDispSw, pCallContext, pParams)
 
 void dispswDestruct_IMPL(struct DispSwObject *pDispSw);
 #define __nvoc_dispswDestruct(pDispSw) dispswDestruct_IMPL(pDispSw)
@@ -447,12 +439,18 @@ static inline NV_STATUS dispswGetOrAllocNotifShare_DISPATCH(struct DispSwObject 
     return pNotifier->__nvoc_metadata_ptr->vtable.__dispswGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS dispswGetSwMethods_46f6a7(struct DispSwObject *pDispSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+NV_STATUS dispswCtrlCmdNotifyOnVblank_IMPL(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams);
+
+// HAL method declarations without bodies
+// Inline HAL method definitions
+static inline NV_STATUS dispswGetSwMethods_395e98(struct DispSwObject *pDispSw, const METHOD **ppMethods, NvU32 *pNumMethods){
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS dispswCtrlCmdNotifyOnVblank_IMPL(struct DispSwObject *pDispSwObject, NV9072_CTRL_CMD_NOTIFY_ON_VBLANK_PARAMS *pNotifyParams);
-
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

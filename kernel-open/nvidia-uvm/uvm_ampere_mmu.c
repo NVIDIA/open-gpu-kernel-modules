@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2024 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -54,19 +54,12 @@ static NvU64 page_sizes_ampere(void)
 
 static uvm_mmu_mode_hal_t ampere_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(void)
 {
     static bool initialized = false;
 
-    UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
-
-    // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
-    // 128K big page size for Pascal+ GPUs
-    if (big_page_size == UVM_PAGE_SIZE_128K)
-        return NULL;
-
     if (!initialized) {
-        uvm_mmu_mode_hal_t *turing_mmu_mode_hal = uvm_hal_mmu_mode_turing(big_page_size);
+        uvm_mmu_mode_hal_t *turing_mmu_mode_hal = uvm_hal_mmu_mode_turing();
         UVM_ASSERT(turing_mmu_mode_hal);
 
         // The assumption made is that arch_hal->mmu_mode_hal() will be

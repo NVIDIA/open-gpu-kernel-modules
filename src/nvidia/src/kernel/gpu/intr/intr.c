@@ -64,6 +64,9 @@ static struct
     NvU32 intrGeneration;
 } stuckIntr[MC_ENGINE_IDX_MAX];
 
+static NvU64 lastDpcExecutionTime = 0;
+static NvU64 totalDpcExecutionTime = 0;
+
 static NvBool _intrServiceStallExactList(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines);
 static void _intrLogLongRunningInterrupts(Intr *pIntr);
 static void _intrInitServiceTable(OBJGPU *pGpu, Intr *pIntr);
@@ -404,6 +407,7 @@ intrQueueDpc_IMPL(OBJGPU *pGpu, Intr *pIntr, DPCQUEUE *pDPCQueue, DPCNODE *pNode
         pDPCQueue->pRear->pNext = pNode;
         pDPCQueue->pRear = pNode;
     }
+
     pDPCQueue->numEntries++;
 }
 
@@ -428,6 +432,11 @@ NvBool
 intrIsDpcQueueEmpty_IMPL(OBJGPU *pGpu, Intr *pIntr, DPCQUEUE *pDPCQueue)
 {
     return (NULL == pDPCQueue->pFront);
+}
+
+DPCQUEUE *intrGetDpcQueue_IMPL(OBJGPU *pGpu, Intr *pIntr)
+{
+    return &pIntr->dpcQueue;
 }
 
 void intrQueueInterruptBasedDpc_IMPL(OBJGPU *pGpu, Intr *pIntr, NvU16 engine)
@@ -1332,6 +1341,8 @@ void intrProcessDPCQueue_IMPL
 
     do
     {
+        NvU64 startTime, endTime; 
+        osGetPerformanceCounter(&startTime);
         bitVectorClrAll(&pendingEngines);
         if (!intrIsDpcQueueEmpty(pGpu, pIntr, pDPCQueue))
         {
@@ -1367,6 +1378,10 @@ void intrProcessDPCQueue_IMPL
                 pIntr->bDpcStarted = NV_TRUE;
             }
         }
+        osGetPerformanceCounter(&endTime);
+        lastDpcExecutionTime = endTime - startTime;
+        totalDpcExecutionTime += lastDpcExecutionTime;
+
     } while (!bitVectorTestAllCleared(&pendingEngines));
 }
 
@@ -1820,4 +1835,14 @@ intrRefetchInterruptTable_IMPL
     NV_ASSERT_OK_OR_RETURN(intrStateLoad_HAL(pGpu, pIntr, GPU_STATE_FLAGS_PRESERVING));
 
     return NV_OK;
+}
+
+NvU64 intrGetLastDpcExecutionTime_IMPL(OBJGPU *pGpu, Intr *pIntr)
+{
+    return lastDpcExecutionTime;
+}
+
+NvU64 intrGetTotalDpcExecutionTime_IMPL(OBJGPU *pGpu, Intr *pIntr)
+{
+    return totalDpcExecutionTime;
 }

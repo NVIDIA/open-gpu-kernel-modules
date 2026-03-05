@@ -134,13 +134,9 @@ struct NVOC_METADATA__DispSfUser {
     const struct NVOC_VTABLE__DispSfUser vtable;
 };
 
-#ifndef __NVOC_CLASS_DispSfUser_TYPEDEF__
-#define __NVOC_CLASS_DispSfUser_TYPEDEF__
-typedef struct DispSfUser DispSfUser;
-#endif /* __NVOC_CLASS_DispSfUser_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispSfUser
-#define __nvoc_class_id_DispSfUser 0xba7439
+#define __nvoc_class_id_DispSfUser 0xba7439u
+typedef struct DispSfUser DispSfUser;
 #endif /* __nvoc_class_id_DispSfUser */
 
 // Casting support
@@ -158,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispSfUser;
 
 NV_STATUS __nvoc_objCreateDynamic_DispSfUser(DispSfUser**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DispSfUser(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DispSfUser((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DispSfUser(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DispSfUser((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *arg_pDispSfUser, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dispsfConstruct(arg_pDispSfUser, arg_pCallContext, arg_pParams) dispsfConstruct_IMPL(arg_pDispSfUser, arg_pCallContext, arg_pParams)
+NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *pDispSfUser, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dispsfConstruct(pDispSfUser, pCallContext, pParams) dispsfConstruct_IMPL(pDispSfUser, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -321,8 +317,14 @@ static inline void dispsfAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__dispsfAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS dispsfGetRegBaseOffsetAndSize_IMPL(struct DispSfUser *pDispSfUser, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

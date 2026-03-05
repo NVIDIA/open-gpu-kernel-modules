@@ -160,13 +160,9 @@ struct NVOC_METADATA__NvfbcSession {
     const struct NVOC_VTABLE__NvfbcSession vtable;
 };
 
-#ifndef __NVOC_CLASS_NvfbcSession_TYPEDEF__
-#define __NVOC_CLASS_NvfbcSession_TYPEDEF__
-typedef struct NvfbcSession NvfbcSession;
-#endif /* __NVOC_CLASS_NvfbcSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_NvfbcSession
-#define __nvoc_class_id_NvfbcSession 0xcbde75
+#define __nvoc_class_id_NvfbcSession 0xcbde75u
+typedef struct NvfbcSession NvfbcSession;
 #endif /* __nvoc_class_id_NvfbcSession */
 
 // Casting support
@@ -184,14 +180,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvfbcSession;
 
 NV_STATUS __nvoc_objCreateDynamic_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_NvfbcSession(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_NvfbcSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_NvfbcSession(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_NvfbcSession((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS nvfbcsessionConstruct_IMPL(struct NvfbcSession *arg_pNvfbcSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_nvfbcsessionConstruct(arg_pNvfbcSession, arg_pCallContext, arg_pParams) nvfbcsessionConstruct_IMPL(arg_pNvfbcSession, arg_pCallContext, arg_pParams)
+NV_STATUS nvfbcsessionConstruct_IMPL(struct NvfbcSession *pNvfbcSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_nvfbcsessionConstruct(pNvfbcSession, pCallContext, pParams) nvfbcsessionConstruct_IMPL(pNvfbcSession, pCallContext, pParams)
 
 void nvfbcsessionDestruct_IMPL(struct NvfbcSession *pNvfbcSession);
 #define __nvoc_nvfbcsessionDestruct(pNvfbcSession) nvfbcsessionDestruct_IMPL(pNvfbcSession)
@@ -360,8 +356,14 @@ static inline void nvfbcsessionAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

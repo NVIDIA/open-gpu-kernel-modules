@@ -116,16 +116,4 @@ typedef struct
     NvBool bDirty;
 } INFOROM_ECC_STATE, *PINFOROM_ECC_STATE;
 
-struct INFOROM_BRL_BANK_REMAPPING_PARAMS
-{
-    NvU32 partition;        // physical partition index
-    NvU32 sublocation;      // physical sublocation index
-    NvU32 pseudoChannel;    // pseudo channel index
-    NvU32 stackId;          // stack Id that the remapped bank resides in
-    NvU32 bank;             // bank to be remapped
-    NvU8  source;           // source of the error
-};
-
-typedef struct INFOROM_BRL_BANK_REMAPPING_PARAMS INFOROM_BRL_BANK_REMAPPING_PARAMS;
-
 #endif // _IFRECC_H_

@@ -155,7 +155,8 @@
 #define LSF_FALCON_ID_GSPLITE_RISCV_EB  (28U)
 #define LSF_FALCON_ID_DISPLAY_RISCV_EB  (29U)
 #define LSF_FALCON_ID_FBFALCON_RISCV_EB (30U)
-#define LSF_FALCON_ID_END               (31U)
+#define LSF_FALCON_ID_LPSEC             (31U)
+#define LSF_FALCON_ID_END               (32U)
 
 #define LSF_FALCON_ID_INVALID   (0xFFFFFFFFU)
 
@@ -186,8 +187,8 @@
 #define LSF_FALCON_INSTANCE_DEFAULT_4           (0x4U)
 #define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1U)
 
-// Currently max supported instance is 8 for FECS/GPCCS SMC
-#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x8U)
+// Currently max supported instance is 24 for FECS/GPCCS SMC
+#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x18U)
 #define LSF_FALCON_INSTANCE_INVALID             (0xFFFFFFFFU)
 #define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0U)
 
@@ -205,7 +206,8 @@
                                              (falconId == LSF_FALCON_ID_FECS_RISCV_EB)    ||  \
                                              (falconId == LSF_FALCON_ID_GPCCS_RISCV_EB)   ||  \
                                              (falconId == LSF_FALCON_ID_GSPLITE_RISCV_EB) ||  \
-                                             (falconId == LSF_FALCON_ID_OFA_RISCV_EB))
+                                             (falconId == LSF_FALCON_ID_OFA_RISCV_EB)     ||  \
+                                             (falconId == LSF_FALCON_ID_LPSEC))
 
 
 /*!

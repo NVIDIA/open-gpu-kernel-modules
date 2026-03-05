@@ -36,7 +36,6 @@
 \***************************************************************************/
 
 #include "os/os.h"
-#include "os/os_stub.h"
 #include "core/system.h"
 #include "core/locks.h"
 #include "gpu/gpu.h"
@@ -62,6 +61,39 @@ constructObjOS(OBJOS *pOS)
 
     return NV_OK;
 }
+
+#if defined(DEBUG) || defined(DEVELOP)
+/*!
+ * @brief Validate that registry key doesn't use reserved prefixes
+ * 
+ * Registry keys with "CpuRm" or "GspRm" prefixes are reserved for internal 
+ * routing to CPU-RM and GSP-RM respectively and should not be defined as 
+ * default values in source code.
+ *
+ * @param[in] regParmStr Registry parameter string to validate
+ * 
+ * @return NV_OK if valid, NV_ERR_INVALID_ARGUMENT if using reserved prefix
+ */
+
+NV_STATUS osValidateRegistryKeyPrefix(const char *regParmStr)
+{
+    if (portStringCompareIgnoreCase(regParmStr, "cpurm", 5) == 0)
+    {
+        NV_ASSERT_FAILED("Registry key should not start with CpuRm prefix");
+        PORT_BREAKPOINT_ALWAYS();
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    
+    if (portStringCompareIgnoreCase(regParmStr, "gsprm", 5) == 0)
+    {
+        NV_ASSERT_FAILED("Registry key should not start with GspRm prefix");
+        PORT_BREAKPOINT_ALWAYS();
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    
+    return NV_OK;
+}
+#endif
 
 //
 // Function to find the maximum number of cores in the system
@@ -219,9 +251,8 @@ void vgpuDevWriteReg032(
     OBJSYS        *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
 
-    if(!pGpu ||
-       !pHypervisor || !pHypervisor->bDetected || !pHypervisor->bIsHVMGuest ||
-       !GPU_GET_KERNEL_BIF(pGpu))
+    if (!pGpu || !GPU_GET_KERNEL_BIF(pGpu) ||
+        (!IS_VIRTUAL(pGpu) && !(pHypervisor && pHypervisor->bDetected && pHypervisor->bIsHVMGuest)))
     {
         *vgpuHandled = NV_FALSE;
         return;
@@ -298,7 +329,6 @@ NvU32 vgpuDevReadReg032(
     NvU32          configSpaceMirrorSize = 0;
     OBJSYS        *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
-
 
     if (!pGpu || !GPU_GET_KERNEL_BIF(pGpu) ||
         (!IS_VIRTUAL(pGpu) && !(pHypervisor && pHypervisor->bDetected && pHypervisor->bIsHVMGuest)))
@@ -438,6 +468,10 @@ NV_STATUS osReadRegistryDword
     NV_ASSERT_OR_RETURN(pRegParmStr != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pData != NULL, NV_ERR_INVALID_ARGUMENT);
 
+#if defined(DEBUG) || defined(DEVELOP)
+    NV_ASSERT_OK_OR_RETURN(osValidateRegistryKeyPrefix(pRegParmStr));
+#endif
+
     status = osReadRegistryDwordBase(pGpu, pRegParmStr, pData);
     if (status != NV_OK)
     {
@@ -471,6 +505,10 @@ NV_STATUS osReadRegistryString
     NV_ASSERT_OR_RETURN(pRegParmStr != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pCbLen != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(!(*pCbLen != 0 && pData == NULL), NV_ERR_INVALID_ARGUMENT);
+
+#if defined(DEBUG) || defined(DEVELOP)
+    NV_ASSERT_OK_OR_RETURN(osValidateRegistryKeyPrefix(pRegParmStr));
+#endif
 
     status = osReadRegistryStringBase(pGpu, pRegParmStr, pData, pCbLen);
     if (status != NV_OK)

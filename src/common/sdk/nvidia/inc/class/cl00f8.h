@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,6 +74,12 @@
  *            The FLA -> PA mappings will be created read-only. This option is only available on
  *            debug/develop builds due to security concerns. The security concerns are due to the
  *            fact that FLA access errors (a.k.a PRIV errors) are not aways context attributable.
+ *        FORCE_UC_LOOPBACK
+ *            Sticky FLA allocations fallback to GVA->GPA/SPA mappings as an optimization when
+ *            mapped on the FLA owner GPU. However, if HW/FW supports loopback, this flag can be
+ *            used to force create GVA->FLA loopback mappings. This flag is a NOP for flexible FLA
+ *            allocations.
+ *
  *
  *  map.offset [IN]
  *    Offset into the physical memory descriptor.
@@ -98,10 +104,13 @@
 #define NV_MEMORY_FABRIC_PAGE_SIZE_256G 0x4000000000
 
 #define NV00F8_ALLOC_FLAGS_DEFAULT      0
-#define NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA        NVBIT(0)
-#define NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS NVBIT(1)
-#define NV00F8_ALLOC_FLAGS_FORCE_CONTIGUOUS    NVBIT(2)
-#define NV00F8_ALLOC_FLAGS_READ_ONLY           NVBIT(3)
+#define NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA               NVBIT(0)
+#define NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS        NVBIT(1)
+#define NV00F8_ALLOC_FLAGS_FORCE_CONTIGUOUS           NVBIT(2)
+#define NV00F8_ALLOC_FLAGS_READ_ONLY                  NVBIT(3)
+#define NV00F8_ALLOC_FLAGS_FORCE_UC_LOOPBACK          NVBIT(4)
+
+
 
 #define NV00F8_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00f8U)
 
@@ -119,5 +128,6 @@ typedef struct NV00F8_ALLOCATION_PARAMETERS {
         NvHandle hVidMem;
         NvU32    flags;
     } map;
+
 } NV00F8_ALLOCATION_PARAMETERS;
 

@@ -900,6 +900,12 @@ kfspGetGspUcodeArchive
                     }
                 }
                 else
+                // GSP has a separate stress test profile for cases when ACR is enabled during inst-in-sys mode for the chip
+                if (gspIsStressTestEnabled_HAL(pGpu, pGsp))
+                {
+                    return gspGetBinArchiveGspFmcGfwStressDebugSigned_HAL(pGsp);
+                }
+                else
                 {
                     return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
                 }
@@ -1505,6 +1511,16 @@ failed:
 
     return status;
 }
+
+void kfspResetGspFmcErrorCode_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    GPU_REG_WR32(pGpu, NV_PBUS_SW_SCRATCH_GSP_FMC_ERROR, 0);
+}
+
 /*!
  * @brief Send GSP-FMC and FRTS info to FSP
  *
@@ -1528,6 +1544,9 @@ kfspSendBootCommands_GH100
     NV_STATUS status = NV_OK;
 
     NV_ASSERT_OR_RETURN(pKernelFsp->pCotPayload != NULL, NV_ERR_INVALID_STATE);
+
+    // Reset the GSP-FMC error code register to prevent reporting stale data
+    kfspResetGspFmcErrorCode_HAL(pGpu, pKernelFsp);
 
     status = kfspSendAndReadMessage(pGpu, pKernelFsp, (NvU8 *)pKernelFsp->pCotPayload,
                                     sizeof(NVDM_PAYLOAD_COT), NVDM_TYPE_COT, NULL, 0);

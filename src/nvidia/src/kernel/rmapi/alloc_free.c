@@ -362,6 +362,16 @@ serverResLock_Prologue
                 goto done;
             }
         }
+        else if (rmGpuLocksGetOwnedMask() != 0)
+        {
+            //
+            // Caller owns some of the GPU lock but requests all GPU locks.
+            // Violating locking order.
+            //
+            NV_ASSERT(0);
+            status = NV_ERR_INVALID_LOCK_STATE;
+            goto done;
+        }
         else
         {
             if ((status = rmGpuLocksAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT)) != NV_OK)
@@ -1299,9 +1309,9 @@ rmapiAllocWithSecInfo
                   hParent, *phObject, hClass);
     }
 
+done:
     portMemFree(pLockInfo);
 
-done:
     rmapiEpilogue(pRmApi, &rmApiContext);
 
     return status;

@@ -43,7 +43,7 @@
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 #include "published/blackwell/gb100/dev_nv_pcie_config_reg_addendum.h"
 #include "published/blackwell/gb100/dev_fuse_zb.h"
-#include "published/blackwell/gb100/hwproject.h"
+#include "published/blackwell/gb100/dev_bus_zb.h"
 
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
@@ -108,6 +108,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB100[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
@@ -161,6 +162,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB102[] =
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(Spdm, 1),
@@ -1111,7 +1113,7 @@ gpuHandleSecFault_GB100
     // handleGpuLost first to setGpuDisconnectedProperties so that another reg read does not
     // happen when the notifier is sent below.
     //
-    osHandleGpuLost(pGpu);
+    osHandleGpuLost(pGpu, NV_FALSE);
 
     //
     // Send SEC_FAULT notification. This should tells any MODS test testing for this
@@ -1698,7 +1700,7 @@ gpuFuseSupportsDisplay_GB100
     OBJGPU *pGpu
 )
 {
-    NvU32 fuseOptDisplay = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_STATUS_OPT_DISPLAY);
+    NvU32 fuseOptDisplay = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_STATUS_OPT_DISPLAY);
     return FLD_TEST_DRF(_FUSE_ZB, _STATUS_OPT_DISPLAY, _DATA, _ENABLE, fuseOptDisplay);
 }
 /*!
@@ -1749,3 +1751,83 @@ gpuGenUgidData_GB100
 
     return NV_ERR_NOT_SUPPORTED;
 }
+
+/*!
+ * @brief    Reads Pbus SW Scratch register
+ *
+ * @param[in]  pGpu      OBJGPU pointer
+ * @param[in]  idx       Index of Vbios Scratch Register
+ *
+ * @return NvU32    Value stored in Register
+ */
+NvU32
+gpuReadPBusScratch_GB100
+(
+    OBJGPU *pGpu,
+    NvU8 idx
+)
+{
+    return GPU_REG_RD32(pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_SCRATCH(idx));
+}
+
+/*!
+* @brief    Writes Pbus SW Scratch register
+*
+* @param[in]  pGpu      OBJGPU pointer
+* @param[in]  idx       Index of Vbios Scratch Register
+* @param[in]  data      Value to write in Register
+*
+* @return Void
+*/
+void
+gpuWritePBusScratch_GB100
+(
+    OBJGPU *pGpu,
+    NvU8 idx,
+    NvU32 data
+)
+{
+    GPU_REG_WR32(pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_SCRATCH(idx), data);
+}
+
+/*!
+ * @brief: Return base offset of register group
+ *
+ * @param[in]  pGpu          OBJGPU pointer
+ *             regBase       NvU32 value for requested register group
+ * @param[out] offset        NvU32 pointer to return base offset
+ *
+ * @returns NV_OK if the register group is found.
+ */
+NV_STATUS
+gpuGetRegBaseOffset_GB100(OBJGPU *pGpu, NvU32 regBase, NvU32 *pOffset)
+{
+    switch (regBase)
+    {
+        case NV_REG_BASE_USERMODE:
+        {
+            *pOffset = GPU_GET_VREG_OFFSET(pGpu, DRF_BASE(NV_VIRTUAL_FUNCTION));
+            return NV_OK;
+        }
+        default:
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+}
+
+NvBool
+gpuWaitForBarFirewallHal_GB100
+(
+    OBJGPU *pGpu,
+    NvU32 domain,
+    NvU8 bus,
+    NvU8 device,
+    NvU8 function,
+    NvU16 devId,
+    NvU16 subsystemId
+)
+{
+    return gpumgrWaitForBarFirewall(domain, bus, device, function, devId, subsystemId);
+}
+

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -409,7 +409,7 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     uvm_rm_mem_t *gpu_rm_mem = NULL;
     uvm_gpu_address_t gpu_addresses[4] = {0};
     size_t gpu_addresses_length = 0;
-    size_t size = gpu->big_page.internal_size;
+    size_t size = UVM_BIG_PAGE_SIZE;
     static const size_t element_sizes[] = {1, 4, 8};
     const size_t iterations = 4;
     size_t i, j, k, s;

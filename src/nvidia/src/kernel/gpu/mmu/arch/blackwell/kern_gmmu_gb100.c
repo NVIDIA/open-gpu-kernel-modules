@@ -25,9 +25,13 @@
 
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/uvm/uvm.h"
+#include "kernel/gpu/intr/intr.h"
+#include "gpu/bus/kern_bus.h"
+#include "vgpu/rpc.h"
 
-#include "published/blackwell/gb100/dev_vm.h"
 #include "published/blackwell/gb100/dev_fault.h"
+#include "published/blackwell/gb100/dev_hubmmu_base.h"
+#include "published/blackwell/gb100/dev_vm.h"
 
 /*!
  * @brief Commit the invalidate command to H/W.
@@ -251,3 +255,76 @@ kgmmuCheckAccessCounterBar2FaultServicingState_GB100
     return NV_FALSE;
 }
 
+void
+kgmmuWriteMmuFaultBufferSize_GB100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       index,
+    NvU32       value,
+    NvU32       gfid
+)
+{
+    {
+        NV_ASSERT(IS_GFID_PF(gfid));
+
+        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_SIZE(index), value);
+    }
+
+    // Align the HW/SW _GET_PTR if _FAULT_BUFFER_SIZE_ENABLE is _FALSE which will be 0
+    if (FLD_TEST_DRF(_HUBMMU_PRI, _MMU_FAULT_BUFFER_SIZE, _ENABLE, _FALSE, value))
+    {
+        pKernelGmmu->mmuFaultBuffer[gfid].hwFaultBuffers[index].cachedGetIndex = 0;
+    }
+}
+
+void
+kgmmuWriteMmuFaultBufferHiLo_GB100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       index,
+    NvU32       loValue,
+    NvU32       hiValue,
+    NvU32       gfid
+)
+{
+    {
+        NV_ASSERT(IS_GFID_PF(gfid));
+
+        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_HI(index), hiValue);
+        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(index), loValue);
+    }
+}
+
+/*!
+ * @brief Returns the HW default size of MMU fault buffers (replayable
+ *        or non replayable buffers).
+ *
+ * @param[in] pGpu         OBJGPU  pointer
+ * @param[in] pKernelGmmu  KernelGmmu pointer
+ * @param[in] index        Fault buffer index
+ *
+ * @returns size of MMU fault buffers
+ */
+NvU32
+kgmmuSetAndGetDefaultFaultBufferSize_GB100
+(
+    OBJGPU           *pGpu,
+    KernelGmmu       *pKernelGmmu,
+    FAULT_BUFFER_TYPE index,
+    NvU32             gfid
+)
+{
+    NvU32 faultBufferSize;
+    {
+        {
+            NV_ASSERT(IS_GFID_PF(gfid));
+
+            GPU_VREG_FLD_IDX_WR_DRF_DEF(pGpu, _VIRTUAL_FUNCTION_PRIV, _MMU_FAULT_BUFFER_SIZE, index, _SET_DEFAULT, _YES);
+            faultBufferSize = GPU_VREG_IDX_RD_DRF(pGpu, _VIRTUAL_FUNCTION_PRIV, _MMU_FAULT_BUFFER_SIZE, index, _VAL) * NVC369_BUF_SIZE;
+        }
+    }
+
+    return faultBufferSize;
+}

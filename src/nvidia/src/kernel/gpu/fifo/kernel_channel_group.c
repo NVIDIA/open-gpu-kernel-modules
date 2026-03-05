@@ -773,3 +773,7 @@ kchangrpGetEngineContextMemDesc_IMPL
     return NV_OK;
 }
 
+FIFO_TSG_INFO kchangrpGetInfo_IMPL(KernelChannelGroup *pKernelChannelGroup)
+{
+    return (FIFO_TSG_INFO){pKernelChannelGroup->grpID, pKernelChannelGroup->runlistId};
+}

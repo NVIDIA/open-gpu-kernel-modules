@@ -175,13 +175,9 @@ struct NVOC_METADATA__GpuAccounting {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_GpuAccounting_TYPEDEF__
-#define __NVOC_CLASS_GpuAccounting_TYPEDEF__
-typedef struct GpuAccounting GpuAccounting;
-#endif /* __NVOC_CLASS_GpuAccounting_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GpuAccounting
-#define __nvoc_class_id_GpuAccounting 0x0f1350
+#define __nvoc_class_id_GpuAccounting 0x0f1350u
+typedef struct GpuAccounting GpuAccounting;
 #endif /* __nvoc_class_id_GpuAccounting */
 
 // Casting support
@@ -200,13 +196,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuAccounting;
 NV_STATUS __nvoc_objCreateDynamic_GpuAccounting(GpuAccounting**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_GpuAccounting(GpuAccounting**, Dynamic*, NvU32);
-#define __objCreate_GpuAccounting(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_GpuAccounting((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_GpuAccounting(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_GpuAccounting((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gpuacctConstruct_IMPL(struct GpuAccounting *arg_);
-#define __nvoc_gpuacctConstruct(arg_) gpuacctConstruct_IMPL(arg_)
+NV_STATUS gpuacctConstruct_IMPL(struct GpuAccounting *arg_this);
+#define __nvoc_gpuacctConstruct(arg_this) gpuacctConstruct_IMPL(arg_this)
 
 void gpuacctDestruct_IMPL(struct GpuAccounting *arg_this);
 #define __nvoc_gpuacctDestruct(arg_this) gpuacctDestruct_IMPL(arg_this)
@@ -315,6 +311,12 @@ static inline NV_STATUS gpuacctSetProcType(struct GpuAccounting *arg_this, NvU32
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

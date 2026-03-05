@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,9 @@
 #define NV_PFALCON_FBIF_TRANSCFG(i)                                                                    (0x00000000+(i)*4) /* RW-4A */
 #define NV_PFALCON_FBIF_TRANSCFG__SIZE_1                                                               8              /*       */
 #define NV_PFALCON_FBIF_TRANSCFG_TARGET                                                                1:0            /* RWIVF */
+#define NV_PFALCON_FBIF_TRANSCFG_TARGET_LOCAL_FB                                                       0x00000000     /* R---V */
 #define NV_PFALCON_FBIF_TRANSCFG_TARGET_COHERENT_SYSMEM                                                0x00000001     /* R---V */
+#define NV_PFALCON_FBIF_TRANSCFG_TARGET_NONCOHERENT_SYSMEM                                             0x00000002     /* R---V */
 #define NV_PFALCON_FBIF_TRANSCFG_MEM_TYPE                                                              2:2            /* RWIVF */
 #define NV_PFALCON_FBIF_TRANSCFG_MEM_TYPE_PHYSICAL                                                     0x00000001     /* R---V */
 #define NV_PFALCON_FBIF_INSTBLK                                                                        0x00000020     /* R--4R */

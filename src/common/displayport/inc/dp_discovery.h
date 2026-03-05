@@ -34,6 +34,8 @@
 #include "dp_list.h"
 #include "dp_messages.h"
 #include "dp_messagecodings.h"
+#include "dp_edid.h"
+#include "dp_displayid2.h"
 
 namespace DisplayPort
 {
@@ -56,6 +58,9 @@ namespace DisplayPort
             PortMap     portMap;
             bool        videoSink;          // Should be true when a video sink is supported
             NvU64       maxTmdsClkRate;
+
+            DisplayID2x             displayId2x;
+            Edid                    edid;
 
             Device():peerDevice(None),SDPStreams(0),SDPStreamSinks(0),dirty(false),videoSink(false),maxTmdsClkRate(0)
             {

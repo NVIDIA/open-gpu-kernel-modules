@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
+#include "os/nv_memory_iterator.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "vgpu/vgpu_events.h"
 #include "gpu/fifo/kernel_fifo.h"
@@ -545,8 +546,7 @@ kbusEnableStaticBar1Mapping_TU102
     //
     // align down to 2MB page size
     // The last client FB addresses not aligned to 2MB will
-    // not be mappable to a 2MB mapping, and we don't want
-    // possible overmap into the reserved heap.
+    // not be mappable to a 2MB mapping.
     //
     bar1MapSize = RM_ALIGN_DOWN(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
                                 RM_PAGE_SIZE_2M);
@@ -807,8 +807,8 @@ _kbusUpdateStaticBar1VAMapping_TU102
                                       vaLo, vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL |
                                       DMA_UPDATE_VASPACE_FLAGS_ALLOW_REMAP,
-                                      &pageArray, 0,                            
-                                      &comprInfo, 0,                           
+                                      &pageArray,
+                                      &comprInfo, 0,
                                       NV_MMU_PTE_VALID_TRUE,
                                       GMMU_APERTURE_VIDEO,
                                       NV_FALSE,
@@ -1034,23 +1034,16 @@ kbusGetStaticFbAperture_TU102
     NvU32       busMapFlags
 )
 {
-    NV_STATUS   status;
-    NvU64       pageSize;
-    OBJVASPACE *pVAS;
-    NvU32       gfid;
-    NvU64       mapGranularity;
-    NvU64       offset;
-    NvU64       mapRangeEndPlus1;
-    NvU64       numRanges = 0;
-    NvU64       i;
-    NvBool      bUnmanagedRange   = !!(busMapFlags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
-    NvBool      bDiscontigAllowed = !!(busMapFlags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG);
-    NvBool      bContigDesc;
-    ADDRESS_TRANSLATION addressTranslation;
-    MemoryRange testMapRange;
-    NvU64       lastTestMapRangeLimit = 0;
-    NvBool      bInStaticRegion  = NV_FALSE;
-    NvBool      bInDynamicRegion = NV_FALSE;
+    NV_STATUS      status;
+    OBJVASPACE    *pVAS;
+    NvU32          gfid;
+    MemoryIterator it;
+    MemoryRange    curRange;
+    NvBool         bUnmanagedRange   = !!(busMapFlags & BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
+    NvBool         bDiscontigAllowed = !!(busMapFlags & BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG);
+    NvBool         bInStaticRegion   = NV_FALSE;
+    NvBool         bInDynamicRegion  = NV_FALSE;
+    NvBool         bInLastPage       = NV_TRUE;
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, kbusIsStaticBar1Enabled(pGpu, pKernelBus),
                         NV_ERR_NOT_SUPPORTED);
@@ -1066,41 +1059,32 @@ kbusGetStaticFbAperture_TU102
     NV_ASSERT_OR_RETURN(pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
 
     pVAS = pKernelBus->bar1[gfid].pVAS;
-    addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
-    pageSize = memdescGetPageSize(pMemDesc, addressTranslation);
-    bContigDesc = memdescGetContiguity(pMemDesc, addressTranslation);
-    mapRangeEndPlus1 = mapRange.start + mapRange.size;
-    // TODO: simplify for dynamic page granularity
-    mapGranularity = bContigDesc ? mapRange.size : pageSize;
-
-    NV_CHECK_OR_RETURN(LEVEL_INFO,
-                       mapRangeEndPlus1 <= memdescGetSize(pMemDesc),
-                       NV_ERR_OUT_OF_RANGE);
+    it = memdescIteratorInit(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), mapRange);
+    pMemArea->numRanges = 0;
 
     //
     // check ranges before modifying any of the values since pMemArea->pRanges[i] is used by the dynamic code
     // if not used here and can't be written until it will be successfully allocated
     //
-    for (offset = mapRange.start; offset < mapRangeEndPlus1; numRanges++)
+    while (memoryIteratorNext(&it, &curRange))
     {
-        testMapRange.start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
-        testMapRange.size  = bContigDesc ? mapGranularity : (NV_MIN(mapRangeEndPlus1, NV_ALIGN_UP(offset + 1, mapGranularity)) - offset);
+        NvU64 curLimit = mrangeLimit(curRange);
+        NvU64 staticBar1Size = pKernelBus->bar1[gfid].staticBar1.size;
 
-        lastTestMapRangeLimit = mrangeLimit(testMapRange);
+        pMemArea->numRanges++;
 
-        if (lastTestMapRangeLimit > pKernelBus->bar1[gfid].staticBar1.size)
+        if (curLimit > staticBar1Size)
         {
             bInDynamicRegion = NV_TRUE;
+            bInLastPage = bInLastPage && ((curLimit - staticBar1Size) < RM_PAGE_SIZE_2M);
         }
         else
         {
             bInStaticRegion = NV_TRUE;
         }
-
-        offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);
     }
 
-    NV_CHECK_OR_RETURN(LEVEL_INFO, (numRanges == 1) || (bDiscontigAllowed && !bUnmanagedRange),
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (pMemArea->numRanges == 1) || (bDiscontigAllowed && !bUnmanagedRange),
                         NV_ERR_INVALID_ARGUMENT);
 
     if (bInDynamicRegion && bInStaticRegion)
@@ -1110,8 +1094,7 @@ kbusGetStaticFbAperture_TU102
         // we can allocate the last non-2MB aligned region
         // but not have a mapping for it
         //
-        if ((lastTestMapRangeLimit > pKernelBus->bar1[gfid].staticBar1.size) &&
-            (lastTestMapRangeLimit - pKernelBus->bar1[gfid].staticBar1.size <= RM_PAGE_SIZE_2M))
+        if (bInLastPage)
         {
             return NV_ERR_NOT_SUPPORTED;
         }
@@ -1121,7 +1104,7 @@ kbusGetStaticFbAperture_TU102
         NV_PRINTF(LEVEL_ERROR, "static Bar1 map [0, 0x%llx]\n",
                   pKernelBus->bar1[gfid].staticBar1.size);
         NV_PRINTF(LEVEL_ERROR, "Requested map range 0x%llx to 0x%llx, mapGranularity 0x%llx\n",
-                  mapRange.start, mapRangeEndPlus1 - 1, mapGranularity);
+                  mapRange.start, mrangeLimit(mapRange) - 1llu, mapRange.size);
 
         memdescPrintMemdesc(pMemDesc, NV_TRUE, MAKE_NV_PRINTF_STR("Dumping memdesc:"));
 
@@ -1134,6 +1117,19 @@ kbusGetStaticFbAperture_TU102
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    //
+    // When the static bar1 is enabled, the Fb aperture offset is the
+    // physical address.
+    //
+    if (!bUnmanagedRange)
+    {
+        pMemArea->pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * pMemArea->numRanges);
+        if (pMemArea->pRanges == NULL)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+    }
+
     status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus, pMemDesc, busMapFlags);
 
     if (status == NV_ERR_IN_USE || status == NV_ERR_NOT_SUPPORTED)
@@ -1142,32 +1138,23 @@ kbusGetStaticFbAperture_TU102
         // This mapping is already in use or not supported,
         // and we need to make a dynamic mapping instead
         //
+        portMemFree(pMemArea->pRanges);
         return NV_ERR_NOT_SUPPORTED;
     }
     else if (status != NV_OK)
     {
+        portMemFree(pMemArea->pRanges);
         return status;
     }
 
-    //
-    // When the static bar1 is enabled, the Fb aperture offset is the
-    // physical address.
-    //
-    if (!bUnmanagedRange)
+    it = memdescIteratorInit(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), mapRange);
+    pMemArea->numRanges = 0;
+    while (memoryIteratorNext(&it, &curRange))
     {
-        pMemArea->pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * numRanges);
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemArea->pRanges != NULL, NV_ERR_NO_MEMORY);
+        pMemArea->pRanges[pMemArea->numRanges] = curRange;
+        pMemArea->pRanges[pMemArea->numRanges].start += pKernelBus->bar1[gfid].staticBar1.startOffset;
+        pMemArea->numRanges++;
     }
-
-    for (i = 0, offset = mapRange.start; offset < mapRangeEndPlus1; i++)
-    {
-        pMemArea->pRanges[i].start = memdescGetPhysAddr(pMemDesc, addressTranslation, offset) + pKernelBus->bar1[gfid].staticBar1.startOffset;
-        pMemArea->pRanges[i].size  = bContigDesc ? mapGranularity : NV_MIN(mapRangeEndPlus1, NV_ALIGN_UP(offset + 1, mapGranularity)) - offset;
-
-        offset = bContigDesc ? (offset + mapGranularity) : NV_ALIGN_DOWN(offset + mapGranularity, mapGranularity);
-    }
-
-    pMemArea->numRanges = numRanges;
 
     return NV_OK;
 }

@@ -46,11 +46,9 @@
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_ram.h"
-#include "published/hopper/gh100/pri_nv_xal_ep.h"
-#include "published/hopper/gh100/pri_nv_xal_ep_p2p.h"
 #include "published/hopper/gh100/dev_nv_xal_ep_zb.h"
 #include "published/hopper/gh100/dev_nv_xal_ep_p2p_zb.h"
-#include "published/hopper/gh100/dev_nv_xal_addendum.h"
+#include "published/hopper/gh100/dev_nv_xal_zb_addendum.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_mmu.h"
@@ -112,7 +110,7 @@ kbusTeardownMailbox_GH100
 NvU32
 kbusGetP2PWriteMailboxAddressSize_GH100(OBJGPU *pGpu)
 {
-    return DRF_SIZE(NV_XAL_EP_P2P_WMBOX_ADDR_ADDR);
+    return DRF_SIZE(NV_XAL_EP_P2P_ZB_WMBOX_ADDR_ADDR);
 }
 
 /*!
@@ -132,7 +130,8 @@ kbusWriteBAR0WindowBase_GH100
     NvU32      base
 )
 {
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, base);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    REG_FLD_WR_DRF_NUM(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE, base);
     return NV_OK;
 }
 
@@ -151,7 +150,8 @@ kbusReadBAR0WindowBase_GH100
     KernelBus *pKernelBus
 )
 {
-    return GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    return REG_RD_DRF(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE);
 }
 
 /*!
@@ -171,7 +171,7 @@ kbusValidateBAR0WindowBase_GH100
     NvU32      base
 )
 {
-    return base <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE);
+    return base <= DRF_MASK(NV_XAL_EP_ZB_BAR0_WINDOW_BASE);
 }
 
 NV_STATUS
@@ -189,16 +189,16 @@ kbusSetBAR0WindowVidOffset_GH100
     }
 
     NV_ASSERT((vidOffset & 0xffff)==0);
-    NV_ASSERT(kbusValidateBAR0WindowBase_HAL(pGpu, pKernelBus, vidOffset >> NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT));
+    NV_ASSERT(kbusValidateBAR0WindowBase_HAL(pGpu, pKernelBus, vidOffset >> NV_XAL_EP_ZB_BAR0_WINDOW_BASE_SHIFT));
 
     //
     // RM initialises cachedBar0WindowVidOffset with 0. Refresh its value with
-    // current NV_XAL_EP_BAR0_WINDOW_BASE.
+    // current NV_XAL_ZB_EP_BAR0_WINDOW_BASE.
     //
     if (pKernelBus->cachedBar0WindowVidOffset == 0)
     {
         pKernelBus->cachedBar0WindowVidOffset = ((NvU64) kbusReadBAR0WindowBase_HAL(pGpu, pKernelBus))
-            << NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT;
+            << NV_XAL_EP_ZB_BAR0_WINDOW_BASE_SHIFT;
     }
 
     // Update only if the new offset is different from the cached value
@@ -228,12 +228,12 @@ kbusGetBAR0WindowVidOffset_GH100
 
     //
     // RM initialises cachedBar0WindowVidOffset with 0. Refresh its value with
-    // current NV_XAL_EP_BAR0_WINDOW_BASE.
+    // current NV_XAL_ZB_EP_BAR0_WINDOW_BASE.
     //
     if (pKernelBus->cachedBar0WindowVidOffset == 0)
     {
         pKernelBus->cachedBar0WindowVidOffset = ((NvU64) kbusReadBAR0WindowBase_HAL(pGpu, pKernelBus))
-            << NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT;
+            << NV_XAL_EP_ZB_BAR0_WINDOW_BASE_SHIFT;
     }
 
     vidOffset = pKernelBus->cachedBar0WindowVidOffset;
@@ -366,7 +366,7 @@ kbusVerifyBar2_GH100
     if (testAddrSpace != NV_MMU_PTE_APERTURE_VIDEO_MEMORY)
     {
         NV_PRINTF(LEVEL_ERROR,
-            "Test is not supported. NV_XAL_EP_BAR0_WINDOW only supports vidmem\n");
+            "Test is not supported. NV_XAL_EP_ZB_BAR0_WINDOW only supports vidmem\n");
         DBG_BREAKPOINT();
         status = NV_ERR_NOT_SUPPORTED;
         goto kbusVerifyBar2_failed;
@@ -502,10 +502,13 @@ kbusVerifyBar2_GH100
 
     kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(testMemoryOffset >> 16));
 
+#if NV_PRINTF_LEVEL_ENABLED(LEVEL_INFO)
+    IoAperture        *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
     NV_PRINTF(LEVEL_INFO,
               "bar0Window = 0x%llx, testMemoryOffset = 0x%llx, testAddrSpace = %d, "
-              "_XAL_EP_BAR0_WINDOW = 0x%08x\n", bar0Window, testMemoryOffset,
-              testAddrSpace, GPU_REG_RD32(pGpu, NV_XAL_EP_BAR0_WINDOW));
+              "_XAL_EP_ZB_BAR0_WINDOW = 0x%08x\n", bar0Window, testMemoryOffset,
+              testAddrSpace, REG_RD32(pXalAperture, NV_XAL_EP_ZB_BAR0_WINDOW));
+#endif
 
     temp = (DRF_BASE(NV_PRAMIN) + (NvU32)(testMemoryOffset & 0xffff));
     for(index = 0; index < testMemorySize; index += 4)
@@ -778,9 +781,10 @@ kbusSetupP2PDomainAccess_GH100
     PMEMORY_DESCRIPTOR *ppP2PDomMemDesc
 )
 {
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu0, pKernelBus0, XAL_P2P_BASE);
     return kbusSetupPeerBarAccess(pGpu0, pGpu1,
-                pGpu0->busInfo.gpuPhysAddr + DRF_BASE(NV_XAL_EP_P2P),
-                DRF_SIZE(NV_XAL_EP_P2P), ppP2PDomMemDesc);
+                pGpu0->busInfo.gpuPhysAddr + pXalAperture->baseAddress,
+                DRF_SIZE(NV_XAL_EP_P2P_ZB), ppP2PDomMemDesc);
 }
 
 NV_STATUS
@@ -951,6 +955,45 @@ kbusIsPeerIdValid_GH100
     return kbusIsPeerIdValid_GP100(pGpu, pKernelBus, peerId);
 }
 
+void
+kbusCarveoutWprs_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NV_RANGE  *pWprRegions
+)
+{
+    NvU32 data;
+    NvU64 start;
+    NvU64 end;
+
+    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_LO);
+    data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_LO, _VAL, data);
+    start = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_LO_ALIGNMENT;
+
+    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_HI);
+    data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_HI, _VAL, data);
+    end = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_HI_ALIGNMENT;
+
+    if (start != end && end != 0)
+        pWprRegions[0] = rangeMake(start, end - 1);
+    else
+        pWprRegions[0] = NV_RANGE_EMPTY;
+
+    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_LO);
+    data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_LO, _VAL, data);
+    start = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT;
+
+    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
+    data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+    end = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT;
+
+    if (start != end && end != 0)
+        pWprRegions[1] = rangeMake(start, end - 1);
+    else
+        pWprRegions[1] = NV_RANGE_EMPTY;
+}
+
 /*!
  * @brief Create C2C mappings for FB memory
  * When this is called, we should not have any BAR1/BAR2 mappings
@@ -982,7 +1025,6 @@ kbusCreateCoherentCpuMapping_GH100
     NvU64               busAddrSize[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
     NvU32               i;
     NvU64               memblockSize;
-    NvU32               data;
     NvU64               start;
     NvU64               end;
     NV_RANGE            wprRegions[2];
@@ -1009,10 +1051,10 @@ kbusCreateCoherentCpuMapping_GH100
 
     pKernelBus->coherentCpuMapping.nrMapping = 1;
 
-    // reserved regions
-    start = pMemoryManager->Ram.fbRegion[0].base + numaOnlineMemorySize,
+    start = pMemoryManager->Ram.fbRegion[0].base + numaOnlineMemorySize;
     end = pMemoryManager->Ram.fbRegion[0].base + fbSize;
 
+    // reserved regions
     if (start != end)
     {
         numReservedRegions = 1;
@@ -1021,31 +1063,7 @@ kbusCreateCoherentCpuMapping_GH100
         if (!IS_VIRTUAL(pGpu))
         {
             // carving out WPRs
-            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_LO);
-            data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_LO, _VAL, data);
-            start = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_LO_ALIGNMENT;
-        
-            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR1_ADDR_HI);
-            data = DRF_VAL(_PFB, _PRI_MMU_WPR1_ADDR_HI, _VAL, data);
-            end = (NvU64)data << NV_PFB_PRI_MMU_WPR1_ADDR_HI_ALIGNMENT;
-        
-            if (start != end && end != 0)
-                wprRegions[0] = rangeMake(start, end - 1);
-            else
-                wprRegions[0] = NV_RANGE_EMPTY;
-        
-            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_LO);
-            data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_LO, _VAL, data);
-            start = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT;
-        
-            data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
-            data = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-            end = (NvU64)data << NV_PFB_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT;
-        
-            if (start != end && end != 0)
-                wprRegions[1] = rangeMake(start, end - 1);
-            else
-                wprRegions[1] = NV_RANGE_EMPTY;
+            kbusCarveoutWprs_HAL(pGpu, pKernelBus, wprRegions);
         
             NV_PRINTF(LEVEL_INFO, "wpr1 0x%llx->0x%llx, wpr2 0x%llx->0x%llx\n",
                 wprRegions[0].lo, wprRegions[0].hi, wprRegions[1].lo, wprRegions[1].hi);
@@ -2149,10 +2167,11 @@ kbusWriteP2PWmbTag_GH100
     NvU64      p2pWmbTag
 )
 {
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_P2P_BASE);
     // See bug 3558208 comment 34 and 50
-    GPU_REG_RD32(pGpu, NV_XAL_EP_P2P_WREQMB_L(remote2Local));
-    GPU_REG_WR32(pGpu, NV_XAL_EP_P2P_WREQMB_L(remote2Local), NvU64_LO32(p2pWmbTag));
-    GPU_REG_WR32(pGpu, NV_XAL_EP_P2P_WREQMB_H(remote2Local), NvU64_HI32(p2pWmbTag));
+    REG_RD32(pXalAperture, NV_XAL_EP_P2P_ZB_WREQMB_L(remote2Local));
+    REG_WR32(pXalAperture, NV_XAL_EP_P2P_ZB_WREQMB_L(remote2Local), NvU64_LO32(p2pWmbTag));
+    REG_WR32(pXalAperture, NV_XAL_EP_P2P_ZB_WREQMB_H(remote2Local), NvU64_HI32(p2pWmbTag));
 }
 
 /*!
@@ -2914,14 +2933,15 @@ kbusGetEccCounts_GH100
 {
     NvU32 regVal;
     NvU32 count = 0;
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
 
     // PCIE RE ORDER
-    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT);
-    count += DRF_VAL(_XAL_EP, _REORDER_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+    regVal = REG_RD32(pXalAperture, NV_XAL_EP_ZB_REORDER_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP_ZB, _REORDER_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
 
     // PCIE P2PREQ
-    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT);
-    count += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+    regVal = REG_RD32(pXalAperture, NV_XAL_EP_ZB_P2PREQ_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP_ZB, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
 
     return count;
 }
@@ -2950,6 +2970,7 @@ kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
     RMTIMEOUT    timeout;
     NvU32        startToken = 0;
     NvU32        completedToken = 0;
+    IoAperture   *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
 
     if (API_GPU_IN_RESET_SANITY_CHECK(pGpu) || API_GPU_IN_RECOVERY_SANITY_CHECK(pGpu) ||
         !API_GPU_ATTACHED_SANITY_CHECK(pGpu))
@@ -2970,14 +2991,14 @@ kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
     threadStateResetTimeout(pGpu);
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
-    startToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_FB_FLUSH);
-    startToken = DRF_VAL( _XAL_EP_UFLUSH, _FB_FLUSH, _TOKEN, startToken);
+    startToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_FB_FLUSH);
+    startToken = DRF_VAL( _XAL_EP_ZB, _UFLUSH_FB_FLUSH, _TOKEN, startToken);
 
-    while (((completedToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED)) &
-                DRF_SHIFTMASK(NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS))
-            == (NvU32)DRF_DEF(_XAL_EP_UFLUSH, _FB_FLUSH_COMPLETED, _STATUS, _BUSY) )
+    while (((completedToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED)) &
+                DRF_SHIFTMASK(NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED_STATUS))
+            == (NvU32)DRF_DEF(_XAL_EP_ZB, _UFLUSH_FB_FLUSH_COMPLETED, _STATUS, _BUSY) )
     {
-        completedToken = DRF_VAL( _XAL_EP_UFLUSH, _FB_FLUSH_COMPLETED, _TOKEN, completedToken);
+        completedToken = DRF_VAL( _XAL_EP_ZB, _UFLUSH_FB_FLUSH_COMPLETED, _TOKEN, completedToken);
 
         //
         // When completedToken > startToken(including the wrapping around case), due to the nature
@@ -2988,7 +3009,7 @@ kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
         // The loop will wait only when completedToken in the range of
         // [startToken-NV_XAL_EP_MEMOP_MAX_OUTSTANDING, startToken].
         //
-        if (((startToken - completedToken) & DRF_MASK(NV_XAL_EP_UFLUSH_FB_FLUSH_TOKEN)) > NV_XAL_EP_MEMOP_MAX_OUTSTANDING)
+        if (((startToken - completedToken) & DRF_MASK(NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_TOKEN)) > NV_XAL_EP_ZB_MEMOP_MAX_OUTSTANDING)
         {
             break;
         }
@@ -3003,7 +3024,7 @@ kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
         {
 #ifdef DEBUG
             // to aid in debug, probe a normally harmless reg to trigger on
-            GPU_REG_RD32(pGpu, NV_XAL_EP_ZEROS);
+            REG_RD32(pXalAperture, NV_XAL_EP_ZB_ZEROS);
 #endif
 
             //

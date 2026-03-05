@@ -31,14 +31,12 @@
 NvBool nvCheckLayerPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
     const NvU32 apiHead,
     const NvU8 changedLayersMask);
 
 NvBool nvCheckFlipPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
     const NvU32 apiHead,
     const struct NvKmsFlipCommonParams *pParams);
 

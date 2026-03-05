@@ -54,16 +54,11 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "kernel/gpu/intr/engine_idx.h"
 
-
 struct IntrService;
 
-#ifndef __NVOC_CLASS_IntrService_TYPEDEF__
-#define __NVOC_CLASS_IntrService_TYPEDEF__
-typedef struct IntrService IntrService;
-#endif /* __NVOC_CLASS_IntrService_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_IntrService
-#define __nvoc_class_id_IntrService 0x2271cc
+#define __nvoc_class_id_IntrService 0x2271ccu
+typedef struct IntrService IntrService;
 #endif /* __nvoc_class_id_IntrService */
 
 
@@ -130,13 +125,9 @@ struct NVOC_METADATA__IntrService {
     const struct NVOC_VTABLE__IntrService vtable;
 };
 
-#ifndef __NVOC_CLASS_IntrService_TYPEDEF__
-#define __NVOC_CLASS_IntrService_TYPEDEF__
-typedef struct IntrService IntrService;
-#endif /* __NVOC_CLASS_IntrService_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_IntrService
-#define __nvoc_class_id_IntrService 0x2271cc
+#define __nvoc_class_id_IntrService 0x2271ccu
+typedef struct IntrService IntrService;
 #endif /* __nvoc_class_id_IntrService */
 
 // Casting support
@@ -155,8 +146,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
 NV_STATUS __nvoc_objCreateDynamic_IntrService(IntrService**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_IntrService(IntrService**, Dynamic*, NvU32);
-#define __objCreate_IntrService(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_IntrService((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_IntrService(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_IntrService((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -188,6 +179,7 @@ static inline NV_STATUS intrservServiceNotificationInterrupt_DISPATCH(struct OBJ
     return pIntrService->__nvoc_metadata_ptr->vtable.__intrservServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
+// Virtual method declarations and/or inline definitions
 void intrservRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[180]);
 
 NvBool intrservClearInterrupt_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceClearInterruptArguments *pParams);
@@ -196,6 +188,11 @@ NvU32 intrservServiceInterrupt_IMPL(struct OBJGPU *pGpu, struct IntrService *pIn
 
 NV_STATUS intrservServiceNotificationInterrupt_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

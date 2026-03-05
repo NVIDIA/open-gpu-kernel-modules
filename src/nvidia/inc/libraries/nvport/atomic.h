@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@
 
 /** See @ref PORT_UTIL_INLINE */
 #ifndef PORT_ATOMIC_INLINE
-#if PORT_COMPILER_HAS_INTRINSIC_ATOMICS && !defined(NV_MODS)
+#if PORT_COMPILER_HAS_INTRINSIC_ATOMICS
 #define PORT_ATOMIC_INLINE PORT_INLINE
 #if NVCPU_IS_64_BITS
 #define PORT_ATOMIC64_INLINE PORT_INLINE
@@ -65,17 +65,29 @@
 #endif
 #endif
 
+//
+// Prefer C11 atomics unless it's one of the exceptions:
+// C++ is incompatible with stdatomic.h.
+// Usermode tests generate NVOC headers that get included in .cpp.
+// NVOC on Windows generates headers to be processed by MSVC.
+// MSVC requires experimental flag to use stdatomic.h.
+//
+#if !defined(__cplusplus) && \
+    (PORT_COMPILER_IS_GCC || PORT_COMPILER_IS_CLANG) && \
+    (PORT_IS_KERNEL_BUILD == 1) && \
+    (!defined(NVOC) || !NVOS_IS_WINDOWS) && \
+    !NVOS_IS_LIBOS
+#define NVPORT_HAS_C11_ATOMICS 1
+#else
+#define NVPORT_HAS_C11_ATOMICS 0
+#endif
+
 /**
  * @name Core Functions
  * @{
  */
 
-/**
- * @brief Initialization function for port atomics
- *
- * This function is only needed for Libos
- */
-PORT_ATOMIC_INLINE void portAtomicInit(void);
+#if !NVPORT_HAS_C11_ATOMICS
 
 /**
  * @brief Atomic addition on a signed 32b integer
@@ -372,6 +384,8 @@ PORT_ATOMIC64_INLINE NvU64 portAtomicExAndU64(volatile NvU64 *pVal, NvU64 val);
 
 #endif // PORT_ATOMIC_64_BIT_SUPPORTED
 
+#endif // !NVPORT_HAS_C11_ATOMICS
+
 /// @} End extended functions
 
 /**
@@ -379,9 +393,9 @@ PORT_ATOMIC64_INLINE NvU64 portAtomicExAndU64(volatile NvU64 *pVal, NvU64 val);
  */
 #if NVOS_IS_LIBOS
 #include "nvport/inline/atomic_libos.h"
-#endif
-
-#if PORT_COMPILER_IS_GCC
+#elif NVPORT_HAS_C11_ATOMICS
+#include "nvport/inline/atomic_c11.h"
+#elif PORT_COMPILER_IS_GCC
 #include "nvport/inline/atomic_gcc.h"
 #elif PORT_COMPILER_IS_CLANG
 #include "nvport/inline/atomic_clang.h"
@@ -398,10 +412,12 @@ PORT_ATOMIC64_INLINE NvU64 portAtomicExAndU64(volatile NvU64 *pVal, NvU64 val);
  * present on systems where pointers and NvLength are 64 bits.
  * @{
  */
+#if !NVPORT_HAS_C11_ATOMICS
 #if !NVCPU_IS_64_BITS
 #define portAtomicAddSize(a,b)              (NvSPtr)portAtomicAddS32((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicSubSize(a,b)              (NvSPtr)portAtomicSubS32((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicSetSize(a,b)              portAtomicSetS32((volatile NvSPtr *)a, (NvSPtr)b)
+#define portAtomicGetSize(a)                portAtomicOrS32((volatile NvSPtr *)a, (NvSPtr)0) // FIXME: replace with non-RMW op
 #define portAtomicCompareAndSwapSize(a,b,c) portAtomicCompareAndSwapS32((volatile NvSPtr *)a, (NvSPtr)b, (NvSPtr)c)
 #define portAtomicIncrementSize(a)          (NvSPtr)portAtomicIncrementS32((volatile NvSPtr *)a)
 #define portAtomicDecrementSize(a)          (NvSPtr)portAtomicDecrementS32((volatile NvSPtr *)a)
@@ -412,13 +428,16 @@ PORT_ATOMIC64_INLINE NvU64 portAtomicExAndU64(volatile NvU64 *pVal, NvU64 val);
 #define portAtomicAddSize(a,b)              (NvSPtr)portAtomicExAddS64((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicSubSize(a,b)              (NvSPtr)portAtomicExSubS64((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicSetSize(a,b)              portAtomicExSetS64((volatile NvSPtr *)a, (NvSPtr)b)
+#define portAtomicGetSize(a)                portAtomicExOrS64((volatile NvSPtr *)a, (NvSPtr)0) // FIXME: replace with non-RMW op
 #define portAtomicCompareAndSwapSize(a,b,c) portAtomicExCompareAndSwapS64((volatile NvSPtr *)a, (NvSPtr)b, (NvSPtr)c)
 #define portAtomicIncrementSize(a)          (NvSPtr)portAtomicExIncrementS64((volatile NvSPtr *)a)
 #define portAtomicDecrementSize(a)          (NvSPtr)portAtomicExDecrementS64((volatile NvSPtr *)a)
 #define portAtomicXorSize(a,b)              (NvSPtr)portAtomicExXorS64((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicOrSize(a,b)               (NvSPtr)portAtomicExOrS64((volatile NvSPtr *)a, (NvSPtr)b)
 #define portAtomicAndSize(a,b)              (NvSPtr)portAtomicExAndS64((volatile NvSPtr *)a, (NvSPtr)b)
-#endif
+#endif // NVCPU_IS_64_BITS
+#endif // NVPORT_HAS_C11_ATOMICS
+
 /// @}
 
 #endif // _NVPORT_ATOMIC_H_

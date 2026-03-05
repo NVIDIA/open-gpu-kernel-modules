@@ -162,13 +162,9 @@ struct NVOC_METADATA__OBJENGSTATE {
     const struct NVOC_VTABLE__OBJENGSTATE vtable;
 };
 
-#ifndef __NVOC_CLASS_OBJENGSTATE_TYPEDEF__
-#define __NVOC_CLASS_OBJENGSTATE_TYPEDEF__
-typedef struct OBJENGSTATE OBJENGSTATE;
-#endif /* __NVOC_CLASS_OBJENGSTATE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJENGSTATE
-#define __nvoc_class_id_OBJENGSTATE 0x7a7ed6
+#define __nvoc_class_id_OBJENGSTATE 0x7a7ed6u
+typedef struct OBJENGSTATE OBJENGSTATE;
 #endif /* __nvoc_class_id_OBJENGSTATE */
 
 // Casting support
@@ -192,8 +188,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 NV_STATUS __nvoc_objCreateDynamic_OBJENGSTATE(OBJENGSTATE**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJENGSTATE(OBJENGSTATE**, Dynamic*, NvU32);
-#define __objCreate_OBJENGSTATE(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJENGSTATE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJENGSTATE(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJENGSTATE((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -366,6 +362,7 @@ static inline NvBool engstateIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJE
     return pEngstate->__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS engstateConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3);
 
 void engstateInitMissing_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
@@ -394,6 +391,11 @@ void engstateStateDestroy_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstat
 
 NvBool engstateIsPresent_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

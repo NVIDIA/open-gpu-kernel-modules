@@ -78,13 +78,9 @@ struct MODULEDESCRIPTOR {
 
 typedef struct OBJHAL *POBJHAL;
 
-#ifndef __NVOC_CLASS_OBJHAL_TYPEDEF__
-#define __NVOC_CLASS_OBJHAL_TYPEDEF__
-typedef struct OBJHAL OBJHAL;
-#endif /* __NVOC_CLASS_OBJHAL_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHAL
-#define __nvoc_class_id_OBJHAL 0xe803b6
+#define __nvoc_class_id_OBJHAL 0xe803b6u
+typedef struct OBJHAL OBJHAL;
 #endif /* __nvoc_class_id_OBJHAL */
 
 
@@ -130,13 +126,9 @@ struct NVOC_METADATA__OBJHAL {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJHAL_TYPEDEF__
-#define __NVOC_CLASS_OBJHAL_TYPEDEF__
-typedef struct OBJHAL OBJHAL;
-#endif /* __NVOC_CLASS_OBJHAL_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHAL
-#define __nvoc_class_id_OBJHAL 0xe803b6
+#define __nvoc_class_id_OBJHAL 0xe803b6u
+typedef struct OBJHAL OBJHAL;
 #endif /* __nvoc_class_id_OBJHAL */
 
 // Casting support
@@ -155,8 +147,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHAL;
 NV_STATUS __nvoc_objCreateDynamic_OBJHAL(OBJHAL**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHAL(OBJHAL**, Dynamic*, NvU32);
-#define __objCreate_OBJHAL(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJHAL((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJHAL(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJHAL((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -174,6 +166,12 @@ static inline PMODULEDESCRIPTOR objhalGetModuleDescriptor(struct OBJHAL *pHal) {
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

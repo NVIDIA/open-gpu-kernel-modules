@@ -25,9 +25,14 @@
 #include "kernel/gpu/mem_mgr/virt_mem_allocator.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "lib/base_utils.h"
 
 #include "published/hopper/gh100/dev_fault.h"
 #include "published/hopper/gh100/dev_vm.h"
+#include "published/hopper/gh100/dev_ram.h"
+#include "published/hopper/gh100/dev_esched_pbdma.h"
+
+#include "kernel/gpu/conf_compute/conf_compute.h"
 
 /*!
  * Checks the USERD and GPFIFO/PushBuffer location attributes
@@ -583,4 +588,156 @@ kfifoRingChannelDoorBell_GH100
 )
 {
     return kfifoRingChannelDoorBell_GV100(pGpu, pKernelFifo, pKernelChannel);
+}
+
+/*
+ * @  Function to write gpfifo info in RAMFC
+ * @param[in] pGpu           - GPU object pointer
+ * @param[in] pKernelFifo    - KernelFifo pointer
+ * @param[in] pInstMem       - CPU pointer to instance mem
+ * @param[in] gpFifoOffset   - GPFIFO virtual address
+ * @param[in] gpFifoEntries  - GPFIFO entries
+ */
+void
+kfifoWriteRamfcGpfifo_GH100
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    NvU8          *pInstMem,
+    NvU64         gpFifoOffset,
+    NvU32         gpFifoEntries
+)
+{
+    // GPBASE
+    NV_ASSERT(FLD_TEST_DRF(_PBDMA, _GP_BASE, _RSVD, _ZERO, NvU64_LO32(gpFifoOffset)));
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_BASE), NvU64_LO32(gpFifoOffset));
+    
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_BASE_HI),
+                 DRF_NUM(_PBDMA, _GP_BASE_HI, _OFFSET, NvU64_HI32(gpFifoOffset)));
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_INFO),
+             DRF_NUM(_PBDMA, _GP_INFO, _LIMIT2, nvLogBase2(gpFifoEntries) |
+             DRF_NUM(_PBDMA, _GP_INFO, _PB_SEGMENT_EXTENDED_BASE, 0)));
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_PUT), 0);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_GET), 0);
+}
+
+NV_STATUS
+kfifoDisableChannelsForKeyRotation_GH100
+(
+    OBJGPU         *pGpu,
+    KernelFifo     *pKernelFifo,
+    RmCtrlParams   *pRmCtrlParams,
+    NvBool          bEnableAfterKeyRotation,
+    NvBool          bForceKeyRotation,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams
+)
+{
+    NvU32           i;
+    NV_STATUS       status        = NV_OK;
+    NV_STATUS       tmpStatus     = NV_OK;
+    KernelChannel  *pKernelChannel = NULL;
+    RM_API         *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    // Send RPC to handle message on GSP-RM
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
+    }
+    // Send internal control call to actually disable channels and preempt channels
+    else
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    }
+
+    // Loop through all the channels and mark them disabled
+    NvU32 keyIndex = 0;
+    NvBool bFound = NV_FALSE;
+    NvU32 h2dKeyList[CC_KEYSPACE_TOTAL_SIZE];
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    for (i = 0; i < pParams->numChannels; i++)
+    {
+        RsClient              *pClient = NULL;
+        tmpStatus = serverGetClientUnderLock(&g_resServ,
+                                          pParams->hClientList[i], &pClient);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get client with hClient = 0x%x status = 0x%x\n", pParams->hClientList[i], status);
+            continue;
+        }
+        tmpStatus = CliGetKernelChannel(pClient,
+                                     pParams->hChannelList[i], &pKernelChannel);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n",
+                                    pParams->hClientList[i], pParams->hChannelList[i], status);
+            continue;
+        }
+        kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
+        kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, bEnableAfterKeyRotation);
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            NvU32 h2dKey, d2hKey;
+            NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel,
+                                                                      &h2dKey, &d2hKey));
+            if (bForceKeyRotation)
+            {
+                //
+                // This loop doesn't need to execute in the first iteration of above loop
+                // since keyList is empty.
+                //
+                for (NvU32 j = 0; j < keyIndex; j++)
+                {
+                    if (h2dKeyList[j] == h2dKey)
+                    {
+                        bFound = NV_TRUE;
+                        break;
+                    }
+                }
+                if (!bFound)
+                {
+                    NV_ASSERT_OR_RETURN(keyIndex < CC_KEYSPACE_TOTAL_SIZE, NV_ERR_INVALID_STATE);
+                    h2dKeyList[keyIndex++] = h2dKey;
+                }
+                bFound = NV_FALSE;
+            }
+            else
+            {
+                KEY_ROTATION_STATUS state;
+                NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+                if ((state == KEY_ROTATION_STATUS_PENDING) ||
+                    (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
+                {
+                    NV_ASSERT_OK_OR_RETURN(confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+                }
+            }
+        }
+    }
+
+    if (IS_GSP_CLIENT(pGpu) && bForceKeyRotation)
+    {
+        for (NvU32 j = 0; j < keyIndex; j++)
+        {
+            NvU32 h2dKey, d2hKey;
+            confComputeGetKeyPairByKey(pConfCompute, h2dKeyList[j], &h2dKey, &d2hKey);
+            NV_PRINTF(LEVEL_INFO, "Forcing key rotation on h2dKey 0x%x\n", h2dKey);
+            status = confComputeForceKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Forced key rotation for key 0x%x failed\n", h2dKey);
+                return status;
+            }
+        }
+    }
+    return status;
 }

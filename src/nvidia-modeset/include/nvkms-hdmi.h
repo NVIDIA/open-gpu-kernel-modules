@@ -54,7 +54,10 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
 
 void nvRemoveUnusedHdmiDpAudioDevice(const NVDispEvoRec *pDispEvo);
 
-void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable);
+void nvHdmiSetVRR(const NVDispEvoPtr pDispEvo,
+                  NvU32 head,
+                  NvBool enable,
+                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl);
 
 NvBool nvInitHdmiLibrary(NVDevEvoRec *pDevEvo);
 void nvTeardownHdmiLibrary(NVDevEvoRec *pDevEvo);

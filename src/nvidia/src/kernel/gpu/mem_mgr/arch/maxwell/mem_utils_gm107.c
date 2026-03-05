@@ -578,7 +578,7 @@ memmgrMemUtilsChannelInitialize_GM107
     // client allocated userd only supported on volta+
     // TODO: Use property to check if client allocated userd is supported
     //
-    pChannel->bClientUserd = IsVOLTAorBetter(pGpu);
+    pChannel->bClientUserd = NV_TRUE; // TODO: MPV
 
     //
     // We need to allocate a VAS to use for CE copies, but also for

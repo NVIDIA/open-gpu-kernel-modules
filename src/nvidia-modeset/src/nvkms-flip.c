@@ -40,11 +40,9 @@
 NvBool nvCheckLayerPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
     const NvU32 apiHead,
     const NvU8 changedLayersMask)
 {
-    const int dispIndex = pDevEvo->gpus[sd].pDispEvo->displayOwner;
     const struct NvKmsFlipPermissions *pFlipPermissions =
         nvGetFlipPermissionsFromOpenDev(pOpenDev);
     const struct NvKmsModesetPermissions *pModesetPermissions =
@@ -52,14 +50,13 @@ NvBool nvCheckLayerPermissions(
     const NvU8 allLayersMask = NVBIT(pDevEvo->apiHead[apiHead].numLayers) - 1;
     NvU8 layerMask = 0;
 
-    layerMask = pFlipPermissions->disp[dispIndex].head[apiHead].layerMask;
+    layerMask = pFlipPermissions->head[apiHead].layerMask;
 
     /*
-     * If the client has modeset permissions for this disp+head, allow
+     * If the client has modeset permissions for this head, allow
      * the client to also perform flips on any layer.
      */
-    if (!nvDpyIdListIsEmpty(pModesetPermissions->disp[dispIndex].
-                            head[apiHead].dpyIdList)) {
+    if (!nvDpyIdListIsEmpty(pModesetPermissions->head[apiHead].dpyIdList)) {
         layerMask = allLayersMask;
     }
 
@@ -87,7 +84,6 @@ NvBool nvCheckLayerPermissions(
 NvBool nvCheckFlipPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
     const NvU32 apiHead,
     const struct NvKmsFlipCommonParams *pParams)
 {
@@ -101,7 +97,7 @@ NvBool nvCheckFlipPermissions(
         (pParams->lut.input.specified)  ||
         (pParams->lut.output.specified)) {
         return nvCheckLayerPermissions(pOpenDev, pDevEvo,
-                                       sd, apiHead,
+                                       apiHead,
                                        allLayersMask);
     }
 
@@ -112,7 +108,7 @@ NvBool nvCheckFlipPermissions(
     }
 
     return nvCheckLayerPermissions(pOpenDev, pDevEvo,
-                                   sd, apiHead,
+                                   apiHead,
                                    changedLayersMask);
 }
 
@@ -529,7 +525,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
             goto done;
         }
 
-        if (!nvCheckFlipPermissions(pOpenDev, pDevEvo, sd, apiHead,
+        if (!nvCheckFlipPermissions(pOpenDev, pDevEvo, apiHead,
                                     &pFlipHead[i].flip)) {
             goto done;
         }

@@ -134,13 +134,9 @@ struct NVOC_METADATA__DispCapabilities {
     const struct NVOC_VTABLE__DispCapabilities vtable;
 };
 
-#ifndef __NVOC_CLASS_DispCapabilities_TYPEDEF__
-#define __NVOC_CLASS_DispCapabilities_TYPEDEF__
-typedef struct DispCapabilities DispCapabilities;
-#endif /* __NVOC_CLASS_DispCapabilities_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DispCapabilities
-#define __nvoc_class_id_DispCapabilities 0x99db3e
+#define __nvoc_class_id_DispCapabilities 0x99db3eu
+typedef struct DispCapabilities DispCapabilities;
 #endif /* __nvoc_class_id_DispCapabilities */
 
 // Casting support
@@ -158,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispCapabilities;
 
 NV_STATUS __nvoc_objCreateDynamic_DispCapabilities(DispCapabilities**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DispCapabilities(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DispCapabilities((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DispCapabilities(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DispCapabilities((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *arg_pDispCapabilities, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dispcapConstruct(arg_pDispCapabilities, arg_pCallContext, arg_pParams) dispcapConstruct_IMPL(arg_pDispCapabilities, arg_pCallContext, arg_pParams)
+NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *pDispCapabilities, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dispcapConstruct(pDispCapabilities, pCallContext, pParams) dispcapConstruct_IMPL(pDispCapabilities, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -321,8 +317,14 @@ static inline void dispcapAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__dispcapAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS dispcapGetRegBaseOffsetAndSize_IMPL(struct DispCapabilities *pDispCapabilities, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

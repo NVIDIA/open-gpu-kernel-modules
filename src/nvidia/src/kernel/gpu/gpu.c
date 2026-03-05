@@ -50,6 +50,9 @@
 #include "vgpu/rpc.h"
 #include "jt.h"
 #include "kernel/gpu/nvbitmask.h"
+
+#include "compute/fabric.h"
+
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 #include "nvmisc.h"
@@ -81,6 +84,9 @@
 #include "diagnostics/gpu_acct.h"
 
 #include "nvop.h"
+
+#include "class/cla083.h" // NVA083_GRID_DISPLAYLESS
+#include "griddisplayless/objgriddisplayless.h"
 
 #include "nvdevid.h" // for NV_PCI_DEVID_DEVICE
 
@@ -148,6 +154,10 @@ typedef struct
     NvU32   flags;
     NvBool  bStarted;
 } ENGLIST_ITER, *PENGLIST_ITER;
+
+typedef struct _GPU_REFRESH_RECOVERY_ACTION_PARAMS {
+    NvBool bSquashXid;
+} GPU_REFRESH_RECOVERY_ACTION_PARAMS;
 
 static ENGLIST_ITER gpuGetEngineOrderListIter(OBJGPU *pGpu, NvU32 flags);
 static NvBool gpuGetNextInEngineOrderList(OBJGPU *pGpu, ENGLIST_ITER *pIt, ENGDESCRIPTOR *pEngDesc);
@@ -653,6 +663,15 @@ NV_STATUS gpuConstruct_IMPL
 
     pGpu->pDpcThreadState = portMemAllocNonPaged(sizeof(THREAD_STATE_NODE));
     NV_ASSERT_OR_RETURN(pGpu->pDpcThreadState != NULL, NV_ERR_NO_MEMORY);
+
+    // initialize spinlock for subdevice backreferences array protection
+    pGpu->pSubdeviceBackReferencesLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pGpu->pSubdeviceBackReferencesLock == NULL)
+    {
+        portMemFree(pGpu->pDpcThreadState);
+        pGpu->pDpcThreadState = NULL;
+        return NV_ERR_NO_MEMORY;
+    }
 
     return gpuConstructPhysical(pGpu);
 }
@@ -1594,6 +1613,8 @@ gpuDestruct_IMPL
     pGpu->pSubdeviceBackReferences = NULL;
     pGpu->numSubdeviceBackReferences = 0;
     pGpu->maxSubdeviceBackReferences = 0;
+    portSyncSpinlockDestroy(pGpu->pSubdeviceBackReferencesLock);
+    pGpu->pSubdeviceBackReferencesLock = NULL;
 
     multimapDestroy(&pGpu->videoEventBufferBindingsUid);
 
@@ -1837,7 +1858,8 @@ gpuRemoveMissingEngineClasses
     if (gpuGetClassList(pGpu, &numClasses, NULL, missingEngDescriptor) == NV_OK)
     {
         pClassList = portMemAllocNonPaged(sizeof(NvU32) * numClasses);
-        if (NV_OK == gpuGetClassList(pGpu, &numClasses, pClassList, missingEngDescriptor))
+        if ((pClassList != NULL) &&
+            gpuGetClassList(pGpu, &numClasses, pClassList, missingEngDescriptor) == NV_OK)
         {
             for (i = 0; i < numClasses; i++)
             {
@@ -1922,6 +1944,43 @@ gpuIsEngDescSupported_IMPL
 
     return engDescriptorFound;
 }
+
+/*!
+ * @brief     Helper function to check if class NVA083_GRID_DISPLAYLESS is
+ *            supported on given GPU.
+ *
+ * @param[in] pGpu
+ *
+ * @return    NV_TRUE if class NVA083_GRID_DISPLAYLESS is supported,
+ *            NV_FALSE otherwise.
+ *
+ */
+NvBool
+gpuIsGridDisplaylessClassSupported_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    KernelDisplay *pKernDisp = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvBool bDisplayPresent = (pKernDisp != NULL);
+
+    if (bDisplayPresent)
+    {
+        //
+        // Classes DISPLAY_COMMON and NVA083_GRID_DISPLAYLESS are mutually exclusive.
+        // Return not supported since display class is present.
+        //
+        return NV_FALSE;
+    }
+
+    if (osIsGridSupported(pGpu))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 /*!
  * @brief Mark given Engine Descriptor with ENG_INVALID engine descriptor.
  *
@@ -2096,15 +2155,6 @@ gpuStatePreInit_IMPL
 {
     NV_STATUS      rmStatus = NV_OK;
 
-    //
-    // The prereq tracker must be kept track of in stateInit/Destroy because
-    // it accumulates dependencies throughout stateInit, stateInit may happen
-    // multiple times in SLI linking, and it and does not destroy the prereq list
-    // until the entire object is destroyed
-    //
-    NV_ASSERT_OK_OR_RETURN(
-        objCreate(&pGpu->pPrereqTracker, pGpu, PrereqTracker, pGpu));
-
     // Quadro, Geforce SMB, Tesla, VGX, Titan GPU detection
     NV_ASSERT_OK_OR_RETURN(gpuInitBranding(pGpu));
 
@@ -2223,6 +2273,16 @@ gpuStatePreInit_IMPL
         }
     }
 
+    //
+    // NVA083_GRID_DISPLAYLESS class is only supported on GRID boards with
+    // Display engine NOT present, KernelDisplay presence can be checked
+    // only after KernelDisplay statepreinit.
+    //
+    if (!gpuIsGridDisplaylessClassSupported(pGpu))
+    {
+        gpuDeleteClassFromClassDBByClassId(pGpu, NVA083_GRID_DISPLAYLESS);
+    }
+
     // RM User Shared Data is currently unable to support VGPU due to isolation requirements
     if (IS_VIRTUAL(pGpu))
     {
@@ -2254,7 +2314,7 @@ gpuStateInit_IMPL
     NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_GOTO(rmStatus,
-        gpuStateInitStartedSatisfy_HAL(pGpu, pGpu->pPrereqTracker),
+        gpuStateInitStartedSatisfy_HAL(pGpu),
         gpuStateInit_exit);
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2603,8 +2663,19 @@ gpuStateLoad_IMPL
         RMTRACE_ENGINE_PROFILE_EVENT("gpuStateLoadEngEnd", curEngDescriptor, pGpu->registerAccess.regReadCount, pGpu->registerAccess.regWriteCount);
     }
 
-    // Video logging is not a required feature, don't override existing status
-    NV_CHECK(LEVEL_ERROR, gpuInitVideoLogging(pGpu) == NV_OK);
+    //
+    // Skip the gpuInitVideoLogging() and gpuFreeVideoLogging() sequences when GPU_STATE_FLAGS_PRESERVING is set
+    // for iGPUs. It appears that dGPU intentionally performs alloc/free of the VideoLogging buffer during the
+    // GC6 sequence due to Bug 4252219.
+    // For dGPU, the VideoLogging buffer resides in VIDMEM and is accessed via BAR2 mapping, which requires the
+    // special handling described in Bug 4252219.
+    // In contrast, for iGPUs, the VideoLogging buffer is located in SYSMEM, so this special handling is not needed.
+    //
+    if (!(pGpu->pGpuArch->bGpuArchIsZeroFb && (flags & GPU_STATE_FLAGS_PRESERVING)))
+    {
+        // Video logging is not a required feature, don't override existing status
+        NV_CHECK(LEVEL_ERROR, gpuInitVideoLogging(pGpu) == NV_OK);
+    }
 
     rmStatus = gpuInitVmmuInfo(pGpu);
     if (rmStatus != NV_OK)
@@ -2688,6 +2759,14 @@ gpuStateLoad_IMPL
                 pGpu, localStatus);
             return localStatus);
     }
+
+    //
+    // Resume depends on non-zero pGpu->userSharedData.lastPolledDataMask and
+    // polling registry can set the mask to non-zero. Handle resume before
+    // the polling registry.
+    //
+    gpuResumeRusdPollingOnLoad(pGpu);
+    gpuHandleRusdPollingRegistry(pGpu);
 
 gpuStateLoad_exit:
     if (rmStatus != NV_OK)
@@ -3690,6 +3769,8 @@ gpuStateUnload_IMPL
     // Set indicator that state is currently unloading.
     pGpu->bStateUnloading = NV_TRUE;
 
+    // stop RUSD polling before unload
+    gpuStopRusdPollingOnUnload(pGpu);
 
     {
         rmStatus = gpuStatePreUnload(pGpu, flags);
@@ -3703,7 +3784,18 @@ gpuStateUnload_IMPL
         return rmStatus;
     }
 
-    gpuFreeVideoLogging(pGpu);
+    //
+    // Skip the gpuInitVideoLogging() and gpuFreeVideoLogging() sequences when GPU_STATE_FLAGS_PRESERVING is set
+    // for iGPUs. It appears that dGPU intentionally performs alloc/free of the VideoLogging buffer during the
+    // GC6 sequence due to Bug 4252219.
+    // For dGPU, the VideoLogging buffer resides in VIDMEM and is accessed via BAR2 mapping, which requires the
+    // special handling described in Bug 4252219.
+    // In contrast, for iGPUs, the VideoLogging buffer is located in SYSMEM, so this special handling is not needed.
+    //
+    if (!(pGpu->pGpuArch->bGpuArchIsZeroFb && (flags & GPU_STATE_FLAGS_PRESERVING)))
+    {
+        gpuFreeVideoLogging(pGpu);
+    }
 
     ENGDESCRIPTOR *pEngDescriptorList = gpuGetUnloadEngineDescriptors(pGpu);
     NvU32          numEngDescriptors  = gpuGetNumEngDescriptors(pGpu);
@@ -3973,7 +4065,7 @@ gpuStateDestroy_IMPL
     //       DO NOT ADD MORE SPECIAL CASES HERE!
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    gpuStateInitStartedRetract_HAL(pGpu, pGpu->pPrereqTracker);
+    gpuStateInitStartedRetract_HAL(pGpu);
 
     // Clear the property indicating that the state initialization has been done
     if (rmStatus == NV_OK)
@@ -3997,9 +4089,6 @@ gpuStateDestroy_IMPL
     gpuDestroyGenericKernelFalconList(pGpu);
 
     gpuDestroyKernelVideoEngineList(pGpu);
-
-    objDelete(pGpu->pPrereqTracker);
-    pGpu->pPrereqTracker = NULL;
 
     portMemFree(pGpu->pChipInfo);
     pGpu->pChipInfo = NULL;
@@ -5058,12 +5147,12 @@ gpuGetGidInfo_IMPL
 
     if (pGpu->gpuUuid.isInitialized)
     {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuValidateUuid_HAL(pGpu));
         portMemCopy(gidData, gidSize, &pGpu->gpuUuid.uuid[0], gidSize);
         goto fillGidData;
     }
 
     rmStatus = gpuGenGidData_HAL(pGpu, gidData, gidSize, gidFlags);
-
     if (rmStatus != NV_OK)
     {
         return rmStatus;
@@ -6459,16 +6548,13 @@ gpuIsSliLinkSupported_IMPL
 {
     NvBool   bIsSupported = NV_FALSE;
 
-    if (!bIsSupported)
+    KernelNvlink * pKernelNvLink =  GPU_GET_KERNEL_NVLINK(pGpu);
+    if (pKernelNvLink != NULL)
     {
-        KernelNvlink * pKernelNvLink =  GPU_GET_KERNEL_NVLINK(pGpu);
-        if (pKernelNvLink != NULL)
+        NVLINK_BIT_VECTOR *pConnectedLinksMaskVec = knvlinkGetConnectedLinksMask_HAL(pGpu, pKernelNvLink);
+        if (pConnectedLinksMaskVec != NULL)
         {
-            NVLINK_BIT_VECTOR *pConnectedLinksMaskVec = knvlinkGetConnectedLinksMask_HAL(pGpu, pKernelNvLink);
-            if (pConnectedLinksMaskVec != NULL)
-            {
-                bIsSupported = !bitVectorTestAllCleared(pConnectedLinksMaskVec);
-            }
+            bIsSupported = !bitVectorTestAllCleared(pConnectedLinksMaskVec);
         }
     }
 
@@ -6735,6 +6821,41 @@ _gpuGetSchedulerPolicyGr(OBJGPU *pGpu)
     return schedPolicy;
 }
 
+NvU32
+_gpuGetSchedulerPolicyNvenc(OBJGPU *pGpu)
+{
+    NvU32 schedPolicy = SCHED_POLICY_DEFAULT;
+    NvU32 regkey      = 0;
+
+    if (hypervisorIsVgxHyper() ||
+        (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))
+    {
+        // Check the PVMRL regkey
+        if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_PVMRL_NVENC, &regkey) == NV_OK) &&
+            FLD_TEST_REF(NV_REG_STR_RM_PVMRL_NVENC_ENABLE, _YES, regkey))
+        {
+            NvU32 configSchedPolicy = REF_VAL(NV_REG_STR_RM_PVMRL_NVENC_SCHED_POLICY, regkey);
+
+            switch (configSchedPolicy)
+            {
+                case NV_REG_STR_RM_PVMRL_NVENC_SCHED_POLICY_VGPU_EQUAL_SHARE:
+                    schedPolicy = SCHED_POLICY_VGPU_EQUAL_SHARE;
+                    break;
+                case NV_REG_STR_RM_PVMRL_NVENC_SCHED_POLICY_VGPU_FIXED_SHARE:
+                    schedPolicy = SCHED_POLICY_VGPU_FIXED_SHARE;
+                    break;
+                default:
+                    NV_PRINTF(LEVEL_INFO,
+                        "Invalid scheduling policy %u specified by PVMRL regkey 0x%08x for NVENC\n",
+                        configSchedPolicy, regkey);
+                    break;
+            }
+        }
+    }
+
+    return schedPolicy;
+}
+
 /*!
  *  Obtains the valid scheduling policy for the current platform.
  *  Use: Determine whether software scheduling is required.
@@ -6745,6 +6866,10 @@ gpuGetSchedulerPolicy_IMPL(OBJGPU *pGpu, RM_ENGINE_TYPE rmEngineType)
     if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
     {
         return _gpuGetSchedulerPolicyGr(pGpu);
+    }
+    else if (RM_ENGINE_TYPE_IS_NVENC(rmEngineType))
+    {
+        return _gpuGetSchedulerPolicyNvenc(pGpu);
     }
 
     return SCHED_POLICY_DEFAULT;
@@ -6807,7 +6932,7 @@ gpuApplySchedulerPolicy_IMPL
     // SWRL is always enabled on GR engine on vGPU. Enabled SWRL Granular locking on vGPU.
     if ((RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)) || hypervisorIsVgxHyper())
     {
-        pGpu->setProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING, NV_TRUE);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_PVMRL_GRANULAR_LOCKING, NV_TRUE);
     }
 }
 
@@ -7009,6 +7134,8 @@ _gpuRecoveryActionName
             return "Drain P2P";
         case NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_AND_RESET:
             return "Drain and Reset";
+        case NV2080_CTRL_GPU_RECOVERY_ACTION_RECOVER_IMEX_DOMAIN:
+            return "Recover IMEX Domain";
         default:
             NV_ASSERT_FAILED("Unknown recovery action!");
             return "Unknown";
@@ -7054,14 +7181,16 @@ _gpuRefreshRecoveryActionInLock
     void  *pParams
 )
 {
-    OBJSYS                          *pSys = SYS_GET_INSTANCE();
-    OBJGPU                          *pGpu = gpumgrGetGpu(gpuInstance);
-    NV_STATUS                        rmStatus;
-    NvBool                           bResetRequired;
-    NvBool                           bDrainAndReset;
-    NV2080_CTRL_GPU_RECOVERY_ACTION  newAction;
-    NV2080_CTRL_GPU_RECOVERY_ACTION  oldAction;
-    
+    OBJSYS                             *pSys = SYS_GET_INSTANCE();
+    OBJGPU                             *pGpu = gpumgrGetGpu(gpuInstance);
+    GPU_REFRESH_RECOVERY_ACTION_PARAMS *pActionParams = (GPU_REFRESH_RECOVERY_ACTION_PARAMS *)pParams;
+    NV_STATUS                           rmStatus;
+    NvBool                              bResetRequired;
+    NvBool                              bDrainAndReset;
+    NV2080_CTRL_GPU_RECOVERY_ACTION     newAction;
+    NV2080_CTRL_GPU_RECOVERY_ACTION     oldAction;
+    NvBool                              bSquashXid = (pActionParams != NULL) ? pActionParams->bSquashXid : NV_FALSE;
+
     if (pGpu == NULL)
     {
         // Call-back is too late. pGpu is already NULL
@@ -7084,6 +7213,15 @@ _gpuRefreshRecoveryActionInLock
         }
         else
         {
+            NvBool bFabricMemAllocDisabled = NV_FALSE;
+
+            Fabric *pFabric = SYS_GET_FABRIC(pSys);
+
+            if (pFabric != NULL)
+            {
+                bFabricMemAllocDisabled = fabricIsMemAllocDisabled(pFabric);
+            }
+
             rmStatus = gpuIsDeviceMarkedForDrainAndReset(pGpu, &bDrainAndReset);
             if ((rmStatus == NV_OK) && bDrainAndReset)
             {
@@ -7092,6 +7230,10 @@ _gpuRefreshRecoveryActionInLock
             else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED))
             {
                 newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_DRAIN_P2P;
+            }
+            else if (bFabricMemAllocDisabled)
+            {
+                newAction = NV2080_CTRL_GPU_RECOVERY_ACTION_RECOVER_IMEX_DOMAIN;
             }
             else
             {
@@ -7111,8 +7253,12 @@ _gpuRefreshRecoveryActionInLock
             gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_RECOVERY_ACTION, NULL, 0, 0, newAction);
 
             // Log XID 154 to indicate new recovery action.
-            nvErrorLog_va(pGpu, GPU_RECOVERY_ACTION_CHANGED, "GPU recovery action changed from 0x%x (%s) to 0x%x (%s)",
-                oldAction, _gpuRecoveryActionName(oldAction), newAction, _gpuRecoveryActionName(newAction));
+            if (!bSquashXid)
+            {
+                nvErrorLog_va(pGpu, GPU_RECOVERY_ACTION_CHANGED, "GPU recovery action changed from 0x%x (%s) to 0x%x (%s)",
+                    oldAction, _gpuRecoveryActionName(oldAction), newAction, _gpuRecoveryActionName(newAction));
+
+            }
         }
     }
 }
@@ -7134,21 +7280,38 @@ gpuRefreshRecoveryAction_KERNEL
     NvBool  inLock
 )
 {
+    NvBool bSquashXid = pGpu->getProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154);
+
     if (!inLock)
     {
         //
         // Schedule a workitem to acquire GPUS_LOCK_ALL and perform the refresh
         // as the current thread could be in any IRQL / lock context.
         //
-        NV_ASSERT_OK(osQueueWorkItem(pGpu,
-                                     _gpuRefreshRecoveryActionInLock,
-                                     NULL,
-                                     (OsQueueWorkItemFlags){.bLockGpus = NV_TRUE}));
+        GPU_REFRESH_RECOVERY_ACTION_PARAMS *pActionParams = portMemAllocNonPaged(sizeof(GPU_REFRESH_RECOVERY_ACTION_PARAMS));
+        if (pActionParams == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for recovery action params\n");
+            return;
+        }
+
+        pActionParams->bSquashXid = bSquashXid;
+
+        NV_STATUS status = osQueueWorkItem(pGpu,
+                                          _gpuRefreshRecoveryActionInLock,
+                                          pActionParams,
+                                          (OsQueueWorkItemFlags){.bLockGpus = NV_TRUE});
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to queue recovery action work item: 0x%x\n", status);
+            portMemFree(pActionParams);
+        }
     }
     else
     {
         // Lock requirement is already satisfied, perform the refresh directly.
-        _gpuRefreshRecoveryActionInLock(pGpu->gpuInstance, NULL);
+        GPU_REFRESH_RECOVERY_ACTION_PARAMS actionParams = { .bSquashXid = bSquashXid };
+        _gpuRefreshRecoveryActionInLock(pGpu->gpuInstance, &actionParams);
     }
 }
 
@@ -7174,6 +7337,17 @@ gpuSetRecoveryDrainP2P_KERNEL
         gpuRefreshRecoveryAction_KERNEL(pGpu, NV_FALSE);
     }
 }
+
+void
+gpuUnmarkDeviceForDrainP2P_KERNEL
+(
+    OBJGPU *pGpu
+)
+{
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED, NV_FALSE);
+    gpuRefreshRecoveryAction_KERNEL(pGpu, NV_FALSE);
+}
+
 /*!
  * @brief Set partition error attribution
  *
@@ -7369,6 +7543,7 @@ gpuIterDeviceInfo_IMPL
 
     pIter->pEntry            = &pGpu->pDeviceInfoTable[-1];
     pIter->devTypeEnum       = deviceTypeEnum;
+
     pIter->dieletIdMask = (dieletInstance == DEVICE_INFO_DIELET_INSTANCE_ANY) ?
         0xffffffffu :
         NVBIT32(dieletInstance);
@@ -7387,10 +7562,12 @@ gpuDeviceInfoIterNext_IMPL
          pIter->pEntry < &pGpu->pDeviceInfoTable[pGpu->numDeviceInfoEntries];
          pIter->pEntry++)
     {
-        if (pIter->pEntry->typeEnum == pIter->devTypeEnum &&
-            (NVBIT32(pIter->pEntry->groupId) & pIter->dieletIdMask))
+        if (pIter->pEntry->typeEnum == pIter->devTypeEnum)
         {
-            return NV_TRUE;
+            if (NVBIT32(pIter->pEntry->groupId) & pIter->dieletIdMask)
+            {
+                return NV_TRUE;
+            }
         }
     }
     return NV_FALSE;
@@ -7418,7 +7595,7 @@ gpuGetOneDeviceEntry_IMPL
                                              dieletInstance));
 
     const DEVICE_INFO_ENTRY *pFirstMatch = NULL;
-    for (; gpuDeviceInfoIterNext(pGpu, &iter);)
+    while (gpuDeviceInfoIterNext(pGpu, &iter))
     {
         if ((globalInstanceId == DEVICE_INFO_GLOBAL_INSTANCE_ID_ANY ||
              globalInstanceId == (NvS32)iter.pEntry->instanceId) &&
@@ -7473,4 +7650,30 @@ gpuBootGspRmProxy_IMPL
     }
 
     return status;
+}
+
+/*!
+ * Check if Inst-in-sys boot is done by ACR
+ *
+ * @param  [in]  pGpu      OBJGPU pointer
+ *
+ * @return       NV_TRUE if yes
+ */
+NvBool gpuIsInstInSysBootByAcrEnabled_IMPL(OBJGPU *pGpu)
+{
+    return NV_FALSE;
+
+}
+
+/*!
+ * Check if Inst-in-sys boot is done by RM
+ *
+ * @param  [in]  pGpu      OBJGPU pointer
+ *
+ * @return       NV_TRUE if yes
+ */
+NvBool gpuIsInstInSysBootByRmEnabled_IMPL(OBJGPU *pGpu)
+{
+    return 1 &&
+          pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM);
 }

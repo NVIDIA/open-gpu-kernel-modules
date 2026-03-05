@@ -32,7 +32,7 @@
 #include "gpu/gpu.h"
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/fsp/kern_fsp_cot_payload.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 
 #if RMCFG_MODULE_ENABLED (GSP)
 #include "gpu/gsp/gsp.h"

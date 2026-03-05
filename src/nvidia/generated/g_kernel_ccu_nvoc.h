@@ -149,8 +149,8 @@ struct KernelCcu {
     struct KernelCcu *__nvoc_pbase_KernelCcu;    // kccu
 
     // Vtable with 2 per-object function pointers
-    NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu * /*this*/, NvBool);  // halified (2 hals)
-    NV_STATUS (*__kccuGetBufSize__)(OBJGPU *, struct KernelCcu * /*this*/);  // halified (3 hals)
+    NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu * /*this*/, NvBool);  // halified (2 hals) body
+    NV_STATUS (*__kccuGetBufSize__)(OBJGPU *, struct KernelCcu * /*this*/);  // halified (3 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KCCU_IS_MISSING inherited from OBJENGSTATE
@@ -192,13 +192,9 @@ struct NVOC_METADATA__KernelCcu {
     const struct NVOC_VTABLE__KernelCcu vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelCcu_TYPEDEF__
-#define __NVOC_CLASS_KernelCcu_TYPEDEF__
-typedef struct KernelCcu KernelCcu;
-#endif /* __NVOC_CLASS_KernelCcu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCcu
-#define __nvoc_class_id_KernelCcu 0x5d5b68
+#define __nvoc_class_id_KernelCcu 0x5d5b68u
+typedef struct KernelCcu KernelCcu;
 #endif /* __nvoc_class_id_KernelCcu */
 
 // Casting support
@@ -222,8 +218,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcu;
 NV_STATUS __nvoc_objCreateDynamic_KernelCcu(KernelCcu**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
-#define __objCreate_KernelCcu(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelCcu((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelCcu(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelCcu((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -428,26 +424,32 @@ static inline NvBool kccuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelCc
     return pEngstate->__nvoc_metadata_ptr->vtable.__kccuIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kccuConstructEngine_IMPL(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc);
 
-NV_STATUS kccuStateLoad_IMPL(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 flags);
+NV_STATUS kccuStateLoad_IMPL(OBJGPU *arg1, struct KernelCcu *arg_this, NvU32 flags);
 
-NV_STATUS kccuStateUnload_IMPL(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 flags);
+NV_STATUS kccuStateUnload_IMPL(OBJGPU *arg1, struct KernelCcu *arg_this, NvU32 flags);
 
-static inline NV_STATUS kccuMigShrBufHandler_46f6a7(OBJGPU *arg1, struct KernelCcu *arg2, NvBool bMigEnabled) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NV_STATUS kccuMigShrBufHandler_GH100(OBJGPU *arg1, struct KernelCcu *arg_this, NvBool bMigEnabled);
+
+NV_STATUS kccuGetBufSize_GH100(OBJGPU *arg1, struct KernelCcu *arg_this);
+
+NV_STATUS kccuGetBufSize_GB100(OBJGPU *arg1, struct KernelCcu *arg_this);
+
+// Inline HAL method definitions
+static inline NV_STATUS kccuMigShrBufHandler_395e98(OBJGPU *arg1, struct KernelCcu *arg_this, NvBool bMigEnabled){
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS kccuMigShrBufHandler_GH100(OBJGPU *arg1, struct KernelCcu *arg2, NvBool bMigEnabled);
-
-NV_STATUS kccuGetBufSize_GB100(OBJGPU *arg1, struct KernelCcu *arg2);
-
-NV_STATUS kccuGetBufSize_GH100(OBJGPU *arg1, struct KernelCcu *arg2);
-
-static inline NV_STATUS kccuGetBufSize_46f6a7(OBJGPU *arg1, struct KernelCcu *arg2) {
+static inline NV_STATUS kccuGetBufSize_395e98(OBJGPU *arg1, struct KernelCcu *arg_this){
     return NV_ERR_NOT_SUPPORTED;
 }
 
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

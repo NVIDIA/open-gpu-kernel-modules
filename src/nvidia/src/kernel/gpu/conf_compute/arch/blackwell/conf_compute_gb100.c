@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -206,3 +206,41 @@ confComputeIsGpuCcCapable_GB100
     return NV_TRUE;
 }
 
+NV_STATUS
+confComputeRotationNotifHandler_GB100
+(
+    OBJGPU               *pGpu,
+    ConfidentialCompute  *pConfCompute,
+    RM_API               *pRmApi,
+    NvHandle              hClient,
+    KernelChannel        *pKernelChannel,
+    NvBool               *bCheckKeyRotation,
+    NvBool                bSet
+)
+{
+    // 
+    // This function would not be needed on Blackwell... once per-channel keys are supported for all engines.
+    // Currently KR is only enabled for CEs. Hence rest of engines rely on hopper style KR.
+    //
+    if (!RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
+    {
+        NV_ASSERT_OK_OR_RETURN(confComputeRotationNotifHandler_GH100(pGpu,
+                    pConfCompute, pRmApi, hClient, pKernelChannel, bCheckKeyRotation, bSet));
+    }
+    return NV_OK;
+}
+
+NV_STATUS confComputeUpdatePerChannelSecrets_GB100(ConfidentialCompute *pConfCompute,
+                                                   KernelChannel       *pKernelChannel)
+{
+    OBJGPU           *pGpu   = ENG_GET_GPU(pConfCompute);
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_PRINTF(LEVEL_INFO, "Updating secrets for channel.\n");
+
+    // Call to Kernel-RM for new key-derivation on same KernelChannel instance.
+    NV_ASSERT_OK_OR_RETURN(kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, &(pKernelChannel->clientKmb)));
+
+    return NV_OK;
+}

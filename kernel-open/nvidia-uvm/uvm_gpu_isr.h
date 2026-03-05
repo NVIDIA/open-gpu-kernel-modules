@@ -198,4 +198,12 @@ void uvm_access_counters_intr_enable(uvm_access_counter_buffer_t *access_counter
 // g_uvm_global.global_lock is held so that the returned pointer remains valid.
 uvm_gpu_t *uvm_parent_gpu_find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu);
 
+// Check if any non-replayable faults are pending, and if so schedule a bottom
+// half to service them.
+//
+// Returns 1 if a new bottom half instance was scheduled, 0 if not.
+//
+// parent_gpu->isr.interrupts_lock must be held to call this function.
+unsigned uvm_parent_gpu_schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu);
+
 #endif // __UVM_GPU_ISR_H__

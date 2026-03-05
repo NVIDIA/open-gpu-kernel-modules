@@ -125,7 +125,7 @@ intrGetIntrTopNonStallMask_GH100
     mask |= intrGetIntrTopCategoryMask(pIntr,
         NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION);
 
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PVMRL_GRANULAR_LOCKING))
     {
         mask |= intrGetIntrTopCategoryMask(pIntr,
             NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
@@ -207,7 +207,7 @@ intrGetIntrTopLegacyStallMask_GH100
                 intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_OWNED) |
                 intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_SHARED);
 
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_PVMRL_GRANULAR_LOCKING))
     {
         ret |= intrGetIntrTopCategoryMask(pIntr,
             NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
@@ -228,7 +228,7 @@ intrGetIntrTopLockedMask_GH100
     NvU64 ret = intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
                 intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_RUNLIST);
 
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_PVMRL_GRANULAR_LOCKING))
     {
         ret |= intrGetIntrTopCategoryMask(pIntr,
             NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);

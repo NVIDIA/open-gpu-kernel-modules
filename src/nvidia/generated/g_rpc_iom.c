@@ -80,16 +80,14 @@ static const struct NVOC_CASTINFO __iom_castinfo_OBJRPC =
 extern const NVOC_RTTI_PROVIDER __iom_rtti_provider;
 const struct NVOC_CLASS_DEF __iom_class_def_OBJRPC =
 {
-    {
-        sizeof(OBJRPC),
-        classId(OBJRPC),
-        &__iom_rtti_provider,
+    .classInfo.size =       sizeof(OBJRPC),
+    .classInfo.classId =    classId(OBJRPC),
+    .classInfo.providerId = &__iom_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        "OBJRPC",
+    .classInfo.name =       "OBJRPC",
 #endif
-    },
-    NULL,
-    &__iom_castinfo_OBJRPC,
+    .objCreatefn = NULL,
+    .pCastInfo =   &__iom_castinfo_OBJRPC,
 };
 
 

@@ -861,17 +861,15 @@ typedef struct NV2080_CTRL_FB_GET_GPU_CACHE_INFO_PARAMS {
 
 #define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES           18U
 
-typedef NvBool NV2080_CTRL_CMD_FB_GET_FB_REGION_SURFACE_MEM_TYPE_FLAG[NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES];
-
 typedef struct NV2080_CTRL_CMD_FB_GET_FB_REGION_FB_REGION_INFO {
     NV_DECLARE_ALIGNED(NvU64 base, 8);
     NV_DECLARE_ALIGNED(NvU64 limit, 8);
     NV_DECLARE_ALIGNED(NvU64 reserved, 8);
-    NvU32                                                  performance;
-    NvBool                                                 supportCompressed;
-    NvBool                                                 supportISO;
-    NvBool                                                 bProtected;
-    NV2080_CTRL_CMD_FB_GET_FB_REGION_SURFACE_MEM_TYPE_FLAG blackList;
+    NvU32  performance;
+    NvBool supportCompressed;
+    NvBool supportISO;
+    NvBool bProtected;
+    NvBool blackList[NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES];
 } NV2080_CTRL_CMD_FB_GET_FB_REGION_FB_REGION_INFO;
 
 #define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MAX_ENTRIES 16U
@@ -1874,16 +1872,14 @@ typedef struct NV2080_CTRL_CMD_FB_GET_CBC_BASE_ADDR_PARAMS {
 
 
 
-typedef struct NV2080_CTRL_FB_REMAP_ENTRY {
+typedef struct NV2080_CTRL_FB_ROW_REMAP_ENTRY {
     NvU32 remapRegVal;
     NvU32 timestamp;
     NvU8  fbpa;
     NvU8  sublocation;
     NvU8  source;
     NvU8  flags;
-} NV2080_CTRL_FB_REMAP_ENTRY;
-
-typedef NV2080_CTRL_FB_REMAP_ENTRY NV2080_CTRL_FB_ROW_REMAP_ENTRY;
+} NV2080_CTRL_FB_ROW_REMAP_ENTRY;
 
 /* valid values for source */
 
@@ -2938,7 +2934,16 @@ typedef struct NV2080_CTRL_FB_BANK_REMAP_HISTOGRAM {
 #define NV2080_CTRL_FB_GET_REMAPPED_BANKS_FLAGS_PENDING_FALSE 0U
 #define NV2080_CTRL_FB_GET_REMAPPED_BANKS_FLAGS_PENDING_TRUE  1U
 
-typedef NV2080_CTRL_FB_REMAP_ENTRY NV2080_CTRL_FB_BANK_REMAP_ENTRY;
+typedef struct NV2080_CTRL_FB_BANK_REMAP_ENTRY {
+    NvU32 remapRegVal;
+    NvU32 timestamp;
+    NvU8  fbpa;
+    NvU8  channel;
+    NvU8  pseudoChannel;
+    NvU8  group;
+    NvU8  source;
+    NvU8  flags;
+} NV2080_CTRL_FB_BANK_REMAP_ENTRY;
 
 #define NV2080_CTRL_FB_GET_REMAPPED_BANKS_PARAMS_MESSAGE_ID (0x61U)
 
@@ -2977,5 +2982,53 @@ typedef struct NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 ugpuTotalMemory[NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_MAX_UGPUS], 8);
     NV_DECLARE_ALIGNED(NvU64 ugpuFreeMemory[NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_MAX_UGPUS], 8);
 } NV2080_CTRL_FB_GET_UGPU_MEMORY_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_CPU_COHERENT_RANGE
+ *
+ * This command returns the CPU-coherent FB range.
+ * Only applicable on self-hosted platforms.
+ *
+ *   coherentCpuFbBase
+ *     FB offset of the start of the CPU-coherent range
+ *   coherentCpuFbEnd
+ *     FB offset of the end (exclusive) of the CPU-coherent range
+ */
+#define NV2080_CTRL_CMD_FB_GET_CPU_COHERENT_RANGE (0x20801363U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS_MESSAGE_ID (0x63U)
+
+typedef struct NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 coherentCpuFbBase, 8);
+    NV_DECLARE_ALIGNED(NvU64 coherentCpuFbEnd, 8);
+} NV2080_CTRL_FB_GET_CPU_COHERENT_RANGE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_WPR_REGION_INFO
+ *
+ * This command returns information about WPR regions.
+ *
+ *   wpr1Start
+ *     FB offset of the start of WPR1
+ *   wpr1End
+ *     FB offset of the end (exclusive) of WPR1
+ *   wpr2Start
+ *     FB offset of the start of WPR1
+ *   wpr2End
+ *     FB offset of the end (exclusive) of WPR1
+ *   fbRegionOfWpr2Start
+ *     FB offset of the start of the FB region (as tracked by RM) that contains WPR2
+ */
+#define NV2080_CTRL_CMD_FB_GET_WPR_REGION_INFO (0x20801364U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS_MESSAGE_ID (0x64U)
+
+typedef struct NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 wpr1Start, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr1End, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr2Start, 8);
+    NV_DECLARE_ALIGNED(NvU64 wpr2End, 8);
+    NV_DECLARE_ALIGNED(NvU64 fbRegionOfWpr2Start, 8);
+} NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS;
 
 /* _ctrl2080fb_h_ */

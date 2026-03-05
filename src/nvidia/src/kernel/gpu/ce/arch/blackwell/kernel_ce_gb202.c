@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,8 +27,8 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/bif/kernel_bif.h"
 
+#include "published/blackwell/gb202/dev_top_zb.h"
 #include "published/blackwell/gb202/dev_ce_base.h"
-#include "published/blackwell/gb202/dev_ce.h"
 
 // Defines for PCE-LCE mapping algorithm
 #define NV_CE_MAX_HSHUBS                  2
@@ -41,6 +41,9 @@
 #define NV_CE_PCE_PER_HSHUB               3
 #define NV_CE_NUM_PCES_NO_LINK_CASE       2
 #define NV_CE_MAX_PCE_PER_GRCE            1
+
+#define GET_DEVICE_ENTRY(gpu, type, instance, global, local, entry) \
+    gpuGetOneDeviceEntry(gpu, type, instance, global, local, entry)
 
 /*!
  * @brief Returns the size of the GRCE_CONFIG register array
@@ -300,10 +303,18 @@ kceGetGrceMaskReg_GB202
     NvU32    *pGrceMask
 )
 {
-    NV_ASSERT_OR_RETURN((pGrceMask != NULL), NV_ERR_INVALID_ARGUMENT); 
+    const DEVICE_INFO_ENTRY *pEntry;
 
-    *pGrceMask = DRF_VAL(_CE, _GRCE_MASK, _VALUE,
-                         GPU_REG_RD32(pGpu, NV_CE_GRCE_MASK));
+    NV_ASSERT_OK_OR_RETURN(GET_DEVICE_ENTRY(pGpu,
+                                            NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_LCE,
+                                            DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                            0,
+                                            DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                            &pEntry));
+    NV_ASSERT_OR_RETURN((pGrceMask != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    *pGrceMask = DRF_VAL(_CE_BASE, _GRCE_MASK, _VALUE,
+                         GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_CE_BASE_GRCE_MASK));
 
     return NV_OK;
 }

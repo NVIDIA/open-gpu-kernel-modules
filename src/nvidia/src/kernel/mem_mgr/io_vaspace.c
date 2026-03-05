@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -290,10 +290,12 @@ _iovaspaceCreateSubmapping
     // Since this is a submemory descriptor, we need to account for the
     // PteAdjust as well, which is included in rootOffset. We don't want to
     // account for it in the iovaArray because it is not accounted for in the
-    // memdesc's PTE array. This should result in a 4K-aligned root offset.
+    // memdesc's PTE array. The root offset should be aligned with
+    // `pageArrayGranularity` because PteAdjust is calculated based on
+    // `pageArrayGranularity`(4K, 64K, etc.).
     //
     rootOffset -= pPhysMemDesc->PteAdjust;
-    NV_ASSERT((rootOffset & RM_PAGE_MASK) == 0);
+    NV_ASSERT((rootOffset & GET_PAGE_MASK(pPhysMemDesc->pageArrayGranularity)) == 0);
 
     //
     // For submemory descriptors, there are two possibilities:
@@ -331,9 +333,9 @@ _iovaspaceCreateSubmapping
     else
     {
         NvU64 i, j;
-        NV_ASSERT(((rootOffset >> RM_PAGE_SHIFT) + pPhysMemDesc->PageCount) <=
+        NV_ASSERT(((rootOffset >> GET_PAGE_SHIFT(pPhysMemDesc->pageArrayGranularity)) + pPhysMemDesc->PageCount) <=
                     pRootMemDesc->PageCount);
-        for (i = (rootOffset >> RM_PAGE_SHIFT), j = 0;
+        for (i = (rootOffset >> GET_PAGE_SHIFT(pPhysMemDesc->pageArrayGranularity)), j = 0;
              j < pPhysMemDesc->PageCount && i < pRootMemDesc->PageCount; i++, j++)
         {
             pSubMapping->iovaArray[j] = pRootIovaMapping->iovaArray[i];
@@ -459,7 +461,11 @@ _iovaspaceCreateMapping
                   pVAS->vaspaceId, status);
         goto error;
     }
-
+    {
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pMappingGpu);
+        if (pKernelGmmu != NULL)
+            kgmmuTlbInvalidatePostIommuMap_HAL(pMappingGpu, pKernelGmmu, pPhysMemDesc);
+    }
     memdescAddIommuMap(pPhysMemDesc, pIovaMapping);
     ++pIOVAS->mappingCount;
 

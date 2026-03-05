@@ -31,6 +31,9 @@
 
 #include "dp_auxdefs.h"
 
+#define DP_TESTMESSAGE_QSES 0x38
+#include "dp_qse.h"
+
 #include "dp_connector.h"
 
 #define DP_LPRIME_SIZE 20
@@ -48,7 +51,58 @@ namespace DisplayPort
     // Request type enum.
     typedef enum
     {
+        DP_TESTMESSAGE_REQUEST_TYPE_QSES,                   // TestMessage from DPTestUtil.
     } DP_TESTMESSAGE_REQUEST_TYPE;
+
+    //
+    // NVAPI QSES reply message struct.
+    // Do NOT inherit any class, need keep consist with definition with Nvapi part,
+    // which is C STRUCT
+    //
+    typedef struct
+    {
+        StreamState     streamState;
+        bool            repeaterFuncPresent;
+        bool            encryption;
+        bool            authentication;
+        OutputSinkType  sinkType;
+        OutputCPType    cpType;
+        bool            signedLPrime;
+        NvU8            streamId;
+        NvU8            LPrime[DP_LPRIME_SIZE];
+    } DP_TESTMESSAGE_REQUEST_QSES_OUTPUT;
+
+    //
+    // Version of QSES_OUTPUT that consistent with struct in dp_messageencodings.h
+    // ( without QSES Lprime).
+    //
+    // Considering nvapi backward compatibility, don't modify DP_TESTMESSAGE_REQUEST_QSES_OUTPUT
+    // definition but has internal version to sync up with dplib implementation.
+    //
+    // DPLib message implementation is using this version for now. TestMessage
+    // need this structure to safely copy info from QSES message structure.
+    //
+    typedef struct
+    {
+        StreamState     streamState;
+        bool            repeaterFuncPresent;
+        bool            encryption;
+        bool            authentication;
+        OutputSinkType  sinkType;
+        OutputCPType    cpType;
+        bool            signedLPrime;
+        NvU8            streamId;
+    } DP_TESTMESSAGE_REQUEST_QSES_OUTPUT_V2;
+
+    typedef struct
+    {
+        // indicated what status to get, for DP, user need fill this
+        DP_TESTMESSAGE_REQUEST_TYPE         requestType;
+        // stream id for QSES to get, user need file this
+        NvU32                               streamID;
+        // replay buffer
+        DP_TESTMESSAGE_REQUEST_QSES_OUTPUT  reply;
+    } DP_TESTMESSAGE_REQUEST_QSES_INPUT;
 
     class TestMessage;
     struct ConnectorImpl;
@@ -83,6 +137,10 @@ namespace DisplayPort
         {
             switch (requestType)
             {
+                case DP_TESTMESSAGE_REQUEST_TYPE_QSES:
+                {
+                    return structSize == sizeof(DP_TESTMESSAGE_REQUEST_QSES_INPUT) ? true : false;
+                }
                 default:
                     return false;
             }
@@ -92,8 +150,10 @@ namespace DisplayPort
 
         // Data Structure for Generic Message.
         NvU32 replyBytes;
+        void  sendTestMsgQSES(void *pBuffer);
 
     public:
+        DP_TESTMESSAGE_REQUEST_QSES_OUTPUT_V2  qsesReply;
 
         DP_TESTMESSAGE_REQUEST_STATUS       testMessageStatus;
 
@@ -103,6 +163,14 @@ namespace DisplayPort
             pConnector = 0;
             pMsgManager = 0;
             replyBytes = 0;
+            qsesReply.streamState = DoesNotExist;
+            qsesReply.repeaterFuncPresent = 0;
+            qsesReply.encryption = 0;
+            qsesReply.authentication = 0;
+            qsesReply.sinkType = StreamUnconnected;
+            qsesReply.cpType = HDCP1x;
+            qsesReply.signedLPrime = 0;
+            qsesReply.streamId = '\0';
         }
         DP_TESTMESSAGE_STATUS sendDPTestMessage(void    *pBuffer,
                                                 NvU32    requestSize,

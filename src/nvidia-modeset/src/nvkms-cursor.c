@@ -37,6 +37,7 @@
 #include "nvkms-rmapi.h"
 
 #include <class/cl917a.h> /* sizeof(GK104DispCursorControlPio) */
+#include <class/cla083.h> /* NVA083_GRID_DISPLAYLESS */
 
 #include <nvos.h> /* NV50VAIO_CHANNELPIO_ALLOCATION_PARAMETERS */
 
@@ -322,6 +323,10 @@ NvBool nvAllocCursorEvo(NVDevEvoPtr pDevEvo)
 {
     NvU32 head;
 
+    if (pDevEvo->displaylessHw) {
+        return TRUE;
+    }
+
     for (head = 0; head < pDevEvo->numHeads; head++) {
         NV50VAIO_CHANNELPIO_ALLOCATION_PARAMETERS PioChannelAllocParams = { 0 };
         NVDispEvoPtr pDispEvo;
@@ -431,6 +436,7 @@ extern NVEvoCursorHAL nvEvoCursorC9;
 extern NVEvoCursorHAL nvEvoCursorCA;
 extern NVEvoCursorHAL nvEvoCursorCB;
 extern NVEvoCursorHAL nvEvoCursorCC;
+extern NVEvoCursorHAL nvDisplaylessCursor;
 
 
 enum NvKmsAllocDeviceStatus nvInitDispHalCursorEvo(NVDevEvoPtr pDevEvo)
@@ -442,6 +448,7 @@ enum NvKmsAllocDeviceStatus nvInitDispHalCursorEvo(NVDevEvoPtr pDevEvo)
         &nvEvoCursorCA,
         &nvEvoCursorCB,
         &nvEvoCursorCC,
+        &nvDisplaylessCursor,
     };
 
     int i;

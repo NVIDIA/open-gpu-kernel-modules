@@ -53,6 +53,7 @@
 #include "ctrl/ctrla0bc.h"
 #include "ctrl/ctrlb06f.h"
 #include "ctrl/ctrl83de.h"
+#include "ctrl/ctrla083.h"
 #ifdef USE_AMAPLIB
 #include "amap_v1.h"
 #endif
@@ -551,6 +552,19 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             sizeof(NV0041_CTRL_SURFACE_INFO));
             break;
         }
+        case NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_DEFAULT_EDID:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS);
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[0],
+                            ((NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS*)pParams)->pEdidBuffer,
+                            ((NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS*)pParams)->pEdidBuffer,
+                            ((NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS*)pParams)->edidSize, 1);
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
+
+            break;
+        }
 #ifdef NV0000_CTRL_CMD_OS_GET_CAPS
 // Not defined on all platforms
         case NV0000_CTRL_CMD_OS_GET_CAPS:
@@ -1002,6 +1016,14 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0041_CTRL_GET_SURFACE_INFO_PARAMS*)pParams)->surfaceInfoList = paramCopies[0].pUserParams;
+            break;
+        }
+        case NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_DEFAULT_EDID:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS);
+
+            status = rmapiParamsRelease(&paramCopies[0]);
+            ((NVA083_CTRL_VIRTUAL_DISPLAY_GET_DEFAULT_EDID_PARAMS*)pParams)->pEdidBuffer = paramCopies[0].pUserParams;
             break;
         }
 #ifdef NV0000_CTRL_CMD_OS_GET_CAPS

@@ -113,7 +113,6 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
     NV_STATUS status  = NV_OK;
     NVLINK_BIT_VECTOR localLinkMask;
     NVLINK_BIT_VECTOR matchingLinkMask;
-    NvU64 tmpLinkMask;
     NVLINK_BIT_VECTOR *pEnabledLinkMask;
 
     if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
@@ -139,27 +138,20 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    //
-    // Following functions using tmpLinkMask will need to be modified to use
-    // bitvector.
-    //
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        bitVectorToRaw(&localLinkMask, &tmpLinkMask, sizeof(tmpLinkMask)));
-
     switch (pParams->powerState)
     {
         case NV2080_CTRL_NVLINK_POWER_STATE_L0:
         {
             status = knvlinkEnterExitSleep(pGpu, pKernelNvlink,
-                                           tmpLinkMask,
+                                           &localLinkMask,
                                            NV_FALSE);
 
             if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
             {
                 NV_PRINTF(LEVEL_INFO,
-                          "Transition to L0 for GPU%d: linkMask 0x%llx in progress... Waiting for "
+                          "Transition to L0 for GPU%d: linkMask "NV_BITVECTOR_INLINE_FMTX" in progress... Waiting for "
                           "remote endpoints to request L2 exit\n",
-                          pGpu->gpuInstance, tmpLinkMask);
+                          pGpu->gpuInstance, NV_BITVECTOR_INLINE_PRINTF_ARG(&localLinkMask));
 
                 return NV_WARN_MORE_PROCESSING_REQUIRED;
             }
@@ -167,8 +159,8 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Error setting power state %d on linkmask 0x%llx\n",
-                          pParams->powerState, tmpLinkMask);
+                          "Error setting power state %d on linkmask "NV_BITVECTOR_INLINE_FMTX"\n",
+                          pParams->powerState, NV_BITVECTOR_INLINE_PRINTF_ARG(&localLinkMask));
 
                 return status;
             }
@@ -178,15 +170,15 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
         case NV2080_CTRL_NVLINK_POWER_STATE_L2:
         {
             status = knvlinkEnterExitSleep(pGpu, pKernelNvlink,
-                                           tmpLinkMask,
+                                           &localLinkMask,
                                            NV_TRUE);
 
             if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
             {
                 NV_PRINTF(LEVEL_INFO,
-                          "Transition to L2 for GPU%d: linkMask 0x%llx in progress... Waiting for "
+                          "Transition to L2 for GPU%d: linkMask "NV_BITVECTOR_INLINE_FMTX" in progress... Waiting for "
                           "remote endpoints to request L2 entry\n",
-                          pGpu->gpuInstance, tmpLinkMask);
+                          pGpu->gpuInstance, NV_BITVECTOR_INLINE_PRINTF_ARG(&localLinkMask));
 
                 return NV_WARN_MORE_PROCESSING_REQUIRED;
             }
@@ -194,8 +186,8 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Error setting power state %d on linkmask 0x%llx\n",
-                          pParams->powerState, tmpLinkMask);
+                          "Error setting power state %d on linkmask "NV_BITVECTOR_INLINE_FMTX"\n",
+                          pParams->powerState, NV_BITVECTOR_INLINE_PRINTF_ARG(&localLinkMask));
 
                 return status;
             }

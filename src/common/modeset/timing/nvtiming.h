@@ -1,31 +1,29 @@
-//****************************************************************************
-//
-//  SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-//  SPDX-License-Identifier: MIT
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a
-//  copy of this software and associated documentation files (the "Software"),
-//  to deal in the Software without restriction, including without limitation
-//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the
-//  Software is furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-//  DEALINGS IN THE SOFTWARE.
-//
-//  File:       nvtiming.h
-//
-//  Purpose:    This file is the common header all nv timing library clients.
-//
-//*****************************************************************************
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/** @file  nvtiming.h
+ *  @brief This file is the common header all NV timing library clients.
+ */
 
 #ifndef __NVTIMING_H__
 #define __NVTIMING_H__
@@ -935,7 +933,7 @@ typedef struct tagNVT_RID_CODES
     NvU8  rid;        // Resolution Identification (RID)
 } NVT_RID_CODES;
 
-#pragma pack(1)
+#pragma pack(push, 1)
 typedef struct tagVFD_ONE_BYTE
 {
     NvU8 rid          : 6;
@@ -1126,7 +1124,7 @@ typedef struct tagNVT_HDR10PLUS_INFO
     NvU8 full_frame_peak_luminance_index    : 2;
     NvU8 peak_luminance_index               : 4;
 } NVT_HDR10PLUS_INFO;
-#pragma pack()
+#pragma pack(pop)
 
 //***************************
 // colorimetry data block
@@ -1261,7 +1259,7 @@ typedef struct tagNVT_2BYTES
     NvU8   byte2;
 } NVT_2BYTES;
 
-#pragma pack(1)
+#pragma pack(push, 1)
 #define NVT_CTA861_DID_MAX_DATA_BLOCK           4
 //***********************
 // DisplayID VII Video Timing Data Block (T7VDB)
@@ -1346,7 +1344,7 @@ typedef struct tagNATIVE_VIDEO_RESOLUTION_DATA
     NvU8 image_size[4];
 } NATIVE_VIDEO_RESOLUTION_DATA;
 
-#pragma pack()
+#pragma pack(pop)
 
 // See CEA-861E, Table 42, 43 Extended Tags; indicates that the corresponding CEA extended data block value is valid,
 // e.g. if colorimetry is set, then NVT_EDID_CEA861_INFO::colorimetry is valid
@@ -3364,7 +3362,7 @@ typedef struct tagNVT_VIDEO_INFOFRAME
 #define NVT_VIDEO_INFOFRAME_CONTENT_GAME                  4
 #define NVT_VIDEO_INFOFRAME_CONTENT_LAST                  4
 
-#pragma pack(1)
+#pragma pack(push, 1)
 typedef struct
 {
     // byte 1
@@ -3428,7 +3426,7 @@ typedef struct
         NvU8 rsvd_bits_byte15        : 1;
     }byte15;
 } NVT_VIDEO_INFOFRAME_OVERRIDE;
-#pragma pack()
+#pragma pack(pop)
 
 typedef struct
 {
@@ -4342,13 +4340,13 @@ typedef struct tagNVT_HDR_INFOFRAME_PAYLOAD
     NVT_HDR_INFOFRAME_MASTERING_DATA type1;
 } NVT_HDR_INFOFRAME_PAYLOAD;
 
-#pragma pack(1)
+#pragma pack(push, 1)
 typedef struct tagNVT_HDR_INFOFRAME
 {
     NVT_INFOFRAME_HEADER            header;
     NVT_HDR_INFOFRAME_PAYLOAD       payload;
 } NVT_HDR_INFOFRAME;
-#pragma pack()
+#pragma pack(pop)
 
 //
 //

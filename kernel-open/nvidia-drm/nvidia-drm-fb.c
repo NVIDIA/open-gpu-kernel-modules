@@ -63,7 +63,9 @@ static void nv_drm_framebuffer_destroy(struct drm_framebuffer *fb)
 
     /* Free NvKmsKapiSurface associated with this framebuffer object */
 
-    nvKms->destroySurface(nv_dev->pDevice, nv_fb->pSurface);
+    if (nv_fb->pSurface != NULL) {
+        nvKms->destroySurface(nv_dev->pDevice, nv_fb->pSurface);
+    }
 
     __nv_drm_framebuffer_free(nv_fb);
 }
@@ -139,6 +141,7 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
     struct NvKmsKapiCreateSurfaceParams params = { };
     struct nv_drm_gem_object *nv_gem;
     struct drm_framebuffer *fb = &nv_fb->base;
+    bool non_scanout_mem_backed = false;
     uint32_t i;
     int ret;
 
@@ -160,6 +163,10 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
             params.planes[i].memory = nv_gem->pMemory;
             params.planes[i].offset = fb->offsets[i];
             params.planes[i].pitch = fb->pitches[i];
+
+            if (!nvKms->isVidmem(nv_gem->pMemory) && nv_dev->hasVideoMemory) {
+                non_scanout_mem_backed = true;
+            }
         }
     }
     params.height = fb->height;
@@ -226,10 +233,15 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
 
     /* Create NvKmsKapiSurface */
 
-    nv_fb->pSurface = nvKms->createSurface(nv_dev->pDevice, &params);
-    if (nv_fb->pSurface == NULL) {
-        NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Failed to create NvKmsKapiSurface");
-        goto fail;
+    if (non_scanout_mem_backed) {
+        /* Do not register drm_framebuffer against nvkms */
+        nv_fb->pSurface = NULL;
+    } else {
+        nv_fb->pSurface = nvKms->createSurface(nv_dev->pDevice, &params);
+        if (nv_fb->pSurface == NULL) {
+            NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Failed to create NvKmsKapiSurface");
+            goto fail;
+        }
     }
 
     return 0;

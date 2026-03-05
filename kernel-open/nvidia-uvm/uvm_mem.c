@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2024 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -289,7 +289,7 @@ uvm_chunk_sizes_mask_t uvm_mem_kernel_chunk_sizes(uvm_gpu_t *gpu)
 {
     // Get the mmu mode hal directly as the internal address space tree has not
     // been created yet.
-    uvm_mmu_mode_hal_t *hal = gpu->parent->arch_hal->mmu_mode_hal(gpu->big_page.internal_size);
+    uvm_mmu_mode_hal_t *hal = gpu->parent->arch_hal->mmu_mode_hal();
     NvU64 page_sizes = hal->page_sizes();
 
     return (uvm_chunk_sizes_mask_t)(page_sizes & UVM_CHUNK_SIZES_MASK);
@@ -305,10 +305,10 @@ static NvU64 mem_pick_chunk_size(uvm_mem_t *mem)
 
     biggest_page_size = uvm_mmu_biggest_page_size_up_to(&mem->backing_gpu->address_space_tree, UVM_CHUNK_SIZE_MAX);
 
-    if (mem->size < mem->backing_gpu->big_page.internal_size)
+    if (mem->size < UVM_BIG_PAGE_SIZE)
         chunk_size = UVM_PAGE_SIZE_4K;
     else if (mem->size < biggest_page_size)
-        chunk_size = mem->backing_gpu->big_page.internal_size;
+        chunk_size = UVM_BIG_PAGE_SIZE;
     else
         chunk_size = biggest_page_size;
 
@@ -328,15 +328,8 @@ static NvU64 mem_pick_gpu_page_size(uvm_mem_t *mem, uvm_gpu_t *gpu, uvm_page_tre
         return mem->chunk_size;
     }
 
-    // For sysmem, check whether the GPU supports mapping it with large pages.
-    if (gpu->parent->can_map_sysmem_with_large_pages) {
-        // If it's supported, pick the largest page size not bigger than
-        // the chunk size.
-        return uvm_mmu_biggest_page_size_up_to(gpu_page_tree, mem->chunk_size);
-    }
-
-    // Otherwise just use 4K.
-    return UVM_PAGE_SIZE_4K;
+    // For sysmem, pick the largest page size not bigger than the chunk size.
+    return uvm_mmu_biggest_page_size_up_to(gpu_page_tree, mem->chunk_size);
 }
 
 static void mem_free_vidmem_chunks(uvm_mem_t *mem)

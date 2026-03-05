@@ -197,6 +197,27 @@ _fabricvaspaceUnbindInstBlk
     }
 }
 
+
+static NV_INLINE void
+_fabricvaspaceEncodeFabricAddresses
+(
+    FABRIC_VASPACE *pFabricVAS,
+    NvU64          *pAddrs,
+    NvU32          numAddrs
+)
+{
+}
+
+static NV_INLINE void
+_fabricvaspaceDecodeFabricAddresses
+(
+    FABRIC_VASPACE *pFabricVAS,
+    NvU64          *pAddrs,
+    NvU32          numAddrs
+)
+{
+}
+
 NV_STATUS
 fabricvaspaceConstruct__IMPL
 (
@@ -485,9 +506,17 @@ fabricvaspaceAllocNonContiguous_IMPL
     pFabricVAS->ucFabricFreeSize  -= size;
     pFabricVAS->ucFabricInUseSize += size;
 
+    _fabricvaspaceEncodeFabricAddresses(pFabricVAS, *ppAddr, *pNumAddr);
+
     return NV_OK;
 
 failed:
+    //
+    // fabricvaspaceBatchFree adjusts the fabric vaspace usage counters.
+    // Since we are error handling using that, we need to account for it before invoking it.
+    //
+    pFabricVAS->ucFabricFreeSize  += pageSize * (*pNumAddr);
+    pFabricVAS->ucFabricInUseSize -= pageSize * (*pNumAddr);
 
     fabricvaspaceBatchFree(pFabricVAS, *ppAddr, *pNumAddr, 1);
     portMemFree(*ppAddr);
@@ -504,32 +533,8 @@ fabricvaspaceFree_IMPL
     NvU64           vAddr
 )
 {
-    OBJGPU     *pGpu = pFabricVAS->pGpu;
-    KernelBus  *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    NvU64       blockSize;
-    NvBool      bUcFla;
-
-    NV_ASSERT_OR_RETURN(pFabricVAS->pGVAS != NULL, NV_ERR_OBJECT_NOT_FOUND);
-
-    bUcFla = (vAddr >= fabricvaspaceGetUCFlaStart(pFabricVAS) &&
-              vAddr < fabricvaspaceGetUCFlaLimit(pFabricVAS));
-
-    NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS, vAddr, &blockSize) == NV_OK);
-
-    kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
-                                     BUS_FLUSH_SYSTEM_MEMORY));
-
-    fabricvaspaceInvalidateTlb(pFabricVAS, NULL, PTE_DOWNGRADE);
-
-    _fabricvaspaceUnbindInstBlk(pFabricVAS);
-
-    if (bUcFla)
-    {
-        pFabricVAS->ucFabricFreeSize  += blockSize;
-        pFabricVAS->ucFabricInUseSize -= blockSize;
-    }
-
-    return NV_OK;
+    NV_ASSERT(0);
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS
@@ -636,6 +641,7 @@ fabricvaspaceBatchFree_IMPL
     NvU32 idx   = 0;
     NvBool bUcFla;
 
+    _fabricvaspaceDecodeFabricAddresses(pFabricVAS, pAddr, numAddr);
 
     for (count = 0; count < numAddr; count++)
     {
@@ -682,23 +688,15 @@ fabricvaspaceGetGpaMemdesc_IMPL
     MEMORY_DESCRIPTOR **ppAdjustedMemdesc
 )
 {
-    KernelNvlink      *pKernelNvlink      = GPU_GET_KERNEL_NVLINK(pMappingGpu);
     MEMORY_DESCRIPTOR *pRootMemDesc       = NULL;
     NODE              *pNode              = NULL;
     NV_STATUS          status             = NV_OK;
     NvU64              rootOffset         = 0;
-    NvBool             bLoopbackSupported = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(ppAdjustedMemdesc != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    {
-        bLoopbackSupported = pKernelNvlink != NULL &&
-                (knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink) ||
-                 knvlinkIsForcedConfig(pMappingGpu, pKernelNvlink));
-    }
-
-    if (memdescGetAddressSpace(pFabricMemdesc) != ADDR_FABRIC_V2 ||
-        bLoopbackSupported)
+    if ((memdescGetAddressSpace(pFabricMemdesc) != ADDR_FABRIC_V2) ||
+        memdescGetFlag(pFabricMemdesc, MEMDESC_FLAGS_ALLOW_FABRIC_LOOPBACK_MAPPING))
     {
         *ppAdjustedMemdesc = pFabricMemdesc;
         return NV_OK;
@@ -1017,6 +1015,7 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
             // Virtual address, not localized
             fabricAddr = memdescGetPhysAddr(pFabricMemDesc, AT_GPU, fabricOffset);
 
+            _fabricvaspaceDecodeFabricAddresses(pFabricVAS, &fabricAddr, 1);
             vaspaceUnmap(pFabricVAS->pGVAS, pFabricVAS->pGpu, fabricAddr, fabricAddr + mapLength - 1);
 
             fabricOffset = fabricOffset + mapLength;
@@ -1140,6 +1139,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
             // Virtual address, not localized
             fabricAddr = memdescGetPhysAddr(pFabricMemDesc, AT_GPU, fabricOffset);
 
+            _fabricvaspaceDecodeFabricAddresses(pFabricVAS, &fabricAddr, 1);
             //
             // Physical address, may be localized
             // FLA code offsets into the page array
@@ -1185,7 +1185,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
             // Map the memory fabric object at the given physical memory offset.
             status = dmaUpdateVASpace_HAL(pFabricGpu, pFabricDma, pFabricVAS->pGVAS, pTempMemdesc,
                                           NULL, fabricAddr, fabricAddr + mapLength - 1,
-                                          mapFlags, &pageArray, 0, &comprInfo, 0,
+                                          mapFlags, &pageArray, &comprInfo, 0,
                                           NV_MMU_PTE_VALID_TRUE, aperture,
                                           dmaIsDefaultGpuUncached_HAL(pFabricDma, pTempMemdesc, aperture, NV_FALSE),
                                           peerNumber, NVLINK_INVALID_FABRIC_ADDR,
@@ -1282,3 +1282,4 @@ fabricvaspaceIsInUse_IMPL
 {
     return gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE));
 }
+

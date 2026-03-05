@@ -133,6 +133,7 @@ namespace DisplayPort
     {
         StreamUnconnected = 0,
         NonAuthLegacyDevice = 1,  // TV or CRT
+        Non12CPOrNonQSE = 2,      // DVI/HDMI or DP 1.1 sink/repeater
         DP_MST = 4
     }OutputSinkType;
 
@@ -556,6 +557,105 @@ namespace DisplayPort
 
     public:
         SinkEventNotifyMessage(MessageReceiverEventSink * sink, unsigned requestId);
+    };
+
+    //
+    // QUERY_STREAM_ENCRYPTION_STATUS 0x38
+    //
+    class QueryStreamEncryptionMessage : public MessageManager::Message
+    {
+        virtual ParseResponseStatus parseResponseAck(EncodedMessage * message,
+                                                     BitStreamReader * reader);
+
+    private:
+        struct QSES_REPLY
+        {
+            StreamState     streamState;
+            bool            repeaterFuncPresent;
+            bool            encryption;
+            bool            authentication;
+            OutputSinkType  sinkType;
+            OutputCPType    cpType;
+            bool            signedLPrime;
+            NvU8            streamId;
+        } reply;
+
+        bool bIsHdcp22Qse;
+
+    public:
+        QueryStreamEncryptionMessage() :
+                    Message(NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS,
+                            NV_DP_SBMSG_PRIORITY_LEVEL_DEFAULT)
+        {
+            dpMemZero(&reply, sizeof(reply));
+            bIsHdcp22Qse = false;
+        }
+
+        void set(const Address & target,
+            unsigned streamId,
+            NvU8* clientId,
+            StreamEvent streamEvent,
+            bool streamEventMask,
+            StreamBehavior streamBehavior,
+            bool streamBehaviorMask);
+        NvU8 getStreamId()
+        {
+            return reply.streamId;
+        }
+
+        void getReply(void *p)
+        {
+            *(struct QSES_REPLY *)p = reply;
+        }
+
+        NvU16 getStreamStatus()
+        {
+            NvU16 streamStatus = 0;
+
+            streamStatus = (NvU16)reply.streamState;
+
+            if (reply.repeaterFuncPresent)
+                streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_REPEATER);
+            if (reply.encryption)
+                streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_ENCRYPTION);
+            if (reply.authentication)
+                streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_AUTHENTICATION);
+
+            if (reply.sinkType != StreamUnconnected)
+            {
+                if (reply.sinkType & DP_MST)
+                {
+                    streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_OUTPUT_SINK_MULTI);
+                }
+
+                if (reply.sinkType & Non12CPOrNonQSE)
+                {
+                   streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_OUTPUT_SINK_NON_DP1_2_CP);
+                }
+
+                if (reply.sinkType & NonAuthLegacyDevice)
+                {
+                    streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_OUTPUT_SINK_LEGACY);
+                }
+            }
+
+            if (reply.cpType == HDCP1x)
+            {
+                streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_OUTPUT_CP_TYPE_HDCP1X);
+            }
+            else if (reply.cpType == HDCP2x)
+            {
+                streamStatus |= 1 << (1 ? NV_DP_HDCP_STREAM_OUTPUT_CP_TYPE_HDCP2X);
+            }
+
+            return streamStatus;
+
+        }
+
+        void setHdcp22Qse(bool bHdcp22Qse)
+        {
+            bIsHdcp22Qse = bHdcp22Qse;
+        }
     };
 
 }

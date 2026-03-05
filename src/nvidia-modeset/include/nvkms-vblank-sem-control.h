@@ -32,11 +32,11 @@ NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset);
 
-NvBool nvEvoDisableVblankSemControl(
+void nvEvoDisableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVVblankSemControl *pVblankSemControl);
 
-NvBool nvEvoAccelVblankSemControls(
+void nvEvoAccelVblankSemControls(
     NVDevEvoPtr pDevEvo,
     NVDispEvoRec *pDispEvo,
     NvU32 apiHeadMask);

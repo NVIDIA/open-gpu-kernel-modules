@@ -34,7 +34,7 @@ extern "C" {
 
 #        define LIBOS_LOG_TO_NVLOG 1
 
-#    define LIBOS_LOG_MAX_LOGS      7   // Max logs per GPU
+#    define LIBOS_LOG_MAX_LOGS      8   // Max logs per GPU
 
 #elif defined(LIBOS_LOG_OFFLINE_DECODER)
 #    include "nvlog_decoder.h"
@@ -251,8 +251,7 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode);
 
 void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog);
 
-void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode);
-NvBool isLibosPreserveLogBufferFull(LIBOS_LOG_DECODE *pLogDecode, NvU32 gpuInstance);
+void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode, NvBool bPreserveNoWrap, NvBool bPreserveWrap);
 
 void *libosLogGetDataPointer(LIBOS_LOG_NVLOG_BUFFER *pLibosBuf);
 

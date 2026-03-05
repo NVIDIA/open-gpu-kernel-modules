@@ -53,19 +53,15 @@ extern "C" {
 
 #include "core/core.h"
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 
 #include "ctrl/ctrl0004.h"
 
 typedef struct OBJTMR *POBJTMR;
 
-#ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__
-#define __NVOC_CLASS_OBJTMR_TYPEDEF__
-typedef struct OBJTMR OBJTMR;
-#endif /* __NVOC_CLASS_OBJTMR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJTMR
-#define __nvoc_class_id_OBJTMR 0x9ddede
+#define __nvoc_class_id_OBJTMR 0x9ddedeu
+typedef struct OBJTMR OBJTMR;
 #endif /* __nvoc_class_id_OBJTMR */
 
 
@@ -170,13 +166,9 @@ struct NVOC_METADATA__TimerApi {
     const struct NVOC_VTABLE__TimerApi vtable;
 };
 
-#ifndef __NVOC_CLASS_TimerApi_TYPEDEF__
-#define __NVOC_CLASS_TimerApi_TYPEDEF__
-typedef struct TimerApi TimerApi;
-#endif /* __NVOC_CLASS_TimerApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_TimerApi
-#define __nvoc_class_id_TimerApi 0xb13ac4
+#define __nvoc_class_id_TimerApi 0xb13ac4u
+typedef struct TimerApi TimerApi;
 #endif /* __nvoc_class_id_TimerApi */
 
 // Casting support
@@ -194,14 +186,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_TimerApi;
 
 NV_STATUS __nvoc_objCreateDynamic_TimerApi(TimerApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_TimerApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_TimerApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_TimerApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_TimerApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS tmrapiConstruct_IMPL(struct TimerApi *arg_pTimerApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_tmrapiConstruct(arg_pTimerApi, arg_pCallContext, arg_pParams) tmrapiConstruct_IMPL(arg_pTimerApi, arg_pCallContext, arg_pParams)
+NV_STATUS tmrapiConstruct_IMPL(struct TimerApi *pTimerApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_tmrapiConstruct(pTimerApi, pCallContext, pParams) tmrapiConstruct_IMPL(pTimerApi, pCallContext, pParams)
 
 void tmrapiDestruct_IMPL(struct TimerApi *pTimerApi);
 #define __nvoc_tmrapiDestruct(pTimerApi) tmrapiDestruct_IMPL(pTimerApi)
@@ -409,10 +401,16 @@ static inline NV_STATUS tmrapiGetOrAllocNotifShare_DISPATCH(struct TimerApi *pNo
     return pNotifier->__nvoc_metadata_ptr->vtable.__tmrapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS tmrapiGetRegBaseOffsetAndSize_IMPL(struct TimerApi *pTimerApi, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS tmrapiCtrlCmdTmrSetAlarmNotify_IMPL(struct TimerApi *pTimerApi, NV0004_CTRL_TMR_SET_ALARM_NOTIFY_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

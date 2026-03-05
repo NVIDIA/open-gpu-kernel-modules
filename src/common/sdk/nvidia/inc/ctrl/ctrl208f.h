@@ -40,7 +40,6 @@
 
 #include "ctrl208f/ctrl208fbif.h"
 #include "ctrl208f/ctrl208fbus.h"
-#include "ctrl208f/ctrl208fevent.h"
 #include "ctrl208f/ctrl208fgpu.h"
 #include "ctrl208f/ctrl208fgr.h"
 #include "ctrl208f/ctrl208fpmgr.h"

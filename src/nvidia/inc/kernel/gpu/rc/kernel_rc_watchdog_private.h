@@ -70,7 +70,7 @@ typedef struct {
     NvU32 thwapRepeatMask;
     NvU32 stompChannelMask;
     NvU32 stompRepeatMask;
-    /*! Mask of allocations to fail for testing RC. See nvcm.h */
+    /*! Mask of allocations to fail for testing RC */
     NvU32 allocFailMask;
     /*! Array of NvU32 to hold last vblank counter */
     NvU32 oldVblank[OBJ_MAX_HEADS];
@@ -110,7 +110,7 @@ typedef struct
     NvU32 gpEntry0[2];
     NvU32 gpEntry1[2];
     NvU32 pbBytes;
-    NvU32 class2dSubch;
+    NvU32 classSubch;
 } KernelWatchdogChannelInfo;
 
 #endif // ifndef KERNEL_RC_WATCHDOG_PRIVATE_H

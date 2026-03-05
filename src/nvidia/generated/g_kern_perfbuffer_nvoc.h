@@ -131,13 +131,9 @@ struct NVOC_METADATA__PerfBuffer {
     const struct NVOC_VTABLE__PerfBuffer vtable;
 };
 
-#ifndef __NVOC_CLASS_PerfBuffer_TYPEDEF__
-#define __NVOC_CLASS_PerfBuffer_TYPEDEF__
-typedef struct PerfBuffer PerfBuffer;
-#endif /* __NVOC_CLASS_PerfBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_PerfBuffer
-#define __nvoc_class_id_PerfBuffer 0x4bc43b
+#define __nvoc_class_id_PerfBuffer 0x4bc43bu
+typedef struct PerfBuffer PerfBuffer;
 #endif /* __nvoc_class_id_PerfBuffer */
 
 // Casting support
@@ -155,13 +151,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PerfBuffer;
 
 NV_STATUS __nvoc_objCreateDynamic_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_PerfBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_PerfBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_PerfBuffer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_PerfBuffer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-#define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_b3696a(pResource)
+#define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_d44104(pResource)
 
 NV_STATUS perfbufferPrivilegeCheck_IMPL(struct PerfBuffer *pPerfBuffer);
 #ifdef __nvoc_kern_perfbuffer_h_disabled
@@ -334,19 +330,24 @@ static inline void perfbufferAddAdditionalDependants_DISPATCH(struct RsClient *p
     pResource->__nvoc_metadata_ptr->vtable.__perfbufferAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline void perfbufferDestruct_b3696a(struct PerfBuffer *pResource) {
-    return;
-}
-
-
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS perfbufferConstructHal_KERNEL(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
-static inline NV_STATUS perfbufferConstructHal_46f6a7(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+// Inline HAL method definitions
+static inline NV_STATUS perfbufferConstructHal_395e98(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS __nvoc_perfbufferConstruct(struct PerfBuffer *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return perfbufferConstructHal(arg_pResource, arg_pCallContext, arg_pParams);
+static inline void perfbufferDestruct_d44104(struct PerfBuffer *pResource){
+    return;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_perfbufferConstruct(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return perfbufferConstructHal(pResource, pCallContext, pParams);
 }
 
 #undef PRIVATE_FIELD

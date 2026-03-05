@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,6 @@
 #include "core/system.h"
 #include "core/locks.h"
 #include "compute/fabric.h"
-#include "Nvcm.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/gpu.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"

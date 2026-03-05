@@ -90,6 +90,7 @@ NV_STATUS uvm_global_init(void)
     INIT_LIST_HEAD(&g_uvm_global.va_spaces.list);
     uvm_mutex_init(&g_uvm_global.devmem_ranges.lock, UVM_LOCK_ORDER_LEAF);
     INIT_LIST_HEAD(&g_uvm_global.devmem_ranges.list);
+    INIT_LIST_HEAD(&g_uvm_global.pci_p2pdma_devices.list);
 
     status = uvm_kvmalloc_init();
     if (status != NV_OK) {
@@ -238,6 +239,7 @@ void uvm_global_exit(void)
     uvm_mem_global_exit();
     uvm_pmm_sysmem_exit();
     uvm_pmm_devmem_exit();
+    uvm_pmm_pci_p2pdma_cache_exit();
     uvm_gpu_exit();
     uvm_processor_mask_cache_exit();
 
@@ -311,10 +313,7 @@ static NV_STATUS uvm_suspend(void)
         // guarantees that all user channels have been preempted before
         // uvm_suspend() is called, which implies that no user channels can be
         // stalled on faults when this point is reached.
-        if (gpu->parent->replayable_faults_supported)
-            uvm_gpu_fault_buffer_flush(gpu);
-
-        // TODO: Bug 2535118: flush the non-replayable fault buffer
+        uvm_gpu_replayable_buffer_flush(gpu);
 
         // Stop access counter interrupt processing for the duration of this
         // sleep cycle to defend against potential interrupt storms in

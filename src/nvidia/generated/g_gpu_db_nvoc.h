@@ -147,13 +147,9 @@ struct NVOC_METADATA__GpuDb {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_GpuDb_TYPEDEF__
-#define __NVOC_CLASS_GpuDb_TYPEDEF__
-typedef struct GpuDb GpuDb;
-#endif /* __NVOC_CLASS_GpuDb_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GpuDb
-#define __nvoc_class_id_GpuDb 0xcdd250
+#define __nvoc_class_id_GpuDb 0xcdd250u
+typedef struct GpuDb GpuDb;
 #endif /* __nvoc_class_id_GpuDb */
 
 // Casting support
@@ -172,13 +168,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb;
 NV_STATUS __nvoc_objCreateDynamic_GpuDb(GpuDb**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_GpuDb(GpuDb**, Dynamic*, NvU32);
-#define __objCreate_GpuDb(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_GpuDb((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_GpuDb(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_GpuDb((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gpudbConstruct_IMPL(struct GpuDb *arg_pGpuDb);
-#define __nvoc_gpudbConstruct(arg_pGpuDb) gpudbConstruct_IMPL(arg_pGpuDb)
+NV_STATUS gpudbConstruct_IMPL(struct GpuDb *pGpuDb);
+#define __nvoc_gpudbConstruct(pGpuDb) gpudbConstruct_IMPL(pGpuDb)
 
 void gpudbDestruct_IMPL(struct GpuDb *pGpuDb);
 #define __nvoc_gpudbDestruct(pGpuDb) gpudbDestruct_IMPL(pGpuDb)
@@ -187,6 +183,12 @@ void gpudbDestruct_IMPL(struct GpuDb *pGpuDb);
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

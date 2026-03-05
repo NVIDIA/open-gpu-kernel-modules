@@ -24,6 +24,12 @@
 #ifndef gh100_dev_nv_bus_addendum_h
 #define gh100_dev_nv_bus_addendum_h
 
+//
+// This register is used report GSP-FMC errors
+//
+#define NV_PBUS_SW_SCRATCH_GSP_FMC_ERROR                            NV_PBUS_SW_SCRATCH(0x37)
+#define NV_PBUS_SW_SCRATCH_GSP_FMC_ERROR_CODE                       31:0
+
 /*!
  * @defgroup    FRTS_INSECURE_SCRATCH_REGISTERS
  *

@@ -303,9 +303,8 @@ knvlinkCoreUpdateDeviceUUID_IMPL
         //
 
         portMemSet((void *)pKernelNvlink->deviceName, 0, NVLINK_DEVICE_NAME_LENGTH);
-        gpuGetNameString(pGpu,
-                         NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII,
-                         pKernelNvlink->deviceName);
+        ct_assert(NVLINK_DEVICE_NAME_LENGTH >= NV2080_GPU_MAX_NAME_STRING_LENGTH);
+        gpuGetNameString(pGpu, pKernelNvlink->deviceName);
 
         devIdx = pKernelNvlink->deviceName;
         while (*devIdx != '\0') devIdx++;

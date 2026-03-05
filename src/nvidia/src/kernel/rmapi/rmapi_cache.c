@@ -653,7 +653,6 @@ static NvBool _isGpuGetInfoIndexCacheable(NvU32 index, NvU32 cacheGpuFlags)
         case NV2080_CTRL_GPU_INFO_INDEX_GPU_SR_SUPPORT:
         case NV2080_CTRL_GPU_INFO_INDEX_SPLIT_VAS_MGMT_SERVER_CLIENT_RM:
         case NV2080_CTRL_GPU_INFO_INDEX_GPU_SM_VERSION:
-        case NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED:
         case NV2080_CTRL_GPU_INFO_INDEX_DISPLAY_ENABLED:
         case NV2080_CTRL_GPU_INFO_INDEX_MOBILE_CONFIG_ENABLED:
         case NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY:
@@ -936,10 +935,7 @@ done:
 
 typedef struct GpuNameStringCacheEntry
 {
-    NvBool bAsciiValid;
-    NvBool bUnicodeValid;
     NvU8  ascii[NV2080_GPU_MAX_NAME_STRING_LENGTH];
-    NvU16 unicode[NV2080_GPU_MAX_NAME_STRING_LENGTH];
 } GpuNameStringCacheEntry;
 
 NV_STATUS _gpuNameStringGet
@@ -982,37 +978,16 @@ NV_STATUS _gpuNameStringGet
 
     cachedParams = (GpuNameStringCacheEntry *)entry->params;
 
-    switch (pParams->gpuNameStringFlags)
+    if (cachedParams->ascii[0] == 0)
     {
-        case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII:
-            if (!cachedParams->bAsciiValid)
-            {
-                status = NV_ERR_OBJECT_NOT_FOUND;
-                goto done;
-            }
-            portMemCopy(pParams->gpuNameString.ascii,
-                        sizeof(pParams->gpuNameString.ascii),
-                        cachedParams->ascii,
-                        sizeof(pParams->gpuNameString.ascii));
-            break;
-
-        case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_UNICODE:
-            if (!cachedParams->bUnicodeValid)
-            {
-                status = NV_ERR_OBJECT_NOT_FOUND;
-                goto done;
-            }
-            portMemCopy(pParams->gpuNameString.unicode,
-                        sizeof(pParams->gpuNameString.unicode),
-                        cachedParams->unicode,
-                        sizeof(pParams->gpuNameString.unicode));
-            break;
-
-        default:
-            NV_PRINTF(LEVEL_ERROR, "Unknown gpu name string flag: %u\n", pParams->gpuNameStringFlags);
-            status = NV_ERR_OBJECT_NOT_FOUND;
-            goto done;
+        status = NV_ERR_OBJECT_NOT_FOUND;
+        goto done;
     }
+    portMemCopy(pParams->gpuNameString.ascii,
+                sizeof(pParams->gpuNameString.ascii),
+                cachedParams->ascii,
+                sizeof(pParams->gpuNameString.ascii));
+
 done:
     _cacheLockRelease(LOCK_SHARED);
     return status;
@@ -1053,48 +1028,19 @@ NV_STATUS _gpuNameStringSet
 
     cachedParams = (GpuNameStringCacheEntry *)entry->params;
 
-    switch (pParams->gpuNameStringFlags)
+    if (cachedParams->ascii[0] != 0)
     {
-        case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII:
-            if (cachedParams->bAsciiValid)
-            {
-                NV_ASSERT(
-                    portMemCmp(pParams->gpuNameString.ascii,
-                               cachedParams->ascii,
-                               sizeof(pParams->gpuNameString.ascii)) == 0);
-            }
-            else
-            {
-                portMemCopy(cachedParams->ascii,
-                            sizeof(pParams->gpuNameString.ascii),
-                            pParams->gpuNameString.ascii,
-                            sizeof(pParams->gpuNameString.ascii));
-                cachedParams->bAsciiValid = NV_TRUE;
-            }
-            break;
-
-        case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_UNICODE:
-            if (cachedParams->bUnicodeValid)
-            {
-                NV_ASSERT(
-                    portMemCmp(pParams->gpuNameString.unicode,
-                               cachedParams->unicode,
-                               sizeof(pParams->gpuNameString.unicode)) == 0);
-            }
-            else
-            {
-                portMemCopy(cachedParams->unicode,
-                            sizeof(pParams->gpuNameString.unicode),
-                            pParams->gpuNameString.unicode,
-                            sizeof(pParams->gpuNameString.unicode));
-                cachedParams->bUnicodeValid = NV_TRUE;
-            }
-            break;
-
-        default:
-            NV_PRINTF(LEVEL_ERROR, "Unknown gpu name string flag: %u\n", pParams->gpuNameStringFlags);
-            status = NV_ERR_INVALID_PARAMETER;
-            goto done;
+        NV_ASSERT(
+            portMemCmp(pParams->gpuNameString.ascii,
+                       cachedParams->ascii,
+                       sizeof(pParams->gpuNameString.ascii)) == 0);
+    }
+    else
+    {
+        portMemCopy(cachedParams->ascii,
+                    sizeof(pParams->gpuNameString.ascii),
+                    pParams->gpuNameString.ascii,
+                    sizeof(pParams->gpuNameString.ascii));
     }
 
 done:

@@ -29,6 +29,7 @@
 #include "vgpu/rpc.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/gpu.h"
+#include "kernel/gpu/perf/kern_perf.h"
 
 /* ------------------------ Global Variables ------------------------------- */
 /* ------------------------ Static Function Prototypes --------------------- */
@@ -80,8 +81,11 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    if ((!(isAdmin || osCheckAccess(RS_ACCESS_PERFMON))) &&
-        (gpuIsRmProfilingPrivileged(pGpu) && (pControlParams->vPstateType == NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST)))
+    if ((pControlParams->vPstateType == NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST)
+        && !isAdmin && gpuIsRmProfilingPrivileged(pGpu)
+        && !osCheckAccess(RS_ACCESS_PERFMON)
+        )
+
     {
         NV_PRINTF(LEVEL_ERROR,
                 "Non-Privileged clients are not allowed to use Turbo Boost clock controls.\n");
@@ -200,20 +204,17 @@ subdeviceCtrlCmdPerfSetAuxPowerState_KERNEL
 }
 
 NV_STATUS
-subdeviceCtrlCmdPerfSetPowerstate_KERNEL
+kperfPerfSetPowerstate_KERNEL
 (
-    Subdevice *pSubdevice,
+    OBJGPU     *pGpu,
+    KernelPerf *pKernelPerf,
     NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS *pPowerInfoParams
 )
 {
-    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     RM_API     *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    KernelPerf *pKernelPerf = GPU_GET_KERNEL_PERF(pGpu);
     NV_STATUS   status      = NV_OK;
     NvBool      bSwitchToAC = (pPowerInfoParams->powerStateInfo.powerState ==
                                              NV2080_CTRL_PERF_POWER_SOURCE_AC);
-
-    NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
 
     if ((pPowerInfoParams->powerStateInfo.powerState != NV2080_CTRL_PERF_POWER_SOURCE_AC) &&
         (pPowerInfoParams->powerStateInfo.powerState != NV2080_CTRL_PERF_POWER_SOURCE_BATTERY))
@@ -233,8 +234,8 @@ subdeviceCtrlCmdPerfSetPowerstate_KERNEL
 
     // Redirect to Physical RM.
     status = pRmApi->Control(pRmApi,
-                             RES_GET_CLIENT_HANDLE(pSubdevice),
-                             RES_GET_HANDLE(pSubdevice),
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
                              NV2080_CTRL_CMD_PERF_SET_POWERSTATE,
                              pPowerInfoParams,
                              sizeof(*pPowerInfoParams));
@@ -257,4 +258,21 @@ subdeviceCtrlCmdPerfSetPowerstate_KERNEL
 
     return status;
 }
+
+
+NV_STATUS
+subdeviceCtrlCmdPerfSetPowerstate_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS *pPowerInfoParams
+)
+{
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelPerf *pKernelPerf = GPU_GET_KERNEL_PERF(pGpu);
+    
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
+
+    return kperfPerfSetPowerstate(pGpu, pKernelPerf, pPowerInfoParams);
+}
+
 /* ------------------------- Private Functions ------------------------------ */

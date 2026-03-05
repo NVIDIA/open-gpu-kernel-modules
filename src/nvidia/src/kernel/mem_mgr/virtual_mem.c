@@ -32,7 +32,6 @@
 #include "core/locks.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "gpu/device/device.h"
-#include "Nvcm.h"
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/bus/kern_bus.h"
@@ -1281,8 +1280,8 @@ virtmemMapTo_IMPL
             bIsIndirectPeer = NV_TRUE;
     }
 
-    // Different cases for vidmem & system memory/fabric memory.
-    bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM) || (tgtAddressSpace == ADDR_EGM);
+    // Different cases for vidmem & system memory.
+    bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM);
 
     //
     // Create a MEMORY_DESCRIPTOR describing this region of the memory

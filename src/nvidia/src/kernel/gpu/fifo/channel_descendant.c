@@ -22,7 +22,7 @@
  */
 
 #include "core/locks.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rmapi_utils.h"
 #include "kernel/gpu/falcon/kernel_falcon.h"

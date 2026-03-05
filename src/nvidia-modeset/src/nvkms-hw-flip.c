@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -250,7 +250,11 @@ NvBool nvIsLayerDirty(const struct NvKmsFlipCommonParams *pParams,
            pParams->layer[layer].csc.specified ||
            pParams->layer[layer].hdr.specified ||
            pParams->layer[layer].colorSpace.specified ||
-           pParams->layer[layer].tf.specified;
+           pParams->layer[layer].tf.specified ||
+           pParams->layer[layer].csc00Override.specified ||
+           pParams->layer[layer].csc01Override.specified ||
+           pParams->layer[layer].csc10Override.specified ||
+           pParams->layer[layer].csc11Override.specified;
 }
 
 /*!
@@ -1486,16 +1490,17 @@ ValidateLayerLutHwState(const NVDevEvoRec *pDevEvo,
 
     /* Surface format validation is handled in UpdateFlipLutHwState */
     if (pHwState->pSurfaceEvo[NVKMS_LEFT] != NULL) {
+        const enum NvKmsSurfaceMemoryFormat surfaceFormat =
+            pHwState->pSurfaceEvo[NVKMS_LEFT]->format;
+
         /*
          * The ILUT must be set if the surface is not in FP16 and the ILUT must
          * not be set if the surface is in FP16. However, we only validate the
          * second case because the first is handled internally be using the
          * default ILUT.
          */
-        if ((pHwState->pSurfaceEvo[NVKMS_LEFT]->format ==
-                NvKmsSurfaceMemoryFormatRF16GF16BF16XF16) ||
-            (pHwState->pSurfaceEvo[NVKMS_LEFT]->format ==
-                NvKmsSurfaceMemoryFormatRF16GF16BF16AF16)) {
+        if (surfaceFormat == NvKmsSurfaceMemoryFormatRF16GF16BF16XF16 ||
+            surfaceFormat == NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) {
             /*
              * If the layer's surface format is FP16, the ILUT must not be
              * enabled.
@@ -1504,15 +1509,11 @@ ValidateLayerLutHwState(const NVDevEvoRec *pDevEvo,
                 (pHwState->tf != NVKMS_INPUT_TF_LINEAR)) {
                 return FALSE;
             }
-        }
-    }
-
-    if (pHwState->pSurfaceEvo[NVKMS_LEFT] &&
-        pHwState->pSurfaceEvo[NVKMS_LEFT]->format == NvKmsSurfaceMemoryFormatI8) {
-
-        /* If the layer's surface format is I8, the ILUT must be enabled. */
-        if (pHwState->inputLut.pLutSurfaceEvo == NULL) {
-            return FALSE;
+        } else if (surfaceFormat == NvKmsSurfaceMemoryFormatI8) {
+            /* If the layer's surface format is I8, the ILUT must be enabled. */
+            if (pHwState->inputLut.pLutSurfaceEvo == NULL) {
+                return FALSE;
+            }
         }
     }
 

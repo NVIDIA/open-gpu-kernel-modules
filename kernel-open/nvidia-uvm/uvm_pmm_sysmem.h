@@ -124,7 +124,7 @@ typedef struct
 {
     uvm_cpu_chunk_t common;
 
-    // Lock protecting dirty_bitmap and gpu_mappings.
+    // Lock protecting gpu_mappings.
     uvm_mutex_t lock;
 
     struct
@@ -152,19 +152,6 @@ typedef struct
         // parent GPU, this mask only needs to track uvm_parent_gpu_t.
         uvm_parent_processor_mask_t dma_addrs_mask;
     } gpu_mappings;
-
-    // A dynamically allocated bitmap (one per PAGE_SIZE page) used
-    // to track dirty state of each PAGE_SIZE page.
-    // Large CPU chunks are allocated as compound pages. For such
-    // pages, the kernel keeps dirtiness state with a single bit
-    // (in the compound page head) that covers the entire compound
-    // page.
-    //
-    // In the case of UVM-Lite GPUs, using the dirty bit of the
-    // the compound page will cause performance regression due to
-    // the copying of extra data. We mitigate this by using this
-    // bitmap to track which base pages are dirty.
-    unsigned long *dirty_bitmap;
 
 } uvm_cpu_physical_chunk_t;
 
@@ -329,22 +316,6 @@ NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chun
 // Merge an array of logical chunks into their parent chunk. All chunks have to
 // have the same size, parent, and set of mapped GPUs.
 uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_cpu_chunk_t **chunks);
-
-// Mark the page_index sub-page of the chunk as dirty.
-// page_index is an offset into the chunk.
-//
-// Note that dirty status for HMM chunks should not be modified directly from
-// UVM. Instead the kernel will mark the backing struct pages dirty either on
-// fault when written to from the CPU, or when the PTE is mirrored to the GPU
-// using hmm_range_fault().
-void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
-
-// Mark the page_index sub-page of the chunk as clean.
-// page_index is an offset into the chunk.
-void uvm_cpu_chunk_mark_clean(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
-
-// Return true if the page_index base page of the CPU chunk is dirty.
-bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
 static NV_STATUS uvm_test_get_cpu_chunk_allocation_sizes(UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES_PARAMS *params,
                                                          struct file *filp)

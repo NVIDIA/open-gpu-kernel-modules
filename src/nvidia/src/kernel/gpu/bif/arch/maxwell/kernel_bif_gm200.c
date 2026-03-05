@@ -83,7 +83,6 @@ kbifDoFullChipReset_GM200
     OBJCL *pCl = SYS_GET_CL(pSys);
     NvU32  tempRegVal;
     NvU32  oldPmc, newPmc;
-    NV_STATUS status;
 
     // First Reset PMC
     oldPmc = GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
@@ -139,16 +138,5 @@ kbifDoFullChipReset_GM200
     clPcieWriteDword(pCl, gpuGetDomain(pGpu), gpuGetBus(pGpu),
                      gpuGetDevice(pGpu), 0, NV_XVE_SW_RESET, tempRegVal);
 
-    //
-    // When bug 1511451 is present, SW_RESET will clear BAR3, and IO accesses
-    // will fail when legacy VBIOS is called. Apply the related SW WAR now.
-    //
-    status = kbifApplyWarForBug1511451_HAL(pGpu, pKernelBif);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed while applying WAR for Bug 1511451\n");
-        NV_ASSERT(0);
-    }
-
-    return status;
+    return NV_OK;
 }

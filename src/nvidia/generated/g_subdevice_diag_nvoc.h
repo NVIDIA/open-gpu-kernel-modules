@@ -44,12 +44,11 @@ extern "C" {
 #ifndef _DIAGAPI_H_
 #define _DIAGAPI_H_
 
-#include "class/cl208f.h" // NV208F_NOTIFIERS_MAXCOUNT
 #include "ctrl/ctrl208f.h" // rmcontrol params
 #include "ctrl/ctrl208f/ctrl208fgr.h" // rmcontrol params
 
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/control.h"
 #include "gpu/gpu_halspec.h"
 
@@ -98,9 +97,6 @@ struct DiagApi {
 
     // Vtable with 1 per-object function pointer
     NV_STATUS (*__diagapiCtrlCmdFifoGetChannelState__)(struct DiagApi * /*this*/, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *);  // halified (2 hals) exported (id=0x208f0403) body
-
-    // Data members
-    NvU32 notifyActions[1];
 };
 
 
@@ -146,13 +142,9 @@ struct NVOC_METADATA__DiagApi {
     const struct NVOC_VTABLE__DiagApi vtable;
 };
 
-#ifndef __NVOC_CLASS_DiagApi_TYPEDEF__
-#define __NVOC_CLASS_DiagApi_TYPEDEF__
-typedef struct DiagApi DiagApi;
-#endif /* __NVOC_CLASS_DiagApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DiagApi
-#define __nvoc_class_id_DiagApi 0xaa3066
+#define __nvoc_class_id_DiagApi 0xaa3066u
+typedef struct DiagApi DiagApi;
 #endif /* __nvoc_class_id_DiagApi */
 
 // Casting support
@@ -170,14 +162,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DiagApi;
 
 NV_STATUS __nvoc_objCreateDynamic_DiagApi(DiagApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DiagApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DiagApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DiagApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DiagApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS diagapiConstruct_IMPL(struct DiagApi *arg_pDiagApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_diagapiConstruct(arg_pDiagApi, arg_pCallContext, arg_pParams) diagapiConstruct_IMPL(arg_pDiagApi, arg_pCallContext, arg_pParams)
+NV_STATUS diagapiConstruct_IMPL(struct DiagApi *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_diagapiConstruct(pDiagApi, pCallContext, pParams) diagapiConstruct_IMPL(pDiagApi, pCallContext, pParams)
 
 #ifdef __nvoc_subdevice_diag_h_disabled
 static inline NV_STATUS diagapiCoverageGetState(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_STATE_PARAMS *pParams) {
@@ -580,26 +572,13 @@ static inline NV_STATUS diagapiGetOrAllocNotifShare_DISPATCH(struct DiagApi *pNo
     return pNotifier->__nvoc_metadata_ptr->vtable.__diagapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS diagapiCoverageGetState_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_STATE_PARAMS *pParams);
-
-
-NV_STATUS diagapiCoverageSetState_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_STATE_PARAMS *pParams);
-
-
-NV_STATUS diagapiCoverageGetData_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_DATA_PARAMS *pParams);
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS diagapiControl_IMPL(struct DiagApi *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
 NV_STATUS diagapiControlFilter_IMPL(struct DiagApi *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS diagapiCtrlCmdFifoCheckEngineContext_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS *pCheckEngineContextParams);
-
-static inline NV_STATUS diagapiCtrlCmdFifoGetChannelState_46f6a7(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS diagapiCtrlCmdFifoGetChannelState_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
 
 NV_STATUS diagapiCtrlCmdFbCtrlGpuCache_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CTRL_GPU_CACHE_PARAMS *pGpuCacheParams);
 
@@ -635,6 +614,22 @@ NV_STATUS diagapiCtrlCmdUcodeInstrumentationSetState_IMPL(struct DiagApi *pDiagA
 
 NV_STATUS diagapiCtrlCmdUcodeInstrumentationGetData_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_DATA_PARAMS *pParams);
 
+// HAL method declarations without bodies
+NV_STATUS diagapiCoverageGetState_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_STATE_PARAMS *pParams);
+
+NV_STATUS diagapiCoverageSetState_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_STATE_PARAMS *pParams);
+
+NV_STATUS diagapiCoverageGetData_KERNEL(struct DiagApi *pDiagApi, NV208F_CTRL_UCODE_INSTRUMENTATION_GET_DATA_PARAMS *pParams);
+
+NV_STATUS diagapiCtrlCmdFifoGetChannelState_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
+
+// Inline HAL method definitions
+static inline NV_STATUS diagapiCtrlCmdFifoGetChannelState_395e98(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

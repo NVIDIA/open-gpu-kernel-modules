@@ -176,6 +176,7 @@ NV_STATUS kgmmuStateInitLocked_IMPL
 )
 {
     NV_STATUS  status;
+    NvU32 data32 = 0;
 
     status = _kgmmuInitStaticInfo(pGpu, pKernelGmmu);
     if (status != NV_OK)
@@ -197,7 +198,9 @@ NV_STATUS kgmmuStateInitLocked_IMPL
 
     if (gpuIsSelfHosted(pGpu) &&
         pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-        IsdBLACKWELL(pGpu))
+        (IsdBLACKWELL(pGpu) || 
+        ((osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG_4686457_WAR, &data32) == NV_OK) && 
+        (data32 == NV_REG_STR_RM_BUG_4686457_WAR_ENABLE))))
     {
         pKernelGmmu->bBug4686457WAR = NV_TRUE;
     }
@@ -520,7 +523,7 @@ _kgmmuInitRegistryOverrides(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
     //
     // Check if we want to disable big page size per address space
     //
-    pKernelGmmu->bEnablePerVaspaceBigPage = IsGM20X(pGpu);
+    pKernelGmmu->bEnablePerVaspaceBigPage = NV_FALSE; // TODO: MPV - Remove as nowehere used
     if (NV_OK == osReadRegistryDword(pGpu,
                    NV_REG_STR_RM_DISABLE_BIG_PAGE_PER_ADDRESS_SPACE, &data))
     {
@@ -1419,6 +1422,7 @@ kgmmuEncodePhysAddrs_IMPL
         _kgmmuEncodePeerAddrs(pAddresses, fabricBaseAddress, count);
     }
 }
+
 
 NvU64
 kgmmuEncodePhysAddr_IMPL
@@ -2648,7 +2652,7 @@ kgmmuExtractPteInfo_IMPL
     }
 }
 
-NvS32*
+PORT_ATOMIC NvS32*
 kgmmuGetFatalFaultIntrPendingState_IMPL
 (
     KernelGmmu *pKernelGmmu,
@@ -3188,3 +3192,71 @@ subdeviceCtrlCmdGmmuCommitTlbInvalidate_IMPL
 
 }
 
+/**
+ * @brief Check if there is a memory subsystem HW error
+ * @details Check if memory subsystem HW hit an error by issuing mem operations 
+ *          through TLB invalidates and membars. More detials in function comments
+ *
+ * @return  Returns NV_ERR_MEMORY_ERROR if there is a memory HW error
+ */
+NV_STATUS
+kgmmuCheckMemSubsysError_IMPL
+(
+    OBJGPU               *pGpu,
+    KernelGmmu           *pKernelGmmu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    KernelBus  *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+
+    if (!pGpu->bMemsubsysErrDetectionEnabled)
+    {
+        NV_PRINTF(LEVEL_WARNING, "Memory Subsystem Error detection disabled.\n");
+        return status;
+    }
+
+    //
+    // 1. Issue a TLB invalidate without membar. This would ensure that GMMU is not blocked. 
+    //    A failure at this step indicates MMU is most likely stuck in a previously issued membar.
+    //
+    status = kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL, VASPACE_FLAGS_NONE,
+                                    PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS, NV_FALSE);
+    if (status == NV_ERR_TIMEOUT)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kgmmuInvalidateTlb failed.\n");
+        goto done;
+    }
+
+    //
+    // 2. If 1 passes, issue membar / UFLUSH. UFLUSH does a flush/membar from HUB side
+    //    A failure here would indicate an issue in FBHUB, HSHUBs, VidL2, SysL2 or NvLink
+    //
+    status = kbusSendSysmembarSingle(pGpu, pKernelBus);
+    if (status == NV_ERR_TIMEOUT)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kbusSendSysmembarSingle failed.\n");
+        goto done;
+    }
+
+    //
+    // 3. If 1 and 2 pass, issue another TLBI, WITH sysmembar. This involves TLBI from GMMU 
+    //    as well as FLUSH/Membar (at the completion of TLBI) for all the clients in GPU (both GPC and HUB side)
+    //    If the GPU's memory subsystem is stuck anywhere that was missed by previous 2 steps, 
+    //    it should be caught here.
+    //
+
+    status = kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL, VASPACE_FLAGS_NONE,
+                                    PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS, NV_TRUE);
+
+    if (status == NV_ERR_TIMEOUT)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kgmmuInvalidateTlb with sysmembar failed.\n");
+    }
+
+done:
+    // Set status to NV_ERR_MEMORY_ERROR if any of the above mem operations timed out
+    status = (status == NV_ERR_TIMEOUT) ? NV_ERR_MEMORY_ERROR : status;
+
+    return status;
+}

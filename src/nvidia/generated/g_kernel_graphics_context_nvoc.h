@@ -54,42 +54,27 @@ extern "C" {
 #include "mem_mgr/vaddr_list.h"
 #include "kernel/gpu/gr/kernel_graphics_context_buffers.h"
 
-
 struct KernelChannel;
 
-#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
-#define __NVOC_CLASS_KernelChannel_TYPEDEF__
-typedef struct KernelChannel KernelChannel;
-#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannel
-#define __nvoc_class_id_KernelChannel 0x5d8d70
+#define __nvoc_class_id_KernelChannel 0x5d8d70u
+typedef struct KernelChannel KernelChannel;
 #endif /* __nvoc_class_id_KernelChannel */
-
 
 
 struct KernelChannelGroupApi;
 
-#ifndef __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
-#define __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
-typedef struct KernelChannelGroupApi KernelChannelGroupApi;
-#endif /* __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannelGroupApi
-#define __nvoc_class_id_KernelChannelGroupApi 0x2b5b80
+#define __nvoc_class_id_KernelChannelGroupApi 0x2b5b80u
+typedef struct KernelChannelGroupApi KernelChannelGroupApi;
 #endif /* __nvoc_class_id_KernelChannelGroupApi */
-
 
 
 struct KernelSMDebuggerSession;
 
-#ifndef __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
-#define __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
-typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
-#endif /* __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelSMDebuggerSession
-#define __nvoc_class_id_KernelSMDebuggerSession 0x4adc81
+#define __nvoc_class_id_KernelSMDebuggerSession 0x4adc81u
+typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
 #endif /* __nvoc_class_id_KernelSMDebuggerSession */
 
 
@@ -138,42 +123,27 @@ typedef struct
 struct KernelGraphicsContextUnicast;
 typedef struct KernelGraphicsContextUnicast KernelGraphicsContextUnicast;
 
-
 struct KernelGraphics;
 
-#ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphics_TYPEDEF__
-typedef struct KernelGraphics KernelGraphics;
-#endif /* __NVOC_CLASS_KernelGraphics_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphics
-#define __nvoc_class_id_KernelGraphics 0xea3fa9
+#define __nvoc_class_id_KernelGraphics 0xea3fa9u
+typedef struct KernelGraphics KernelGraphics;
 #endif /* __nvoc_class_id_KernelGraphics */
-
 
 
 struct KernelGraphicsContextShared;
 
-#ifndef __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__
-typedef struct KernelGraphicsContextShared KernelGraphicsContextShared;
-#endif /* __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsContextShared
-#define __nvoc_class_id_KernelGraphicsContextShared 0xe7abeb
+#define __nvoc_class_id_KernelGraphicsContextShared 0xe7abebu
+typedef struct KernelGraphicsContextShared KernelGraphicsContextShared;
 #endif /* __nvoc_class_id_KernelGraphicsContextShared */
-
 
 
 struct KernelGraphicsObject;
 
-#ifndef __NVOC_CLASS_KernelGraphicsObject_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsObject_TYPEDEF__
-typedef struct KernelGraphicsObject KernelGraphicsObject;
-#endif /* __NVOC_CLASS_KernelGraphicsObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsObject
-#define __nvoc_class_id_KernelGraphicsObject 0x097648
+#define __nvoc_class_id_KernelGraphicsObject 0x097648u
+typedef struct KernelGraphicsObject KernelGraphicsObject;
 #endif /* __nvoc_class_id_KernelGraphicsObject */
 
 
@@ -222,7 +192,7 @@ struct KernelGraphicsContext {
 
     // Vtable with 2 per-object function pointers
     NvBool (*__kgrctxShouldPreAllocPmBuffer__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
-    GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals)
+    GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
 
     // Data members
     struct KernelGraphicsContextShared *PRIVATE_FIELD(pShared);
@@ -251,7 +221,7 @@ struct KernelGraphicsContext_PRIVATE {
 
     // Vtable with 2 per-object function pointers
     NvBool (*__kgrctxShouldPreAllocPmBuffer__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
-    GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals)
+    GR_GLOBALCTX_BUFFER (*__kgrctxGetRegisterAccessMapId__)(struct OBJGPU *, struct KernelGraphicsContext * /*this*/, struct KernelChannel *);  // halified (2 hals) body
 
     // Data members
     struct KernelGraphicsContextShared *pShared;
@@ -295,13 +265,9 @@ struct NVOC_METADATA__KernelGraphicsContext {
     const struct NVOC_VTABLE__KernelGraphicsContext vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelGraphicsContext_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsContext_TYPEDEF__
-typedef struct KernelGraphicsContext KernelGraphicsContext;
-#endif /* __NVOC_CLASS_KernelGraphicsContext_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsContext
-#define __nvoc_class_id_KernelGraphicsContext 0x7ead09
+#define __nvoc_class_id_KernelGraphicsContext 0x7ead09u
+typedef struct KernelGraphicsContext KernelGraphicsContext;
 #endif /* __nvoc_class_id_KernelGraphicsContext */
 
 // Casting support
@@ -319,9 +285,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsContext;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelGraphicsContext(KernelGraphicsContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelGraphicsContext(KernelGraphicsContext**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelGraphicsContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelGraphicsContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelGraphicsContext(KernelGraphicsContext**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelGraphicsContext(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelGraphicsContext((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -352,8 +318,8 @@ GMMU_APERTURE kgrctxGetExternalAllocAperture_IMPL(NvU32 addressSpace);
 NV_STATUS kgrctxFillCtxBufferInfo_IMPL(struct MEMORY_DESCRIPTOR *arg1, NvU32 externalId, NvBool bBufferGlobal, NV2080_CTRL_GR_CTX_BUFFER_INFO *arg4);
 #define kgrctxFillCtxBufferInfo(arg1, externalId, bBufferGlobal, arg4) kgrctxFillCtxBufferInfo_IMPL(arg1, externalId, bBufferGlobal, arg4)
 
-NV_STATUS kgrctxConstruct_IMPL(struct KernelGraphicsContext *arg_pKernelGraphicsContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kgrctxConstruct(arg_pKernelGraphicsContext, arg_pCallContext, arg_pParams) kgrctxConstruct_IMPL(arg_pKernelGraphicsContext, arg_pCallContext, arg_pParams)
+NV_STATUS kgrctxConstruct_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kgrctxConstruct(pKernelGraphicsContext, pCallContext, pParams) kgrctxConstruct_IMPL(pKernelGraphicsContext, pCallContext, pParams)
 
 NV_STATUS kgrctxCopyConstruct_IMPL(struct KernelGraphicsContext *arg_this, struct CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3);
 #ifdef __nvoc_kernel_graphics_context_h_disabled
@@ -1028,40 +994,14 @@ static inline void kgrctxAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__kgrctxAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NvBool kgrctxShouldManageCtxBuffers_KERNEL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, NvU32 gfid);
-
-
-NvBool kgrctxShouldCleanup_KERNEL(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext);
-
-
-void kgrctxUnmapBuffers_KERNEL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, KernelGraphicsContextUnicast *arg3, struct KernelChannel *arg4);
-
-
-NV_STATUS kgrctxUnmapCtxBuffers_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, struct KernelGraphicsObject *arg3, struct KernelGraphics *arg4, NvBool bDestructor);
-
-
-void kgrctxIncObjectCount_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, NvU32 classNum);
-
-
-void kgrctxDecObjectCount_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, NvU32 classNum);
-
-
-static inline NvBool kgrctxCanCopy_e661f0(struct KernelGraphicsContext *arg1) {
+// Virtual method declarations and/or inline definitions
+static inline NvBool kgrctxCanCopy_e661f0(struct KernelGraphicsContext *arg_this){
     return NV_TRUE;
 }
 
-NvHandle kgrctxGetInternalObjectHandle_IMPL(struct KernelGraphicsContext *arg1);
+NvHandle kgrctxGetInternalObjectHandle_IMPL(struct KernelGraphicsContext *arg_this);
 
-NvBool kgrctxShouldPreAllocPmBuffer_VF(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext, struct KernelChannel *pKernelChannel);
-
-NvBool kgrctxShouldPreAllocPmBuffer_PF(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext, struct KernelChannel *pKernelChannel);
-
-static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_aa21e9(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3) {
-    return GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP;
-}
-
-GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3);
-
+// Exported method declarations and/or inline definitions
 NV_STATUS kgrctxCtrlGetTpcPartitionMode_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams);
 
 NV_STATUS kgrctxCtrlSetTpcPartitionMode_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams);
@@ -1072,17 +1012,43 @@ NV_STATUS kgrctxCtrlProgramVidmemPromote_IMPL(struct KernelGraphicsContext *pKer
 
 NV_STATUS kgrctxCtrlSetLgSectorPromotion_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams);
 
-static inline struct KernelGraphicsContextShared *kgrctxGetShared(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext) {
+// HAL method declarations without bodies
+NvBool kgrctxShouldManageCtxBuffers_KERNEL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, NvU32 gfid);
+
+NvBool kgrctxShouldCleanup_KERNEL(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext);
+
+NvBool kgrctxShouldPreAllocPmBuffer_VF(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext, struct KernelChannel *pKernelChannel);
+
+NvBool kgrctxShouldPreAllocPmBuffer_PF(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext, struct KernelChannel *pKernelChannel);
+
+void kgrctxUnmapBuffers_KERNEL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, KernelGraphicsContextUnicast *arg3, struct KernelChannel *arg4);
+
+NV_STATUS kgrctxUnmapCtxBuffers_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, struct KernelGraphicsObject *arg3, struct KernelGraphics *arg4, NvBool bDestructor);
+
+void kgrctxIncObjectCount_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, NvU32 classNum);
+
+void kgrctxDecObjectCount_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, NvU32 classNum);
+
+GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, struct KernelChannel *arg3);
+
+// Inline HAL method definitions
+static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_ab4809(struct OBJGPU *arg1, struct KernelGraphicsContext *arg_this, struct KernelChannel *arg3){
+    return GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline struct KernelGraphicsContextShared * kgrctxGetShared(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext){
     struct KernelGraphicsContext_PRIVATE *pKernelGraphicsContext_PRIVATE = (struct KernelGraphicsContext_PRIVATE *)pKernelGraphicsContext;
     return pKernelGraphicsContext_PRIVATE->pShared;
 }
 
-static inline VGPU_GFXP_BUFFERS *kgrctxGetVgpuGfxpBuffers(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext) {
+static inline VGPU_GFXP_BUFFERS * kgrctxGetVgpuGfxpBuffers(struct OBJGPU *pGpu, struct KernelGraphicsContext *pKernelGraphicsContext){
     struct KernelGraphicsContext_PRIVATE *pKernelGraphicsContext_PRIVATE = (struct KernelGraphicsContext_PRIVATE *)pKernelGraphicsContext;
     return pKernelGraphicsContext_PRIVATE->pVgpuGfxpBuffers;
 }
 
-static inline void kgrctxSetVgpuGfxpBuffers(struct KernelGraphicsContext *pKernelGraphicsContext, VGPU_GFXP_BUFFERS *pBuffers) {
+static inline void kgrctxSetVgpuGfxpBuffers(struct KernelGraphicsContext *pKernelGraphicsContext, VGPU_GFXP_BUFFERS *pBuffers){
     struct KernelGraphicsContext_PRIVATE *pKernelGraphicsContext_PRIVATE = (struct KernelGraphicsContext_PRIVATE *)pKernelGraphicsContext;
     pKernelGraphicsContext_PRIVATE->pVgpuGfxpBuffers = pBuffers;
 }
@@ -1167,13 +1133,9 @@ struct NVOC_METADATA__KernelGraphicsContextShared {
     const struct NVOC_METADATA__RsShared metadata__RsShared;
 };
 
-#ifndef __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__
-typedef struct KernelGraphicsContextShared KernelGraphicsContextShared;
-#endif /* __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsContextShared
-#define __nvoc_class_id_KernelGraphicsContextShared 0xe7abeb
+#define __nvoc_class_id_KernelGraphicsContextShared 0xe7abebu
+typedef struct KernelGraphicsContextShared KernelGraphicsContextShared;
 #endif /* __nvoc_class_id_KernelGraphicsContextShared */
 
 // Casting support
@@ -1192,13 +1154,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsContextShared;
 NV_STATUS __nvoc_objCreateDynamic_KernelGraphicsContextShared(KernelGraphicsContextShared**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelGraphicsContextShared(KernelGraphicsContextShared**, Dynamic*, NvU32);
-#define __objCreate_KernelGraphicsContextShared(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelGraphicsContextShared((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelGraphicsContextShared(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelGraphicsContextShared((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS shrkgrctxConstruct_IMPL(struct KernelGraphicsContextShared *arg_);
-#define __nvoc_shrkgrctxConstruct(arg_) shrkgrctxConstruct_IMPL(arg_)
+NV_STATUS shrkgrctxConstruct_IMPL(struct KernelGraphicsContextShared *arg_this);
+#define __nvoc_shrkgrctxConstruct(arg_this) shrkgrctxConstruct_IMPL(arg_this)
 
 NV_STATUS shrkgrctxInit_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContextShared *arg_this, struct KernelGraphicsContext *arg3);
 #ifdef __nvoc_kernel_graphics_context_h_disabled
@@ -1254,6 +1216,12 @@ static inline void shrkgrctxDetach(struct OBJGPU *arg1, struct KernelGraphicsCon
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -226,6 +226,18 @@ namespace DisplayPort
         //  HDCP Renegotiate and trigger ACT.
         //
         virtual void configureHDCPRenegotiate(NvU64 cN = HDCP_DUMMY_CN, NvU64 cKsv = HDCP_DUMMY_CKSV, bool bForceReAuth = false, bool bRxIDMsgPending = false) = 0;
+        //  HDCP set ECF
+        virtual void configureAndTriggerECF(NvU64 ecf, NvBool bForceClearEcf = NV_FALSE, NvBool bAddStreamBack = NV_FALSE) = 0;
+        //
+        //  Enable of disable alternate scrambler SR (ASSR)
+        //
+        //      (used for embedded displayport)
+        virtual void disableAlternateScramblerReset() = 0;
+        virtual void configureHDCPDisableAuthentication() = 0;
+        virtual void configureHDCPAbortAuthentication(AbortAuthReason abortAuthReason) = 0;
+        virtual bool setStreamType(unsigned streamIndex, NvU8 streamType, bool * bNeedReNegotiate) = 0;
+        virtual void configureHDCPValidateLink(HDCPValidateData &hdcpValidateData, NvU64 cN = HDCP_DUMMY_CN, NvU64 cKsv = HDCP_DUMMY_CKSV) = 0;
+        virtual void forwardPendingKsvListReady(NvBool bKsvListReady) = 0;
         virtual void triggerACT() = 0;
         virtual void configureHDCPGetHDCPState(HDCPState &hdcpState) = 0;
 

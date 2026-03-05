@@ -121,6 +121,9 @@ int libspdm_aead(const uint8_t *key, size_t key_size,
                  uint8_t *data_out, size_t *data_out_size,
                  bool enc, char const *alg);
 
+bool libspdm_encode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen);
+bool libspdm_decode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size_t *p_dstlen);
+
 void *lkca_hash_new(const char* alg_name);
 void lkca_hash_free(struct shash_desc *ctx);
 bool lkca_hash_duplicate(struct shash_desc *dst, struct shash_desc const *src);

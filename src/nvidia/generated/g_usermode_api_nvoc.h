@@ -133,13 +133,9 @@ struct NVOC_METADATA__UserModeApi {
     const struct NVOC_VTABLE__UserModeApi vtable;
 };
 
-#ifndef __NVOC_CLASS_UserModeApi_TYPEDEF__
-#define __NVOC_CLASS_UserModeApi_TYPEDEF__
-typedef struct UserModeApi UserModeApi;
-#endif /* __NVOC_CLASS_UserModeApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_UserModeApi
-#define __nvoc_class_id_UserModeApi 0x6f57ec
+#define __nvoc_class_id_UserModeApi 0x6f57ecu
+typedef struct UserModeApi UserModeApi;
 #endif /* __nvoc_class_id_UserModeApi */
 
 // Casting support
@@ -157,14 +153,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_UserModeApi;
 
 NV_STATUS __nvoc_objCreateDynamic_UserModeApi(UserModeApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_UserModeApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_UserModeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_UserModeApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_UserModeApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *arg_pUserModeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_usrmodeConstruct(arg_pUserModeApi, arg_pCallContext, arg_pParams) usrmodeConstruct_IMPL(arg_pUserModeApi, arg_pCallContext, arg_pParams)
+NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_usrmodeConstruct(pUserModeApi, pCallContext, pParams) usrmodeConstruct_IMPL(pUserModeApi, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -326,10 +322,16 @@ static inline void usrmodeAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__usrmodeAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool usrmodeCanCopy_IMPL(struct UserModeApi *pUserModeApi);
 
 NV_STATUS usrmodeGetMemInterMapParams_IMPL(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

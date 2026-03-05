@@ -47,6 +47,8 @@
 #include "class/cl0080.h" // NV01_DEVICE_0
 #include "class/cl2080.h" // NV20_SUBDEVICE_0
 #include "class/cl902d.h" // FERMI_TWOD_A
+#include "class/clcdc0.h" // BLACKWELL_COMPUTE_A
+
 #include "class/cl906f.h" // GF100_CHANNEL_GPFIFO
 #include "class/cla06f.h" // KEPLER_CHANNEL_GPFIFO_A
 #include "class/cla06fsubch.h"
@@ -59,7 +61,6 @@
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 
 #include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
-
 
 #include "deprecated/rmapi_deprecated.h"
 #include "nvrm_registry.h"
@@ -122,10 +123,14 @@ NV_STATUS
 krcWatchdogChangeState_IMPL
 (
     KernelRc  *pKernelRc,
+    KernelWatchdog *pKernelWatchdog,
     Subdevice *pSubdevice,
     RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE operation
 )
 {
+    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
+    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
+
     //
     // Provide automatic management of RC watchdog enabling and disabling.
     // Provide for cooperation between RM clients, and allow for independent
@@ -192,9 +197,9 @@ krcWatchdogChangeState_IMPL
     NvBool bCurrentEnableRequest      = NV_FALSE;
     NvBool bCurrentDisableRequest     = NV_FALSE;
     NvBool bCurrentSoftDisableRequest = NV_FALSE;
-    NvS32  prevEnableRefCount      = pKernelRc->watchdogPersistent.enableRequestsRefCount;
-    NvS32  prevDisableRefCount     = pKernelRc->watchdogPersistent.disableRequestsRefCount;
-    NvS32  prevSoftDisableRefCount = pKernelRc->watchdogPersistent.softDisableRequestsRefCount;
+    NvS32  prevEnableRefCount      = pWatchdogPersistent->enableRequestsRefCount;
+    NvS32  prevDisableRefCount     = pWatchdogPersistent->disableRequestsRefCount;
+    NvS32  prevSoftDisableRefCount = pWatchdogPersistent->softDisableRequestsRefCount;
     NvBool bPrevEnableRequest      = pSubdevice->bRcWatchdogEnableRequested;
     NvBool bPrevDisableRequest     = pSubdevice->bRcWatchdogDisableRequested;
     NvBool bPrevSoftDisableRequest = pSubdevice->bRcWatchdogSoftDisableRequested;
@@ -255,9 +260,9 @@ krcWatchdogChangeState_IMPL
     // conflicting request is released - we'll fall back to the soft-disabled
     // state then.
     //
-    if ((pKernelRc->watchdogPersistent.disableRequestsRefCount != 0 &&
+    if ((pWatchdogPersistent->disableRequestsRefCount != 0 &&
          bCurrentEnableRequest) ||
-        (pKernelRc->watchdogPersistent.enableRequestsRefCount != 0 &&
+        (pWatchdogPersistent->enableRequestsRefCount != 0 &&
          bCurrentDisableRequest))
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -265,8 +270,8 @@ krcWatchdogChangeState_IMPL
             "(Enable requests: %d, Disable requests: %d)\n",
             opstring,
             pGpu->gpuId,
-            pKernelRc->watchdogPersistent.enableRequestsRefCount,
-            pKernelRc->watchdogPersistent.disableRequestsRefCount);
+            pWatchdogPersistent->enableRequestsRefCount,
+            pWatchdogPersistent->disableRequestsRefCount);
 
         return NV_ERR_STATE_IN_USE;
     }
@@ -275,37 +280,37 @@ krcWatchdogChangeState_IMPL
         "(before) op: %s, GPU 0x%x, enableRefCt: %d, disableRefCt: %d, softDisableRefCt: %d, WDflags: 0x%x\n",
         opstring,
         pGpu->gpuId,
-        pKernelRc->watchdogPersistent.enableRequestsRefCount,
-        pKernelRc->watchdogPersistent.disableRequestsRefCount,
-        pKernelRc->watchdogPersistent.softDisableRequestsRefCount,
-        pKernelRc->watchdog.flags);
+        pWatchdogPersistent->enableRequestsRefCount,
+        pWatchdogPersistent->disableRequestsRefCount,
+        pWatchdogPersistent->softDisableRequestsRefCount,
+        pWatchdogState->flags);
 
     // Step 2: if client state has changed, adjust the per-GPU/RC refcount:
     if (!bPrevEnableRequest && bCurrentEnableRequest)
     {
-        ++pKernelRc->watchdogPersistent.enableRequestsRefCount;
+        ++pWatchdogPersistent->enableRequestsRefCount;
     }
     else if (bPrevEnableRequest && !bCurrentEnableRequest)
     {
-        --pKernelRc->watchdogPersistent.enableRequestsRefCount;
+        --pWatchdogPersistent->enableRequestsRefCount;
     }
 
     if (!bPrevDisableRequest && bCurrentDisableRequest)
     {
-        ++pKernelRc->watchdogPersistent.disableRequestsRefCount;
+        ++pWatchdogPersistent->disableRequestsRefCount;
     }
     else if (bPrevDisableRequest && !bCurrentDisableRequest)
     {
-        --pKernelRc->watchdogPersistent.disableRequestsRefCount;
+        --pWatchdogPersistent->disableRequestsRefCount;
     }
 
     if (!bPrevSoftDisableRequest && bCurrentSoftDisableRequest)
     {
-        ++pKernelRc->watchdogPersistent.softDisableRequestsRefCount;
+        ++pWatchdogPersistent->softDisableRequestsRefCount;
     }
     else if (bPrevSoftDisableRequest && !bCurrentSoftDisableRequest)
     {
-        --pKernelRc->watchdogPersistent.softDisableRequestsRefCount;
+        --pWatchdogPersistent->softDisableRequestsRefCount;
     }
 
     // Step 3: record client state:
@@ -317,24 +322,24 @@ krcWatchdogChangeState_IMPL
     // Step 4: if per-GPU/RC refcount has changed from 0 to 1, then change the
     // watchdog state:
     //
-    if (pKernelRc->watchdogPersistent.enableRequestsRefCount == 1 &&
+    if (pWatchdogPersistent->enableRequestsRefCount == 1 &&
         prevEnableRefCount == 0 &&
-        pKernelRc->watchdogPersistent.disableRequestsRefCount == 0)
+        pWatchdogPersistent->disableRequestsRefCount == 0)
     {
         // Enable the watchdog:
-        krcWatchdogEnable(pKernelRc, NULL, NV_FALSE /* bOverRide */);
+        krcWatchdogEnable(pKernelRc, pKernelWatchdog, NV_FALSE /* bOverRide */);
     }
-    else if (pKernelRc->watchdogPersistent.disableRequestsRefCount == 1 &&
+    else if (pWatchdogPersistent->disableRequestsRefCount == 1 &&
              prevDisableRefCount == 0 &&
-             pKernelRc->watchdogPersistent.enableRequestsRefCount == 0)
+             pWatchdogPersistent->enableRequestsRefCount == 0)
     {
         // Disable the watchdog:
-        krcWatchdogDisable(pKernelRc, NULL);
+        krcWatchdogDisable(pKernelRc, pKernelWatchdog);
     }
-    else if ((pKernelRc->watchdogPersistent.enableRequestsRefCount == 0) &&
-             (pKernelRc->watchdogPersistent.disableRequestsRefCount == 0) &&
+    else if ((pWatchdogPersistent->enableRequestsRefCount == 0) &&
+             (pWatchdogPersistent->disableRequestsRefCount == 0) &&
              ((prevEnableRefCount > 0) || (prevSoftDisableRefCount == 0)) &&
-             (pKernelRc->watchdogPersistent.softDisableRequestsRefCount > 0))
+             (pWatchdogPersistent->softDisableRequestsRefCount > 0))
     {
         //
         // Go back to disabled if all of the below are true:
@@ -344,17 +349,23 @@ krcWatchdogChangeState_IMPL
         //  (3) there are now one or more outstanding soft disable requests
         //      (including the one currently being refcounted.
         //
-        krcWatchdogDisable(pKernelRc, NULL);
+        krcWatchdogDisable(pKernelRc, pKernelWatchdog);
     }
 
     NV_PRINTF(LEVEL_INFO,
         "(after) op: %s, GPU 0x%x, enableRefCt: %d, disableRefCt: %d, softDisableRefCt: %d, WDflags: 0x%x\n",
         opstring,
         pGpu->gpuId,
-        pKernelRc->watchdogPersistent.enableRequestsRefCount,
-        pKernelRc->watchdogPersistent.disableRequestsRefCount,
-        pKernelRc->watchdogPersistent.softDisableRequestsRefCount,
-        pKernelRc->watchdog.flags);
+        pWatchdogPersistent->enableRequestsRefCount,
+        pWatchdogPersistent->disableRequestsRefCount,
+        pWatchdogPersistent->softDisableRequestsRefCount,
+        pWatchdogState->flags);
+
+    //
+    // cast pWatchdogState to void to prevent compilation error (pWatchdogState is only used in LEVEL_INFO printf
+    // which can cause unused variable error in some builds)
+    //
+    (void)pWatchdogState;
 
     return NV_OK;
 }
@@ -431,19 +442,22 @@ krcWatchdogShutdown_IMPL
 void krcWatchdogGetReservationCounts_IMPL
 (
     KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog,
     NvS32    *pEnable,
     NvS32    *pDisable,
     NvS32    *pSoftDisable
 )
 {
+    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
+
     if (pEnable != NULL)
-        *pEnable = pKernelRc->watchdogPersistent.enableRequestsRefCount;
+        *pEnable = pWatchdogPersistent->enableRequestsRefCount;
 
     if (pDisable != NULL)
-        *pDisable = pKernelRc->watchdogPersistent.disableRequestsRefCount;
+        *pDisable = pWatchdogPersistent->disableRequestsRefCount;
 
     if (pSoftDisable != NULL)
-        *pSoftDisable = pKernelRc->watchdogPersistent .softDisableRequestsRefCount;
+        *pSoftDisable = pWatchdogPersistent->softDisableRequestsRefCount;
 }
 
 
@@ -455,7 +469,7 @@ krcWatchdogInit_IMPL
     KernelWatchdog *pKernelWatchdog
 )
 {
-    NvHandle hClient;
+    NvHandle hClient = NV01_NULL_OBJECT;
     NvHandle hDevice;
     NvHandle hSubdevice;
     KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
@@ -474,7 +488,7 @@ krcWatchdogInit_IMPL
     RM_API *pRmApi = rmGpuLockIsOwner() ?
                          rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL) :
                          rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
-    NvBool bClientUserd = IsVOLTAorBetter(pGpu);
+    NvBool bClientUserd = NV_TRUE;
     NvBool bAcquireLock = NV_FALSE;
 
     union
@@ -487,11 +501,8 @@ krcWatchdogInit_IMPL
         NV_MEMORY_ALLOCATION_PARAMS            mem;
     } *pParams = NULL;
 
-    // If booting in SMC mode, skip watchdog init since TWOD is not supported
-    NV_CHECK_OR_RETURN(LEVEL_SILENT,
-                       !IS_MIG_ENABLED(pGpu) &&
-                           gpuIsClassSupported(pGpu, FERMI_TWOD_A),
-                       NV_OK);
+    // Revist this check when Bug 4154640 is resolved
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, !IS_MIG_ENABLED(pGpu), NV_OK);
 
     if (pWatchdogState->flags &
         (WATCHDOG_FLAGS_DISABLED | WATCHDOG_FLAGS_INITIALIZED))
@@ -537,7 +548,6 @@ krcWatchdogInit_IMPL
 
         // Allocate a root.
         {
-            hClient = NV01_NULL_OBJECT;
             status = pRmApi->AllocWithHandle(pRmApi,
                                              NV01_NULL_OBJECT /* hClient */,
                                              NV01_NULL_OBJECT /* hParent */,
@@ -646,19 +656,6 @@ krcWatchdogInit_IMPL
         pKernelWatchdog->hSubdevice = hSubdevice;
     }
  
-    //
-    // Determine what class to allocate so we will know whether to use
-    // context DMAs.  Context DMAs are not allowed on any gpu after Fermi
-    //
-    if (gpuIsClassSupported(pGpu, FERMI_TWOD_A))
-    {
-        grObj = FERMI_TWOD_A;
-    }
-    else
-    {
-        grObj = NV01_NULL_OBJECT; // Null object will kill RmAllocObject
-    }
-
     {
         const struct
         {
@@ -681,7 +678,7 @@ krcWatchdogInit_IMPL
         // Defaults if none match
         gpfifoObj = GF100_CHANNEL_GPFIFO;
         ctrlSize  = sizeof(Nv906fControl);
-        pWatchdogChannelInfo->class2dSubch = 0;
+        pWatchdogChannelInfo->classSubch = 0;
 
         for (i = 0; i < NV_ARRAY_ELEMENTS(gpfifoMapping); ++i)
         {
@@ -689,7 +686,7 @@ krcWatchdogInit_IMPL
             {
                 gpfifoObj = gpfifoMapping[i].gpfifoObject;
                 ctrlSize  = gpfifoMapping[i].ctrlSize;
-                pWatchdogChannelInfo->class2dSubch = NVA06F_SUBCHANNEL_2D;
+                pWatchdogChannelInfo->classSubch = NVA06F_SUBCHANNEL_2D;
                 break;
             }
         }
@@ -1130,6 +1127,23 @@ krcWatchdogInit_IMPL
         WATCHDOG_WORK_SUBMIT_TOKEN_OFFSET(
             pWatchdogChannelInfo->pbBytes));
 
+    if (gpuIsClassSupported(pGpu, FERMI_TWOD_A))
+    {
+        pWatchdogChannelInfo->classSubch = NVA06F_SUBCHANNEL_2D;
+        grObj = FERMI_TWOD_A;
+    }
+    else if (gpuIsClassSupported(pGpu, BLACKWELL_COMPUTE_A))
+    {
+        pWatchdogChannelInfo->classSubch = NVA06F_SUBCHANNEL_COMPUTE;
+        grObj = BLACKWELL_COMPUTE_A;
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU lacks support for 2D and COMPUTE\n");
+        status = NV_ERR_NOT_SUPPORTED;
+        goto error;
+    }
+
     // Create an object that will require a trip through the graphics engine
     status = pRmApi->AllocWithHandle(pRmApi,
         hClient                        /* hClient */,
@@ -1239,8 +1253,6 @@ krcWatchdogInit_IMPL
     pWatchdogPersistent->nextRunTime = 0;
 
 error:
-    NV_ASSERT(status == NV_OK);
-
     if (status != NV_OK)
     {
         pRmApi->Free(pRmApi, hClient, hClient);
@@ -1248,22 +1260,62 @@ error:
     }
 
     portMemFree(pParams);
+
     return status;
 }
 
-
-void
-krcWatchdogInitPushbuffer_IMPL
+static void
+_watchdogInitPushbuffer
 (
     OBJGPU   *pGpu,
     KernelRc *pKernelRc,
-    KernelWatchdog *pKernelWatchdog
+    KernelWatchdog *pKernelWatchdog,
+    NvU32 class
 )
 {
     NvU32 *ptr, *ptrbase, *ptrbase1;
     NvU32  pbOffset;
     KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
     KernelWatchdogChannelInfo *pWatchdogChannelInfo = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogChannelInfo : &pKernelRc->watchdogChannelInfo);
+
+    struct {
+        NvU32 setObjectCmd;
+        NvU32 setNotifyACmd;
+        NvU32 setNotifyBCmd;
+        NvU32 notifyCmd;
+        NvU32 noOperationCmd;
+        NvU32 notifyTypeWriteOnly;
+    } cmdSet;    
+    
+    switch (class)
+    {
+        case FERMI_TWOD_A:
+            cmdSet.setObjectCmd = NV902D_SET_OBJECT;
+            cmdSet.setNotifyACmd = NV902D_SET_NOTIFY_A;
+            cmdSet.setNotifyBCmd = NV902D_SET_NOTIFY_B;
+            cmdSet.notifyCmd = NV902D_NOTIFY;
+            cmdSet.noOperationCmd = NV902D_NO_OPERATION;
+            cmdSet.notifyTypeWriteOnly = NV902D_NOTIFY_TYPE_WRITE_ONLY;
+            break;
+        case BLACKWELL_COMPUTE_A:
+            cmdSet.setObjectCmd = NVCDC0_SET_OBJECT;
+            cmdSet.setNotifyACmd = NVCDC0_SET_NOTIFY_A;
+            cmdSet.setNotifyBCmd = NVCDC0_SET_NOTIFY_B;
+            cmdSet.notifyCmd = NVCDC0_NOTIFY;
+            cmdSet.noOperationCmd = NVCDC0_NO_OPERATION;
+            cmdSet.notifyTypeWriteOnly = NVCDC0_NOTIFY_TYPE_WRITE_ONLY;
+            break;
+        default:
+            return;
+    }
+    #define WATCHDOG_SET_NOTIFY_A_UPPER(class, value) \
+        ((class) == FERMI_TWOD_A ? \
+        DRF_NUM(902D, _SET_NOTIFY_A, _ADDRESS_UPPER, value) : \
+        DRF_NUM(CDC0, _SET_NOTIFY_A, _ADDRESS_UPPER, value))
+    #define WATCHDOG_SET_NOTIFY_B_LOWER(class, value) \
+        ((class) == FERMI_TWOD_A ? \
+        DRF_NUM(902D, _SET_NOTIFY_B, _ADDRESS_LOWER, value) : \
+        DRF_NUM(CDC0, _SET_NOTIFY_B, _ADDRESS_LOWER, value))
 
     //
     // Set up the pushbuffer.
@@ -1289,8 +1341,8 @@ krcWatchdogInitPushbuffer_IMPL
     }
 
     // Set up object in first pushbuffer
-    PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
-              NV902D_SET_OBJECT,
+    PUSH_PAIR(pWatchdogChannelInfo->classSubch,
+              cmdSet.setObjectCmd,
               pWatchdogChannelInfo->classEngineID);
 
     //
@@ -1336,14 +1388,16 @@ krcWatchdogInitPushbuffer_IMPL
                       gpumgrGetSubDeviceInstanceFromGpu(pGpu),
                       0));
 
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
-            NV902D_SET_NOTIFY_A,
-            DRF_NUM(902D, _SET_NOTIFY_A, _ADDRESS_UPPER, NvU64_HI32(offset)));
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
-            NV902D_SET_NOTIFY_B,
-            DRF_NUM(902D, _SET_NOTIFY_B, _ADDRESS_LOWER, NvU64_LO32(offset)));
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
+            cmdSet.setNotifyACmd,
+            WATCHDOG_SET_NOTIFY_A_UPPER(class, NvU64_HI32(offset)));
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
+            cmdSet.setNotifyBCmd,
+            WATCHDOG_SET_NOTIFY_B_LOWER(class, NvU64_LO32(offset)));
     }
     SLI_LOOP_END;
+    #undef WATCHDOG_SET_NOTIFY_A_UPPER
+    #undef WATCHDOG_SET_NOTIFY_B_LOWER
 
     if (IsSLIEnabled(pGpu))
     {
@@ -1354,10 +1408,10 @@ krcWatchdogInitPushbuffer_IMPL
     }
 
     // Notifiers
-    PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
-              NV902D_NOTIFY, NV902D_NOTIFY_TYPE_WRITE_ONLY);
-    PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
-              NV902D_NO_OPERATION, 0x0);
+    PUSH_PAIR(pWatchdogChannelInfo->classSubch,
+              cmdSet.notifyCmd, cmdSet.notifyTypeWriteOnly);
+    PUSH_PAIR(pWatchdogChannelInfo->classSubch,
+              cmdSet.noOperationCmd, 0x0);
 
     if (!gpuIsClassSupported(pGpu, HOPPER_CHANNEL_GPFIFO_A))
     {
@@ -1371,22 +1425,22 @@ krcWatchdogInitPushbuffer_IMPL
         //
         NV_ASSERT(!IsHOPPERorBetter(pGpu));
 
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
                   NV906F_SET_REFERENCE, 0x0);
     }
     else
     {
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch, NVC86F_WFI, 0);
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch, NVC86F_WFI, 0);
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
                   NVC86F_MEM_OP_A,
                   0);
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
                   NVC86F_MEM_OP_B,
                   0);
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
                   NVC86F_MEM_OP_C,
                   0);
-        PUSH_PAIR(pWatchdogChannelInfo->class2dSubch,
+        PUSH_PAIR(pWatchdogChannelInfo->classSubch,
                   NVC86F_MEM_OP_D,
                   DRF_DEF(C86F, _MEM_OP_D, _OPERATION, _MEMBAR));
     }
@@ -1455,6 +1509,20 @@ krcWatchdogInitPushbuffer_IMPL
     krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc, pKernelWatchdog);
 }
 
+void
+krcWatchdogInitPushbuffer_IMPL
+(
+    OBJGPU   *pGpu,
+    KernelRc *pKernelRc,
+    KernelWatchdog *pKernelWatchdog
+)
+{
+    _watchdogInitPushbuffer(
+        pGpu,
+        pKernelRc,
+        pKernelWatchdog,
+        gpuIsClassSupported(pGpu, FERMI_TWOD_A) ? FERMI_TWOD_A : BLACKWELL_COMPUTE_A);
+}
 
 void
 krcWatchdogWriteNotifierToGpfifo_IMPL
@@ -1524,13 +1592,4 @@ krcWatchdogWriteNotifierToGpfifo_IMPL
             pWatchdogState->notifierToken->info32);
     }
     SLI_LOOP_END;
-}
-
-NV_STATUS krcWatchdogGetClientHandle(KernelRc *pKernelRc, NvHandle *phClient)
-{
-    if (!pKernelRc->watchdog.bHandleValid)
-        return NV_ERR_INVALID_STATE;
-
-    *phClient = pKernelRc->watchdog.hClient;
-    return NV_OK;
 }

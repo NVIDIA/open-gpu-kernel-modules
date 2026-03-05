@@ -48,8 +48,8 @@ static NV_STATUS _knvlinkActivateDiscoveredConns(OBJGPU *, KernelNvlink *, NvBoo
 static NV_STATUS _knvlinkActivateDiscoveredP2pConn(OBJGPU *, KernelNvlink *, NvU32);
 static NV_STATUS _knvlinkActivateDiscoveredSwitchConn(OBJGPU *, KernelNvlink *, NvU32);
 static NV_STATUS _knvlinkActivateDiscoveredSysmemConn(OBJGPU *, KernelNvlink *, NvU32);
-static NV_STATUS _knvlinkEnterSleep(OBJGPU *, KernelNvlink *, NvU32);
-static NV_STATUS _knvlinkExitSleep(OBJGPU *, KernelNvlink *, NvU32);
+static NV_STATUS _knvlinkEnterSleep(OBJGPU *, KernelNvlink *, NVLINK_BIT_VECTOR *);
+static NV_STATUS _knvlinkExitSleep(OBJGPU *, KernelNvlink *, NVLINK_BIT_VECTOR *);
 static NvBool    _knvlinkUpdateSwitchLinkMasks(OBJGPU *, KernelNvlink *, NvU64);
 static NvBool    _knvlinkUpdateSwitchLinkMasksGpuDegraded(OBJGPU *, KernelNvlink *);
 static void      _knvlinkUpdatePeerConfigs(OBJGPU *, KernelNvlink *);
@@ -928,7 +928,7 @@ knvlinkTrainFabricLinksToActive_IMPL
  *
  * @param[in]  pGpu           OBJGPU pointer
  * @param[in]  pKernelNvlink  KernelNvlink pointer
- * @param[in]  linkMask       Mask of links
+ * @param[in]  pLinkMask      Mask of links
  * @param[in]  bEntry         Enter/Exit sleep (L2)
  *
  * @return  NV_OK on success
@@ -938,7 +938,7 @@ knvlinkEnterExitSleep_IMPL
 (
     OBJGPU       *pGpu,
     KernelNvlink *pKernelNvlink,
-    NvU32         linkMask,
+    NVLINK_BIT_VECTOR *pLinkMask,
     NvBool        bEntry
 )
 {
@@ -972,7 +972,7 @@ knvlinkEnterExitSleep_IMPL
     }
 
     // Check if all the links in the mask are connected
-    FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+    FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
     {
         if (!pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected)
         {
@@ -983,12 +983,12 @@ knvlinkEnterExitSleep_IMPL
             return NV_ERR_NOT_SUPPORTED;
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
+    FOR_EACH_IN_BITVECTOR_END();
 
     if (pKernelNvlink->ipVerNvlink < NVLINK_VERSION_30)
     {
         // Links that share a PLL must enter/exit L2 together
-        FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+        FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
         {
             // If the link is a PLL master, consider the slave link
             if (pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId == linkId)
@@ -996,7 +996,7 @@ knvlinkEnterExitSleep_IMPL
                 // If the slave link exists and is not init-disabled, it should be included
                 if ( (pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId != NVLINK_MAX_LINKS_SW)               &&
                     (bitVectorTest(&pKernelNvlink->enabledLinks, pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId)) &&
-                    !(NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId) & linkMask) )
+                    !(bitVectorTest(pLinkMask, pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId)))
                 {
                     NV_PRINTF(LEVEL_ERROR,
                             "GPU%d: Links sharing PLL should enter/exit L2 together. Returning\n",
@@ -1009,7 +1009,7 @@ knvlinkEnterExitSleep_IMPL
             {
                 // For a slave link, its PLL master should be included if not init-disabled
                 if ( (bitVectorTest(&pKernelNvlink->enabledLinks, pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId)) &&
-                    !(NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId) & linkMask) )
+                    !(bitVectorTest(pLinkMask, pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId)))
                 {
                     NV_PRINTF(LEVEL_ERROR,
                             "GPU%d: Links sharing PLL should enter/exit L2 together. Returning\n",
@@ -1019,7 +1019,7 @@ knvlinkEnterExitSleep_IMPL
                 }
             }
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
     }
 
     // Device must be registered in the nvlink core library
@@ -1037,12 +1037,12 @@ done:
     if (bEntry)
     {
         // Remove the peer mapping in HSHUB and transition links to sleep (L2)
-        return _knvlinkEnterSleep(pGpu, pKernelNvlink, linkMask);
+        return _knvlinkEnterSleep(pGpu, pKernelNvlink, pLinkMask);
     }
     else
     {
         // Wakeup the links from sleep (L2) and setup the peer mapping in HSHUB
-        return _knvlinkExitSleep(pGpu, pKernelNvlink, linkMask);
+        return _knvlinkExitSleep(pGpu, pKernelNvlink, pLinkMask);
     }
 #endif
 
@@ -1947,7 +1947,7 @@ _knvlinkActivateDiscoveredSysmemConn
  *
  * @param[in]  pGpu          OBJGPU pointer
  * @param[in]  pKernelNvlink KernelNvlink pointer
- * @param[in]  linkMask      Mask of links
+ * @param[in]  pLinkMask     Mask of links
  *
  * @return  NV_OK on success
  */
@@ -1956,11 +1956,12 @@ _knvlinkEnterSleep
 (
     OBJGPU       *pGpu,
     KernelNvlink *pKernelNvlink,
-    NvU32         linkMask
+    NVLINK_BIT_VECTOR *pLinkMask
 )
 {
     NV_STATUS retStatus = NV_OK;
     NvlStatus status    = NVL_SUCCESS;
+    NvU32 linkMask;
 
     NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_PARAMS      programBufferRdyParams;
     NV2080_CTRL_INTERNAL_NVLINK_SAVE_RESTORE_HSHUB_STATE_PARAMS saveRestoreHshubStateParams;
@@ -1969,7 +1970,11 @@ _knvlinkEnterSleep
     portMemSet(&programBufferRdyParams, 0, sizeof(programBufferRdyParams));
     programBufferRdyParams.flags        = NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_FLAGS_SAVE;
     programBufferRdyParams.bSysmem      = NV_FALSE;
-    programBufferRdyParams.peerLinkMask = linkMask;
+
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        convertBitVectorToLinkMasks(pLinkMask, &programBufferRdyParams.peerLinkMask,
+                                        sizeof(programBufferRdyParams.peerLinkMask), NULL));
 
     // Save Bufferready state for the the mask of links entering L2
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
@@ -1980,7 +1985,8 @@ _knvlinkEnterSleep
         return status;
 
     portMemSet(&saveRestoreHshubStateParams, 0, sizeof(saveRestoreHshubStateParams));
-    saveRestoreHshubStateParams.linkMask = linkMask;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        convertBitVectorToLinkMasks(pLinkMask, NULL, 0, &saveRestoreHshubStateParams.linkMask));
     saveRestoreHshubStateParams.bSave    = NV_TRUE;
 
     // Save HSHUB SW state for the links which will need to be restored later
@@ -2006,7 +2012,7 @@ _knvlinkEnterSleep
 
         params.callbackType.type = NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_TL_LINK_MODE;
 
-        FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+        FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
         {
             params.linkId               = linkId;
             pSetTlLinkModeParams        = &params.callbackType.callbackParams.setTlLinkMode;
@@ -2020,11 +2026,13 @@ _knvlinkEnterSleep
                 NV_PRINTF(LEVEL_ERROR, "Error setting link: %d to sleep!\n", linkId);
             }
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
 
         return retStatus;
     }
 
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        convertBitVectorToLinkMasks(pLinkMask, &linkMask, sizeof(linkMask), NULL));
     // Put the mask of links of the device to sleep
     status = nvlink_lib_powerdown_links_from_active_to_L2(pKernelNvlink->pNvlinkDev,
                                                           linkMask,
@@ -2056,7 +2064,7 @@ _knvlinkEnterSleep
  *
  * @param[in]  pGpu          OBJGPU pointer
  * @param[in]  pKernelNvlink KernelNvlink pointer
- * @param[in]  linkMask      Mask of links
+ * @param[in]  pLinkMask     Mask of links
  *
  * @return  NV_OK on success
  */
@@ -2065,7 +2073,7 @@ _knvlinkExitSleep
 (
     OBJGPU       *pGpu,
     KernelNvlink *pKernelNvlink,
-    NvU32         linkMask
+    NVLINK_BIT_VECTOR *pLinkMask
 )
 {
     NvlStatus  status         = NVL_SUCCESS;
@@ -2075,6 +2083,7 @@ _knvlinkExitSleep
     NvU32      gpuInst;
     RMTIMEOUT  timeout;
     NvU32 linkTrainingTimeout = 10000000;
+    NvU32 localLinkMask;
 
     NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_PARAMS      programBufferRdyParams;
     NV2080_CTRL_INTERNAL_NVLINK_SAVE_RESTORE_HSHUB_STATE_PARAMS saveRestoreHshubStateParams;
@@ -2090,7 +2099,7 @@ _knvlinkExitSleep
         // will be queries via DLSTAT to know their status and training
         // progression.
         //
-        FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+        FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
         {
             status = knvlinkTrainLinksToActiveAli(pGpu, pKernelNvlink, NVBIT(linkId), NV_FALSE);
             if (status != NV_OK)
@@ -2102,7 +2111,7 @@ _knvlinkExitSleep
                 pKernelNvlink->nvlinkLinks[linkId].core_link->bStateSaved = NV_FALSE;
 #endif
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
 
         //
         // Get all links that are passed RxDet after L2 exit and poll on those
@@ -2133,16 +2142,17 @@ _knvlinkExitSleep
     }
     else
     {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            convertBitVectorToLinkMasks(pLinkMask, &localLinkMask, sizeof(localLinkMask), NULL));
         // Wakeup the mask of links of the device from sleep using legacy l2 exit
         status = nvlink_lib_train_links_from_L2_to_active(pKernelNvlink->pNvlinkDev,
-                                                          linkMask,
+                                                          localLinkMask,
                                                           NVLINK_STATE_CHANGE_ASYNC);
     }
-
     if (status == NVL_SUCCESS)
     {
         // Perform post-initialization setup for links that exited L2
-        FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+        FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
         {
             // Post topology link enable for pre-Ampere. This sets up buffer ready
             status = knvlinkEnableLinksPostTopology_HAL(pGpu, pKernelNvlink, NVBIT(linkId));
@@ -2189,7 +2199,7 @@ _knvlinkExitSleep
                 }
             }
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
     }
 
     //
@@ -2199,7 +2209,8 @@ _knvlinkExitSleep
     if (status == NVL_SUCCESS)
     {
         portMemSet(&saveRestoreHshubStateParams, 0, sizeof(saveRestoreHshubStateParams));
-        saveRestoreHshubStateParams.linkMask = linkMask;
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            convertBitVectorToLinkMasks(pLinkMask, NULL, 0, &saveRestoreHshubStateParams.linkMask));
         saveRestoreHshubStateParams.bSave    = NV_FALSE;
 
         // Restore HSHUB SW state for the links which exited L2 state
@@ -2215,7 +2226,9 @@ _knvlinkExitSleep
         portMemSet(&programBufferRdyParams, 0, sizeof(programBufferRdyParams));
         programBufferRdyParams.flags        = NV2080_CTRL_INTERNAL_NVLINK_PROGRAM_BUFFERREADY_FLAGS_RESTORE;
         programBufferRdyParams.bSysmem      = NV_FALSE;
-        programBufferRdyParams.peerLinkMask = linkMask;
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            convertBitVectorToLinkMasks(pLinkMask, &programBufferRdyParams.peerLinkMask,
+                                        sizeof(programBufferRdyParams.peerLinkMask), NULL));
 
         // Restore Bufferready state for the links which exited L2 state
         status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
@@ -2225,12 +2238,13 @@ _knvlinkExitSleep
         if (status != NV_OK)
             return status;
 
-        FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
+        FOR_EACH_IN_BITVECTOR(pLinkMask, linkId)
         {
             if (pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType == NVLINK_DEVICE_TYPE_GPU)
             {
                 OBJGPU       *pGpu1          = NULL;
                 KernelNvlink *pKernelNvlink1 = NULL;
+                NVLINK_BIT_VECTOR remoteLinkMask;
 
                 // Get the remote OBJGPU and Nvlink
                 for (gpuInst = 0; gpuInst < NV_MAX_DEVICES; gpuInst++)
@@ -2247,7 +2261,9 @@ _knvlinkExitSleep
                         remoteLinkId   = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber;
 
                         portMemSet(&saveRestoreHshubStateParams, 0, sizeof(saveRestoreHshubStateParams));
-                        saveRestoreHshubStateParams.linkMask = NVBIT(remoteLinkId);
+                        bitVectorSet(&remoteLinkMask, remoteLinkId);
+                        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                            convertBitVectorToLinkMasks(&remoteLinkMask, NULL, 0, &saveRestoreHshubStateParams.linkMask));
                         saveRestoreHshubStateParams.bSave    = NV_FALSE;
 
                         // Restore HSHUB SW state for the links which exited L2 state
@@ -2281,24 +2297,23 @@ _knvlinkExitSleep
                 }
             }
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
     }
 
     if (status == NVL_MORE_PROCESSING_REQUIRED)
     {
         NV_PRINTF(LEVEL_INFO,
-                  "Transition to L0 for GPU%d: linkMask 0x%x in progress... Waiting for "
+                  "Transition to L0 for GPU%d: linkMask "NV_BITVECTOR_INLINE_FMTX" in progress... Waiting for "
                   "remote endpoints to request L2 exit\n", pGpu->gpuInstance,
-                  linkMask);
+                  NV_BITVECTOR_INLINE_PRINTF_ARG(pLinkMask));
 
         return NV_WARN_MORE_PROCESSING_REQUIRED;
     }
-
     if (status != NVL_SUCCESS)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Unable to wakeup the linkmask 0x%x of GPU%d from SLEEP\n",
-                  linkMask, pGpu->gpuInstance);
+                  "Unable to wakeup the linkmask "NV_BITVECTOR_INLINE_FMTX" of GPU%d from SLEEP\n",
+                  NV_BITVECTOR_INLINE_PRINTF_ARG(pLinkMask), pGpu->gpuInstance);
 
         return NV_ERR_GENERIC;
     }
@@ -2588,15 +2603,12 @@ _knvlinkGetNumPortEvents
 )
 {
     NV_STATUS status;
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS params = {0};
 
-    status = pRmApi->Control(pRmApi,
-                             pGpu->hInternalClient,
-                             pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS,
-                             &params,
-                             sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS,
+                                (void *)&params,
+                                sizeof(params));
     if (status != NV_OK)
     {
         // If this call fails, force discovery in knvlinkCoreGetRemoteDeviceInfo

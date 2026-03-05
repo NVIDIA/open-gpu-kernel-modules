@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/gpu.h"
 
-#include "published/ampere/ga102/dev_ce.h"
+#include "published/ampere/ga102/dev_ce_base.h"
 
 #define NV_CE_SYS_ALLOWED_LCE_MASK            0x0C
 #define NV_CE_GRCE_ALLOWED_LCE_MASK           0x03
@@ -53,7 +53,7 @@ kceGetPce2lceConfigSize1_GA102
     KernelCE *pKCe
 )
 {
-    return NV_CE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**

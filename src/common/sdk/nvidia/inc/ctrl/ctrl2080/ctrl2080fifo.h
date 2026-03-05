@@ -463,6 +463,7 @@ typedef struct NV2080_CTRL_FIFO_OBJSCHED_SW_GET_LOG_ENTRY {
     NvU32 targetTimeSlice;
     NV_DECLARE_ALIGNED(NvU64 cumulativePreemptionTime, 8);
     NV_DECLARE_ALIGNED(NvU64 cumulativeIdleTime, 8);
+    NvU32 weight;
     NV_DECLARE_ALIGNED(NvU64 counters[NV2080_CTRL_FIFO_OBJSCHED_SW_NCOUNTERS], 8);
 } NV2080_CTRL_FIFO_OBJSCHED_SW_GET_LOG_ENTRY;
 
@@ -881,6 +882,38 @@ typedef struct NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS {
     NvHandle hChannelList[NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES];
     NvBool   bEnableAfterKeyRotation;
 } NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FIFO_ROTATE_KEYS
+ *
+ * This command will disable and preempt channels described in the
+ * list provided and force key rotation on these channels.
+ * hClient <-> hChannel pairs should use the same index in the arrays.
+ * This control call is only for Blackwell and newer GPUs.
+ *
+ *  numChannels
+ *      The number of valid entries in hChannelList array.
+ *  hClientList
+ *      An array of NvHandle listing the client handles
+ *  hChannelList
+ *      An array of NvHandle listing the channel handles
+ *      to be stopped.
+ *  bEnableAfterKeyRotation
+ *      This determines if channel is enabled by RM after it completes key rotation.
+ * Possible status values returned are:
+ *    NV_OK
+ *    NVOS_INVALID_STATE
+ */
+#define NV2080_CTRL_CMD_FIFO_ROTATE_KEYS (0x2080111c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS_MESSAGE_ID (0x1CU)
+
+typedef struct NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS {
+    NvU32    numChannels;
+    NvHandle hClientList[NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES];
+    NvHandle hChannelList[NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES];
+    NvBool   bEnableAfterKeyRotation;
+} NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS;
 
 
 

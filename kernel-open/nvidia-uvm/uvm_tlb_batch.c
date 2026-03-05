@@ -88,16 +88,10 @@ static void tlb_batch_flush_invalidate_all(uvm_tlb_batch_t *batch, uvm_push_t *p
 
 static bool tlb_batch_should_invalidate_all(uvm_tlb_batch_t *batch)
 {
-    if (!batch->tree->gpu->parent->tlb_batch.va_invalidate_supported)
-        return true;
-
     if (batch->count > UVM_TLB_BATCH_MAX_ENTRIES)
         return true;
 
-    if (batch->tree->gpu->parent->tlb_batch.va_range_invalidate_supported)
-        return batch->total_ranges > batch->tree->gpu->parent->tlb_batch.max_ranges;
-
-    return batch->total_pages > batch->tree->gpu->parent->tlb_batch.max_pages;
+    return batch->total_ranges > batch->tree->gpu->parent->tlb_batch.max_ranges;
 }
 
 void uvm_tlb_batch_end(uvm_tlb_batch_t *batch, uvm_push_t *push, uvm_membar_t tlb_membar)
@@ -121,10 +115,7 @@ void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, N
 
     ++batch->count;
 
-    if (batch->tree->gpu->parent->tlb_batch.va_range_invalidate_supported)
-        batch->total_ranges++;
-    else
-        batch->total_pages += uvm_div_pow2_64(size, smallest_page_size(page_sizes));
+    batch->total_ranges++;
 
     batch->biggest_page_size = max(batch->biggest_page_size, biggest_page_size(page_sizes));
 

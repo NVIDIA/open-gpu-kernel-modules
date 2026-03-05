@@ -757,6 +757,14 @@ continue_alloc_object:
             pHwResource = NULL;
         }
 
+        if (src_hHwResHandle != 0 && pHwResource != NULL)
+        {
+            /* Increment the refCount for HW resource which is not allocated inside memlistConstruct_IMPL.
+             * This is to avoid freeing up of HwResource while source HW resource handle is still active.
+             */
+            pMemory->pHwResource->refCount += 1;
+        }
+
         memdescSetPteKind(pMemory->pMemDesc, pAllocParams->format);
         memdescSetHwResId(pMemory->pMemDesc, hwResId);
 
@@ -765,7 +773,9 @@ done_fbmem:
         {
             memdescDestroy(pMemDesc);
 
-            if (src_hHwResHandle == 0)
+            if ((src_hHwResHandle == 0) &&
+                (pFbAllocInfo != NULL) &&
+                (pFbAllocPageFormat != NULL))
             {
                 portMemFree(pHwResource);
 

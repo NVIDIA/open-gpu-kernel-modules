@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,6 +54,12 @@ extern "C" {
  * their state and common code will broadcast that to all tracking structures
  * and issue callbacks again with bSatisfied=false, if all dependencies
  * for that prereq were previously satisfied.
+ *   Prerequisites can also be added as deferrable. In this case, when all dependencies
+ * are satisfied (or a satisfied PREREQ_ENTRY is unsatisfied), the associated callback
+ * will not be invoked directly inline. Instead, if deferment conditions are met,
+ * a work-item will be scheduled to execute the callback asynchronously.
+ * This allows the callback to run outside of contexts where direct
+ * invocation is undesirable (e.g., high IRQL or blocking RPC in progress).
  *
  * @note      Feature is designed to prevent creating new prerequisites once
  *          dependencies start issuing Satisfy()/Retract() notifications.
@@ -91,16 +97,11 @@ extern "C" {
 
 /* ------------------------ Datatypes --------------------------------------- */
 
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
@@ -157,11 +158,44 @@ typedef struct
     NvBool               bArmed;
 
     /*!
+     * Boolean indicating whether we should try to defer executing the callback
+     * associated with this entry.
+     */
+    NvBool               bDeferrable;
+
+    /*!
+     * Boolean indicating whether a work-item has already been scheduled to
+     * execute this entry's callback, used to prevent redundant work-item
+     * scheduling.
+     */
+    NvBool               bWorkItemScheduled;
+
+    /*!
+     *  Boolean indicating value of the flag `bSatisfied` passed into this
+     * entry's callback during its last invocation, so that we know
+     * (1) what value to pass in for next invocation and
+     * (2) which condition work-item should double check before next executing
+     * the callback.
+     */
+    NvBool               bLastCallbackWasSatisfy;
+
+    /*!
      * @copydoc GpuPrereqCallback
      */
     GpuPrereqCallback   *callback;
 } PREREQ_ENTRY;
 MAKE_LIST(PrereqList, PREREQ_ENTRY);
+
+struct PrereqTracker;
+
+#ifndef __nvoc_class_id_PrereqTracker
+#define __nvoc_class_id_PrereqTracker 0x0e171bu
+typedef struct PrereqTracker PrereqTracker;
+#endif /* __nvoc_class_id_PrereqTracker */
+
+
+
+typedef NvBool GpuPrereqDeferralCheckCallback(struct PrereqTracker *pPrereqTracker, PREREQ_ENTRY *pPrereqEntry);
 
 /*!
  * Holds common prerequisite tracking information.
@@ -202,6 +236,7 @@ struct PrereqTracker {
     NvBool bInitialized;
     PrereqList prereqList;
     struct OBJGPU *pParent;
+    GpuPrereqDeferralCheckCallback *pDeferralCheckCallback;
 };
 
 
@@ -211,13 +246,9 @@ struct NVOC_METADATA__PrereqTracker {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_PrereqTracker_TYPEDEF__
-#define __NVOC_CLASS_PrereqTracker_TYPEDEF__
-typedef struct PrereqTracker PrereqTracker;
-#endif /* __NVOC_CLASS_PrereqTracker_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_PrereqTracker
-#define __nvoc_class_id_PrereqTracker 0x0e171b
+#define __nvoc_class_id_PrereqTracker 0x0e171bu
+typedef struct PrereqTracker PrereqTracker;
 #endif /* __nvoc_class_id_PrereqTracker */
 
 // Casting support
@@ -235,14 +266,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PrereqTracker;
 
 NV_STATUS __nvoc_objCreateDynamic_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, struct OBJGPU *arg_pParent);
-#define __objCreate_PrereqTracker(ppNewObj, pParent, createFlags, arg_pParent) \
-    __nvoc_objCreate_PrereqTracker((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent)
+NV_STATUS __nvoc_objCreate_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, struct OBJGPU *pParent, GpuPrereqDeferralCheckCallback *pCallback);
+#define __objCreate_PrereqTracker(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pParent, pCallback) \
+    __nvoc_objCreate_PrereqTracker((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pParent, pCallback)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS prereqConstruct_IMPL(struct PrereqTracker *arg_pTracker, struct OBJGPU *arg_pParent);
-#define __nvoc_prereqConstruct(arg_pTracker, arg_pParent) prereqConstruct_IMPL(arg_pTracker, arg_pParent)
+NV_STATUS prereqConstruct_IMPL(struct PrereqTracker *pTracker, struct OBJGPU *pParent, GpuPrereqDeferralCheckCallback *pCallback);
+#define __nvoc_prereqConstruct(pTracker, pParent, pCallback) prereqConstruct_IMPL(pTracker, pParent, pCallback)
 
 void prereqDestruct_IMPL(struct PrereqTracker *pTracker);
 #define __nvoc_prereqDestruct(pTracker) prereqDestruct_IMPL(pTracker)
@@ -287,10 +318,26 @@ static inline NV_STATUS prereqComposeEntry(struct PrereqTracker *pTracker, GpuPr
 #define prereqComposeEntry(pTracker, callback, pDepends, ppPrereq) prereqComposeEntry_IMPL(pTracker, callback, pDepends, ppPrereq)
 #endif // __nvoc_prereq_tracker_h_disabled
 
+NV_STATUS prereqComposeEntryDeferrable_IMPL(struct PrereqTracker *pTracker, GpuPrereqCallback *callback, union PREREQ_ID_BIT_VECTOR *pDepends, PREREQ_ENTRY **ppPrereq);
+#ifdef __nvoc_prereq_tracker_h_disabled
+static inline NV_STATUS prereqComposeEntryDeferrable(struct PrereqTracker *pTracker, GpuPrereqCallback *callback, union PREREQ_ID_BIT_VECTOR *pDepends, PREREQ_ENTRY **ppPrereq) {
+    NV_ASSERT_FAILED_PRECOMP("PrereqTracker was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_prereq_tracker_h_disabled
+#define prereqComposeEntryDeferrable(pTracker, callback, pDepends, ppPrereq) prereqComposeEntryDeferrable_IMPL(pTracker, callback, pDepends, ppPrereq)
+#endif // __nvoc_prereq_tracker_h_disabled
+
 
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

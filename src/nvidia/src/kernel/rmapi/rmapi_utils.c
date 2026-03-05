@@ -238,6 +238,7 @@ NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(OBJGPU *pGpu, NvU
         case NV2080_CTRL_CMD_NVLINK_GET_PLATFORM_INFO:
         case NV402C_CTRL_CMD_I2C_GET_PORT_SPEED:
         case NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME:
+        case NV2080_CTRL_CMD_ECC_GET_UNREPAIRABLE_MEMORY_FLAG:
             return NV_TRUE;
 
         case NV90E6_CTRL_CMD_MASTER_GET_ERROR_INTR_OFFSET_MASK:

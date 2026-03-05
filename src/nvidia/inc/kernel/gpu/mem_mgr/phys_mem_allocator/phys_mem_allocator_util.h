@@ -37,15 +37,12 @@ extern "C" {
 #define PMA_FRAME2ADDR(frame, base) ((base) + ((frame) << PMA_PAGE_SHIFT))
 
 // State bits
-#define PMA_SCRUB_INITIALIZE   0
-#define PMA_SCRUB_IN_PROGRESS  1
-#define PMA_SCRUB_DONE         2
+#define PMA_SCRUB_INITIALIZE   (NvSPtr)0
+#define PMA_SCRUB_IN_PROGRESS  (NvSPtr)1
+#define PMA_SCRUB_DONE         (NvSPtr)2
 
 #define PMA_SCRUBBER_VALID     1
 #define PMA_SCRUBBER_INVALID   0
-
-// TODO See if this can be added to NvPort
-#define pmaPortAtomicGet(ptr) portAtomicOrSize((ptr), 0)
 
 NvU32 findRegionID(PMA *pPma, NvU64 address);
 void pmaPrintBlockStatus(PMA_PAGESTATUS blockStatus);

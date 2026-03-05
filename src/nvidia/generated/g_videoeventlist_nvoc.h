@@ -57,29 +57,19 @@ extern "C" {
 #include "class/cl90cdvideo.h"
 #include "ctrl/ctrl2080/ctrl2080event.h"
 
-
 struct EventBuffer;
 
-#ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
-#define __NVOC_CLASS_EventBuffer_TYPEDEF__
-typedef struct EventBuffer EventBuffer;
-#endif /* __NVOC_CLASS_EventBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_EventBuffer
-#define __nvoc_class_id_EventBuffer 0x63502b
+#define __nvoc_class_id_EventBuffer 0x63502bu
+typedef struct EventBuffer EventBuffer;
 #endif /* __nvoc_class_id_EventBuffer */
-
 
 
 struct KernelChannel;
 
-#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
-#define __NVOC_CLASS_KernelChannel_TYPEDEF__
-typedef struct KernelChannel KernelChannel;
-#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannel
-#define __nvoc_class_id_KernelChannel 0x5d8d70
+#define __nvoc_class_id_KernelChannel 0x5d8d70u
+typedef struct KernelChannel KernelChannel;
 #endif /* __nvoc_class_id_KernelChannel */
 
 

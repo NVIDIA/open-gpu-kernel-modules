@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,10 +19,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * File:      nvhdmipkt.c
- *
- * Purpose:   Provide initialization functions for HDMI library
+ */
+
+/** @file  nvhdmipkt.c
+ ** @brief Provide initialization functions for HDMI library
  */
 
 #include <stddef.h>
@@ -611,6 +611,14 @@ NvHdmiPkt_CallConstructors(NVHDMIPKT_CLASS_ID const thisClassId,
     return NV_TRUE;
 }
 
+static void
+NvHdmiPkt_NullPrint(NvHdmiPkt_CBHandle handle,
+                    const char *format, ...)
+{
+    // Noop implementation.  Avoids having to check for NULL on every call.
+}
+
+
 /******************************** HDMI Library Init functions ***********************************/
 /*
  * NvHdmiPkt_InitializeLibrary
@@ -712,7 +720,14 @@ NvHdmiPkt_InitializeLibrary(NvU32                              const hwClass,
     pClass->callback.checkTimeout    = pCallbacks->checkTimeout;
 #endif
 
-    pClass->callback.print           = pCallbacks->print;
+    if (pCallbacks->print == NULL)
+    {
+        pClass->callback.print = NvHdmiPkt_NullPrint;
+    }
+    else
+    {
+        pClass->callback.print = pCallbacks->print;
+    }
 
 #if defined (DEBUG)
     pClass->callback.assert          = pCallbacks->assert;

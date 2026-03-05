@@ -1155,11 +1155,13 @@ kgrctxAllocMainCtxBuffer_IMPL
         pCtxBufPool = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pCtxBufPool;
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+    NV_STATUS status;
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         memdescCreate(&pGrCtxBufferMemDesc, pGpu, ctxSize,
                       RM_PAGE_SIZE, bIsContiguous, ADDR_UNKNOWN,
                       pAttr->cpuAttr,
-                      allocFlags | MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE));
+                      allocFlags | MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE),
+                    failed);
 
     if (kgraphicsIsOverrideContextBuffersToGpuCached(pGpu, pKernelGraphics))
         memdescSetGpuCacheAttrib(pGrCtxBufferMemDesc, NV_MEMORY_CACHED);
@@ -1168,24 +1170,31 @@ kgrctxAllocMainCtxBuffer_IMPL
     // Force page size to 4KB, we can change this later when RM access method
     // support 64k pages
     //
-    NV_ASSERT_OK_OR_RETURN(
-        memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pGrCtxBufferMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB));
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pGrCtxBufferMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB),
+        failed);
 
-    NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(pGrCtxBufferMemDesc, pCtxBufPool));
+    NV_ASSERT_OK_OR_GOTO(status, memdescSetCtxBufPool(pGrCtxBufferMemDesc, pCtxBufPool), failed);
 
     // Overwrite the ptekind of the main grctx buffer if the required regkey is specified
     kgraphicsSetContextBufferPteKind(pGpu, pKernelGraphics, &pGrCtxBufferMemDesc, GR_CTX_BUFFER_MAIN, NV_FALSE, memmgrGetPteKindGenericMemoryCompressible_HAL(pGpu, pMemoryManager));
 
-    NV_STATUS status;
     memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_CONTEXT_BUFFER, pGrCtxBufferMemDesc, pAttr->pAllocList);
-    NV_ASSERT_OK_OR_RETURN(status);
+    NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
-    NV_ASSERT_OK_OR_RETURN(
+    NV_ASSERT_OK_OR_GOTO(status,
         kchannelSetEngineContextMemDesc(pGpu, pKernelChannel,
                                         ENG_GR(kgraphicsGetInstance(pGpu, pKernelGraphics)),
-                                        pGrCtxBufferMemDesc));
+                                        pGrCtxBufferMemDesc),
+                    failed);
     pKernelGraphicsContextUnicast->pMainCtxBuffer = pGrCtxBufferMemDesc;
     return NV_OK;
+
+failed:
+    memdescFree(pGrCtxBufferMemDesc);
+    memdescDestroy(pGrCtxBufferMemDesc);
+    pGrCtxBufferMemDesc = NULL;
+    return status;
 }
 
 /*!
@@ -2622,8 +2631,10 @@ kgrctxShouldManageCtxBuffers_PHYSICAL
     NvU32 gfid
 )
 {
-    return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || (gpuIsSriovEnabled(pGpu) && IS_GFID_PF(gfid) &&
-                                                             !(IS_MIG_IN_USE(pGpu) && hypervisorIsType(OS_HYPERVISOR_VMWARE)));
+    if (gpuIsSriovEnabled(pGpu) && !RMCFG_FEATURE_PLATFORM_GSP)
+        return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) || IS_GFID_PF(gfid);
+    else
+        return !gpuIsClientRmAllocatedCtxBufferEnabled(pGpu);
 }
 
 /**
@@ -3289,8 +3300,7 @@ kgrctxGetRegisterAccessMapId_IMPL
 {
     // Using cached privilege because this function is called at a raised IRQL.
     if (kchannelCheckIsAdmin(pKernelChannel)
-        && !(hypervisorIsVgxHyper() || (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))) &&
-        IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
+        && !(hypervisorIsVgxHyper() || (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))) && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
     {
         return GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP;
     }

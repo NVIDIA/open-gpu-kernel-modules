@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xc37aef = 1;
+char __nvoc_class_id_uniqueness_check__c37aef = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCrashCatEngine;
@@ -37,7 +37,8 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelCrashCatEngine;
 // Down-thunk(s) to bridge KernelCrashCatEngine methods from ancestors (if any)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this);    // this
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCatEngine *arg_this);    // this
-void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // this
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog(struct CrashCatEngine *arg_this);    // this
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args);    // this
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriRead(struct CrashCatEngine *arg_this, NvU32 offset);    // this
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriWrite(struct CrashCatEngine *arg_this, NvU32 offset, NvU32 data);    // this
 void * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineMapBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc);    // this
@@ -48,6 +49,7 @@ NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct 
 
 // Up-thunk(s) to bridge KernelCrashCatEngine methods to ancestors (if any)
 
+// Class-specific details for KernelCrashCatEngine
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
 //  kcrashcatEngineRegRead
@@ -55,17 +57,15 @@ NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct 
 //  kcrashcatEngineMaskDmemAddr
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCrashCatEngine = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelCrashCatEngine),
-        /*classId=*/            classId(KernelCrashCatEngine),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelCrashCatEngine),
+    .classInfo.classId =            classId(KernelCrashCatEngine),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelCrashCatEngine",
+    .classInfo.name =               "KernelCrashCatEngine",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelCrashCatEngine,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelCrashCatEngine
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__KernelCrashCatEngine,
+    .pExportInfo =        &__nvoc_export_info__KernelCrashCatEngine
 };
 
 
@@ -82,6 +82,8 @@ static const struct NVOC_METADATA__KernelCrashCatEngine __nvoc_metadata__KernelC
     .metadata__CrashCatEngine.vtable.__crashcatEngineConfigured__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured,    // pure virtual
     .vtable.__kcrashcatEngineUnload__ = &kcrashcatEngineUnload_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__CrashCatEngine.vtable.__crashcatEngineUnload__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload,    // virtual
+    .vtable.__kcrashcatEngineResetLog__ = &kcrashcatEngineResetLog_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
+    .metadata__CrashCatEngine.vtable.__crashcatEngineResetLog__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog,    // pure virtual
     .vtable.__kcrashcatEngineVprintf__ = &kcrashcatEngineVprintf_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__CrashCatEngine.vtable.__crashcatEngineVprintf__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf,    // pure virtual
     .vtable.__kcrashcatEngineRegRead__ = NULL,    // pure virtual
@@ -97,7 +99,7 @@ static const struct NVOC_METADATA__KernelCrashCatEngine __nvoc_metadata__KernelC
     .metadata__CrashCatEngine.vtable.__crashcatEngineUnmapBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnmapBufferDescriptor,    // pure virtual
     .vtable.__kcrashcatEngineSyncBufferDescriptor__ = &kcrashcatEngineSyncBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__CrashCatEngine.vtable.__crashcatEngineSyncBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor,    // pure virtual
-    .vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_2fced3,    // virtual halified (singleton optimized)
+    .vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_f2d351,    // virtual halified (singleton optimized) body
     .metadata__CrashCatEngine.vtable.__crashcatEngineGetScratchOffsets__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets,    // pure virtual
     .metadata__CrashCatEngine.vtable.__crashcatEngineGetWFL0Offset__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset,    // pure virtual
 };
@@ -112,7 +114,7 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelCrashCatEngine = {
     }
 };
 
-// 10 down-thunk(s) defined to bridge methods in KernelCrashCatEngine from superclasses
+// 11 down-thunk(s) defined to bridge methods in KernelCrashCatEngine from superclasses
 
 // kcrashcatEngineConfigured: virtual override (crashcatEngine) base (crashcatEngine)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this) {
@@ -124,9 +126,14 @@ void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCat
     kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
 }
 
+// kcrashcatEngineResetLog: virtual override (crashcatEngine) base (crashcatEngine)
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog(struct CrashCatEngine *arg_this) {
+    kcrashcatEngineResetLog((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
+}
+
 // kcrashcatEngineVprintf: virtual override (crashcatEngine) base (crashcatEngine)
-void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), bReportStart, fmt, args);
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), errorId, fmt, args);
 }
 
 // kcrashcatEnginePriRead: virtual override (crashcatEngine) base (crashcatEngine)
@@ -154,12 +161,12 @@ void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor(s
     kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), pBufDesc, offset, size);
 }
 
-// kcrashcatEngineGetScratchOffsets: virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
+// kcrashcatEngineGetScratchOffsets: virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
 const NvU32 * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets(struct CrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
     return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)), scratchGroupId);
 }
 
-// kcrashcatEngineGetWFL0Offset: virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
+// kcrashcatEngineGetWFL0Offset: virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct CrashCatEngine *arg_this) {
     return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCrashCatEngine, __nvoc_base_CrashCatEngine)));
 }
@@ -167,16 +174,20 @@ NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset(struct 
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelCrashCatEngine = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelCrashCatEngine object.
 void __nvoc_dtor_CrashCatEngine(CrashCatEngine*);
-void __nvoc_dtor_KernelCrashCatEngine(KernelCrashCatEngine *pThis) {
+void __nvoc_dtor_KernelCrashCatEngine(KernelCrashCatEngine* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_CrashCatEngine(&pThis->__nvoc_base_CrashCatEngine);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelCrashCatEngine(KernelCrashCatEngine *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -186,17 +197,23 @@ void __nvoc_init_dataField_KernelCrashCatEngine(KernelCrashCatEngine *pThis, Gpu
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_CrashCatEngine(CrashCatEngine* );
+
+// Construct KernelCrashCatEngine object.
+NV_STATUS __nvoc_ctor_CrashCatEngine(CrashCatEngine *arg_this);
 NV_STATUS __nvoc_ctor_KernelCrashCatEngine(KernelCrashCatEngine *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_CrashCatEngine(&pThis->__nvoc_base_CrashCatEngine);
     if (status != NV_OK) goto __nvoc_ctor_KernelCrashCatEngine_fail_CrashCatEngine;
+
+    // Initialize data fields.
     __nvoc_init_dataField_KernelCrashCatEngine(pThis, pGpuhalspecowner);
     goto __nvoc_ctor_KernelCrashCatEngine_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelCrashCatEngine_fail_CrashCatEngine:
 __nvoc_ctor_KernelCrashCatEngine_exit:
-
     return status;
 }
 
@@ -209,45 +226,45 @@ static void __nvoc_init_funcTable_KernelCrashCatEngine_1(KernelCrashCatEngine *p
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
-    // kcrashcatEngineReadDmem -- virtual halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    // kcrashcatEngineReadDmem -- virtual halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kcrashcatEngineReadDmem__ = &kcrashcatEngineReadDmem_TU102;
     }
     // default
     else
     {
-        pThis->__kcrashcatEngineReadDmem__ = &kcrashcatEngineReadDmem_2fced3;
+        pThis->__kcrashcatEngineReadDmem__ = &kcrashcatEngineReadDmem_f2d351;
     }
 
-    // kcrashcatEngineGetScratchOffsets -- virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    // kcrashcatEngineGetScratchOffsets -- virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kcrashcatEngineGetScratchOffsets__ = &kcrashcatEngineGetScratchOffsets_TU102;
     }
     // default
     else
     {
-        pThis->__kcrashcatEngineGetScratchOffsets__ = &kcrashcatEngineGetScratchOffsets_11d6dc;
+        pThis->__kcrashcatEngineGetScratchOffsets__ = &kcrashcatEngineGetScratchOffsets_80f438;
     }
 
-    // kcrashcatEngineGetWFL0Offset -- virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    // kcrashcatEngineGetWFL0Offset -- virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kcrashcatEngineGetWFL0Offset__ = &kcrashcatEngineGetWFL0Offset_TU102;
     }
     // default
     else
     {
-        pThis->__kcrashcatEngineGetWFL0Offset__ = &kcrashcatEngineGetWFL0Offset_c067f9;
+        pThis->__kcrashcatEngineGetWFL0Offset__ = &kcrashcatEngineGetWFL0Offset_474d46;
     }
 } // End __nvoc_init_funcTable_KernelCrashCatEngine_1 with approximately 6 basic block(s).
 
 
-// Initialize vtable(s) for 15 virtual method(s).
+// Initialize vtable(s) for 16 virtual method(s).
 void __nvoc_init_funcTable_KernelCrashCatEngine(KernelCrashCatEngine *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize vtable(s) with 3 per-object function pointer(s).

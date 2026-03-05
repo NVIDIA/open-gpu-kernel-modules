@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -742,7 +742,11 @@ namespace DisplayPort
                 //
                 bool linkStatusDirtied;
             } laneStatusIntr;
-
+            struct
+            {
+                bool receiverPort0InSync;
+                bool receiverPort1InSync;
+            } sinkStatus;                                           // DPCD offset 205
             struct
             {
                 bool testRequestTraining;                          // DPCD offset 218
@@ -1130,7 +1134,7 @@ namespace DisplayPort
         void readLTTPRLinkStatus(NvS32 rxIndex, NvU8 *buffer);
         void resetIntrLaneStatus();
 
-        void fetchLinkStatusESI();
+        virtual void fetchLinkStatusESI();
         void fetchLinkStatusLegacy();
 
         virtual bool readTraining(NvU8* voltageSwingLane,  NvU8* preemphasisLane,
@@ -1504,7 +1508,7 @@ namespace DisplayPort
         bool clearDpTunnelingEstimatedBwStatus();
         bool clearDpTunnelingBwAllocationCapStatus();
 
-        virtual AuxRetry::status notifySDPErrDetectionCapability() { return AuxRetry::ack; }        
+        virtual AuxRetry::status notifySDPErrDetectionCapability() { return AuxRetry::ack; }
         virtual bool isDp2xChannelCodingCapable() { return false; }
         virtual void setIgnoreCableIdCaps(bool bIgnore) { return; }
         virtual void overrideCableIdCap(LinkRate linkRate, bool bEnable) { return; }

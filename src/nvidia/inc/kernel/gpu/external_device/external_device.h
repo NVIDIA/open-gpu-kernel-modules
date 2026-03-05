@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 #define EXTDEV_H_
 
 /* ------------------------ Includes --------------------------------------- */
-#include "Nvcm.h"
 #include "gpu/disp/dispsw.h"
 
 /* ------------------------ Types definitions ------------------------------ */

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,7 +49,9 @@ extern "C" {
 #include "resserv/resserv.h"
 #include "rmapi/resource.h"
 #include "core/core.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
+
+
 
 /* ------------------------ Macros & Defines ------------------------------- */
 
@@ -140,13 +142,9 @@ struct NVOC_METADATA__GSyncApi {
     const struct NVOC_VTABLE__GSyncApi vtable;
 };
 
-#ifndef __NVOC_CLASS_GSyncApi_TYPEDEF__
-#define __NVOC_CLASS_GSyncApi_TYPEDEF__
-typedef struct GSyncApi GSyncApi;
-#endif /* __NVOC_CLASS_GSyncApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GSyncApi
-#define __nvoc_class_id_GSyncApi 0x214628
+#define __nvoc_class_id_GSyncApi 0x214628u
+typedef struct GSyncApi GSyncApi;
 #endif /* __nvoc_class_id_GSyncApi */
 
 // Casting support
@@ -164,14 +162,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GSyncApi;
 
 NV_STATUS __nvoc_objCreateDynamic_GSyncApi(GSyncApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_GSyncApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_GSyncApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_GSyncApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_GSyncApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gsyncapiConstruct_IMPL(struct GSyncApi *arg_pGsyncApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_gsyncapiConstruct(arg_pGsyncApi, arg_pCallContext, arg_pParams) gsyncapiConstruct_IMPL(arg_pGsyncApi, arg_pCallContext, arg_pParams)
+NV_STATUS gsyncapiConstruct_IMPL(struct GSyncApi *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_gsyncapiConstruct(pGsyncApi, pCallContext, pParams) gsyncapiConstruct_IMPL(pGsyncApi, pCallContext, pParams)
 
 NV_STATUS gsyncapiCtrlCmdGsyncGetVersion_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *pGsyncGetVersionParams);
 #ifdef __nvoc_gsync_api_h_disabled
@@ -623,8 +621,10 @@ static inline NV_STATUS gsyncapiGetOrAllocNotifShare_DISPATCH(struct GSyncApi *p
     return pNotifier->__nvoc_metadata_ptr->vtable.__gsyncapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS gsyncapiControl_IMPL(struct GSyncApi *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS gsyncapiCtrlCmdGsyncGetVersion_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_GET_VERSION_PARAMS *pGsyncGetVersionParams);
 
 NV_STATUS gsyncapiCtrlCmdGetGsyncGpuTopology_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS *pParams);
@@ -683,6 +683,10 @@ NV_STATUS gsyncapiCtrlCmdGsyncGetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, 
 
 NV_STATUS gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL(struct GSyncApi *pGsyncApi, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

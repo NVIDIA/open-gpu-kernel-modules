@@ -74,6 +74,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GP100[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -109,6 +110,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GP102[] =
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -144,6 +146,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GP106[] =
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -179,6 +182,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GP108[] =
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
 };
 
 const GPUCHILDPRESENT *

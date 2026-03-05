@@ -96,7 +96,16 @@ namespace DisplayPort
 
         bool    bMstTimeslotBug4968411;
         bool    bApplyManualTimeslotBug4968411;
-        
+        //
+        //  Set the policy of reading DID2x on MST devices.
+        //  Valid values are 0-1.
+        //  0 - DID2X then EDID.     (Read DID2x first, then read EDID regardless of DID2x availability before reporting device to client.)
+        //  1 - DID2X only.          (Read DID2x first, then read EDID only if DID2x is not available.)
+        //  Default value is 0.
+        //
+        DISPLAYID2_MST_POLICY displayId2MSTPolicy;
+        void discoveryNewDevice(const DiscoveryManager::Device &device) override;
+
         bool    bApplyStuffDummySymbolsWAR;
         bool    bStuffDummySymbolsFor128b132b;
         bool    bStuffDummySymbolsFor8b10b;
@@ -150,11 +159,30 @@ namespace DisplayPort
             }
             virtual ~WatermarkCacheElement() = default;
 
-            unsigned int hash() const override; 
-            bool isEqual(const HashMapElement *other) const override; 
+            unsigned int hash() const override;
+            bool isEqual(const HashMapElement *other) const override;
         };
 
         HashMap m_watermarkCache;
+    };
+    //
+    //  New devices may not get a DeviceImpl created until after the Did2 read has completed.
+    //   This object is used to track the necessary state.
+    //
+    struct DevicePendingDID2Read : protected DID2ReadMultistream::DID2ReadMultistreamEventSink, public ListElement
+    {
+        ConnectorImpl2x *           parent;
+        DiscoveryManager::Device    device;
+        DID2ReadMultistream         reader;
+
+        void mstDid2Completed(DID2ReadMultistream * from);
+        void mstDid2ReadFailed(DID2ReadMultistream * from);
+
+    public:
+        DevicePendingDID2Read(ConnectorImpl2x *  _parent, MessageManager * manager, DiscoveryManager::Device dev)
+            : parent(_parent), device(dev), reader(_parent->timer, manager, this, dev.address)
+        {
+        }
     };
 }
 

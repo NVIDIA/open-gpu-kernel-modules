@@ -635,9 +635,9 @@ static void pde_clear(uvm_page_tree_t *tree,
     pde_write(tree, dir, entry_index, false, push);
 }
 
-static uvm_chunk_sizes_mask_t allocation_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU64 big_page_size)
+static uvm_chunk_sizes_mask_t allocation_sizes(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal(big_page_size);
+    uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal();
     unsigned long page_sizes, page_size_log2;
     uvm_chunk_sizes_mask_t alloc_sizes;
 
@@ -659,9 +659,9 @@ static uvm_chunk_sizes_mask_t allocation_sizes_for_big_page_size(uvm_parent_gpu_
     return alloc_sizes;
 }
 
-static NvU64 page_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU64 big_page_size)
+static NvU64 page_sizes(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal(big_page_size);
+    uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal();
 
     if (hal != NULL)
         return hal->page_sizes();
@@ -1136,7 +1136,6 @@ static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t locatio
 NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
                              uvm_gpu_va_space_t *gpu_va_space,
                              uvm_page_tree_type_t type,
-                             NvU64 big_page_size,
                              uvm_aperture_t location,
                              uvm_page_tree_t *tree)
 {
@@ -1148,15 +1147,12 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
 
     memset(tree, 0, sizeof(*tree));
     uvm_mutex_init(&tree->lock, UVM_LOCK_ORDER_PAGE_TREE);
-    tree->hal = gpu->parent->arch_hal->mmu_mode_hal(big_page_size);
+    tree->hal = gpu->parent->arch_hal->mmu_mode_hal();
     UVM_ASSERT(tree->hal != NULL);
     UVM_ASSERT(MAX_OPERATION_DEPTH >= tree->hal->page_table_depth(UVM_PAGE_SIZE_AGNOSTIC));
     tree->gpu = gpu;
     tree->type = type;
     tree->gpu_va_space = gpu_va_space;
-    tree->big_page_size = big_page_size;
-
-    UVM_ASSERT(uvm_mmu_page_size_supported(tree, big_page_size));
 
     page_tree_set_location(tree, location);
 
@@ -2446,9 +2442,7 @@ void uvm_mmu_destroy_peer_identity_mappings(uvm_gpu_t *gpu, uvm_gpu_t *peer)
 
 void uvm_mmu_init_gpu_chunk_sizes(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_chunk_sizes_mask_t sizes = page_sizes_for_big_page_size(parent_gpu, UVM_PAGE_SIZE_64K)  |
-                                   page_sizes_for_big_page_size(parent_gpu, UVM_PAGE_SIZE_128K) |
-                                   PAGE_SIZE;
+    uvm_chunk_sizes_mask_t sizes = page_sizes(parent_gpu) | PAGE_SIZE;
 
     // Although we may have to map PTEs smaller than PAGE_SIZE, user (managed)
     // memory is never allocated with granularity smaller than PAGE_SIZE. Force
@@ -2461,8 +2455,7 @@ void uvm_mmu_init_gpu_chunk_sizes(uvm_parent_gpu_t *parent_gpu)
     // the chunk size list.
     parent_gpu->mmu_user_chunk_sizes &= UVM_CHUNK_SIZES_MASK;
 
-    parent_gpu->mmu_kernel_chunk_sizes = allocation_sizes_for_big_page_size(parent_gpu, UVM_PAGE_SIZE_64K) |
-                                         allocation_sizes_for_big_page_size(parent_gpu, UVM_PAGE_SIZE_128K);
+    parent_gpu->mmu_kernel_chunk_sizes = allocation_sizes(parent_gpu);
 }
 
 void uvm_mmu_init_gpu_peer_addresses(uvm_gpu_t *gpu)
@@ -3001,8 +2994,10 @@ NV_STATUS uvm_mmu_l2_invalidate(uvm_gpu_t *gpu, uvm_aperture_t aperture)
                             UVM_CHANNEL_TYPE_MEMOPS,
                             &push,
                             "L2 cache invalidate");
-    if (status != NV_OK) 
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("L2 cache invalidation: Failed to begin push, status: %s\n", nvstatusToString(status));
         return status;
+    }
 
     gpu->parent->host_hal->l2_invalidate(&push, aperture);
 

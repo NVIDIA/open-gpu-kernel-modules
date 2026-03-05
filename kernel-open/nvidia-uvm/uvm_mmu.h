@@ -212,7 +212,7 @@ struct uvm_mmu_mode_hal_struct
     // This is an optimization which reduces TLB pressure, reduces the number of
     // TLB invalidates we must issue, and means we don't have to initialize the
     // 4k PTEs which are covered by big PTEs since the MMU will never read them.
-    NvU64 (*unmapped_pte)(NvU64 page_size);
+    NvU64 (*unmapped_pte)(void);
 
     // Bit pattern used for debug purposes to clobber PTEs which ought to be
     // unused. In practice this will generate a PRIV violation or a physical
@@ -279,7 +279,6 @@ struct uvm_page_tree_struct
     uvm_page_directory_t *root;
     uvm_mmu_mode_hal_t *hal;
     uvm_page_tree_type_t type;
-    NvU64 big_page_size;
 
     // Pointer to the GPU VA space containing the page tree.
     // This pointer is set only for page trees of type
@@ -379,7 +378,6 @@ void uvm_mmu_init_gpu_peer_addresses(uvm_gpu_t *gpu);
 NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
                              uvm_gpu_va_space_t *gpu_va_space,
                              uvm_page_tree_type_t type,
-                             NvU64 big_page_size,
                              uvm_aperture_t location,
                              uvm_page_tree_t *tree_out);
 

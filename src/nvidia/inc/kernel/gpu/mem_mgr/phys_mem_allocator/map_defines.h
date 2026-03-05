@@ -28,6 +28,7 @@
 #ifndef MAP_DEFINES_H
 #define MAP_DEFINES_H
 
+#include "nvos.h"
 #include "nvtypes.h"
 #include "nvstatus.h"
 #include "nvmisc.h"
@@ -56,23 +57,31 @@ extern "C" {
 #define _PMA_2MB                (2ULL   * 1024 * 1024)
 #define _PMA_512MB              (512ULL * 1024 * 1024)
 
-// Localized memory chunks are 64MB split into 2 32MB chunks
+//
+// Localized memory chunks are 64MB, currently split into 2 32MB chunks
+//
+// Note: A lot of the localized allocation code in phys_mem_allocator.c and regmap.c currently assumes 2 uGPUs
+//       (i.e. 2 localized regions.) and does not make use of PMA_MAX_LOCALIZED_REGION_COUNT. This code will need to be
+//       audited and updated if PMA_MAX_LOCALIZED_REGION_COUNT is increased in the future.
+//       PMA_MAX_LOCALIZED_REGION_COUNT has been added for new code in anticipation of the need for expanded counts.
+//
 #define PMA_LOCALIZED_MEMORY_ALLOC_STRIDE   (32ULL * 1024 * 1024)
-#define PMA_LOCALIZED_MEMORY_RESERVE_SIZE   (2 * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
+#define PMA_LOCALIZED_MEMORY_ALLOC_FRAMES   (PMA_LOCALIZED_MEMORY_ALLOC_STRIDE >> PMA_PAGE_SHIFT)
+#define PMA_LOCALIZED_MEMORY_RESERVE_SIZE   (PMA_MAX_LOCALIZED_REGION_COUNT * PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
+#define PMA_LOCALIZED_MEMORY_RESERVE_FRAMES (PMA_LOCALIZED_MEMORY_RESERVE_SIZE >> PMA_PAGE_SHIFT)
 
-// Same as NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_UGPU_COUNT
-#define PMA_MAX_LOCALIZED_REGION_COUNT      2
+// Needed for PMA_STATS, where the localized memory fields are available regardless of the LOCALIZED_MEMORY RMCFG.
+#define PMA_MAX_LOCALIZED_REGION_COUNT      NVOS32_ATTR2_ENABLE_LOCALIZED_MEMORY_UGPU_COUNT
 
 typedef NvU32 PMA_PAGESTATUS;
 
-#define MAP_IDX_ALLOC_UNPIN 0
-#define MAP_IDX_ALLOC_PIN   1
-#define MAP_IDX_EVICTING    2
-#define MAP_IDX_SCRUBBING   3
-#define MAP_IDX_PERSISTENT  4
-#define MAP_IDX_NUMA_REUSE  5
-#define MAP_IDX_BLACKLIST   6
-#define MAP_IDX_LOCALIZED   7
+#define MAP_IDX_ALLOC_UNPIN  0
+#define MAP_IDX_ALLOC_PIN    1
+#define MAP_IDX_EVICTING     2
+#define MAP_IDX_SCRUBBING    3
+#define MAP_IDX_PERSISTENT   4
+#define MAP_IDX_NUMA_REUSE   5
+#define MAP_IDX_BLACKLIST    6
 
 #define STATE_FREE      0x00
 #define STATE_UNPIN     NVBIT(MAP_IDX_ALLOC_UNPIN)
@@ -80,23 +89,37 @@ typedef NvU32 PMA_PAGESTATUS;
 #define STATE_MASK      (STATE_UNPIN | STATE_PIN | STATE_FREE)
 #define STATE_COUNT     3
 
-#define ATTRIB_EVICTING    NVBIT(MAP_IDX_EVICTING)
-#define ATTRIB_SCRUBBING   NVBIT(MAP_IDX_SCRUBBING)
-#define ATTRIB_PERSISTENT  NVBIT(MAP_IDX_PERSISTENT)
-#define ATTRIB_NUMA_REUSE  NVBIT(MAP_IDX_NUMA_REUSE)
-#define ATTRIB_BLACKLIST   NVBIT(MAP_IDX_BLACKLIST)
-#define ATTRIB_LOCALIZED   NVBIT(MAP_IDX_LOCALIZED)
+#define ATTRIB_EVICTING     NVBIT(MAP_IDX_EVICTING)
+#define ATTRIB_SCRUBBING    NVBIT(MAP_IDX_SCRUBBING)
+#define ATTRIB_PERSISTENT   NVBIT(MAP_IDX_PERSISTENT)
+#define ATTRIB_NUMA_REUSE   NVBIT(MAP_IDX_NUMA_REUSE)
+#define ATTRIB_BLACKLIST    NVBIT(MAP_IDX_BLACKLIST)
 
 #define ATTRIB_MASK        (ATTRIB_EVICTING | ATTRIB_SCRUBBING      \
                             | ATTRIB_PERSISTENT | ATTRIB_NUMA_REUSE \
-                            | ATTRIB_BLACKLIST | ATTRIB_LOCALIZED)
+                            | ATTRIB_BLACKLIST)
 
 #define MAP_MASK    (STATE_MASK | ATTRIB_MASK)
 
 #define PMA_STATE_BITS_PER_PAGE     2   // Alloc & pinned state
-#define PMA_ATTRIB_BITS_PER_PAGE    6   // Persistence, Scrubbing, Evicting, Reuse, Blacklisting, & Localized attributes
+#define PMA_ATTRIB_BITS_PER_PAGE    5   // Persistence, Scrubbing, Evicting, Reuse & Blacklisting attributes
 
 #define PMA_BITS_PER_PAGE           (PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE)
+
+typedef NvU16 PMA_LOCALIZATION_STATUS;
+
+typedef struct pma_localization_info
+{
+    PMA_LOCALIZATION_STATUS status;
+    NvU16                   allocatedFrameCount;
+} PMA_LOCALIZATION_INFO;
+
+// Attributes for localization state.
+#define LOCALIZATION_STATE_IDX_IS_LOCALIZED 0
+#define LOCALIZATION_STATE_IDX_COUNT 1
+
+#define LOCALIZATION_STATE_IS_LOCALIZED NVBIT(LOCALIZATION_STATE_IDX_IS_LOCALIZED)
+
 
 //
 // Stores PMA-wide statistics.

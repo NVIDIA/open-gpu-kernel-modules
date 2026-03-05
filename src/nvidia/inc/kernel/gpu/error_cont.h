@@ -68,7 +68,12 @@ typedef enum _NV_ERROR_CONT_ERR_ID
     NV_ERROR_CONT_ERR_ID_E25_FBFALCON_POISON                   = 19,   // FD Error ID: E25: FBFalcon poison error
     NV_ERROR_CONT_ERR_ID_E26_NVDEC_POISON                      = 20,   // FD Error ID: E26: NVDEC poison error
     NV_ERROR_CONT_ERR_ID_E27_NVJPG_POISON                      = 21,   // FD Error ID: E27: NVJPG poison error
-    NV_ERROR_CONT_ERR_ID_E28_OFA_POISON                        = 22    // FD Error ID: E28: OFA poison error
+    NV_ERROR_CONT_ERR_ID_E28_OFA_POISON                        = 22,   // FD Error ID: E28: OFA poison error
+    NV_ERROR_CONT_ERR_ID_E29_LTC_ECC_DSTG_FATAL                = 23,   // FD Error ID: E29: LTC ECC in data region that triggered containment mode
+    NV_ERROR_CONT_ERR_ID_E30_SYSLTC_ECC_DSTG                   = 24,   // FD Error ID: E30: SYSLTC ECC in data region
+    NV_ERROR_CONT_ERR_ID_E31_SYSLTC_ECC_TSTG                   = 25,   // FD Error ID: E31: SYSLTC Tag Parity error
+    NV_ERROR_CONT_ERR_ID_E32_SYSLTC_ECC_RSTG                   = 26,   // FD Error ID: E32: SYSLTC CBC Parity error
+    NV_ERROR_CONT_ERR_ID_E33_SYSLTC_ECC_DSTG_FATAL             = 27,   // FD Error ID: E33: SYSLTC ECC in data region that triggered containment mode
 } NV_ERROR_CONT_ERR_ID;
 
 /*!
@@ -122,6 +127,16 @@ typedef struct _NV_ERROR_CONT_LOCATION_ENG_ID
 } NV_ERROR_CONT_LOCATION_ENG_ID;
 
 /*!
+ * Struct for SYSLTC location
+ */
+typedef struct _NV_ERROR_CONT_LOCATION_SYSLTC
+{
+    NvU32 groupId;
+    NvU32 instanceId;
+    NvU32 slice;
+} NV_ERROR_CONT_LOCATION_SYSLTC;
+
+/*!
  * Error Containment location type
  */
 typedef enum _NV_ERROR_CONT_LOCATION_TYPE
@@ -130,7 +145,8 @@ typedef enum _NV_ERROR_CONT_LOCATION_TYPE
     NV_ERROR_CONT_LOCATION_TYPE_DRAM   = 1, // DRAM location
     NV_ERROR_CONT_LOCATION_TYPE_LTC    = 2, // LTC location
     NV_ERROR_CONT_LOCATION_TYPE_ENGINE = 3, // Engine location
-    NV_ERROR_CONT_LOCATION_TYPE_VF     = 4  // VF location
+    NV_ERROR_CONT_LOCATION_TYPE_VF     = 4, // VF location
+    NV_ERROR_CONT_LOCATION_TYPE_SYSLTC = 5  // SYSLTC location
 } NV_ERROR_CONT_LOCATION_TYPE;
 
 /*!
@@ -142,6 +158,7 @@ typedef union _NV_ERROR_CONT_LOCATION_INFO
     NV_ERROR_CONT_LOCATION_LTC    ltcLoc;    // LTC location
     NV_ERROR_CONT_LOCATION_ENG_ID engineLoc; // Engine location
     NvU32                         vfGfid;    // VF location
+    NV_ERROR_CONT_LOCATION_SYSLTC sysLtcLoc; // SYSLTC location
 } NV_ERROR_CONT_LOCATION_INFO;
 
 typedef struct _NV_ERROR_CONT_LOCATION
@@ -184,6 +201,11 @@ typedef struct _NV_ERROR_CONT_LOCATION
                                             "FB Falcon",         \
                                             "NVDEC",             \
                                             "NVJPG",             \
-                                            "OFA"}
+                                            "OFA",               \
+                                            "LTC Data Fatal",    \
+                                            "SYSLTC Data",       \
+                                            "SYSLTC Tag",        \
+                                            "SYSLTC CBC",        \
+                                            "SYSLTC Data Fatal"}
 
 #endif // _ERROR_CONT_H_

@@ -235,7 +235,8 @@ enum {
     X(RM, CTRL_CMD_GET_HS_CREDITS_MAPPING,                        225)
     X(RM, CTRL_EXEC_PARTITIONS_EXPORT,                            226)
     X(RM, CTRL_CMD_INTERNAL_GPU_CHECK_CTS_ID_VALID,               227)
-    X(RM, NUM_FUNCTIONS,                                          228)
+    X(RM, INIT_GSP_TRACE_CRASH_BUFFER,                            228)
+    X(RM, NUM_FUNCTIONS,                                          229)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X
@@ -286,7 +287,11 @@ enum {
     E(TRIGGER_BUGCHECK,                                       0x1023)
     E(BIND_BAR2,                                              0x1024)
     E(FORCED_DRIVER_SHUTDOWN,                                 0x1025)
-    E(NUM_EVENTS,                                             0x1026)
+    E(GSP_LOAD_EXEC_GENERIC_BOOTLOADER,                       0x1026)
+    E(GSP_LOAD_EXEC_HS_BINARY,                                0x1027)
+    E(UPDATE_GRID_DISPLAYLESS_PARAMS,                         0x1028)
+    E(PMU_HALTED,                                             0x1029)
+    E(NUM_EVENTS,                                             0x102a)
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef E
