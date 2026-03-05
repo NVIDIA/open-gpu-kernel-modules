@@ -941,40 +941,54 @@ int nv_drm_reset_input_colorspace(struct drm_device *dev)
     struct drm_modeset_acquire_ctx ctx;
     int ret = 0;
     bool do_reset = false;
+    bool retry;
     NvU32 flags = 0;
-
-    state = drm_atomic_state_alloc(dev);
-    if (!state)
-        return -ENOMEM;
 
 #if defined(DRM_MODESET_ACQUIRE_INTERRUPTIBLE)
     flags |= DRM_MODESET_ACQUIRE_INTERRUPTIBLE;
 #endif
     drm_modeset_acquire_init(&ctx, flags);
-    state->acquire_ctx = &ctx;
 
-    nv_drm_for_each_plane(plane, dev) {
-        plane_state = drm_atomic_get_plane_state(state, plane);
-        if (IS_ERR(plane_state)) {
-            ret = PTR_ERR(plane_state);
-            goto out;
+    do {
+        retry = false;
+        ret = 0;
+        do_reset = false;
+
+        state = drm_atomic_state_alloc(dev);
+        if (!state) {
+            ret = -ENOMEM;
+            break;
         }
+        state->acquire_ctx = &ctx;
 
-        nv_drm_plane_state = to_nv_drm_plane_state(plane_state);
-        if (nv_drm_plane_state) {
-            if (nv_drm_plane_state->input_colorspace != NV_DRM_INPUT_COLOR_SPACE_NONE) {
-                nv_drm_plane_state->input_colorspace = NV_DRM_INPUT_COLOR_SPACE_NONE;
-                do_reset = true;
+        nv_drm_for_each_plane(plane, dev) {
+            plane_state = drm_atomic_get_plane_state(state, plane);
+            if (IS_ERR(plane_state)) {
+                ret = PTR_ERR(plane_state);
+                break;
+            }
+
+            nv_drm_plane_state = to_nv_drm_plane_state(plane_state);
+            if (nv_drm_plane_state) {
+                if (nv_drm_plane_state->input_colorspace != NV_DRM_INPUT_COLOR_SPACE_NONE) {
+                    nv_drm_plane_state->input_colorspace = NV_DRM_INPUT_COLOR_SPACE_NONE;
+                    do_reset = true;
+                }
             }
         }
-    }
 
-    if (do_reset) {
-        ret = drm_atomic_commit(state);
-    }
+        if (!ret && do_reset) {
+            ret = drm_atomic_commit(state);
+        }
 
-out:
-    drm_atomic_state_put(state);
+        drm_atomic_state_put(state);
+
+        if (ret == -EDEADLK) {
+            ret = drm_modeset_backoff(&ctx);
+            retry = (ret == 0);
+        }
+    } while (retry);
+
     drm_modeset_drop_locks(&ctx);
     drm_modeset_acquire_fini(&ctx);
 
