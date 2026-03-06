@@ -48,7 +48,17 @@ void nv_drm_gem_free(struct drm_gem_object *gem)
 {
     struct nv_drm_gem_object *nv_gem = to_nv_gem_object(gem);
 
-    /* Cleanup core gem object */
+    /*
+     * Prepare for release - stop callbacks and signal fences BEFORE
+     * releasing the core gem object. This prevents race conditions where
+     * the kernel's drm_exec/shrinker infrastructure can access the object
+     * via dma_resv while it's being destroyed.
+     */
+    if (nv_gem->ops->prepare_release) {
+        nv_gem->ops->prepare_release(nv_gem);
+    }
+
+    /* Cleanup core gem object - now safe since fences are detached */
     drm_gem_object_release(&nv_gem->base);
 
 #if !defined(NV_DRM_GEM_OBJECT_HAS_RESV)
