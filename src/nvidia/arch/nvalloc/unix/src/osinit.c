@@ -1332,10 +1332,29 @@ RmInitNvDevice(
     }
 
     // Configure eGPU setting
-    if (RmCheckForExternalGpu(pGpu, pCl))
     {
-        pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU, NV_TRUE);
-        nv->is_external_gpu = NV_TRUE;
+        NvU32 forceExternalGpu = 0;
+        NvBool isExternalGpu = NV_FALSE;
+
+        // Check if user has forced eGPU mode via RmForceExternalGpu registry key
+        if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_EXTERNAL_GPU, &forceExternalGpu) == NV_OK) &&
+            (forceExternalGpu != 0))
+        {
+            NV_PRINTF(LEVEL_NOTICE, "Forcing external GPU mode via RmForceExternalGpu registry key\n");
+            isExternalGpu = NV_TRUE;
+        }
+        else
+        {
+            // Otherwise, use automatic detection
+            isExternalGpu = RmCheckForExternalGpu(pGpu, pCl);
+        }
+
+        if (isExternalGpu)
+        {
+            NV_PRINTF(LEVEL_NOTICE, "GPU treated as external GPU (eGPU)\n");
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU, NV_TRUE);
+            nv->is_external_gpu = NV_TRUE;
+        }
     }
     status->rmStatus = gpumgrStateInitGpu(pGpu);
     if (status->rmStatus != NV_OK)

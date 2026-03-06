@@ -1004,6 +1004,17 @@
 #define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE            0x00000001
 #define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DEFAULT           NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE
 
+//
+// Type DWORD
+// Force external GPU mode, bypassing automatic Thunderbolt bridge detection.
+// Useful for Thunderbolt 4/5 enclosures not in the driver's approved bridge list.
+//
+// Encoding:
+//   0 (default) - use automatic eGPU detection
+//   1           - force GPU to be treated as external
+//
+#define NV_REG_STR_RM_FORCE_EXTERNAL_GPU                    "RmForceExternalGpu"
+
 #define NV_REG_STR_RM_BLACKLIST_ADDRESSES                "RmBlackListAddresses"
 // Type BINARY:
 // struct
