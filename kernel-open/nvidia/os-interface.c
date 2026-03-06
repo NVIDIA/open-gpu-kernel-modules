@@ -703,15 +703,9 @@ NvU64 NV_API_CALL os_get_monotonic_time_ns_hr(void)
 
 NvU64 NV_API_CALL os_get_monotonic_time_ns(void)
 {
-#if defined(NV_JIFFIES_TO_TIMESPEC_PRESENT)
-    struct timespec ts;
-    jiffies_to_timespec(jiffies, &ts);
-    return (NvU64) timespec_to_ns(&ts);
-#else
     struct timespec64 ts;
-    jiffies_to_timespec64(jiffies, &ts);
+    ktime_get_raw_ts64(&ts);
     return (NvU64) timespec64_to_ns(&ts);
-#endif
 }
 
 NvU64 NV_API_CALL os_get_monotonic_tick_resolution_ns(void)
