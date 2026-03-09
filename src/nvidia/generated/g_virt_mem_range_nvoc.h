@@ -129,13 +129,9 @@ struct NVOC_METADATA__VirtualMemoryRange {
     const struct NVOC_VTABLE__VirtualMemoryRange vtable;
 };
 
-#ifndef __NVOC_CLASS_VirtualMemoryRange_TYPEDEF__
-#define __NVOC_CLASS_VirtualMemoryRange_TYPEDEF__
-typedef struct VirtualMemoryRange VirtualMemoryRange;
-#endif /* __NVOC_CLASS_VirtualMemoryRange_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VirtualMemoryRange
-#define __nvoc_class_id_VirtualMemoryRange 0x7032c6
+#define __nvoc_class_id_VirtualMemoryRange 0x7032c6u
+typedef struct VirtualMemoryRange VirtualMemoryRange;
 #endif /* __nvoc_class_id_VirtualMemoryRange */
 
 // Casting support
@@ -153,14 +149,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VirtualMemoryRange;
 
 NV_STATUS __nvoc_objCreateDynamic_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VirtualMemoryRange(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VirtualMemoryRange((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VirtualMemoryRange(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VirtualMemoryRange((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *arg_pVmRange, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_vmrangeConstruct(arg_pVmRange, arg_pCallContext, arg_pParams) vmrangeConstruct_IMPL(arg_pVmRange, arg_pCallContext, arg_pParams)
+NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *pVmRange, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_vmrangeConstruct(pVmRange, pCallContext, pParams) vmrangeConstruct_IMPL(pVmRange, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -322,6 +318,12 @@ static inline void vmrangeAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__vmrangeAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

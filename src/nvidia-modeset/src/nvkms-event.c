@@ -33,6 +33,8 @@
 #include "nvkms-evo.h"
 #include "nvkms-hdmi.h"
 
+#include "ctrl/ctrla083.h"
+
 /*
  * Handle a display device hotplug event.
  *
@@ -61,43 +63,76 @@ nvHandleHotplugEventDeferredWork(void *dataPtr, NvU32 dataU32)
     NVDpyEvoPtr pDpyEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
-    // Get the hotplug state.
-    hotplugParams.subDeviceInstance = pDispEvo->displayOwner;
+    if (!pDevEvo->displaylessHw) {
+        // Get the hotplug state.
+        hotplugParams.subDeviceInstance = pDispEvo->displayOwner;
 
-    if ((ret = nvRmApiControl(
-                nvEvoGlobal.clientHandle,
-                pDevEvo->displayCommonHandle,
-                NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE,
-                &hotplugParams,
-                sizeof(hotplugParams)))
-            != NVOS_STATUS_SUCCESS) {
+        if ((ret = nvRmApiControl(
+                    nvEvoGlobal.clientHandle,
+                    pDevEvo->displayCommonHandle,
+                    NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE,
+                    &hotplugParams,
+                    sizeof(hotplugParams)))
+                != NVOS_STATUS_SUCCESS) {
 
-        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN, "Failed to determine which "
-                     "devices were hotplugged: 0x%x\n", ret);
-        return;
-    }
+            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN, "Failed to determine which "
+                         "devices were hotplugged: 0x%x\n", ret);
+            return;
+        }
 
-    /*
-     * Work around an RM bug in hotplug notification when the GPU is in
-     * GC6.  In this case, the RM will notify us of a hotplug event, but
-     * NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE returns both
-     * hotPlugMask and hotUnplugMask as 0.
-     * Bug 200528641 tracks finding a root cause.  Until that bug is
-     * fixed, call NV0073_CTRL_CMD_SYSTEM_GET_CONNECT_STATE to get the
-     * full list of connected dpys and construct hotplugged and
-     * unplugged lists from that if we encounter this case.
-     */
-    if ((hotplugParams.hotPlugMask == 0) &&
-        (hotplugParams.hotUnplugMask == 0)) {
+        /*
+         * Work around an RM bug in hotplug notification when the GPU is in
+         * GC6.  In this case, the RM will notify us of a hotplug event, but
+         * NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE returns both
+         * hotPlugMask and hotUnplugMask as 0.
+         * Bug 200528641 tracks finding a root cause.  Until that bug is
+         * fixed, call NV0073_CTRL_CMD_SYSTEM_GET_CONNECT_STATE to get the
+         * full list of connected dpys and construct hotplugged and
+         * unplugged lists from that if we encounter this case.
+         */
+        if ((hotplugParams.hotPlugMask == 0) &&
+            (hotplugParams.hotUnplugMask == 0)) {
+            const NVDpyIdList updatedDisplayList = nvRmGetConnectedDpys(pDispEvo,
+                                                      pDispEvo->connectorIds);
+            hotplugged = nvDpyIdListMinusDpyIdList(updatedDisplayList,
+                                                   pDispEvo->connectedDisplays);
+            unplugged = nvDpyIdListMinusDpyIdList(pDispEvo->connectedDisplays,
+                                                  updatedDisplayList);
+        } else {
+            hotplugged = nvNvU32ToDpyIdList(hotplugParams.hotPlugMask);
+            unplugged = nvNvU32ToDpyIdList(hotplugParams.hotUnplugMask);
+        }
+    } else {
+        NVA083_CTRL_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS getMaxResolutionParams = { 0 };
         const NVDpyIdList updatedDisplayList = nvRmGetConnectedDpys(pDispEvo,
                                                   pDispEvo->connectorIds);
-        hotplugged = nvDpyIdListMinusDpyIdList(updatedDisplayList,
-                                               pDispEvo->connectedDisplays);
-        unplugged = nvDpyIdListMinusDpyIdList(pDispEvo->connectedDisplays,
-                                              updatedDisplayList);
-    } else {
-        hotplugged = nvNvU32ToDpyIdList(hotplugParams.hotPlugMask);
-        unplugged = nvNvU32ToDpyIdList(hotplugParams.hotUnplugMask);
+
+        /*
+         * Update connected displays
+         *
+         * XXX We don't know which dpys actually changed, so treat all connected
+         * dpys as hotplugged.
+         */
+        hotplugged = updatedDisplayList;
+        unplugged  = nvDpyIdListMinusDpyIdList(pDispEvo->connectedDisplays,
+                                               updatedDisplayList);
+
+        // Update max resolution
+        if ((ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                    pDevEvo->displaylessHandle,
+                    NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION,
+                    &getMaxResolutionParams,
+                    sizeof(getMaxResolutionParams)))
+                != NVOS_STATUS_SUCCESS) {
+
+           nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                       "Failed to get the max resolution for displayless HW,"
+                       "error %d", ret);
+        } else {
+            pDevEvo->caps.maxWidthInBytes = getMaxResolutionParams.maxHResolution * (32 >> 3);
+            pDevEvo->caps.maxWidthInPixels = getMaxResolutionParams.maxHResolution;
+            pDevEvo->caps.maxHeight = getMaxResolutionParams.maxVResolution;
+        }
     }
 
     // The RM only reports the latest plug/unplug status of each dpy.
@@ -190,22 +225,15 @@ void
 nvHandleDPIRQEventDeferredWork(void *dataPtr, NvU32 dataU32)
 {
     NVDispEvoPtr pDispEvo = dataPtr;
+    NVDpyId id = nvNvU32ToDpyId(dataU32);
+    NVConnectorEvoPtr pConnectorEvo = nvGetConnectorFromDisp(pDispEvo, id);
 
-    // XXX[AGP]: ReceiveDPIRQEvent throws away the DisplayID of the device that
-    // caused the event, so for now we have to poll all of the connected DP
-    // devices to see which ones need attention.  When RM is fixed, this can be
-    // improved.
-
-    NVConnectorEvoPtr pConnectorEvo;
-
-    // Notify all connectors which are using DP lib. For DP Serializer connector,
-    // HPD_IRQ indicates loss of clock/sync, so re-train the link.
-    FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
-        if (nvConnectorUsesDPLib(pConnectorEvo)) {
-            nvDPNotifyShortPulse(pConnectorEvo->pDpLibConnector);
-        } else if (nvConnectorIsDPSerializer(pConnectorEvo)) {
-            nvDPSerializerHandleDPIRQ(pDispEvo, pConnectorEvo);
-        }
+    // Notify event-related DP connector. For DP Serializer connector, HPD_IRQ
+    // indicates loss of clock/sync, so re-train the link.
+    if (nvConnectorUsesDPLib(pConnectorEvo)) {
+        nvDPNotifyShortPulse(pConnectorEvo->pDpLibConnector);
+    } else if (nvConnectorIsDPSerializer(pConnectorEvo)) {
+        nvDPSerializerHandleDPIRQ(pDispEvo, pConnectorEvo);
     }
 }
 

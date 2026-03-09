@@ -45,21 +45,16 @@ extern "C" {
 
 #include "resserv/resserv.h"
 #include "nvoc/prelude.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/resource.h"
 #include "ctrl/ctrl90cd.h"
 #include "eventbufferproducer.h"
 
-
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
@@ -170,13 +165,9 @@ struct NVOC_METADATA__EventBuffer {
     const struct NVOC_VTABLE__EventBuffer vtable;
 };
 
-#ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
-#define __NVOC_CLASS_EventBuffer_TYPEDEF__
-typedef struct EventBuffer EventBuffer;
-#endif /* __NVOC_CLASS_EventBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_EventBuffer
-#define __nvoc_class_id_EventBuffer 0x63502b
+#define __nvoc_class_id_EventBuffer 0x63502bu
+typedef struct EventBuffer EventBuffer;
 #endif /* __nvoc_class_id_EventBuffer */
 
 // Casting support
@@ -194,14 +185,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_EventBuffer;
 
 NV_STATUS __nvoc_objCreateDynamic_EventBuffer(EventBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_EventBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_EventBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_EventBuffer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_EventBuffer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS eventbufferConstruct_IMPL(struct EventBuffer *arg_pEventBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_eventbufferConstruct(arg_pEventBuffer, arg_pCallContext, arg_pParams) eventbufferConstruct_IMPL(arg_pEventBuffer, arg_pCallContext, arg_pParams)
+NV_STATUS eventbufferConstruct_IMPL(struct EventBuffer *pEventBuffer, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_eventbufferConstruct(pEventBuffer, pCallContext, pParams) eventbufferConstruct_IMPL(pEventBuffer, pCallContext, pParams)
 
 void eventbufferDestruct_IMPL(struct EventBuffer *pEventBuffer);
 #define __nvoc_eventbufferDestruct(pEventBuffer) eventbufferDestruct_IMPL(pEventBuffer)
@@ -376,6 +367,8 @@ static inline void eventbufferAddAdditionalDependants_DISPATCH(struct RsClient *
     pResource->__nvoc_metadata_ptr->vtable.__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS eventbuffertBufferCtrlCmdEnableEvent_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_ENABLE_EVENTS_PARAMS *pEnableParams);
 
 NV_STATUS eventbuffertBufferCtrlCmdUpdateGet_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_UPDATE_GET_PARAMS *pUpdateParams);
@@ -384,6 +377,10 @@ NV_STATUS eventbuffertBufferCtrlCmdFlush_IMPL(struct EventBuffer *pEventBuffer);
 
 NV_STATUS eventbuffertBufferCtrlCmdPostTelemetryEvent_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_POST_TELEMETRY_EVENT_PARAMS *pPostTelemetryEvent);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

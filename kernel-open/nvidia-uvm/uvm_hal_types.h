@@ -225,9 +225,8 @@ static int uvm_gpu_addr_cmp(uvm_gpu_address_t a, uvm_gpu_address_t b)
     }
 }
 
-// For processors with no concept of an atomic fault (the CPU and pre-Pascal
-// GPUs), UVM_PROT_READ_WRITE and UVM_PROT_READ_WRITE_ATOMIC are
-// interchangeable.
+// For processors with no concept of an atomic fault (the CPU),
+// UVM_PROT_READ_WRITE and UVM_PROT_READ_WRITE_ATOMIC are interchangeable.
 typedef enum
 {
     UVM_PROT_NONE,

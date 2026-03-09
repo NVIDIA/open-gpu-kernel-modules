@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@
 #include "published/turing/tu102/dev_nv_xve3g_vf.h"
 #include "published/turing/tu102/dev_gc6_island.h"
 #include "published/turing/tu102/dev_gc6_island_addendum.h"
+#include "published/turing/tu104/dev_timer.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -137,6 +138,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
 };
@@ -167,6 +169,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
 };
@@ -197,6 +200,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     GPU_CHILD_PRESENT(KernelNvlink, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
     GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
 };
@@ -285,6 +289,12 @@ gpuGetRegBaseOffset_TU102(OBJGPU *pGpu, NvU32 regBase, NvU32 *pOffset)
             //
             *pOffset = GPU_GET_VREG_OFFSET(pGpu, DRF_BASE(NV_VIRTUAL_FUNCTION));
 
+            return NV_OK;
+        }
+        case NV_REG_BASE_TIMER:
+        {
+            // Return the offset to the NV_PTIMER registers
+            *pOffset = DRF_BASE(NV_PTIMER);
             return NV_OK;
         }
         default:

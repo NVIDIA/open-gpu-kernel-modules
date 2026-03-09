@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x7716b1 = 1;
+char __nvoc_class_id_uniqueness_check__7716b1 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Utils;
@@ -26,7 +26,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 void __nvoc_init__Object(Object*);
 void __nvoc_init__Sec2Utils(Sec2Utils*);
 void __nvoc_init_funcTable_Sec2Utils(Sec2Utils*);
-NV_STATUS __nvoc_ctor_Sec2Utils(Sec2Utils*, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance);
+NV_STATUS __nvoc_ctor_Sec2Utils(Sec2Utils*, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance);
 void __nvoc_init_dataField_Sec2Utils(Sec2Utils*);
 void __nvoc_dtor_Sec2Utils(Sec2Utils*);
 
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2Utils;
 
 // Up-thunk(s) to bridge Sec2Utils methods to ancestors (if any)
 
+// Class-specific details for Sec2Utils
 const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Utils = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(Sec2Utils),
-        /*classId=*/            classId(Sec2Utils),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(Sec2Utils),
+    .classInfo.classId =            classId(Sec2Utils),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "Sec2Utils",
+    .classInfo.name =               "Sec2Utils",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Sec2Utils,
-    /*pCastInfo=*/          &__nvoc_castinfo__Sec2Utils,
-    /*pExportInfo=*/        &__nvoc_export_info__Sec2Utils
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Sec2Utils,
+    .pCastInfo =          &__nvoc_castinfo__Sec2Utils,
+    .pExportInfo =        &__nvoc_export_info__Sec2Utils
 };
 
 
@@ -76,38 +75,51 @@ const struct NVOC_CASTINFO __nvoc_castinfo__Sec2Utils = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2Utils = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct Sec2Utils object.
 void __nvoc_sec2utilsDestruct(Sec2Utils*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_Sec2Utils(Sec2Utils *pThis) {
+void __nvoc_dtor_Sec2Utils(Sec2Utils* pThis) {
+
+// Call destructor.
     __nvoc_sec2utilsDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_Sec2Utils(Sec2Utils *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_Sec2Utils(Sec2Utils *pThis, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_Sec2Utils_fail_Object;
-    __nvoc_init_dataField_Sec2Utils(pThis);
 
-    status = __nvoc_sec2utilsConstruct(pThis, arg_pGpu, arg_pKernelMIGGPUInstance);
+// Construct Sec2Utils object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_Sec2Utils(Sec2Utils *psec2utils, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&psec2utils->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_Sec2Utils_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_Sec2Utils(psec2utils);
+
+    // Call the constructor for this class.
+    status = __nvoc_sec2utilsConstruct(psec2utils, pGpu, pKernelMIGGPUInstance);
     if (status != NV_OK) goto __nvoc_ctor_Sec2Utils_fail__init;
     goto __nvoc_ctor_Sec2Utils_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_Sec2Utils_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&psec2utils->__nvoc_base_Object);
 __nvoc_ctor_Sec2Utils_fail_Object:
 __nvoc_ctor_Sec2Utils_exit:
-
     return status;
 }
 
@@ -140,49 +152,49 @@ void __nvoc_init__Sec2Utils(Sec2Utils *pThis) {
     __nvoc_init_funcTable_Sec2Utils(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance)
+NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    Sec2Utils *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    Sec2Utils *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(Sec2Utils));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(Sec2Utils));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(Sec2Utils));
+    portMemSet(__nvoc_pThis, 0, sizeof(Sec2Utils));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__Sec2Utils(pThis);
-    status = __nvoc_ctor_Sec2Utils(pThis, arg_pGpu, arg_pKernelMIGGPUInstance);
-    if (status != NV_OK) goto __nvoc_objCreate_Sec2Utils_cleanup;
+    __nvoc_init__Sec2Utils(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_Sec2Utils(__nvoc_pThis, pGpu, pKernelMIGGPUInstance);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_Sec2Utils_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -191,31 +203,31 @@ NV_STATUS __nvoc_objCreate_Sec2Utils(Sec2Utils **ppThis, Dynamic *pParent, NvU32
 __nvoc_objCreate_Sec2Utils_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(Sec2Utils));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(Sec2Utils));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_Sec2Utils(Sec2Utils **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct OBJGPU *arg_pGpu = va_arg(args, struct OBJGPU *);
-    KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance = va_arg(args, KERNEL_MIG_GPU_INSTANCE *);
+NV_STATUS __nvoc_objCreateDynamic_Sec2Utils(Sec2Utils **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct OBJGPU *pGpu = va_arg(__nvoc_args, struct OBJGPU *);
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance = va_arg(__nvoc_args, KERNEL_MIG_GPU_INSTANCE *);
 
-    status = __nvoc_objCreate_Sec2Utils(ppThis, pParent, createFlags, arg_pGpu, arg_pKernelMIGGPUInstance);
+    __nvoc_status = __nvoc_objCreate_Sec2Utils(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pGpu, pKernelMIGGPUInstance);
 
-    return status;
+    return __nvoc_status;
 }
 

@@ -208,13 +208,9 @@ struct NVOC_METADATA__Spdm {
     const struct NVOC_VTABLE__Spdm vtable;
 };
 
-#ifndef __NVOC_CLASS_Spdm_TYPEDEF__
-#define __NVOC_CLASS_Spdm_TYPEDEF__
-typedef struct Spdm Spdm;
-#endif /* __NVOC_CLASS_Spdm_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Spdm
-#define __nvoc_class_id_Spdm 0x261ee8
+#define __nvoc_class_id_Spdm 0x261ee8u
+typedef struct Spdm Spdm;
 #endif /* __nvoc_class_id_Spdm */
 
 // Casting support
@@ -240,8 +236,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Spdm;
 NV_STATUS __nvoc_objCreateDynamic_Spdm(Spdm**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
-#define __objCreate_Spdm(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_Spdm((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_Spdm(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_Spdm((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -597,207 +593,200 @@ static inline NvBool spdmIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pE
     return pEngstate->__nvoc_metadata_ptr->vtable.__spdmIsPresent__(pGpu, pEngstate);
 }
 
-void spdmDestruct_IMPL(struct Spdm *pSpdm);
-
-
-NV_STATUS spdmSetupCommunicationBuffers_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
-
-
-NV_STATUS spdmContextInit_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
-
-
-NV_STATUS spdmContextDeinit_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear);
-
-
-NV_STATUS spdmStart_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
-
-
-NV_STATUS spdmSetupResponderCertCtx_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pCertResponder, NvU64 certResponderSize, void *pCertCtx, NvU32 *pCertCount);
-
-
-NV_STATUS spdmBuildCertChainDer_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, void *pCertRespCtx, NvU32 certCountResp, NvU8 *pCertChainOut, size_t *pCertChainOutSize);
-
-
-NV_STATUS spdmBuildCertChainPem_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, void *pCertRespCtx, NvU32 certCountResp, NvU8 *pCertChainOut, size_t *pCertChainOutSize);
-
-
-NV_STATUS spdmEstablishSession_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
-
-
-NV_STATUS spdmCheckRequesterIdValid_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
-
-
-NV_STATUS spdmRetrieveExportSecret_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keySize, NvU8 *pKeyOut);
-
-
-NV_STATUS spdmSendApplicationMessage_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
-
-
-const BINDATA_ARCHIVE *spdmGetBinArchiveL1Certificate_IMPL(struct Spdm *pSpdm);
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS spdmConstructEngine_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, ENGDESCRIPTOR engDesc);
+
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+void spdmDestruct_IMPL(struct Spdm *pSpdm);
 
 NV_STATUS spdmStatePostLoad_KERNEL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags);
 
-static inline NV_STATUS spdmStatePostLoad_56cd7a(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
-    return NV_OK;
-}
-
 NV_STATUS spdmStatePreUnload_KERNEL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags);
 
-static inline NV_STATUS spdmStatePreUnload_56cd7a(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags) {
-    return NV_OK;
-}
+NV_STATUS spdmSetupCommunicationBuffers_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
+
+NV_STATUS spdmContextInit_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
+
+NV_STATUS spdmContextDeinit_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear);
+
+NV_STATUS spdmStart_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm);
+
+NV_STATUS spdmSetupResponderCertCtx_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pCertResponder, NvU64 certResponderSize, void *pCertCtx, NvU32 *pCertCount);
+
+NV_STATUS spdmBuildCertChainDer_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, void *pCertRespCtx, NvU32 certCountResp, NvU8 *pCertChainOut, size_t *pCertChainOutSize);
+
+NV_STATUS spdmBuildCertChainPem_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, void *pCertRespCtx, NvU32 certCountResp, NvU8 *pCertChainOut, size_t *pCertChainOutSize);
+
+NV_STATUS spdmEstablishSession_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
+
+NV_STATUS spdmCheckRequesterIdValid_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 requesterId);
 
 NV_STATUS spdmGetCertChains_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize);
 
-static inline NV_STATUS spdmGetCertChains_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmGetAttestationReport_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize);
-
-static inline NV_STATUS spdmGetAttestationReport_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmCheckAndExecuteKeyUpdate_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId);
 
-static inline NV_STATUS spdmCheckAndExecuteKeyUpdate_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS spdmRetrieveExportSecret_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keySize, NvU8 *pKeyOut);
 
 NV_STATUS spdmSendInitRmDataCommand_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
-static inline NV_STATUS spdmSendInitRmDataCommand_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmRegisterForHeartbeats_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec);
-
-static inline NV_STATUS spdmRegisterForHeartbeats_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmUnregisterFromHeartbeats_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
-static inline NV_STATUS spdmUnregisterFromHeartbeats_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NvBool spdmMutualAuthSupported_88bc07(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_TRUE;
-}
-
-static inline NvBool spdmMutualAuthSupported_3dd2c9(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_FALSE;
-}
+NV_STATUS spdmSendApplicationMessage_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
 
 NV_STATUS spdmSendCtrlCall_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams);
 
-static inline NV_STATUS spdmSendCtrlCall_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmDeviceInit_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
-
-static inline NV_STATUS spdmDeviceInit_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmDeviceDeinit_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear);
 
-static inline NV_STATUS spdmDeviceDeinit_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmDeviceSecuredSessionSupported_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
-
-static inline NV_STATUS spdmDeviceSecuredSessionSupported_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmCheckConnection_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
-static inline NV_STATUS spdmCheckConnection_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmMessageProcess_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
-
-static inline NV_STATUS spdmMessageProcess_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmGetCertificates_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
-static inline NV_STATUS spdmGetCertificates_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmGetReqEncapCertificates_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize);
-
-static inline NV_STATUS spdmGetReqEncapCertificates_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS spdmGetRequesterCertificateCount_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 *pCertCount);
 
 NV_STATUS spdmGetRequesterCertificateCount_GB100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 *pCertCount);
 
-static inline NV_STATUS spdmGetRequesterCertificateCount_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 *pCertCount) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+const BINDATA_ARCHIVE * spdmGetBinArchiveL1Certificate_IMPL(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_GH100(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL2Certificate_GH100(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_GB100(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL2Certificate_GB20X(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_GB20X(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL2Certificate_GB100(struct Spdm *pSpdm);
 
-static inline const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL2Certificate_fa6e19(struct Spdm *pSpdm) {
-    return ((void *)0);
-}
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GH100(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GH100(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB100(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB100(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB102(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB102(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB110(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB110(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB112(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB112(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB202(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB202(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB203(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB203(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB205(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB205(struct Spdm *pSpdm);
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB206(struct Spdm *pSpdm);
 
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB206(struct Spdm *pSpdm);
-
-const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_GB207(struct Spdm *pSpdm);
-
-static inline const BINDATA_ARCHIVE *spdmGetBinArchiveIndividualL3Certificate_fa6e19(struct Spdm *pSpdm) {
-    return ((void *)0);
-}
+const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_GB207(struct Spdm *pSpdm);
 
 NV_STATUS spdmGetIndividualCertificate_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize);
 
 NV_STATUS spdmGetIndividualCertificate_GB100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize);
 
-static inline NV_STATUS spdmGetIndividualCertificate_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS spdmConvertCertificateToDer_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, const BINDATA_STORAGE *pBinStorage, NvBool bNeedCopy, NvU8 *pCert, NvU64 *pCertSize);
 
-static inline NV_STATUS spdmConvertCertificateToDer_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, const BINDATA_STORAGE *pBinStorage, NvBool bNeedCopy, NvU8 *pCert, NvU64 *pCertSize) {
+// Inline HAL method definitions
+static inline NV_STATUS spdmStatePostLoad_ac1694(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags){
+    return NV_OK;
+}
+
+static inline NV_STATUS spdmStatePreUnload_ac1694(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 flags){
+    return NV_OK;
+}
+
+static inline NV_STATUS spdmGetCertChains_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize){
     return NV_ERR_NOT_SUPPORTED;
 }
 
+static inline NV_STATUS spdmGetAttestationReport_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmCheckAndExecuteKeyUpdate_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmSendInitRmDataCommand_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmRegisterForHeartbeats_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmUnregisterFromHeartbeats_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool spdmMutualAuthSupported_e661f0(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_TRUE;
+}
+
+static inline NvBool spdmMutualAuthSupported_d69453(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_FALSE;
+}
+
+static inline NV_STATUS spdmSendCtrlCall_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS *pParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmDeviceInit_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmDeviceDeinit_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmDeviceSecuredSessionSupported_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmCheckConnection_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmMessageProcess_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmGetCertificates_395e98(OBJGPU *pGpu, struct Spdm *pSpdm){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmGetReqEncapCertificates_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmGetRequesterCertificateCount_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 *pCertCount){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL2Certificate_9e2234(struct Spdm *pSpdm){
+    return ((void *)0);
+}
+
+static inline const BINDATA_ARCHIVE * spdmGetBinArchiveIndividualL3Certificate_9e2234(struct Spdm *pSpdm){
+    return ((void *)0);
+}
+
+static inline NV_STATUS spdmGetIndividualCertificate_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 certId, NvBool bDerFormat, void *pCert, NvU64 *pCertSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS spdmConvertCertificateToDer_395e98(OBJGPU *pGpu, struct Spdm *pSpdm, const BINDATA_STORAGE *pBinStorage, NvBool bNeedCopy, NvU8 *pCert, NvU64 *pCertSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

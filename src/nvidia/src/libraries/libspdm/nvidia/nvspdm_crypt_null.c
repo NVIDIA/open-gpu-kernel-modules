@@ -508,12 +508,6 @@ bool libspdm_x509_get_cert_from_cert_chain(const uint8_t *cert_chain,
     return false;
 }
 
-bool libspdm_random_seed(const uint8_t *seed, size_t seed_size)
-{
-    /* TBD*/
-    return true;
-}
-
 bool libspdm_random_bytes(uint8_t *output, size_t size)
 {
     return true;

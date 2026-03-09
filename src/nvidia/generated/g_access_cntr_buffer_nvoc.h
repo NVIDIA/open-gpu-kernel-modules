@@ -45,7 +45,7 @@ extern "C" {
 #define ACCESS_CNTR_BUFFER_H
 
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 
 #include "ctrl/ctrlc365.h"
 
@@ -140,13 +140,9 @@ struct NVOC_METADATA__AccessCounterBuffer {
     const struct NVOC_VTABLE__AccessCounterBuffer vtable;
 };
 
-#ifndef __NVOC_CLASS_AccessCounterBuffer_TYPEDEF__
-#define __NVOC_CLASS_AccessCounterBuffer_TYPEDEF__
-typedef struct AccessCounterBuffer AccessCounterBuffer;
-#endif /* __NVOC_CLASS_AccessCounterBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_AccessCounterBuffer
-#define __nvoc_class_id_AccessCounterBuffer 0x1f0074
+#define __nvoc_class_id_AccessCounterBuffer 0x1f0074u
+typedef struct AccessCounterBuffer AccessCounterBuffer;
 #endif /* __nvoc_class_id_AccessCounterBuffer */
 
 // Casting support
@@ -164,14 +160,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_AccessCounterBuffer;
 
 NV_STATUS __nvoc_objCreateDynamic_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_AccessCounterBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_AccessCounterBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_AccessCounterBuffer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_AccessCounterBuffer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS accesscntrConstruct_IMPL(struct AccessCounterBuffer *arg_pAccessCounterBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_accesscntrConstruct(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams) accesscntrConstruct_IMPL(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams)
+NV_STATUS accesscntrConstruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_accesscntrConstruct(pAccessCounterBuffer, pCallContext, pParams) accesscntrConstruct_IMPL(pAccessCounterBuffer, pCallContext, pParams)
 
 void accesscntrDestruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer);
 #define __nvoc_accesscntrDestruct(pAccessCounterBuffer) accesscntrDestruct_IMPL(pAccessCounterBuffer)
@@ -460,12 +456,14 @@ static inline NV_STATUS accesscntrGetOrAllocNotifShare_DISPATCH(struct AccessCou
     return pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS accesscntrMap_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS accesscntrUnmap_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS accesscntrGetMapAddrSpace_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadGet_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS *pGetParams);
 
 NV_STATUS accesscntrCtrlCmdAccessCntrBufferReadPut_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS *pParams);
@@ -486,6 +484,10 @@ NV_STATUS accesscntrCtrlCmdAccessCntrSetConfig_IMPL(struct AccessCounterBuffer *
 
 NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *pGetParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

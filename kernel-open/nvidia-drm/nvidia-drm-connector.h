@@ -75,6 +75,22 @@ static inline struct nv_drm_connector *to_nv_connector(
     return container_of(connector, struct nv_drm_connector, base);
 }
 
+struct nv_drm_connector_state {
+       struct drm_connector_state base;
+};
+
+static inline struct nv_drm_connector_state *to_nv_drm_connector_state(
+                     struct drm_connector_state *state)
+{
+    return container_of(state, struct nv_drm_connector_state, base);
+}
+
+static inline const struct nv_drm_connector_state *to_nv_drm_connector_state_const(
+                           const struct drm_connector_state *state)
+{
+    return container_of(state, const struct nv_drm_connector_state, base);
+}
+
 static inline void nv_drm_connector_mark_connection_status_dirty(
     struct nv_drm_connector *nv_connector)
 {

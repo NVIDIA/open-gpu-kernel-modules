@@ -125,13 +125,9 @@ struct NVOC_METADATA__MemoryList {
     const struct NVOC_VTABLE__MemoryList vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryList_TYPEDEF__
-#define __NVOC_CLASS_MemoryList_TYPEDEF__
-typedef struct MemoryList MemoryList;
-#endif /* __NVOC_CLASS_MemoryList_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryList
-#define __nvoc_class_id_MemoryList 0x298f78
+#define __nvoc_class_id_MemoryList 0x298f78u
+typedef struct MemoryList MemoryList;
 #endif /* __nvoc_class_id_MemoryList */
 
 // Casting support
@@ -149,14 +145,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryList;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryList(MemoryList**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryList(MemoryList**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryList(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryList((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryList(MemoryList**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryList(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryList((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memlistConstruct_IMPL(struct MemoryList *arg_pMemoryList, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memlistConstruct(arg_pMemoryList, arg_pCallContext, arg_pParams) memlistConstruct_IMPL(arg_pMemoryList, arg_pCallContext, arg_pParams)
+NV_STATUS memlistConstruct_IMPL(struct MemoryList *pMemoryList, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memlistConstruct(pMemoryList, pCallContext, pParams) memlistConstruct_IMPL(pMemoryList, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -318,8 +314,14 @@ static inline void memlistAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__memlistAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool memlistCanCopy_IMPL(struct MemoryList *pMemoryList);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

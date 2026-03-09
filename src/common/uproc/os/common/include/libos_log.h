@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,17 +44,18 @@
  *  Keep GSP task id consistent with nv_firmware_task_t such that
  *  LIBOS_LOG_TASK id = NV_FIRMWARE_TASK number + 2
  */
-#define LIBOS_LOG_TASK_UNKNOWN    0x0
-#define LIBOS_LOG_TASK_GSP_KERNEL 0x1
-#define LIBOS_LOG_TASK_GSP_INIT   0x2
-#define LIBOS_LOG_TASK_GSP_RM     0x3
-#define LIBOS_LOG_TASK_GSP_INTR   0x4
-#define LIBOS_LOG_TASK_GSP_VGPU   0x5
-#define LIBOS_LOG_TASK_GSP_MNOC   0x6
-#define LIBOS_LOG_TASK_GSP_DEBUG  0x7
-#define LIBOS_LOG_TASK_GSP_ROOT   0x8
-#define LIBOS_LOG_TASK_GSP_MAX_ID 0x9
-#define LIBOS_LOG_TASK_MAX_ID     LIBOS_LOG_TASK_GSP_MAX_ID
+#define LIBOS_LOG_TASK_UNKNOWN              0x0
+#define LIBOS_LOG_TASK_GSP_KERNEL           0x1
+#define LIBOS_LOG_TASK_GSP_INIT             0x2
+#define LIBOS_LOG_TASK_GSP_RM               0x3
+#define LIBOS_LOG_TASK_GSP_INTR             0x4
+#define LIBOS_LOG_TASK_GSP_VGPU             0x5
+#define LIBOS_LOG_TASK_GSP_MNOC             0x6
+#define LIBOS_LOG_TASK_GSP_DEBUG            0x7
+#define LIBOS_LOG_TASK_GSP_ROOT             0x8
+#define LIBOS_LOG_TASK_GSP_RM_STATE_MONITOR 0x9
+#define LIBOS_LOG_TASK_GSP_MAX_ID           0xA
+#define LIBOS_LOG_TASK_MAX_ID               LIBOS_LOG_TASK_GSP_MAX_ID
 
 
 /*!
@@ -274,7 +275,11 @@ void LibosLogEntry(NvU64 nArgs, ...);
  * flags with entsize=1 so that strings get merged by LD. Comment character # works around GCC
  * appending its own default flags.
  */
+#if defined(__clang__)
+#define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const")))
+#else
 #define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const, \"MSa\", @progbits, 1 #")))
+#endif
 #define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata")))
 #define LIBOS_LOGGING_AUX_METADATA_DUMP \
     static const LIBOS_SECTION_LOGGING_CONST int  libos_dummy_line[] LIBOS_ATTR_USED = {__LINE__};
@@ -302,24 +307,26 @@ void LibosLogEntry(NvU64 nArgs, ...);
 #define LIBOS_LOG_INTERNAL_SPECIAL(dispatcher, level, special, ...)                                            \
     do                                                                                                         \
     {                                                                                                          \
-        static const LIBOS_SECTION_LOGGING_CONST char libos_pvt_format[]   = {LIBOS_MACRO_FIRST(__VA_ARGS__)}; \
-        static const LIBOS_SECTION_LOGGING_CONST char libos_pvt_file[]     = {__FILE__};                       \
+        static const LIBOS_SECTION_LOGGING_CONST char LIBOS_MACRO_PASTE_EVAL(libos_pvt_format, __LINE__)[]   = {LIBOS_MACRO_FIRST(__VA_ARGS__)}; \
+        static const LIBOS_SECTION_LOGGING_CONST char LIBOS_MACRO_PASTE_EVAL(libos_pvt_file, __LINE__)[]     = {__FILE__};                       \
         LIBOS_LOGGING_AUX_METADATA_DUMP;                                                                       \
-        static const LIBOS_SECTION_LOGGING_METADATA libosLogMetadata libos_pvt_meta = {                        \
-            .filename      = &libos_pvt_file[0],                                                               \
-            .format        = &libos_pvt_format[0],                                                             \
+        static const LIBOS_SECTION_LOGGING_METADATA libosLogMetadata LIBOS_MACRO_PASTE_EVAL(libos_pvt_meta, __LINE__) = {                        \
+            .filename      = &LIBOS_MACRO_PASTE_EVAL(libos_pvt_file, __LINE__)[0],                             \
+            .format        = &LIBOS_MACRO_PASTE_EVAL(libos_pvt_format, __LINE__)[0],                           \
             .lineNumber    = __LINE__,                                                                         \
             .argumentCount = LIBOS_MACRO_GET_COUNT(__VA_ARGS__) - 1,                                           \
             .printLevel    = level,                                                                            \
             .specialType   = special};                                                                         \
-        LIBOS_LOG_DISPATCH(dispatcher, libos_pvt_meta, __VA_ARGS__)                                            \
+        LIBOS_LOG_DISPATCH(dispatcher, LIBOS_MACRO_PASTE_EVAL(libos_pvt_meta, __LINE__), __VA_ARGS__)          \
     } while (0)
 
 #define LIBOS_LOG_INTERNAL(dispatcher, level, ...)                                                             \
     do                                                                                                         \
     {                                                                                                          \
         if (0)                                                                                                 \
+        {                                                                                                      \
             LIBOS_CHECK_PRINTF_FMT(__VA_ARGS__);                                                               \
+        }                                                                                                      \
         LIBOS_LOG_INTERNAL_SPECIAL(dispatcher, level, 0 /* specialType */, __VA_ARGS__);                       \
     } while (0)
 

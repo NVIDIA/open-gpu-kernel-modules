@@ -369,13 +369,9 @@ struct NVOC_METADATA__OBJCL {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJCL_TYPEDEF__
-#define __NVOC_CLASS_OBJCL_TYPEDEF__
-typedef struct OBJCL OBJCL;
-#endif /* __NVOC_CLASS_OBJCL_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJCL
-#define __nvoc_class_id_OBJCL 0x547dbb
+#define __nvoc_class_id_OBJCL 0x547dbbu
+typedef struct OBJCL OBJCL;
 #endif /* __nvoc_class_id_OBJCL */
 
 // Casting support
@@ -473,13 +469,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
 NV_STATUS __nvoc_objCreateDynamic_OBJCL(OBJCL**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJCL(OBJCL**, Dynamic*, NvU32);
-#define __objCreate_OBJCL(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJCL((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJCL(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJCL((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS clConstruct_IMPL(struct OBJCL *arg_pCl);
-#define __nvoc_clConstruct(arg_pCl) clConstruct_IMPL(arg_pCl)
+NV_STATUS clConstruct_IMPL(struct OBJCL *pCl);
+#define __nvoc_clConstruct(pCl) clConstruct_IMPL(pCl)
 
 void clDestruct_IMPL(struct OBJCL *pCl);
 #define __nvoc_clDestruct(pCl) clDestruct_IMPL(pCl)
@@ -995,144 +991,104 @@ static inline void clSyncWithGsp(struct OBJCL *arg_this, GspSystemInfo *arg2) {
 #define clGetPortAcsRedirectConfig_HAL(arg1, arg_this, arg3, arg4, arg5, arg6, arg7) clGetPortAcsRedirectConfig(arg1, arg_this, arg3, arg4, arg5, arg6, arg7)
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS clInit_IMPL(struct OBJGPU *arg1, struct OBJCL *pCl);
-
 
 void clUpdateConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *pCl);
 
-
 NV_STATUS clTeardown_IMPL(struct OBJGPU *arg1, struct OBJCL *pCl);
-
 
 void clInitPropertiesFromRegistry_IMPL(struct OBJGPU *arg1, struct OBJCL *pCl);
 
+NvU32 clInitMappingPciBusDevice_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NvU32 clInitMappingPciBusDevice_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NV_STATUS clFindFHBAndGetChipsetInfoIndex_IMPL(struct OBJCL *arg_this, NvU16 *arg2);
 
+NV_STATUS clInitPcie_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NV_STATUS clFindFHBAndGetChipsetInfoIndex_IMPL(struct OBJCL *arg1, NvU16 *arg2);
+void clUpdatePcieConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
+NV_STATUS clTeardownPcie_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NV_STATUS clInitPcie_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NV_STATUS clPcieReadPortConfigReg_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, PORTDATA *arg3, NvU32 arg4, NvU32 *arg5);
 
+NV_STATUS clPcieWriteRootPortConfigReg_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU32 arg3, NvU32 arg4);
 
-void clUpdatePcieConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NV_STATUS clPcieReadAerCapability_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, struct PcieAerCapability *arg3);
 
+NV_STATUS clPcieReadL1SsCapability_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, struct PexL1SubstateCapability *arg3);
 
-NV_STATUS clTeardownPcie_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NV_STATUS clPcieReadDevCtrlStatus_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU32 *arg3, NvU32 *arg4);
 
+NV_STATUS clPcieClearDevCtrlStatus_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU32 *arg3);
 
-NV_STATUS clPcieReadPortConfigReg_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, PORTDATA *arg3, NvU32 arg4, NvU32 *arg5);
+NvU16 clPcieReadWord_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6);
 
+NvU32 clPcieReadDword_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6);
 
-NV_STATUS clPcieWriteRootPortConfigReg_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 arg3, NvU32 arg4);
+void clPcieWriteWord_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6, NvU16 arg7);
 
-
-NV_STATUS clPcieReadAerCapability_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, struct PcieAerCapability *arg3);
-
-
-NV_STATUS clPcieReadL1SsCapability_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, struct PexL1SubstateCapability *arg3);
-
-
-NV_STATUS clPcieReadDevCtrlStatus_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 *arg3, NvU32 *arg4);
-
-
-NV_STATUS clPcieClearDevCtrlStatus_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 *arg3);
-
-
-NvU16 clPcieReadWord_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6);
-
-
-NvU32 clPcieReadDword_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6);
-
-
-void clPcieWriteWord_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6, NvU16 arg7);
-
-
-void clPcieWriteDword_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6, NvU32 arg7);
-
+void clPcieWriteDword_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3, NvU8 arg4, NvU8 arg5, NvU32 arg6, NvU32 arg7);
 
 NvBool clFindBR04_IMPL(POBJGPU *pGpus, NvU32 NumGpus, NvBool flat, NvU32 devId, struct OBJCL *pCl);
 
-
 NV_STATUS clResumeBridge_IMPL(struct OBJCL *pCl);
 
+void * clFindP2PBrdg_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3, NvU8 *arg4, NvU8 *arg5, NvU8 *arg6, NvU16 *arg7, NvU16 *arg8);
 
-void *clFindP2PBrdg_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3, NvU8 *arg4, NvU8 *arg5, NvU8 *arg6, NvU16 *arg7, NvU16 *arg8);
+void * clFindBrdgUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvBool arg3, NvU8 *arg4, NvU8 *arg5, NvU8 *arg6, NvU16 *arg7, NvU16 *arg8, NvU8 *arg9);
 
-
-void *clFindBrdgUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvBool arg3, NvU8 *arg4, NvU8 *arg5, NvU8 *arg6, NvU16 *arg7, NvU16 *arg8, NvU8 *arg9);
-
-
-NV_STATUS clSetPortPcieCapOffset_IMPL(struct OBJCL *arg1, void *arg2, NvU32 *arg3);
-
+NV_STATUS clSetPortPcieCapOffset_IMPL(struct OBJCL *arg_this, void *arg2, NvU32 *arg3);
 
 NV_STATUS clStorePcieConfigSpaceBaseFromMcfg_IMPL(struct OBJCL *pCl);
 
+NV_STATUS clInsertPcieConfigSpaceBase_IMPL(struct OBJCL *arg_this, RmPhysAddr arg2, NvU32 arg3, NvU8 arg4, NvU8 arg5);
 
-NV_STATUS clInsertPcieConfigSpaceBase_IMPL(struct OBJCL *arg1, RmPhysAddr arg2, NvU32 arg3, NvU8 arg4, NvU8 arg5);
-
-
-RmPhysAddr clFindPcieConfigSpaceBase_IMPL(struct OBJCL *arg1, NvU32 arg2, NvU8 arg3);
-
+RmPhysAddr clFindPcieConfigSpaceBase_IMPL(struct OBJCL *arg_this, NvU32 arg2, NvU8 arg3);
 
 void clFreePcieConfigSpaceBase_IMPL(struct OBJCL *pCl);
 
+NV_STATUS clInitDeviceInfo_IMPL(struct OBJCL *arg_this, struct OBJGPU *arg2);
 
-NV_STATUS clInitDeviceInfo_IMPL(struct OBJCL *arg1, struct OBJGPU *arg2);
-
-
-void clCountBR_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU8 *arg3);
-
+void clCountBR_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU8 *arg3);
 
 void clFindCommonBR_IMPL(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pBR04Bus, NvBool bScanAll);
 
-
 void clFindCommonDownstreamBR_IMPL(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pPciSwitchBus);
-
 
 void clFindBR_IMPL(struct OBJGPU *pGpu, struct OBJCL *pCl, NvU8 *pBR03Bus, NvU8 *pBR04Bus, NvBool *pBRNotBR04A03, NvBool *pNoUnsupportedBRFound, NvBool *pNoOnboardBR04);
 
-
 void clSearchBR04_IMPL(struct OBJCL *pCl, NvU8 *pBR04BusArray, NvU8 *pBR04RevArray, NvU8 *pBR04Count);
-
 
 NV_STATUS clPcieGetMaxCapableLinkWidth_IMPL(struct OBJCL *pCl, struct OBJGPU *pGpu, NvU32 *maxCapableLinkWidth);
 
-
 NV_STATUS clPcieIsRelaxedOrderingSafe_IMPL(struct OBJCL *pCl, struct OBJGPU *pGpu, NvBool *result);
-
 
 NV_STATUS clStoreBusTopologyCache_IMPL(struct OBJCL *pCl, NvU32 secDomain, NvU16 secBus);
 
-
 void clFreeBusTopologyCache_IMPL(struct OBJCL *pCl);
 
+NvBool clIsL1SupportedForUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NvBool clIsL1SupportedForUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NvBool clIsL0sMaskEnabledForUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
+NV_STATUS clControlL0sL1LinkControlUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvBool arg3);
 
-NvBool clIsL0sMaskEnabledForUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
+NV_STATUS clChipsetAspmPublicControl_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU32 arg3);
 
+NvBool clRootportNeedsNosnoopWAR_FWCLIENT(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NV_STATUS clControlL0sL1LinkControlUpstreamPort_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvBool arg3);
+NvU16 clPcieGetGpuLostDiagnosticData_IMPL(struct OBJGPU *pGpu, struct OBJCL *arg_this, NvU8 *pBuffer, NvU32 size);
 
+NvU32 clGetChipsetL1ClockPMSupport_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this);
 
-NV_STATUS clChipsetAspmPublicControl_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 arg3);
+NV_STATUS clGetPortAcsRedirectConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *arg_this, NvU32 arg3, NvU8 arg4, NvU8 arg5, NvU8 arg6, NvU32 *arg7);
 
-
-NvBool clRootportNeedsNosnoopWAR_FWCLIENT(struct OBJGPU *arg1, struct OBJCL *arg2);
-
-
-NvU16 clPcieGetGpuLostDiagnosticData_IMPL(struct OBJGPU *pGpu, struct OBJCL *arg2, NvU8 *pBuffer, NvU32 size);
-
-
-NvU32 clGetChipsetL1ClockPMSupport_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2);
-
-
-NV_STATUS clGetPortAcsRedirectConfig_IMPL(struct OBJGPU *arg1, struct OBJCL *arg2, NvU32 arg3, NvU8 arg4, NvU8 arg5, NvU8 arg6, NvU32 *arg7);
-
-
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

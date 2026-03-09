@@ -57,6 +57,8 @@ static NvU64 p2p_mem_page_count(uvm_device_p2p_mem_t *p2p_mem)
     return (p2p_mem->pfn_count * p2p_mem->page_size) >> PAGE_SHIFT;
 }
 
+// Look up the struct page associated with this PFN. Validates that the index is
+// within the range of PFNs for this handle.,
 static struct page *p2p_mem_get_page(uvm_device_p2p_mem_t *p2p_mem, NvU64 cpu_page_index)
 {
     NvU64 gpu_pfn_nr = cpu_page_index / (p2p_mem->page_size >> PAGE_SHIFT);
@@ -343,6 +345,12 @@ static NV_STATUS alloc_device_p2p_mem(uvm_gpu_t *gpu,
     for (i = 0; i < p2p_mem_page_count(p2p_mem); i++) {
         struct page *page = p2p_mem_get_page(p2p_mem, i);
 
+        // Older kernel versions set page_ref_count(page) to 1, but newer
+        // kernels with commit b7e282378773 ("mm/mm_init: move p2pdma page
+        // refcount initialisation to p2pdma") set the ref count to 0. The
+        // ref count is checked in pci_p2pdma_page_free(). For compatbility
+        // between the two just set the page count to 1.
+        set_page_count(page, 1);
         if (!gpu->parent->cdmm_enabled && !pci_p2pdma_page_free(page)) {
             UVM_ASSERT(0);
 
@@ -356,12 +364,10 @@ static NV_STATUS alloc_device_p2p_mem(uvm_gpu_t *gpu,
         page_set_zone_device_data(page, p2p_mem);
 
 #if UVM_CDMM_PAGES_SUPPORTED()
-        // RM doesn't use DEVICE_COHERENT pages and therefore won't already hold
-        // a reference to them, so take one now if using DEVICE_COHERENT pages.
-        if (gpu->parent->cdmm_enabled) {
-            get_page(page);
+        // The page reference count was taken unconditionally above by setting
+        // page_count to 1. Take a page devmap reference.
+        if (gpu->parent->cdmm_enabled)
             NV_GET_DEV_PAGEMAP(page_to_pfn(page));
-        }
 #else
         // CDMM P2PDMA will never be enabled for this case
         if (gpu->parent->cdmm_enabled) {
@@ -391,10 +397,10 @@ out_free:
     return status;
 }
 
-static NV_STATUS alloc_pci_device_p2p(uvm_gpu_t *gpu,
-                                      NvHandle client,
-                                      NvHandle memory,
-                                      uvm_device_p2p_mem_t **p2p_mem_out)
+static NV_STATUS alloc_zone_device_p2p(uvm_gpu_t *gpu,
+                                       NvHandle client,
+                                       NvHandle memory,
+                                       uvm_device_p2p_mem_t **p2p_mem_out)
 {
     NvU64 pfn;
     NV_STATUS status;
@@ -530,7 +536,10 @@ NV_STATUS uvm_api_alloc_device_p2p(UVM_ALLOC_DEVICE_P2P_PARAMS *params, struct f
     uvm_gpu_t *gpu;
     LIST_HEAD(deferred_free_list);
 
-    if (uvm_api_range_invalid(params->base + params->offset, params->length))
+    // Check the range and offset is valid. Not strictly neccessary as
+    // ultimately RM controls the range that can be mapped and this is validated
+    // during mapping, but fail early to avoid errors later during mapping.
+    if (uvm_api_range_offset_invalid(params->base, params->offset, params->length))
         return NV_ERR_INVALID_ARGUMENT;
 
     gpu = uvm_va_space_retain_gpu_by_uuid(va_space, &params->gpuUuid);
@@ -548,11 +557,13 @@ NV_STATUS uvm_api_alloc_device_p2p(UVM_ALLOC_DEVICE_P2P_PARAMS *params, struct f
             goto out_release;
     }
     else {
-        status = alloc_pci_device_p2p(gpu, params->hClient, params->hMemory, &p2p_mem);
+        status = alloc_zone_device_p2p(gpu, params->hClient, params->hMemory, &p2p_mem);
         if (status != NV_OK)
             goto out_release;
     }
 
+    // Validate RM returned enough PFNs to cover the requested range to avoid
+    // failure during mapping.
     if (params->offset + params->length > p2p_mem->pfn_count * p2p_mem->page_size) {
         status = NV_ERR_INVALID_ARGUMENT;
         goto out_free;

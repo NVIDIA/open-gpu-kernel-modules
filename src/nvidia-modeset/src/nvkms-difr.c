@@ -104,7 +104,7 @@
 #include "nvidia-push-utils.h"
 
 #include <class/cl2080.h>
-#include <class/cla06f.h>
+#include <class/clc46f.h>
 #include <class/cla06fsubch.h>
 #include <class/cla0b5.h>
 #include <class/clb0b5sw.h>
@@ -662,13 +662,13 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     semaphore->data[0] = 0;
 
     /* Program a semaphore release after prefetch DMA copy. */
-    nvPushMethod(p, 0, NVA06F_SEMAPHOREA, 4);
+    nvPushMethod(p, 0, NVC46F_SEMAPHOREA, 4);
     nvPushSetMethodDataU64(p, semaphoreGPUAddress);
     nvPushSetMethodData(p, PREFETCH_DONE_VALUE);
     nvPushSetMethodData(p,
-                        DRF_DEF(A06F, _SEMAPHORED, _OPERATION, _RELEASE) |
-                        DRF_DEF(A06F, _SEMAPHORED, _RELEASE_WFI, _EN) |
-                        DRF_DEF(A06F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE));
+                        DRF_DEF(C46F, _SEMAPHORED, _OPERATION, _RELEASE) |
+                        DRF_DEF(C46F, _SEMAPHORED, _RELEASE_WFI, _EN) |
+                        DRF_DEF(C46F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE));
     nvPushKickoff(p);
 
     /*

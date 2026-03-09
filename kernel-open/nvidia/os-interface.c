@@ -284,9 +284,11 @@ void* NV_API_CALL os_alloc_rwlock(void)
     init_rwsem(&os_rwlock->sem);
 
 #if defined(CONFIG_LOCKDEP)
+#if NV_IS_EXPORT_SYMBOL_PRESENT_lockdep_register_key
     // Register the dynamically allocated key to Lockdep.
     lockdep_register_key(&os_rwlock->key);
     lockdep_set_class(&os_rwlock->sem, &os_rwlock->key);
+#endif //NV_IS_EXPORT_SYMBOL_PRESENT_lockdep_register_key
 #endif // CONFIG_LOCKDEP
 
     return os_rwlock;
@@ -1284,6 +1286,15 @@ typedef struct os_spinlock_s
 {
     nv_spinlock_t      lock;
     unsigned long      eflags;
+#if defined(CONFIG_LOCKDEP)
+    /**
+     * A key of lock class. It would be registered to Lockdep validator so all
+     * instances' usages and dependencies will contribute to constructing correct
+     * locking rules and this lock will be tracked by the Lockdep validator.
+     *
+     */
+    struct lock_class_key key;
+#endif // CONFIG_LOCKDEP
 } os_spinlock_t;
 
 NV_STATUS NV_API_CALL os_alloc_spinlock(void **ppSpinlock)
@@ -1300,12 +1311,25 @@ NV_STATUS NV_API_CALL os_alloc_spinlock(void **ppSpinlock)
 
     os_spinlock = (os_spinlock_t *)*ppSpinlock;
     NV_SPIN_LOCK_INIT(&os_spinlock->lock);
+#if defined(CONFIG_LOCKDEP)
+#if NV_IS_EXPORT_SYMBOL_PRESENT_lockdep_register_key
+    // Register the dynamically allocated key to Lockdep.
+    lockdep_register_key(&os_spinlock->key);
+    lockdep_set_class(&os_spinlock->lock, &os_spinlock->key);
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_lockdep_register_key
+#endif // CONFIG_LOCKDEP
     os_spinlock->eflags = 0;
     return NV_OK;
 }
 
 void NV_API_CALL os_free_spinlock(void *pSpinlock)
 {
+
+#if defined(CONFIG_LOCKDEP)
+    os_spinlock_t *os_spinlock = (os_spinlock_t *)pSpinlock;
+    // Unregister the dynamically allocated key.
+    lockdep_unregister_key(&os_spinlock->key);
+#endif // CONFIG_LOCKDEP
     os_free_mem(pSpinlock);
 }
 
@@ -1366,6 +1390,15 @@ NV_STATUS NV_API_CALL os_get_is_openrm(NvBool *bIsOpenRm)
 #else // defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
     return NV_ERR_NOT_SUPPORTED;
 #endif // defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
+}
+
+NvBool NV_API_CALL os_is_bif_reset_supported(void *pOsGpuInfo)
+{
+    nv_state_t *nv = (nv_state_t *) pOsGpuInfo;
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    // BIF reset is not supported if init on probe is enabled
+    return !(nvl->init_on_probe);
 }
 
 NvBool NV_API_CALL os_is_xen_dom0(void)
@@ -2763,4 +2796,9 @@ NV_STATUS NV_API_CALL os_device_vm_present(void)
 #else
     return NV_ERR_NOT_SUPPORTED;
 #endif
+}
+
+NvBool NV_API_CALL os_supports_kernel_suspend_notifiers(void)
+{
+    return (NVreg_UseKernelSuspendNotifiers == 1);
 }

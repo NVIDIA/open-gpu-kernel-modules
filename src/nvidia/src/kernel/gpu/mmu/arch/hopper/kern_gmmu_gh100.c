@@ -25,7 +25,6 @@
 
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "vgpu/vgpu_events.h"
 #include "nv_sriov_defines.h"
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/gsp/kernel_gsp.h"

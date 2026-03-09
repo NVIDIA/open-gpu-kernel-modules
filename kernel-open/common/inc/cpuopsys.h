@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
  *
  * cpuopsys.h
  *
- * Copyright (c) 2001, Nvidia Corporation.  All rights reserved.
+ * Copyright (c) 2001-2025, Nvidia Corporation.  All rights reserved.
  */
 
 /*!
@@ -134,7 +134,6 @@
 #endif
 
 /* ***** Processor type variations */
-/* Note: The prefix NV_CPU_* is taken by Nvcm.h */
 
 #if ((defined(_M_IX86) || defined(__i386__) || defined(__i386)) && !defined(NVCPU_X86)) /* XXX until removed from Makefiles */
 /* _M_IX86 for windows, __i386__ for Linux (or any x86 using gcc) */

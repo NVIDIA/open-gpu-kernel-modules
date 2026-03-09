@@ -25,6 +25,9 @@
 #define __gb100_dev_hshub_h__
 
 // Needed to boot GSP before we get the whole device info table.
-#define NV_PFB_HSHUB0      0x00870fff:0x00870000
+// Derived from NV_PFB_HSHUB0
+// HW provides these define in hwproject.h in chips after Blackwell
+#define NV_HSHUB0_PRIV_BASE                   0x870000
+#define NV_HSHUB_PRIV_STRIDE                  0x1000
 
 #endif // __gb100_dev_hshub_h__

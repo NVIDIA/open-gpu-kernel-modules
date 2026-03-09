@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x40d457 = 1;
+char __nvoc_class_id_uniqueness_check__40d457 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterMemory;
@@ -30,7 +30,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Memory;
 void __nvoc_init__Memory(Memory*);
 void __nvoc_init__RegisterMemory(RegisterMemory*);
 void __nvoc_init_funcTable_RegisterMemory(RegisterMemory*);
-NV_STATUS __nvoc_ctor_RegisterMemory(RegisterMemory*, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_RegisterMemory(RegisterMemory*, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_RegisterMemory(RegisterMemory*);
 void __nvoc_dtor_RegisterMemory(RegisterMemory*);
 
@@ -107,19 +107,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_regmemUnmapFrom(struct RegisterMemory *pRes
 NvU32 __nvoc_up_thunk_RsResource_regmemGetRefCount(struct RegisterMemory *pResource);    // this
 void __nvoc_up_thunk_RsResource_regmemAddAdditionalDependants(struct RsClient *pClient, struct RegisterMemory *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for RegisterMemory
 const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterMemory = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RegisterMemory),
-        /*classId=*/            classId(RegisterMemory),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RegisterMemory),
+    .classInfo.classId =            classId(RegisterMemory),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RegisterMemory",
+    .classInfo.name =               "RegisterMemory",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RegisterMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo__RegisterMemory,
-    /*pExportInfo=*/        &__nvoc_export_info__RegisterMemory
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RegisterMemory,
+    .pCastInfo =          &__nvoc_castinfo__RegisterMemory,
+    .pExportInfo =        &__nvoc_export_info__RegisterMemory
 };
 
 
@@ -389,36 +388,47 @@ void __nvoc_up_thunk_RsResource_regmemAddAdditionalDependants(struct RsClient *p
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterMemory = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct RegisterMemory object.
 void __nvoc_dtor_Memory(Memory*);
-void __nvoc_dtor_RegisterMemory(RegisterMemory *pThis) {
+void __nvoc_dtor_RegisterMemory(RegisterMemory* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RegisterMemory(RegisterMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Memory(Memory* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_RegisterMemory(RegisterMemory *pThis, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Memory(&pThis->__nvoc_base_Memory, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_RegisterMemory_fail_Memory;
-    __nvoc_init_dataField_RegisterMemory(pThis);
 
-    status = __nvoc_regmemConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct RegisterMemory object.
+NV_STATUS __nvoc_ctor_Memory(Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_RegisterMemory(RegisterMemory *pRegisterMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Memory(&pRegisterMemory->__nvoc_base_Memory, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_RegisterMemory_fail_Memory;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_RegisterMemory(pRegisterMemory);
+
+    // Call the constructor for this class.
+    status = __nvoc_regmemConstruct(pRegisterMemory, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_RegisterMemory_fail__init;
     goto __nvoc_ctor_RegisterMemory_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RegisterMemory_fail__init:
-    __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
+    __nvoc_dtor_Memory(&pRegisterMemory->__nvoc_base_Memory);
 __nvoc_ctor_RegisterMemory_fail_Memory:
 __nvoc_ctor_RegisterMemory_exit:
-
     return status;
 }
 
@@ -459,49 +469,49 @@ void __nvoc_init__RegisterMemory(RegisterMemory *pThis) {
     __nvoc_init_funcTable_RegisterMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    RegisterMemory *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    RegisterMemory *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(RegisterMemory));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(RegisterMemory));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(RegisterMemory));
+    portMemSet(__nvoc_pThis, 0, sizeof(RegisterMemory));
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__RegisterMemory(pThis);
-    status = __nvoc_ctor_RegisterMemory(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_RegisterMemory_cleanup;
+    __nvoc_init__RegisterMemory(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_RegisterMemory(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_RegisterMemory_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -510,31 +520,31 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory **ppThis, Dynamic *pPar
 __nvoc_objCreate_RegisterMemory_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(RegisterMemory));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(RegisterMemory));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_RegisterMemory(RegisterMemory **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    CALL_CONTEXT *arg_pCallContext = va_arg(args, CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_RegisterMemory(RegisterMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_RegisterMemory(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_RegisterMemory(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

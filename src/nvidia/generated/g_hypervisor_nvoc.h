@@ -55,16 +55,11 @@ extern "C" {
 #include "mem_mgr/mem.h"
 
 /* ------------------------ Forward Declarations ---------------------------- */
-
 struct OBJOS;
 
-#ifndef __NVOC_CLASS_OBJOS_TYPEDEF__
-#define __NVOC_CLASS_OBJOS_TYPEDEF__
-typedef struct OBJOS OBJOS;
-#endif /* __NVOC_CLASS_OBJOS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJOS
-#define __nvoc_class_id_OBJOS 0xaa1d70
+#define __nvoc_class_id_OBJOS 0xaa1d70u
+typedef struct OBJOS OBJOS;
 #endif /* __nvoc_class_id_OBJOS */
 
 
@@ -120,13 +115,9 @@ struct NVOC_METADATA__OBJHYPERVISOR {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
-#define __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
-typedef struct OBJHYPERVISOR OBJHYPERVISOR;
-#endif /* __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHYPERVISOR
-#define __nvoc_class_id_OBJHYPERVISOR 0x33c1ba
+#define __nvoc_class_id_OBJHYPERVISOR 0x33c1bau
+typedef struct OBJHYPERVISOR OBJHYPERVISOR;
 #endif /* __nvoc_class_id_OBJHYPERVISOR */
 
 // Casting support
@@ -150,8 +141,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
 NV_STATUS __nvoc_objCreateDynamic_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32);
-#define __objCreate_OBJHYPERVISOR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJHYPERVISOR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJHYPERVISOR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJHYPERVISOR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -163,8 +154,8 @@ NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
 NvBool hypervisorIsType_IMPL(HYPERVISOR_TYPE hyperType);
 #define hypervisorIsType(hyperType) hypervisorIsType_IMPL(hyperType)
 
-NV_STATUS hypervisorConstruct_IMPL(struct OBJHYPERVISOR *arg_);
-#define __nvoc_hypervisorConstruct(arg_) hypervisorConstruct_IMPL(arg_)
+NV_STATUS hypervisorConstruct_IMPL(struct OBJHYPERVISOR *arg_this);
+#define __nvoc_hypervisorConstruct(arg_this) hypervisorConstruct_IMPL(arg_this)
 
 void hypervisorDestruct_IMPL(struct OBJHYPERVISOR *arg_this);
 #define __nvoc_hypervisorDestruct(arg_this) hypervisorDestruct_IMPL(arg_this)
@@ -232,15 +223,18 @@ static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg_th
 #define hypervisorSetHypervVgpuSupported_HAL(arg_this) hypervisorSetHypervVgpuSupported(arg_this)
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NvBool hypervisorIsVgxHyper_IMPL(void);
 
+NV_STATUS hypervisorInjectInterrupt_IMPL(struct OBJHYPERVISOR *arg_this, VGPU_NS_INTR *arg2);
 
-NV_STATUS hypervisorInjectInterrupt_IMPL(struct OBJHYPERVISOR *arg1, VGPU_NS_INTR *arg2);
+void hypervisorSetHypervVgpuSupported_IMPL(struct OBJHYPERVISOR *arg_this);
 
-
-void hypervisorSetHypervVgpuSupported_IMPL(struct OBJHYPERVISOR *arg1);
-
-
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -116,13 +116,9 @@ struct NVOC_METADATA__RegisterAperture {
     const struct NVOC_VTABLE__RegisterAperture vtable;
 };
 
-#ifndef __NVOC_CLASS_RegisterAperture_TYPEDEF__
-#define __NVOC_CLASS_RegisterAperture_TYPEDEF__
-typedef struct RegisterAperture RegisterAperture;
-#endif /* __NVOC_CLASS_RegisterAperture_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RegisterAperture
-#define __nvoc_class_id_RegisterAperture 0xfcaf2e
+#define __nvoc_class_id_RegisterAperture 0xfcaf2eu
+typedef struct RegisterAperture RegisterAperture;
 #endif /* __nvoc_class_id_RegisterAperture */
 
 // Casting support
@@ -141,8 +137,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture;
 NV_STATUS __nvoc_objCreateDynamic_RegisterAperture(RegisterAperture**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_RegisterAperture(RegisterAperture**, Dynamic*, NvU32);
-#define __objCreate_RegisterAperture(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_RegisterAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_RegisterAperture(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_RegisterAperture((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -198,6 +194,12 @@ static inline NvBool regaprtIsRegValid_DISPATCH(struct RegisterAperture *pApertu
     return pAperture->__nvoc_metadata_ptr->vtable.__regaprtIsRegValid__(pAperture, addr);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -210,6 +212,8 @@ static inline NvBool regaprtIsRegValid_DISPATCH(struct RegisterAperture *pApertu
 #else // (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
 typedef struct IO_DEVICE IO_DEVICE;
 typedef struct IO_APERTURE IO_APERTURE;
+typedef struct SWBC_DEVICE SWBC_DEVICE;
+typedef struct SWBC_APERTURE SWBC_APERTURE;
 
 typedef NvU8     ReadReg008Fn(IO_APERTURE *a, NvU32 addr);
 typedef NvU16    ReadReg016Fn(IO_APERTURE *a, NvU32 addr);
@@ -218,6 +222,14 @@ typedef void    WriteReg008Fn(IO_APERTURE *a, NvU32 addr, NvV8  value);
 typedef void    WriteReg016Fn(IO_APERTURE *a, NvU32 addr, NvV16 value);
 typedef void    WriteReg032Fn(IO_APERTURE *a, NvU32 addr, NvV32 value);
 typedef NvBool     ValidRegFn(IO_APERTURE *a, NvU32 addr);
+
+typedef NvU8     SwbcReadReg008Fn(SWBC_APERTURE *a, NvU32 addr);
+typedef NvU16    SwbcReadReg016Fn(SWBC_APERTURE *a, NvU32 addr);
+typedef NvU32    SwbcReadReg032Fn(SWBC_APERTURE *a, NvU32 addr);
+typedef void     SwbcWriteReg008Fn(SWBC_APERTURE *a, NvU32 addr, NvV8  value);
+typedef void     SwbcWriteReg016Fn(SWBC_APERTURE *a, NvU32 addr, NvV16 value);
+typedef void     SwbcWriteReg032Fn(SWBC_APERTURE *a, NvU32 addr, NvV32 value);
+typedef NvBool   SwbcValidRegFn(SWBC_APERTURE *a, NvU32 addr);
 
 #define REG_RD08(ap, addr)          (ap)->pDevice->pReadReg008Fn((ap), (addr))
 #define REG_RD16(ap, addr)          (ap)->pDevice->pReadReg016Fn((ap), (addr))
@@ -243,11 +255,30 @@ struct IO_DEVICE
     ValidRegFn           *pValidRegFn;
 };
 
+struct SWBC_DEVICE
+{
+    SwbcReadReg008Fn    *pReadReg008Fn;     // Cast to ReadReg008Fn*
+    SwbcReadReg016Fn    *pReadReg016Fn;     // Cast to ReadReg016Fn*
+    SwbcReadReg032Fn    *pReadReg032Fn;     // Cast to ReadReg032Fn*
+    SwbcWriteReg008Fn   *pWriteReg008Fn;    // Cast to WriteReg008Fn*
+    SwbcWriteReg016Fn   *pWriteReg016Fn;    // Cast to WriteReg016Fn*
+    SwbcWriteReg032Fn   *pWriteReg032Fn;    // Cast to WriteReg032Fn*
+    SwbcWriteReg032Fn   *pWriteReg032UcFn;  // Cast to WriteReg032Fn*
+    SwbcValidRegFn      *pValidRegFn;       // Cast to ValidRegFn*
+};
+
 struct IO_APERTURE
 {
     IO_DEVICE *pDevice;     // Pointer to module specific IO_DEVICE
     NvU32      baseAddress; // register base address
     NvU32      length;      // length of aperture
+};
+
+struct SWBC_APERTURE
+{
+    SWBC_DEVICE    *pDevice;        // Pointer to module specific SWBC_DEVICE
+    IO_APERTURE   **pApertures;     // Array of underlying apertures
+    NvU32           numApertures;   // Number of apertures to broadcast to
 };
 
 NV_STATUS ioaccessInitIOAperture
@@ -258,6 +289,14 @@ NV_STATUS ioaccessInitIOAperture
     NvU32 offset,
     NvU32 length
 );
+
+NV_STATUS swbcInitAperture
+(
+    SWBC_APERTURE *pSwbcAperture, 
+    IO_APERTURE  **pApertures, 
+    NvU32          numApertures
+);
+
 #endif // (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
 
 

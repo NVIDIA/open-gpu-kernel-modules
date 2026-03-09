@@ -64,28 +64,19 @@ extern "C" {
 MAKE_MAP(GVAS_CHANGRP_MAP, NvU32);
 typedef GVAS_CHANGRP_MAPIter GVAS_CHANGRP_MAP_ITER;
 
-
 struct OBJGVASPACE;
 
-#ifndef __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
-#define __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
-typedef struct OBJGVASPACE OBJGVASPACE;
-#endif /* __NVOC_CLASS_OBJGVASPACE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGVASPACE
-#define __nvoc_class_id_OBJGVASPACE 0xba5875
+#define __nvoc_class_id_OBJGVASPACE 0xba5875u
+typedef struct OBJGVASPACE OBJGVASPACE;
 #endif /* __nvoc_class_id_OBJGVASPACE */
 
 
 typedef struct KernelChannelGroup KernelChannelGroup;
 
-#ifndef __NVOC_CLASS_KernelChannelGroup_TYPEDEF__
-#define __NVOC_CLASS_KernelChannelGroup_TYPEDEF__
-typedef struct KernelChannelGroup KernelChannelGroup;
-#endif /* __NVOC_CLASS_KernelChannelGroup_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannelGroup
-#define __nvoc_class_id_KernelChannelGroup 0xec6de1
+#define __nvoc_class_id_KernelChannelGroup 0xec6de1u
+typedef struct KernelChannelGroup KernelChannelGroup;
 #endif /* __nvoc_class_id_KernelChannelGroup */
 
 
@@ -317,13 +308,9 @@ struct NVOC_METADATA__OBJGVASPACE {
     const struct NVOC_VTABLE__OBJGVASPACE vtable;
 };
 
-#ifndef __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
-#define __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
-typedef struct OBJGVASPACE OBJGVASPACE;
-#endif /* __NVOC_CLASS_OBJGVASPACE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGVASPACE
-#define __nvoc_class_id_OBJGVASPACE 0xba5875
+#define __nvoc_class_id_OBJGVASPACE 0xba5875u
+typedef struct OBJGVASPACE OBJGVASPACE;
 #endif /* __nvoc_class_id_OBJGVASPACE */
 
 // Casting support
@@ -342,8 +329,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGVASPACE;
 NV_STATUS __nvoc_objCreateDynamic_OBJGVASPACE(OBJGVASPACE**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGVASPACE(OBJGVASPACE**, Dynamic*, NvU32);
-#define __objCreate_OBJGVASPACE(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJGVASPACE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJGVASPACE(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJGVASPACE((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -735,6 +722,7 @@ static inline NvU64 gvaspaceGetVaLimit_DISPATCH(struct OBJGVASPACE *pVAS) {
     return pVAS->__nvoc_metadata_ptr->vtable.__gvaspaceGetVaLimit__(pVAS);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS gvaspaceConstruct__IMPL(struct OBJGVASPACE *pGVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags);
 
 NV_STATUS gvaspaceReserveMempool_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags);
@@ -751,7 +739,7 @@ NV_STATUS gvaspaceMap_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, const 
 
 void gvaspaceUnmap_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi);
 
-OBJEHEAP *gvaspaceGetHeap_IMPL(struct OBJGVASPACE *pVAS);
+OBJEHEAP * gvaspaceGetHeap_IMPL(struct OBJGVASPACE *pVAS);
 
 NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock);
 
@@ -785,7 +773,12 @@ NV_STATUS gvaspaceSetPteInfo_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu,
 
 NV_STATUS gvaspaceFreeV2_IMPL(struct OBJGVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize);
 
-static inline NvU32 gvaspaceGetReservedVaspaceBase(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvU32 gvaspaceGetReservedVaspaceBase(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu){
     if (!((0) && (pGpu))) {
         return 1048576;
     }

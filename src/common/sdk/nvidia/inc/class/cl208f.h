@@ -28,22 +28,8 @@
 extern "C" {
 #endif
 
-#include "nvtypes.h"
-
 /* Class within the subdevice used for diagnostic purpose*/
 #define  NV20_SUBDEVICE_DIAG                                       (0x0000208f)
-
-/* event values */
-#define NV208F_NOTIFIERS_SW                                        (0)
-#define NV208F_NOTIFIERS_MAXCOUNT                                  (1)
-
-/* NvNotification[] fields and values */
-#define NV208f_NOTIFICATION_STATUS_ERROR_PROTECTION_FAULT          (0x4000)
-/* pio method data structure */
-typedef volatile struct _cl208f_tag0 {
- NvV32 Reserved00[0x7c0];
-} Nv208fTypedef, Nv20SubdeviceDiag;
-#define  NV208f_TYPEDEF                                            Nv20SubdeviceDiag
 
 #ifdef __cplusplus
 };     /* extern "C" */

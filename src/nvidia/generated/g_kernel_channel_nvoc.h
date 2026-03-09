@@ -66,29 +66,19 @@ extern "C" {
 
 #include "cc_drv.h"
 
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct UserInfo;
 
-#ifndef __NVOC_CLASS_UserInfo_TYPEDEF__
-#define __NVOC_CLASS_UserInfo_TYPEDEF__
-typedef struct UserInfo UserInfo;
-#endif /* __NVOC_CLASS_UserInfo_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_UserInfo
-#define __nvoc_class_id_UserInfo 0x21d236
+#define __nvoc_class_id_UserInfo 0x21d236u
+typedef struct UserInfo UserInfo;
 #endif /* __nvoc_class_id_UserInfo */
 
 
@@ -249,26 +239,31 @@ struct KernelChannel {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelChannel *__nvoc_pbase_KernelChannel;    // kchannel
 
-    // Vtable with 19 per-object function pointers
+    // Vtable with 24 per-object function pointers
+    NV_STATUS (*__kchannelMap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual halified (2 hals) override (res) base (gpures) body
+    NV_STATUS (*__kchannelUnmap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual halified (2 hals) override (res) base (gpures) body
+    NV_STATUS (*__kchannelGetMapAddrSpace__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual halified (2 hals) override (gpures) base (gpures) body
     NV_STATUS (*__kchannelAllocMem__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU32, NvU32);  // halified (2 hals) body
     void (*__kchannelDestroyMem__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kchannelAllocHwID__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvU32, NvU32, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kchannelFreeHwID__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kchannelGetUserdInfo__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU64 *, NvU64 *, NvU64 *);  // halified (2 hals)
-    NV_STATUS (*__kchannelGetUserdBar1MapOffset__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU64 *, NvU32 *);  // halified (2 hals)
+    NV_STATUS (*__kchannelGetUserdInfo__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU64 *, NvU64 *, NvU64 *);  // halified (2 hals) body
+    NV_STATUS (*__kchannelGetUserdBar1MapOffset__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU64 *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__kchannelCreateUserdMemDescBc__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvHandle *, NvU64 *);  // halified (2 hals) body
-    NV_STATUS (*__kchannelCreateUserdMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvHandle, NvU64, NvU64 *, NvU32 *);  // halified (2 hals)
-    void (*__kchannelDestroyUserdMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kchannelCreateUserMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (3 hals)
+    NV_STATUS (*__kchannelCreateUserdMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvHandle, NvU64, NvU64 *, NvU32 *);  // halified (2 hals) body
+    void (*__kchannelDestroyUserdMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kchannelCreateUserMemDesc__)(struct OBJGPU *, struct KernelChannel * /*this*/);  // halified (3 hals) body
     NvBool (*__kchannelIsUserdAddrSizeValid__)(struct KernelChannel * /*this*/, NvU32, NvU32);  // halified (5 hals) body
     NV_STATUS (*__kchannelGetEngine__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kchannelMapUserD__)(struct OBJGPU *, struct KernelChannel * /*this*/, RS_PRIV_LEVEL, NvU64, NvU32, NvP64 *, NvP64 *);  // halified (2 hals) body
+    void (*__kchannelUnmapUserD__)(struct OBJGPU *, struct KernelChannel * /*this*/, RS_PRIV_LEVEL, NvP64 *, NvP64 *);  // halified (2 hals) body
     NV_STATUS (*__kchannelCtrlCmdGetKmb__)(struct KernelChannel * /*this*/, NVC56F_CTRL_CMD_GET_KMB_PARAMS *);  // halified (2 hals) exported (id=0xc56f010b) body
     NV_STATUS (*__kchannelCtrlRotateSecureChannelIv__)(struct KernelChannel * /*this*/, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *);  // halified (2 hals) exported (id=0xc56f010c) body
     NV_STATUS (*__kchannelSetEncryptionStatsBuffer__)(struct OBJGPU *, struct KernelChannel * /*this*/, MEMORY_DESCRIPTOR *, NvBool);  // halified (2 hals) body
-    NV_STATUS (*__kchannelGetClassEngineID__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvU32 *, NvU32 *, RM_ENGINE_TYPE *);  // halified (2 hals) body
-    NV_STATUS (*__kchannelEnableVirtualContext__)(struct KernelChannel * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kchannelDeriveAndRetrieveKmb__)(struct OBJGPU *, struct KernelChannel * /*this*/, CC_KMB *);  // halified (2 hals) body
     NV_STATUS (*__kchannelSetKeyRotationNotifier__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvBool);  // halified (2 hals) body
+    NV_STATUS (*__kchannelGetClassEngineID__)(struct OBJGPU *, struct KernelChannel * /*this*/, NvHandle, NvU32 *, NvU32 *, RM_ENGINE_TYPE *);  // halified (2 hals) body
+    NV_STATUS (*__kchannelEnableVirtualContext__)(struct KernelChannel * /*this*/);  // halified (2 hals) body
 
     // Data members
     NvU16 nextObjectClassID;
@@ -328,11 +323,8 @@ struct KernelChannel {
 };
 
 
-// Vtable with 30 per-class function pointers
+// Vtable with 27 per-class function pointers
 struct NVOC_VTABLE__KernelChannel {
-    NV_STATUS (*__kchannelMap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__kchannelUnmap__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__kchannelGetMapAddrSpace__)(struct KernelChannel * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
     NV_STATUS (*__kchannelGetMemInterMapParams__)(struct KernelChannel * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual override (rmres) base (gpures)
     NV_STATUS (*__kchannelCheckMemInterUnmap__)(struct KernelChannel * /*this*/, NvBool);  // virtual override (rmres) base (gpures)
     NV_STATUS (*__kchannelControl__)(struct KernelChannel * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
@@ -370,13 +362,9 @@ struct NVOC_METADATA__KernelChannel {
     const struct NVOC_VTABLE__KernelChannel vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
-#define __NVOC_CLASS_KernelChannel_TYPEDEF__
-typedef struct KernelChannel KernelChannel;
-#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannel
-#define __nvoc_class_id_KernelChannel 0x5d8d70
+#define __nvoc_class_id_KernelChannel 0x5d8d70u
+typedef struct KernelChannel KernelChannel;
 #endif /* __nvoc_class_id_KernelChannel */
 
 // Casting support
@@ -394,14 +382,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannel;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelChannel(KernelChannel**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelChannel(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelChannel((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelChannel(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelChannel((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kchannelConstruct_IMPL(struct KernelChannel *arg_pKernelChannel, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kchannelConstruct(arg_pKernelChannel, arg_pCallContext, arg_pParams) kchannelConstruct_IMPL(arg_pKernelChannel, arg_pCallContext, arg_pParams)
+NV_STATUS kchannelConstruct_IMPL(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kchannelConstruct(pKernelChannel, pCallContext, pParams) kchannelConstruct_IMPL(pKernelChannel, pCallContext, pParams)
 
 void kchannelDestruct_IMPL(struct KernelChannel *pResource);
 #define __nvoc_kchannelDestruct(pResource) kchannelDestruct_IMPL(pResource)
@@ -487,7 +475,7 @@ static inline NV_STATUS kchannelFwdToInternalCtrl(struct OBJGPU *pGpu, struct Ke
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_channel_h_disabled
-#define kchannelFwdToInternalCtrl(pGpu, pKernelChannel, internalCmd, pRmCtrlParams) kchannelFwdToInternalCtrl_56cd7a(pGpu, pKernelChannel, internalCmd, pRmCtrlParams)
+#define kchannelFwdToInternalCtrl(pGpu, pKernelChannel, internalCmd, pRmCtrlParams) kchannelFwdToInternalCtrl_ac1694(pGpu, pKernelChannel, internalCmd, pRmCtrlParams)
 #endif // __nvoc_kernel_channel_h_disabled
 
 #ifdef __nvoc_kernel_channel_h_disabled
@@ -496,7 +484,7 @@ static inline NV_STATUS kchannelAllocChannel(struct KernelChannel *pKernelChanne
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_channel_h_disabled
-#define kchannelAllocChannel(pKernelChannel, pChannelGpfifoParams) kchannelAllocChannel_56cd7a(pKernelChannel, pChannelGpfifoParams)
+#define kchannelAllocChannel(pKernelChannel, pChannelGpfifoParams) kchannelAllocChannel_ac1694(pKernelChannel, pChannelGpfifoParams)
 #endif // __nvoc_kernel_channel_h_disabled
 
 #ifdef __nvoc_kernel_channel_h_disabled
@@ -505,7 +493,7 @@ static inline NvBool kchannelIsValid(struct KernelChannel *pKernelChannel) {
     return NV_FALSE;
 }
 #else // __nvoc_kernel_channel_h_disabled
-#define kchannelIsValid(pKernelChannel) kchannelIsValid_88bc07(pKernelChannel)
+#define kchannelIsValid(pKernelChannel) kchannelIsValid_e661f0(pKernelChannel)
 #endif // __nvoc_kernel_channel_h_disabled
 
 NvBool kchannelCheckIsUserMode_IMPL(struct KernelChannel *pKernelChannel);
@@ -606,25 +594,6 @@ static inline NV_STATUS kchannelNotifyWorkSubmitToken(struct OBJGPU *pGpu, struc
 }
 #else // __nvoc_kernel_channel_h_disabled
 #define kchannelNotifyWorkSubmitToken(pGpu, arg_this, token) kchannelNotifyWorkSubmitToken_IMPL(pGpu, arg_this, token)
-#endif // __nvoc_kernel_channel_h_disabled
-
-NV_STATUS kchannelMapUserD_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvU64 arg4, NvU32 arg5, NvP64 *arg6, NvP64 *arg7);
-#ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelMapUserD(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvU64 arg4, NvU32 arg5, NvP64 *arg6, NvP64 *arg7) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_kernel_channel_h_disabled
-#define kchannelMapUserD(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7) kchannelMapUserD_IMPL(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7)
-#endif // __nvoc_kernel_channel_h_disabled
-
-void kchannelUnmapUserD_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvP64 *arg4, NvP64 *arg5);
-#ifdef __nvoc_kernel_channel_h_disabled
-static inline void kchannelUnmapUserD(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvP64 *arg4, NvP64 *arg5) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-}
-#else // __nvoc_kernel_channel_h_disabled
-#define kchannelUnmapUserD(pGpu, arg_this, arg3, arg4, arg5) kchannelUnmapUserD_IMPL(pGpu, arg_this, arg3, arg4, arg5)
 #endif // __nvoc_kernel_channel_h_disabled
 
 void kchannelFillMmuExceptionInfo_IMPL(struct KernelChannel *pKernelChannel, FIFO_MMU_EXCEPTION_DATA *arg2);
@@ -921,23 +890,38 @@ static inline NvU32 kchannelGetGoldenCtxUpdateFlags(struct KernelChannel *pKerne
 #define kchannelGetGoldenCtxUpdateFlags(pKernelChannel) kchannelGetGoldenCtxUpdateFlags_IMPL(pKernelChannel)
 #endif // __nvoc_kernel_channel_h_disabled
 
+FIFO_CHANNEL_INFO kchannelGetInfo_IMPL(struct KernelChannel *arg_this);
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline FIFO_CHANNEL_INFO kchannelGetInfo(struct KernelChannel *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    FIFO_CHANNEL_INFO ret;
+    portMemSet(&ret, 0, sizeof(FIFO_CHANNEL_INFO));
+    return ret;
+}
+#else // __nvoc_kernel_channel_h_disabled
+#define kchannelGetInfo(arg_this) kchannelGetInfo_IMPL(arg_this)
+#endif // __nvoc_kernel_channel_h_disabled
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_channel_h_disabled
-#define kchannelRotateSecureChannelIv(pKernelChannel, rotateOperation, encryptIv, decryptIv) kchannelRotateSecureChannelIv_46f6a7(pKernelChannel, rotateOperation, encryptIv, decryptIv)
+#define kchannelRotateSecureChannelIv(pKernelChannel, rotateOperation, encryptIv, decryptIv) kchannelRotateSecureChannelIv_395e98(pKernelChannel, rotateOperation, encryptIv, decryptIv)
 #endif // __nvoc_kernel_channel_h_disabled
 
 
 // Wrapper macros for halified functions
-#define kchannelMap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelMap__
+#define kchannelMap_FNPTR(pKernelChannel) pKernelChannel->__kchannelMap__
 #define kchannelMap(pKernelChannel, pCallContext, pParams, pCpuMapping) kchannelMap_DISPATCH(pKernelChannel, pCallContext, pParams, pCpuMapping)
-#define kchannelUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelUnmap__
+#define kchannelMap_HAL(pKernelChannel, pCallContext, pParams, pCpuMapping) kchannelMap_DISPATCH(pKernelChannel, pCallContext, pParams, pCpuMapping)
+#define kchannelUnmap_FNPTR(pKernelChannel) pKernelChannel->__kchannelUnmap__
 #define kchannelUnmap(pKernelChannel, pCallContext, pCpuMapping) kchannelUnmap_DISPATCH(pKernelChannel, pCallContext, pCpuMapping)
-#define kchannelGetMapAddrSpace_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMapAddrSpace__
+#define kchannelUnmap_HAL(pKernelChannel, pCallContext, pCpuMapping) kchannelUnmap_DISPATCH(pKernelChannel, pCallContext, pCpuMapping)
+#define kchannelGetMapAddrSpace_FNPTR(pKernelChannel) pKernelChannel->__kchannelGetMapAddrSpace__
 #define kchannelGetMapAddrSpace(pKernelChannel, pCallContext, mapFlags, pAddrSpace) kchannelGetMapAddrSpace_DISPATCH(pKernelChannel, pCallContext, mapFlags, pAddrSpace)
+#define kchannelGetMapAddrSpace_HAL(pKernelChannel, pCallContext, mapFlags, pAddrSpace) kchannelGetMapAddrSpace_DISPATCH(pKernelChannel, pCallContext, mapFlags, pAddrSpace)
 #define kchannelGetMemInterMapParams_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMemInterMapParams__
 #define kchannelGetMemInterMapParams(pKernelChannel, pParams) kchannelGetMemInterMapParams_DISPATCH(pKernelChannel, pParams)
 #define kchannelCheckMemInterUnmap_FNPTR(pKernelChannel) pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelCheckMemInterUnmap__
@@ -985,6 +969,12 @@ static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKer
 #define kchannelFwdToInternalCtrl_HAL(pGpu, pKernelChannel, internalCmd, pRmCtrlParams) kchannelFwdToInternalCtrl(pGpu, pKernelChannel, internalCmd, pRmCtrlParams)
 #define kchannelAllocChannel_HAL(pKernelChannel, pChannelGpfifoParams) kchannelAllocChannel(pKernelChannel, pChannelGpfifoParams)
 #define kchannelIsValid_HAL(pKernelChannel) kchannelIsValid(pKernelChannel)
+#define kchannelMapUserD_FNPTR(arg_this) arg_this->__kchannelMapUserD__
+#define kchannelMapUserD(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7) kchannelMapUserD_DISPATCH(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7)
+#define kchannelMapUserD_HAL(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7) kchannelMapUserD_DISPATCH(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7)
+#define kchannelUnmapUserD_FNPTR(arg_this) arg_this->__kchannelUnmapUserD__
+#define kchannelUnmapUserD(pGpu, arg_this, arg3, arg4, arg5) kchannelUnmapUserD_DISPATCH(pGpu, arg_this, arg3, arg4, arg5)
+#define kchannelUnmapUserD_HAL(pGpu, arg_this, arg3, arg4, arg5) kchannelUnmapUserD_DISPATCH(pGpu, arg_this, arg3, arg4, arg5)
 #define kchannelCtrlCmdGetKmb_FNPTR(pKernelChannel) pKernelChannel->__kchannelCtrlCmdGetKmb__
 #define kchannelCtrlCmdGetKmb(pKernelChannel, pGetKmbParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pGetKmbParams)
 #define kchannelCtrlCmdGetKmb_HAL(pKernelChannel, pGetKmbParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pGetKmbParams)
@@ -994,6 +984,12 @@ static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKer
 #define kchannelSetEncryptionStatsBuffer_FNPTR(pKernelChannel) pKernelChannel->__kchannelSetEncryptionStatsBuffer__
 #define kchannelSetEncryptionStatsBuffer(pGpu, pKernelChannel, pMemDesc, bSet) kchannelSetEncryptionStatsBuffer_DISPATCH(pGpu, pKernelChannel, pMemDesc, bSet)
 #define kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, pMemDesc, bSet) kchannelSetEncryptionStatsBuffer_DISPATCH(pGpu, pKernelChannel, pMemDesc, bSet)
+#define kchannelDeriveAndRetrieveKmb_FNPTR(pKernelChannel) pKernelChannel->__kchannelDeriveAndRetrieveKmb__
+#define kchannelDeriveAndRetrieveKmb(pGpu, pKernelChannel, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, keyMaterialBundle)
+#define kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, keyMaterialBundle)
+#define kchannelSetKeyRotationNotifier_FNPTR(pKernelChannel) pKernelChannel->__kchannelSetKeyRotationNotifier__
+#define kchannelSetKeyRotationNotifier(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
+#define kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
 #define kchannelGetClassEngineID_FNPTR(pKernelChannel) pKernelChannel->__kchannelGetClassEngineID__
 #define kchannelGetClassEngineID(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID) kchannelGetClassEngineID_DISPATCH(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID)
 #define kchannelGetClassEngineID_HAL(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID) kchannelGetClassEngineID_DISPATCH(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID)
@@ -1001,12 +997,6 @@ static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKer
 #define kchannelEnableVirtualContext(arg_this) kchannelEnableVirtualContext_DISPATCH(arg_this)
 #define kchannelEnableVirtualContext_HAL(arg_this) kchannelEnableVirtualContext_DISPATCH(arg_this)
 #define kchannelRotateSecureChannelIv_HAL(pKernelChannel, rotateOperation, encryptIv, decryptIv) kchannelRotateSecureChannelIv(pKernelChannel, rotateOperation, encryptIv, decryptIv)
-#define kchannelDeriveAndRetrieveKmb_FNPTR(pKernelChannel) pKernelChannel->__kchannelDeriveAndRetrieveKmb__
-#define kchannelDeriveAndRetrieveKmb(pGpu, pKernelChannel, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, keyMaterialBundle)
-#define kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, keyMaterialBundle) kchannelDeriveAndRetrieveKmb_DISPATCH(pGpu, pKernelChannel, keyMaterialBundle)
-#define kchannelSetKeyRotationNotifier_FNPTR(pKernelChannel) pKernelChannel->__kchannelSetKeyRotationNotifier__
-#define kchannelSetKeyRotationNotifier(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
-#define kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, bSet) kchannelSetKeyRotationNotifier_DISPATCH(pGpu, pKernelChannel, bSet)
 #define kchannelControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
 #define kchannelControl(pGpuResource, pCallContext, pParams) kchannelControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kchannelShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
@@ -1060,15 +1050,15 @@ static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKer
 
 // Dispatch functions
 static inline NV_STATUS kchannelMap_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelMap__(pKernelChannel, pCallContext, pParams, pCpuMapping);
+    return pKernelChannel->__kchannelMap__(pKernelChannel, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kchannelUnmap_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelUnmap__(pKernelChannel, pCallContext, pCpuMapping);
+    return pKernelChannel->__kchannelUnmap__(pKernelChannel, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS kchannelGetMapAddrSpace_DISPATCH(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pKernelChannel->__nvoc_metadata_ptr->vtable.__kchannelGetMapAddrSpace__(pKernelChannel, pCallContext, mapFlags, pAddrSpace);
+    return pKernelChannel->__kchannelGetMapAddrSpace__(pKernelChannel, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kchannelGetMemInterMapParams_DISPATCH(struct KernelChannel *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
@@ -1127,6 +1117,14 @@ static inline NV_STATUS kchannelGetEngine_DISPATCH(struct OBJGPU *pGpu, struct K
     return pKernelChannel->__kchannelGetEngine__(pGpu, pKernelChannel, engDesc);
 }
 
+static inline NV_STATUS kchannelMapUserD_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvU64 arg4, NvU32 arg5, NvP64 *arg6, NvP64 *arg7) {
+    return arg_this->__kchannelMapUserD__(pGpu, arg_this, arg3, arg4, arg5, arg6, arg7);
+}
+
+static inline void kchannelUnmapUserD_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvP64 *arg4, NvP64 *arg5) {
+    arg_this->__kchannelUnmapUserD__(pGpu, arg_this, arg3, arg4, arg5);
+}
+
 static inline NV_STATUS kchannelCtrlCmdGetKmb_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams) {
     return pKernelChannel->__kchannelCtrlCmdGetKmb__(pKernelChannel, pGetKmbParams);
 }
@@ -1139,20 +1137,20 @@ static inline NV_STATUS kchannelSetEncryptionStatsBuffer_DISPATCH(struct OBJGPU 
     return pKernelChannel->__kchannelSetEncryptionStatsBuffer__(pGpu, pKernelChannel, pMemDesc, bSet);
 }
 
-static inline NV_STATUS kchannelGetClassEngineID_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID) {
-    return pKernelChannel->__kchannelGetClassEngineID__(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID);
-}
-
-static inline NV_STATUS kchannelEnableVirtualContext_DISPATCH(struct KernelChannel *arg_this) {
-    return arg_this->__kchannelEnableVirtualContext__(arg_this);
-}
-
 static inline NV_STATUS kchannelDeriveAndRetrieveKmb_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle) {
     return pKernelChannel->__kchannelDeriveAndRetrieveKmb__(pGpu, pKernelChannel, keyMaterialBundle);
 }
 
 static inline NV_STATUS kchannelSetKeyRotationNotifier_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet) {
     return pKernelChannel->__kchannelSetKeyRotationNotifier__(pGpu, pKernelChannel, bSet);
+}
+
+static inline NV_STATUS kchannelGetClassEngineID_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID) {
+    return pKernelChannel->__kchannelGetClassEngineID__(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID);
+}
+
+static inline NV_STATUS kchannelEnableVirtualContext_DISPATCH(struct KernelChannel *arg_this) {
+    return arg_this->__kchannelEnableVirtualContext__(arg_this);
 }
 
 static inline NV_STATUS kchannelControl_DISPATCH(struct KernelChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -1255,132 +1253,12 @@ static inline NV_STATUS kchannelGetOrAllocNotifShare_DISPATCH(struct KernelChann
     return pNotifier->__nvoc_metadata_ptr->vtable.__kchannelGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS kchannelNotifyRc_IMPL(struct KernelChannel *pKernelChannel);
-
-
-NvBool kchannelIsSchedulable_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
-
-
-NV_STATUS kchannelGetChannelPhysicalState_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
-
-
-static inline NvU32 kchannelEmbedRunlistID_13cd8d(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
-    NV_ASSERT_PRECOMP(0);
-    return 0;
-}
-
-
-static inline NV_STATUS kchannelFwdToInternalCtrl_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 internalCmd, RmCtrlParams *pRmCtrlParams) {
-    return NV_OK;
-}
-
-
-static inline NV_STATUS kchannelAllocChannel_56cd7a(struct KernelChannel *pKernelChannel, NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams) {
-    return NV_OK;
-}
-
-
-static inline NvBool kchannelIsValid_88bc07(struct KernelChannel *pKernelChannel) {
-    return NV_TRUE;
-}
-
-
-static inline NV_STATUS kchannelRotateSecureChannelIv_46f6a7(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-NV_STATUS kchannelMap_IMPL(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);
-
-NV_STATUS kchannelUnmap_IMPL(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
-
-NV_STATUS kchannelGetMapAddrSpace_IMPL(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS kchannelGetMemInterMapParams_IMPL(struct KernelChannel *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams);
 
 NV_STATUS kchannelCheckMemInterUnmap_IMPL(struct KernelChannel *pKernelChannel, NvBool bSubdeviceHandleProvided);
 
-NV_STATUS kchannelAllocMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags);
-
-static inline NV_STATUS kchannelAllocMem_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags) {
-    return NV_OK;
-}
-
-void kchannelDestroyMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
-
-static inline void kchannelDestroyMem_b3696a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
-    return;
-}
-
-NV_STATUS kchannelAllocHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID);
-
-static inline NV_STATUS kchannelAllocHwID_46f6a7(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kchannelFreeHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
-
-static inline NV_STATUS kchannelFreeHwID_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
-    return NV_OK;
-}
-
-NV_STATUS kchannelGetUserdInfo_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvU64 *userBase, NvU64 *offset, NvU64 *length);
-
-static inline NV_STATUS kchannelGetUserdInfo_92bfc3(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvU64 *userBase, NvU64 *offset, NvU64 *length) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kchannelGetUserdBar1MapOffset_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvU64 *bar1Offset, NvU32 *bar1MapSize);
-
-static inline NV_STATUS kchannelGetUserdBar1MapOffset_5baef9(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvU64 *bar1Offset, NvU32 *bar1MapSize) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-NV_STATUS kchannelCreateUserdMemDescBc_GV100(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg3, NvHandle *arg4, NvU64 *arg5);
-
-static inline NV_STATUS kchannelCreateUserdMemDescBc_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg3, NvHandle *arg4, NvU64 *arg5) {
-    return NV_OK;
-}
-
-NV_STATUS kchannelCreateUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvHandle arg3, NvHandle arg4, NvU64 arg5, NvU64 *arg6, NvU32 *arg7);
-
-static inline NV_STATUS kchannelCreateUserdMemDesc_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *arg2, NvHandle arg3, NvHandle arg4, NvU64 arg5, NvU64 *arg6, NvU32 *arg7) {
-    return NV_OK;
-}
-
-void kchannelDestroyUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg2);
-
-static inline void kchannelDestroyUserdMemDesc_b3696a(struct OBJGPU *pGpu, struct KernelChannel *arg2) {
-    return;
-}
-
-NV_STATUS kchannelCreateUserMemDesc_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg2);
-
-NV_STATUS kchannelCreateUserMemDesc_GA10B(struct OBJGPU *pGpu, struct KernelChannel *arg2);
-
-static inline NV_STATUS kchannelCreateUserMemDesc_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *arg2) {
-    return NV_OK;
-}
-
-NvBool kchannelIsUserdAddrSizeValid_GV100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
-
-NvBool kchannelIsUserdAddrSizeValid_GA100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
-
-NvBool kchannelIsUserdAddrSizeValid_GH100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
-
-NvBool kchannelIsUserdAddrSizeValid_GB10B(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
-
-static inline NvBool kchannelIsUserdAddrSizeValid_88bc07(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi) {
-    return NV_TRUE;
-}
-
-NV_STATUS kchannelGetEngine_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc);
-
-static inline NV_STATUS kchannelGetEngine_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc) {
-    return NV_OK;
-}
-
+// Exported method declarations and/or inline definitions
 NV_STATUS kchannelCtrlCmdResetIsolatedChannel_IMPL(struct KernelChannel *pKernelChannel, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *pResetParams);
 
 NV_STATUS kchannelCtrlCmdInternalResetIsolatedChannel_IMPL(struct KernelChannel *pKernelChannel, NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS *pResetParams);
@@ -1431,125 +1309,255 @@ NV_STATUS kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex_IMPL(struct KernelCh
 
 NV_STATUS kchannelCtrlCmdStopChannel_IMPL(struct KernelChannel *pKernelChannel, NVA06F_CTRL_STOP_CHANNEL_PARAMS *pStopChannelParams);
 
-static inline NV_STATUS kchannelCtrlCmdGetKmb_46f6a7(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams) {
-    return NV_ERR_NOT_SUPPORTED;
+static inline NV_STATUS kchannelCtrlGetTpcPartitionMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
 }
+
+static inline NV_STATUS kchannelCtrlSetTpcPartitionMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchannelCtrlGetMMUDebugMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchannelCtrlProgramVidmemPromote_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchannelCtrlSetLgSectorPromotion_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+// HAL method declarations without bodies
+NV_STATUS kchannelMap_TU102(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);
+
+NV_STATUS kchannelUnmap_TU102(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
+
+NV_STATUS kchannelGetMapAddrSpace_TU102(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
+
+NV_STATUS kchannelNotifyRc_IMPL(struct KernelChannel *pKernelChannel);
+
+NvBool kchannelIsSchedulable_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
+
+NV_STATUS kchannelAllocMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags);
+
+void kchannelDestroyMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
+
+NV_STATUS kchannelGetChannelPhysicalState_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
+
+NV_STATUS kchannelAllocHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID);
+
+NV_STATUS kchannelFreeHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
+
+NV_STATUS kchannelGetUserdInfo_TU102(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvU64 *userBase, NvU64 *offset, NvU64 *length);
+
+NV_STATUS kchannelGetUserdBar1MapOffset_TU102(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvU64 *bar1Offset, NvU32 *bar1MapSize);
+
+NV_STATUS kchannelCreateUserdMemDescBc_GV100(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg3, NvHandle *arg4, NvU64 *arg5);
+
+NV_STATUS kchannelCreateUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvHandle arg3, NvHandle arg4, NvU64 arg5, NvU64 *arg6, NvU32 *arg7);
+
+void kchannelDestroyUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg_this);
+
+NV_STATUS kchannelCreateUserMemDesc_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg_this);
+
+NV_STATUS kchannelCreateUserMemDesc_GA10B(struct OBJGPU *pGpu, struct KernelChannel *arg_this);
+
+NvBool kchannelIsUserdAddrSizeValid_GV100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
+NvBool kchannelIsUserdAddrSizeValid_GA100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
+NvBool kchannelIsUserdAddrSizeValid_GB10B(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
+NvBool kchannelIsUserdAddrSizeValid_GH100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
+NV_STATUS kchannelGetEngine_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc);
+
+NV_STATUS kchannelMapUserD_TU102(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvU64 arg4, NvU32 arg5, NvP64 *arg6, NvP64 *arg7);
+
+void kchannelUnmapUserD_TU102(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvP64 *arg4, NvP64 *arg5);
 
 NV_STATUS kchannelCtrlCmdGetKmb_KERNEL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams);
-
-static inline NV_STATUS kchannelCtrlRotateSecureChannelIv_46f6a7(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS kchannelCtrlRotateSecureChannelIv_KERNEL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams);
 
 NV_STATUS kchannelSetEncryptionStatsBuffer_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, MEMORY_DESCRIPTOR *pMemDesc, NvBool bSet);
 
-static inline NV_STATUS kchannelSetEncryptionStatsBuffer_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, MEMORY_DESCRIPTOR *pMemDesc, NvBool bSet) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kchannelCtrlGetTpcPartitionMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
-    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
-}
-
-static inline NV_STATUS kchannelCtrlSetTpcPartitionMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
-    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
-}
-
-static inline NV_STATUS kchannelCtrlGetMMUDebugMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams) {
-    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
-}
-
-static inline NV_STATUS kchannelCtrlProgramVidmemPromote_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
-    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
-}
-
-static inline NV_STATUS kchannelCtrlSetLgSectorPromotion_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
-    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
-}
-
-NV_STATUS kchannelGetClassEngineID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID);
-
-static inline NV_STATUS kchannelGetClassEngineID_46f6a7(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kchannelEnableVirtualContext_GM107(struct KernelChannel *arg1);
-
-static inline NV_STATUS kchannelEnableVirtualContext_46f6a7(struct KernelChannel *arg1) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS kchannelDeriveAndRetrieveKmb_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle) {
-    return NV_OK;
-}
-
 NV_STATUS kchannelDeriveAndRetrieveKmb_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle);
 
 NV_STATUS kchannelSetKeyRotationNotifier_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet);
 
-static inline NV_STATUS kchannelSetKeyRotationNotifier_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet) {
+NV_STATUS kchannelGetClassEngineID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID);
+
+NV_STATUS kchannelEnableVirtualContext_GM107(struct KernelChannel *arg_this);
+
+// Inline HAL method definitions
+static inline NV_STATUS kchannelMap_395e98(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelUnmap_395e98(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelGetMapAddrSpace_395e98(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelAllocMem_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags){
     return NV_OK;
 }
 
-static inline NvU32 kchannelGetDebugTag(const struct KernelChannel *pKernelChannel) {
+static inline void kchannelDestroyMem_d44104(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel){
+    return;
+}
+
+static inline NvU32 kchannelEmbedRunlistID_13cd8d(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel){
+    NV_ASSERT_PRECOMP(0);
+    return 0;
+}
+
+static inline NV_STATUS kchannelAllocHwID_395e98(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelFreeHwID_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelGetUserdInfo_92bfc3(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvU64 *userBase, NvU64 *offset, NvU64 *length){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelGetUserdBar1MapOffset_5baef9(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvU64 *bar1Offset, NvU32 *bar1MapSize){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS kchannelCreateUserdMemDescBc_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg3, NvHandle *arg4, NvU64 *arg5){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelCreateUserdMemDesc_ac1694(struct OBJGPU *pGpu, struct KernelChannel *arg_this, NvHandle arg3, NvHandle arg4, NvU64 arg5, NvU64 *arg6, NvU32 *arg7){
+    return NV_OK;
+}
+
+static inline void kchannelDestroyUserdMemDesc_d44104(struct OBJGPU *pGpu, struct KernelChannel *arg_this){
+    return;
+}
+
+static inline NV_STATUS kchannelCreateUserMemDesc_ac1694(struct OBJGPU *pGpu, struct KernelChannel *arg_this){
+    return NV_OK;
+}
+
+static inline NvBool kchannelIsUserdAddrSizeValid_e661f0(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS kchannelGetEngine_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelFwdToInternalCtrl_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 internalCmd, RmCtrlParams *pRmCtrlParams){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelAllocChannel_ac1694(struct KernelChannel *pKernelChannel, NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams){
+    return NV_OK;
+}
+
+static inline NvBool kchannelIsValid_e661f0(struct KernelChannel *pKernelChannel){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS kchannelMapUserD_5baef9(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvU64 arg4, NvU32 arg5, NvP64 *arg6, NvP64 *arg7){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline void kchannelUnmapUserD_ca557d(struct OBJGPU *pGpu, struct KernelChannel *arg_this, RS_PRIV_LEVEL arg3, NvP64 *arg4, NvP64 *arg5){
+    NV_ASSERT_OR_RETURN_VOID_PRECOMP(0);
+}
+
+static inline NV_STATUS kchannelCtrlCmdGetKmb_395e98(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelCtrlRotateSecureChannelIv_395e98(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelSetEncryptionStatsBuffer_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, MEMORY_DESCRIPTOR *pMemDesc, NvBool bSet){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelDeriveAndRetrieveKmb_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelSetKeyRotationNotifier_ac1694(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet){
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelGetClassEngineID_395e98(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelEnableVirtualContext_395e98(struct KernelChannel *arg_this){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kchannelRotateSecureChannelIv_395e98(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvU32 kchannelGetDebugTag(const struct KernelChannel *pKernelChannel){
     if (pKernelChannel == ((void *)0))
         return 4294967295U;
     return (pKernelChannel->runlistId << 24) | pKernelChannel->ChID;
 }
 
-static inline NvBool kchannelIsCtxBufferAllocSkipped(struct KernelChannel *pKernelChannel) {
+static inline NvBool kchannelIsCtxBufferAllocSkipped(struct KernelChannel *pKernelChannel){
     return pKernelChannel->bSkipCtxBufferAlloc;
 }
 
-static inline NvU32 kchannelGetSubctxId(struct KernelChannel *pKernelChannel) {
+static inline NvU32 kchannelGetSubctxId(struct KernelChannel *pKernelChannel){
     return pKernelChannel->subctxId;
 }
 
-static inline NvU32 kchannelGetVaSpaceId(struct KernelChannel *pKernelChannel) {
+static inline NvU32 kchannelGetVaSpaceId(struct KernelChannel *pKernelChannel){
     return pKernelChannel->vaSpaceId;
 }
 
-static inline NvU32 kchannelGetCid(struct KernelChannel *pKernelChannel) {
+static inline NvU32 kchannelGetCid(struct KernelChannel *pKernelChannel){
     return pKernelChannel->cid;
 }
 
-static inline struct MIG_INSTANCE_REF *kchannelGetMIGReference(struct KernelChannel *pKernelChannel) {
+static inline struct MIG_INSTANCE_REF * kchannelGetMIGReference(struct KernelChannel *pKernelChannel){
     return &pKernelChannel->partitionRef;
 }
 
-static inline NvU32 kchannelGetRunqueue(struct KernelChannel *pKernelChannel) {
+static inline NvU32 kchannelGetRunqueue(struct KernelChannel *pKernelChannel){
     return pKernelChannel->runqueue;
 }
 
-static inline NvU32 kchannelGetRunlistId(struct KernelChannel *pKernelChannel) {
+static inline NvU32 kchannelGetRunlistId(struct KernelChannel *pKernelChannel){
     return pKernelChannel->runlistId;
 }
 
-static inline void kchannelSetRunlistId(struct KernelChannel *pKernelChannel, NvU32 runlistId) {
+static inline void kchannelSetRunlistId(struct KernelChannel *pKernelChannel, NvU32 runlistId){
     pKernelChannel->runlistId = runlistId;
 }
 
-static inline RM_ENGINE_TYPE kchannelGetEngineType(struct KernelChannel *pKernelChannel) {
+static inline RM_ENGINE_TYPE kchannelGetEngineType(struct KernelChannel *pKernelChannel){
     return pKernelChannel->engineType;
 }
 
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
-#undef kchannelDeriveAndRetrieveKmb
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelDeriveAndRetrieveKmb)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle);
-
-#undef kchannelDeriveAndRetrieveKmb_HAL
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelDeriveAndRetrieveKmb_HAL)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, CC_KMB *keyMaterialBundle);
-
-#undef kchannelSetKeyRotationNotifier
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelSetKeyRotationNotifier)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet);
-
-#undef kchannelSetKeyRotationNotifier_HAL
-NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelSetKeyRotationNotifier_HAL)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvBool bSet);
-
 #ifndef __nvoc_kernel_channel_h_disabled
 #undef kchannelRotateSecureChannelIv
 NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelRotateSecureChannelIv)(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv);

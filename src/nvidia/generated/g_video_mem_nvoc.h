@@ -48,16 +48,11 @@ extern "C" {
 #include "gpu/mem_mgr/heap_base.h"
 
 typedef struct PMA_ALLOC_INFO PMA_ALLOC_INFO;
-
 struct Device;
 
-#ifndef __NVOC_CLASS_Device_TYPEDEF__
-#define __NVOC_CLASS_Device_TYPEDEF__
-typedef struct Device Device;
-#endif /* __NVOC_CLASS_Device_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Device
-#define __nvoc_class_id_Device 0xe0ac20
+#define __nvoc_class_id_Device 0xe0ac20u
+typedef struct Device Device;
 #endif /* __nvoc_class_id_Device */
 
 
@@ -138,13 +133,9 @@ struct NVOC_METADATA__VideoMemory {
     const struct NVOC_VTABLE__VideoMemory vtable;
 };
 
-#ifndef __NVOC_CLASS_VideoMemory_TYPEDEF__
-#define __NVOC_CLASS_VideoMemory_TYPEDEF__
-typedef struct VideoMemory VideoMemory;
-#endif /* __NVOC_CLASS_VideoMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VideoMemory
-#define __nvoc_class_id_VideoMemory 0xed948f
+#define __nvoc_class_id_VideoMemory 0xed948fu
+typedef struct VideoMemory VideoMemory;
 #endif /* __nvoc_class_id_VideoMemory */
 
 // Casting support
@@ -162,14 +153,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VideoMemory;
 
 NV_STATUS __nvoc_objCreateDynamic_VideoMemory(VideoMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VideoMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VideoMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VideoMemory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VideoMemory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *arg_pVideoMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_vidmemConstruct(arg_pVideoMemory, arg_pCallContext, arg_pParams) vidmemConstruct_IMPL(arg_pVideoMemory, arg_pCallContext, arg_pParams)
+NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *pVideoMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_vidmemConstruct(pVideoMemory, pCallContext, pParams) vidmemConstruct_IMPL(pVideoMemory, pCallContext, pParams)
 
 void vidmemDestruct_IMPL(struct VideoMemory *pVideoMemory);
 #define __nvoc_vidmemDestruct(pVideoMemory) vidmemDestruct_IMPL(pVideoMemory)
@@ -337,8 +328,14 @@ static inline void vidmemAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__vidmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS vidmemCheckCopyPermissions_IMPL(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

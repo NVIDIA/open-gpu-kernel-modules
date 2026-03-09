@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -155,8 +155,51 @@ void GroupImpl::insert(Device * dev)
 
     members.insertFront(di);
 
-    update(dev, true);
+    NvBool bIs128b132bChannelCoding = false;
 
+    LinkConfiguration linkConfig = parent->getActiveLinkConfig();
+    bIs128b132bChannelCoding = linkConfig.bIs128b132bChannelCoding;
+
+    // Is HDCP on for this group?
+    //  YES? Disable HDCP (ECF)
+    if (this->hdcpEnabled)
+    {
+        NvU64 ecf = 0x0;
+        NvU64 countOnes = 0x0;
+        NvU64 mask = 0x0;
+        // Get the MASK for the all active groups which is ECF enabled.
+        for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+        {
+            GroupImpl * group = (GroupImpl *)i;
+            if (group->hdcpEnabled)
+            {
+                countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+
+                if (bIs128b132bChannelCoding && (group->timeslot.count == 64))
+                {
+                    countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+                }
+
+                mask = countOnes << group->timeslot.begin;
+                ecf |= mask;
+            }
+        }
+
+        countOnes = (((NvU64)1) << this->timeslot.count) - 1;
+
+        if (bIs128b132bChannelCoding && (this->timeslot.count == 64))
+        {
+            countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+        }
+
+        mask = countOnes << this->timeslot.begin;
+        ecf &= ~mask;
+
+        parent->main->configureAndTriggerECF(ecf);
+        this->hdcpEnabled = false;
+    }
+
+    update(dev, true);
 }
 
 void GroupImpl::remove(Device * dev)
@@ -195,6 +238,11 @@ void GroupImpl::destroy()
     // Cancel any queue the auth callback.
     cancelHdcpCallbacks();
 
+    if (streamEncryptionStatusDetection)
+    {
+        delete streamEncryptionStatusDetection;
+        streamEncryptionStatusDetection = 0;
+    }
     parent = this->parent;
 
     if (parent)
@@ -247,6 +295,8 @@ void GroupImpl::cancelHdcpCallbacks()
     parent->timer->cancelCallback(this, &tagHDCPReauthentication);
     parent->timer->cancelCallback(this, &tagStreamValidation);
 
+    QSESetECFRetries = 0;
+    parent->timer->cancelCallback(this, &tagMSTQSEandSetECF);
 }
 
 Device * GroupImpl::enumDevices(Device * previousDevice)
@@ -294,12 +344,215 @@ void GroupImpl::expired(const void * tag)
           DP_ASSERT(0 && "DP> Didn't get final notification." );
        }
     }
+    else if (tag == &tagMSTQSEandSetECF)
+    {
+        if (QSESetECFRetries < HDCP_QSEANDSETECF_RETRIES)
+        {
+            HDCPState hdcpState = {0};
+            parent->main->configureHDCPGetHDCPState(hdcpState);
+            this->hdcpEnabled = parent->isHDCPAuthOn = hdcpState.HDCP_State_Authenticated;
+
+            // Wait till authenticated then enable QSE and set ECF.
+            if (parent->isHDCPAuthOn)
+            {
+                QSESetECFRetries = 0;
+                parent->timer->cancelCallback(this, &tagMSTQSEandSetECF);
+                hdcpMSTQSEandSetECF();
+            }
+            else
+            {
+                QSESetECFRetries++;
+                parent->timer->queueCallback(this, &tagMSTQSEandSetECF,
+                                             HDCP_QSEANDSETECF_COOLDOWN);
+            }
+        }
+        else
+        {
+            DP_ASSERT(0 && "MST HDCP not authenticated within timeout and fail to set ECF." );
+        }
+    }
 }
+
+// bForceClear stands for bForceClearECF.
+bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForceClear, NvBool bAddStreamBack)
+{
+    LinkConfiguration linkConfig = parent->getActiveLinkConfig();
+
+    if (encrypted == true)
+    {
+        bool bNeedReNegotiate = false;
+        HDCPState hdcpState = {0};
+
+        DP_PRINTF(DP_NOTICE, "DP-GRP: enable encryption with type=%d.", streamType);
+
+        // enumerate the displays in the group and see if they are hdcp capable.
+        Device * d = 0;
+        bool isHdcpCapable = false;
+        for (d = ((Group*)this)->enumDevices(0); d != 0; d = ((Group*)this)->enumDevices(d))
+        {
+            NvU8 Bcaps = (NvU8)(((DeviceImpl*)d)->nvBCaps[0]);
+
+            if ((FLD_TEST_DRF(_DPCD, _HDCP_BCAPS_OFFSET, _HDCP_CAPABLE, _YES, Bcaps)) &&
+                (((DeviceImpl*)d)->isHDCPCap == True))
+            {
+                isHdcpCapable = true;
+                break;
+            }
+        }
+
+        if (isHdcpCapable == false)
+        {
+            DP_PRINTF(DP_ERROR, "DP-GRP: group does not contain a hdcp capable device.");
+            return false;
+        }
+
+        parent->main->configureHDCPGetHDCPState(hdcpState);
+
+        // Clear dplib authentication state if RM reports not authenticated.
+        if (!hdcpState.HDCP_State_Authenticated)
+        {
+            parent->isHDCPAuthOn = this->hdcpEnabled = false;
+        }
+
+        // Update stream content type and trigger negotiation if need.
+        if ((hdcpState.HDCP_State_22_Capable) &&
+            (false == parent->main->setStreamType(streamIndex, streamType, &bNeedReNegotiate)))
+        {
+            DP_PRINTF(DP_ERROR, "DP-GRP: group set stream type failed.");
+            return false;
+        }
+
+        if(!parent->isHDCPAuthOn || bNeedReNegotiate)
+        {
+            cancelHdcpCallbacks();
+
+            parent->main->configureHDCPRenegotiate();
+            parent->main->configureHDCPGetHDCPState(hdcpState);
+            if (hdcpState.HDCP_State_Encryption)
+            {
+                parent->isHDCPAuthOn = this->hdcpEnabled = true;
+            }
+            else
+            {
+                parent->isHDCPAuthOn = this->hdcpEnabled = false;
+                parent->timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN);
+            }
+        }
+        else
+        {
+            // SST and non128b/132b is done when it's authenticated.
+            if (!(parent->linkUseMultistream())
+                && !linkConfig.bIs128b132bChannelCoding
+                )
+                return true;
+        }
+
+        if (parent->linkUseMultistream()
+           || linkConfig.bIs128b132bChannelCoding
+            )
+        {
+            // Check if authenticated else wait it's authenticated then assigning ECF.
+            if(!parent->isHDCPAuthOn || bNeedReNegotiate)
+            {
+                parent->timer->queueCallback(this, &tagMSTQSEandSetECF, HDCP_QSEANDSETECF_COOLDOWN);
+                return true;
+            }
+            else
+            {
+                parent->timer->cancelCallback(this, &tagMSTQSEandSetECF);
+                hdcpMSTQSEandSetECF();
+            }
+        }
+    }
+    else
+    {
+        if (parent->isHDCPAuthOn)
+        {
+            if (!(parent->linkUseMultistream())
+                && !linkConfig.bIs128b132bChannelCoding
+                )
+            {
+                parent->main->configureHDCPDisableAuthentication();
+                parent->isHDCPAuthOn = this->hdcpEnabled = false;
+            }
+            else
+            {
+                NvU64 ecf = 0x0;
+                NvU64 countOnes = 0x0;
+                NvU64 mask = 0x0;
+
+                // Get the MASK for the all active groups which is ECF enabled.
+                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+                    if (group->hdcpEnabled)
+                    {
+                        countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+
+                        if (linkConfig.bIs128b132bChannelCoding && (group->timeslot.count == 64))
+                        {
+                            countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+                        }
+
+                        mask = countOnes << group->timeslot.begin;
+                        ecf |= mask;
+                    }
+                }
+
+                //Just clear the ECF not turn off the auth.
+                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+
+                    if (this->headIndex == group->headIndex)
+                    {
+                        countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+
+                        if (linkConfig.bIs128b132bChannelCoding && (group->timeslot.count == 64))
+                        {
+                            countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+                        }
+
+                        mask = countOnes << group->timeslot.begin;
+                        ecf &= ~mask;
+                    }
+                }
+
+                parent->main->configureAndTriggerECF(ecf, bForceClear, bAddStreamBack);
+
+                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+                    if (this->headIndex == group->headIndex)
+                    {
+                        group->hdcpEnabled = false;
+                        { // Inform ConnectorEventSink that we have disabled HDCP on this Device
+                            Device * d = 0;
+                            for (d = ((Group*)this)->enumDevices(0); d != 0; d = ((Group*)this)->enumDevices(d))
+                            {
+                                if (((DeviceImpl*)d)->isHDCPCap == True)
+                                {
+                                    parent->sink->notifyHDCPCapDone(d, False);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+            return true;
+    }
+
+    return true;
+}
+//DP_OPTION_HDCP_SUPPORT_ENABLE
 
 bool GroupImpl::hdcpGetEncrypted()
 {
     //
     // Returns whether encryption is currently enabled
+    // After the setECFencyption we just set the flag for this group and make the default as false.
     //
     if (parent->isHDCPAuthOn)
     {
@@ -308,6 +561,150 @@ bool GroupImpl::hdcpGetEncrypted()
     else
     {
         return false;
+    }
+}
+
+void GroupImpl::hdcpMSTQSEandSetECF()
+{
+    NvBool bIs128b132bChannelCoding = false;
+
+    LinkConfiguration linkConfig = parent->getActiveLinkConfig();
+    bIs128b132bChannelCoding = linkConfig.bIs128b132bChannelCoding;
+
+    //
+    //  We become passive and wait for the Stream_Status_Change coming.
+    //  Otherwise, we might not have the change to get the update KSVlist to
+    //  validate it. Before, Naresh's Stream_Status_Change p4r in.
+    //  We just simple turn it on. (which can be the option for non-QSE
+    //  (AKA intel/AMD plan) branch.)
+    //
+
+    //
+    // Enable sending QSES message only when regkey 'DISABLE_QSES' set to 0
+    // in DD's path.
+    // This is added to provide driver for ST and not to be productized.
+    //
+    if ((parent->bIsEncryptionQseValid) &&
+        (!parent->main->getRegkeyValue(NV_DP_REGKEY_DISABLE_QSES)) 
+        && (!bIs128b132bChannelCoding)
+        )
+    {
+        for (ListElement * i = parent->activeGroups.begin();
+             i != parent->activeGroups.end(); i = i->next)
+        {
+            GroupImpl * group = (GroupImpl *)i;
+
+            if (this->headIndex == group->headIndex)
+            {
+                HDCPValidateData hdcpValidateData = {0};
+                parent->main->configureHDCPValidateLink(hdcpValidateData);
+                parent->qseNonceGenerator->clientIdBuilder(hdcpValidateData.aN);
+            }
+        }
+    }
+
+    //
+    // Turn on the ECF set ECF on according to the group's active stream.
+    // Set flag for the goup for later getting status using.
+    //
+    NvU64 ecf = 0x0;
+    NvU64 countOnes = 0x0;
+    NvU64 mask = 0x0;
+
+    // Get the MASK for the all active groups which is ECF enabled.
+    for (ListElement * i = parent->activeGroups.begin();
+         i != parent->activeGroups.end(); i = i->next)
+    {
+        GroupImpl * group = (GroupImpl *)i;
+        if (group->hdcpEnabled)
+        {
+            countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+
+            if (bIs128b132bChannelCoding && (group->timeslot.count == 64))
+            {
+                countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+            }
+
+            mask = countOnes << group->timeslot.begin;
+            ecf |= mask;
+        }
+    }
+
+    for (ListElement * i = parent->activeGroups.begin();
+         i != parent->activeGroups.end(); i = i->next)
+    {
+        GroupImpl * group = (GroupImpl *)i;
+
+        if (this->headIndex == group->headIndex)
+        {
+            countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+
+            if (bIs128b132bChannelCoding && (group->timeslot.count == 64))
+            {
+                countOnes = (NvU64)0xFFFFFFFFFFFFFFFF;
+            }
+
+            mask = countOnes << group->timeslot.begin;
+            ecf |= mask;
+        }
+    }
+
+    // Set the ECF with new added group.
+    parent->main->configureAndTriggerECF(ecf);
+
+    //
+    // Enable sending QSES message only when regkey 'DISABLE_QSES' set to 0 in
+    // DD's path.
+    // This is added to provide driver for ST and not to be productized.
+    //
+    if ((parent->bIsEncryptionQseValid) &&
+        (!parent->main->getRegkeyValue(NV_DP_REGKEY_DISABLE_QSES))
+        && (!bIs128b132bChannelCoding)
+        )
+    {
+        for (ListElement * i = parent->activeGroups.begin();
+             i != parent->activeGroups.end(); i = i->next)
+        {
+            GroupImpl * group = (GroupImpl *)i;
+
+            if (this->headIndex == group->headIndex)
+            {
+                if (NULL == group->streamEncryptionStatusDetection)
+                {
+                    group->streamEncryptionStatusDetection =
+                        new StreamEncryptionStatusDetection(group, parent);
+                }
+                if (group->streamEncryptionStatusDetection)
+                {
+                   parent->bValidQSERequest = true;
+                   group->streamEncryptionStatusDetection->sendQSEMessage(group);
+                   parent->timer->queueCallback(group,
+                                                &(group->tagStreamValidation),
+                                                HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
+                }
+            }
+        }
+    }
+
+    for (ListElement * i = parent->activeGroups.begin();
+         i != parent->activeGroups.end(); i = i->next)
+    {
+        GroupImpl * group = (GroupImpl *)i;
+
+        if (this->headIndex == group->headIndex)
+        {
+            group->hdcpEnabled = true;
+            { // Inform ConnectorEventSink that we have enabled HDCP on this Device
+                Device * d = 0;
+                for (d = ((Group*)this)->enumDevices(0); d != 0; d = ((Group*)this)->enumDevices(d))
+                {
+                    if (((DeviceImpl*)d)->isHDCPCap == True)
+                    {
+                        parent->sink->notifyHDCPCapDone(d, True);
+                    }
+                }
+	    }
+        }
     }
 }
 

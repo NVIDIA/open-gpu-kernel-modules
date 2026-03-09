@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x2271cc = 1;
+char __nvoc_class_id_uniqueness_check__2271cc = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
@@ -36,20 +36,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__IntrService;
 
 // Up-thunk(s) to bridge IntrService methods to ancestors (if any)
 
+// Class-specific details for IntrService
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(IntrService),
-        /*classId=*/            classId(IntrService),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(IntrService),
+    .classInfo.classId =            classId(IntrService),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "IntrService",
+    .classInfo.name =               "IntrService",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__IntrService,
-    /*pExportInfo=*/        &__nvoc_export_info__IntrService
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__IntrService,
+    .pExportInfo =        &__nvoc_export_info__IntrService
 };
 
 
@@ -76,25 +75,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__IntrService = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__IntrService = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_IntrService(IntrService *pThis) {
+
+// Destruct IntrService object.
+void __nvoc_dtor_IntrService(IntrService* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_IntrService(IntrService *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct IntrService object.
 NV_STATUS __nvoc_ctor_IntrService(IntrService *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_IntrService(pThis);
     goto __nvoc_ctor_IntrService_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_IntrService_exit:
-
     return status;
 }
 

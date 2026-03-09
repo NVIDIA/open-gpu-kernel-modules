@@ -136,9 +136,9 @@ struct KernelSec2 {
     NvU32 (*__ksec2RegRead__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual halified (3 hals) inherited (kflcn) base (kflcn) body
     void (*__ksec2RegWrite__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32, NvU32);  // virtual halified (3 hals) inherited (kflcn) base (kflcn) body
     NvU32 (*__ksec2MaskDmemAddr__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual halified (4 hals) inherited (kflcn) base (kflcn) body
-    void (*__ksec2ReadDmem__)(struct KernelSec2 * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
-    const NvU32 * (*__ksec2GetScratchOffsets__)(struct KernelSec2 * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
-    NvU32 (*__ksec2GetWFL0Offset__)(struct KernelSec2 * /*this*/);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    void (*__ksec2ReadDmem__)(struct KernelSec2 * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
+    const NvU32 * (*__ksec2GetScratchOffsets__)(struct KernelSec2 * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
+    NvU32 (*__ksec2GetWFL0Offset__)(struct KernelSec2 * /*this*/);  // virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
 
     // 6 PDB properties
     NvBool PDB_PROP_KSEC2_GSP_MODE_GSPRM;
@@ -162,11 +162,11 @@ struct KernelSec2 {
 };
 
 
-// Vtable with 25 per-class function pointers
+// Vtable with 26 per-class function pointers
 struct NVOC_VTABLE__KernelSec2 {
     NV_STATUS (*__ksec2ConstructEngine__)(struct OBJGPU *, struct KernelSec2 * /*this*/, ENGDESCRIPTOR);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
     void (*__ksec2RegisterIntrService__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceRecord *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
-    NV_STATUS (*__ksec2ServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
+    NV_STATUS (*__ksec2ServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
     NV_STATUS (*__ksec2StateUnload__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     void (*__ksec2InitMissing__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__ksec2StatePreInitLocked__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
@@ -182,13 +182,14 @@ struct NVOC_VTABLE__KernelSec2 {
     NvU32 (*__ksec2ServiceInterrupt__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
     NvBool (*__ksec2Configured__)(struct KernelSec2 * /*this*/);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__ksec2Unload__)(struct KernelSec2 * /*this*/);  // virtual inherited (kcrashcatEngine) base (kflcn)
-    void (*__ksec2Vprintf__)(struct KernelSec2 * /*this*/, NvBool, const char *, va_list);  // virtual inherited (kcrashcatEngine) base (kflcn)
+    void (*__ksec2ResetLog__)(struct KernelSec2 * /*this*/);  // virtual inherited (kcrashcatEngine) base (kflcn)
+    void (*__ksec2Vprintf__)(struct KernelSec2 * /*this*/, NvU64, const char *, va_list);  // virtual inherited (kcrashcatEngine) base (kflcn)
     NvU32 (*__ksec2PriRead__)(struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__ksec2PriWrite__)(struct KernelSec2 * /*this*/, NvU32, NvU32);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void * (*__ksec2MapBufferDescriptor__)(struct KernelSec2 * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__ksec2UnmapBufferDescriptor__)(struct KernelSec2 * /*this*/, CrashCatBufferDescriptor *);  // virtual inherited (kcrashcatEngine) base (kflcn)
     void (*__ksec2SyncBufferDescriptor__)(struct KernelSec2 * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual inherited (kcrashcatEngine) base (kflcn)
-    void (*__ksec2ReadEmem__)(struct KernelSec2 * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn)
+    void (*__ksec2ReadEmem__)(struct KernelSec2 * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn) body
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -200,13 +201,9 @@ struct NVOC_METADATA__KernelSec2 {
     const struct NVOC_VTABLE__KernelSec2 vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelSec2_TYPEDEF__
-#define __NVOC_CLASS_KernelSec2_TYPEDEF__
-typedef struct KernelSec2 KernelSec2;
-#endif /* __NVOC_CLASS_KernelSec2_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelSec2
-#define __nvoc_class_id_KernelSec2 0x2f36c9
+#define __nvoc_class_id_KernelSec2 0x2f36c9u
+typedef struct KernelSec2 KernelSec2;
 #endif /* __nvoc_class_id_KernelSec2 */
 
 // Casting support
@@ -240,8 +237,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSec2;
 NV_STATUS __nvoc_objCreateDynamic_KernelSec2(KernelSec2**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
-#define __objCreate_KernelSec2(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelSec2((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelSec2(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelSec2((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -449,8 +446,10 @@ static inline NV_STATUS ksec2SendMessage(struct OBJGPU *pGpu, struct KernelSec2 
 #define ksec2Configured(arg_this) ksec2Configured_DISPATCH(arg_this)
 #define ksec2Unload_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__
 #define ksec2Unload(arg_this) ksec2Unload_DISPATCH(arg_this)
+#define ksec2ResetLog_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineResetLog__
+#define ksec2ResetLog(arg_this) ksec2ResetLog_DISPATCH(arg_this)
 #define ksec2Vprintf_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__
-#define ksec2Vprintf(arg_this, bReportStart, fmt, args) ksec2Vprintf_DISPATCH(arg_this, bReportStart, fmt, args)
+#define ksec2Vprintf(arg_this, errorId, fmt, args) ksec2Vprintf_DISPATCH(arg_this, errorId, fmt, args)
 #define ksec2PriRead_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriRead__
 #define ksec2PriRead(arg_this, offset) ksec2PriRead_DISPATCH(arg_this, offset)
 #define ksec2PriWrite_FNPTR(arg_this) arg_this->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriWrite__
@@ -683,8 +682,12 @@ static inline void ksec2Unload_DISPATCH(struct KernelSec2 *arg_this) {
     arg_this->__nvoc_metadata_ptr->vtable.__ksec2Unload__(arg_this);
 }
 
-static inline void ksec2Vprintf_DISPATCH(struct KernelSec2 *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    arg_this->__nvoc_metadata_ptr->vtable.__ksec2Vprintf__(arg_this, bReportStart, fmt, args);
+static inline void ksec2ResetLog_DISPATCH(struct KernelSec2 *arg_this) {
+    arg_this->__nvoc_metadata_ptr->vtable.__ksec2ResetLog__(arg_this);
+}
+
+static inline void ksec2Vprintf_DISPATCH(struct KernelSec2 *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    arg_this->__nvoc_metadata_ptr->vtable.__ksec2Vprintf__(arg_this, errorId, fmt, args);
 }
 
 static inline NvU32 ksec2PriRead_DISPATCH(struct KernelSec2 *arg_this, NvU32 offset) {
@@ -723,229 +726,235 @@ static inline NvU32 ksec2GetWFL0Offset_DISPATCH(struct KernelSec2 *arg_this) {
     return arg_this->__ksec2GetWFL0Offset__(arg_this);
 }
 
-NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg3);
+// Virtual method declarations and/or inline definitions
+NV_STATUS ksec2StateUnload_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 flags);
 
-static inline NV_STATUS ksec2ConstructEngine_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg3);
 
 void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[180]);
 
-NV_STATUS ksec2ServiceNotificationInterrupt_IMPL(struct OBJGPU *arg1, struct KernelSec2 *arg2, IntrServiceServiceNotificationInterruptArguments *arg3);
-
-NV_STATUS ksec2StateUnload_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 flags);
-
-NV_STATUS ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-NV_STATUS ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+NV_STATUS ksec2ServiceNotificationInterrupt_IMPL(struct OBJGPU *arg1, struct KernelSec2 *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3);
 
 NV_STATUS ksec2ConfigureFalcon_GA102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2ConfigureFalcon_92bfc3(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+
+NV_STATUS ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2ResetHw_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 NV_STATUS ksec2StateLoad_GH100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg3);
 
-static inline NV_STATUS ksec2StateLoad_56cd7a(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg3) {
-    return NV_OK;
-}
-
 void ksec2StateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline void ksec2StateDestroy_b3696a(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return;
-}
-
-static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
-    return 0;
-}
 
 NvU32 ksec2ReadUcodeFuseVersion_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
 
 NvU32 ksec2ReadUcodeFuseVersion_GB100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
 
-static inline NvU32 ksec2ReadUcodeFuseVersion_474d46(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_80f438(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
-}
+const BINDATA_ARCHIVE * ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2GetGenericBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg);
 
-static inline NV_STATUS ksec2GetGenericBlUcode_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_80f438(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
-}
+const BINDATA_ARCHIVE * ksec2GetBinArchiveSecurescrubUcode_AD10X(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2SetupGspImages_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NVDM_PAYLOAD_COT *pCotPayload);
 
 NV_STATUS ksec2SetupGspImages_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NVDM_PAYLOAD_COT *pCotPayload);
 
-static inline NV_STATUS ksec2SetupGspImages_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NVDM_PAYLOAD_COT *pCotPayload) {
-    return NV_OK;
-}
-
 NV_STATUS ksec2PrepareBootCommands_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2PrepareBootCommands_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NV_STATUS ksec2PrepareBootCommands_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS ksec2SafeToSendBootCommands_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2SafeToSendBootCommands_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2SafeToSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_OK;
-}
-
 NV_STATUS ksec2SendBootCommands_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2SendBootCommands_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NV_STATUS ksec2SendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_OK;
-}
 
 NV_STATUS ksec2PrepareAndSendBootCommands_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
 NV_STATUS ksec2PrepareAndSendBootCommands_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2PrepareAndSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_OK;
-}
-
 NvBool ksec2CanSendPacket_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NvBool ksec2CanSendPacket_d69453(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_FALSE;
-}
 
 NvU32 ksec2GetMaxSendPacketSize_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NvU32 ksec2GetMaxSendPacketSize_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return 0;
-}
-
 NvU32 ksec2CreateNvdmHeader_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 nvdmType);
-
-static inline NvU32 ksec2CreateNvdmHeader_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 nvdmType) {
-    return 0;
-}
-
-static inline NvU32 ksec2CreateMctpHeader_539ab4(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq) {
-    return 1;
-}
 
 NvU32 ksec2CreateMctpHeader_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq);
 
-static inline NvU32 ksec2CreateMctpHeader_4a4dee(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq) {
-    return 0;
-}
-
 NV_STATUS ksec2SendPacket_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 packetSize);
-
-static inline NV_STATUS ksec2SendPacket_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 packetSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS ksec2WaitForGspTargetMaskReleased_GB10B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2WaitForGspTargetMaskReleased_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS ksec2ReadPacket_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
-
-static inline NV_STATUS ksec2ReadPacket_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NvBool ksec2IsResponseAvailable_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NvBool ksec2IsResponseAvailable_d69453(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_FALSE;
-}
-
 NvBool ksec2GspFmcIsEnforced_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NvBool ksec2GspFmcIsEnforced_e661f0(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_TRUE;
-}
 
 NV_STATUS ksec2WaitForSecureBoot_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2WaitForSecureBoot_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NvU32 ksec2GetMaxRecvPacketSize_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NvU32 ksec2GetMaxRecvPacketSize_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return NV_OK;
-}
 
 NvU8 ksec2NvdmToSeid_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 nvdmType);
 
-static inline NvU8 ksec2NvdmToSeid_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 nvdmType) {
-    return 0;
-}
-
 NV_STATUS ksec2GetPacketInfo_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag);
-
-static inline NV_STATUS ksec2GetPacketInfo_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS ksec2ValidateMctpPayloadHeader_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size);
 
-static inline NV_STATUS ksec2ValidateMctpPayloadHeader_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS ksec2ProcessNvdmMessage_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size);
-
-static inline NV_STATUS ksec2ProcessNvdmMessage_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS ksec2ProcessCommandResponse_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size);
 
-static inline NV_STATUS ksec2ProcessCommandResponse_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size) {
-    return NV_OK;
-}
-
 void ksec2DumpDebugState_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline void ksec2DumpDebugState_d44104(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return;
-}
 
 NV_STATUS ksec2ErrorCode2NvStatusMap_GB20B(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 errorCode);
 
-static inline NV_STATUS ksec2ErrorCode2NvStatusMap_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 errorCode) {
+// Inline HAL method definitions
+static inline NV_STATUS ksec2ConstructEngine_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg3){
     return NV_ERR_NOT_SUPPORTED;
 }
 
+static inline NV_STATUS ksec2ConfigureFalcon_92bfc3(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2ResetHw_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS ksec2StateLoad_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg3){
+    return NV_OK;
+}
+
+static inline void ksec2StateDestroy_d44104(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return;
+}
+
+static inline NvU32 ksec2ReadUcodeFuseVersion_474d46(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId){
+    return 0;
+}
+
+static inline const BINDATA_ARCHIVE * ksec2GetBinArchiveBlUcode_80f438(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
+}
+
+static inline NV_STATUS ksec2GetGenericBlUcode_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline const BINDATA_ARCHIVE * ksec2GetBinArchiveSecurescrubUcode_80f438(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
+}
+
+static inline NV_STATUS ksec2SetupGspImages_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NVDM_PAYLOAD_COT *pCotPayload){
+    return NV_OK;
+}
+
+static inline NV_STATUS ksec2PrepareBootCommands_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2SafeToSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_OK;
+}
+
+static inline NV_STATUS ksec2SendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_OK;
+}
+
+static inline NV_STATUS ksec2PrepareAndSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_OK;
+}
+
+static inline NvBool ksec2CanSendPacket_d69453(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_FALSE;
+}
+
+static inline NvU32 ksec2GetMaxSendPacketSize_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return 0;
+}
+
+static inline NvU32 ksec2CreateNvdmHeader_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 nvdmType){
+    return 0;
+}
+
+static inline NvU32 ksec2CreateMctpHeader_245b9d(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq){
+    return 1;
+}
+
+static inline NvU32 ksec2CreateMctpHeader_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq){
+    return 0;
+}
+
+static inline NV_STATUS ksec2SendPacket_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 packetSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2WaitForGspTargetMaskReleased_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2ReadPacket_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool ksec2IsResponseAvailable_d69453(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_FALSE;
+}
+
+static inline NvBool ksec2GspFmcIsEnforced_e661f0(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS ksec2WaitForSecureBoot_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU32 ksec2GetMaxRecvPacketSize_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return NV_OK;
+}
+
+static inline NvU8 ksec2NvdmToSeid_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 nvdmType){
+    return 0;
+}
+
+static inline NV_STATUS ksec2GetPacketInfo_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2ValidateMctpPayloadHeader_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2ProcessNvdmMessage_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS ksec2ProcessCommandResponse_ac1694(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU8 *pBuffer, NvU32 size){
+    return NV_OK;
+}
+
+static inline void ksec2DumpDebugState_d44104(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2){
+    return;
+}
+
+static inline NV_STATUS ksec2ErrorCode2NvStatusMap_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 errorCode){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

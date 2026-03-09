@@ -38,7 +38,8 @@ nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
                    NVHwModeTimingsEvo *pTimings,
                    NVDpyAttributeColor *pDpyColor,
                    NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-                   NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl);
+                   NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+                   NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl);
 
 NvBool nvGetAllowHeadSurfaceInNvKms(const NVDevEvoRec *pDevEvo,
                                     const struct NvKmsPerOpenDev *pOpenDev,

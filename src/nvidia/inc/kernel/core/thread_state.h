@@ -132,7 +132,7 @@ typedef struct THREAD_STATE_DB
      * Thread state sequencer id counter.  The last allocated thread state
      * sequencer id via @ref threadStateInitXYZ().
      */
-    NvU32   threadSeqCntr;
+    PORT_ATOMIC NvU32   threadSeqCntr;
     /*!
      * Thread state sequencer id counter for only GSP task_interrupt.
      */

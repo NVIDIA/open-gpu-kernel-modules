@@ -1691,7 +1691,7 @@ typedef struct NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS {
  *   edpPllFreq    (out)  enum NV0073_CTRL_DFP_DISP_PHY_EDP_PLL_FREQ_SEL
  *
  *   padLink[4]    (out)  One entry per DP Pad-Link (DP0...DP3):
- *         sorSel           enum NV0073_CTRL_DFP_DISP_PHY_DP_SOR_SEL 
+ *         sorSel           enum NV0073_CTRL_DFP_DISP_PHY_DP_SOR_SEL
  *         mode             enum NV0073_CTRL_DFP_DISP_PHY_TYPEC_MODE
  *         cableOrient      enum NV0073_CTRL_DFP_DISP_PHY_CABLE_ORIENT
  *         modeStatusDone   NvBool   (Alt-mode exit / entry finished)

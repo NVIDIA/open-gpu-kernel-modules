@@ -28,9 +28,6 @@
 
 #include "gpu/subdevice/subdevice_diag.h"
 
-#include "class/cl208f.h" // NV208F_NOTIFIERS_MAXCOUNT
-#include "ctrl/ctrl208f/ctrl208fevent.h" // NV208F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE
-
 #include "resserv/rs_client.h"
 
 
@@ -46,14 +43,6 @@ NV_STATUS diagapiConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NvU32 i;
-
-    for (i = 0; i < NV208F_NOTIFIERS_MAXCOUNT; i++)
-    {
-        pDiagApi->notifyActions[i] =
-            NV208F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
-    }
-
     return NV_OK;
 }
 

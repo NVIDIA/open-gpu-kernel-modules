@@ -109,8 +109,7 @@ void EvoMainLink2x::applyDP2xRegkeyOverrides()
     this->bSupportUHBR2_50   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_5G;
     this->bSupportUHBR2_70   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_2_7G;
     this->bSupportUHBR5_00   = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G;
-    this->bEnable5147205Fix  = dpRegkeyDatabase.bEnable5147205Fix;
-	this->bCableVconnSourceUnknown = dpRegkeyDatabase.bCableVconnSourceUnknownWar;
+    this->bCableVconnSourceUnknown = dpRegkeyDatabase.bCableVconnSourceUnknownWar;
 }
 
 NvU32 EvoMainLink2x::headToStream(NvU32 head, bool bSidebandMessageSupported,
@@ -484,10 +483,23 @@ bool EvoMainLink2x::train(const LinkConfiguration & link, bool force,
         // Check if the link is capable to train with 128b/132b
         if (requestRmLC.bIs128b132bChannelCoding)
         {
+            NV0073_CTRL_DP_NOTIFY_LT_PARAMS     notifyParams;
+            dpMemZero(&notifyParams, sizeof(notifyParams));
+            notifyParams.subDeviceInstance       = subdeviceIndex;
+            notifyParams.displayId               = displayId;
+            notifyParams.bLTInProgress           = NV_TRUE;
+
+            NvU32 bNotifyLT = provider->rmControl0073(NV0073_CTRL_CMD_DP_NOTIFY_LT, &notifyParams, sizeof(notifyParams));
             ltStatus = trainDP2xChannelCoding(requestRmLC, force, linkTrainingType,
                                               retLink, bSkipLt,
                                               isPostLtAdjRequestGranted,
                                               phyRepeaterCount);
+
+            if (bNotifyLT == NVOS_STATUS_SUCCESS)
+            {
+                notifyParams.bLTInProgress = NV_FALSE;
+                provider->rmControl0073(NV0073_CTRL_CMD_DP_NOTIFY_LT, &notifyParams, sizeof(notifyParams));
+            }
         }
         else
         {
@@ -1115,7 +1127,7 @@ bool EvoMainLink2x::resetDPRXLink(DP2XResetParam resetParam)
         ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
     }
 
-    if (resetParam.bSkipLt && bEnable5147205Fix)
+    if (resetParam.bSkipLt)
     {
         ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _SKIP_HW_PROGRAMMING, _YES);
     }

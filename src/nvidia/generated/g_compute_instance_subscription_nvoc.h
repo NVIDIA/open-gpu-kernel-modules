@@ -163,13 +163,9 @@ struct NVOC_METADATA__ComputeInstanceSubscription {
     const struct NVOC_VTABLE__ComputeInstanceSubscription vtable;
 };
 
-#ifndef __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__
-#define __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__
-typedef struct ComputeInstanceSubscription ComputeInstanceSubscription;
-#endif /* __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ComputeInstanceSubscription
-#define __nvoc_class_id_ComputeInstanceSubscription 0xd1f238
+#define __nvoc_class_id_ComputeInstanceSubscription 0xd1f238u
+typedef struct ComputeInstanceSubscription ComputeInstanceSubscription;
 #endif /* __nvoc_class_id_ComputeInstanceSubscription */
 
 // Casting support
@@ -187,17 +183,17 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ComputeInstanceSubscription;
 
 NV_STATUS __nvoc_objCreateDynamic_ComputeInstanceSubscription(ComputeInstanceSubscription**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ComputeInstanceSubscription(ComputeInstanceSubscription**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ComputeInstanceSubscription(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ComputeInstanceSubscription((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ComputeInstanceSubscription(ComputeInstanceSubscription**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ComputeInstanceSubscription(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ComputeInstanceSubscription((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
 NV_STATUS cisubscriptionGetComputeInstanceSubscription_IMPL(struct RsClient *arg1, NvHandle arg2, struct ComputeInstanceSubscription **arg3);
 #define cisubscriptionGetComputeInstanceSubscription(arg1, arg2, arg3) cisubscriptionGetComputeInstanceSubscription_IMPL(arg1, arg2, arg3)
 
-NV_STATUS cisubscriptionConstruct_IMPL(struct ComputeInstanceSubscription *arg_pComputeInstanceSubscription, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_cisubscriptionConstruct(arg_pComputeInstanceSubscription, arg_pCallContext, arg_pParams) cisubscriptionConstruct_IMPL(arg_pComputeInstanceSubscription, arg_pCallContext, arg_pParams)
+NV_STATUS cisubscriptionConstruct_IMPL(struct ComputeInstanceSubscription *pComputeInstanceSubscription, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_cisubscriptionConstruct(pComputeInstanceSubscription, pCallContext, pParams) cisubscriptionConstruct_IMPL(pComputeInstanceSubscription, pCallContext, pParams)
 
 NV_STATUS cisubscriptionCopyConstruct_IMPL(struct ComputeInstanceSubscription *arg_this, CALL_CONTEXT *arg2, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg3);
 #ifdef __nvoc_compute_instance_subscription_h_disabled
@@ -376,11 +372,17 @@ static inline void cisubscriptionAddAdditionalDependants_DISPATCH(struct RsClien
     pResource->__nvoc_metadata_ptr->vtable.__cisubscriptionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NvBool cisubscriptionCanCopy_IMPL(struct ComputeInstanceSubscription *arg1);
+// Virtual method declarations and/or inline definitions
+NvBool cisubscriptionCanCopy_IMPL(struct ComputeInstanceSubscription *arg_this);
 
-NV_STATUS cisubscriptionCtrlCmdGetUuid_IMPL(struct ComputeInstanceSubscription *arg1, NVC638_CTRL_GET_UUID_PARAMS *arg2);
+// Exported method declarations and/or inline definitions
+NV_STATUS cisubscriptionCtrlCmdGetUuid_IMPL(struct ComputeInstanceSubscription *arg_this, NVC638_CTRL_GET_UUID_PARAMS *arg2);
 
-static inline MIG_COMPUTE_INSTANCE *cisubscriptionGetMIGComputeInstance(struct ComputeInstanceSubscription *pComputeInstanceSubscription) {
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline MIG_COMPUTE_INSTANCE * cisubscriptionGetMIGComputeInstance(struct ComputeInstanceSubscription *pComputeInstanceSubscription){
     struct ComputeInstanceSubscription_PRIVATE *pComputeInstanceSubscription_PRIVATE = (struct ComputeInstanceSubscription_PRIVATE *)pComputeInstanceSubscription;
     return pComputeInstanceSubscription_PRIVATE->pMIGComputeInstance;
 }

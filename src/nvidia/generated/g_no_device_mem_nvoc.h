@@ -126,13 +126,9 @@ struct NVOC_METADATA__NoDeviceMemory {
     const struct NVOC_VTABLE__NoDeviceMemory vtable;
 };
 
-#ifndef __NVOC_CLASS_NoDeviceMemory_TYPEDEF__
-#define __NVOC_CLASS_NoDeviceMemory_TYPEDEF__
-typedef struct NoDeviceMemory NoDeviceMemory;
-#endif /* __NVOC_CLASS_NoDeviceMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_NoDeviceMemory
-#define __nvoc_class_id_NoDeviceMemory 0x6c0832
+#define __nvoc_class_id_NoDeviceMemory 0x6c0832u
+typedef struct NoDeviceMemory NoDeviceMemory;
 #endif /* __nvoc_class_id_NoDeviceMemory */
 
 // Casting support
@@ -150,14 +146,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NoDeviceMemory;
 
 NV_STATUS __nvoc_objCreateDynamic_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_NoDeviceMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_NoDeviceMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_NoDeviceMemory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_NoDeviceMemory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS nodevicememConstruct_IMPL(struct NoDeviceMemory *arg_pNoDeviceMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_nodevicememConstruct(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams) nodevicememConstruct_IMPL(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams)
+NV_STATUS nodevicememConstruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_nodevicememConstruct(pNoDeviceMemory, pCallContext, pParams) nodevicememConstruct_IMPL(pNoDeviceMemory, pCallContext, pParams)
 
 void nodevicememDestruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory);
 #define __nvoc_nodevicememDestruct(pNoDeviceMemory) nodevicememDestruct_IMPL(pNoDeviceMemory)
@@ -322,8 +318,14 @@ static inline void nodevicememAddAdditionalDependants_DISPATCH(struct RsClient *
     pResource->__nvoc_metadata_ptr->vtable.__nodevicememAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS nodevicememGetMapAddrSpace_IMPL(struct NoDeviceMemory *pNoDeviceMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

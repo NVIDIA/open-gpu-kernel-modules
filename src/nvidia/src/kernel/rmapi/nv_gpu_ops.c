@@ -228,7 +228,7 @@ typedef struct
     volatile void      *clientRegionMapping;
 
     NvHandle       hP2pObject;
-    volatile NvU64 p2pObjectRef;
+    PORT_ATOMIC NvU64 p2pObjectRef;
 } subDeviceDesc;
 
 struct gpuSession
@@ -3122,15 +3122,13 @@ static NV_STATUS getNvlinkP2PCaps(struct gpuDevice *device1,
         return NV_OK;
     }
 
-    // NVLink1 devices cannot be mixed with other versions. NVLink3 supports
-    // mixing NVLink2 and NVLink3 devices. NVLink4 and NVLink5 devices cannot
-    // be mixed with prior NVLink versions or with each other.
     if (nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0 ||
         nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0 ||
         nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0 ||
-        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0)
+        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0
+       )
     {
         NV_ASSERT(nvlinkVersion1 == nvlinkVersion2);
         NV_ASSERT(linkBandwidthMBps1 == linkBandwidthMBps2);
@@ -3884,6 +3882,7 @@ nvGpuOpsBuildExternalAllocPtes
     GMMU_APERTURE           aperture;
     COMPR_INFO              comprInfo;
     GMMU_ENTRY_VALUE        pte                 = {{0}};
+    GMMU_PEER_TYPE          peerType = GMMU_PEER_TYPE_LEGACY;
 
     NvU64         fabricBaseAddress   = NVLINK_INVALID_FABRIC_ADDR;
     NvU32         kind;
@@ -4123,7 +4122,7 @@ nvGpuOpsBuildExternalAllocPtes
                     else
                     {
                         fabricBaseAddress =
-                                knvlinkGetDirectConnectBaseAddress_HAL(pMemDesc->pGpu,
+                                knvlinkGetDirectConnectBaseAddress(pMemDesc->pGpu,
                                                                        pKernelNvlink);
                     }
                 }
@@ -4145,6 +4144,7 @@ nvGpuOpsBuildExternalAllocPtes
                 }
             }
         }
+
     }
 
     //
@@ -4244,7 +4244,7 @@ nvGpuOpsBuildExternalAllocPtes
     {
         physAddr = physicalAddresses[iter];
 
-        gmmuFieldSetAddress(gmmuFmtPtePhysAddrFld(pPteFmt, aperture),
+        gmmuFieldSetAddress(gmmuFmtPtePhysAddrFld(pPteFmt, aperture, peerType),
                             physAddr,
                             pte.v8);
 
@@ -4457,7 +4457,7 @@ nvGpuOpsBuildExternalAllocPhysAddrs
                     else
                     {
                         fabricBaseAddress =
-                                knvlinkGetDirectConnectBaseAddress_HAL(pMemDesc->pGpu,
+                                knvlinkGetDirectConnectBaseAddress(pMemDesc->pGpu,
                                                                        pKernelNvlink);
                     }
                 }
@@ -7525,7 +7525,7 @@ static NV_STATUS getNvlinkDirectConnectInfo(OBJGPU *pGpu,
         else
         {
             pGpuInfo->nvlDirectConnectMemoryWindowStart =
-                    knvlinkGetDirectConnectBaseAddress_HAL(pGpu, pKernelNvlink);
+                    knvlinkGetDirectConnectBaseAddress(pGpu, pKernelNvlink);
             if (pGpuInfo->nvlDirectConnectMemoryWindowStart != NVLINK_INVALID_FABRIC_ADDR)
             {
                 pGpuInfo->nvlDirectConnect = NV_TRUE;
@@ -8229,6 +8229,7 @@ static NV_STATUS dupMemory(struct gpuDevice *device,
     pThreadState = threadStateAlloc(THREAD_STATE_FLAGS_NONE);
     if (!pThreadState)
         return NV_ERR_NO_MEMORY;
+
     // RS-TODO use dual client locking
     status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_NONE, device->session->handle,
         &pSessionClient, &acquiredLocks);
@@ -8987,7 +8988,7 @@ NV_STATUS nvGpuOpsSetPageDirectory(struct gpuAddressSpace *vaSpace,
     // RM clients must not unmap this address, and instead rely on RM to unmap
     // it when nvGpuOpsUnsetPageDirectory() is called.
     //
-    *dmaAddress = memdescGetPtePhysAddr(vaspaceGetPageDirBase(pVAS, pGpu), AT_GPU, 0);
+    *dmaAddress = memdescGetPhysAddr(vaspaceGetPageDirBase(pVAS, pGpu), AT_GPU, 0);
 
     if (vaspaceIsExternallyOwned(pVAS))
     {

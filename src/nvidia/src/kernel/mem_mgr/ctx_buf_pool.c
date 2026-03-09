@@ -122,7 +122,7 @@ ctxBufPoolInit
 {
     NV_STATUS status = NV_OK;
     CTX_BUF_POOL_INFO *pCtxBufPool = NULL;
-    NvU32 i;
+    NvU32 i, poolConfig;
 
     NV_ASSERT_OR_RETURN(ppCtxBufPool != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -137,13 +137,35 @@ ctxBufPoolInit
 
     //
     // create a mem pool for each page size supported by RM
+    // pool corresponding to RM_ATTR_PAGE_SIZE_DEFAULT remains unused
     //
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
-        // Pool Config starts from POOL_CONFIG_CTXBUF_256G
+        switch (i)
+        {
+            case RM_ATTR_PAGE_SIZE_DEFAULT:
+            case RM_ATTR_PAGE_SIZE_4KB:
+                poolConfig = POOL_CONFIG_CTXBUF_4K;
+                break;
+            case RM_ATTR_PAGE_SIZE_BIG:
+                poolConfig = POOL_CONFIG_CTXBUF_64K;
+                break;
+            case RM_ATTR_PAGE_SIZE_HUGE:
+                poolConfig = POOL_CONFIG_CTXBUF_2M;
+                break;
+            case RM_ATTR_PAGE_SIZE_512MB:
+                poolConfig = POOL_CONFIG_CTXBUF_512M;
+                break;
+            case RM_ATTR_PAGE_SIZE_256GB:
+                poolConfig = POOL_CONFIG_CTXBUF_256G;
+                break;
+            default:
+                NV_PRINTF(LEVEL_ERROR, "Unsupported page size attr %d\n", i);
+                return NV_ERR_INVALID_STATE;
+        }
         NV_ASSERT_OK_OR_GOTO(status,
             rmMemPoolSetup((void*)pHeap->pPmaObject, &pCtxBufPool->pMemPool[i],
-                           (POOL_CONFIG_MODE) i),
+                           poolConfig),
             cleanup);
 
         // Allocate the pool in CPR in case of Confidential Compute
@@ -190,7 +212,7 @@ ctxBufPoolDestroy
 
     pCtxBufPool = *ppCtxBufPool;
 
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         if (pCtxBufPool->pMemPool[i] != NULL)
         {
@@ -201,29 +223,6 @@ ctxBufPoolDestroy
     portMemFree(pCtxBufPool);
     *ppCtxBufPool = NULL;
     NV_PRINTF(LEVEL_INFO, "Ctx buf pool destroyed\n");
-}
-
-static NvU32 NV_FORCEINLINE
-ctxBufPoolPageSizeToPoolIndex(NvU64 pageSize)
-{
-    switch (pageSize)
-    {
-        case RM_PAGE_SIZE:
-            return POOL_CONFIG_CTXBUF_4K;
-        case RM_PAGE_SIZE_64K:
-            return POOL_CONFIG_CTXBUF_64K;
-        case RM_PAGE_SIZE_128K:
-            return POOL_CONFIG_CTXBUF_128K;
-        case RM_PAGE_SIZE_HUGE:
-            return POOL_CONFIG_CTXBUF_2M;
-        case RM_PAGE_SIZE_512M:
-            return POOL_CONFIG_CTXBUF_512M;
-        case RM_PAGE_SIZE_256G:
-            return POOL_CONFIG_CTXBUF_256G;
-        default:
-            NV_PRINTF(LEVEL_ERROR, "Unrecognized/unsupported page size = 0x%llx\n", pageSize);
-            NV_ASSERT_OR_RETURN(0, POOL_CONFIG_MAX_SUPPORTED);
-    }
 }
 
 /*
@@ -265,7 +264,7 @@ ctxBufPoolReserve
     NV_STATUS status = NV_OK;
     NvU64 pageSize;
     NvU32 i;
-    NvU64 totalSize[POOL_CONFIG_MAX_SUPPORTED] = {0};
+    NvU64 totalSize[RM_ATTR_PAGE_SIZE_INVALID] = {0};
     NvU64 size;
 
     NV_ASSERT_OR_RETURN(pCtxBufPool != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -284,13 +283,32 @@ ctxBufPoolReserve
         // Determine the pool(4K/64K/2M) from where this buffer will eventually
         // get allocated and mark that pool to reserve this memory.
         //
-        NvU32 poolIndex = ctxBufPoolPageSizeToPoolIndex(pageSize);
-        NV_ASSERT_OR_RETURN(poolIndex < POOL_CONFIG_MAX_SUPPORTED, NV_ERR_INVALID_ARGUMENT);
-        totalSize[poolIndex] += size;
+        switch(pageSize)
+        {
+            case RM_PAGE_SIZE:
+                totalSize[RM_ATTR_PAGE_SIZE_4KB] += size;
+                break;
+            case RM_PAGE_SIZE_64K:
+            case RM_PAGE_SIZE_128K:
+                totalSize[RM_ATTR_PAGE_SIZE_BIG] += size;
+                break;
+            case RM_PAGE_SIZE_HUGE:
+                totalSize[RM_ATTR_PAGE_SIZE_HUGE] += size;
+                break;
+            case RM_PAGE_SIZE_512M:
+                totalSize[RM_ATTR_PAGE_SIZE_512MB] += size;
+                break;
+            case RM_PAGE_SIZE_256G:
+                totalSize[RM_ATTR_PAGE_SIZE_256GB] += size;
+                break;
+            default:
+                NV_PRINTF(LEVEL_ERROR, "Unrecognized/unsupported page size = 0x%llx\n", pageSize);
+                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+        }
         NV_PRINTF(LEVEL_INFO, "Reserving 0x%llx bytes for buf Id = 0x%x in pool with page size = 0x%llx\n", size, i, pageSize);
     }
 
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         if (totalSize[i] > 0)
         {
@@ -325,7 +343,7 @@ ctxBufPoolTrim
     NvU32 i;
     NV_ASSERT_OR_RETURN(pCtxBufPool != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         rmMemPoolTrim(pCtxBufPool->pMemPool[i], 0, 0);
         NV_PRINTF(LEVEL_INFO, "Trimmed pool with RM_ATTR_PAGE_SIZE_* = 0x%x\n", i);
@@ -352,7 +370,7 @@ ctxBufPoolRelease
     NvU32 i;
     NV_ASSERT(pCtxBufPool != NULL);
 
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         rmMemPoolRelease(pCtxBufPool->pMemPool[i], 0);
     }
@@ -409,10 +427,29 @@ ctxBufPoolAllocate
         pageSize = newPageSize;
     }
 
-    NvU32 poolIndex = ctxBufPoolPageSizeToPoolIndex(pageSize);
-    NV_ASSERT_OR_RETURN(poolIndex < POOL_CONFIG_MAX_SUPPORTED, NV_ERR_INVALID_ARGUMENT);
-    pPool = pCtxBufPool->pMemPool[poolIndex];
-
+    // Determine the pool(4K/64K/2M) from where this buffer is to be allocated
+    switch(pageSize)
+    {
+        case RM_PAGE_SIZE:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_4KB];
+            break;
+        case RM_PAGE_SIZE_64K:
+        case RM_PAGE_SIZE_128K:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_BIG];
+            break;
+        case RM_PAGE_SIZE_HUGE:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_HUGE];
+            break;
+        case RM_PAGE_SIZE_512M:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_512MB];
+            break;
+        case RM_PAGE_SIZE_256G:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_256GB];
+            break;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unsupported page size = 0x%llx set for context buffer\n", pageSize);
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+    }
     NV_ASSERT_OK_OR_RETURN(rmMemPoolAllocate(pPool, (RM_POOL_ALLOC_MEMDESC*)pMemDesc));
     NV_PRINTF(LEVEL_INFO, "Buffer allocated from ctx buf pool with page size = 0x%llx\n", pageSize);
     return NV_OK;
@@ -452,9 +489,28 @@ ctxBufPoolFree
             pMemDesc->Alignment, RM_ATTR_PAGE_SIZE_DEFAULT, NV_TRUE, &size, &pageSize));
     }
 
-    NvU32 poolIndex = ctxBufPoolPageSizeToPoolIndex(pageSize);
-    NV_ASSERT_OR_RETURN(poolIndex < POOL_CONFIG_MAX_SUPPORTED, NV_ERR_INVALID_ARGUMENT);
-    pPool = pCtxBufPool->pMemPool[poolIndex];
+    switch(pageSize)
+    {
+        case RM_PAGE_SIZE:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_4KB];
+            break;
+        case RM_PAGE_SIZE_64K:
+        case RM_PAGE_SIZE_128K:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_BIG];
+            break;
+        case RM_PAGE_SIZE_HUGE:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_HUGE];
+            break;
+        case RM_PAGE_SIZE_512M:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_512MB];
+            break;
+        case RM_PAGE_SIZE_256G:
+            pPool = pCtxBufPool->pMemPool[RM_ATTR_PAGE_SIZE_256GB];
+            break;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unsupported page size detected for context buffer\n");
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
+    }
 
     // If scrubber is being skipped by PMA we need to manually scrub this memory
     if (rmMemPoolIsScrubSkipped(pPool))
@@ -610,19 +666,16 @@ ctxBufPoolGetSizeAndPageSize
     {
         NvU64 chunkSize = 0;
         NvU32 i;
-        //
-        // pools are sorted in descending order of chunk size. So, start from the pool with the smallest chunk size.
-        //
-        for (i = POOL_CONFIG_MAX_SUPPORTED; i; i--)
+        for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
         {
-            NV_ASSERT_OK_OR_RETURN(rmMemPoolGetChunkAndPageSize(pCtxBufPool->pMemPool[i - 1], &chunkSize, &pageSize));
+            NV_ASSERT_OK_OR_RETURN(rmMemPoolGetChunkAndPageSize(pCtxBufPool->pMemPool[i], &chunkSize, &pageSize));
             if (chunkSize >= size)
             {
                 size = chunkSize;
                 break;
             }
         }
-        if (i == 0)
+        if (i == RM_ATTR_PAGE_SIZE_INVALID)
         {
             NV_PRINTF(LEVEL_ERROR, "couldn't find pool with chunksize >= 0x%llx\n", size);
             DBG_BREAKPOINT();
@@ -670,7 +723,7 @@ ctxBufPoolIsScrubSkipped
 {
     NvU32 i;
     NV_ASSERT_OR_RETURN(pCtxBufPool != NULL, NV_ERR_INVALID_ARGUMENT);
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         if (!rmMemPoolIsScrubSkipped(pCtxBufPool->pMemPool[i]))
             return NV_FALSE;
@@ -695,7 +748,7 @@ ctxBufPoolSetScrubSkip
 {
     NvU32 i;
     NV_ASSERT_OR_RETURN_VOID(pCtxBufPool != NULL);
-    for (i = 0; i < POOL_CONFIG_MAX_SUPPORTED; i++)
+    for (i = 0; i < RM_ATTR_PAGE_SIZE_INVALID; i++)
     {
         rmMemPoolSkipScrub(pCtxBufPool->pMemPool[i], bSkipScrub);
     }

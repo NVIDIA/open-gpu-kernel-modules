@@ -201,7 +201,6 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                       uvm_migrate_mode_t mode,
                                       uvm_tracker_t *out_tracker)
 {
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_va_block_context_t *va_block_context = service_context->block_context;
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status = NV_OK;
@@ -226,7 +225,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
         uvm_page_mask_init_from_region(make_resident_mask, region, NULL);
 
-        if (uvm_va_policy_is_read_duplicate(policy, va_space)) {
+        if (uvm_va_policy_is_read_duplicate(policy)) {
             if (uvm_page_mask_andnot(make_resident_mask, make_resident_mask, &va_block->discarded_pages)) {
                 status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                                    va_block_retry,
@@ -353,10 +352,9 @@ static bool migration_should_do_cpu_preunmap(uvm_va_space_t *va_space,
 // read-duplication is enabled in the VA range. This is because, when migrating
 // read-duplicated VA blocks, the source processor doesn't need to be unmapped
 // (though it may need write access revoked).
-static bool va_range_should_do_cpu_preunmap(const uvm_va_policy_t *policy,
-                                            uvm_va_space_t *va_space)
+static bool va_range_should_do_cpu_preunmap(const uvm_va_policy_t *policy)
 {
-    return !uvm_va_policy_is_read_duplicate(policy, va_space);
+    return !uvm_va_policy_is_read_duplicate(policy);
 }
 
 // Function that determines if the VA block to be migrated contains pages with
@@ -504,8 +502,7 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_managed_t *managed_range,
     NvU64 preunmap_range_start = start;
     uvm_va_policy_t *policy = &managed_range->policy;
 
-    should_do_cpu_preunmap = should_do_cpu_preunmap &&
-                             va_range_should_do_cpu_preunmap(policy, managed_range->va_range.va_space);
+    should_do_cpu_preunmap = should_do_cpu_preunmap && va_range_should_do_cpu_preunmap(policy);
 
     // Divide migrations into groups of contiguous VA blocks. This is to trigger
     // CPU unmaps for that region before the migration starts.
@@ -587,13 +584,6 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
                                                             dest_id,
                                                             service_context->block_context->make_resident.dest_nid))
                     skipped_migrate = true;
-            }
-            else if (uvm_processor_mask_test(&managed_range->uvm_lite_gpus, dest_id) &&
-                     !uvm_va_policy_preferred_location_equal(policy, dest_id, NUMA_NO_NODE)) {
-                // Don't migrate to a non-faultable GPU that is in UVM-Lite mode,
-                // unless it's the preferred location
-                status = NV_ERR_INVALID_DEVICE;
-                break;
             }
             else {
                 status = uvm_va_range_migrate(managed_range,

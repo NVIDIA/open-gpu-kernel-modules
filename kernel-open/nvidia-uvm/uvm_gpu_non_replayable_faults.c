@@ -121,8 +121,6 @@ NV_STATUS uvm_parent_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_
 {
     uvm_non_replayable_fault_buffer_t *non_replayable_faults = &parent_gpu->fault_buffer.non_replayable;
 
-    UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
-
     non_replayable_faults->shadow_buffer_copy = NULL;
     non_replayable_faults->fault_cache        = NULL;
 
@@ -170,11 +168,41 @@ bool uvm_parent_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
 
     UVM_ASSERT(parent_gpu->isr.non_replayable_faults.handling);
 
-    status = nvUvmInterfaceHasPendingNonReplayableFaults(&parent_gpu->fault_buffer.rm_info,
-                                                         &has_pending_faults);
+    // RM requires the caller to serialize calls on the same GPU
+    uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
+
+    status = nvUvmInterfaceHasPendingNonReplayableFaults(&parent_gpu->fault_buffer.rm_info, &has_pending_faults);
     UVM_ASSERT(status == NV_OK);
 
     return has_pending_faults == NV_TRUE;
+}
+
+void uvm_parent_gpu_non_replayable_buffer_flush(uvm_parent_gpu_t *parent_gpu)
+{
+    // If faults are pending we need to schedule a bottom half invocation. It's
+    // not enough to wait for in-flight bottom halves because we might have
+    // checked after RM added the faults but before UVM's top half was invoked
+    // to schedule the bottom half.
+    // uvm_parent_gpu_schedule_non_replayable_faults_handler() does that check
+    // for us.
+    uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
+    uvm_parent_gpu_schedule_non_replayable_faults_handler(parent_gpu);
+    uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
+
+    // Wait for the non-replayable bottom half to finish servicing. This relies
+    // on the greedy nature of the non-replayable bottom half:
+    // fetch_non_replayable_fault_buffer_entries() always pulls all available
+    // faults in one go and services them in that instance. Those fetched faults
+    // are the ones we need to flush. Therefore we just need to be sure that
+    // bottom halves scheduled prior to this call are complete.
+    //
+    // We have to wait even if no pending fault was detected, because we might
+    // have caught the window after fetch but before service.
+    //
+    // This is overkill since it will wait for all bottom half types, not just
+    // the non-replayable one, but this is not expected to be on the critical
+    // path.
+    nv_kthread_q_flush(&parent_gpu->isr.bottom_half_q);
 }
 
 static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *parent_gpu, NvU32 *cached_faults)
@@ -187,7 +215,6 @@ static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *par
     uvm_fault_buffer_entry_t *fault_entry = non_replayable_faults->fault_cache;
 
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.non_replayable_faults.service_lock));
-    UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
     status = nvUvmInterfaceGetNonReplayableFaults(&parent_gpu->fault_buffer.rm_info,
                                                   current_hw_entry,
@@ -387,9 +414,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
                                                     gpu->id,
                                                     uvm_va_block_cpu_page_index(va_block,
                                                                                 fault_entry->fault_address),
-                                                    fault_entry->fault_access_type,
-                                                    uvm_range_group_address_migratable(va_space,
-                                                                                       fault_entry->fault_address));
+                                                    fault_entry->fault_access_type);
     if (status != NV_OK) {
         fault_entry->is_fatal = true;
         fault_entry->fatal_reason = uvm_tools_status_to_fatal_fault_reason(status);
@@ -786,6 +811,12 @@ void uvm_parent_gpu_service_non_replayable_fault_buffer(uvm_parent_gpu_t *parent
         NV_STATUS status;
         NvU32 i;
 
+        if (uvm_enable_builtin_tests) {
+            NvU32 sleep_us = atomic_read(&parent_gpu->fault_buffer.non_replayable.test.sleep_per_iteration_us);
+            if (sleep_us)
+                usleep_range(sleep_us, sleep_us * 2);
+        }
+
         status = fetch_non_replayable_fault_buffer_entries(parent_gpu, &cached_faults);
         if (status != NV_OK)
             return;
@@ -799,4 +830,44 @@ void uvm_parent_gpu_service_non_replayable_fault_buffer(uvm_parent_gpu_t *parent
                 return;
         }
     } while (cached_faults > 0);
+}
+
+NV_STATUS uvm_test_set_non_replayable_delay(UVM_TEST_SET_NON_REPLAYABLE_DELAY_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_OK;
+
+    uvm_va_space_down_write(va_space);
+
+    gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
+    if (!gpu) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto out;
+    }
+
+    if (uvm_parent_processor_mask_test(&va_space->test.non_replayable_delay_set, gpu->parent->id)) {
+        // If we already own the setting, just clobber it
+        atomic_set(&gpu->parent->fault_buffer.non_replayable.test.sleep_per_iteration_us,
+                   params->sleep_per_iteration_us);
+        if (params->sleep_per_iteration_us == 0)
+            uvm_parent_processor_mask_clear(&va_space->test.non_replayable_delay_set, gpu->parent->id);
+    }
+    else if (params->sleep_per_iteration_us == 0) {
+        status = NV_ERR_INVALID_ARGUMENT;
+    }
+    else {
+        // We don't own the setting. Try to take control.
+        int old = atomic_cmpxchg(&gpu->parent->fault_buffer.non_replayable.test.sleep_per_iteration_us,
+                                 0,
+                                 params->sleep_per_iteration_us);
+        if (old == 0)
+            uvm_parent_processor_mask_set(&va_space->test.non_replayable_delay_set, gpu->parent->id);
+        else
+            status = NV_ERR_IN_USE;
+    }
+
+out:
+    uvm_va_space_up_write(va_space);
+    return status;
 }

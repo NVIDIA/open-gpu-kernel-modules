@@ -147,13 +147,9 @@ struct NVOC_METADATA__MemoryMulticastFabric {
     const struct NVOC_VTABLE__MemoryMulticastFabric vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryMulticastFabric_TYPEDEF__
-#define __NVOC_CLASS_MemoryMulticastFabric_TYPEDEF__
-typedef struct MemoryMulticastFabric MemoryMulticastFabric;
-#endif /* __NVOC_CLASS_MemoryMulticastFabric_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryMulticastFabric
-#define __nvoc_class_id_MemoryMulticastFabric 0x130210
+#define __nvoc_class_id_MemoryMulticastFabric 0x130210u
+typedef struct MemoryMulticastFabric MemoryMulticastFabric;
 #endif /* __nvoc_class_id_MemoryMulticastFabric */
 
 // Casting support
@@ -171,14 +167,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMulticastFabric;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryMulticastFabric(MemoryMulticastFabric**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryMulticastFabric(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryMulticastFabric((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryMulticastFabric(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryMulticastFabric((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memorymulticastfabricConstruct_IMPL(struct MemoryMulticastFabric *arg_pMemoryMulticastFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memorymulticastfabricConstruct(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams) memorymulticastfabricConstruct_IMPL(arg_pMemoryMulticastFabric, arg_pCallContext, arg_pParams)
+NV_STATUS memorymulticastfabricConstruct_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memorymulticastfabricConstruct(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricConstruct_IMPL(pMemoryMulticastFabric, pCallContext, pParams)
 
 void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
 #define __nvoc_memorymulticastfabricDestruct(pMemoryMulticastFabric) memorymulticastfabricDestruct_IMPL(pMemoryMulticastFabric)
@@ -428,6 +424,7 @@ static inline void memorymulticastfabricAddAdditionalDependants_DISPATCH(struct 
     pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS memorymulticastfabricUnmapFrom_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
 NvBool memorymulticastfabricCanCopy_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
@@ -444,6 +441,7 @@ NvBool memorymulticastfabricIsExportAllowed_IMPL(struct MemoryMulticastFabric *p
 
 NV_STATUS memorymulticastfabricGetMapAddrSpace_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS memorymulticastfabricCtrlGetInfo_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_GET_INFO_PARAMS *pParams);
 
 NV_STATUS memorymulticastfabricCtrlAttachMem_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams);
@@ -458,6 +456,10 @@ NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_IMPL(struct MemoryMulticastFa
 
 NV_STATUS memorymulticastfabricCtrlSetFailure_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

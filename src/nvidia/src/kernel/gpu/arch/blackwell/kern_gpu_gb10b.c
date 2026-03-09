@@ -79,6 +79,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB10B[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
 };
@@ -161,7 +162,7 @@ gpuHandleSecFault_GB10B
     // handleGpuLost first to setGpuDisconnectedProperties so that another reg read does not
     // happen when the notifier is sent below.
     //
-    osHandleGpuLost(pGpu);
+    osHandleGpuLost(pGpu, NV_FALSE);
 
     //
     // Send SEC_FAULT notification. This should tells any MODS test testing for this

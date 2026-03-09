@@ -43,6 +43,12 @@
 #define PAGE_MAPIDX(n)              ((n) >> FRAME_TO_U64_SHIFT)
 #define MAKE_BITMASK(n)             (1llu << (n))
 
+#define MAPIDX_PAGE(n)              ((n) << FRAME_TO_U64_SHIFT)
+
+#define PAGE_LOCAL_MAPIDX(n, base)  ((n - base) / PMA_LOCALIZED_MEMORY_RESERVE_FRAMES)
+
+#define LOCAL_STRIDE_INDEX(frame, alignment) (((frame - alignment) / PMA_LOCALIZED_MEMORY_ALLOC_FRAMES) % PMA_MAX_LOCALIZED_REGION_COUNT)
+
 #define SETBITS(bits, mask, newVal) ((bits & (~mask)) | (mask & newVal))
 
 //////////////// DEBUG ///////////////
@@ -416,6 +422,7 @@ pmaRegmapInit
     }
     portMemSet(newMap, 0, sizeof(struct pma_regmap));
 
+    newMap->addrBase = addrBase;
     newMap->totalFrames = numFrames;
     num2mbPages = numFrames / (_PMA_2MB >> PMA_PAGE_SHIFT);
 
@@ -432,6 +439,24 @@ pmaRegmapInit
         pPmaStats->numFreeFramesProtected += newMap->totalFrames;
         pPmaStats->num2mbPagesProtected += num2mbPages;
         pPmaStats->numFree2mbPagesProtected += num2mbPages;
+    }
+
+    // Must localize entire blocks aligned to PMA_LOCALIZED_MEMORY_RESERVE_SIZE at once.
+    NvU64 localizedFrameBase = PMA_ADDR2FRAME(NV_ALIGN_UP(addrBase, PMA_LOCALIZED_MEMORY_RESERVE_SIZE), addrBase);
+    NvU64 localizedFrameEnd = PMA_ADDR2FRAME(NV_ALIGN_DOWN(addrBase + (numFrames << PMA_PAGE_SHIFT), PMA_LOCALIZED_MEMORY_RESERVE_SIZE), addrBase);
+
+    NvU64 numLocalizableFrames = localizedFrameEnd - localizedFrameBase;
+    NvU64 numLocalizableFramesPerRegion = numLocalizableFrames / PMA_MAX_LOCALIZED_REGION_COUNT;
+    NvU64 numLocalizable2mbPagesRegion = numLocalizableFramesPerRegion / (_PMA_2MB >> PMA_PAGE_SHIFT);
+
+    newMap->localizedFrameBase = localizedFrameBase;
+    newMap->localizedFrameCount = numLocalizableFrames;
+
+    for (i = 0; i < PMA_MAX_LOCALIZED_REGION_COUNT; ++i)
+    {
+        pPmaStats->numFreeFramesLocalizable[i] += numLocalizableFramesPerRegion;
+        pPmaStats->num2mbPagesLocalizable[i] += numLocalizable2mbPagesRegion;
+        pPmaStats->numFree2mbPagesLocalizable[i] += numLocalizable2mbPagesRegion;
     }
 
     newMap->bProtected = bProtected;
@@ -461,6 +486,20 @@ pmaRegmapInit
         newMap->map[MAP_IDX_ALLOC_PIN][endOffs] |= endMask;
     }
 
+    NvU64 numLocalizedRegions = numLocalizableFrames / PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+
+    if (numLocalizedRegions > 0)
+    {
+        newMap->localizationState = (PMA_LOCALIZATION_INFO*) portMemAllocNonPaged(numLocalizedRegions * sizeof(PMA_LOCALIZATION_INFO));
+
+        if (newMap->localizationState == NULL)
+        {
+            pmaRegmapDestroy(newMap);
+            return NULL;
+        }
+        portMemSet(newMap->localizationState, 0, (NvLength) (numLocalizedRegions * sizeof(PMA_LOCALIZATION_INFO)));
+    }
+
     return (void *)newMap;
 }
 
@@ -484,12 +523,28 @@ pmaRegmapDestroy(void *pMap)
     }
 
     num2mbPages = pRegmap->totalFrames / (_PMA_2MB >> PMA_PAGE_SHIFT);
+    pRegmap->pPmaStats->num2mbPages -= num2mbPages;
     pRegmap->pPmaStats->numFree2mbPages -= num2mbPages;
 
     if (pRegmap->bProtected)
     {
+        pRegmap->pPmaStats->num2mbPagesProtected -= num2mbPages;
         pRegmap->pPmaStats->numFree2mbPagesProtected -= num2mbPages;
     }
+
+
+    NvU64 localizedFramesPerRegion = pRegmap->localizedFrameCount / PMA_MAX_LOCALIZED_REGION_COUNT;
+
+    for (i = 0; i < PMA_MAX_LOCALIZED_REGION_COUNT; ++i)
+    {
+        pRegmap->pPmaStats->numFreeFramesLocalizable[i] -= localizedFramesPerRegion;
+
+        num2mbPages = localizedFramesPerRegion / (_PMA_2MB >> PMA_PAGE_SHIFT);
+        pRegmap->pPmaStats->num2mbPagesLocalizable[i] -= num2mbPages;
+        pRegmap->pPmaStats->numFree2mbPagesLocalizable[i] -= num2mbPages;
+    }
+
+    portMemFree(pRegmap->localizationState);
 
     portMemFree(pRegmap);
 }
@@ -572,6 +627,21 @@ _pmaRegmapDoSingleStateChange
                 ((((NvU32)(finalState >> 32)) == 0) != (((NvU32)(initialState >> 32)) == 0));
 }
 
+static NV_FORCEINLINE
+void
+_pmaRegmapChangeLocalizedRegionStateAttrib
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 frame,
+    NvU64 len,
+    PMA_PAGESTATUS newState,
+    PMA_PAGESTATUS writeMask,
+    NvBool inLocalizedRegion,
+    NvU64 localizedRegion,
+    NvBool isLocalized,
+    NvU64 localizedUgpu
+);
+
 void
 pmaRegmapChangeBlockStateAttrib
 (
@@ -582,15 +652,119 @@ pmaRegmapChangeBlockStateAttrib
     PMA_PAGESTATUS writeMask
 )
 {
+    //
+    // If localized memory is enabled, this function is split into two parts:
+    //
+    //   - The inner call, _pmaRegmapChangeLocalizedRegionStateAttrib, becomes the equivalent of what
+    //     pmaRegmapChangeBlockStateAttrib is otherwise, but should only be called on frames covering a single aligned
+    //     PMA_LOCALIZED_MEMORY_RESERVE_SIZE region. This call takes additional parameters defining localization state.
+    //
+    //   - This function, pmaRegmapChangeBlockStateAttrib, splits frames into PMA_LOCALIZED_MEMORY_RESERVE_SIZE aligned
+    //     chunks and dispatches them to _pmaRegmapChangeLocalizedRegionStateAttrib.
+    //
+
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    NvU64 i;
+
+    NvU64 localizedFrameBase   = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount  = pRegmap->localizedFrameCount;
+    NvU64 localizedRegionCount = localizedFrameCount / PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+
+    //
+    // Note: In the below code, regions are offset by one to make the addressing math work without exceiptions.
+    //       The offset is reversed after the first call to _pmaRegmapChangeLocalizedRegionStateAttrib.
+    //
+    //       This code is performance critical and intentionally sacrifices some clarity for efficiency.
+    //
+    NvU64 initialLocalizedRegion = PAGE_LOCAL_MAPIDX(frame + PMA_LOCALIZED_MEMORY_RESERVE_FRAMES, localizedFrameBase);
+    NvU64 finalLocalizedRegion   = PAGE_LOCAL_MAPIDX(frame + PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + len - 1, localizedFrameBase);
+
+    if (initialLocalizedRegion == finalLocalizedRegion)
+    {
+        //
+        // Entire block is contained within a single localized region.
+        // Localization is only allowed in this case.
+        //
+
+        NvBool isLocalized     = NV_FALSE;
+        NvU64 localizedUgpuNum = 0;
+
+        NvBool inLocalizedRegion = initialLocalizedRegion > 0 && finalLocalizedRegion <= localizedRegionCount;
+
+        if (inLocalizedRegion)
+        {
+            isLocalized = (pRegmap->localizationState[initialLocalizedRegion - 1].status & LOCALIZATION_STATE_IS_LOCALIZED) != 0;
+            localizedUgpuNum = isLocalized ? LOCAL_STRIDE_INDEX(frame, localizedFrameBase) : 0;
+        }
+
+        _pmaRegmapChangeLocalizedRegionStateAttrib(pRegmap, frame, len, newState, writeMask,
+                                                   inLocalizedRegion, initialLocalizedRegion - 1,
+                                                   isLocalized, localizedUgpuNum);
+    }
+    else
+    {
+        //
+        // The block covers multiple localized regions. Split by region to minimize overhead of free memory accounting.
+        //
+
+        NvU64 regionStart, regionLen;
+
+        // Handle initial region
+        regionStart = frame;
+        regionLen   = (initialLocalizedRegion * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase) - frame;
+        _pmaRegmapChangeLocalizedRegionStateAttrib(pRegmap, regionStart, regionLen, newState, writeMask,
+                                                   initialLocalizedRegion > 0, initialLocalizedRegion - 1,
+                                                   NV_FALSE, 0);
+        
+        //
+        // Note: Regions are no longer offset below this point. Thus, decrementing finalLocalizedRegion is equivalent
+        //       to incrementing initialLocalizedRegion with the offset and then removing the offset from both.
+        //
+        --finalLocalizedRegion;
+
+        // Handle final region
+        regionStart = finalLocalizedRegion * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+        regionLen   = (frame + len) - regionStart;
+        _pmaRegmapChangeLocalizedRegionStateAttrib(pRegmap, regionStart, regionLen, newState, writeMask,
+                                                   finalLocalizedRegion < localizedRegionCount, finalLocalizedRegion,
+                                                   NV_FALSE, 0);
+        
+        // Handle remaining regions
+        for (i = initialLocalizedRegion; i < finalLocalizedRegion; ++i)
+        {
+            regionStart = i * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+            regionLen   = PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+            _pmaRegmapChangeLocalizedRegionStateAttrib(pRegmap, regionStart, regionLen, newState, writeMask,
+                                                       NV_TRUE, i, NV_FALSE, 0);
+        }
+    }
+}
+
+static NV_FORCEINLINE
+void
+_pmaRegmapChangeLocalizedRegionStateAttrib
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 frame,
+    NvU64 len,
+    PMA_PAGESTATUS newState,
+    PMA_PAGESTATUS writeMask,
+    NvBool inLocalizedRegion,
+    NvU64 localizedRegion,
+    NvBool isLocalized,
+    NvU64 localizedUgpuNum
+)
+{
+    NvU64 i, j;
+
     NvU64 initialIdx = PAGE_MAPIDX(frame);
     NvU64 finalIdx = PAGE_MAPIDX(frame + len - 1llu);
     NvU64 initialOffs = PAGE_BITIDX(frame);
     NvU64 finalOffs = PAGE_BITIDX(frame + len - 1llu);
     NvU64 initialMask = NV_U64_MAX << initialOffs;
     NvU64 finalMask = NV_U64_MAX >> (FRAME_TO_U64_MASK - finalOffs);
-    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
-    NvU64 i;
     NvU64 delta2m = 0, delta64k = 0;
+    NvBool isAlloc = (newState & writeMask & STATE_MASK) != 0;
 
     NV_ASSERT(pRegmap != NULL);
     NV_ASSERT(frame + len <= pRegmap->totalFrames);
@@ -610,18 +784,18 @@ pmaRegmapChangeBlockStateAttrib
             pRegmap->map[i][initialIdx] |= toWrite & (initialMask & finalMask);
             continue;
         }
-       
+
         pRegmap->map[i][initialIdx] &= ~initialMask;
         pRegmap->map[i][initialIdx] |= toWrite & initialMask;
-        
+
         for (j = initialIdx + 1; j < finalIdx; j++)
         {
             pRegmap->map[i][j] = toWrite;
             
         }
+
         pRegmap->map[i][finalIdx] &= ~finalMask;
         pRegmap->map[i][finalIdx] |= toWrite & finalMask;
-        
     }
 
     if (!(writeMask & STATE_MASK))
@@ -633,57 +807,191 @@ pmaRegmapChangeBlockStateAttrib
     if (initialIdx == finalIdx)
     {
         _pmaRegmapDoSingleStateChange(pRegmap, initialIdx, newState, writeMask, initialMask & finalMask, &delta2m, &delta64k);
-        goto set_regs;
-    }
-
-    // Checks for 64-aligned start/end so we don't have to deal with partial coverage in the main loop
-    if (initialOffs != 0)
-    {
-        // Do first state update with partial NvU64 coverage
-        _pmaRegmapDoSingleStateChange(pRegmap, initialIdx, newState, writeMask, initialMask, &delta2m, &delta64k);
-        initialIdx++;
-    }
-    if (finalOffs != FRAME_TO_U64_MASK)
-    {
-        // Update last partial NvU64
-        _pmaRegmapDoSingleStateChange(pRegmap, finalIdx, newState, writeMask, finalMask, &delta2m, &delta64k);
-        finalIdx--;
-    }
-
-    // Update all full-size 
-    for (i = initialIdx; i <= finalIdx; i++)
-    {
-        _pmaRegmapDoSingleStateChange(pRegmap, i, newState, writeMask, NV_U64_MAX, &delta2m, &delta64k);
-    }
-
-set_regs:
-    if ((newState & writeMask & STATE_MASK) != 0)
-    {
-        pRegmap->pPmaStats->numFreeFrames -= delta64k;
-        pRegmap->pPmaStats->numFree2mbPages -= delta2m;
     }
     else
     {
-        pRegmap->pPmaStats->numFreeFrames += delta64k;
-        pRegmap->pPmaStats->numFree2mbPages += delta2m;
+        // Checks for 64-aligned start/end so we don't have to deal with partial coverage in the main loop
+        if (initialOffs != 0)
+        {
+            // Do first state update with partial NvU64 coverage
+            _pmaRegmapDoSingleStateChange(pRegmap, initialIdx, newState, writeMask, initialMask, &delta2m, &delta64k);
+            initialIdx++;
+        }
+
+        if (finalOffs != FRAME_TO_U64_MASK)
+        {
+            // Update last partial NvU64
+            _pmaRegmapDoSingleStateChange(pRegmap, finalIdx, newState, writeMask, finalMask, &delta2m, &delta64k);
+            finalIdx--;
+        }
+
+        // Update all full-size 
+        for (i = initialIdx; i <= finalIdx; i++)
+        {
+            _pmaRegmapDoSingleStateChange(pRegmap, i, newState, writeMask, NV_U64_MAX, &delta2m, &delta64k);
+        }
+    }
+
+    if (delta64k == 0)
+    {
+        return;
+    }
+
+    if (isAlloc)
+    {
+        if (inLocalizedRegion)
+        {
+            NvU16 *pAllocatedFrameCount = &pRegmap->localizationState[localizedRegion].allocatedFrameCount;
+
+            if (*pAllocatedFrameCount == 0)
+            {
+                if (isLocalized)
+                {
+                    pRegmap->pPmaStats->numFreeFrames   -= PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+                    pRegmap->pPmaStats->numFree2mbPages -= PMA_LOCALIZED_MEMORY_RESERVE_FRAMES / (_PMA_2MB >> PMA_PAGE_SHIFT);
+                }
+                else
+                {
+                    for (j = 0; j < PMA_MAX_LOCALIZED_REGION_COUNT; ++j)
+                    {
+                        pRegmap->pPmaStats->numFreeFramesLocalizable[j]   -= PMA_LOCALIZED_MEMORY_ALLOC_FRAMES;
+                        pRegmap->pPmaStats->numFree2mbPagesLocalizable[j] -= PMA_LOCALIZED_MEMORY_ALLOC_FRAMES / (_PMA_2MB >> PMA_PAGE_SHIFT);
+                    }
+                }
+            }
+
+            *pAllocatedFrameCount += (NvU16)delta64k;
+        }
+
+        if (isLocalized)
+        {
+            pRegmap->pPmaStats->numFreeFramesLocalizable[localizedUgpuNum] -= delta64k;
+            pRegmap->pPmaStats->numFree2mbPagesLocalizable[localizedUgpuNum] -= delta2m;
+        }
+        else
+        {
+            pRegmap->pPmaStats->numFreeFrames -= delta64k;
+            pRegmap->pPmaStats->numFree2mbPages -= delta2m;
+        }
+    }
+    else
+    {
+        if (inLocalizedRegion)
+        {
+            NvU16 *pAllocatedFrameCount = &pRegmap->localizationState[localizedRegion].allocatedFrameCount;
+
+            if (*pAllocatedFrameCount == delta64k)
+            {
+                if (isLocalized)
+                {
+                    pRegmap->pPmaStats->numFreeFrames   += PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+                    pRegmap->pPmaStats->numFree2mbPages += PMA_LOCALIZED_MEMORY_RESERVE_FRAMES / (_PMA_2MB >> PMA_PAGE_SHIFT);
+                }
+                else
+                {
+                    for (j = 0; j < PMA_MAX_LOCALIZED_REGION_COUNT; ++j)
+                    {
+                        pRegmap->pPmaStats->numFreeFramesLocalizable[j]   += PMA_LOCALIZED_MEMORY_ALLOC_FRAMES;
+                        pRegmap->pPmaStats->numFree2mbPagesLocalizable[j] += PMA_LOCALIZED_MEMORY_ALLOC_FRAMES / (_PMA_2MB >> PMA_PAGE_SHIFT);
+                    }
+                }
+            }
+
+            *pAllocatedFrameCount -= (NvU16)delta64k;
+        }
+
+        if (isLocalized)
+        {
+            pRegmap->pPmaStats->numFreeFramesLocalizable[localizedUgpuNum] += delta64k;
+            pRegmap->pPmaStats->numFree2mbPagesLocalizable[localizedUgpuNum] += delta2m;
+        }
+        else
+        {
+            pRegmap->pPmaStats->numFreeFrames += delta64k;
+            pRegmap->pPmaStats->numFree2mbPages += delta2m;
+        }
     }
     if (!pRegmap->bProtected)
     {
         return;
     }
-    if ((writeMask & newState & STATE_MASK) != 0)
+    if (isAlloc)
     {
-        pRegmap->pPmaStats->numFreeFramesProtected -= delta64k;
-        pRegmap->pPmaStats->numFree2mbPagesProtected -= delta2m;
+        if (!isLocalized)
+        {
+            pRegmap->pPmaStats->numFreeFramesProtected -= delta64k;
+            pRegmap->pPmaStats->numFree2mbPagesProtected -= delta2m;
+        }
     }
     else
     {
-        pRegmap->pPmaStats->numFreeFramesProtected += delta64k;
-        pRegmap->pPmaStats->numFree2mbPagesProtected += delta2m;
+        if (!isLocalized)
+        {
+            pRegmap->pPmaStats->numFreeFramesProtected += delta64k;
+            pRegmap->pPmaStats->numFree2mbPagesProtected += delta2m;
+        }
     }
+
     return;
 }
 
+void
+pmaRegmapChangeLocalizationState
+(
+    void *pMap,
+    NvU64 frame,
+    PMA_LOCALIZATION_STATUS newState,
+    PMA_LOCALIZATION_STATUS newStateMask
+)
+{
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+
+    NvU64 localizedFrameBase  = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    if ((frame < localizedFrameBase) || (frame >= localizedFrameBase + localizedFrameCount))
+    {
+        return;
+    }
+
+    NvU64 regionIndex = PAGE_LOCAL_MAPIDX(frame, localizedFrameBase);
+
+    pRegmap->localizationState[regionIndex].status &= ~newStateMask;
+    pRegmap->localizationState[regionIndex].status |= newState;
+}
+
+void
+pmaRegmapChangeBlockLocalizationState
+(
+    void *pMap,
+    NvU64 frame,
+    NvU64 numFrames,
+    PMA_LOCALIZATION_STATUS newState,
+    PMA_LOCALIZATION_STATUS newStateMask
+)
+{
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+
+    NvU64 localizedFrameBase  = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    NvU64 initialLocalizedFrame = NV_MAX(frame, localizedFrameBase);
+    NvU64 finalLocalizedFrame = NV_MIN(frame + numFrames - 1, localizedFrameBase + localizedFrameCount - 1);
+
+    NvU64 initialIdx = PAGE_LOCAL_MAPIDX(initialLocalizedFrame, localizedFrameBase);
+    NvU64 finalIdx = PAGE_LOCAL_MAPIDX(finalLocalizedFrame, localizedFrameBase);
+
+    newState &= newStateMask;
+
+    for (NvU64 i = initialIdx; ; ++i)
+    {
+        pRegmap->localizationState[i].status &= ~newStateMask;
+        pRegmap->localizationState[i].status |= newState;
+
+        if (i >= finalIdx)
+            break;
+    }
+}
 
 PMA_PAGESTATUS
 pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib)
@@ -710,6 +1018,58 @@ pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib)
     return (PMA_PAGESTATUS)val;
 }
 
+PMA_LOCALIZATION_INFO
+pmaRegmapReadLocalizationInfo(void *pMap, NvU64 frameNum)
+{
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+
+    NvU64 localizedFrameBase  = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    if ((frameNum < localizedFrameBase) || (frameNum >= localizedFrameBase + localizedFrameCount))
+    {
+        PMA_LOCALIZATION_INFO nullInfo = {0, 0};
+        return nullInfo;
+    }
+
+    NvU64 regionIndex = PAGE_LOCAL_MAPIDX(frameNum, localizedFrameBase);
+    return pRegmap->localizationState[regionIndex];
+}
+
+PMA_LOCALIZATION_STATUS
+pmaRegmapReadLocalizationStatus(void *pMap, NvU64 frameNum)
+{
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+
+    NvU64 localizedFrameBase  = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    if ((frameNum < localizedFrameBase) || (frameNum >= localizedFrameBase + localizedFrameCount))
+    {
+        return (PMA_LOCALIZATION_STATUS)0;
+    }
+
+    NvU64 regionIndex = PAGE_LOCAL_MAPIDX(frameNum, localizedFrameBase);
+    return pRegmap->localizationState[regionIndex].status;
+}
+
+NvU64
+pmaRegmapGetLocalizedRegionAllocationCount(void *pMap, NvU64 frameNum)
+{
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    
+    NvU64 localizedFrameBase  = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    if ((frameNum < localizedFrameBase) || (frameNum >= localizedFrameBase + localizedFrameCount))
+    {
+        return 0u;
+    }
+
+    NvU64 regionIndex = PAGE_LOCAL_MAPIDX(frameNum, localizedFrameBase);
+    return pRegmap->localizationState[regionIndex].allocatedFrameCount;
+}
+
 static NvS64 _scanContiguousSearchLoop
 (
     PMA_REGMAP *pRegmap,
@@ -718,24 +1078,33 @@ static NvS64 _scanContiguousSearchLoop
     NvU64 localEnd,
     NvU64 frameAlignment,
     NvU64 frameAlignmentPadding,
-    NvU64 localStride,
-    NvU32 strideStart,
-    NvU64 strideAlignmentPadding,
-    NvU64 strideRegionAlignmentPadding,
+    NvBool bLocalizedAlloc,
+    NvU32 localizedUgpuNum,
     NvBool bSearchEvictable
 )
 {
-    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding); // this is already done by the caller
-    NvU64 nextStrideStart;
+    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 i;
 
     // _scanContiguousSearchLoop can only be called for <32MB localized memory, enforced by PMA
 
+    NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+    //NvU64 localizedRegionCount = localizedFrameCount / PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+
+    NvU64 strideAlignmentPadding = 0;
+    NvU64 nextStrideStart = 0;
+
     // can't allocate contiguous memory > stride. This is guaranteed by the caller, but be sure here
-    if ((localStride != 0) && (numFrames > localStride))
+    if (bLocalizedAlloc)
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        if (numFrames > PMA_LOCALIZED_MEMORY_ALLOC_FRAMES)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        strideAlignmentPadding = localizedFrameBase % PMA_LOCALIZED_MEMORY_ALLOC_FRAMES;
     }
 
     //
@@ -747,21 +1116,20 @@ static NvS64 _scanContiguousSearchLoop
         latestFree[i] = frameBaseIdx;
     }
 
+    NvU64 latestLocalizedFree = NV_MAX(frameBaseIdx, localizedFrameBase);
+
 loop_begin:
-    if (localStride != 0)
+    if (bLocalizedAlloc)
     {
-        // Put the address into the correct strideStart
-        if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+        // Put the address into the correct uGPU stride
+        if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
         {
             // align up to next stride
-            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            frameBaseIdx = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
         }
-    }
 
-    if (localStride != 0)
-    {
         // we're always in the correct stride at this point
-        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
 
         // Won't fit within current stride, need to align up again.
         if ((frameBaseIdx + numFrames) > nextStrideStart)
@@ -769,53 +1137,94 @@ loop_begin:
             // even if it's in the correct stride, it won't fit here, so force it to the next one
             frameBaseIdx = nextStrideStart;
 
-            // Put the address into the correct strideStart
-            if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+            // Put the address into the correct uGPU stride
+            if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
             {
                 // align up to next stride
-                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
             }
         }
-    }
 
-    if (localStride != 0)
-    {
         //
         // Find a region that is either
         // 1. already localized or
         // 2. completely free within the 64MB region
         //
+        // Note: Will need to use PMA_MAX_LOCALIZED_REGION_COUNT if count is increased.
+        //
         while (frameBaseIdx <= localEnd)
         {
-            // If one bit is localized, the entire region must be localized
-            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            // localStart and localEnd guaranteed to be within localizable range if this is a localized allocation
+            PMA_LOCALIZATION_INFO localizationState = pRegmap->localizationState[PAGE_LOCAL_MAPIDX(frameBaseIdx, localizedFrameBase)];
+
+            if (((localizationState.status & LOCALIZATION_STATE_IS_LOCALIZED) != 0) ||
+                (localizationState.allocatedFrameCount == 0))
             {
                 break;
             }
             else
             {
-                // check for localized availability. Do a contiguous scan of only the region of interest
-                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
-                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
-                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
-                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+                // align up to the next entire stride region
+                frameBaseIdx = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_RESERVE_FRAMES, localizedFrameBase);
 
-                if (frameFound >= 0)
+                // Put the address into the correct uGPU stride
+                if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
                 {
-                    break;
+                    // align up to next stride
+                    frameBaseIdx = alignUpToMod((frameBaseIdx + 1), PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
                 }
-                else
-                {
-                    // align up to the next entire stride region
-                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
+            }
+        }
+    }
 
-                    // Put the address into the correct strideStart
-                    if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+    // At the end of memory, pages not available
+    if ((frameBaseIdx + numFrames - 1llu) > localEnd)
+    {
+        return -1;
+    }
+
+    if (!bLocalizedAlloc)
+    {
+        if (latestLocalizedFree < frameBaseIdx)
+        {
+            latestLocalizedFree = frameBaseIdx;
+        }
+        while (latestLocalizedFree < (frameBaseIdx + numFrames))
+        {
+            if (latestLocalizedFree >= localizedFrameBase + localizedFrameCount)
+            {
+                // Aready at the end of localizable memory.
+                latestLocalizedFree = localEnd + 1;
+            }
+            else
+            {
+                NvU64 currentLocalizedRegion = PAGE_LOCAL_MAPIDX(latestLocalizedFree, localizedFrameBase);
+
+                // If there are no more non-localized pages available, advance frameBaseIdx until we find one
+                if ((pRegmap->localizationState[currentLocalizedRegion].status & LOCALIZATION_STATE_IS_LOCALIZED) != 0)
+                {
+                    frameBaseIdx = (currentLocalizedRegion + 1) * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+                    ++currentLocalizedRegion;
+
+                    while (frameBaseIdx <= localEnd)
                     {
-                        // align up to next stride
-                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                        if ((frameBaseIdx >= localizedFrameBase + localizedFrameCount) ||
+                            ((pRegmap->localizationState[currentLocalizedRegion].status & LOCALIZATION_STATE_IS_LOCALIZED) == 0))
+                        {
+                            goto localized_free_found;
+                        }
+
+                        frameBaseIdx = (currentLocalizedRegion + 1) * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+                        ++currentLocalizedRegion;
                     }
+                    // No more free pages, exit
+                    return -1;
+
+localized_free_found:
+                    goto loop_begin;
                 }
+
+                latestLocalizedFree = (currentLocalizedRegion + 1) * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
             }
         }
     }
@@ -831,11 +1240,6 @@ loop_begin:
             latestFree[i] = frameBaseIdx;
         }
     }
-    // At the end of memory, pages not available
-    if ((frameBaseIdx + numFrames - 1llu) > localEnd)
-    {
-        return -1;
-    }
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
         //
@@ -844,12 +1248,6 @@ loop_begin:
         // Persistent pages may still be evictable, so skip checking for ATTRIB_PERSISTENT here as well.
         //
         if (((i == MAP_IDX_ALLOC_UNPIN) || (i == MAP_IDX_PERSISTENT)) && bSearchEvictable)
-        {
-            continue;
-        }
-
-        // ignore checking localized for localized request
-        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
         {
             continue;
         }
@@ -919,6 +1317,11 @@ static NvS64 _scanContiguousSearchLoopReverse
 {
     NvU64 realAlign = (frameAlignmentPadding + numFrames) & (frameAlignment - 1ll);
     NvU64 frameBaseIdx = alignDownToMod(localEnd + 1llu, frameAlignment, realAlign);
+
+    NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+    //NvU64 localizedRegionCount = localizedFrameCount / PMA_LOCALIZED_MEMORY_RESERVE_FRAMES;
+
     //
     // latestFree stores the lowest '0' seen in the given map array in the current run
     // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
@@ -929,7 +1332,59 @@ static NvS64 _scanContiguousSearchLoopReverse
     {
             latestFree[i] = frameBaseIdx;
     }
+
+    NvU64 latestLocalizedFree = NV_MIN(frameBaseIdx, localizedFrameBase + localizedFrameCount);
+
 loop_begin:
+    // At the beginning of memory, pages not available
+    if ((localStart + numFrames) > frameBaseIdx)
+    {
+        return -1;
+    }
+
+    if (latestLocalizedFree > frameBaseIdx)
+    {
+        latestLocalizedFree = frameBaseIdx;
+    }
+    while (latestLocalizedFree > (frameBaseIdx - numFrames))
+    {
+        if (latestLocalizedFree <= localizedFrameBase)
+        {
+            // Aready at the end of localizable memory.
+            latestLocalizedFree = 0;
+        }
+        else
+        {
+            NvU64 currentLocalizedRegion = PAGE_LOCAL_MAPIDX(latestLocalizedFree - 1, localizedFrameBase);
+
+            // If there are no more non-localized pages available, advance frameBaseIdx until we find one
+            if ((pRegmap->localizationState[currentLocalizedRegion].status & LOCALIZATION_STATE_IS_LOCALIZED) != 0)
+            {
+                frameBaseIdx = currentLocalizedRegion * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+                --currentLocalizedRegion;
+
+                while (frameBaseIdx > localStart)
+                {
+                    if ((frameBaseIdx <= localizedFrameBase) ||
+                        ((pRegmap->localizationState[currentLocalizedRegion].status & LOCALIZATION_STATE_IS_LOCALIZED) == 0))
+                    {
+                        goto localized_free_found;
+                    }
+
+                    frameBaseIdx = currentLocalizedRegion * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+                    --currentLocalizedRegion;
+                }
+                // No more free pages, exit
+                return -1;
+
+localized_free_found:
+                goto loop_begin;
+            }
+
+            latestLocalizedFree = currentLocalizedRegion * PMA_LOCALIZED_MEMORY_RESERVE_FRAMES + localizedFrameBase;
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always <= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -940,11 +1395,6 @@ loop_begin:
         {
             latestFree[i] = frameBaseIdx;
         }
-    }
-    // At the beginning of memory, pages not available
-    if ((localStart + numFrames) > frameBaseIdx)
-    {
-        return -1;
     }
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
@@ -957,6 +1407,7 @@ loop_begin:
         {
             continue;
         }
+
         while (latestFree[i] > (frameBaseIdx - numFrames))
         {
             //
@@ -1021,17 +1472,13 @@ _scanDiscontiguousSearchLoop
     NvU64 localEnd,
     NvU64 frameAlignment,
     NvU64 frameAlignmentPadding,
-    NvU64 localStride,
-    NvU32 strideStart,
-    NvU64 strideAlignmentPadding,
-    NvU64 strideRegionAlignmentPadding,
+    NvBool bLocalizedAlloc,
+    NvU32 localizedUgpuNum,
     NvU64 *pPages,
     NvU64 *pNumEvictablePages
 )
 {
-    // discontig doesn't align it before starting the search, should be cleaned up
     NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
-    NvU64 nextStrideStart;
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 totalFound = 0;
 
@@ -1039,6 +1486,17 @@ _scanDiscontiguousSearchLoop
     NvU64 curEvictPage = numPages;
     NvBool bEvictablePage = NV_FALSE;
     NvU64 i;
+
+    NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
+    NvU64 strideAlignmentPadding = 0;
+    NvU64 nextStrideStart = 0;
+
+    if (bLocalizedAlloc)
+    {
+        strideAlignmentPadding = localizedFrameBase % PMA_LOCALIZED_MEMORY_ALLOC_FRAMES;
+    }
 
     //
     // latestFree stores the lowest '0' seen in the given map array in the current run
@@ -1049,20 +1507,17 @@ _scanDiscontiguousSearchLoop
         latestFree[i] = frameBaseIdx;
     }
 loop_begin:
-    if (localStride != 0)
+    if (bLocalizedAlloc)
     {
-        // Put the address into the correct strideStart
-        if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+        // Put the address into the correct uGPU stride
+        if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
         {
             // align up to next stride
-            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
         }
-    }
 
-    if (localStride != 0)
-    {
         // we're always in the correct stride at this point
-        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
 
         // Won't fit within current stride, need to align up again.
         if ((frameBaseIdx + framesPerPage) > nextStrideStart)
@@ -1070,53 +1525,61 @@ loop_begin:
             // even if it's in the correct stride, it won't fit here, so force it to the next one
             frameBaseIdx = nextStrideStart;
 
-            // Put the address into the correct strideStart
-            if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
+            // Put the address into the correct uGPU stride
+            if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
             {
                 // align up to next stride
-                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
             }
         }
-    }
 
-    if (localStride != 0)
-    {
         //
         // Find a region that is either
         // 1. already localized or
         // 2. completely free within the 64MB region
         //
+        // Note: Will need to use PMA_MAX_LOCALIZED_REGION_COUNT if count is increased.
+        //
         while (frameBaseIdx <= localEnd)
         {
-            // If one bit is localized, the entire region must be localized
-            if ((pRegmap->map[MAP_IDX_LOCALIZED][PAGE_MAPIDX(frameBaseIdx)] & NVBIT64(PAGE_BITIDX(frameBaseIdx))) != 0)
+            // localStart and localEnd guaranteed to be within localizable range if this is a localized allocation
+            PMA_LOCALIZATION_INFO localizationState = pRegmap->localizationState[PAGE_LOCAL_MAPIDX(frameBaseIdx, localizedFrameBase)];
+
+            if (((localizationState.status & LOCALIZATION_STATE_IS_LOCALIZED) != 0) ||
+                (localizationState.allocatedFrameCount == 0))
             {
                 break;
             }
             else
             {
-                // check for localized availability. Do a contiguous scan of only the region of interest
-                NvU64 strideRegionStart = alignDownToMod(frameBaseIdx,       (localStride * 2), strideRegionAlignmentPadding);
-                NvU64 strideRegionEnd   =   alignUpToMod((frameBaseIdx + 1), (localStride * 2), strideRegionAlignmentPadding) - 1;
-                NvS64 frameFound = _scanContiguousSearchLoop(pRegmap, (localStride * 2), strideRegionStart, strideRegionEnd,
-                                                             frameAlignment, frameAlignmentPadding, 0, 0, 0, 0, NV_FALSE);
+                // align up to the next entire stride region
+                frameBaseIdx = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_RESERVE_FRAMES, localizedFrameBase);
 
-                if (frameFound >= 0)
+                // Put the address into the correct uGPU stride
+                if (LOCAL_STRIDE_INDEX(frameBaseIdx, localizedFrameBase) != localizedUgpuNum)
                 {
-                    break;
+                    // align up to next stride
+                    frameBaseIdx = alignUpToMod((frameBaseIdx + 1), PMA_LOCALIZED_MEMORY_ALLOC_FRAMES, strideAlignmentPadding);
                 }
-                else
-                {
-                    // align up to the next entire stride region
-                    frameBaseIdx = alignUpToMod(frameBaseIdx + 1, (localStride * 2), strideRegionAlignmentPadding);
-
-                    // Put the address into the correct strideStart
-                    if ((((frameBaseIdx - strideRegionAlignmentPadding) / localStride) % 2) != strideStart)
-                    {
-                        // align up to next stride
-                        frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
-                    }
-                }
+            }
+        }
+    }
+    else // (!bLocalizedAlloc)
+    {
+        //
+        // Find a region that is not currently localized.
+        //
+        while (frameBaseIdx <= localEnd)
+        {
+            if ((frameBaseIdx < localizedFrameBase) || (frameBaseIdx >= localizedFrameBase + localizedFrameCount) ||
+                ((pRegmap->localizationState[PAGE_LOCAL_MAPIDX(frameBaseIdx, localizedFrameBase)].status & LOCALIZATION_STATE_IS_LOCALIZED) == 0))
+            {
+                break;
+            }
+            else
+            {
+                // align up to the next entire stride region
+                frameBaseIdx = alignUpToMod(frameBaseIdx + 1, PMA_LOCALIZED_MEMORY_RESERVE_FRAMES, localizedFrameBase);
             }
         }
     }
@@ -1145,12 +1608,6 @@ loop_begin:
 
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
-        // ignore checking localized for localized request
-        if (i == MAP_IDX_LOCALIZED && (localStride != 0))
-        {
-            continue;
-        }
-
         //
         // If array is not already full of evictable and free pages, go to evictable loop
         //
@@ -1268,6 +1725,9 @@ _scanDiscontiguousSearchLoopReverse
     NvU64 realAlign = (frameAlignmentPadding + framesPerPage) & (frameAlignment - 1ll);
     NvU64 frameBaseIdx = alignDownToMod(localEnd+1llu, frameAlignment, realAlign);
 
+    NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
+    NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
+
     //
     // latestFree stores the lowest '0' seen in the given map array in the current run
     // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
@@ -1285,6 +1745,24 @@ _scanDiscontiguousSearchLoopReverse
         latestFree[i] = frameBaseIdx;
     }
 loop_begin:
+    //
+    // Find a region that is not currently localized.
+    //
+    while (frameBaseIdx > localStart)
+    {
+        NvU64 nextFrameIndex = frameBaseIdx - 1;
+        if ((nextFrameIndex < localizedFrameBase) || (nextFrameIndex >= localizedFrameBase + localizedFrameCount) ||
+            ((pRegmap->localizationState[PAGE_LOCAL_MAPIDX(nextFrameIndex, localizedFrameBase)].status & LOCALIZATION_STATE_IS_LOCALIZED) == 0))
+        {
+            break;
+        }
+        else
+        {
+            // align down to the next entire stride region
+            frameBaseIdx = alignDownToMod(nextFrameIndex, PMA_LOCALIZED_MEMORY_RESERVE_FRAMES, localizedFrameBase);
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always <= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -1428,25 +1906,22 @@ pmaRegmapScanContiguous
     NvU64 *freeList,
     NvU64 pageSize,
     NvU64 alignment,
-    NvU64 stride,
-    NvU32 strideStart,
+    NvBool bLocalizedAlloc,
+    NvU32 localizedUgpuNum,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
     NvBool bReverseAlloc
 )
 {
     NvU64 numFrames, localStart, localEnd, framesPerPage;
-    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding, localStride;
-    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
+    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
     NvS64 frameFound;
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
 
-    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
-    numFrames = framesPerPage * numPages;
-    frameAlignment = alignment >> PMA_PAGE_SHIFT;
-    localStride = stride >> PMA_PAGE_SHIFT;
+    NvU64 localizedFrameBase = 0;
+    NvU64 localizedFrameCount = 0;
 
-    if (stride != 0)
+    if (bLocalizedAlloc)
     {
         if (bReverseAlloc)
         {
@@ -1454,11 +1929,18 @@ pmaRegmapScanContiguous
         }
 
         // assume stride is larger than alignment. Both must be pow2
-        if (alignment > stride)
+        if (alignment > PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
         {
             return NV_ERR_INVALID_ARGUMENT;
         }
+
+        localizedFrameBase  = pRegmap->localizedFrameBase;
+        localizedFrameCount = pRegmap->localizedFrameCount;
     }
+
+    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    numFrames = framesPerPage * numPages;
+    frameAlignment = alignment >> PMA_PAGE_SHIFT;
 
     //
     // Find how much is the base address short of the alignment and stride requirements
@@ -1466,15 +1948,6 @@ pmaRegmapScanContiguous
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-
-    if (stride != 0)
-    {
-        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
-        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-
-        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
-        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -1487,23 +1960,25 @@ pmaRegmapScanContiguous
         localStart = 0;
         localEnd   = pRegmap->totalFrames - 1;
     }
-    localStart = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
 
-    if (localStride != 0)
+    if (bLocalizedAlloc)
     {
-        // Put the address into the correct strideStart
-        if ((((localStart - frameAlignmentPadding) / localStride) % 2) != strideStart)
+        // Early exit for localized allocations if there is no localized memory available to avoid underflow in addressing math.
+        if (localizedFrameCount == 0)
         {
-            // align up to next stride
-            localStart = alignUpToMod((localStart + 1), localStride, strideAlignmentPadding);
+            return NV_ERR_NO_MEMORY;
         }
+
+        // Otherwise, ensure we only scan the localizable region.
+        localStart = NV_MAX(localStart, localizedFrameBase);
+        localEnd = NV_MIN(localEnd, localizedFrameBase + localizedFrameCount - 1);
     }
 
     if (!bReverseAlloc)
     {
         frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
-                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
-                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_FALSE);
+                                               frameAlignment, frameAlignmentPadding,
+                                               bLocalizedAlloc, localizedUgpuNum, NV_FALSE);
     }
     else
     {
@@ -1526,8 +2001,8 @@ pmaRegmapScanContiguous
     if (!bReverseAlloc)
     {
         frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
-                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
-                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_TRUE);
+                                               frameAlignment, frameAlignmentPadding,
+                                               bLocalizedAlloc, localizedUgpuNum, NV_TRUE);
     }
     else
     {
@@ -1557,27 +2032,25 @@ pmaRegmapScanDiscontiguous
     NvU64 *freeList,
     NvU64 pageSize,
     NvU64 alignment,
-    NvU64 stride,
-    NvU32 strideStart,
+    NvBool bLocalizedAlloc,
+    NvU32 localizedUgpuNum,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
     NvBool bReverseAlloc
 )
 {
     PMA_REGMAP *pRegmap = (PMA_REGMAP*) pMap;
-    NvU64 localStart, localEnd, framesPerPage, alignedAddrBase, frameAlignmentPadding, localStride;
-    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
+    NvU64 localStart, localEnd, framesPerPage;
+    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
     NvU64 freeFound = 0, evictFound = 0;
     NvU64 totalFound = 0;
     NV_STATUS status = NV_OK;
     NvU64 i;
 
-    NV_ASSERT(alignment == pageSize);
+    NvU64 localizedFrameBase = 0;
+    NvU64 localizedFrameCount = 0;
 
-    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
-    localStride = stride >> PMA_PAGE_SHIFT;
-
-    if (stride != 0)
+    if (bLocalizedAlloc)
     {
         if (bReverseAlloc)
         {
@@ -1585,11 +2058,19 @@ pmaRegmapScanDiscontiguous
         }
 
         // assume stride is larger than alignment. Both must be pow2
-        if (alignment > stride)
+        if (alignment > PMA_LOCALIZED_MEMORY_ALLOC_STRIDE)
         {
             return NV_ERR_INVALID_ARGUMENT;
         }
+
+        localizedFrameBase  = pRegmap->localizedFrameBase;
+        localizedFrameCount = pRegmap->localizedFrameCount;
     }
+
+    NV_ASSERT(alignment == pageSize);
+
+    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    frameAlignment = alignment >> PMA_PAGE_SHIFT;
 
     //
     // Find how much is the base address short of the alignment and stride requirements
@@ -1597,15 +2078,6 @@ pmaRegmapScanDiscontiguous
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-
-    if (stride != 0)
-    {
-        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
-        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-
-        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
-        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -1625,6 +2097,19 @@ pmaRegmapScanDiscontiguous
         localEnd   = pRegmap->totalFrames - 1;
     }
 
+    if (bLocalizedAlloc)
+    {
+        // Early exit for localized allocations if there is no localized memory available to avoid underflow in addressing math.
+        if (localizedFrameCount == 0)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+
+        // Otherwise, ensure we only scan the localizable region.
+        localStart = NV_MAX(localStart, localizedFrameBase);
+        localEnd = NV_MIN(localEnd, localizedFrameBase + localizedFrameCount - 1);
+    }
+
     //
     // Do the actual scanning here. The scanning functions return free pages at the beginning of
     // the array, and evictable pages in reverse order at the end of the array
@@ -1632,16 +2117,14 @@ pmaRegmapScanDiscontiguous
     if (!bReverseAlloc)
     {
         freeFound = _scanDiscontiguousSearchLoop(pRegmap, numPages, framesPerPage,
-            localStart, localEnd, alignment >> PMA_PAGE_SHIFT,
-            frameAlignmentPadding, localStride, strideStart, strideAlignmentPadding,
-            strideRegionAlignmentPadding,
-            freeList, &evictFound);
+            localStart, localEnd, frameAlignment, frameAlignmentPadding,
+            bLocalizedAlloc, localizedUgpuNum, freeList, &evictFound);
     }
     else
     {
         freeFound = _scanDiscontiguousSearchLoopReverse(pRegmap, numPages, framesPerPage,
-            localStart, localEnd, alignment >> PMA_PAGE_SHIFT,
-            frameAlignmentPadding, freeList, &evictFound);
+            localStart, localEnd, frameAlignment, frameAlignmentPadding,
+            freeList, &evictFound);
     }
 
     *numPagesAlloc = freeFound;
@@ -1696,6 +2179,24 @@ pmaRegmapGetSize
 {
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
     *pBytesTotal = (pRegmap->totalFrames << PMA_PAGE_SHIFT);
+}
+
+void
+pmaRegmapGetLocalizableSize
+(
+    void  *pMap,
+    NvU32 ugpuId,
+    NvU64 *pBytesTotal
+)
+{
+    if (ugpuId >= PMA_MAX_LOCALIZED_REGION_COUNT)
+    {
+        *pBytesTotal = 0;
+        return;
+    }
+
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    *pBytesTotal = ((pRegmap->localizedFrameCount / PMA_MAX_LOCALIZED_REGION_COUNT) << PMA_PAGE_SHIFT);
 }
 
 void

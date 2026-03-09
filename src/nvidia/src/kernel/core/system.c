@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -805,6 +805,12 @@ sysInitRegistryOverrides_IMPL
             == NV_OK)
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_ALLOW_UNKNOWN_4PART_IDS, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR, !!data32);
     }
 
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);

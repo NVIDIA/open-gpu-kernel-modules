@@ -549,11 +549,11 @@ PORT_MEM_ALLOCATOR *portMemAllocatorGetGlobalPaged(void);
  * @note Printing is done using portDbgPrintf, which prints regardless of
  * build type and debug levels.
  */
-void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking);
+void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking, NvBool bReportLeaks);
 /**
  * @brief Calls @ref portMemPrintTrackingInfo for all current allocator trackers.
  */
-void portMemPrintAllTrackingInfo(void);
+void portMemPrintAllTrackingInfo(NvBool bReportLeaks);
 
 // @} End core functions
 

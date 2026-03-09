@@ -90,6 +90,7 @@ rmclientConstruct_IMPL
     pClient->pSecurityToken  = NULL;
     pClient->pOSInfo         = pSecInfo->clientOSInfo;
     pClient->imexChannel     = -1;
+    pClient->clientGfid      = GPU_GFID_PF;
 
     pClient->cachedPrivilege = pSecInfo->privLevel;
 
@@ -874,12 +875,14 @@ rmclientFreeResource_IMPL
 
 static NvBool _rmclientIsCapable
 (
-    NvHandle hClient,
+    RsClient *pRsClient,
     NvU32 capability
 )
 {
     NvU32 internalClassId;
     RsResourceRef *pResourceRef = NULL;
+    NvHandle  hClient = pRsClient->hClient;
+    NvBool bSearchDescenants = NV_FALSE;
 
     switch(capability)
     {
@@ -910,11 +913,28 @@ static NvBool _rmclientIsCapable
         }
     }
 
-    // Check if client has allocated a given class
-    pResourceRef = serverutilFindChildRefByType(hClient, hClient, internalClassId, NV_TRUE);
-    if (pResourceRef == NULL)
+    if (bSearchDescenants)
     {
+        RS_ITERATOR devIt;
+
+        devIt = clientRefIter(pRsClient, NULL, internalClassId, RS_ITERATE_DESCENDANTS, NV_TRUE);
+        while (clientRefIterNext(pRsClient, &devIt))
+        {
+            if (objDynamicCastById(devIt.pResourceRef->pResource, internalClassId))
+            {
+                return NV_TRUE;
+            }
+        }
         return NV_FALSE;
+    }
+    else
+    {
+        // Check if client has allocated a given class under root client.
+        pResourceRef = serverutilFindChildRefByType(hClient, hClient, internalClassId, NV_TRUE);
+        if (pResourceRef == NULL)
+        {
+            return NV_FALSE;
+        }
     }
 
     return NV_TRUE;
@@ -927,15 +947,13 @@ NvBool rmclientIsCapableOrAdmin_IMPL
     RS_PRIV_LEVEL privLevel
 )
 {
-    RsClient *pRsClient = staticCast(pClient, RsClient);
-    NvHandle  hClient = pRsClient->hClient;
 
     if (rmclientIsAdmin(pClient, privLevel))
     {
         return NV_TRUE;
     }
 
-    return _rmclientIsCapable(hClient, capability);
+    return _rmclientIsCapable(staticCast(pClient, RsClient), capability);
 }
 
 NvBool rmclientIsCapable_IMPL
@@ -944,10 +962,7 @@ NvBool rmclientIsCapable_IMPL
     NvU32 capability
 )
 {
-    RsClient *pRsClient = staticCast(pClient, RsClient);
-    NvHandle  hClient = pRsClient->hClient;
-
-    return _rmclientIsCapable(hClient, capability);
+    return _rmclientIsCapable(staticCast(pClient, RsClient), capability);
 }
 
 /**

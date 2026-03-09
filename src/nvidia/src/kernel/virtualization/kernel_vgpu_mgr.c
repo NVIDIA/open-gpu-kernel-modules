@@ -374,6 +374,48 @@ _addVgpuTypeToCreatableType(NvU32 vgpuTypeId,
     return rmStatus;
 }
 
+static NV_STATUS
+_kvgpumgrGetCreatedVgpuOnGpuInstance(OBJGPU *pGpu, NvU32 swizzId, NvU32 *vgpuType)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
+    NvU32 pgpuIndex;
+    KERNEL_PHYS_GPU_INFO *pPgpuInfo;
+    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &pgpuIndex));
+    pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
+
+    if (osIsVgpuVfioPresent() == NV_OK)
+    {
+        for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
+             pRequestVgpu != NULL;
+             pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
+        {
+            /* Check for an existing Vgpu on the same physical gpu and same GI */
+            if ((pRequestVgpu->gpuPciId == pGpu->gpuId) && (pRequestVgpu->swizzId == swizzId))
+            {
+                *vgpuType = pRequestVgpu->vgpuTypeId;
+                return NV_OK;
+            }
+        }
+    } else {
+        KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+
+        for (pKernelHostVgpuDevice = listHead(&(pPgpuInfo->listHostVgpuDeviceHead));
+             pKernelHostVgpuDevice != NULL;
+             pKernelHostVgpuDevice = listNext(&(pPgpuInfo->listHostVgpuDeviceHead), pKernelHostVgpuDevice))
+        {
+            if (pKernelHostVgpuDevice->swizzId == swizzId)
+            {
+                *vgpuType = pKernelHostVgpuDevice->vgpuType;
+                return NV_OK;
+            }
+        }
+    }
+    return NV_ERR_OBJECT_NOT_FOUND;
+}
+
 NV_STATUS
 kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32 pgpuIndex,
                               NvU32 gpuInstanceId, NvU32* numVgpuTypes, NvU32* vgpuTypes)
@@ -401,8 +443,6 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
             NvU32 j;
             VGPU_TYPE *pVgpuTypeInfo;
             VGPU_TYPE *existingVgpuTypeInfo = NULL;
-            NvBool bExistingVgpuOnGI = NV_FALSE;
-            REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
             NvBool bHeterogeneousModeEnabled;
             NvU32 *pSupportedTypeId;
             NV_STATUS rmStatus = NV_OK;
@@ -438,7 +478,6 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
             }
             for (j = 0; j < NV_ARRAY_ELEMENTS(vgpuSmcTypeIdMappings); j++)
             {
-                bExistingVgpuOnGI = NV_FALSE;
 
                 //Check for Ids with same partition flag on same DevID (GPU) 
                 if ((vgpuSmcTypeIdMappings[j].devId == pGpu->idInfo.PCIDeviceID) &&
@@ -464,6 +503,7 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
                     {
                         if (pgpuInfo->migTimeslicingModeEnabled)
                         {
+                            NvU32 vgpuTypeId;
                             pVgpuTypeInfo = NULL;
                             // check to make sure the profile is supported
                             for (i = 0; i < pgpuInfo->numVgpuTypes; i++)
@@ -478,23 +518,13 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
                             // If the vgpu type id is not supported, skip and search the next one
                             if (pVgpuTypeInfo == NULL)
                                 continue;
-                            for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-                                 pRequestVgpu != NULL;
-                                 pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
-                            {
-                                /* Check for an existing Vgpu on the same physical gpu and same GI  */
-                                if ((pRequestVgpu->gpuPciId == pGpu->gpuId) && (pRequestVgpu->swizzId == id))
-                                {
-                                    bExistingVgpuOnGI = NV_TRUE;
-                                    break;
-                                }
-                            }
-                            if (bExistingVgpuOnGI ==  NV_FALSE)
+
+                            if (_kvgpumgrGetCreatedVgpuOnGpuInstance(pGpu, id, &vgpuTypeId) != NV_OK)
                                 continue;
-                            
-                            NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(pRequestVgpu->vgpuTypeId, 
+
+                            NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(vgpuTypeId,
                                                     &existingVgpuTypeInfo));
-                            
+
                             // Check if maximum allowed number of vGPUs for this type has already been created
                             if (pgpuInfo->assignedSwizzIdVgpuCount[id] >= existingVgpuTypeInfo->maxInstancePerGI)
                                 continue;
@@ -762,6 +792,8 @@ kvgpumgrPgpuAddVgpuType
     pPgpuInfo->vgpuTypes[pPgpuInfo->numVgpuTypes] = pVgpuTypeInfo;
     pPgpuInfo->numVgpuTypes++;
 
+    vgpuMgrSetNominalFbSize(&pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
+
     return NV_OK;
 }
 
@@ -802,6 +834,7 @@ kvgpumgrAttachGpu(NvU32 gpuPciId)
         pPhysGpuInfo->gpuPciId     = gpuPciId;
         pPhysGpuInfo->numVgpuTypes = 0;
         pPhysGpuInfo->vgpuConfigState = NVA081_CTRL_VGPU_CONFIG_STATE_UNINITIALIZED;
+        portMemSet(&pPhysGpuInfo->vgpuNominalFbSize, 0, sizeof(VGPU_NOMINAL_FB_SIZE));
         pKernelVgpuMgr->pgpuCount++;
     }
     // Clear placement info for GI
@@ -2089,17 +2122,13 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
                    VGPU_TYPE *vgpuTypeInfo,
                    NvU32 *swizzId)
 {
-    OBJSYS *pSys                         = SYS_GET_INSTANCE();
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    KernelVgpuMgr *pKernelVgpuMgr        = SYS_GET_KERNEL_VGPUMGR(pSys);
     NvU64 swizzIdInUseMask = 0;
     NvU32 id;
     NV_STATUS rmStatus = NV_OK;
     VGPU_TYPE *existingVgpuTypeInfo = NULL;
     NvBool bIsSwizzIdReserved = NV_FALSE;
     NvBool bFoundCreatableHeterogeneousType = NV_FALSE;
-    NvBool bExistingVgpuOnGI = NV_FALSE;
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
 
     swizzIdInUseMask = kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager);
 
@@ -2110,7 +2139,6 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
         if ((*swizzId != KMIGMGR_SWIZZID_INVALID) && (*swizzId != id))
             continue;
 
-        bExistingVgpuOnGI = NV_FALSE;
         if (NVBIT64(id) & swizzIdInUseMask)
         {
             KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
@@ -2150,20 +2178,11 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
                     }
                     else if (pPhysGpuInfo->assignedSwizzIdVgpuCount[id] > 0)
                     {
-                        for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-                             pRequestVgpu != NULL;
-                             pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
+                        NvU32 vgpuTypeId;
+
+                        if (_kvgpumgrGetCreatedVgpuOnGpuInstance(pGpu, id, &vgpuTypeId) == NV_OK)
                         {
-                            /* Check for an existing Vgpu on the same physical gpu and same GI  */
-                            if ((pRequestVgpu->gpuPciId == pGpu->gpuId) && (pRequestVgpu->swizzId == id))
-                            {
-                                bExistingVgpuOnGI = NV_TRUE;
-                                break;
-                            }
-                        }
-                        if (bExistingVgpuOnGI ==  NV_TRUE)
-                        {
-                            NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(pRequestVgpu->vgpuTypeId, &existingVgpuTypeInfo));
+                            NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(vgpuTypeId, &existingVgpuTypeInfo));
                             if (kvgpumgrIsHeterogeneousVgpuTypeSupported() == NV_TRUE)
                             {
                                 if (existingVgpuTypeInfo->profileSize != vgpuTypeInfo->profileSize)
@@ -2791,17 +2810,17 @@ NV_STATUS kvgpumgrGetAvailableInstances(
 
     *availInstances = 0;
 
-    /* TODO: Needs to have a proper fix this for DriverVM config */
-    if (gpuIsSriovEnabled(pGpu) &&
-        !pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED))
+    if (gpuIsSriovEnabled(pGpu))
     {
-        NvU8 fnId = devfn - pGpu->sriovState.firstVFOffset;
+        if (!pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED))
+        {
+            NvU8 fnId = devfn - pGpu->sriovState.firstVFOffset;
 
-        NV_ASSERT_OR_RETURN(fnId <= pGpu->sriovState.totalVFs, NV_ERR_INVALID_ARGUMENT);
+            NV_ASSERT_OR_RETURN(fnId <= pGpu->sriovState.totalVFs, NV_ERR_INVALID_ARGUMENT);
 
-        
-        if ((pKernelVgpuMgr->pgpuInfo[pgpuIndex].createdVfMask) & (NVBIT64(fnId)))
-            goto exit;    
+            if ((pKernelVgpuMgr->pgpuInfo[pgpuIndex].createdVfMask) & (NVBIT64(fnId)))
+                goto exit;
+        }
 
         if (IS_MIG_ENABLED(pGpu))
         {
@@ -2812,8 +2831,6 @@ NV_STATUS kvgpumgrGetAvailableInstances(
                 KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
                 NvU32 id;
                 VGPU_TYPE *existingVgpuTypeInfo = NULL;
-                NvBool bExistingVgpuOnGI = NV_FALSE;
-                REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
 
                 swizzIdInUseMask = kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager);
 
@@ -2837,7 +2854,6 @@ NV_STATUS kvgpumgrGetAvailableInstances(
                 // Determine valid swizzids not assigned to any vGPU device.
                 FOR_EACH_INDEX_IN_MASK(64, id, swizzIdInUseMask)
                 {
-                    bExistingVgpuOnGI = NV_FALSE;
                     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
 
                     rmStatus = kmigmgrGetGPUInstanceInfo(pGpu, pKernelMIGManager,
@@ -2852,22 +2868,13 @@ NV_STATUS kvgpumgrGetAvailableInstances(
 
                     if (pKernelMIGGpuInstance->partitionFlag == partitionFlag)
                     {
-                        if (pKernelVgpuMgr->pgpuInfo[pgpuIndex].assignedSwizzIdVgpuCount[id] > 0) 
+                        if (pKernelVgpuMgr->pgpuInfo[pgpuIndex].assignedSwizzIdVgpuCount[id] > 0)
                         {
-                            for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-                                 pRequestVgpu != NULL;
-                                 pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
+                            NvU32 vgpuTypeId;
+
+                            if (_kvgpumgrGetCreatedVgpuOnGpuInstance(pGpu, id, &vgpuTypeId) == NV_OK)
                             {
-                                /* Check for an existing Vgpu on the same physical gpu and same GI  */
-                                if ((pRequestVgpu->gpuPciId == pGpu->gpuId) && (pRequestVgpu->swizzId == id))
-                                {
-                                    bExistingVgpuOnGI = NV_TRUE;
-                                    break;
-                                }
-                            }
-                            if (bExistingVgpuOnGI ==  NV_TRUE)
-                            {
-                                NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(pRequestVgpu->vgpuTypeId, &existingVgpuTypeInfo));
+                                NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(vgpuTypeId, &existingVgpuTypeInfo));
                                 if (kvgpumgrIsHeterogeneousVgpuTypeSupported() == NV_TRUE)
                                 {
                                     if (existingVgpuTypeInfo->profileSize != vgpuTypeInfo->profileSize)
@@ -3380,7 +3387,8 @@ _kvgpumgrGetMaxTotalGspHeapSize(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo, N
     NvU64 totalGspHeapSize;
     NvU64 maxTotalGspHeapSize = 0;
     VGPU_TYPE *pVgpuTypeInfo;
-    NvU32 maxInstance;
+    NvU32 placementRegionSize, placementSize;
+    VGPU_TYPE_SUPPORTED_PLACEMENT_INFO *pVgpuTypeSupportedPlacementInfo;
 
     /* Calculate Max Total GSP Plugin heap size */
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
@@ -3388,7 +3396,6 @@ _kvgpumgrGetMaxTotalGspHeapSize(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo, N
         pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
         if (pVgpuTypeInfo == NULL)
             break;
-
 
         if (IS_MIG_IN_USE(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
         {
@@ -3403,16 +3410,17 @@ _kvgpumgrGetMaxTotalGspHeapSize(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo, N
             if (partitionFlag != giPartitionFlag)
                 continue;
 
-            maxInstance = pVgpuTypeInfo->maxInstancePerGI;
         }
         /* Ignore MIG vGPUs if MIG is not in use or mig timeslicing is not supported */
         else if (pVgpuTypeInfo->gpuInstanceSize != 0)
             continue;
-        else
-            maxInstance = pVgpuTypeInfo->maxInstance;
 
+        pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
 
-        totalGspHeapSize = pVgpuTypeInfo->gspHeapSize * maxInstance;
+        placementSize = pVgpuTypeSupportedPlacementInfo->placementSize;
+        placementRegionSize = vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
+
+        totalGspHeapSize = NV_ALIGN_UP((pVgpuTypeInfo->gspHeapSize * placementRegionSize / placementSize), RM_PAGE_SIZE_HUGE);
 
         if (maxTotalGspHeapSize < totalGspHeapSize)
             maxTotalGspHeapSize = totalGspHeapSize;
@@ -3459,8 +3467,6 @@ _kvgpumgrSetHeterogeneousResources_GB100(OBJGPU *pGpu,
 {
     NvU32 i, j;
     NvU64 vmmuSegSize;
-    NvU32 placementRegionSize;
-    NvU32 placementRegionSizePerGi;
     NvU32 guestMaxVmmuCount;
     NvU64 maxTotalGspHeapSize;
     NvU64 gspHeapStartOffset;
@@ -3487,13 +3493,11 @@ _kvgpumgrSetHeterogeneousResources_GB100(OBJGPU *pGpu,
     gspHeapStartOffset = (vmmuSegmentMin + guestMaxVmmuCount) * vmmuSegSize;
 
     pKernelVgpuTypePlacementInfo = &pPgpuInfo->kernelVgpuTypePlacementInfo;
-    placementRegionSize = pKernelVgpuTypePlacementInfo->placementRegionSize;
-    placementRegionSizePerGi = placementRegionSize;
 
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
     {
         NvU32 maxInstance;
-        NvU32 memDiv = 0;
+        NvU32 placementRegionSize, placementId;
 
         pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
         if (pVgpuTypeInfo == NULL)
@@ -3510,24 +3514,14 @@ _kvgpumgrSetHeterogeneousResources_GB100(OBJGPU *pGpu,
         pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount = 0;
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_TIMESLICING_SUPPORTED) && pVgpuTypeInfo->gpuInstanceSize != 0)
         {
-            NvU32 partitionFlag                 = PARTITIONID_INVALID;
-
-            NV_ASSERT_OR_RETURN_VOID(kvgpumgrGetPartitionFlag(pVgpuTypeInfo->vgpuTypeId, &partitionFlag) == NV_OK);
-
-            memDiv = _kvgpumgrGetMemDivFromPartitionFlag(
-                (DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _MEMORY_SIZE, partitionFlag)));
-            if (memDiv != 0)
-                placementRegionSizePerGi = placementRegionSize / memDiv;
-            else
-                placementRegionSizePerGi = placementRegionSize;
             maxInstance = pVgpuTypeInfo->maxInstancePerGI;
         }
         else
         {
-            memDiv = 0;
             maxInstance = pVgpuTypeInfo->maxInstance;
         }
 
+        placementRegionSize = vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
 
         for (j = 0; j < maxInstance; j++)
         {
@@ -3535,21 +3529,21 @@ _kvgpumgrSetHeterogeneousResources_GB100(OBJGPU *pGpu,
                                 &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
             pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
 
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_TIMESLICING_SUPPORTED) &&
-                pVgpuTypeInfo->gpuInstanceSize != 0 &&
-                memDiv != 0)
-            {
-                pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId =
-                    (placementRegionSizePerGi * j) / maxInstance;
-            }
-            else
-            {
-                pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId =
+            pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId =
                     (placementRegionSize * j) / maxInstance;
-            }
-
+            placementId = pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId;
             pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedChidOffset =
-                                (hostChannelCount * j) / maxInstance;
+                                (hostChannelCount * placementId) / placementRegionSize;
+
+            pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount++;
+
+           /*
+            * Skip setting pVgpuInstancePlacementInfo here for MIG vGpu profiles as
+            * it will get set during actual GI creation.
+            */
+
+            if (pVgpuTypeInfo->gpuInstanceSize) // MIG vGPU
+                continue;
 
             if (maxInstance == 1)
             {
@@ -3561,14 +3555,13 @@ _kvgpumgrSetHeterogeneousResources_GB100(OBJGPU *pGpu,
             else
             {
                 pVgpuInstancePlacementInfo->heterogeneousSupportedVmmuOffset =
-                                vmmuSegmentMin + ((guestMaxVmmuCount * j) / maxInstance);
+                                vmmuSegmentMin + (guestMaxVmmuCount * placementId) / placementRegionSize;
 
-                gspHeapOffset = (maxTotalGspHeapSize * j) / maxInstance;
+                gspHeapOffset = (maxTotalGspHeapSize * placementId) / placementRegionSize;
                 pVgpuInstancePlacementInfo->heterogeneousGspHeapOffset =
                                 gspHeapStartOffset + NV_ALIGN_DOWN(gspHeapOffset, RM_PAGE_SIZE_HUGE);
             }
 
-            pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount++;
         }
     }
 
@@ -3651,6 +3644,22 @@ _kvgpumgrSetHomogeneousResources_GB100(OBJGPU *pGpu,
     return;
 }
 
+static NvU32
+_kvgpumgrGetplacementSize(NvU64 profileSize, NvU32 placementRegionSize)
+{
+    NvU32 placementSize = (NvU32) (profileSize / (1024 * 1024 * 1024));
+
+    /*
+       Report placementSize as 3 for 2GB profile on 96GB GPU (RTX PRO 6000 Blackwell SE)
+       so that each vgpu gets atleast 64 channels because only 32 instances of 2GB are
+       supported even though it can accommodate 48 vgpus.
+    */    
+    if (placementRegionSize == 96 && placementSize == 2)
+        return 3;
+    else
+        return placementSize;
+}
+
 NV_STATUS
 kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
 {
@@ -3722,10 +3731,12 @@ kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
 
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
     {
+        NvU32 placementRegionSize;
         pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
         if (pVgpuTypeInfo == NULL)
             break;
 
+        placementRegionSize = vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
         pVgpuTypeSupportedPlacementInfo = &pVgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
         pVgpuTypePlacementInfo = &pKernelVgpuTypePlacementInfo->vgpuTypePlacementInfo[i];
 
@@ -3751,7 +3762,7 @@ kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
         pVgpuTypeSupportedPlacementInfo->homogeneousPlacementCount = 0;
         pVgpuTypePlacementInfo->guestVmmuCount = 0;
 
-        pVgpuTypeSupportedPlacementInfo->placementSize = pVgpuTypeInfo->profileSize / (1024 * 1024 * 1024);
+        pVgpuTypeSupportedPlacementInfo->placementSize = _kvgpumgrGetplacementSize(pVgpuTypeInfo->profileSize, placementRegionSize);
 
         if (gpuIsSriovEnabled(pGpu))
         {
@@ -3761,8 +3772,10 @@ kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
                 channelDivisor = pVgpuTypeInfo->maxInstancePerGI;
             else
                 channelDivisor = pVgpuTypeInfo->maxInstance;
+
             if (gpuIsNonPowerOf2ChannelCountSupported(pGpu))
-                pVgpuTypeSupportedPlacementInfo->channelCount = hostChannelCount / channelDivisor;
+                pVgpuTypeSupportedPlacementInfo->channelCount = (hostChannelCount * pVgpuTypeSupportedPlacementInfo->placementSize) /
+                                                             placementRegionSize;
             else
                 pVgpuTypeSupportedPlacementInfo->channelCount = nvPrevPow2_U32(hostChannelCount /
                                                              channelDivisor);
@@ -3829,7 +3842,8 @@ kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
 
         if (pVgpuTypeInfo->maxInstance == 1)
         {
-            pKernelVgpuTypePlacementInfo->placementRegionSize = pVgpuTypeSupportedPlacementInfo->placementSize;
+            pKernelVgpuTypePlacementInfo->placementRegionSize = 
+                vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
 
             if (gpuIsSriovEnabled(pGpu))
             {
@@ -5326,6 +5340,7 @@ _kvgpuMgrSetHeterogeneousResourcesPerGI(OBJGPU *pGpu, NvU32 swizzId, KERNEL_PHYS
     VGPU_TYPE_PLACEMENT_INFO *pVgpuTypePlacementInfo, *pDefaultVgpuTypePlacementInfo;
     VGPU_TYPE_SUPPORTED_PLACEMENT_INFO *pVgpuTypeSupportedPlacementInfo;
     VGPU_INSTANCE_PLACEMENT_INFO *pVgpuInstancePlacementInfo;
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO *pVgpuInstanceSupportedPlacementInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
     Heap *pMemoryPartitionHeap  = NULL;
@@ -5435,6 +5450,7 @@ _kvgpuMgrSetHeterogeneousResourcesPerGI(OBJGPU *pGpu, NvU32 swizzId, KERNEL_PHYS
     // Iterate vgpu types belongs to current GI, then calculate placement resources
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
     {
+        NvU32 placementRegionSize;
         pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
         if (pVgpuTypeInfo == NULL)
             break;
@@ -5456,9 +5472,14 @@ _kvgpuMgrSetHeterogeneousResourcesPerGI(OBJGPU *pGpu, NvU32 swizzId, KERNEL_PHYS
         // Copy from Global(default) placement info calculated in kvgpumgrSetSupportedPlacementIds
         pVgpuTypePlacementInfo->guestVmmuCount = pDefaultVgpuTypePlacementInfo->guestVmmuCount;
 
+        placementRegionSize = vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, pVgpuTypeInfo);
+
         for (j = 0; j < pVgpuTypeSupportedPlacementInfo->heterogeneousPlacementCount; j++)
         {
             pVgpuInstancePlacementInfo = &pVgpuTypePlacementInfo->vgpuInstancePlacementInfo[j];
+            pVgpuInstanceSupportedPlacementInfo =
+                &pVgpuTypeSupportedPlacementInfo->vgpuInstanceSupportedPlacementInfo[j];
+
             if (pVgpuTypeInfo->maxInstancePerGI == 1)
             {
                 pVgpuInstancePlacementInfo->heterogeneousSupportedVmmuOffset = vmmuSegmentMin;
@@ -5467,9 +5488,11 @@ _kvgpuMgrSetHeterogeneousResourcesPerGI(OBJGPU *pGpu, NvU32 swizzId, KERNEL_PHYS
             }
             else
             {
+                NvU32 placementId = pVgpuInstanceSupportedPlacementInfo->heterogeneousSupportedPlacementId;
+
                 pVgpuInstancePlacementInfo->heterogeneousSupportedVmmuOffset =
-                            vmmuSegmentMin + ((guestMaxVmmuCount * j) / pVgpuTypeInfo->maxInstancePerGI);
-                gspHeapOffset = (maxTotalGspHeapSize * j) / pVgpuTypeInfo->maxInstancePerGI;
+                            vmmuSegmentMin + ((guestMaxVmmuCount * placementId) / placementRegionSize);
+                gspHeapOffset = (maxTotalGspHeapSize * placementId) / placementRegionSize;
                 pVgpuInstancePlacementInfo->heterogeneousGspHeapOffset =
                             gspHeapStartOffset + NV_ALIGN_DOWN(gspHeapOffset, RM_PAGE_SIZE_HUGE);
             }

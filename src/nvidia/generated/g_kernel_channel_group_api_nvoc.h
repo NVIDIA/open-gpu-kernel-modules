@@ -54,29 +54,19 @@ extern "C" {
 #include "nvoc/prelude.h"
 #include "resserv/resserv.h"
 
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct KernelChannelGroup;
 
-#ifndef __NVOC_CLASS_KernelChannelGroup_TYPEDEF__
-#define __NVOC_CLASS_KernelChannelGroup_TYPEDEF__
-typedef struct KernelChannelGroup KernelChannelGroup;
-#endif /* __NVOC_CLASS_KernelChannelGroup_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannelGroup
-#define __nvoc_class_id_KernelChannelGroup 0xec6de1
+#define __nvoc_class_id_KernelChannelGroup 0xec6de1u
+typedef struct KernelChannelGroup KernelChannelGroup;
 #endif /* __nvoc_class_id_KernelChannelGroup */
 
 
@@ -164,13 +154,9 @@ struct NVOC_METADATA__KernelChannelGroupApi {
     const struct NVOC_VTABLE__KernelChannelGroupApi vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
-#define __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
-typedef struct KernelChannelGroupApi KernelChannelGroupApi;
-#endif /* __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannelGroupApi
-#define __nvoc_class_id_KernelChannelGroupApi 0x2b5b80
+#define __nvoc_class_id_KernelChannelGroupApi 0x2b5b80u
+typedef struct KernelChannelGroupApi KernelChannelGroupApi;
 #endif /* __nvoc_class_id_KernelChannelGroupApi */
 
 // Casting support
@@ -188,14 +174,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannelGroupApi;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelChannelGroupApi(KernelChannelGroupApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelChannelGroupApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelChannelGroupApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelChannelGroupApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelChannelGroupApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kchangrpapiConstruct_IMPL(struct KernelChannelGroupApi *arg_pKernelChannelGroupApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kchangrpapiConstruct(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams) kchangrpapiConstruct_IMPL(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams)
+NV_STATUS kchangrpapiConstruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kchangrpapiConstruct(pKernelChannelGroupApi, pCallContext, pParams) kchangrpapiConstruct_IMPL(pKernelChannelGroupApi, pCallContext, pParams)
 
 NV_STATUS kchangrpapiCopyConstruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 #ifdef __nvoc_kernel_channel_group_api_h_disabled
@@ -494,10 +480,12 @@ static inline void kchangrpapiAddAdditionalDependants_DISPATCH(struct RsClient *
     pResource->__nvoc_metadata_ptr->vtable.__kchangrpapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool kchangrpapiCanCopy_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);
 
 NV_STATUS kchangrpapiControl_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS kchangrpapiCtrlCmdGpFifoSchedule_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams);
 
 NV_STATUS kchangrpapiCtrlCmdBind_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_BIND_PARAMS *pParams);
@@ -522,26 +510,30 @@ NV_STATUS kchangrpapiCtrlCmdInternalGpFifoSchedule_IMPL(struct KernelChannelGrou
 
 NV_STATUS kchangrpapiCtrlCmdInternalSetTimeslice_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_TIMESLICE_PARAMS *pTsParams);
 
-static inline NV_STATUS kchangrpapiCtrlGetTpcPartitionMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
+static inline NV_STATUS kchangrpapiCtrlGetTpcPartitionMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
-static inline NV_STATUS kchangrpapiCtrlSetTpcPartitionMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
+static inline NV_STATUS kchangrpapiCtrlSetTpcPartitionMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
-static inline NV_STATUS kchangrpapiCtrlGetMMUDebugMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams) {
+static inline NV_STATUS kchangrpapiCtrlGetMMUDebugMode_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
-static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams) {
+static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
-static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
+static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -36,7 +36,6 @@
 #include "nvlimits.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gsp/gsp_static_config.h"
-#include "vgpu/vgpu_events.h"
 #include "gpu/perf/kern_perf_gpuboostsync.h"
 #include "nvdevid.h"
 #include "platform/sli/sli.h"

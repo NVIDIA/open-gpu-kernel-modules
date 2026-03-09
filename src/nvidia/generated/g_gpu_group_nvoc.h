@@ -179,13 +179,9 @@ struct NVOC_METADATA__OBJGPUGRP {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-#define __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-typedef struct OBJGPUGRP OBJGPUGRP;
-#endif /* __NVOC_CLASS_OBJGPUGRP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPUGRP
-#define __nvoc_class_id_OBJGPUGRP 0xe40531
+#define __nvoc_class_id_OBJGPUGRP 0xe40531u
+typedef struct OBJGPUGRP OBJGPUGRP;
 #endif /* __nvoc_class_id_OBJGPUGRP */
 
 // Casting support
@@ -204,8 +200,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUGRP;
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32);
-#define __objCreate_OBJGPUGRP(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJGPUGRP((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJGPUGRP(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJGPUGRP((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -330,6 +326,12 @@ static inline NV_STATUS gpugrpGetGpuFromSubDeviceInstance(struct OBJGPUGRP *pGpu
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

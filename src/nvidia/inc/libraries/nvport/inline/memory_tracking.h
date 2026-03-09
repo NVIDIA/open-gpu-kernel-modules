@@ -78,14 +78,21 @@ void portMemInitializeAllocatorTrackingLibosLimit(NvU32 gfid, NvLength limit);
 #define LIBOS_RW_LOCK_SIZE                      144
 #endif
 
+typedef struct PORT_MEM_FRAGMENTATION
+{
+    PORT_ATOMIC NvLength largestFreeChunkSize;
+    PORT_ATOMIC NvLength freeHeapSize;
+} PORT_MEM_FRAGMENTATION;
+
 typedef struct PORT_MEM_COUNTER
 {
-    volatile NvU32    activeAllocs;
-    volatile NvU32    totalAllocs;
-    volatile NvU32    peakAllocs;
-    volatile NvLength activeSize;
-    volatile NvLength totalSize;
-    volatile NvLength peakSize;
+    PORT_ATOMIC NvU32    activeAllocs;
+    PORT_ATOMIC NvU32    totalAllocs;
+    PORT_ATOMIC NvU32    peakAllocs;
+    PORT_ATOMIC NvLength activeSize;
+    PORT_ATOMIC NvLength totalSize;
+    PORT_ATOMIC NvLength peakSize;
+    PORT_MEM_FRAGMENTATION peakFragmentation;
 } PORT_MEM_COUNTER;
 
 typedef struct PORT_MEM_FENCE_HEAD

@@ -14,7 +14,7 @@ OUTPUT=$4
 XEN_PRESENT=1
 PREEMPT_RT_PRESENT=0
 
-NVIDIA_OOT_PATH="/usr/src/nvidia/nvidia-oot"
+NVIDIA_OOT_PATH="/usr/src/nvidia/nvidia-public"
 MODULE_SYMVERS_PATHS="$OUTPUT/Module.symvers"
 
 # Also search in out-of-tree Module.symvers on Tegra
@@ -507,6 +507,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -530,6 +531,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -588,6 +590,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -614,6 +617,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -1082,30 +1086,99 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_DETACH_IOAS" "" "types"
         ;;
 
+        vfio_device_ops_has_get_region_info_caps)
+            #
+            # Determine if 'struct vfio_device_ops' has 'get_region_info_caps' 
+            # callback.
+            #
+            # Added by commit 775f726a742a ("vfio: Add get_region_info_caps op") 
+            # in v6.19
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            int conftest_vfio_device_ops_has_get_region_info_caps(void) {
+                return offsetof(struct vfio_device_ops, get_region_info_caps);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_GET_REGION_INFO_CAPS" "" "types"
+        ;;
+
         pfn_address_space)
             #
             # Determine if 'struct pfn_address_space' structure is present or not.
+            #
+            # Added by commit 2ec41967189c ("mm: handle poisoning of pfn without
+            # struct pages") in v6.19
+            # Added by commit e6dbcb7c0e7b ("mm: fixup pfnmap memory failure
+            # handling to use pgoff in v6.19
             #
             CODE="
             #include <linux/memory-failure.h>
             void conftest_pfn_address_space() {
                 struct pfn_address_space pfn_address_space;
+                pfn_address_space.pfn_to_vma_pgoff = NULL;
+                register_pfn_address_space(&pfn_address_space);
+                unregister_pfn_address_space(&pfn_address_space);
+            }"
+            compile_check_conftest "$CODE" "NV_PFN_ADDRESS_SPACE_STRUCT_PRESENT" "" "types"
+        ;;
+	
+        irq_bypass_producer_has_token)
+            #
+            # Determine if 'struct irq_bypass_producer' has 'token' field
+            #
+            # Added by commit 2b521d86ee80 ("irqbypass: Take ownership of 
+            # producer/consumer token tracking") in v6.17
+            #
+            CODE="
+            #include <linux/irqbypass.h>
+            int conftest_irq_bypass_producer_has_token(void) {
+                return offsetof(struct irq_bypass_producer, token);
             }"
 
-            compile_check_conftest "$CODE" "NV_PFN_ADDRESS_SPACE_STRUCT_PRESENT" "" "types"
+            compile_check_conftest "$CODE" "NV_IRQ_BYPASS_PRODUCER_HAS_TOKEN" "" "types"
+        ;;
+
+        irq_bypass_register_producer_has_eventfd_and_irq_args)
+            #
+            # Determine if irq_bypass_register_producer() function has 
+            # additional 'eventfd' and 'irq' arguments.
+            #
+            # Added by commits 2b521d86ee80 ("irqbypass: Take ownership of
+            # producer/consumer token tracking") and 23b54381cee2 
+            # ("irqbypass: Require producers to pass in Linux IRQ number 
+            # during registration") in v6.17
+            #
+            CODE="
+            #include <linux/irqbypass.h>
+            #include <linux/eventfd.h>
+            void conftest_irq_bypass_register_producer_has_eventfd_and_irq_args(void) {
+                struct irq_bypass_producer *prod = NULL;
+                struct eventfd_ctx *eventfd = NULL;
+                int irq = 0;
+                irq_bypass_register_producer(prod, eventfd, irq);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IRQ_BYPASS_REGISTER_PRODUCER_HAS_EVENTFD_AND_IRQ_ARGS" "" "types"
         ;;
 
         egm_module_helper_api_present)
             #
             # Determine if egm management api are present or not.
             #
+            # unregister_egm_node() function signature changed by commit 
+            # 9863aeed3a2d ("NVIDIA: SAUCE: vfio/nvgrace-egm: Update EGM 
+            # unregistration API") to use PCI device as its parameter
+            # https://github.com/NVIDIA/NV-Kernels.git
+            #
             CODE="
             #include <linux/pci.h>
             #include <linux/nvgrace-egm.h>
             void conftest_egm_module_helper_api_present() {
-                struct pci_dev *pdev;
+                struct pci_dev *pdev = NULL;
                 register_egm_node(pdev);
-                unregister_egm_node(0);
+                unregister_egm_node(pdev);
             }
             "
             compile_check_conftest "$CODE" "NV_EGM_MODULE_HELPER_API_PRESENT" "" "types"
@@ -1305,6 +1378,51 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG" "" "types"
+        ;;
+
+        zone_device_page_init_has_pgmap_and_order_args)
+            #
+            # Determine if the zone_device_page_init() has two additional
+            # arguments
+            #
+            # This change was introduced by d245f9b4ab80
+            # ("mm/zone_device: support large zone device private folios")
+            #
+            # It was further amended in 9387a71ec62c
+            # (mm/zone_device: reinitialize large zone device private folios)
+            #
+            # both commits are in linux-next, expected in v6.19.
+            #
+            CODE="
+            #include <linux/memremap.h>
+            void init_page(void) {
+                struct page *page;
+                struct dev_pagemap *pgmap;
+
+                zone_device_page_init(page, pgmap, 0);
+            }"
+            compile_check_conftest "$CODE" "NV_ZONE_DEVICE_PAGE_INIT_HAS_PGMAP_AND_ORDER_ARGS" "" "types"
+        ;;
+
+        dev_pagemap_ops_has_folio_free)
+            #
+            # Determine if the zone device now uses a folio_free() as the callback
+            # function instead of page_free()
+            #
+            # This change was introduced by 3a5a06554566
+            # (mm/zone_device: rename page_free callback to folio_free)
+            #
+            # in linux-next, expected in v6.19.
+            #
+            CODE="
+            #include <linux/memremap.h>
+            void test_folio_free(struct folio *folio) {
+            }
+            void set_folio_free_ops(void) {
+                struct dev_pagemap_ops ops;
+                ops.folio_free = test_folio_free;
+            }"
+            compile_check_conftest "$CODE" "NV_PAGEMAP_OPS_HAS_FOLIO_FREE" "" "types"
         ;;
 
         drm_sysfs_connector_property_event)
@@ -1943,24 +2061,6 @@ compile_test() {
             else
                 echo "#undef NV_VFIO_PIN_PAGES_HAS_PAGES_ARG" | append_conftest "functions"
             fi
-        ;;
-
-        enable_apicv)
-            #
-            # Determine if enable_apicv boolean is exported by kernel.
-            #
-            # Added by commit fdf513e37a3b ("KVM: x86: Use common
-            # 'enable_apicv' variable for both APICv and AVIC") in v5.14.
-            #
-            CODE="
-            $CONFTEST_PREAMBLE
-            #include <asm/kvm_host.h>
-
-            bool is_enable_apicv_present() {
-                return enable_apicv;
-            }"
-
-            compile_check_conftest "$CODE" "NV_ENABLE_APICV_PRESENT" "" "types"
         ;;
 
         pci_driver_has_driver_managed_dma)
@@ -4999,6 +5099,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_DEVICE_COHERENT_PRESENT" "" "types"
         ;;
 
+        drm_crtc_funcs_has_get_vblank_timestamp)
+            #
+            # Determine if the 'drm_crtc_funcs' structure has a
+            # 'get_vblank_timestamp' field.
+            #
+            # Added by commit 7fe3f0d15aac ("drm: Add get_vblank_timestamp()
+            # to struct drm_crtc_funcs.") in v5.0
+            #
+            CODE="
+            #include <drm/drm_crtc.h>
+
+            int conftest_drm_crtc_funcs_has_get_vblank_timestamp(void) {
+                return offsetof(struct drm_crtc_funcs, get_vblank_timestamp);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_GET_VBLANK_TIMESTAMP" "" "types"
+        ;;
 
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please

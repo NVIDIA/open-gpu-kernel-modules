@@ -683,113 +683,45 @@ _memDestructCommonWithDevice
                 goto done;
             }
 
-            if (gpumgrGetBcEnabledStatus(pGpu))
+            portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
+            portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
+            pFbAllocInfo->pageFormat = pFbAllocPageFormat;
+
+            pFbAllocInfo->pageFormat->type = pMemory->Type;
+            pFbAllocInfo->pageFormat->attr = pMemory->Attr;
+            pFbAllocInfo->pageFormat->attr2 = pMemory->Attr2;
+            pFbAllocInfo->hwResId = memdescGetHwResId(pMemory->pMemDesc);
+            pFbAllocInfo->size = pMemory->Length;
+            pFbAllocInfo->format = memdescGetPteKind(pMemory->pMemDesc);
+            pFbAllocInfo->hClient = pRsClient->hClient;
+            pFbAllocInfo->hDevice = hDevice;
+
+            //
+            // Note that while freeing duped memory under a device, the
+            // device may not be the memory owning device. Hence, always use
+            // memory owning device (pMemDesc->pGpu) to free HW resources.
+            //
+            if (pMemory->pHwResource->isVgpuHostAllocated)
             {
-                MEMORY_DESCRIPTOR *pNextMemDesc = NULL, *pSubdevMemDesc = NULL;
-                pSubdevMemDesc = pMemory->pMemDesc->_pNext;
-
-                NV_ASSERT(pMemory->pMemDesc->_subDeviceAllocCount > 1);
-                NV_ASSERT(!IS_MIG_IN_USE(pGpu));
-
-                SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY);
-                {
-                    if (pSubdevMemDesc == NULL)
-                    {
-                        NV_ASSERT(0);
-                        SLI_LOOP_GOTO(done);
-                    }
-
-                    pNextMemDesc = pSubdevMemDesc->_pNext;
-
-                    portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
-                    portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
-                    pFbAllocInfo->pageFormat = pFbAllocPageFormat;
-
-                    pFbAllocInfo->pageFormat->type = pMemory->Type;
-                    pFbAllocInfo->pageFormat->attr = pMemory->Attr;
-                    pFbAllocInfo->pageFormat->attr2 = pMemory->Attr2;
-                    pFbAllocInfo->hwResId = memdescGetHwResId(pSubdevMemDesc);
-                    pFbAllocInfo->size = pMemory->Length;
-                    pFbAllocInfo->format = memdescGetPteKind(pSubdevMemDesc);
-                    pFbAllocInfo->hClient = pRsClient->hClient;
-                    pFbAllocInfo->hDevice = hDevice;
-                    pFbAllocInfo->offset = memdescGetPhysAddr(pSubdevMemDesc, AT_GPU, 0);
-                    pFbAllocInfo->size = pSubdevMemDesc->Size;
-
-                    //
-                    // Note that while freeing duped memory under a device, the
-                    // device may not be the memory owning device. Hence, always use
-                    // memory owning device (pMemDesc->pGpu) to free HW resources.
-                    //
-                    if (pMemory->pHwResource->isVgpuHostAllocated)
-                    {
-                        //
-                        // vGPU:
-                        //
-                        // Since vGPU does all real hardware management in the
-                        // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-                        // do an RPC to the host to do the hardware update.
-                        //
-                        NV_RM_RPC_MANAGE_HW_RESOURCE_FREE(pSubdevMemDesc->pGpu,
-                                RES_GET_CLIENT_HANDLE(pMemory),
-                                RES_GET_HANDLE(pDevice),
-                                RES_GET_HANDLE(pMemory),
-                                NVOS32_DELETE_RESOURCES_ALL,
-                                status);
-                    }
-                    else
-                    {
-                        status = memmgrFreeHwResources(pSubdevMemDesc->pGpu, pMemoryManager, pFbAllocInfo);
-                    }
-                    NV_ASSERT(status == NV_OK);
-                    pSubdevMemDesc = pNextMemDesc;
-                }
-                SLI_LOOP_END;            
+                //
+                // vGPU:
+                //
+                // Since vGPU does all real hardware management in the
+                // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+                // do an RPC to the host to do the hardware update.
+                //
+                NV_RM_RPC_MANAGE_HW_RESOURCE_FREE(pMemory->pMemDesc->pGpu,
+                        RES_GET_CLIENT_HANDLE(pMemory),
+                        RES_GET_HANDLE(pDevice),
+                        RES_GET_HANDLE(pMemory),
+                        NVOS32_DELETE_RESOURCES_ALL,
+                        status);
             }
             else
             {
-                NV_ASSERT(pMemory->pMemDesc->_subDeviceAllocCount == 1);
-
-                portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
-                portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
-                pFbAllocInfo->pageFormat = pFbAllocPageFormat;
-
-                pFbAllocInfo->pageFormat->type = pMemory->Type;
-                pFbAllocInfo->pageFormat->attr = pMemory->Attr;
-                pFbAllocInfo->pageFormat->attr2 = pMemory->Attr2;
-                pFbAllocInfo->hwResId = memdescGetHwResId(pMemory->pMemDesc);
-                pFbAllocInfo->size = pMemory->Length;
-                pFbAllocInfo->format = memdescGetPteKind(pMemory->pMemDesc);
-                pFbAllocInfo->hClient = pRsClient->hClient;
-                pFbAllocInfo->hDevice = hDevice;
-
-                //
-                // Note that while freeing duped memory under a device, the
-                // device may not be the memory owning device. Hence, always use
-                // memory owning device (pMemDesc->pGpu) to free HW resources.
-                //
-                if (pMemory->pHwResource->isVgpuHostAllocated)
-                {
-                    //
-                    // vGPU:
-                    //
-                    // Since vGPU does all real hardware management in the
-                    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-                    // do an RPC to the host to do the hardware update.
-                    //
-                    NV_RM_RPC_MANAGE_HW_RESOURCE_FREE(pMemory->pMemDesc->pGpu,
-                            RES_GET_CLIENT_HANDLE(pMemory),
-                            RES_GET_HANDLE(pDevice),
-                            RES_GET_HANDLE(pMemory),
-                            NVOS32_DELETE_RESOURCES_ALL,
-                            status);
-                }
-                else
-                {
-                    status = memmgrFreeHwResources(pMemory->pMemDesc->pGpu, pMemoryManager, pFbAllocInfo);
-                }
-                NV_ASSERT(status == NV_OK);
+                status = memmgrFreeHwResources(pMemory->pMemDesc->pGpu, pMemoryManager, pFbAllocInfo);
             }
+            NV_ASSERT(status == NV_OK);
         }
 
         portMemFree(pMemory->pHwResource);
@@ -1242,8 +1174,7 @@ void memSetSysmemCacheAttrib_IMPL
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU32 gpuCacheAttrib, cpuCacheAttrib;
 
-    NV_ASSERT((memdescGetAddressSpace(pMemDesc) == ADDR_EGM) ||
-              (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM));
+    NV_ASSERT(memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM);
 
     //
     // For system memory default to GPU uncached. GPU caching is different from

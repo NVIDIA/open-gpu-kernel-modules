@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,9 +24,12 @@
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
 
-#include "published/blackwell/gb100/pri_nv_xal_ep.h"
-#include "published/blackwell/gb100/pri_nv_xal_ep_p2p.h"
+#include "published/blackwell/gb100/dev_nv_xal_ep_zb.h"
+#include "published/blackwell/gb100/dev_nv_xal_ep_p2p_zb.h"
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
+
+#include "published/blackwell/gb100/dev_hubmmu_base.h"
+#include "published/blackwell/gb100/dev_top_zb.h"
 
 // Minimum bar size
 #define NV_PF0_PF_RESIZABLE_BAR_CONTROL_BAR_SIZE_MIN 0x6
@@ -39,7 +42,7 @@
 NvU32
 kbusGetP2PWriteMailboxAddressSize_GB100(OBJGPU *pGpu)
 {
-    return DRF_SIZE(NV_XAL_EP_P2P_WMBOX_ADDR_ADDR);
+    return DRF_SIZE(NV_XAL_EP_P2P_ZB_WMBOX_ADDR_ADDR);
 }
 
 /*!
@@ -59,7 +62,8 @@ kbusWriteBAR0WindowBase_GB100
     NvU32      base
 )
 {
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, base);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    REG_FLD_WR_DRF_NUM(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE, base);
     return NV_OK;
 }
 
@@ -78,7 +82,8 @@ kbusReadBAR0WindowBase_GB100
     KernelBus *pKernelBus
 )
 {
-    return GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    return REG_RD_DRF(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE);
 }
 
 /*!
@@ -98,7 +103,7 @@ kbusValidateBAR0WindowBase_GB100
     NvU32      base
 )
 {
-    return base <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE);
+    return base <= DRF_MASK(NV_XAL_EP_ZB_BAR0_WINDOW_BASE);
 }
 
 /*!
@@ -219,4 +224,50 @@ kbusGetPFBar1Spa_GB100
     *pSpaValue = params.spaValue;
 
     return NV_OK;
+}
+
+void
+kbusCarveoutWprs_GB100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NV_RANGE  *pWprRegions
+)
+{
+    NvU32 data;
+    NvU64 start;
+    NvU64 end;
+    const DEVICE_INFO_ENTRY *pEntry;
+    NV_STATUS status = gpuGetOneDeviceEntry(pGpu,
+                                            NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_HUBMMU,
+                                            DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                            0,
+                                            DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                            &pEntry);
+    NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
+    data = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_HUBMMU_PRI_MMU_WPR1_ADDR_LO);
+    data = DRF_VAL(_HUBMMU, _PRI_MMU_WPR1_ADDR_LO, _VAL, data);
+    start = (NvU64)data << NV_HUBMMU_PRI_MMU_WPR1_ADDR_LO_ALIGNMENT;
+
+    data = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_HUBMMU_PRI_MMU_WPR1_ADDR_HI);
+    data = DRF_VAL(_HUBMMU, _PRI_MMU_WPR1_ADDR_HI, _VAL, data);
+    end = (NvU64)data << NV_HUBMMU_PRI_MMU_WPR1_ADDR_HI_ALIGNMENT;
+
+    if (start != end && end != 0)
+        pWprRegions[0] = rangeMake(start, end - 1);
+    else
+        pWprRegions[0] = NV_RANGE_EMPTY;
+
+    data = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_HUBMMU_PRI_MMU_WPR2_ADDR_LO);
+    data = DRF_VAL(_HUBMMU, _PRI_MMU_WPR2_ADDR_LO, _VAL, data);
+    start = (NvU64)data << NV_HUBMMU_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT;
+
+    data = GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI);
+    data = DRF_VAL(_HUBMMU, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+    end = (NvU64)data << NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT;
+
+    if (start != end && end != 0)
+        pWprRegions[1] = rangeMake(start, end - 1);
+    else
+        pWprRegions[1] = NV_RANGE_EMPTY;
 }

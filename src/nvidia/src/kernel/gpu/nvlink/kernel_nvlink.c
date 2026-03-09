@@ -46,6 +46,8 @@
 #include "gpu/gpu_fabric_probe.h"
 #include "swref/common_def_nvlink.h"
 #include "gsp/gspifpub.h"
+#include "kernel/gpu/gpu.h"
+#include "kernel/mem_mgr/fabric_vaspace.h"
 #include "compute/imex_session_api.h"
 #include "compute/fabric.h"
 #include "mem_mgr/mem_multicast_fabric.h"
@@ -58,7 +60,9 @@
 #include "hal/library/cryptlib.h"
 
 static NV_STATUS _knvlinkRefreshEncryptionKeys(OBJGPU *, KernelNvlink *, NvU8 *, NvU32, sessionKeyRefreshStage, NvU8);
-static NV_STATUS _knvlinkSendEncryptionKeys(OBJGPU *, KernelNvlink *, NvU8 *, NvU32);
+
+// 4s timeout for inband retry
+#define KNVLINK_INBAND_RETRY_TIMEOUT_US (4000U * 1000U)
 
 /*!
  * @brief Is NVLINK topology forced? NVLink topology is considered
@@ -300,10 +304,10 @@ _knvlinkCheckFabricProbeHealth
     
     status = gpuFabricProbeGetFabricHealthStatus(pGpu->pGpuFabricProbeInfoKernel, &healthStatusMask);
     NV_ASSERT_OK_OR_RETURN(status);
- 
+
     status = gpuFabricProbeGetFabricHealthStatus(pPeerGpu->pGpuFabricProbeInfoKernel, &peerHealthStatusMask);
     NV_ASSERT_OK_OR_RETURN(status);
- 
+
     if (nvlinkGetFabricHealthSummary(healthStatusMask) == NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_UNHEALTHY ||
         nvlinkGetFabricHealthSummary(peerHealthStatusMask) == NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_UNHEALTHY)
     {
@@ -879,11 +883,29 @@ knvlinkSendInbandData_IMPL
 )
 {
     NV_STATUS status;
+    RMTIMEOUT timeout;
 
-    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_INBAND_SEND_DATA,
-                                 (void *)pParams,
-                                 sizeof(*pParams));
+    gpuSetTimeout(pGpu, KNVLINK_INBAND_RETRY_TIMEOUT_US, &timeout, 0);
+    do
+    {
+        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                        NV2080_CTRL_CMD_NVLINK_INBAND_SEND_DATA,
+                                        (void *)pParams,
+                                        sizeof(*pParams));
+
+        if (status != NV_ERR_BUSY_RETRY)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to send inband data: %llx\n", (NvU64)status);
+            break;
+        }
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Timed out retrying to send inband data\n");
+            break;
+        }
+    } while (status == NV_ERR_BUSY_RETRY);
 
     return status;
 }
@@ -1873,9 +1895,9 @@ knvlinkCopyNvlinkDeviceInfo_IMPL
                                         &pKernelNvlink->discoveredLinks));
 
     pKernelNvlink->ipVerNvlink       = pNvlinkInfoParams->ipVerNvlink;
-    pKernelNvlink->maxSupportedLinks = pNvlinkInfoParams->maxSupportedLinks;
+    pKernelNvlink->maxNumLinks = pNvlinkInfoParams->maxSupportedLinks;
 
-    for (i = 0; i < pKernelNvlink->maxSupportedLinks; i++)
+    for (i = 0; i < pKernelNvlink->maxNumLinks; i++)
     {
         pKernelNvlink->nvlinkLinks[i].pGpu     = pGpu;
         pKernelNvlink->nvlinkLinks[i].bValid   = pNvlinkInfoParams->linkInfo[i].bValid;
@@ -2195,6 +2217,48 @@ knvlinkProcessInitDisabledLinks_IMPL
                                     sizeof(pKernelNvlink->initDisabledLinksMask), NULL));
 
     return NV_OK;
+}
+
+NvBool
+knvlinkIsP2PActive_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    RmClient **ppClient;
+
+    // Check FLA/MC FLA callers are idle
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    if ((pFabricVAS != NULL) && fabricvaspaceIsInUse(pFabricVAS))
+        return NV_TRUE;
+
+    // For each client
+    for (ppClient = serverutilGetFirstClientUnderLock(); ppClient; ppClient = serverutilGetNextClientUnderLock(ppClient))
+    {
+        RmClient *pClient = *ppClient;
+        RsClient *pRsClient = staticCast(pClient, RsClient);
+        RS_ITERATOR p2pIt;
+
+        // For each P2P object
+        p2pIt = clientRefIter(pRsClient, NULL, classId(P2PApi), RS_ITERATE_CHILDREN, NV_TRUE);
+        while (clientRefIterNext(p2pIt.pClient, &p2pIt))
+        {
+            P2PApi *pP2PApi = dynamicCast(p2pIt.pResourceRef->pResource, P2PApi);
+            if (pP2PApi == NULL)
+                continue;
+
+            // Skip ATS P2P objects as those may be allocated internally
+            if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, pP2PApi->attributes))
+                continue;
+
+            // Actve peer connection with this GPU
+            if ((pP2PApi->peer1 == pGpu) || (pP2PApi->peer2 == pGpu))
+                return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
 }
 
 void
@@ -2704,8 +2768,8 @@ knvlinkSetBWModeEpoch_IMPL
  * @param[in] pKey              : NVLE Key
  * @param[in] remoteScfDcfGpuId : Local CLID
  */
-static NV_STATUS
-_knvlinkSendEncryptionKeys
+NV_STATUS
+knvlinkSendEncryptionKeys_IMPL
 (
     OBJGPU       *pGpu,
     KernelNvlink *pKernelNvlink,
@@ -2905,6 +2969,8 @@ knvlinkSetupEncryptionKeys_IMPL
     NvU8 nvleKey[RM_GSP_NVLE_AES_256_GCM_KEY_SIZE_BYTES] = {0};
 
     NV_STATUS status     = NV_OK;
+    NvU32     localALID  = knvlinkGetALID(pLocalGpu, pLocalKernelNvlink);
+    NvU32     remoteALID = knvlinkGetALID(pRemoteGpu, pRemoteKernelNvlink);
     NvU32     localCLID  = knvlinkGetCLID(pLocalGpu, pLocalKernelNvlink);
     NvU32     remoteCLID = knvlinkGetCLID(pRemoteGpu, pRemoteKernelNvlink);
 
@@ -2921,17 +2987,52 @@ knvlinkSetupEncryptionKeys_IMPL
     // are already setup once, key rotation will ensure that the keys are refreshed
     // at fixed time intervals.
     //
-    if (!pLocalKernelNvlink->bNvleKeySetup[remoteCLID] &&
-        !pRemoteKernelNvlink->bNvleKeySetup[localCLID])
+    if (!pLocalKernelNvlink->bNvleKeySetup[remoteCLID])
     {
+        NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS params;
+        portMemSet(&params, 0, sizeof(params));
+
+        params.localGpuAlid  = localALID;
+        params.localGpuClid  = localCLID;
+        params.remoteGpuAlid = remoteALID;
+        params.remoteGpuClid = remoteCLID;
+
         NV_ASSERT_OK_OR_GOTO(status,
-                             _knvlinkSendEncryptionKeys(pLocalGpu,  pLocalKernelNvlink,
-                                                        nvleKey, remoteCLID), ErrorExit);
+                    knvlinkExecGspRmRpc(pLocalGpu, pLocalKernelNvlink,
+                                        NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY,
+                                        (void *)&params, sizeof(params)), ErrorExit);
+
         NV_ASSERT_OK_OR_GOTO(status,
-                             _knvlinkSendEncryptionKeys(pRemoteGpu, pRemoteKernelNvlink,
-                                                        nvleKey,  localCLID), ErrorExit);
+                    knvlinkSendEncryptionKeys(pLocalGpu, pLocalKernelNvlink, nvleKey,
+                                              remoteCLID), ErrorExit);
 
         pLocalKernelNvlink->bNvleKeySetup[remoteCLID] = NV_TRUE;
+    }
+
+    //
+    // Check if NVLE keys are already programmed, skip programming the keys if they
+    // are already setup once, key rotation will ensure that the keys are refreshed
+    // at fixed time intervals.
+    //
+    if (!pRemoteKernelNvlink->bNvleKeySetup[localCLID])
+    {
+        NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY_PARAMS params;
+        portMemSet(&params, 0, sizeof(params));
+
+        params.localGpuAlid  = remoteALID;
+        params.localGpuClid  = remoteCLID;
+        params.remoteGpuAlid = localALID;
+        params.remoteGpuClid = localCLID;
+
+        NV_ASSERT_OK_OR_GOTO(status,
+                    knvlinkExecGspRmRpc(pRemoteGpu, pRemoteKernelNvlink,
+                                        NV2080_CTRL_NVLINK_UPDATE_NVLE_TOPOLOGY,
+                                        (void *)&params, sizeof(params)), ErrorExit);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+                    knvlinkSendEncryptionKeys(pRemoteGpu, pRemoteKernelNvlink, nvleKey,
+                                              localCLID), ErrorExit);
+
         pRemoteKernelNvlink->bNvleKeySetup[localCLID] = NV_TRUE;
     }
 
@@ -3065,25 +3166,9 @@ knvlinkValidateRemapTableSlots_IMPL
     KernelNvlink *pRemoteKernelNvlink
 )
 {
-    ConfidentialCompute *pCC = NULL;
-    NvBool bCCFeatureEnabled = NV_FALSE;
-
-    pCC               = GPU_GET_CONF_COMPUTE(pLocalGpu);
-    bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
-
-    // No validation needed if CC or NVLE is disabled
-    if (!bCCFeatureEnabled ||
-        !pLocalKernelNvlink->getProperty(pLocalKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
-    {
-        return NV_OK;
-    }
-
-    pCC               = GPU_GET_CONF_COMPUTE(pRemoteGpu);
-    bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
-
-    // No validation needed if CC or NVLE is disabled
-    if (!bCCFeatureEnabled ||
-        !pRemoteKernelNvlink->getProperty(pRemoteKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
+    // No validation needed if NVLE is disabled on any of the GPUs
+    if (!(pLocalKernelNvlink->getProperty(pLocalKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED) &&
+          pRemoteKernelNvlink->getProperty(pRemoteKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED)))
     {
         return NV_OK;
     }
@@ -3103,6 +3188,49 @@ knvlinkValidateRemapTableSlots_IMPL
             NV_PRINTF(LEVEL_ERROR, "GPA Remap table validation failed for table index = 0x%x\n", remapTableIdx);
             return NV_ERR_INVALID_STATE;
         }
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * Get the remap table addrs for the FLA and SPA/GPA remap tables
+ *
+ * @param[in] pGpu          : OBJGPU pointer
+ * @param[in] pKernelNvlink : KernelNvlink pointer
+ *
+ * Return NV_OK on success
+ */
+NV_STATUS
+knvlinkGetRemapTableInformation_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_PARAMS params;
+    NvU32 remapTabIdx;
+
+    // Return error if NVLink encryption is disabled 
+    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    portMemSet(&params, 0, sizeof(params));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                             NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO,
+                                             (void *)&params, sizeof(params)));
+
+    NV_ASSERT_OR_RETURN((params.remapTabSize <= NV2080_CTRL_NVLINK_MAX_REMAP_TABLE_ENTRIES),
+                        NV_ERR_INVALID_STATE);
+
+    for (remapTabIdx = 0; remapTabIdx < params.remapTabSize; remapTabIdx++)
+    {
+        pKernelNvlink->flaRemapTabAddr[remapTabIdx] = params.flaRemapTabAddr[remapTabIdx];
+        pKernelNvlink->gpaRemapTabAddr[remapTabIdx] = params.gpaRemapTabAddr[remapTabIdx];
     }
 
     return NV_OK;
@@ -3137,12 +3265,6 @@ knvlinkSetupNvleRemapTables_IMPL
         return NV_OK;
     }
 
-    // Return if NVLE identifiers are already retrieved and remap tables are updated
-    if (pKernelNvlink->bGotNvleIdentifiers)
-    {
-        return NV_OK;
-    }
-
     // Return if probe response if not received on all the GPUs
     for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
     {
@@ -3163,161 +3285,116 @@ knvlinkSetupNvleRemapTables_IMPL
             {
                 return NV_OK;
             }
-
-            //
-            // If MSE and remap tables are locked for one of the GPUs, then it should have been locked for all GPUs,
-            // since we lock them for all the GPUs together
-            //
-            if (pKernelNvlink0->bRemapTableMseLocked)
-            {
-                return NV_OK;
-            }
         }
     }
 
-    // All the GPUs have received the probe response, parse the FLA remap table and assign the CLIDs for the ALIDs
-    for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
+    //
+    // Get the ALID and CLID of the GPUs and whether CLIDs are already updated and remap tables are locked.
+    // On multi-node setup, these steps are expected to be already performed by the time P2P object is created.
+    //
+    if (!pKernelNvlink->bClidUpdated)
     {
-        pGpu0 = gpumgrGetGpu(gpuInst0);
-        if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
+        for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
         {
-            pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
+            pGpu0 = gpumgrGetGpu(gpuInst0);
+            if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
             {
-                continue;
-            }
-
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_FALSE, NV_TRUE));
-        }
-    }
-
-    // All the GPUs have received the probe response, parse the GPA remap table and assign the CLIDs for the ALIDs
-    for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
-    {
-        pGpu0 = gpumgrGetGpu(gpuInst0);
-        if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
-        {
-            pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
-            {
-                continue;
-            }
-
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_TRUE, NV_TRUE));
-        }
-    }
-
-    // All the GPUs have received the probe response, update the CLIDs in the FLA remap table of all the GPUs
-    for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
-    {
-        pGpu0 = gpumgrGetGpu(gpuInst0);
-        if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
-        {
-            pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
-            {
-                continue;
-            }
-
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_FALSE, NV_FALSE));
-        }
-    }
-
-    // All the GPUs have received the probe response, update the CLIDs in the GPA remap table of all the GPUs
-    for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
-    {
-        pGpu0 = gpumgrGetGpu(gpuInst0);
-        if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
-        {
-            pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
-            {
-                continue;
-            }
-
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_TRUE, NV_FALSE));
-
-            // All NVLE identifiers are retrieved and updated by this time
-            pKernelNvlink0->bGotNvleIdentifiers = NV_TRUE;
-        }
-    }
-
-    // All the GPUs have retrieved and updated the ALIDs and CLIDs. Update NVLE topology information for all possible P2P pairs
-    for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
-    {
-        pGpu0 = gpumgrGetGpu(gpuInst0);
-        if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
-        {
-            pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
-            {
-                continue;
-            }
-
-            for (gpuInst1 = gpuInst0+1; gpuInst1 < NV_MAX_DEVICES; gpuInst1++)
-            {
-                pGpu1 = gpumgrGetGpu(gpuInst1);
-                if (pGpu1 && (gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
+                pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
+                if (pKernelNvlink0 == NULL)
                 {
-                    pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
-                    if (pKernelNvlink1 == NULL)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                          knvlinkEncryptionUpdateTopology_HAL(pGpu0, pKernelNvlink0,
-                                                                              pGpu1, pKernelNvlink1));
-                    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                          knvlinkEncryptionUpdateTopology_HAL(pGpu1, pKernelNvlink1,
-                                                                              pGpu0, pKernelNvlink0));
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                      knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_TRUE));
+            }
+        }
+    }
+
+    //
+    // Skip remap table programming if the NVLE identifiers are already retrieved and remap tables are updated.
+    // On multi-node setup, these steps are expected to be already performed by the time P2P object is created.
+    //
+    if (!pKernelNvlink->bClidUpdated)
+    {
+        for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
+        {
+            pGpu0 = gpumgrGetGpu(gpuInst0);
+            if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
+            {
+                pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
+                if (pKernelNvlink0 == NULL)
+                {
+                    continue;
+                }
+
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                      knvlinkEncryptionGetUpdateGpuIdentifiers_HAL(pGpu0, pKernelNvlink0, NV_FALSE));
+            }
+        }
+
+        //
+        // All the GPUs have CLIDs in the remap tables. Generate and setup NVLE keys for all the possible P2P pairs
+        // NVLE topoogy information for all possible P2P pairs will be updated as a part of this step
+        //
+        for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
+        {
+            pGpu0 = gpumgrGetGpu(gpuInst0);
+            if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
+            {
+                pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
+                if (pKernelNvlink0 == NULL)
+                {
+                    continue;
+                }
+
+                for (gpuInst1 = gpuInst0+1; gpuInst1 < NV_MAX_DEVICES; gpuInst1++)
+                {
+                    pGpu1 = gpumgrGetGpu(gpuInst1);
+                    if (pGpu1 && (gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
+                    {
+                        pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
+                        if (pKernelNvlink1 == NULL)
+                        {
+                            continue;
+                        }
+
+                        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                              knvlinkSetupEncryptionKeys(pGpu0, pKernelNvlink0, pGpu1, pKernelNvlink1));
+                    }
                 }
             }
         }
     }
 
-    // NVLE topology should have been updated for the GPUs. Generate and setup the NVLE keys for all the possible P2P pairs
+    // Get the remap table addresses for validation before they can be locked to prevent any topology updates by MSE
     for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
     {
         pGpu0 = gpumgrGetGpu(gpuInst0);
         if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
         {
             pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
+            if (pKernelNvlink0 == NULL || pKernelNvlink0->bRemapTableMseLocked)
             {
                 continue;
             }
 
-            for (gpuInst1 = gpuInst0+1; gpuInst1 < NV_MAX_DEVICES; gpuInst1++)
-            {
-                pGpu1 = gpumgrGetGpu(gpuInst1);
-                if (pGpu1 && (gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
-                {
-                    pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
-                    if (pKernelNvlink1 == NULL)
-                    {
-                        continue;
-                    }
-
-                    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                          knvlinkSetupEncryptionKeys(pGpu0, pKernelNvlink0, pGpu1, pKernelNvlink1));
-                }
-            }
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkGetRemapTableInformation(pGpu0, pKernelNvlink0));
         }
     }
 
-    // Validate remap table slots for all the GPUs
+    //
+    // Validate remap table slots for all the GPUs. Remap tables validation happens before MSE locking. If remap tables
+    // are locked, that implies validation is already done. On multi-node setup, these steps are expected to be already
+    // performed by the time P2P object is created.
+    //
     for (gpuInst0 = 0; gpuInst0 < NV_MAX_DEVICES; gpuInst0++)
     {
         pGpu0 = gpumgrGetGpu(gpuInst0);
         if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
         {
             pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL)
+            if (pKernelNvlink0 == NULL || pKernelNvlink0->bRemapTableMseLocked)
             {
                 continue;
             }
@@ -3328,7 +3405,7 @@ knvlinkSetupNvleRemapTables_IMPL
                 if (pGpu1 && (gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
                 {
                     pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
-                    if (pKernelNvlink1 == NULL)
+                    if (pKernelNvlink1 == NULL || pKernelNvlink1->bRemapTableMseLocked)
                     {
                         continue;
                     }
@@ -3346,18 +3423,18 @@ knvlinkSetupNvleRemapTables_IMPL
         if (pGpu0 && (gpuIsStateLoaded(pGpu0) || gpuIsStateLoading(pGpu0)))
         {
             pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            if (pKernelNvlink0 == NULL || pKernelNvlink0->bRemapTableMseLocked)
+            if (pKernelNvlink0 == NULL || pKernelNvlink0->bRemapTableMseLocked || pKernelNvlink0->bRemapTableLockDisable)
             {
                 continue;
             }
 
-            NV2080_CTRL_INTERNAL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PARAMS params;
+            NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PARAMS params;
             portMemSet(&params, 0, sizeof(params));
             params.linkMask = KNVLINK_BITVECTOR_TO_MASK(pKernelNvlink0, enabledLinks, 64);
 
             // Lock remap tables and MSE from making any further changes to the nvlink topology
             status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
-                                         NV2080_CTRL_CMD_INTERNAL_NVLINK_LOCK_REMAP_TABLE_AND_MSE,
+                                         NV2080_CTRL_CMD_NVLINK_LOCK_REMAP_TABLE_AND_MSE,
                                          (void *)&params, sizeof(params));
             if (status != NV_OK)
             {
@@ -3366,11 +3443,50 @@ knvlinkSetupNvleRemapTables_IMPL
                 return status;
             }
 
-            // DEBUG_ONLY
-            NV_PRINTF(LEVEL_ERROR, "GPU%d Successfully locked remap table and MSE\n",
-                      gpuGetInstance(pGpu0));
-            pKernelNvlink0->bRemapTableMseLocked = NV_TRUE;
+            pKernelNvlink0->bRemapTableLockDisable = params.bRemapTableLockDisabled;
+
+            if (params.bRemapTableMseLocked)
+            {
+                NV_PRINTF(LEVEL_INFO, "GPU%d Successfully locked remap table and MSE\n",
+                                       gpuGetInstance(pGpu0));
+
+                pKernelNvlink0->bRemapTableMseLocked = NV_TRUE;
+            }
         }
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * Assign CLID for the GPU and synchronize with GSP-RM.
+ *
+ * @param[in] pGpu           : OBJGPU pointer
+ * @param[in] pKernelNvlink  : KernelNvlink pointer
+ */
+NV_STATUS
+knvlinkAssignNvleClid_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status = NV_OK;
+
+    pKernelNvlink->clid = gpuGetInstance(pGpu);
+
+    NV2080_CTRL_NVLINK_UPDATE_CLID_PARAMS params;
+    portMemSet(&params, 0, sizeof(params));
+
+    params.clid = pKernelNvlink->clid;
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_CMD_NVLINK_UPDATE_CLID,
+                                 (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute RPC to update CLID in physical RM\n");
+        return status;
     }
 
     return NV_OK;

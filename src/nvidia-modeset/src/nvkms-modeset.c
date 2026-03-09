@@ -189,7 +189,8 @@ nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
                    NVHwModeTimingsEvo *pTimings,
                    NVDpyAttributeColor *pDpyColor,
                    NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-                   NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
+                   NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+                   NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     NVDpyEvoPtr pDpyEvo;
     NVDpyAttributeColor dpyColor = { };
@@ -218,7 +219,8 @@ nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
                                   &dpyColor,
                                   pTimings,
                                   pInfoFrameCtrl,
-                                  pVSInfoFrameCtrl)) {
+                                  pVSInfoFrameCtrl,
+                                  pEmpInfoFrameCtrl)) {
         return FALSE;
     }
 
@@ -1083,7 +1085,8 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                                     &pProposedApiHead->timings,
                                     &pProposedApiHead->attributes.color,
                                     &pProposedApiHead->infoFrame.ctrl,
-                                    &pProposedApiHead->infoFrame.vendorSpecificCtrl)) {
+                                    &pProposedApiHead->infoFrame.vendorSpecificCtrl,
+                                    &pProposedApiHead->infoFrame.empCtrl)) {
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;
@@ -3597,7 +3600,7 @@ ValidateRequest(const NVDevEvoRec *pDevEvo,
             }
 
             const NVDpyIdList permDpyIdList =
-                pPermissions->disp[dispIndex].head[apiHead].dpyIdList;
+                pPermissions->head[apiHead].dpyIdList;
 
             const struct NvKmsSetModeOneHeadRequest *pRequestHead =
                 &pRequestDisp->head[apiHead];

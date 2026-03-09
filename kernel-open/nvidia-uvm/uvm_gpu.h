@@ -467,6 +467,14 @@ typedef struct
 
         // Information required to invalidate stale ATS PTEs from the GPU TLBs
         uvm_ats_fault_invalidate_t ats_invalidate;
+
+        struct
+        {
+            // Not protected by any lock. Can only be set by one VA space at a
+            // time. When the VA space that set this unregisters this GPU, this
+            // is cleared.
+            atomic_t sleep_per_iteration_us;
+        } test;
     } non_replayable;
 
     // Flag that tells if prefetch faults are enabled in HW
@@ -714,14 +722,6 @@ struct uvm_gpu_struct
 
     } mem_info;
 
-    struct
-    {
-        // Big page size used by the internal UVM VA space
-        // Notably it may be different than the big page size used by a user's
-        // VA space in general.
-        NvU32 internal_size;
-    } big_page;
-
     // Mapped registers needed to obtain the current GPU timestamp
     struct
     {
@@ -940,6 +940,8 @@ typedef struct
     bool isr_access_counters_alloc_stats_cpu;
     bool access_counters_batch_context_notifications;
     bool access_counters_batch_context_notification_cache;
+    bool disable_devmem;
+
 } uvm_test_parent_gpu_inject_error_t;
 
 // In order to support SMC/MIG GPU partitions, we split UVM GPUs into two
@@ -1054,22 +1056,8 @@ struct uvm_parent_gpu_struct
     // Virtualization mode of the GPU.
     UVM_VIRT_MODE virt_mode;
 
-    // Pascal+ GPUs can trigger faults on prefetch instructions. If false, this
-    // feature must be disabled at all times in GPUs of the given architecture.
-    // If true, the feature can be toggled at will by SW.
-    //
-    // The field should not be used unless the GPU supports replayable faults.
-    bool prefetch_fault_supported;
-
     // Number of membars required to flush out HSHUB following a TLB invalidate
     NvU32 num_hshub_tlb_invalidate_membars;
-
-    // Whether the channels can configure GPFIFO in vidmem
-    bool gpfifo_in_vidmem_supported;
-
-    bool replayable_faults_supported;
-
-    bool non_replayable_faults_supported;
 
     bool access_counters_supported;
 
@@ -1077,11 +1065,6 @@ struct uvm_parent_gpu_struct
     bool access_counters_serialize_clear_ops_by_type;
 
     bool access_bits_supported;
-
-    bool fault_cancel_va_supported;
-
-    // True if the GPU has hardware support for scoped atomics
-    bool scoped_atomics_supported;
 
     // If true, a HW method can be used to clear a faulted channel.
     // If false, then the GPU supports clearing faulted channels using registers
@@ -1096,23 +1079,13 @@ struct uvm_parent_gpu_struct
     // This value is only defined for GPUs that support non-replayable faults.
     bool has_clear_faulted_channel_sw_method;
 
-    bool sparse_mappings_supported;
-
     // Ampere(GA100) requires map->invalidate->remap->invalidate for page size
     // promotion
     bool map_remap_larger_page_promotion;
 
-    bool plc_supported;
-
     // Parameters used by the TLB batching API
     struct
     {
-        // Is the targeted (single page) VA invalidate supported at all?
-        NvBool va_invalidate_supported;
-
-        // Is the VA range invalidate supported?
-        NvBool va_range_invalidate_supported;
-
         union
         {
             // Maximum (inclusive) number of single page invalidations before
@@ -1130,9 +1103,6 @@ struct uvm_parent_gpu_struct
 
     // Largest VA (exclusive) which Host can operate.
     NvU64 max_host_va;
-
-    // Indicates whether the GPU can map sysmem with pages larger than 4k
-    bool can_map_sysmem_with_large_pages;
 
     // An integrated GPU has no vidmem and coherent access to sysmem. Note
     // integrated GPUs have a write-back L2 cache (cf. discrete GPUs
@@ -1211,7 +1181,6 @@ struct uvm_parent_gpu_struct
     // Interrupt handling state and locks
     uvm_isr_info_t isr;
 
-    // This is only valid if supports_replayable_faults is set to true.
     uvm_fault_buffer_t fault_buffer;
 
     // PMM lazy free processing queue.
@@ -1406,7 +1375,14 @@ struct uvm_parent_gpu_struct
         NvU64 peer_gpa_memory_window_start;
     } peer_address_info;
 
-    uvm_test_parent_gpu_inject_error_t test;
+    struct
+    {
+        uvm_test_parent_gpu_inject_error_t inject_error;
+
+        // Channels whose instance pointers should never be observed in any
+        // fault notification. Synchronized using instance_ptr_table_lock.
+        struct list_head dead_channels;
+    } test;
 
     // PASID ATS
     bool ats_supported;
@@ -1602,6 +1578,7 @@ uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid_locked(const NvProcessorUuid *gpu_u
 NV_STATUS uvm_gpu_retain_by_uuid(const NvProcessorUuid *gpu_uuid,
                                  const uvm_rm_user_object_t *user_rm_device,
                                  const uvm_test_parent_gpu_inject_error_t *parent_gpu_error,
+                                 bool enable_hmm,
                                  uvm_gpu_t **gpu_out);
 
 // Retain a gpu which is known to already be retained. Does NOT require the
@@ -1858,12 +1835,6 @@ static bool uvm_parent_gpu_supports_ats(const uvm_parent_gpu_t *parent_gpu)
 static bool uvm_parent_gpu_needs_pushbuffer_segments(uvm_parent_gpu_t *parent_gpu)
 {
     return parent_gpu->max_host_va > (1ull << 40);
-}
-
-static bool uvm_parent_gpu_supports_eviction(uvm_parent_gpu_t *parent_gpu)
-{
-    // Eviction is supported only if the GPU supports replayable faults
-    return parent_gpu->replayable_faults_supported;
 }
 
 static bool uvm_parent_gpu_is_virt_mode_sriov_heavy(const uvm_parent_gpu_t *parent_gpu)

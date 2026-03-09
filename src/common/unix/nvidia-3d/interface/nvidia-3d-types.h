@@ -353,9 +353,6 @@ typedef struct  _Nv3dDeviceSpaVersionRec {
  * Enum for each compiled shader version.
  */
 enum Nv3dShaderArch {
-    NV3D_SHADER_ARCH_MAXWELL,
-    NV3D_SHADER_ARCH_PASCAL,
-    NV3D_SHADER_ARCH_VOLTA,
     NV3D_SHADER_ARCH_TURING,
     NV3D_SHADER_ARCH_AMPERE,
     NV3D_SHADER_ARCH_HOPPER,

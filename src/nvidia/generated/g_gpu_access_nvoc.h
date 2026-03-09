@@ -467,13 +467,9 @@ struct NVOC_METADATA__IoAperture {
     const struct NVOC_VTABLE__IoAperture vtable;
 };
 
-#ifndef __NVOC_CLASS_IoAperture_TYPEDEF__
-#define __NVOC_CLASS_IoAperture_TYPEDEF__
-typedef struct IoAperture IoAperture;
-#endif /* __NVOC_CLASS_IoAperture_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_IoAperture
-#define __nvoc_class_id_IoAperture 0x40549c
+#define __nvoc_class_id_IoAperture 0x40549cu
+typedef struct IoAperture IoAperture;
 #endif /* __nvoc_class_id_IoAperture */
 
 // Casting support
@@ -491,14 +487,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_IoAperture;
 
 NV_STATUS __nvoc_objCreateDynamic_IoAperture(IoAperture**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_IoAperture(IoAperture**, Dynamic*, NvU32, struct IoAperture *arg_pParentAperture, OBJGPU *arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING *arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU64 arg_length);
-#define __objCreate_IoAperture(ppNewObj, pParent, createFlags, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length) \
-    __nvoc_objCreate_IoAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
+NV_STATUS __nvoc_objCreate_IoAperture(IoAperture**, Dynamic*, NvU32, struct IoAperture *pParentAperture, OBJGPU *pGpu, NvU32 deviceIndex, NvU32 deviceInstance, DEVICE_MAPPING *pMapping, NvU32 mappingStartAddr, NvU32 offset, NvU64 length);
+#define __objCreate_IoAperture(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pParentAperture, pGpu, deviceIndex, deviceInstance, pMapping, mappingStartAddr, offset, length) \
+    __nvoc_objCreate_IoAperture((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pParentAperture, pGpu, deviceIndex, deviceInstance, pMapping, mappingStartAddr, offset, length)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS ioaprtConstruct_IMPL(struct IoAperture *arg_pAperture, struct IoAperture *arg_pParentAperture, OBJGPU *arg_pGpu, NvU32 arg_deviceIndex, NvU32 arg_deviceInstance, DEVICE_MAPPING *arg_pMapping, NvU32 arg_mappingStartAddr, NvU32 arg_offset, NvU64 arg_length);
-#define __nvoc_ioaprtConstruct(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length) ioaprtConstruct_IMPL(arg_pAperture, arg_pParentAperture, arg_pGpu, arg_deviceIndex, arg_deviceInstance, arg_pMapping, arg_mappingStartAddr, arg_offset, arg_length)
+NV_STATUS ioaprtConstruct_IMPL(struct IoAperture *pAperture, struct IoAperture *pParentAperture, OBJGPU *pGpu, NvU32 deviceIndex, NvU32 deviceInstance, DEVICE_MAPPING *pMapping, NvU32 mappingStartAddr, NvU32 offset, NvU64 length);
+#define __nvoc_ioaprtConstruct(pAperture, pParentAperture, pGpu, deviceIndex, deviceInstance, pMapping, mappingStartAddr, offset, length) ioaprtConstruct_IMPL(pAperture, pParentAperture, pGpu, deviceIndex, deviceInstance, pMapping, mappingStartAddr, offset, length)
 
 void ioaprtDestruct_IMPL(struct IoAperture *pAperture);
 #define __nvoc_ioaprtDestruct(pAperture) ioaprtDestruct_IMPL(pAperture)
@@ -555,6 +551,7 @@ static inline NvBool ioaprtIsRegValid_DISPATCH(struct IoAperture *pAperture, NvU
     return pAperture->__nvoc_metadata_ptr->vtable.__ioaprtIsRegValid__(pAperture, addr);
 }
 
+// Virtual method declarations and/or inline definitions
 NvU8 ioaprtReadReg08_IMPL(struct IoAperture *pAperture, NvU32 addr);
 
 NvU16 ioaprtReadReg16_IMPL(struct IoAperture *pAperture, NvU32 addr);
@@ -571,23 +568,28 @@ void ioaprtWriteReg32Uc_IMPL(struct IoAperture *pAperture, NvU32 addr, NvV32 val
 
 NvBool ioaprtIsRegValid_IMPL(struct IoAperture *pAperture, NvU32 addr);
 
-static inline NvU32 ioaprtGetRegAddr(struct IoAperture *pAperture, NvU32 addr) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvU32 ioaprtGetRegAddr(struct IoAperture *pAperture, NvU32 addr){
     return pAperture->baseAddress + addr;
 }
 
-static inline NvU32 ioaprtGetBaseAddr(struct IoAperture *pAperture) {
+static inline NvU32 ioaprtGetBaseAddr(struct IoAperture *pAperture){
     return pAperture->baseAddress;
 }
 
-static inline NvU64 ioaprtGetLength(struct IoAperture *pAperture) {
+static inline NvU64 ioaprtGetLength(struct IoAperture *pAperture){
     return pAperture->length;
 }
 
-static inline NvBool ioaprtIsInitialized(struct IoAperture *pAperture) {
+static inline NvBool ioaprtIsInitialized(struct IoAperture *pAperture){
     return pAperture->length != 0;
 }
 
-static inline NvBool ioaprtIsAddressInRange(struct IoAperture *pAperture, NvU32 addr) {
+static inline NvBool ioaprtIsAddressInRange(struct IoAperture *pAperture, NvU32 addr){
     return (addr >= pAperture->baseAddress) && (addr < (pAperture->baseAddress + pAperture->length));
 }
 
@@ -658,13 +660,9 @@ struct NVOC_METADATA__SwBcAperture {
     const struct NVOC_VTABLE__SwBcAperture vtable;
 };
 
-#ifndef __NVOC_CLASS_SwBcAperture_TYPEDEF__
-#define __NVOC_CLASS_SwBcAperture_TYPEDEF__
-typedef struct SwBcAperture SwBcAperture;
-#endif /* __NVOC_CLASS_SwBcAperture_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SwBcAperture
-#define __nvoc_class_id_SwBcAperture 0x6d0f88
+#define __nvoc_class_id_SwBcAperture 0x6d0f88u
+typedef struct SwBcAperture SwBcAperture;
 #endif /* __nvoc_class_id_SwBcAperture */
 
 // Casting support
@@ -682,14 +680,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SwBcAperture;
 
 NV_STATUS __nvoc_objCreateDynamic_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, struct IoAperture *arg_pApertures, NvU32 arg_numApertures);
-#define __objCreate_SwBcAperture(ppNewObj, pParent, createFlags, arg_pApertures, arg_numApertures) \
-    __nvoc_objCreate_SwBcAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pApertures, arg_numApertures)
+NV_STATUS __nvoc_objCreate_SwBcAperture(SwBcAperture**, Dynamic*, NvU32, struct IoAperture *pApertures, NvU32 numApertures);
+#define __objCreate_SwBcAperture(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pApertures, numApertures) \
+    __nvoc_objCreate_SwBcAperture((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pApertures, numApertures)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS swbcaprtConstruct_IMPL(struct SwBcAperture *arg_pAperture, struct IoAperture *arg_pApertures, NvU32 arg_numApertures);
-#define __nvoc_swbcaprtConstruct(arg_pAperture, arg_pApertures, arg_numApertures) swbcaprtConstruct_IMPL(arg_pAperture, arg_pApertures, arg_numApertures)
+NV_STATUS swbcaprtConstruct_IMPL(struct SwBcAperture *pAperture, struct IoAperture *pApertures, NvU32 numApertures);
+#define __nvoc_swbcaprtConstruct(pAperture, pApertures, numApertures) swbcaprtConstruct_IMPL(pAperture, pApertures, numApertures)
 
 
 // Wrapper macros for halified functions
@@ -743,6 +741,7 @@ static inline NvBool swbcaprtIsRegValid_DISPATCH(struct SwBcAperture *pAperture,
     return pAperture->__nvoc_metadata_ptr->vtable.__swbcaprtIsRegValid__(pAperture, addr);
 }
 
+// Virtual method declarations and/or inline definitions
 NvU8 swbcaprtReadReg08_IMPL(struct SwBcAperture *pAperture, NvU32 addr);
 
 NvU16 swbcaprtReadReg16_IMPL(struct SwBcAperture *pAperture, NvU32 addr);
@@ -759,6 +758,11 @@ void swbcaprtWriteReg32Uc_IMPL(struct SwBcAperture *pAperture, NvU32 addr, NvV32
 
 NvBool swbcaprtIsRegValid_IMPL(struct SwBcAperture *pAperture, NvU32 addr);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -318,7 +318,6 @@ kgraphicsCreateBug4208224Channel_TU102
     RM_API                                *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     RsClient                              *pClientId;
     NvBool                                 bBcStatus;
-    NvBool                                 bClientUserd = IsVOLTAorBetter(pGpu);
     NvBool                                 bAcquireLock = NV_FALSE;
     NvU32                                  sliLoopReentrancy;
     NV_VASPACE_ALLOCATION_PARAMETERS       vaParams;
@@ -426,7 +425,6 @@ kgraphicsCreateBug4208224Channel_TU102
         cleanup);
 
     // Allocate Userd
-    if (bClientUserd)
     {
         NvU32 userdMemClass = NV01_MEMORY_LOCAL_USER;
         NvU32 ctrlSize;
@@ -490,10 +488,7 @@ kgraphicsCreateBug4208224Channel_TU102
     // provide a valid offset here.
     //
     channelGPFIFOAllocParams.gpFifoOffset  = 0;
-    if (bClientUserd)
-    {
-        channelGPFIFOAllocParams.hUserdMemory[0] = hUserdId;
-    }
+    channelGPFIFOAllocParams.hUserdMemory[0] = hUserdId;
 
     channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(RM_ENGINE_TYPE_GR0);
 

@@ -153,6 +153,58 @@ namespace DisplayPort
             mergerDownReply.mailboxInterrupt();
         }
 
+        void clearNotYetSentQSEDownRequest()
+        {
+            for (ListElement * i = notYetSentDownRequest.begin(); i!=notYetSentDownRequest.end(); )
+            {
+                Message * m = (Message *)i;
+                i = i->next;                    // Do this first since we may unlink the current node
+
+                if (m->requestIdentifier ==
+                    NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS)
+                {
+                    notYetSentDownRequest.remove(m);
+                    m->parent = 0;
+                }
+            }
+        }
+
+        bool isAnyAwaitingQSEReplyDownRequest()
+        {
+            bool bQSEAwaiting = false;
+
+            for (ListElement * i = awaitingReplyDownRequest.begin(); i!=awaitingReplyDownRequest.end(); )
+            {
+                Message * m = (Message *)i;
+                i = i->next;                    // Do this first since we may unlink the current node
+
+                if (m->requestIdentifier ==
+                    NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS)
+                {
+                    // We break because there could be only one outstanding QSE message at any time.
+                    bQSEAwaiting = true;
+                    break;
+                }
+            }
+            return bQSEAwaiting;
+        }
+
+        void clearAwaitingQSEReplyDownRequest()
+        {
+            for (ListElement * i = awaitingReplyDownRequest.begin(); i!=awaitingReplyDownRequest.end(); )
+            {
+                Message * m = (Message *)i;
+                i = i->next;                    // Do this first since we may unlink the current node
+
+                if (m->requestIdentifier ==
+                    NV_DP_SBMSG_REQUEST_ID_QUERY_STREAM_ENCRYPTION_STATUS)
+                {
+                    awaitingReplyDownRequest.remove(m);
+                    m->parent = 0;
+                    break;
+                }
+            }
+        }
         MessageManager(DPCDHAL * hal, Timer * timer)
           : timer(timer), hal(hal),
             splitterDownRequest(hal, timer),

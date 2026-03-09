@@ -727,6 +727,8 @@ clTeardown_IMPL(
 void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
 {
     NvU32 idx = 0;
+    pGSI->clPdbProperties = 0;
+
 #define CL_SYNC_PDB(prop)                                                       \
     do {                                                                        \
         pGSI->clPdbProperties |= pCl->getProperty(pCl, prop) ? NVBIT64(idx) : 0;\

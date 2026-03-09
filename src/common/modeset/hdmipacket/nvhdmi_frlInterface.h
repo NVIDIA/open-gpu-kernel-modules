@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/** @file  nvhdmi_frlInterface.h 
+/** @file  nvhdmi_frlInterface.h
  *  @brief This file provides FRL related interfaces between client and HDMI lib
  */ 
 
@@ -180,7 +180,7 @@ typedef struct tagHDMI_FRL_CONFIG
         NvU32            dscHActiveBytes;
         NvU32            dscHActiveTriBytes;
         NvU32            dscHBlankTriBytes;
-		NvU32            dscTBlankToTTotalRatioX1k;
+        NvU32            dscTBlankToTTotalRatioX1k;
     } dscInfo;
 
 } HDMI_FRL_CONFIG;

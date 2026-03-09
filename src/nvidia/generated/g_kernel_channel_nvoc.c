@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x5d8d70 = 1;
+char __nvoc_class_id_uniqueness_check__5d8d70 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannel;
@@ -31,10 +31,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
 // Forward declarations for KernelChannel
 void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__Notifier(Notifier*);
-void __nvoc_init__KernelChannel(KernelChannel*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
-void __nvoc_init_funcTable_KernelChannel(KernelChannel*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
-NV_STATUS __nvoc_ctor_KernelChannel(KernelChannel*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-void __nvoc_init_dataField_KernelChannel(KernelChannel*, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init__KernelChannel(KernelChannel*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelChannel(KernelChannel*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelChannel(KernelChannel*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+void __nvoc_init_dataField_KernelChannel(KernelChannel*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelChannel(KernelChannel*);
 
 // Structures used within RTTI (run-time type information)
@@ -119,19 +119,18 @@ void __nvoc_up_thunk_Notifier_kchannelSetNotificationShare(struct KernelChannel 
 NV_STATUS __nvoc_up_thunk_Notifier_kchannelUnregisterEvent(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
 
+// Class-specific details for KernelChannel
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannel = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelChannel),
-        /*classId=*/            classId(KernelChannel),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelChannel),
+    .classInfo.classId =            classId(KernelChannel),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelChannel",
+    .classInfo.name =               "KernelChannel",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelChannel,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelChannel,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelChannel
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelChannel,
+    .pCastInfo =          &__nvoc_castinfo__KernelChannel,
+    .pExportInfo =        &__nvoc_export_info__KernelChannel
 };
 
 // By default, all exported methods are enabled.
@@ -652,15 +651,12 @@ static const struct NVOC_METADATA__KernelChannel __nvoc_metadata__KernelChannel 
     .metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(KernelChannel, __nvoc_base_Notifier.__nvoc_base_INotifier),
 
-    .vtable.__kchannelMap__ = &kchannelMap_IMPL,    // virtual override (res) base (gpures)
     .metadata__GpuResource.vtable.__gpuresMap__ = &__nvoc_down_thunk_KernelChannel_gpuresMap,    // virtual override (res) base (rmres)
     .metadata__GpuResource.metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
-    .vtable.__kchannelUnmap__ = &kchannelUnmap_IMPL,    // virtual override (res) base (gpures)
     .metadata__GpuResource.vtable.__gpuresUnmap__ = &__nvoc_down_thunk_KernelChannel_gpuresUnmap,    // virtual override (res) base (rmres)
     .metadata__GpuResource.metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
-    .vtable.__kchannelGetMapAddrSpace__ = &kchannelGetMapAddrSpace_IMPL,    // virtual override (gpures) base (gpures)
     .metadata__GpuResource.vtable.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace,    // virtual
     .vtable.__kchannelGetMemInterMapParams__ = &kchannelGetMemInterMapParams_IMPL,    // virtual override (rmres) base (gpures)
     .metadata__GpuResource.vtable.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
@@ -776,17 +772,17 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelChannel = {
 
 // 5 down-thunk(s) defined to bridge methods in KernelChannel from superclasses
 
-// kchannelMap: virtual override (res) base (gpures)
+// kchannelMap: virtual halified (2 hals) override (res) base (gpures) body
 NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresMap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return kchannelMap((struct KernelChannel *)(((unsigned char *) pKernelChannel) - NV_OFFSETOF(KernelChannel, __nvoc_base_GpuResource)), pCallContext, pParams, pCpuMapping);
 }
 
-// kchannelUnmap: virtual override (res) base (gpures)
+// kchannelUnmap: virtual halified (2 hals) override (res) base (gpures) body
 NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresUnmap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return kchannelUnmap((struct KernelChannel *)(((unsigned char *) pKernelChannel) - NV_OFFSETOF(KernelChannel, __nvoc_base_GpuResource)), pCallContext, pCpuMapping);
 }
 
-// kchannelGetMapAddrSpace: virtual override (gpures) base (gpures)
+// kchannelGetMapAddrSpace: virtual halified (2 hals) override (gpures) base (gpures) body
 NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return kchannelGetMapAddrSpace((struct KernelChannel *)(((unsigned char *) pKernelChannel) - NV_OFFSETOF(KernelChannel, __nvoc_base_GpuResource)), pCallContext, mapFlags, pAddrSpace);
 }
@@ -932,76 +928,122 @@ NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelCha
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelChannel = 
 {
-    /*numEntries=*/     32,
-    /*pExportEntries=*/ __nvoc_exported_method_def_KernelChannel
+    .numEntries=     32,
+    .pExportEntries= __nvoc_exported_method_def_KernelChannel
 };
 
+
+// Destruct KernelChannel object.
 void __nvoc_kchannelDestruct(KernelChannel*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
-void __nvoc_dtor_KernelChannel(KernelChannel *pThis) {
+void __nvoc_dtor_KernelChannel(KernelChannel* pThis) {
+
+// Call destructor.
     __nvoc_kchannelDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
     __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
-void __nvoc_init_dataField_KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
+void __nvoc_init_dataField_KernelChannel(KernelChannel *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_Notifier(Notifier* , CALL_CONTEXT *);
-NV_STATUS __nvoc_ctor_KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_KernelChannel_fail_GpuResource;
-    status = __nvoc_ctor_Notifier(&pThis->__nvoc_base_Notifier, arg_pCallContext);
-    if (status != NV_OK) goto __nvoc_ctor_KernelChannel_fail_Notifier;
-    __nvoc_init_dataField_KernelChannel(pThis, pRmhalspecowner, pGpuhalspecowner);
 
-    status = __nvoc_kchannelConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct KernelChannel object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_Notifier(Notifier *pNotifier, struct CALL_CONTEXT *pCallContext);    // inline
+NV_STATUS __nvoc_ctor_KernelChannel(KernelChannel *pKernelChannel, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pKernelChannel->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_KernelChannel_fail_GpuResource;
+    status = __nvoc_ctor_Notifier(&pKernelChannel->__nvoc_base_Notifier, pCallContext);
+    if (status != NV_OK) goto __nvoc_ctor_KernelChannel_fail_Notifier;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_KernelChannel(pKernelChannel, pGpuhalspecowner, pRmhalspecowner);
+
+    // Call the constructor for this class.
+    status = __nvoc_kchannelConstruct(pKernelChannel, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_KernelChannel_fail__init;
     goto __nvoc_ctor_KernelChannel_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelChannel_fail__init:
-    __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+    __nvoc_dtor_Notifier(&pKernelChannel->__nvoc_base_Notifier);
 __nvoc_ctor_KernelChannel_fail_Notifier:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pKernelChannel->__nvoc_base_GpuResource);
 __nvoc_ctor_KernelChannel_fail_GpuResource:
 __nvoc_ctor_KernelChannel_exit:
-
     return status;
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
+static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
+
+    // kchannelMap -- virtual halified (2 hals) override (res) base (gpures) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelMap__ = &kchannelMap_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kchannelMap__ = &kchannelMap_395e98;
+    }
+
+    // kchannelUnmap -- virtual halified (2 hals) override (res) base (gpures) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelUnmap__ = &kchannelUnmap_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kchannelUnmap__ = &kchannelUnmap_395e98;
+    }
+
+    // kchannelGetMapAddrSpace -- virtual halified (2 hals) override (gpures) base (gpures) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelGetMapAddrSpace__ = &kchannelGetMapAddrSpace_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kchannelGetMapAddrSpace__ = &kchannelGetMapAddrSpace_395e98;
+    }
 
     // kchannelAllocMem -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelAllocMem__ = &kchannelAllocMem_56cd7a;
+        pThis->__kchannelAllocMem__ = &kchannelAllocMem_ac1694;
     }
     else
     {
@@ -1011,7 +1053,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelDestroyMem -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelDestroyMem__ = &kchannelDestroyMem_b3696a;
+        pThis->__kchannelDestroyMem__ = &kchannelDestroyMem_d44104;
     }
     else
     {
@@ -1021,7 +1063,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelAllocHwID -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelAllocHwID__ = &kchannelAllocHwID_46f6a7;
+        pThis->__kchannelAllocHwID__ = &kchannelAllocHwID_395e98;
     }
     else
     {
@@ -1031,67 +1073,69 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelFreeHwID -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelFreeHwID__ = &kchannelFreeHwID_56cd7a;
+        pThis->__kchannelFreeHwID__ = &kchannelFreeHwID_ac1694;
     }
     else
     {
         pThis->__kchannelFreeHwID__ = &kchannelFreeHwID_GM107;
     }
 
-    // kchannelGetUserdInfo -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    // kchannelGetUserdInfo -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelGetUserdInfo__ = &kchannelGetUserdInfo_TU102;
+    }
+    // default
+    else
     {
         pThis->__kchannelGetUserdInfo__ = &kchannelGetUserdInfo_92bfc3;
     }
-    else
-    {
-        pThis->__kchannelGetUserdInfo__ = &kchannelGetUserdInfo_GM107;
-    }
 
-    // kchannelGetUserdBar1MapOffset -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    // kchannelGetUserdBar1MapOffset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelGetUserdBar1MapOffset__ = &kchannelGetUserdBar1MapOffset_TU102;
+    }
+    // default
+    else
     {
         pThis->__kchannelGetUserdBar1MapOffset__ = &kchannelGetUserdBar1MapOffset_5baef9;
-    }
-    else
-    {
-        pThis->__kchannelGetUserdBar1MapOffset__ = &kchannelGetUserdBar1MapOffset_GM107;
     }
 
     // kchannelCreateUserdMemDescBc -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelCreateUserdMemDescBc__ = &kchannelCreateUserdMemDescBc_56cd7a;
+        pThis->__kchannelCreateUserdMemDescBc__ = &kchannelCreateUserdMemDescBc_ac1694;
     }
     else
     {
         pThis->__kchannelCreateUserdMemDescBc__ = &kchannelCreateUserdMemDescBc_GV100;
     }
 
-    // kchannelCreateUserdMemDesc -- halified (2 hals)
+    // kchannelCreateUserdMemDesc -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelCreateUserdMemDesc__ = &kchannelCreateUserdMemDesc_56cd7a;
+        pThis->__kchannelCreateUserdMemDesc__ = &kchannelCreateUserdMemDesc_ac1694;
     }
     else
     {
         pThis->__kchannelCreateUserdMemDesc__ = &kchannelCreateUserdMemDesc_GV100;
     }
 
-    // kchannelDestroyUserdMemDesc -- halified (2 hals)
+    // kchannelDestroyUserdMemDesc -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelDestroyUserdMemDesc__ = &kchannelDestroyUserdMemDesc_b3696a;
+        pThis->__kchannelDestroyUserdMemDesc__ = &kchannelDestroyUserdMemDesc_d44104;
     }
     else
     {
         pThis->__kchannelDestroyUserdMemDesc__ = &kchannelDestroyUserdMemDesc_GV100;
     }
 
-    // kchannelCreateUserMemDesc -- halified (3 hals)
+    // kchannelCreateUserMemDesc -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_56cd7a;
+        pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_ac1694;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -1105,7 +1149,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelIsUserdAddrSizeValid -- halified (5 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_88bc07;
+        pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_e661f0;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -1115,8 +1159,8 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GA100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000300UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GB10B;
     }
@@ -1128,17 +1172,39 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelGetEngine -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kchannelGetEngine__ = &kchannelGetEngine_56cd7a;
+        pThis->__kchannelGetEngine__ = &kchannelGetEngine_ac1694;
     }
     else
     {
         pThis->__kchannelGetEngine__ = &kchannelGetEngine_GM107;
     }
 
+    // kchannelMapUserD -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelMapUserD__ = &kchannelMapUserD_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kchannelMapUserD__ = &kchannelMapUserD_5baef9;
+    }
+
+    // kchannelUnmapUserD -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kchannelUnmapUserD__ = &kchannelUnmapUserD_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kchannelUnmapUserD__ = &kchannelUnmapUserD_ca557d;
+    }
+
     // kchannelCtrlCmdGetKmb -- halified (2 hals) exported (id=0xc56f010b) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kchannelCtrlCmdGetKmb__ = &kchannelCtrlCmdGetKmb_46f6a7;
+        pThis->__kchannelCtrlCmdGetKmb__ = &kchannelCtrlCmdGetKmb_395e98;
     }
     else
     {
@@ -1148,7 +1214,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelCtrlRotateSecureChannelIv -- halified (2 hals) exported (id=0xc56f010c) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kchannelCtrlRotateSecureChannelIv__ = &kchannelCtrlRotateSecureChannelIv_46f6a7;
+        pThis->__kchannelCtrlRotateSecureChannelIv__ = &kchannelCtrlRotateSecureChannelIv_395e98;
     }
     else
     {
@@ -1158,37 +1224,17 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelSetEncryptionStatsBuffer -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kchannelSetEncryptionStatsBuffer__ = &kchannelSetEncryptionStatsBuffer_56cd7a;
+        pThis->__kchannelSetEncryptionStatsBuffer__ = &kchannelSetEncryptionStatsBuffer_ac1694;
     }
     else
     {
         pThis->__kchannelSetEncryptionStatsBuffer__ = &kchannelSetEncryptionStatsBuffer_KERNEL;
     }
 
-    // kchannelGetClassEngineID -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
-    {
-        pThis->__kchannelGetClassEngineID__ = &kchannelGetClassEngineID_46f6a7;
-    }
-    else
-    {
-        pThis->__kchannelGetClassEngineID__ = &kchannelGetClassEngineID_GM107;
-    }
-
-    // kchannelEnableVirtualContext -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
-    {
-        pThis->__kchannelEnableVirtualContext__ = &kchannelEnableVirtualContext_46f6a7;
-    }
-    else
-    {
-        pThis->__kchannelEnableVirtualContext__ = &kchannelEnableVirtualContext_GM107;
-    }
-
     // kchannelDeriveAndRetrieveKmb -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kchannelDeriveAndRetrieveKmb__ = &kchannelDeriveAndRetrieveKmb_56cd7a;
+        pThis->__kchannelDeriveAndRetrieveKmb__ = &kchannelDeriveAndRetrieveKmb_ac1694;
     }
     else
     {
@@ -1198,24 +1244,44 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     // kchannelSetKeyRotationNotifier -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_56cd7a;
+        pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_ac1694;
     }
     else
     {
         pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_KERNEL;
     }
-} // End __nvoc_init_funcTable_KernelChannel_1 with approximately 42 basic block(s).
+
+    // kchannelGetClassEngineID -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchannelGetClassEngineID__ = &kchannelGetClassEngineID_395e98;
+    }
+    else
+    {
+        pThis->__kchannelGetClassEngineID__ = &kchannelGetClassEngineID_GM107;
+    }
+
+    // kchannelEnableVirtualContext -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kchannelEnableVirtualContext__ = &kchannelEnableVirtualContext_395e98;
+    }
+    else
+    {
+        pThis->__kchannelEnableVirtualContext__ = &kchannelEnableVirtualContext_GM107;
+    }
+} // End __nvoc_init_funcTable_KernelChannel_1 with approximately 52 basic block(s).
 
 
-// Initialize vtable(s) for 49 virtual method(s).
-void __nvoc_init_funcTable_KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
+// Initialize vtable(s) for 51 virtual method(s).
+void __nvoc_init_funcTable_KernelChannel(KernelChannel *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 19 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelChannel_1(pThis, pRmhalspecowner, pGpuhalspecowner);
+    // Initialize vtable(s) with 24 per-object function pointer(s).
+    __nvoc_init_funcTable_KernelChannel_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
+void __nvoc_init__KernelChannel(KernelChannel *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;    // (obj) super^4
@@ -1242,65 +1308,65 @@ void __nvoc_init__KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspec
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelChannel;    // (kchannel) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelChannel(pThis, pRmhalspecowner, pGpuhalspecowner);
+    __nvoc_init_funcTable_KernelChannel(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    KernelChannel *pThis;
-    RmHalspecOwner *pRmhalspecowner;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    KernelChannel *__nvoc_pThis;
     GpuHalspecOwner *pGpuhalspecowner;
+    RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(KernelChannel));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(KernelChannel));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(KernelChannel));
+    portMemSet(__nvoc_pThis, 0, sizeof(KernelChannel));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
-    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
+    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelChannel_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelChannel(pThis, pRmhalspecowner, pGpuhalspecowner);
-    status = __nvoc_ctor_KernelChannel(pThis, pRmhalspecowner, pGpuhalspecowner, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_KernelChannel_cleanup;
+    __nvoc_init__KernelChannel(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelChannel(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelChannel_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -1309,31 +1375,31 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel **ppThis, Dynamic *pParen
 __nvoc_objCreate_KernelChannel_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(KernelChannel));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(KernelChannel));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_KernelChannel(KernelChannel **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    CALL_CONTEXT *arg_pCallContext = va_arg(args, CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_KernelChannel(KernelChannel **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_KernelChannel(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_KernelChannel(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

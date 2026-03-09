@@ -50,16 +50,11 @@ extern "C" {
 #include "nvlog/nvlog_printf.h"
 #include "lib/protobuf/prb.h"
 
-
 struct CrashCatEngine;
 
-#ifndef __NVOC_CLASS_CrashCatEngine_TYPEDEF__
-#define __NVOC_CLASS_CrashCatEngine_TYPEDEF__
-typedef struct CrashCatEngine CrashCatEngine;
-#endif /* __NVOC_CLASS_CrashCatEngine_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatEngine
-#define __nvoc_class_id_CrashCatEngine 0x654166
+#define __nvoc_class_id_CrashCatEngine 0x654166u
+typedef struct CrashCatEngine CrashCatEngine;
 #endif /* __nvoc_class_id_CrashCatEngine */
 
 
@@ -69,6 +64,7 @@ typedef NvU64 CrashCatImplementer;
 #define CRASHCAT_IMPLEMENTER_UNSPECIFIED    0ull
 #define CRASHCAT_IMPLEMENTER_LIBOS2         0x4C49424F53322E30ull   // "LIBOS2.0"
 #define CRASHCAT_IMPLEMENTER_LIBOS3         0x4C49424F53332E31ull   // "LIBOS3.1"
+#define CRASHCAT_DEFAULT_XID                120ull
 
 struct CrashCatReportHal {
     unsigned short __nvoc_HalVarIdx;
@@ -118,7 +114,7 @@ struct CrashCatReport {
     struct CrashCatReport *__nvoc_pbase_CrashCatReport;    // crashcatReport
 
     // Vtable with 4 per-object function pointers
-    NV_CRASHCAT_CONTAINMENT (*__crashcatReportSourceContainment__)(struct CrashCatReport * /*this*/);  // halified (2 hals)
+    NV_CRASHCAT_CONTAINMENT (*__crashcatReportSourceContainment__)(struct CrashCatReport * /*this*/);  // halified (2 hals) body
     void (*__crashcatReportLogReporter__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
     void (*__crashcatReportLogSource__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
     void (*__crashcatReportLogVersionProtobuf__)(struct CrashCatReport * /*this*/, PRB_ENCODER *);  // halified (3 hals)
@@ -137,13 +133,9 @@ struct NVOC_METADATA__CrashCatReport {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_CrashCatReport_TYPEDEF__
-#define __NVOC_CLASS_CrashCatReport_TYPEDEF__
-typedef struct CrashCatReport CrashCatReport;
-#endif /* __NVOC_CLASS_CrashCatReport_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CrashCatReport
-#define __nvoc_class_id_CrashCatReport 0xde4777
+#define __nvoc_class_id_CrashCatReport 0xde4777u
+typedef struct CrashCatReport CrashCatReport;
 #endif /* __nvoc_class_id_CrashCatReport */
 
 // Casting support
@@ -162,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatReport;
 NV_STATUS __nvoc_objCreateDynamic_CrashCatReport(CrashCatReport**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
-        NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version, CrashCatImplementer CrashCatReportHal_implementer, void **arg_ppReportBytes, NvLength arg_bytesRemaining);
-#define __objCreate_CrashCatReport(ppNewObj, pParent, createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining) \
-    __nvoc_objCreate_CrashCatReport((ppNewObj), staticCast((pParent), Dynamic), (createFlags), CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining)
+        NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version, CrashCatImplementer CrashCatReportHal_implementer, void **ppReportBytes, NvLength bytesRemaining);
+#define __objCreate_CrashCatReport(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, ppReportBytes, bytesRemaining) \
+    __nvoc_objCreate_CrashCatReport((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), CrashCatReportHal_version, CrashCatReportHal_implementer, ppReportBytes, bytesRemaining)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS crashcatReportConstruct_IMPL(struct CrashCatReport *arg_, void **arg_ppReportBytes, NvLength arg_bytesRemaining);
-#define __nvoc_crashcatReportConstruct(arg_, arg_ppReportBytes, arg_bytesRemaining) crashcatReportConstruct_IMPL(arg_, arg_ppReportBytes, arg_bytesRemaining)
+NV_STATUS crashcatReportConstruct_IMPL(struct CrashCatReport *arg_this, void **ppReportBytes, NvLength bytesRemaining);
+#define __nvoc_crashcatReportConstruct(arg_this, ppReportBytes, bytesRemaining) crashcatReportConstruct_IMPL(arg_this, ppReportBytes, bytesRemaining)
 
 #define __nvoc_crashcatReportDestruct(arg_this) crashcatReportDestruct_V1(arg_this)
 
@@ -359,78 +351,68 @@ static inline void crashcatReportLogVersionProtobuf_DISPATCH(struct CrashCatRepo
     arg_this->__crashcatReportLogVersionProtobuf__(arg_this, pCrashcatProtobufData);
 }
 
-void crashcatReportDestruct_V1(struct CrashCatReport *arg1);
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+void crashcatReportDestruct_V1(struct CrashCatReport *arg_this);
 
+NvBool crashcatReportIsWatchdog_V1(struct CrashCatReport *arg_this);
 
-NvBool crashcatReportIsWatchdog_V1(struct CrashCatReport *arg1);
+NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_V1_LIBOS3(struct CrashCatReport *arg_this);
 
+void crashcatReportLogToProtobuf_V1(struct CrashCatReport *arg_this, PRB_ENCODER *pCrashcatProtobufData);
 
-void crashcatReportLogToProtobuf_V1(struct CrashCatReport *arg1, PRB_ENCODER *pCrashcatProtobufData);
+NvU64 crashcatReportRa_V1(struct CrashCatReport *arg_this);
 
+NvU64 crashcatReportXcause_V1(struct CrashCatReport *arg_this);
 
-NvU64 crashcatReportRa_V1(struct CrashCatReport *arg1);
+NvU64 crashcatReportXtval_V1(struct CrashCatReport *arg_this);
 
+void * crashcatReportExtract_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
-NvU64 crashcatReportXcause_V1(struct CrashCatReport *arg1);
+void * crashcatReportExtractReport_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
+void * crashcatReportExtractRiscv64CsrState_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
-NvU64 crashcatReportXtval_V1(struct CrashCatReport *arg1);
+void * crashcatReportExtractRiscv64GprState_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
+void * crashcatReportExtractRiscv64Trace_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
-void *crashcatReportExtract_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void * crashcatReportExtractIo32State_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 
+void crashcatReportLogReporter_V1_LIBOS2(struct CrashCatReport *arg_this);
 
-void *crashcatReportExtractReport_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void crashcatReportLogReporter_V1_LIBOS3(struct CrashCatReport *arg_this);
 
+void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg_this);
 
-void *crashcatReportExtractRiscv64CsrState_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void crashcatReportLogSource_V1_LIBOS2(struct CrashCatReport *arg_this);
 
+void crashcatReportLogSource_V1_LIBOS3(struct CrashCatReport *arg_this);
 
-void *crashcatReportExtractRiscv64GprState_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void crashcatReportLogSource_V1_GENERIC(struct CrashCatReport *arg_this);
 
+void crashcatReportLogRiscv64CsrState_V1(struct CrashCatReport *arg_this);
 
-void *crashcatReportExtractRiscv64Trace_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void crashcatReportLogRiscv64GprState_V1(struct CrashCatReport *arg_this);
 
+void crashcatReportLogRiscv64Traces_V1(struct CrashCatReport *arg_this);
 
-void *crashcatReportExtractIo32State_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
+void crashcatReportLogIo32State_V1(struct CrashCatReport *arg_this);
 
+void crashcatReportLogVersionProtobuf_V1_LIBOS2(struct CrashCatReport *arg_this, PRB_ENCODER *pCrashcatProtobufData);
 
-void crashcatReportLogRiscv64CsrState_V1(struct CrashCatReport *arg1);
+void crashcatReportLogVersionProtobuf_V1_LIBOS3(struct CrashCatReport *arg_this, PRB_ENCODER *pCrashcatProtobufData);
 
+void crashcatReportLogVersionProtobuf_V1_GENERIC(struct CrashCatReport *arg_this, PRB_ENCODER *pCrashcatProtobufData);
 
-void crashcatReportLogRiscv64GprState_V1(struct CrashCatReport *arg1);
-
-
-void crashcatReportLogRiscv64Traces_V1(struct CrashCatReport *arg1);
-
-
-void crashcatReportLogIo32State_V1(struct CrashCatReport *arg1);
-
-
-static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_3e9f29(struct CrashCatReport *arg1) {
+// Inline HAL method definitions
+static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_3e9f29(struct CrashCatReport *arg_this){
     return NV_CRASHCAT_CONTAINMENT_UNSPECIFIED;
 }
 
-NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_V1_LIBOS3(struct CrashCatReport *arg1);
-
-void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg1);
-
-void crashcatReportLogReporter_V1_LIBOS2(struct CrashCatReport *arg1);
-
-void crashcatReportLogReporter_V1_LIBOS3(struct CrashCatReport *arg1);
-
-void crashcatReportLogSource_V1_GENERIC(struct CrashCatReport *arg1);
-
-void crashcatReportLogSource_V1_LIBOS2(struct CrashCatReport *arg1);
-
-void crashcatReportLogSource_V1_LIBOS3(struct CrashCatReport *arg1);
-
-void crashcatReportLogVersionProtobuf_V1_GENERIC(struct CrashCatReport *arg1, PRB_ENCODER *pCrashcatProtobufData);
-
-void crashcatReportLogVersionProtobuf_V1_LIBOS2(struct CrashCatReport *arg1, PRB_ENCODER *pCrashcatProtobufData);
-
-void crashcatReportLogVersionProtobuf_V1_LIBOS3(struct CrashCatReport *arg1, PRB_ENCODER *pCrashcatProtobufData);
-
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CRASHCAT_REPORT_H_PRIVATE_ACCESS_ALLOWED

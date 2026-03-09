@@ -843,6 +843,14 @@ knvlinkStatePostLoad_IMPL
                 return NV_ERR_FEATURE_NOT_ENABLED;
             }
         }
+
+        // Pre-assign the CLID for the GPU
+        status = knvlinkAssignNvleClid(pGpu, pKernelNvlink);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,"Failed to assign CLID for GPU 0x%x\n", pGpu->gpuInstance);
+            return status;
+        }
     }
 
     status = knvlinkStatePostLoadHal_HAL(pGpu, pKernelNvlink);
@@ -1198,9 +1206,6 @@ knvlinkSetDegradedMode_IMPL
 {
     NV_STATUS status = NV_OK;
 
-    // Prevent invalid shift later
-    NV_ASSERT_OR_RETURN_VOID((linkId == -1) || ((linkId >= 0) && (linkId < 32)));
-
     if (pKernelNvlink == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1230,7 +1235,7 @@ knvlinkSetDegradedMode_IMPL
                         (OsQueueWorkItemFlags){
                             .apiLock = WORKITEM_FLAGS_API_LOCK_READ_ONLY,
                             .bLockGpuGroupSubdevice = NV_TRUE}),
-        return;);
+                        return;);
 }
 
 /*!
@@ -1313,7 +1318,7 @@ _knvlinkProcessSysmemLinks
 {
     NV_STATUS status = NV_OK;
 
-#if defined(NVCPU_AARCH64)
+#if defined(INCLUDE_NVLINK_LIB) && defined(NVCPU_AARCH64)
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED))
     {
         //

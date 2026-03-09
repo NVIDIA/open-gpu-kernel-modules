@@ -45,6 +45,8 @@
 
 #include "nv_smg.h"
 
+#include <class/cla083.h> /* NVA083_GRID_DISPLAYLESS */
+
 #include "class/cl00c3.h" /* NV01_MEMORY_SYNCPOINT */
 #include "class/cl0005.h" /* NV01_EVENT */
 
@@ -55,6 +57,8 @@
 #include <class/cl0080.h> /* NV01_DEVICE_0 */
 #include <class/cl0040.h> /* NV01_MEMORY_LOCAL_USER */
 #include <class/cl2080.h> /* NV20_SUBDEVICE_0 */
+
+#include <class/cl2080_notification.h> /* NV2080_NOTIFIERS_* */
 
 #include "class/clc57b.h" /* NVC57B_WINDOW_IMM_CHANNEL_DMA */
 #include "class/clc57e.h" /* NVC57E_WINDOW_CHANNEL_DMA */
@@ -84,6 +88,8 @@
 #include <ctrl/ctrl2080/ctrl2080unix.h> /* NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT */
 #include <ctrl/ctrl5070/ctrl5070chnc.h> /* NV5070_CTRL_CMD_SET_RMFREE_FLAGS */
 #include <ctrl/ctrl0000/ctrl0000system.h> /* NV0000_CTRL_CMD_SYSTEM_GET_APPROVAL_COOKIE */
+
+#include <ctrl/ctrla083.h> /* NVA083_CTRL_CMD_VIRTUAL_DISPLAY_* */
 
 #include "nvos.h"
 
@@ -183,16 +189,6 @@ static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
 
     /* TODO: This cap bit should be queried from RM */
     pDevEvo->requiresAllAllocationsInSysmem = pDevEvo->isSOCDisplay;
-
-    /*
-     * Prohibit vblank_sem_control if:
-     * - the kernel interface layer says so, or
-     * - (RM-based) SLI mosaic is enabled (WAR for bug 4552673, until RM-based
-     *   SLI is dropped)
-     */
-    pDevEvo->supportsVblankSemControl =
-        nvkms_vblank_sem_control() &&
-        !pDevEvo->sli.mosaic;
 
     /* ctxDma{,Non}CoherentAllowed */
 
@@ -395,6 +391,27 @@ fail:
     return FALSE;
 }
 
+static void DisplaylessProbeValidDisplays(NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVDpyId dpyId = { 0 };
+    NVDpyIdList dpyIdList;
+    NvU32 i = 0, headMask = 0;
+
+    for (i = 0; i < pDevEvo->numHeads; i++) {
+        headMask |= NVBIT(i);
+    }
+
+    dpyIdList = nvNvU32ToDpyIdList(headMask);
+
+    FOR_ALL_DPY_IDS(dpyId, dpyIdList) {
+        pDispEvo->connectorIds =
+            nvAddDpyIdToDpyIdList(dpyId, pDispEvo->connectorIds);
+    }
+
+    pDispEvo->validDisplays = pDispEvo->connectorIds;
+}
+
 /*
  * Get the (id) list of all supported display devices for this pDisp.
  */
@@ -408,6 +425,11 @@ static NvBool ProbeValidDisplays(NVDispEvoPtr pDispEvo)
     pDispEvo->displayPortMSTIds = nvEmptyDpyIdList();
     pDispEvo->dynamicDpyIds = nvEmptyDpyIdList();
     pDispEvo->validDisplays = nvEmptyDpyIdList();
+
+    if (pDevEvo->displaylessHw) {
+        DisplaylessProbeValidDisplays(pDispEvo);
+        return TRUE;
+    }
 
     getSupportedParams.subDeviceInstance = pDispEvo->displayOwner;
 
@@ -570,6 +592,37 @@ typedef struct _AllocConnectorDispDataRec {
     NvU32 typeIndices[NVKMS_CONNECTOR_TYPE_MAX + 1];
 } AllocConnectorDispDataRec;
 
+static void DisplaylessAllocConnector(
+    NVDispEvoPtr pDispEvo,
+    NVDpyId dpyId,
+    AllocConnectorDispDataRec *pAllocConnectorDispData,
+    NVConnectorEvoPtr pConnectorEvo)
+{
+    pConnectorEvo->pDispEvo = pDispEvo;
+    pConnectorEvo->displayId = dpyId;
+    pConnectorEvo->or.type = NV0073_CTRL_SPECIFIC_OR_TYPE_SOR;
+    pConnectorEvo->type = NVKMS_CONNECTOR_TYPE_DVI_D;
+
+    pConnectorEvo->physicalIndex = nvDpyIdToNvU32(dpyId);
+    pConnectorEvo->physicalLocation = nvDpyIdToNvU32(dpyId);
+
+    pConnectorEvo->dfpInfo = 0;
+
+    pConnectorEvo->legacyType = NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP;
+    pConnectorEvo->legacyTypeIndex = pAllocConnectorDispData->dfpIndex++;
+
+    nvAssert(pConnectorEvo->type <
+             ARRAY_LEN(pAllocConnectorDispData->typeIndices));
+    pConnectorEvo->typeIndex =
+        pAllocConnectorDispData->typeIndices[pConnectorEvo->type]++;
+
+    nvListAppend(&pConnectorEvo->connectorListEntry, &pDispEvo->connectorList);
+
+    nvkms_snprintf(pConnectorEvo->name, sizeof(pConnectorEvo->name), "%s-%u",
+                   NvKmsConnectorTypeString(pConnectorEvo->type),
+                   pConnectorEvo->typeIndex);
+}
+
 /*!
  * Query and setup information for a connector.
  */
@@ -588,6 +641,14 @@ static NvBool AllocConnector(
 
     if (pConnectorEvo == NULL) {
         return FALSE;
+    }
+
+    if (pDevEvo->displaylessHw) {
+        DisplaylessAllocConnector(pDispEvo,
+                                  dpyId,
+                                  pAllocConnectorDispData,
+                                  pConnectorEvo);
+        return TRUE;
     }
 
     pConnectorEvo->pDispEvo = pDispEvo;
@@ -859,6 +920,55 @@ static NvBool IsFlexibleWindowMapping(NvU32 windowHeadMask)
             NV0073_CTRL_SPECIFIC_FLEXIBLE_HEAD_WINDOW_ASSIGNMENT);
 }
 
+static NvBool DisplaylessProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
+{
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS numHeadsParams = { 0 };
+    NvU32 numHeads = 0;
+    NvU32 ret, win, head;
+
+    pDevEvo->numHeads = 0;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displaylessHandle,
+                         NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_NUM_HEADS,
+                         &numHeadsParams, sizeof(numHeadsParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+            "Failed to get the number of heads for displayless HW, error %d",
+            ret);
+        return FALSE;
+    }
+
+    numHeads = numHeadsParams.maxNumHeads;
+
+    if (numHeads == 0) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "No heads found on board!");
+        return FALSE;
+    }
+
+    if (numHeads > NV_MAX_HEADS)
+    {
+        nvEvoLog(EVO_LOG_WARN,
+                 "HW supports %d heads. Limiting to %d heads",
+                 numHeads, NV_MAX_HEADS);
+        numHeads = NV_MAX_HEADS;
+    }
+
+    pDevEvo->numHeads = numHeads;
+
+    for (win = 0; win < NVKMS_MAX_WINDOWS_PER_DISP; win++) {
+        pDevEvo->headForWindow[win] = NV_INVALID_HEAD;
+    }
+
+    // Displayless has fixed 1 window per head with identity mapping
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        pDevEvo->headForWindow[head] = head;
+    }
+
+    return TRUE;
+}
+
 /*!
  * Query the number of heads and save the result in pDevEvo->numHeads.
  * Get window head assignment and save it in pDevEvo->headForWindow[win].
@@ -893,6 +1003,10 @@ static NvBool ProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
     NvBool isFlexibleWindowMapping = NV_TRUE;
     NvU32 win;
     NvU32 ret;
+
+    if (pDevEvo->displaylessHw) {
+        return DisplaylessProbeHeadCountAndWindowAssignment(pDevEvo);
+    }
 
     pDevEvo->numHeads = 0;
 
@@ -1280,6 +1394,33 @@ static void ProbeBootDisplays(NVDispEvoPtr pDispEvo)
     }
 }
 
+static NvBool DisplaylessProbeDisplayCaps(NVDevEvoPtr pDevEvo)
+{
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS getMaxResolutionParams = { 0 };
+    NvU32 ret = 0;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displaylessHandle,
+                         NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION,
+                         &getMaxResolutionParams, sizeof(getMaxResolutionParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+            "Failed to get the max resolution for displayless HW, error %d",
+            ret);
+       return FALSE;
+    }
+
+    pDevEvo->caps.maxWidthInBytes = getMaxResolutionParams.maxHResolution * (32 >> 3);
+    pDevEvo->caps.maxWidthInPixels = getMaxResolutionParams.maxHResolution;
+    pDevEvo->caps.maxHeight = getMaxResolutionParams.maxVResolution;
+
+    nvEvoLogDevDebug(pDevEvo, EVO_LOG_INFO,
+                     "max width %d, max height %d",
+                     pDevEvo->caps.maxWidthInPixels, pDevEvo->caps.maxHeight);
+    return TRUE;
+}
+
 /*!
  * Query the 0073 display common object capabilities.
  */
@@ -1562,13 +1703,13 @@ static void ReceiveHotplugEvent(void *arg, void *pEventDataVoid, NvU32 hEvent,
 static void ReceiveDPIRQEvent(void *arg, void *pEventDataVoid, NvU32 hEvent,
                               NvU32 Data, NV_STATUS Status)
 {
-    // XXX The displayId of the connector that generated the event should be
-    // available here somewhere.  We should figure out how to find that and
-    // plumb it through to nvHandleDPIRQEventDeferredWork.
+    Nv2080DpIrqNotification *pDpIrqData =
+        (Nv2080DpIrqNotification *) pEventDataVoid;
+
     (void) nvkms_alloc_timer_with_ref_ptr(
         nvHandleDPIRQEventDeferredWork, /* callback */
-        arg, /* argument (this is a ref_ptr to a pDispEvo) */
-        0,   /* dataU32 */
+        arg,    /* argument (this is a ref_ptr to a pDispEvo) */
+        pDpIrqData->displayId, /* dataU32 */
         0);
 }
 
@@ -1698,6 +1839,23 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
             goto fail;
 
         }
+    } else if (nvRmEvoClassListCheck(pDevEvo, NVA083_GRID_DISPLAYLESS)) {
+
+        pDevEvo->displaylessHandle =
+            nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+
+        if (nvRmApiAlloc(nvEvoGlobal.clientHandle,
+                         pDevEvo->deviceHandle,
+                         pDevEvo->displaylessHandle,
+                         NVA083_GRID_DISPLAYLESS, NULL)
+                != NVOS_STATUS_SUCCESS) {
+            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                        "Failed to initialize the displayless "
+                        "subsystem for the NVIDIA GRID device!");
+            goto fail;
+
+        }
+        pDevEvo->displaylessHw = NV_TRUE;
     } else {
         /*
          * Not supporting NV04_DISPLAY_COMMON is expected in some
@@ -1708,9 +1866,16 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
         goto fail;
     }
 
-    if (!ProbeDisplayCommonCaps(pDevEvo)) {
-        status = NVKMS_ALLOC_DEVICE_STATUS_NO_HARDWARE_AVAILABLE;
-        goto fail;
+    if (!pDevEvo->displaylessHw) {
+        if (!ProbeDisplayCommonCaps(pDevEvo)) {
+            status = NVKMS_ALLOC_DEVICE_STATUS_NO_HARDWARE_AVAILABLE;
+            goto fail;
+        }
+    } else {
+        if (!DisplaylessProbeDisplayCaps(pDevEvo)) {
+            status = NVKMS_ALLOC_DEVICE_STATUS_NO_HARDWARE_AVAILABLE;
+            goto fail;
+        }
     }
 
     if (!ProbeHeadCountAndWindowAssignment(pDevEvo)) {
@@ -1887,6 +2052,21 @@ void nvRmDestroyDisplays(NVDevEvoPtr pDevEvo)
 
         // Free the DisplayPort IRQ event.
         if (pDispEvo->DPIRQEventHandle != 0) {
+            NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS setEventParams = { };
+
+            // Disable DP-IRQ notifications for this subdevice
+            setEventParams.event = NV2080_NOTIFIERS_DP_IRQ;
+            setEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+            if ((ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                                      subDevice,
+                                      NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                                      &setEventParams,
+                                      sizeof(setEventParams))
+                    != NVOS_STATUS_SUCCESS)) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+                                "Failed to disable hotplug notifications (subdevice: %d) (error: 0x%x)", dispIndex, ret);
+            }
+
             nvRmApiFree(nvEvoGlobal.clientHandle,
                         nvEvoGlobal.clientHandle,
                         pDispEvo->DPIRQEventHandle);
@@ -1896,11 +2076,22 @@ void nvRmDestroyDisplays(NVDevEvoPtr pDevEvo)
         }
 
         // Free the hotplug event.
-        /*
-         * XXX I wish I could cancel anything scheduled by
-         * ReceiveHotplugEvent() and ReceiveDPIRQEvent() for this pDispEvo...
-         */
         if (pDispEvo->hotplugEventHandle != 0) {
+            NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS setEventParams = { };
+
+            // Disable hotplug notifications for this subdevice
+            setEventParams.event = NV2080_NOTIFIERS_HOTPLUG;
+            setEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+            if ((ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                                      subDevice,
+                                      NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                                      &setEventParams,
+                                      sizeof(setEventParams))
+                    != NVOS_STATUS_SUCCESS)) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+                                "Failed to disable hotplug notifications (subdevice: %d) (error: 0x%x)", dispIndex, ret);
+            }
+
             nvRmApiFree(nvEvoGlobal.clientHandle,
                         nvEvoGlobal.clientHandle,
                         pDispEvo->hotplugEventHandle);
@@ -1955,6 +2146,18 @@ void nvRmDestroyDisplays(NVDevEvoPtr pDevEvo)
         nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
                            pDevEvo->displayCommonHandle);
         pDevEvo->displayCommonHandle = 0;
+    }
+
+    if (pDevEvo->displaylessHandle != 0) {
+        ret = nvRmApiFree(nvEvoGlobal.clientHandle,
+                          pDevEvo->deviceHandle,
+                          pDevEvo->displaylessHandle);
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvAssert(!"Free(displaylessHandle) failed");
+        }
+        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                           pDevEvo->displaylessHandle);
+        pDevEvo->displaylessHandle = 0;
     }
 }
 
@@ -2197,6 +2400,34 @@ void nvRmGetConnectorORInfo(NVConnectorEvoPtr pConnectorEvo, NvBool assertOnly)
     }
 }
 
+static NVDpyIdList DisplaylessRmGetConnectedDpys(const NVDispEvoRec *pDispEvo,
+                                                 NVDpyIdList dpyIdList)
+{
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS numHeadsParams = { 0 };
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 displayMask = 0, i, ret;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displaylessHandle,
+                         NVA083_CTRL_CMD_VIRTUAL_DISPLAY_GET_NUM_HEADS,
+                         &numHeadsParams,
+                         sizeof(numHeadsParams));
+
+    if (ret == NVOS_STATUS_SUCCESS) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_INFO,
+            "connectedDpys %d", numHeadsParams.numHeads);
+
+        for (i = 0; i < numHeadsParams.numHeads; i++) {
+            displayMask |= NVBIT(i);
+        }
+        return nvNvU32ToDpyIdList(displayMask);
+    } else {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+            "Failed detecting connected displays for displayless HW");
+        return nvEmptyDpyIdList();
+    }
+}
+
 /*!
  * Query connector state, and retry if necessary.
  */
@@ -2206,6 +2437,10 @@ NVDpyIdList nvRmGetConnectedDpys(const NVDispEvoRec *pDispEvo,
     NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS params = { 0 };
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvU32 ret;
+
+    if (pDevEvo->displaylessHw) {
+        return DisplaylessRmGetConnectedDpys(pDispEvo, dpyIdList);
+    }
 
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayMask = nvDpyIdListToNvU32(dpyIdList);
@@ -2888,6 +3123,28 @@ static NvBool AllocPostSyncptPerChannel(NVDevEvoPtr pDevEvo,
     return AllocSyncpt(pDevEvo, pChannel, &pChannel->postSyncpt);
 }
 
+static NvBool DisplaylessAllocateWindowChannels(NVDevEvoPtr pDevEvo)
+{
+    NvU32 window;
+
+    nvAssert(pDevEvo->numWindows <= ARRAY_LEN(pDevEvo->window));
+    for (window = 0; window < pDevEvo->numWindows; window++) {
+        NVEvoChannelPtr pChannel = nvCalloc(1, sizeof(*pChannel));
+
+        if (pChannel == NULL) {
+            return FALSE;
+        }
+
+        pChannel->instance = window;
+        pChannel->channelMask =
+            DRF_IDX_DEF64(_EVO, _CHANNEL_MASK, _WINDOW, window, _ENABLE);
+
+        pDevEvo->window[window] = pChannel;
+    }
+
+    return TRUE;
+}
+
 NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
 {
     int index;
@@ -2910,6 +3167,10 @@ NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
         { NVC57E_WINDOW_CHANNEL_DMA,
           NVC57B_WINDOW_IMM_CHANNEL_DMA },
     }, *c = NULL;
+
+    if (pDevEvo->displaylessHw) {
+        return DisplaylessAllocateWindowChannels(pDevEvo);
+    }
 
     for (index = 0; index < ARRAY_LEN(windowChannelClasses); index++) {
         if (nvRmEvoClassListCheck(pDevEvo,
@@ -3798,7 +4059,7 @@ static void CloseDevice(NVDevEvoPtr pDevEvo)
             break;
         }
 
-        nvkms_close_gpu(gpuId);
+        nvkms_close_gpu(gpuId, NV_TRUE /* reset_aware */);
         pDevEvo->openedGpuIds[i] = NV0000_CTRL_GPU_INVALID_ID;
     }
 }
@@ -3831,7 +4092,7 @@ static NvBool OpenTegraDevice(NVDevEvoPtr pDevEvo)
         goto fail;
     }
 
-    if (!nvkms_open_gpu(gpu_info[0].gpu_id)) {
+    if (!nvkms_open_gpu(gpu_info[0].gpu_id, NV_TRUE /* reset_aware */)) {
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to open GPU");
         goto fail;
     }
@@ -3906,7 +4167,7 @@ static NvBool OpenDevice(NVDevEvoPtr pDevEvo)
             continue;
         }
 
-        if (!nvkms_open_gpu(gpuId)) {
+        if (!nvkms_open_gpu(gpuId, NV_TRUE /* reset_aware */)) {
             nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to open GPU");
             goto fail;
         }
@@ -4134,7 +4395,6 @@ NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
 
     pDevEvo->deviceId.rmDeviceId = pRequest->deviceId.rmDeviceId;
     pDevEvo->deviceId.migDevice = pRequest->deviceId.migDevice;
-    pDevEvo->sli.mosaic = pRequest->sliMosaic;
 
     if (pRequest->deviceId.rmDeviceId == NVKMS_DEVICE_ID_TEGRA) {
         /*
@@ -4345,6 +4605,10 @@ NvBool nvRmIsPossibleToActivateDpyIdList(NVDispEvoPtr pDispEvo,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS mapParams = { 0 };
     NvU32 ret = 0;
+
+    if (pDevEvo->displaylessHw) {
+        return TRUE;
+    }
 
     /* Trivially accept an empty dpyIdList. */
 
@@ -5435,8 +5699,8 @@ NvU32 nvRmAllocAndBindSurfaceDescriptor(
 
      /* Each surface to be displayed needs its own surface descriptor */
     nvAssert(pDevEvo->displayHandle != 0);
-    nvAssert(pDevEvo->core);
-    nvAssert(pDevEvo->core->pb.channel_handle);
+    if (pDevEvo->core)
+        nvAssert(pDevEvo->core->pb.channel_handle);
     nvAssert(hMemory);
     nvAssert(limit);
 

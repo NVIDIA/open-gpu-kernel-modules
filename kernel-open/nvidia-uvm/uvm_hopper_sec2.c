@@ -29,7 +29,7 @@
 #include "nv_uvm_interface.h"
 #include "clcba2.h"
 #include "clc86f.h"
-#include "clb06f.h"
+#include "clc46f.h"
 
 #define UVM_CSL_SIGN_AUTH_TAG_ALIGNMENT_BYTES (1 << HWSHIFT(CBA2, METHOD_STREAM_AUTH_TAG_ADDR_LO, DATA))
 
@@ -42,11 +42,11 @@ static void sign_push(uvm_push_t *push, NvU32 *init_method, NvU8 *auth_tag)
     UVM_ASSERT(init_method < push->next);
 
     while (init_method < push->next) {
-        NvU8 subch = READ_HWVALUE(*init_method, B06F, DMA, METHOD_SUBCHANNEL);
-        NvU32 count = READ_HWVALUE(*init_method, B06F, DMA, METHOD_COUNT);
+        NvU8 subch = READ_HWVALUE(*init_method, C46F, DMA, METHOD_SUBCHANNEL);
+        NvU32 count = READ_HWVALUE(*init_method, C46F, DMA, METHOD_COUNT);
 
         if (subch == UVM_SUBCHANNEL_CBA2) {
-            NvU32 method_addr = READ_HWVALUE(*init_method, B06F, DMA, METHOD_ADDRESS) << 2;
+            NvU32 method_addr = READ_HWVALUE(*init_method, C46F, DMA, METHOD_ADDRESS) << 2;
 
             UVM_ASSERT(count == 1);
             UVM_ASSERT((sign_size + 2) * UVM_METHOD_SIZE <= UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE);

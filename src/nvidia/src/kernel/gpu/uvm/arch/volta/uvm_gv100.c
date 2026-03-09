@@ -36,7 +36,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/bus/kern_bus.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 
 #include "class/clc365.h"
 #include "ctrl/ctrlc365.h"

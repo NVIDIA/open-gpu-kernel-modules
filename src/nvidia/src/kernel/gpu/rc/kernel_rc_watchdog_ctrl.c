@@ -38,6 +38,8 @@ subdeviceCtrlCmdRcGetWatchdogInfo_IMPL
 
     portMemSet(pWatchdogInfoParams, 0, sizeof *pWatchdogInfoParams);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
+
     if (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_INITIALIZED)
     {
         pWatchdogInfoParams->watchdogStatusFlags |=
@@ -71,7 +73,9 @@ subdeviceCtrlCmdRcDisableWatchdog_IMPL
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
+                                  NULL,
                                   pSubdevice,
                                   RMAPI_DISABLE_REQUEST);
 }
@@ -86,7 +90,9 @@ subdeviceCtrlCmdRcSoftDisableWatchdog_IMPL
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
+                                  NULL,
                                   pSubdevice,
                                   RMAPI_SOFT_DISABLE_REQUEST);
 }
@@ -101,7 +107,9 @@ subdeviceCtrlCmdRcEnableWatchdog_IMPL
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
+                                  NULL,
                                   pSubdevice,
                                   RMAPI_ENABLE_REQUEST);
 }
@@ -116,7 +124,9 @@ subdeviceCtrlCmdRcReleaseWatchdogRequests_IMPL
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
 
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
+                                  NULL,
                                   pSubdevice,
                                   RMAPI_RELEASE_ALL_REQUESTS);
 }

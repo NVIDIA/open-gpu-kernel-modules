@@ -47,34 +47,24 @@ extern "C" {
 #include "core/core.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "rmapi/resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "ctrl/ctrl0002.h"
 #include "rmapi/control.h" // for macro RMCTRL_EXPORT etc.
 #include "nvlimits.h"
 
-
 struct Device;
 
-#ifndef __NVOC_CLASS_Device_TYPEDEF__
-#define __NVOC_CLASS_Device_TYPEDEF__
-typedef struct Device Device;
-#endif /* __NVOC_CLASS_Device_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Device
-#define __nvoc_class_id_Device 0xe0ac20
+#define __nvoc_class_id_Device 0xe0ac20u
+typedef struct Device Device;
 #endif /* __nvoc_class_id_Device */
-
 
 
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
@@ -181,13 +171,9 @@ struct NVOC_METADATA__ContextDma {
     const struct NVOC_VTABLE__ContextDma vtable;
 };
 
-#ifndef __NVOC_CLASS_ContextDma_TYPEDEF__
-#define __NVOC_CLASS_ContextDma_TYPEDEF__
-typedef struct ContextDma ContextDma;
-#endif /* __NVOC_CLASS_ContextDma_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ContextDma
-#define __nvoc_class_id_ContextDma 0x88441b
+#define __nvoc_class_id_ContextDma 0x88441bu
+typedef struct ContextDma ContextDma;
 #endif /* __nvoc_class_id_ContextDma */
 
 // Casting support
@@ -205,14 +191,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ContextDma;
 
 NV_STATUS __nvoc_objCreateDynamic_ContextDma(ContextDma**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ContextDma(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ContextDma((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ContextDma(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ContextDma((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS ctxdmaConstruct_IMPL(struct ContextDma *arg_pCtxdma, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_ctxdmaConstruct(arg_pCtxdma, arg_pCallContext, arg_pParams) ctxdmaConstruct_IMPL(arg_pCtxdma, arg_pCallContext, arg_pParams)
+NV_STATUS ctxdmaConstruct_IMPL(struct ContextDma *pCtxdma, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_ctxdmaConstruct(pCtxdma, pCallContext, pParams) ctxdmaConstruct_IMPL(pCtxdma, pCallContext, pParams)
 
 void ctxdmaDestruct_IMPL(struct ContextDma *pCtxdma);
 #define __nvoc_ctxdmaDestruct(pCtxdma) ctxdmaDestruct_IMPL(pCtxdma)
@@ -440,16 +426,22 @@ static inline NV_STATUS ctxdmaGetOrAllocNotifShare_DISPATCH(struct ContextDma *p
     return pNotifier->__nvoc_metadata_ptr->vtable.__ctxdmaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS ctxdmaMapTo_IMPL(struct ContextDma *pContextDma, struct RS_RES_MAP_TO_PARAMS *pParams);
 
 NV_STATUS ctxdmaUnmapFrom_IMPL(struct ContextDma *pContextDma, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS ctxdmaCtrlCmdUpdateContextdma_IMPL(struct ContextDma *pContextDma, NV0002_CTRL_UPDATE_CONTEXTDMA_PARAMS *pUpdateCtxtDmaParams);
 
 NV_STATUS ctxdmaCtrlCmdBindContextdma_IMPL(struct ContextDma *pContextDma, NV0002_CTRL_BIND_CONTEXTDMA_PARAMS *pBindCtxtDmaParams);
 
 NV_STATUS ctxdmaCtrlCmdUnbindContextdma_IMPL(struct ContextDma *pContextDma, NV0002_CTRL_UNBIND_CONTEXTDMA_PARAMS *pUnbindCtxtDmaParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

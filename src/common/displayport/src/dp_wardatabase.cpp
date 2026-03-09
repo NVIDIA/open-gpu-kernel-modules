@@ -631,7 +631,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             }
             else if (ProductID == 0x5CA7 || ProductID == 0x9E9D || ProductID == 0x9EA0 || ProductID == 0x9EA5 || ProductID == 0x5CB7 ||
                      ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5 ||
-                     ProductID == 0x77E0 || ProductID == 0x9EB9)
+                     ProductID == 0x77E0 || ProductID == 0x9EB9 || ProductID == 0x5BBF)
             {
                 this->WARFlags.bForceHeadShutdownOnModeTransition = true;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Force head shutdown on Mode transition.");

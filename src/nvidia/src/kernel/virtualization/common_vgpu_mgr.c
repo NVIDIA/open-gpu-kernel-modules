@@ -347,27 +347,42 @@ vgpuMgrFreeSystemChannelIDs
 }
 
 
-NvU32 vgpuMgrGetSwrlCountToAllocate(OBJGPU *pGpu)
+NvU32 vgpuMgrGetVmsetCountToAllocate(OBJGPU *pGpu, RM_ENGINE_TYPE rmEngineType)
 {
-    NvU32 num_swrl;
+    NvU32 num_vmsets = 1;
+    NvU32 schedPolicy;
+
+    //num_vmsets are 1 for NON-GR and NON-NVENC engines & if sched policy is Default
+    if (!(
+        RM_ENGINE_TYPE_IS_NVENC(rmEngineType) ||
+        RM_ENGINE_TYPE_IS_GR(rmEngineType)))
+    {
+        return num_vmsets;
+    }
+
+    schedPolicy = gpuGetSchedulerPolicy(pGpu, rmEngineType);
+    if (schedPolicy == SCHED_POLICY_DEFAULT)
+    {
+        return num_vmsets;
+    }
 
     if (IS_MIG_ENABLED(pGpu))
     {
         if (IsGB20XorBetter(pGpu))
         {
-            num_swrl = OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT;
+            num_vmsets = OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT;
         }
         else
         {
-            num_swrl = OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT;
+            num_vmsets = OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT;
         }
     }
     else
     {
-        num_swrl = OBJSCHED_SW_RUNLIST_COUNT;
+        num_vmsets = OBJSCHED_SW_RUNLIST_COUNT;
     }
 
-    return num_swrl;
+    return num_vmsets;
 }
 
 NvU16 vgpuMgrGetVgpuSsvid(OBJGPU *pGpu)
@@ -375,4 +390,95 @@ NvU16 vgpuMgrGetVgpuSsvid(OBJGPU *pGpu)
     NvU16 vgpuSsvid = NV_PCI_SUBID_VENDOR_NVIDIA;
 
     return vgpuSsvid;
+}
+
+/*
+ * Function to allocate the slot in nominalFbSizePerGI Array
+ *
+ * For each MIG memory partition size assign the array index.
+ *
+ * If any new MIG memory size partition supported later,
+ * increase the size of the array (currently 3)
+ * which is stored in def VGPU_SUPPORTED_GI_MAX
+ */
+NvU32
+_vgpuMgrGetNominalFbSizeGIIndex
+(
+    NvU32 vgpuTypeId
+)
+{
+    NvU32 partitionFlag;
+    NV_STATUS status = kvgpumgrGetPartitionFlag(vgpuTypeId, &partitionFlag);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "partition flag not found for vgpuTypeId=%u; defaulting to FULL\n",
+                  vgpuTypeId);
+
+        return NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL;
+    }
+    
+    return DRF_VAL(2080, _CTRL_GPU_PARTITION_FLAG, _MEMORY_SIZE, partitionFlag);
+}
+
+void
+vgpuMgrSetNominalFbSize
+(
+    VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+    VGPU_TYPE            *pVgpuTypeInfo
+)
+{
+    if (pVgpuTypeInfo->maxInstance == 1)
+    {
+        if (pVgpuNominalFbSize->nominalGpuFbSize < pVgpuTypeInfo->profileSize)
+        {
+            pVgpuNominalFbSize->nominalGpuFbSize = pVgpuTypeInfo->profileSize;
+        }
+    }
+
+    if (pVgpuTypeInfo->maxInstancePerGI == 1)
+    {
+        NvU32 index = _vgpuMgrGetNominalFbSizeGIIndex(pVgpuTypeInfo->vgpuTypeId);
+
+        if (pVgpuNominalFbSize->nominalFbSizePerGI[index] < pVgpuTypeInfo->profileSize)
+        {
+            pVgpuNominalFbSize->nominalFbSizePerGI[index] = pVgpuTypeInfo->profileSize;
+        }
+    }
+}
+
+NvU64
+vgpuMgrGetNominalFbSize
+(
+    OBJGPU               *pGpu,
+    VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+    VGPU_TYPE            *pVgpuTypeInfo
+)
+{
+    NvU64 nominalGpuFbSize;
+
+    if (pVgpuTypeInfo->gpuInstanceSize != 0)
+    {
+        NvU32 index = _vgpuMgrGetNominalFbSizeGIIndex(pVgpuTypeInfo->vgpuTypeId);
+
+        nominalGpuFbSize = pVgpuNominalFbSize->nominalFbSizePerGI[index];
+    }
+    else
+    {
+        nominalGpuFbSize = pVgpuNominalFbSize->nominalGpuFbSize;
+    }
+
+    return nominalGpuFbSize;
+}
+
+NvU32
+vgpuMgrGetPlacementRegionSize
+(
+    OBJGPU               *pGpu,
+    VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+    VGPU_TYPE            *pVgpuTypeInfo
+)
+{
+    return (NvU32) (vgpuMgrGetNominalFbSize(pGpu, pVgpuNominalFbSize, pVgpuTypeInfo) >> VGPU_FB_BYTES_TO_GB_SHIFT);
 }

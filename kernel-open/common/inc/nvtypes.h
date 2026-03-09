@@ -664,6 +664,27 @@ typedef struct
 
 #endif  // defined(_MSC_VER)
 
+ /***************************************************************************\
+|*                                                                           *|
+|*  Definitions of binary/bytes representations of floating point values     *|
+|*                                                                           *|
+|*  Intended for use when passing values across kernel contexts in which     *|
+|*  floating point use is forbidden                                          *|
+|*                                                                           *|
+ \***************************************************************************/
+/*!
+ * A struct containing the 32-bit representation of an (IEEE-754 binary32)
+ * floating point value, i.e., the raw underlying bytes of an @ref NvF32
+ *
+ * This struct must be used in places where a value may be passed across a
+ * kernel boundary, as use of floating point within some kernels is, in general,
+ * banned.
+ */
+typedef struct
+{
+    NvU32 value;
+} NvF32Bytes;
+
 #ifdef __cplusplus
 }
 #endif

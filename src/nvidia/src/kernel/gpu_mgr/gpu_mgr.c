@@ -1933,13 +1933,6 @@ gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
             pGpu->busInfo.gpuPhysAddr = pGpu->deviceMappings[SOC_DEV_MAPPING_DISP].gpuNvPAddr;
             pGpu->gpuDeviceMapCount = 1;
         }
-
-        //
-        // TODO bug 2100708: a fake DBDF is used on SOC to opt out of some
-        // RM paths that cause issues otherwise, see the bug for details.
-        //
-        pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
-        pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
     }
     else if (pAttachArg->bIsSOC)
     {
@@ -1955,13 +1948,6 @@ gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
             NV_ASSERT(sizeof(pGpu->deviceMappings) == sizeof(pAttachArg->socDeviceMappings));
             portMemCopy(pGpu->deviceMappings, sizeof(pGpu->deviceMappings), pAttachArg->socDeviceMappings, sizeof(pGpu->deviceMappings));
             pGpu->gpuDeviceMapCount = pAttachArg->socDeviceCount;
-
-            //
-            // TODO bug 2100708: a fake DBDF is used on SOC to opt out of some
-            // RM paths that cause issues otherwise, see the bug for details.
-            //
-            pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
-            pGpu->busInfo.bNvDomainBusDeviceFuncValid = NV_TRUE;
         }
     }
     else
@@ -2861,9 +2847,8 @@ gpumgrUpdateBoardId_IMPL(OBJGPU *pGpu)
 //
 // This routine looks at the set of GPUs and picks a the primary (parent)
 // with the following rules, in this order:
-// 1- If a primary GPU has been passed in an SLI config by a client
-// 2- If there is a boot primary in the GPU mask
-// 3- The first VGA device attached (not 3d controller)
+// 1- If there is a boot primary in the GPU mask
+// 2- The first VGA device attached (not 3d controller)
 //
 NvU32
 gpumgrGetDefaultPrimaryGpu
@@ -2880,27 +2865,13 @@ gpumgrGetDefaultPrimaryGpu
         return 0;
     }
 
-    // Find  masterFromSLIConfig, set when a RM client passes a primary GPU
-    // index from a SLI config
+    // default to boot primary
     gpuInstance = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
-        if (pGpu->masterFromSLIConfig)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE))
         {
             break;
-        }
-    }
-
-    // default to boot primary
-    if (pGpu == NULL)
-    {
-        gpuInstance = 0;
-        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-        {
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE))
-            {
-                break;
-            }
         }
     }
 
@@ -3807,7 +3778,7 @@ gpumgrGetGpuInitDisabledNvlinks_IMPL
  *
  * @return mode     reduced bandwidth mode.
  */
-NvU8
+NvU16
 gpumgrGetGpuNvlinkBwMode_IMPL(void)
 {
     OBJSYS     *pSys = SYS_GET_INSTANCE();
@@ -3857,7 +3828,7 @@ gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL
     // PER_GPU setting has been made via NV2080_CTRL_CMD_GPU_SET_NVLINK_BW_MODE.
     // Skip if it is not.
     //
-    if (pGpuMgr->nvlinkBwMode != GPU_NVLINK_BW_MODE_FULL ||
+    if (DRF_VAL(_GPU, _NVLINK, _BW_MODE, pGpuMgr->nvlinkBwMode) != GPU_NVLINK_BW_MODE_FULL ||
         pGpuMgr->bwModeScope != GPU_NVLINK_BW_MODE_SCOPE_UNSET)
     {
 
@@ -3964,7 +3935,7 @@ NV_STATUS
 gpumgrSetGpuNvlinkBwModePerGpu_IMPL
 (
     OBJGPU *pGpu,
-    NvU8 mode
+    NvU16 mode
 )
 {
     OBJSYS     *pSys = SYS_GET_INSTANCE();
@@ -4012,7 +3983,7 @@ gpumgrSetGpuNvlinkBwModePerGpu_IMPL
 NV_STATUS
 gpumgrSetGpuNvlinkBwMode_IMPL
 (
-    NvU8 mode
+    NvU16 mode
 )
 {
     OBJSYS     *pSys = SYS_GET_INSTANCE();
@@ -5021,7 +4992,6 @@ NvBool gpumgrWaitForBarFirewall
  *
  * @param[in]   pGpuMgr  OBJGPUMGR pointer
  * @param[in]   alid     NVLE ALID
- * @param[out]  clid     Return corresponding CLID if ALID present in map
  *
  * return NV_TRUE if mapping exists, else return NV_FALSE
  */
@@ -5029,22 +4999,20 @@ NvBool
 gpuMgrIsNvleAlidPresent
 (
     OBJGPUMGR *pGpuMgr,
-    NvU32      alid,
-    NvU32     *clid
+    NvU32      alid
 )
 {
     NvU32 idx;
 
-    if (pGpuMgr->alidClidMap.alidCount == 0)
+    if (pGpuMgr->alidClidTable.numEntries == 0)
     {
         return NV_FALSE;
     }
 
-    for (idx = 0; idx < pGpuMgr->alidClidMap.alidCount; idx++)
+    for (idx = 0; idx < pGpuMgr->alidClidTable.numEntries; idx++)
     {
-        if (pGpuMgr->alidClidMap.alid[idx] == alid)
+        if (pGpuMgr->alidClidTable.alidClidMap[idx].alid == alid)
         {
-            *clid = idx;
              return NV_TRUE;
         }
     }
@@ -5053,48 +5021,48 @@ gpuMgrIsNvleAlidPresent
 }
 
 /**
- * @brief Adds the given ALID in the ALID-CLID map and returns the CLID
+ * @brief Adds the given ALID, CLID in the ALID-CLID map
  *
  * @param[in]   pGpuMgr  OBJGPUMGR pointer
  * @param[in]   alid     NVLE ALID to be added
- * @param[out]  clid     Return corresponding CLID
+ * @param[in]   clid     NVLE CLID to be added
  *
  * return NV_TRUE if alid was successfully added
  */
 NvBool
-gpuMgrCacheNvleAlid
+gpuMgrCacheNvleAlidClid
 (
     OBJGPUMGR *pGpuMgr,
     NvU32      alid,
-    NvU32     *clid
+    NvU32      clid
 )
 {
     NvU32 idx;
 
-    if (pGpuMgr->alidClidMap.alidCount == 0)
+    if (pGpuMgr->alidClidTable.numEntries == 0)
     {
-        pGpuMgr->alidClidMap.alid[0] = alid;
-        *clid                        = 0;
-        pGpuMgr->alidClidMap.alidCount++;
+        pGpuMgr->alidClidTable.alidClidMap[0].alid = alid;
+        pGpuMgr->alidClidTable.alidClidMap[0].clid = clid;
+        pGpuMgr->alidClidTable.numEntries++;
 
         return NV_TRUE;
     }
 
-    for (idx = 0; idx < pGpuMgr->alidClidMap.alidCount; idx++)
+    for (idx = 0; idx < pGpuMgr->alidClidTable.numEntries; idx++)
     {
         // Mapping already present, no need to add
-        if (pGpuMgr->alidClidMap.alid[idx] == alid)
+        if (pGpuMgr->alidClidTable.alidClidMap[idx].alid == alid)
         {
              return NV_FALSE;
         }
     }
- 
+
     if (idx != NVLINK_NVLE_MAX_REMAP_TABLE_ENTRIES)
     {
-        // Assign a new NVLE CLID for this ALID and add the mapping
-        pGpuMgr->alidClidMap.alid[idx] = alid;
-        *clid                          = idx;
-        pGpuMgr->alidClidMap.alidCount++;
+        // ALID-CLID mapping does not exist, add a new entry
+        pGpuMgr->alidClidTable.alidClidMap[idx].alid = alid;
+        pGpuMgr->alidClidTable.alidClidMap[idx].clid = clid;
+        pGpuMgr->alidClidTable.numEntries++;
 
         return NV_TRUE;
     }

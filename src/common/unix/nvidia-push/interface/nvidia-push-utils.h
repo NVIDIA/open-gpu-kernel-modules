@@ -29,7 +29,7 @@
 #include "nvidia-push-types.h"
 #include "nvlimits.h"
 
-#include "class/cla16f.h"
+#include "class/clc46f.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,7 +72,7 @@ void nvPushSetSubdeviceMask(NvPushChannelPtr p, NvU32 mask);
 void __nvPushMakeRoom(NvPushChannelPtr, NvU32 count);
 
 #define NV_PUSH_SUBDEVICE_MASK_PRIMARY 0x00000001
-#define NV_PUSH_SUBDEVICE_MASK_ALL DRF_MASK(NVA16F_DMA_SET_SUBDEVICE_MASK_VALUE)
+#define NV_PUSH_SUBDEVICE_MASK_ALL DRF_MASK(NVC46F_DMA_SET_SUBDEVICE_MASK_VALUE)
 
 /*
  * Evaluates to TRUE if the two subDevMasks are equivalent for the given SLI

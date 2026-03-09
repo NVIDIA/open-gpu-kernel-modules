@@ -139,13 +139,9 @@ struct NVOC_METADATA__KernelCeContext {
     const struct NVOC_VTABLE__KernelCeContext vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelCeContext_TYPEDEF__
-#define __NVOC_CLASS_KernelCeContext_TYPEDEF__
-typedef struct KernelCeContext KernelCeContext;
-#endif /* __NVOC_CLASS_KernelCeContext_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCeContext
-#define __nvoc_class_id_KernelCeContext 0x2d0ee9
+#define __nvoc_class_id_KernelCeContext 0x2d0ee9u
+typedef struct KernelCeContext KernelCeContext;
 #endif /* __nvoc_class_id_KernelCeContext */
 
 // Casting support
@@ -163,14 +159,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCeContext;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelCeContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelCeContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelCeContext(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelCeContext((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kcectxConstruct_IMPL(struct KernelCeContext *arg_pKCeContext, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kcectxConstruct(arg_pKCeContext, arg_pCallContext, arg_pParams) kcectxConstruct_IMPL(arg_pKCeContext, arg_pCallContext, arg_pParams)
+NV_STATUS kcectxConstruct_IMPL(struct KernelCeContext *pKCeContext, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kcectxConstruct(pKCeContext, pCallContext, pParams) kcectxConstruct_IMPL(pKCeContext, pCallContext, pParams)
 
 void kcectxDestruct_IMPL(struct KernelCeContext *pKCeContext);
 #define __nvoc_kcectxDestruct(pKCeContext) kcectxDestruct_IMPL(pKCeContext)
@@ -371,6 +367,12 @@ static inline NV_STATUS kcectxGetOrAllocNotifShare_DISPATCH(struct KernelCeConte
     return pNotifier->__nvoc_metadata_ptr->vtable.__kcectxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

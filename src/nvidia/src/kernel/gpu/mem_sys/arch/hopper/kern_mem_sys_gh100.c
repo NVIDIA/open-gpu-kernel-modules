@@ -34,8 +34,8 @@
 #include "published/hopper/gh100/dev_fb.h"
 #include "published/hopper/gh100/dev_fbpa.h"
 #include "published/hopper/gh100/dev_vm.h"
-#include "published/hopper/gh100/pri_nv_xal_ep.h"
-#include "published/hopper/gh100/dev_nv_xal_addendum.h"
+#include "published/hopper/gh100/dev_nv_xal_ep_zb.h"
+#include "published/hopper/gh100/dev_nv_xal_zb_addendum.h"
 #include "published/hopper/gh100/dev_nv_xpl.h"
 #include "published/hopper/gh100/dev_xtl_ep_pri.h"
 #include "published/hopper/gh100/hwproject.h"
@@ -59,6 +59,9 @@ kmemsysDoCacheOp_GH100
     NvU32      startToken = 0;
     NvU32      completedToken = 0;
     NvBool     bMemopBusy = NV_TRUE;
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), XAL_BASE);
+    NvU32      l2FlushDirtyReg = REG_GET_ADDR(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY);
+    NvU32      l2CleanComptagsReg = REG_GET_ADDR(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS);
 
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
     {
@@ -71,91 +74,87 @@ kmemsysDoCacheOp_GH100
 
     if (IS_VIRTUAL(pGpu))
     {
-        switch (reg)
+        if (reg == l2FlushDirtyReg)
         {
-            case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE:
-            case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE:
-                break;
-            case NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY:
-                return NV_OK;
-            default:
-                return NV_ERR_NOT_SUPPORTED;
+            return NV_OK;
+        }
+        else if (reg != NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE &&
+                 reg != NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE)
+        {
+            return NV_ERR_NOT_SUPPORTED;
         }
     }
 
-    switch (reg)
+    if (reg == l2FlushDirtyReg)
     {
-        case NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY:
-            tokenRangeMask = DRF_MASK(NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY_TOKEN);
+        tokenRangeMask = DRF_MASK(NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_TOKEN);
 
-            startToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY);
-            startToken = DRF_VAL( _XAL_EP_UFLUSH, _L2_FLUSH_DIRTY, _TOKEN, startToken);
-            break;
+        startToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY);
+        startToken = DRF_VAL( _XAL_EP_ZB, _UFLUSH_L2_FLUSH_DIRTY, _TOKEN, startToken);
+    }
+    else if (reg == l2CleanComptagsReg)
+    {
+        tokenRangeMask = DRF_MASK(NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_TOKEN);
 
-        case NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS:
-            tokenRangeMask = DRF_MASK(NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_TOKEN);
+        startToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS);
+        startToken = DRF_VAL( _XAL_EP_ZB, _UFLUSH_L2_CLEAN_COMPTAGS, _TOKEN, startToken);
+    }
+    else if (reg == NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE)
+    {
+        tokenRangeMask = DRF_MASK(NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_TOKEN);
 
-            startToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS);
-            startToken = DRF_VAL( _XAL_EP_UFLUSH, _L2_CLEAN_COMPTAGS, _TOKEN, startToken);
-            break;
+        startToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE);
+        startToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE, _TOKEN, startToken);
+    }
+    else if (reg == NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE)
+    {
+        tokenRangeMask = DRF_MASK(NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE_TOKEN);
 
-        case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE:
-            tokenRangeMask = DRF_MASK(NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_TOKEN);
-
-            startToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE);
-            startToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE, _TOKEN, startToken);
-            break;
-
-        case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE:
-            tokenRangeMask = DRF_MASK(NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE_TOKEN);
-
-            startToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE);
-            startToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE, _TOKEN, startToken);
-            break;
-
-        default:
-            return NV_ERR_NOT_SUPPORTED;
+        startToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE);
+        startToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE, _TOKEN, startToken);
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
     }
 
     while(1)
     {
-        switch (reg)
+        if (reg == l2FlushDirtyReg)
         {
-            case NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY:
-                completedToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY_COMPLETED);
+            completedToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_COMPLETED);
 
-                bMemopBusy = FLD_TEST_DRF(_XAL_EP_UFLUSH, _L2_FLUSH_DIRTY_COMPLETED, _STATUS, _BUSY, completedToken)
-                             ? NV_TRUE : NV_FALSE;
+            bMemopBusy = FLD_TEST_DRF(_XAL_EP_ZB, _UFLUSH_L2_FLUSH_DIRTY_COMPLETED, _STATUS, _BUSY, completedToken)
+                         ? NV_TRUE : NV_FALSE;
 
-                completedToken = DRF_VAL( _XAL_EP_UFLUSH, _L2_FLUSH_DIRTY_COMPLETED, _TOKEN, completedToken);
-                break;
+            completedToken = DRF_VAL(_XAL_EP_ZB, _UFLUSH_L2_FLUSH_DIRTY_COMPLETED, _TOKEN, completedToken);
+        }
+        else if (reg == l2CleanComptagsReg)
+        {
+            completedToken = REG_RD32(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED);
 
-            case NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS:
-                completedToken = GPU_REG_RD32(pGpu, NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED);
+            bMemopBusy = FLD_TEST_DRF(_XAL_EP_ZB, _UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED, _STATUS, _BUSY, completedToken)
+                         ? NV_TRUE : NV_FALSE;
 
-                bMemopBusy = FLD_TEST_DRF(_XAL_EP_UFLUSH, _L2_CLEAN_COMPTAGS_COMPLETED, _STATUS, _BUSY, completedToken)
-                             ? NV_TRUE : NV_FALSE;
+            completedToken = DRF_VAL( _XAL_EP_ZB, _UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED, _TOKEN, completedToken);
+        }
+        else if (reg == NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE)
+        {
+            completedToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED);
 
-                completedToken = DRF_VAL( _XAL_EP_UFLUSH, _L2_CLEAN_COMPTAGS_COMPLETED, _TOKEN, completedToken);
-                break;
+            bMemopBusy = FLD_TEST_DRF( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED, _STATUS, _BUSY, completedToken)
+                         ? NV_TRUE : NV_FALSE;
 
-            case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE:
-                completedToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED);
+            completedToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED, _TOKEN, completedToken);
+        }
+        else if (reg == NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE)
+        {
+            completedToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED);
 
-                bMemopBusy = FLD_TEST_DRF( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED, _STATUS, _BUSY, completedToken)
-                             ? NV_TRUE : NV_FALSE;
+            bMemopBusy = FLD_TEST_DRF( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED, _STATUS, _BUSY, completedToken)
+                         ? NV_TRUE : NV_FALSE;
 
-                completedToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED, _TOKEN, completedToken);
-                break;
-
-            case NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE:
-                completedToken = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED);
-
-                bMemopBusy = FLD_TEST_DRF( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED, _STATUS, _BUSY, completedToken)
-                             ? NV_TRUE : NV_FALSE;
-
-                completedToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED, _TOKEN, completedToken);
-                break;
+            completedToken = DRF_VAL( _VIRTUAL_FUNCTION, _PRIV_FUNC_L2_PEERMEM_INVALIDATE_COMPLETED, _TOKEN, completedToken);
         }
 
         if (bMemopBusy == NV_FALSE)
@@ -172,7 +171,7 @@ kmemsysDoCacheOp_GH100
         // The loop will wait only when completedToken in the range of
         // [startToken-NV_XAL_EP_MEMOP_MAX_OUTSTANDING, startToken].
         //
-        if (((startToken - completedToken) & tokenRangeMask) > NV_XAL_EP_MEMOP_MAX_OUTSTANDING)
+        if (((startToken - completedToken) & tokenRangeMask) > NV_XAL_EP_ZB_MEMOP_MAX_OUTSTANDING)
         {
             break;
         }
@@ -239,6 +238,7 @@ kmemsysCacheOp_GH100
     NV_STATUS status  = NV_OK;
     RMTIMEOUT timeout = {0, };
     NvU32     reg = 0;
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), XAL_BASE);
 
     if ((targetMem == FB_CACHE_MEM_UNDEFINED) && pMemDesc)
     {
@@ -274,7 +274,7 @@ kmemsysCacheOp_GH100
 
             if (cacheOp == FB_CACHE_WRITEBACK || cacheOp == FB_CACHE_EVICT)
             {
-                reg =  NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY;
+                reg =  REG_GET_ADDR(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY);
                 status = kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, reg, 0, 0, &timeout);
             }
 
@@ -338,7 +338,7 @@ kmemsysCacheOp_GH100
             // or comp tag cache could be corrupted.  When mods uses this call
             // during verif, this should already be the case.
             //
-            reg =  NV_XAL_EP_UFLUSH_L2_CLEAN_COMPTAGS;
+            reg =  REG_GET_ADDR(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS);
             status = kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, reg, 0, 0, &timeout);
             break;
 
@@ -348,7 +348,7 @@ kmemsysCacheOp_GH100
                 return NV_OK;
             }
 
-            reg =  NV_XAL_EP_UFLUSH_L2_FLUSH_DIRTY;
+            reg =  REG_GET_ADDR(pXalAperture, NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY);
             status = kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, reg, 0, 0, &timeout);
             break;
 
@@ -649,9 +649,9 @@ kmemsysAssertFbAckTimeoutPending_GH100
 )
 {
 #ifdef DEBUG
-    NvU32 intr0 = 0;
-    intr0 = GPU_REG_RD32(pGpu, NV_XAL_EP_INTR_0);
-    return DRF_VAL(_XAL_EP, _INTR_0, _FB_ACK_TIMEOUT, intr0) == NV_XAL_EP_INTR_0_FB_ACK_TIMEOUT_PENDING;
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), XAL_BASE);
+    NvU32 intr0 = REG_RD32(pXalAperture, NV_XAL_EP_ZB_INTR_0);
+    return DRF_VAL(_XAL_EP_ZB, _INTR_0, _FB_ACK_TIMEOUT, intr0) == NV_XAL_EP_ZB_INTR_0_FB_ACK_TIMEOUT_PENDING;
 #else
     return NV_FALSE;
 #endif

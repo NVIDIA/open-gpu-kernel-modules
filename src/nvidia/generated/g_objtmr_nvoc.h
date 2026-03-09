@@ -252,7 +252,7 @@ struct OBJTMR {
     NvBool PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_PTIMER_FOR_OSTIMER_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS;
-    NvBool PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL;
+    NvBool PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_PVMRL;
     NvBool PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF;
 //  NvBool PDB_PROP_TMR_IS_MISSING inherited from OBJENGSTATE
 
@@ -269,7 +269,7 @@ struct OBJTMR {
     TIMEPROC_COUNTDOWN pSwrlCallback;
     NvU32 retryTimes;
     NvU32 errorCount;
-    volatile NvS32 tmrChangePending;
+    _Atomic(NvS32) tmrChangePending;
     NvBool bAlarmIntrEnabled;
     struct OBJREFCNT *pGrTickFreqRefcnt;
     NvU64 sysTimerOffsetNs;
@@ -305,13 +305,9 @@ struct NVOC_METADATA__OBJTMR {
     const struct NVOC_VTABLE__OBJTMR vtable;
 };
 
-#ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__
-#define __NVOC_CLASS_OBJTMR_TYPEDEF__
-typedef struct OBJTMR OBJTMR;
-#endif /* __NVOC_CLASS_OBJTMR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJTMR
-#define __nvoc_class_id_OBJTMR 0x9ddede
+#define __nvoc_class_id_OBJTMR 0x9ddedeu
+typedef struct OBJTMR OBJTMR;
 #endif /* __nvoc_class_id_OBJTMR */
 
 // Casting support
@@ -338,8 +334,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR;
 #define PDB_PROP_TMR_USE_PTIMER_FOR_OSTIMER_CALLBACKS_BASE_NAME PDB_PROP_TMR_USE_PTIMER_FOR_OSTIMER_CALLBACKS
 #define PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS_BASE_CAST
 #define PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS_BASE_NAME PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS
-#define PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL_BASE_CAST
-#define PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL_BASE_NAME PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL
+#define PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_PVMRL_BASE_CAST
+#define PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_PVMRL_BASE_NAME PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_PVMRL
 #define PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF_BASE_CAST
 #define PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF_BASE_NAME PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF
 #define PDB_PROP_TMR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
@@ -349,8 +345,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR;
 NV_STATUS __nvoc_objCreateDynamic_OBJTMR(OBJTMR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
-#define __objCreate_OBJTMR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJTMR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJTMR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJTMR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -605,7 +601,7 @@ static inline NV_STATUS tmrSetAlarmIntrDisable(OBJGPU *pGpu, struct OBJTMR *pTmr
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrSetAlarmIntrDisable(pGpu, pTmr) tmrSetAlarmIntrDisable_56cd7a(pGpu, pTmr)
+#define tmrSetAlarmIntrDisable(pGpu, pTmr) tmrSetAlarmIntrDisable_ac1694(pGpu, pTmr)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -614,7 +610,7 @@ static inline NV_STATUS tmrSetAlarmIntrEnable(OBJGPU *pGpu, struct OBJTMR *pTmr)
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrSetAlarmIntrEnable(pGpu, pTmr) tmrSetAlarmIntrEnable_56cd7a(pGpu, pTmr)
+#define tmrSetAlarmIntrEnable(pGpu, pTmr) tmrSetAlarmIntrEnable_ac1694(pGpu, pTmr)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -623,7 +619,7 @@ static inline NV_STATUS tmrSetAlarmIntrReset(OBJGPU *pGpu, struct OBJTMR *pTmr, 
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrSetAlarmIntrReset(pGpu, pTmr, arg3) tmrSetAlarmIntrReset_56cd7a(pGpu, pTmr, arg3)
+#define tmrSetAlarmIntrReset(pGpu, pTmr, arg3) tmrSetAlarmIntrReset_ac1694(pGpu, pTmr, arg3)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -659,7 +655,7 @@ static inline NV_STATUS tmrSetAlarm(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 ala
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrSetAlarm(pGpu, pTmr, alarm, pThreadState) tmrSetAlarm_56cd7a(pGpu, pTmr, alarm, pThreadState)
+#define tmrSetAlarm(pGpu, pTmr, alarm, pThreadState) tmrSetAlarm_ac1694(pGpu, pTmr, alarm, pThreadState)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -668,7 +664,7 @@ static inline NvBool tmrGetAlarmPending(OBJGPU *pGpu, struct OBJTMR *pTmr, struc
     return NV_FALSE;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrGetAlarmPending(pGpu, pTmr, arg3) tmrGetAlarmPending_3dd2c9(pGpu, pTmr, arg3)
+#define tmrGetAlarmPending(pGpu, pTmr, arg3) tmrGetAlarmPending_d69453(pGpu, pTmr, arg3)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -677,7 +673,7 @@ static inline NvBool tmrGetCountdownPending(OBJGPU *pGpu, struct OBJTMR *pTmr, s
     return NV_FALSE;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrGetCountdownPending(pGpu, pTmr, arg3) tmrGetCountdownPending_3dd2c9(pGpu, pTmr, arg3)
+#define tmrGetCountdownPending(pGpu, pTmr, arg3) tmrGetCountdownPending_d69453(pGpu, pTmr, arg3)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -686,7 +682,7 @@ static inline NvU32 tmrGetWallClkScaleFactor(OBJGPU *pGpu, struct OBJTMR *pTmr) 
     return 0;
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrGetWallClkScaleFactor(pGpu, pTmr) tmrGetWallClkScaleFactor_4a4dee(pGpu, pTmr)
+#define tmrGetWallClkScaleFactor(pGpu, pTmr) tmrGetWallClkScaleFactor_b2b553(pGpu, pTmr)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -694,7 +690,7 @@ static inline void tmrResetTimerRegistersForVF(OBJGPU *pGpu, struct OBJTMR *pTmr
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
 }
 #else // __nvoc_objtmr_h_disabled
-#define tmrResetTimerRegistersForVF(pGpu, pTmr, gfid) tmrResetTimerRegistersForVF_b3696a(pGpu, pTmr, gfid)
+#define tmrResetTimerRegistersForVF(pGpu, pTmr, gfid) tmrResetTimerRegistersForVF_d44104(pGpu, pTmr, gfid)
 #endif // __nvoc_objtmr_h_disabled
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -997,162 +993,10 @@ static inline NV_STATUS tmrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, s
     return pIntrService->__nvoc_metadata_ptr->vtable.__tmrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
-static inline NV_STATUS tmrSetAlarmIntrDisable_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_OK;
-}
-
-NV_STATUS tmrSetAlarmIntrDisable_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-NV_STATUS tmrSetAlarmIntrDisable_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-static inline NV_STATUS tmrSetAlarmIntrDisable_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS tmrSetAlarmIntrEnable_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_OK;
-}
-
-NV_STATUS tmrSetAlarmIntrEnable_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-NV_STATUS tmrSetAlarmIntrEnable_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-static inline NV_STATUS tmrSetAlarmIntrEnable_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS tmrSetAlarmIntrReset_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return NV_OK;
-}
-
-NV_STATUS tmrSetAlarmIntrReset_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-NV_STATUS tmrSetAlarmIntrReset_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-static inline NV_STATUS tmrSetAlarmIntrReset_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS tmrGetIntrStatus_cb5ce8(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4) {
-    *pStatus = 0;
-    return NV_OK;
-}
-
-NV_STATUS tmrGetIntrStatus_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
-
-NV_STATUS tmrGetIntrStatus_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
-
-NV_STATUS tmrGetIntrStatus_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
-
-
-static inline NV_STATUS tmrGetCurrentTime_18537a(struct OBJTMR *pTmr, NvU64 *pTime) {
-    *pTime = osGetMonotonicTimeNs();
-    return NV_OK;
-}
-
-static inline NV_STATUS tmrGetCurrentTime_70fb36(struct OBJTMR *pTmr, NvU64 *pTime) {
-    *pTime = osGetTimestamp();
-    return NV_OK;
-}
-
-NV_STATUS tmrGetCurrentTime_IMPL(struct OBJTMR *pTmr, NvU64 *pTime);
-
-
-static inline NV_STATUS tmrGetCurrentTimeEx_18537a(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3) {
-    *pTime = osGetMonotonicTimeNs();
-    return NV_OK;
-}
-
-static inline NV_STATUS tmrGetCurrentTimeEx_70fb36(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3) {
-    *pTime = osGetTimestamp();
-    return NV_OK;
-}
-
-NV_STATUS tmrGetCurrentTimeEx_IMPL(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3);
-
-
-static inline NV_STATUS tmrSetAlarm_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState) {
-    return NV_OK;
-}
-
-NV_STATUS tmrSetAlarm_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState);
-
-static inline NV_STATUS tmrSetAlarm_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NvBool tmrGetAlarmPending_3dd2c9(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return NV_FALSE;
-}
-
-NvBool tmrGetAlarmPending_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-NvBool tmrGetAlarmPending_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-
-static inline NvBool tmrGetCountdownPending_3dd2c9(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return NV_FALSE;
-}
-
-
-static inline NvU32 tmrGetWallClkScaleFactor_4a4dee(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return 0;
-}
-
-NvU32 tmrGetWallClkScaleFactor_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-NvU32 tmrGetWallClkScaleFactor_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-
-static inline void tmrResetTimerRegistersForVF_b3696a(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid) {
-    return;
-}
-
-void tmrResetTimerRegistersForVF_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
-
-void tmrResetTimerRegistersForVF_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
-
-void tmrResetTimerRegistersForVF_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
-
-
-NV_STATUS tmrEventCreateOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
-
-
-NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRelNs);
-
-
-NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
-
-
-NV_STATUS tmrEventCancelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
-
-
-NV_STATUS tmrEventDestroyOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
-
-
-NV_STATUS tmrDelay_OSTIMER(struct OBJTMR *pTmr, NvU32 arg2);
-
-NV_STATUS tmrDelay_PTIMER(struct OBJTMR *pTmr, NvU32 arg2);
-
+// Virtual method declarations and/or inline definitions
 void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[180]);
 
 NvBool tmrClearInterrupt_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceClearInterruptArguments *pParams);
-
-static inline NvU32 tmrServiceInterrupt_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams) {
-    return NV_OK;
-}
-
-NvU32 tmrServiceInterrupt_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
-
-NvU32 tmrServiceInterrupt_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
-
-static inline NvU32 tmrServiceInterrupt_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS tmrConstructEngine_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, ENGDESCRIPTOR arg3);
 
@@ -1168,159 +1012,301 @@ NV_STATUS tmrStateUnload_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3);
 
 void tmrStateDestroy_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NV_STATUS tmrSetCurrentTime_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_OK;
-}
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NV_STATUS tmrDelay_OSTIMER(struct OBJTMR *pTmr, NvU32 arg2);
+
+NV_STATUS tmrDelay_PTIMER(struct OBJTMR *pTmr, NvU32 arg2);
+
+NvU32 tmrServiceInterrupt_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
+
+NvU32 tmrServiceInterrupt_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
+
+NV_STATUS tmrSetCurrentTime_GB10B(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrSetCurrentTime_GV100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrSetCurrentTime_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-NV_STATUS tmrSetCurrentTime_GB10B(OBJGPU *pGpu, struct OBJTMR *pTmr);
+NV_STATUS tmrSetAlarmIntrDisable_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NV_STATUS tmrSetCurrentTime_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS tmrSetAlarmIntrDisable_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU32 tmrGetTimeLo_74ee8d(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return ((NvU32)(((NvU64)(osGetMonotonicTimeNs())) & 4294967295U));
-}
+NV_STATUS tmrSetAlarmIntrEnable_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU32 tmrGetTimeLo_cf0499(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return ((NvU32)(((NvU64)(osGetTimestamp())) & 4294967295U));
-}
+NV_STATUS tmrSetAlarmIntrEnable_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-NvU32 tmrGetTimeLo_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+NV_STATUS tmrSetAlarmIntrReset_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
+
+NV_STATUS tmrSetAlarmIntrReset_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
+
+NV_STATUS tmrGetIntrStatus_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
+
+NV_STATUS tmrGetIntrStatus_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
+
+NV_STATUS tmrGetIntrStatus_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4);
+
+NV_STATUS tmrGetCurrentTime_IMPL(struct OBJTMR *pTmr, NvU64 *pTime);
+
+NV_STATUS tmrGetCurrentTimeEx_IMPL(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3);
 
 NvU32 tmrGetTimeLo_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU64 tmrGetTime_837445(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return osGetMonotonicTimeNs();
-}
-
-static inline NvU64 tmrGetTime_fa6bbe(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return osGetTimestamp();
-}
-
-NvU64 tmrGetTime_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+NvU32 tmrGetTimeLo_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NvU64 tmrGetTime_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU32 tmrGetNsecShiftMask_4a4dee(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return 0;
-}
+NvU64 tmrGetTime_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NvU32 tmrGetNsecShiftMask_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NvU32 tmrGetNsecShiftMask_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU64 tmrGetTimeEx_837445(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return osGetMonotonicTimeNs();
-}
-
-static inline NvU64 tmrGetTimeEx_fa6bbe(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return osGetTimestamp();
-}
+NvU64 tmrGetTimeEx_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NvU64 tmrGetTimeEx_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NvU64 tmrGetTimeEx_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
-NvU64 tmrGetTimeEx_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
+NvU32 tmrReadTimeLoReg_T234D(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NvU32 tmrReadTimeLoReg_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
-NvU32 tmrReadTimeLoReg_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
+NvU32 tmrReadTimeHiReg_T234D(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NvU32 tmrReadTimeHiReg_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-NvU32 tmrReadTimeHiReg_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NV_STATUS tmrGetGpuPtimerOffset_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4);
 
 NV_STATUS tmrGetGpuPtimerOffset_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4);
 
-static inline NV_STATUS tmrGetGpuPtimerOffset_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NvU64 tmrGetPtimerOffsetNs_GB10B(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvU64 tmrGetPtimerOffsetNs_4a4dee(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return 0;
-}
+NV_STATUS tmrSetAlarm_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState);
+
+NvBool tmrGetAlarmPending_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
+
+NvBool tmrGetAlarmPending_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
 NV_STATUS tmrSetCountdownIntrDisable_GM200(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NV_STATUS tmrSetCountdownIntrDisable_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_OK;
-}
-
-static inline NV_STATUS tmrSetCountdownIntrDisable_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS tmrSetCountdownIntrEnable_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NV_STATUS tmrSetCountdownIntrEnable_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS tmrSetCountdownIntrReset_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
-
-static inline NV_STATUS tmrSetCountdownIntrReset_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS tmrSetCountdown_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
 NV_STATUS tmrSetCountdown_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5);
 
-static inline NV_STATUS tmrSetCountdown_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS tmrGetTimerBar0MapInfo_PTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU32 *arg4);
 
 NV_STATUS tmrGetTimerBar0MapInfo_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU32 *arg4);
 
-static inline NV_STATUS tmrGetTimerBar0MapInfo_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU32 *arg4) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS tmrGrTickFreqChange_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg3);
 
-static inline NV_STATUS tmrGrTickFreqChange_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NvU32 tmrGetWallClkScaleFactor_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-NV_STATUS tmrGetGpuAndCpuTimestampPair_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU64 *arg4);
+NvU32 tmrGetWallClkScaleFactor_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrGetGpuAndCpuTimestampPair_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU64 *arg4);
 
-NvU32 tmrGetTmrBaseAddr_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+NV_STATUS tmrGetGpuAndCpuTimestampPair_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU64 *arg4);
 
-NvU32 tmrGetTmrBaseAddr_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr);
+void tmrResetTimerRegistersForVF_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
 
-static inline NvU32 tmrGetTmrBaseAddr_474d46(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
+void tmrResetTimerRegistersForVF_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
+
+void tmrResetTimerRegistersForVF_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid);
+
+NV_STATUS tmrEventCreateOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
+
+NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRelNs);
+
+NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
+
+NV_STATUS tmrEventCancelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
+
+NV_STATUS tmrEventDestroyOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 NvU32 tmrGetTmrBaseAddr_PHY_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
-static inline NvBool tmrServiceSwrlCallbacksPmcTree(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+NvU32 tmrGetTmrBaseAddr_GB100(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+NvU32 tmrGetTmrBaseAddr_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+// Inline HAL method definitions
+static inline NvU32 tmrServiceInterrupt_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU32 tmrServiceInterrupt_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetCurrentTime_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetCurrentTime_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrDisable_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrDisable_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrEnable_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrEnable_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrReset_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetAlarmIntrReset_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrGetIntrStatus_cb5ce8(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *pStatus, struct THREAD_STATE_NODE *arg4){
+    *pStatus = 0;
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrGetCurrentTime_18537a(struct OBJTMR *pTmr, NvU64 *pTime){
+    *pTime = osGetMonotonicTimeNs();
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrGetCurrentTime_70fb36(struct OBJTMR *pTmr, NvU64 *pTime){
+    *pTime = osGetTimestamp();
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrGetCurrentTimeEx_18537a(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3){
+    *pTime = osGetMonotonicTimeNs();
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrGetCurrentTimeEx_70fb36(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3){
+    *pTime = osGetTimestamp();
+    return NV_OK;
+}
+
+static inline NvU32 tmrGetTimeLo_b4121f(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return ((NvU32)(((NvU64)(osGetMonotonicTimeNs())) & 4294967295U));
+}
+
+static inline NvU32 tmrGetTimeLo_841c58(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return ((NvU32)(((NvU64)(osGetTimestamp())) & 4294967295U));
+}
+
+static inline NvU64 tmrGetTime_82bfc1(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return osGetMonotonicTimeNs();
+}
+
+static inline NvU64 tmrGetTime_10cfcb(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return osGetTimestamp();
+}
+
+static inline NvU32 tmrGetNsecShiftMask_b2b553(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return 0;
+}
+
+static inline NvU64 tmrGetTimeEx_82bfc1(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return osGetMonotonicTimeNs();
+}
+
+static inline NvU64 tmrGetTimeEx_10cfcb(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return osGetTimestamp();
+}
+
+static inline NV_STATUS tmrGetGpuPtimerOffset_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU64 tmrGetPtimerOffsetNs_b2b553(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return 0;
+}
+
+static inline NV_STATUS tmrSetAlarm_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetAlarm_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 alarm, struct THREAD_STATE_NODE *pThreadState){
+    return NV_OK;
+}
+
+static inline NvBool tmrGetAlarmPending_d69453(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
     return NV_FALSE;
 }
 
-static inline NvBool tmrClearSwrlCallbacksSemaphore(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+static inline NV_STATUS tmrSetCountdownIntrDisable_ac1694(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetCountdownIntrDisable_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetCountdownIntrEnable_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetCountdownIntrReset_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool tmrGetCountdownPending_d69453(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
     return NV_FALSE;
 }
 
-static inline void tmrServiceSwrlCallbacks(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+static inline NV_STATUS tmrSetCountdown_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3, NvU32 arg4, struct THREAD_STATE_NODE *arg5){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrGetTimerBar0MapInfo_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU32 *arg4){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrGrTickFreqChange_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU32 tmrGetWallClkScaleFactor_b2b553(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return 0;
+}
+
+static inline void tmrResetTimerRegistersForVF_d44104(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 gfid){
     return;
 }
 
-static inline NvBool tmrServiceSwrlWrapper(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+static inline NvU32 tmrGetTmrBaseAddr_474d46(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvBool tmrServiceSwrlCallbacksPmcTree(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return NV_FALSE;
+}
+
+static inline NvBool tmrClearSwrlCallbacksSemaphore(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return NV_FALSE;
+}
+
+static inline void tmrServiceSwrlCallbacks(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return;
+}
+
+static inline NvBool tmrServiceSwrlWrapper(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
     return NV_FALSE;
 }
 
@@ -1344,12 +1330,6 @@ NV_STATUS NVOC_PRIVATE_FUNCTION(tmrGetGpuPtimerOffset)(OBJGPU *pGpu, struct OBJT
 
 #undef tmrGetGpuPtimerOffset_HAL
 NV_STATUS NVOC_PRIVATE_FUNCTION(tmrGetGpuPtimerOffset_HAL)(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4);
-
-#undef tmrGetPtimerOffsetNs
-NvU64 NVOC_PRIVATE_FUNCTION(tmrGetPtimerOffsetNs)(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-#undef tmrGetPtimerOffsetNs_HAL
-NvU64 NVOC_PRIVATE_FUNCTION(tmrGetPtimerOffsetNs_HAL)(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 #endif // NVOC_OBJTMR_H_PRIVATE_ACCESS_ALLOWED
 

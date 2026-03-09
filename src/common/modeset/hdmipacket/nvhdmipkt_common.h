@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,11 +19,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * File:      nvhdmipkt_common.h
- *
- * Purpose:   This file contains defines and structures used across hdmipkt library. All the
- *            common stuff goes here.
+ */
+
+/** @file  nvhdmipkt_common.h
+ ** @brief This file contains defines and structures used across hdmipkt library. All the
+ *         common stuff goes here.
  */
 
 #ifndef _NVHDMIPKT_COMMON_H_
@@ -65,12 +65,9 @@ struct tagNVHDMIPKT_MEM_MAP
 };
 
 // HDMIPKT print define
-    #define NvHdmiPkt_Print(_p, ...)                                                     \
-        do {                                                                             \
-            if ((_p)->callback.print)                                                    \
-            {                                                                            \
-                (_p)->callback.print((_p)->cbHandle, "HdmiPacketLibrary: " __VA_ARGS__); \
-            }                                                                            \
+    #define NvHdmiPkt_Print(_p, ...)                            \
+        do {                                                    \
+            (_p)->callback.print((_p)->cbHandle, __VA_ARGS__);  \
         } while(0)
 
 

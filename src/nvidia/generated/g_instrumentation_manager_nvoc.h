@@ -114,13 +114,9 @@ struct NVOC_METADATA__InstrumentationManager {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_InstrumentationManager_TYPEDEF__
-#define __NVOC_CLASS_InstrumentationManager_TYPEDEF__
-typedef struct InstrumentationManager InstrumentationManager;
-#endif /* __NVOC_CLASS_InstrumentationManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_InstrumentationManager
-#define __nvoc_class_id_InstrumentationManager 0x30d0c5
+#define __nvoc_class_id_InstrumentationManager 0x30d0c5u
+typedef struct InstrumentationManager InstrumentationManager;
 #endif /* __nvoc_class_id_InstrumentationManager */
 
 // Casting support
@@ -139,13 +135,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_InstrumentationManager;
 NV_STATUS __nvoc_objCreateDynamic_InstrumentationManager(InstrumentationManager**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_InstrumentationManager(InstrumentationManager**, Dynamic*, NvU32);
-#define __objCreate_InstrumentationManager(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_InstrumentationManager((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_InstrumentationManager(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_InstrumentationManager((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS instrumentationmanagerConstruct_IMPL(struct InstrumentationManager *arg_pInstrumentationManager);
-#define __nvoc_instrumentationmanagerConstruct(arg_pInstrumentationManager) instrumentationmanagerConstruct_IMPL(arg_pInstrumentationManager)
+NV_STATUS instrumentationmanagerConstruct_IMPL(struct InstrumentationManager *pInstrumentationManager);
+#define __nvoc_instrumentationmanagerConstruct(pInstrumentationManager) instrumentationmanagerConstruct_IMPL(pInstrumentationManager)
 
 void instrumentationmanagerDestruct_IMPL(struct InstrumentationManager *pInstrumentationManager);
 #define __nvoc_instrumentationmanagerDestruct(pInstrumentationManager) instrumentationmanagerDestruct_IMPL(pInstrumentationManager)
@@ -210,6 +206,12 @@ static inline void instrumentationmanagerDeregisterBuffer(struct Instrumentation
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

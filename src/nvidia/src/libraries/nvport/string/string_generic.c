@@ -107,6 +107,56 @@ portStringCompare
 }
 #endif
 
+#ifndef NVPORT_STRING_DONT_DEFINE_portStringCompareIgnoreCase
+static char _portToLower(char c)
+{
+    if (c >= 'A' && c <= 'Z')
+        return c + ('a' - 'A');
+    return c;
+}
+
+NvS32
+portStringCompareIgnoreCase
+(
+    const char *str1,
+    const char *str2,
+    NvLength maxLength
+)
+{
+    NvLength i;
+
+    PORT_ASSERT_CHECKED(str1 != NULL);
+    PORT_ASSERT_CHECKED(str2 != NULL);
+
+    for (i = 0; i < maxLength; i++)
+    {
+        char c1 = _portToLower(str1[i]);
+        char c2 = _portToLower(str2[i]);
+        
+        if (c1 != c2)
+        {
+            //
+            // Cast to unsigned before assigning to NvS32, to avoid sign
+            // extension.  E.g., if c1 is 0xff, we want s1 to contain
+            // 0xff, not -1.  In practice, this shouldn't matter for printable
+            // characters, but still...
+            //
+            NvS32 s1 = (unsigned char)c1;
+            NvS32 s2 = (unsigned char)c2;
+            return s1 - s2;
+        }
+
+        if ((str1[i] == '\0') &&
+            (str2[i] == '\0'))
+        {
+            return 0;
+        }
+    }
+
+    return 0;
+}
+#endif
+
 #ifndef NVPORT_STRING_DONT_DEFINE_portStringCopy
 NvLength
 portStringCopy

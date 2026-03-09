@@ -100,7 +100,9 @@
 #include <asm/mshyperv.h>
 #endif
 
+#if defined(NV_ASM_CPUFEATURE_H_PRESENT)
 #include <asm/cpufeature.h>
+#endif
 
 #include "conftest/patches.h"
 #include "detect-self-hosted.h"
@@ -156,11 +158,11 @@ NvU32 num_probed_nv_devices = 0;
 
 /*
  * Global list and table of per-device state
- * note: both nv_linux_devices and nv_linux_minor_num_table
+ * note: both nv_linux_devices and nv_linux_minor_bitmap
  *       are protected by nv_linux_devices_lock
  */
 nv_linux_state_t *nv_linux_devices;
-static nv_linux_state_t *nv_linux_minor_num_table[NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1];
+static DECLARE_BITMAP(nv_linux_minor_bitmap, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1);
 
 // Global state for the control device
 nv_linux_state_t nv_ctl_device = { { 0 } };
@@ -182,6 +184,13 @@ struct rw_semaphore nv_system_pm_lock;
 static nv_power_state_t nv_system_power_state;
 static nv_pm_action_depth_t nv_system_pm_action_depth;
 struct semaphore nv_system_power_state_lock;
+
+#include <linux/suspend.h>
+
+static int nv_pm_notifier(struct notifier_block *nb, unsigned long event, void *unused);
+static struct notifier_block nv_pm_nb = {
+    .notifier_call = nv_pm_notifier,
+};
 #endif
 
 void *nvidia_p2p_page_t_cache;
@@ -587,7 +596,7 @@ nv_module_state_init(nv_stack_t *sp)
     }
 
     nv_linux_devices = NULL;
-    memset(nv_linux_minor_num_table, 0, sizeof(nv_linux_minor_num_table));
+    bitmap_clear(nv_linux_minor_bitmap, 0, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1);
     NV_INIT_MUTEX(&nv_linux_devices_lock);
     init_rwsem(&nv_system_pm_lock);
 
@@ -610,7 +619,7 @@ exit:
 }
 
 static void __init
-nv_registry_keys_init(nv_stack_t *sp)
+nv_global_registry_keys_init(nv_stack_t *sp)
 {
     NV_STATUS status;
     nv_state_t *nv = NV_STATE_PTR(&nv_ctl_device);
@@ -856,11 +865,24 @@ static int __init nvidia_init_module(void)
         return rc;
     }
 
+#if defined(CONFIG_PM)
+    if (NVreg_UseKernelSuspendNotifiers)
+    {
+        /* Register PM notifier for automatic suspend/resume */
+        rc = register_pm_notifier(&nv_pm_nb);
+        if (rc != 0)
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: Failed to register PM notifier\n");
+            goto procfs_exit;
+        }
+    }
+#endif
+
     rc = nv_caps_root_init();
     if (rc < 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize capabilities.\n");
-        goto procfs_exit;
+        goto pm_notifier_exit;
     }
 
     rc = nv_caps_imex_init();
@@ -885,10 +907,20 @@ static int __init nvidia_init_module(void)
         goto module_exit;
     }
 
+#if defined(NV_UVM_ENABLE)
+    rc = nv_uvm_init();
+    if (rc != 0)
+    {
+        goto module_exit;
+    }
+#endif
+
+    nv_global_registry_keys_init(sp);
+
     rc = nv_drivers_init();
     if (rc < 0)
     {
-        goto module_exit;
+        goto uvm_exit;
     }
 
     warn_unprobed = (num_probed_nv_devices != count);
@@ -945,24 +977,9 @@ static int __init nvidia_init_module(void)
         goto drivers_exit;
     }
 
-    /*
-     * Initialize registry keys after PCI driver registration has
-     * completed successfully to support per-device module
-     * parameters.
-     */
-    nv_registry_keys_init(sp);
-
     nv_report_applied_patches();
 
     nv_printf(NV_DBG_ERRORS, "NVRM: loading %s\n", pNVRM_ID);
-
-#if defined(NV_UVM_ENABLE)
-    rc = nv_uvm_init();
-    if (rc != 0)
-    {
-        goto drivers_exit;
-    }
-#endif
 
     /*
      * Register char devices for both the region of regular devices
@@ -974,7 +991,7 @@ static int __init nvidia_init_module(void)
             &nv_linux_devices_cdev, "nvidia", &nvidia_fops);
     if (rc < 0)
     {
-        goto no_chrdev_exit;
+        goto drivers_exit;
     }
 
     rc = nv_register_chrdev(NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE, 1,
@@ -992,13 +1009,13 @@ partial_chrdev_exit:
     nv_unregister_chrdev(0, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1,
         &nv_linux_devices_cdev);
 
-no_chrdev_exit:
+drivers_exit:
+    nv_drivers_exit();
+
+uvm_exit:
 #if defined(NV_UVM_ENABLE)
     nv_uvm_exit();
 #endif
-
-drivers_exit:
-    nv_drivers_exit();
 
 module_exit:
     nv_module_exit(sp);
@@ -1009,7 +1026,15 @@ caps_imex_exit:
 caps_root_exit:
     nv_caps_root_exit();
 
+pm_notifier_exit:
+#if defined(CONFIG_PM)
+    if (NVreg_UseKernelSuspendNotifiers)
+    {
+        unregister_pm_notifier(&nv_pm_nb);
+    }
+
 procfs_exit:
+#endif
     nv_procfs_exit();
 
     return rc;
@@ -1036,6 +1061,13 @@ static void __exit nvidia_exit_module(void)
 
     nv_caps_root_exit();
 
+#if defined(CONFIG_PM)
+    if (NVreg_UseKernelSuspendNotifiers)
+    {
+        unregister_pm_notifier(&nv_pm_nb);
+    }
+#endif
+
     nv_procfs_exit();
 
     nv_memdbg_exit();
@@ -1051,6 +1083,9 @@ static void *nv_alloc_file_private(void)
 
     init_waitqueue_head(&nvlfp->waitqueue);
     NV_SPIN_LOCK_INIT(&nvlfp->fp_lock);
+
+    init_rwsem(&nvlfp->fileVaLock);
+    nvlfp->file_mapping_list = NULL;
 
     return nvlfp;
 }
@@ -1068,52 +1103,48 @@ static void nv_free_file_private(nv_linux_file_private_t *nvlfp)
         NV_KFREE(nvet, sizeof(nvidia_event_t));
     }
 
-    if (nvlfp->mmap_context.valid)
+    while (nvlfp->file_mapping_list != NULL)
     {
-        if (nvlfp->mmap_context.page_array != NULL)
+        nv_alloc_mapping_list_node_t *pNode = nvlfp->file_mapping_list;
+        nvlfp->file_mapping_list = pNode->pNext;
+        if (pNode->context.page_array != NULL)
         {
-            os_free_mem(nvlfp->mmap_context.page_array);
+            os_free_mem(pNode->context.page_array);
         }
-        if (nvlfp->mmap_context.memArea.pRanges != NULL)
+        if (pNode->context.memArea.pRanges != NULL)
         {
-            os_free_mem(nvlfp->mmap_context.memArea.pRanges);
+            os_free_mem(pNode->context.memArea.pRanges);
         }
+        os_free_mem(pNode);
     }
 
     NV_KFREE(nvlfp, sizeof(nv_linux_file_private_t));
 }
 
 /*
- * Find the nv device with the given minor device number in the minor number
- * table. Caller should hold nv_linux_devices_lock using
- * LOCK_NV_LINUX_DEVICES. This function does not automatically take
- * nvl->ldata_lock, so the caller must do that if required.
+ * Find the nv device with the given minor device number in the nv_linux_devices list.
+ * Caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES. This
+ * function does not automatically take nvl->ldata_lock, so the caller must do
+ * that if required.
  */
 static nv_linux_state_t *find_minor_locked(NvU32 minor)
 {
     nv_linux_state_t *nvl;
 
-    if (minor > NV_MINOR_DEVICE_NUMBER_REGULAR_MAX)
-        return NULL;
-
-    nvl = nv_linux_minor_num_table[minor];
-    if (nvl == NULL)
+    for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
     {
-        // there isn't actually a GPU present for nv_linux_minor_num_table[minor]
-    }
-    else if (nvl->minor_num != minor)
-    {
-        // nv_linux_minor_num_table out of sync -- this shouldn't happen
-        WARN_ON(1);
-        nvl = NULL;
+        if (nvl->minor_num == minor)
+        {
+            return nvl;
+        }
     }
 
-    return nvl;
+    return NULL;
 }
 
 /*
- * Find the nv device with the given minor device number in the minor number
- * table. If found, nvl is returned with nvl->ldata_lock taken.
+ * Find the nv device with the given minor device number in the nv_linux_devices list.
+ * If found, nvl is returned with nvl->ldata_lock taken.
  */
 static nv_linux_state_t *find_minor(NvU32 minor)
 {
@@ -1343,7 +1374,7 @@ nv_schedule_uvm_resume_p2p(NvU8 *pUuid)
 /*
  * Brings up the device on the first file open. Assumes nvl->ldata_lock is held.
  */
-static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
+int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
 {
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 #if defined(NV_LINUX_PCIE_MSI_SUPPORTED)
@@ -1507,7 +1538,7 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
         nv_acpi_register_notifier(nvl);
     }
 
-    nv->flags |= NV_FLAG_OPEN;
+    nv->flags |= NV_FLAG_INITIALIZED;
 
     rm_request_dnotifier_state(sp, nv);
 
@@ -1619,11 +1650,6 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
     int rc;
     NV_STATUS status;
 
-    if ((nv->flags & NV_FLAG_PCI_REMOVE_IN_PROGRESS) != 0)
-    {
-        return -ENODEV;
-    }
-
     if ((nv->flags & NV_FLAG_EXCLUDE) != 0)
     {
         char *uuid = rm_get_gpu_uuid(sp, nv);
@@ -1656,9 +1682,16 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
         return -ENODEV;
     }
 
-    if ( ! (nv->flags & NV_FLAG_OPEN))
+    if ( ! (nv->flags & NV_FLAG_INITIALIZED))
     {
-        /* Sanity check: !NV_FLAG_OPEN requires usage_count == 0 */
+        /*
+         * No need to early return here when init_on_probe is enabled since
+         * NV_FLAG_INITIALIZED will always be set at end of nv_start_device()
+         * which is called in nv_pci_probe()
+         */
+         BUG_ON(nvl->init_on_probe); // This should never occur
+
+        /* Sanity check: !NV_FLAG_INITIALIZED requires usage_count == 0 */
         if (atomic64_read(&nvl->usage_count) != 0)
         {
             NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
@@ -1792,7 +1825,7 @@ static int nv_try_lock_foreground_open(
     {
         if (down_trylock(&nvl->ldata_lock) == 0)
         {
-            if (nv->flags & NV_FLAG_OPEN)
+            if (nv->flags & NV_FLAG_INITIALIZED)
             {
                 /* device already initialized */
                 return 0;
@@ -2034,7 +2067,7 @@ void nv_shutdown_adapter(nvidia_stack_t *sp,
  * Tears down the device on the last file close. Assumes nvl->ldata_lock is
  * held.
  */
-static void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
+void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
 {
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     static int persistence_mode_notice_logged;
@@ -2074,7 +2107,7 @@ static void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
     }
 
     /* leave INIT flag alone so we don't reinit every time */
-    nv->flags &= ~NV_FLAG_OPEN;
+    nv->flags &= ~NV_FLAG_INITIALIZED;
 
     if (!(nv->flags & NV_FLAG_PERSISTENT_SW_STATE))
     {
@@ -2107,7 +2140,10 @@ static void nv_close_device(nv_state_t *nv, nvidia_stack_t *sp)
     }
 
     if (atomic64_dec_and_test(&nvl->usage_count))
-        nv_stop_device(nv, sp);
+    {
+        if (!nvl->init_on_probe)
+            nv_stop_device(nv, sp);
+    }
 }
 
 /*
@@ -2369,6 +2405,61 @@ out:
     return rc;
 }
 
+static NV_STATUS nv_validate_ioctls(unsigned int cmd)
+{
+    size_t arg_size = _IOC_SIZE(cmd);
+    int arg_cmd = _IOC_NR(cmd);
+    int i;
+    NV_STATUS status;
+    static const struct {
+        unsigned int cmdKey;
+        size_t paramSize;
+        NvBool isArgumentArray;
+    } nv_ioctls_table[] = {
+    
+    #define _NV_IOCTL_ENTRY(_cmd, _type, _isArgumentArray) \
+        { .cmdKey = (_cmd & 0xFF), .paramSize = sizeof(_type), .isArgumentArray = _isArgumentArray}
+        /*nvidia ioctls*/
+        _NV_IOCTL_ENTRY(NV_ESC_CHECK_VERSION_STR, nv_ioctl_rm_api_version_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_IOCTL_XFER_CMD, nv_ioctl_xfer_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_ATTACH_GPUS_TO_FD, NvU32, NV_TRUE),
+        _NV_IOCTL_ENTRY(NV_ESC_CARD_INFO, nv_ioctl_card_info_t, NV_TRUE),
+        _NV_IOCTL_ENTRY(NV_ESC_QUERY_DEVICE_INTR, nv_ioctl_query_device_intr_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_SYS_PARAMS, nv_ioctl_sys_params_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_EXPORT_TO_DMABUF_FD, nv_ioctl_export_to_dma_buf_fd_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_WAIT_OPEN_COMPLETE, nv_ioctl_wait_open_complete_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_NUMA_INFO, nv_ioctl_numa_info_t, NV_FALSE),
+        _NV_IOCTL_ENTRY(NV_ESC_SET_NUMA_STATUS, nv_ioctl_set_numa_status_t, NV_FALSE),
+    };
+
+    status = rm_validate_ioctls(cmd, arg_size);
+    if (status != NV_ERR_INVALID_COMMAND) 
+    {
+        return status;
+    }
+    
+    for (i = 0; i < NV_ARRAY_ELEMENTS(nv_ioctls_table); ++i) {
+        if (nv_ioctls_table[i].cmdKey == arg_cmd) {
+            const NvBool is_arg_size_valid = nv_ioctls_table[i].isArgumentArray
+                ? (arg_size != 0 && (arg_size % nv_ioctls_table[i].paramSize) == 0)
+                : (arg_size == nv_ioctls_table[i].paramSize);
+
+            if (is_arg_size_valid)
+            {
+                return NV_OK;
+            }
+
+            nv_printf(NV_DBG_ERRORS, "NVRM: invalid %d structure size, expected %d, got %d!\n",
+                      nv_ioctls_table[i].cmdKey, nv_ioctls_table[i].paramSize, arg_size);
+
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
+    // Unknown IOCTL case. Not found in any nv, rm and RM Tables.
+    nv_printf(NV_DBG_ERRORS, "NVRM:unknown NVRM ioctl command: 0x%x\n", arg_cmd);
+
+    return NV_ERR_INVALID_ARGUMENT;
+}
 
 int
 nvidia_ioctl(
@@ -2388,6 +2479,11 @@ nvidia_ioctl(
     void *arg_copy = NULL;
     size_t arg_size = 0;
     int arg_cmd;
+
+    if (nv_validate_ioctls(cmd) != NV_OK)
+    {
+        return -EINVAL;
+    }
 
     nv_printf(NV_DBG_INFO, "NVRM: ioctl(0x%x, 0x%x, 0x%x)\n",
         _IOC_NR(cmd), (unsigned int) i_arg, _IOC_SIZE(cmd));
@@ -2570,12 +2666,12 @@ nvidia_ioctl(
                     continue;
                 }
 
-                if (nvidia_dev_get(nvlfp->attached_gpus[i], sp))
+                if (nvidia_dev_get(nvlfp->attached_gpus[i], sp, NV_FALSE /* reset_aware */))
                 {
                     while (i--)
                     {
                         if (nvlfp->attached_gpus[i] != 0)
-                            nvidia_dev_put(nvlfp->attached_gpus[i], sp);
+                            nvidia_dev_put(nvlfp->attached_gpus[i], sp, NV_FALSE /* reset_aware */);
                     }
 
                     /* atomically free attached_gpus */
@@ -3081,7 +3177,7 @@ nvidia_ctl_open(
 
     if (atomic64_read(&nvl->usage_count) == 0)
     {
-        nv->flags |= (NV_FLAG_OPEN | NV_FLAG_CONTROL);
+        nv->flags |= (NV_FLAG_INITIALIZED | NV_FLAG_CONTROL);
     }
 
     atomic64_inc(&nvl->usage_count);
@@ -3111,7 +3207,7 @@ nvidia_ctl_close(
     down(&nvl->ldata_lock);
     if (atomic64_dec_and_test(&nvl->usage_count))
     {
-        nv->flags &= ~NV_FLAG_OPEN;
+        nv->flags &= ~NV_FLAG_INITIALIZED;
     }
     up(&nvl->ldata_lock);
 
@@ -3140,7 +3236,7 @@ nvidia_ctl_close(
         for (i = 0; i < nvlfp->num_attached_gpus; i++)
         {
             if (nvlfp->attached_gpus[i] != 0)
-                nvidia_dev_put(nvlfp->attached_gpus[i], sp);
+                nvidia_dev_put(nvlfp->attached_gpus[i], sp, NV_FALSE /* reset_aware */);
         }
 
         NV_KFREE(nvlfp->attached_gpus, sizeof(NvU32) * nvlfp->num_attached_gpus);
@@ -4103,7 +4199,7 @@ nv_file_private_t* NV_API_CALL nv_get_file_private(
 
         for (i = 0; i <= NV_MINOR_DEVICE_NUMBER_REGULAR_MAX; i++)
         {
-            if ((nv_linux_minor_num_table[i] != NULL) && (MINOR(rdev) == i))
+            if (test_bit(i, nv_linux_minor_bitmap) && (MINOR(rdev) == i))
             {
                 found = NV_TRUE;
                 break;
@@ -4389,6 +4485,45 @@ failure:
     return status;
 }
 
+/*
+ * PM notifier for automatic suspend/resume functionality
+ */
+static int nv_pm_notifier(struct notifier_block *nb, unsigned long event, void *unused)
+{
+    NV_STATUS status;
+    nv_power_state_t power_state;
+    const char *name;
+
+    switch (event) {
+    case PM_SUSPEND_PREPARE:
+        power_state = NV_POWER_STATE_IN_STANDBY;
+        name = "suspend";
+        break;
+
+    case PM_HIBERNATION_PREPARE:
+        power_state = NV_POWER_STATE_IN_HIBERNATE;
+        name = "hibernate";
+        break;
+
+    case PM_POST_SUSPEND:
+    case PM_POST_HIBERNATION:
+        power_state = NV_POWER_STATE_RUNNING;
+        name = "resume";
+        break;
+
+    default:
+        return NOTIFY_DONE;
+    }
+
+    status = nv_set_system_power_state(power_state, nv_procfs_pm_action_depth);
+    if (status != NV_OK) {
+        nv_printf(NV_DBG_ERRORS, "NVRM: PM %s notifier failed: 0x%x\n", name, status);
+        return NOTIFY_BAD;
+    }
+
+    return NOTIFY_OK;
+}
+
 static NV_STATUS
 nv_restore_user_channels(
     nv_state_t *nv
@@ -4405,7 +4540,7 @@ nv_restore_user_channels(
 
     down(&nvl->ldata_lock);
 
-    if ((nv->flags & NV_FLAG_OPEN) == 0)
+    if ((nv->flags & NV_FLAG_INITIALIZED) == 0)
     {
         goto done;
     }
@@ -4445,7 +4580,7 @@ nv_preempt_user_channels(
 
     down(&nvl->ldata_lock);
 
-    if ((nv->flags & NV_FLAG_OPEN) == 0)
+    if ((nv->flags & NV_FLAG_INITIALIZED) == 0)
     {
         goto done;
     }
@@ -4521,7 +4656,7 @@ nvidia_suspend(
 
     down(&nvl->ldata_lock);
 
-    if (((nv->flags & NV_FLAG_OPEN) == 0) &&
+    if (((nv->flags & NV_FLAG_INITIALIZED) == 0) &&
         ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) == 0))
     {
         goto done;
@@ -4539,7 +4674,9 @@ nvidia_suspend(
         goto pci_pm;
     }
 
-    if (nv->preserve_vidmem_allocations && !is_procfs_suspend)
+    if (nv->preserve_vidmem_allocations &&
+        nv_dev_needs_vidmem_preservation(nv) &&
+        !is_procfs_suspend)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
                       "PreserveVideoMemoryAllocations module parameter is set. "
@@ -4679,7 +4816,9 @@ nv_resume_devices(
 
     for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
     {
-        if (resume_devices)
+        nv_state_t *nv = NV_STATE_PTR(nvl);
+
+        if (resume_devices && nv_dev_needs_vidmem_preservation(nv))
         {
             status = nvidia_resume(nvl->dev, pm_action);
             WARN_ON(status != NV_OK);
@@ -4695,8 +4834,13 @@ nv_resume_devices(
 
     for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
     {
-        status = nv_restore_user_channels(NV_STATE_PTR(nvl));
-        WARN_ON(status != NV_OK);
+        nv_state_t *nv = NV_STATE_PTR(nvl);
+
+        if (nv_dev_needs_vidmem_preservation(nv))
+        {
+            status = nv_restore_user_channels(nv);
+            WARN_ON(status != NV_OK);
+        }
     }
 
     UNLOCK_NV_LINUX_DEVICES();
@@ -4716,29 +4860,6 @@ nv_suspend_devices(
     nv_linux_state_t *nvl;
     NvBool resume_devices = NV_FALSE;
     NV_STATUS status = NV_OK;
-#if defined(NV_PM_RUNTIME_AVAILABLE)
-    nv_state_t *nv;
-    struct device *dev;
-
-    LOCK_NV_LINUX_DEVICES();
-
-    /* For Tegra PCI iGPU, forbid the GPU suspend via procfs */
-    for (nvl = nv_linux_devices; nvl != NULL && status == NV_OK; nvl = nvl->next)
-    {
-        nv = NV_STATE_PTR(nvl);
-        dev = nvl->dev;
-        if (dev_is_pci(dev) && nv->is_tegra_pci_igpu_rg_enabled)
-        {
-            nv_printf(NV_DBG_INFO,
-                "NVRM: GPU suspend through procfs is forbidden with Tegra iGPU\n");
-            UNLOCK_NV_LINUX_DEVICES();
-
-            return NV_ERR_NOT_SUPPORTED;
-        }
-    }
-
-    UNLOCK_NV_LINUX_DEVICES();
-#endif
 
     nvidia_modeset_suspend(0);
 
@@ -4751,8 +4872,13 @@ nv_suspend_devices(
 
     for (nvl = nv_linux_devices; nvl != NULL && status == NV_OK; nvl = nvl->next)
     {
-        status = nv_preempt_user_channels(NV_STATE_PTR(nvl));
-        WARN_ON(status != NV_OK);
+        nv_state_t *nv = NV_STATE_PTR(nvl);
+
+        if (nv_dev_needs_vidmem_preservation(nv))
+        {
+            status = nv_preempt_user_channels(nv);
+            WARN_ON(status != NV_OK);
+        }
     }
 
     UNLOCK_NV_LINUX_DEVICES();
@@ -4776,8 +4902,13 @@ nv_suspend_devices(
 
     for (nvl = nv_linux_devices; nvl != NULL && status == NV_OK; nvl = nvl->next)
     {
-        status = nvidia_suspend(nvl->dev, pm_action, NV_TRUE);
-        WARN_ON(status != NV_OK);
+        nv_state_t *nv = NV_STATE_PTR(nvl);
+
+        if (nv_dev_needs_vidmem_preservation(nv))
+        {
+            status = nvidia_suspend(nvl->dev, pm_action, NV_TRUE);
+            WARN_ON(status != NV_OK);
+        }
     }
     if (status != NV_OK)
     {
@@ -4793,12 +4924,14 @@ done:
 
         for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
         {
-            if (resume_devices)
+            nv_state_t *nv = NV_STATE_PTR(nvl);
+
+            if (resume_devices && nv_dev_needs_vidmem_preservation(nv))
             {
                 nvidia_resume(nvl->dev, NV_PM_ACTION_RESUME);
             }
 
-            nv_restore_user_channels(NV_STATE_PTR(nvl));
+            nv_restore_user_channels(nv);
         }
 
         UNLOCK_NV_LINUX_DEVICES();
@@ -4950,7 +5083,7 @@ nvidia_transition_dynamic_power(
     NvBool bTryAgain = NV_FALSE;
     NV_STATUS status;
 
-    if ((nv->flags & (NV_FLAG_OPEN | NV_FLAG_PERSISTENT_SW_STATE)) == 0)
+    if ((nv->flags & (NV_FLAG_INITIALIZED | NV_FLAG_PERSISTENT_SW_STATE)) == 0)
     {
         return 0;
     }
@@ -4981,10 +5114,11 @@ int nv_pmops_runtime_suspend(
 )
 {
     int err = 0;
-#if defined(CONFIG_PM_DEVFREQ)
     struct pci_dev *pci_dev = to_pci_dev(dev);
     nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
+    nv_state_t *nv = NV_STATE_PTR(nvl);
 
+#if defined(CONFIG_PM_DEVFREQ)
     if (nvl->devfreq_suspend != NULL)
     {
         err = nvl->devfreq_suspend(dev);
@@ -4993,12 +5127,22 @@ int nv_pmops_runtime_suspend(
             return err;
         }
     }
+
+    nv_pci_tegra_boost_clocks(dev);
 #endif
 
     err = nvidia_transition_dynamic_power(dev, NV_TRUE);
     if (err)
     {
         goto nv_pmops_runtime_suspend_exit;
+    }
+
+    if (nv->flags & NV_FLAG_TRIGGER_FLR)
+    {
+        if (nvl->pci_dev)
+        {
+            os_pci_trigger_flr((void *)nvl->pci_dev);
+        }
     }
 
     return err;
@@ -5021,6 +5165,8 @@ int nv_pmops_runtime_resume(
 #if defined(CONFIG_PM_DEVFREQ)
     struct pci_dev *pci_dev = to_pci_dev(dev);
     nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
+
+    nv_pci_tegra_boost_clocks(dev);
 #endif
 
     err = nvidia_transition_dynamic_power(dev, NV_FALSE);
@@ -5108,8 +5254,12 @@ NV_STATUS NV_API_CALL nv_set_primary_vga_status(
     nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     pci_dev = nvl->pci_dev;
 
-    nv->primary_vga = ((NV_PCI_RESOURCE_FLAGS(pci_dev, PCI_ROM_RESOURCE) &
-        IORESOURCE_ROM_SHADOW) == IORESOURCE_ROM_SHADOW);
+    if (pci_dev != NULL)
+    {
+        nv->primary_vga = ((NV_PCI_RESOURCE_FLAGS(pci_dev, PCI_ROM_RESOURCE) &
+            IORESOURCE_ROM_SHADOW) == IORESOURCE_ROM_SHADOW);
+    }
+
     return NV_OK;
 }
 
@@ -5174,8 +5324,10 @@ done:
  * GPU is not reset while the GPU is active.
  *
  * Returns -ENODEV if the given gpu_id does not exist.
+ *
+ * reset_aware: When set, the client will not be counted by the RM reset path.
  */
-int nvidia_dev_get(NvU32 gpu_id, nvidia_stack_t *sp)
+int nvidia_dev_get(NvU32 gpu_id, nvidia_stack_t *sp, NvBool reset_aware)
 {
     nv_linux_state_t *nvl;
     int rc;
@@ -5187,8 +5339,10 @@ int nvidia_dev_get(NvU32 gpu_id, nvidia_stack_t *sp)
 
     rc = nv_open_device(NV_STATE_PTR(nvl), sp);
 
-    if (rc == 0)
+    if (rc == 0 && !reset_aware)
+    {
         WARN_ON(rm_set_external_kernel_client_count(sp, NV_STATE_PTR(nvl), NV_TRUE) != NV_OK);
+    }
 
     up(&nvl->ldata_lock);
     return rc;
@@ -5199,7 +5353,7 @@ int nvidia_dev_get(NvU32 gpu_id, nvidia_stack_t *sp)
  * kernel modules. This decrements the ref count of the device with
  * the given gpu_id, potentially tearing it down.
  */
-void nvidia_dev_put(NvU32 gpu_id, nvidia_stack_t *sp)
+void nvidia_dev_put(NvU32 gpu_id, nvidia_stack_t *sp, NvBool reset_aware)
 {
     nv_linux_state_t *nvl;
 
@@ -5210,7 +5364,10 @@ void nvidia_dev_put(NvU32 gpu_id, nvidia_stack_t *sp)
 
     nv_close_device(NV_STATE_PTR(nvl), sp);
 
-    WARN_ON(rm_set_external_kernel_client_count(sp, NV_STATE_PTR(nvl), NV_FALSE) != NV_OK);
+    if (!reset_aware)
+    {
+        WARN_ON(rm_set_external_kernel_client_count(sp, NV_STATE_PTR(nvl), NV_FALSE) != NV_OK);
+    }
 
     up(&nvl->ldata_lock);
 }
@@ -5337,6 +5494,7 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
     nv_state_t *nv,
     NvU64 *compr_addr_sys_phys,
     NvU64 *addr_guest_phys,
+    NvU64 *size_guest_phys,
     NvU64 *rsvd_phys,
     NvU32 *addr_width,
     NvS32 *node_id
@@ -5359,6 +5517,10 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
     if (addr_guest_phys)
     {
         *addr_guest_phys = nvl->coherent_link_info.gpu_mem_pa;
+    }
+    if (size_guest_phys)
+    {
+        *size_guest_phys = nvl->coherent_link_info.gpu_mem_size;
     }
     if (rsvd_phys)
     {
@@ -5464,27 +5626,26 @@ NvBool NV_API_CALL nv_dynamic_power_available(
 }
 
 /* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
-int nv_linux_add_device_locked(nv_linux_state_t *nvl)
+int nv_linux_assign_minor_locked(nv_linux_state_t *nvl)
 {
     int rc = -1;
     int i;
 
-    // look for free a minor number and assign unique minor number to this device
-    for (i = 0; i <= NV_MINOR_DEVICE_NUMBER_REGULAR_MAX; i++)
+    // look for a free minor number and assign it to the device
+    i = find_first_zero_bit(nv_linux_minor_bitmap, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1);
+    if (i <= NV_MINOR_DEVICE_NUMBER_REGULAR_MAX)
     {
-        if (nv_linux_minor_num_table[i] == NULL)
-        {
-            nv_linux_minor_num_table[i] = nvl;
-            nvl->minor_num = i;
-            rc = 0;
-            break;
-        }
+        nvl->minor_num = i;
+        set_bit(i, nv_linux_minor_bitmap);
+        rc = 0;
     }
 
-    // bail if no minor number is free
-    if (rc != 0)
-        return rc;
+    return rc;
+}
 
+/* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
+void nv_linux_add_device_locked(nv_linux_state_t *nvl)
+{
     if (nv_linux_devices == NULL) {
         nv_linux_devices = nvl;
     }
@@ -5494,8 +5655,12 @@ int nv_linux_add_device_locked(nv_linux_state_t *nvl)
         for (tnvl = nv_linux_devices; tnvl->next != NULL;  tnvl = tnvl->next);
         tnvl->next = nvl;
     }
+}
 
-    return rc;
+/* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
+void nv_linux_remove_minor_locked(nv_linux_state_t *nvl)
+{
+    clear_bit(nvl->minor_num, nv_linux_minor_bitmap);
 }
 
 /* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
@@ -5510,8 +5675,6 @@ void nv_linux_remove_device_locked(nv_linux_state_t *nvl)
         for (tnvl = nv_linux_devices; tnvl->next != nvl;  tnvl = tnvl->next);
         tnvl->next = nvl->next;
     }
-
-    nv_linux_minor_num_table[nvl->minor_num] = NULL;
 }
 
 int nv_linux_init_open_q(nv_linux_state_t *nvl)
@@ -5549,10 +5712,9 @@ void NV_API_CALL nv_control_soc_irqs(nv_state_t *nv, NvBool bEnable)
     unsigned long flags;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
-    if (nv->current_soc_irq != -1)
-        return;
+    // This must be under the GPU lock to control the ISRs
 
-    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_lock, flags);
+    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_info_lock, flags);
     if (bEnable)
     {
         for (count = 0; count < nv->num_soc_irqs; count++)
@@ -5575,7 +5737,7 @@ void NV_API_CALL nv_control_soc_irqs(nv_state_t *nv, NvBool bEnable)
             }
         }
     }
-    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_lock, flags);
+    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_info_lock, flags);
 }
 
 NvU32 NV_API_CALL nv_get_dev_minor(nv_state_t *nv)
@@ -6173,6 +6335,21 @@ void NV_API_CALL nv_get_screen_info(
     *pPhysicalAddress = 0;
     *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = *pFbSize = 0;
 
+#if defined(CONFIG_OF)
+    //
+    // Try to get the framebuffer information from device tree simple-framebuffer node.
+    // This is particularly useful for Tegra platforms where the bootloader
+    // sets up a simple framebuffer via device tree.
+    //
+    if (pci_dev == NULL)
+    {
+        if (nv_platform_get_screen_info_dt(pPhysicalAddress, pFbWidth, pFbHeight, pFbDepth, pFbPitch, pFbSize) == NV_OK)
+        {
+            return;
+        }
+    }
+#endif // CONFIG_OF
+
 #if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
     if (num_registered_fb > 0)
     {
@@ -6328,12 +6505,13 @@ void NV_API_CALL nv_set_gpu_pg_mask
 
     // overlay the gpu_pg_mask from module parameter
     if (NVreg_TegraGpuPgMask != NV_TEGRA_PCI_IGPU_PG_MASK_DEFAULT) {
-        nv_printf(NV_DBG_INFO, "NVRM: overlay gpu_pg_mask with module parameter.\n");
         nv->tegra_pci_igpu_pg_mask = NVreg_TegraGpuPgMask;
+        nv_printf(NV_DBG_INFO, "NVRM: overlay gpu_pg_mask " \
+                "with module parameter %u.\n", nv->tegra_pci_igpu_pg_mask);
     }
 
     if (nv->tegra_pci_igpu_pg_mask == NV_TEGRA_PCI_IGPU_PG_MASK_DEFAULT) {
-        nv_printf(NV_DBG_INFO, "NVRM: Using default gpu_pg_mask. "\
+        nv_printf(NV_DBG_INFO, "NVRM: Using default gpu_pg_mask. " \
                                     "There's no need to send BPMP MRQ.\n");
         return;
     }
@@ -6369,6 +6547,13 @@ void NV_API_CALL nv_set_gpu_pg_mask
     nv_printf(NV_DBG_INFO, "NVRM: gpu_pg_mask configuration is not supported\n");
 #endif // defined(NV_PM_RUNTIME_AVAILABLE) && defined(NV_PM_DOMAIN_AVAILABLE)
 #endif // defined(NV_BPMP_MRQ_HAS_STRAP_SET)
+}
+
+void NV_API_CALL nv_trigger_gpu_flr(nv_state_t *nv)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    os_pci_trigger_flr((void *)nvl->pci_dev);
 }
 
 module_init(nvidia_init_module);

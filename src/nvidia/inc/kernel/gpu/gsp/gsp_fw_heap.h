@@ -26,6 +26,7 @@
 
 #include "rmconfig.h"
 
+#include "g_rmconfig_private.h"
 
 // Static defines for the GSP FW WPR Heap
 #define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS2                   (0 << 20)   // No FB heap usage

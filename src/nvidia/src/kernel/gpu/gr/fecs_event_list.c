@@ -31,7 +31,7 @@
 \***************************************************************************/
 
 #include "kernel/gpu/gr/kernel_graphics.h"
-#include "kernel/rmapi/event.h"
+#include "kernel/rmapi/event_api.h"
 #include "kernel/rmapi/event_buffer.h"
 #include "libraries/resserv/rs_server.h"
 #include "kernel/core/locks.h"
@@ -78,7 +78,7 @@ struct KGRAPHICS_FECS_TRACE_INFO
     NvU16  fecsCtxswLogRecordsPerIntr;
     NvU16  fecsTraceRdOffset;
     NvU16  fecsTraceCounter;
-    NvU32  fecsCtxswLogIntrPending;
+    PORT_ATOMIC NvU32  fecsCtxswLogIntrPending;
     NvU32  fecsLastSeqno;
 
 #if PORT_IS_MODULE_SUPPORTED(crypto)
@@ -110,7 +110,7 @@ struct KGRMGR_FECS_GLOBAL_TRACE_INFO
     NvU32 fecsTimerInterval;
 
     // Atomic for scheduling the fecs callback in timer mode
-    NvU32 fecsCallbackScheduled;
+    PORT_ATOMIC NvU32 fecsCallbackScheduled;
 
     // Number of consumer clients
     NvS16 fecsCtxswLogConsumerCount;
@@ -818,7 +818,7 @@ _fecsSignalCallbackScheduled
 )
 {
     NV_ASSERT_OR_RETURN(pFecsGlobalTraceInfo != NULL, 0);
-    return portAtomicCompareAndSwapU32(&pFecsGlobalTraceInfo->fecsCallbackScheduled, 1, 0);
+    return portAtomicCompareAndSwapU32(&pFecsGlobalTraceInfo->fecsCallbackScheduled, 1U, 0U);
 }
 
 static void
@@ -1744,7 +1744,7 @@ fecsSignalIntrPendingIfNotPending
 
     NV_ASSERT_OR_RETURN(pFecsTraceInfo != NULL, NV_FALSE);
 
-    return portAtomicCompareAndSwapU32(&pFecsTraceInfo->fecsCtxswLogIntrPending, 1, 0);
+    return portAtomicCompareAndSwapU32(&pFecsTraceInfo->fecsCtxswLogIntrPending, 1U, 0U);
 }
 
 /*! Atomically clear intr callback pending, return NV_TRUE if was pending */
@@ -1759,7 +1759,7 @@ fecsClearIntrPendingIfPending
 
     NV_ASSERT_OR_RETURN(pFecsTraceInfo != NULL, NV_FALSE);
 
-    return portAtomicCompareAndSwapU32(&pFecsTraceInfo->fecsCtxswLogIntrPending, 0, 1);
+    return portAtomicCompareAndSwapU32(&pFecsTraceInfo->fecsCtxswLogIntrPending, 0U, 1U);
 }
 
 /*! Atomically check if intr callback pending */

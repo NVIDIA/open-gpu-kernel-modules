@@ -72,16 +72,11 @@ typedef struct
 
 MAKE_MAP(REFCNT_REQUESTER_ENTRY_MAP, REFCNT_REQUESTER_ENTRY);
 
-
 struct OBJREFCNT;
 
-#ifndef __NVOC_CLASS_OBJREFCNT_TYPEDEF__
-#define __NVOC_CLASS_OBJREFCNT_TYPEDEF__
-typedef struct OBJREFCNT OBJREFCNT;
-#endif /* __NVOC_CLASS_OBJREFCNT_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJREFCNT
-#define __nvoc_class_id_OBJREFCNT 0xf89281
+#define __nvoc_class_id_OBJREFCNT 0xf89281u
+typedef struct OBJREFCNT OBJREFCNT;
 #endif /* __nvoc_class_id_OBJREFCNT */
 
 
@@ -150,13 +145,9 @@ struct NVOC_METADATA__OBJREFCNT {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJREFCNT_TYPEDEF__
-#define __NVOC_CLASS_OBJREFCNT_TYPEDEF__
-typedef struct OBJREFCNT OBJREFCNT;
-#endif /* __NVOC_CLASS_OBJREFCNT_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJREFCNT
-#define __nvoc_class_id_OBJREFCNT 0xf89281
+#define __nvoc_class_id_OBJREFCNT 0xf89281u
+typedef struct OBJREFCNT OBJREFCNT;
 #endif /* __nvoc_class_id_OBJREFCNT */
 
 // Casting support
@@ -179,14 +170,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJREFCNT;
 
 NV_STATUS __nvoc_objCreateDynamic_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
-#define __objCreate_OBJREFCNT(ppNewObj, pParent, createFlags, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) \
-    __nvoc_objCreate_OBJREFCNT((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
+NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic *pParent, NvU32 tag, RefcntStateChangeCallback *pStateChangeCallback, RefcntResetCallback *pResetCallback);
+#define __objCreate_OBJREFCNT(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pParent, tag, pStateChangeCallback, pResetCallback) \
+    __nvoc_objCreate_OBJREFCNT((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pParent, tag, pStateChangeCallback, pResetCallback)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS refcntConstruct_IMPL(struct OBJREFCNT *arg_pRefcnt, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
-#define __nvoc_refcntConstruct(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) refcntConstruct_IMPL(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
+NV_STATUS refcntConstruct_IMPL(struct OBJREFCNT *pRefcnt, Dynamic *pParent, NvU32 tag, RefcntStateChangeCallback *pStateChangeCallback, RefcntResetCallback *pResetCallback);
+#define __nvoc_refcntConstruct(pRefcnt, pParent, tag, pStateChangeCallback, pResetCallback) refcntConstruct_IMPL(pRefcnt, pParent, tag, pStateChangeCallback, pResetCallback)
 
 void refcntDestruct_IMPL(struct OBJREFCNT *pRefcnt);
 #define __nvoc_refcntDestruct(pRefcnt) refcntDestruct_IMPL(pRefcnt)
@@ -225,6 +216,12 @@ static inline NV_STATUS refcntReset(struct OBJREFCNT *pRefcnt, NvBool arg2) {
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

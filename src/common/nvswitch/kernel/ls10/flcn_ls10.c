@@ -359,9 +359,16 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
         }
 
         // Print VBIOS version at the end
-        nvswitch_lib_get_bios_version(device, &bios_version);
-        NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_SOE_HALT,
-            "SOE HALT data[%d] = 0x%16llx\n", entry, bios_version);
+        if (nvswitch_lib_get_bios_version(device, &bios_version) != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_SOE_HALT,
+                "SOE HALT data[%d] = unavailable\n", entry);
+        }
+        else
+        {
+            NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_SOE_HALT,
+                "SOE HALT data[%d] = 0x%16llx\n", entry, bios_version);
+        }
     }
 
     // reset trace buffer

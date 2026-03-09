@@ -129,13 +129,9 @@ struct NVOC_METADATA__KernelGsplite {
     const struct NVOC_VTABLE__KernelGsplite vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelGsplite_TYPEDEF__
-#define __NVOC_CLASS_KernelGsplite_TYPEDEF__
-typedef struct KernelGsplite KernelGsplite;
-#endif /* __NVOC_CLASS_KernelGsplite_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGsplite
-#define __nvoc_class_id_KernelGsplite 0x927969
+#define __nvoc_class_id_KernelGsplite 0x927969u
+typedef struct KernelGsplite KernelGsplite;
 #endif /* __nvoc_class_id_KernelGsplite */
 
 // Casting support
@@ -161,8 +157,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsplite;
 NV_STATUS __nvoc_objCreateDynamic_KernelGsplite(KernelGsplite**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite**, Dynamic*, NvU32);
-#define __objCreate_KernelGsplite(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelGsplite((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelGsplite(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelGsplite((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -295,12 +291,18 @@ static inline NvBool kgspliteIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Kern
     return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kgspliteConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite, ENGDESCRIPTOR engDesc);
 
 NV_STATUS kgspliteStateInitUnlocked_IMPL(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite);
 
 NV_STATUS kgspliteStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

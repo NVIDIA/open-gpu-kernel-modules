@@ -124,13 +124,9 @@ struct NVOC_METADATA__MemoryHwResources {
     const struct NVOC_VTABLE__MemoryHwResources vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryHwResources_TYPEDEF__
-#define __NVOC_CLASS_MemoryHwResources_TYPEDEF__
-typedef struct MemoryHwResources MemoryHwResources;
-#endif /* __NVOC_CLASS_MemoryHwResources_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryHwResources
-#define __nvoc_class_id_MemoryHwResources 0x9a2a71
+#define __nvoc_class_id_MemoryHwResources 0x9a2a71u
+typedef struct MemoryHwResources MemoryHwResources;
 #endif /* __nvoc_class_id_MemoryHwResources */
 
 // Casting support
@@ -148,14 +144,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryHwResources;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryHwResources(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryHwResources((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryHwResources(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryHwResources((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS hwresConstruct_IMPL(struct MemoryHwResources *arg_pMemoryHwResources, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_hwresConstruct(arg_pMemoryHwResources, arg_pCallContext, arg_pParams) hwresConstruct_IMPL(arg_pMemoryHwResources, arg_pCallContext, arg_pParams)
+NV_STATUS hwresConstruct_IMPL(struct MemoryHwResources *pMemoryHwResources, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_hwresConstruct(pMemoryHwResources, pCallContext, pParams) hwresConstruct_IMPL(pMemoryHwResources, pCallContext, pParams)
 
 void hwresDestruct_IMPL(struct MemoryHwResources *pMemoryHwResources);
 #define __nvoc_hwresDestruct(pMemoryHwResources) hwresDestruct_IMPL(pMemoryHwResources)
@@ -320,8 +316,14 @@ static inline void hwresAddAdditionalDependants_DISPATCH(struct RsClient *pClien
     pResource->__nvoc_metadata_ptr->vtable.__hwresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool hwresCanCopy_IMPL(struct MemoryHwResources *pMemoryHwResources);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

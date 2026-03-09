@@ -95,9 +95,9 @@ struct KernelCrashCatEngine {
     struct KernelCrashCatEngine *__nvoc_pbase_KernelCrashCatEngine;    // kcrashcatEngine
 
     // Vtable with 3 per-object function pointers
-    void (*__kcrashcatEngineReadDmem__)(struct KernelCrashCatEngine * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals)
-    const NvU32 * (*__kcrashcatEngineGetScratchOffsets__)(struct KernelCrashCatEngine * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
-    NvU32 (*__kcrashcatEngineGetWFL0Offset__)(struct KernelCrashCatEngine * /*this*/);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine)
+    void (*__kcrashcatEngineReadDmem__)(struct KernelCrashCatEngine * /*this*/, NvU32, NvU32, void *);  // virtual halified (2 hals) body
+    const NvU32 * (*__kcrashcatEngineGetScratchOffsets__)(struct KernelCrashCatEngine * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
+    NvU32 (*__kcrashcatEngineGetWFL0Offset__)(struct KernelCrashCatEngine * /*this*/);  // virtual halified (2 hals) override (crashcatEngine) base (crashcatEngine) body
 
     // Data members
     NvBool PRIVATE_FIELD(bConfigured);
@@ -106,16 +106,18 @@ struct KernelCrashCatEngine {
     NvU32 PRIVATE_FIELD(errorId);
     struct OBJGPU *PRIVATE_FIELD(pGpu);
     NvU32 PRIVATE_FIELD(dmemPort);
+    NvBool PRIVATE_FIELD(bReportStart);
     char PRIVATE_FIELD(printBuffer)[512];
     char PRIVATE_FIELD(fmtBuffer)[512];
 };
 
 
-// Vtable with 12 per-class function pointers
+// Vtable with 13 per-class function pointers
 struct NVOC_VTABLE__KernelCrashCatEngine {
     NvBool (*__kcrashcatEngineConfigured__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineUnload__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineVprintf__)(struct KernelCrashCatEngine * /*this*/, NvBool, const char *, va_list);  // virtual override (crashcatEngine) base (crashcatEngine)
+    void (*__kcrashcatEngineResetLog__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
+    void (*__kcrashcatEngineVprintf__)(struct KernelCrashCatEngine * /*this*/, NvU64, const char *, va_list);  // virtual override (crashcatEngine) base (crashcatEngine)
     NvU32 (*__kcrashcatEngineRegRead__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32);  // pure virtual
     void (*__kcrashcatEngineRegWrite__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32, NvU32);  // pure virtual
     NvU32 (*__kcrashcatEngineMaskDmemAddr__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32);  // pure virtual
@@ -124,7 +126,7 @@ struct NVOC_VTABLE__KernelCrashCatEngine {
     void * (*__kcrashcatEngineMapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineUnmapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineSyncBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineReadEmem__)(struct KernelCrashCatEngine * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized)
+    void (*__kcrashcatEngineReadEmem__)(struct KernelCrashCatEngine * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized) body
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -134,13 +136,9 @@ struct NVOC_METADATA__KernelCrashCatEngine {
     const struct NVOC_VTABLE__KernelCrashCatEngine vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelCrashCatEngine_TYPEDEF__
-#define __NVOC_CLASS_KernelCrashCatEngine_TYPEDEF__
-typedef struct KernelCrashCatEngine KernelCrashCatEngine;
-#endif /* __NVOC_CLASS_KernelCrashCatEngine_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCrashCatEngine
-#define __nvoc_class_id_KernelCrashCatEngine 0xc37aef
+#define __nvoc_class_id_KernelCrashCatEngine 0xc37aefu
+typedef struct KernelCrashCatEngine KernelCrashCatEngine;
 #endif /* __nvoc_class_id_KernelCrashCatEngine */
 
 // Casting support
@@ -159,8 +157,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCrashCatEngine;
 NV_STATUS __nvoc_objCreateDynamic_KernelCrashCatEngine(KernelCrashCatEngine**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelCrashCatEngine(KernelCrashCatEngine**, Dynamic*, NvU32);
-#define __objCreate_KernelCrashCatEngine(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelCrashCatEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelCrashCatEngine(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelCrashCatEngine((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -209,8 +207,10 @@ static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEng
 #define kcrashcatEngineConfigured(arg_this) kcrashcatEngineConfigured_DISPATCH(arg_this)
 #define kcrashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__
 #define kcrashcatEngineUnload(arg_this) kcrashcatEngineUnload_DISPATCH(arg_this)
+#define kcrashcatEngineResetLog_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineResetLog__
+#define kcrashcatEngineResetLog(arg_this) kcrashcatEngineResetLog_DISPATCH(arg_this)
 #define kcrashcatEngineVprintf_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__
-#define kcrashcatEngineVprintf(arg_this, bReportStart, fmt, args) kcrashcatEngineVprintf_DISPATCH(arg_this, bReportStart, fmt, args)
+#define kcrashcatEngineVprintf(arg_this, errorId, fmt, args) kcrashcatEngineVprintf_DISPATCH(arg_this, errorId, fmt, args)
 #define kcrashcatEngineRegRead_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineRegRead__
 #define kcrashcatEngineRegRead(pGpu, arg_this, offset) kcrashcatEngineRegRead_DISPATCH(pGpu, arg_this, offset)
 #define kcrashcatEngineRegWrite_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineRegWrite__
@@ -249,8 +249,12 @@ static inline void kcrashcatEngineUnload_DISPATCH(struct KernelCrashCatEngine *a
     arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__(arg_this);
 }
 
-static inline void kcrashcatEngineVprintf_DISPATCH(struct KernelCrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__(arg_this, bReportStart, fmt, args);
+static inline void kcrashcatEngineResetLog_DISPATCH(struct KernelCrashCatEngine *arg_this) {
+    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineResetLog__(arg_this);
+}
+
+static inline void kcrashcatEngineVprintf_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__(arg_this, errorId, fmt, args);
 }
 
 static inline NvU32 kcrashcatEngineRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelCrashCatEngine *arg_this, NvU32 offset) {
@@ -301,44 +305,52 @@ static inline NvU32 kcrashcatEngineGetWFL0Offset_DISPATCH(struct KernelCrashCatE
     return arg_this->__kcrashcatEngineGetWFL0Offset__(arg_this);
 }
 
-NvBool kcrashcatEngineConfigured_IMPL(struct KernelCrashCatEngine *arg1);
+// Virtual method declarations and/or inline definitions
+NvBool kcrashcatEngineConfigured_IMPL(struct KernelCrashCatEngine *arg_this);
 
-void kcrashcatEngineUnload_IMPL(struct KernelCrashCatEngine *arg1);
+void kcrashcatEngineUnload_IMPL(struct KernelCrashCatEngine *arg_this);
 
-void kcrashcatEngineVprintf_IMPL(struct KernelCrashCatEngine *arg1, NvBool bReportStart, const char *fmt, va_list args);
+void kcrashcatEngineResetLog_IMPL(struct KernelCrashCatEngine *arg_this);
 
-NvU32 kcrashcatEnginePriRead_IMPL(struct KernelCrashCatEngine *arg1, NvU32 offset);
+void kcrashcatEngineVprintf_IMPL(struct KernelCrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args);
 
-void kcrashcatEnginePriWrite_IMPL(struct KernelCrashCatEngine *arg1, NvU32 offset, NvU32 data);
+NvU32 kcrashcatEnginePriRead_IMPL(struct KernelCrashCatEngine *arg_this, NvU32 offset);
 
-void *kcrashcatEngineMapBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg1, CrashCatBufferDescriptor *pBufDesc);
+void kcrashcatEnginePriWrite_IMPL(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 data);
 
-void kcrashcatEngineUnmapBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg1, CrashCatBufferDescriptor *pBufDesc);
+void * kcrashcatEngineMapBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc);
 
-void kcrashcatEngineSyncBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg1, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size);
+void kcrashcatEngineUnmapBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc);
 
-void kcrashcatEngineReadDmem_TU102(struct KernelCrashCatEngine *arg1, NvU32 offset, NvU32 size, void *pBuf);
+void kcrashcatEngineSyncBufferDescriptor_IMPL(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size);
 
-static inline void kcrashcatEngineReadDmem_2fced3(struct KernelCrashCatEngine *arg1, NvU32 offset, NvU32 size, void *pBuf) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+void kcrashcatEngineReadDmem_TU102(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 size, void *pBuf);
+
+const NvU32 * kcrashcatEngineGetScratchOffsets_TU102(struct KernelCrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);
+
+NvU32 kcrashcatEngineGetWFL0Offset_TU102(struct KernelCrashCatEngine *arg_this);
+
+// Inline HAL method definitions
+static inline void kcrashcatEngineReadDmem_f2d351(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 size, void *pBuf){
     NV_ASSERT_PRECOMP(0);
 }
 
-static inline void kcrashcatEngineReadEmem_2fced3(struct KernelCrashCatEngine *arg1, NvU64 offset, NvU64 size, void *pBuf) {
+static inline void kcrashcatEngineReadEmem_f2d351(struct KernelCrashCatEngine *arg_this, NvU64 offset, NvU64 size, void *pBuf){
     NV_ASSERT_PRECOMP(0);
 }
 
-const NvU32 *kcrashcatEngineGetScratchOffsets_TU102(struct KernelCrashCatEngine *arg1, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);
-
-static inline const NvU32 *kcrashcatEngineGetScratchOffsets_11d6dc(struct KernelCrashCatEngine *arg1, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+static inline const NvU32 * kcrashcatEngineGetScratchOffsets_80f438(struct KernelCrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId){
     NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
 }
 
-NvU32 kcrashcatEngineGetWFL0Offset_TU102(struct KernelCrashCatEngine *arg1);
-
-static inline NvU32 kcrashcatEngineGetWFL0Offset_c067f9(struct KernelCrashCatEngine *arg1) {
+static inline NvU32 kcrashcatEngineGetWFL0Offset_474d46(struct KernelCrashCatEngine *arg_this){
     NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
 }
 
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

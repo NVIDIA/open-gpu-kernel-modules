@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,6 @@
 
 
 #include "nvtypes.h"
-#include "Nvcm.h"
 #include "kernel/gpu/fifo/uvm_channel_retainer.h"
 #include "class/clc574.h" // UVM_CHANNEL_RETAINER
 #include "virtualization/hypervisor/hypervisor.h"

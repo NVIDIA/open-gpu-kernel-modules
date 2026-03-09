@@ -44,7 +44,6 @@
 
 #include "gpu/timer/objtmr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
-#include "Nvcm.h"
 #include "gpu/bus/p2p_api.h"
 
 NV_STATUS
@@ -124,10 +123,14 @@ subdeviceConstruct_IMPL
         NV_RM_RPC_ALLOC_SUBDEVICE(pPrimaryGpu, pRsClient->hClient, pParentRef->hResource,
                               pResourceRef->hResource, NV20_SUBDEVICE_0,
                               subDeviceInst, status);
-        NV_ASSERT_OK_OR_RETURN(status);
+        if (status != NV_OK)
+        {
+            gpuUnregisterSubdevice(pGpu, pSubdevice);
+            return status;
+        }
     }
 
-    return status;
+    return NV_OK;
 }
 
 //
@@ -175,6 +178,21 @@ subdeviceDestruct_IMPL
     RsResourceRef          *pResourceRef    = RES_GET_REF(pSubdevice);
     OBJGPU                 *pGpu            = GPU_RES_GET_GPU(pSubdevice);
     NV_STATUS               status          = NV_OK;
+
+    // unregister first so no new notifications can find this subdevice
+    gpuUnregisterSubdevice(pGpu, pSubdevice);
+
+    // wait for all in-flight notifications to complete
+    {
+        NvU32 spinCount = 0;
+        while (portAtomicOrU32(&pSubdevice->notificationRefCount, 0) != 0)
+        {
+            if (spinCount++ < 1000)
+                portUtilSpin();
+            else
+                osDelayUs(10);
+        }
+    }
 
     if (pSubdevice == pGpu->pCachedSubdevice)
     {
@@ -227,6 +245,7 @@ subdeviceDestruct_IMPL
                        pResourceRef->pParentRef->hResource,
                        pResourceRef->hResource, status);
     }
+
     //
     // Restore sched settings
     //
@@ -237,8 +256,6 @@ subdeviceDestruct_IMPL
             pSubdevice->bSchedPolicySet = NV_FALSE;
         }
     }
-
-    gpuUnregisterSubdevice(pGpu, pSubdevice);
 }
 
 NV_STATUS
@@ -437,6 +454,7 @@ subdeviceRestoreWatchdog_IMPL
 
     pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pKernelRc != NULL);
-    krcWatchdogChangeState(pKernelRc, pSubdevice, RM_CLIENT_DESTRUCTION);
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
+    krcWatchdogChangeState(pKernelRc, NULL, pSubdevice, RM_CLIENT_DESTRUCTION);
 }
 

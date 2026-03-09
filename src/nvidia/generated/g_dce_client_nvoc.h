@@ -131,13 +131,9 @@ struct NVOC_METADATA__OBJDCECLIENTRM {
     const struct NVOC_VTABLE__OBJDCECLIENTRM vtable;
 };
 
-#ifndef __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__
-#define __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__
-typedef struct OBJDCECLIENTRM OBJDCECLIENTRM;
-#endif /* __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDCECLIENTRM
-#define __nvoc_class_id_OBJDCECLIENTRM 0x61649c
+#define __nvoc_class_id_OBJDCECLIENTRM 0x61649cu
+typedef struct OBJDCECLIENTRM OBJDCECLIENTRM;
 #endif /* __nvoc_class_id_OBJDCECLIENTRM */
 
 // Casting support
@@ -161,8 +157,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJDCECLIENTRM;
 NV_STATUS __nvoc_objCreateDynamic_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32);
-#define __objCreate_OBJDCECLIENTRM(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJDCECLIENTRM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJDCECLIENTRM(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJDCECLIENTRM((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -296,14 +292,20 @@ static inline NvBool dceclientIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJ
     return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS dceclientConstructEngine_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, ENGDESCRIPTOR arg3);
+// Virtual method declarations and/or inline definitions
+NV_STATUS dceclientConstructEngine_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, ENGDESCRIPTOR arg3);
 
-void dceclientStateDestroy_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2);
+void dceclientStateDestroy_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this);
 
-NV_STATUS dceclientStateLoad_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvU32 arg3);
+NV_STATUS dceclientStateLoad_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvU32 arg3);
 
-NV_STATUS dceclientStateUnload_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg2, NvU32 arg3);
+NV_STATUS dceclientStateUnload_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvU32 arg3);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

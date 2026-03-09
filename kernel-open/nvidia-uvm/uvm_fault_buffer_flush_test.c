@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -45,7 +45,7 @@ NV_STATUS uvm_test_fault_buffer_flush(UVM_TEST_FAULT_BUFFER_FLUSH_PARAMS *params
 
     uvm_va_space_down_read(va_space);
 
-    uvm_processor_mask_and(retained_gpus, &va_space->faultable_processors, &va_space->registered_gpus);
+    uvm_processor_mask_copy(retained_gpus, &va_space->registered_gpus);
 
     uvm_global_gpu_retain(retained_gpus);
 
@@ -63,7 +63,7 @@ NV_STATUS uvm_test_fault_buffer_flush(UVM_TEST_FAULT_BUFFER_FLUSH_PARAMS *params
         }
 
         for_each_gpu_in_mask(gpu, retained_gpus)
-            TEST_CHECK_GOTO(uvm_gpu_fault_buffer_flush(gpu) == NV_OK, out);
+            TEST_CHECK_GOTO(uvm_gpu_replayable_buffer_flush(gpu) == NV_OK, out);
     }
 
 out:

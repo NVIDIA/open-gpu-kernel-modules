@@ -126,13 +126,9 @@ struct NVOC_METADATA__PhysicalMemory {
     const struct NVOC_VTABLE__PhysicalMemory vtable;
 };
 
-#ifndef __NVOC_CLASS_PhysicalMemory_TYPEDEF__
-#define __NVOC_CLASS_PhysicalMemory_TYPEDEF__
-typedef struct PhysicalMemory PhysicalMemory;
-#endif /* __NVOC_CLASS_PhysicalMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_PhysicalMemory
-#define __nvoc_class_id_PhysicalMemory 0x5fccf2
+#define __nvoc_class_id_PhysicalMemory 0x5fccf2u
+typedef struct PhysicalMemory PhysicalMemory;
 #endif /* __nvoc_class_id_PhysicalMemory */
 
 // Casting support
@@ -150,14 +146,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory;
 
 NV_STATUS __nvoc_objCreateDynamic_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_PhysicalMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_PhysicalMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_PhysicalMemory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_PhysicalMemory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *arg_pPhysicalMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_physmemConstruct(arg_pPhysicalMemory, arg_pCallContext, arg_pParams) physmemConstruct_IMPL(arg_pPhysicalMemory, arg_pCallContext, arg_pParams)
+NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *pPhysicalMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_physmemConstruct(pPhysicalMemory, pCallContext, pParams) physmemConstruct_IMPL(pPhysicalMemory, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -319,8 +315,14 @@ static inline void physmemAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__physmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool physmemCanCopy_IMPL(struct PhysicalMemory *pPhysicalMemory);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

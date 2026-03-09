@@ -145,13 +145,9 @@ struct NVOC_METADATA__MemoryFabricImportV2 {
     const struct NVOC_VTABLE__MemoryFabricImportV2 vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__
-#define __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__
-typedef struct MemoryFabricImportV2 MemoryFabricImportV2;
-#endif /* __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryFabricImportV2
-#define __nvoc_class_id_MemoryFabricImportV2 0xf96871
+#define __nvoc_class_id_MemoryFabricImportV2 0xf96871u
+typedef struct MemoryFabricImportV2 MemoryFabricImportV2;
 #endif /* __nvoc_class_id_MemoryFabricImportV2 */
 
 // Casting support
@@ -169,14 +165,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryFabricImportV2;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryFabricImportV2(MemoryFabricImportV2**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryFabricImportV2(MemoryFabricImportV2**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryFabricImportV2(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryFabricImportV2((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryFabricImportV2(MemoryFabricImportV2**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryFabricImportV2(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryFabricImportV2((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memoryfabricimportv2Construct_IMPL(struct MemoryFabricImportV2 *arg_pMemoryFabricImportV2, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memoryfabricimportv2Construct(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams) memoryfabricimportv2Construct_IMPL(arg_pMemoryFabricImportV2, arg_pCallContext, arg_pParams)
+NV_STATUS memoryfabricimportv2Construct_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memoryfabricimportv2Construct(pMemoryFabricImportV2, pCallContext, pParams) memoryfabricimportv2Construct_IMPL(pMemoryFabricImportV2, pCallContext, pParams)
 
 void memoryfabricimportv2Destruct_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
 #define __nvoc_memoryfabricimportv2Destruct(pMemoryFabricImportV2) memoryfabricimportv2Destruct_IMPL(pMemoryFabricImportV2)
@@ -366,6 +362,7 @@ static inline void memoryfabricimportv2AddAdditionalDependants_DISPATCH(struct R
     pResource->__nvoc_metadata_ptr->vtable.__memoryfabricimportv2AddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool memoryfabricimportv2CanCopy_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
 
 NV_STATUS memoryfabricimportv2IsReady_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NvBool bCopyConstructorContext);
@@ -376,12 +373,17 @@ NV_STATUS memoryfabricimportv2Control_IMPL(struct MemoryFabricImportV2 *pMemoryF
 
 NV_STATUS memoryfabricimportv2GetMapAddrSpace_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
-NV_STATUS memoryfabricimportv2CtrlGetInfo_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NV00F9_CTRL_GET_INFO_PARAMS *pParams);
-
 NvBool memoryfabricimportv2IsGpuMapAllowed_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, struct OBJGPU *pGpu);
 
 NvBool memoryfabricimportv2IsExportAllowed_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2);
 
+// Exported method declarations and/or inline definitions
+NV_STATUS memoryfabricimportv2CtrlGetInfo_IMPL(struct MemoryFabricImportV2 *pMemoryFabricImportV2, NV00F9_CTRL_GET_INFO_PARAMS *pParams);
+
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -391,7 +393,7 @@ typedef struct
     NvU32 memFlags;
     NvU32 cliqueId;
     NvU64 bwModeEpoch;
-    NvU8  bwMode;
+    NvU16  bwMode;
 } FABRIC_IMPORT_MEMDESC_DATA;
 
 //

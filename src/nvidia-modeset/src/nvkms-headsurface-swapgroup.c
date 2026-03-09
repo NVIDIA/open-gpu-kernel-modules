@@ -415,28 +415,10 @@ static NvBool HsSwapGroupValidateConfig(
     const struct NvKmsSwapGroupConfig *pConfig)
 {
     const NvU32 validHeadMask = NVBIT(pDevEvo->numApiHeads) - 1;
-    NvU32 dispIndex;
 
-    for (dispIndex = 0; dispIndex < ARRAY_LEN(pConfig->disp); dispIndex++) {
+    /* Fail if the config describes heads not present on the device. */
 
-        if (pConfig->disp[dispIndex].headMask == 0) {
-            continue;
-        }
-
-        /* Fail if the config describes disps not present on the pDevEvo. */
-
-        if (dispIndex >= pDevEvo->nDispEvo) {
-            return FALSE;
-        }
-
-        /* Fail if the config describes heads not present on the disp. */
-
-        if ((pConfig->disp[dispIndex].headMask & ~validHeadMask) != 0) {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
+    return ((pConfig->headMask & ~validHeadMask) == 0);
 }
 
 /*!
@@ -461,7 +443,7 @@ NVSwapGroupRec* nvHsAllocSwapGroup(
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         NvU32 apiHead;
-        FOR_ALL_HEADS(apiHead, pRequest->config.disp[dispIndex].headMask) {
+        FOR_ALL_HEADS(apiHead, pRequest->config.headMask) {
             if (pDispEvo->pSwapGroup[apiHead] != NULL) {
                 return NULL;
             }
@@ -483,7 +465,7 @@ NVSwapGroupRec* nvHsAllocSwapGroup(
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         NvU32 apiHead;
-        FOR_ALL_HEADS(apiHead, pRequest->config.disp[dispIndex].headMask) {
+        FOR_ALL_HEADS(apiHead, pRequest->config.headMask) {
             pDispEvo->pSwapGroup[apiHead] = pSwapGroup;
         }
     }

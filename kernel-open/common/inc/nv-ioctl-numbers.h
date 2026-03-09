@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,10 @@
 #define NV_IOCTL_NUMBERS_H
 
 /* NOTE: using an ioctl() number > 55 will overflow! */
+/* 
+ * NOTE: Any new ioctls added here should also be added to nv_validate_ioctls() in nv.c or
+ * rm_validate_ioctls() in osapi.c
+ */
 #define NV_IOCTL_MAGIC      'F'
 #define NV_IOCTL_BASE       200
 #define NV_ESC_CARD_INFO             (NV_IOCTL_BASE + 0)

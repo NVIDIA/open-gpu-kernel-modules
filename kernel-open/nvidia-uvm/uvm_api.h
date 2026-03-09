@@ -188,6 +188,16 @@ static bool uvm_api_range_invalid(NvU64 base, NvU64 length)
     return uvm_api_range_invalid_aligned(base, length, PAGE_SIZE);
 }
 
+// Similar to uvm_api_range_invalid() but also validates that an offset is
+// aligned and that the offset and length won't overflow.
+static bool uvm_api_range_offset_invalid(NvU64 base, NvU64 offset, NvU64 length)
+{
+    return uvm_api_range_invalid(base, offset + length) ||
+            !IS_ALIGNED(offset, PAGE_SIZE)     ||
+            !IS_ALIGNED(length, PAGE_SIZE)     ||
+            offset + length < offset;
+}
+
 // Some APIs can only enforce 4K alignment as it's the smallest GPU page size
 // even when the smallest host page is larger.
 static bool uvm_api_range_invalid_4k(NvU64 base, NvU64 length)
@@ -246,8 +256,6 @@ NV_STATUS uvm_api_unregister_channel(UVM_UNREGISTER_CHANNEL_PARAMS *params, stru
 NV_STATUS uvm_api_enable_read_duplication(const UVM_ENABLE_READ_DUPLICATION_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_disable_read_duplication(const UVM_DISABLE_READ_DUPLICATION_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp);
-NV_STATUS uvm_api_enable_system_wide_atomics(UVM_ENABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
-NV_STATUS uvm_api_disable_system_wide_atomics(UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_init_event_tracker_v2(UVM_TOOLS_INIT_EVENT_TRACKER_V2_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_set_notification_threshold(UVM_TOOLS_SET_NOTIFICATION_THRESHOLD_PARAMS *params, struct file *filp);

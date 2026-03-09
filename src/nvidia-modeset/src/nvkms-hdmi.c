@@ -34,6 +34,7 @@
 #include "nvkms-utils.h"
 #include "nvkms-vrr.h"
 #include "dp/nvdp-connector.h"
+#include "nv_vasprintf.h"
 
 #include "hdmi_spec.h"
 #include "nvos.h"
@@ -1709,21 +1710,22 @@ NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
  * be enabled before the first extended vblank after enabling VRR, or the
  * display will blank.
  */
-void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
+void nvHdmiSetVRR(const NVDispEvoPtr pDispEvo,
+                  NvU32 head,
+                  NvBool enable,
+                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame;
-    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empCtrl = { 0 };
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame = { 0 };
     NvEvoInfoFrameTransmitControl transmitCtrl = enable ?
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME :
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
     NVT_STATUS status;
 
-    empCtrl.EnableVRR = enable;
+    empCtrl->EnableVRR = enable;
 
-    status = NvTiming_ConstructExtendedMetadataPacketInfoframe(&empCtrl,
+    status = NvTiming_ConstructExtendedMetadataPacketInfoframe(empCtrl,
                                                                &empInfoFrame);
-
     if (status != NVT_STATUS_SUCCESS) {
         nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
                 "Error in constructing Extended Metadata Packet InfoFrame");
@@ -1879,17 +1881,27 @@ static void HdmiLibPrint(
     NvHdmiPkt_CBHandle handle,
     const char *format, ...)
 {
-    NVDevEvoRec *pDevEvo = handle;
+    const NVDevEvoRec *pDevEvo = handle;
+    char *msg, prefix[30];
 
     if (!nvDoDebugLogging()) return;
 
     va_list ap;
     va_start(ap, format);
+    msg = nv_vasprintf(format, ap);
+    va_end(ap);
+    if (msg == NULL) {
+        return;
+    }
+    nvkms_snprintf(prefix, sizeof(prefix), "GPU:%d: HdmiPacketLibrary: ",
+                   pDevEvo->gpuLogIndex);
+
     /* The HDMI library doesn't have log levels. It's pretty chatty (e.g., it
      * prints "Initialize Success" when it inits), so hardcode it to INFO level
      * for now. */
-    nvVEvoLog(EVO_LOG_INFO, pDevEvo->gpuLogIndex, format, ap);
-    va_end(ap);
+    nvkms_log(NVKMS_LOG_LEVEL_INFO, prefix, msg);
+
+    nvFree(msg);
 }
 
 static void HdmiLibAssert(

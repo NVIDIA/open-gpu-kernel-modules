@@ -465,7 +465,9 @@ _importDescriptorEnqueueWait
     pNode = listAppendNew(&pFabricImportDesc->waitingImportersList);
     if (pNode == NULL)
     {
-        osDereferenceObjectCount(pValidatedOsEvent);
+        if (pValidatedOsEvent != NULL)
+            osDereferenceObjectCount(pValidatedOsEvent);
+
         status = NV_ERR_NO_MEMORY;
         goto fail;
     }

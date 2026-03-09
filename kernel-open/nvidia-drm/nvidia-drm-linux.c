@@ -31,7 +31,7 @@
 
 MODULE_PARM_DESC(
     modeset,
-    "Enable atomic kernel modesetting (1 = enable, 0 = disable (default))");
+    "Enable atomic kernel modesetting (1 = enable (default), 0 = disable)");
 module_param_named(modeset, nv_drm_modeset_module_param, bool, 0400);
 
 #if defined(NV_DRM_FBDEV_AVAILABLE)

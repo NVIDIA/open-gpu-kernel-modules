@@ -2576,7 +2576,7 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_HDMI_GPU_CAPS_PARAMS {
  *   The sub-device instance
  *  [in]newDevices
  *   Bitmask of devices that are planned on being enabled with the
- *   pending device change. See NV_CFGEX_GET_DEVICES_CONFIGURATION for bit defs.
+ *   pending device change.
  *  [in]properties
  *   Bitmask of display attributes for new configuration (none used at the moment).
  *  [in]enable
@@ -3117,6 +3117,9 @@ typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
  * maxDisplayLuminance
  * maximum display luminance
  *
+ * maxOutputLuminance
+ * maximum output luminance considering the protocol limit (SDR/HDR) and maximum display luminance.
+ *
  * luminanceSscalingFactor
  * HDR tone mapping luminance scaling factor
  *
@@ -3142,6 +3145,7 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS {
     NvBool bContentAdaptiveBrightness;
     NvBool bDynamicHdrTonemapping;
     NvU32  maxDisplayLuminance;
+    NvU32  maxOutputLuminance;
     NvU32  luminanceScalingFactor;
 } NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS;
 

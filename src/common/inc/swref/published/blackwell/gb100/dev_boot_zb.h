@@ -35,5 +35,7 @@
 #define NV_PMC_ZB_ENABLE_PDISP         30:30 /* RWBVF */
 #define NV_PMC_ZB_ENABLE_PDISP_DISABLED                     0x00000000 /* RW--V */
 #define NV_PMC_ZB_ENABLE_PDISP_ENABLED                      0x00000001 /* RWB-V */
+#define NV_PMC_ZB_BOOT_42                                   0x00000A00 /* R--4R */
+#define NV_PMC_ZB_BOOT_0                                    0x00000000 /* R--4R */
 #endif // __gb100_dev_boot_zb_h__
  

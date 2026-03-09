@@ -640,7 +640,7 @@ NV_STATUS pmaNumaAllocate
         portSyncMutexAcquire(pPma->pAllocLock);
         portSyncRwLockAcquireRead(pPma->pScrubberValidLock);
 
-        if (pmaPortAtomicGet(&pPma->scrubberValid) != PMA_SCRUBBER_VALID)
+        if (portAtomicGetSize(&pPma->scrubberValid) != PMA_SCRUBBER_VALID)
         {
             NV_PRINTF(LEVEL_WARNING, "PMA object is not valid\n");
             portSyncRwLockReleaseRead(pPma->pScrubberValidLock);
@@ -689,13 +689,12 @@ NV_STATUS pmaNumaAllocate
         NvU32  regId;
         void  *pMap = NULL;
         NvU64  regAddrBase;
+        NvU64  regFrameBase;
         NvU64  frameOffset;
         NvU64  frameCount = 0;
         PMA_PAGESTATUS curStatus = STATE_FREE;
         PMA_PAGESTATUS pinOption = !!(flags & PMA_ALLOCATE_PINNED) ?
                                         STATE_PIN : STATE_UNPIN;
-
-        pinOption |= localizedFlag ? ATTRIB_LOCALIZED : 0;
 
         NV_PRINTF(LEVEL_INFO, "SUCCESS allocCount %lld, allocsize %llx eviction? %s pinned ? %s contig? %s\n",
                               (NvU64) allocationCount, (NvU64) allocSize, (flags & PMA_ALLOCATE_DONT_EVICT) ?  "NOTALLOWED" : "ALLOWED",
@@ -708,13 +707,19 @@ NV_STATUS pmaNumaAllocate
             regId = findRegionID(pPma, pPages[i]);
             pMap  = pPma->pRegions[regId];
             regAddrBase = pPma->pRegDescriptors[regId]->base;
+            regFrameBase = PMA_ADDR2FRAME(pPages[i], regAddrBase);
             frameCount  = allocSize >> PMA_PAGE_SHIFT;
+
+            if (localizedFlag)
+            {
+                pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, regFrameBase, LOCALIZATION_STATE_IS_LOCALIZED, LOCALIZATION_STATE_IS_LOCALIZED);
+            }
 
             for (j = 0; j < frameCount; j++)
             {
                 // This localizes them all for localized
                 // for non-localized, still need to do this for each page
-                frameOffset = PMA_ADDR2FRAME(pPages[i], regAddrBase) + j;
+                frameOffset = regFrameBase + j;
 
                 curStatus = pPma->pMapInfo->pmaMapRead(pMap, frameOffset, NV_TRUE);
 
@@ -818,7 +823,7 @@ void pmaNumaFreeInternal
         NvU32 regId = findRegionID(pPma, pPages[0]);
         NvU64 addrBase = pPma->pRegDescriptors[regId]->base;
         NvU64 frameNum = PMA_ADDR2FRAME(pPages[0], addrBase);
-        if (pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE) & ATTRIB_LOCALIZED)
+        if (pPma->pMapInfo->pmaMapReadLocalizationStatus(pPma->pRegions[regId], frameNum) & LOCALIZATION_STATE_IS_LOCALIZED)
         {
             bLocalized = NV_TRUE;
             // This returns the 64MB aligned value to the caller, but that's not concerning..
@@ -837,6 +842,7 @@ void pmaNumaFreeInternal
         NvU64 sysPhysAddr = 0;
         NvU64 frameNum;
         NvU64 framesPerPage;
+        void  *pMap = NULL;
 
         // Shift the GPA to acquire the bus address (SPA)
         NV_ASSERT(pPages[i] < pPma->coherentCpuFbSize);
@@ -852,10 +858,17 @@ void pmaNumaFreeInternal
         }
 
         regId    = findRegionID(pPma, pPages[i]);
+        pMap     = pPma->pRegions[regId];
         addrBase = pPma->pRegDescriptors[regId]->base;
         frameNum = PMA_ADDR2FRAME(pPages[i], addrBase);
         framesPerPage = size >> PMA_PAGE_SHIFT;
         sysPhysAddr   = pPages[i] + pPma->coherentCpuFbBase;
+
+        if (bLocalized)
+        {
+            // Localized NUMA allocations may not share the same region, so no need to check allocation count before clearing state.
+            pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameNum, 0, LOCALIZATION_STATE_IS_LOCALIZED);
+        }
 
         for (j = 0; j < framesPerPage; j++)
         {
@@ -877,14 +890,14 @@ void pmaNumaFreeInternal
                 //
                 if (currentStatus & STATE_UNPIN)
                 {
-                    pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j),
+                    pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, (frameNum + j),
                                                             ATTRIB_NUMA_REUSE, ATTRIB_NUMA_REUSE);
                 }
                 continue;
             }
             sysPagePhysAddr = sysPhysAddr + (j << PMA_PAGE_SHIFT);
             osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
-            pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
+            pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, (frameNum + j), newStatus, ~ATTRIB_EVICTING);
         }
     }
 

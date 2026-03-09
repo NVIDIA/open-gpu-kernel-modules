@@ -35,6 +35,7 @@
 
 #include "class/cl0080.h"
 #include "class/cl0100.h"
+#include "class/cl0101.h"
 
 #include "g_finn_rm_api.h"
 
@@ -593,6 +594,793 @@ lockStressObjCtrlCmdGetLockStressCounters_IMPL
     pParams->gpuLockStressCounter = pGpu->lockStressCounter;
     pParams->clientLockStressCounter = pRmClient->lockStressCounter;
     pParams->internalClientLockStressCounter = pRmInternalClient->lockStressCounter;
+
+    return NV_OK;
+}
+
+typedef enum _GPU_LOCK_STATE
+{
+    _GPU_LOCK_STATE_NONE,
+    _GPU_LOCK_STATE_DEVICE_LOCK,
+    _GPU_LOCK_STATE_ALL_LOCK
+} _GPU_LOCK_STATE;
+
+static NV_STATUS
+_verifyGpuLockState
+(
+    OBJGPU *pGpu,
+    NvHandle hClient,
+    NvHandle hSubdevice,
+    NvHandle hLockStressObject,
+    const _GPU_LOCK_STATE lockState
+)
+{
+    NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM internalParam = {0};
+    NV0080_ALLOC_PARAMETERS nv0080AllocParams = {0};
+    NV00DE_ALLOC_PARAMETERS nv00deAllocParams = {0};
+    NvHandle hDevice = NV01_NULL_OBJECT;
+    NvHandle hRusd = NV01_NULL_OBJECT;
+    NvHandle hRelaxedDupObj = NV01_NULL_OBJECT;
+    RM_API *pRmApi = NULL;
+    NV_STATUS status = NV_OK;
+    NV_STATUS expectedStatus = NV_OK;
+    NvU32 gpuMask = 0;
+    const NvBool bMultiGpu = (SYS_GET_GPUMGR(SYS_GET_INSTANCE())->gpuAttachCount > 1);
+
+    if (lockState == _GPU_LOCK_STATE_NONE)
+    {
+        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    }
+    else
+    {
+        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    }
+
+    // Test RM Control
+
+    portMemSet(&internalParam, 0, sizeof(internalParam));
+    internalParam.bLeaf = NV_TRUE;
+
+    // NO_GPUS_LOCK RMCTRL is always supported regardless of the lock state
+    status = pRmApi->Control(pRmApi, hClient, hLockStressObject,
+                             NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_NO_LOCK,
+                             &internalParam, sizeof(internalParam));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No GPU lock control failed with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // GPU lock for RMCTRL works differently than other RMAPIs.
+    //
+    // For API_LOCK_INTERNAL, the resource server takes the GPU lock required for
+    // the RMCTRL. Thread holds the exact lock when it reaches the control function.
+    //
+    // For GPU_LOCK_INTERNAL RMCTRL, the resource server neither check nor change
+    // the locking state. _rmapiRmControl set RM_LOCK_FLAGS_NO_GPUS_LOCK, which
+    // makes serverControlLookupLockFlags cleans RM_LOCK_FLAGS_GPU_GROUP_LOCK.
+    // As a result, serverReslock_Prologue becomes NOP. When the thread reaches
+    // the control function body, the GPU lock state for a
+    // GPU_LOCK_INTERNAL RMCTRL remains the same as before the call.
+    //
+    // Therefore, when a thread holds the device only GPU lock and calls this
+    // RMCTRL, we reaches the function body with device only GPU lock and fails
+    // the check for all GPUs lock when there's multiple GPUs in the system
+    // (i.e., when the device only GPU lock does not equal to the all GPUs lock).
+    //
+    expectedStatus = (bMultiGpu && (lockState == _GPU_LOCK_STATE_DEVICE_LOCK)) ?
+                         NV_ERR_INVALID_LOCK_STATE : NV_OK;
+    status = pRmApi->Control(pRmApi, hClient, hLockStressObject,
+                            NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_ALL_LOCK,
+                            &internalParam, sizeof(internalParam));
+    if (status != expectedStatus)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "All GPUs lock control failed with: 0x%x, expected: 0x%x\n",
+                  status, expectedStatus);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // A device only RMCTRL always succeeds for the lock states we have here.
+    // For _GPU_LOCK_STATE_NONE, it goes through API_LOCK_INTERNAL where the
+    // resource server takes care the GPU lock acquisition.
+    //
+    // For _GPU_LOCK_STATE_DEVICE_LOCK/_GPU_LOCK_STATE_ALL_LOCK, the device lock
+    // is already held by the caller.
+    //
+    // This device only GPU lock will only fail when it's called through the
+    // _GPU_LOCK_STATE_DEVICE_LOCK interface without holding the device lock for
+    // this GPU (e.g., a cross-GPU RMCTRL call).
+    //
+    status = pRmApi->Control(pRmApi, hClient, hLockStressObject,
+                             NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_DEVICE_LOCK,
+                             &internalParam, sizeof(internalParam));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device lock control failed with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    // Test RM Alloc
+
+    // Skip since on vGPU only one device with a device instance is allowed
+    if (!IS_VIRTUAL(pGpu))
+    {
+        portMemSet(&nv0080AllocParams, 0, sizeof(nv0080AllocParams));
+        nv0080AllocParams.deviceId = gpuGetDeviceInstance(pGpu);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            serverutilGenResourceHandle(hClient, &hDevice), cleanup);
+
+        //
+        // Test all GPUs lock RM alloc.
+        //
+        // For alloc, resource server checks the lock state in serverResLock_Prologue.
+        // If we hold all GPUs lock, no further lock acqusition required.
+        // If we hold GPU device lock in multi-GPU setup, serverResLock_Prologue
+        // detects recursive lock acquisition and fails the request.
+        //
+
+        expectedStatus = (bMultiGpu && (lockState == _GPU_LOCK_STATE_DEVICE_LOCK)) ?
+                            NV_ERR_INVALID_LOCK_STATE : NV_OK;
+        status = pRmApi->AllocWithHandle(pRmApi, hClient, hClient, hDevice, NV01_DEVICE_0,
+                                        &nv0080AllocParams, sizeof(nv0080AllocParams));
+        if (status != NV_OK)
+        {
+            // No need to free the object
+            hDevice = NV01_NULL_OBJECT;
+        }
+        if (status != expectedStatus)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Failed to allocate device with: 0x%x, expected: 0x%x\n",
+                    status, expectedStatus);
+            status = NV_ERR_INVALID_LOCK_STATE;
+            goto cleanup;
+        }
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        serverutilGenResourceHandle(hClient, &hRusd), cleanup);
+
+    //
+    // Test device only GPU lock RM alloc
+    // No further lock acquisition required for either _GPU_LOCK_STATE_DEVICE_LOCK
+    // or _GPU_LOCK_STATE_ALL_LOCK.
+    //
+    // For _GPU_LOCK_STATE_NONE, resource server handles the GPU lock since it
+    // goes through API_LOCK_INTERNAL RMAPI.
+    //
+    // For vGPU, RUSD allocation will return NV_ERR_NOT_SUPPORTED in ctor.
+    // We can still verify the resource server locking on vGPU.
+    //
+    expectedStatus = IS_VIRTUAL(pGpu) ? NV_ERR_NOT_SUPPORTED : NV_OK;
+    status = pRmApi->AllocWithHandle(pRmApi, hClient, hSubdevice, hRusd, RM_USER_SHARED_DATA,
+                                     &nv00deAllocParams, sizeof(nv00deAllocParams));
+    if (status != NV_OK)
+    {
+        hRusd = NV01_NULL_OBJECT;
+    }
+    if (status != expectedStatus)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to allocate RUSD with: 0x%x, expected: 0x%x\n",
+                  status, expectedStatus);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // Allocation to test free with all GPUs locks under _GPU_LOCK_STATE_DEVICE_LOCK.
+    //
+    // Above device allocation will fail with _GPU_LOCK_STATE_DEVICE_LOCK and
+    // multi-GPU; leaving us no object to test free with all GPUs locks.
+    //
+    // This test-only object requires device only lock to alloc and all GPUs lock
+    // to free.
+    //
+    NV_ASSERT_OK_OR_GOTO(status,
+        serverutilGenResourceHandle(hClient, &hRelaxedDupObj), cleanup);
+    status = pRmApi->AllocWithHandle(pRmApi, hClient, hSubdevice, hRelaxedDupObj,
+                                     LOCK_TEST_RELAXED_DUP_OBJECT, NULL, 0);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to allocate relaxed dup object with: 0x%x\n", status);
+        hRelaxedDupObj = NV01_NULL_OBJECT;
+        goto cleanup;
+    }
+
+    //
+    // Test RM free.
+    //
+
+    //
+    // Test RM Free with device only GPU lock.
+    //
+    // RM Free goes through serverResLock_Prologue, the same as the RM Alloc.
+    // The locking requirements are the same as those for RM alloc.
+    //
+    if (hRusd != NV01_NULL_OBJECT)
+    {
+        status = pRmApi->Free(pRmApi, hClient, hRusd);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Failed to free subdevice with: 0x%x\n", status);
+            goto cleanup;
+        }
+
+        hRusd = NV01_NULL_OBJECT;
+    }
+
+    //
+    // Test RM Free with all GPUs lock.
+    // We won't fail this case. If the device was allocated successfully,
+    // it should be able to be freed successfully.
+    //
+    if (hDevice != NV01_NULL_OBJECT)
+    {
+        status = pRmApi->Free(pRmApi, hClient, hDevice);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to free device with: 0x%x,\n", status);
+            goto cleanup;
+        }
+
+        hDevice = NV01_NULL_OBJECT;
+    }
+
+    // 
+    // Test RM Free with all GPUs lock.
+    // Fails if we hold device only lock in multi-GPU setup due to locking order
+    // violation.
+    //
+    if (hRelaxedDupObj != NV01_NULL_OBJECT)
+    {
+        expectedStatus = (bMultiGpu && (lockState == _GPU_LOCK_STATE_DEVICE_LOCK)) ?
+                            NV_ERR_INVALID_LOCK_STATE : NV_OK;
+        status = pRmApi->Free(pRmApi, hClient, hRelaxedDupObj);
+        if (status == NV_OK)
+        {
+            hRelaxedDupObj = NV01_NULL_OBJECT;
+        }
+
+        if (status != expectedStatus)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Failed to free relaxed dup object with: 0x%x, expected: 0x%x\n",
+                    status, expectedStatus);
+            status = NV_ERR_INVALID_LOCK_STATE;
+            goto cleanup;
+        }
+    }
+
+    status = NV_OK;
+
+cleanup:
+    // Release all locks we have for clean up
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    if (hDevice != NV01_NULL_OBJECT)
+    {
+        pRmApi->Free(pRmApi, hClient, hDevice);
+        hDevice = NV01_NULL_OBJECT;
+    }
+    if (hRusd != NV01_NULL_OBJECT)
+    {
+        pRmApi->Free(pRmApi, hClient, hRusd);
+        hRusd = NV01_NULL_OBJECT;
+    }
+    if (hRelaxedDupObj != NV01_NULL_OBJECT)
+    {
+        pRmApi->Free(pRmApi, hClient, hRelaxedDupObj);
+        hRelaxedDupObj = NV01_NULL_OBJECT;
+    }
+
+    // reset lock state
+    if (lockState == _GPU_LOCK_STATE_DEVICE_LOCK)
+    {
+        if (rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
+            GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to reset to device only GPU Lock");
+        }
+    }
+    else if (lockState == _GPU_LOCK_STATE_ALL_LOCK)
+    {
+        if (rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_ALL,
+            GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to reset to all GPUs Lock");
+        }
+    }
+
+    return status;
+}
+
+static NV_STATUS
+_verifyGpuLockingOrder
+(
+    OBJGPU *pGpu
+)
+{
+    NvBool bMultiGpu = (SYS_GET_GPUMGR(SYS_GET_INSTANCE())->gpuAttachCount > 1);
+    NvU32 gpuMask = 0;
+    OBJGPU *pGpu0 = NULL;
+    OBJGPU *pGpu1 = NULL;
+    NV_STATUS status = NV_OK;
+
+    // Only support locking order testing under no GPU lock in multi-GPU setup
+    if ((rmGpuLocksGetOwnedMask() != 0) || !bMultiGpu)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    pGpu0 = gpumgrGetGpu(0);
+    pGpu1 = gpumgrGetGpu(1);
+
+    // Lock GPU0
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire GPU0 device lock with: 0x%x\n", status);
+        return status;
+    }
+
+    //
+    // Lock GPU0 again and expects to fail.
+    // Recursivie lock acquisition is not allowed for normal lock acquire.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Recursive GPU0 device lock acquisition succeeded"
+                               " with: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // Conditionally lock GPU0 again and expects to fail.
+    // Recursivie lock acquisition is not allowed for conditional lock acquire.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_STATE_IN_USE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Recursive GPU0 device lock acquisition succeeded"
+                               " with: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // Safe upgrade to lock GPU0 again and expect to succeed.
+    // Safe upgrade for recursive lock acquisition became NOP and will succeed.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Safe lock upgrade for recursive GPU0 device lock"
+                               " failed with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // Lock GPU1 and expect to succeed.
+    // Normal lock acquisition following the locking order should succeed.
+    //
+    status = rmGpuGroupLockAcquire(pGpu1->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire GPU1 device lock with correct "
+                               "locking order, status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    // Release all locks
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    //
+    // Test locking order violation
+    // Lock GPU1.
+    //
+    status = rmGpuGroupLockAcquire(pGpu1->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire GPU1 device lock with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // Lock GPU0 and expect to fail.
+    // Normal lock acquisition that violates locking order should fail.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU0 lock acqusition that violates locking order "
+                               "does not fail. status: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // Conditionally lock GPU0 and expect to get OK or STATE_IN_USE.
+    // Conditional lock acquisition that violates locking order may succeed.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if ((status != NV_OK) && (status != NV_ERR_STATE_IN_USE))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Conditional lock acquisition that violates locking"
+                               " order should not fail. status: 0x%x\n", status);
+        goto cleanup;
+    }
+    else if (status == NV_OK)
+    {
+        // Unlock GPU0 if conditional lock acquisition succeeded.
+        rmGpuGroupLockRelease(0x1, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    //
+    // Safe upgrade to lock GPU0 and expect to get OK or STATE_IN_USE.
+    // Safe lock upgrade that violates locking order becomes a conditoinal acquire.
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if ((status != NV_OK) && (status != NV_ERR_STATE_IN_USE))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Safe lock upgrade that violates locking order "
+                               "should not fail. status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // Testing the locking order violation for alloc lock.
+    // Lock alloc lock and expect to fail due to locking order.
+    //
+    gpuMask = 0;
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_MASK,
+                GPU_LOCK_FLAGS_LOCK_ALLOC, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Alloc lock acquisition that violates locking "
+                               "order did not fail. status: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    // Conditional alloc lock acquistion that violates locking order can succeed
+    gpuMask = 0;
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_MASK,
+                GPU_LOCK_FLAGS_LOCK_ALLOC | GPU_LOCK_FLAGS_COND_ACQUIRE,
+                RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if ((status != NV_ERR_STATE_IN_USE) && (status != NV_OK))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Alloc lock acquisition that violates locking "
+                               "order did not fail. status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // No API to release the alloc lock only (Alloc lock is only used internally)
+    // Release all locks.
+    //
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    //
+    // Test safe upgrade for alloc lock
+    // Lock GPU0
+    //
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire GPU0 device lock with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    //
+    // Safe lock upgrade for alloc lock that violates locking order may succeed
+    // Safe lock upgrade that violates locking order becomes a conditoinal acquire.
+    //
+    gpuMask = 0;
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_MASK,
+                GPU_LOCK_FLAGS_LOCK_ALLOC | GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if ((status != NV_OK) && (status != NV_ERR_STATE_IN_USE))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Safe lock upgrade for alloc lock that violates"
+                               "locking order failed. status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    // Release all locks.
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    // Lock all GPUs. This also locks the alloc lock.
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_ALL,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire all GPUs lock. status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    // Lock the alloc lock and expect to fail due to recursive lock acquisition.
+    gpuMask = 0;
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_MASK,
+                GPU_LOCK_FLAGS_LOCK_ALLOC, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Recursive alloc lock acquisition does not "
+                               "fail with invalid lock state. state: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    //
+    // Safe upgrade the alloc lock. Expect to succeed.
+    // Safe upgrade for recursive lock acquisition becomes NOP and will succeed.
+    //
+    gpuMask = 0;
+    status = rmGpuGroupLockAcquire(pGpu0->gpuInstance, GPU_LOCK_GRP_MASK,
+                GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE | GPU_LOCK_FLAGS_LOCK_ALLOC,
+                RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Recursive alloc lock safe upgrade failed with 0x%x\n", status);
+        goto cleanup;
+    }
+
+    status = NV_OK;
+
+cleanup:
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    return status;
+
+}
+
+NV_STATUS
+lockStressObjCtrlCmdRecursiveGpuLockTestNoLock_IMPL
+(
+    LockStressObject *pResource,
+    NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pResource);
+    NV_STATUS status = NV_OK;
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pResource);
+    NvHandle hSubdevice = RES_GET_PARENT_HANDLE(pResource);
+    NvHandle hLockStressObject = RES_GET_HANDLE(pResource);
+    NvBool bMultiGpu = (SYS_GET_GPUMGR(SYS_GET_INSTANCE())->gpuAttachCount > 1);
+
+    NvU32 gpuMask = 0;
+
+    // Basic Lock Model is not supported for GSP.
+    if(RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // if this is leaf function, verify that we hold at least the required lock
+    if (pParams->bLeaf)
+    {
+        // no GPU lock needed, nothing to check
+        return NV_OK;
+    }
+
+    // Only testing locking order for multi-GPU setup.
+    if (bMultiGpu)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            _verifyGpuLockingOrder(pGpu));
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        _verifyGpuLockState(pGpu, hClient, hSubdevice, hLockStressObject, _GPU_LOCK_STATE_NONE));
+
+    // Try acquire GPU device lock. Expected to work.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire GPU device lock with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        _verifyGpuLockState(pGpu, hClient, hSubdevice, hLockStressObject,
+                            _GPU_LOCK_STATE_DEVICE_LOCK),
+        cleanup);
+
+    // Try acquire all GPUs lock. Expected to fail since we hold device only lock.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_ALL,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "All GPUs lock attempt under GPU Device Lock "
+                               " should be invalid, status: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    // Re-acquire all GPUs lock. Expected to work.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_ALL,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire all GPUs lock with: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        _verifyGpuLockState(pGpu, hClient, hSubdevice, hLockStressObject,
+                            _GPU_LOCK_STATE_ALL_LOCK),
+        cleanup);
+
+    // Try acquire device lock. Expected to fail since we hold all GPUs lock.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device lock attempt under All GPUs Lock "
+                               " should be invalid, status: 0x%x\n", status);
+        status = NV_ERR_INVALID_LOCK_STATE;
+        goto cleanup;
+    }
+
+    status = NV_OK;
+
+cleanup:
+
+    rmGpuGroupLockRelease(rmGpuLocksGetOwnedMask(), GPUS_LOCK_FLAGS_NONE);
+
+    return status;
+}
+
+NV_STATUS
+lockStressObjCtrlCmdRecursiveGpuLockTestAllLock_IMPL
+(
+    LockStressObject *pResource,
+    NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pResource);
+    NV_STATUS status = NV_OK;
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pResource);
+    NvHandle hSubdevice = RES_GET_PARENT_HANDLE(pResource);
+    NvHandle hLockStressObject = RES_GET_HANDLE(pResource);
+
+    NvU32 gpuMask = 0;
+    if(RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // if this is leaf function, verify that we hold at least the required lock
+    if (pParams->bLeaf)
+    {
+        if (rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_ALL, &gpuMask))
+        {
+            return NV_OK;
+        }
+        else
+        {
+            //
+            // This can happen because resource server GPU lock checking is
+            // skipped for GPU_LOCK_INTERNAL RMAPI. 
+            //
+            NV_PRINTF(LEVEL_ERROR, "Failed to hold all GPUs lock\n");
+            return NV_ERR_INVALID_LOCK_STATE;
+        }
+    }
+
+    NV_ASSERT_OK_OR_RETURN(_verifyGpuLockState(pGpu, hClient, hSubdevice, hLockStressObject, _GPU_LOCK_STATE_ALL_LOCK));
+
+    // Test taking all GPUs lock when we already hold all GPUs lock. Expected to fail.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_ALL,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "All GPUs lock attempt succeeded, status: 0x%x\n", status);
+        return NV_ERR_INVALID_LOCK_STATE;
+    }
+
+    // Test taking device lock when we already hold all GPUs lock. Expected to fail.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device lock attempt succeeded, status: 0x%x\n", status);
+        return NV_ERR_INVALID_LOCK_STATE;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock_IMPL
+(
+    LockStressObject *pResource,
+    NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pResource);
+    NV_STATUS status = NV_OK;
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pResource);
+    NvHandle hSubdevice = RES_GET_PARENT_HANDLE(pResource);
+    NvHandle hLockStressObject = RES_GET_HANDLE(pResource);
+    NvU32 gpuMask = 0;
+
+    if(RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // if this is leaf function, verify that we hold at least the required lock
+    if (pParams->bLeaf)
+    {
+        if (rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE, &gpuMask))
+        {
+            return NV_OK;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to hold the GPU device lock\n");
+            return NV_ERR_INVALID_LOCK_STATE;
+        }
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        _verifyGpuLockState(pGpu, hClient, hSubdevice, hLockStressObject, _GPU_LOCK_STATE_DEVICE_LOCK));
+
+    // Test taking all GPUs lock when we already hold GPU device lock. Expected to fail.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_ALL,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "All GPUs lock attempt succeeded, status: 0x%x\n", status);
+
+        // In case we did succeeded, release the lock and return error.
+        if (status == NV_OK)
+        {
+            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        return NV_ERR_INVALID_LOCK_STATE;
+    }
+
+    // Test taking device lock when we already hold GPU device lock. Expected to fail.
+    status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
+                GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT, &gpuMask);
+    if (status != NV_ERR_INVALID_LOCK_STATE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Device lock attempt succeeded, status: 0x%x\n", status);
+
+        // In case we did succeeded, release the lock and return error.
+        if (status == NV_OK)
+        {
+            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        return NV_ERR_INVALID_LOCK_STATE;
+    }
 
     return NV_OK;
 }

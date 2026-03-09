@@ -181,6 +181,7 @@ namespace DisplayPort
             unsigned maxNumHztSlices;
             unsigned lineBufferBitDepth;
         }_DSC;
+        NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS paramsHdcpCtrl;
         void initializeRegkeyDatabase();
         void applyRegkeyOverrides();
 
@@ -371,6 +372,13 @@ namespace DisplayPort
         virtual bool dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *headIndex);
 
         void triggerACT();
+        void configureAndTriggerECF(NvU64 ecf, NvBool bForceClearEcf = NV_FALSE, NvBool bAddStreamBack = NV_FALSE); // This function program as well as trigger ECF on branch devices.
+        virtual void disableAlternateScramblerReset();
+        void configureHDCPDisableAuthentication();
+        void configureHDCPAbortAuthentication(AbortAuthReason abortAuthReason);
+        bool setStreamType(unsigned streamIndex, NvU8 streamType, bool * bNeedReNegotiate);
+        void configureHDCPValidateLink(HDCPValidateData &hdcpValidateData, NvU64 cN = HDCP_DUMMY_CN, NvU64 cKsv = HDCP_DUMMY_CKSV);
+        void forwardPendingKsvListReady(NvBool bKsvListReady);
         void configureHDCPRenegotiate(NvU64 cN = HDCP_DUMMY_CN, NvU64 cKsv = HDCP_DUMMY_CKSV, bool bForceReAuth = false,
                                       bool bRxIDMsgPending = false);
         void configureHDCPGetHDCPState(HDCPState &hdcpState);

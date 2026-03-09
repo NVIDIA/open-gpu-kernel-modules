@@ -345,7 +345,6 @@ dmaAllocMapping_GM107
     {
         NvU32              pteCount;
         NvU32              pageCount;
-        NvU32              overMap;
         NvU64              vaLo;
         NvU64              vaHi;
         NvU64              mapLength;
@@ -819,15 +818,6 @@ dmaAllocMapping_GM107
         pLocals->disableEncryption = FLD_TEST_DRF(OS46, _FLAGS, _DISABLE_ENCRYPTION, _TRUE, flags) ?
             DMA_UPDATE_VASPACE_FLAGS_DISABLE_ENCRYPTION : 0;
 
-        if (pLocals->bIsMemContiguous)
-        {
-            pLocals->overMap = pLocals->pageCount + NvU64_LO32((pLocals->pageOffset + (pLocals->pageSize - 1)) / pLocals->pageSize);
-        }
-        else
-        {
-            pLocals->overMap = pLocals->pageCount;
-        }
-
         // BAR1 VA space is split when MIG mem partitioning is enabled
         if (pLocals->bIsBar1 && pLocals->bIsMIGMemPartitioningEnabled && IS_GFID_PF(gfid))
         {
@@ -855,8 +845,6 @@ dmaAllocMapping_GM107
                   (pLocals->pageSize == RM_PAGE_SIZE_HUGE) ||
                   (pLocals->pageSize == RM_PAGE_SIZE_512M) ||
                   (pLocals->pageSize == RM_PAGE_SIZE_256G));
-
-        pLocals->overMap = 0;
 
         if (pCliMapInfo != NULL)
         {
@@ -1035,35 +1023,6 @@ dmaAllocMapping_GM107
         NV_ASSERT_OR_ELSE(vaSize >= pLocals->mapLength,
             status = NV_ERR_INVALID_STATE;
             goto cleanup; );
-
-        //
-        // Handle overmapping for BAR1.
-        //
-        // BAR1 VA is allocated at big page size granularity
-        // regardless of the physical memory size being mapped.
-        // Unmapped regions of BAR1 need to be mapped to dummy
-        // pages (or sparse) to avoid faults on PCIe prefetch.
-        //
-        // Overmap solves this by wrapping around the target physical
-        // memory for the remainder of the last big page so
-        // any left over 4K pages are "scratch invalidated."
-        //
-        // When this is used, the mapLength must be extended to
-        // to the entire VA range and dmaUpdateVASpace
-        // takes care of the overMap modulus.
-        //
-        // TODO: With VMM enabled BAR1 scratch invalidate is handled
-        //       transparently with SW (or HW) sparse support.
-        //       Removing this special overmap logic should be
-        //       possible when the old VAS path is fully
-        //       deprecated.
-        //
-        // See Bug 200090426.
-        //
-        if (pLocals->overMap != 0)
-        {
-            pLocals->mapLength = vaSize;
-        }
     }
     else
     {
@@ -1171,6 +1130,8 @@ dmaAllocMapping_GM107
         }
         dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
                                   pLocals->pageArrayFlags, pLocals->pTempMemDesc->localizedMask);
+        pLocals->pageArray.PteAdjust = pLocals->pTempMemDesc->PteAdjust;
+        NV_ASSERT_OR_ELSE(pLocals->pageArray.PteAdjust < pLocals->pTempMemDesc->pageArrayGranularity, status = NV_ERR_INVALID_STATE; goto cleanup);
 
         // Get pLocals->aperture
         if (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FBMEM)
@@ -1388,7 +1349,7 @@ dmaAllocMapping_GM107
                 else
                 {
                     // Get vidmem base address, if applicable
-                    pLocals->fabricAddr = knvlinkGetDirectConnectBaseAddress_HAL(pGpu,
+                    pLocals->fabricAddr = knvlinkGetDirectConnectBaseAddress(pGpu,
                                                             GPU_GET_KERNEL_NVLINK(pGpu));
                 }
             }
@@ -1477,7 +1438,7 @@ dmaAllocMapping_GM107
                                       pLocals->vaLo, pLocals->vaHi,
                                       DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL | pLocals->readOnly | pLocals->priv |
                                           pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption,
-                                     &pLocals->pageArray, pLocals->overMap,
+                                     &pLocals->pageArray,
                                      &pLocals->comprInfo,
                                       0,
                                       NV_MMU_PTE_VALID_TRUE,
@@ -1650,7 +1611,7 @@ dmaFreeMapping_GM107
                                           NULL,
                                           vaLo, vaHi,
                                           DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID, // only change validity
-                                          NULL, 0,
+                                          NULL,
                                           NULL, 0,
                                           NV_MMU_PTE_VALID_FALSE,
                                           GMMU_APERTURE_INVALID,
@@ -1728,6 +1689,11 @@ struct MMU_MAP_ITERATOR
     NvU32            currIdx;
 
     /*!
+     * Offset in current page.
+     */
+    NvU32            currPageOffset;
+
+    /*!
      * Base offset in bytes into the logical surface being mapped.
      */
     NvU64            surfaceOffset;
@@ -1769,12 +1735,6 @@ struct MMU_MAP_ITERATOR
      * aperture.
      */
     const GMMU_FIELD_ADDRESS *pAddrField;
-
-    /*!
-     * Indicates after how many indexes in pPageArray, should the
-     * map wrap around to the first mapped page.
-     */
-    NvU32 overMapModulus;
 
     /*!
      * Indicates to read-modify-write each PTE instead of
@@ -1861,16 +1821,12 @@ _gmmuWalkCBMapNextEntries_Direct
         {
             NvU32 currIdxMod = pIter->currIdx;
 
-            // Wrap the curr idx to the start offset for BAR1 overmapping.
-            if (0 != pIter->overMapModulus)
-            {
-                currIdxMod %= pIter->overMapModulus;
-            }
-
             // Extract the physical address of the page to map.
             if (currIdxMod < pIter->pPageArray->count)
             {
                 pIter->physAddr = dmaPageArrayGetPhysAddr(pIter->pPageArray, currIdxMod);
+
+                pIter->physAddr += pIter->currPageOffset;
                 // Hack to WAR submemesc mappings
                 pIter->physAddr = NV_ALIGN_DOWN64(pIter->physAddr, pageSize);
             }
@@ -1997,12 +1953,23 @@ _gmmuWalkCBMapNextEntries_Direct
                     entry.v8, pLevelFmt->entrySize);
 
         //
-        // pPageArray deals in 4K pages.
-        // So increment by the ratio of mapping page size to 4K
-        // --
-        // The above assumption will be invalid upon implementation of memdesc dynamic page arrays
+        // pPageArray deals pages with granularity `pTarget->pageArrayGranularity`.
+        // So increment by the ratio of mapping page size to `pTarget->pageArrayGranularity`
         //
-        pIter->currIdx += (NvU32)(pageSize / pTarget->pageArrayGranularity);
+        if (SYS_GET_INSTANCE()->bEnableDynamicGranularityPageArrays && pageSize < pTarget->pageArrayGranularity)
+        {
+            pIter->currPageOffset += pageSize;
+            if (pIter->currPageOffset >= pTarget->pageArrayGranularity)
+            {
+                pIter->currPageOffset = 0;
+                pIter->currIdx += 1;
+            }
+        }
+        else // pageSize >= pTarget->pageArrayGranularity
+        {
+            pIter->currPageOffset = 0;
+            pIter->currIdx += (NvU32)(pageSize / pTarget->pageArrayGranularity);
+        }
     }
 
     *pProgress = entryIndexHi - entryIndexLo + 1;
@@ -2161,7 +2128,6 @@ dmaUpdateVASpace_GF100
     NvU64       vAddrLimit,
     NvU32       flags,
     DMA_PAGE_ARRAY *pPageArray,
-    NvU32       overmapPteMod,
     COMPR_INFO *pComprInfo,
     NvU64       surfaceOffset,
     NvU32       valid,
@@ -2387,7 +2353,6 @@ dmaUpdateVASpace_GF100
         mapIter.pPageArray      = pPageArray;
         mapIter.surfaceOffset   = surfaceOffset;
         mapIter.comprInfo       = *pComprInfo;
-        mapIter.overMapModulus  = overmapPteMod;
         mapIter.bReadPtes       = readPte;
         mapIter.kindNoCompr     = kindNoCompression;
         mapIter.bCompr          = memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pComprInfo->kind);
@@ -2524,8 +2489,11 @@ dmaUpdateVASpace_GF100
                                  mapIter.pteTemplate);
         if (mapIter.aperture != GMMU_APERTURE_INVALID)
         {
-            mapIter.pAddrField =
-                gmmuFmtPtePhysAddrFld(pFmt->pPte, mapIter.aperture);
+            {
+                mapIter.pAddrField =
+                    gmmuFmtPtePhysAddrFld(pFmt->pPte, mapIter.aperture, GMMU_PEER_TYPE_LEGACY);
+            
+            }
         }
 
         //
@@ -2859,7 +2827,7 @@ dmaMapBuffer_GM107
                                   NULL,
                                   vaddr, vaddr + mapLength - 1,
                                   flags | DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL,
-                                 &pageArray, 0, &comprInfo,
+                                 &pageArray, &comprInfo,
                                   0,
                                   NV_MMU_PTE_VALID_TRUE,
                                   aperture,

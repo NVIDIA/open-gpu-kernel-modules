@@ -34,6 +34,8 @@
 #include "uvm_hal.h"
 #include "uvm_map_external.h"
 #include "uvm_ats.h"
+#include "uvm_gpu_replayable_faults.h"
+#include "uvm_gpu_non_replayable_faults.h"
 #include "uvm_gpu_access_counters.h"
 #include "uvm_hmm.h"
 #include "uvm_va_space_mm.h"
@@ -215,10 +217,6 @@ NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va
     processor_mask_array_set(va_space->can_copy_from, UVM_ID_CPU, UVM_ID_CPU);
     processor_mask_array_set(va_space->has_native_atomics, UVM_ID_CPU, UVM_ID_CPU);
 
-    // CPU always participates in system-wide atomics
-    uvm_processor_mask_set(&va_space->system_wide_atomics_enabled_processors, UVM_ID_CPU);
-    uvm_processor_mask_set(&va_space->faultable_processors, UVM_ID_CPU);
-
     // Initialize the CPU/GPU affinity array. New CPU NUMA nodes are added at
     // GPU registration time, but they are never freed on unregister_gpu
     // (although the GPU is removed from the corresponding mask).
@@ -302,18 +300,22 @@ fail:
 
 static void va_space_parent_gpu_unregister(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent)
 {
-    uvm_egm_numa_node_info_t *node_info;
-
-    if (!uvm_va_space_single_gpu_in_parent(va_space, parent) ||
-        !parent->egm.enabled ||
-        parent->closest_cpu_numa_node == NUMA_NO_NODE)
+    if (!uvm_va_space_single_gpu_in_parent(va_space, parent))
         return;
 
-    node_info = uvm_va_space_get_egm_numa_node_info(va_space, parent->closest_cpu_numa_node);
-    uvm_parent_processor_mask_clear(&node_info->parent_gpus, parent->id);
+    if (parent->egm.enabled && parent->closest_cpu_numa_node != NUMA_NO_NODE) {
+        uvm_egm_numa_node_info_t *node_info = uvm_va_space_get_egm_numa_node_info(va_space,
+                                                                                  parent->closest_cpu_numa_node);
+        uvm_parent_processor_mask_clear(&node_info->parent_gpus, parent->id);
 
-    // Clear local EGM routing
-    node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = NULL;
+        // Clear local EGM routing
+        node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = NULL;
+    }
+
+    if (uvm_parent_processor_mask_test(&va_space->test.non_replayable_delay_set, parent->id)) {
+        atomic_set(&parent->fault_buffer.non_replayable.test.sleep_per_iteration_us, 0);
+        uvm_parent_processor_mask_clear(&va_space->test.non_replayable_delay_set, parent->id);
+    }
 }
 
 // This function does *not* release the GPU, nor the GPU's PCIE peer pairings.
@@ -364,16 +366,6 @@ static void unregister_gpu(uvm_va_space_t *va_space,
     }
 
     va_space_parent_gpu_unregister(va_space, gpu->parent);
-
-    if (gpu->parent->isr.replayable_faults.handling) {
-        UVM_ASSERT(uvm_processor_mask_test(&va_space->faultable_processors, gpu->id));
-        uvm_processor_mask_clear(&va_space->faultable_processors, gpu->id);
-        uvm_processor_mask_clear(&va_space->system_wide_atomics_enabled_processors, gpu->id);
-    }
-    else {
-        UVM_ASSERT(uvm_processor_mask_test(&va_space->non_faultable_processors, gpu->id));
-        uvm_processor_mask_clear(&va_space->non_faultable_processors, gpu->id);
-    }
 
     processor_mask_array_clear(va_space->can_access, gpu->id, gpu->id);
     processor_mask_array_clear(va_space->can_access, gpu->id, UVM_ID_CPU);
@@ -708,25 +700,6 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_mem_info(uvm_va_space_t *va_space, const UvmG
     return NULL;
 }
 
-bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changing_gpu)
-{
-    NvU32 count = va_space->num_non_faultable_gpu_va_spaces;
-
-    if (changing_gpu && !uvm_processor_mask_test(&va_space->faultable_processors, changing_gpu->id)) {
-        if (uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, changing_gpu->id)) {
-            // A non-faultable GPU is getting removed.
-            UVM_ASSERT(count > 0);
-            --count;
-        }
-        else {
-            // A non-faultable GPU is getting added.
-            ++count;
-        }
-    }
-
-    return count == 0;
-}
-
 static void va_space_parent_gpu_register(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent)
 {
     uvm_egm_numa_node_info_t *node_info;
@@ -768,8 +741,9 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     uvm_gpu_t *other_gpu;
     bool gpu_can_access_sysmem = true;
     uvm_processor_mask_t *peers_to_release = NULL;
+    bool enable_hmm = !(va_space->initialization_flags & UVM_INIT_FLAGS_DISABLE_HMM);
 
-    status = uvm_gpu_retain_by_uuid(gpu_uuid, user_rm_device, &va_space->test.parent_gpu_error, &gpu);
+    status = uvm_gpu_retain_by_uuid(gpu_uuid, user_rm_device, &va_space->test.parent_gpu_error, enable_hmm, &gpu);
     if (status != NV_OK)
         return status;
 
@@ -853,19 +827,6 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     va_space->peers_to_release[uvm_id_value(gpu->id)] = peers_to_release;
 
     uvm_processor_mask_set(&va_space->registered_gpus, gpu->id);
-
-    if (gpu->parent->isr.replayable_faults.handling) {
-        UVM_ASSERT(!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id));
-        uvm_processor_mask_set(&va_space->faultable_processors, gpu->id);
-
-        UVM_ASSERT(!uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, gpu->id));
-        // System-wide atomics are enabled by default
-        uvm_processor_mask_set(&va_space->system_wide_atomics_enabled_processors, gpu->id);
-    }
-    else {
-        UVM_ASSERT(!uvm_processor_mask_test(&va_space->non_faultable_processors, gpu->id));
-        uvm_processor_mask_set(&va_space->non_faultable_processors, gpu->id);
-    }
 
     // All GPUs have native atomics on their own memory
     processor_mask_array_set(va_space->has_native_atomics, gpu->id, gpu->id);
@@ -1196,7 +1157,6 @@ static void enable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_
 static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
     NV_STATUS status = NV_OK;
-    uvm_gpu_va_space_t *gpu_va_space0, *gpu_va_space1;
     NvU32 pair_index;
     uvm_va_range_t *va_range;
     LIST_HEAD(deferred_free_list);
@@ -1213,16 +1173,6 @@ static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu
     pair_index = uvm_gpu_pair_index(gpu0->id, gpu1->id);
 
     UVM_ASSERT(!test_bit(pair_index, va_space->enabled_peers));
-
-    // If both GPUs have registered GPU VA spaces already, their big page sizes
-    // must match.
-    gpu_va_space0 = uvm_gpu_va_space_get(va_space, gpu0);
-    gpu_va_space1 = uvm_gpu_va_space_get(va_space, gpu1);
-    if (gpu_va_space0 &&
-        gpu_va_space1 &&
-        gpu_va_space0->page_tables.big_page_size != gpu_va_space1->page_tables.big_page_size) {
-        return NV_ERR_NOT_COMPATIBLE;
-    }
 
     processor_mask_array_set(va_space->can_access, gpu0->id, gpu1->id);
     processor_mask_array_set(va_space->can_access, gpu1->id, gpu0->id);
@@ -1566,21 +1516,13 @@ static NV_STATUS create_gpu_va_space(uvm_gpu_t *gpu,
         goto error;
     }
 
-    // RM allows the creation of VA spaces on Pascal with 128k big pages. We
-    // don't support that, so just fail those attempts.
-    //
-    // TODO: Bug 1789555: Remove this check once RM disallows this case.
-    if (!gpu->parent->arch_hal->mmu_mode_hal(gpu_address_space_info.bigPageSize)) {
-        status = NV_ERR_INVALID_FLAGS;
-        goto error;
-    }
+    UVM_ASSERT(gpu_address_space_info.bigPageSize == UVM_BIG_PAGE_SIZE);
 
     // Set up this GPU's page tables
     UVM_ASSERT(gpu_va_space->page_tables.root == NULL);
     status = uvm_page_tree_init(gpu,
                                 gpu_va_space,
                                 UVM_PAGE_TREE_TYPE_USER,
-                                gpu_address_space_info.bigPageSize,
                                 uvm_get_page_tree_location(gpu),
                                 &gpu_va_space->page_tables);
     if (status != NV_OK) {
@@ -1607,9 +1549,6 @@ static void add_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
 
     UVM_ASSERT(va_space);
     uvm_assert_rwsem_locked_write(&va_space->lock);
-
-    if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id))
-        va_space->num_non_faultable_gpu_va_spaces++;
 
     uvm_processor_mask_set(&va_space->registered_gpu_va_spaces, gpu->id);
     va_space->gpu_va_spaces[uvm_id_gpu_index(gpu->id)] = gpu_va_space;
@@ -1658,9 +1597,6 @@ static NV_STATUS check_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
 
         if (!test_bit(uvm_gpu_pair_index(gpu->id, other_gpu->id), va_space->enabled_peers))
             continue;
-
-        if (gpu_va_space->page_tables.big_page_size != other_gpu_va_space->page_tables.big_page_size)
-            return NV_ERR_NOT_COMPATIBLE;
     }
 
     return NV_OK;
@@ -1818,11 +1754,6 @@ static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
 
     gpu = gpu_va_space->gpu;
 
-    if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id)) {
-        UVM_ASSERT(va_space->num_non_faultable_gpu_va_spaces);
-        va_space->num_non_faultable_gpu_va_spaces--;
-    }
-
     uvm_processor_mask_clear(&va_space->registered_gpu_va_spaces, gpu->id);
     va_space->gpu_va_spaces[uvm_id_gpu_index(gpu->id)] = NULL;
     gpu_va_space->state = UVM_GPU_VA_SPACE_STATE_DEAD;
@@ -1969,19 +1900,39 @@ out:
     return closest_id;
 }
 
-static void uvm_deferred_free_object_channel(uvm_deferred_free_object_t *object,
-                                             uvm_parent_processor_mask_t *flushed_parent_gpus)
+// Avoid redundant buffer flushes in deferred free by tracking the parent GPUs
+// on which the flush already happened. These buffers are shared by all GPU
+// instances under the parent, so flushing a buffer on one GPU instance will
+// also flush it for all other instances on that parent GPU.
+typedef struct
+{
+    uvm_parent_processor_mask_t replayable;
+    uvm_parent_processor_mask_t non_replayable;
+    uvm_parent_processor_mask_t access_counters;
+} flushed_gpus_t;
+
+static void uvm_deferred_free_object_channel(uvm_deferred_free_object_t *object, flushed_gpus_t *flushed_gpus)
 {
     uvm_user_channel_t *channel = container_of(object, uvm_user_channel_t, deferred_free);
     uvm_gpu_t *gpu = channel->gpu;
 
-    // Flush out any faults with this instance pointer still in the buffer. This
-    // prevents us from re-allocating the same instance pointer for a new
-    // channel and mis-attributing old faults to it.
-    if (gpu->parent->replayable_faults_supported &&
-        !uvm_parent_processor_mask_test(flushed_parent_gpus, gpu->parent->id)) {
-        uvm_gpu_fault_buffer_flush(gpu);
-        uvm_parent_processor_mask_set(flushed_parent_gpus, gpu->parent->id);
+    // Flush this instance pointer out of the buffers. This prevents us from re-
+    // allocating the same instance pointer for a new channel and mis-
+    // attributing old notifications to it.
+
+    // All channels can generate non-replayable faults, so all must flush
+    if (!uvm_parent_processor_mask_test_and_set(&flushed_gpus->non_replayable, gpu->parent->id))
+        uvm_parent_gpu_non_replayable_buffer_flush(gpu->parent);
+
+    // Only the GR engine can generate replayable faults and access counter
+    // notifications
+    if (channel->engine_type == UVM_GPU_CHANNEL_ENGINE_TYPE_GR) {
+        if (!uvm_parent_processor_mask_test_and_set(&flushed_gpus->replayable, gpu->parent->id))
+            uvm_gpu_replayable_buffer_flush(gpu);
+
+        if (gpu->parent->access_counters_supported &&
+            !uvm_parent_processor_mask_test_and_set(&flushed_gpus->access_counters, gpu->parent->id))
+            uvm_parent_gpu_access_counter_buffer_flush(gpu->parent);
     }
 
     uvm_user_channel_destroy_detached(channel);
@@ -1990,20 +1941,18 @@ static void uvm_deferred_free_object_channel(uvm_deferred_free_object_t *object,
 void uvm_deferred_free_object_list(struct list_head *deferred_free_list)
 {
     uvm_deferred_free_object_t *object, *next;
-    uvm_parent_processor_mask_t flushed_parent_gpus;
+    flushed_gpus_t flushed_gpus;
 
-    // flushed_parent_gpus prevents redundant fault buffer flushes by tracking
-    // the parent GPUs on which the flush already happened. Flushing the fault
-    // buffer on one GPU instance will flush it for all other instances on that
-    // parent GPU.
-    uvm_parent_processor_mask_zero(&flushed_parent_gpus);
+    uvm_parent_processor_mask_zero(&flushed_gpus.replayable);
+    uvm_parent_processor_mask_zero(&flushed_gpus.non_replayable);
+    uvm_parent_processor_mask_zero(&flushed_gpus.access_counters);
 
     list_for_each_entry_safe(object, next, deferred_free_list, list_node) {
         list_del(&object->list_node);
 
         switch (object->type) {
             case UVM_DEFERRED_FREE_OBJECT_TYPE_CHANNEL:
-                uvm_deferred_free_object_channel(object, &flushed_parent_gpus);
+                uvm_deferred_free_object_channel(object, &flushed_gpus);
                 break;
             case UVM_DEFERRED_FREE_OBJECT_GPU_VA_SPACE:
                 destroy_gpu_va_space(container_of(object, uvm_gpu_va_space_t, deferred_free));
@@ -2284,6 +2233,7 @@ NV_STATUS uvm_test_va_space_inject_error(UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS *
     va_space->test.parent_gpu_error.isr_access_counters_alloc = params->gpu_isr_access_counters_alloc;
     va_space->test.parent_gpu_error.isr_access_counters_alloc_stats_cpu =
         params->gpu_isr_access_counters_alloc_stats_cpu;
+    va_space->test.parent_gpu_error.disable_devmem = params->disable_devmem;
 
     return NV_OK;
 }

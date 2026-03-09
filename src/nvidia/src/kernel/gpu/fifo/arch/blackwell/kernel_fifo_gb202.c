@@ -29,8 +29,6 @@
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
 
-#include "vgpu/vgpu_events.h"
-
 #include "published/blackwell/gb202/dev_fault.h"
 #include "published/blackwell/gb202/dev_vm.h"
 #include "published/blackwell/gb202/dev_ram.h"

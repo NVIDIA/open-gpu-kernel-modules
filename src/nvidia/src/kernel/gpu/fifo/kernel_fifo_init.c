@@ -222,13 +222,6 @@ kfifoStateInitLocked_IMPL
         }
     }
 
-    //
-    // If bUsePerRunlistChram is set, RM cannot feasibly pre-allocate USERD for
-    // such a large number of channels. We expect clients to have already
-    // migrated to using client allocated USERD.
-    //
-    pKernelFifo->bDisablePreAllocatedUserD = pKernelFifo->bUsePerRunlistChram;
-
     NV_ASSERT_OK_OR_RETURN(kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo));
 
     NV_ASSERT_OK_OR_RETURN(kfifoChidMgrConstruct(pGpu, pKernelFifo));

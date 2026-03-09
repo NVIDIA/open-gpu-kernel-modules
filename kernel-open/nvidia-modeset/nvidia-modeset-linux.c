@@ -81,9 +81,6 @@ module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0
 static bool hdmi_deepcolor = true;
 module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0400);
 
-static bool vblank_sem_control = true;
-module_param_named(vblank_sem_control, vblank_sem_control, bool, 0400);
-
 static bool opportunistic_display_sync = true;
 module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0400);
 
@@ -178,11 +175,6 @@ NvBool nvkms_disable_vrr_memclk_switch(void)
 NvBool nvkms_hdmi_deepcolor(void)
 {
     return hdmi_deepcolor;
-}
-
-NvBool nvkms_vblank_sem_control(void)
-{
-    return vblank_sem_control;
 }
 
 NvBool nvkms_opportunistic_display_sync(void)
@@ -1179,7 +1171,7 @@ done:
     return ret;
 }
 
-NvBool nvkms_open_gpu(NvU32 gpuId)
+NvBool nvkms_open_gpu(NvU32 gpuId, NvBool reset_aware)
 {
     nvidia_modeset_stack_ptr stack = NULL;
     NvBool ret;
@@ -1188,14 +1180,14 @@ NvBool nvkms_open_gpu(NvU32 gpuId)
         return NV_FALSE;
     }
 
-    ret = __rm_ops.open_gpu(gpuId, stack) == 0;
+    ret = __rm_ops.open_gpu(gpuId, stack, reset_aware) == 0;
 
     __rm_ops.free_stack(stack);
 
     return ret;
 }
 
-void nvkms_close_gpu(NvU32 gpuId)
+void nvkms_close_gpu(NvU32 gpuId, NvBool reset_aware)
 {
     nvidia_modeset_stack_ptr stack = NULL;
 
@@ -1203,7 +1195,7 @@ void nvkms_close_gpu(NvU32 gpuId)
         return;
     }
 
-    __rm_ops.close_gpu(gpuId, stack);
+    __rm_ops.close_gpu(gpuId, stack, reset_aware);
 
     __rm_ops.free_stack(stack);
 }

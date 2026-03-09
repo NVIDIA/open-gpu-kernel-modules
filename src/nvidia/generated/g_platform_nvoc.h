@@ -133,13 +133,9 @@ struct NVOC_METADATA__OBJPFM {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJPFM_TYPEDEF__
-#define __NVOC_CLASS_OBJPFM_TYPEDEF__
-typedef struct OBJPFM OBJPFM;
-#endif /* __NVOC_CLASS_OBJPFM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJPFM
-#define __nvoc_class_id_OBJPFM 0xb543ae
+#define __nvoc_class_id_OBJPFM 0xb543aeu
+typedef struct OBJPFM OBJPFM;
 #endif /* __nvoc_class_id_OBJPFM */
 
 // Casting support
@@ -179,13 +175,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJPFM;
 NV_STATUS __nvoc_objCreateDynamic_OBJPFM(OBJPFM**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJPFM(OBJPFM**, Dynamic*, NvU32);
-#define __objCreate_OBJPFM(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJPFM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJPFM(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJPFM((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS pfmConstruct_IMPL(struct OBJPFM *arg_pPfm);
-#define __nvoc_pfmConstruct(arg_pPfm) pfmConstruct_IMPL(arg_pPfm)
+NV_STATUS pfmConstruct_IMPL(struct OBJPFM *pPfm);
+#define __nvoc_pfmConstruct(pPfm) pfmConstruct_IMPL(pPfm)
 
 void pfmUpdateAcpiIdMapping_IMPL(struct OBJPFM *arg_this, OBJGPU *arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5, NvU32 arg6);
 #ifdef __nvoc_platform_h_disabled
@@ -249,6 +245,12 @@ static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg_this, OBJGPU *arg2, 
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

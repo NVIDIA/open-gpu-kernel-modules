@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009 - 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,19 +19,16 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
-*/
-/*
- * This header file contains the 3-character Plug and Play Vendor IDs and
- * their translation into Vendor names.
+ */
+
+/** @file  nvPNPVendorIds.h
+ *  @brief Contains the 3-character Plug and Play Vendor IDs and their translation into Vendor names.
  *
- * If the includer defines NV_PNP_VENDOR_IDS_USE_TCHAR, then
- * PNPVendorID::vendorName will have type const TCHAR*; otherwise, it will have
- * type const char*.
+ *         If the includer defines NV_PNP_VENDOR_IDS_USE_TCHAR, then PNPVendorID::vendorName will have type const TCHAR*;
+ *         otherwise, it will have type const char*.
  *
- * References:
- *  https://uefi.org/pnp_id_list
- *
- */ 
+ *         References: https://uefi.org/pnp_id_list
+ */
 
 #ifndef __NV_PNP_VENDOR_IDS_H__
 #define __NV_PNP_VENDOR_IDS_H__

@@ -126,8 +126,13 @@ nvidia_vma_access(
     nv_state_t *nv = NV_STATE_PTR(nvlfp->nvptr);
     NvU32 pageIndex, pageOffset;
     void *kernel_mapping;
-    const nv_alloc_mapping_context_t *mmap_context = &nvlfp->mmap_context;
+    nv_alloc_mapping_list_node_t **pfile_mapping_list = NULL;
+    nv_alloc_mapping_context_t *mmap_context = NULL;
     NvU64 offsInVma = addr - vma->vm_start;
+    NvBool bIsNuma = NV_FALSE;
+    int ret = -EINVAL;
+
+    bIsNuma = pfn_valid(mmap_context->access_start >> PAGE_SHIFT);
 
     pageIndex = (offsInVma >> PAGE_SHIFT);
     pageOffset = (offsInVma & ~PAGE_MASK);
@@ -137,15 +142,20 @@ nvidia_vma_access(
         return -EINVAL;
     }
 
-    if (!mmap_context->valid)
+    pfile_mapping_list = nv_acquire_file_va(&nvlfp->nvfp, NV_FALSE);
+
+    if (*pfile_mapping_list == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
-        return -EINVAL;
+        goto done;
     }
+
+    mmap_context = &(*pfile_mapping_list)->context;
 
     if (write && !(mmap_context->prot & NV_PROTECT_WRITEABLE))
     {
-        return -EACCES;
+        ret = -EACCES;
+        goto done;
     }
 
     if (nv->flags & NV_FLAG_CONTROL)
@@ -156,18 +166,31 @@ nvidia_vma_access(
          * at can be NULL for peer IO mem.
          */
         if (!at)
-            return -EINVAL;
+        {
+            ret = -EINVAL;
+            goto done;
+        }
 
         if (pageIndex >= at->num_pages)
-            return -EINVAL;
+        {
+            ret = -EINVAL;
+            goto done;
+        }
 
         pageIndex = nv_array_index_no_speculate(pageIndex, at->num_pages);
         kernel_mapping = (void *)(at->page_table[pageIndex].virt_addr + pageOffset);
+    }
+    else if (bIsNuma)
+    {
+        struct page *pPage = NV_GET_PAGE_STRUCT(mmap_context->page_array[pageIndex]);
+        NvU8 *pPagePtr = (NvU8 *) page_address(pPage);
+        kernel_mapping = &pPagePtr[pageOffset];
     }
     else
     {
         NvU64 idx = 0;
         NvU64 curOffs = 0;
+        
         for(; idx < mmap_context->memArea.numRanges; idx++)
         {
             NvU64 nextOffs = mmap_context->memArea.pRanges[idx].size + curOffs;
@@ -179,29 +202,42 @@ nvidia_vma_access(
             }
             curOffs = nextOffs;
         }
-        return -EINVAL;
+        ret = -EINVAL;
+        goto done;
 found:
         kernel_mapping = os_map_kernel_space(addr, PAGE_SIZE, NV_MEMORY_UNCACHED);
         if (kernel_mapping == NULL)
-            return -ENOMEM;
+        {
+            ret = -ENOMEM;
+            goto done;
+        }
 
         kernel_mapping = ((char *)kernel_mapping + pageOffset);
     }
 
     length = NV_MIN(length, (int)(PAGE_SIZE - pageOffset));
+    ret = length;
 
+#if defined(NVCPU_AARCH64)
+    if (write)
+        memcpy_toio(kernel_mapping, buffer, length);
+    else
+        memcpy_fromio(buffer, kernel_mapping, length);
+#else
     if (write)
         memcpy(kernel_mapping, buffer, length);
     else
         memcpy(buffer, kernel_mapping, length);
+#endif // defined(NVCPU_AARCH64)
 
-    if (at == NULL)
+    if (at == NULL && !bIsNuma)
     {
         kernel_mapping = ((char *)kernel_mapping - pageOffset);
         os_unmap_kernel_space(kernel_mapping, PAGE_SIZE);
     }
-
-    return length;
+done: 
+    nv_release_file_va(&nvlfp->nvfp, NV_FALSE);
+    return ret;
 }
 
 static vm_fault_t nvidia_fault(
@@ -271,7 +307,13 @@ static vm_fault_t nvidia_fault(
         NvU64 idx;
         NvU64 curOffs = 0;
         NvBool bRevoked = NV_TRUE;
-        nv_alloc_mapping_context_t *mmap_context = &nvlfp->mmap_context;
+        nv_alloc_mapping_list_node_t **pfile_mapping_list = NULL;
+        nv_alloc_mapping_context_t *mmap_context = NULL;
+
+        pfile_mapping_list = nv_acquire_file_va(&nvlfp->nvfp, NV_FALSE);
+
+        mmap_context = &(*pfile_mapping_list)->context;
+
         for(idx = 0; idx < mmap_context->memArea.numRanges; idx++)
         {
             NvU64 nextOffs = curOffs + mmap_context->memArea.pRanges[idx].size;
@@ -292,6 +334,7 @@ static vm_fault_t nvidia_fault(
             curOffs = nextOffs;
         }
 err:
+        nv_release_file_va(&nvlfp->nvfp, NV_FALSE);
         nvl->all_mappings_revoked &= bRevoked;
     }
 
@@ -501,27 +544,33 @@ int nvidia_mmap_helper(
 )
 {
     NvU32 prot = 0;
-    int ret;
-    const nv_alloc_mapping_context_t *mmap_context = &nvlfp->mmap_context;
+    nv_alloc_mapping_list_node_t **pfile_mapping_list = NULL;
+    nv_alloc_mapping_context_t *mmap_context = NULL;
+
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     NV_STATUS status;
+    int ret = -EINVAL;
 
     if (nvlfp == NULL)
         return NV_ERR_INVALID_ARGUMENT;
+
+    pfile_mapping_list = nv_acquire_file_va(&nvlfp->nvfp, NV_FALSE);
 
     /*
      * If mmap context is not valid on this file descriptor, this mapping wasn't
      * previously validated with the RM so it must be rejected.
      */
-    if (!mmap_context->valid)
+    if (*pfile_mapping_list == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap\n");
-        return -EINVAL;
+        nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
+        goto done;
     }
+
+    mmap_context = &(*pfile_mapping_list)->context;
 
     if (vma->vm_pgoff != 0)
     {
-        return -EINVAL;
+        goto done;
     }
 
     NV_PRINT_VMA(NV_DBG_MEMINFO, vma);
@@ -531,7 +580,7 @@ int nvidia_mmap_helper(
     {
         NV_DEV_PRINTF(NV_DBG_INFO, nv,
             "GPU is lost, skipping nvidia_mmap_helper\n");
-        return status;
+        goto done;
     }
 
     NV_VMA_PRIVATE(vma) = vm_priv;
@@ -550,7 +599,8 @@ int nvidia_mmap_helper(
         // Ensure size is correct.
         if (NV_VMA_SIZE(vma) != memareaSize(mmap_context->memArea))
         {
-            return -ENXIO;
+            ret = -ENXIO;
+            goto done;
         }
 
         if (IS_REG_OFFSET(nv, access_start, access_len))
@@ -558,7 +608,8 @@ int nvidia_mmap_helper(
             if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
                         NV_MEMORY_TYPE_REGISTERS))
             {
-                return -ENXIO;
+                ret = -ENXIO;
+                goto done;
             }
         }
         else if (IS_FB_OFFSET(nv, access_start, access_len))
@@ -568,7 +619,8 @@ int nvidia_mmap_helper(
                 if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
                             NV_MEMORY_TYPE_FRAMEBUFFER))
                 {
-                    return -ENXIO;
+                    ret = -ENXIO;
+                    goto done;
                 }
             }
             else
@@ -580,7 +632,8 @@ int nvidia_mmap_helper(
                     if (nv_encode_caching(&vma->vm_page_prot,
                             NV_MEMORY_UNCACHED_WEAK, NV_MEMORY_TYPE_FRAMEBUFFER))
                     {
-                        return -ENXIO;
+                        ret = -ENXIO;
+                        goto done;
                     }
                 }
             }
@@ -604,7 +657,7 @@ int nvidia_mmap_helper(
                 if (ret)
                 {
                     up(&nvl->mmap_lock);
-                    return ret;
+                    goto done;
                 }
             }
             else
@@ -620,7 +673,8 @@ int nvidia_mmap_helper(
                             vma->vm_start + curOffs) != 0)
                     {
                         up(&nvl->mmap_lock);
-                        return -EAGAIN;
+                        ret = -EAGAIN;
+                        goto done;
                     }
                     curOffs = nextOffs;
                 }
@@ -644,7 +698,8 @@ int nvidia_mmap_helper(
 
         if ((page_index + pages) > at->num_pages)
         {
-            return -ERANGE;
+            ret = -ERANGE;
+            goto done;
         }
 
         /*
@@ -659,7 +714,8 @@ int nvidia_mmap_helper(
                                   at->cache_type,
                                   NV_MEMORY_TYPE_DEVICE_MMIO))
             {
-                return -ENXIO;
+                ret = -ENXIO;
+                goto done;
             }
 
             /*
@@ -676,7 +732,7 @@ int nvidia_mmap_helper(
 
             if (ret)
             {
-                return ret;
+                goto done;
             }
 
             NV_PRINT_AT(NV_DBG_MEMINFO, at);
@@ -690,7 +746,8 @@ int nvidia_mmap_helper(
                                   at->cache_type,
                                   NV_MEMORY_TYPE_SYSTEM))
             {
-                return -ENXIO;
+                ret = -ENXIO;
+                goto done;
             }
 
             NV_VMA_PRIVATE(vma) = at;
@@ -699,7 +756,7 @@ int nvidia_mmap_helper(
 
             if (ret)
             {
-                return ret;
+                goto done;
             }
 
             NV_PRINT_AT(NV_DBG_MEMINFO, at);
@@ -721,8 +778,10 @@ int nvidia_mmap_helper(
     }
 
     vma->vm_ops = &nv_vm_ops;
-
-    return 0;
+    ret = 0;
+done: 
+    nv_release_file_va(&nvlfp->nvfp, NV_FALSE);
+    return ret;
 }
 
 int nvidia_mmap(
@@ -808,6 +867,42 @@ NV_STATUS NV_API_CALL nv_revoke_gpu_mappings(
     up(&nvl->mmap_lock);
 
     return NV_OK;
+}
+
+nv_alloc_mapping_list_node_t** NV_API_CALL
+nv_acquire_file_va
+(
+    nv_file_private_t *nvfp,
+    NvBool bWrite
+)
+{
+    nv_linux_file_private_t *nvlfp = nv_get_nvlfp_from_nvfp(nvfp);
+    if (bWrite)
+    {
+        down_write(&nvlfp->fileVaLock);
+    }
+    else
+    {
+        down_read(&nvlfp->fileVaLock);
+    }
+    return &nvlfp->file_mapping_list;
+}
+
+void NV_API_CALL nv_release_file_va
+(
+    nv_file_private_t *nvfp,
+    NvBool bWrite
+)
+{
+    nv_linux_file_private_t *nvlfp = nv_get_nvlfp_from_nvfp(nvfp);
+    if (bWrite)
+    {
+        up_write(&nvlfp->fileVaLock);
+    }
+    else
+    {
+        up_read(&nvlfp->fileVaLock);
+    }
 }
 
 void NV_API_CALL nv_acquire_mmap_lock(
@@ -901,7 +996,7 @@ static NvBool nv_vma_enter_locked(struct vm_area_struct *vma, NvBool detaching)
     {
         // Clean up on error: release refcount and dep_map
         refcount_sub_and_test(VMA_LOCK_OFFSET, &vma->vm_refcnt);
-        rwsem_release(&vma->vmlock_dep_map, _RET_IP_);	
+        rwsem_release(&vma->vmlock_dep_map, _RET_IP_);
         return NV_FALSE;
     }
 

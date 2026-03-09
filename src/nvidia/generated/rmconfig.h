@@ -366,7 +366,6 @@
 #define RMCFG_CLASS_NV1_MEMORY_LOCAL_USER         1  // aka NV01_MEMORY_LOCAL_USER
 #define RMCFG_CLASS_NV01_MEMORY_USER              1  // aka NV01_MEMORY_LOCAL_USER
 #define RMCFG_CLASS_NV1_MEMORY_USER               1  // aka NV01_MEMORY_LOCAL_USER
-#define RMCFG_CLASS_NV_MEMORY_EXTENDED_USER       1  // Extended GPU Memory
 #define RMCFG_CLASS_NV01_MEMORY_VIRTUAL           1
 #define RMCFG_CLASS_NV01_MEMORY_SYSTEM_DYNAMIC    1  // aka NV01_MEMORY_VIRTUAL
 #define RMCFG_CLASS_NV1_MEMORY_SYSTEM_DYNAMIC     1  // aka NV01_MEMORY_VIRTUAL
@@ -381,6 +380,9 @@
 #define RMCFG_CLASS_NV01_MEMORY_LIST_FBMEM        1
 #define RMCFG_CLASS_NV01_MEMORY_LIST_OBJECT       1
 #define RMCFG_CLASS_NV_IMEX_SESSION               1
+#define RMCFG_CLASS_PROFILER_DEVICE_EVENT         0
+#define RMCFG_CLASS_PROFILER_CONTEXT_EVENT        0
+#define RMCFG_CLASS_TRACE_DEVICE_EVENT            0
 #define RMCFG_CLASS_NV_MEMORY_EXPORT              1
 #define RMCFG_CLASS_NV_CE_UTILS                   1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC              1
@@ -608,6 +610,7 @@
 #define RMCFG_CLASS_KEPLER_DEVICE_VGPU            1  // KEPLER virtual gpu
 #define RMCFG_CLASS_NVA081_VGPU_CONFIG            1  // virtual gpu configuration
 #define RMCFG_CLASS_NVA084_KERNEL_HOST_VGPU_DEVICE  1  // Kernel component of the host virtual gpu device
+#define RMCFG_CLASS_NVA083_GRID_DISPLAYLESS       1  // virtual display for GRID Displayless stack
 #define RMCFG_CLASS_NV0060_SYNC_GPU_BOOST         1  // Synchronized GPU Boost Class. Defines a set of GPUs for Synchronized Boost
 #define RMCFG_CLASS_GP100_UVM_SW                  1  // UVM SW class to support SW methods for fault cancel
 #define RMCFG_CLASS_NVENC_SW_SESSION              1  // GPU NVENC Software Session
@@ -690,13 +693,11 @@
 #define RMCFG_MODULE_NV_DEBUG_DUMP                1  // NV Debug
 #define RMCFG_MODULE_SWENG                        1  // Software Engine for all SW classes
 #define RMCFG_MODULE_GPU                          1  // GPU Control Object
-#define RMCFG_MODULE_FSP_I2C                      1  // FSP i2c Serial Interface
 #define RMCFG_MODULE_KERNEL_HFRP                  1  // Kernel controls for HFRP
 #define RMCFG_MODULE_I2C                          0  // i2c Serial Interface
 #define RMCFG_MODULE_KERNEL_I2C                   1  // Kernel controls for I2C
 #define RMCFG_MODULE_SPI                          0  // SPI Interface
 #define RMCFG_MODULE_OOB                          0  // Out-of-band Interface
-#define RMCFG_MODULE_FSP_GPIO                     1  // FSP General Purpose I/O Pins
 #define RMCFG_MODULE_GPIO                         0  // General Purpose I/O Pins
 #define RMCFG_MODULE_KERNEL_GPIO                  1  // Kernel controls for GPIO
 #define RMCFG_MODULE_FAN                          0  // General Purpose I/O Pins
@@ -727,10 +728,12 @@
 #define RMCFG_MODULE_HDA                          0  // High Definition Audio (HDA) Engine
 #define RMCFG_MODULE_HDACODEC                     0  // High Definition Audio (HDA) Codec Engine
 #define RMCFG_MODULE_INFOROM                      0  // InfoROM Engine
+#define RMCFG_MODULE_ECC                          0
 #define RMCFG_MODULE_KERNEL_INFOROM               1  // Kernel controls for InfoROM Engine
 #define RMCFG_MODULE_LPWR                         0  // Low Power Object. This objects manages all power saving features.
 #define RMCFG_MODULE_KERNEL_LPWR                  1  // Low Power Object. This objects manages all power saving features.
 #define RMCFG_MODULE_PGCTRL                       1  // Power Gating Controller (PGCTRL) Engine
+#define RMCFG_MODULE_LPSEC                        0  // Low Power Sequencer
 #define RMCFG_MODULE_LPWRFSM                      0  // LPWR FSM Object Engine
 
 #define RMCFG_MODULE_PGISLAND                     1  // Power Gating Island (PGISLAND)
@@ -800,7 +803,7 @@
 #define RMCFG_MODULE_KERNEL_HSHUB                 1  // High Speed Hub on Kernel(CPU) RM
 #define RMCFG_MODULE_GPUMON                       0  // GPU Monitoring
 #define RMCFG_MODULE_GPUBOOSTMGR                  1  // Sync Gpu Boost Manager
-#define RMCFG_MODULE_GRIDDISPLAYLESS              0  // GRID Displayless
+#define RMCFG_MODULE_GRIDDISPLAYLESS              1  // GRID Displayless
 #define RMCFG_MODULE_WINDOW                       0  // NvDisplay WINDOW channel
 #define RMCFG_MODULE_RPC                          1  // RPC Engine for VGPU
 #define RMCFG_MODULE_RPCSTRUCTURECOPY             1  // RPC structure copying for VGPU

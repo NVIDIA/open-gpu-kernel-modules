@@ -660,8 +660,10 @@ enum {
 ,     CS_RESERVED_3
 ,     CS_AMD_RPH
 ,     CS_INTEL_B660
+,     CS_RESERVED_4
 ,     CS_AMPERE_AMPEREONE192
 ,     CS_NVIDIA_T254
+,     CS_RESERVED_5
 ,     CS_MAX_PCIE
 };
 

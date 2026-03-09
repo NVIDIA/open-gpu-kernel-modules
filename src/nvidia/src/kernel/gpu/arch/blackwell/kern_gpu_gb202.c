@@ -40,6 +40,7 @@
 
 #include "published/blackwell/gb202/dev_therm.h"
 #include "published/blackwell/gb202/dev_therm_addendum.h"
+#include "published/blackwell/gb202/hwproject.h"
 
 #include "kernel/gpu/ce/kernel_ce_shared.h"
 
@@ -84,6 +85,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB202[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 4),
@@ -281,7 +283,7 @@ gpuHandleSecFault_GB202
     // handleGpuLost first to setGpuDisconnectedProperties so that another reg read does not
     // happen when the notifier is sent below.
     //
-    osHandleGpuLost(pGpu);
+    osHandleGpuLost(pGpu, NV_FALSE);
 
     //
     // Send SEC_FAULT notification. This should tells any MODS test testing for this
@@ -386,4 +388,20 @@ gpuRequireGrCePresence_GB202
     // check for partnered GR
     *pIsEngineRequired = bCheckEnginePresence && ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
     return NV_OK;
+}
+
+/*!
+ *  @brief Get XTL base address
+ *
+ *  @param[in]  pGpu    GPU object pointer
+ *
+ *  @return NV_XTL_BASE_ADDRESS
+ */
+NvU32
+gpuGetXtlBaseAddr_GB202
+(
+    OBJGPU *pGpu
+)
+{
+    return NV_XTL_BASE_ADDRESS;
 }

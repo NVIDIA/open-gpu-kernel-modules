@@ -23,9 +23,14 @@
 
 #ifndef __gb202_dev_ce_base_h__
 #define __gb202_dev_ce_base_h__
+
 #define NV_CE_BASE_GRCE_CONFIG__SIZE_1            4
 #define NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1         4
 #define NV_CE_BASE_GRCE_CONFIG_SHARED             30:30 /* RWIVF */
 #define NV_CE_BASE_GRCE_CONFIG_SHARED_LCE         3:0 /* RWIVF */
 #define NV_CE_BASE_GRCE_CONFIG_SHARED_LCE_NONE    0xf /* RW--V */
+#define NV_CE_BASE_GRCE_MASK                      0x000000d8 /* C--4R */
+#define NV_CE_BASE_GRCE_MASK_VALUE                9:0 /* C--VF */
+#define NV_CE_BASE_GRCE_MASK_VALUE_INIT           0x00f /* C---V */
+
 #endif // __gb202_dev_ce_base_h__

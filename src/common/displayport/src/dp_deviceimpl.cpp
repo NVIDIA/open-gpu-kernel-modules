@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1384,6 +1384,24 @@ TriState DeviceImpl::hdcpAvailable()
     {
         return this->hdcpAvailableHop();
     }
+    else
+    {
+        DeviceImpl *targetDevice = this;
+        while (targetDevice)
+        {
+            if (!targetDevice->hdcpAvailableHop())
+            {
+                return False;
+            }
+            else if (targetDevice->hdcpAvailableHop() == Indeterminate)
+            {
+                return Indeterminate;
+            }
+            targetDevice = targetDevice->parent;
+        }
+
+        return True;
+    }
     return False;
 }
 
@@ -1632,7 +1650,19 @@ bool DeviceImpl::getRawEDID(char * buffer, unsigned size) const
     dpMemCopy(buffer, rawEDID.getBuffer()->getData(), rawEDID.getEdidSize());
     return true;
 }
+unsigned DeviceImpl::getDisplayId2xSize() const
+{
+    return displayId2x.getDisplayId2xSize();
+}
 
+bool DeviceImpl::getDisplayId2x(char * buffer, unsigned size) const
+{
+    if (size < displayId2x.getDisplayId2xSize())
+        return false;
+
+    dpMemCopy(buffer, displayId2x.getBuffer()->getData(), displayId2x.getDisplayId2xSize());
+    return true;
+}
 bool DeviceImpl::startVrrEnablement()
 {
     bool ret = false;
@@ -2622,6 +2652,18 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
                 this->bDSCPossible = true;
                 this->devDoingDscDecompression = this;
             }
+            else
+            {
+                //
+                // This condition takes care of sink devices not capable of DSC
+                // but parent is capable of DSC decompression.
+                //
+                if (this->parent && this->parent->isDSCDecompressionSupported())
+                {
+                    this->bDSCPossible = true;
+                    this->devDoingDscDecompression = this->parent;
+                }
+            }
         }
         else
         {
@@ -3352,9 +3394,7 @@ DeviceHDCPDetection::start()
         }
         else
         {
-            parent->isHDCPCap = False;
-            waivePendingHDCPCapDoneNotification();
-            return;
+            goto NativeDPCDHDCPCAPRead;
         }
 
 NativeDPCDHDCPCAPRead:
@@ -3380,8 +3420,8 @@ NativeDPCDHDCPCAPRead:
             waivePendingHDCPCapDoneNotification();
             return;
         }
-	else
-	{
+        else
+        {
            parent->hal->getBCaps(bCaps, parent->BCAPS);
            *(parent->nvBCaps) = *(parent->BCAPS);
            if (bCaps.HDCPCapable)
@@ -3406,8 +3446,16 @@ NativeDPCDHDCPCAPRead:
     }
     else
     {
-        parent->isHDCPCap = False;
-        waivePendingHDCPCapDoneNotification();
+        parent->isHDCPCap = Indeterminate;
+        Address parentAddress = parent->address.parent();
+        //For DP1.4 atomic messaging, HDCP detection can be delayed, so lowering the priority.
+        remote22BCapsReadMessage.setMessagePriority(NV_DP_SBMSG_PRIORITY_LEVEL_DEFAULT);
+        remote22BCapsReadMessage.set(parentAddress, parent->address.tail(), NV_DPCD_HDCP22_BCAPS_OFFSET, HDCP22_BCAPS_SIZE);
+        bCapsReadCompleted = false;
+        bBCapsReadMessagePending = true;
+        messageManager->post(&remote22BCapsReadMessage, this);
+        if (parent->connector)
+            parent->connector->incPendingRemoteHdcpDetection();
     }
 }
 
@@ -3444,7 +3492,8 @@ DeviceHDCPDetection::readRemoteHdcp1xCaps
     bCapsReadCompleted = false;
     bBCapsReadMessagePending = true;
     messageManager->post(&remoteBCapsReadMessage, this);
-}    
+}
+
 
 void
 DeviceHDCPDetection::handleRemoteDpcdReadDownReply
@@ -3716,7 +3765,7 @@ DeviceHDCPDetection::messageFailed
             // any other reason like NakNoResources/NakUndefined/NakDpcdFail etc
             // then reset the bBCapsReadMessagePending flag and try to read HDCP1X
             // capability
-            //        
+            //
             Address::StringBuffer sb;
             DP_USED(sb);
             DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPC_READ(22BCaps) {%p} at '%s' failed.",
@@ -3724,7 +3773,7 @@ DeviceHDCPDetection::messageFailed
             bBCapsReadMessagePending = false;
             tryRemote1XCaps = true;
             timer->queueCallback(this, "22BCaps-Try1X", DPCD_REMOTE_DPCD_READ_MESSAGE_COOLDOWN_BKSV);
-            return;        
+            return;
         }
     }
 
@@ -3845,7 +3894,6 @@ DeviceHDCPDetection::expired
         tryRemote1XCaps = false;
         readRemoteHdcp1xCaps();
     }
-
 }
 
 DeviceHDCPDetection::~DeviceHDCPDetection()

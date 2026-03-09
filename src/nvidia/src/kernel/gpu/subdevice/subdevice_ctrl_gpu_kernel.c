@@ -79,6 +79,9 @@
 #include "g_rpc-message-header.h"
 #undef RPC_MESSAGE_STRUCTURES
 
+#include "gpu/gsp/message_queue.h"
+#include "gpu/gsp/message_queue_priv.h"
+
 // bit to set when telling physical to fill in an info entry
 #define INDEX_FORWARD_TO_PHYSICAL 0x80000000
 ct_assert(INDEX_FORWARD_TO_PHYSICAL == DRF_NUM(2080, _CTRL_GPU_INFO_INDEX, _RESERVED, 1));
@@ -93,7 +96,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
     NvU32 data              = 0;
     NvBool bPhysicalForward = NV_FALSE;
 
-    // Note that calls using nonzero _GROUP_ID would need to call this multiple times
+    // Note that calls using nonzero _TYPE would need to call this multiple times
     if ((pParams->gpuInfoListSize > NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE) ||
         (pParams->gpuInfoListSize == 0))
     {
@@ -110,13 +113,8 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             return NV_ERR_INVALID_ARGUMENT;
         }
 
-        const NvU32 groupId = DRF_VAL(2080, _CTRL_GPU_INFO_INDEX, _GROUP_ID, pParams->gpuInfoList[i].index);
-
-        if (groupId >= pGpu->gpuGroupCount)
-        {
-            NV_PRINTF(LEVEL_WARNING, "invalid groupId\n");
-            return NV_ERR_INVALID_ARGUMENT;
-        }
+        const NvU32 type = DRF_VAL(2080, _CTRL_GPU_INFO_INDEX, _TYPE, pParams->gpuInfoList[i].index);
+        const NvU32 typeSpecificId = DRF_VAL(2080, _CTRL_GPU_INFO_INDEX, _TYPE_SPECIFIC_ID, pParams->gpuInfoList[i].index);
 
         data = 0;
 
@@ -127,7 +125,15 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 if (IS_GSP_CLIENT(pGpu))
                 {
                     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-                    data =  pGSCI->ecidInfo[groupId].ecidLow;
+
+                    if (type > 0 || typeSpecificId > 0)
+                    {
+                        pParams->gpuInfoList[i].index |= INDEX_FORWARD_TO_PHYSICAL;
+                        bPhysicalForward = NV_TRUE;
+                        break;
+                    }
+
+                    data =  pGSCI->ecidInfo.ecidLow;
                     break;
                 }
                 data = 0;
@@ -139,7 +145,15 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 if (IS_GSP_CLIENT(pGpu))
                 {
                     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-                    data = pGSCI->ecidInfo[groupId].ecidHigh;
+
+                    if (type > 0 || typeSpecificId > 0)
+                    {
+                        pParams->gpuInfoList[i].index |= INDEX_FORWARD_TO_PHYSICAL;
+                        bPhysicalForward = NV_TRUE;
+                        break;
+                    }
+
+                    data = pGSCI->ecidInfo.ecidHigh;
                     break;
                 }
                 data = 0;
@@ -151,7 +165,15 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 if (IS_GSP_CLIENT(pGpu))
                 {
                     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-                    data = pGSCI->ecidInfo[groupId].ecidExtended;
+
+                    if (type > 0 || typeSpecificId > 0)
+                    {
+                        pParams->gpuInfoList[i].index |= INDEX_FORWARD_TO_PHYSICAL;
+                        bPhysicalForward = NV_TRUE;
+                        break;
+                    }
+
+                    data = pGSCI->ecidInfo.ecidExtended;
                     break;
                 }
                 data = 0;
@@ -355,18 +377,6 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 else
                 {
                     data = pGpu->encSessionStatsReportingState;
-                }
-                break;
-            }
-            case NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED:
-            {
-                if (pGpu->bNeed4kPageIsolation)
-                {
-                    data = NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED_YES;
-                }
-                else
-                {
-                    data = NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED_NO;
                 }
                 break;
             }
@@ -3207,6 +3217,11 @@ _convertGpuFabricProbeInfoCaps
 #endif
                 break;
             }
+            case NVLINK_INBAND_FM_CAPS_UC_LOOPBACK_ENABLED:
+            {
+                fabricCaps |= NV2080_CTRL_GPU_FABRIC_PROBE_CAP_UC_LOOPBACK_SUPPORTED;
+                break;
+            }
             default:
             {
                 break;
@@ -3436,10 +3451,36 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _INCORRECT_CONFIGURATION, _INVALID_LOCATION, healthMask);
     }
     else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
+                          _GPU_STATE_INVALID, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _INCORRECT_CONFIGURATION, _GPU_STATE_INVALID, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _INCORRECT_CONFIGURATION,
                           _NOT_SUPPORTED, mask))
     {
         healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
                                    _INCORRECT_CONFIGURATION, _NOT_SUPPORTED, healthMask);
+    }
+
+    // Fabric Partition Assigned
+    if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED, _TRUE,
+                     mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _TRUE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED,
+                          _FALSE, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _FALSE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _PARTITION_ASSIGNED,
+                          _NOT_SUPPORTED, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _PARTITION_ASSIGNED, _NOT_SUPPORTED, healthMask);
     }
 
     if (gpuGetChipArch(pGpu) >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)
@@ -3526,9 +3567,7 @@ subdeviceCtrlCmdGpuGetNameString_IMPL
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    return gpuGetNameString(pGpu,
-                            pNameStringParams->gpuNameStringFlags,
-                            (void *)&pNameStringParams->gpuNameString);
+    return gpuGetNameString(pGpu, (void *)&pNameStringParams->gpuNameString);
 }
 
 //
@@ -3769,7 +3808,8 @@ subdeviceCtrlCmdGpuRpcGspTest_IMPL
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
         pParams->startTimestamp = osGetTimestamp();
         if ((pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_SERIALIZED_INTEGRITY) ||
-            (pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_SERIALIZED_NOP))
+            (pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_SERIALIZED_NOP) ||
+            (pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_TIMEOUT))
         {
             NV_RM_RPC_CONTROL(pGpu,
                         pRmCtrlParams->hClient,
@@ -3809,6 +3849,10 @@ subdeviceCtrlCmdGpuRpcGspTest_IMPL
             data[i] = i * 3;
         }
         return status;
+    }
+    else if (pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_TIMEOUT)
+    {
+        osDelay(10000);
     }
 
     return NV_OK;
@@ -4240,4 +4284,108 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
 
     return status;
 
+}
+
+#define GDMA_FUZZ_BUFFER_SIZE (1024 * 1024)
+#define GDMA_ADDR_ALIGN       4
+
+/*!
+ * @brief  This command asks GSP-RM to perform GDMA transfer tests.
+ */
+NV_STATUS
+subdeviceCtrlCmdGspGdmaFuzzTest_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST_PARAMS *pGspGdmaFuzzTestParams
+)
+{
+    NV_STATUS status;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    RsClient *pRsClient = RES_GET_CLIENT(pSubdevice);
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_CHECK_OK_OR_GOTO(
+        status,
+        LEVEL_ERROR,
+        memdescCreate(&pMemDesc, pGpu,
+                      GDMA_FUZZ_BUFFER_SIZE, RM_PAGE_SIZE,
+                      NV_MEMORY_CONTIGUOUS, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                      MEMDESC_FLAGS_NONE),
+        cleanup);
+
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_13, pMemDesc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to alloc test buffer, status: 0x%x\n", status);
+        goto cleanup;
+    }
+
+    pGspGdmaFuzzTestParams->pSysmemPA = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+
+    NV_RM_RPC_CONTROL(pGpu, pRsClient->hClient, RES_GET_HANDLE(pSubdevice),
+                      NV2080_CTRL_CMD_GSP_GDMA_FUZZ_TEST,
+                      pGspGdmaFuzzTestParams, sizeof(*pGspGdmaFuzzTestParams),
+                      status);
+
+cleanup:
+    memdescFree(pMemDesc);
+    memdescDestroy(pMemDesc);
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGpuErrorInjectionControl_IMPL(Subdevice *pSubdevice,
+                                              NV2080_CTRL_GPU_ERROR_INJECTION_CONTROL_PARAMS *pParams)
+{
+    if (pParams->errorType == NV2080_CTRL_GPU_INJECT_ERROR_MESSAGE_QUEUE)
+    {
+        OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+        MESSAGE_QUEUE_INFO *pMQI = pRpc->pMessageQueueInfo;
+        pMQI->bErrorInjectionEnabled = NV_TRUE;
+        return NV_OK;
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+}
+
+/*!
+ * @brief  This command checks if there is a memory subsystem HW error.
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuCheckMemSubsysError_IMPL(Subdevice *pSubdevice,
+                                            NV2080_CTRL_GPU_CHECK_MEM_SUBSYS_ERROR_PARAMS *pParams)
+{
+    NV_STATUS status = NV_OK;
+
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+    status = kgmmuCheckMemSubsysError_HAL(pGpu, pKernelGmmu);
+
+    return status;
+}
+
+/*!
+ * @brief  This command returns the RM default timeout in ms.
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuGetDefaultTimeout_IMPL(Subdevice *pSubdevice,
+                                          NV2080_CTRL_GPU_GET_DEFAULT_TIMEOUT_PARAMS *pParams)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    NV_ASSERT_OR_RETURN(pGpu->timeoutData.defaultus != 0, NV_ERR_GENERIC);
+
+    pParams->defaultTimeout = pGpu->timeoutData.defaultus / 1000;
+
+    return NV_OK;
 }

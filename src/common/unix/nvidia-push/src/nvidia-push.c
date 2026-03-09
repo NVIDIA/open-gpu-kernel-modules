@@ -36,11 +36,6 @@
 
 #include "class/cl2080.h" // NV2080_SUBDEVICE_NOTIFICATION_STATUS_DONE_SUCCESS
 
-#include "class/cla16f.h" // KEPLER_CHANNEL_GPFIFO_B
-#include "class/cla26f.h" // KEPLER_CHANNEL_GPFIFO_C
-#include "class/clb06f.h" // MAXWELL_CHANNEL_GPFIFO_A
-#include "class/clc06f.h" // PASCAL_CHANNEL_GPFIFO_A
-#include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
@@ -55,11 +50,11 @@
  */
 #define SetSubDeviceMask(_push_buffer, _segment, _mask)                 \
     do {                                                                \
-        ASSERT_DRF_NUM(A16F, _DMA, _SET_SUBDEVICE_MASK_VALUE, _mask);   \
+        ASSERT_DRF_NUM(C46F, _DMA, _SET_SUBDEVICE_MASK_VALUE, _mask);   \
         nvPushHeader(_push_buffer, _segment, 0,                         \
-            DRF_DEF(A16F, _DMA, _SEC_OP, _GRP0_USE_TERT) |              \
-            DRF_DEF(A16F, _DMA, _TERT_OP, _GRP0_SET_SUB_DEV_MASK) |     \
-            DRF_NUM(A16F, _DMA, _SET_SUBDEVICE_MASK_VALUE, _mask));     \
+            DRF_DEF(C46F, _DMA, _SEC_OP, _GRP0_USE_TERT) |              \
+            DRF_DEF(C46F, _DMA, _TERT_OP, _GRP0_SET_SUB_DEV_MASK) |     \
+            DRF_NUM(C46F, _DMA, _SET_SUBDEVICE_MASK_VALUE, _mask));     \
     } while(0)
 
 /*!
@@ -206,12 +201,12 @@ static void FillGpEntry(NvPushChannelSegmentPtr segment, NvU32 putOffset,
     const NvU32 length = putOffset - segment->putOffset;
     const NvU64 base = segment->gpuMapOffset + segment->putOffset;
     *gpEntry0 =
-        DRF_NUM(A16F, _GP_ENTRY0, _GET, NvU64_LO32(base) >> 2);
+        DRF_NUM(C46F, _GP_ENTRY0, _GET, NvU64_LO32(base) >> 2);
     *gpEntry1 =
-        DRF_NUM(A16F, _GP_ENTRY1, _GET_HI, NvU64_HI32(base)) |
-        DRF_NUM(A16F, _GP_ENTRY1, _LENGTH, length >> 2);
+        DRF_NUM(C46F, _GP_ENTRY1, _GET_HI, NvU64_HI32(base)) |
+        DRF_NUM(C46F, _GP_ENTRY1, _LENGTH, length >> 2);
 
-    ASSERT_DRF_NUM(A16F, _GP_ENTRY1, _LENGTH, length >> 2);
+    ASSERT_DRF_NUM(C46F, _GP_ENTRY1, _LENGTH, length >> 2);
     nvAssert(segment->putOffset + length <= segment->sizeInBytes);
     nvAssert(!(segment->putOffset & 0x3));
     nvAssert(!(length & 0x3));
@@ -282,12 +277,12 @@ static void InsertProgressTracker(NvPushChannelPtr p, NvU32 putOffset,
         DRF_NUM(_PUSH_PROGRESS_TRACKER, _SEMAPHORE, _GET, putOffsetDwords) |
         DRF_NUM(_PUSH_PROGRESS_TRACKER, _SEMAPHORE, _GP_GET, gpPutOffset / 2);
     const NvU32 semaphoreOperation =
-        DRF_DEF(C36F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _PAYLOAD_SIZE, _32BIT) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_TIMESTAMP, _DIS) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _PAYLOAD_SIZE, _32BIT) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _RELEASE_TIMESTAMP, _DIS) |
         (progressTrackerWFI ?
-         DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_WFI, _EN) :
-         DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_WFI, _DIS));
+         DRF_DEF(C46F, _SEM_EXECUTE, _RELEASE_WFI, _EN) :
+         DRF_DEF(C46F, _SEM_EXECUTE, _RELEASE_WFI, _DIS));
 
     NvU32 restoreSDM = NV_PUSH_SUBDEVICE_MASK_ALL;
 
@@ -318,7 +313,7 @@ static void InsertProgressTracker(NvPushChannelPtr p, NvU32 putOffset,
         SetSubDeviceMask(p, progressTracker, NV_PUSH_SUBDEVICE_MASK_ALL);
     }
 
-    __nvPushStart(p, progressTracker, 0, NVC36F_SEM_ADDR_LO, 5, _INC_METHOD);
+    __nvPushStart(p, progressTracker, 0, NVC46F_SEM_ADDR_LO, 5, _INC_METHOD);
     __nvPushSetMethodDataSegmentU64LE(segment, p->progressSemaphore.gpuVA);
     __nvPushSetMethodDataSegment(segment, payload);
     __nvPushSetMethodDataSegment(segment, 0);
@@ -428,8 +423,8 @@ static void UserDKickoff(NvPushChannelPtr push_buffer,
     unsigned int sd;
 
     for (sd = 0; sd < push_buffer->pDevice->numSubDevices; sd++) {
-        KeplerBControlGPFifo *pUserd =
-            (KeplerBControlGPFifo *)push_buffer->control[sd];
+        TuringAControlGPFifo *pUserd =
+            (TuringAControlGPFifo *)push_buffer->control[sd];
         pUserd->GPPut = newGpPut;
     }
 }
@@ -547,7 +542,7 @@ static NvBool IdleChannel(NvPushChannelPtr p, NvBool progressTrackerWFI,
      * issue a WFI, which is important to ensure the channel is really
      * idle.
      */
-    nvPushHeader(p, main, 0, NVA16F_DMA_NOP);
+    nvPushHeader(p, main, 0, NVC46F_DMA_NOP);
 
     Kickoff(p, progressTrackerWFI);
 
@@ -882,14 +877,14 @@ void nvPushWaitForNotifier(
 // value is not recognizable as a method header.
 NvBool nvPushDecodeMethod(NvU32 header, NvU32 *count)
 {
-    switch (DRF_VAL(A16F, _DMA, _SEC_OP, header)) {
-        case NVA16F_DMA_SEC_OP_IMMD_DATA_METHOD:
+    switch (DRF_VAL(C46F, _DMA, _SEC_OP, header)) {
+        case NVC46F_DMA_SEC_OP_IMMD_DATA_METHOD:
             *count = 0;
             return TRUE;
-        case NVA16F_DMA_SEC_OP_INC_METHOD:
-        case NVA16F_DMA_SEC_OP_NON_INC_METHOD:
-        case NVA16F_DMA_SEC_OP_ONE_INC:
-            *count = DRF_VAL(A16F, _DMA, _METHOD_COUNT, header);
+        case NVC46F_DMA_SEC_OP_INC_METHOD:
+        case NVC46F_DMA_SEC_OP_NON_INC_METHOD:
+        case NVC46F_DMA_SEC_OP_ONE_INC:
+            *count = DRF_VAL(C46F, _DMA, _METHOD_COUNT, header);
             return TRUE;
         default:
             // Not a recognized method header!
@@ -952,7 +947,7 @@ void nvPushSetObject(NvPushChannelPtr p, NvU32 subch, NvU32 *object)
             }
             nvPushSetSubdeviceMask(p, thisSDM);
         }
-        nvPushMethod(p, subch, NVA16F_SET_OBJECT, 1);
+        nvPushMethod(p, subch, NVC46F_SET_OBJECT, 1);
         nvPushSetMethodData(p,
             GetSetObjectHandle(p, object[deviceIndex], deviceIndex));
     }
@@ -969,83 +964,23 @@ void nvPushSetSubdeviceMask(NvPushChannelPtr p, NvU32 mask)
     SetSubDeviceMask(p, main, mask);
 }
 
-static void KeplerReleaseTimelineSemaphore(
-    NvPushChannelPtr p,
-    void *cpuAddress,
-    NvU64 gpuAddress,
-    NvU64 val)
-{
-    NvReportSemaphore32 *report = (NvReportSemaphore32 *)cpuAddress;
-
-    // Must be done before submitting the semaphore release to ensure the maximum
-    // known-submitted value is never less than the semaphore's current value.
-    NvTimeSemFermiSetMaxSubmittedVal(&report->timer, val);
-
-    nvPushMethod(p, 0, NVA16F_SEMAPHOREA, 4);
-    nvPushSetMethodDataU64(p, gpuAddress);    // NVA16F_SEMAPHOREB
-    nvPushSetMethodData(p, val);              // NVA16F_SEMAPHOREC
-    nvPushSetMethodData(p,                    // NVA16F_SEMAPHORED
-        DRF_DEF(A16F, _SEMAPHORED, _OPERATION, _RELEASE) |
-        DRF_DEF(A16F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE));
-
-    nvPushMethod(p, 0, NVA16F_NON_STALL_INTERRUPT, 1);
-    nvPushSetMethodData(p, 0);
-}
-
-static void KeplerAcquireTimelineSemaphore(
-    NvPushChannelPtr p,
-    NvU64 gpuAddress,
-    NvU64 val)
-{
-    nvPushMethod(p, 0, NVA16F_SEMAPHOREA, 4);
-    nvPushSetMethodDataU64(p, gpuAddress);    // NVA16F_SEMAPHOREB
-    nvPushSetMethodData(p, val);              // NVA16F_SEMAPHOREC
-    nvPushSetMethodData(p,                    // NVA16F_SEMAPHORED
-        DRF_DEF(A16F, _SEMAPHORED, _ACQUIRE_SWITCH, _ENABLED) |
-        DRF_DEF(A16F, _SEMAPHORED, _OPERATION, _ACQ_GEQ));
-}
-
-static void VoltaReleaseTimelineSemaphore(
-    NvPushChannelPtr p,
-    void *cpuAddress,
-    NvU64 gpuAddress,
-    NvU64 val)
-{
-    nvPushMethod(p, 0, NVC36F_SEM_ADDR_LO, 5);
-    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC36F_SEM_ADDR_LO/HI
-    nvPushSetMethodDataU64LE(p, val);               // NVC36F_SEM_PAYLOAD_LO/HI
-    nvPushSetMethodData(p,                          // NVC36F_SEM_EXECUTE
-        DRF_DEF(C36F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_WFI, _EN) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _PAYLOAD_SIZE, _64BIT) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_TIMESTAMP, _EN));
-
-    nvPushMethod(p, 0, NVC36F_NON_STALL_INTERRUPT, 1);
-    nvPushSetMethodData(p, 0);
-}
-
-static void VoltaAcquireTimelineSemaphore(
-    NvPushChannelPtr p,
-    NvU64 gpuAddress,
-    NvU64 val)
-{
-    nvPushMethod(p, 0, NVC36F_SEM_ADDR_LO, 5);
-    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC36F_SEM_ADDR_LO/HI
-    nvPushSetMethodDataU64LE(p, val);               // NVC36F_SEM_PAYLOAD_LO/HI
-    nvPushSetMethodData(p,                          // NVC36F_SEM_EXECUTE
-        DRF_DEF(C36F, _SEM_EXECUTE, _OPERATION, _ACQ_STRICT_GEQ) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _ACQUIRE_SWITCH_TSG, _EN) |
-        DRF_DEF(C36F, _SEM_EXECUTE, _PAYLOAD_SIZE, _64BIT));
-}
-
 void nvPushReleaseTimelineSemaphore(
     NvPushChannelPtr p,
     void *cpuAddress,
     NvU64 gpuAddress,
     NvU64 val)
 {
-    NvPushDevicePtr pDevice = p->pDevice;
-    pDevice->hal.releaseTimelineSemaphore(p, cpuAddress, gpuAddress, val);
+    nvPushMethod(p, 0, NVC46F_SEM_ADDR_LO, 5);
+    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC46F_SEM_ADDR_LO/HI
+    nvPushSetMethodDataU64LE(p, val);               // NVC46F_SEM_PAYLOAD_LO/HI
+    nvPushSetMethodData(p,                          // NVC46F_SEM_EXECUTE
+        DRF_DEF(C46F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _RELEASE_WFI, _EN) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _PAYLOAD_SIZE, _64BIT) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _RELEASE_TIMESTAMP, _EN));
+
+    nvPushMethod(p, 0, NVC46F_NON_STALL_INTERRUPT, 1);
+    nvPushSetMethodData(p, 0);
 }
 
 void nvPushAcquireTimelineSemaphore(
@@ -1053,8 +988,13 @@ void nvPushAcquireTimelineSemaphore(
     NvU64 gpuAddress,
     NvU64 val)
 {
-    NvPushDevicePtr pDevice = p->pDevice;
-    pDevice->hal.acquireTimelineSemaphore(p, gpuAddress, val);
+    nvPushMethod(p, 0, NVC46F_SEM_ADDR_LO, 5);
+    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC46F_SEM_ADDR_LO/HI
+    nvPushSetMethodDataU64LE(p, val);               // NVC46F_SEM_PAYLOAD_LO/HI
+    nvPushSetMethodData(p,                          // NVC46F_SEM_EXECUTE
+        DRF_DEF(C46F, _SEM_EXECUTE, _OPERATION, _ACQ_STRICT_GEQ) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _ACQUIRE_SWITCH_TSG, _EN) |
+        DRF_DEF(C46F, _SEM_EXECUTE, _PAYLOAD_SIZE, _64BIT));
 }
 
 NvBool __nvPushGetHal(
@@ -1071,33 +1011,15 @@ NvBool __nvPushGetHal(
             // fall through
         case HOPPER_CHANNEL_GPFIFO_A:
             pHal->caps.extendedBase = TRUE;
-            // otherwise backwards compatible with the Volta DMA HAL
+            // otherwise backwards compatible with Turing
             // fall through
         case AMPERE_CHANNEL_GPFIFO_A:
-            // backwards compatible with the Volta DMA HAL
+            // backwards compatible with Turing
             // fall through
         case TURING_CHANNEL_GPFIFO_A:
-            // backwards compatible with the Volta DMA HAL
-            // fall through
-        case VOLTA_CHANNEL_GPFIFO_A:
             pHal->kickoff = DoorbellKickoff;
             pHal->caps.clientAllocatesUserD = TRUE;
             pHal->caps.allocateDoubleSizeGpFifo = FALSE;
-            pHal->releaseTimelineSemaphore = VoltaReleaseTimelineSemaphore;
-            pHal->acquireTimelineSemaphore = VoltaAcquireTimelineSemaphore;
-            break;
-        case PASCAL_CHANNEL_GPFIFO_A:
-            // backwards compatible with the Kepler DMA HAL
-            // fall through
-        case MAXWELL_CHANNEL_GPFIFO_A:
-            // backwards compatible with the Kepler DMA HAL
-            // fall through
-        case KEPLER_CHANNEL_GPFIFO_B:
-            pHal->kickoff = UserDKickoff;
-            pHal->caps.clientAllocatesUserD = FALSE;
-            pHal->caps.allocateDoubleSizeGpFifo = FALSE;
-            pHal->releaseTimelineSemaphore = KeplerReleaseTimelineSemaphore;
-            pHal->acquireTimelineSemaphore = KeplerAcquireTimelineSemaphore;
             break;
         default:
             nvAssert(!"There's no DMA HAL for this channel class");

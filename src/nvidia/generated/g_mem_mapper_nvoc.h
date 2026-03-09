@@ -54,68 +54,43 @@ extern "C" {
 #include "ctrl/ctrl00fe.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 
-
 struct Subdevice;
 
-#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
-#define __NVOC_CLASS_Subdevice_TYPEDEF__
-typedef struct Subdevice Subdevice;
-#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Subdevice
-#define __nvoc_class_id_Subdevice 0x4b01b3
+#define __nvoc_class_id_Subdevice 0x4b01b3u
+typedef struct Subdevice Subdevice;
 #endif /* __nvoc_class_id_Subdevice */
-
 
 
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
-
 
 
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct SemaphoreSurface;
 
-#ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
-#define __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
-typedef struct SemaphoreSurface SemaphoreSurface;
-#endif /* __NVOC_CLASS_SemaphoreSurface_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SemaphoreSurface
-#define __nvoc_class_id_SemaphoreSurface 0xeabc69
+#define __nvoc_class_id_SemaphoreSurface 0xeabc69u
+typedef struct SemaphoreSurface SemaphoreSurface;
 #endif /* __nvoc_class_id_SemaphoreSurface */
-
 
 
 struct MemoryMapper;
 
-#ifndef __NVOC_CLASS_MemoryMapper_TYPEDEF__
-#define __NVOC_CLASS_MemoryMapper_TYPEDEF__
-typedef struct MemoryMapper MemoryMapper;
-#endif /* __NVOC_CLASS_MemoryMapper_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryMapper
-#define __nvoc_class_id_MemoryMapper 0xb8e4a2
+#define __nvoc_class_id_MemoryMapper 0xb8e4a2u
+typedef struct MemoryMapper MemoryMapper;
 #endif /* __nvoc_class_id_MemoryMapper */
 
 
@@ -225,13 +200,9 @@ struct NVOC_METADATA__MemoryMapper {
     const struct NVOC_VTABLE__MemoryMapper vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryMapper_TYPEDEF__
-#define __NVOC_CLASS_MemoryMapper_TYPEDEF__
-typedef struct MemoryMapper MemoryMapper;
-#endif /* __NVOC_CLASS_MemoryMapper_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryMapper
-#define __nvoc_class_id_MemoryMapper 0xb8e4a2
+#define __nvoc_class_id_MemoryMapper 0xb8e4a2u
+typedef struct MemoryMapper MemoryMapper;
 #endif /* __nvoc_class_id_MemoryMapper */
 
 // Casting support
@@ -249,14 +220,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryMapper(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryMapper((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryMapper(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryMapper((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memmapperConstruct(arg_pMemoryMapper, arg_pCallContext, arg_pParams) memmapperConstruct_IMPL(arg_pMemoryMapper, arg_pCallContext, arg_pParams)
+NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *pMemoryMapper, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memmapperConstruct(pMemoryMapper, pCallContext, pParams) memmapperConstruct_IMPL(pMemoryMapper, pCallContext, pParams)
 
 void memmapperDestruct_IMPL(struct MemoryMapper *pMemoryMapper);
 #define __nvoc_memmapperDestruct(pMemoryMapper) memmapperDestruct_IMPL(pMemoryMapper)
@@ -444,10 +415,16 @@ static inline void memmapperAddAdditionalDependants_DISPATCH(struct RsClient *pC
     pResource->__nvoc_metadata_ptr->vtable.__memmapperAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS memmapperCtrlCmdSubmitOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams);
 
 NV_STATUS memmapperCtrlCmdResizeQueue_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

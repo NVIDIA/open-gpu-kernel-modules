@@ -858,9 +858,6 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_external_t *ext
 
     uvm_assert_rwsem_locked_read(&va_space->lock);
 
-    if ((map_rm_params->compression_type == UvmGpuCompressionTypeEnabledNoPlc) && !mapping_gpu->parent->plc_supported)
-        return NV_ERR_INVALID_DEVICE;
-
     // Check if the GPU can access the VA
     if (!uvm_gpu_can_address(mapping_gpu, base, length))
         return NV_ERR_OUT_OF_RANGE;
@@ -1188,12 +1185,6 @@ static NV_STATUS uvm_map_external_sparse(uvm_va_space_t *va_space, UVM_MAP_EXTER
 
     mapping_gpu = uvm_va_space_get_gpu_by_uuid_with_gpu_va_space(va_space, &params->gpuUuid);
     if (!mapping_gpu) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto out;
-    }
-
-    // Sparse mappings are unsupported on GPUs prior to Pascal.
-    if (!mapping_gpu->parent->sparse_mappings_supported) {
         status = NV_ERR_INVALID_DEVICE;
         goto out;
     }

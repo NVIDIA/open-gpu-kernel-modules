@@ -43,7 +43,6 @@
 #define NV208F_CTRL_FBIO                  (0x0A)
 #define NV208F_CTRL_MMU                   (0x0B)
 #define NV208F_CTRL_PMU                   (0x0C)
-#define NV208F_CTRL_EVENT                 (0x10)
 #define NV208F_CTRL_GPU                   (0x11)
 #define NV208F_CTRL_GR                    (0x12)
 #define NV208F_CTRL_PMGR                  (0x13)

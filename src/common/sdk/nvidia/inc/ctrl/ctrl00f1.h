@@ -133,7 +133,7 @@ typedef struct NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA {
     NvU32 cliqueId;
     NvU16 index;
     NvU16 exportNodeId;
-    NvU8  bwMode;
+    NvU16 bwMode;
     NvU8  exportUuid[NV_MEM_EXPORT_UUID_LEN];
 } NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA;
 

@@ -37,7 +37,6 @@
 #include "published/maxwell/gm107/dev_mmu.h"
 
 static NV_STATUS _kchannelCreateRMUserdMemDesc(OBJGPU *pGpu, KernelChannel *pKernelChannel);
-
 static NV_STATUS _kchannelDestroyRMUserdMemDesc(OBJGPU *pGpu, KernelChannel *pKernelChannel);
 
 /*!
@@ -118,6 +117,9 @@ _kchannelCreateRMUserdMemDesc
     NvU32                subdevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     MEMORY_DESCRIPTOR  **ppUserdSubdevMemDesc =
                          &pKernelChannel->pUserdSubDeviceMemDesc[subdevInst];
+
+    NV_ASSERT_OR_RETURN(pUserdInfo != NULL && pUserdInfo->userdPhysDesc[subdevInst] != NULL,
+                        NV_ERR_INVALID_STATE);
 
     kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, NULL);
 
@@ -532,117 +534,6 @@ kchannelFreeHwID_GM107
     }
 
     return status;
-}
-
-NV_STATUS
-kchannelGetUserdInfo_GM107
-(
-    OBJGPU         *pGpu,
-    KernelChannel  *pKernelChannel,
-    NvU64          *userBase,
-    NvU64          *offset,
-    NvU64          *length
-)
-{
-    NV_STATUS              status;
-    NvU64                  bar1MapOffset;
-    NvU32                  bar1MapSize;
-    CLI_CHANNEL_CLASS_INFO classInfo;
-    KernelMemorySystem     *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-
-    NvBool bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
-
-    CliGetChannelClassInfo(RES_GET_EXT_CLASS_ID(pKernelChannel), &classInfo);
-
-    switch (classInfo.classType)
-    {
-        case CHANNEL_CLASS_TYPE_GPFIFO:
-            NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
-
-            // USERD is not pre-allocated in BAR1 so there is no offset/userBase
-            NV_ASSERT_OR_RETURN(!pKernelChannel->bClientAllocatedUserD,
-                                NV_ERR_INVALID_REQUEST);
-
-            status = kchannelGetUserdBar1MapOffset_HAL(pGpu,
-                                                       pKernelChannel,
-                                                       &bar1MapOffset,
-                                                       &bar1MapSize);
-            if (status == NV_OK)
-            {
-                *offset = bar1MapOffset;
-                *length = bar1MapSize;
-
-                if (userBase)
-                {
-                    if (bCoherentCpuMapping)
-                    {
-                        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-                        *userBase = pKernelMemorySystem->coherentCpuFbBase;
-                    }
-                    else
-                    {
-                        *userBase = gpumgrGetGpuPhysFbAddr(pGpu);
-                    }
-                }
-            }
-            break;
-
-        default:
-            NV_PRINTF(LEVEL_ERROR,
-                      "class = %x not supported for user base mapping\n",
-                      RES_GET_EXT_CLASS_ID(pKernelChannel));
-            status = NV_ERR_GENERIC;
-            break;
-    }
-    return status;
-}
-
-//
-// Takes as input a Channel * and returns the BAR1 offset that this channel's
-// USERD has been mapped to. Also returns the size of the BAR1 mapping that
-// pertains to this channel. The BAR1 map of all USERDs should have already
-// been setup before the first channel was created.
-//
-// For example, USERD of 40 channels have been mapped at BAR1 offset 0x100.
-// USERD of one channel is of size 4k. In which case this function will return
-// ( 0x100 + ( 0x1000 * 0xa ) ) if the input ChID = 0xa.
-//
-NV_STATUS
-kchannelGetUserdBar1MapOffset_GM107
-(
-    OBJGPU        *pGpu,
-    KernelChannel *pKernelChannel,
-    NvU64         *bar1MapOffset,
-    NvU32         *bar1MapSize
-)
-{
-    KernelFifo        *pKernelFifo     = GPU_GET_KERNEL_FIFO(pGpu);
-    const PREALLOCATED_USERD_INFO *pUserdInfo = kfifoGetPreallocatedUserdInfo(pKernelFifo);
-
-    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OR_RETURN(kfifoIsPreAllocatedUserDEnabled(pKernelFifo),
-                        NV_ERR_NOT_SUPPORTED);
-
-    if (pUserdInfo->userdBar1MapSize == 0)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "fifoGetUserdBar1Offset_GF100: BAR1 map of USERD has not "
-                  "been setup yet\n");
-        NV_ASSERT(0);
-        return NV_ERR_GENERIC;
-    }
-
-    kfifoGetUserdSizeAlign_HAL(pKernelFifo, bar1MapSize, NULL);
-
-    *bar1MapOffset = pKernelChannel->ChID * *bar1MapSize +
-                     pUserdInfo->userdBar1MapStartOffset;
-
-    NV_ASSERT((*bar1MapOffset + *bar1MapSize) <=
-              (pUserdInfo->userdBar1MapStartOffset +
-               pUserdInfo->userdBar1MapSize));
-
-    return NV_OK;
 }
 
 /*!

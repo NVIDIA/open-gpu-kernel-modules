@@ -280,6 +280,11 @@ triggerKeyRotationByKeyPair
                 if (pConfCompute->keyRotationTimeoutInfo[h2dIndex].pTimer == NULL)
                 {
                     NvU32 *pH2DKey = portMemAllocNonPaged(sizeof(NvU32));
+                    if (pH2DKey == NULL)
+                    {
+                        return NV_ERR_NO_MEMORY;
+                    }
+
                     *pH2DKey = h2dKey;
                     NV_ASSERT_OK_OR_RETURN(tmrEventCreate(pTmr, &pConfCompute->keyRotationTimeoutInfo[h2dIndex].pTimer,
                                                           keyRotationTimeoutCallback, (void*)pH2DKey, TMR_FLAGS_NONE));

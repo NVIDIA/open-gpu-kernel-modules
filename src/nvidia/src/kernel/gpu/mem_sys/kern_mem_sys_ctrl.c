@@ -218,6 +218,7 @@ _kmemsysGetFbInfos
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_SIZE:
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_ALIGNMENT:
             case NV2080_CTRL_FB_INFO_INDEX_P2P_MAILBOX_BAR1_MAX_OFFSET_64KB:
+            case NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB:
                 continue;
 
             case NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE:
@@ -961,6 +962,9 @@ _kmemsysGetFbInfos
         NvU32 physIdx = 0;
         NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pRpcParams =
             portMemAllocNonPaged(sizeof(NV2080_CTRL_FB_GET_INFO_V2_PARAMS));
+
+        if (pRpcParams == NULL)
+            return NV_ERR_NO_MEMORY;
 
         portMemSet(pRpcParams, 0, sizeof(*pRpcParams));
         FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)

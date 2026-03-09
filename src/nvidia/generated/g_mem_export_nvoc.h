@@ -135,13 +135,9 @@ struct NVOC_METADATA__MemoryExport {
     const struct NVOC_VTABLE__MemoryExport vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryExport_TYPEDEF__
-#define __NVOC_CLASS_MemoryExport_TYPEDEF__
-typedef struct MemoryExport MemoryExport;
-#endif /* __NVOC_CLASS_MemoryExport_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryExport
-#define __nvoc_class_id_MemoryExport 0xe7ac53
+#define __nvoc_class_id_MemoryExport 0xe7ac53u
+typedef struct MemoryExport MemoryExport;
 #endif /* __nvoc_class_id_MemoryExport */
 
 // Casting support
@@ -159,14 +155,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryExport;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryExport(MemoryExport**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryExport(MemoryExport**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryExport(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryExport((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryExport(MemoryExport**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryExport(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryExport((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memoryexportConstruct_IMPL(struct MemoryExport *arg_pMemoryExport, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memoryexportConstruct(arg_pMemoryExport, arg_pCallContext, arg_pParams) memoryexportConstruct_IMPL(arg_pMemoryExport, arg_pCallContext, arg_pParams)
+NV_STATUS memoryexportConstruct_IMPL(struct MemoryExport *pMemoryExport, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memoryexportConstruct(pMemoryExport, pCallContext, pParams) memoryexportConstruct_IMPL(pMemoryExport, pCallContext, pParams)
 
 void memoryexportDestruct_IMPL(struct MemoryExport *pMemoryExport);
 #define __nvoc_memoryexportDestruct(pMemoryExport) memoryexportDestruct_IMPL(pMemoryExport)
@@ -331,16 +327,22 @@ static inline void memoryexportAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__memoryexportAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool memoryexportCanCopy_IMPL(struct MemoryExport *pMemoryExport);
 
 NV_STATUS memoryexportControl_IMPL(struct MemoryExport *pMemoryExport, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS memoryexportCtrlExportMem_IMPL(struct MemoryExport *pMemoryExport, NV00E0_CTRL_EXPORT_MEM_PARAMS *pParams);
 
 NV_STATUS memoryexportCtrlImportMem_IMPL(struct MemoryExport *pMemoryExport, NV00E0_CTRL_IMPORT_MEM_PARAMS *pParams);
 
 NV_STATUS memoryexportCtrlGetInfo_IMPL(struct MemoryExport *pMemoryExport, NV00E0_CTRL_GET_INFO_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -60,6 +60,7 @@ typedef NV_STATUS      Deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS(NVC637
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES(VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_VGPU_DISPLAYLESS_INFO(VGPU_DISPLAYLESS_INFO* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP(VGPU_FB_GET_LTC_INFO_FOR_FBP* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_STATIC_DATA(VGPU_STATIC_DATA* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -122,6 +123,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS */
     Deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES  *deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES; /* HAL function to deserialize VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS */
+    Deserialize_VGPU_DISPLAYLESS_INFO  *deserialize_VGPU_DISPLAYLESS_INFO; /* HAL function to deserialize VGPU_DISPLAYLESS_INFO */
     Deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP  *deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP; /* HAL function to deserialize VGPU_FB_GET_LTC_INFO_FOR_FBP */
     Deserialize_VGPU_STATIC_DATA  *deserialize_VGPU_STATIC_DATA; /* HAL function to deserialize VGPU_STATIC_DATA */
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_THROTTLE_CTRL_PARAMS */
@@ -204,6 +206,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_VGPU_DISPLAYLESS_INFO_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_VGPU_DISPLAYLESS_INFO(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_VGPU_STATIC_DATA_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \

@@ -45,10 +45,6 @@
 #include "kernel/gpu/conf_compute/conf_compute.h"
 
 static NV_STATUS _kfifoGetCaps(OBJGPU *pGpu, NvU8 *pKfifoCaps);
-static NV_STATUS _kfifoDisableChannelsForKeyRotation(OBJGPU *pGpu, RmCtrlParams *pRmCtrlParams,
-                                                     NvBool bEnableAfterKeyRotation, NvBool bForceKeyRotation,
-                                                     NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams);
-
 /*!
  * @brief deviceCtrlCmdFifoGetChannelList
  */
@@ -763,6 +759,7 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
 {
     NV_STATUS       status        = NV_OK;
     OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelFifo     *pKernelFifo   = GPU_GET_KERNEL_FIFO(pGpu);
     CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
     NvU32           i = 0;
@@ -784,8 +781,9 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
         pParams->hChannelList[i] = pDisableChannelParams->hChannelList[i];
     }
     pParams->numChannels = pDisableChannelParams->numChannels;
-    status = _kfifoDisableChannelsForKeyRotation(pGpu, pRmCtrlParams, pDisableChannelParams->bEnableAfterKeyRotation,
-                                                 NV_FALSE, pParams);
+    status = kfifoDisableChannelsForKeyRotation_HAL(pGpu, pKernelFifo, pRmCtrlParams,
+                                                    pDisableChannelParams->bEnableAfterKeyRotation,
+                                                    NV_FALSE, pParams);
     portMemFree(pParams);
     return status;
 }
@@ -803,6 +801,7 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_IMPL
 {
     NV_STATUS       status        = NV_OK;
     OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelFifo     *pKernelFifo   = GPU_GET_KERNEL_FIFO(pGpu);
     CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
     NvU32           i = 0;
@@ -822,127 +821,71 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_IMPL
         pParams->hChannelList[i] = pDisableChannelParams->hChannelList[i];
     }
     pParams->numChannels = pDisableChannelParams->numChannels;
-    status = _kfifoDisableChannelsForKeyRotation(pGpu, pRmCtrlParams, pDisableChannelParams->bEnableAfterKeyRotation,
-                                                 NV_TRUE, pParams);
+    status = kfifoDisableChannelsForKeyRotation_HAL(pGpu, pKernelFifo, pRmCtrlParams,
+                                                    pDisableChannelParams->bEnableAfterKeyRotation,
+                                                    NV_TRUE, pParams);
     portMemFree(pParams);
     return status;
 }
 
-static NV_STATUS
-_kfifoDisableChannelsForKeyRotation
+/**
+ * @brief Disables and preempts the given channels and marks
+ *        them disables them to perform key rotation. Conditionally also marks
+ *        them for re-enablement.
+ */
+NV_STATUS
+subdeviceCtrlCmdFifoRotateKeys_IMPL
 (
-    OBJGPU         *pGpu,
-    RmCtrlParams   *pRmCtrlParams,
-    NvBool          bEnableAfterKeyRotation,
-    NvBool          bForceKeyRotation,
-    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS *pRotateKeyParams
 )
 {
+    NvU32           i             = 0;
     NV_STATUS       status        = NV_OK;
-    NV_STATUS       tmpStatus     = NV_OK;
-    NvU32           i;
-    KernelChannel  *pKernelChannel = NULL;
+    CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
+    OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
     RM_API         *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    KernelFifo     *pKernelFifo   = GPU_GET_KERNEL_FIFO(pGpu);
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pParams = NULL;
 
-    // Send RPC to handle message on Host-RM
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        status = pRmApi->Control(pRmApi,
-                                 pRmCtrlParams->hClient,
-                                 pRmCtrlParams->hObject,
-                                 pRmCtrlParams->cmd,
-                                 pRmCtrlParams->pParams,
-                                 pRmCtrlParams->paramsSize);
-    }
-    // Send internal control call to actually disable channels and preempt channels
-    else
-    {
-        status = NV_ERR_NOT_SUPPORTED;
-        NV_ASSERT_OR_RETURN(status == NV_OK, status);
-    }
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        pRotateKeyParams->numChannels <= NV_ARRAY_ELEMENTS(pRotateKeyParams->hChannelList),
+        NV_ERR_INVALID_ARGUMENT);
 
-    // Loop through all the channels and mark them disabled
-    NvBool bFound = NV_FALSE;
-    NvU32 h2dKeyList[CC_KEYSPACE_TOTAL_SIZE];
-    NvU32 keyIndex = 0;
-    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+            pRotateKeyParams->numChannels <= NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES,
+            NV_ERR_INVALID_ARGUMENT);
 
-    for (i = 0; i < pParams->numChannels; i++)
-    {
-        RsClient              *pClient = NULL;
-        tmpStatus = serverGetClientUnderLock(&g_resServ,
-                                          pParams->hClientList[i], &pClient);
-        if (tmpStatus != NV_OK)
-        {
-            status = tmpStatus;
-            NV_PRINTF(LEVEL_ERROR, "Failed to get client with hClient = 0x%x status = 0x%x\n", pParams->hClientList[i], status);
-            continue;
-        }
-        tmpStatus = CliGetKernelChannel(pClient,
-                                     pParams->hChannelList[i], &pKernelChannel);
-        if (tmpStatus != NV_OK)
-        {
-            status = tmpStatus;
-            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n",
-                                    pParams->hClientList[i], pParams->hChannelList[i], status);
-            continue;
-        }
-        kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
-        kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, bEnableAfterKeyRotation);
-        if (IS_GSP_CLIENT(pGpu))
-        {
-            NvU32 h2dKey, d2hKey;
-            NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel,
-                                                                      &h2dKey, &d2hKey));
-            if (bForceKeyRotation)
-            {
-                //
-                // This loop doesn't need to execute in the first iteration of above loop
-                // since keyList is empty.
-                //
-                for (NvU32 j = 0; j < keyIndex; j++)
-                {
-                    if (h2dKeyList[j] == h2dKey)
-                    {
-                        bFound = NV_TRUE;
-                        break;
-                    }
-                }
-                if (!bFound)
-                {
-                    NV_ASSERT_OR_RETURN(keyIndex < CC_KEYSPACE_TOTAL_SIZE, NV_ERR_INVALID_STATE);
-                    h2dKeyList[keyIndex++] = h2dKey;
-                }
-                bFound = NV_FALSE;
-            }
-            else
-            {
-                KEY_ROTATION_STATUS state;
-                NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
-                if ((state == KEY_ROTATION_STATUS_PENDING) ||
-                    (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
-                {
-                    NV_ASSERT_OK_OR_RETURN(confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
-                }
-            }
-        }
-    }
+    ct_assert(NV_ARRAY_ELEMENTS(pRotateKeyParams->hClientList) ==
+              NV_ARRAY_ELEMENTS(pRotateKeyParams->hChannelList));
 
-    if (IS_GSP_CLIENT(pGpu) && bForceKeyRotation)
+    // CTRL Call to GSP-RM to trigger keyrotation.
+    status = pRmApi->Control(pRmApi,
+                             pRmCtrlParams->hClient,
+                             pRmCtrlParams->hObject,
+                             NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ROTATE_PER_CHANNEL_KEYS,
+                             pRmCtrlParams->pParams,
+                             pRmCtrlParams->paramsSize);
+    if (status != NV_OK)
+        goto done;
+    pParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_NO_MEMORY);
+    portMemSet(pParams, 0, sizeof(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS));
+
+    for (i = 0; i < pRotateKeyParams->numChannels; i++)
     {
-        for (NvU32 j = 0; j < keyIndex; j++)
-        {
-            NvU32 h2dKey, d2hKey;
-            confComputeGetKeyPairByKey(pConfCompute, h2dKeyList[j], &h2dKey, &d2hKey);
-            NV_PRINTF(LEVEL_INFO, "Forcing key rotation on h2dKey 0x%x\n", h2dKey);
-            status = confComputeForceKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Forced key rotation for key 0x%x failed\n", h2dKey);
-                return status;
-            }
-        }
+        pParams->hClientList[i] = pRotateKeyParams->hClientList[i];
+        pParams->hChannelList[i] = pRotateKeyParams->hChannelList[i];
     }
+    pParams->numChannels = pRotateKeyParams->numChannels;
+
+    status = kfifoDisableChannelsForKeyRotation_HAL(pGpu, pKernelFifo, pRmCtrlParams,
+                                                    pRotateKeyParams->bEnableAfterKeyRotation,
+                                                    NV_TRUE, pParams);
+    portMemFree(pParams);
+
+done:
     return status;
 }
 

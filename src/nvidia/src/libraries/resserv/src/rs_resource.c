@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -610,23 +610,90 @@ refFreeCpuMappingPrivate
 #endif /* RS_STANDALONE */
 
 NV_STATUS
-refAddInterMapping
+refCreateInterMapping
 (
-    RsResourceRef *pMapperRef,
-    RsResourceRef *pMappableRef,
-    RsResourceRef *pContextRef,
-    RsInterMapping **ppMapping
+    RsResourceRef   *pMapperRef,
+    RsInterMapping **ppInterMapping
 )
 {
-    RsInterMapping *pInterMapping;
+    RsInterMapping *pInterMapping = NULL;
 
-    NV_ASSERT(pMapperRef != NULL);
-    NV_ASSERT(pMappableRef != NULL);
-    NV_ASSERT(pMappableRef != pMapperRef);
+    NV_ASSERT_OR_RETURN(pMapperRef != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(ppInterMapping != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pMapperRef->pAllocator != NULL, NV_ERR_INVALID_STATE);
 
-    pInterMapping = listAppendNew(&pMapperRef->interMappings);
+    pInterMapping = (RsInterMapping *)PORT_ALLOC(pMapperRef->pAllocator, sizeof(*pInterMapping));
     if (pInterMapping == NULL)
+    {
+        *ppInterMapping = NULL;
         return NV_ERR_NO_MEMORY;
+    }
+
+    portMemSet(pInterMapping, 0, sizeof(*pInterMapping));
+
+    *ppInterMapping = pInterMapping;
+
+    return NV_OK;
+}
+
+NV_STATUS
+refDestroyInterMapping
+(
+    RsResourceRef  *pMapperRef,
+    RsInterMapping *pInterMapping
+)
+{
+    NV_ASSERT_OR_RETURN(pMapperRef != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pInterMapping != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pMapperRef->pAllocator != NULL, NV_ERR_INVALID_STATE);
+
+    PORT_FREE(pMapperRef->pAllocator, pInterMapping);
+
+    return NV_OK;
+}
+
+NV_STATUS
+refAddInterMapping
+(
+    RsResourceRef  *pMapperRef,
+    RsResourceRef  *pMappableRef,
+    NvU64           dmaOffset,
+    RsResourceRef  *pContextRef,
+    RsInterMapping *pInterMapping
+)
+{
+    RsInterMappingMap *pInterMappings;
+
+    NV_ASSERT_OR_RETURN(pMapperRef != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pMappableRef != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pMappableRef != pMapperRef, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pInterMapping != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pInterMappings = mapFind(&pMapperRef->interMappingContextMap, pContextRef->hResource);
+
+    if (pInterMappings == NULL)
+    {
+        pInterMappings = mapInsertNew(&pMapperRef->interMappingContextMap, pContextRef->hResource);
+        mapInitIntrusive(pInterMappings);
+        NV_ASSERT_OR_RETURN(pInterMappings != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    if (!mapInsertExisting(pInterMappings, dmaOffset, pInterMapping))
+    {
+        RsInterMapping *pExistingInterMapping = mapFind(pInterMappings, dmaOffset);
+        if (pExistingInterMapping != NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Duplicate inter mapping detected at dmaOffset: 0x%llX. newSize: 0x%llX existingSize: 0x%llX\n",
+                      dmaOffset, pInterMapping->size, pExistingInterMapping->size);
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to add inter mapping at dmaOffset: 0x%llX\n", dmaOffset);
+            return NV_ERR_INVALID_STATE;
+        }
+    }
 
     // Add backref linked to this inter-mapping
     listAppendExisting(&pMappableRef->interBackRefsMappable, pInterMapping);
@@ -645,9 +712,7 @@ refAddInterMapping
     pInterMapping->pMappableRef = pMappableRef;
     pInterMapping->pContextRef = pContextRef;
     pInterMapping->pMapperRef = pMapperRef;
-
-    if (ppMapping != NULL)
-        *ppMapping = pInterMapping;
+    pInterMapping->dmaOffset = dmaOffset;
 
     return NV_OK;
 }
@@ -656,11 +721,13 @@ void
 refRemoveInterMapping
 (
     RsResourceRef *pMapperRef,
-    RsInterMapping *pMapping
+    RsInterMapping *pMapping,
+    NvBool bKeepPerContextMap
 )
 {
     RsResourceRef *pMappableRef = pMapping->pMappableRef;
     RsResourceRef *pContextRef = pMapping->pContextRef;
+    RsInterMappingMap *pInterMappings = mapFind(&pMapperRef->interMappingContextMap, pContextRef->hResource);
 
     // Find and remove the mappable's backref linked to this inter-mapping
     listRemove(&pMappableRef->interBackRefsMappable, pMapping);
@@ -672,7 +739,14 @@ refRemoveInterMapping
         listRemove(&pContextRef->interBackRefsContext, pMapping);
     }
 
-    listRemove(&pMapperRef->interMappings, pMapping);
+    NV_ASSERT(pInterMappings != NULL);
+    mapRemove(pInterMappings, pMapping);
+
+    if (!bKeepPerContextMap && mapCount(pInterMappings) == 0)
+    {
+        mapDestroy(pInterMappings);
+        mapRemove(&pMapperRef->interMappingContextMap, pInterMappings);
+    }
 }
 
 NV_STATUS

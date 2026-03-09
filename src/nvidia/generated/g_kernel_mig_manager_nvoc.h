@@ -49,6 +49,7 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
+#include "kernel/gpu/gr/kernel_watchdog.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvbitmask.h"
@@ -232,6 +233,11 @@ typedef struct MIG_COMPUTE_INSTANCE
      * ID may not have been assigned.
      */
     NvU32 computeSize;
+
+    /*!
+     * Kernel watchdog for this compute instance
+     */
+    struct KernelWatchdog *pKernelWatchdog;
 } MIG_COMPUTE_INSTANCE;
 
 /*!
@@ -514,37 +520,39 @@ struct KernelMIGManager {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMIGManager *__nvoc_pbase_KernelMIGManager;    // kmigmgr
 
-    // Vtable with 31 per-object function pointers
+    // Vtable with 33 per-object function pointers
     struct NV_RANGE (*__kmigmgrGetGRCERange__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
     struct NV_RANGE (*__kmigmgrGetAsyncCERange__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kmigmgrLoadStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrSetStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    void (*__kmigmgrClearStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrSaveToPersistenceFromVgpuStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrDeleteGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrRestoreFromPersistence__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    void (*__kmigmgrApplyDefaultCeMappings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrClearMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrApplyMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateGPUInstanceCheck__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool);  // halified (3 hals)
-    NvBool (*__kmigmgrIsDevinitMIGBitSet__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals)
-    void (*__kmigmgrDetectReducedConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NvBool (*__kmigmgrIsGPUInstanceCombinationValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (5 hals)
-    NvBool (*__kmigmgrIsGPUInstanceFlagValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (6 hals)
-    NvBool (*__kmigmgrGpuInstanceSupportVgpuTimeslice__)(struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrGenerateComputeInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvU32, NvUuid *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrGenerateGPUInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvUuid *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateComputeInstances__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *, NvBool, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS, NvU32 *, NvBool);  // halified (2 hals)
-    NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kmigmgrIsGfxCapabilitesRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    struct NV_RANGE (*__kmigmgrSwizzIdToSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    struct NV_RANGE (*__kmigmgrSwizzIdToGrSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    NV_STATUS (*__kmigmgrSetMIGState__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool, NvBool, NvBool);  // halified (2 hals)
+    NV_STATUS (*__kmigmgrSetStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrClearStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrSaveToPersistenceFromVgpuStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrDeleteGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrRestoreFromPersistence__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrApplyDefaultCeMappings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrClearMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrApplyMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateGPUInstanceCheck__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrPatchCICapacity__)(OBJGPU *, struct KernelMIGManager * /*this*/, const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsDevinitMIGBitSet__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrConfigurePMSettings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrDetectReducedConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsGPUInstanceCombinationValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (5 hals) body
+    NvBool (*__kmigmgrIsGPUInstanceFlagValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (6 hals) body
+    NvBool (*__kmigmgrGpuInstanceSupportVgpuTimeslice__)(struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrGenerateComputeInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvU32, NvUuid *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrGenerateGPUInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvUuid *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateComputeInstances__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *, NvBool, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS, NvU32 *, NvBool);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsGfxCapabilitesRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    struct NV_RANGE (*__kmigmgrSwizzIdToSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    struct NV_RANGE (*__kmigmgrSwizzIdToGrSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrSetMIGState__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool, NvBool, NvBool);  // halified (2 hals) body
     NV_STATUS (*__kmigmgrGetComputeProfileFromGpcCount__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *);  // halified (2 hals)
-    NvBool (*__kmigmgrIsCTSAlignmentRequired__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals)
+    NvBool (*__kmigmgrIsCTSAlignmentRequired__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kmigmgrRestoreFromBootConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
 
     // 1 PDB property
@@ -567,6 +575,7 @@ struct KernelMIGManager {
     NvU64 PRIVATE_FIELD(validGlobalCTSIdMask);
     NvU64 PRIVATE_FIELD(validGlobalGfxCTSIdMask);
     NvBool PRIVATE_FIELD(bIsSmgEnabled);
+    NvBool PRIVATE_FIELD(bIsDynamicPMDisabled);
 };
 
 
@@ -586,37 +595,39 @@ struct KernelMIGManager_PRIVATE {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMIGManager *__nvoc_pbase_KernelMIGManager;    // kmigmgr
 
-    // Vtable with 31 per-object function pointers
+    // Vtable with 33 per-object function pointers
     struct NV_RANGE (*__kmigmgrGetGRCERange__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
     struct NV_RANGE (*__kmigmgrGetAsyncCERange__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kmigmgrLoadStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrSetStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    void (*__kmigmgrClearStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrSaveToPersistenceFromVgpuStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrDeleteGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrRestoreFromPersistence__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    void (*__kmigmgrApplyDefaultCeMappings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrClearMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrApplyMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateGPUInstanceCheck__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool);  // halified (3 hals)
-    NvBool (*__kmigmgrIsDevinitMIGBitSet__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals)
-    void (*__kmigmgrDetectReducedConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals)
-    NvBool (*__kmigmgrIsGPUInstanceCombinationValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (5 hals)
-    NvBool (*__kmigmgrIsGPUInstanceFlagValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (6 hals)
-    NvBool (*__kmigmgrGpuInstanceSupportVgpuTimeslice__)(struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrGenerateComputeInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvU32, NvUuid *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrGenerateGPUInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvUuid *);  // halified (2 hals)
-    NV_STATUS (*__kmigmgrCreateComputeInstances__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *, NvBool, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS, NvU32 *, NvBool);  // halified (2 hals)
-    NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kmigmgrIsGfxCapabilitesRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals)
-    struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    struct NV_RANGE (*__kmigmgrSwizzIdToSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    struct NV_RANGE (*__kmigmgrSwizzIdToGrSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals)
-    NV_STATUS (*__kmigmgrSetMIGState__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool, NvBool, NvBool);  // halified (2 hals)
+    NV_STATUS (*__kmigmgrSetStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrClearStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrSaveToPersistenceFromVgpuStaticInfo__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrDeleteGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateGPUInstanceRunlists__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrRestoreFromPersistence__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrApplyDefaultCeMappings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrClearMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrApplyMIGGpuInstanceCeMapping__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateGPUInstanceCheck__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrPatchCICapacity__)(OBJGPU *, struct KernelMIGManager * /*this*/, const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsDevinitMIGBitSet__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrConfigurePMSettings__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    void (*__kmigmgrDetectReducedConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsGPUInstanceCombinationValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (5 hals) body
+    NvBool (*__kmigmgrIsGPUInstanceFlagValid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (6 hals) body
+    NvBool (*__kmigmgrGpuInstanceSupportVgpuTimeslice__)(struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrGenerateComputeInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvU32, NvUuid *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrGenerateGPUInstanceUuid__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NvUuid *);  // halified (2 hals) body
+    NV_STATUS (*__kmigmgrCreateComputeInstances__)(OBJGPU *, struct KernelMIGManager * /*this*/, KERNEL_MIG_GPU_INSTANCE *, NvBool, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS, NvU32 *, NvBool);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    NvBool (*__kmigmgrIsGfxCapabilitesRequested__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (2 hals) body
+    struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    struct NV_RANGE (*__kmigmgrSwizzIdToSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    struct NV_RANGE (*__kmigmgrSwizzIdToGrSpan__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32);  // halified (3 hals) body
+    NV_STATUS (*__kmigmgrSetMIGState__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvBool, NvBool, NvBool);  // halified (2 hals) body
     NV_STATUS (*__kmigmgrGetComputeProfileFromGpcCount__)(OBJGPU *, struct KernelMIGManager * /*this*/, NvU32, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *);  // halified (2 hals)
-    NvBool (*__kmigmgrIsCTSAlignmentRequired__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals)
+    NvBool (*__kmigmgrIsCTSAlignmentRequired__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kmigmgrRestoreFromBootConfig__)(OBJGPU *, struct KernelMIGManager * /*this*/);  // halified (2 hals) body
 
     // 1 PDB property
@@ -639,6 +650,7 @@ struct KernelMIGManager_PRIVATE {
     NvU64 validGlobalCTSIdMask;
     NvU64 validGlobalGfxCTSIdMask;
     NvBool bIsSmgEnabled;
+    NvBool bIsDynamicPMDisabled;
 };
 
 
@@ -667,13 +679,9 @@ struct NVOC_METADATA__KernelMIGManager {
     const struct NVOC_VTABLE__KernelMIGManager vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelMIGManager_TYPEDEF__
-#define __NVOC_CLASS_KernelMIGManager_TYPEDEF__
-typedef struct KernelMIGManager KernelMIGManager;
-#endif /* __NVOC_CLASS_KernelMIGManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelMIGManager
-#define __nvoc_class_id_KernelMIGManager 0x01c1bf
+#define __nvoc_class_id_KernelMIGManager 0x01c1bfu
+typedef struct KernelMIGManager KernelMIGManager;
 #endif /* __nvoc_class_id_KernelMIGManager */
 
 // Casting support
@@ -697,8 +705,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelMIGManager;
 NV_STATUS __nvoc_objCreateDynamic_KernelMIGManager(KernelMIGManager**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelMIGManager(KernelMIGManager**, Dynamic*, NvU32);
-#define __objCreate_KernelMIGManager(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelMIGManager((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelMIGManager(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelMIGManager((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -1655,9 +1663,15 @@ static inline NV_STATUS kmigmgrComputeProfileGetCapacity(OBJGPU *pGpu, struct Ke
 #define kmigmgrCreateGPUInstanceCheck_FNPTR(arg_this) arg_this->__kmigmgrCreateGPUInstanceCheck__
 #define kmigmgrCreateGPUInstanceCheck(arg1, arg_this, bMemoryPartitioningNeeded) kmigmgrCreateGPUInstanceCheck_DISPATCH(arg1, arg_this, bMemoryPartitioningNeeded)
 #define kmigmgrCreateGPUInstanceCheck_HAL(arg1, arg_this, bMemoryPartitioningNeeded) kmigmgrCreateGPUInstanceCheck_DISPATCH(arg1, arg_this, bMemoryPartitioningNeeded)
+#define kmigmgrPatchCICapacity_FNPTR(pKernelMIGManager) pKernelMIGManager->__kmigmgrPatchCICapacity__
+#define kmigmgrPatchCICapacity(pGpu, pKernelMIGManager, pProfile, pParams, veidSlotCount) kmigmgrPatchCICapacity_DISPATCH(pGpu, pKernelMIGManager, pProfile, pParams, veidSlotCount)
+#define kmigmgrPatchCICapacity_HAL(pGpu, pKernelMIGManager, pProfile, pParams, veidSlotCount) kmigmgrPatchCICapacity_DISPATCH(pGpu, pKernelMIGManager, pProfile, pParams, veidSlotCount)
 #define kmigmgrIsDevinitMIGBitSet_FNPTR(arg_this) arg_this->__kmigmgrIsDevinitMIGBitSet__
 #define kmigmgrIsDevinitMIGBitSet(arg1, arg_this) kmigmgrIsDevinitMIGBitSet_DISPATCH(arg1, arg_this)
 #define kmigmgrIsDevinitMIGBitSet_HAL(arg1, arg_this) kmigmgrIsDevinitMIGBitSet_DISPATCH(arg1, arg_this)
+#define kmigmgrConfigurePMSettings_FNPTR(arg_this) arg_this->__kmigmgrConfigurePMSettings__
+#define kmigmgrConfigurePMSettings(arg1, arg_this) kmigmgrConfigurePMSettings_DISPATCH(arg1, arg_this)
+#define kmigmgrConfigurePMSettings_HAL(arg1, arg_this) kmigmgrConfigurePMSettings_DISPATCH(arg1, arg_this)
 #define kmigmgrDetectReducedConfig_FNPTR(arg_this) arg_this->__kmigmgrDetectReducedConfig__
 #define kmigmgrDetectReducedConfig(arg1, arg_this) kmigmgrDetectReducedConfig_DISPATCH(arg1, arg_this)
 #define kmigmgrDetectReducedConfig_HAL(arg1, arg_this) kmigmgrDetectReducedConfig_DISPATCH(arg1, arg_this)
@@ -1797,8 +1811,16 @@ static inline NV_STATUS kmigmgrCreateGPUInstanceCheck_DISPATCH(OBJGPU *arg1, str
     return arg_this->__kmigmgrCreateGPUInstanceCheck__(arg1, arg_this, bMemoryPartitioningNeeded);
 }
 
+static inline NV_STATUS kmigmgrPatchCICapacity_DISPATCH(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *pProfile, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *pParams, NvU32 veidSlotCount) {
+    return pKernelMIGManager->__kmigmgrPatchCICapacity__(pGpu, pKernelMIGManager, pProfile, pParams, veidSlotCount);
+}
+
 static inline NvBool kmigmgrIsDevinitMIGBitSet_DISPATCH(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
     return arg_this->__kmigmgrIsDevinitMIGBitSet__(arg1, arg_this);
+}
+
+static inline NV_STATUS kmigmgrConfigurePMSettings_DISPATCH(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
+    return arg_this->__kmigmgrConfigurePMSettings__(arg1, arg_this);
 }
 
 static inline void kmigmgrDetectReducedConfig_DISPATCH(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
@@ -1913,257 +1935,275 @@ static inline NvBool kmigmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Kerne
     return pEngstate->__nvoc_metadata_ptr->vtable.__kmigmgrIsPresent__(pGpu, pEngstate);
 }
 
-struct NV_RANGE kmigmgrGetGRCERange_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+// Virtual method declarations and/or inline definitions
+NV_STATUS kmigmgrConstructEngine_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this, ENGDESCRIPTOR arg3);
 
-struct NV_RANGE kmigmgrGetGRCERange_PF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrStateInitLocked_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-struct NV_RANGE kmigmgrGetAsyncCERange_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrStateUnload_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 flags);
 
-struct NV_RANGE kmigmgrGetAsyncCERange_PF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+struct NV_RANGE kmigmgrGetGRCERange_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrConstructEngine_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg2, ENGDESCRIPTOR arg3);
+struct NV_RANGE kmigmgrGetGRCERange_PF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrStateInitLocked_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg2);
+struct NV_RANGE kmigmgrGetAsyncCERange_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrStateUnload_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 flags);
+struct NV_RANGE kmigmgrGetAsyncCERange_PF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrLoadStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrLoadStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrLoadStaticInfo_KERNEL(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrLoadStaticInfo_KERNEL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrSetStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrSetStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline NV_STATUS kmigmgrSetStaticInfo_46f6a7(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+void kmigmgrClearStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-void kmigmgrClearStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrSaveToPersistenceFromVgpuStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline void kmigmgrClearStaticInfo_b3696a(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return;
-}
+NV_STATUS kmigmgrDeleteGPUInstanceRunlists_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3);
 
-NV_STATUS kmigmgrSaveToPersistenceFromVgpuStaticInfo_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrCreateGPUInstanceRunlists_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3);
 
-static inline NV_STATUS kmigmgrSaveToPersistenceFromVgpuStaticInfo_46f6a7(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS kmigmgrRestoreFromPersistence_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline NV_STATUS kmigmgrDeleteGPUInstanceRunlists_56cd7a(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3) {
-    return NV_OK;
-}
+NV_STATUS kmigmgrRestoreFromPersistence_PF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrDeleteGPUInstanceRunlists_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3);
+void kmigmgrApplyDefaultCeMappings_GH100(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline NV_STATUS kmigmgrCreateGPUInstanceRunlists_56cd7a(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3) {
-    return NV_OK;
-}
+NV_STATUS kmigmgrClearMIGGpuInstanceCeMapping_GH100(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
 
-NV_STATUS kmigmgrCreateGPUInstanceRunlists_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3);
+NV_STATUS kmigmgrApplyMIGGpuInstanceCeMapping_GH100(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
 
-NV_STATUS kmigmgrRestoreFromPersistence_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrCreateGPUInstanceCheck_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvBool bMemoryPartitioningNeeded);
 
-NV_STATUS kmigmgrRestoreFromPersistence_PF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrCreateGPUInstanceCheck_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvBool bMemoryPartitioningNeeded);
 
-void kmigmgrApplyDefaultCeMappings_GH100(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NV_STATUS kmigmgrPatchCICapacity_GB10B(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *pProfile, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *pParams, NvU32 veidSlotCount);
 
-static inline void kmigmgrApplyDefaultCeMappings_b3696a(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return;
-}
+NvBool kmigmgrIsDevinitMIGBitSet_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrClearMIGGpuInstanceCeMapping_GH100(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
+NvBool kmigmgrIsDevinitMIGBitSet_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline NV_STATUS kmigmgrClearMIGGpuInstanceCeMapping_56cd7a(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance) {
-    return NV_OK;
-}
+NV_STATUS kmigmgrConfigurePMSettings_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrApplyMIGGpuInstanceCeMapping_GH100(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
+void kmigmgrDetectReducedConfig_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-static inline NV_STATUS kmigmgrApplyMIGGpuInstanceCeMapping_56cd7a(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance) {
-    return NV_OK;
-}
+NvBool kmigmgrIsGPUInstanceCombinationValid_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NV_STATUS kmigmgrCreateGPUInstanceCheck_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvBool bMemoryPartitioningNeeded);
+NvBool kmigmgrIsGPUInstanceCombinationValid_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NV_STATUS kmigmgrCreateGPUInstanceCheck_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvBool bMemoryPartitioningNeeded);
+NvBool kmigmgrIsGPUInstanceCombinationValid_GB202(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-static inline NV_STATUS kmigmgrCreateGPUInstanceCheck_46f6a7(OBJGPU *arg1, struct KernelMIGManager *arg2, NvBool bMemoryPartitioningNeeded) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NvBool kmigmgrIsGPUInstanceCombinationValid_GH100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NvBool kmigmgrIsDevinitMIGBitSet_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NvBool kmigmgrIsGPUInstanceFlagValid_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NvBool kmigmgrIsDevinitMIGBitSet_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NvBool kmigmgrIsGPUInstanceFlagValid_GH100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-static inline NvBool kmigmgrIsDevinitMIGBitSet_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return NV_FALSE;
-}
+NvBool kmigmgrIsGPUInstanceFlagValid_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-void kmigmgrDetectReducedConfig_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NvBool kmigmgrIsGPUInstanceFlagValid_GB202(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-static inline void kmigmgrDetectReducedConfig_b3696a(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return;
-}
+NvBool kmigmgrIsGPUInstanceFlagValid_GB100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NvBool kmigmgrIsGPUInstanceCombinationValid_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NvBool kmigmgrGpuInstanceSupportVgpuTimeslice_GB202(struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag);
 
-NvBool kmigmgrIsGPUInstanceCombinationValid_GH100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NV_STATUS kmigmgrGenerateComputeInstanceUuid_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId, NvU32 globalGrIdx, NvUuid *arg5);
 
-NvBool kmigmgrIsGPUInstanceCombinationValid_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NV_STATUS kmigmgrGenerateGPUInstanceUuid_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId, NvUuid *arg4);
 
-NvBool kmigmgrIsGPUInstanceCombinationValid_GB202(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NV_STATUS kmigmgrCreateComputeInstances_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3, NvBool bQuery, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS arg5, NvU32 *pCIIds, NvBool bCreateCap);
 
-static inline NvBool kmigmgrIsGPUInstanceCombinationValid_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag) {
-    return NV_FALSE;
-}
+NV_STATUS kmigmgrCreateComputeInstances_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3, NvBool bQuery, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS arg5, NvU32 *pCIIds, NvBool bCreateCap);
 
-NvBool kmigmgrIsGPUInstanceFlagValid_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NvBool kmigmgrIsMemoryPartitioningRequested_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 partitionFlags);
 
-NvBool kmigmgrIsGPUInstanceFlagValid_GH100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NvBool kmigmgrIsMemoryPartitioningNeeded_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId);
 
-NvBool kmigmgrIsGPUInstanceFlagValid_GB100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+NvBool kmigmgrIsGfxCapabilitesRequested_GB100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 partitionFlags);
 
-NvBool kmigmgrIsGPUInstanceFlagValid_GB202(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+struct NV_RANGE kmigmgrMemSizeFlagToSwizzIdRange_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 memSizeFlag);
 
-NvBool kmigmgrIsGPUInstanceFlagValid_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag);
+struct NV_RANGE kmigmgrSwizzIdToSpan_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId);
 
-static inline NvBool kmigmgrIsGPUInstanceFlagValid_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpuInstanceFlag) {
-    return NV_FALSE;
-}
+struct NV_RANGE kmigmgrSwizzIdToSpan_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId);
 
-NvBool kmigmgrGpuInstanceSupportVgpuTimeslice_GB202(struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag);
+struct NV_RANGE kmigmgrSwizzIdToGrSpan_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId);
 
-static inline NvBool kmigmgrGpuInstanceSupportVgpuTimeslice_3dd2c9(struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag) {
-    return NV_FALSE;
-}
+struct NV_RANGE kmigmgrSwizzIdToGrSpan_GA100(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId);
 
-NV_STATUS kmigmgrGenerateComputeInstanceUuid_VF(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId, NvU32 globalGrIdx, NvUuid *arg5);
+NV_STATUS kmigmgrSetMIGState_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvBool bMemoryPartitioningNeeded, NvBool bEnable, NvBool bUnload);
 
-static inline NV_STATUS kmigmgrGenerateComputeInstanceUuid_5baef9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId, NvU32 globalGrIdx, NvUuid *arg5) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
+NV_STATUS kmigmgrSetMIGState_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvBool bMemoryPartitioningNeeded, NvBool bEnable, NvBool bUnload);
 
-NV_STATUS kmigmgrGenerateGPUInstanceUuid_VF(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId, NvUuid *arg4);
+NV_STATUS kmigmgrGetComputeProfileFromGpcCount_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpcCount, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *pProfile);
 
-static inline NV_STATUS kmigmgrGenerateGPUInstanceUuid_5baef9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId, NvUuid *arg4) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
+NV_STATUS kmigmgrGetComputeProfileFromGpcCount_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpcCount, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *pProfile);
 
-NV_STATUS kmigmgrCreateComputeInstances_VF(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3, NvBool bQuery, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS arg5, NvU32 *pCIIds, NvBool bCreateCap);
+NvBool kmigmgrIsCTSAlignmentRequired_VF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
-NV_STATUS kmigmgrCreateComputeInstances_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg2, KERNEL_MIG_GPU_INSTANCE *arg3, NvBool bQuery, KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS arg5, NvU32 *pCIIds, NvBool bCreateCap);
-
-NvBool kmigmgrIsMemoryPartitioningRequested_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 partitionFlags);
-
-static inline NvBool kmigmgrIsMemoryPartitioningRequested_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 partitionFlags) {
-    return NV_FALSE;
-}
-
-NvBool kmigmgrIsMemoryPartitioningNeeded_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId);
-
-static inline NvBool kmigmgrIsMemoryPartitioningNeeded_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId) {
-    return NV_FALSE;
-}
-
-NvBool kmigmgrIsGfxCapabilitesRequested_GB100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 partitionFlags);
-
-static inline NvBool kmigmgrIsGfxCapabilitesRequested_3dd2c9(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 partitionFlags) {
-    return NV_FALSE;
-}
-
-static inline struct NV_RANGE kmigmgrMemSizeFlagToSwizzIdRange_d64cd6(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 memSizeFlag) {
-    return NV_RANGE_EMPTY;
-}
-
-struct NV_RANGE kmigmgrMemSizeFlagToSwizzIdRange_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 memSizeFlag);
-
-struct NV_RANGE kmigmgrSwizzIdToSpan_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId);
-
-struct NV_RANGE kmigmgrSwizzIdToSpan_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId);
-
-static inline struct NV_RANGE kmigmgrSwizzIdToSpan_d64cd6(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId) {
-    return NV_RANGE_EMPTY;
-}
-
-struct NV_RANGE kmigmgrSwizzIdToGrSpan_GA100(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId);
-
-struct NV_RANGE kmigmgrSwizzIdToGrSpan_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId);
-
-static inline struct NV_RANGE kmigmgrSwizzIdToGrSpan_d64cd6(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 swizzId) {
-    return NV_RANGE_EMPTY;
-}
-
-NV_STATUS kmigmgrSetMIGState_VF(OBJGPU *arg1, struct KernelMIGManager *arg2, NvBool bMemoryPartitioningNeeded, NvBool bEnable, NvBool bUnload);
-
-NV_STATUS kmigmgrSetMIGState_FWCLIENT(OBJGPU *arg1, struct KernelMIGManager *arg2, NvBool bMemoryPartitioningNeeded, NvBool bEnable, NvBool bUnload);
-
-NV_STATUS kmigmgrGetComputeProfileFromGpcCount_GB10B(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpcCount, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *pProfile);
-
-NV_STATUS kmigmgrGetComputeProfileFromGpcCount_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg2, NvU32 gpcCount, NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE *pProfile);
-
-static inline NvBool kmigmgrIsCTSAlignmentRequired_88bc07(OBJGPU *arg1, struct KernelMIGManager *arg2) {
-    return NV_TRUE;
-}
-
-NvBool kmigmgrIsCTSAlignmentRequired_VF(OBJGPU *arg1, struct KernelMIGManager *arg2);
-
-NvBool kmigmgrIsCTSAlignmentRequired_PF(OBJGPU *arg1, struct KernelMIGManager *arg2);
+NvBool kmigmgrIsCTSAlignmentRequired_PF(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 
 NV_STATUS kmigmgrRestoreFromBootConfig_PF(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager);
 
-static inline NV_STATUS kmigmgrRestoreFromBootConfig_56cd7a(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+// Inline HAL method definitions
+static inline NV_STATUS kmigmgrSetStaticInfo_395e98(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void kmigmgrClearStaticInfo_d44104(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return;
+}
+
+static inline NV_STATUS kmigmgrSaveToPersistenceFromVgpuStaticInfo_395e98(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kmigmgrDeleteGPUInstanceRunlists_ac1694(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3){
     return NV_OK;
 }
 
-static inline NvBool kmigmgrUseLegacyVgpuPolicy(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NV_STATUS kmigmgrCreateGPUInstanceRunlists_ac1694(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *arg3){
+    return NV_OK;
+}
+
+static inline void kmigmgrApplyDefaultCeMappings_d44104(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return;
+}
+
+static inline NV_STATUS kmigmgrClearMIGGpuInstanceCeMapping_ac1694(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance){
+    return NV_OK;
+}
+
+static inline NV_STATUS kmigmgrApplyMIGGpuInstanceCeMapping_ac1694(OBJGPU *arg1, struct KernelMIGManager *arg_this, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance){
+    return NV_OK;
+}
+
+static inline NV_STATUS kmigmgrCreateGPUInstanceCheck_395e98(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvBool bMemoryPartitioningNeeded){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kmigmgrPatchCICapacity_ac1694(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, const NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO *pProfile, NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS *pParams, NvU32 veidSlotCount){
+    return NV_OK;
+}
+
+static inline NvBool kmigmgrIsDevinitMIGBitSet_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this){
     return NV_FALSE;
 }
 
-static inline NvBool kmigmgrIsMIGNvlinkP2PSupportOverridden(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NV_STATUS kmigmgrConfigurePMSettings_ac1694(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return NV_OK;
+}
+
+static inline void kmigmgrDetectReducedConfig_d44104(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return;
+}
+
+static inline NvBool kmigmgrIsGPUInstanceCombinationValid_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag){
     return NV_FALSE;
 }
 
-static inline void kmigmgrSetMIGEnabled(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvBool bEnabled) {
+static inline NvBool kmigmgrIsGPUInstanceFlagValid_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag){
+    return NV_FALSE;
+}
+
+static inline NvBool kmigmgrGpuInstanceSupportVgpuTimeslice_d69453(struct KernelMIGManager *arg_this, NvU32 gpuInstanceFlag){
+    return NV_FALSE;
+}
+
+static inline NV_STATUS kmigmgrGenerateComputeInstanceUuid_5baef9(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId, NvU32 globalGrIdx, NvUuid *arg5){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS kmigmgrGenerateGPUInstanceUuid_5baef9(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId, NvUuid *arg4){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NvBool kmigmgrIsMemoryPartitioningRequested_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 partitionFlags){
+    return NV_FALSE;
+}
+
+static inline NvBool kmigmgrIsMemoryPartitioningNeeded_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId){
+    return NV_FALSE;
+}
+
+static inline NvBool kmigmgrIsGfxCapabilitesRequested_d69453(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 partitionFlags){
+    return NV_FALSE;
+}
+
+static inline struct NV_RANGE kmigmgrMemSizeFlagToSwizzIdRange_e30f0e(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 memSizeFlag){
+    return NV_RANGE_EMPTY;
+}
+
+static inline struct NV_RANGE kmigmgrSwizzIdToSpan_e30f0e(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId){
+    return NV_RANGE_EMPTY;
+}
+
+static inline struct NV_RANGE kmigmgrSwizzIdToGrSpan_e30f0e(OBJGPU *arg1, struct KernelMIGManager *arg_this, NvU32 swizzId){
+    return NV_RANGE_EMPTY;
+}
+
+static inline NvBool kmigmgrIsCTSAlignmentRequired_e661f0(OBJGPU *arg1, struct KernelMIGManager *arg_this){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS kmigmgrRestoreFromBootConfig_ac1694(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
+    return NV_OK;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvBool kmigmgrUseLegacyVgpuPolicy(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
+    return NV_FALSE;
+}
+
+static inline NvBool kmigmgrIsMIGNvlinkP2PSupportOverridden(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
+    return NV_FALSE;
+}
+
+static inline void kmigmgrSetMIGEnabled(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvBool bEnabled){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     pKernelMIGManager_PRIVATE->bMIGEnabled = bEnabled;
 }
 
-static inline const union ENGTYPE_BIT_VECTOR *kmigmgrGetPartitionableEnginesInUse(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline const union ENGTYPE_BIT_VECTOR * kmigmgrGetPartitionableEnginesInUse(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     return &pKernelMIGManager_PRIVATE->partitionableEnginesInUse;
 }
 
-static inline NvBool kmigmgrIsA100ReducedConfig(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NvBool kmigmgrIsA100ReducedConfig(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     return pKernelMIGManager_PRIVATE->bIsA100ReducedConfig;
 }
 
-static inline void kmigmgrSetIsA100ReducedConfig(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvBool bA100ReducedConfig) {
+static inline void kmigmgrSetIsA100ReducedConfig(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvBool bA100ReducedConfig){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     pKernelMIGManager_PRIVATE->bIsA100ReducedConfig = bA100ReducedConfig;
 }
 
-static inline NvU64 kmigmgrGetValidGlobalCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NvU64 kmigmgrGetValidGlobalCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     return pKernelMIGManager_PRIVATE->validGlobalCTSIdMask;
 }
 
-static inline void kmigmgrSetValidGlobalCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU64 validGlobalCTSIdMask) {
+static inline void kmigmgrSetValidGlobalCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU64 validGlobalCTSIdMask){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     pKernelMIGManager_PRIVATE->validGlobalCTSIdMask = validGlobalCTSIdMask;
 }
 
-static inline NvU64 kmigmgrGetValidGlobalGfxCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NvU64 kmigmgrGetValidGlobalGfxCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     return pKernelMIGManager_PRIVATE->validGlobalGfxCTSIdMask;
 }
 
-static inline void kmigmgrSetValidGlobalGfxCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU64 validGlobalGfxCTSIdMask) {
+static inline void kmigmgrSetValidGlobalGfxCTSIdMask(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU64 validGlobalGfxCTSIdMask){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     pKernelMIGManager_PRIVATE->validGlobalGfxCTSIdMask = validGlobalGfxCTSIdMask;
 }
 
-static inline NvBool kmigmgrIsSmgEnabled(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
+static inline NvBool kmigmgrIsSmgEnabled(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager){
     struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
     return pKernelMIGManager_PRIVATE->bIsSmgEnabled;
 }

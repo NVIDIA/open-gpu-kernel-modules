@@ -426,37 +426,20 @@ kgmmuReportFaultBufferOverflow_GV100
 
     if (kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu, NULL))
     {
-        if (IsVOLTA(pGpu))
-        {
-            //
-            // Check if Non_replayable interrupt is set when overflow is seen.
-            // This shouldn't happen as this can cause a live-lock considering
-            // top-half will kept on coming and will not let overflow interrupt
-            // serviced. HW should disable the FAULT_INTR when overflow is
-            // detected.
-            //
-            NV_PRINTF(LEVEL_ERROR, "MMU Fault: GPU %d: HW-BUG : "
-                "NON_REPLAYABLE_INTR is high when OVERFLOW is detected\n",
-                pGpu->gpuInstance);
-            NV_ASSERT(0);
-        }
-        else
-        {
-            //
-            // With message-based MMU interrupts (Turing onwards), it is
-            // possible for us to get here - a real fault can happen while an
-            // overflow happens, and there is no ordering guarantee about the
-            // order of these interrupts in HW. However, if we write GET pointer
-            // with GET != PUT while overflow is detected, the fault interrupt
-            // will not be sent. Instead, the overflow interrupt will be sent,
-            // so this will not cause an interrupt storm with message-based
-            // interrupts. If HW does have a bug though, we'll see the below
-            // print repeatedly which can point to a HW bug where it isn't
-            // behaving the way it is designed to do.
-            //
-            NV_PRINTF(LEVEL_INFO, "MMU Fault: GPU %d: NON_REPLAYABLE_INTR "
-                "is high when OVERFLOW is detected\n", pGpu->gpuInstance);
-        }
+        //
+        // With message-based MMU interrupts (Turing onwards), it is
+        // possible for us to get here - a real fault can happen while an
+        // overflow happens, and there is no ordering guarantee about the
+        // order of these interrupts in HW. However, if we write GET pointer
+        // with GET != PUT while overflow is detected, the fault interrupt
+        // will not be sent. Instead, the overflow interrupt will be sent,
+        // so this will not cause an interrupt storm with message-based
+        // interrupts. If HW does have a bug though, we'll see the below
+        // print repeatedly which can point to a HW bug where it isn't
+        // behaving the way it is designed to do.
+        //
+        NV_PRINTF(LEVEL_INFO, "MMU Fault: GPU %d: NON_REPLAYABLE_INTR "
+            "is high when OVERFLOW is detected\n", pGpu->gpuInstance);
     }
 
     // Check if overflow is due to incorrect fault buffer size or GET > SIZE

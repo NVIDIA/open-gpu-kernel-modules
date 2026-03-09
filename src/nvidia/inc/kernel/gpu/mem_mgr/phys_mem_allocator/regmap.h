@@ -45,9 +45,14 @@ extern "C" {
 //
 typedef struct pma_regmap
 {
+    NvU64 addrBase;                   /* Address of region start */
     NvU64 totalFrames;                /* Total number of frames */
+    // TODO: Should eventually include a localized region count here. For now, just use PMA_MAX_LOCALIZED_REGION_COUNT.
+    NvU64 localizedFrameBase;         /* First frame within a localizable region aligned to PMA_LOCALIZED_MEMORY_RESERVE_SIZE */
+    NvU64 localizedFrameCount;        /* Total number of localizable frames */
     NvU64 mapLength;                  /* Length of the map */
     NvU64 *map[PMA_BITS_PER_PAGE];    /* The bit map */
+    PMA_LOCALIZATION_INFO *localizationState;
     NvU64 frameEvictionsInProcess;    /* Count of frame evictions in-process */
     PMA_STATS *pPmaStats;             /* Point back to the public struct in PMA structure */
     NvBool bProtected;                /* The memory segment tracked by this regmap is protected (VPR/CPR) */
@@ -142,6 +147,40 @@ void pmaRegmapChangeBlockStateAttrib(void *pMap, NvU64 frameNum,
                                      PMA_PAGESTATUS newStateMask);
 
 /*!
+ * @brief Changes localization state for the requested frame
+ *
+ * Updates the state for the PMA_LOCALIZED_MEMORY_RESERVE_SIZE region covered by the specified frame.
+ *
+ * @param[in]   pMap         The regmap to change
+ * @param[in]   frameNum     The frame number to change
+ * @param[in]   newState     The new state to change to
+ * @param[in]   newStateMask Specific bits to write
+ *
+ * @return void
+ */
+void pmaRegmapChangeLocalizationState(void *pMap, NvU64 frameNum,
+                                      PMA_LOCALIZATION_STATUS newState,
+                                      PMA_LOCALIZATION_STATUS newStateMask);
+
+/*!
+ * @brief Changes localization state for the requested frames
+ *
+ * Updates the state for each PMA_LOCALIZED_MEMORY_RESERVE_SIZE region covered by the specified frames.
+ *
+ * @param[in]   pMap         The regmap to change
+ * @param[in]   frameNum     The frame number to change
+ * @param[in]   numFrames    The number of frames to change
+ * @param[in]   newState     The new state to change to
+ * @param[in]   newStateMask Specific bits to write
+ *
+ * @return void
+ */
+void pmaRegmapChangeBlockLocalizationState(void *pMap, NvU64 frameNum,
+                                           NvU64 numFrames,
+                                           PMA_LOCALIZATION_STATUS newState,
+                                           PMA_LOCALIZATION_STATUS newStateMask);
+
+/*!
  * @brief Read the page state & attrib bits
  *
  * Read the state of the page given the physical frame number
@@ -150,9 +189,51 @@ void pmaRegmapChangeBlockStateAttrib(void *pMap, NvU64 frameNum,
  * @param[in]   frameNum    The frame number to read
  * @param[in]   readAttrib  Read attribute bits as well
  *
- * @return PAGESTATUS of the frame
+ * @return PMA_PAGESTATUS of the frame
  */
 PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
+
+/*!
+ * @brief Read the page localization info
+ *
+ * Read the localization info of the page given the physical frame number
+ *
+ * Note: Localization info is shared between all pages within each PMA_LOCALIZED_MEMORY_RESERVE_SIZE region.
+ *
+ * @param[in]   pMap        The regmap to read
+ * @param[in]   frameNum    The frame number to read
+ *
+ * @return PMA_LOCALIZATION_INFO of the frame
+ */
+PMA_LOCALIZATION_INFO
+pmaRegmapReadLocalizationInfo(void *pMap, NvU64 frameNum);
+
+/*!
+ * @brief Read the page localization status
+ *
+ * Read the localization status of the page given the physical frame number
+ *
+ * Note: Localization status is shared between all pages within each PMA_LOCALIZED_MEMORY_RESERVE_SIZE region.
+ *
+ * @param[in]   pMap        The regmap to read
+ * @param[in]   frameNum    The frame number to read
+ *
+ * @return PMA_LOCALIZATION_STATUS of the frame
+ */
+ PMA_LOCALIZATION_STATUS pmaRegmapReadLocalizationStatus(void *pMap, NvU64 frameNum);
+
+/*!
+ * @brief Read the number of frames allocated within the localized region containing a given frame.
+ *
+ * Note: Regions are sized according to PMA_LOCALIZED_MEMORY_RESERVE_SIZE, and correspond to the localization status
+ *       bits returned by pmaRegmapReadLocalizationStatus.
+ *
+ * @param[in]   pMap        The regmap to read
+ * @param[in]   frameNum    The frame number to read
+ *
+ * @return Localized allocation count of the frame
+ */
+NvU64 pmaRegmapGetLocalizedRegionAllocationCount(void *pMap, NvU64 frameNum);
 
 
 /*!
@@ -162,16 +243,19 @@ PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
  * function is optimized for performance if PMA_BITS_PER_PAGE is 2. It uses
  * trailing-zero algorithm to determine which frame(s) has different status.
  *
- * @param[in]   pMap            The regmap to be scanned
- * @param[in]   addrBase        The base address of this region
- * @param[in]   rangeStart      The start of the restricted range
- * @param[in]   rangeEnd        The end of the restricted range
- * @param[in]   numPages        The number of pages we are scanning for
- * @param[out]  freeList        A list of free frame numbers -- contains only 1 element
- * @param[in]   pageSize        Size of one page
- * @param[in]   alignment       Alignment requested by client
- * @param[out]  pagesAllocated  Number of pages this call allocated
- * @param[in]   bSkipEvict      Whether it's ok to skip the scan for evictable pages
+ * @param[in]   pMap             The regmap to be scanned
+ * @param[in]   addrBase         The base address of this region
+ * @param[in]   rangeStart       The start of the restricted range
+ * @param[in]   rangeEnd         The end of the restricted range
+ * @param[in]   numPages         The number of pages we are scanning for
+ * @param[out]  freeList         A list of free frame numbers -- contains only 1 element
+ * @param[in]   pageSize         Size of one page
+ * @param[in]   alignment        Alignment requested by client
+ * @param[in]   bLocalizedAlloc  Whether this allocation is in localized memory
+ * @param[in]   localizedUgpuNum The uGPU ID this allocation should be localized to
+ * @param[out]  pagesAllocated   Number of pages this call allocated
+ * @param[in]   bSkipEvict       Whether it's ok to skip the scan for evictable pages
+ * @param[in]   bReverseAlloc    Search from the end of the region rather than the beginning
  *
  * @return NV_OK if succeeded
  * @return NV_ERR_IN_USE if found pages that can be evicted
@@ -179,7 +263,8 @@ PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
  */
 NV_STATUS pmaRegmapScanContiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment, NvU64 stride, NvU32 strideStart,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+    NvBool bLocalizedAlloc, NvU32 localizedUgpuNum,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
@@ -189,16 +274,19 @@ NV_STATUS pmaRegmapScanContiguous(
  * the regmap. This function will allocate contiguous space whenever possible.
  * Not optimized for performance yet.
  *
- * @param[in]   pMap            The regmap to be scanned
- * @param[in]   addrBase        The base address of this region
- * @param[in]   rangeStart      The start of the restricted range
- * @param[in]   rangeEnd        The end of the restricted range
- * @param[in]   numFrames       The number of frames we are scanning for
- * @param[out]  freeList        A list of free frame numbers (allocated by client)
- * @param[in]   pageSize        Size of one page
- * @param[in]   alignment       Alignment requested by client. Has to be equal to the pageSize.
- * @param[out]  pagesAllocated  Number of pages this call allocated
- * @param[in]   bSkipEvict      Whether it's ok to skip the scan for evictable pages
+ * @param[in]   pMap             The regmap to be scanned
+ * @param[in]   addrBase         The base address of this region
+ * @param[in]   rangeStart       The start of the restricted range
+ * @param[in]   rangeEnd         The end of the restricted range
+ * @param[in]   numFrames        The number of frames we are scanning for
+ * @param[out]  freeList         A list of free frame numbers (allocated by client)
+ * @param[in]   pageSize         Size of one page
+ * @param[in]   alignment        Alignment requested by client. Has to be equal to the pageSize.
+ * @param[in]   bLocalizedAlloc  Whether this allocation is in localized memory
+ * @param[in]   localizedUgpuNum The uGPU ID this allocation should be localized to
+ * @param[out]  pagesAllocated   Number of pages this call allocated
+ * @param[in]   bSkipEvict       Whether it's ok to skip the scan for evictable pages
+ * @param[in]   bReverseAlloc    Search from the end of the region rather than the beginning
  *
  * @return NV_OK if succeeded
  * @return NV_ERR_IN_USE if found pages that can be evicted
@@ -206,7 +294,8 @@ NV_STATUS pmaRegmapScanContiguous(
  */
 NV_STATUS pmaRegmapScanDiscontiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment, NvU64 stride, NvU32 strideStart, 
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+    NvBool bLocalizedAlloc, NvU32 localizedUgpuNum, 
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
@@ -220,6 +309,17 @@ NV_STATUS pmaRegmapScanDiscontiguous(
  */
 void pmaRegmapGetSize(void *pMap, NvU64 *pBytesTotal);
 
+/*!
+ * @brief Gets the total size of specified PMA managed region which can be localized to the given uGPU.
+ *
+ * Gets the total size of current PMA managed region in the FB.
+ *
+ * @param[in]  pMap         Pointer to the regmap for the region
+ * @param[in]  ugpuId       uGPU ID corresponding to the region
+ * @param[in]  pBytesTotal  Pointer that will return total bytes for current region.
+ *
+ */
+void pmaRegmapGetLocalizableSize(void *pMap, NvU32 ugpuId, NvU64 *pBytesTotal);
 
 /*!
  * @brief Gets the size of the maximum free chunk of memory in specified region.

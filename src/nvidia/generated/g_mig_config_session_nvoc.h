@@ -134,13 +134,9 @@ struct NVOC_METADATA__MIGConfigSession {
     const struct NVOC_VTABLE__MIGConfigSession vtable;
 };
 
-#ifndef __NVOC_CLASS_MIGConfigSession_TYPEDEF__
-#define __NVOC_CLASS_MIGConfigSession_TYPEDEF__
-typedef struct MIGConfigSession MIGConfigSession;
-#endif /* __NVOC_CLASS_MIGConfigSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MIGConfigSession
-#define __nvoc_class_id_MIGConfigSession 0x36a941
+#define __nvoc_class_id_MIGConfigSession 0x36a941u
+typedef struct MIGConfigSession MIGConfigSession;
 #endif /* __nvoc_class_id_MIGConfigSession */
 
 // Casting support
@@ -158,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MIGConfigSession;
 
 NV_STATUS __nvoc_objCreateDynamic_MIGConfigSession(MIGConfigSession**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MIGConfigSession(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MIGConfigSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MIGConfigSession(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MIGConfigSession((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS migconfigsessionConstruct_IMPL(struct MIGConfigSession *arg_pMIGConfigSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_migconfigsessionConstruct(arg_pMIGConfigSession, arg_pCallContext, arg_pParams) migconfigsessionConstruct_IMPL(arg_pMIGConfigSession, arg_pCallContext, arg_pParams)
+NV_STATUS migconfigsessionConstruct_IMPL(struct MIGConfigSession *pMIGConfigSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_migconfigsessionConstruct(pMIGConfigSession, pCallContext, pParams) migconfigsessionConstruct_IMPL(pMIGConfigSession, pCallContext, pParams)
 
 void migconfigsessionDestruct_IMPL(struct MIGConfigSession *pMIGConfigSession);
 #define __nvoc_migconfigsessionDestruct(pMIGConfigSession) migconfigsessionDestruct_IMPL(pMIGConfigSession)
@@ -300,6 +296,12 @@ static inline void migconfigsessionAddAdditionalDependants_DISPATCH(struct RsCli
     pResource->__nvoc_metadata_ptr->vtable.__migconfigsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

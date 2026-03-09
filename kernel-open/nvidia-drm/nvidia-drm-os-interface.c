@@ -38,7 +38,7 @@
 #include <drm/drmP.h>
 #endif
 
-bool nv_drm_modeset_module_param = false;
+bool nv_drm_modeset_module_param = true;
 bool nv_drm_fbdev_module_param = true;
 
 void *nv_drm_calloc(size_t nmemb, size_t size)

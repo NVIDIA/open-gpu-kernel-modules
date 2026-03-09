@@ -96,6 +96,7 @@ typedef struct SCRUB_NODE SCRUB_NODE;
 #define PMA_ALLOCATE_TURN_BLACKLIST_OFF     NVBIT(11)
 #define PMA_ALLOCATE_ALLOW_PARTIAL          NVBIT(12)
 #define PMA_ALLOCATE_REVERSE_ALLOC          NVBIT(13)
+// Note: Will need additional bits/field if PMA_MAX_LOCALIZED_REGION_COUNT is increased.
 #define PMA_ALLOCATE_LOCALIZED_UGPU0        NVBIT(14)
 #define PMA_ALLOCATE_LOCALIZED_UGPU1        NVBIT(15)
 

@@ -32,7 +32,6 @@
 
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
-#include "vgpu/vgpu_events.h"
 #include "nvdevid.h"
 
 #include "published/ampere/ga100/dev_mmu.h"

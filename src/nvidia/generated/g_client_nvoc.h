@@ -49,7 +49,7 @@ extern "C" {
 #include "nvoc/prelude.h"
 #include "resserv/rs_client.h"
 #include "rmapi/resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "nvsecurityinfo.h"
 
 // event information definitions
@@ -102,13 +102,9 @@ struct NVOC_METADATA__UserInfo {
     const struct NVOC_METADATA__RsShared metadata__RsShared;
 };
 
-#ifndef __NVOC_CLASS_UserInfo_TYPEDEF__
-#define __NVOC_CLASS_UserInfo_TYPEDEF__
-typedef struct UserInfo UserInfo;
-#endif /* __NVOC_CLASS_UserInfo_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_UserInfo
-#define __nvoc_class_id_UserInfo 0x21d236
+#define __nvoc_class_id_UserInfo 0x21d236u
+typedef struct UserInfo UserInfo;
 #endif /* __nvoc_class_id_UserInfo */
 
 // Casting support
@@ -127,13 +123,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_UserInfo;
 NV_STATUS __nvoc_objCreateDynamic_UserInfo(UserInfo**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_UserInfo(UserInfo**, Dynamic*, NvU32);
-#define __objCreate_UserInfo(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_UserInfo((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_UserInfo(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_UserInfo((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS userinfoConstruct_IMPL(struct UserInfo *arg_pUserInfo);
-#define __nvoc_userinfoConstruct(arg_pUserInfo) userinfoConstruct_IMPL(arg_pUserInfo)
+NV_STATUS userinfoConstruct_IMPL(struct UserInfo *pUserInfo);
+#define __nvoc_userinfoConstruct(pUserInfo) userinfoConstruct_IMPL(pUserInfo)
 
 void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
 #define __nvoc_userinfoDestruct(pUserInfo) userinfoDestruct_IMPL(pUserInfo)
@@ -142,6 +138,12 @@ void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -203,6 +205,7 @@ struct RmClient {
     PSECURITY_TOKEN pSecurityToken;
     struct UserInfo *pUserInfo;
     NvBool bIsClientVirtualMode;
+    NvU32 clientGfid;
     NvS32 imexChannel;
     PNODE pCliSyncGpuBoostTree;
     NvS32 lockStressCounter;
@@ -232,13 +235,9 @@ struct NVOC_METADATA__RmClient {
     const struct NVOC_VTABLE__RmClient vtable;
 };
 
-#ifndef __NVOC_CLASS_RmClient_TYPEDEF__
-#define __NVOC_CLASS_RmClient_TYPEDEF__
-typedef struct RmClient RmClient;
-#endif /* __NVOC_CLASS_RmClient_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RmClient
-#define __nvoc_class_id_RmClient 0xb23d83
+#define __nvoc_class_id_RmClient 0xb23d83u
+typedef struct RmClient RmClient;
 #endif /* __nvoc_class_id_RmClient */
 
 // Casting support
@@ -256,14 +255,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmClient;
 
 NV_STATUS __nvoc_objCreateDynamic_RmClient(RmClient**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RmClient(ppNewObj, pParent, createFlags, arg_pAllocator, arg_pParams) \
-    __nvoc_objCreate_RmClient((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pAllocator, arg_pParams)
+NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM_ALLOCATOR *pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RmClient(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pAllocator, pParams) \
+    __nvoc_objCreate_RmClient((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pAllocator, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS rmclientConstruct_IMPL(struct RmClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_rmclientConstruct(arg_pClient, arg_pAllocator, arg_pParams) rmclientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
+NV_STATUS rmclientConstruct_IMPL(struct RmClient *pClient, struct PORT_MEM_ALLOCATOR *pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_rmclientConstruct(pClient, pAllocator, pParams) rmclientConstruct_IMPL(pClient, pAllocator, pParams)
 
 void rmclientDestruct_IMPL(struct RmClient *pClient);
 #define __nvoc_rmclientDestruct(pClient) rmclientDestruct_IMPL(pClient)
@@ -383,6 +382,7 @@ static inline NV_STATUS rmclientShareResource_DISPATCH(struct RmClient *pClient,
     return pClient->__nvoc_metadata_ptr->vtable.__rmclientShareResource__(pClient, pResourceRef, pSharePolicy, pCallContext);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS rmclientValidate_IMPL(struct RmClient *pClient, const API_SECURITY_INFO *pSecInfo);
 
 NV_STATUS rmclientValidateLocks_IMPL(struct RmClient *pClient, struct RsServer *pServer, const struct CLIENT_ENTRY *pClientEntry);
@@ -399,6 +399,11 @@ RS_PRIV_LEVEL rmclientGetCachedPrivilege_IMPL(struct RmClient *pClient);
 
 NvBool rmclientIsAdmin_IMPL(struct RmClient *pClient, RS_PRIV_LEVEL privLevel);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

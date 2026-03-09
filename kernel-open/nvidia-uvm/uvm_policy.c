@@ -181,7 +181,6 @@ static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
     uvm_processor_id_t preferred_location = policy->preferred_location;
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     const uvm_page_mask_t *mapped_mask;
 
     if (UVM_ID_IS_INVALID(preferred_location) || !uvm_processor_mask_test(&va_block->mapped, preferred_location))
@@ -189,7 +188,7 @@ static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
 
     // Read duplication takes precedence over PreferredLocation. No mappings
     // need to be removed.
-    if (uvm_va_policy_is_read_duplicate(policy, va_space))
+    if (uvm_va_policy_is_read_duplicate(policy))
         goto done;
 
     mapped_mask = uvm_va_block_map_mask_get(va_block, preferred_location);
@@ -229,9 +228,6 @@ NV_STATUS uvm_va_block_set_preferred_location_locked(uvm_va_block_t *va_block,
 {
     uvm_assert_mutex_locked(&va_block->lock);
 
-    if (!uvm_va_block_is_hmm(va_block))
-        uvm_va_block_mark_cpu_dirty(va_block);
-
     return preferred_location_unmap_remote_pages(va_block, va_block_context, region);
 }
 
@@ -241,23 +237,14 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                                         NvU64 length,
                                         uvm_processor_id_t preferred_location,
                                         int preferred_cpu_nid,
-                                        uvm_va_range_managed_t **first_managed_range_to_migrate,
                                         uvm_tracker_t *out_tracker)
 {
     uvm_va_range_managed_t *managed_range, *managed_range_last;
     const NvU64 last_address = base + length - 1;
-    bool preferred_location_is_faultable_gpu = false;
     preferred_location_split_params_t split_params;
     NV_STATUS status;
 
     uvm_assert_rwsem_locked_write(&va_space->lock);
-
-    if (UVM_ID_IS_VALID(preferred_location)) {
-        *first_managed_range_to_migrate = NULL;
-        preferred_location_is_faultable_gpu = UVM_ID_IS_GPU(preferred_location) &&
-                                              uvm_processor_mask_test(&va_space->faultable_processors,
-                                                                      preferred_location);
-    }
 
     split_params.processor_id = preferred_location;
     split_params.nid = preferred_cpu_nid;
@@ -271,23 +258,11 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
 
     managed_range_last = NULL;
     uvm_for_each_va_range_managed_in_contig(managed_range, va_space, base, last_address) {
-        bool found_non_migratable_interval = false;
-
         managed_range_last = managed_range;
 
         // If we didn't split the ends, check that they match
         if (managed_range->va_range.node.start < base || managed_range->va_range.node.end > last_address)
             UVM_ASSERT(uvm_id_equal(managed_range->policy.preferred_location, preferred_location));
-
-        if (UVM_ID_IS_VALID(preferred_location)) {
-            const NvU64 start = max(base, managed_range->va_range.node.start);
-            const NvU64 end = min(last_address, managed_range->va_range.node.end);
-
-            found_non_migratable_interval = !uvm_range_group_all_migratable(va_space, start, end);
-
-            if (found_non_migratable_interval && preferred_location_is_faultable_gpu)
-                return NV_ERR_INVALID_DEVICE;
-        }
 
         status = uvm_va_range_set_preferred_location(managed_range,
                                                      preferred_location,
@@ -296,11 +271,6 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                                                      out_tracker);
         if (status != NV_OK)
             return status;
-
-        // Return the first managed range that needs to be migrated so the
-        // caller function doesn't need to traverse the tree again
-        if (found_non_migratable_interval && (*first_managed_range_to_migrate == NULL))
-            *first_managed_range_to_migrate = managed_range;
     }
 
     if (managed_range_last) {
@@ -325,15 +295,12 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
-    uvm_va_range_managed_t *managed_range = NULL;
-    uvm_va_range_managed_t *first_managed_range_to_migrate = NULL;
     struct mm_struct *mm;
     uvm_processor_id_t preferred_location_id;
     int preferred_cpu_nid = NUMA_NO_NODE;
     bool has_va_space_write_lock;
     const NvU64 start = params->requestedBase;
     const NvU64 length = params->length;
-    const NvU64 end = start + length - 1;
     uvm_api_range_type_t type;
 
     UVM_ASSERT(va_space);
@@ -410,35 +377,7 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
                                     length,
                                     preferred_location_id,
                                     preferred_cpu_nid,
-                                    &first_managed_range_to_migrate,
                                     &local_tracker);
-    if (status != NV_OK)
-        goto done;
-
-    // No managed range to migrate, early exit
-    if (!first_managed_range_to_migrate)
-        goto done;
-
-    uvm_va_space_downgrade_write(va_space);
-    has_va_space_write_lock = false;
-
-    // No need to check for holes in the managed ranges span here, this was
-    // checked by preferred_location_set
-    for (managed_range = first_managed_range_to_migrate;
-         managed_range;
-         managed_range = uvm_va_space_iter_managed_next(managed_range, end)) {
-        uvm_range_group_range_iter_t iter;
-        NvU64 cur_start = max(start, managed_range->va_range.node.start);
-        NvU64 cur_end = min(end, managed_range->va_range.node.end);
-
-        uvm_range_group_for_each_migratability_in(&iter, va_space, cur_start, cur_end) {
-            if (!iter.migratable) {
-                status = uvm_range_group_va_range_migrate(managed_range, iter.start, iter.end, &local_tracker);
-                if (status != NV_OK)
-                    goto done;
-            }
-        }
-    }
 
 done:
     tracker_status = uvm_tracker_wait_deinit(&local_tracker);
@@ -489,7 +428,6 @@ NV_STATUS uvm_api_unset_preferred_location(const UVM_UNSET_PREFERRED_LOCATION_PA
                                     params->length,
                                     UVM_ID_INVALID,
                                     NUMA_NO_NODE,
-                                    NULL,
                                     &local_tracker);
 
 done:
@@ -533,7 +471,6 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
                                        uvm_va_block_context_t *va_block_context,
                                        uvm_processor_id_t processor_id)
 {
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
@@ -543,7 +480,7 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
 
     // Read duplication takes precedence over SetAccessedBy. Do not add mappings
     // if read duplication is enabled.
-    if (uvm_va_policy_is_read_duplicate(policy, va_space))
+    if (uvm_va_policy_is_read_duplicate(policy))
         return NV_OK;
 
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block,
@@ -912,21 +849,16 @@ static NV_STATUS read_duplication_set(uvm_va_space_t *va_space, NvU64 base, NvU6
             if (managed_range->va_range.node.start < base || managed_range->va_range.node.end > last_address)
                 UVM_ASSERT(managed_range->policy.read_duplication == new_policy);
 
-            // If the va_space cannot currently read duplicate, only change the user
-            // state. All memory should already have read duplication unset.
-            if (uvm_va_space_can_read_duplicate(va_space, NULL)) {
-
-                // Handle SetAccessedBy mappings
-                if (new_policy == UVM_READ_DUPLICATION_ENABLED) {
-                    status = uvm_va_range_set_read_duplication(managed_range, mm);
-                    if (status != NV_OK)
-                        goto done;
-                }
-                else {
-                    // If unsetting read duplication fails, the return status is
-                    // not propagated back to the caller
-                    (void)uvm_va_range_unset_read_duplication(managed_range, mm);
-                }
+            // Handle SetAccessedBy mappings
+            if (new_policy == UVM_READ_DUPLICATION_ENABLED) {
+                status = uvm_va_range_set_read_duplication(managed_range, mm);
+                if (status != NV_OK)
+                    goto done;
+            }
+            else {
+                // If unsetting read duplication fails, the return status is
+                // not propagated back to the caller
+                (void)uvm_va_range_unset_read_duplication(managed_range, mm);
             }
 
             managed_range->policy.read_duplication = new_policy;
@@ -960,102 +892,6 @@ NV_STATUS uvm_api_disable_read_duplication(const UVM_DISABLE_READ_DUPLICATION_PA
     return read_duplication_set(va_space, params->requestedBase, params->length, false);
 }
 
-static NV_STATUS system_wide_atomics_set(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid, bool enable)
-{
-    NV_STATUS status = NV_OK;
-    uvm_gpu_t *gpu;
-    bool already_enabled;
-
-    uvm_va_space_down_write(va_space);
-
-    gpu = uvm_va_space_get_gpu_by_uuid(va_space, gpu_uuid);
-    if (!gpu) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto done;
-    }
-
-    if (gpu->parent->scoped_atomics_supported) {
-        status = NV_ERR_NOT_SUPPORTED;
-        goto done;
-    }
-
-    if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id)) {
-        status = NV_ERR_NOT_SUPPORTED;
-        goto done;
-    }
-
-    already_enabled = uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, gpu->id);
-    if (enable && !already_enabled) {
-        uvm_va_range_managed_t *managed_range;
-        uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
-        uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, NULL);
-        NV_STATUS tracker_status;
-
-        // Revoke atomic mappings from the calling GPU
-        uvm_for_each_va_range_managed(managed_range, va_space) {
-            uvm_va_block_t *va_block;
-
-            for_each_va_block_in_va_range(managed_range, va_block) {
-                uvm_page_mask_t *non_resident_pages = &va_block_context->caller_page_mask;
-
-                uvm_mutex_lock(&va_block->lock);
-
-                if (!uvm_processor_mask_test(&va_block->mapped, gpu->id)) {
-                    uvm_mutex_unlock(&va_block->lock);
-                    continue;
-                }
-
-                uvm_page_mask_complement(non_resident_pages, &va_block->gpus[uvm_id_gpu_index(gpu->id)]->resident);
-
-                status = uvm_va_block_revoke_prot(va_block,
-                                                  va_block_context,
-                                                  gpu->id,
-                                                  uvm_va_block_region_from_block(va_block),
-                                                  non_resident_pages,
-                                                  UVM_PROT_READ_WRITE_ATOMIC,
-                                                  &va_block->tracker);
-
-                tracker_status = uvm_tracker_add_tracker_safe(&local_tracker, &va_block->tracker);
-
-                uvm_mutex_unlock(&va_block->lock);
-
-                if (status == NV_OK)
-                    status = tracker_status;
-
-                if (status != NV_OK) {
-                    uvm_tracker_deinit(&local_tracker);
-                    goto done;
-                }
-            }
-        }
-        status = uvm_tracker_wait_deinit(&local_tracker);
-
-        uvm_processor_mask_set(&va_space->system_wide_atomics_enabled_processors, gpu->id);
-    }
-    else if (!enable && already_enabled) {
-        // TODO: Bug 1767229: Promote write mappings to atomic
-        uvm_processor_mask_clear(&va_space->system_wide_atomics_enabled_processors, gpu->id);
-    }
-
-done:
-    uvm_va_space_up_write(va_space);
-    return status;
-}
-
-NV_STATUS uvm_api_enable_system_wide_atomics(UVM_ENABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp)
-{
-    uvm_va_space_t *va_space = uvm_va_space_get(filp);
-
-    return system_wide_atomics_set(va_space, &params->gpu_uuid, true);
-}
-
-NV_STATUS uvm_api_disable_system_wide_atomics(UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp)
-{
-    uvm_va_space_t *va_space = uvm_va_space_get(filp);
-
-    return system_wide_atomics_set(va_space, &params->gpu_uuid, false);
-}
-
 NV_STATUS uvm_api_discard(UVM_DISCARD_PARAMS *params, struct file *filp)
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
@@ -1079,12 +915,6 @@ NV_STATUS uvm_api_discard(UVM_DISCARD_PARAMS *params, struct file *filp)
     // will still result in undesirable results.
     mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_read(va_space);
-
-    // Can't discard if any non-fault-capable GPUs have been registered
-    if (!uvm_processor_mask_empty(&va_space->non_faultable_processors)) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto done;
-    }
 
     type = uvm_api_range_type_check(va_space, mm, base, length);
     if (type != UVM_API_RANGE_TYPE_MANAGED) {

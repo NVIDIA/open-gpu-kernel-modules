@@ -836,10 +836,42 @@ void uvm_user_channel_detach(uvm_user_channel_t *user_channel, struct list_head 
     user_channel->gpu_va_space = NULL;
 }
 
+// Counterpart of uvm_test_dead_channel(). Used only when builtin tests are
+// enabled.
+static void check_dead(uvm_user_channel_t *user_channel)
+{
+    uvm_parent_gpu_t *parent_gpu = user_channel->gpu->parent;
+    NvU32 delay_us = user_channel->test.dead.delay_us;
+    struct page *page = user_channel->test.dead.page;
+
+    if (!page)
+        return;
+
+    // Put this channel on the dead list
+    uvm_spin_lock(&parent_gpu->instance_ptr_table_lock);
+    list_add_tail(&user_channel->test.dead.node, &parent_gpu->test.dead_channels);
+    uvm_spin_unlock(&parent_gpu->instance_ptr_table_lock);
+
+    // Wait to see if the bottom halves attempt translation of this channel's
+    // instance pointer.
+    if (delay_us)
+        usleep_range(delay_us, delay_us + 1000);
+
+    uvm_spin_lock(&parent_gpu->instance_ptr_table_lock);
+    list_del(&user_channel->test.dead.node);
+    uvm_spin_unlock(&parent_gpu->instance_ptr_table_lock);
+
+    kunmap(page);
+    NV_UNPIN_USER_PAGE(page);
+    user_channel->test.dead.page = NULL;
+}
+
 void uvm_user_channel_destroy_detached(uvm_user_channel_t *user_channel)
 {
     // Check that this channel was already detached
     UVM_ASSERT(user_channel->gpu_va_space == NULL);
+
+    check_dead(user_channel);
 
     // On Volta+ GPUs, clearing non-replayable faults requires pushing the
     // channel id into a method. The bottom half fault handler adds all such
@@ -999,7 +1031,7 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
     uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
-    if (!gpu || !uvm_processor_mask_test(&va_space->faultable_processors, gpu->id)) {
+    if (!gpu) {
         status = NV_ERR_INVALID_DEVICE;
         goto out;
     }
@@ -1026,8 +1058,7 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
         fault_entry.fault_source.ve_id += channel_info->smcEngineVeIdOffset;
 
     }
-    else if (channel_info->channelEngineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE &&
-             gpu->parent->non_replayable_faults_supported) {
+    else if (channel_info->channelEngineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE) {
         fault_entry.fault_source.client_type     = UVM_FAULT_CLIENT_TYPE_HUB;
         fault_entry.fault_source.mmu_engine_type = UVM_MMU_ENGINE_TYPE_CE;
         fault_entry.fault_source.ve_id           = 0;
@@ -1060,5 +1091,51 @@ out:
 
     uvm_kvfree(channel_info);
 
+    return status;
+}
+
+NV_STATUS uvm_test_dead_channel(UVM_TEST_DEAD_CHANNEL_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    uvm_user_channel_t *user_channel;
+    struct page *page;
+    long ret;
+    NV_STATUS status = NV_OK;
+    uvm_rm_user_object_t user_rm_channel =
+    {
+        .rm_control_fd = -1, // Not needed for a UVM-internal handle lookup
+        .user_client   = params->client,
+        .user_object   = params->channel,
+    };
+
+    if (!IS_ALIGNED(params->usr_error_count_ptr, sizeof(NvU64)))
+        return NV_ERR_INVALID_ADDRESS;
+
+    // Hold mmap_lock to call pin_user_pages(). The UVM locking helper functions
+    // are not used in case usr_error_count_ptr is a managed memory pointer, in
+    // which case the CPU fault handler would fire a locking assertion.
+    nv_mmap_read_lock(current->mm);
+    ret = NV_PIN_USER_PAGES(params->usr_error_count_ptr, 1, FOLL_WRITE, &page);
+    nv_mmap_read_unlock(current->mm);
+
+    if (ret < 0)
+        return errno_to_nv_status(ret);
+    UVM_ASSERT(ret == 1);
+
+    uvm_va_space_down_write(va_space);
+
+    user_channel = find_user_channel(va_space, &user_rm_channel);
+    if (user_channel && !user_channel->test.dead.page) {
+        // uvm_user_channel_detach() has not yet been called
+        user_channel->test.dead.page = page;
+        user_channel->test.dead.ptr = (NvU64 *)((uintptr_t)kmap(page) + (params->usr_error_count_ptr & ~PAGE_MASK));
+        user_channel->test.dead.delay_us = params->delay_us;
+    }
+    else {
+        status = NV_ERR_INVALID_CHANNEL;
+        NV_UNPIN_USER_PAGE(page);
+    }
+
+    uvm_va_space_up_write(va_space);
     return status;
 }

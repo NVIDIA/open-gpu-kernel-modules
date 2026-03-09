@@ -394,12 +394,6 @@ static void cpu_physical_chunk_release(uvm_cpu_chunk_t *chunk)
     if (phys_chunk->gpu_mappings.max_entries > 1)
         uvm_kvfree(phys_chunk->gpu_mappings.dynamic_entries);
 
-    if (uvm_cpu_chunk_get_size(chunk) > PAGE_SIZE &&
-        !bitmap_empty(phys_chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(chunk)))
-        SetPageDirty(chunk->page);
-
-    uvm_kvfree(phys_chunk->dirty_bitmap);
-
     if (chunk->type != UVM_CPU_CHUNK_TYPE_HMM)
         put_page(chunk->page);
 }
@@ -473,9 +467,6 @@ static struct page *uvm_cpu_chunk_alloc_page(uvm_chunk_size_t alloc_size,
     }
 
     if (page) {
-        if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO)
-            SetPageDirty(page);
-
         if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_STRICT)
             UVM_ASSERT(page_to_nid(page) == nid);
     }
@@ -495,13 +486,6 @@ static uvm_cpu_physical_chunk_t *uvm_cpu_chunk_create(uvm_chunk_size_t alloc_siz
     nv_kref_init(&chunk->common.refcount);
     uvm_mutex_init(&chunk->lock, UVM_LOCK_ORDER_LEAF);
     chunk->gpu_mappings.max_entries = 1;
-    if (alloc_size > PAGE_SIZE) {
-        chunk->dirty_bitmap = uvm_kvmalloc_zero(BITS_TO_LONGS(alloc_size / PAGE_SIZE) * sizeof(*chunk->dirty_bitmap));
-        if (!chunk->dirty_bitmap) {
-            uvm_kvfree(chunk);
-            return NULL;
-        }
-    }
 
     return chunk;
 }
@@ -766,92 +750,4 @@ uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_cpu_chunk_t **chunks)
         uvm_cpu_chunk_free(chunks[i]);
 
     return parent;
-}
-
-// Check the CPU PTE dirty bit and if set, clear it and fill the
-// physical chunk's dirty bitmap.
-static void check_cpu_dirty_flag(uvm_cpu_physical_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    struct page *page;
-
-    uvm_assert_mutex_locked(&chunk->lock);
-
-    // Kernels prior to v4.5 used the flags within the individual pages even for
-    // compound pages. For those kernels, we don't necessarily need the bitmap
-    // but using it allows for a single implementation.
-    page = chunk->common.page + page_index;
-    if (TestClearPageDirty(page))
-        bitmap_fill(chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(&chunk->common));
-}
-
-void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_cpu_physical_chunk_t *parent;
-
-    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
-    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
-
-    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE) {
-        SetPageDirty(chunk->page);
-        return;
-    }
-
-    parent = get_physical_parent(chunk);
-    if (uvm_cpu_chunk_is_logical(chunk)) {
-        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        page_index += cpu_chunk_get_phys_index(logical_chunk);
-    }
-
-    uvm_mutex_lock(&parent->lock);
-    set_bit(page_index, parent->dirty_bitmap);
-    uvm_mutex_unlock(&parent->lock);
-}
-
-void uvm_cpu_chunk_mark_clean(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_cpu_physical_chunk_t *parent;
-
-    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
-    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
-
-    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE) {
-        ClearPageDirty(chunk->page);
-        return;
-    }
-
-    parent = get_physical_parent(chunk);
-    if (uvm_cpu_chunk_is_logical(chunk)) {
-        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        page_index += cpu_chunk_get_phys_index(logical_chunk);
-    }
-
-    uvm_mutex_lock(&parent->lock);
-    check_cpu_dirty_flag(parent, page_index);
-    clear_bit(page_index, parent->dirty_bitmap);
-    uvm_mutex_unlock(&parent->lock);
-}
-
-bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_cpu_physical_chunk_t *parent;
-    bool dirty;
-
-    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
-    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
-
-    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE)
-        return PageDirty(chunk->page);
-
-    parent = get_physical_parent(chunk);
-    if (uvm_cpu_chunk_is_logical(chunk)) {
-        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        page_index += cpu_chunk_get_phys_index(logical_chunk);
-    }
-
-    uvm_mutex_lock(&parent->lock);
-    check_cpu_dirty_flag(parent, page_index);
-    dirty = test_bit(page_index, parent->dirty_bitmap);
-    uvm_mutex_unlock(&parent->lock);
-
-    return dirty;
 }

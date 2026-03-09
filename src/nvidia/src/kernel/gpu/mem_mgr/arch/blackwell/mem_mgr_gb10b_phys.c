@@ -154,6 +154,7 @@ memmgrDestroyScanoutCarveoutHeap_GB10B
     MemoryManager *pMemoryManager
 )
 {
+
     if (pMemoryManager->pScanoutHeap)
     {
         pMemoryManager->pScanoutHeap->eheapDestruct(pMemoryManager->pScanoutHeap);

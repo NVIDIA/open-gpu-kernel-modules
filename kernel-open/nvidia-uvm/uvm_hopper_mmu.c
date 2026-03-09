@@ -239,13 +239,11 @@ static NvU64 make_sparse_pte_hopper(void)
            HWCONST64(_MMU_VER3, PTE, PCF, SPARSE);
 }
 
-static NvU64 unmapped_pte_hopper(NvU64 page_size)
+static NvU64 unmapped_pte_hopper(void)
 {
     // Setting PCF to NO_VALID_4KB_PAGE on an otherwise-zeroed big PTE causes
     // the corresponding 4k PTEs to be ignored. This allows the invalidation of
     // a mixed PDE range to be much faster.
-    if (page_size != UVM_PAGE_SIZE_64K)
-        return 0;
 
     // When VALID == 0, GMMU still reads the PCF field, which indicates the PTE
     // is sparse (make_sparse_pte_hopper) or an unmapped big-page PTE.
@@ -509,19 +507,12 @@ static void make_pde_hopper(void *entry,
 
 static uvm_mmu_mode_hal_t hopper_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(void)
 {
     static bool initialized = false;
 
-    UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
-
-    // TODO: Bug 1789555: RM should reject the creation of GPU VA spaces with
-    // 128K big page size for Pascal+ GPUs
-    if (big_page_size == UVM_PAGE_SIZE_128K)
-        return NULL;
-
     if (!initialized) {
-        uvm_mmu_mode_hal_t *ampere_mmu_mode_hal = uvm_hal_mmu_mode_ampere(big_page_size);
+        uvm_mmu_mode_hal_t *ampere_mmu_mode_hal = uvm_hal_mmu_mode_ampere();
         UVM_ASSERT(ampere_mmu_mode_hal);
 
         // The assumption made is that arch_hal->mmu_mode_hal() will be called

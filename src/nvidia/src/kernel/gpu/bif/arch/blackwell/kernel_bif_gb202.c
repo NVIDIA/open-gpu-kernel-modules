@@ -26,6 +26,7 @@
 #include "platform/chipset/chipset.h"
 
 #include "published/blackwell/gb202/dev_xtl_ep_pcfg_gpu.h"
+#include "published/blackwell/gb202/dev_xtl_ep_pri.h"
 
 /*!
  * @brief Save PCIe Config space for Fn1
@@ -184,8 +185,86 @@ kbifInitLtr_GB202
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR, "LTR is disabled in the hierarchy\n");
+        NV_PRINTF(LEVEL_WARNING, "LTR is disabled in the hierarchy\n");
     }
+}
+
+/*!
+ * @brief Get LTR enable state
+ *
+ * @param[in]  pGpu       GPU object pointer
+ * @param[in]  pKernelBif KernelBif object pointer
+ * @param[out] pBEnable   True if LTR is enabled
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifGetLtrEnable_GB202
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool    *pBEnable
+)
+{
+    NvU32     regVal = 0;
+    NV_STATUS status = NV_OK;
+
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2\n");
+        status    = NV_ERR_GENERIC;
+        *pBEnable = NV_FALSE;
+        return status;
+    }
+
+    *pBEnable = (NvBool) FLD_TEST_DRF_NUM(_EP_PCFG_GPU, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, 0x1, regVal);
+
+    return status;
+}
+
+/*!
+ * @brief Set LTR enable
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ * @param[in] bEnable    Enable/disable LTR
+ */
+NV_STATUS
+kbifSetLtrEnable_GB202
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool     bEnable
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32     regVal;
+
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2\n");
+        return NV_ERR_GENERIC;
+    }
+
+    if (bEnable)
+    {
+        regVal = FLD_SET_DRF_NUM(_EP_PCFG_GPU, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, 0x1, regVal);
+    }
+    else
+    {
+        regVal = FLD_SET_DRF(_EP_PCFG_GPU, _DEVICE_CONTROL_STATUS_2, _LTR_ENABLE, _DEFAULT, regVal);
+    }
+
+    status = GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2, regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,"Unable to write NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2\n");
+        return NV_ERR_GENERIC;
+    }
+
+    return status;
 }
 
 /*!
@@ -272,4 +351,17 @@ NvBool kbifAllowGpuReqPcieAtomics_GB202
     }
 
     return NV_FALSE;
+}
+
+void
+kbifConstructXtlAperture_GB202
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 xtlBaseAddress = gpuGetXtlBaseAddr_HAL(pGpu);
+    NV_ASSERT_OR_RETURN_VOID(ioaprtInit(&pKernelBif->pBifXtlAperture,
+                                        pGpu->pIOApertures[DEVICE_INDEX_GPU],
+                                        xtlBaseAddress, DRF_SIZE(NV_XTL_EP_PRI)) == NV_OK);
 }

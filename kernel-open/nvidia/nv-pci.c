@@ -79,6 +79,7 @@
 #endif
 
 extern int NVreg_GrdmaPciTopoCheckOverride;
+extern int NVreg_ExcludeAllGpus;
 
 static void
 nv_check_and_exclude_gpu(
@@ -87,6 +88,13 @@ nv_check_and_exclude_gpu(
 )
 {
     char *uuid_str;
+
+    if (NVreg_ExcludeAllGpus)
+    {
+        NV_DEV_PRINTF(NV_DBG_INFO, nv, "Excluding all GPUs as requested\n");
+        nv->flags |= NV_FLAG_EXCLUDE;
+        return;
+    }
 
     uuid_str = rm_get_gpu_uuid(sp, nv);
     if (uuid_str == NULL)
@@ -439,6 +447,12 @@ nv_init_coherent_link_info
     if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) == 0)
     {
         nvl->coherent_link_info.gpu_mem_pa = pa;
+
+        NvU64 gpu_mem_size;
+        if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-size", &gpu_mem_size) == 0)
+        {
+            nvl->coherent_link_info.gpu_mem_size = gpu_mem_size;
+        }
     }
     else
     {
@@ -608,19 +622,19 @@ static const struct nv_pci_tegra_devfreq_data gb10b_tegra_devfreq_table[] = {
     {
         .clk_name = "gpc0clk",
         .icc_name = "gpu-write",
-        .gpc_fuse_field = BIT(3),
+        .gpc_fuse_field = BIT(0),
         .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
     },
     {
         .clk_name = "gpc1clk",
         .icc_name = "gpu-write",
-        .gpc_fuse_field = BIT(4),
+        .gpc_fuse_field = BIT(1),
         .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
     },
     {
         .clk_name = "gpc2clk",
         .icc_name = "gpu-write",
-        .gpc_fuse_field = BIT(5),
+        .gpc_fuse_field = BIT(2),
         .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
     },
     {
@@ -655,17 +669,11 @@ nv_pci_gb10b_devfreq_target(struct device *dev, unsigned long *freq, u32 flags)
     u32 kBps;
 #endif
 
-    //
-    // When GPU is suspended(railgated), the PM runtime suspend callback should
-    // suspend all devfreq devices, and devfreq cycle should not be triggered.
-    //
-    // However, users are still able to change the devfreq governor from the
-    // sysfs interface and indirectly invoke the update_devfreq function, which
-    // will further call the target callback function.
-    //
-    // Early stop the process here before clk_set_rate/clk_get_rate, since these
-    // calls served by BPMP will awake the GPU.
-    //
+    /*
+     * If the device is suspended, skip the frequency scaling
+     * because the clocks may be unavailable.
+     * Otherwise, set the clocks to the target frequency.
+     */
     if (pm_runtime_suspended(&pdev->dev))
     {
         return 0;
@@ -742,7 +750,17 @@ nv_pci_tegra_devfreq_get_cur_freq(struct device *dev, unsigned long *freq)
 {
     struct nv_pci_tegra_devfreq_dev *tdev = to_tegra_devfreq_dev(dev);
 
-    *freq = clk_get_rate(tdev->clk);
+    //
+    // Clock frequency reported from CCF is only valid when GPU is active.
+    // If GPU is suspended, return 0 frequency because whole GPU is powered off.
+    // Otherwise, return the last frequency step saved in devfreq.
+    //
+    if (pm_runtime_active(dev->parent))
+        *freq = clk_get_rate(tdev->clk);
+    else if (pm_runtime_suspended(dev->parent))
+        *freq = 0;
+    else
+        *freq = tdev->devfreq->previous_freq;
 
     return 0;
 }
@@ -761,18 +779,19 @@ nv_pci_tegra_devfreq_get_dev_status(struct device *dev,
     NV_STATUS status;
 
     //
-    // When GPU is suspended(railgated), the PM runtime suspend callback should
-    // suspend all devfreq devices, and devfreq cycle should not be triggered.
+    // GPU can be under suspending/suspended/resuming state defined the runtime
+    // PM (RPM) framework. When device is under either of these states, DVFS based
+    // on GPU load information should be disabled.
     //
-    // However, users are still able to change the devfreq governor from the
-    // sysfs interface and indirectly invoke the update_devfreq function, which
-    // will further call the get_dev_status callback function.
+    // Complete load-based DVFS cycle involve GPU load query through rmapi and
+    // clock scaling through BPMP MRQ_CLK mailbox request, which will awake the
+    // GPU and contradict the suspended state.
     //
-    if (pm_runtime_suspended(&pdev->dev))
+    if (!pm_runtime_active(&pdev->dev))
     {
         stat->total_time = 100;
         stat->busy_time = 0;
-        stat->current_frequency = clk_get_rate(tdev->clk);
+        stat->current_frequency = tdev->devfreq->previous_freq;
         return 0;
     }
 
@@ -1040,10 +1059,6 @@ nv_pci_gb10b_add_devfreq_device(struct nv_pci_tegra_devfreq_dev *tdev)
         goto err_nv_pci_gb10b_add_devfreq_device_opp;
     }
 
-#if defined(NV_DEVFREQ_HAS_SUSPEND_FREQ)
-    tdev->devfreq->suspend_freq = tdev->devfreq->scaling_max_freq;
-#endif
-
 #if NV_HAS_COOLING_SUPPORTED
     err = nv_pci_tegra_init_cooling_device(tdev);
     if (err)
@@ -1077,7 +1092,9 @@ nv_pci_gb10b_register_devfreq(struct pci_dev *pdev)
 #endif
     struct clk *clk;
     int i, err, node;
-    u32 gpu_pg_mask;
+    resource_size_t bar0_addr, bar0_size;
+    void *bar0_map;
+    u32 gpc_fuse_mask;
 
     while (pbus->parent != NULL)
     {
@@ -1086,21 +1103,26 @@ nv_pci_gb10b_register_devfreq(struct pci_dev *pdev)
 
     node = max(0, dev_to_node(to_pci_host_bridge(pbus->bridge)->dev.parent));
 
-    if (nv->tegra_pci_igpu_pg_mask == NV_TEGRA_PCI_IGPU_PG_MASK_DEFAULT)
+    bar0_addr = (resource_size_t)nv->bars[NV_GPU_BAR_INDEX_REGS].cpu_address;
+    bar0_size = (resource_size_t)nv->bars[NV_GPU_BAR_INDEX_REGS].size;
+    bar0_map = devm_ioremap(&pdev->dev, bar0_addr, bar0_size);
+
+    if (bar0_map == NULL)
     {
-        gpu_pg_mask = 0;
+        gpc_fuse_mask = 0;
     }
     else
     {
-        gpu_pg_mask = nv->tegra_pci_igpu_pg_mask;
-        nv_printf(NV_DBG_INFO, "NVRM: devfreq register receives gpu_pg_mask = %u\n", gpu_pg_mask);
+        gpc_fuse_mask = readl(bar0_map + nv->gpc_fuse_status_offset);
     }
+
+    nv_printf(NV_DBG_INFO, "NVRM: devfreq registration detects gpc_fuse_mask = %u\n", gpc_fuse_mask);
 
     for (i = 0; i < nvl->devfreq_table_size; i++)
     {
         tdata = &nvl->devfreq_table[i];
 
-        if (gpu_pg_mask && (gpu_pg_mask & tdata->gpc_fuse_field))
+        if (gpc_fuse_mask && (gpc_fuse_mask & tdata->gpc_fuse_field))
         {
             continue;
         }
@@ -1188,7 +1210,6 @@ nv_pci_gb10b_register_devfreq(struct pci_dev *pdev)
             nvl->gpc_devfreq_dev->devfreq = NULL;
             goto error_slave_teardown;
         }
-
         if (nvl->sys_devfreq_dev != NULL)
         {
             list_add_tail(&nvl->sys_devfreq_dev->gpc_cluster, &nvl->gpc_devfreq_dev->gpc_cluster);
@@ -1210,7 +1231,6 @@ nv_pci_gb10b_register_devfreq(struct pci_dev *pdev)
             nvl->nvd_devfreq_dev->devfreq = NULL;
             goto error_slave_teardown;
         }
-
         if (nvl->sys_devfreq_dev != NULL)
         {
             list_add_tail(&nvl->sys_devfreq_dev->nvd_cluster, &nvl->nvd_devfreq_dev->nvd_cluster);
@@ -1263,6 +1283,12 @@ nv_pci_gb10b_suspend_devfreq(struct device *dev)
 
     if (nvl->gpc_devfreq_dev != NULL && nvl->gpc_devfreq_dev->devfreq != NULL)
     {
+#if defined(NV_DEVFREQ_HAS_SUSPEND_FREQ)
+        mutex_lock(&nvl->gpc_devfreq_dev->devfreq->lock);
+        nvl->gpc_devfreq_dev->devfreq->suspend_freq = nvl->gpc_devfreq_dev->devfreq->previous_freq;
+        mutex_unlock(&nvl->gpc_devfreq_dev->devfreq->lock);
+#endif
+
         err = devfreq_suspend_device(nvl->gpc_devfreq_dev->devfreq);
         if (err)
         {
@@ -1279,6 +1305,12 @@ nv_pci_gb10b_suspend_devfreq(struct device *dev)
 
     if (nvl->nvd_devfreq_dev != NULL && nvl->nvd_devfreq_dev->devfreq != NULL)
     {
+#if defined(NV_DEVFREQ_HAS_SUSPEND_FREQ)
+        mutex_lock(&nvl->nvd_devfreq_dev->devfreq->lock);
+        nvl->nvd_devfreq_dev->devfreq->suspend_freq = nvl->nvd_devfreq_dev->devfreq->previous_freq;
+        mutex_unlock(&nvl->nvd_devfreq_dev->devfreq->lock);
+#endif
+
         err = devfreq_suspend_device(nvl->nvd_devfreq_dev->devfreq);
         if (err)
         {
@@ -1310,6 +1342,19 @@ nv_pci_gb10b_resume_devfreq(struct device *dev)
         {
             return err;
         }
+#if defined(NV_UPDATE_DEVFREQ_PRESENT)
+        /*
+         * During GPU runtime suspended state, switching the devfreq governor
+         * which doesn't poll for GPU utilization could lead to devfreq
+         * frequency not being updated after runtime resume.
+         *
+         * Manually trigger the devfreq update here to ensure the
+         * frequency is compliant with the devfreq governor.
+         */
+        mutex_lock(&nvl->gpc_devfreq_dev->devfreq->lock);
+        update_devfreq(nvl->gpc_devfreq_dev->devfreq);
+        mutex_unlock(&nvl->gpc_devfreq_dev->devfreq->lock);
+#endif
     }
 
     if (nvl->nvd_devfreq_dev != NULL && nvl->nvd_devfreq_dev->devfreq != NULL)
@@ -1319,6 +1364,11 @@ nv_pci_gb10b_resume_devfreq(struct device *dev)
         {
             return err;
         }
+#if defined(NV_UPDATE_DEVFREQ_PRESENT)
+        mutex_lock(&nvl->nvd_devfreq_dev->devfreq->lock);
+        update_devfreq(nvl->nvd_devfreq_dev->devfreq);
+        mutex_unlock(&nvl->nvd_devfreq_dev->devfreq->lock);
+#endif
     }
 
     return err;
@@ -1533,6 +1583,39 @@ nv_pci_get_tegra_igpu_data(struct pci_dev *pdev)
     return NULL;
 }
 
+void nv_pci_tegra_boost_clocks(struct device *dev)
+{
+#if defined(CONFIG_PM_DEVFREQ)
+    nv_linux_state_t *nvl = pci_get_drvdata(to_pci_dev(dev));
+    const struct nv_pci_tegra_devfreq_data *tdata;
+    struct clk *clk = NULL;
+    unsigned long max_freq;
+    int i;
+
+    for (i = 0; i < nvl->devfreq_table_size; i++)
+    {
+        tdata = &nvl->devfreq_table[i];
+
+        /*
+         * Don't boost the GPC, NVD clocks but only the uprocclk
+         * and sysclk. This saves power consumption of GPU rail
+         * and reduces impact to GPU suspend/resume latency.
+         */
+        if (strstr(tdata->clk_name, "uproc") || strstr(tdata->clk_name, "sys"))
+        {
+            clk = devm_clk_get(dev, tdata->clk_name);
+        }
+        else
+        {
+            continue;
+        }
+
+        max_freq = clk_round_rate(clk, ULONG_MAX);
+        clk_set_rate(clk, max_freq);
+    }
+#endif
+}
+
 static int
 nv_pci_tegra_register_devfreq(struct pci_dev *pdev)
 {
@@ -1614,6 +1697,13 @@ static void nv_init_tegra_gpu_pg_mask(nvidia_stack_t *sp, struct pci_dev *pci_de
     }
 
     nv_set_gpu_pg_mask(nv);
+
+    /*
+     * Trigger GPU reset to make new value of static TPC/GPC/FBP
+     * power-gating mask effective in BPMP-FW. Otherwise, the BPMP-FW
+     * may just save the mask in SW variable until next GPU reset.
+     */
+    nv_trigger_gpu_flr(nv);
 }
 
 static NvBool
@@ -1964,6 +2054,9 @@ nv_pci_probe
 
     nv->cpu_numa_node_id = dev_to_node(nvl->dev);
 
+    /* Initialize per-device init_on_probe from registry value NVreg_GpuInitOnProbe */
+    nvl->init_on_probe = (NVreg_GpuInitOnProbe != 0);
+
     if (nv_linux_init_open_q(nvl) != 0)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "nv_linux_init_open_q() failed!\n");
@@ -1983,22 +2076,6 @@ nv_pci_probe
 
     num_nv_devices++;
 
-    /*
-     * The newly created nvl object is added to the nv_linux_devices global list
-     * only after all the initialization operations for that nvl object are
-     * completed, so as to protect against simultaneous lookup operations which
-     * may discover a partially initialized nvl object in the list
-     */
-    LOCK_NV_LINUX_DEVICES();
-
-    if (nv_linux_add_device_locked(nvl) != 0)
-    {
-        UNLOCK_NV_LINUX_DEVICES();
-        goto err_add_device;
-    }
-
-    UNLOCK_NV_LINUX_DEVICES();
-
     pm_vt_switch_required(nvl->dev, NV_TRUE);
 
 #if defined(CONFIG_PM_DEVFREQ)
@@ -2011,20 +2088,10 @@ nv_pci_probe
 
     rm_get_gpu_uuid_raw(sp, nv);
 
-    nv_procfs_add_gpu(nvl);
-
     /* Parse and set any per-GPU registry keys specified. */
     nv_parse_per_device_option_string(sp);
 
     rm_set_rm_firmware_requested(sp, nv);
-
-#if defined(NV_VGPU_KVM_BUILD)
-    if (nvidia_vgpu_vfio_probe(nvl->pci_dev) != NV_OK)
-    {
-        NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to register device to vGPU VFIO module");
-        goto err_free_all;
-    }
-#endif
 
     nv_check_and_exclude_gpu(sp, nv);
 
@@ -2048,9 +2115,76 @@ nv_pci_probe
     if (nv_pci_tegra_register_devfreq(pci_dev) != 0)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to register linux devfreq");
-        goto err_free_all;
+        goto err_add_device;
     };
 #endif
+
+    /*
+     * Assign a minor number for the newly created nvl object
+     */
+    LOCK_NV_LINUX_DEVICES();
+    if (nv_linux_assign_minor_locked(nvl) != 0)
+    {
+        UNLOCK_NV_LINUX_DEVICES();
+        goto err_add_device;
+    }
+    UNLOCK_NV_LINUX_DEVICES();
+
+    if (nvl->init_on_probe && !(nv->flags & NV_FLAG_EXCLUDE))
+    {
+        int ret;
+        nv_printf(NV_DBG_SETUP, "NVRM: Starting device %04x:%02x:%02x.%x\n",
+            NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+            NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+
+        ret = nv_start_device(nv, sp);
+        if (ret)
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: Device start failed for %04x:%02x:%02x.%x (ret=%d)\n",
+                NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn), ret);
+            goto err_remove_minor;
+        }
+    }
+
+    /*
+     * The newly created nvl object is added to the nv_linux_devices global list
+     * only after all the initialization operations for that nvl object are
+     * completed, so as to protect against simultaneous lookup operations which
+     * may discover a partially initialized nvl object in the list
+     */
+    LOCK_NV_LINUX_DEVICES();
+    nv_linux_add_device_locked(nvl);
+    UNLOCK_NV_LINUX_DEVICES();
+
+    /*
+     * Create the procfs entry only after all the initialization operations for
+     * the nvl object are completed and the device is added to the
+     * nv_linux_devices global list
+     */
+    nv_procfs_add_gpu(nvl);
+
+#if defined(NV_VGPU_KVM_BUILD)
+    /*
+     * vGPU VFIO probe requires the device to be added to the nv_linux_devices
+     * global list since the vgpu mgr daemon invokes a open() call on the device
+     * as part of the probe sequence
+     */
+    if (nvidia_vgpu_vfio_probe(nvl->pci_dev) != NV_OK)
+    {
+        NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to register device to vGPU VFIO module");
+        goto err_free_all;
+    }
+#endif
+
+    /*
+     * Notification must be sent only after all the initialization operations
+     * as part of the probe sequence are complete.
+     * Do not add code after this line which can fail nv_pci_probe().
+     */
+    rm_notify_gpu_addition(sp, nv);
+
+    nvidia_modeset_probe(nvl);
 
     /*
      * Dynamic power management should be enabled as the last step.
@@ -2060,26 +2194,26 @@ nv_pci_probe
      */
     rm_enable_dynamic_power_management(sp, nv);
 
-    /*
-     * This must be the last action in nv_pci_probe(). Do not add code after this line.
-     */
-    rm_notify_gpu_addition(sp, nv);
-
     nv_kmem_cache_free_stack(sp);
-
-    nvidia_modeset_probe(nvl);
 
     return 0;
 
-goto err_free_all;
+#if defined(NV_VGPU_KVM_BUILD)
 err_free_all:
+#endif
     nv_procfs_remove_gpu(nvl);
-    rm_cleanup_dynamic_power_management(sp, nv);
-    pm_vt_switch_unregister(nvl->dev);
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
+    if (nvl->init_on_probe)
+        nv_stop_device(nv, sp);
+err_remove_minor:
+    LOCK_NV_LINUX_DEVICES();
+    nv_linux_remove_minor_locked(nvl);
+    UNLOCK_NV_LINUX_DEVICES();
 err_add_device:
+    rm_cleanup_dynamic_power_management(sp, nv);
+    pm_vt_switch_unregister(nvl->dev);
     nv_linux_stop_open_q(nvl);
 err_gpu_lost:
     nv_clk_clear_handles(nv);
@@ -2104,8 +2238,7 @@ failed:
     return -1;
 }
 
-static void
-nv_pci_remove(struct pci_dev *pci_dev)
+static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_use)
 {
     nv_linux_state_t *nvl = NULL;
     nv_state_t *nv;
@@ -2113,9 +2246,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
     NvU8 regs_bar_index = nv_bar_index_to_os_bar_index(pci_dev,
                                                        NV_GPU_BAR_INDEX_REGS);
 
-    nv_printf(NV_DBG_SETUP, "NVRM: removing GPU %04x:%02x:%02x.%x\n",
-              NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
-              NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
 #ifdef NV_PCI_SRIOV_SUPPORT
     if (pci_dev->is_virtfn)
@@ -2128,15 +2258,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
 
-    if (nv_kmem_cache_alloc_stack(&sp) != 0)
-    {
-        return;
-    }
-
     nvl = pci_get_drvdata(pci_dev);
     if (!nvl || (nvl->pci_dev != pci_dev))
     {
-        nv_kmem_cache_free_stack(sp);
         return;
     }
 
@@ -2162,6 +2286,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
     }
 #endif
 #endif // NV_IS_EXPORT_SYMBOL_GPL_iommu_dev_disable_feature
+
     /*
      * Flush and stop open_q before proceeding with removal to ensure nvl
      * outlives all enqueued work items.
@@ -2172,7 +2297,22 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     LOCK_NV_LINUX_DEVICES();
     down(&nvl->ldata_lock);
-    nv->flags |= NV_FLAG_PCI_REMOVE_IN_PROGRESS;
+
+    if (!block_if_gpu_in_use && (atomic64_read(&nvl->usage_count) != 0))
+    {
+        up(&nvl->ldata_lock);
+        UNLOCK_NV_LINUX_DEVICES();
+        return;
+    }
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        up(&nvl->ldata_lock);
+        UNLOCK_NV_LINUX_DEVICES();
+        return;
+    }
+
+    nv_linux_remove_device_locked(nvl);
 
     rm_notify_gpu_removal(sp, nv);
 
@@ -2194,7 +2334,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
          */
         while (atomic64_read(&nvl->usage_count) != 0)
         {
-
             /*
              * While waiting, release the locks so that other threads can make
              * forward progress.
@@ -2213,7 +2352,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
                 nv_printf(NV_DBG_ERRORS,
                           "NVRM: Failed removal of device %04x:%02x:%02x.%x!\n",
                           NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
-                          NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));  
+                          NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
                 WARN_ON(1);
                 goto done;
             }
@@ -2229,8 +2368,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     rm_check_for_gpu_surprise_removal(sp, nv);
 
-    nv_linux_remove_device_locked(nvl);
-
     /* Remove proc entry for this GPU */
     nv_procfs_remove_gpu(nvl);
 
@@ -2242,6 +2379,19 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     rm_cleanup_dynamic_power_management(sp, nv);
 
+    /*
+     * Stop device if it was initialized on probe but only after dynamic power
+     * management is disabled
+     */
+    if (nvl->init_on_probe && !(nv->flags & NV_FLAG_EXCLUDE))
+    {
+        nv_printf(NV_DBG_SETUP, "NVRM: Stopping device %04x:%02x:%02x.%x\n",
+              NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+              NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+        nv_stop_device(nv, sp);
+    }
+
+    nv_linux_remove_minor_locked(nvl);
     nv->removed = NV_TRUE;
 
     UNLOCK_NV_LINUX_DEVICES();
@@ -2253,7 +2403,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
     nvidia_vgpu_vfio_remove(pci_dev, NV_TRUE);
 #endif
 
-    if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_OPEN))
+    if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_INITIALIZED))
     {
         nv_acpi_unregister_notifier(nvl);
         if (nv->flags & NV_FLAG_PERSISTENT_SW_STATE)
@@ -2305,28 +2455,42 @@ done:
 }
 
 static void
+nv_pci_remove(struct pci_dev *pci_dev)
+{
+
+    nv_printf(NV_DBG_SETUP, "NVRM: removing GPU %04x:%02x:%02x.%x\n",
+              NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+              NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+
+    nv_pci_remove_helper(pci_dev, true);
+}
+
+static void
 nv_pci_shutdown(struct pci_dev *pci_dev)
 {
     nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
-
-    if (nvl != NULL)
+    
+    if (!nvl || (nvl->pci_dev != pci_dev))
     {
-        nv_state_t *nv = NV_STATE_PTR(nvl);
+        return;
+    }
 
-        if (nvl->is_forced_shutdown)
-        {
-            nvl->is_forced_shutdown = NV_FALSE;
-            return;
-        }
-
-        nvidia_modeset_remove(nv->gpu_id);
-
-        nvl->nv_state.is_shutdown = NV_TRUE;
+    if (nvl->is_forced_shutdown)
+    {
+        nvl->is_forced_shutdown = NV_FALSE;
+        return;
     }
 
 #if defined(CONFIG_PM_DEVFREQ)
     nv_pci_tegra_unregister_devfreq(pci_dev);
 #endif
+
+    nv_pci_remove_helper(pci_dev, false);
+
+    if (pci_get_drvdata(pci_dev) != NULL)
+    {
+        nvl->nv_state.is_shutdown = NV_TRUE;
+    }
 
     /* pci_clear_master is not defined for !CONFIG_PCI */
 #ifdef CONFIG_PCI
@@ -2511,14 +2675,7 @@ NvBool nv_pci_is_valid_topology_for_direct_pci(
         return NV_FALSE;
     }
 
-    switch (NVreg_GrdmaPciTopoCheckOverride) {
-        case NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_ALLOW_ACCESS:
-            return NV_TRUE;
-        case NV_REG_GRDMA_PCI_TOPO_CHECK_OVERRIDE_DENY_ACCESS:
-            return NV_FALSE;
-        default:
-           return (pdev0->dev.iommu_group == pdev1->dev.iommu_group);
-    }
+    return (pdev0->dev.iommu_group == pdev1->dev.iommu_group);
 }
 
 NvBool nv_pci_has_common_pci_switch(

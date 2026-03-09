@@ -106,12 +106,6 @@ gpuGc6Exit_IMPL
 
     }
 
-    // Check if we need to execute SR_EXIT step
-    if (GPU_IS_GC6_STEP_ID_SET(SR_ENTRY, pGpu->gc6State.executedStepMask))
-    {
-
-    }
-
 gpuGc6Exit_IMPL_exit:
     // Reset the executed step mask
     pGpu->gc6State.executedStepMask = 0;
@@ -534,8 +528,7 @@ _gpuGc6EntryStateUnload(OBJGPU *pGpu)
 static NV_STATUS
 _gpuGc6ExitSanityCheck(OBJGPU *pGpu)
 {
-    NV_STATUS status = NV_OK;
-
+    NV_STATUS status = NV_OK; // TODO: MPV
 
     // Make sure that the current GC6 state is GPU_STATE_ENTERED_GC6
     if (!IS_GPU_GC6_STATE_ENTERED(pGpu))

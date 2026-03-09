@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,7 +49,6 @@
 
 #include "gpu/gr/kernel_sm_debugger_session.h"
 #include "kernel/gpu/rc/kernel_rc.h"
-#include "Nvcm.h"
 #include "diagnostics/gpu_acct.h"
 #include "gpu/perf/kern_cuda_limit.h"
 

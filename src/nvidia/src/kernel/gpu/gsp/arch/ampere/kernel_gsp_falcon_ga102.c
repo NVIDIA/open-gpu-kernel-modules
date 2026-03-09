@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,10 +30,14 @@
 
 #include "gpu/gpu.h"
 #include "gpu/falcon/kernel_falcon.h"
+#include "rmgspseq.h"
 
 #include "published/ampere/ga102/dev_falcon_v4.h"
 #include "published/ampere/ga102/dev_falcon_second_pri.h"
 #include "published/ampere/ga102/dev_fbif_v4.h"
+#include "published/ampere/ga102/dev_gc6_island.h"
+#include "published/ampere/ga102/dev_gc6_island_addendum.h"
+#include "gpu/sec2/kernel_sec2.h"
 
 static GpuWaitConditionFunc s_dmaPollCondFunc;
 
@@ -146,6 +150,20 @@ s_dmaTransfer_GA102
     return status;
 }
 
+static void
+_kgspSetupPkcParams(OBJGPU *pGpu, KernelFalcon *pKernelFlcn, NvU32 hsSigDmemAddr, NvU32 engineIdMask, NvU32 ucodeId)
+{
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_PARAADDR(0), hsSigDmemAddr);
+
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_ENGIDMASK, engineIdMask);
+
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_CURR_UCODE_ID,
+                           DRF_NUM(_PFALCON2_FALCON, _BROM_CURR_UCODE_ID, _VAL, ucodeId));
+
+    kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_MOD_SEL,
+                           DRF_NUM(_PFALCON2_FALCON, _MOD_SEL, _ALGO, NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K));
+}
+
 /*!
  * Execute the HS falcon ucode provided in pFlcnUcode on the falcon engine
  * represented by pKernelFlcn and wait for its completion.
@@ -254,17 +272,7 @@ kgspExecuteHsFalcon_GA102
     }
 
     // Program BROM registers for PKC signature validation.
-    {
-        kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_PARAADDR(0), pUcode->hsSigDmemAddr);
-
-        kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_ENGIDMASK, pUcode->engineIdMask);
-
-        kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_BROM_CURR_UCODE_ID,
-                               DRF_NUM(_PFALCON2_FALCON, _BROM_CURR_UCODE_ID, _VAL, pUcode->ucodeId));
-
-        kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON2_FALCON_MOD_SEL,
-                               DRF_NUM(_PFALCON2_FALCON, _MOD_SEL, _ALGO, NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K));
-    }
+    _kgspSetupPkcParams(pGpu, pKernelFlcn, pUcode->hsSigDmemAddr, pUcode->engineIdMask, pUcode->ucodeId);
 
     // Set BOOTVEC to start of secure code.
     kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_BOOTVEC, pUcode->imemVa);
@@ -288,4 +296,107 @@ kgspExecuteHsFalcon_GA102
         *pMailbox1 = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_MAILBOX1);
 
     return status;
+}
+
+/*!
+ * Load and Execute an HS Binary on request from GSP
+ *
+ * @param[in]      pGpu             GPU object pointer
+ * @param[in]      pKernelGsp       KernelGsp object pointer
+ * @param[in]      pParams          Parameters for loading and executing an HS binary
+ *
+ * @return NV_OK if the HS binary has been loaded and executed successfully
+ */
+NV_STATUS
+kgspLoadAndExecuteHsBinary_GA102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp,
+    GspLoadExecHsBinaryParams *pParams
+)
+{
+    NvU32               dmaCmd = 0;
+    NvU32               memOff = 0;
+    NvU32               data = 0;
+    NV_STATUS           status;
+    KernelFalcon        *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
+
+    // Wait for the GSP processor suspend to complete.
+    status = kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
+    if (status != NV_OK)
+    {
+        NvU32 mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_MAILBOX0);
+        NV_PRINTF(LEVEL_ERROR, "Timeout waiting for falcon to suspend. mailbox0: 0x%x\n", mailbox0);
+        return status;
+    }
+
+    // Perform core reset.
+    NV_ASSERT_OK_OR_RETURN(kflcnReset_HAL(pGpu, pKernelFlcn));
+
+    kflcnDisableCtxReq_HAL(pGpu, pKernelFlcn);
+
+    // Program Transcfg to fetch the DMA data
+    data = GPU_REG_RD32(pGpu, pKernelFlcn->fbifBase + NV_PFALCON_FBIF_TRANSCFG(0 /* ctxDma */));
+    data = FLD_SET_DRF(_PFALCON, _FBIF_TRANSCFG, _TARGET, _LOCAL_FB, data);
+    data = FLD_SET_DRF(_PFALCON, _FBIF_TRANSCFG, _MEM_TYPE, _PHYSICAL, data);
+    data = FLD_SET_DRF(_PFALCON, _FBIF_TRANSCFG, _ENGINE_ID_FLAG, _BAR2_FN0, data);
+    GPU_REG_WR32(pGpu, pKernelFlcn->fbifBase + NV_PFALCON_FBIF_TRANSCFG(0 /* ctxDma */), data);
+
+    // Prepare DMA command
+    dmaCmd = FLD_SET_DRF(_PFALCON, _FALCON_DMATRFCMD, _WRITE, _FALSE, dmaCmd);
+    dmaCmd = FLD_SET_DRF(_PFALCON, _FALCON_DMATRFCMD, _SIZE, _256B, dmaCmd);
+    dmaCmd = FLD_SET_DRF_NUM(_PFALCON, _FALCON_DMATRFCMD, _CTXDMA, 0, dmaCmd);
+
+    // Prepare DMA command for IMEM
+    dmaCmd = FLD_SET_DRF(_PFALCON, _FALCON_DMATRFCMD, _IMEM, _TRUE, dmaCmd);
+    dmaCmd = FLD_SET_DRF_NUM(_PFALCON, _FALCON_DMATRFCMD, _SEC, 0x1, dmaCmd);
+
+    // Perform DMA for IMEM
+    NV_ASSERT_OK_OR_RETURN(
+        s_dmaTransfer_GA102(pGpu, pKernelFlcn,
+                            pParams->ucodeImemPA,    // dest
+                            pParams->ucodeImemVA,    // memOff
+                            pParams->imemPhysAddr,   // srcPhysAddr
+                            pParams->ucodeImemSize,  // sizeInBytes
+                            dmaCmd));
+
+    // Prepare DMA command for DMEM
+    dmaCmd = FLD_SET_DRF(_PFALCON, _FALCON_DMATRFCMD, _IMEM, _FALSE, dmaCmd);
+    dmaCmd = FLD_SET_DRF_NUM(_PFALCON, _FALCON_DMATRFCMD, _SEC, 0x0, dmaCmd);
+
+    if (pParams->ucodeDmemVA != FLCN_DMEM_VA_INVALID)
+    {
+        dmaCmd = FLD_SET_DRF(_PFALCON, _FALCON_DMATRFCMD, _SET_DMTAG, _TRUE, dmaCmd);
+        memOff = pParams->ucodeDmemVA;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        s_dmaTransfer_GA102(pGpu, pKernelFlcn,
+                            pParams->ucodeDmemPA,    // dest
+                            memOff,                  // memOff
+                            pParams->dmemPhysAddr,   // srcPhysAddr
+                            pParams->ucodeDmemSize,  // sizeInBytes
+                            dmaCmd));
+
+    // Program BootRom registers for PKC signature validation.
+    _kgspSetupPkcParams(pGpu, pKernelFlcn, pParams->hsSigDmemAddr,
+                        pParams->engineIdMask, pParams->ucodeId);
+
+    //
+    // Write FLCN_ERR_BINARY_NOT_STARTED in falcon mailbox register
+    // For binaries like ACR, which reads MAILBOX0 register to propagate error code, 0 is considered as success
+    // If binary fails to start, ACR thinks it has succeeded even it is not. Writing NOT_STARTED help to identify
+    // such cases.
+    kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_MAILBOX0, FLCN_ERR_BINARY_NOT_STARTED);
+
+    // Set BOOTVEC to start of secure code.
+    kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_BOOTVEC, pParams->ucodeImemVA);
+
+    // Start CPU now
+    kflcnStartCpu_HAL(pGpu, pKernelFlcn);
+
+    NV_ASSERT_OK_OR_RETURN(kflcnWaitForHalt_HAL(pGpu, pKernelFlcn, GPU_TIMEOUT_DEFAULT, 0));
+
+    // Resume RISC-V
+    return kgspExecuteCoreResume_HAL(pGpu, pKernelGsp);
 }

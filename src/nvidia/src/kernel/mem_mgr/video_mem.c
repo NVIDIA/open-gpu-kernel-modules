@@ -34,7 +34,6 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "diagnostics/gpu_acct.h"
 #include "gpu/device/device.h"
-#include "Nvcm.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "gpu/bus/kern_bus.h"
 #include "platform/sli/sli.h"
@@ -1338,7 +1337,7 @@ vidmemAllocResources
     {
         pFbAllocInfo->offset = pMemDesc->_pteArray[0];
 
-        if (SYS_GET_INSTANCE()->bEnableDynamicGranularityPageArrays == NV_TRUE)
+        if (SYS_GET_INSTANCE()->bEnableDynamicGranularityPageArrays == NV_TRUE && !memdescGetContiguity(pMemDesc, AT_CPU))
         {
             //
             // set pagearray granularity if dynamic memdesc pagesize is enabled

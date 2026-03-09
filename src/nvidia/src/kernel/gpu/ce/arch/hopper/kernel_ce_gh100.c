@@ -28,7 +28,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "platform/chipset/chipset.h"
 
-#include "published/hopper/gh100/dev_ce.h"
+#include "published/hopper/gh100/dev_ce_base.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 
 #define NV_CE_INVALID_TOPO_IDX 0xFFFF
@@ -163,7 +163,7 @@ kceGetPce2lceConfigSize1_GH100
     KernelCE *pKCe
 )
 {
-    return NV_CE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**
@@ -558,8 +558,8 @@ kceMapPceLceForGRCE_GH100
                 {
                     // GRCE is shared - set the status and shared LCE # in register field
                     lceIndex = pLocalPceLceMap[pceIndex];
-                    pLocalGrceMap[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 1) |
-                                             DRF_NUM(_CE, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
+                    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 1) |
+                                             DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
                 }
                 else
                 {
@@ -568,8 +568,8 @@ kceMapPceLceForGRCE_GH100
                     lceIndex = CE_GET_LOWEST_AVAILABLE_IDX(lceMask);
                     pLocalPceLceMap[pceIndex] = lceIndex;
                     // Reflect non-sharing status in register field
-                    pLocalGrceMap[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 0) |
-                                             DRF_DEF(_CE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
+                    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 0) |
+                                             DRF_DEF(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
                 }
             }
 
@@ -629,8 +629,8 @@ kceMapPceLceForCC
         {
             pLocalPceLceMap[pceIndex] = lceIndex;
             lceMask &= (~(NVBIT32(lceIndex)));
-            pLocalGrceMap[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 0) |
-                                     DRF_DEF(_CE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
+            pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 0) |
+                                     DRF_DEF(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
             pceIndex++;
         }
     }

@@ -622,12 +622,18 @@ NvBool gmmuFmtEntryIsPte(
             const MMU_FMT_LEVEL *pLevel,
             const NvU8          *pEntry);
 
+typedef enum
+{
+    GMMU_PEER_TYPE_LEGACY
+} GMMU_PEER_TYPE;
+
 /*!
  * Get the PTE physical address field format for a given aperture.
  */
 const GMMU_FIELD_ADDRESS *gmmuFmtPtePhysAddrFld(
                         const GMMU_FMT_PTE *pPte,
-                        const GMMU_APERTURE aperture);
+                        const GMMU_APERTURE aperture,
+                        const GMMU_PEER_TYPE peerType);
 
 /*!
  * GPU compression attributes for a physical surface.

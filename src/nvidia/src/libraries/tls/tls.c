@@ -82,7 +82,7 @@ typedef struct TlsDatabase
     /// @brief Allocator which allocates all necessary data for current @ref TlsDatabase.
     PORT_MEM_ALLOCATOR *pAllocator;
     /// @brief Last allocated entry id.
-    NvU64 lastEntryId;
+    PORT_ATOMIC NvU64 lastEntryId;
 
 #if TLS_IS_SINGLE_THREADED
     ThreadEntry passiveThreadEntry;
@@ -105,7 +105,7 @@ typedef struct TlsDatabase
 #define TLS_MAX_ISRS 1024
 #endif
     struct {
-        volatile NvU64 sp;
+        PORT_ATOMIC NvU64 sp;
         ThreadEntry   *pThreadEntry;
     } isrEntries[TLS_MAX_ISRS];
 #endif // TLS_ISR_CAN_USE_LOCK
@@ -122,7 +122,7 @@ typedef struct TlsDatabase
     NvU32 *isrCount;
 #endif
 
-    volatile NvU32 initCount;
+    PORT_ATOMIC NvU32 initCount;
 } TlsDatabase;
 
 TlsDatabase tlsDatabase; // Zero initialized
@@ -743,7 +743,7 @@ static void _tlsIsrEntriesInsert(ThreadEntry *pThreadEntry)
     NvU32 i = 0;
 
     while (!portAtomicExCompareAndSwapU64(&tlsDatabase.isrEntries[i].sp,
-                                         pThreadEntry->key.sp, 0))
+                                          pThreadEntry->key.sp, (NvU64)0))
     {
         i = (i + 1) % TLS_MAX_ISRS;
     }

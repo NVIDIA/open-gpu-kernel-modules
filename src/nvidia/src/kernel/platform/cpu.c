@@ -29,7 +29,6 @@
 
 #include "cpuopsys.h"
 
-#include "Nvcm.h"
 #include "os/os.h"
 #include "core/system.h"
 
@@ -191,6 +190,7 @@ void RmInitCpuInfo(void)
             break;
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_V2):
+        case AARCH64_VENDOR_PART(ARM, NEOVERSE_V3AE):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC;
             break;
         default:
@@ -482,19 +482,44 @@ void RmInitCpuInfo(
 {
     OBJSYS    *pSys = SYS_GET_INSTANCE();
 
-    // XXX
+    // Do this only once.
+    if (pSys->cpuInfo.bInitialized)
+        return;
+
+    // Init structure to default
+    portMemSet(&pSys->cpuInfo, 0, sizeof(pSys->cpuInfo));
+
+    // TODO cpuInfo.caps for MODS
     pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_UNKNOWN;
+    pSys->cpuInfo.caps = NV0000_CTRL_SYSTEM_CPU_CAP_SFENCE;
+
+    // Calculate the frequency
+    pSys->cpuInfo.clock = 1; //TODO no clock info from lscpu
 
     // Zero out the vendor-specific family, model & stepping
     pSys->cpuInfo.family = 0;
     pSys->cpuInfo.model  = 0;
     pSys->cpuInfo.stepping = 0;
 
-    // Calculate the frequency
-    pSys->cpuInfo.clock = 1;
-
-    // host native page size
+#ifdef PAGE_SIZE
+    pSys->cpuInfo.hostPageSize = PAGE_SIZE;
+#else
     pSys->cpuInfo.hostPageSize = 4096;
+#endif
+
+#if NVOS_IS_LIBOS
+    pSys->cpuInfo.numPhysicalCpus = 0; // Don't need this info.
+#else
+    pSys->cpuInfo.numPhysicalCpus = osGetCpuCount();
+#endif
+    pSys->cpuInfo.maxLogicalCpus = pSys->cpuInfo.numPhysicalCpus;
+
+    // There is no hyper-threading on RISCV
+    pSys->cpuInfo.numLogicalCpus = pSys->cpuInfo.numPhysicalCpus;
+
+    // TODO arch, impl
+
+    pSys->cpuInfo.bInitialized = NV_TRUE;
 }
 
 #endif // NVCPU_IS_RISCV64

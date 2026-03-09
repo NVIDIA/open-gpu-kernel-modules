@@ -35,16 +35,6 @@
 #define DPCD_MESSAGEBOX_SIZE                    48
 
 //
-// This definitions are being used for orin Hdcp opensourcing. Ideally this
-// should be replaced with build flags. Bug ID: 200733434
-//
-#define DP_OPTION_HDCP_SUPPORT_ENABLE           1   /* HDCP Enable */
-
-#define DP_OPTION_HDCP_12_ENABLED               1   /* DP1.2 HDCP ENABLE */
-
-#define DP_OPTION_QSE_ENABLED                   1   /* Remove here when QSE p4r check-in */
-
-//
 //  If a message is outstanding for at least 4 seconds
 //  assume no reply is coming through
 //
@@ -77,6 +67,9 @@
 #define HDCP_AUTHENTICATION_COOLDOWN_HPD        3000// 3 sec for first stream Add
 #define HDCP_CPIRQ_RXSTATUS_COOLDOWN            20  // 20ms between attempts
 
+#define HDCP_QSEANDSETECF_RETRIES               6   // 6 retries as authentication retires
+#define HDCP_QSEANDSETECF_COOLDOWN              3000// 3 sec between attempts as authentication period
+
 // Need to re-submit Stream Validation request to falcon microcontroller after 1 sec if current request fails
 #define HDCP_STREAM_VALIDATION_RESUBMIT_COOLDOWN    1000
 
@@ -85,6 +78,12 @@
 // then timeout.
 //
 #define HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN 8000
+
+//
+// Wait till 1 sec to check if still have active QSE message then send QSE message or queue
+// to check next time. 1sec should be enough that sink reply QSE request.
+//
+#define HDCP_SEND_QSE_MESSAGE_COOLDOWN          1000
 
 #define DPCD_OUI_NVIDIA                         0x00044B
 

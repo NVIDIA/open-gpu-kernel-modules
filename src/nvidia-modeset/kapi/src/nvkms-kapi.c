@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -260,6 +260,9 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     device->isSOC =
         FLD_TEST_DRF(0000, _CTRL_GPU_ID_INFO, _SOC, _TRUE,
                      idInfoParams.gpuFlags);
+    device->isSOCDisplay =
+        FLD_TEST_DRF(0000, _CTRL_GPU_ID_INFO, _SOC_TYPE, _DISPLAY,
+                     idInfoParams.gpuFlags);
 
     /* Initialize RM handle allocator */
 
@@ -341,21 +344,25 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
 
     /* Determine if GPU has coherent link */
 
-    infoParams.gpuInfoListSize = 1;
-    infoParams.gpuInfoList[0].index =
-        NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE;
-    ret = nvRmApiControl(device->hRmClient,
-                         device->hRmSubDevice,
-                         NV2080_CTRL_CMD_GPU_GET_INFO_V2,
-                         &infoParams, sizeof(infoParams));
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvKmsKapiLogDeviceDebug(device,
-                                "Failed to determine coherent GPU memory mode");
+    if (device->isSOCDisplay) {
         device->coherentGpuMemory = NV_FALSE;
     } else {
-        device->coherentGpuMemory =
-            (infoParams.gpuInfoList[0].data !=
-             NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NONE);
+        infoParams.gpuInfoListSize = 1;
+        infoParams.gpuInfoList[0].index =
+            NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE;
+        ret = nvRmApiControl(device->hRmClient,
+                             device->hRmSubDevice,
+                             NV2080_CTRL_CMD_GPU_GET_INFO_V2,
+                             &infoParams, sizeof(infoParams));
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvKmsKapiLogDeviceDebug(device,
+                                    "Failed to determine coherent GPU memory mode");
+            goto failed;
+        } else {
+            device->coherentGpuMemory =
+                (infoParams.gpuInfoList[0].data !=
+                 NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE_NONE);
+        }
     }
 
     if (device->migDevice != NO_MIG_DEVICE) {
@@ -475,7 +482,6 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
 
     paramsAlloc->request.deviceId.rmDeviceId = device->deviceInstance;
     paramsAlloc->request.deviceId.migDevice = device->migDevice;
-    paramsAlloc->request.sliMosaic = NV_FALSE;
     paramsAlloc->request.enableConsoleHotplugHandling = NV_TRUE;
 
     status = nvkms_ioctl_from_kapi(device->pKmsOpen,
@@ -626,7 +632,7 @@ static void FreeDevice(struct NvKmsKapiDevice *device)
 
     /* Lower the reference count of gpu. */
 
-    nvkms_close_gpu(device->gpuId);
+    nvkms_close_gpu(device->gpuId, NV_TRUE /* reset_aware */);
 
     if (device->pSema != NULL) {
         nvkms_sema_free(device->pSema);
@@ -939,7 +945,7 @@ static struct NvKmsKapiDevice* AllocateDevice
 
     /* Raise the reference count of gpu. */
 
-    if (!nvkms_open_gpu(params->gpuId)) {
+    if (!nvkms_open_gpu(params->gpuId, NV_TRUE /* reset_aware */)) {
         nvKmsKapiLogDebug("Failed to open GPU ID 0x%08x", params->gpuId);
         goto failed;
     }
@@ -1023,10 +1029,8 @@ static NvBool GrantPermissions
 {
     struct NvKmsGrantPermissionsParams paramsGrant = { };
     struct NvKmsPermissions *perm = &paramsGrant.request.permissions;
-    NvU32 dispIdx = device->dispIdx;
 
-    if (dispIdx >= ARRAY_LEN(perm->modeset.disp) ||
-        head >= ARRAY_LEN(perm->modeset.disp[0].head) || device == NULL) {
+    if (head >= ARRAY_LEN(perm->modeset.head) || device == NULL) {
         return NV_FALSE;
     }
 
@@ -1035,7 +1039,7 @@ static NvBool GrantPermissions
     }
 
     perm->type = NV_KMS_PERMISSIONS_TYPE_MODESET;
-    perm->modeset.disp[dispIdx].head[head].dpyIdList =
+    perm->modeset.head[head].dpyIdList =
         nvAddDpyIdToEmptyDpyIdList(nvNvU32ToDpyId(display));
 
     paramsGrant.request.fd = fd;
@@ -1055,11 +1059,9 @@ static NvBool RevokePermissions
 {
     struct NvKmsRevokePermissionsParams paramsRevoke = { };
     struct NvKmsPermissions *perm = &paramsRevoke.request.permissions;
-    NvU32 dispIdx = device->dispIdx;
 
 
-    if (dispIdx >= ARRAY_LEN(perm->modeset.disp) ||
-        head >= ARRAY_LEN(perm->modeset.disp[0].head) || device == NULL) {
+    if (head >= ARRAY_LEN(perm->modeset.head) || device == NULL) {
         return NV_FALSE;
     }
 
@@ -1068,7 +1070,7 @@ static NvBool RevokePermissions
     }
 
     perm->type = NV_KMS_PERMISSIONS_TYPE_MODESET;
-    perm->modeset.disp[dispIdx].head[head].dpyIdList =
+    perm->modeset.head[head].dpyIdList =
         nvAddDpyIdToEmptyDpyIdList(nvNvU32ToDpyId(display));
 
     paramsRevoke.request.deviceHandle = device->hKmsDevice;
@@ -1345,7 +1347,6 @@ static NvBool GetConnectorInfo
     struct NvKmsQueryConnectorDynamicDataParams paramsDynamicConnector = { };
     NvBool status = NV_FALSE;
     NvU64 startTime = 0;
-    NvBool timeout;
 
     if (device == NULL || info == NULL) {
         goto done;
@@ -1376,7 +1377,12 @@ static NvBool GetConnectorInfo
 
     info->type = paramsConnector.reply.type;
 
-
+    /*
+     * Attempt to query dynamic dpy ID list.
+     *
+     * If this fails, still return success, but specify that the dynamic dpy ID
+     * list is not valid.
+     */
     startTime = nvkms_get_usec();
     do {
         nvkms_memset(&paramsDynamicConnector, 0, sizeof(paramsDynamicConnector));
@@ -1388,31 +1394,35 @@ static NvBool GetConnectorInfo
                                    NVKMS_IOCTL_QUERY_CONNECTOR_DYNAMIC_DATA,
                                    &paramsDynamicConnector,
                                    sizeof(paramsDynamicConnector))) {
-
             nvKmsKapiLogDeviceDebug(
                     device,
                     "Failed to query dynamic data of connector 0x%08x",
                     connector);
-            status = NV_FALSE;
-
-            goto done;
+            break;
         }
 
-        timeout = nvkms_get_usec() - startTime >
-            NVKMS_DP_DETECT_COMPLETE_TIMEOUT_USEC;
-
-        if (!paramsDynamicConnector.reply.detectComplete && !timeout) {
-            nvkms_usleep(NVKMS_DP_DETECT_COMPLETE_POLL_INTERVAL_USEC);
+        if (paramsDynamicConnector.reply.detectComplete) {
+            /* Success */
+            break;
         }
-    } while (!paramsDynamicConnector.reply.detectComplete && !timeout);
+
+        if ((nvkms_get_usec() - startTime) >
+            NVKMS_DP_DETECT_COMPLETE_TIMEOUT_USEC) {
+
+            nvKmsKapiLogDeviceDebug(device, "Timed out waiting for DisplayPort"
+                   " device detection to complete.");
+            break;
+        }
+
+        nvkms_usleep(NVKMS_DP_DETECT_COMPLETE_POLL_INTERVAL_USEC);
+    } while (TRUE);
 
     if (!paramsDynamicConnector.reply.detectComplete) {
-        nvKmsKapiLogDeviceDebug(device, "Timed out waiting for DisplayPort"
-               " device detection to complete.");
-        status = NV_FALSE;
+        info->dynamicDpyIdListValid = FALSE;
+    } else {
+        info->dynamicDpyIdListValid = TRUE;
+        info->dynamicDpyIdList = paramsDynamicConnector.reply.dynamicDpyIdList;
     }
-
-    info->dynamicDpyIdList = paramsDynamicConnector.reply.dynamicDpyIdList;
 
 done:
 
@@ -1525,6 +1535,11 @@ static NvBool GetDynamicDisplayInfo(
     }
 
     params->connected = pParamsDpyDynamic->reply.connected;
+
+    params->maxWidthInPixels  = pParamsDpyDynamic->reply.maxWidthInPixels;
+    params->maxHeightInPixels = pParamsDpyDynamic->reply.maxHeightInPixels;
+    device->caps.maxWidthInPixels  = params->maxWidthInPixels;
+    device->caps.maxHeightInPixels = params->maxHeightInPixels;
 
     if (pParamsDpyDynamic->reply.connected && !params->overrideEdid) {
 
@@ -2139,13 +2154,11 @@ static NvBool MapMemory
         case NVKMS_KAPI_MAPPING_TYPE_USER:
             /*
              * Usermode clients can't be trusted not to access mappings while
-             * the GPU is in GC6.
+             * the GPU is in GC6. It's up to the caller to increment the GC6
+             * refcount when necessary.
              *
              * TODO: Revoke/restore mappings rather than blocking GC6
              */
-            if (!RmGc6BlockerRefCntInc(device)) {
-                return NV_FALSE;
-            }
             flags |= DRF_DEF(OS33, _FLAGS, _MEM_SPACE, _USER);
             break;
         case NVKMS_KAPI_MAPPING_TYPE_KERNEL:
@@ -2170,9 +2183,6 @@ static NvBool MapMemory
             device,
             "Failed to Map RM memory object 0x%x allocated for NVKMemory 0x%p",
             memory->hRmHandle, memory);
-        if (type == NVKMS_KAPI_MAPPING_TYPE_USER) {
-            RmGc6BlockerRefCntDec(device); // XXX Can't handle failure.
-        }
         return NV_FALSE;
     }
 
@@ -2213,10 +2223,6 @@ static void UnmapMemory
             device,
             "Failed to Ummap RM memory object 0x%x allocated for NVKMemory 0x%p",
             memory->hRmHandle, memory);
-    }
-
-    if (type == NVKMS_KAPI_MAPPING_TYPE_USER) {
-        RmGc6BlockerRefCntDec(device); // XXX Can't handle failure.
     }
 }
 
@@ -2855,13 +2861,6 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
         if (!layerConfig->cscUseMain) {
             params->layer[layer].csc.matrix = layerConfig->csc;
         }
-
-        // 'blendCtm' overrides 'csc', but provides a 3x4 matrix.
-        if (layerConfig->matrixOverrides.enabled.blendCtm) {
-            params->layer[layer].csc.useMain = FALSE;
-            params->layer[layer].csc.matrix =
-                layerConfig->matrixOverrides.blendCtm;
-        }
     }
 
     if (layerRequestedConfig->flags.srcWHChanged || bFromKmsSetMode) {
@@ -3041,6 +3040,14 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         changed = TRUE;
     }
 
+    if (layerRequestedConfig->flags.dstXYChanged || bFromKmsSetMode) {
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.val.x = layerConfig->dstX;
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.val.y = layerConfig->dstY;
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.specified = NV_TRUE;
+
+        changed = TRUE;
+    }
+
     if (layerRequestedConfig->flags.cscChanged ||
         layerRequestedConfig->flags.matrixOverridesChanged ||
         bFromKmsSetMode) {
@@ -3049,12 +3056,6 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         params->layer[NVKMS_MAIN_LAYER].csc.specified = NV_TRUE;
         params->layer[NVKMS_MAIN_LAYER].csc.useMain = FALSE;
         params->layer[NVKMS_MAIN_LAYER].csc.matrix = layerConfig->csc;
-
-        // 'blendCtm' overrides 'csc', but provides a 3x4 matrix.
-        if (layerConfig->matrixOverrides.enabled.blendCtm) {
-            params->layer[NVKMS_MAIN_LAYER].csc.matrix =
-                layerConfig->matrixOverrides.blendCtm;
-        }
 
         changed = TRUE;
     }
@@ -4043,6 +4044,8 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->mapMemory   = MapMemory;
     funcsTable->unmapMemory = UnmapMemory;
     funcsTable->isVidmem    = IsVidmem;
+    funcsTable->gc6BlockerRefCntInc = RmGc6BlockerRefCntInc;
+    funcsTable->gc6BlockerRefCntDec = RmGc6BlockerRefCntDec;
 
     funcsTable->createSurface  = CreateSurface;
     funcsTable->destroySurface = DestroySurface;

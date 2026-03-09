@@ -197,6 +197,8 @@ void NV_API_CALL os_pci_trigger_flr(void *handle)
     struct pci_dev *pdev = (struct pci_dev *) handle;
     int ret;
 
+    nv_printf(NV_DBG_INFO,
+        "NVRM: %s() Start to trigger FLR\n", __FUNCTION__);
     ret = pci_save_state(pdev);
     if (ret)
     {

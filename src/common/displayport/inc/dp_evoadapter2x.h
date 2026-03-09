@@ -107,7 +107,6 @@ namespace DisplayPort
         bool    bSupportUHBR2_50;               // Support UHBR2.5 for internal testing.
         bool    bSupportUHBR2_70;               // Support UHBR2.7 for internal testing.
         bool    bSupportUHBR5_00;               // Support UHBR5.0 for internal testing.
-        bool    bEnable5147205Fix;              // Enable 5147205 fix.
 
         bool    bConnectorIsUSBTypeC;
         bool    bCableVconnSourceUnknown;
@@ -149,7 +148,7 @@ namespace DisplayPort
         virtual bool clearFlushMode(FlushModePhase phase, NvU32 attachFailedHeadMask = 0, NvU32 headIndex = 0);
         virtual bool isRgFlushSequenceUsed() {return bUseRgFlushSequence;}
         void applyDP2xRegkeyOverrides();
-        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported, 
+        virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported,
                                    DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID streamIdentifier = DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY);
 
         // Link Rate will return the value with 10M convention!

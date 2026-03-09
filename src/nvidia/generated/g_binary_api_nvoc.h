@@ -124,13 +124,9 @@ struct NVOC_METADATA__BinaryApi {
     const struct NVOC_VTABLE__BinaryApi vtable;
 };
 
-#ifndef __NVOC_CLASS_BinaryApi_TYPEDEF__
-#define __NVOC_CLASS_BinaryApi_TYPEDEF__
-typedef struct BinaryApi BinaryApi;
-#endif /* __NVOC_CLASS_BinaryApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_BinaryApi
-#define __nvoc_class_id_BinaryApi 0xb7a47c
+#define __nvoc_class_id_BinaryApi 0xb7a47cu
+typedef struct BinaryApi BinaryApi;
 #endif /* __nvoc_class_id_BinaryApi */
 
 // Casting support
@@ -148,14 +144,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi;
 
 NV_STATUS __nvoc_objCreateDynamic_BinaryApi(BinaryApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_BinaryApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_BinaryApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_BinaryApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_BinaryApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS binapiConstruct_IMPL(struct BinaryApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_binapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS binapiConstruct_IMPL(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_binapiConstruct(pResource, pCallContext, pParams) binapiConstruct_IMPL(pResource, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -311,8 +307,14 @@ static inline void binapiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__binapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS binapiControl_IMPL(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -391,13 +393,9 @@ struct NVOC_METADATA__BinaryApiPrivileged {
     const struct NVOC_VTABLE__BinaryApiPrivileged vtable;
 };
 
-#ifndef __NVOC_CLASS_BinaryApiPrivileged_TYPEDEF__
-#define __NVOC_CLASS_BinaryApiPrivileged_TYPEDEF__
-typedef struct BinaryApiPrivileged BinaryApiPrivileged;
-#endif /* __NVOC_CLASS_BinaryApiPrivileged_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_BinaryApiPrivileged
-#define __nvoc_class_id_BinaryApiPrivileged 0x1c0579
+#define __nvoc_class_id_BinaryApiPrivileged 0x1c0579u
+typedef struct BinaryApiPrivileged BinaryApiPrivileged;
 #endif /* __nvoc_class_id_BinaryApiPrivileged */
 
 // Casting support
@@ -415,14 +413,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged;
 
 NV_STATUS __nvoc_objCreateDynamic_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_BinaryApiPrivileged(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_BinaryApiPrivileged((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_BinaryApiPrivileged(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_BinaryApiPrivileged((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS binapiprivConstruct_IMPL(struct BinaryApiPrivileged *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_binapiprivConstruct(arg_pResource, arg_pCallContext, arg_pParams) binapiprivConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS binapiprivConstruct_IMPL(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_binapiprivConstruct(pResource, pCallContext, pParams) binapiprivConstruct_IMPL(pResource, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -578,8 +576,14 @@ static inline void binapiprivAddAdditionalDependants_DISPATCH(struct RsClient *p
     pResource->__nvoc_metadata_ptr->vtable.__binapiprivAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS binapiprivControl_IMPL(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

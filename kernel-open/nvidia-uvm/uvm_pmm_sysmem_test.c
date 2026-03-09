@@ -155,13 +155,6 @@ static NV_STATUS test_cpu_chunk_alloc(uvm_chunk_size_t size,
         vunmap(cpu_addr);
     }
 
-    for (i = 0; i < size / PAGE_SIZE; i++) {
-        if (flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO)
-            TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(chunk, i), done);
-        else
-            TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(chunk, i), done);
-    }
-
 done:
     if (status == NV_OK)
         *out_chunk = chunk;
@@ -531,151 +524,6 @@ static NV_STATUS test_cpu_chunk_split_and_merge_2(uvm_gpu_t *gpu0, uvm_gpu_t *gp
     return NV_OK;
 }
 
-static NV_STATUS test_cpu_chunk_dirty_split(uvm_cpu_chunk_t *chunk)
-{
-    uvm_chunk_size_t size = uvm_cpu_chunk_get_size(chunk);
-    uvm_chunk_size_t split_size;
-    uvm_chunk_sizes_mask_t alloc_sizes = uvm_cpu_chunk_get_allocation_sizes();
-    uvm_cpu_chunk_t **split_chunks;
-    uvm_cpu_chunk_t *merged_chunk;
-    size_t num_pages = size / PAGE_SIZE;
-    size_t num_split_chunks;
-    size_t num_split_chunk_pages;
-    size_t i;
-    NV_STATUS status = NV_OK;
-
-    split_size = uvm_chunk_find_prev_size(alloc_sizes, size);
-    UVM_ASSERT(split_size != UVM_CHUNK_SIZE_INVALID);
-    num_split_chunks = size / split_size;
-    num_split_chunk_pages = split_size / PAGE_SIZE;
-    split_chunks = uvm_kvmalloc_zero(num_split_chunks * sizeof(*split_chunks));
-    if (!split_chunks)
-        return NV_ERR_NO_MEMORY;
-
-    TEST_NV_CHECK_GOTO(uvm_cpu_chunk_split(chunk, split_chunks), done_free);
-
-    // The parent chunk had only the even pages set as dirty. Make sure
-    // that's still the case after the split.
-    for (i = 0; i < num_split_chunks; i++) {
-        uvm_page_index_t chunk_page;
-
-        for (chunk_page = 0; chunk_page < num_split_chunk_pages; chunk_page++) {
-            if (((i * num_split_chunk_pages) + chunk_page) % 2)
-                TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(split_chunks[i], chunk_page), done);
-            else
-                TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(split_chunks[i], chunk_page), done);
-        }
-    }
-
-    if (split_size > PAGE_SIZE) {
-        for (i = 0; i < num_split_chunks; i++)
-            TEST_NV_CHECK_GOTO(test_cpu_chunk_dirty_split(split_chunks[i]), done);
-    }
-
-    merged_chunk = uvm_cpu_chunk_merge(split_chunks);
-    num_split_chunks = 0;
-    for (i = 0; i < num_pages; i++) {
-        if (i % 2)
-            TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(merged_chunk, i), done_free);
-        else
-            TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(merged_chunk, i), done_free);
-    }
-
-done:
-    for (i = 0; i < num_split_chunks; i++)
-        uvm_cpu_chunk_free(split_chunks[i]);
-
-done_free:
-    uvm_kvfree(split_chunks);
-    return status;
-}
-
-static NV_STATUS test_cpu_chunk_dirty(uvm_gpu_t *gpu)
-{
-    NV_STATUS status = NV_OK;
-    uvm_cpu_chunk_t *chunk;
-    uvm_chunk_size_t size;
-    uvm_chunk_sizes_mask_t alloc_sizes = uvm_cpu_chunk_get_allocation_sizes();
-    size_t i;
-
-    for_each_chunk_size(size, alloc_sizes) {
-        uvm_cpu_physical_chunk_t *phys_chunk;
-        size_t num_pages;
-
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
-        phys_chunk = uvm_cpu_chunk_to_physical(chunk);
-        num_pages = uvm_cpu_chunk_num_pages(chunk);
-
-        for (i = 0; i < num_pages; i++)
-            TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(chunk, i), done);
-
-        if (size > PAGE_SIZE)
-            TEST_CHECK_GOTO(bitmap_empty(phys_chunk->dirty_bitmap, num_pages), done);
-
-        uvm_cpu_chunk_free(chunk);
-
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO, NUMA_NO_NODE, &chunk));
-        phys_chunk = uvm_cpu_chunk_to_physical(chunk);
-        num_pages = uvm_cpu_chunk_num_pages(chunk);
-
-        // Allocating the chunk with UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO will set the
-        // entire chunk as dirty.
-        for (i = 0; i < num_pages; i++)
-            TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(chunk, i), done);
-
-        if (size > PAGE_SIZE)
-            TEST_CHECK_GOTO(bitmap_full(phys_chunk->dirty_bitmap, num_pages), done);
-
-        // For chunks larger than PAGE_SIZE, marking individual pages in a
-        // physical chunk should not affect the entire chunk.
-        for (i = 0; i < num_pages; i++) {
-            uvm_cpu_chunk_mark_clean(chunk, i);
-            TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(chunk, i), done);
-            if (size > PAGE_SIZE) {
-                TEST_CHECK_GOTO(bitmap_empty(phys_chunk->dirty_bitmap, i + 1), done);
-                TEST_CHECK_GOTO(bitmap_weight(phys_chunk->dirty_bitmap, num_pages) == num_pages - (i + 1), done);
-            }
-        }
-
-        for (i = 0; i < num_pages; i++) {
-            uvm_cpu_chunk_mark_dirty(chunk, i);
-            TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(chunk, i), done);
-            if (size > PAGE_SIZE) {
-                TEST_CHECK_GOTO(bitmap_full(phys_chunk->dirty_bitmap, i + 1), done);
-                TEST_CHECK_GOTO(bitmap_weight(phys_chunk->dirty_bitmap, num_pages) == i + 1, done);
-            }
-        }
-
-        // Leave only even pages as dirty
-        for (i = 1; i < num_pages; i += 2)
-            uvm_cpu_chunk_mark_clean(chunk, i);
-
-        for (i = 0; i < num_pages; i++) {
-            if (i % 2) {
-                TEST_CHECK_GOTO(!uvm_cpu_chunk_is_dirty(chunk, i), done);
-                if (size > PAGE_SIZE)
-                    TEST_CHECK_GOTO(!test_bit(i, phys_chunk->dirty_bitmap), done);
-            }
-            else {
-                TEST_CHECK_GOTO(uvm_cpu_chunk_is_dirty(chunk, i), done);
-                if (size > PAGE_SIZE)
-                    TEST_CHECK_GOTO(test_bit(i, phys_chunk->dirty_bitmap), done);
-            }
-        }
-
-        if (size > PAGE_SIZE)
-            TEST_NV_CHECK_GOTO(test_cpu_chunk_dirty_split(chunk), done);
-
-done:
-        uvm_cpu_chunk_free(chunk);
-
-        if (status != NV_OK)
-            break;
-    }
-
-    return status;
-}
-
 static NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk,
                                         uvm_va_space_t *va_space,
                                         const uvm_processor_mask_t *test_gpus)
@@ -873,7 +721,6 @@ NV_STATUS uvm_test_cpu_chunk_api(UVM_TEST_CPU_CHUNK_API_PARAMS *params, struct f
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_basic(gpu, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE), done);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_basic(gpu, UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO), done);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_split_and_merge(gpu), done);
-        TEST_NV_CHECK_GOTO(test_cpu_chunk_dirty(gpu), done);
     }
 
     TEST_NV_CHECK_GOTO(test_cpu_chunk_free(va_space, test_gpus), done);

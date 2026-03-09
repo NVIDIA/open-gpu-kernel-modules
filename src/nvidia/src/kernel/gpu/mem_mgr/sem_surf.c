@@ -80,7 +80,7 @@ _semsurfGetValue
     {
         const volatile NvU32 *pSemVal           = (volatile NvU32 *)pSemBase;
         volatile NvU8        *pMaxSubmittedBase = pMaxSubmitted + index * pShared->layout.size;
-        volatile NvU64       *pMaxSubmitted     = (volatile NvU64 *)(pMaxSubmittedBase + pShared->layout.maxSubmittedSemaphoreValueOffset);
+        PORT_ATOMIC NvU64 *pMaxSubmitted        = (PORT_ATOMIC NvU64 *)(pMaxSubmittedBase + pShared->layout.maxSubmittedSemaphoreValueOffset);
 
         // The ordering below is critical. See NvTimeSemFermiGetPayload() for full comment.
         // TODO Share this code?
@@ -88,7 +88,7 @@ _semsurfGetValue
 
         portAtomicMemoryFenceLoad();
 
-        NvU64 maxSubmitted = portAtomicExAddU64(pMaxSubmitted, 0);
+        NvU64 maxSubmitted = portAtomicExAddU64(pMaxSubmitted, 0ULL);
 
         NV_PRINTF(LEVEL_INFO, " Read maxSubmitted %" NvU64_fmtu " and 32-bit semVal %"
                   NvU64_fmtu " from semaphore index %" NvU64_fmtu "\n",
@@ -130,11 +130,11 @@ _semsurfSetValue
     {
         volatile NvU32 *pSemVal           = (volatile NvU32 *)pSemBase;
         volatile NvU8  *pMaxSubmittedBase = pMaxSubmitted + index * pShared->layout.size;
-        volatile NvU64 *pMaxSubmitted     = (volatile NvU64 *)(pMaxSubmittedBase + pShared->layout.maxSubmittedSemaphoreValueOffset);
+        PORT_ATOMIC NvU64 *pMaxSubmitted = (PORT_ATOMIC NvU64 *)(pMaxSubmittedBase + pShared->layout.maxSubmittedSemaphoreValueOffset);
         NvU64 oldMax, origMax;
 
         portAtomicMemoryFenceFull();
-        origMax = oldMax = portAtomicExAddU64(pMaxSubmitted, 0);
+        origMax = oldMax = portAtomicExAddU64(pMaxSubmitted, 0ULL);
 
         // First save the actual value to the max submitted slot using
         // an atomic max operation

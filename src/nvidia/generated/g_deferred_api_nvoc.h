@@ -153,13 +153,9 @@ struct NVOC_METADATA__DeferredApiObject {
     const struct NVOC_VTABLE__DeferredApiObject vtable;
 };
 
-#ifndef __NVOC_CLASS_DeferredApiObject_TYPEDEF__
-#define __NVOC_CLASS_DeferredApiObject_TYPEDEF__
-typedef struct DeferredApiObject DeferredApiObject;
-#endif /* __NVOC_CLASS_DeferredApiObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DeferredApiObject
-#define __nvoc_class_id_DeferredApiObject 0x8ea933
+#define __nvoc_class_id_DeferredApiObject 0x8ea933u
+typedef struct DeferredApiObject DeferredApiObject;
 #endif /* __nvoc_class_id_DeferredApiObject */
 
 // Casting support
@@ -177,14 +173,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DeferredApiObject;
 
 NV_STATUS __nvoc_objCreateDynamic_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DeferredApiObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DeferredApiObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DeferredApiObject(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DeferredApiObject((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS defapiConstruct_IMPL(struct DeferredApiObject *arg_pDeferredApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_defapiConstruct(arg_pDeferredApi, arg_pCallContext, arg_pParams) defapiConstruct_IMPL(arg_pDeferredApi, arg_pCallContext, arg_pParams)
+NV_STATUS defapiConstruct_IMPL(struct DeferredApiObject *pDeferredApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_defapiConstruct(pDeferredApi, pCallContext, pParams) defapiConstruct_IMPL(pDeferredApi, pCallContext, pParams)
 
 void defapiDestruct_IMPL(struct DeferredApiObject *pDeferredApi);
 #define __nvoc_defapiDestruct(pDeferredApi) defapiDestruct_IMPL(pDeferredApi)
@@ -425,10 +421,12 @@ static inline NV_STATUS defapiGetOrAllocNotifShare_DISPATCH(struct DeferredApiOb
     return pNotifier->__nvoc_metadata_ptr->vtable.__defapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS defapiGetSwMethods_IMPL(struct DeferredApiObject *pDeferredApi, const METHOD **ppMethods, NvU32 *pNumMethods);
 
 NvBool defapiIsSwMethodStalling_IMPL(struct DeferredApiObject *pDeferredApi, NvU32 hDeferredApi);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS defapiCtrlCmdDeferredApi_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi);
 
 NV_STATUS defapiCtrlCmdDeferredApiV2_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi);
@@ -437,6 +435,10 @@ NV_STATUS defapiCtrlCmdDeferredApiInternal_IMPL(struct DeferredApiObject *pDefer
 
 NV_STATUS defapiCtrlCmdRemoveApi_IMPL(struct DeferredApiObject *pDeferredApiObj, NV5080_CTRL_REMOVE_API_PARAMS *pRemoveApi);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

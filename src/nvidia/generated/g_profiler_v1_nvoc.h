@@ -126,13 +126,9 @@ struct NVOC_METADATA__Profiler {
     const struct NVOC_VTABLE__Profiler vtable;
 };
 
-#ifndef __NVOC_CLASS_Profiler_TYPEDEF__
-#define __NVOC_CLASS_Profiler_TYPEDEF__
-typedef struct Profiler Profiler;
-#endif /* __NVOC_CLASS_Profiler_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Profiler
-#define __nvoc_class_id_Profiler 0x65b4c7
+#define __nvoc_class_id_Profiler 0x65b4c7u
+typedef struct Profiler Profiler;
 #endif /* __nvoc_class_id_Profiler */
 
 // Casting support
@@ -150,14 +146,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Profiler;
 
 NV_STATUS __nvoc_objCreateDynamic_Profiler(Profiler**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_Profiler(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_Profiler((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_Profiler(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_Profiler((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS profilerConstruct_IMPL(struct Profiler *arg_pProfiler, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_profilerConstruct(arg_pProfiler, arg_pCallContext, arg_pParams) profilerConstruct_IMPL(arg_pProfiler, arg_pCallContext, arg_pParams)
+NV_STATUS profilerConstruct_IMPL(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_profilerConstruct(pProfiler, pCallContext, pParams) profilerConstruct_IMPL(pProfiler, pCallContext, pParams)
 
 #ifdef __nvoc_profiler_v1_h_disabled
 static inline NvBool profilerIsProfilingPermitted(struct Profiler *pProfiler) {
@@ -395,26 +391,10 @@ static inline void profilerAddAdditionalDependants_DISPATCH(struct RsClient *pCl
     pResource->__nvoc_metadata_ptr->vtable.__profilerAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-NvBool profilerIsProfilingPermitted_IMPL(struct Profiler *pProfiler);
-
-
-static inline NV_STATUS profilerConstructState_ac1694(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    return NV_OK;
-}
-
-
-static inline void profilerDestruct_d44104(struct Profiler *pProfiler) {
-    return;
-}
-
-
-static inline NV_STATUS profilerControlHwpmSupported_ac1694(struct Profiler *pProfiler, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return NV_OK;
-}
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS profilerControl_IMPL(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS profilerCtrlCmdProfilerReserveHwpm_IMPL(struct Profiler *pProfiler);
 
 NV_STATUS profilerCtrlCmdProfilerReleaseHwpm_IMPL(struct Profiler *pProfiler);
@@ -425,6 +405,24 @@ NV_STATUS profilerCtrlCmdProfilerRequestCgControls_IMPL(struct Profiler *pProfil
 
 NV_STATUS profilerCtrlCmdProfilerReleaseCgControls_IMPL(struct Profiler *pProfiler, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams);
 
+// HAL method declarations without bodies
+NvBool profilerIsProfilingPermitted_IMPL(struct Profiler *pProfiler);
+
+// Inline HAL method definitions
+static inline NV_STATUS profilerConstructState_ac1694(struct Profiler *pProfiler, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return NV_OK;
+}
+
+static inline void profilerDestruct_d44104(struct Profiler *pProfiler){
+    return;
+}
+
+static inline NV_STATUS profilerControlHwpmSupported_ac1694(struct Profiler *pProfiler, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams){
+    return NV_OK;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

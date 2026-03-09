@@ -514,11 +514,7 @@ kbusStatePreLoad_GM107
             NV_ASSERT(IsTEGRA(pGpu));
         }
 
-        if (!IsMAXWELL(pGpu))
-        {
-            // Bug 4351702 WAR: restore BAR2 after FBSR on Maxwell
-            NV_ASSERT_OK_OR_RETURN(kbusRestoreBar2_HAL(pKernelBus, flags));
-        }
+        NV_ASSERT_OK_OR_RETURN(kbusRestoreBar2_HAL(pKernelBus, flags));
     }
 
     return NV_OK;
@@ -557,12 +553,6 @@ kbusStateLoad_GM107
                 kbusCacheBAR1ResizeSize_WAR_BUG_3249028_HAL(pGpu, pKernelBus);
             }
         }
-    }
-
-    if ((flags & GPU_STATE_FLAGS_PRESERVING) && IsMAXWELL(pGpu))
-    {
-        // Bug 4351702 WAR: restore BAR2 after FBSR on Maxwell
-        NV_ASSERT_OK_OR_RETURN(kbusRestoreBar2_HAL(pKernelBus, flags));
     }
 
     return NV_OK;
@@ -973,51 +963,14 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     }
 
     //
-    // kbusIsP2pMailboxClientAllocated:
-    //     The client allocates the mailbox area
-    //     It is not safe to disable smooth transition from RM as it assumed to be enabled in KMD
+    // Bug 3208922: For notebooks with smooth transition enabled,
+    // allocate from high addresses to avoid conflict with UEFI scanout at offset 0
+    // since KMD claims addresses 0 through getCpuHostApertureMappableSize including
+    // the UEFI scanout.
     //
-    if (kbusIsP2pMailboxClientAllocated(pKernelBus))
+    if (bSmoothTransitionEnabled)
     {
-        // KMD requires smooth transition to have a reverse BAR1 VA space
-        if (bSmoothTransitionEnabled)
-            vaflags |= VASPACE_FLAGS_REVERSE;
-    }
-    else
-    {
-        //
-        // Smooth transition is enabled
-        //     Bug# 3208922: For BAR1 range > 4gig on notebooks.
-        //     For BAR1 range less than 4gig, otherwise
-        //
-        if (bSmoothTransitionEnabled && (IsMobile(pGpu) || (vaRangeMax < NV_U32_MAX)))
-        {
-            //
-            // If UEFI scanoutsurface size is configured to be non-zero,
-            // we are going to move all BAR1 vaspace requests to not
-            // conflict the UEFI scanout surface at offset 0 to the higher
-            // address range.
-            //
-            // P2P mailbox registers are 34 bit wide and hence can only address
-            // first 16 GiG of BAR1 due to the limited address width. Hence,
-            // they cannot be moved to the top of the BAR1 always.
-            //
-            // We are restricting this feature only to those SKUs which
-            // has BAR1 aperture within 4gig range, because this feature is
-            // notebook only, and the expectation is the BAR1 va range will
-            // not be that huge. Once BAR1 va range crosses 4gig (eventhough smaller?
-            // than 16 gig), we may have to revisit p2p mailbox and expand it to
-            // full fb range - as there will be new features such as dynamic BAR1.
-            //
-            // Choosing the smallest 4gig range for now.
-            //
-            vaflags |= VASPACE_FLAGS_REVERSE;
-        }
-        else
-        {
-            bSmoothTransitionEnabled = NV_FALSE;
-            pGpu->uefiScanoutSurfaceSizeInMB = 0;
-        }
+        vaflags |= VASPACE_FLAGS_REVERSE;
     }
 
     if (IS_GFID_VF(gfid))
@@ -2756,7 +2709,8 @@ kbusUpdateRmAperture_GM107
             gmmuFmtPtePhysAddrFld(pFmt->pPte,
                                   gmmuFieldGetAperture(
                                       &pFmt->pPte->fldAperture,
-                                      mapIter.pteTemplate.v8));
+                                      mapIter.pteTemplate.v8),
+                                      GMMU_PEER_TYPE_LEGACY);
 
 
         // Write PTE kind.
@@ -2815,7 +2769,8 @@ kbusUpdateRmAperture_GM107
                               pKernelBus->virtualBar2[gfid].pPDB,
                               pKernelBus->virtualBar2[gfid].flags,
                               PTE_DOWNGRADE, 0,
-                              NV_GMMU_INVAL_SCOPE_NON_LINK_TLBS);
+                              NV_GMMU_INVAL_SCOPE_NON_LINK_TLBS,
+                              NV_FALSE);
         SLI_LOOP_END
         pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
     }
@@ -5821,7 +5776,7 @@ kbusCommitBar2_GM107
             kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu,
                                    pKernelBus->virtualBar2[gfid].pPDB,
                                    pKernelBus->virtualBar2[gfid].flags,
-                                   PTE_DOWNGRADE, 0, NV_GMMU_INVAL_SCOPE_NON_LINK_TLBS);
+                                   PTE_DOWNGRADE, 0, NV_GMMU_INVAL_SCOPE_NON_LINK_TLBS, NV_FALSE);
             // Update the PDB pointer just before binding w/ the new page tables.
             pKernelBus->virtualBar2[gfid].pPDB = pKernelBus->bar2[gfid].pPDEMemDesc;
         }

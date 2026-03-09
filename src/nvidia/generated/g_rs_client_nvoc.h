@@ -153,13 +153,9 @@ struct NVOC_METADATA__RsClient {
     const struct NVOC_VTABLE__RsClient vtable;
 };
 
-#ifndef __NVOC_CLASS_RsClient_TYPEDEF__
-#define __NVOC_CLASS_RsClient_TYPEDEF__
-typedef struct RsClient RsClient;
-#endif /* __NVOC_CLASS_RsClient_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsClient
-#define __nvoc_class_id_RsClient 0x8f87e5
+#define __nvoc_class_id_RsClient 0x8f87e5u
+typedef struct RsClient RsClient;
 #endif /* __nvoc_class_id_RsClient */
 
 // Casting support
@@ -177,14 +173,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClient;
 
 NV_STATUS __nvoc_objCreateDynamic_RsClient(RsClient**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RsClient(RsClient**, Dynamic*, NvU32, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RsClient(ppNewObj, pParent, createFlags, arg_pAllocator, arg_pParams) \
-    __nvoc_objCreate_RsClient((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pAllocator, arg_pParams)
+NV_STATUS __nvoc_objCreate_RsClient(RsClient**, Dynamic*, NvU32, struct PORT_MEM_ALLOCATOR *pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RsClient(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pAllocator, pParams) \
+    __nvoc_objCreate_RsClient((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pAllocator, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS clientConstruct_IMPL(struct RsClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_clientConstruct(arg_pClient, arg_pAllocator, arg_pParams) clientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
+NV_STATUS clientConstruct_IMPL(struct RsClient *pClient, struct PORT_MEM_ALLOCATOR *pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_clientConstruct(pClient, pAllocator, pParams) clientConstruct_IMPL(pClient, pAllocator, pParams)
 
 void clientDestruct_IMPL(struct RsClient *pClient);
 #define __nvoc_clientDestruct(pClient) clientDestruct_IMPL(pClient)
@@ -424,6 +420,7 @@ static inline NV_STATUS clientShareResource_DISPATCH(struct RsClient *pClient, s
     return pClient->__nvoc_metadata_ptr->vtable.__clientShareResource__(pClient, pResourceRef, pSharePolicy, pCallContext);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS clientValidate_IMPL(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo);
 
 NV_STATUS clientValidateLocks_IMPL(struct RsClient *pClient, RsServer *pServer, const CLIENT_ENTRY *pClientEntry);
@@ -448,6 +445,11 @@ NV_STATUS clientPostProcessPendingFreeList_IMPL(struct RsClient *pClient, struct
 
 NV_STATUS clientShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 MAKE_INTRUSIVE_LIST(RsDisabledClientList, RsClient, disabledClientNode);
@@ -583,13 +585,9 @@ struct NVOC_METADATA__RsClientResource {
     const struct NVOC_VTABLE__RsClientResource vtable;
 };
 
-#ifndef __NVOC_CLASS_RsClientResource_TYPEDEF__
-#define __NVOC_CLASS_RsClientResource_TYPEDEF__
-typedef struct RsClientResource RsClientResource;
-#endif /* __NVOC_CLASS_RsClientResource_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsClientResource
-#define __nvoc_class_id_RsClientResource 0x083442
+#define __nvoc_class_id_RsClientResource 0x083442u
+typedef struct RsClientResource RsClientResource;
 #endif /* __nvoc_class_id_RsClientResource */
 
 // Casting support
@@ -607,14 +605,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClientResource;
 
 NV_STATUS __nvoc_objCreateDynamic_RsClientResource(RsClientResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RsClientResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_RsClientResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RsClientResource(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_RsClientResource((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS clientresConstruct_IMPL(struct RsClientResource *arg_pClientRes, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_clientresConstruct(arg_pClientRes, arg_pCallContext, arg_pParams) clientresConstruct_IMPL(arg_pClientRes, arg_pCallContext, arg_pParams)
+NV_STATUS clientresConstruct_IMPL(struct RsClientResource *pClientRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_clientresConstruct(pClientRes, pCallContext, pParams) clientresConstruct_IMPL(pClientRes, pCallContext, pParams)
 
 void clientresDestruct_IMPL(struct RsClientResource *pClientRes);
 #define __nvoc_clientresDestruct(pClientRes) clientresDestruct_IMPL(pClientRes)
@@ -731,6 +729,12 @@ static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pC
     pResource->__nvoc_metadata_ptr->vtable.__clientresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

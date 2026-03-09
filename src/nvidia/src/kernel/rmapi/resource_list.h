@@ -267,6 +267,16 @@ RS_ENTRY(
                                  RS_FLAGS_ALLOC_RPC_TO_ALL | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
+RS_ENTRY(
+    /* External Class         */ NVA083_GRID_DISPLAYLESS,
+    /* Internal Class         */ Griddisplayless,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Device)),
+    /* Alloc Param Info       */ RS_NONE,
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
     /* Channels can have a CHANNEL_GROUP, a DEVICE, or a CONTEXT_SHARE (starting in Volta) as parents */
     /* RS-TODO: Update channel parent list when CONTEXT_SHARE is added */
 RS_ENTRY(
@@ -500,16 +510,6 @@ RS_ENTRY(
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE |
                                  RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP,
-    /* Required Access Rights */ RS_ACCESS_NONE
-)
-RS_ENTRY(
-    /* External Class         */ NV_MEMORY_EXTENDED_USER,
-    /* Internal Class         */ ExtendedGpuMemory,
-    /* Multi-Instance         */ NV_TRUE,
-    /* Parents                */ RS_LIST(classId(Device), classId(Subdevice)),
-    /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_ALLOCATION_PARAMS),
-    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -2175,7 +2175,7 @@ RS_ENTRY(
 )
 RS_ENTRY(
     /* External Class         */ NV01_EVENT,
-    /* Internal Class         */ Event,
+    /* Internal Class         */ EventApi,
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_ANY_PARENT,
     /* Alloc Param Info       */ RS_REQUIRED(NV0005_ALLOC_PARAMETERS),
@@ -2187,7 +2187,7 @@ RS_ENTRY(
 )
 RS_ENTRY(
     /* External Class         */ NV01_EVENT_OS_EVENT,
-    /* Internal Class         */ Event,
+    /* Internal Class         */ EventApi,
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_ANY_PARENT,
     /* Alloc Param Info       */ RS_REQUIRED(NV0005_ALLOC_PARAMETERS),
@@ -2199,7 +2199,7 @@ RS_ENTRY(
 )
 RS_ENTRY(
     /* External Class         */ NV01_EVENT_KERNEL_CALLBACK,
-    /* Internal Class         */ Event,
+    /* Internal Class         */ EventApi,
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_ANY_PARENT,
     /* Alloc Param Info       */ RS_REQUIRED(NV0005_ALLOC_PARAMETERS),
@@ -2210,7 +2210,7 @@ RS_ENTRY(
 )
 RS_ENTRY(
     /* External Class         */ NV01_EVENT_KERNEL_CALLBACK_EX,
-    /* Internal Class         */ Event,
+    /* Internal Class         */ EventApi,
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_ANY_PARENT,
     /* Alloc Param Info       */ RS_REQUIRED(NV0005_ALLOC_PARAMETERS),
@@ -2272,7 +2272,7 @@ RS_ENTRY(
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_RELAXED_GPUS_LOCK_ON_DUP |
                                  RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC |
-                                 RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE,
+                                 RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 

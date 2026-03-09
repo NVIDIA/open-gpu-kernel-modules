@@ -279,13 +279,9 @@ struct NVOC_METADATA__OBJGSYNCMGR {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJGSYNCMGR_TYPEDEF__
-#define __NVOC_CLASS_OBJGSYNCMGR_TYPEDEF__
-typedef struct OBJGSYNCMGR OBJGSYNCMGR;
-#endif /* __NVOC_CLASS_OBJGSYNCMGR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGSYNCMGR
-#define __nvoc_class_id_OBJGSYNCMGR 0xd07fd0
+#define __nvoc_class_id_OBJGSYNCMGR 0xd07fd0u
+typedef struct OBJGSYNCMGR OBJGSYNCMGR;
 #endif /* __nvoc_class_id_OBJGSYNCMGR */
 
 // Casting support
@@ -304,13 +300,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR;
 NV_STATUS __nvoc_objCreateDynamic_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32);
-#define __objCreate_OBJGSYNCMGR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJGSYNCMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJGSYNCMGR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJGSYNCMGR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *arg_pGsyncmgr);
-#define __nvoc_gsyncmgrConstruct(arg_pGsyncmgr) gsyncmgrConstruct_IMPL(arg_pGsyncmgr)
+NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *pGsyncmgr);
+#define __nvoc_gsyncmgrConstruct(pGsyncmgr) gsyncmgrConstruct_IMPL(pGsyncmgr)
 
 void gsyncmgrDestruct_IMPL(struct OBJGSYNCMGR *pGsyncmgr);
 #define __nvoc_gsyncmgrDestruct(pGsyncmgr) gsyncmgrDestruct_IMPL(pGsyncmgr)
@@ -321,14 +317,20 @@ void gsyncmgrDestruct_IMPL(struct OBJGSYNCMGR *pGsyncmgr);
 #define gsyncmgrIsFirmwareGPUMismatch_HAL(pGpu, pGsync) gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(pGpu, pGsync)
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NvBool gsyncmgrIsFirmwareGPUMismatch_GB100(struct OBJGPU *pGpu, OBJGSYNC *pGsync);
 
-static inline NvBool gsyncmgrIsFirmwareGPUMismatch_4a4dee(struct OBJGPU *pGpu, OBJGSYNC *pGsync) {
+// Inline HAL method definitions
+static inline NvBool gsyncmgrIsFirmwareGPUMismatch_b2b553(struct OBJGPU *pGpu, OBJGSYNC *pGsync){
     return 0;
 }
 
+// Static dispatch method declarations
 NvBool gsyncmgrIsFirmwareGPUMismatch_STATIC_DISPATCH(struct OBJGPU *pGpu, OBJGSYNC *pGsync);
 
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

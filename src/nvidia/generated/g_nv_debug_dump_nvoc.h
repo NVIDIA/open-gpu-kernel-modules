@@ -228,13 +228,9 @@ struct NVOC_METADATA__NvDebugDump {
     const struct NVOC_VTABLE__NvDebugDump vtable;
 };
 
-#ifndef __NVOC_CLASS_NvDebugDump_TYPEDEF__
-#define __NVOC_CLASS_NvDebugDump_TYPEDEF__
-typedef struct NvDebugDump NvDebugDump;
-#endif /* __NVOC_CLASS_NvDebugDump_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_NvDebugDump
-#define __nvoc_class_id_NvDebugDump 0x7e80a2
+#define __nvoc_class_id_NvDebugDump 0x7e80a2u
+typedef struct NvDebugDump NvDebugDump;
 #endif /* __nvoc_class_id_NvDebugDump */
 
 // Casting support
@@ -258,8 +254,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump;
 NV_STATUS __nvoc_objCreateDynamic_NvDebugDump(NvDebugDump**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump**, Dynamic*, NvU32);
-#define __objCreate_NvDebugDump(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_NvDebugDump((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_NvDebugDump(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_NvDebugDump((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -444,10 +440,16 @@ static inline NvBool nvdIsPresent_DISPATCH(struct OBJGPU *pGpu, struct NvDebugDu
     return pEngstate->__nvoc_metadata_ptr->vtable.__nvdIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS nvdConstructEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg3);
 
 NV_STATUS nvdStateInitLocked_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

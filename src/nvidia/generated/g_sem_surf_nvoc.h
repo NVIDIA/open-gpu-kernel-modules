@@ -46,7 +46,7 @@ extern "C" {
 
 #include "gpu/gpu_resource.h" // GpuResource
 #include "mem_mgr/mem.h"
-#include "rmapi/event.h"     // EVENTNOTIFICATION
+#include "rmapi/event_api.h"     // EVENTNOTIFICATION
 
 #include "class/cl00da.h"    // NV_SEMAPHORE_SURFACE
 #include "ctrl/ctrl00da.h"   // NV_SEMAPHORE_SURFACE_CTRL_*
@@ -235,13 +235,9 @@ struct NVOC_METADATA__SemaphoreSurface {
     const struct NVOC_VTABLE__SemaphoreSurface vtable;
 };
 
-#ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
-#define __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
-typedef struct SemaphoreSurface SemaphoreSurface;
-#endif /* __NVOC_CLASS_SemaphoreSurface_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SemaphoreSurface
-#define __nvoc_class_id_SemaphoreSurface 0xeabc69
+#define __nvoc_class_id_SemaphoreSurface 0xeabc69u
+typedef struct SemaphoreSurface SemaphoreSurface;
 #endif /* __nvoc_class_id_SemaphoreSurface */
 
 // Casting support
@@ -259,14 +255,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SemaphoreSurface;
 
 NV_STATUS __nvoc_objCreateDynamic_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_SemaphoreSurface(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_SemaphoreSurface((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_SemaphoreSurface(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_SemaphoreSurface((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS semsurfConstruct_IMPL(struct SemaphoreSurface *arg_semaphoreSurf, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_semsurfConstruct(arg_semaphoreSurf, arg_pCallContext, arg_pParams) semsurfConstruct_IMPL(arg_semaphoreSurf, arg_pCallContext, arg_pParams)
+NV_STATUS semsurfConstruct_IMPL(struct SemaphoreSurface *semaphoreSurf, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_semsurfConstruct(semaphoreSurf, pCallContext, pParams) semsurfConstruct_IMPL(semaphoreSurf, pCallContext, pParams)
 
 void semsurfDestruct_IMPL(struct SemaphoreSurface *pSemSurf);
 #define __nvoc_semsurfDestruct(pSemSurf) semsurfDestruct_IMPL(pSemSurf)
@@ -505,10 +501,12 @@ static inline void semsurfAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__semsurfAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NvBool semsurfCanCopy_e661f0(struct SemaphoreSurface *pSemSurf) {
+// Virtual method declarations and/or inline definitions
+static inline NvBool semsurfCanCopy_e661f0(struct SemaphoreSurface *pSemSurf){
     return NV_TRUE;
 }
 
+// Exported method declarations and/or inline definitions
 NV_STATUS semsurfCtrlCmdRefMemory_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *pParams);
 
 NV_STATUS semsurfCtrlCmdBindChannel_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS *pParams);
@@ -521,6 +519,10 @@ NV_STATUS semsurfCtrlCmdSetValue_IMPL(struct SemaphoreSurface *pSemaphoreSurf, N
 
 NV_STATUS semsurfCtrlCmdUnregisterWaiter_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_UNREGISTER_WAITER_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

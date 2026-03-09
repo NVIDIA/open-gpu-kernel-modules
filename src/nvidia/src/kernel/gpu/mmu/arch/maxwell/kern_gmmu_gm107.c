@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,8 +99,10 @@ kgmmuCommitInvalidateTlbTest_GM107
  *                               invalidated. Unused on pre Turing
  * @param[in] invalidation_scope invalidation scope to choose whether to invalidate
  *                               Link TLB or Non-Link TLBs or ALL TLBs
+ *
+ * @returns    NV_STATUS
  */
-void
+NV_STATUS
 kgmmuInvalidateTlb_GM107
 (
     OBJGPU              *pGpu,
@@ -109,7 +111,8 @@ kgmmuInvalidateTlb_GM107
     NvU32                vaspaceFlags,
     VAS_PTE_UPDATE_TYPE  update_type,
     NvU32                gfid,
-    NvU32                invalidation_scope
+    NvU32                invalidation_scope,
+    NvBool               bForceSysmemBar
 )
 {
     NV_STATUS             status         = NV_OK;
@@ -127,7 +130,7 @@ kgmmuInvalidateTlb_GM107
         IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
         (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
     {
-        return;
+        return status;
     }
 
     // Clear struct before use.
@@ -141,7 +144,7 @@ kgmmuInvalidateTlb_GM107
     {
         NV_PRINTF(LEVEL_INFO,
                   "disable_mmu_invalidate flag, skipping hub invalidate.\n");
-        return;
+        return status;
     }
 
     pVgpu = GPU_GET_VGPU(pGpu);
@@ -177,7 +180,7 @@ kgmmuInvalidateTlb_GM107
         status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &params.timeout);
         if (status != NV_OK)
         {
-           return;
+           return status;
         }
     }
 
@@ -203,7 +206,7 @@ kgmmuInvalidateTlb_GM107
         }
         else
         {
-            return;
+            return NV_ERR_NOT_SUPPORTED;
         }
 
         params.pdbAddress = memdescGetPhysAddr(memdescGetMemDescFromGpu(pRootPageDir, pGpu), AT_GPU, 0);
@@ -228,16 +231,21 @@ kgmmuInvalidateTlb_GM107
         flushCount = kgmmuSetTlbInvalidateMembarWarParameters_HAL(pGpu, pKernelGmmu, &params);
     }
 
+    if (bForceSysmemBar)
+    {
+        kgmmuSetTlbInvalidateMembarParameters_HAL(pGpu, pKernelGmmu, &params);
+    }
+
     status = kgmmuSetTlbInvalidationScope_HAL(pGpu, pKernelGmmu, invalidation_scope, &params);
     if (!(status == NV_OK || status == NV_ERR_NOT_SUPPORTED))
-        return;
+        return status;
 
     if (bDoVgpuRpc)
     {
         NV_RM_RPC_INVALIDATE_TLB(pGpu, status, params.pdbAddress, params.regVal);
         if (status != NV_OK)
         {
-            return;
+            return status;
         }
     }
     else
@@ -246,17 +254,20 @@ kgmmuInvalidateTlb_GM107
         status = kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &params);
         if (status != NV_OK)
         {
-            return;
+            return status;
         }
     }
 
     while (flushCount--)
     {
-        if (kbusSendSysmembar(pGpu, GPU_GET_KERNEL_BUS(pGpu)) == NV_ERR_TIMEOUT)
+        status = kbusSendSysmembar(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+        if (status == NV_ERR_TIMEOUT)
         {
             break;
         }
     }
+
+    return status;
 }
 
 /*!
@@ -348,9 +359,6 @@ kgmmuGetHwPteApertureFromMemdesc_GM107
             break;
         case ADDR_FABRIC_V2:
         case ADDR_FABRIC_MC:
-        case ADDR_EGM:
-            aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
-            break;
         case ADDR_FBMEM:
             aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
             break;

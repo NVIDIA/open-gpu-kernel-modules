@@ -138,6 +138,19 @@ struct NV_BITVECTOR
     bitVectorSetRange_IMPL(&((pBitVector)->real),                           \
                       sizeof(((pBitVector)->last->_)), (range))
 
+#define bitVectorInv(pBitVector, idx)                                       \
+    bitVectorInv_IMPL(&((pBitVector)->real),                                \
+                      sizeof(((pBitVector)->last->_)), (idx))
+
+#define bitVectorInvRange(pBitVector, range)                                \
+    bitVectorInvRange_IMPL(&((pBitVector)->real),                           \
+                         sizeof(((pBitVector)->last->_)), (range))
+
+#define bitVectorInvAll(pBitVector)                                         \
+    bitVectorInvRange_IMPL(&((pBitVector)->real),                           \
+                         sizeof(((pBitVector)->last->_)),                   \
+                         rangeMake(0, sizeof(((pBitVector)->last->_)) - 1))
+
 #define bitVectorFromArrayU16(pBitVector, pArr, sz)                         \
     bitVectorFromArrayU16_IMPL(&((pBitVector)->real),                       \
                             sizeof(((pBitVector)->last->_)),                \
@@ -240,6 +253,20 @@ struct NV_BITVECTOR
                           sizeof(((pBitVector)->last->_)),                  \
                           rangeMake(offset, offset + size - 1),             \
                           slice)
+
+#define bitVectorGetSliceToBitVector(pSrcBitVector, pDstBitVector, range)    \
+    bitVectorGetSliceToBitVector_IMPL(&((pSrcBitVector)->real),              \
+                                     sizeof(((pSrcBitVector)->last->_)),    \
+                                     &((pDstBitVector)->real),               \
+                                     sizeof(((pDstBitVector)->last->_)),    \
+                                     range)
+
+#define bitVectorGetSliceToBitVectorAtOffset(pSrcBitVector, pDstBitVector, offset, size) \
+    bitVectorGetSliceToBitVectorAtOffset_IMPL(&((pSrcBitVector)->real),                  \
+                                     sizeof(((pSrcBitVector)->last->_)),                 \
+                                     &((pDstBitVector)->real),                           \
+                                     sizeof(((pDstBitVector)->last->_)),                \
+                                     offset, size)
 
 #define bitVectorLowestNBits(pBitVectorDst, pBitVectorSrc,  N)              \
     bitVectorLowestNBits_IMPL(&((pBitVectorDst)->real),                     \
@@ -595,6 +622,27 @@ bitVectorLowestNBits_IMPL
     const NV_BITVECTOR *pBitVectorSrc,
     NvU16 bitVectorSrcLast,
     NvU16 n
+);
+
+NV_STATUS
+bitVectorGetSliceToBitVector_IMPL
+(
+    const NV_BITVECTOR *pSrcBitVector,
+    NvU16 srcBitVectorLast,
+    NV_BITVECTOR *pDstBitVector,
+    NvU16 dstBitVectorLast,
+    NV_RANGE range
+);
+
+NV_STATUS
+bitVectorGetSliceToBitVectorAtOffset_IMPL
+(
+    const NV_BITVECTOR *pSrcBitVector,
+    NvU16 srcBitVectorLast,
+    NV_BITVECTOR *pDstBitVector,
+    NvU16 dstBitVectorLast,
+    NvU32 offset,
+    NvU32 size
 );
 
 #ifdef __cplusplus

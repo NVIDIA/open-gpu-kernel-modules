@@ -141,13 +141,9 @@ struct NVOC_METADATA__VaSpaceApi {
     const struct NVOC_VTABLE__VaSpaceApi vtable;
 };
 
-#ifndef __NVOC_CLASS_VaSpaceApi_TYPEDEF__
-#define __NVOC_CLASS_VaSpaceApi_TYPEDEF__
-typedef struct VaSpaceApi VaSpaceApi;
-#endif /* __NVOC_CLASS_VaSpaceApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VaSpaceApi
-#define __nvoc_class_id_VaSpaceApi 0xcd048b
+#define __nvoc_class_id_VaSpaceApi 0xcd048bu
+typedef struct VaSpaceApi VaSpaceApi;
 #endif /* __nvoc_class_id_VaSpaceApi */
 
 // Casting support
@@ -165,14 +161,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VaSpaceApi;
 
 NV_STATUS __nvoc_objCreateDynamic_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VaSpaceApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VaSpaceApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VaSpaceApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VaSpaceApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vaspaceapiConstruct_IMPL(struct VaSpaceApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_vaspaceapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) vaspaceapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS vaspaceapiConstruct_IMPL(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_vaspaceapiConstruct(pResource, pCallContext, pParams) vaspaceapiConstruct_IMPL(pResource, pCallContext, pParams)
 
 NV_STATUS vaspaceapiCopyConstruct_IMPL(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 #ifdef __nvoc_vaspace_api_h_disabled
@@ -401,8 +397,10 @@ static inline void vaspaceapiAddAdditionalDependants_DISPATCH(struct RsClient *p
     pResource->__nvoc_metadata_ptr->vtable.__vaspaceapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool vaspaceapiCanCopy_IMPL(struct VaSpaceApi *pResource);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS vaspaceapiCtrlCmdVaspaceGetGmmuFormat_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS *pGmmuFormatParams);
 
 NV_STATUS vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pPageLevelInfoParams);
@@ -415,6 +413,10 @@ NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL(struct VaSpaceApi 
 
 NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -33,36 +33,6 @@ static bool lkca_ecdsa_sign(void *ec_context,
     return false;
 }
 
-bool libspdm_ec_set_pub_key(void *ec_context, const uint8_t *public_key,
-                            size_t public_key_size)
-{
-    if (ec_context == NULL || public_key == NULL) {
-        return false;
-    }
-
-    return lkca_ec_set_pub_key(ec_context, public_key, public_key_size);
-}
-
-bool libspdm_ec_get_pub_key(void *ec_context, uint8_t *public_key,
-                            size_t *public_key_size)
-{
-    if (ec_context == NULL || public_key_size == NULL) {
-        return false;
-    }
-
-    if (public_key == NULL && *public_key_size != 0) {
-        return false;
-    }
-
-    return lkca_ec_get_pub_key(ec_context, public_key, public_key_size);
-}
-
-bool libspdm_ec_check_key(const void *ec_context)
-{
-    /* TBD*/
-    return true;
-}
-
 bool libspdm_ec_generate_key(void *ec_context, uint8_t *public_data,
                              size_t *public_size)
 {

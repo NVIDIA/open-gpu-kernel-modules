@@ -56,6 +56,12 @@ memmgrSavePowerMgmtState_KERNEL
     if (pGpu->pGpuArch->bGpuArchIsZeroFb ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
     {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SC7_SUPPORTED) &&
+            IS_GSP_CLIENT(pGpu))
+        {
+            NV_PRINTF(LEVEL_INFO, "Init SC7 SR\n");
+            return (memmgrSc7SrInitGsp_HAL(pGpu, pMemoryManager));
+        }
         return NV_OK;
     }
 
@@ -213,7 +219,7 @@ memmgrSavePowerMgmtState_KERNEL
 /*!
  * Restore video memory
  */
-static volatile NvS32 concurrentfbRestorePowerMgmtStateAccess[NV_MAX_DEVICES] = { 0 };
+static PORT_ATOMIC NvS32 concurrentfbRestorePowerMgmtStateAccess[NV_MAX_DEVICES] = { 0 };
 NV_STATUS
 memmgrRestorePowerMgmtState_KERNEL
 (

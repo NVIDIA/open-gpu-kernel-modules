@@ -25,18 +25,7 @@
 #include "uvm_global.h"
 #include "uvm_kvmalloc.h"
 
-#include "cla16f.h"
-#include "clb069.h"
-#include "clb06f.h"
-#include "clb0b5.h"
-#include "clc06f.h"
-#include "clc0b5.h"
-#include "clc1b5.h"
 #include "ctrl2080mc.h"
-#include "clc3b5.h"
-#include "clc36f.h"
-#include "clc369.h"
-#include "clc365.h"
 #include "clc46f.h"
 #include "clc5b5.h"
 #include "clc6b5.h"
@@ -68,65 +57,31 @@ MODULE_PARM_DESC(uvm_downgrade_force_membar_sys, "Force all TLB invalidation dow
 static uvm_hal_class_ops_t ce_table[] =
 {
     {
-        .id = MAXWELL_DMA_COPY_A,
-        .u.ce_ops = {
-            .init = uvm_hal_maxwell_ce_init,
-            .method_is_valid = uvm_hal_method_is_valid_stub,
-            .semaphore_release = uvm_hal_maxwell_ce_semaphore_release,
-            .semaphore_timestamp = uvm_hal_maxwell_ce_semaphore_timestamp,
-            .semaphore_reduction_inc = uvm_hal_maxwell_ce_semaphore_reduction_inc,
-            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
-            .offset_out = uvm_hal_maxwell_ce_offset_out,
-            .offset_in_out = uvm_hal_maxwell_ce_offset_in_out,
-            .phys_mode = uvm_hal_maxwell_ce_phys_mode,
-            .plc_mode = uvm_hal_maxwell_ce_plc_mode,
-            .memcopy_copy_type = uvm_hal_maxwell_ce_memcopy_copy_type,
-            .memcopy_is_valid = uvm_hal_maxwell_ce_memcopy_is_valid,
-            .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
-            .memcopy = uvm_hal_maxwell_ce_memcopy,
-            .memcopy_v_to_v = uvm_hal_maxwell_ce_memcopy_v_to_v,
-            .memset_is_valid = uvm_hal_maxwell_ce_memset_is_valid,
-            .memset_1 = uvm_hal_maxwell_ce_memset_1,
-            .memset_4 = uvm_hal_maxwell_ce_memset_4,
-            .memset_8 = uvm_hal_maxwell_ce_memset_8,
-            .memset_v_4 = uvm_hal_maxwell_ce_memset_v_4,
-            .encrypt = uvm_hal_maxwell_ce_encrypt_unsupported,
-            .decrypt = uvm_hal_maxwell_ce_decrypt_unsupported,
-        }
-    },
-    {
-        .id = PASCAL_DMA_COPY_A,
-        .parent_id = MAXWELL_DMA_COPY_A,
-        .u.ce_ops = {
-            .semaphore_release = uvm_hal_pascal_ce_semaphore_release,
-            .semaphore_timestamp = uvm_hal_pascal_ce_semaphore_timestamp,
-            .semaphore_reduction_inc = uvm_hal_pascal_ce_semaphore_reduction_inc,
-            .offset_out = uvm_hal_pascal_ce_offset_out,
-            .offset_in_out = uvm_hal_pascal_ce_offset_in_out,
-        }
-    },
-    {
-        .id = PASCAL_DMA_COPY_B,
-        .parent_id = PASCAL_DMA_COPY_A,
-        .u.ce_ops = {}
-    },
-    {
-        .id = VOLTA_DMA_COPY_A,
-        .parent_id = PASCAL_DMA_COPY_B,
-        .u.ce_ops = {
-            .semaphore_release = uvm_hal_volta_ce_semaphore_release,
-            .semaphore_timestamp = uvm_hal_volta_ce_semaphore_timestamp,
-            .semaphore_reduction_inc = uvm_hal_volta_ce_semaphore_reduction_inc,
-            .memcopy = uvm_hal_volta_ce_memcopy,
-            .memset_1 = uvm_hal_volta_ce_memset_1,
-            .memset_4 = uvm_hal_volta_ce_memset_4,
-            .memset_8 = uvm_hal_volta_ce_memset_8,
-        },
-    },
-    {
         .id = TURING_DMA_COPY_A,
-        .parent_id = VOLTA_DMA_COPY_A,
-        .u.ce_ops = {},
+        .u.ce_ops = {
+            .init = uvm_hal_turing_ce_init,
+            .method_is_valid = uvm_hal_method_is_valid_stub,
+            .semaphore_release = uvm_hal_turing_ce_semaphore_release,
+            .semaphore_timestamp = uvm_hal_turing_ce_semaphore_timestamp,
+            .semaphore_reduction_inc = uvm_hal_turing_ce_semaphore_reduction_inc,
+            .semaphore_target_is_valid = uvm_hal_turing_semaphore_target_is_valid,
+            .offset_out = uvm_hal_turing_ce_offset_out,
+            .offset_in_out = uvm_hal_turing_ce_offset_in_out,
+            .phys_mode = uvm_hal_turing_ce_phys_mode,
+            .plc_mode = uvm_hal_turing_ce_plc_mode,
+            .memcopy_copy_type = uvm_hal_turing_ce_memcopy_copy_type,
+            .memcopy_is_valid = uvm_hal_turing_ce_memcopy_is_valid,
+            .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
+            .memcopy = uvm_hal_turing_ce_memcopy,
+            .memcopy_v_to_v = uvm_hal_turing_ce_memcopy_v_to_v,
+            .memset_is_valid = uvm_hal_turing_ce_memset_is_valid,
+            .memset_1 = uvm_hal_turing_ce_memset_1,
+            .memset_4 = uvm_hal_turing_ce_memset_4,
+            .memset_8 = uvm_hal_turing_ce_memset_8,
+            .memset_v_4 = uvm_hal_turing_ce_memset_v_4,
+            .encrypt = uvm_hal_turing_ce_encrypt_unsupported,
+            .decrypt = uvm_hal_turing_ce_decrypt_unsupported,
+        },
     },
     {
         .id = AMPERE_DMA_COPY_A,
@@ -145,9 +100,9 @@ static uvm_hal_class_ops_t ce_table[] =
         .u.ce_ops = {
             .method_is_valid = uvm_hal_method_is_valid_stub,
             .plc_mode = uvm_hal_ampere_ce_plc_mode_c7b5,
-            .memcopy_is_valid = uvm_hal_maxwell_ce_memcopy_is_valid,
+            .memcopy_is_valid = uvm_hal_turing_ce_memcopy_is_valid,
             .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
-            .memset_is_valid = uvm_hal_maxwell_ce_memset_is_valid,
+            .memset_is_valid = uvm_hal_turing_ce_memset_is_valid,
         },
     },
     {
@@ -188,95 +143,41 @@ static uvm_hal_class_ops_t ce_table[] =
 static uvm_hal_class_ops_t host_table[] =
 {
     {
-        // This host class is reported for GM10x
-        .id = KEPLER_CHANNEL_GPFIFO_B,
+        .id = TURING_CHANNEL_GPFIFO_A,
         .u.host_ops = {
-            .init = uvm_hal_maxwell_host_init_noop,
+            .init = uvm_hal_turing_host_init,
             .method_is_valid = uvm_hal_method_is_valid_stub,
             .sw_method_is_valid = uvm_hal_method_is_valid_stub,
-            .wait_for_idle = uvm_hal_maxwell_host_wait_for_idle,
-            .membar_sys = uvm_hal_maxwell_host_membar_sys,
-
-            // No MEMBAR GPU until Pascal, just do a MEMBAR SYS.
-            .membar_gpu = uvm_hal_maxwell_host_membar_sys,
-            .noop = uvm_hal_maxwell_host_noop,
-            .interrupt = uvm_hal_maxwell_host_interrupt,
-            .semaphore_acquire = uvm_hal_maxwell_host_semaphore_acquire,
-            .semaphore_release = uvm_hal_maxwell_host_semaphore_release,
-            .semaphore_timestamp = uvm_hal_maxwell_host_semaphore_timestamp,
-            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
-            .set_gpfifo_entry = uvm_hal_maxwell_host_set_gpfifo_entry,
-            .set_gpfifo_noop = uvm_hal_maxwell_host_set_gpfifo_noop,
-            .set_gpfifo_pushbuffer_segment_base = uvm_hal_maxwell_host_set_gpfifo_pushbuffer_segment_base_unsupported,
-            .write_gpu_put = uvm_hal_maxwell_host_write_gpu_put,
-            .tlb_invalidate_all = uvm_hal_maxwell_host_tlb_invalidate_all_a16f,
-            .tlb_invalidate_va = uvm_hal_maxwell_host_tlb_invalidate_va,
-            .tlb_invalidate_phys = uvm_hal_maxwell_host_tlb_invalidate_phys_unsupported,
-            .tlb_invalidate_test = uvm_hal_maxwell_host_tlb_invalidate_test,
-            .tlb_flush_prefetch = uvm_hal_maxwell_host_tlb_flush_prefetch_unsupported,
-            .replay_faults = uvm_hal_maxwell_replay_faults_unsupported,
-            .cancel_faults_global = uvm_hal_maxwell_cancel_faults_global_unsupported,
-            .cancel_faults_targeted = uvm_hal_maxwell_cancel_faults_targeted_unsupported,
-            .cancel_faults_va = uvm_hal_maxwell_cancel_faults_va_unsupported,
-            .clear_faulted_channel_sw_method = uvm_hal_maxwell_host_clear_faulted_channel_sw_method_unsupported,
-            .clear_faulted_channel_method = uvm_hal_maxwell_host_clear_faulted_channel_method_unsupported,
-            .clear_faulted_channel_register = uvm_hal_maxwell_host_clear_faulted_channel_register_unsupported,
-            .access_counter_clear_all = uvm_hal_maxwell_access_counter_clear_all_unsupported,
-            .access_counter_clear_targeted = uvm_hal_maxwell_access_counter_clear_targeted_unsupported,
-            .access_counter_query_clear_op = uvm_hal_maxwell_access_counter_query_clear_op_unsupported,
-            .l2_invalidate = uvm_hal_host_l2_invalidate_unsupported,
-            .get_time = uvm_hal_maxwell_get_time,
-        }
-    },
-    {
-        // This host class is reported for GM20x
-        .id = MAXWELL_CHANNEL_GPFIFO_A,
-        .parent_id = KEPLER_CHANNEL_GPFIFO_B,
-        .u.host_ops = {
-            .tlb_invalidate_all = uvm_hal_maxwell_host_tlb_invalidate_all_b06f,
-        }
-    },
-    {
-        .id = PASCAL_CHANNEL_GPFIFO_A,
-        .parent_id = MAXWELL_CHANNEL_GPFIFO_A,
-        .u.host_ops = {
-            .init = uvm_hal_pascal_host_init,
-            .membar_sys = uvm_hal_pascal_host_membar_sys,
-            .membar_gpu = uvm_hal_pascal_host_membar_gpu,
-            .tlb_invalidate_all = uvm_hal_pascal_host_tlb_invalidate_all,
-            .tlb_invalidate_va = uvm_hal_pascal_host_tlb_invalidate_va,
-            .tlb_invalidate_test = uvm_hal_pascal_host_tlb_invalidate_test,
-            .replay_faults = uvm_hal_pascal_replay_faults,
-            .cancel_faults_global = uvm_hal_pascal_cancel_faults_global,
-            .cancel_faults_targeted = uvm_hal_pascal_cancel_faults_targeted,
-        }
-    },
-    {
-        .id = VOLTA_CHANNEL_GPFIFO_A,
-        .parent_id = PASCAL_CHANNEL_GPFIFO_A,
-        .u.host_ops = {
-            .write_gpu_put = uvm_hal_volta_host_write_gpu_put,
-            .tlb_invalidate_va = uvm_hal_volta_host_tlb_invalidate_va,
-            .replay_faults = uvm_hal_volta_replay_faults,
-            .cancel_faults_va = uvm_hal_volta_cancel_faults_va,
-            .clear_faulted_channel_method = uvm_hal_volta_host_clear_faulted_channel_method,
-            .semaphore_timestamp = uvm_hal_volta_host_semaphore_timestamp,
-        }
-    },
-    {
-        .id = TURING_CHANNEL_GPFIFO_A,
-        .parent_id = VOLTA_CHANNEL_GPFIFO_A,
-        .u.host_ops = {
+            .wait_for_idle = uvm_hal_turing_host_wait_for_idle,
+            .membar_sys = uvm_hal_turing_host_membar_sys,
+            .membar_gpu = uvm_hal_turing_host_membar_gpu,
+            .noop = uvm_hal_turing_host_noop,
+            .interrupt = uvm_hal_turing_host_interrupt,
             .semaphore_acquire = uvm_hal_turing_host_semaphore_acquire,
             .semaphore_release = uvm_hal_turing_host_semaphore_release,
-            .clear_faulted_channel_method = uvm_hal_turing_host_clear_faulted_channel_method,
+            .semaphore_timestamp = uvm_hal_turing_host_semaphore_timestamp,
+            .semaphore_target_is_valid = uvm_hal_turing_semaphore_target_is_valid,
             .set_gpfifo_entry = uvm_hal_turing_host_set_gpfifo_entry,
+            .set_gpfifo_noop = uvm_hal_turing_host_set_gpfifo_noop,
+            .set_gpfifo_pushbuffer_segment_base = uvm_hal_turing_host_set_gpfifo_pushbuffer_segment_base_unsupported,
+            .write_gpu_put = uvm_hal_turing_host_write_gpu_put,
             .tlb_invalidate_all = uvm_hal_turing_host_tlb_invalidate_all,
             .tlb_invalidate_va = uvm_hal_turing_host_tlb_invalidate_va,
+            .tlb_invalidate_phys = uvm_hal_turing_host_tlb_invalidate_phys_unsupported,
             .tlb_invalidate_test = uvm_hal_turing_host_tlb_invalidate_test,
+            .tlb_flush_prefetch = uvm_hal_turing_host_tlb_flush_prefetch_unsupported,
+            .replay_faults = uvm_hal_turing_replay_faults,
+            .cancel_faults_global = uvm_hal_turing_cancel_faults_global,
+            .cancel_faults_targeted = uvm_hal_turing_cancel_faults_targeted,
+            .cancel_faults_va = uvm_hal_turing_cancel_faults_va,
+            .clear_faulted_channel_sw_method = uvm_hal_turing_host_clear_faulted_channel_sw_method_unsupported,
+            .clear_faulted_channel_method = uvm_hal_turing_host_clear_faulted_channel_method,
+            .clear_faulted_channel_register = uvm_hal_turing_host_clear_faulted_channel_register_unsupported,
             .access_counter_clear_all = uvm_hal_turing_access_counter_clear_all,
             .access_counter_clear_targeted = uvm_hal_turing_access_counter_clear_targeted,
             .access_counter_query_clear_op = uvm_hal_turing_access_counter_query_clear_op,
+            .l2_invalidate = uvm_hal_host_l2_invalidate_unsupported,
+            .get_time = uvm_hal_turing_get_time,
         }
     },
     {
@@ -335,46 +236,14 @@ static uvm_hal_class_ops_t host_table[] =
 static uvm_hal_class_ops_t arch_table[] =
 {
     {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.arch_ops = {
-            .init_properties = uvm_hal_maxwell_arch_init_properties,
-            .mmu_mode_hal = uvm_hal_mmu_mode_maxwell,
-            .enable_prefetch_faults = uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported,
-            .disable_prefetch_faults = uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported,
-            .mmu_client_id_to_utlb_id = uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.arch_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .u.arch_ops = {
-            .init_properties = uvm_hal_pascal_arch_init_properties,
-            .mmu_mode_hal = uvm_hal_mmu_mode_pascal,
-            .enable_prefetch_faults = uvm_hal_pascal_mmu_enable_prefetch_faults,
-            .disable_prefetch_faults = uvm_hal_pascal_mmu_disable_prefetch_faults,
-            .mmu_client_id_to_utlb_id = uvm_hal_pascal_mmu_client_id_to_utlb_id,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .u.arch_ops = {
-            .init_properties = uvm_hal_volta_arch_init_properties,
-            .mmu_mode_hal = uvm_hal_mmu_mode_volta,
-            .mmu_client_id_to_utlb_id = uvm_hal_volta_mmu_client_id_to_utlb_id,
-        },
-    },
-    {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
         .u.arch_ops = {
             .init_properties = uvm_hal_turing_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_turing,
+            .enable_prefetch_faults = uvm_hal_turing_mmu_enable_prefetch_faults,
+            .disable_prefetch_faults = uvm_hal_turing_mmu_disable_prefetch_faults,
+            .mmu_client_id_to_utlb_id = uvm_hal_turing_mmu_client_id_to_utlb_id,
+
         },
     },
     {
@@ -451,67 +320,22 @@ static uvm_hal_class_ops_t chip_table[] =
 static uvm_hal_class_ops_t fault_buffer_table[] =
 {
     {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.fault_buffer_ops = {
-            .enable_replayable_faults  = uvm_hal_maxwell_enable_replayable_faults_unsupported,
-            .disable_replayable_faults = uvm_hal_maxwell_disable_replayable_faults_unsupported,
-            .clear_replayable_faults = uvm_hal_maxwell_clear_replayable_faults_unsupported,
-            .read_put = uvm_hal_maxwell_fault_buffer_read_put_unsupported,
-            .read_get = uvm_hal_maxwell_fault_buffer_read_get_unsupported,
-            .write_get = uvm_hal_maxwell_fault_buffer_write_get_unsupported,
-            .get_ve_id = uvm_hal_maxwell_fault_buffer_get_ve_id_unsupported,
-            .get_mmu_engine_type = uvm_hal_maxwell_fault_buffer_get_mmu_engine_type_unsupported,
-            .parse_replayable_entry = uvm_hal_maxwell_fault_buffer_parse_replayable_entry_unsupported,
-            .entry_is_valid = uvm_hal_maxwell_fault_buffer_entry_is_valid_unsupported,
-            .entry_clear_valid = uvm_hal_maxwell_fault_buffer_entry_clear_valid_unsupported,
-            .entry_size = uvm_hal_maxwell_fault_buffer_entry_size_unsupported,
-            .parse_non_replayable_entry = uvm_hal_maxwell_fault_buffer_parse_non_replayable_entry_unsupported,
-            .get_fault_type = uvm_hal_maxwell_fault_buffer_get_fault_type_unsupported,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.fault_buffer_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .u.fault_buffer_ops = {
-            .enable_replayable_faults  = uvm_hal_pascal_enable_replayable_faults,
-            .disable_replayable_faults = uvm_hal_pascal_disable_replayable_faults,
-            .clear_replayable_faults = uvm_hal_pascal_clear_replayable_faults,
-            .read_put = uvm_hal_pascal_fault_buffer_read_put,
-            .read_get = uvm_hal_pascal_fault_buffer_read_get,
-            .write_get = uvm_hal_pascal_fault_buffer_write_get,
-            .parse_replayable_entry = uvm_hal_pascal_fault_buffer_parse_replayable_entry,
-            .entry_is_valid = uvm_hal_pascal_fault_buffer_entry_is_valid,
-            .entry_clear_valid = uvm_hal_pascal_fault_buffer_entry_clear_valid,
-            .entry_size = uvm_hal_pascal_fault_buffer_entry_size,
-            .get_fault_type = uvm_hal_pascal_fault_buffer_get_fault_type,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .u.fault_buffer_ops = {
-            .read_put = uvm_hal_volta_fault_buffer_read_put,
-            .read_get = uvm_hal_volta_fault_buffer_read_get,
-            .write_get = uvm_hal_volta_fault_buffer_write_get,
-            .get_ve_id = uvm_hal_volta_fault_buffer_get_ve_id,
-            .get_mmu_engine_type = uvm_hal_volta_fault_buffer_get_mmu_engine_type,
-            .parse_replayable_entry = uvm_hal_volta_fault_buffer_parse_replayable_entry,
-            .parse_non_replayable_entry = uvm_hal_volta_fault_buffer_parse_non_replayable_entry,
-            .get_fault_type = uvm_hal_volta_fault_buffer_get_fault_type,
-        }
-    },
-    {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
         .u.fault_buffer_ops = {
+            .enable_replayable_faults = uvm_hal_turing_enable_replayable_faults,
             .disable_replayable_faults = uvm_hal_turing_disable_replayable_faults,
             .clear_replayable_faults = uvm_hal_turing_clear_replayable_faults,
+            .read_put = uvm_hal_turing_fault_buffer_read_put,
+            .read_get = uvm_hal_turing_fault_buffer_read_get,
+            .write_get = uvm_hal_turing_fault_buffer_write_get,
+            .get_ve_id = uvm_hal_turing_fault_buffer_get_ve_id,
             .get_mmu_engine_type = uvm_hal_turing_fault_buffer_get_mmu_engine_type,
+            .parse_replayable_entry = uvm_hal_turing_fault_buffer_parse_replayable_entry,
+            .entry_is_valid = uvm_hal_turing_fault_buffer_entry_is_valid,
+            .entry_clear_valid = uvm_hal_turing_fault_buffer_entry_clear_valid,
+            .entry_size = uvm_hal_turing_fault_buffer_entry_size,
+            .parse_non_replayable_entry = uvm_hal_turing_fault_buffer_parse_non_replayable_entry,
+            .get_fault_type = uvm_hal_turing_fault_buffer_get_fault_type,
         }
     },
     {
@@ -552,35 +376,7 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
 static uvm_hal_class_ops_t access_counter_buffer_table[] =
 {
     {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.access_counter_buffer_ops = {
-            .enable_access_counter_notifications  = uvm_hal_maxwell_enable_access_counter_notifications_unsupported,
-            .disable_access_counter_notifications = uvm_hal_maxwell_disable_access_counter_notifications_unsupported,
-            .clear_access_counter_notifications = uvm_hal_maxwell_clear_access_counter_notifications_unsupported,
-            .parse_entry = uvm_hal_maxwell_access_counter_buffer_parse_entry_unsupported,
-            .entry_is_valid = uvm_hal_maxwell_access_counter_buffer_entry_is_valid_unsupported,
-            .entry_clear_valid = uvm_hal_maxwell_access_counter_buffer_entry_clear_valid_unsupported,
-            .entry_size = uvm_hal_maxwell_access_counter_buffer_entry_size_unsupported,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.access_counter_buffer_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .u.access_counter_buffer_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .u.access_counter_buffer_ops = {}
-    },
-    {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
         .u.access_counter_buffer_ops = {
             .enable_access_counter_notifications  = uvm_hal_turing_enable_access_counter_notifications,
             .disable_access_counter_notifications = uvm_hal_turing_disable_access_counter_notifications,
@@ -621,34 +417,14 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
 static uvm_hal_class_ops_t sec2_table[] =
 {
     {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.sec2_ops = {
-            .init = uvm_hal_maxwell_sec2_init_noop,
-            .decrypt = uvm_hal_maxwell_sec2_decrypt_unsupported,
-            .semaphore_release = uvm_hal_maxwell_sec2_semaphore_release_unsupported,
-            .semaphore_timestamp = uvm_hal_maxwell_sec2_semaphore_timestamp_unsupported,
-            .semaphore_target_is_valid = uvm_hal_maxwell_semaphore_target_is_valid,
-        }
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM000,
-        .u.sec2_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GM200,
-        .u.sec2_ops = {}
-    },
-    {
-        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GP100,
-        .u.sec2_ops = {}
-    },
-    {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
-        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GV100,
-        .u.sec2_ops = {}
+        .u.sec2_ops = {
+            .init = uvm_hal_turing_sec2_init_noop,
+            .decrypt = uvm_hal_turing_sec2_decrypt_unsupported,
+            .semaphore_release = uvm_hal_turing_sec2_semaphore_release_unsupported,
+            .semaphore_timestamp = uvm_hal_turing_sec2_semaphore_timestamp_unsupported,
+            .semaphore_target_is_valid = uvm_hal_turing_semaphore_target_is_valid,
+        }
     },
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,

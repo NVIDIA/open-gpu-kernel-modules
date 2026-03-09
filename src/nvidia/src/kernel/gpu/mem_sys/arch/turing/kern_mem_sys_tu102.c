@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "published/turing/tu102/dev_fbpa.h"
 #include "published/turing/tu102/dev_fb.h"
 #include "published/turing/tu102/dev_ltc.h"
+#include "published/turing/tu102/dev_ltc_zb.h"
 
 void
 kmemsysWriteL2SysmemInvalidateReg_TU102
@@ -177,7 +178,7 @@ kmemsysGetEccCounts_TU102
 
             ltcDedCountRegAddr = kmemsysGetL2EccDedCountRegAddr_HAL(pGpu, pKernelMemorySystem, i, j);
             regVal = _kmemsysReadRegAndMaskPriError(pGpu, ltcDedCountRegAddr);
-            *ltcCount += DRF_VAL(_PLTCG_LTC0_LTS0, _L2_CACHE_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+            *ltcCount += DRF_VAL(_PLTC, _LTS0_L2_CACHE_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
         }
     }
 }

@@ -15,6 +15,7 @@
 --undefined=rm_init_rm
 --undefined=rm_vgpu_vfio_set_driver_vm
 --undefined=rm_ioctl
+--undefined=rm_validate_ioctls
 --undefined=rm_is_supported_device
 --undefined=rm_is_supported_pci_device
 --undefined=rm_isr
@@ -177,7 +178,6 @@
 --undefined=nvswitch_lib_is_tnvl_enabled
 --undefined=rm_gpu_copy_mmu_faults
 --undefined=rm_gpu_handle_mmu_faults
---undefined=rm_gpu_need_4k_page_isolation
 --undefined=rm_is_chipset_io_coherent
 --undefined=rm_get_device_remove_flag
 --undefined=rm_init_event_locks

@@ -118,7 +118,7 @@ static unsigned schedule_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
     return 1;
 }
 
-static unsigned schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
+unsigned uvm_parent_gpu_schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
 {
     bool scheduled;
 
@@ -261,7 +261,7 @@ static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
     ++parent_gpu->isr.interrupt_count;
 
     num_handlers_scheduled += schedule_replayable_faults_handler(parent_gpu);
-    num_handlers_scheduled += schedule_non_replayable_faults_handler(parent_gpu);
+    num_handlers_scheduled += uvm_parent_gpu_schedule_non_replayable_faults_handler(parent_gpu);
     for (i = 0; i < parent_gpu->rm_info.accessCntrBufferCount; i++)
         num_handlers_scheduled += schedule_access_counters_handler(parent_gpu, i);
 
@@ -320,7 +320,7 @@ static NV_STATUS uvm_isr_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU3
         return status;
     }
 
-    if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_alloc_block_context)
+    if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.access_counters_alloc_block_context)
         return NV_ERR_NO_MEMORY;
 
     block_context = uvm_va_block_context_alloc(NULL);
@@ -338,7 +338,7 @@ static NV_STATUS uvm_isr_init_access_counters(uvm_parent_gpu_t *parent_gpu, NvU3
     // dynamically enabled when the GPU is registered on a VA space.
     parent_gpu->isr.access_counters[notif_buf_index].handling_ref_count = 0;
 
-    if (uvm_enable_builtin_tests && parent_gpu->test.isr_access_counters_alloc_stats_cpu)
+    if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.isr_access_counters_alloc_stats_cpu)
         return NV_ERR_NO_MEMORY;
 
     parent_gpu->isr.access_counters[notif_buf_index].stats.cpu_exec_count =
@@ -356,98 +356,94 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
     char kthread_name[TASK_COMM_LEN + 1];
     uvm_va_block_context_t *block_context;
 
-    if (parent_gpu->replayable_faults_supported) {
-        status = uvm_parent_gpu_fault_buffer_init(parent_gpu);
-        if (status != NV_OK) {
-            UVM_ERR_PRINT("Failed to initialize GPU fault buffer: %s, GPU: %s\n",
-                          nvstatusToString(status),
-                          uvm_parent_gpu_name(parent_gpu));
-            return status;
-        }
+    status = uvm_parent_gpu_fault_buffer_init(parent_gpu);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Failed to initialize GPU fault buffer: %s, GPU: %s\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu));
+        return status;
+    }
 
-        nv_kthread_q_item_init(&parent_gpu->isr.replayable_faults.bottom_half_q_item,
-                               replayable_faults_isr_bottom_half_entry,
-                               parent_gpu);
+    nv_kthread_q_item_init(&parent_gpu->isr.replayable_faults.bottom_half_q_item,
+                           replayable_faults_isr_bottom_half_entry,
+                           parent_gpu);
 
-        parent_gpu->isr.replayable_faults.stats.cpu_exec_count =
-            uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.replayable_faults.stats.cpu_exec_count) * num_possible_cpus());
-        if (!parent_gpu->isr.replayable_faults.stats.cpu_exec_count)
+    parent_gpu->isr.replayable_faults.stats.cpu_exec_count =
+        uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.replayable_faults.stats.cpu_exec_count) * num_possible_cpus());
+    if (!parent_gpu->isr.replayable_faults.stats.cpu_exec_count)
+        return NV_ERR_NO_MEMORY;
+
+    block_context = uvm_va_block_context_alloc(NULL);
+    if (!block_context)
+        return NV_ERR_NO_MEMORY;
+
+    parent_gpu->fault_buffer.replayable.block_service_context.block_context = block_context;
+
+    parent_gpu->isr.replayable_faults.handling = true;
+
+    snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u BH", uvm_parent_id_value(parent_gpu->id));
+    status = init_queue_on_node(&parent_gpu->isr.bottom_half_q, kthread_name, parent_gpu->closest_cpu_numa_node);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Failed in nv_kthread_q_init for bottom_half_q: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu));
+        return status;
+    }
+
+    nv_kthread_q_item_init(&parent_gpu->isr.non_replayable_faults.bottom_half_q_item,
+                           non_replayable_faults_isr_bottom_half_entry,
+                           parent_gpu);
+
+    parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count =
+        uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count) *
+                          num_possible_cpus());
+    if (!parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count)
+        return NV_ERR_NO_MEMORY;
+
+    block_context = uvm_va_block_context_alloc(NULL);
+    if (!block_context)
+        return NV_ERR_NO_MEMORY;
+
+    parent_gpu->fault_buffer.non_replayable.block_service_context.block_context = block_context;
+
+    parent_gpu->isr.non_replayable_faults.handling = true;
+
+    snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u KC", uvm_parent_id_value(parent_gpu->id));
+    status = init_queue_on_node(&parent_gpu->isr.kill_channel_q,
+                                kthread_name,
+                                parent_gpu->closest_cpu_numa_node);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Failed in nv_kthread_q_init for kill_channel_q: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu));
+        return status;
+    }
+
+    if (parent_gpu->access_counters_supported) {
+        NvU32 index_count = parent_gpu->rm_info.accessCntrBufferCount;
+        NvU32 notif_buf_index;
+
+        UVM_ASSERT(index_count > 0);
+
+        if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.access_counters_alloc_buffer)
             return NV_ERR_NO_MEMORY;
 
-        block_context = uvm_va_block_context_alloc(NULL);
-        if (!block_context)
+        parent_gpu->access_counters.buffer = uvm_kvmalloc_zero(sizeof(*parent_gpu->access_counters.buffer) *
+                                                               index_count);
+        if (!parent_gpu->access_counters.buffer)
             return NV_ERR_NO_MEMORY;
 
-        parent_gpu->fault_buffer.replayable.block_service_context.block_context = block_context;
+        if (uvm_enable_builtin_tests && parent_gpu->test.inject_error.isr_access_counters_alloc)
+            return NV_ERR_NO_MEMORY;
 
-        parent_gpu->isr.replayable_faults.handling = true;
+        parent_gpu->isr.access_counters = uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.access_counters) * index_count);
+        if (!parent_gpu->isr.access_counters)
+            return NV_ERR_NO_MEMORY;
 
-        snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u BH", uvm_parent_id_value(parent_gpu->id));
-        status = init_queue_on_node(&parent_gpu->isr.bottom_half_q, kthread_name, parent_gpu->closest_cpu_numa_node);
-        if (status != NV_OK) {
-            UVM_ERR_PRINT("Failed in nv_kthread_q_init for bottom_half_q: %s, GPU %s\n",
-                          nvstatusToString(status),
-                          uvm_parent_gpu_name(parent_gpu));
-            return status;
-        }
-
-        if (parent_gpu->non_replayable_faults_supported) {
-            nv_kthread_q_item_init(&parent_gpu->isr.non_replayable_faults.bottom_half_q_item,
-                                   non_replayable_faults_isr_bottom_half_entry,
-                                   parent_gpu);
-
-            parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count =
-                uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count) *
-                                  num_possible_cpus());
-            if (!parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count)
-                return NV_ERR_NO_MEMORY;
-
-            block_context = uvm_va_block_context_alloc(NULL);
-            if (!block_context)
-                return NV_ERR_NO_MEMORY;
-
-            parent_gpu->fault_buffer.non_replayable.block_service_context.block_context = block_context;
-
-            parent_gpu->isr.non_replayable_faults.handling = true;
-
-            snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u KC", uvm_parent_id_value(parent_gpu->id));
-            status = init_queue_on_node(&parent_gpu->isr.kill_channel_q,
-                                        kthread_name,
-                                        parent_gpu->closest_cpu_numa_node);
-            if (status != NV_OK) {
-                UVM_ERR_PRINT("Failed in nv_kthread_q_init for kill_channel_q: %s, GPU %s\n",
-                              nvstatusToString(status),
-                              uvm_parent_gpu_name(parent_gpu));
+        for (notif_buf_index = 0; notif_buf_index < index_count; notif_buf_index++) {
+            status = uvm_isr_init_access_counters(parent_gpu, notif_buf_index);
+            if (status != NV_OK)
                 return status;
-            }
-        }
-
-        if (parent_gpu->access_counters_supported) {
-            NvU32 index_count = parent_gpu->rm_info.accessCntrBufferCount;
-            NvU32 notif_buf_index;
-
-            UVM_ASSERT(index_count > 0);
-
-            if (uvm_enable_builtin_tests && parent_gpu->test.access_counters_alloc_buffer)
-                return NV_ERR_NO_MEMORY;
-
-            parent_gpu->access_counters.buffer = uvm_kvmalloc_zero(sizeof(*parent_gpu->access_counters.buffer) *
-                                                                   index_count);
-            if (!parent_gpu->access_counters.buffer)
-                return NV_ERR_NO_MEMORY;
-
-            if (uvm_enable_builtin_tests && parent_gpu->test.isr_access_counters_alloc)
-                return NV_ERR_NO_MEMORY;
-
-            parent_gpu->isr.access_counters = uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.access_counters) * index_count);
-            if (!parent_gpu->isr.access_counters)
-                return NV_ERR_NO_MEMORY;
-
-            for (notif_buf_index = 0; notif_buf_index < index_count; notif_buf_index++) {
-                status = uvm_isr_init_access_counters(parent_gpu, notif_buf_index);
-                if (status != NV_OK)
-                    return status;
-            }
         }
     }
 
@@ -549,12 +545,10 @@ void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
         uvm_kvfree(parent_gpu->access_counters.buffer);
     }
 
-    if (parent_gpu->non_replayable_faults_supported) {
-        block_context = parent_gpu->fault_buffer.non_replayable.block_service_context.block_context;
-        uvm_va_block_context_free(block_context);
+    block_context = parent_gpu->fault_buffer.non_replayable.block_service_context.block_context;
+    uvm_va_block_context_free(block_context);
 
-        uvm_kvfree(parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count);
-    }
+    uvm_kvfree(parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count);
 
     block_context = parent_gpu->fault_buffer.replayable.block_service_context.block_context;
     uvm_va_block_context_free(block_context);
@@ -600,8 +594,6 @@ static void replayable_faults_isr_bottom_half(void *args)
     uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
     unsigned int cpu;
 
-    UVM_ASSERT(parent_gpu->replayable_faults_supported);
-
     // Record the lock ownership
     // The service_lock semaphore is taken in the top half using a raw
     // semaphore call (down_trylock()). Here, the lock "ownership" is recorded,
@@ -639,8 +631,6 @@ static void non_replayable_faults_isr_bottom_half(void *args)
 {
     uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
     unsigned int cpu;
-
-    UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
     uvm_parent_gpu_non_replayable_faults_isr_lock(parent_gpu);
 
@@ -724,7 +714,7 @@ static void access_counters_isr_bottom_half_entry(void *args)
 //
 // While in the typical case the retriggering happens within a replayable
 // fault bottom half, it can also happen within a non-interrupt path such as
-// uvm_gpu_fault_buffer_flush.
+// uvm_gpu_replayable_buffer_flush.
 static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu)
 {
     if (!g_uvm_global.conf_computing_enabled)

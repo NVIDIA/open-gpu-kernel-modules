@@ -59,29 +59,6 @@ gpuGenGidData_VF
     return NV_ERR_NOT_SUPPORTED;
 }
 
-/*!
- * @brief       Returns FBIO Floorsweeping Mask
- *
- * @param[in]   pGpu            OBJGPU pointer
- * @returns     FBIO Floorsweeping Mask - On is enabled
- *
- */
-NvU64 gpuGetActiveFBIOs_VF
-(
-    OBJGPU *pGpu
-)
-{
-    // Cache is not valid.
-    if (pGpu->activeFBIOs == 0)
-    {
-        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-        if (pVSI)
-            pGpu->activeFBIOs = pVSI->fbioMask;
-    }
-    // Return the cached map of available FBIOs
-    return pGpu->activeFBIOs;
-}
-
 NV_STATUS
 gpuCreateDefaultClientShare_VF
 (
@@ -207,7 +184,6 @@ NV_STATUS
 gpuGetNameString_VF
 (
     OBJGPU *pGpu,
-    NvU32 type,
     void *nameStringBuffer
 )
 {
@@ -215,16 +191,8 @@ gpuGetNameString_VF
 
     NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
-    if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
-    {
-        portMemCopy(nameStringBuffer, sizeof(pVSI->adapterName),
-                    pVSI->adapterName, sizeof(pVSI->adapterName));
-    }
-    else
-    {
-        portMemCopy(nameStringBuffer, sizeof(pVSI->adapterName_Unicode),
-                    pVSI->adapterName_Unicode, sizeof(pVSI->adapterName_Unicode));
-    }
+    portMemCopy(nameStringBuffer, sizeof(pVSI->adapterName),
+                pVSI->adapterName, sizeof(pVSI->adapterName));
 
     return NV_OK;
 }
@@ -298,7 +266,6 @@ gpuConstructDeviceInfoTable_VF
             .rlEngId                = pSrc->rlEngId,
             .groupId                = pSrc->groupId,
             .runlistPriBase         = pSrc->runlistPriBase,
-            .groupId                = pSrc->groupId,
             .ginTargetId            = pSrc->ginTargetId,
             .deviceBroadcastPriBase = pSrc->deviceBroadcastPriBase,
             .groupLocalInstanceId   = pSrc->groupLocalInstanceId

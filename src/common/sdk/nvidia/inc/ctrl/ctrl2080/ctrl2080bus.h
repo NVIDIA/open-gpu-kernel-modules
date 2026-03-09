@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1330,11 +1330,17 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
 
 #define NV2080_CTRL_CMD_BUS_GET_C2C_INFO                            (0x2080182b) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_MESSAGE_ID" */
 
+#define NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_INSTANCES          2
+#define NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS_PER_INSTANCE 7
+#define NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS              (0xe) /* finn: Evaluated from "NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_INSTANCES * NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS_PER_INSTANCE" */
+
 #define NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_MESSAGE_ID (0x2BU)
 
 typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS {
     NvBool bIsLinkUp;
     NvBool bLinkInHS;
+
+
     NvU32  nrLinks;
     NvU32  maxNrLinks;
     NvU32  linkMask;
@@ -1380,8 +1386,7 @@ typedef struct NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS {
  * errCnts[OUT]
  *  Array of structure that contains the error counts for
  *  number of times one of C2C fatal error interrupt has happened.
- *  The array size should be NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES
- *  * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE.
+ *  The array size should be NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS.
  *
  *  nrCrcErrIntr[OUT]
  *   Number of times CRC error interrupt triggered.
@@ -1396,10 +1401,7 @@ typedef struct NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS {
  *  NV_ERR_NOT_SUPPORTED
  */
 
-#define NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO                        (0x2080182d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES      2
-#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE 7
+#define NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO (0x2080182d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID (0x2DU)
 
@@ -1408,7 +1410,7 @@ typedef struct NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS {
         NvU32 nrCrcErrIntr;
         NvU32 nrReplayErrIntr;
         NvU32 nrReplayB2bErrIntr;
-    } errCnts[NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE];
+    } errCnts[NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS];
 } NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS;
 
 /*
@@ -1669,4 +1671,24 @@ typedef struct NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_IDLE_THRESHOLD_PARAMS {
     NvU32 c2cLpwrStateId;
     NvU32 idleThresholdUs;
 } NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_IDLE_THRESHOLD_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS
+ *
+ * This command gets packet counter values for all C2C links. This
+ * is intended for testing and debug only. These values cannot be used to
+ * measure bandwidth.
+ *   packetCounters[OUT]
+ *      An array of C2C packet counters
+ *
+ */
+#define NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS (0x20801837) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS_MESSAGE_ID (0x37U)
+
+typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS {
+    NvU32 packetCounters[NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS];
+} NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS;
+
+
 

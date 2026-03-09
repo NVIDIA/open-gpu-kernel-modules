@@ -170,6 +170,7 @@ RmDeprecatedI2CAccess
     NV2080_CTRL_I2C_ACCESS_PARAMS *pControlParams = 0;
     void                          *pEmbeddedParams = 0;
     NvP64                          orginalEmbeddedPtr = NvP64_NULL;
+    NvU32                          originalDataBuffSize = 0;
     NvHandle                       hSubDevice;
     NvBool                         bMustFreeSubDevice = NV_FALSE;
 
@@ -189,6 +190,31 @@ RmDeprecatedI2CAccess
     if (status != NV_OK)
         goto done;
 
+    originalDataBuffSize = pControlParams->dataBuffSize;
+    orginalEmbeddedPtr = pControlParams->data;
+
+    //
+    // Sanitize the input for read/write commands, otherwise it might violate 
+    // the FINN API contract and the invocation would fail due to
+    // unexpected values in irrelevant for the current command members.
+    // 
+    switch (pControlParams->cmd)
+    {
+        case NV2080_CTRL_I2C_ACCESS_CMD_READ_BYTE:
+        case NV2080_CTRL_I2C_ACCESS_CMD_WRITE_BYTE:
+            pControlParams->dataBuffSize = (pControlParams->data != NvP64_NULL)
+                ? 1
+                : 0;
+            break;
+        case NV2080_CTRL_I2C_ACCESS_CMD_READ_BUFFER:
+        case NV2080_CTRL_I2C_ACCESS_CMD_WRITE_BUFFER:
+            break;
+        default:
+            pControlParams->dataBuffSize = 0;
+            pControlParams->data = NvP64_NULL;
+            break;
+    }
+
     if (pControlParams->dataBuffSize)
     {
         if (pControlParams->dataBuffSize <= NV402C_CTRL_I2C_MESSAGE_LENGTH_MAX)
@@ -198,7 +224,6 @@ RmDeprecatedI2CAccess
             if (status != NV_OK)
                 goto done;
 
-            orginalEmbeddedPtr = pControlParams->data;
             pControlParams->data = NV_PTR_TO_NvP64(pEmbeddedParams);
         }
         else
@@ -227,6 +252,9 @@ done:
 
     if (pControlParams)
     {
+        // Restore original value before copy back
+        pControlParams->dataBuffSize = originalDataBuffSize;
+
         statusTmp = pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYOUT, RMAPI_DEPRECATED_BUFFER_ALLOCATE, 
                                        pArgs->paramStructPtr, sizeof(NV2080_CTRL_I2C_ACCESS_PARAMS), (void **)&pControlParams);
         if (status == NV_OK)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,15 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
-===============================================================================
-
-    dsc_pps.h
-
-    Provide definition needed for DSC(Display Stream Compression) PPS(Picture Parameter Set)
-
-================================================================================
-*/
+/** @file  dsc_pps.h
+ *  @brief Provide definition needed for DSC (Display Stream Compression) PPS (Picture Parameter Set)
+ */
 
 #ifndef __DSCPPS_H__
 #define __DSCPPS_H__

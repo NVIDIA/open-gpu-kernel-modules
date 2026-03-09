@@ -173,6 +173,47 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
     return status;
 }
 
+/*!
+ * @brief Query Display Bandwidth values set by UEFI.
+ */
+NV_STATUS
+dispcmnCtrlCmdSystemQueryUefiDisplayBandwidth_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH_PARAMS *pParams
+)
+{
+    OBJGPU        *pGpu;
+    KernelDisplay *pKernelDisplay;
+    NV_STATUS      status;
+
+    // client gave us a subdevice #: get right pGpu for it
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    status = dispapiValidateRmctrlPriv(pGpu);
+    if (status != NV_OK)
+        return status;
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    status =
+        kdispGetUefiDisplayBandwidth_HAL(pGpu,
+                                         pKernelDisplay,
+                                         &pParams->isoBandwidthKBPS,
+                                         &pParams->floorBandwidthKBPS);
+
+    return status;
+}
+
 NV_STATUS
 dispcmnCtrlCmdSystemGetVblankEnable_IMPL
 (
@@ -523,6 +564,8 @@ dispcmnCtrlCmdCalculateDpImp_IMPL
     dpModesetData.SetRasterBlankEndX        = pParams->modesetInfo.rasterBlankEndX;
     dpModesetData.bDscEnable                = pParams->modesetInfo.bDSCEnabled;
     dpModesetData.colorFormat               = pParams->modesetInfo.colorFormat;
+    dpModesetData.twoChannelAudioHz         = pParams->modesetInfo.twoChannelAudioHz;
+    dpModesetData.eightChannelAudioHz       = pParams->modesetInfo.eightChannelAudioHz;
 
     if (dpModesetData.bDscEnable)
     {

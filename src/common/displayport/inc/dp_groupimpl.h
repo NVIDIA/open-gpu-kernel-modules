@@ -37,11 +37,14 @@
 
 namespace DisplayPort
 {
+    class StreamEncryptionStatusDetection;
 
     struct GroupImpl : public Group, ListElement, Timer::TimerCallback
     {
         ConnectorImpl * parent;
         LinkedList<Device> members;
+        StreamEncryptionStatusDetection * streamEncryptionStatusDetection;
+        NvU8            clientId[CLIENT_ID_SIZE];
         List            elements;
         unsigned        headIndex;
         unsigned        streamIndex;
@@ -50,6 +53,7 @@ namespace DisplayPort
         bool            bIsHeadShutdownNeeded;      // Set if head shutdown is requested during modeset
         bool            hdcpEnabled;
         bool            hdcpPreviousStatus;
+        bool            qseEncryptionStatusMismatch;
         bool            bWaitForDeAllocACT;
         bool            bDeferredPayloadAlloc;
         ModesetInfo     lastModesetInfo;
@@ -75,6 +79,7 @@ namespace DisplayPort
               bIsHeadShutdownNeeded(true),
               hdcpEnabled(false),
               hdcpPreviousStatus(false),
+              qseEncryptionStatusMismatch(false),
               bWaitForDeAllocACT(false),
               dscModeRequest(DSC_MODE_NONE),
               dscModeActive(DSC_MODE_NONE),
@@ -82,11 +87,22 @@ namespace DisplayPort
               singleHeadMultiStreamMode(DP_SINGLE_HEAD_MULTI_STREAM_MODE_NONE),
               headAttached(false), timeslotAllocated(false)
         {
+            if (isFirmwareGroup)
+                streamEncryptionStatusDetection = 0;
+            else
+            {
+                streamEncryptionStatusDetection = new StreamEncryptionStatusDetection(this, parent);
+            }
             timeslot.count = 0;
         }
 
         ~GroupImpl()
         {
+            if (streamEncryptionStatusDetection)
+            {
+                delete streamEncryptionStatusDetection;
+                streamEncryptionStatusDetection = 0;
+            }
         }
 
         virtual void insert(Device * dev);
@@ -104,9 +120,14 @@ namespace DisplayPort
         char tagHDCPReauthentication;
         char tagStreamValidation;
 
+        char tagMSTQSEandSetECF;
+        unsigned QSESetECFRetries;                  // Retry counter for MST QSE and set ECF.
+        virtual void hdcpMSTQSEandSetECF();
+
         unsigned authRetries;                       // Retry counter for the authentication.
 
         virtual void expired(const void * tag);
+        virtual bool hdcpSetEncrypted(bool encrypted, NvU8 streamType = NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0, NvBool bForceClear = NV_FALSE, NvBool bAddStreamBack = NV_FALSE);
         virtual bool hdcpGetEncrypted();
         virtual void destroy();
         void cancelHdcpCallbacks();

@@ -92,13 +92,9 @@ struct NVOC_METADATA__OBJHALMGR {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__
-#define __NVOC_CLASS_OBJHALMGR_TYPEDEF__
-typedef struct OBJHALMGR OBJHALMGR;
-#endif /* __NVOC_CLASS_OBJHALMGR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHALMGR
-#define __nvoc_class_id_OBJHALMGR 0xbf26de
+#define __nvoc_class_id_OBJHALMGR 0xbf26deu
+typedef struct OBJHALMGR OBJHALMGR;
 #endif /* __nvoc_class_id_OBJHALMGR */
 
 // Casting support
@@ -117,13 +113,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHALMGR;
 NV_STATUS __nvoc_objCreateDynamic_OBJHALMGR(OBJHALMGR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHALMGR(OBJHALMGR**, Dynamic*, NvU32);
-#define __objCreate_OBJHALMGR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJHALMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJHALMGR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJHALMGR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS halmgrConstruct_IMPL(struct OBJHALMGR *arg_);
-#define __nvoc_halmgrConstruct(arg_) halmgrConstruct_IMPL(arg_)
+NV_STATUS halmgrConstruct_IMPL(struct OBJHALMGR *arg_this);
+#define __nvoc_halmgrConstruct(arg_this) halmgrConstruct_IMPL(arg_this)
 
 void halmgrDestruct_IMPL(struct OBJHALMGR *arg_this);
 #define __nvoc_halmgrDestruct(arg_this) halmgrDestruct_IMPL(arg_this)
@@ -162,6 +158,12 @@ static inline struct OBJHAL * halmgrGetHal(struct OBJHALMGR *arg_this, NvU32 arg
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

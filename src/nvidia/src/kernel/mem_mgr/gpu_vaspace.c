@@ -2129,7 +2129,8 @@ gvaspaceInvalidateTlb_IMPL
         kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, pRootMem,
                               pGVAS->flags,
                               update_type, gfid,
-                              invalidation_scope);
+                              invalidation_scope,
+                              NV_FALSE);
     }
 }
 
@@ -2461,7 +2462,8 @@ gvaspaceGetPteInfo_IMPL
             nvFieldGetBool(&pFmt->pPte->fldValid, pte.v8))
         {
             pAddrField = gmmuFmtPtePhysAddrFld(pFmt->pPte,
-                gmmuFieldGetAperture(&pFmt->pPte->fldAperture, pte.v8));
+                gmmuFieldGetAperture(&pFmt->pPte->fldAperture, pte.v8),
+                GMMU_PEER_TYPE_LEGACY);
             *pPhysAddr = (RmPhysAddr)gmmuFieldGetAddress(pAddrField, pte.v8);
         }
     }
@@ -2694,7 +2696,8 @@ gvaspaceSetPteInfo_IMPL
                     {
                         COMPR_INFO                comprInfo;
                         const GMMU_FIELD_ADDRESS *pAddrField = gmmuFmtPtePhysAddrFld(pFmt->pPte,
-                                                                                     gmmuFieldGetAperture(&pFmt->pPte->fldAperture, pte.v8));
+                                                                                     gmmuFieldGetAperture(&pFmt->pPte->fldAperture, pte.v8),
+                                                                                     GMMU_PEER_TYPE_LEGACY);
                         RmPhysAddr                physAddr = (RmPhysAddr)gmmuFieldGetAddress(pAddrField, pte.v8);
 
                         surfOffset = pteIndex * pPteBlock->pageSize;

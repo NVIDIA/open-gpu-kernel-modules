@@ -899,6 +899,17 @@ extern "C" {
 #define NVCC7E_SET_SURFACE_ADDRESS_LO_TMO_LUT_ENABLE                            0:0
 #define NVCC7E_SET_SURFACE_ADDRESS_LO_TMO_LUT_ENABLE_DISABLE                    (0x00000000)
 #define NVCC7E_SET_SURFACE_ADDRESS_LO_TMO_LUT_ENABLE_ENABLE                     (0x00000001)
+#define NVCC7E_SET_TELLTALE_CRC_REGION(b)                                       (0x00000698 + (b)*0x00000004)
+#define NVCC7E_SET_TELLTALE_CRC_REGION_INDEX0                                   7:0
+#define NVCC7E_SET_TELLTALE_CRC_REGION_INDEX1                                   15:8
+#define NVCC7E_SET_TELLTALE_CRC_REGION_INDEX2                                   23:16
+#define NVCC7E_SET_TELLTALE_CRC_REGION_INDEX3                                   31:24
+#define NVCC7E_SET_TELLTALE_GOLDEN_CRC_LOWER(b)                                 (0x000006A8 + (b)*0x00000004)
+#define NVCC7E_SET_TELLTALE_GOLDEN_CRC_LOWER_CRC                                31:0
+#define NVCC7E_SET_TELLTALE_GOLDEN_CRC_UPPER(b)                                 (0x000006E8 + (b)*0x00000004)
+#define NVCC7E_SET_TELLTALE_GOLDEN_CRC_UPPER_CRC                                31:0
+#define NVCC7E_SET_TELLTALE_CRC_CONTROL                                         (0x00000728)
+#define NVCC7E_SET_TELLTALE_CRC_CONTROL_REGION_ENABLE                           15:0
 
 #ifdef __cplusplus
 };     /* extern "C" */

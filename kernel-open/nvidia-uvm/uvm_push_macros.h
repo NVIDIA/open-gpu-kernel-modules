@@ -30,8 +30,7 @@
 #include "nvtypes.h"
 #include "nvmisc.h"
 #include "cla06fsubch.h"
-#include "cla16f.h"
-#include "clb06f.h"
+#include "clc46f.h"
 
 #define HWMASK(d, r, f) DRF_MASK(NV ## d ## _ ## r ## _ ## f)
 #define HWSHIFT(d, r, f) DRF_SHIFT(NV ## d ## _ ## r ## _ ## f)
@@ -96,19 +95,10 @@
 // identification.
 #define UVM_SUBCHANNEL_SEC2 NVA06F_SUBCHANNEL_COMPUTE
 
-#define UVM_SUBCHANNEL_A16F UVM_SUBCHANNEL_HOST
-
-#define UVM_SUBCHANNEL_B06F UVM_SUBCHANNEL_HOST
-#define UVM_SUBCHANNEL_B0B5 UVM_SUBCHANNEL_CE
-
-#define UVM_SUBCHANNEL_C06F UVM_SUBCHANNEL_HOST
 #define UVM_SUBCHANNEL_C076 UVM_SUBCHANNEL_SW
-#define UVM_SUBCHANNEL_C0B5 UVM_SUBCHANNEL_CE
-
-#define UVM_SUBCHANNEL_C36F UVM_SUBCHANNEL_HOST
-#define UVM_SUBCHANNEL_C3B5 UVM_SUBCHANNEL_CE
 
 #define UVM_SUBCHANNEL_C46F UVM_SUBCHANNEL_HOST
+#define UVM_SUBCHANNEL_C5B5 UVM_SUBCHANNEL_CE
 
 #define UVM_SUBCHANNEL_C56F UVM_SUBCHANNEL_HOST
 #define UVM_SUBCHANNEL_C6B5 UVM_SUBCHANNEL_CE
@@ -121,22 +111,22 @@
 #define UVM_SUBCHANNEL_CBA2 UVM_SUBCHANNEL_SEC2
 
 #define UVM_METHOD_SIZE 4
-#define UVM_METHOD_COUNT_MAX HWMASK(B06F, DMA, INCR_COUNT)
-#if HWMASK(B06F, DMA, INCR_COUNT) != HWMASK(B06F, DMA, NONINCR_COUNT)
+#define UVM_METHOD_COUNT_MAX HWMASK(C46F, DMA, INCR_COUNT)
+#if HWMASK(C46F, DMA, INCR_COUNT) != HWMASK(C46F, DMA, NONINCR_COUNT)
 #error "Unable to define UVM_METHOD_COUNT_MAX"
 #endif
 
 #define UVM_METHOD_INC(subch, address, count)                                   \
-                        (HWCONST(B06F, DMA, SEC_OP, INC_METHOD) |               \
-                         HWVALUE(B06F, DMA, INCR_ADDRESS, (address) >> 2) |     \
-                         HWVALUE(B06F, DMA, INCR_SUBCHANNEL, (subch)) |         \
-                         HWVALUE(B06F, DMA, INCR_COUNT, (count)))
+                        (HWCONST(C46F, DMA, SEC_OP, INC_METHOD) |               \
+                         HWVALUE(C46F, DMA, INCR_ADDRESS, (address) >> 2) |     \
+                         HWVALUE(C46F, DMA, INCR_SUBCHANNEL, (subch)) |         \
+                         HWVALUE(C46F, DMA, INCR_COUNT, (count)))
 
 #define UVM_METHOD_NONINC(subch, address, count)                                    \
-                            (HWCONST(B06F, DMA, SEC_OP, NON_INC_METHOD) |           \
-                             HWVALUE(B06F, DMA, NONINCR_ADDRESS, (address) >> 2) |  \
-                             HWVALUE(B06F, DMA, NONINCR_SUBCHANNEL, (subch)) |      \
-                             HWVALUE(B06F, DMA, NONINCR_COUNT, (count)))
+                            (HWCONST(C46F, DMA, SEC_OP, NON_INC_METHOD) |           \
+                             HWVALUE(C46F, DMA, NONINCR_ADDRESS, (address) >> 2) |  \
+                             HWVALUE(C46F, DMA, NONINCR_SUBCHANNEL, (subch)) |      \
+                             HWVALUE(C46F, DMA, NONINCR_COUNT, (count)))
 
 #define __UVM_ASSERT_CONTIGUOUS_METHODS(a1, a2) BUILD_BUG_ON((a2) - (a1) != UVM_METHOD_SIZE)
 

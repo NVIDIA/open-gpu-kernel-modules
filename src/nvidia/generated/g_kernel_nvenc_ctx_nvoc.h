@@ -135,13 +135,9 @@ struct NVOC_METADATA__MsencContext {
     const struct NVOC_VTABLE__MsencContext vtable;
 };
 
-#ifndef __NVOC_CLASS_MsencContext_TYPEDEF__
-#define __NVOC_CLASS_MsencContext_TYPEDEF__
-typedef struct MsencContext MsencContext;
-#endif /* __NVOC_CLASS_MsencContext_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MsencContext
-#define __nvoc_class_id_MsencContext 0x88c92a
+#define __nvoc_class_id_MsencContext 0x88c92au
+typedef struct MsencContext MsencContext;
 #endif /* __nvoc_class_id_MsencContext */
 
 // Casting support
@@ -159,9 +155,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MsencContext;
 
 NV_STATUS __nvoc_objCreateDynamic_MsencContext(MsencContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MsencContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MsencContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MsencContext(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MsencContext((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -380,17 +376,21 @@ static inline NV_STATUS msencctxGetOrAllocNotifShare_DISPATCH(struct MsencContex
     return pNotifier->__nvoc_metadata_ptr->vtable.__msencctxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS msencctxConstructHal_KERNEL(struct MsencContext *pMsencContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
 
 void msencctxDestructHal_KERNEL(struct MsencContext *pMsencContext);
 
-
-static inline NV_STATUS __nvoc_msencctxConstruct(struct MsencContext *arg_pMsencContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return msencctxConstructHal(arg_pMsencContext, arg_pCallContext, arg_pParams);
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_msencctxConstruct(struct MsencContext *pMsencContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return msencctxConstructHal(pMsencContext, pCallContext, pParams);
 }
 
-static inline void __nvoc_msencctxDestruct(struct MsencContext *pMsencContext) {
+static inline void __nvoc_msencctxDestruct(struct MsencContext *pMsencContext){
     msencctxDestructHal(pMsencContext);
 }
 

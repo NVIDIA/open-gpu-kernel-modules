@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xfcaf2e = 1;
+char __nvoc_class_id_uniqueness_check__fcaf2e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture;
@@ -36,6 +36,7 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterAperture;
 
 // Up-thunk(s) to bridge RegisterAperture methods to ancestors (if any)
 
+// Class-specific details for RegisterAperture
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
 //  regaprtReadReg08
@@ -48,17 +49,15 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterAperture;
 //  regaprtIsRegValid
 const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RegisterAperture),
-        /*classId=*/            classId(RegisterAperture),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RegisterAperture),
+    .classInfo.classId =            classId(RegisterAperture),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RegisterAperture",
+    .classInfo.name =               "RegisterAperture",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__RegisterAperture,
-    /*pExportInfo=*/        &__nvoc_export_info__RegisterAperture
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__RegisterAperture,
+    .pExportInfo =        &__nvoc_export_info__RegisterAperture
 };
 
 
@@ -89,25 +88,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__RegisterAperture = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RegisterAperture = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_RegisterAperture(RegisterAperture *pThis) {
+
+// Destruct RegisterAperture object.
+void __nvoc_dtor_RegisterAperture(RegisterAperture* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RegisterAperture(RegisterAperture *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct RegisterAperture object.
 NV_STATUS __nvoc_ctor_RegisterAperture(RegisterAperture *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_RegisterAperture(pThis);
     goto __nvoc_ctor_RegisterAperture_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RegisterAperture_exit:
-
     return status;
 }
 

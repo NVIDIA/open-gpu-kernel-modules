@@ -174,8 +174,8 @@ static struct PORT_MEM_GLOBALS
         PORT_MEM_ALLOCATOR_IMPL pagedImpl;
         PORT_MEM_ALLOCATOR_IMPL nonPagedImpl;
     } alloc;
-    NvU32 initCount;
-    NvU32 totalAllocators;
+    PORT_ATOMIC NvU32 initCount;
+    PORT_ATOMIC NvU32 totalAllocators;
 #if PORT_MEM_TRACK_USE_LIMIT
     NvBool bLimitEnabled;
     PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking[PORT_MEM_LIMIT_MAX_GFID];
@@ -274,6 +274,56 @@ _portMemCounterInc
                 break;
         } while (!PORT_MEM_ATOMIC_CAS_U32(&pCounter->peakAllocs, activeAllocs, peakAllocs));
     }
+
+#if PORT_MEM_TRACK_ALLOC_SIZE
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetHeapSize)
+    // Check aggregate heap utilization and fragmentation
+    if (pCounter == &portMemGlobals.mainTracking.counter)
+    {
+        NvLength allocatedSize = pCounter->activeSize + (pCounter->activeAllocs * PORT_MEM_STAGING_SIZE);
+        NvLength heapSize = portMemExTrackingGetHeapSize();
+        NvLength freeHeapSize = heapSize - allocatedSize;
+
+        // Check whether heap utilization is above ~90% (1 - 1/16 == 93.75%)
+        if (allocatedSize > (heapSize - (heapSize >> 4)))
+        {
+            static NvU32 rateLimit = 0;
+            if (rateLimit % 50 == 0)
+            {
+                portDbgPrintf("WARNING: GSP-RM malloc heap usage above 90%% capacity %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes\n",
+                    allocatedSize, heapSize);
+            }
+            rateLimit++;
+        }
+
+#if PORT_IS_FUNC_SUPPORTED(portMemGetLargestFreeChunkSize)
+#define FRAGMENTATION_CHECK_INTERVAL 100
+        static NvU32 fragCheckLimit = 0;
+        
+        if (fragCheckLimit % FRAGMENTATION_CHECK_INTERVAL == 0)
+        {
+            NvLength largestFreeChunkSize = portMemGetLargestFreeChunkSize();
+
+            // Check whether fragmentation is >=75% (Fragmentation: 1 - (largestFreeChunkSize / freeHeapSize))
+            if (largestFreeChunkSize <= (freeHeapSize >> 2))
+            {
+                portDbgPrintf("WARNING: GSP-RM malloc heap fragmentation above 75%% %"NvUPtr_fmtu" / %"NvUPtr_fmtu")\n",
+                    largestFreeChunkSize, freeHeapSize);
+
+                // Compare (freeChunkSize / freeHeapSize) for current and peak (cross-multiplied), then update peak
+                if ((largestFreeChunkSize * pCounter->peakFragmentation.freeHeapSize) <=
+                    (freeHeapSize * pCounter->peakFragmentation.largestFreeChunkSize))
+                {
+                    pCounter->peakFragmentation.largestFreeChunkSize = largestFreeChunkSize;
+                    pCounter->peakFragmentation.freeHeapSize = freeHeapSize;
+                }
+            }
+        }
+        fragCheckLimit++;
+#endif
+    }
+#endif
+#endif
 }
 static NV_INLINE void
 _portMemCounterDec
@@ -848,7 +898,7 @@ portMemShutdown(NvBool bForceSilent)
 #if (PORT_MEM_TRACK_PRINT_LEVEL > PORT_MEM_TRACK_PRINT_LEVEL_SILENT)
     if (!bForceSilent)
     {
-        portMemPrintAllTrackingInfo();
+        portMemPrintAllTrackingInfo(NV_TRUE);
     }
 #endif
     PORT_MEM_LOG_DESTROY();
@@ -1130,7 +1180,7 @@ void portMemGfidTrackingFree(NvU32 gfid)
 
     }
 
-    portMemPrintTrackingInfo(pTracking);
+    portMemPrintTrackingInfo(pTracking, NV_TRUE);
 }
 
 #endif
@@ -1227,7 +1277,8 @@ _portMemAllocatorFree
 void
 portMemPrintTrackingInfo
 (
-    const PORT_MEM_ALLOCATOR_TRACKING *pTracking
+    const PORT_MEM_ALLOCATOR_TRACKING *pTracking,
+    NvBool bReportLeaks
 )
 {
     if (pTracking == NULL)
@@ -1249,7 +1300,7 @@ portMemPrintTrackingInfo
     else
         portDbgPrintf("[NvPort] ======== Memory Allocator %p Tracking ======== \n", pTracking->pAllocator);
 
-    if (pTracking->counter.activeAllocs != 0)
+    if (bReportLeaks && (pTracking->counter.activeAllocs != 0))
         portDbgPrintf("  !!! MEMORY LEAK DETECTED (%u blocks) !!!\n",
                       pTracking->counter.activeAllocs);
 
@@ -1294,6 +1345,29 @@ portMemPrintTrackingInfo
                     stats.allocatedSize,
                     stats.usefulSize,
                     stats.metaSize);
+
+        if (pTracking->counter.peakFragmentation.freeHeapSize > 0)
+        {
+            // Only aggregate tracking prints fragmentation data
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetHeapSize)
+#if PORT_IS_FUNC_SUPPORTED(portMemGetLargestFreeChunkSize)
+            NvLength allocatedSize = pTracking->counter.activeSize + (pTracking->counter.activeAllocs * PORT_MEM_STAGING_SIZE);
+            NvLength heapSize = portMemExTrackingGetHeapSize();
+            NvLength largestFreeChunkSize = portMemGetLargestFreeChunkSize();
+            NvLength freeHeapSize = heapSize - allocatedSize;
+
+            portDbgPrintf("  FRAG:   %"NvUPtr_fmtu"%% curr fragmentation @ %"NvUPtr_fmtu" bytes largest free chunk with %"NvUPtr_fmtu" bytes free heap\n",
+                    (100 - ((100 * largestFreeChunkSize) / freeHeapSize)),
+                    largestFreeChunkSize,
+                    freeHeapSize);
+#endif
+#endif
+
+            portDbgPrintf("          %"NvUPtr_fmtu"%% peak fragmentation @ %"NvUPtr_fmtu" bytes largest free chunk with %"NvUPtr_fmtu" bytes free heap\n",
+                    (100 - ((100 * pTracking->counter.peakFragmentation.largestFreeChunkSize) / pTracking->counter.peakFragmentation.freeHeapSize)),
+                    pTracking->counter.peakFragmentation.largestFreeChunkSize,
+                    pTracking->counter.peakFragmentation.freeHeapSize);
+        }
     }
 #endif
 
@@ -1373,13 +1447,13 @@ portMemPrintTrackingInfo
 }
 
 void
-portMemPrintAllTrackingInfo(void)
+portMemPrintAllTrackingInfo(NvBool bReportLeaks)
 {
     const PORT_MEM_ALLOCATOR_TRACKING *pTracking = &portMemGlobals.mainTracking;
     PORT_MEM_LOCK_ACQUIRE(portMemGlobals.trackingLock);
     do
     {
-        portMemPrintTrackingInfo(pTracking);
+        portMemPrintTrackingInfo(pTracking, bReportLeaks);
     } while ((pTracking = pTracking->pNext) != &portMemGlobals.mainTracking);
     PORT_MEM_LOCK_RELEASE(portMemGlobals.trackingLock);
 }
@@ -1587,7 +1661,7 @@ _portMemTrackingRelease
 
 #if (PORT_MEM_TRACK_PRINT_LEVEL > PORT_MEM_TRACK_PRINT_LEVEL_SILENT)
     if (bReportLeaks && (pTracking->counter.activeAllocs != 0))
-        portMemPrintTrackingInfo(pTracking);
+        portMemPrintTrackingInfo(pTracking, bReportLeaks);
 #else
     PORT_UNREFERENCED_VARIABLE(bReportLeaks);
 #endif

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,6 +90,22 @@ typedef enum
     VIDEO_ENGINE_EVENT_ID__SESSION_END,
     VIDEO_ENGINE_EVENT_ID__POWER_STATE_CHANGE,
     VIDEO_ENGINE_EVENT_ID__LOG_DATA,
+    /*!
+    * logged when a context switch restore operation completes, i.e. when the context starts running.
+    */
+    VIDEO_ENGINE_EVENT_ID__CONTEXT_START,
+    /*!
+    * logged when a context switch save operation is complete.
+    */
+    VIDEO_ENGINE_EVENT_ID__SAVE_END,
+    /*!
+    * when the context save request is sent by HOST to ENGINE.
+    */
+    VIDEO_ENGINE_EVENT_ID__CTXSW_REQ_BY_HOST,
+    /*!
+    * logged when a context switch restore operation starts.
+    */
+    VIDEO_ENGINE_EVENT_ID__RESTORE_START,
     VIDEO_ENGINE_EVENT_ID__NUM
 } VIDEO_ENGINE_EVENT_ID;
 

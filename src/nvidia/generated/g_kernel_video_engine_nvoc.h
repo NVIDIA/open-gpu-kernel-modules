@@ -138,13 +138,9 @@ struct NVOC_METADATA__KernelVideoEngine {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_KernelVideoEngine_TYPEDEF__
-#define __NVOC_CLASS_KernelVideoEngine_TYPEDEF__
-typedef struct KernelVideoEngine KernelVideoEngine;
-#endif /* __NVOC_CLASS_KernelVideoEngine_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelVideoEngine
-#define __nvoc_class_id_KernelVideoEngine 0x9e2f3e
+#define __nvoc_class_id_KernelVideoEngine 0x9e2f3eu
+typedef struct KernelVideoEngine KernelVideoEngine;
 #endif /* __nvoc_class_id_KernelVideoEngine */
 
 // Casting support
@@ -162,9 +158,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
-#define __objCreate_KernelVideoEngine(ppNewObj, pParent, createFlags, arg_pGpu, arg_physEngDesc) \
-    __nvoc_objCreate_KernelVideoEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_physEngDesc)
+NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU32, struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc);
+#define __objCreate_KernelVideoEngine(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pGpu, physEngDesc) \
+    __nvoc_objCreate_KernelVideoEngine((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pGpu, physEngDesc)
 
 
 // Wrapper macros for implementation functions
@@ -177,8 +173,8 @@ NvU32 kvidengRingbufferGetDataSize_IMPL(struct OBJGPU *pGpu, VIDEO_TRACE_RING_BU
 struct KernelVideoEngine * kvidengFromEngDesc_IMPL(struct OBJGPU *pGpu, NvU32 engDesc);
 #define kvidengFromEngDesc(pGpu, engDesc) kvidengFromEngDesc_IMPL(pGpu, engDesc)
 
-NV_STATUS kvidengConstruct_IMPL(struct KernelVideoEngine *arg_pKernelVideoEngine, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
-#define __nvoc_kvidengConstruct(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc) kvidengConstruct_IMPL(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc)
+NV_STATUS kvidengConstruct_IMPL(struct KernelVideoEngine *pKernelVideoEngine, struct OBJGPU *pGpu, ENGDESCRIPTOR physEngDesc);
+#define __nvoc_kvidengConstruct(pKernelVideoEngine, pGpu, physEngDesc) kvidengConstruct_IMPL(pKernelVideoEngine, pGpu, physEngDesc)
 
 #ifdef __nvoc_kernel_video_engine_h_disabled
 static inline NV_STATUS kvidengInitLogging(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
@@ -225,20 +221,24 @@ static inline NvU32 kvidengEventbufferGetRecord(struct OBJGPU *arg1, struct Kern
 #define kvidengFreeLogging_HAL(pGpu, pKernelVideoEngine) kvidengFreeLogging(pGpu, pKernelVideoEngine)
 
 // Dispatch functions
-NV_STATUS kvidengInitLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NvBool kvidengIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
 
+NV_STATUS kvidengInitLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
 
 void kvidengFreeLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
 
-
-NvBool kvidengIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
-
-static inline NvBool kvidengIsVideoTraceLogSupported_3dd2c9(struct OBJGPU *pGpu) {
+// Inline HAL method definitions
+static inline NvBool kvidengIsVideoTraceLogSupported_d69453(struct OBJGPU *pGpu){
     return NV_FALSE;
 }
 
+// Static dispatch method declarations
 NvBool kvidengIsVideoTraceLogSupported_STATIC_DISPATCH(struct OBJGPU *pGpu);
 
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

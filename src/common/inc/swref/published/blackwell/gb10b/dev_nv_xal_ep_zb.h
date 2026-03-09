@@ -20,8 +20,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef __gb10b_dev_nv_xal_ep_zb_h__
-#define __gb10b_dev_nv_xal_ep_zb_h__
-#define NV_XAL_EP_ZB                               0x00000FFF:0x00000000 /* RW--D */
-#endif // __gb10b_dev_nv_xal_ep_zb_h__
 
+#ifndef __gb10b_dev_nv_xal_ep_zb__h__
+#define __gb10b_dev_nv_xal_ep_zb__h__
+
+#define NV_XAL_EP_ZB                               0x00000FFF:0x00000000 /* RW--D */
+#define NV_XAL_EP_ZB_BAR0_WINDOW                                                  0x00000d40 /* RW-4R */
+#define NV_XAL_EP_ZB_BAR0_WINDOW_BASE                                                   24:0 /* RWIUF */
+#define NV_XAL_EP_BAR0_WINDOW_BASE_0                                            0x0000000 /* RWI-V */
+#define NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT                                        0x0000010 /*       */
+
+#endif // __gb10b_dev_nv_xal_ep_zb__h__

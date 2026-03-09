@@ -25,5 +25,7 @@
 #define __gb100_dev_top_zb__h__
 
 #define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_TMR                                       0x1f /*       */
+#define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_PBUS                                      0x33 /*       */
+#define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_HUBMMU                                    0x35 /*       */
 
-#endif // __gb100_dev_top_zb__h__
+#endif // __gb100_dev_top_zb_h__

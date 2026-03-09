@@ -45,13 +45,23 @@
 #define SET_GUEST_ID_ACTION_UNSET                      1
 
 // swrl count for MIG when running in non-timesliced mode
-#define OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT     1
+#define OBJSCHED_SW_MIG_NO_TIMESLICE_RUNLIST_COUNT     2
 // swrl count for MIG when running in timesliced mode
-#define OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT        (MAX_VGPU_DEVICES_PER_GI + 1)
+#define OBJSCHED_SW_MIG_TIMESLICE_RUNLIST_COUNT        (MAX_VGPU_DEVICES_PER_GI + 2)
 // swrl count for non-mig
-#define OBJSCHED_SW_RUNLIST_COUNT                      (MAX_VGPU_DEVICES_PER_PGPU_NON_MIG + 1)
+#define OBJSCHED_SW_RUNLIST_COUNT                      (MAX_VGPU_DEVICES_PER_PGPU_NON_MIG + 2)
 //No. of Reserved CE Channels for KMD/OS in HYPER-V
 #define HYPERV_RESERVED_CE_CHANNELS_KMD                32
+
+#define VGPU_FB_BYTES_TO_GB_SHIFT                      30
+#define VGPU_FB_GB_TO_BYTES_SHIFT                      VGPU_FB_BYTES_TO_GB_SHIFT
+
+/*
+ * On MIG, available memory partition sizes are Eight, Quarter, Half, and Full,
+ * If additional partitions are added in the future, update 
+ * VGPU_SUPPORTED_GI_MAX accordingly.
+ */
+#define VGPU_SUPPORTED_GI_MAX   4
 
 typedef struct
 {
@@ -119,6 +129,12 @@ typedef struct
     NvU8                                vgpuSignature[VGPU_SIGNATURE_SIZE];
 } VGPU_TYPE;
 
+typedef struct
+{
+     NvU64  nominalGpuFbSize;
+     NvU64  nominalFbSizePerGI[VGPU_SUPPORTED_GI_MAX];
+} VGPU_NOMINAL_FB_SIZE;
+
 MAKE_LIST(VGPU_TYPE_LIST, VGPU_TYPE);
 
 void
@@ -146,8 +162,22 @@ vgpuMgrFreeSystemChannelIDs(OBJGPU *pGpu,
                             FIFO_ENGINE_LIST *engineFifoList);
 
 
-NvU32 vgpuMgrGetSwrlCountToAllocate(OBJGPU *pGpu);
+NvU32 vgpuMgrGetVmsetCountToAllocate(OBJGPU *pGpu, RM_ENGINE_TYPE rmEngineType);
 
 NvU16 vgpuMgrGetVgpuSsvid(OBJGPU *pGpu);
+
+void
+vgpuMgrSetNominalFbSize(VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+                        VGPU_TYPE *pVgpuTypeInfo);
+
+NvU64
+vgpuMgrGetNominalFbSize(OBJGPU *pGpu,
+                        VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+                        VGPU_TYPE *pVgpuTypeInfo);
+
+NvU32
+vgpuMgrGetPlacementRegionSize(OBJGPU *pGpu,
+                              VGPU_NOMINAL_FB_SIZE *pVgpuNominalFbSize,
+                              VGPU_TYPE *pVgpuTypeInfo);
 
 #endif // __common_vgpu_mgr_h__

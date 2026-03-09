@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,15 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/*
-===============================================================================
-
-    dp_sdp.cpp
-
-    Provide definition needed for display port secondary data packet.
-
-================================================================================
-*/
+/** @file  dp_sdp.cpp
+ *  @brief Provide definition needed for DisplayPort secondary data packet.
+ */
 
 #ifndef __DPSDP_H__
 #define __DPSDP_H__

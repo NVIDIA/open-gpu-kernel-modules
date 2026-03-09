@@ -1106,7 +1106,15 @@ static NvUPtr nv_vmap(struct page **pages, NvU32 page_count,
         prot = cached ? PAGE_KERNEL : PAGE_KERNEL_NOCACHE;
     }
 #elif defined(NVCPU_AARCH64)
-    prot = cached ? PAGE_KERNEL : NV_PGPROT_UNCACHED(PAGE_KERNEL);
+    if (unencrypted)
+    {
+        prot = cached ? nv_adjust_pgprot(PAGE_KERNEL) :
+                        nv_adjust_pgprot(NV_PGPROT_UNCACHED(PAGE_KERNEL));
+    }
+    else
+    {
+        prot = cached ? PAGE_KERNEL : NV_PGPROT_UNCACHED(PAGE_KERNEL);
+    }
 #endif
     ptr = vmap(pages, page_count, VM_MAP, prot);
     NV_MEMDBG_ADD(ptr, page_count * PAGE_SIZE);

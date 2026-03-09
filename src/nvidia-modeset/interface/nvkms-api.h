@@ -354,10 +354,8 @@ enum NvKmsModeValidationOverrides {
     NVKMS_MODE_VALIDATION_NO_HDMI2_CHECK                     = (1 << 14),
     NVKMS_MODE_VALIDATION_NO_RRX1K_CHECK                     = (1 << 15),
     NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS                = (1 << 16),
-    NVKMS_MODE_VALIDATION_ALLOW_DP_INTERLACED                = (1 << 17),
-    NVKMS_MODE_VALIDATION_NO_INTERLACED_MODES                = (1 << 18),
-    NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD              = (1 << 19),
-    NVKMS_MODE_VALIDATION_PREFER_HDMI_FRL_MODE               = (1 << 20),
+    NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD              = (1 << 17),
+    NVKMS_MODE_VALIDATION_PREFER_HDMI_FRL_MODE               = (1 << 18),
 };
 
 /*!
@@ -1015,15 +1013,10 @@ struct NvKmsFlipCommonReplyOneHead {
 /*!
  * NVKMS_IOCTL_ALLOC_DEVICE: Allocate an NVKMS device object.
  *
- * This has the scope of a resman SLI device.
+ * This has the scope of a resman device.
  *
  * Multiple clients can allocate devices (DRM-KMS, multiple X
- * servers).  Clients should configure SLI before initializing NVKMS.
- * NVKMS will query resman for the current SLI topology.
- *
- * The SLI configuration (both the linked SLI device, and the sliMosaic
- * boolean below) will be latched when the specified GPU transitions
- * from zero NVKMS devices allocated to one NVKMS device allocated.
+ * servers).
  *
  * The returned information will remain static until the NVKMS device
  * object is freed.
@@ -1057,22 +1050,6 @@ struct NvKmsAllocDeviceRequest {
      * or a graphics capable MIG partition (= an SMG device).
      */
     struct NvKmsDeviceId deviceId;
-
-    /*!
-     * Whether SLI Mosaic is requested: i.e., multiple disps, one
-     * per physical GPU, for the SLI device.
-     */
-    NvBool sliMosaic;
-
-    /*!
-     * When tryInferSliMosaicFromExistingDevice=TRUE, then the above
-     * 'sliMosaic' field is ignored and the ALLOC_DEVICE request will
-     * inherit the current sliMosaic state of the existing device
-     * identified by deviceId.  If there is not an existing device for
-     * deviceId, then the ALLOC_DEVICE request will proceed normally, honoring
-     * the requested sliMosaic state.
-     */
-    NvBool tryInferSliMosaicFromExistingDevice;
 
     /*!
      * NVKMS will use the 3D engine for headSurface.  If clients want to avoid
@@ -1253,18 +1230,6 @@ struct NvKmsAllocDeviceReply {
      * generator sync objects that signal at vblank.
      */
     NvBool supportsVblankSyncObjects;
-
-    /*!
-     * 'supportsVblankSemControl' indicates whether the VBlank Semaphore Control
-     * interface:
-     *
-     *   NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
-     *   NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
-     *   NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
-     *
-     * is supported.
-     */
-    NvBool supportsVblankSemControl;
 
     /*! framebuffer console base address and size. */
     NvU64 vtFbBaseAddress;
@@ -1452,6 +1417,7 @@ struct NvKmsQueryDpyStaticDataReply {
     NvBool isDpMST;
     /* Bitmask of valid heads to drive this dpy. */
     NvU32 headMask;
+    NvBool isHDRCapable;
 };
 
 struct NvKmsQueryDpyStaticDataParams {
@@ -1529,6 +1495,9 @@ struct NvKmsQueryDpyDynamicDataReply {
         NvU8 widthInCM; /* horizontal screen size */
     } physicalDimensions;
 
+    NvU32 maxWidthInPixels;
+    NvU32 maxHeightInPixels;
+
     /*!
      * Which VRR type has been selected for this display, either true
      * G-SYNC, Adaptive-Sync defaultlisted, or Adaptive-Sync non-defaultlisted.
@@ -1589,6 +1558,22 @@ struct NvKmsQueryDpyDynamicDataParams {
     struct NvKmsQueryDpyDynamicDataReply reply;     /*! out */
 };
 
+/*! Values for the NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE attribute. */
+enum NvKmsDpyAttributeRequestedColorSpaceValue {
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB = 0,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr422 = 1,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr444 = 2,
+};
+
+struct NvKmsDpyOutputColorParams {
+    /*! Output color format. Valid only when formatSpecified is true. */
+    enum NvKmsDpyAttributeRequestedColorSpaceValue format;
+    NvBool formatSpecified;
+
+    /*! Output color bpc. Valid only when bpcSpecified is true. */
+    enum NvKmsDpyAttributeColorBpcValue bpc;
+    NvBool bpcSpecified;
+};
 
 /*!
  * NVKMS_IOCTL_VALIDATE_MODE_INDEX: Validate a particular mode from a
@@ -1656,6 +1641,7 @@ struct NvKmsValidateModeIndexRequest {
     NvKmsDispHandle dispHandle;
     NVDpyId dpyId;
     struct NvKmsModeValidationParams modeValidation;
+    struct NvKmsDpyOutputColorParams dpyOutputColor;
     NvU32 modeIndex;
 
     /*
@@ -1731,6 +1717,7 @@ struct NvKmsValidateModeRequest {
     NvKmsDispHandle dispHandle;
     NVDpyId dpyId;
     struct NvKmsModeValidationParams modeValidation;
+    struct NvKmsDpyOutputColorParams dpyOutputColor;
     struct NvKmsMode mode;
 
     /*
@@ -1869,13 +1856,6 @@ enum NvKmsAllowAdaptiveSync {
     NVKMS_ALLOW_ADAPTIVE_SYNC_DISABLED = 0,
     NVKMS_ALLOW_ADAPTIVE_SYNC_DEFAULTLISTED_ONLY,
     NVKMS_ALLOW_ADAPTIVE_SYNC_ALL,
-};
-
-/*! Values for the NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE attribute. */
-enum NvKmsDpyAttributeRequestedColorSpaceValue {
-    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB = 0,
-    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr422 = 1,
-    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr444 = 2,
 };
 
 /*!
@@ -3432,37 +3412,33 @@ enum NvKmsPermissionsType {
 
 struct NvKmsFlipPermissions {
     struct {
-        struct {
-            /*
-             * Bitmask of flippable layers, where each layer is
-             * indicated by '1 << layer'.  It is an error for bits
-             * above NVKMS_MAX_LAYERS_PER_HEAD to be set.
-             *
-             * Only applicable when type==FLIPPING.
-             */
-            NvU8 layerMask;
-        } head[NVKMS_MAX_HEADS_PER_DISP];
-    } disp[NVKMS_MAX_SUBDEVICES];
+        /*
+         * Bitmask of flippable layers, where each layer is
+         * indicated by '1 << layer'.  It is an error for bits
+         * above NVKMS_MAX_LAYERS_PER_HEAD to be set.
+         *
+         * Only applicable when type==FLIPPING.
+         */
+        NvU8 layerMask;
+    } head[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsModesetPermissions {
     struct {
-        struct {
-            /*
-             * A list of dpys which a particular NVKMS client is
-             * allowed to use when performing a modeset on this head.
-             *
-             * If the NVKMS client is not allowed to set a mode on
-             * this head, this list will be empty.
-             *
-             * If an NVKMS client can drive the head without
-             * restrictions, this will be nvAllDpyIdList().
-             *
-             * Only applicable when type==MODESET.
-             */
-            NVDpyIdList dpyIdList;
-        } head[NVKMS_MAX_HEADS_PER_DISP];
-    } disp[NVKMS_MAX_SUBDEVICES];
+        /*
+         * A list of dpys which a particular NVKMS client is
+         * allowed to use when performing a modeset on this head.
+         *
+         * If the NVKMS client is not allowed to set a mode on
+         * this head, this list will be empty.
+         *
+         * If an NVKMS client can drive the head without
+         * restrictions, this will be nvAllDpyIdList().
+         *
+         * Only applicable when type==MODESET.
+         */
+        NVDpyIdList dpyIdList;
+    } head[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsPermissions {
@@ -3744,7 +3720,7 @@ struct NvKmsUnregisterDeferredRequestFifoParams {
  *
  * An NVKMS client creates a SwapGroup by calling NVKMS_IOCTL_ALLOC_SWAP_GROUP
  * and specifying the heads in the SwapGroup with
- * NvKmsAllocSwapGroupRequest::disp[]::headMask.
+ * NvKmsAllocSwapGroupRequest::headMask.
  *
  * The SwapGroup can be shared with clients through
  * NVKMS_IOCTL_GRANT_SWAP_GROUP, and it is destroyed once all clients that have
@@ -3774,9 +3750,7 @@ struct NvKmsUnregisterDeferredRequestFifoParams {
  */
 
 struct NvKmsSwapGroupConfig {
-    struct {
-        NvU32 headMask;
-    } disp[NVKMS_MAX_SUBDEVICES];
+    NvU32 headMask;
 };
 
 struct NvKmsAllocSwapGroupRequest {
@@ -4172,11 +4146,7 @@ struct NvKmsNotifyVblankParams {
 
 struct NvKmsSetFlipLockGroupOneDev {
     NvKmsDeviceHandle deviceHandle;
-
-    NvU32 requestedDispsBitMask;
-    struct {
-        NvU32 requestedHeadsBitMask;
-    } disp[NVKMS_MAX_SUBDEVICES];
+    NvU32 requestedHeadsBitMask;
 };
 
 struct NvKmsSetFlipLockGroupRequest {
@@ -4278,9 +4248,6 @@ struct NvKmsSetFlipLockGroupParams {
  * set of heads, to set all vblank sem controls on those heads to have their
  * semaphore set to the value in their respective
  * NvKmsVblankSemControlDataOneHead::requestCounterAccel fields.
- *
- * These ioctls are only available when
- * NvKmsAllocDeviceReply::supportsVblankSemControl is true.
  */
 
 struct NvKmsEnableVblankSemControlRequest {

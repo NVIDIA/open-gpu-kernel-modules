@@ -47,7 +47,6 @@
 #include <class/cl003e.h>               // NV01_MEMORY_SYSTEM
 #include <class/cl003f.h>               // NV01_MEMORY_LOCAL_PRIVILEGED
 #include <class/cl0040.h>               // NV01_MEMORY_LOCAL_USER
-#include <class/cl0042.h>               // NV_MEMORY_EXTENDED_USER
 #include <class/cl0070.h>               // NV01_MEMORY_VIRTUAL
 #include <class/cl00fe.h>               // NV_MEMORY_MAPPER
 #include <class/cl00c2.h>               // NV01_MEMORY_LOCAL_PHYSICAL
@@ -239,6 +238,7 @@
 #include <class/cla080.h>               // KEPLER_DEVICE_VGPU
 #include <class/cla081.h>               // NVA081_VGPU_CONFIG
 #include <class/cla084.h>               // NVA084_KERNEL_HOST_VGPU_DEVICE
+#include <class/cla083.h>               // NVA083_GRID_DISPLAYLESS
 #include <class/cl0060.h>               // NV0060_SYNC_GPU_BOOST
 #include <class/clc076.h>               // GP100_UVM_SW
 #include <class/cla0bc.h>               // NVENC_SW_SESSION
@@ -339,10 +339,6 @@
 #endif
 #ifndef NV1_MEMORY_USER
 #define NV1_MEMORY_USER                          (0x00000040) // alias
-#endif
-
-#ifndef NV_MEMORY_EXTENDED_USER
-#define NV_MEMORY_EXTENDED_USER                  (0x00000042)
 #endif
 
 #ifndef NV01_MEMORY_VIRTUAL
@@ -1140,6 +1136,10 @@
 
 #ifndef NVA084_KERNEL_HOST_VGPU_DEVICE
 #define NVA084_KERNEL_HOST_VGPU_DEVICE           (0x0000a084)
+#endif
+
+#ifndef NVA083_GRID_DISPLAYLESS
+#define NVA083_GRID_DISPLAYLESS                  (0x0000a083)
 #endif
 
 #ifndef NV0060_SYNC_GPU_BOOST

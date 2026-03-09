@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -180,6 +180,9 @@
 #define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_LT_FAILED_YES                          (0x00000001) /* R-XUV */
 
 #define NV_DPCD20_SINK_STATUS                                                                (0x00000205) /* R-XUR */
+#define NV_DPCD20_SINK_STATUS_STREAM_REGENERATED                                                     2:2  /* R-XUF */
+#define NV_DPCD20_SINK_STATUS_STREAM_REGENERATED_NO                                          (0x00000000) /* R-XUV */
+#define NV_DPCD20_SINK_STATUS_STREAM_REGENERATED_YES                                         (0x00000001) /* R-XUV */
 #define NV_DPCD20_SINK_STATUS_INTRA_HOP_AUX_REPLY                                                    3:3  /* R-XUF */
 #define NV_DPCD20_SINK_STATUS_INTRA_HOP_AUX_REPLY_DPRX                                       (0x00000000) /* R-XUV */
 #define NV_DPCD20_SINK_STATUS_INTRA_HOP_AUX_REPLY_LTTPR                                      (0x00000001) /* R-XUV */

@@ -188,18 +188,6 @@ struct uvm_va_space_struct
     // Mask of gpus registered with the va space
     uvm_processor_mask_t registered_gpus;
 
-    // Mask of processors registered with the va space that support replayable
-    // faults.
-    uvm_processor_mask_t faultable_processors;
-
-    // Mask of processors registered with the va space that don't support
-    // faulting.
-    uvm_processor_mask_t non_faultable_processors;
-
-    // This is a count of non fault capable processors with a GPU VA space
-    // registered.
-    NvU32 num_non_faultable_gpu_va_spaces;
-
     // Count of integrated GPUs in a VA space.
     NvU32 num_integrated_gpus;
 
@@ -295,9 +283,6 @@ struct uvm_va_space_struct
     // unregister. Used to make other paths return an error rather than
     // corrupting state.
     uvm_processor_mask_t gpu_unregister_in_progress;
-
-    // Mask of processors that are participating in system-wide atomics
-    uvm_processor_mask_t system_wide_atomics_enabled_processors;
 
     // Temporary copy of registered_gpus used to avoid allocation during VA
     // space destroy.
@@ -429,7 +414,11 @@ struct uvm_va_space_struct
 
         bool allow_allocation_from_movable;
 
+        bool disable_request_free_mem_region;
+
         uvm_test_parent_gpu_inject_error_t parent_gpu_error;
+
+        uvm_parent_processor_mask_t non_replayable_delay_set;
     } test;
 
     // Queue item for deferred f_ops->release() handling
@@ -520,12 +509,6 @@ uvm_gpu_t *uvm_va_space_retain_gpu_by_uuid(uvm_va_space_t *va_space, const NvPro
 // Find and return the owning GPU for the given mem_info or NULL if not found.
 // Locking: the VA space lock must be held.
 uvm_gpu_t *uvm_va_space_get_gpu_by_mem_info(uvm_va_space_t *va_space, const UvmGpuMemoryInfo *mem_info);
-
-// Returns whether read-duplication is supported.
-// If gpu is NULL, returns the current state.
-// otherwise, it returns what the result would be once the gpu's va space is
-// added or removed (by inverting the gpu's current state).
-bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changing_gpu);
 
 // Register a gpu in the va space
 // Note that each gpu can be only registered once in a va space

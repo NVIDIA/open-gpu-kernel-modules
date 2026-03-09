@@ -53,7 +53,21 @@
 #define DRM_NVIDIA_SEMSURF_FENCE_WAIT               0x16
 #define DRM_NVIDIA_SEMSURF_FENCE_ATTACH             0x17
 #define DRM_NVIDIA_GET_DRM_FILE_UNIQUE_ID           0x18
+#define DRM_NVIDIA_REGISTER_ROI                     0x19  /* Register ROI  */
+#define DRM_NVIDIA_UNREGISTER_ROI                   0x1a  /* Unregister ROI */
+#define DRM_NVIDIA_GET_CRTC_ROI_CRCS                0x1b  /* Read CRCs for registered ROIs */
+#define DRM_NVIDIA_GET_ROI_CAPABILITIES             0x1c  /* Get ROI related capabilities */
 
+
+/* Maximum possible telltale CRCs per plane (used for array size)
+ * actual value is queried from the plane property  NV_DRM_NUM_PLANE_TELLTALE_CRCS*/
+#define NV_DRM_MAX_TELLTALES_PER_PLANE              64
+
+/* Maximum possible ROIs per CRTC (used for array size)
+ * actual value is queried from DRM_NVIDIA_GET_ROI_CAPABILITIES */
+#define NV_DRM_MAX_ROIS_PER_CRTC                    64
+
+/* IOCTLs */
 #define DRM_IOCTL_NVIDIA_GEM_IMPORT_NVKMS_MEMORY                           \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IMPORT_NVKMS_MEMORY),      \
              struct drm_nvidia_gem_import_nvkms_memory_params)
@@ -162,6 +176,22 @@
     DRM_IOWR((DRM_COMMAND_BASE +                                        \
               DRM_NVIDIA_GET_DRM_FILE_UNIQUE_ID),                       \
               struct drm_nvidia_get_drm_file_unique_id_params)
+
+#define DRM_IOCTL_NVIDIA_REGISTER_ROI                                    \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_REGISTER_ROI),               \
+             struct drm_nvidia_register_roi_params)
+
+#define DRM_IOCTL_NVIDIA_UNREGISTER_ROI                                 \
+    DRM_IOW((DRM_COMMAND_BASE + DRM_NVIDIA_UNREGISTER_ROI),             \
+            struct drm_nvidia_unregister_roi_params)
+
+#define DRM_IOCTL_NVIDIA_GET_CRTC_ROI_CRCS                              \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CRTC_ROI_CRCS),         \
+             struct drm_nvidia_read_crc_params)
+
+#define DRM_IOCTL_NVIDIA_GET_ROI_CAPABILITIES                         \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_ROI_CAPABILITIES),    \
+             struct drm_nvidia_get_roi_capabilities_params)
 
 struct drm_nvidia_gem_import_nvkms_memory_params {
     uint64_t mem_size;           /* IN */
@@ -394,6 +424,163 @@ struct drm_nvidia_semsurf_fence_attach_params {
 
 struct drm_nvidia_get_drm_file_unique_id_params {
     uint64_t id;                    /* OUT Unique ID of the DRM file */
+};
+
+/**
+ * @brief Parameters for getting ROI capabilities
+ *
+ * This structure is used with the DRM_NVIDIA_GET_ROI_CAPABILITIES ioctl to
+ * get ROI related capabilities.
+ *
+ * @param[out] max_rois Maximum number of ROIs that can be registered
+ */
+struct drm_nvidia_get_roi_capabilities_params {
+    uint32_t max_registered_rois;     /* OUT Maximum number of ROIs that can be registered */
+    uint32_t reserved[7];
+};
+
+/**
+ * @brief Rectangle structure for ROI
+ *
+ * This structure is used to define a rectangle region of interest.
+ *
+ * @param[in] x X coordinate of the top-left corner
+ * @param[in] y Y coordinate of the top-left corner
+ * @param[in] width Width of the ROI
+ * @param[in] height Height of the ROI
+ */
+struct drm_nvidia_roi_rect {
+    uint32_t x;
+    uint32_t y;
+    uint32_t width;
+    uint32_t height;
+};
+
+/**
+ * @brief Parameters for registering a Region of Interest (ROI)
+ *
+ * This structure is used to register an ROI region in the Region RAM which can
+ * then be referenced by its region handle when configuring a window to enable CRC.
+ * The region handle is treated as a separate resource and must be registered
+ * outside of the regular commit cycle.
+ *
+ * @param[in] rect Rectangle defining the ROI coordinates
+ * @param[out] region_handle Unique handle for the registered ROI
+ */
+struct drm_nvidia_register_roi_params {
+    struct drm_nvidia_roi_rect rect;   /* IN */
+    uint64_t region_handle;            /* OUT */
+};
+
+/**
+ * @brief Parameters for unregistering a Region of Interest (ROI)
+ *
+ * This structure is used to unregister a previously registered ROI region.
+ * Note: A region handle that is actively in use (configured in the CRC enablement
+ * property) cannot be unregistered. Only a handle that was previously registered
+ * by this client can be unregistered.
+ *
+ * @param[in] region_handle Handle of the ROI to unregister
+ */
+struct drm_nvidia_unregister_roi_params {
+    uint64_t region_handle;          /* IN */
+};
+
+/**
+ * @brief Per-plane telltale CRC configuration
+ *
+ * This structure defines the configuration for telltale CRC on a per-plane basis.
+ * Each plane can have multiple telltale CRC regions configured, with each region
+ * referencing a previously registered ROI via its region handle.
+ *
+ * @param[in] region_handle Handle of registered ROI to use
+ * @param[in] golden_crc Expected CRC value for safety interrupts (0 if not configured)
+ */
+struct drm_nvidia_telltale_per_plane_config {
+    uint64_t region_handle;         /* IN */
+    uint64_t golden_crc;            /* IN */
+};
+
+/* NV_DRM_NUM_PLANE_TELLTALE_CRCS is a plane property that can be read to get
+ * the max number of telltale CRCs that can be enabled on a plane */
+
+/**
+ * @brief Blob property structure for NV_DRM_PLANE_TELLTALES
+ *
+ * This structure is used as the content for the NV_DRM_PLANE_TELLTALES blob property
+ * that is set on a plane before atomic commit. It contains an array of telltale
+ * configurations, one for each telltale CRC region that should be enabled on the plane.
+ * The number of configurations should not exceed the value read from the
+ * NV_DRM_NUM_PLANE_TELLTALE_CRCS plane property.
+ * This property is expected to be set in the regular atomic commit operation.
+ *
+ * @param[in] telltale_configs Array of telltale CRC configurations
+ */
+struct drm_nvidia_plane_telltales {
+    struct drm_nvidia_telltale_per_plane_config \
+        telltale_configs[NV_DRM_MAX_TELLTALES_PER_PLANE]; /* IN */
+};
+
+/**
+ * @brief ROI CRC data structure
+ *
+ * This structure contains the CRC value for a specific ROI region. It is used
+ * as part of the array returned by the DRM_NVIDIA_GET_CRTC_ROI_CRCS ioctl to
+ * provide CRC values for all active ROI regions on a CRTC.
+ *
+ * @param[out] region_handle Handle of the ROI region
+ * @param[out] crc Computed CRC value for this ROI
+ * @param[in/out] reserved Reserved fields for future use
+ */
+struct drm_nvidia_roi_crc {
+    uint64_t region_handle;         /* OUT */
+    uint64_t crc;                   /* OUT */
+    uint64_t reserved[4];
+};
+
+/**
+ * @brief Parameters for reading CRC data from CRTC
+ *
+ * This structure is used with the DRM_NVIDIA_GET_CRTC_ROI_CRCS ioctl to read
+ * the CRC values for all registered ROI regions that are currently active on
+ * the specified CRTC. The ioctl will populate the roi_crcs array with CRC data
+ * for each active region and set num_collected_crcs to indicate how many valid
+ * entries are in the array.
+ * Please note that only the last collected CRC is returned per active region handle.
+ *
+ * @param[in] crtc_id CRTC identifier to read CRCs from
+ * @param[out] num_collected_crcs Number of valid CRC entries returned
+ * @param[in/out] reserved Reserved fields for future use
+ * @param[out] roi_crcs Array of ROI CRC data
+ */
+struct drm_nvidia_read_crc_params {
+    int32_t crtc_id;                /* IN */
+    int32_t num_collected_crcs;     /* OUT */
+    struct drm_nvidia_roi_crc roi_crcs[NV_DRM_MAX_ROIS_PER_CRTC]; /* OUT */
+    uint64_t reserved[4];
+};
+
+/**
+ * @brief Named transfer function enum
+ *
+ * This enum defines the named transfer functions that can be used to set
+ * the degamma and regamma transfer functions properties.
+ */
+ enum nv_drm_transfer_function {
+    NV_DRM_TRANSFER_FUNCTION_DEFAULT,
+    NV_DRM_TRANSFER_FUNCTION_LINEAR,
+    NV_DRM_TRANSFER_FUNCTION_PQ,
+    /*
+     * nvidia-drm only supports the transfer function types defined above. The
+     * below transfer functions are currently only supported by tegradisp-drm,
+     * and not by nvidia-drm. Do not define a transfer function above
+     * NV_DRM_TRANSFER_FUNCTION_SRGB without updating
+     * NV_DRM_TRANSFER_FUNCTION_MAX.
+     */
+    NV_DRM_TRANSFER_FUNCTION_SRGB,
+    NV_DRM_TRANSFER_FUNCTION_SMPTE_170M,
+    NV_DRM_TRANSFER_FUNCTION_TEGRA_MAX,
+    NV_DRM_TRANSFER_FUNCTION_MAX = NV_DRM_TRANSFER_FUNCTION_SRGB,
 };
 
 #endif /* _NV_DRM_COMMON_IOCTL_H_ */

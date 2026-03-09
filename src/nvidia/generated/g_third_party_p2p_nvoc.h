@@ -50,29 +50,19 @@ extern "C" {
 
 #include <ctrl/ctrl503c.h>
 
-
 struct Subdevice;
 
-#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
-#define __NVOC_CLASS_Subdevice_TYPEDEF__
-typedef struct Subdevice Subdevice;
-#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Subdevice
-#define __nvoc_class_id_Subdevice 0x4b01b3
+#define __nvoc_class_id_Subdevice 0x4b01b3u
+typedef struct Subdevice Subdevice;
 #endif /* __nvoc_class_id_Subdevice */
-
 
 
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
@@ -205,16 +195,11 @@ struct _def_client_third_party_p2p_pid_client_mapping_info
 };
 typedef struct _def_client_third_party_p2p_pid_client_mapping_info CLI_THIRD_PARTY_P2P_PID_CLIENT_INFO, *PCLI_THIRD_PARTY_P2P_PID_CLIENT_INFO;
 
-
 struct ThirdPartyP2P;
 
-#ifndef __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
-#define __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
-typedef struct ThirdPartyP2P ThirdPartyP2P;
-#endif /* __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ThirdPartyP2P
-#define __nvoc_class_id_ThirdPartyP2P 0x34d08b
+#define __nvoc_class_id_ThirdPartyP2P 0x34d08bu
+typedef struct ThirdPartyP2P ThirdPartyP2P;
 #endif /* __nvoc_class_id_ThirdPartyP2P */
 
 
@@ -261,13 +246,9 @@ struct NVOC_METADATA__P2PTokenShare {
     const struct NVOC_METADATA__RsShared metadata__RsShared;
 };
 
-#ifndef __NVOC_CLASS_P2PTokenShare_TYPEDEF__
-#define __NVOC_CLASS_P2PTokenShare_TYPEDEF__
-typedef struct P2PTokenShare P2PTokenShare;
-#endif /* __NVOC_CLASS_P2PTokenShare_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_P2PTokenShare
-#define __nvoc_class_id_P2PTokenShare 0x3e3a6a
+#define __nvoc_class_id_P2PTokenShare 0x3e3a6au
+typedef struct P2PTokenShare P2PTokenShare;
 #endif /* __nvoc_class_id_P2PTokenShare */
 
 // Casting support
@@ -286,13 +267,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_P2PTokenShare;
 NV_STATUS __nvoc_objCreateDynamic_P2PTokenShare(P2PTokenShare**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare**, Dynamic*, NvU32);
-#define __objCreate_P2PTokenShare(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_P2PTokenShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_P2PTokenShare(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_P2PTokenShare((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS shrp2pConstruct_IMPL(struct P2PTokenShare *arg_pP2PTokenShare);
-#define __nvoc_shrp2pConstruct(arg_pP2PTokenShare) shrp2pConstruct_IMPL(arg_pP2PTokenShare)
+NV_STATUS shrp2pConstruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
+#define __nvoc_shrp2pConstruct(pP2PTokenShare) shrp2pConstruct_IMPL(pP2PTokenShare)
 
 void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
 #define __nvoc_shrp2pDestruct(pP2PTokenShare) shrp2pDestruct_IMPL(pP2PTokenShare)
@@ -301,6 +282,12 @@ void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -395,13 +382,9 @@ struct NVOC_METADATA__ThirdPartyP2P {
     const struct NVOC_VTABLE__ThirdPartyP2P vtable;
 };
 
-#ifndef __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
-#define __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
-typedef struct ThirdPartyP2P ThirdPartyP2P;
-#endif /* __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ThirdPartyP2P
-#define __nvoc_class_id_ThirdPartyP2P 0x34d08b
+#define __nvoc_class_id_ThirdPartyP2P 0x34d08bu
+typedef struct ThirdPartyP2P ThirdPartyP2P;
 #endif /* __nvoc_class_id_ThirdPartyP2P */
 
 // Casting support
@@ -419,14 +402,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ThirdPartyP2P;
 
 NV_STATUS __nvoc_objCreateDynamic_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ThirdPartyP2P(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ThirdPartyP2P((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ThirdPartyP2P(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ThirdPartyP2P((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS thirdpartyp2pConstruct_IMPL(struct ThirdPartyP2P *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_thirdpartyp2pConstruct(arg_pResource, arg_pCallContext, arg_pParams) thirdpartyp2pConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS thirdpartyp2pConstruct_IMPL(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_thirdpartyp2pConstruct(pResource, pCallContext, pParams) thirdpartyp2pConstruct_IMPL(pResource, pCallContext, pParams)
 
 void thirdpartyp2pDestruct_IMPL(struct ThirdPartyP2P *pResource);
 #define __nvoc_thirdpartyp2pDestruct(pResource) thirdpartyp2pDestruct_IMPL(pResource)
@@ -685,6 +668,8 @@ static inline void thirdpartyp2pAddAdditionalDependants_DISPATCH(struct RsClient
     pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS thirdpartyp2pCtrlCmdRegisterVaSpace_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_VA_SPACE_PARAMS *pRegisterVaSpaceParams);
 
 NV_STATUS thirdpartyp2pCtrlCmdUnregisterVaSpace_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_UNREGISTER_VA_SPACE_PARAMS *pUnregisterVaSpaceParams);
@@ -695,6 +680,10 @@ NV_STATUS thirdpartyp2pCtrlCmdUnregisterVidmem_IMPL(struct ThirdPartyP2P *pThird
 
 NV_STATUS thirdpartyp2pCtrlCmdRegisterPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NV503C_CTRL_REGISTER_PID_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

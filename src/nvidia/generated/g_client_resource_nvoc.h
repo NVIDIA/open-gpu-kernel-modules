@@ -48,7 +48,7 @@ extern "C" {
 #include "nvoc/prelude.h"
 #include "resserv/rs_client.h"
 #include "rmapi/resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/control.h"
 
 #include "ctrl/ctrl0000/ctrl0000gpu.h"
@@ -146,13 +146,9 @@ struct NVOC_METADATA__RmClientResource {
     const struct NVOC_VTABLE__RmClientResource vtable;
 };
 
-#ifndef __NVOC_CLASS_RmClientResource_TYPEDEF__
-#define __NVOC_CLASS_RmClientResource_TYPEDEF__
-typedef struct RmClientResource RmClientResource;
-#endif /* __NVOC_CLASS_RmClientResource_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RmClientResource
-#define __nvoc_class_id_RmClientResource 0x37a701
+#define __nvoc_class_id_RmClientResource 0x37a701u
+typedef struct RmClientResource RmClientResource;
 #endif /* __nvoc_class_id_RmClientResource */
 
 // Casting support
@@ -170,14 +166,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmClientResource;
 
 NV_STATUS __nvoc_objCreateDynamic_RmClientResource(RmClientResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RmClientResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_RmClientResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RmClientResource(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_RmClientResource((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS cliresConstruct_IMPL(struct RmClientResource *arg_pRmCliRes, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_cliresConstruct(arg_pRmCliRes, arg_pCallContext, arg_pParams) cliresConstruct_IMPL(arg_pRmCliRes, arg_pCallContext, arg_pParams)
+NV_STATUS cliresConstruct_IMPL(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_cliresConstruct(pRmCliRes, pCallContext, pParams) cliresConstruct_IMPL(pRmCliRes, pCallContext, pParams)
 
 void cliresDestruct_IMPL(struct RmClientResource *pRmCliRes);
 #define __nvoc_cliresDestruct(pRmCliRes) cliresDestruct_IMPL(pRmCliRes)
@@ -812,16 +808,6 @@ static inline NV_STATUS cliresCtrlCmdGpuGetNvlinkBwMode(struct RmClientResource 
 #define cliresCtrlCmdGpuGetNvlinkBwMode(pRmCliRes, pParams) cliresCtrlCmdGpuGetNvlinkBwMode_IMPL(pRmCliRes, pParams)
 #endif // __nvoc_client_resource_h_disabled
 
-NV_STATUS cliresCtrlCmdLegacyConfig_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams);
-#ifdef __nvoc_client_resource_h_disabled
-static inline NV_STATUS cliresCtrlCmdLegacyConfig(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("RmClientResource was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_client_resource_h_disabled
-#define cliresCtrlCmdLegacyConfig(pRmCliRes, pParams) cliresCtrlCmdLegacyConfig_IMPL(pRmCliRes, pParams)
-#endif // __nvoc_client_resource_h_disabled
-
 NV_STATUS cliresCtrlCmdIdleChannels_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *pParams);
 #ifdef __nvoc_client_resource_h_disabled
 static inline NV_STATUS cliresCtrlCmdIdleChannels(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *pParams) {
@@ -1374,6 +1360,7 @@ static inline NV_STATUS cliresGetOrAllocNotifShare_DISPATCH(struct RmClientResou
     return pNotifier->__nvoc_metadata_ptr->vtable.__cliresGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool cliresAccessCallback_IMPL(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
 
 NvBool cliresShareCallback_IMPL(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);
@@ -1382,6 +1369,7 @@ NV_STATUS cliresControl_Prologue_IMPL(struct RmClientResource *pRmCliRes, struct
 
 void cliresControl_Epilogue_IMPL(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS cliresCtrlCmdSystemGetCpuInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS *pCpuInfoParams);
 
 NV_STATUS cliresCtrlCmdSystemGetFeatures_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS *pParams);
@@ -1508,8 +1496,6 @@ NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRe
 
 NV_STATUS cliresCtrlCmdGpuGetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *pParams);
 
-NV_STATUS cliresCtrlCmdLegacyConfig_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams);
-
 NV_STATUS cliresCtrlCmdIdleChannels_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdPushUcodeImage_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS *pParams);
@@ -1592,6 +1578,10 @@ NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters_IMPL(struct RmClie
 
 NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_PERF_SENSOR_COUNTERS_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

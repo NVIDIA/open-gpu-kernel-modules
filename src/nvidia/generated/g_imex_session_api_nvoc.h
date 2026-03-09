@@ -146,13 +146,9 @@ struct NVOC_METADATA__ImexSessionApi {
     const struct NVOC_VTABLE__ImexSessionApi vtable;
 };
 
-#ifndef __NVOC_CLASS_ImexSessionApi_TYPEDEF__
-#define __NVOC_CLASS_ImexSessionApi_TYPEDEF__
-typedef struct ImexSessionApi ImexSessionApi;
-#endif /* __NVOC_CLASS_ImexSessionApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ImexSessionApi
-#define __nvoc_class_id_ImexSessionApi 0xb4748b
+#define __nvoc_class_id_ImexSessionApi 0xb4748bu
+typedef struct ImexSessionApi ImexSessionApi;
 #endif /* __nvoc_class_id_ImexSessionApi */
 
 // Casting support
@@ -170,14 +166,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ImexSessionApi;
 
 NV_STATUS __nvoc_objCreateDynamic_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ImexSessionApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ImexSessionApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ImexSessionApi(ImexSessionApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ImexSessionApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ImexSessionApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS imexsessionapiConstruct_IMPL(struct ImexSessionApi *arg_pImexSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_imexsessionapiConstruct(arg_pImexSessionApi, arg_pCallContext, arg_pParams) imexsessionapiConstruct_IMPL(arg_pImexSessionApi, arg_pCallContext, arg_pParams)
+NV_STATUS imexsessionapiConstruct_IMPL(struct ImexSessionApi *pImexSessionApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_imexsessionapiConstruct(pImexSessionApi, pCallContext, pParams) imexsessionapiConstruct_IMPL(pImexSessionApi, pCallContext, pParams)
 
 void imexsessionapiDestruct_IMPL(struct ImexSessionApi *pImexSessionApi);
 #define __nvoc_imexsessionapiDestruct(pImexSessionApi) imexsessionapiDestruct_IMPL(pImexSessionApi)
@@ -342,12 +338,18 @@ static inline void imexsessionapiAddAdditionalDependants_DISPATCH(struct RsClien
     pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS imexsessionapiCtrlCmdGetFabricEvents_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS *pParams);
 
 NV_STATUS imexsessionapiCtrlCmdFinishMemUnimport_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS *pParams);
 
 NV_STATUS imexsessionapiCtrlCmdDisableImporters_IMPL(struct ImexSessionApi *pImexSessionApi, NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -60,16 +60,22 @@ typedef void  (*pmaMapDestroy_t)(void *pMap);
 typedef void  (*pmaMapChangeStateAttrib_t)(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
 typedef void  (*pmaMapChangePageStateAttrib_t)(void *pMap, NvU64 startFrame, NvU64 pageSize, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
 typedef void  (*pmaMapChangeBlockStateAttrib_t)(void *pMap, NvU64 frameNum, NvU64 numFrames, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
+typedef void  (*pmaMapChangeLocalizationState_t)(void *pMap, NvU64 frameNum, PMA_LOCALIZATION_STATUS newState, PMA_LOCALIZATION_STATUS newStateMask);
+typedef void  (*pmaMapChangeBlockLocalizationState_t)(void *pMap, NvU64 frameNum, NvU64 numFrames, PMA_LOCALIZATION_STATUS newState, PMA_LOCALIZATION_STATUS newStateMask);
 typedef PMA_PAGESTATUS (*pmaMapRead_t)(void *pMap, NvU64 frameNum, NvBool readAttrib);
+typedef PMA_LOCALIZATION_INFO (*pmaMapReadLocalizationInfo_t)(void *pMap, NvU64 frameNum);
+typedef PMA_LOCALIZATION_STATUS (*pmaMapReadLocalizationStatus_t)(void *pMap, NvU64 frameNum);
+typedef NvU64 (*pmaMapGetLocalizedRegionAllocationCount_t)(void *pMap, NvU64 frameNum);
 typedef NV_STATUS (*pmaMapScanContiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                             NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
-                                            NvU64 stride, NvU32 strideStart,
+                                            NvBool bLocalizedAlloc, NvU32 localizedUgpuNum,
                                             NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef NV_STATUS (*pmaMapScanDiscontiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                                NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
-                                               NvU64 stride, NvU32 strideStart,
+                                               NvBool bLocalizedAlloc, NvU32 localizedUgpuNum,
                                                NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef void (*pmaMapGetSize_t)(void *pMap, NvU64 *pBytesTotal);
+typedef void (*pmaMapGetLocalizableSize_t)(void *pMap, NvU32 ugpugId, NvU64 *pBytesTotal);
 typedef void (*pmaMapGetLargestFree_t)(void *pMap, NvU64 *pLargestFree, NvU64 *pLargestFreeBase);
 typedef NV_STATUS (*pmaMapScanContiguousNumaEviction_t)(void *pMap, NvU64 addrBase, NvLength actualSize,
                                                         NvU64 pageSize, NvU64 *evictStart, NvU64 *evictEnd);
@@ -84,10 +90,16 @@ struct _PMA_MAP_INFO
     pmaMapChangeStateAttrib_t      pmaMapChangeStateAttrib;
     pmaMapChangePageStateAttrib_t  pmaMapChangePageStateAttrib;
     pmaMapChangeBlockStateAttrib_t pmaMapChangeBlockStateAttrib;
+    pmaMapChangeLocalizationState_t      pmaMapChangeLocalizationState;
+    pmaMapChangeBlockLocalizationState_t pmaMapChangeBlockLocalizationState;
     pmaMapRead_t                pmaMapRead;
+    pmaMapReadLocalizationInfo_t              pmaMapReadLocalizationInfo;
+    pmaMapReadLocalizationStatus_t            pmaMapReadLocalizationStatus;
+    pmaMapGetLocalizedRegionAllocationCount_t pmaMapGetLocalizedRegionAllocationCount;
     pmaMapScanContiguous_t      pmaMapScanContiguous;
     pmaMapScanDiscontiguous_t   pmaMapScanDiscontiguous;
     pmaMapGetSize_t             pmaMapGetSize;
+    pmaMapGetLocalizableSize_t    pmaMapGetLocalizableSize;
     pmaMapGetLargestFree_t      pmaMapGetLargestFree;
     pmaMapScanContiguousNumaEviction_t pmaMapScanContiguousNumaEviction;
     pmaMapGetEvictingFrames_t  pmaMapGetEvictingFrames;
@@ -119,9 +131,9 @@ struct _PMA
     PMA_STATS               pmaStats;                           // PMA statistics used for client heuristics
 
     // Scrubber related states
-    NvSPtr                  initScrubbing;                      // If the init scrubber has finished in this PMA
+    PORT_ATOMIC NvSPtr      initScrubbing;                      // If the init scrubber has finished in this PMA
     NvBool                  bScrubOnFree;                       // If "scrub on free" is enabled for this PMA object
-    NvSPtr                  scrubberValid;                      // If scrubber object is valid, using atomic variable to prevent races
+    PORT_ATOMIC NvSPtr      scrubberValid;                      // If scrubber object is valid, using atomic variable to prevent races
     OBJMEMSCRUB            *pScrubObj;                          // Object to store the FreeScrub header
 
     // NUMA states

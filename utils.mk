@@ -171,6 +171,10 @@ ifeq ($(TARGET_ARCH),ppc64le)
   CFLAGS += -DNV_PPC64LE -DNV_ARCH_BITS=64
 endif
 
+ifeq ($(TARGET_ARCH),riscv64)
+  CFLAGS += -DNV_RISCV64 -DNV_ARCH_BITS=64
+endif
+
 ifeq ($(TARGET_OS),Linux)
   LIBDL_LIBS = -ldl
 else

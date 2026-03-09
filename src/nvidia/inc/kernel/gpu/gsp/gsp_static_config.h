@@ -76,7 +76,6 @@ typedef struct
 // Fetched from GSP-RM into CPU-RM
 typedef struct GspStaticConfigInfo_t
 {
-    NvU8 grCapsBits[NV0080_CTRL_GR_CAPS_TBL_SIZE];
     NV2080_CTRL_GPU_GET_GID_INFO_PARAMS gidInfo;
     NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS SKUInfo;
     NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS fbRegionInfoParams;
@@ -92,15 +91,9 @@ typedef struct GspStaticConfigInfo_t
     NvBool poisonFuseEnabled;
 
     NvU64 fb_length;
-    NvU64 fbio_mask;
-    NvU32 fb_bus_width;
-    NvU32 fb_ram_type;
-    NvU64 fbp_mask;
-    NvU32 l2_cache_size;
 
     NvU8 gpuNameString[NV2080_GPU_MAX_NAME_STRING_LENGTH];
     NvU8 gpuShortNameString[NV2080_GPU_MAX_NAME_STRING_LENGTH];
-    NvU16 gpuNameString_Unicode[NV2080_GPU_MAX_NAME_STRING_LENGTH];
     NvBool bGpuInternalSku;
     NvBool bIsQuadroGeneric;
     NvBool bIsQuadroAd;
@@ -144,10 +137,6 @@ typedef struct GspStaticConfigInfo_t
 
     NvBool bClRootportNeedsNosnoopWAR;
 
-    VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS displaylessMaxHeads;
-    VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS displaylessMaxResolution;
-    NvU64 displaylessMaxPixels;
-
     // Client handle for internal RMAPI control.
     NvHandle hInternalClient;
 
@@ -163,11 +152,12 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsGpuUefi;
     NvBool bIsEfiInit;
 
-    EcidManufacturingInfo ecidInfo[MAX_GROUP_COUNT];
+    EcidManufacturingInfo ecidInfo;
 
     FW_WPR_LAYOUT_OFFSET fwWprLayoutOffset;
 
     NvBool bSystemRebootRequired;
+
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -228,6 +218,7 @@ typedef struct GspSystemInfo
     NvBool bWindowChannelAlwaysMapped;
     NvU32  pciePowerControlValue;
     NvBool bPciePowerControlPresent;
+    NvU32  pf0DeviceControl2Reg;
 } GspSystemInfo;
 
 

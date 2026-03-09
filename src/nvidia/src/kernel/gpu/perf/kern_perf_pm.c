@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,7 @@
 // This routine attempts to acquire (or release) the PerfMon HW
 // for all GPUs within the specified device. PM HW mgmt should
 // really be a unicast operation but we have a BC interface
-// (NV_CFG_RESERVE_PERFMON_HW) that we need to continue to support.
+// (NV2080_CTRL_CMD_PERF_RESERVE_PERFMO) that we need to continue to support.
 //
 // The work here is broken up into two steps:
 //

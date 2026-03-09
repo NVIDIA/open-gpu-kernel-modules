@@ -131,13 +131,9 @@ struct NVOC_METADATA__LockStressObject {
     const struct NVOC_VTABLE__LockStressObject vtable;
 };
 
-#ifndef __NVOC_CLASS_LockStressObject_TYPEDEF__
-#define __NVOC_CLASS_LockStressObject_TYPEDEF__
-typedef struct LockStressObject LockStressObject;
-#endif /* __NVOC_CLASS_LockStressObject_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_LockStressObject
-#define __nvoc_class_id_LockStressObject 0xecce10
+#define __nvoc_class_id_LockStressObject 0xecce10u
+typedef struct LockStressObject LockStressObject;
 #endif /* __nvoc_class_id_LockStressObject */
 
 // Casting support
@@ -155,14 +151,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_LockStressObject;
 
 NV_STATUS __nvoc_objCreateDynamic_LockStressObject(LockStressObject**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_LockStressObject(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_LockStressObject((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_LockStressObject(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_LockStressObject((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS lockStressObjConstruct_IMPL(struct LockStressObject *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_lockStressObjConstruct(arg_pResource, arg_pCallContext, arg_pParams) lockStressObjConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS lockStressObjConstruct_IMPL(struct LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_lockStressObjConstruct(pResource, pCallContext, pParams) lockStressObjConstruct_IMPL(pResource, pCallContext, pParams)
 
 void lockStressObjDestruct_IMPL(struct LockStressObject *pResource);
 #define __nvoc_lockStressObjDestruct(pResource) lockStressObjDestruct_IMPL(pResource)
@@ -265,6 +261,36 @@ static inline NV_STATUS lockStressObjCtrlCmdGetLockStressCounters(struct LockStr
 }
 #else // __nvoc_lock_stress_h_disabled
 #define lockStressObjCtrlCmdGetLockStressCounters(pResource, pParams) lockStressObjCtrlCmdGetLockStressCounters_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestNoLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestNoLock(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdRecursiveGpuLockTestNoLock(pResource, pParams) lockStressObjCtrlCmdRecursiveGpuLockTestNoLock_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestAllLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestAllLock(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdRecursiveGpuLockTestAllLock(pResource, pParams) lockStressObjCtrlCmdRecursiveGpuLockTestAllLock_IMPL(pResource, pParams)
+#endif // __nvoc_lock_stress_h_disabled
+
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+#ifdef __nvoc_lock_stress_h_disabled
+static inline NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("LockStressObject was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_lock_stress_h_disabled
+#define lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock(pResource, pParams) lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock_IMPL(pResource, pParams)
 #endif // __nvoc_lock_stress_h_disabled
 
 
@@ -421,6 +447,8 @@ static inline void lockStressObjAddAdditionalDependants_DISPATCH(struct RsClient
     pResource->__nvoc_metadata_ptr->vtable.__lockStressObjAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS lockStressObjCtrlCmdResetLockStressState_IMPL(struct LockStressObject *pResource);
 
 NV_STATUS lockStressObjCtrlCmdPerformLockStressAllRmLocks_IMPL(struct LockStressObject *pResource, NV0100_CTRL_PERFORM_LOCK_STRESS_ALL_RM_LOCKS_PARAMS *pParams);
@@ -441,6 +469,16 @@ NV_STATUS lockStressObjCtrlCmdPerformLockStressInternalNoGpusLockApiLockReadMode
 
 NV_STATUS lockStressObjCtrlCmdGetLockStressCounters_IMPL(struct LockStressObject *pResource, NV0100_CTRL_GET_LOCK_STRESS_COUNTERS_PARAMS *pParams);
 
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestNoLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestAllLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+
+NV_STATUS lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock_IMPL(struct LockStressObject *pResource, NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM *pParams);
+
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

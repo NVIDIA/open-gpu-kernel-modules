@@ -1290,6 +1290,102 @@ return_t deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2B_11(NV20
     return SUCCESS_T;
 }
 
+static
+return_t deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams,
+                                                                            NvU8 *buffer,
+                                                                            NvU32 bufferSize,
+                                                                            NvU32 *offset)
+{
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01 *src  = (void*)(buffer);
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS        *dest = pParams;
+
+    if (src && dest) {
+#ifdef COPY_OUTPUT_PARAMETERS
+        NV2080_CTRL_NVLINK_LINK_MASK_v2B_11                  *enabledLinks_s;
+        NV2080_CTRL_NVLINK_LINK_MASK                         *enabledLinks_d;
+        NvU32 i;
+
+        NvU32 rpcBufferIndex = 0;  // Tracks position in RPC buffer (relative indexing)
+
+        enabledLinks_s = &src->enabledLinks;
+        enabledLinks_d = &pParams->enabledLinks;
+
+        enabledLinks_d->lenMasks = enabledLinks_s->lenMasks;
+        NvU32 maxMasks = NV_MIN(enabledLinks_s->lenMasks, NV2080_CTRL_NVLINK_MAX_MASK_SIZE_v2B_11);
+        for (i = 0; i < maxMasks; i++)
+             enabledLinks_d->masks[i] |= enabledLinks_s->masks[i];
+
+        // TBD: Handle case when lenMasks > 1 (multiple mask elements)
+        // Currently only processing masks[0], need to iterate through all masks
+        FOR_EACH_INDEX_IN_MASK(64, i, enabledLinks_s->masks[0])
+        {
+            NV2080_CTRL_NVLINK_DEVICE_INFO        *deviceInfo_d = NULL;
+            NV2080_CTRL_NVLINK_DEVICE_INFO_v28_09 *deviceInfo_s = NULL;
+            
+            if (i >= NV2080_CTRL_NVLINK_MAX_LINKS_v2D_01) {
+                NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: Invalid link index - link: %u, max: %u\n", 
+                          i, NV2080_CTRL_NVLINK_MAX_LINKS_v2D_01);
+                 return FAILURE_T;
+            }
+            
+            // Copy from RPC buffer (relative) to output array (absolute)
+            dest->linkInfo[i].capsTbl                   = src->linkInfo[rpcBufferIndex].capsTbl;
+            dest->linkInfo[i].phyType                   = src->linkInfo[rpcBufferIndex].phyType;
+            dest->linkInfo[i].subLinkWidth              = src->linkInfo[rpcBufferIndex].subLinkWidth;
+            dest->linkInfo[i].linkState                 = src->linkInfo[rpcBufferIndex].linkState;
+            dest->linkInfo[i].rxSublinkStatus           = src->linkInfo[rpcBufferIndex].rxSublinkStatus;
+            dest->linkInfo[i].txSublinkStatus           = src->linkInfo[rpcBufferIndex].txSublinkStatus;
+            dest->linkInfo[i].nvlinkVersion             = src->linkInfo[rpcBufferIndex].nvlinkVersion;
+            dest->linkInfo[i].nciVersion                = src->linkInfo[rpcBufferIndex].nciVersion;
+            dest->linkInfo[i].phyVersion                = src->linkInfo[rpcBufferIndex].phyVersion;
+            dest->linkInfo[i].nvlinkLinkClockKHz        = src->linkInfo[rpcBufferIndex].nvlinkLinkClockKHz;
+            dest->linkInfo[i].nvlinkLineRateMbps        = src->linkInfo[rpcBufferIndex].nvlinkLineRateMbps;
+            dest->linkInfo[i].connected                 = src->linkInfo[rpcBufferIndex].connected;
+            dest->linkInfo[i].remoteDeviceLinkNumber    = src->linkInfo[rpcBufferIndex].remoteDeviceLinkNumber;
+            dest->linkInfo[i].localDeviceLinkNumber     = src->linkInfo[rpcBufferIndex].localDeviceLinkNumber;            
+
+            deviceInfo_d = &dest->linkInfo[i].remoteDeviceInfo;
+            deviceInfo_s = &src->linkInfo[rpcBufferIndex].remoteDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+
+            deviceInfo_d = &dest->linkInfo[i].localDeviceInfo;
+            deviceInfo_s = &src->linkInfo[rpcBufferIndex].localDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+            rpcBufferIndex++;  // Move to next entry in RPC buffer
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
 
 static
 return_t deserialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS *pParams,
@@ -1302,7 +1398,13 @@ return_t deserialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D(NV0000_CTRL_S
 
     if (src && dest) {
 #ifdef COPY_INPUT_PARAMETERS
-        memcpy(dest->gpuIds, src->gpuIds, (sizeof(NvU32) * NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS));
+        if (portMemCopy(dest->gpuIds, sizeof(dest->gpuIds),
+                        src->gpuIds, (sizeof(NvU32) * NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS)) == NULL) {
+                NV_PRINTF(LEVEL_ERROR,                                                                  
+                          "Error in copying GPU Id's source size is %lu and destination size is %lu \n",
+                          (sizeof(NvU32) * NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS), sizeof(dest->gpuIds));
+            return FAILURE_T;
+        }
         dest->gpuCount              = src->gpuCount;
 #endif
 #ifdef COPY_OUTPUT_PARAMETERS
@@ -4980,6 +5082,95 @@ return_t serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2B_11(NV2080
     return SUCCESS_T;
 }
 
+static
+return_t serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams,
+                                                                          NvU8 *buffer,
+                                                                          NvU32 bufferSize,
+                                                                          NvU32 *offset)
+{
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS        *src  = pParams;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01 *dest = (void*)(buffer);
+
+    if (src && dest) {
+#ifdef COPY_OUTPUT_PARAMETERS
+        NV2080_CTRL_NVLINK_LINK_MASK_v2B_11                  *enabledLinks_d;
+        NV2080_CTRL_NVLINK_LINK_MASK                         *enabledLinks_s;
+        NvU32 i;
+
+        NvU32 rpcBufferIndex = 0;  // Tracks position in RPC buffer (relative indexing)
+
+        enabledLinks_d = &dest->enabledLinks;
+        enabledLinks_s = &src->enabledLinks;
+
+        enabledLinks_d->lenMasks = enabledLinks_s->lenMasks;
+        for (i = 0; i < NV2080_CTRL_NVLINK_MAX_MASK_SIZE_v2B_11; i++)
+            enabledLinks_d->masks[i] = enabledLinks_s->masks[i];
+
+        FOR_EACH_INDEX_IN_MASK(64, i, src->enabledLinks.masks[0])
+        {
+            NV2080_CTRL_NVLINK_DEVICE_INFO        *deviceInfo_s = NULL;
+            NV2080_CTRL_NVLINK_DEVICE_INFO_v28_09 *deviceInfo_d = NULL;
+
+            if (i >= NV2080_CTRL_NVLINK_MAX_LINKS_v2D_01)
+                break;
+            
+            // Copy from source array (absolute) to RPC buffer (relative)
+            dest->linkInfo[rpcBufferIndex].capsTbl                   = src->linkInfo[i].capsTbl;
+            dest->linkInfo[rpcBufferIndex].phyType                   = src->linkInfo[i].phyType;
+            dest->linkInfo[rpcBufferIndex].subLinkWidth              = src->linkInfo[i].subLinkWidth;
+            dest->linkInfo[rpcBufferIndex].linkState                 = src->linkInfo[i].linkState;
+            dest->linkInfo[rpcBufferIndex].rxSublinkStatus           = src->linkInfo[i].rxSublinkStatus;
+            dest->linkInfo[rpcBufferIndex].txSublinkStatus           = src->linkInfo[i].txSublinkStatus;
+            dest->linkInfo[rpcBufferIndex].nvlinkVersion             = src->linkInfo[i].nvlinkVersion;
+            dest->linkInfo[rpcBufferIndex].nciVersion                = src->linkInfo[i].nciVersion;
+            dest->linkInfo[rpcBufferIndex].phyVersion                = src->linkInfo[i].phyVersion;
+            dest->linkInfo[rpcBufferIndex].nvlinkLinkClockKHz        = src->linkInfo[i].nvlinkLinkClockKHz;
+            dest->linkInfo[rpcBufferIndex].nvlinkLineRateMbps        = src->linkInfo[i].nvlinkLineRateMbps;
+            dest->linkInfo[rpcBufferIndex].connected                 = src->linkInfo[i].connected;
+            dest->linkInfo[rpcBufferIndex].remoteDeviceLinkNumber    = src->linkInfo[i].remoteDeviceLinkNumber;
+            dest->linkInfo[rpcBufferIndex].localDeviceLinkNumber     = src->linkInfo[i].localDeviceLinkNumber;
+
+            deviceInfo_d = &dest->linkInfo[rpcBufferIndex].localDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].localDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+
+            deviceInfo_d = &dest->linkInfo[rpcBufferIndex].remoteDeviceInfo;
+            deviceInfo_s = &src->linkInfo[i].remoteDeviceInfo;
+
+            deviceInfo_d->deviceIdFlags = deviceInfo_s->deviceIdFlags;
+            deviceInfo_d->domain        = deviceInfo_s->domain;
+            deviceInfo_d->bus           = deviceInfo_s->bus;
+            deviceInfo_d->device        = deviceInfo_s->device;
+            deviceInfo_d->function      = deviceInfo_s->function;
+            deviceInfo_d->pciDeviceId   = deviceInfo_s->pciDeviceId;
+            deviceInfo_d->deviceType    = deviceInfo_s->deviceType;
+            portMemCopy(deviceInfo_d->deviceUUID,
+                        sizeof(deviceInfo_d->deviceUUID),
+                        deviceInfo_s->deviceUUID,
+                        sizeof(deviceInfo_s->deviceUUID));
+            deviceInfo_d->fabricRecoveryStatusMask = deviceInfo_s->fabricRecoveryStatusMask;
+            rpcBufferIndex++;
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+#endif
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
 
 static
 return_t serialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS *pParams,
@@ -5000,7 +5191,13 @@ return_t serialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D(NV0000_CTRL_SYS
             dest->p2pCaps               = src->p2pCaps;
             dest->p2pOptimalReadCEs     = src->p2pOptimalReadCEs;
             dest->p2pOptimalWriteCEs    = src->p2pOptimalWriteCEs;
-            memcpy(dest->p2pCapsStatus, src->p2pCapsStatus, NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D);
+            if (portMemCopy(dest->p2pCapsStatus, sizeof(dest->p2pCapsStatus),
+                            src->p2pCapsStatus, NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D) == NULL) {
+                    NV_PRINTF(LEVEL_ERROR,                                                                  
+                               "Error in copying P2P capability status. source size is %u and destination size is %u \n",
+                               NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D, sizeof(dest->p2pCapsStatus));
+                return FAILURE_T;
+            }
 #endif
     }
     else
@@ -7458,68 +7655,6 @@ return_t serialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04(NV83DE_CTR
 
 #if defined(BUILD_COMMON_RPCS)
 static
-return_t serialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A(NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams,
-                                                            NvU8 *buffer,
-                                                            NvU32 bufferSize,
-                                                            NvU32 *offset)
-{
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS        *src = pParams;
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A *dest = (void*)(buffer);
-
-    if (src && dest)
-    {
-        NvU32 i;
-
-        if ((src->fbInfoListSize == 0) ||
-            (src->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_24_0A)) {
-            return FAILURE_T;
-        }
-
-        dest->fbInfoListSize = src->fbInfoListSize;
-
-        for (i = 0; i < src->fbInfoListSize; i++) {
-            dest->fbInfoList[i].index = src->fbInfoList[i].index;
-            dest->fbInfoList[i].data = src->fbInfoList[i].data;
-        }
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-
-static
-return_t deserialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A(NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams,
-                                                              NvU8 *buffer,
-                                                              NvU32 bufferSize,
-                                                              NvU32 *offset)
-{
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A *src = (void*)(buffer);
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS        *dest = pParams;
-
-    if (src && dest)
-    {
-        NvU32 i;
-
-        if ((src->fbInfoListSize == 0) ||
-            (src->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_24_0A)) {
-            return FAILURE_T;
-        }
-
-        dest->fbInfoListSize = src->fbInfoListSize;
-
-        for (i = 0; i < src->fbInfoListSize; i++) {
-            dest->fbInfoList[i].index = src->fbInfoList[i].index;
-            dest->fbInfoList[i].data = src->fbInfoList[i].data;
-        }
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-
-static
 return_t serialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00(NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams,
                                                             NvU8 *buffer,
                                                             NvU32 bufferSize,
@@ -8333,6 +8468,17 @@ static NV_STATUS static_data_copy(OBJRPCSTRUCTURECOPY *pObjRpcStructureCopy,
     if (status != NVOS_STATUS_SUCCESS) {
         return status;
     }
+
+    NV_CHECK_AND_ALIGN_OFFSET(*offset, bAlignOffset)
+    status = serialize_deserialize(VGPU_DISPLAYLESS_INFO)(pObjRpcStructureCopy,
+                                                                    pVSI,
+                                                                    buffer,
+                                                                    bufferSize,
+                                                                    offset);
+    if (status != NVOS_STATUS_SUCCESS) {
+        return status;
+    }
+
 
 end:
     return status;

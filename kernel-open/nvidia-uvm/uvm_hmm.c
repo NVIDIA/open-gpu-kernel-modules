@@ -74,6 +74,19 @@ module_param(uvm_disable_hmm, bool, 0444);
 #include "uvm_va_policy.h"
 #include "uvm_tools.h"
 
+//
+// Pass 0 as the order, when actual large order support is added this
+// function will need to be revisited
+//
+static __always_inline void nv_zone_device_page_init(struct page *page)
+{
+#if defined(NV_ZONE_DEVICE_PAGE_INIT_HAS_PGMAP_AND_ORDER_ARGS)
+    zone_device_page_init(page, page_pgmap(page), 0);
+#else
+    zone_device_page_init(page);
+#endif
+}
+
 // The function nv_PageSwapCache() wraps the check for page swap cache flag in
 // order to support a wide variety of kernel versions.
 // The function PageSwapCache() is removed after 32f51ead3d77 ("mm: remove
@@ -1253,7 +1266,6 @@ static NV_STATUS hmm_set_accessed_by_start_end_locked(uvm_va_block_t *va_block,
                                                       NvU64 end,
                                                       uvm_tracker_t *out_tracker)
 {
-    uvm_va_space_t *va_space = va_block->hmm.va_space;
     uvm_va_policy_node_t *node;
     uvm_va_block_region_t region;
     NV_STATUS status = NV_OK;
@@ -1261,7 +1273,7 @@ static NV_STATUS hmm_set_accessed_by_start_end_locked(uvm_va_block_t *va_block,
     uvm_for_each_va_policy_node_in(node, va_block, start, end) {
         // Read duplication takes precedence over SetAccessedBy.
         // Do not add mappings if read duplication is enabled.
-        if (uvm_va_policy_is_read_duplicate(&node->policy, va_space))
+        if (uvm_va_policy_is_read_duplicate(&node->policy))
             continue;
 
         region = uvm_va_block_region_from_start_end(va_block,
@@ -2140,7 +2152,7 @@ static void fill_dst_pfn(uvm_va_block_t *va_block,
 
         UVM_ASSERT(!page_count(dpage));
         UVM_ASSERT(!dpage->zone_device_data);
-        zone_device_page_init(dpage);
+        nv_zone_device_page_init(dpage);
         dpage->zone_device_data = gpu_chunk;
         atomic64_inc(&va_block->hmm.va_space->hmm.allocated_page_count);
     }

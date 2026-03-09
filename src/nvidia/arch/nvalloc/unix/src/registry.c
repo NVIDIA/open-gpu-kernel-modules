@@ -483,6 +483,7 @@ NV_STATUS RmReadRegistryString(
     return NV_OK;
 }
 
+
 NV_STATUS RmInitRegistry(void)
 {
     NV_STATUS rmStatus;

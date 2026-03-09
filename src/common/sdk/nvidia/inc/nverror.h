@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2025, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -167,7 +167,9 @@
 #define UNCORRECTABLE_SRAM_ERROR                        (172)
 #define C2C_FATAL_LINK_FAILURE                          (173)
 #define ROBUST_CHANNEL_RESETCHANNEL_KILL_PROCESS_SILENT (174)
-#define ROBUST_CHANNEL_LAST_ERROR                       (174)
+#define MEMORY_SUBSYSTEM_ERROR                          (175)
+#define PCIE_CORRECTABLE_ERROR_FAULT                    (176) 
+#define ROBUST_CHANNEL_LAST_ERROR                       (176)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \

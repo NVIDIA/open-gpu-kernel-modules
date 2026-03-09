@@ -242,6 +242,7 @@ ceutilsConstruct_IMPL
     status = memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pCeUtils->hTdCopyClass);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
 
+
     if (pCeUtils->hTdCopyClass >= HOPPER_DMA_COPY_A && !pChannel->bUseVasForCeCopy)
     {
         pChannel->type = FAST_SCRUBBER_CHANNEL;

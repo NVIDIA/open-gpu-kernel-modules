@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "os/os.h"
-#include "rmapi/event.h"
-#include "vgpu/rpc.h"
+#include "rmapi/event_api.h"
 #include "vgpu/vgpu_events.h"
 
 #include "published/turing/tu102/dev_vm.h"
@@ -164,11 +163,6 @@ intrRestoreNonStall_TU102
     THREAD_STATE_NODE *pThreadState
 )
 {
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
-    {
-        return;
-    }
-
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
         return;
@@ -214,11 +208,6 @@ intrGetPendingNonStall_TU102
     NV_ASSERT_OR_RETURN(pEngines != NULL, NV_ERR_INVALID_ARGUMENT);
 
     bitVectorClrAll(pEngines);
-
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     //
     // If the GPU is in GC6 (aka powered down or rail-gated state), return
@@ -402,10 +391,7 @@ intrDisableNonStall_TU102
     THREAD_STATE_NODE *pThreadState
 )
 {
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
-    {
-        intrDisableTopNonstall_HAL(pGpu, pIntr, pThreadState);
-    }
+    intrDisableTopNonstall_HAL(pGpu, pIntr, pThreadState);
 }
 
 NV_STATUS

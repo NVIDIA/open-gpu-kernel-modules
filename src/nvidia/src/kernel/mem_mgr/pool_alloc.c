@@ -1,5 +1,5 @@
  /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,7 +99,8 @@ typedef enum
  * This array contains the alloction sizes (in bytes) of each pool.
  */
 static const NvU64 poolAllocSizes[] = {
-    0x4000000000, 0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100
+    0x4000000000,
+    0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100
 };
 
 #define POOL_CONFIG_POOL_IDX       0
@@ -111,8 +112,7 @@ static const NvU64 poolConfig[POOL_CONFIG_MAX_SUPPORTED][POOL_CONFIG_CHUNKSIZE_I
      { RM_POOL_IDX_4K,   PMA_CHUNK_SIZE_64K },  // pool with pageSize = 4K for GMMU_FMT_VERSION_2
      { RM_POOL_IDX_256G, PMA_CHUNK_SIZE_256G }, // pool with pageSize = 256G for RM allocated buffers (unused as of blackwell)
      { RM_POOL_IDX_512M, PMA_CHUNK_SIZE_512M }, // pool with pageSize = 512MB for RM allocated buffers (unused as of ampere)
-     { RM_POOL_IDX_2M,   PMA_CHUNK_SIZE_4M },   // pool with pageSize = 4MB for RM allocated buffers
-     { RM_POOL_IDX_128K, PMA_CHUNK_SIZE_2M},    // pool with pageSize = 2MB for RM allocated buffers
+     { RM_POOL_IDX_2M,   PMA_CHUNK_SIZE_4M },   // pool with pageSize = 2MB for RM allocated buffers
      { RM_POOL_IDX_64K,  PMA_CHUNK_SIZE_256K }, // pool with pageSize = 64K for RM allocated buffers
      { RM_POOL_IDX_4K,   PMA_CHUNK_SIZE_64K }   // pool with pageSize = 4K for RM allocated buffers
 };
@@ -241,6 +241,10 @@ allocUpstreamTopPool
     {
         NvU64 *pPageStore = portMemAllocNonPaged(sizeof(NvU64) * numPages);
         NV_STATUS status = NV_OK;
+
+        if (pPageStore == NULL)
+            return NV_ERR_NO_MEMORY;
+
         NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
             pmaAllocatePages(pMemReserveInfo->pPma,
                 numPages,

@@ -20,7 +20,18 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef __gh100_dev_nv_xal_ep_p2p_zb_h__
-#define __gh100_dev_nv_xal_ep_p2p_zb_h__
-#define NV_XAL_EP_P2P_ZB                           0x00001fff:0x00000000 /* RW--D */
-#endif // __gh100_dev_nv_xal_ep_p2p_zb_h__
+#ifndef __gh100_dev_nv_xal_ep_p2p_zb__h__
+#define __gh100_dev_nv_xal_ep_p2p_zb__h__
+#define NV_XAL_EP_P2P_ZB                   0x00001fff:0x00000000
+#define NV_XAL_EP_P2P_ZB_WMBOX_ADDR_ADDR   22:1
+#define NV_XAL_EP_P2P_ZB_WREQMB_L(i)                                     (0x00000200+(i)*64) /* R--4A */
+#define NV_XAL_EP_P2P_ZB_WREQMB_L__SIZE_1                                                  8 /*       */
+#define NV_XAL_EP_P2P_ZB_WREQMB_L__PRIV_LEVEL_MASK                                0x00000900 /*       */
+#define NV_XAL_EP_P2P_WREQMB_L_PAGE_ADDR                                             21:0 /* R-IUF */
+#define NV_XAL_EP_P2P_WREQMB_L_PAGE_ADDR_INIT                                    0x000000 /* R-I-V */
+#define NV_XAL_EP_P2P_ZB_WREQMB_H(i)                                     (0x00000204+(i)*64) /* R--4A */
+#define NV_XAL_EP_P2P_ZB_WREQMB_H__SIZE_1                                                  8 /*       */
+#define NV_XAL_EP_P2P_ZB_WREQMB_H__PRIV_LEVEL_MASK                                0x00000900 /*       */
+#define NV_XAL_EP_P2P_WREQMB_H_REQ_ATTR                                              31:0 /* R-IUF */
+#define NV_XAL_EP_P2P_WREQMB_H_REQ_ATTR_INIT                                   0x00000000 /* R-I-V */
+#endif // __gh100_dev_nv_xal_ep_p2p_zb__h__
