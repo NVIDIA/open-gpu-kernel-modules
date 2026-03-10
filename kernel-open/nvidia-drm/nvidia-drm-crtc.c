@@ -282,7 +282,7 @@ static void ctm_3x4_to_csc(struct NvKmsCscMatrix    *nvkms_csc,
     }
 }
 
-static void
+static int
 cursor_plane_req_config_update(struct drm_plane *plane,
                                struct drm_plane_state *plane_state,
                                struct NvKmsKapiCursorRequestedConfig *req_config)
@@ -292,11 +292,14 @@ cursor_plane_req_config_update(struct drm_plane *plane,
 
     if (plane_state->fb == NULL) {
         cursor_req_config_disable(req_config);
-        return;
+        return 0;
     }
 
     memset(req_config, 0, sizeof(*req_config));
     req_config->surface = to_nv_framebuffer(plane_state->fb)->pSurface;
+    if (req_config->surface == NULL) {
+        return -EINVAL;
+    }
     req_config->dstX = plane_state->crtc_x;
     req_config->dstY = plane_state->crtc_y;
 
@@ -368,12 +371,14 @@ cursor_plane_req_config_update(struct drm_plane *plane,
     if (old_config.surface == NULL &&
         old_config.surface != req_config->surface) {
         req_config->flags.dstXYChanged = NV_TRUE;
-        return;
+        return 0;
     }
 
     req_config->flags.dstXYChanged =
         old_config.dstX != req_config->dstX ||
         old_config.dstY != req_config->dstY;
+
+    return 0;
 }
 
 static void release_drm_nvkms_surface(struct nv_drm_nvkms_surface *drm_nvkms_surface)
@@ -1171,6 +1176,9 @@ plane_req_config_update(struct drm_plane *plane,
     memset(req_config, 0, sizeof(*req_config));
 
     req_config->config.surface = to_nv_framebuffer(plane_state->fb)->pSurface;
+    if (req_config->config.surface == NULL) {
+        return -EINVAL;
+    }
 
     /* Source values are 16.16 fixed point */
     req_config->config.srcX = plane_state->src_x >> 16;
@@ -1553,7 +1561,7 @@ static int __nv_drm_cursor_atomic_check(struct drm_plane *plane,
                                         struct drm_plane_state *plane_state)
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
-    int i;
+    int i, ret;
     struct drm_crtc *crtc;
     struct drm_crtc_state *crtc_state;
 
@@ -1573,8 +1581,11 @@ static int __nv_drm_cursor_atomic_check(struct drm_plane *plane,
         }
 
         if (plane_state->crtc == crtc) {
-            cursor_plane_req_config_update(plane, plane_state,
-                                           cursor_req_config);
+            ret = cursor_plane_req_config_update(plane, plane_state,
+                                                 cursor_req_config);
+            if (ret != 0) {
+                return ret;
+            }
         }
     }
 

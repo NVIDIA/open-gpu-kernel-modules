@@ -794,8 +794,10 @@ nv_dma_buf_map_pages (
 {
     struct sg_table *sgt = NULL;
     struct scatterlist *sg;
+    void *pgmap;
     NvU32 dma_max_seg_size = 0;
     NvU32 i, nents;
+    NvBool pagemap_ref = NV_FALSE;
     int rc;
 
     nents = nv_dma_buf_get_sg_count(dev, priv, &dma_max_seg_size);
@@ -810,6 +812,25 @@ nv_dma_buf_map_pages (
     if (rc != 0)
     {
         goto free_sgt;
+    }
+
+    if (priv->nv->coherent_gpu_mem_mode == NV_COHERENT_GPU_MEM_MODE_DRIVER)
+    {
+        //
+        // For CDMM mode, on pre-6.18 kernels, we must use the
+        // MEMORY_DEVICE_COHERENT pages allocated by UVM to use in the DMA mapping.
+        // This dependency will go away with 6.18 introducing dma_map_phys for which
+        // struct page is not required.
+        // Take a refcount on the dev_pagemap created for GPU memory by UVM here.
+        //
+        pgmap = nv_dma_get_dev_pagemap(priv->handles[0].memArea.pRanges[0].start);
+        if (pgmap == NULL)
+        {
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: Failed to get a reference on dev_pagemap in CDMM(driver) mode\n");
+            goto free_table;
+        }
+        pagemap_ref = NV_TRUE;
     }
 
     sg = sgt->sgl;
@@ -831,7 +852,7 @@ nv_dma_buf_map_pages (
 
                 if ((page == NULL) || (sg == NULL))
                 {
-                    goto free_table;
+                    goto put_pgmap;
                 }
 
                 sg_set_page(sg, page, sg_len, NV_GET_OFFSET_IN_PAGE(dma_addr));
@@ -848,11 +869,28 @@ nv_dma_buf_map_pages (
     rc = dma_map_sg_attrs(dev, sgt->sgl, sgt->orig_nents, DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
     if (rc <= 0)
     {
-        goto free_table;
+        goto put_pgmap;
     }
     sgt->nents = rc;
 
+    // Reset page pointers in the sgt for CDMM mode after mapping
+    if (pagemap_ref)
+    {
+        for_each_sg(sgt->sgl, sg, sgt->nents, i)
+        {
+            sg_assign_page(sg, NULL);
+        }
+
+        nv_dma_put_dev_pagemap(pgmap);
+    }
+
     return sgt;
+
+put_pgmap:
+    if (pagemap_ref)
+    {
+        nv_dma_put_dev_pagemap(pgmap);
+    }
 
 free_table:
     sg_free_table(sgt);
@@ -920,17 +958,8 @@ nv_dma_buf_map_pfns (
 
                 if (!priv->skip_iommu)
                 {
-                    if (priv->nv->coherent)
-                    {
-                        status = nv_dma_map_non_pci_peer(&peer_dma_dev,
-                                                         (sg_len >> PAGE_SHIFT),
-                                                         &dma_addr);
-                    }
-                    else
-                    {
-                        status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev, 0x1,
-                                                 (sg_len >> PAGE_SHIFT), &dma_addr);
-                    }
+                    status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev, 0x1,
+                                             (sg_len >> PAGE_SHIFT), &dma_addr);
                     if (status != NV_OK)
                     {
                         goto unmap_pfns;
@@ -1064,7 +1093,13 @@ nv_dma_buf_map(
     // For MAPPING_TYPE_FORCE_PCIE on coherent platforms,
     // get the BAR1 PFN scatterlist instead of C2C pages.
     //
-    if (priv->nv->mem_has_struct_page &&
+    // If nv->coherent is true, that could mean two things:
+    // 1. GPU memory has struct page from memory onlining(NUMA)
+    // 2. GPU memory is not onlined but CDMM mode is enabled.
+    //    In CDMM, dma-buf depends on the MEMORY_DEVICE_COHERENT pages
+    //    created by UVM.
+    //
+    if (priv->nv->coherent &&
         (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
     {
         sgt = nv_dma_buf_map_pages(attachment->dev, priv);
@@ -1106,7 +1141,7 @@ nv_dma_buf_unmap(
 
     mutex_lock(&priv->lock);
 
-    if (priv->nv->mem_has_struct_page &&
+    if (priv->nv->coherent &&
         (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
     {
         nv_dma_buf_unmap_pages(attachment->dev, sgt, priv);

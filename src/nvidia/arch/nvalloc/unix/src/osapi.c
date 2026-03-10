@@ -1454,6 +1454,7 @@ RmDmabufPutClientAndDevice(
 }
 
 static NV_STATUS RmP2PDmaMapPages(
+    nv_state_t      *pNv,
     nv_dma_device_t *peer,
     NvU64            pageSize,
     NvU32            pageCount,
@@ -1466,12 +1467,30 @@ static NV_STATUS RmP2PDmaMapPages(
     NvU32 osPagesPerP2PPage, osPageCount, count;
     NvBool bDmaMapped = NV_FALSE;
     NvU32 i, j, index;
+    void *pgmap = NULL;
+    NvBool bPageMapRef = NV_FALSE;
 
     NV_ASSERT_OR_RETURN((pageSize >= os_page_size), NV_ERR_INVALID_ARGUMENT);
 
+    if (pNv->coherent_gpu_mem_mode == NV_COHERENT_GPU_MEM_MODE_DRIVER)
+    {
+        // Take a refcount on the dev_pagemap created for GPU memory by UVM
+        pgmap = nv_dma_get_dev_pagemap(pDmaAddresses[0]);
+        if (pgmap == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to get a reference on dev_pagemap in CDMM(driver) mode\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        bPageMapRef = NV_TRUE;
+    }
+
     if (pageSize == os_page_size)
     {
-        return nv_dma_map_alloc(peer, pageCount, pDmaAddresses, NV_FALSE, ppPriv);
+        status = nv_dma_map_alloc(peer, pageCount, pDmaAddresses, NV_FALSE, ppPriv);
+
+        goto put_pgmap;
     }
 
     //
@@ -1547,6 +1566,11 @@ static NV_STATUS RmP2PDmaMapPages(
 
     os_free_mem(pOsDmaAddresses);
 
+    if (bPageMapRef)
+    {
+        nv_dma_put_dev_pagemap(pgmap);
+    }
+
     return NV_OK;
 
 failed:
@@ -1559,6 +1583,12 @@ failed:
     if (pOsDmaAddresses != NULL)
     {
         os_free_mem(pOsDmaAddresses);
+    }
+
+put_pgmap:
+    if (bPageMapRef)
+    {
+        nv_dma_put_dev_pagemap(pgmap);
     }
 
     return status;
@@ -4448,9 +4478,9 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
 
     pNv = NV_GET_NV_STATE(pGpu);
 
-    if (pNv->mem_has_struct_page)
+    if (pNv->coherent)
     {
-        rmStatus = RmP2PDmaMapPages(peer, pageSize, pageCount,
+        rmStatus = RmP2PDmaMapPages(pNv, peer, pageSize, pageCount,
                                     pDmaAddresses, ppPriv);
         goto unlock;
     }
@@ -4464,19 +4494,10 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
 
     for (i = 0; i < pageCount; i++)
     {
-        if (pNv->coherent)
-        {
-            // Map C2C PFNs for coherent platforms
-            rmStatus = nv_dma_map_non_pci_peer(peer, pageSize / os_page_size,
-                                               &pDmaAddresses[i]);
-        }
-        else
-        {
-            // Map BAR1 PFNs for non-coherent platforms
-            rmStatus = nv_dma_map_peer(peer, pNv->dma_dev, 0x1,
-                                       pageSize / os_page_size,
-                                       &pDmaAddresses[i]);
-        }
+        // Map BAR1 PFNs for non-coherent platforms
+        rmStatus = nv_dma_map_peer(peer, pNv->dma_dev, 0x1,
+                                   pageSize / os_page_size,
+                                   &pDmaAddresses[i]);
         if ((rmStatus != NV_OK) && (i > 0))
         {
             for (j = i - 1; j < pageCount; j--)

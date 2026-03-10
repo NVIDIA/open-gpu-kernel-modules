@@ -1935,6 +1935,14 @@ typedef struct rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v2B_12
 
 typedef rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v2B_12 rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v;
 
+typedef struct rpc_init_gsp_trace_crash_buffer_v03_00
+{
+    NvU64      pa NV_ALIGN_BYTES(8);
+    NvU32      size;
+} rpc_init_gsp_trace_crash_buffer_v03_00;
+
+typedef rpc_init_gsp_trace_crash_buffer_v03_00 rpc_init_gsp_trace_crash_buffer_v;
+
 
 #endif
 
@@ -10248,6 +10256,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_internal_gpu_check_cts_id_vali
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_init_gsp_trace_crash_buffer_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00[] = {
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_init_gsp_trace_crash_buffer_v03_00, pa),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "pa"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_init_gsp_trace_crash_buffer_v03_00, size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "size"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_init_gsp_trace_crash_buffer",
+    #endif
+    .header_length = sizeof(rpc_init_gsp_trace_crash_buffer_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -11809,6 +11847,13 @@ vmiopd_mdesc_t *rpcdebugCtrlCmdInternalGpuCheckCtsIdValid_v2B_12(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_init_gsp_trace_crash_buffer_v03_00
+vmiopd_mdesc_t *rpcdebugInitGspTraceCrashBuffer_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00;
+}
+#endif
+
 
 #endif
 
@@ -12211,6 +12256,8 @@ typedef union rpc_generic_union {
     rpc_setup_hibernation_buffer_v setup_hibernation_buffer_v;
     rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v2B_12 ctrl_cmd_internal_gpu_check_cts_id_valid_v2B_12;
     rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v ctrl_cmd_internal_gpu_check_cts_id_valid_v;
+    rpc_init_gsp_trace_crash_buffer_v03_00 init_gsp_trace_crash_buffer_v03_00;
+    rpc_init_gsp_trace_crash_buffer_v init_gsp_trace_crash_buffer_v;
 } rpc_generic_union;
 
 #endif

@@ -69,6 +69,7 @@ extern "C" {
 #include "gsp_fw_wpr_meta.h"
 #include "gsp_fw_sr_meta.h"
 #include "liblogdecode.h"
+#include "gpu/gsp/gsp_trace_rats_macro.h"
 
 /*!
  * Forward declarations
@@ -541,6 +542,7 @@ struct KernelGsp {
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
     NvBool bFatalError;
+    NvBool bGspRmForceUnloaded;
     struct CrashCatReport *pWatchdogReport;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;
     SimAccessBuffer *pSimAccessBuf;
@@ -552,6 +554,10 @@ struct KernelGsp {
     void *pProfilerSamplesMDPriv;
     void *pProfilerSamples;
     GspStaticConfigInfo gspStaticInfo;
+    MEMORY_DESCRIPTOR *pGspTraceCrashBufferRawMemDesc;
+    void *pGspTraceCrashBufferRawMemDescPriv;
+    NV_RATS_GSP_TRACE_RECORD *pGspTraceCrashBufferRaw;
+    NvU32 gspTraceCrashBufferSize;
     NvBool bPartitionedFmc;
     NvBool bScrubberUcodeSupported;
     NvU32 fwHeapParamBaseSize;

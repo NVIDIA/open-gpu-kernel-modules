@@ -1455,6 +1455,57 @@ extern OSGetTimeoutParams   osGetTimeoutParams;
 
     #define ADD_PROBE(pGpu, probeId)
 
+    // Define dummy enum values so macro arguments compile in non-MODS builds
+    #define MODSDRV_ERROR_SEVERITY_UNKNOWN         0
+    #define MODSDRV_ERROR_SEVERITY_INFORMATIONAL   1
+    #define MODSDRV_ERROR_SEVERITY_CORRECTED       2
+    #define MODSDRV_ERROR_SEVERITY_RECOVERABLE     3
+    #define MODSDRV_ERROR_SEVERITY_FATAL           4
+    #define MODSDRV_NVLINK_ERROR_SOURCE_UNKNOWN     0
+    #define MODSDRV_NVLINK_ERROR_SOURCE_RLW         1
+    #define MODSDRV_NVLINK_ERROR_SOURCE_TLW         2
+    #define MODSDRV_NVLINK_ERROR_SOURCE_TREX        3
+    #define MODSDRV_NVLINK_ERROR_SOURCE_NVLPW_CTRL  4
+    #define MODSDRV_NVLINK_ERROR_SOURCE_NETIR       5
+    #define MODSDRV_NVLINK_ERROR_SOURCE_MSEFW       6
+    #define MODSDRV_NVLINK_ERROR_SOURCE_NVLINK_SW   7
+    #define MODSDRV_NVLINK_ERROR_CODE_INVALID              0
+    #define MODSDRV_NVLINK_ERROR_CODE_SAW_MVB              1
+    #define MODSDRV_NVLINK_ERROR_CODE_SAW_MSEFW            2
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_CTRL             3
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_REMAP            4
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_RSPCOL           5
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_RXPIPE           6
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_SRC_TRACK        7
+    #define MODSDRV_NVLINK_ERROR_CODE_RLW_TAGSTATE         8
+    #define MODSDRV_NVLINK_ERROR_CODE_TLW_CTRL             9
+    #define MODSDRV_NVLINK_ERROR_CODE_TLW_RX_PIPE0         10
+    #define MODSDRV_NVLINK_ERROR_CODE_TLW_RX_PIPE1         11
+    #define MODSDRV_NVLINK_ERROR_CODE_TLW_TX_PIPE0         12
+    #define MODSDRV_NVLINK_ERROR_CODE_TLW_TX_PIPE1         13
+    #define MODSDRV_NVLINK_ERROR_CODE_TREX                 14
+    #define MODSDRV_NVLINK_ERROR_CODE_NVLPW                15
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_PMPE           16
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_LINK_DOWN      17
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_THERMAL_EVENT  18
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_BER_EVENT      19
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_MFDE_EVENT     20
+    #define MODSDRV_NVLINK_ERROR_CODE_MVB_CTRL             21
+    #define MODSDRV_NVLINK_ERROR_CODE_MVB_RX               22
+    #define MODSDRV_NVLINK_ERROR_CODE_MVB_TX               23
+    #define MODSDRV_NVLINK_ERROR_CODE_NETIR_INT            24
+    #define MODSDRV_NVLINK_ERROR_CODE_MSE_WATCHDOG         25
+    #define MODSDRV_NVLINK_ERROR_CODE_MSE_FALCON_IRQSTAT   26
+    #define MODSDRV_NVLINK_ERROR_CODE_MSE_DEGRADED         27
+    #define MODSDRV_NVLINK_ERROR_CODE_SW_DEFINED           28
+    #define MODS_REPORT_NVLINK_ERROR(pGpu_, sev_, src_, ecode_, xcon_, inj_, link_, lane_, intr_, estat_, dsize_, dptr_) \
+        do { (void)(pGpu_); (void)(sev_); (void)(src_); (void)(ecode_); (void)(xcon_); (void)(inj_); (void)(link_); \
+             (void)(lane_); (void)(intr_); (void)(estat_); (void)(dsize_); (void)(dptr_); } while(0)
+    #define MODS_REPORT_GENERIC_ERROR(sev_, str_) \
+        do { (void)(sev_); (void)(str_); } while(0)
+    typedef NvU32 ModsDrvNvlinkErrorCode;
+    typedef NvU32 ModsDrvNvlinkErrorSource;
+
 #define IS_SIM_MODS(pOS)            (pOS->bIsSimMods)
 
 #endif // _OS_H_

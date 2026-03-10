@@ -573,6 +573,17 @@ static inline void NV_RM_RPC_PMA_SCRUBBER_SHARED_BUFFER_GUEST_PAGES_OPERATION(OB
             status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
     } while (0)
 
+#define NV_RM_RPC_INIT_GSP_TRACE_CRASH_BUFFER(pGpu, status, pa, size)          \
+    do                                                                         \
+    {                                                                          \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                      \
+        NV_ASSERT(pRpc != NULL);                                               \
+        if ((status == NV_OK) && (pRpc != NULL))                               \
+            status = rpcInitGspTraceCrashBuffer_HAL(pGpu, pRpc, pa, size);     \
+        else if (pRpc == NULL)                                                 \
+            status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
+    } while (0)
+
 void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu);
 
 NV_STATUS RmRpcPerfGetCurrentPstate(OBJGPU *pGpu,  NV2080_CTRL_PERF_GET_CURRENT_PSTATE_PARAMS *pParamStructPtr);

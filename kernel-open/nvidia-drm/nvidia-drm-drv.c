@@ -283,6 +283,10 @@ static int nv_drm_get_mst_display_infos
         goto done;
     }
 
+    if (!connectorInfo->dynamicDpyIdListValid) {
+        ret = -ETIMEDOUT;
+        goto done;
+    }
 
     *nDynamicDisplays = nvCountDpyIdsInDpyIdList(connectorInfo->dynamicDpyIdList);
 
@@ -444,9 +448,11 @@ static void nv_drm_enumerate_encoders_and_connectors
 
                     if (nv_drm_get_mst_display_infos(nv_dev, hDisplays[i],
                             &displayInfos, &nDynamicDisplays)) {
-                        NV_DRM_DEV_LOG_ERR(
+                        NV_DRM_DEV_LOG_INFO(
                                 nv_dev,
-                                "Failed to get dynamic displays");
+                                "Failed to get dynamic displays during device "
+                                "registration. Dynamic displays may be probed in "
+                                "non-deterministic order.");
                     } else if (nDynamicDisplays) {
                         nv_drm_sort_dynamic_displays_by_dp_addr(displayInfos, nDynamicDisplays);
 

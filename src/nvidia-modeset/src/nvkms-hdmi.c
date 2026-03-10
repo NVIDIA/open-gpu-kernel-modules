@@ -1718,21 +1718,22 @@ NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
  * be enabled before the first extended vblank after enabling VRR, or the
  * display will blank.
  */
-void nvHdmiSetVRR(NVDispEvoPtr pDispEvo, NvU32 head, NvBool enable)
+void nvHdmiSetVRR(const NVDispEvoPtr pDispEvo,
+                  NvU32 head,
+                  NvBool enable,
+                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame;
-    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empCtrl = { 0 };
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame = { 0 };
     NvEvoInfoFrameTransmitControl transmitCtrl = enable ?
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME :
         NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
     NVT_STATUS status;
 
-    empCtrl.EnableVRR = enable;
+    empCtrl->EnableVRR = enable;
 
-    status = NvTiming_ConstructExtendedMetadataPacketInfoframe(&empCtrl,
+    status = NvTiming_ConstructExtendedMetadataPacketInfoframe(empCtrl,
                                                                &empInfoFrame);
-
     if (status != NVT_STATUS_SUCCESS) {
         nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
                 "Error in constructing Extended Metadata Packet InfoFrame");

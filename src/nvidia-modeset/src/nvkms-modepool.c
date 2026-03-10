@@ -72,7 +72,8 @@ static NvBool ConstructModeTimingsMetaData(
     struct NvKmsMode *pKmsMode,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl);
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl);
 
 static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                            const struct NvKmsMode *pKmsMode,
@@ -152,7 +153,8 @@ nvValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                                       &kmsMode,
                                       &evoFlags,
                                       NULL /* pInfoFrameCtrl */,
-                                      NULL /* pVSInfoFrameCtrl */)) {
+                                      NULL /* pVSInfoFrameCtrl */,
+                                      NULL /* pEmpCtrl */)) {
         pReply->valid = FALSE;
         return;
     }
@@ -1932,7 +1934,17 @@ const NVT_TIMING *nvFindEdidNVT_TIMING
     return NULL;
 }
 
-static void ConstructVSInfoFrameCtrls(
+static void ConstructEmpInfoFrameCtrl(
+    const NVT_TIMING *pTiming,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpCtrl)
+{
+    pEmpCtrl->version = NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21A;
+    pEmpCtrl->ITTiming = 1;
+    pEmpCtrl->BaseRefreshRate = pTiming->etc.rr;
+    pEmpCtrl->BaseVFP = pTiming->VFrontPorch; 
+}
+
+static void ConstructVSInfoFrameCtrl(
     const NVT_TIMING *pTiming,
     const NvBool hdmi3D,
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSCtrl)
@@ -1984,12 +1996,14 @@ static NvBool ConstructModeTimingsMetaData(
     struct NvKmsMode *pKmsMode,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     EvoValidateModeFlags flags = { 0 };
     NVT_VIDEO_INFOFRAME_CTRL infoFrameCtrl;
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vsInfoFrameCtrl = { };
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empInfoFrameCtrl = { };
     NvModeTimings modeTimings = pKmsMode->timings;
     const NVT_TIMING *pTiming;
 
@@ -2070,7 +2084,8 @@ static NvBool ConstructModeTimingsMetaData(
          */
         if (nvDpyIsHdmiEvo(pDpyEvo)) {
             NvTiming_ConstructVideoInfoframeCtrl(&timing, &infoFrameCtrl);
-            ConstructVSInfoFrameCtrls(&timing, hdmi3D, &vsInfoFrameCtrl);
+            ConstructVSInfoFrameCtrl(&timing, hdmi3D, &vsInfoFrameCtrl);
+            ConstructEmpInfoFrameCtrl(&timing, &empInfoFrameCtrl);
         }
 
         goto done;
@@ -2096,6 +2111,9 @@ done:
     if (pVSInfoFrameCtrl != NULL) {
         *pVSInfoFrameCtrl = vsInfoFrameCtrl;
     }
+    if (pEmpInfoFrameCtrl != NULL) {
+        *pEmpInfoFrameCtrl = empInfoFrameCtrl;
+    }
     pKmsMode->timings = modeTimings;
 
     return TRUE;
@@ -2120,7 +2138,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 NVDpyAttributeColor *pDpyColor,
                                 NVHwModeTimingsEvo *pTimingsEvo,
                                 NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-                                NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
+                                NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+                                NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     EvoValidateModeFlags flags;
     struct NvKmsMode kmsMode = *pKmsMode;
@@ -2133,7 +2152,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                       &kmsMode,
                                       &flags,
                                       pInfoFrameCtrl,
-                                      pVSInfoFrameCtrl)) {
+                                      pVSInfoFrameCtrl,
+                                      pEmpInfoFrameCtrl)) {
         return FALSE;
     }
 

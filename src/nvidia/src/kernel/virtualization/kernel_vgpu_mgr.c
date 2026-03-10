@@ -490,6 +490,10 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
                         {
                             if (pgpuInfo->vgpuTypes[i] == NULL)
                                 continue;
+
+                            if (!kvgpumgrIsMigTimeslicingModeEnabled(pGpu) && (pgpuInfo->vgpuTypes[i]->maxInstancePerGI != 1))
+                                continue;
+
                             if (pgpuInfo->vgpuTypes[i]->vgpuTypeId == vgpuSmcTypeIdMappings[j].vgpuTypeId)
                             {
                                 _addVgpuTypeToCreatableType(vgpuSmcTypeIdMappings[j].vgpuTypeId,
@@ -5076,10 +5080,13 @@ kvgpuMgrGetPlacementResource(OBJGPU *pGpu, Device *pDevice,
 NV_STATUS
 kvgpuMgrGetHeterogeneousMode(OBJGPU *pGpu, NvU32 swizzId, NvBool *bHeterogeneousModeEnabled)
 {
-    if (IS_MIG_IN_USE(pGpu) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+    if (IS_MIG_IN_USE(pGpu))
     {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kvgpuMgrGetHeterogeneousModePerGI(pGpu, swizzId, bHeterogeneousModeEnabled));
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_TIMESLICING_SUPPORTED) && kvgpumgrIsMigTimeslicingModeEnabled(pGpu))
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kvgpuMgrGetHeterogeneousModePerGI(pGpu, swizzId, bHeterogeneousModeEnabled));
+        else
+            *bHeterogeneousModeEnabled = NV_FALSE;
     }
     else
     {

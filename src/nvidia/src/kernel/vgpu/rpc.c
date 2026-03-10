@@ -6795,6 +6795,12 @@ NV_STATUS rpcCtrlTimerSetGrTickFreq_v1A_1F(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle 
     NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS *pParams = (NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS *)pParamStructPtr;
     rpc_ctrl_timer_set_gr_tick_freq_v1A_1F *rpc_buffer_params = &rpc_message->ctrl_timer_set_gr_tick_freq_v1A_1F;
 
+    // Hopper and later architectures, hardware does not support changing the GR Tick frequency
+    if (IsHOPPERorBetter(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_TIMER_SET_GR_TICK_FREQ,
                                       sizeof(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F));
     if (status != NV_OK)
@@ -11646,5 +11652,28 @@ NV_STATUS rpcCtrlCmdInternalGpuCheckCtsIdValid_v2B_12
 
     status = deserialize_NV2080_CTRL_INTERNAL_GPU_CHECK_CTS_ID_VALID_PARAMS_v2B_12(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
 
+    return status;
+}
+
+NV_STATUS rpcInitGspTraceCrashBuffer_v03_00
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc,
+    NvU64 pa,
+    NvU32 size
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_INIT_GSP_TRACE_CRASH_BUFFER,
+                                        sizeof(rpc_init_gsp_trace_crash_buffer_v03_00));
+        if (status != NV_OK)
+            return status;
+
+        rpc_message->init_gsp_trace_crash_buffer_v03_00.pa = pa;
+        rpc_message->init_gsp_trace_crash_buffer_v03_00.size = size;
+        status = _issueRpcAndWait(pGpu, pRpc);
+    }
     return status;
 }

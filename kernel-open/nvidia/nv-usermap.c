@@ -93,8 +93,8 @@ NV_STATUS NV_API_CALL nv_add_mapping_context_to_file(
     }
 
     nvamc->prot = prot;
-    nvamc->valid = NV_TRUE;
     nvamc->caching = nvuap->caching;
+    nvamc->valid = NV_TRUE;
 
 done:
     nv_put_file_private(priv);

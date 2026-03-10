@@ -123,6 +123,53 @@ kmigmgrGpuInstanceSupportVgpuTimeslice_GB202
 
     return gfxSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE ? NV_FALSE : NV_TRUE;
 }
+
+static NvBool
+s_kmigmgrIsSingleSliceConfig_GB202
+(
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager,
+    NvU32 gpuInstanceFlag
+)
+{
+    NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _COMPUTE_SIZE, gpuInstanceFlag);
+    NvU32 syspipeMask = 0;
+    NvBool isSingleSliceProfile = NV_FALSE;
+    NvU32 actualMigCount = 0;
+    NvU32 i;
+
+    for (i = 0; i < RM_ENGINE_TYPE_GR_SIZE; ++i)
+    {
+        if (gpuCheckEngine_HAL(pGpu, ENG_GR(i)))
+        {
+            syspipeMask |= NVBIT32(i);
+        }
+    }
+    actualMigCount = nvPopCount32(syspipeMask);
+
+    switch (computeSizeFlag)
+    {
+        case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF:
+            if (actualMigCount == 2)
+            {
+                //
+                // On 2 slice configurations, MINI_HALF is the smallest available partition
+                // QUARTER would be hidden by NVML See bug 5592609 for more details.
+                //
+                isSingleSliceProfile = NV_TRUE;
+            }
+            break;
+        case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER:
+            isSingleSliceProfile = NV_TRUE;
+            break;
+        default:
+            // nothing do do. default value is already initialized to NV_FALSE
+            break;
+    }
+
+    return isSingleSliceProfile;
+}
+
 /*!
  * @brief   Function to determine whether gpu instance flag combinations are valid
  *          for this GPU
@@ -138,20 +185,17 @@ kmigmgrIsGPUInstanceCombinationValid_GB202
     NvU32 memSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _MEMORY_SIZE, gpuInstanceFlag);
     NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _COMPUTE_SIZE, gpuInstanceFlag);
     NvU32 gfxSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _GFX_SIZE, gpuInstanceFlag);
-    NvU32 smallestComputeSizeFlag;
 
     if (!kmigmgrIsGPUInstanceFlagValid_HAL(pGpu, pKernelMIGManager, gpuInstanceFlag))
     {
         return NV_FALSE;
     }
 
-    smallestComputeSizeFlag = kmigmgrSmallestComputeProfileSize(pGpu, pKernelMIGManager);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, smallestComputeSizeFlag != KMIGMGR_COMPUTE_SIZE_INVALID, NV_FALSE);
 
-    // JPG_OFA profile is only available on the smallest available partition
+    // JPG_OFA profile is only available on single slice GPU Instances
     if (FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA, _ENABLE, gpuInstanceFlag))
     {
-        if (computeSizeFlag != smallestComputeSizeFlag)
+        if (!s_kmigmgrIsSingleSliceConfig_GB202(pGpu, pKernelMIGManager, gpuInstanceFlag))
         {
             return NV_FALSE;
         }

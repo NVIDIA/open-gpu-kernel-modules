@@ -374,6 +374,21 @@ typedef struct uvm_pmm_gpu_struct
         // or workqueue.
         struct list_head va_block_lazy_free;
         nv_kthread_q_item_t va_block_lazy_free_q_item;
+
+        // Count of the number of root chunks "in_eviction". Incremented for
+        // each root chunks that starts the eviction process, and decremented
+        // on eviction success or failure.
+        // Updates are protected by 'list_lock', but it can be queried outside
+        // of the critical section.
+        long in_eviction_count;
+
+        // Count of the number of root chunks that are temporarily pinned.
+        // Incremented each time a root chunk is explicitly pinned or when
+        // merging of a split root chunk results in pinned status.
+        // Decremented on explict chunk unpin or split.
+        // Updates are protected by 'list_lock', but it can be queried outside
+        // of the critical section.
+        long pinned_count;
     } root_chunks;
 
     // Lock protecting PMA allocation, freeing and eviction

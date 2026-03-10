@@ -140,6 +140,7 @@
 #include <asm/pgtable.h>            /* pte bit definitions              */
 #include <asm/bitops.h>             /* __set_bit()                      */
 #include <linux/time.h>             /* FD_SET()                         */
+#include <linux/memremap.h>
 
 #include "nv-list-helpers.h"
 
@@ -596,8 +597,8 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #endif
 }
 
+#define NV_GET_PAGE_STRUCT(phys_page) pfn_to_page(phys_page >> PAGE_SHIFT)
 #define NV_GET_OFFSET_IN_PAGE(phys_page) offset_in_page(phys_page)
-#define NV_GET_PAGE_STRUCT(phys_page) virt_to_page(__va(phys_page))
 #define NV_VMA_PGOFF(vma)             ((vma)->vm_pgoff)
 #define NV_VMA_SIZE(vma)              ((vma)->vm_end - (vma)->vm_start)
 #define NV_VMA_OFFSET(vma)            (((NvU64)(vma)->vm_pgoff) << PAGE_SHIFT)
@@ -605,6 +606,12 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_VMA_FILE(vma)              ((vma)->vm_file)
 
 #define NV_DEVICE_MINOR_NUMBER(x)     minor((x)->i_rdev)
+
+#if defined(NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG)
+#define NV_GET_DEV_PAGEMAP(pfn) get_dev_pagemap(pfn, NULL)
+#else
+#define NV_GET_DEV_PAGEMAP get_dev_pagemap
+#endif
 
 #define NV_PCI_DISABLE_DEVICE(pci_dev)                           \
     {                                                            \

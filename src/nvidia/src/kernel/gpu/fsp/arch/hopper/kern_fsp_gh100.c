@@ -971,6 +971,7 @@ kfspGetGspBootArgs
     return status;
 }
 
+
 /*!
  * @brief Set up GSP-FMC and boot args for FSP command
  *
@@ -1000,6 +1001,7 @@ kfspSetupGspImages
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
     NvU64 flags = MEMDESC_FLAGS_NONE;
+
     //
     // On systems with SEV enabled, the GSP-FMC image has to be accessible
     // to FSP (an unit inside GPU) and hence placed in unprotected sysmem

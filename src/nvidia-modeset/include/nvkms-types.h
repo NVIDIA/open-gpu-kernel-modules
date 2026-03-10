@@ -1849,6 +1849,7 @@ typedef struct _NVDispHeadAudioStateEvoRec {
 typedef struct _NVDispHeadInfoFrameStateEvoRec {
     NVT_VIDEO_INFOFRAME_CTRL ctrl;
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorSpecificCtrl;
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empCtrl;
     NvBool hdTimings;
 } NVDispHeadInfoFrameStateEvoRec;
 

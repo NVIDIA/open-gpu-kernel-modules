@@ -479,6 +479,19 @@ struct NvKmsModeValidationParams {
      * When dscOverrideBitsPerPixelX16 is 0, NVKMS compute the rate itself.
      */
     NvU32 dscOverrideBitsPerPixelX16;
+
+    /*!
+     * Maximum pixel depth (in bits) for each layer's usage bounds.
+     * When non-zero, NVKMS filters out surface memory formats with
+     * bpp > this value before performing the gpu extended capability check.
+     *
+     * This allows clients to constrain usage bounds based on the maximum
+     * pixel depth they will actually use, preventing bandwidth allocation
+     * for deeper formats that will never be validated or displayed.
+     *
+     * Value 0 means no constraint (backward compatible).
+     */
+    NvU8 maxUsageBoundPixelDepth[NVKMS_MAX_LAYERS_PER_HEAD];
 };
 
 /*!

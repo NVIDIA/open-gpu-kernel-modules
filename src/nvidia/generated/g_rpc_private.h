@@ -523,6 +523,10 @@ RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v26_04;
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v2B_07;
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
 
+                                               // RPC:INIT_GSP_TRACE_CRASH_BUFFER
+RpcInitGspTraceCrashBuffer         rpcInitGspTraceCrashBuffer_v03_00;
+RpcInitGspTraceCrashBuffer         rpcInitGspTraceCrashBuffer_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
+
                                                // RPC:CTRL_SET_CHANNEL_INTERLEAVE_LEVEL
 RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_v1A_0A;
 RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, T234D, T26XD
@@ -3262,6 +3266,8 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlFbGetFsInfo = rpcCtrlFbGetFsInfo_v26_04;
     if (IsIPVersionInRange(pRpc, 0x2B070000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlFbGetFsInfo = rpcCtrlFbGetFsInfo_v2B_07;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcInitGspTraceCrashBuffer = rpcInitGspTraceCrashBuffer_v03_00;
     if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlSetChannelInterleaveLevel = rpcCtrlSetChannelInterleaveLevel_v1A_0A;
     if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
@@ -3445,6 +3451,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFlaSetupInstanceMemBlock);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalSriovPromotePmaStream);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFbGetFsInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcInitGspTraceCrashBuffer);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetChannelInterleaveLevel);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgResumeContext);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocRoot);
@@ -4166,6 +4173,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -4367,6 +4375,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -4580,6 +4589,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -4781,6 +4791,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -4946,6 +4957,7 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -5147,6 +5159,7 @@ static void rpcHalIfacesSetup_GB202(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -5366,6 +5379,7 @@ static void rpcHalIfacesSetup_T234D(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot
@@ -5531,6 +5545,7 @@ static void rpcHalIfacesSetup_T264D(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
         rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
         rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcInitGspTraceCrashBuffer_STUB,         // rpcInitGspTraceCrashBuffer
         rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
         rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
         rpcAllocRoot_STUB,                       // rpcAllocRoot

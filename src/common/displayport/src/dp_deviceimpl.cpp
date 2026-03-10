@@ -65,8 +65,10 @@ DeviceImpl::~DeviceImpl()
 
     // Unlink this node from its children
     for (unsigned int i = 0; i < sizeof(children)/sizeof(*children); i++)
-        if (children[i])
-            children[i]->parent = 0;
+        if (children[i]) {
+            children[i]->parent = NULL;
+            children[i]->setDscDecompressionDevice(false /* bDscCapBasedOnParent */);
+        }
 
     // Unlink this node from its parent when it's there
     if (parent && (parent->children[this->address.tail()] == this))
@@ -2621,6 +2623,18 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
             {
                 this->bDSCPossible = true;
                 this->devDoingDscDecompression = this;
+            }
+            else
+            {
+                //
+                // This condition takes care of sink devices not capable of DSC
+                // but parent is capable of DSC decompression.
+                //
+                if (this->parent && this->parent->isDSCDecompressionSupported())
+                {
+                    this->bDSCPossible = true;
+                    this->devDoingDscDecompression = this->parent;
+                }
             }
         }
         else

@@ -255,6 +255,12 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
                        const enum NvKmsAllowAdaptiveSync allowAdaptiveSync)
 {
 
+    if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) &&
+        nvDPLibDpyUsesHDMIActivePcon(pDpyEvo)) {
+
+        return NVKMS_DPY_VRR_TYPE_NONE;
+    }
+
     if (nvDpyIsHdmiEvo(pDpyEvo)) {
         /*
          * Do not allow HDMI VRR if refresh rate less than
@@ -467,11 +473,12 @@ static void RmDisableVrr(NVDevEvoPtr pDevEvo)
 void nvDisableVrr(NVDevEvoPtr pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
-    NvU32 head, dispIndex;
+    NvU32 apiHead, head, dispIndex;
+    NVDispHeadStateEvoRec *pHeadState;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+            pHeadState = &pDispEvo->headState[head];
 
             TellRMAboutVrrHead(pDispEvo, pHeadState, FALSE);
         }
@@ -491,15 +498,26 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
     RmDisableVrr(pDevEvo);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
 
-            if ((pHeadState->pConnectorEvo != NULL) &&
-                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+                continue;
+            }
+
+            head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+            nvAssert(head != NV_INVALID_HEAD);
+
+            pHeadState = &pDispEvo->headState[head];
+            nvAssert(pHeadState->pConnectorEvo != NULL);
+
+            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, FALSE);
                 } else {
-                    nvHdmiSetVRR(pDispEvo, head, FALSE);
+                    nvHdmiSetVRR(pDispEvo, head,
+                                 FALSE, &pApiHeadState->infoFrame.empCtrl);
                 }
             }
         }
@@ -607,20 +625,32 @@ void nvGetDpyMinRefreshRateValidValues(
 void nvEnableVrr(NVDevEvoPtr pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
-    NvU32 head, dispIndex;
+    NvU32 apiHead, head, dispIndex;
+    NVDispHeadStateEvoRec *pHeadState;
 
     nvAssert(!pDevEvo->vrr.enabled);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
 
-            if ((pHeadState->pConnectorEvo != NULL) &&
-                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+                continue;
+            }
+
+            head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+            nvAssert(head != NV_INVALID_HEAD);
+
+            pHeadState = &pDispEvo->headState[head];
+            nvAssert(pHeadState->pConnectorEvo != NULL);
+
+            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
                 } else {
-                    nvHdmiSetVRR(pDispEvo, head, TRUE);
+                    nvHdmiSetVRR(pDispEvo, head,
+                                 TRUE, &pApiHeadState->infoFrame.empCtrl);
                 }
             }
         }
@@ -628,7 +658,7 @@ void nvEnableVrr(NVDevEvoPtr pDevEvo)
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+            pHeadState = &pDispEvo->headState[head];
 
             // To allow VRR-based mclk switching, RM needs to know which heads
             // are driving VRR displays capable of extending vblank.  This

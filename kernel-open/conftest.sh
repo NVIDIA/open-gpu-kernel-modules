@@ -507,6 +507,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -530,6 +531,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -588,6 +590,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -614,6 +617,7 @@ compile_test() {
             #include <asm/pgtable_types.h>
             #endif
             #include <asm/page.h>
+            #include <linux/percpu.h>
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -1126,19 +1130,44 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_DETACH_IOAS" "" "types"
         ;;
 
+        vfio_device_ops_has_get_region_info_caps)
+            #
+            # Determine if 'struct vfio_device_ops' has 'get_region_info_caps' 
+            # callback.
+            #
+            # Added by commit 775f726a742a ("vfio: Add get_region_info_caps op") 
+            # in v6.19
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            int conftest_vfio_device_ops_has_get_region_info_caps(void) {
+                return offsetof(struct vfio_device_ops, get_region_info_caps);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_GET_REGION_INFO_CAPS" "" "types"
+        ;;
+
         pfn_address_space)
             #
             # Determine if 'struct pfn_address_space' structure is present or not.
+            #
+            # Added by commit 2ec41967189c ("mm: handle poisoning of pfn without
+            # struct pages") in v6.19
+            # Added by commit e6dbcb7c0e7b ("mm: fixup pfnmap memory failure
+            # handling to use pgoff in v6.19
             #
             CODE="
             #include <linux/memory-failure.h>
             void conftest_pfn_address_space() {
                 struct pfn_address_space pfn_address_space;
+                pfn_address_space.pfn_to_vma_pgoff = NULL;
+                register_pfn_address_space(&pfn_address_space);
+                unregister_pfn_address_space(&pfn_address_space);
             }"
-
             compile_check_conftest "$CODE" "NV_PFN_ADDRESS_SPACE_STRUCT_PRESENT" "" "types"
         ;;
-
+	
         irq_bypass_producer_has_token)
             #
             # Determine if 'struct irq_bypass_producer' has 'token' field
@@ -1182,13 +1211,18 @@ compile_test() {
             #
             # Determine if egm management api are present or not.
             #
+            # unregister_egm_node() function signature changed by commit 
+            # 9863aeed3a2d ("NVIDIA: SAUCE: vfio/nvgrace-egm: Update EGM 
+            # unregistration API") to use PCI device as its parameter
+            # https://github.com/NVIDIA/NV-Kernels.git
+            #
             CODE="
             #include <linux/pci.h>
             #include <linux/nvgrace-egm.h>
             void conftest_egm_module_helper_api_present() {
-                struct pci_dev *pdev;
+                struct pci_dev *pdev = NULL;
                 register_egm_node(pdev);
-                unregister_egm_node(0);
+                unregister_egm_node(pdev);
             }
             "
             compile_check_conftest "$CODE" "NV_EGM_MODULE_HELPER_API_PRESENT" "" "types"
@@ -2136,24 +2170,6 @@ compile_test() {
             else
                 echo "#undef NV_VFIO_PIN_PAGES_HAS_PAGES_ARG" | append_conftest "functions"
             fi
-        ;;
-
-        enable_apicv)
-            #
-            # Determine if enable_apicv boolean is exported by kernel.
-            #
-            # Added by commit fdf513e37a3b ("KVM: x86: Use common
-            # 'enable_apicv' variable for both APICv and AVIC") in v5.14.
-            #
-            CODE="
-            $CONFTEST_PREAMBLE
-            #include <asm/kvm_host.h>
-
-            bool is_enable_apicv_present() {
-                return enable_apicv;
-            }"
-
-            compile_check_conftest "$CODE" "NV_ENABLE_APICV_PRESENT" "" "types"
         ;;
 
         pci_driver_has_driver_managed_dma)
@@ -5043,6 +5059,26 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_DEVICE_COHERENT_PRESENT" "" "types"
         ;;
 
+
+        is_vma_write_locked_has_mm_lock_seq_arg)
+            #
+            # Determine if __is_vma_write_locked() takes only a single
+            # 'struct vm_area_struct *' argument.
+            #
+            # Commit 22f7639f2f03 ("mm/vma: improve and document
+            # __is_vma_write_locked()") removed the 'unsigned int *mm_lock_seq'
+            # parameter in v7.0-rc1.
+            #
+            CODE="
+            #include <linux/mm.h>
+            #include <linux/mmap_lock.h>
+            int conftest_is_vma_write_locked_has_mm_lock_seq_arg(struct vm_area_struct *vma) {
+                unsigned int mm_lock_seq;
+                return __is_vma_write_locked(vma, &mm_lock_seq);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IS_VMA_WRITE_LOCKED_HAS_MM_LOCK_SEQ_ARG" "" "types"
+        ;;
 
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please

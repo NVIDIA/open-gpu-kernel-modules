@@ -525,8 +525,8 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
     else
     {
         //
-        // If DSC is enabled bpp will already be multiplied by 16, we need to mulitply by another 16 
-        // to match scalar of 256 which is used in non-DSC case. 
+        // If DSC is enabled bpp will already be multiplied by 16, we need to mulitply by another 16
+        // to match scalar of 256 which is used in non-DSC case.
         //
         localInfo->localModesetInfo.depth = localInfo->localModesetInfo.depth * EFF_BPP_DSC_SCALER;
     }
@@ -679,7 +679,7 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
                   dev->isVideoSink() ? "VIDEO" : "BRANCH");
 
         //
-        // Note: This makes an assumption that all devices in the group have the same values for 
+        // Note: This makes an assumption that all devices in the group have the same values for
         //       bApplyStuffDummySymbolsWAR, bStuffDummySymbolsFor8b10b and bStuffDummySymbolsFor128b132b
         //
         bApplyStuffDummySymbolsWAR |= ((DeviceImpl *)dev)->getApplyStuffDummySymbolsWAR();
@@ -817,7 +817,7 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
             NvU32 bitsPerLane                   = (NvU32)NV_CEIL(modesetParams.modesetInfo.surfaceWidth, LOGICAL_LANES) * depth;
             NvU32 totalSymbolsPerLane           = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
             NvU32 totalSymbols                  = totalSymbolsPerLane * LOGICAL_LANES;
-            targetImpl->lastModesetInfo.depth   = (NvU32)NV_CEIL((totalSymbols * symbolSize * EFF_BPP_NON_DSC_SCALER), 
+            targetImpl->lastModesetInfo.depth   = (NvU32)NV_CEIL((totalSymbols * symbolSize * EFF_BPP_NON_DSC_SCALER),
                                                                   modesetParams.modesetInfo.surfaceWidth);
         }
     }
@@ -852,6 +852,14 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         main->setDpStereoMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
         main->setDpMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
     }
+    else
+    {
+        // CLear MSA parameters for MST topology
+        NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS msaParams = modesetParams.msaparams;
+        msaParams.bEnableMSA        = false;
+        main->setDpStereoMSAParameters(false, msaParams);
+        main->setDpMSAParameters(false, msaParams);
+    }
 
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN_STATUS, bLinkTrainingStatus);
 
@@ -875,8 +883,8 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 
     // Apply dummy symbol WAR if link training succeeded and device requires dummy symbols
     // for the channel coding mode as per the device's WAR flags
-    if (bLinkTrainingStatus && 
-        bApplyStuffDummySymbolsWAR && 
+    if (bLinkTrainingStatus &&
+        bApplyStuffDummySymbolsWAR &&
         ((activeLinkConfig.bIs128b132bChannelCoding && bStuffDummySymbolsFor128b132b) ||
          ((!activeLinkConfig.bIs128b132bChannelCoding) && bStuffDummySymbolsFor8b10b)))
     {

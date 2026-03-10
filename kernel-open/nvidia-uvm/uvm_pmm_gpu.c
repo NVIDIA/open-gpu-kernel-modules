@@ -413,8 +413,11 @@ static void chunk_pin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk->state != UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED);
     chunk->state = UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED;
 
-    if (chunk_is_root_chunk(chunk))
+
+    if (chunk_is_root_chunk(chunk)) {
+        ++pmm->root_chunks.pinned_count;
         return;
+    }
 
     // For subchunks, update the pinned leaf chunks count tracked in the
     // suballoc of the root chunk.
@@ -442,8 +445,10 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
 
     chunk->state = new_state;
 
-    if (chunk_is_root_chunk(chunk))
+    if (chunk_is_root_chunk(chunk)) {
+        --pmm->root_chunks.pinned_count;
         return;
+    }
 
     // For subchunks, update the pinned leaf chunks count tracked in the
     // suballoc of the root chunk.
@@ -462,7 +467,7 @@ static void chunk_unpin(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_pmm_gpu_
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
     UVM_ASSERT(uvm_gpu_chunk_is_user(chunk));
-    UVM_ASSERT(uvm_gpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_MAX);
+    UVM_ASSERT(chunk_is_root_chunk(chunk));
 
     chunk->in_eviction = in_eviction;
 }
@@ -805,6 +810,8 @@ static void merge_gpu_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         UVM_ASSERT(root_chunk->chunk.suballoc->pinned_leaf_chunks >= num_sub);
         root_chunk->chunk.suballoc->pinned_leaf_chunks += 1 - num_sub;
         chunk->va_block = subchunk->va_block;
+        if (chunk_is_root_chunk(chunk))
+            ++pmm->root_chunks.pinned_count;
     }
 
     chunk->state = child_state;
@@ -1327,6 +1334,7 @@ static NV_STATUS evict_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root
 
     UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED);
     uvm_gpu_chunk_set_in_eviction(chunk, false);
+    --pmm->root_chunks.in_eviction_count;
 
     chunk->is_zero = false;
 
@@ -1359,6 +1367,7 @@ error:
     uvm_spin_lock(&pmm->list_lock);
 
     uvm_gpu_chunk_set_in_eviction(chunk, false);
+    --pmm->root_chunks.in_eviction_count;
 
     // In case we didn't manage to evict any chunks and hence the root is still
     // unpinned, we need to put it back on an eviction list.
@@ -1410,6 +1419,7 @@ static void chunk_start_eviction(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
     list_del_init(&chunk->list);
     uvm_gpu_chunk_set_in_eviction(chunk, true);
+    ++pmm->root_chunks.in_eviction_count;
 }
 
 static void root_chunk_update_eviction_list(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, struct list_head *list)
@@ -1510,8 +1520,18 @@ static NV_STATUS pick_and_evict_root_chunk(uvm_pmm_gpu_t *pmm,
     uvm_assert_mutex_locked(&pmm->lock);
 
     root_chunk = pick_root_chunk_to_evict(pmm);
-    if (!root_chunk)
+    if (!root_chunk) {
+        if (pmm_context == PMM_CONTEXT_DEFAULT && type == UVM_PMM_GPU_MEMORY_TYPE_USER && \
+            (READ_ONCE(pmm->root_chunks.pinned_count) > 0 || READ_ONCE(pmm->root_chunks.in_eviction_count) > 0)) {
+
+            // There are UVM managed root chunks that are currently 'in-flight'
+            // and not tracked on any of the lists. Try again after returning
+            // from PMM.
+            return NV_ERR_MORE_PROCESSING_REQUIRED;
+        }
+
         return NV_ERR_NO_MEMORY;
+    }
 
     status = evict_root_chunk(pmm, root_chunk, pmm_context);
     if (status != NV_OK)
@@ -1879,6 +1899,9 @@ static void init_root_chunk(uvm_pmm_gpu_t *pmm,
     chunk->state = initial_state;
     chunk->is_zero = is_zero;
 
+    if (initial_state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED)
+        ++pmm->root_chunks.pinned_count;
+
     chunk_update_lists_locked(pmm, chunk);
 
     uvm_spin_unlock(&pmm->list_lock);
@@ -2150,8 +2173,10 @@ NV_STATUS split_gpu_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
         // When a pinned root chunk gets split, the count starts at 0 not
         // accounting for the root chunk itself so add the 1 back.
-        if (chunk_is_root_chunk(chunk))
+        if (chunk_is_root_chunk(chunk)) {
             root_chunk->chunk.suballoc->pinned_leaf_chunks += 1;
+            --pmm->root_chunks.pinned_count;
+        }
 
         chunk->va_block = NULL;
         chunk->va_block_page_index = PAGES_PER_UVM_VA_BLOCK;
@@ -3590,6 +3615,8 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_lazy_free);
     INIT_LIST_HEAD(&pmm->root_chunks.va_block_discarded);
     nv_kthread_q_item_init(&pmm->root_chunks.va_block_lazy_free_q_item, process_lazy_free_entry, pmm);
+    pmm->root_chunks.pinned_count = 0;
+    pmm->root_chunks.in_eviction_count = 0;
 
     uvm_mutex_init(&pmm->lock, UVM_LOCK_ORDER_PMM);
     uvm_init_rwsem(&pmm->pma_lock, UVM_LOCK_ORDER_PMM_PMA);

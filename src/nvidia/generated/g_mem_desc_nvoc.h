@@ -630,12 +630,12 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_TRACE_CRASH_BUFFER = 187U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_154       = 187U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_155       = 188U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_156       = 189U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_157       = 190U,

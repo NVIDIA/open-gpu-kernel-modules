@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1431,6 +1431,8 @@ bool ConnectorImpl::compoundQueryAttachMSTIsDscPossible
                 ((dev->devDoingDscDecompression == dev) &&
                 (dev->isLogical() && dev->parent)))
             {
+                DP_ASSERT((dev->devDoingDscDecompression != NULL) &&
+                          (dev->parent != NULL));
                 //
                 // If DSC decoding is going to happen at sink's parent or
                 // decoding will be done by sink but sink is a logical port,
@@ -3503,6 +3505,16 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         main->setDpStereoMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
         main->setDpMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
     }
+    else
+    {
+        // CLear MSA parameters
+        NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS msaParams = modesetParams.msaparams;
+        msaParams.bEnableMSA        = false;
+
+        main->setDpStereoMSAParameters(false, msaParams);
+        main->setDpMSAParameters(false, msaParams);
+    }
+
 
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN_STATUS, bLinkTrainingStatus);
 

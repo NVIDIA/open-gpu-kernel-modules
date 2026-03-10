@@ -530,6 +530,14 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     allocParams.compressible = &p->compressible;
 
     pMemory = nvKms->allocateMemory(nv_dev->pDevice, &allocParams);
+    if (pMemory == NULL && (p->flags & NV_GEM_ALLOC_NO_SCANOUT)) {
+        NV_DRM_DEV_LOG_INFO(
+                nv_dev,
+                "Failed to allocate NVKMS video memory for GEM object, trying to fall back to sysmem");
+        allocParams.useVideoMemory = false;
+        pMemory = nvKms->allocateMemory(nv_dev->pDevice, &allocParams);
+    }
+
     if (pMemory == NULL) {
         ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(nv_dev,

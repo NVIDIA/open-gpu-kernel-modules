@@ -2927,4 +2927,25 @@
 #define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE      0x0
 #define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DEFAULT      NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE
 
+//
+// Type: Dword
+// This regkey toggles whether to enable GSP Trace Crash Logging
+//   0 - Disable        - GSP Trace Crash Logging is disabled.
+//   1 - Enable/Default - GSP Trace Crash Logging is enabled.
+
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING                     "RmGspTraceCrashLogging"
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_DISABLE             0x00000000
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_ENABLE              0x00000001
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_DEFAULT             NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_ENABLE
+
+//
+// Type: Dword
+// Regkey to set the GSP Trace Crash Logging buffer size in number of records.
+//   50 - Default buffer size.
+//
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE         "RmGspTraceCrashLoggingBufferSize"
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_DEFAULT 50
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MIN     10
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MAX     10000
+
 #endif // NVRM_REGISTRY_H

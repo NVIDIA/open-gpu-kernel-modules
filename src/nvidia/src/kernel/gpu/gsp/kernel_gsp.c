@@ -2091,6 +2091,37 @@ kgspLogRpcDebugInfo
     }
 }
 
+static void
+_kgspLogGspTraceCrashBuffer
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    NV_RATS_GSP_TRACE_RECORD *buffer = pKernelGsp->pGspTraceCrashBufferRaw;
+    NvU32 bufferLength = pKernelGsp->gspTraceCrashBufferSize;
+
+    if (buffer == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO,"Gsp Trace Crash Buffer is NULL\n");
+        return;
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "Gsp Trace Crash Buffer\n");
+    for (NvU32 i = 0; i < bufferLength; i++)
+    {
+        NV_PRINTF(LEVEL_ERROR, "%llu,%llu,%u,%u,%u,%llu\n",
+                  buffer[i].timeStamp,
+                  buffer[i].recordType,
+                  buffer[i].seqNo,
+                  buffer[i].gspSeqNo,
+                  buffer[i].threadId,
+                  buffer[i].info);
+    }
+#endif
+}
+
 /*!
  * Log Xid 119 - GSP RPC Timeout
  */
@@ -2150,6 +2181,8 @@ _kgspLogXid119
 
         kgspLogRpcDebugInfo(pGpu, pRpc, GSP_RPC_TIMEOUT, NV_TRUE/*bPollingForRpcResponse*/);
         osAssertFailed();
+
+        _kgspLogGspTraceCrashBuffer(pGpu, pKernelGsp);
 
         //
         // Dump registers / core state, non-destructively here.
@@ -3226,6 +3259,137 @@ error_cleanup:
     return nvStatus;
 }
 
+static void kgspFreeGspTraceCrashBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    if (pKernelGsp->pGspTraceCrashBufferRaw != NULL)
+    {
+        memdescUnmap(pKernelGsp->pGspTraceCrashBufferRawMemDesc,
+                     NV_TRUE,
+                     pKernelGsp->pGspTraceCrashBufferRaw,
+                     pKernelGsp->pGspTraceCrashBufferRawMemDescPriv);
+        pKernelGsp->pGspTraceCrashBufferRaw = NULL;
+    }
+
+    if (pKernelGsp->pGspTraceCrashBufferRawMemDesc != NULL)
+    {
+        memdescFree(pKernelGsp->pGspTraceCrashBufferRawMemDesc);
+        memdescDestroy(pKernelGsp->pGspTraceCrashBufferRawMemDesc);
+        pKernelGsp->pGspTraceCrashBufferRawMemDesc = NULL;
+    }
+#endif
+}
+
+static NV_STATUS
+kgspInitGspTraceCrashBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    NV_STATUS status = NV_OK;
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    void *pMemDescPriv = NULL;
+    void *pBuffer = NULL;
+
+    NvU32 gspTraceCrashRegkey;
+    NvU32 bufferSizeBytes;
+    NvU32 bufferSize = NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_DEFAULT;
+    NvBool enableGspTraceCrash = NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_DEFAULT;
+
+    // Feature not supported on CC due to needing shared SYSMEM buffer with GSP
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "GSP Trace Crash logging is not supported on CC\n");
+        enableGspTraceCrash = NV_FALSE;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING, &gspTraceCrashRegkey) == NV_OK)
+    {
+        enableGspTraceCrash = (gspTraceCrashRegkey == NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_ENABLE);
+
+        // Fail loudly if user attempts to explicitly enable GSP Trace Crash logging on CC
+        if (enableGspTraceCrash && gpuIsCCFeatureEnabled(pGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Attempted to enable GSP Trace Crash logging on CC, which is not supported\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
+    if (!enableGspTraceCrash)
+    {
+        NV_PRINTF(LEVEL_INFO, "GSP Trace Crash logging is disabled\n");
+        return NV_OK;
+    }
+
+    osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE, &bufferSize);
+    if (bufferSize > NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MAX)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GSP Trace Crash buffer size is too large, clamping to %u\n",
+                  NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MAX);
+        bufferSize = NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MAX;
+    }
+    else if (bufferSize < NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MIN)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GSP Trace Crash buffer size is too small, clamping to %u\n",
+                  NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MIN);
+        bufferSize = NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MIN;
+    }
+
+    bufferSizeBytes = sizeof(NV_RATS_GSP_TRACE_RECORD) * bufferSize;
+    NV_ASSERT_OK_OR_GOTO(status,
+        memdescCreate(&pMemDesc,
+                      pGpu,
+                      bufferSizeBytes,
+                      RM_PAGE_SIZE,
+                      NV_TRUE,
+                      ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                      MEMDESC_FLAGS_NONE),
+        done);
+
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_TRACE_CRASH_BUFFER, pMemDesc);
+    NV_ASSERT_OK_OR_GOTO(status, status, done);
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        memdescMap(pMemDesc, 0,
+                   memdescGetSize(pMemDesc),
+                   NV_TRUE, NV_PROTECT_READ_WRITE,
+                   &pBuffer, &pMemDescPriv),
+        done);
+    portMemSet(pBuffer, 0, bufferSizeBytes);
+
+    NV_RM_RPC_INIT_GSP_TRACE_CRASH_BUFFER(
+        pGpu,
+        status,
+        memdescGetPhysAddr(pMemDesc, AT_GPU, 0),
+        memdescGetSize(pMemDesc)
+    );
+    NV_ASSERT_OK_OR_GOTO(status, status, done);
+
+    pKernelGsp->pGspTraceCrashBufferRawMemDesc = pMemDesc;
+    pKernelGsp->pGspTraceCrashBufferRawMemDescPriv = pMemDescPriv;
+    pKernelGsp->pGspTraceCrashBufferRaw = (NV_RATS_GSP_TRACE_RECORD *)pBuffer;
+    pKernelGsp->gspTraceCrashBufferSize = bufferSize;
+
+done:
+    if (status != NV_OK)
+    {
+        if (pBuffer != NULL)
+        {
+            memdescUnmap(pMemDesc,
+                         NV_TRUE,
+                         pBuffer,
+                         pMemDescPriv);
+        }
+
+        if (pMemDesc != NULL)
+        {
+            memdescFree(pMemDesc);
+            memdescDestroy(pMemDesc);
+        }
+    }
+
+#endif // KERNEL_GSP_TRACING_RATS_ENABLED
+    return status;
+}
+
 static void
 _kgspFreeSimAccessBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp)
 {
@@ -4034,6 +4198,8 @@ kgspInitRm_IMPL
         goto done;
     }
 
+    NV_ASSERT_OK_OR_GOTO(status, kgspInitGspTraceCrashBuffer(pGpu, pKernelGsp), done);
+
     // Set PDB properties as per data from GSP.
     _kgspInitGpuProperties(pGpu);
 
@@ -4086,6 +4252,12 @@ kgspUnloadRm_IMPL
     NV_STATUS status;
     NvBool bInPmTransition = (unloadMode != KGSP_UNLOAD_MODE_NORMAL);
     NvBool bGc6Entering = (unloadMode == KGSP_UNLOAD_MODE_GC6_ENTER);
+
+    if (pKernelGsp->bGspRmForceUnloaded)
+    {
+        NV_PRINTF(LEVEL_ERROR, "skipping attempt to unload GSP-RM after force unload\n");
+        return NV_OK;
+    }
 
     NV_PRINTF(LEVEL_INFO, "unloading GSP-RM\n");
     NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, rpcStatus, bInPmTransition, bGc6Entering, newPmLevel);
@@ -4175,6 +4347,8 @@ kgspDestruct_IMPL
     _kgspFreeBootBinaryImage(pGpu, pKernelGsp);
     _kgspFreeSimAccessBuffer(pGpu, pKernelGsp);
     _kgspFreeNotifyOpSharedSurface(pGpu, pKernelGsp);
+
+    kgspFreeGspTraceCrashBuffer(pGpu, pKernelGsp);
 
     kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
 }

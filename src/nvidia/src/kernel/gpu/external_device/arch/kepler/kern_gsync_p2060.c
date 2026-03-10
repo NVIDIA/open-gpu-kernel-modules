@@ -1214,7 +1214,25 @@ gsyncReadUniversalFrameCount_P2060
     OBJTMR *pTmpTmr = NULL;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
-    NV_CHECK_OR_RETURN(LEVEL_INFO, gsyncIsFrameLocked_P2060(pThis), NV_ERR_INVALID_STATE);
+    //
+    // We do this loop to determine if framelock is enabled or not, instead of calling
+    // gsyncIsFrameLocked_P2060, which goes through i2c and is more expensive.
+    //
+    NvBool isFramelocked = NV_FALSE;
+    for (NvU32 iface = 0; !isFramelocked && iface < NV_P2060_MAX_IFACES_PER_GSYNC; iface++) 
+    {
+        for (NvU32 head = 0; !isFramelocked && head < OBJ_MAX_HEADS; head++) 
+        {
+            if (pThis->Iface[iface].Sync.Master[head] ||
+                pThis->Iface[iface].Sync.Slaved[head] ||
+                pThis->Iface[iface].Sync.LocalSlave[head]) 
+            {
+                isFramelocked = NV_TRUE;
+            }
+        }
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, isFramelocked, NV_ERR_INVALID_STATE);
 
     if (!(pThis->FrameCountData.iface == NV_P2060_MAX_IFACES_PER_GSYNC))
     {

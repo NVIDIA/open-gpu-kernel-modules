@@ -1337,7 +1337,6 @@ static NvBool GetConnectorInfo
     struct NvKmsQueryConnectorDynamicDataParams paramsDynamicConnector = { };
     NvBool status = NV_FALSE;
     NvU64 startTime = 0;
-    NvBool timeout;
 
     if (device == NULL || info == NULL) {
         goto done;
@@ -1368,7 +1367,12 @@ static NvBool GetConnectorInfo
 
     info->type = paramsConnector.reply.type;
 
-
+    /*
+     * Attempt to query dynamic dpy ID list.
+     *
+     * If this fails, still return success, but specify that the dynamic dpy ID
+     * list is not valid.
+     */
     startTime = nvkms_get_usec();
     do {
         nvkms_memset(&paramsDynamicConnector, 0, sizeof(paramsDynamicConnector));
@@ -1380,31 +1384,35 @@ static NvBool GetConnectorInfo
                                    NVKMS_IOCTL_QUERY_CONNECTOR_DYNAMIC_DATA,
                                    &paramsDynamicConnector,
                                    sizeof(paramsDynamicConnector))) {
-
             nvKmsKapiLogDeviceDebug(
                     device,
                     "Failed to query dynamic data of connector 0x%08x",
                     connector);
-            status = NV_FALSE;
-
-            goto done;
+            break;
         }
 
-        timeout = nvkms_get_usec() - startTime >
-            NVKMS_DP_DETECT_COMPLETE_TIMEOUT_USEC;
-
-        if (!paramsDynamicConnector.reply.detectComplete && !timeout) {
-            nvkms_usleep(NVKMS_DP_DETECT_COMPLETE_POLL_INTERVAL_USEC);
+        if (paramsDynamicConnector.reply.detectComplete) {
+            /* Success */
+            break;
         }
-    } while (!paramsDynamicConnector.reply.detectComplete && !timeout);
+
+        if ((nvkms_get_usec() - startTime) >
+            NVKMS_DP_DETECT_COMPLETE_TIMEOUT_USEC) {
+
+            nvKmsKapiLogDeviceDebug(device, "Timed out waiting for DisplayPort"
+                   " device detection to complete.");
+            break;
+        }
+
+        nvkms_usleep(NVKMS_DP_DETECT_COMPLETE_POLL_INTERVAL_USEC);
+    } while (TRUE);
 
     if (!paramsDynamicConnector.reply.detectComplete) {
-        nvKmsKapiLogDeviceDebug(device, "Timed out waiting for DisplayPort"
-               " device detection to complete.");
-        status = NV_FALSE;
+        info->dynamicDpyIdListValid = FALSE;
+    } else {
+        info->dynamicDpyIdListValid = TRUE;
+        info->dynamicDpyIdList = paramsDynamicConnector.reply.dynamicDpyIdList;
     }
-
-    info->dynamicDpyIdList = paramsDynamicConnector.reply.dynamicDpyIdList;
 
 done:
 

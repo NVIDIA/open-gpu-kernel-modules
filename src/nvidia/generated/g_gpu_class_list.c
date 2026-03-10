@@ -81,6 +81,8 @@ gpuGetNoEngClassList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -88,7 +90,7 @@ gpuGetNoEngClassList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 31;
+    *pNumClassDescriptors = 33;
     return halTU102ClassDescriptorList;
 }
 
@@ -136,8 +138,6 @@ gpuGetEngClassDescriptorList_TU102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC57B_WINDOW_IMM_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_A, ENG_GR(0) },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -184,6 +184,8 @@ gpuGetNoEngClassList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -191,7 +193,7 @@ gpuGetNoEngClassList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 31;
+    *pNumClassDescriptors = 33;
     return halTU104ClassDescriptorList;
 }
 
@@ -240,8 +242,6 @@ gpuGetEngClassDescriptorList_TU104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC57B_WINDOW_IMM_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_A, ENG_GR(0) },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -288,6 +288,8 @@ gpuGetNoEngClassList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -295,7 +297,7 @@ gpuGetNoEngClassList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 31;
+    *pNumClassDescriptors = 33;
     return halTU106ClassDescriptorList;
 }
 
@@ -345,8 +347,6 @@ gpuGetEngClassDescriptorList_TU106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC57B_WINDOW_IMM_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_A, ENG_GR(0) },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -393,6 +393,8 @@ gpuGetNoEngClassList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -400,7 +402,7 @@ gpuGetNoEngClassList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 31;
+    *pNumClassDescriptors = 33;
     return halTU116ClassDescriptorList;
 }
 
@@ -448,8 +450,6 @@ gpuGetEngClassDescriptorList_TU116(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC57B_WINDOW_IMM_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_A, ENG_GR(0) },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -496,6 +496,8 @@ gpuGetNoEngClassList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_MEMORY_EXPORT,
@@ -503,7 +505,7 @@ gpuGetNoEngClassList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 31;
+    *pNumClassDescriptors = 33;
     return halTU117ClassDescriptorList;
 }
 
@@ -551,8 +553,6 @@ gpuGetEngClassDescriptorList_TU117(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC57B_WINDOW_IMM_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC57E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_A, ENG_GR(0) },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -604,6 +604,8 @@ gpuGetNoEngClassList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -615,7 +617,7 @@ gpuGetNoEngClassList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 40;
+    *pNumClassDescriptors = 42;
     return halGA100ClassDescriptorList;
 }
 
@@ -679,8 +681,6 @@ gpuGetEngClassDescriptorList_GA100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC6B0_VIDEO_DECODER, ENG_NVDEC(3) },
         { NVC6B0_VIDEO_DECODER, ENG_NVDEC(4) },
         { NVC6FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -727,6 +727,8 @@ gpuGetNoEngClassList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -738,7 +740,7 @@ gpuGetNoEngClassList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halGA102ClassDescriptorList;
 }
 
@@ -799,8 +801,6 @@ gpuGetEngClassDescriptorList_GA102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC7B0_VIDEO_DECODER, ENG_NVDEC(1) },
         { NVC7B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC7FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -847,6 +847,8 @@ gpuGetNoEngClassList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -858,7 +860,7 @@ gpuGetNoEngClassList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halGA103ClassDescriptorList;
 }
 
@@ -919,8 +921,6 @@ gpuGetEngClassDescriptorList_GA103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC7B0_VIDEO_DECODER, ENG_NVDEC(1) },
         { NVC7B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC7FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -967,6 +967,8 @@ gpuGetNoEngClassList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -978,7 +980,7 @@ gpuGetNoEngClassList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halGA104ClassDescriptorList;
 }
 
@@ -1039,8 +1041,6 @@ gpuGetEngClassDescriptorList_GA104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC7B0_VIDEO_DECODER, ENG_NVDEC(1) },
         { NVC7B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC7FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1087,6 +1087,8 @@ gpuGetNoEngClassList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1098,7 +1100,7 @@ gpuGetNoEngClassList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halGA106ClassDescriptorList;
 }
 
@@ -1159,8 +1161,6 @@ gpuGetEngClassDescriptorList_GA106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC7B0_VIDEO_DECODER, ENG_NVDEC(1) },
         { NVC7B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC7FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1207,6 +1207,8 @@ gpuGetNoEngClassList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1218,7 +1220,7 @@ gpuGetNoEngClassList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halGA107ClassDescriptorList;
 }
 
@@ -1279,8 +1281,6 @@ gpuGetEngClassDescriptorList_GA107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC7B0_VIDEO_DECODER, ENG_NVDEC(1) },
         { NVC7B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVC7FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1327,6 +1327,8 @@ gpuGetNoEngClassList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1338,7 +1340,7 @@ gpuGetNoEngClassList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halAD102ClassDescriptorList;
 }
 
@@ -1407,8 +1409,6 @@ gpuGetEngClassDescriptorList_AD102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVC9FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1455,6 +1455,8 @@ gpuGetNoEngClassList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1466,7 +1468,7 @@ gpuGetNoEngClassList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halAD103ClassDescriptorList;
 }
 
@@ -1535,8 +1537,6 @@ gpuGetEngClassDescriptorList_AD103(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVC9FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1583,6 +1583,8 @@ gpuGetNoEngClassList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1594,7 +1596,7 @@ gpuGetNoEngClassList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halAD104ClassDescriptorList;
 }
 
@@ -1663,8 +1665,6 @@ gpuGetEngClassDescriptorList_AD104(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVC9FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1711,6 +1711,8 @@ gpuGetNoEngClassList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1722,7 +1724,7 @@ gpuGetNoEngClassList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halAD106ClassDescriptorList;
 }
 
@@ -1791,8 +1793,6 @@ gpuGetEngClassDescriptorList_AD106(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVC9FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1839,6 +1839,8 @@ gpuGetNoEngClassList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_EVENT_BUFFER,
         NV_IMEX_SESSION,
@@ -1850,7 +1852,7 @@ gpuGetNoEngClassList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 41;
+    *pNumClassDescriptors = 43;
     return halAD107ClassDescriptorList;
 }
 
@@ -1919,8 +1921,6 @@ gpuGetEngClassDescriptorList_AD107(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVC9D1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVC9FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -1968,6 +1968,8 @@ gpuGetNoEngClassList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -1982,7 +1984,7 @@ gpuGetNoEngClassList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGH100ClassDescriptorList;
 }
 
@@ -2059,8 +2061,6 @@ gpuGetEngClassDescriptorList_GH100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVB8D1_VIDEO_NVJPG, ENG_NVJPEG(6) },
         { NVB8D1_VIDEO_NVJPG, ENG_NVJPEG(7) },
         { NVB8FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2108,6 +2108,8 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2122,7 +2124,7 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB100ClassDescriptorList;
 }
 
@@ -2211,8 +2213,6 @@ gpuGetEngClassDescriptorList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(7) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(1) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2260,6 +2260,8 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2274,7 +2276,7 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB102ClassDescriptorList;
 }
 
@@ -2344,8 +2346,6 @@ gpuGetEngClassDescriptorList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2394,6 +2394,8 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2408,7 +2410,7 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 46;
+    *pNumClassDescriptors = 48;
     return halGB10BClassDescriptorList;
 }
 
@@ -2474,8 +2476,6 @@ gpuGetEngClassDescriptorList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCED0_VIDEO_NVJPG, ENG_NVJPEG(0) },
         { NVCED0_VIDEO_NVJPG, ENG_NVJPEG(1) },
         { NVCEFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2523,6 +2523,8 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2537,7 +2539,7 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB110ClassDescriptorList;
 }
 
@@ -2626,8 +2628,6 @@ gpuGetEngClassDescriptorList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(7) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(1) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2675,6 +2675,8 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2689,7 +2691,7 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB112ClassDescriptorList;
 }
 
@@ -2759,8 +2761,6 @@ gpuGetEngClassDescriptorList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2808,6 +2808,8 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2822,7 +2824,7 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB202ClassDescriptorList;
 }
 
@@ -2923,8 +2925,6 @@ gpuGetEngClassDescriptorList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(2) },
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(3) },
         { NVCFFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -2972,6 +2972,8 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -2986,7 +2988,7 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB203ClassDescriptorList;
 }
 
@@ -3082,8 +3084,6 @@ gpuGetEngClassDescriptorList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(0) },
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(1) },
         { NVCFFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -3131,6 +3131,8 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -3145,7 +3147,7 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB205ClassDescriptorList;
 }
 
@@ -3237,8 +3239,6 @@ gpuGetEngClassDescriptorList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCFB7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(0) },
         { NVCFFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -3286,6 +3286,8 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -3300,7 +3302,7 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB206ClassDescriptorList;
 }
 
@@ -3392,8 +3394,6 @@ gpuGetEngClassDescriptorList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCFB7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVCFD1_VIDEO_NVJPG, ENG_NVJPEG(0) },
         { NVCFFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -3441,6 +3441,8 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -3455,7 +3457,7 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 45;
+    *pNumClassDescriptors = 47;
     return halGB207ClassDescriptorList;
 }
 
@@ -3546,8 +3548,6 @@ gpuGetEngClassDescriptorList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVCFB0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVCFB7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVCFFA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -3596,6 +3596,8 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -3610,7 +3612,7 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 46;
+    *pNumClassDescriptors = 48;
     return halGB20BClassDescriptorList;
 }
 
@@ -3713,8 +3715,6 @@ gpuGetEngClassDescriptorList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVD1B0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVD1B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVD1FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
@@ -3763,6 +3763,8 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV40_DEBUG_BUFFER,
         NV40_I2C,
         NV9010_VBLANK_CALLBACK,
+        NVENC_SW_SESSION,
+        NVFBC_SW_SESSION,
         NV_CE_UTILS,
         NV_COUNTER_COLLECTION_UNIT,
         NV_EVENT_BUFFER,
@@ -3777,7 +3779,7 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_SEMAPHORE_SURFACE,
         UVM_CHANNEL_RETAINER,
     };
-    *pNumClassDescriptors = 46;
+    *pNumClassDescriptors = 48;
     return halGB20CClassDescriptorList;
 }
 
@@ -3880,8 +3882,6 @@ gpuGetEngClassDescriptorList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVD1B0_VIDEO_DECODER, ENG_NVDEC(0) },
         { NVD1B7_VIDEO_ENCODER, ENG_NVENC(0) },
         { NVD1FA_VIDEO_OFA, ENG_OFA(0) },
-        { NVENC_SW_SESSION, ENG_SW },
-        { NVFBC_SW_SESSION, ENG_SW },
         { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
         { RM_USER_SHARED_DATA, ENG_GPU },
         { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },

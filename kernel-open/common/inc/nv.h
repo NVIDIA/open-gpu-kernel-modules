@@ -567,6 +567,14 @@ typedef struct nv_state_t
      */
     NvBool mem_has_struct_page;
 
+    /*
+     * Coherent GPU Memory Mode, one of:
+     *   NV_COHERENT_GPU_MEM_MODE_NONE
+     *   NV_COHERENT_GPU_MEM_MODE_NUMA
+     *   NV_COHERENT_GPU_MEM_MODE_DRIVER
+     */
+    NvBool coherent_gpu_mem_mode;
+
     /* OS detected GPU has ATS capability */
     NvBool ats_support;
     /*
@@ -767,6 +775,13 @@ typedef enum
 #define NV_EVAL_ACPI_METHOD_NVIF     0x01
 #define NV_EVAL_ACPI_METHOD_WMMX     0x02
 
+/*
+ * Coherent GPU Memory Mode
+ */
+#define NV_COHERENT_GPU_MEM_MODE_NONE   0
+#define NV_COHERENT_GPU_MEM_MODE_NUMA   1
+#define NV_COHERENT_GPU_MEM_MODE_DRIVER 2
+
 typedef enum {
     NV_I2C_CMD_READ = 1,
     NV_I2C_CMD_WRITE,
@@ -915,13 +930,14 @@ NV_STATUS  NV_API_CALL  nv_dma_map_alloc         (nv_dma_device_t *, NvU64, NvU6
 NV_STATUS  NV_API_CALL  nv_dma_unmap_alloc       (nv_dma_device_t *, NvU64, NvU64 *, void **);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_peer          (nv_dma_device_t *, nv_dma_device_t *, NvU8, NvU64, NvU64 *);
-NV_STATUS  NV_API_CALL  nv_dma_map_non_pci_peer  (nv_dma_device_t *, NvU64, NvU64 *);
 void       NV_API_CALL  nv_dma_unmap_peer        (nv_dma_device_t *, NvU64, NvU64);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_mmio          (nv_dma_device_t *, NvU64, NvU64 *);
 void       NV_API_CALL  nv_dma_unmap_mmio        (nv_dma_device_t *, NvU64, NvU64);
 
 void       NV_API_CALL  nv_dma_cache_invalidate  (nv_dma_device_t *, void *);
+void*      NV_API_CALL  nv_dma_get_dev_pagemap   (NvU64);
+void       NV_API_CALL  nv_dma_put_dev_pagemap   (void *);
 NvBool     NV_API_CALL  nv_grdma_pci_topology_supported(nv_state_t *, nv_dma_device_t *);
 
 NvS32  NV_API_CALL  nv_start_rc_timer            (nv_state_t *);

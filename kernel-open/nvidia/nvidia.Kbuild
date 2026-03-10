@@ -161,6 +161,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_pasid_drop
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vma_flags_set_word
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_flags_set
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += get_dev_pagemap_has_pgmap_arg
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_sme_active
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_swiotlb_map_sg_attrs
@@ -218,6 +219,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += devfreq_has_freq_table
 NV_CONFTEST_TYPE_COMPILE_TESTS += has_enum_pidtype_tgid
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_resize_resource_has_exclude_bars_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

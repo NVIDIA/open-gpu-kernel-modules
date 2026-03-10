@@ -632,6 +632,7 @@ subdeviceCtrlCmdGpuForceGspUnload_IMPL
     rmStatus = kgspUnloadRm(pGpu, pKernelGsp, KGSP_UNLOAD_MODE_NORMAL, (GPU_STATE_FLAGS_FAST_UNLOAD|GPU_STATE_FLAGS_FORCE_GSP_UNLOAD));
 
     pKernelGsp->bFatalError = NV_TRUE;
+    pKernelGsp->bGspRmForceUnloaded = NV_TRUE;
 
     return rmStatus;;
 }
