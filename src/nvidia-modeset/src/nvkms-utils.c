@@ -508,6 +508,52 @@ NvU8 nvPixelDepthToBitsPerComponent(enum nvKmsPixelDepth pixelDepth)
     return 0;
 }
 
+/*
+ * Extract bits_per_component from a DSC Picture Parameter Set (PPS).
+ *
+ * The PPS is an array of NvU32 dwords stored in native byte order.
+ * Per VESA DSC 1.2a Table 4-1, byte 3 bits [7:4] hold the
+ * bits_per_component value (8, 10, or 12 for typical displays).
+ * On little-endian machines byte 3 maps to pps[0] bits [31:28].
+ *
+ * Returns the raw bpc value from the PPS, or 0 if the field is
+ * reserved/zero.
+ */
+NvU32 nvDscPpsGetBitsPerComponent(const NvU32 *pps)
+{
+    /*
+     * PPS DWord 0 layout (bytes stored in native byte order):
+     *
+     *   bits [31:28] : bits_per_component   (PPS byte 3, bits [7:4])
+     *   bits [27:24] : linebuf_depth        (PPS byte 3, bits [3:0])
+     *   bits [23:16] : reserved             (PPS byte 2)
+     *   bits [15:8]  : pps_identifier       (PPS byte 1)
+     *   bits [7:4]   : dsc_version_major    (PPS byte 0, bits [7:4])
+     *   bits [3:0]   : dsc_version_minor    (PPS byte 0, bits [3:0])
+     */
+    return (pps[0] >> 28) & 0xF;
+}
+
+/*
+ * Compute the DSC flatness detection threshold from bits_per_component.
+ *
+ * Per VESA DSC 1.2a section 4.1:
+ *   flatness_det_thresh = 2 << (bpc - 8)
+ *
+ * bpc is expected to be >= 8 (the minimum the DSC standard supports).
+ * If bpc is unexpectedly below 8, the function clamps to the minimum
+ * valid threshold of 2 and fires an assertion.
+ */
+NvU32 nvDscComputeFlatnessDetThresh(NvU32 bpc)
+{
+    if (bpc < 8) {
+        nvAssert(bpc >= 8);
+        bpc = 8;
+    }
+
+    return (2 << (bpc - 8));
+}
+
 /* Import function required by nvBuildModeName() */
 
 int nvBuildModeNameSnprintf(char *str, size_t size, const char *format, ...)
