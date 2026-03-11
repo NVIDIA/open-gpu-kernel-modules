@@ -54,6 +54,13 @@ nv-modeset-kernel-cflags += $(NV_DEFINES)
 nv-modeset-kernel-cflags += -Wno-format-zero-length
 nv-modeset-kernel-cflags += -Wno-implicit-fallthrough
 
+# Get rid of COMDAT groups when linking nv-modeset-kernel.stub.o to not cause
+# objtool-generated cross-section linker errors on sections the linker is about
+# to drop. Also merge all related C++-specific sections with the help of a
+# linker script to reduce them to a sensible number of to-be-loaded sections.
+nv-modeset-kernel-ldflags := --force-group-allocation
+nv-modeset-kernel-ldflags += -T $(src)/$(nvidia_modeset_src)/$(LINKER_SCRIPT)
+
 # XXX: Using -ffunction-sections / -fdata-sections makes no sense without
 # XXX: --gc-sections. However, we cannot make use of --gc-sections as that
 # XXX: would also drop crucial sections like .alt_instructions or
@@ -68,6 +75,9 @@ nv-modeset-kernel-cflags-remove += $(ccflags-includes)
 
 $(call ASSIGN_PER_OBJ_CFLAGS_REMOVE, $(nv-modeset-kernel-objs), $(nv-modeset-kernel-cflags-remove))
 $(call ASSIGN_PER_OBJ_CFLAGS, $(nv-modeset-kernel-objs), $(nv-modeset-kernel-cflags))
+$(call ASSIGN_PER_OBJ_LDFLAGS, nv-modeset-kernel.stub.o, $(nv-modeset-kernel-ldflags))
+
+$(obj)/nv-modeset-kernel.stub.o: $(obj)/$(nvidia_modeset_src)/$(LINKER_SCRIPT)
 
 nv-modeset-kernel-cxxflags := -std=gnu++11
 nv-modeset-kernel-cxxflags += -fno-operator-names
