@@ -37,6 +37,8 @@ ifeq ($(ARCH), arm64)
     OFA_ARCH := aarch64
 else ifeq ($(ARCH), powerpc)
     OFA_ARCH := ppc64le
+else ifeq ($(ARCH), x86)
+    OFA_ARCH := x86_64
 else
     OFA_ARCH := $(ARCH)
 endif
