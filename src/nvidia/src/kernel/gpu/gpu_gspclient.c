@@ -191,14 +191,6 @@ gpuGenGidData_FWCLIENT
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU64 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
-{
-    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-    NV_ASSERT_OR_RETURN(pGSCI != NULL, 0);
-
-    return pGSCI->fbio_mask;
-}
-
 NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
@@ -296,22 +288,13 @@ NV_STATUS
 gpuGetNameString_FWCLIENT
 (
     OBJGPU *pGpu,
-    NvU32 type,
     void *nameStringBuffer
 )
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
-    if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
-    {
-        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString),
-                    pGSCI->gpuNameString, sizeof(pGSCI->gpuNameString));
-    }
-    else
-    {
-        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString_Unicode),
-                    pGSCI->gpuNameString_Unicode, sizeof(pGSCI->gpuNameString_Unicode));
-    }
+    portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString),
+                pGSCI->gpuNameString, sizeof(pGSCI->gpuNameString));
 
     return NV_OK;
 }

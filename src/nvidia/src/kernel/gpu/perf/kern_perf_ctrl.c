@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -102,6 +102,11 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *pSample;
     NvU32 numEntries, index, nsPid;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CLKS_IN_TEGRA_SOC))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
                           pRmApi->Control(pRmApi,

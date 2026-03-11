@@ -34,7 +34,9 @@
 
 static NvBool _is48VmEnabled(NvU64 pciId, NvU64 subDeviceId)
 {
-    if (PCI_TABLE_ENTRY(0x2BB5, 0x204E) || PCI_TABLE_ENTRY(0x2BB1, 0x204B))
+    if (PCI_TABLE_ENTRY(0x2BB5, 0x204E) ||      // NVIDIA RTX Pro 6000 Blackwell DC
+        PCI_TABLE_ENTRY(0x2BB1, 0x204B) ||      // NVIDIA RTX Pro 6000 X
+        PCI_TABLE_ENTRY(0x2BB5, 0x220B))        // NVIDIA RTX PRO 6000 Blackwell Server Edition LC
         return NV_TRUE;
 
     return NV_FALSE;

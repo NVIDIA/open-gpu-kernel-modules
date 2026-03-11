@@ -135,13 +135,9 @@ struct NVOC_METADATA__OfaContext {
     const struct NVOC_VTABLE__OfaContext vtable;
 };
 
-#ifndef __NVOC_CLASS_OfaContext_TYPEDEF__
-#define __NVOC_CLASS_OfaContext_TYPEDEF__
-typedef struct OfaContext OfaContext;
-#endif /* __NVOC_CLASS_OfaContext_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OfaContext
-#define __nvoc_class_id_OfaContext 0xf63d99
+#define __nvoc_class_id_OfaContext 0xf63d99u
+typedef struct OfaContext OfaContext;
 #endif /* __nvoc_class_id_OfaContext */
 
 // Casting support
@@ -159,9 +155,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OfaContext;
 
 NV_STATUS __nvoc_objCreateDynamic_OfaContext(OfaContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_OfaContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_OfaContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_OfaContext(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_OfaContext((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -380,17 +376,21 @@ static inline NV_STATUS ofactxGetOrAllocNotifShare_DISPATCH(struct OfaContext *p
     return pNotifier->__nvoc_metadata_ptr->vtable.__ofactxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS ofactxConstructHal_KERNEL(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
 
 void ofactxDestructHal_KERNEL(struct OfaContext *pOfaContext);
 
-
-static inline NV_STATUS __nvoc_ofactxConstruct(struct OfaContext *arg_pOfaContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return ofactxConstructHal(arg_pOfaContext, arg_pCallContext, arg_pParams);
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_ofactxConstruct(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return ofactxConstructHal(pOfaContext, pCallContext, pParams);
 }
 
-static inline void __nvoc_ofactxDestruct(struct OfaContext *pOfaContext) {
+static inline void __nvoc_ofactxDestruct(struct OfaContext *pOfaContext){
     ofactxDestructHal(pOfaContext);
 }
 

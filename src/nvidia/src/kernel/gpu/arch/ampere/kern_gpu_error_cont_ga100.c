@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,7 +64,7 @@ static const NV_ERROR_CONT_STATE_TABLE g_errContStateTable_GA100[] =
     { NV_ERROR_CONT_ERR_ID_E07_LTC_ECC_TSTG                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },
                                                                    {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}},
     { NV_ERROR_CONT_ERR_ID_E08_LTC_ECC_RSTG                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },
-                                                                   {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_TRUE              , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_ALL_COMPUTE_CHANNELS_IN_SPECIFIC_PARTITION       */ }}},
+                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}},
     { NV_ERROR_CONT_ERR_ID_E09_FBHUB_POISON                     , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },
                                                                    {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}},
     { NV_ERROR_CONT_ERR_ID_E10_SM_POISON                        , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },
@@ -80,6 +80,8 @@ static const NV_ERROR_CONT_STATE_TABLE g_errContStateTable_GA100[] =
     { NV_ERROR_CONT_ERR_ID_E17_CTXSW_POISON                     , {{ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ },
                                                                    {ROBUST_CHANNEL_CONTAINED_ERROR  , NV_FALSE     , NV_FALSE             , NV_TRUE               , NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL /* , No                        , RC_COMPUTE_CHANNELS_IN_ADDRESS_SPACE                */ }}},
     { NV_ERROR_CONT_ERR_ID_E20_XALEP_EGRESS_POISON              , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },
+                                                                   {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}},
+    { NV_ERROR_CONT_ERR_ID_E29_LTC_ECC_DSTG_FATAL               , {{ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ },
                                                                    {ROBUST_CHANNEL_UNCONTAINED_ERROR, NV_TRUE      , NV_FALSE             , NV_FALSE              , NV2080_NOTIFIERS_POISON_ERROR_FATAL     /* , No                        , RC_ALL_COMPUTE_CHANNELS                             */ }}}
 };
 
@@ -173,6 +175,7 @@ _gpuNotifySubDeviceEventNotifier
         case NV_ERROR_CONT_ERR_ID_E06_LTC_UNSUPPORTED_CLIENT_POISON:
         case NV_ERROR_CONT_ERR_ID_E07_LTC_ECC_TSTG:
         case NV_ERROR_CONT_ERR_ID_E08_LTC_ECC_RSTG:
+        case NV_ERROR_CONT_ERR_ID_E29_LTC_ECC_DSTG_FATAL:
             info16 = LTC_ERROR;
             break;
 
@@ -258,6 +261,24 @@ _gpuNotifySubDeviceEventNotifier
         case NV_ERROR_CONT_ERR_ID_E28_OFA_POISON:
             localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
             info16 = ROBUST_CHANNEL_OFA_ERROR(NV2080_ENGINE_TYPE_OFA_IDX(localRmEngineType));
+            break;
+
+        // Intentional fall-through
+        case NV_ERROR_CONT_ERR_ID_E30_SYSLTC_ECC_DSTG:
+        case NV_ERROR_CONT_ERR_ID_E31_SYSLTC_ECC_TSTG:
+        case NV_ERROR_CONT_ERR_ID_E32_SYSLTC_ECC_RSTG:
+        case NV_ERROR_CONT_ERR_ID_E33_SYSLTC_ECC_DSTG_FATAL:
+            //
+            // For now, we assign error codes defined in sdk/nvidia/inc/nverror.h
+            // to info16. However, that header file is supposed to only include
+            // XID definitions while not all existing ones are really used as
+            // XIDs like LTC_ERROR above. SYSLTC is similar to LTC, but it's not
+            // preferred to add new non-XID error code there. By checking the
+            // usage on info16 for NV2080_NOTIFIERS_POISON_ERROR_FATAL/NON_FATAL,
+            // it's confirmed that this field is only used for debug printout
+            // at this moment. Therefore, leave it unset until we decouple
+            // these notifier error codes from XID definitions.
+            //
             break;
     }
 
@@ -421,6 +442,22 @@ _gpuGenerateErrorLog
                               ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
                           ppErrContErrorIdStr[errorCode],
                           loc.locInfo.vfGfid,
+                          pErrorContSmcSettings->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSettings->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+        }
+        case NV_ERROR_CONT_LOCATION_TYPE_SYSLTC:
+        {
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s (%d, %d, %d). RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                            ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                            ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          loc.locInfo.sysLtcLoc.groupId,
+                          loc.locInfo.sysLtcLoc.instanceId,
+                          loc.locInfo.sysLtcLoc.slice,
                           pErrorContSmcSettings->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSettings->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;

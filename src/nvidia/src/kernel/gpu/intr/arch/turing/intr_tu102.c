@@ -30,7 +30,6 @@
 #include "gpu/uvm/uvm.h"
 #include "os/os.h"
 #include "vgpu/vgpu_events.h"
-#include "vgpu/rpc.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "libraries/nvport/nvport.h"
 #include "gpu/disp/kern_disp.h"
@@ -1041,8 +1040,7 @@ intrRetriggerTopLevel_TU102
     // Toggle the top level interrupt enables for all interrupts whose top
     // level enables are not toggled during RM lock acquire/release.
     //
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS) &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
     {
         //
         // 1. If the alternate tree (nonstall tree) is handled "lockless", it

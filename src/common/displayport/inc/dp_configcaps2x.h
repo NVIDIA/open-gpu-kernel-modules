@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,7 +73,7 @@ namespace DisplayPort
                 bool     bUHBR_20GSupported;
             } dpInTunnelingCaps;
 
-            /* 
+            /*
              * Cable capabilities determined on the sink end
              * read by source via DPCD
              */
@@ -86,7 +86,7 @@ namespace DisplayPort
                 bool      bHandshakeCompleted;
             } rxCableCaps;
 
-            /* 
+            /*
              * Cable capabilities determined on the source end
              */
             struct
@@ -117,6 +117,13 @@ namespace DisplayPort
                 //
                 NvU32 sqNum;                                        // DPCD offset 249
             } testPhyCompliance2x;
+
+            struct
+            {
+                bool streamRegenerated;
+                bool interhopAuxReply;
+            } sinkStatus2x;                                           // DPCD offset 205
+
         } interrupts2x;
 
         virtual AuxRetry::status            notifySDPErrDetectionCapability();
@@ -130,6 +137,8 @@ namespace DisplayPort
         virtual void                setGpuDPSupportedVersions(NvU32 _gpuDPSupportedVersions);
         virtual bool                isDp2xChannelCodingCapable();
         virtual void                parseAndReadCaps();
+        virtual void                fetchLinkStatusESI();
+
         virtual LinkRate            getMaxLinkRate();
         virtual NvU32               getUHBRSupported();
         virtual void                setIgnoreCableIdCaps(bool bIgnore){ bIgnoreCableIdCaps = bIgnore; }
@@ -162,7 +171,7 @@ namespace DisplayPort
         bool bIgnoreCableIdCaps;
         bool bConnectorIsTypeC;
         bool bCableVconnSourceUnknown;
-        
+
         virtual void initialize()
         {
             setIgnoreCableIdCaps(false);

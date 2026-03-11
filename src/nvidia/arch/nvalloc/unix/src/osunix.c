@@ -29,11 +29,14 @@
 \***************************************************************************/
 
 #include <os/os.h>
+#include <core/system.h>
 
 void
 osInitObjOS(OBJOS *pOS)
 {
-    pOS->setProperty(pOS, PDB_PROP_OS_ONDEMAND_VBLANK_CONTROL_ENABLE_DEFAULT, NV_TRUE);
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    pSys->setProperty(pSys, PDB_PROP_SYS_ONDEMAND_VBLANK_CONTROL_ENABLE_DEFAULT, NV_TRUE);
     pOS->setProperty(pOS, PDB_PROP_OS_CACHED_MEMORY_MAPPINGS_FOR_ACPI_TABLE, NV_TRUE);
     pOS->setProperty(pOS, PDB_PROP_OS_LIMIT_GPU_RESET, NV_TRUE);
 }

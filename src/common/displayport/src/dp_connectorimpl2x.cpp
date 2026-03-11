@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -113,9 +113,7 @@ void ConnectorImpl2x::applyDP2xRegkeyOverrides()
     this->bSupportUHBR5_00      = dpRegkeyDatabase.supportInternalUhbrOnFpga & NV_DP2X_REGKEY_FPGA_UHBR_SUPPORT_5_0G;
     this->maxLinkRateFromRegkey = dpRegkeyDatabase.applyMaxLinkRateOverrides;
     bSupportInternalUhbrOnFpga  = dpRegkeyDatabase.supportInternalUhbrOnFpga;
-	// Disabling watermark caching by default on 590 irrespective of the regkey
-	// TODO: Set it back to read regkey value while fixing the issues on 595
-    this->bDisableWatermarkCaching = true;
+    this->bDisableWatermarkCaching = dpRegkeyDatabase.bDisableWatermarkCaching;
     if (dpRegkeyDatabase.bIgnoreCableIdCaps)
     {
         hal->setIgnoreCableIdCaps(true);
@@ -154,9 +152,6 @@ bool ConnectorImpl2x::getValidLowestLinkConfig
         {
             // Get next entry.
             lowestSelected = this->allPossibleLinkCfgs[i+1];
-            // Update enhancedFraming/bDisableDownspread/bEnableFEC for target config
-            lowestSelected.enhancedFraming = lConfig.enhancedFraming;
-            lowestSelected.bDisableDownspread = lConfig.bDisableDownspread;
             lowestSelected.enableFEC(lConfig.bEnableFEC);
         }
     }
@@ -885,6 +880,13 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         }
     }
 
+    // Clean up: Clearing ECF
+    if (linkUseMultistream() || (activeLinkConfig.bIs128b132bChannelCoding))
+    {
+        targetImpl->hdcpSetEncrypted(false, NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0,  NV_TRUE, NV_FALSE);
+        targetImpl->hdcpEnabled = false;
+    }
+
     if (linkUseMultistream())
     {
         unsigned symbolSize = GET_SYMBOL_SIZE(activeLinkConfig.bIs128b132bChannelCoding);
@@ -1036,18 +1038,42 @@ void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
     // For DP1.1, let the upstream to turn it back.
     // For DP1.2, we should turn the modeset back if it was on.
     // The authentication will be called off during the modeset.
+    // see Bug 5633477
     //
     HDCPState hdcpState = {0};
     main->configureHDCPGetHDCPState(hdcpState);
-    if ((!hdcpState.HDCP_State_Authenticated) && (isHDCPAuthOn == true)
-        && (currentModesetDeviceGroup->hdcpEnabled))
+    if ((!hdcpState.HDCP_State_Authenticated)
+        && (currentModesetDeviceGroup->hdcpPreviousStatus))
     {
         if (!this->linkUseMultistream())
         {
             currentModesetDeviceGroup->hdcpEnabled = isHDCPAuthOn = false;
         }
+        else if (bMstRestoreHdcpStateAtAttach)
+        {
+            currentModesetDeviceGroup->cancelHdcpCallbacks();
+
+            if (isDP12AuthCap && !isHopLimitExceeded && !isHDCPReAuthPending)
+            {
+                isHDCPReAuthPending = true;
+                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+            }
+        }
     }
 
+    //
+    // RM has the requirement of Head being ARMed to do authentication.
+    // Postpone the authentication until the NAE to do the authentication for DP1.2 as solution.
+    //
+    if (isDP12AuthCap && !isHopLimitExceeded && !isHDCPReAuthPending &&
+        !bHdcpAuthOnlyOnDemand)
+    {
+        isHDCPReAuthPending = true;
+        timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+    }
+
+    hdcpCapsRetries = 0U;
+    timer->queueCallback(this, &tagDelayedHdcpCapRead, 2000);
     fireEvents();
 }
 
@@ -1408,6 +1434,12 @@ void ConnectorImpl2x::notifyDetachBegin(Group *target)
             DP_PRINTF(DP_ERROR, "Failed to Disable the WAR for bug4949066!");
         }
     }
+    if(!linkUseMultistream() && activeLinkConfig.bIs128b132bChannelCoding)
+    {
+        group->hdcpPreviousStatus = group->hdcpEnabled;
+        group->hdcpSetEncrypted(false, NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0, NV_TRUE, NV_FALSE);
+        group->hdcpEnabled = false;
+    }
     return ConnectorImpl::notifyDetachBegin(target);
 }
 
@@ -1500,6 +1532,20 @@ void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive)
         //
         else
         {
+            //
+            // - if EDP; disable ASSR after switching off the stream from head
+            //   to prevent corruption (bug 926360)
+            // - disable ASSR before power down link (bug 1641174)
+            //
+            if (main->isEDP())
+            {
+                bool bPanelPowerOn;
+                // if eDP's power has been shutdown here, don't disable ASSR, else it will be turned on by LT.
+                if (main->getEdpPowerData(&bPanelPowerOn, NULL) && bPanelPowerOn)
+                {
+                    main->disableAlternateScramblerReset();
+                }
+            }
             //
             // Power down the links as we have switched away from the monitor.
             // For shared SOR case, we need this to keep SW stats in DP instances in sync.
@@ -1909,7 +1955,82 @@ ConnectorImpl2x::ConnectorImpl2x(MainLink * main, AuxBus * auxBus, Timer * timer
 {
     bFlushSkipped = false;
     bDisableDownspread  = false;
+    displayId2MSTPolicy = DISPLAYID2_MST_POLICY_DID2X_THEN_EDID;
     applyDP2xRegkeyOverrides();
+}
+
+void ConnectorImpl2x::discoveryNewDevice(const DiscoveryManager::Device & device)
+{
+    //
+    //  We're guaranteed that there isn't already a device on the list with the same
+    //  address.  If we receive the same device announce again - it is considered
+    //  a notification that the device underlying may have seen an HPD.
+    //
+    //  We're going to queue a DID2x read, and remember which device we did it on.
+    //  If the DID2x comes back different we'll have mark the old device object
+    //  as disconnected - and create a new one.  This is required because
+    //  DID2x is one of the fields considered to be immutable.
+    //
+    NvBool bReadDID2x = false;
+    if (!device.branch)
+    {
+        if (!device.videoSink)
+        {
+            // Don't read DID2x and EDID on a device having no videoSink
+            processNewDevice({device, Edid(), DisplayID2x(), false, DISPLAY_PORT, RESERVED});
+            return;
+        }
+        // Only read DID2x if the device is version 1.4 or higher and native DisplayID2x support is enabled
+        bReadDID2x = !bDisableNativeDisplayId2xSupport &&
+                     (device.dpcdRevisionMajor > 1 || device.dpcdRevisionMinor >= 4);
+        if (bReadDID2x)
+        {
+            pendingDid2Reads.insertBack(new DevicePendingDID2Read(this, messageManager, device));
+        }
+        else
+        {
+            pendingEdidReads.insertBack(new DevicePendingEDIDRead(this, messageManager, device));
+        }
+    }
+    else
+    {
+        // Don't try to read the DID2x and EDID on a branch device
+        processNewDevice({device, Edid(), DisplayID2x(), true, DISPLAY_PORT, RESERVED});
+    }
+}
+
+void DisplayPort::DevicePendingDID2Read::mstDid2Completed(DID2ReadMultistream * from)
+{
+    Address::StringBuffer sb;
+    DP_USED(sb);
+    DP_PRINTF(DP_NOTICE, "DP-CONN> DID2 read complete: %s",
+              from->topologyAddress.toString(sb));
+
+    ConnectorImpl2x * connector = parent;
+    if (connector->displayId2MSTPolicy == DISPLAYID2_MST_POLICY_DID2X_ONLY)
+    {
+        parent->processNewDevice({device, Edid(), from->displayId2x, true, DISPLAY_PORT, RESERVED});
+        delete this;
+        connector->discoveryDetectComplete();
+    }
+    else
+    {
+        device.displayId2x = from->displayId2x;
+        connector->pendingEdidReads.insertBack(new DevicePendingEDIDRead(connector, connector->messageManager, device));
+        delete this;
+    }
+}
+
+void DisplayPort::DevicePendingDID2Read::mstDid2ReadFailed(DID2ReadMultistream * from)
+{
+    Address::StringBuffer sb;
+    DP_USED(sb);
+    DP_PRINTF(DP_ERROR, "DP-CONN> DID2 read failed: %s - read EDID instead",
+              from->topologyAddress.toString(sb));
+    ConnectorImpl2x * connector = parent;
+
+    connector->pendingEdidReads.insertBack(new DevicePendingEDIDRead(connector, connector->messageManager, device));
+    delete this;
 }
 
 bool ConnectorImpl2x::getDp2xLaneConfig(NvU32 *numLanes, NvU32 *data)

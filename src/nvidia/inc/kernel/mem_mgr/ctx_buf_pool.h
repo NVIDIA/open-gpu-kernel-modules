@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,9 +44,10 @@ struct CTX_BUF_POOL_INFO
 {
     //
     // Each array index corresponds to a pointer to memory pool with
-    // page size corresponding to POOL_CONFIG_MODE
+    // page size corresponding to RM_ATTR_PAGE_SIZE_*
+    // Pool corresponding to RM_ATTR_PAGE_SIZE_DEFAULT will be left unused
     //
-    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemPool[POOL_CONFIG_MAX_SUPPORTED];
+    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemPool[RM_ATTR_PAGE_SIZE_INVALID];
 };
 
 // List of all context buffers supported by memory pools

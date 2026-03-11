@@ -49,6 +49,9 @@ memmgrScrubHandlePostSchedulingEnable_GP100
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool bIsVgpuLegacyPolicy = (pKernelMIGManager != NULL) && kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager);
 
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH))
+        return NV_OK;
+
     if (!memmgrIsScrubOnFreeEnabled(pMemoryManager))
         return NV_OK;
 

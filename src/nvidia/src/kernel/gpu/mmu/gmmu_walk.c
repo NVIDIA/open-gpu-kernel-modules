@@ -162,6 +162,7 @@ _gmmuWalkCBLevelAlloc
         {
             memPoolList[memPoolListCount++] = ADDR_SYSMEM;
         }
+
     }
     else
     {
@@ -270,9 +271,6 @@ _gmmuWalkCBLevelAlloc
     // Add memList end entry.
     memPoolList[memPoolListCount++] = ADDR_UNKNOWN;
     NV_ASSERT(memPoolListCount <= NV_ARRAY_ELEMENTS(memPoolList));
-
-    // MEMDESC flags
-    memDescFlags = MEMDESC_FLAGS_LOCKLESS_SYSMEM_ALLOC;
 
     if (pGVAS->flags & VASPACE_FLAGS_ALLOW_PAGES_IN_PHYS_MEM_SUBALLOCATOR)
     {

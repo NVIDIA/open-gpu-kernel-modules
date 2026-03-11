@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,9 +22,32 @@
  */
 /* ------------------------ Includes --------------------------------------- */
 #include "prereq_tracker/prereq_tracker.h"
+#include "os/os.h"
+#include "gpu/gpu_access.h"
 
 /* ------------------------ Static Function Prototypes --------------------- */
 static NvBool    _prereqValid(PrereqTracker *pTracker, PREREQ_ENTRY *pPrereq);
+
+static NV_STATUS  _prereqComposeEntryHelper(PrereqTracker *pTracker,
+    GpuPrereqCallback *callback, PREREQ_ID_BIT_VECTOR *pDepends,
+    PREREQ_ENTRY **ppPrereq, NvBool bDeferrable);
+
+static void _prereqTracker_WORKITEM(NvU32 gpuInstance, void *pArgs);
+
+static NV_STATUS _prereqDeferCallback(PrereqTracker *pTracker, PREREQ_ENTRY  *pPrereqEntry);
+
+/* ------------------------ Datatypes -------------------------------------- */
+/*!
+ * @brief Arguments for @ref _prereqTracker_WORKITEM
+ *
+ * @param[in]     pTracker    PrereqTracker object pointer
+ * @param[in/out] pPrereqEntry Prerequisite entry object pointer
+ */
+typedef struct
+{
+    PrereqTracker *pTracker;
+    PREREQ_ENTRY *pPrereqEntry;
+} PrereqDeferredWorkItemArgs;
 
 /* ------------------------ Public Functions  ------------------------------ */
 
@@ -41,7 +64,8 @@ NV_STATUS
 prereqConstruct_IMPL
 (
     PrereqTracker *pTracker,
-    OBJGPU        *pParent
+    OBJGPU        *pParent,
+    GpuPrereqDeferralCheckCallback *pCallback
 )
 {
     NV_ASSERT_OR_RETURN(!pTracker->bInitialized, NV_ERR_INVALID_STATE);
@@ -52,6 +76,7 @@ prereqConstruct_IMPL
     listInit(&pTracker->prereqList, portMemAllocatorGetGlobalNonPaged());
     pTracker->bInitialized = NV_TRUE;
     pTracker->pParent = pParent;
+    pTracker->pDeferralCheckCallback = pCallback;
 
     return NV_OK;
 }
@@ -116,7 +141,16 @@ _prereqArm
 
     if (PREREQ_IS_SATISFIED(pPrereq))
     {
-        NV_ASSERT_OK_OR_RETURN(pPrereq->callback(pTracker->pParent, NV_TRUE));
+        if (pTracker->pDeferralCheckCallback(pTracker, pPrereq))
+        {
+            NV_PRINTF(LEVEL_INFO, "Deferring callback while arming! pCallback: %p \n",
+                pPrereq->callback);
+            NV_ASSERT_OK_OR_RETURN(_prereqDeferCallback(pTracker, pPrereq));
+        }
+        else
+        {
+            NV_ASSERT_OK_OR_RETURN(pPrereq->callback(pTracker->pParent, NV_TRUE));
+        }
     }
 
     return NV_OK;
@@ -124,8 +158,7 @@ _prereqArm
 
 /*!
  * @brief Creates, adds IDs to, and Arms a prereq tracking structure into the list.
- * Caller gives up all control of the prereq structure to the prereq tracker, which
- * will take care of storing the completed, final struct and freeing it once done.
+ * Simple wrapper around _prereqComposeEntryHelper that sets bDeferrable to NV_FALSE.
  *
  * @param[in]   pTracker    PrereqTracker object
  * @param[in]   callback    Callback function pointer
@@ -145,25 +178,36 @@ prereqComposeEntry_IMPL
     PREREQ_ENTRY        **ppPrereq
 )
 {
-    PREREQ_ENTRY *pPrereq;
+    NV_ASSERT_OK_OR_RETURN(_prereqComposeEntryHelper(pTracker, callback,
+        pDepends, ppPrereq, NV_FALSE));
 
-    NV_ASSERT_OR_RETURN(pTracker->bInitialized, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(callback != NULL, NV_ERR_INVALID_POINTER);
-    NV_ASSERT_OR_RETURN(pDepends != NULL, NV_ERR_INVALID_POINTER);
+    return NV_OK;
+}
 
-    pPrereq = listAppendNew(&pTracker->prereqList);
-    NV_ASSERT_OR_RETURN(pPrereq != NULL, NV_ERR_NO_MEMORY);
-
-    NV_ASSERT_OK_OR_RETURN(bitVectorCopy(&pPrereq->requested, pDepends));
-
-    pPrereq->countRequested = bitVectorCountSetBits(&pPrereq->requested);
-    pPrereq->countSatisfied = 0;
-    pPrereq->callback       = callback;
-
-    NV_ASSERT_OK_OR_RETURN(_prereqArm(pTracker, pPrereq));
-
-    if (ppPrereq != NULL)
-        *ppPrereq = pPrereq;
+/*!
+ * @brief Creates, adds IDs to, and Arms a prereq tracking structure into the list.
+ * Simple wrapper around _prereqComposeEntryHelper that sets bDeferrable to NV_TRUE.
+ *
+ * @param[in]   pTracker    PrereqTracker object
+ * @param[in]   callback    Callback function pointer
+ *                          First parameter passed will be NVOC parent of pTracker
+ * @param[in]   pDepends    Bitvector of prerequisite IDs to add as requirement
+ * @param[out]  ppPrereq    PREREQ_ENTRY object pointer created, or NULL if not desired
+ *
+ * @return  NV_OK   Prerequisite successfully armed.
+ * @return  error   Errors propagated up from functions called.
+ */
+NV_STATUS
+prereqComposeEntryDeferrable_IMPL
+(
+    PrereqTracker        *pTracker,
+    GpuPrereqCallback    *callback,
+    PREREQ_ID_BIT_VECTOR *pDepends,
+    PREREQ_ENTRY        **ppPrereq
+)
+{
+    NV_ASSERT_OK_OR_RETURN(_prereqComposeEntryHelper(pTracker, callback,
+        pDepends, ppPrereq, NV_TRUE));
 
     return NV_OK;
 }
@@ -214,7 +258,16 @@ prereqSatisfy_IMPL
 
             if (PREREQ_IS_SATISFIED(pPrereq))
             {
-                NV_ASSERT_OK_OR_RETURN(pPrereq->callback(pTracker->pParent, NV_TRUE));
+                if (pTracker->pDeferralCheckCallback(pTracker, pPrereq))
+                {
+                    NV_PRINTF(LEVEL_INFO, "Deferring callback on satisfy! pCallback: %p \n",
+                              pPrereq->callback);
+                    NV_ASSERT_OK_OR_RETURN(_prereqDeferCallback(pTracker, pPrereq));
+                }
+                else
+                {
+                    NV_ASSERT_OK_OR_RETURN(pPrereq->callback(pTracker->pParent, NV_TRUE));
+                }
             }
         }
     }
@@ -269,7 +322,16 @@ prereqRetract_IMPL
         {
             if (PREREQ_IS_SATISFIED(pNode))
             {
-                NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status, pNode->callback(pTracker->pParent, NV_FALSE));
+                if (pTracker->pDeferralCheckCallback(pTracker, pNode))
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Deferring callback for retract! pCallback: %p\n",
+                        pNode->callback);
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status, _prereqDeferCallback(pTracker, pNode));
+                }
+                else
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status, pNode->callback(pTracker->pParent, NV_FALSE));
+                }
             }
 
             pNode->countSatisfied--;
@@ -347,3 +409,178 @@ _prereqValid
 
     return NV_FALSE;
 }
+
+/*!
+ * @brief Creates, adds IDs to, and Arms a prereq tracking structure into the list.
+ * Caller gives up all control of the prereq structure to the prereq tracker, which
+ * will take care of storing the completed, final struct and freeing it once done.
+ *
+ * @param[in]   pTracker    PrereqTracker object
+ * @param[in]   callback    Callback function pointer
+ *                          First parameter passed will be NVOC parent of pTracker
+ * @param[in]   pDepends    Bitvector of prerequisite IDs to add as requirement
+ * @param[out]  ppPrereq    PREREQ_ENTRY object pointer created, or NULL if not desired
+ * @param[in]   bDeferrable Boolean indicating whether the callback can be deferred
+ *
+ * @return  NV_OK   Prerequisite successfully armed.
+ * @return  error   Errors propagated up from functions called.
+ */
+NV_STATUS
+_prereqComposeEntryHelper
+(
+    PrereqTracker        *pTracker,
+    GpuPrereqCallback    *callback,
+    PREREQ_ID_BIT_VECTOR *pDepends,
+    PREREQ_ENTRY        **ppPrereq,
+    NvBool                bDeferrable
+)
+{
+    PREREQ_ENTRY *pPrereq;
+
+    NV_ASSERT_OR_RETURN(pTracker->bInitialized, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(callback != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDepends != NULL, NV_ERR_INVALID_POINTER);
+
+    pPrereq = listAppendNew(&pTracker->prereqList);
+    NV_ASSERT_OR_RETURN(pPrereq != NULL, NV_ERR_NO_MEMORY);
+
+    NV_ASSERT_OK_OR_RETURN(bitVectorCopy(&pPrereq->requested, pDepends));
+
+    pPrereq->countRequested = bitVectorCountSetBits(&pPrereq->requested);
+    pPrereq->countSatisfied = 0;
+    pPrereq->callback       = callback;
+
+    //
+    // bLastCallbackWasSatisfy gets initialized to NV_FALSE, since the first
+    // action we can take on a PREREQ_ENTRY is to satisfy it.
+    //
+    pPrereq->bLastCallbackWasSatisfy = NV_FALSE;
+    pPrereq->bDeferrable    = bDeferrable;
+    pPrereq->bWorkItemScheduled = NV_FALSE;
+
+    NV_ASSERT_OK_OR_RETURN(_prereqArm(pTracker, pPrereq));
+
+    if (ppPrereq != NULL)
+        *ppPrereq = pPrereq;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Defers a callback by scheduling a work-item to execute it.
+ *
+ * @param[in]   pTracker    PrereqTracker object pointer
+ * @param[in]   pPrereqEntry PREREQ_ENTRY object pointer
+ *
+ * @return NV_OK   Callback successfully deferred.
+ * @return error   Errors propagated up from functions called.
+ */
+static NV_STATUS
+_prereqDeferCallback
+(
+    PrereqTracker *pTracker,
+    PREREQ_ENTRY  *pPrereqEntry
+)
+{
+    NV_STATUS status;
+    PrereqDeferredWorkItemArgs *pWorkItemArgs = NULL;
+
+    if (pPrereqEntry->bWorkItemScheduled)
+    {
+        status = NV_OK;
+        goto _prereqDeferCallback_exit;
+    }
+
+    pWorkItemArgs = portMemAllocNonPaged(sizeof(*pWorkItemArgs));
+    NV_ASSERT_TRUE_OR_GOTO(status,
+        pWorkItemArgs != NULL,
+        NV_ERR_NO_MEMORY,
+        _prereqDeferCallback_exit);
+
+    pWorkItemArgs->pTracker = pTracker;
+    pWorkItemArgs->pPrereqEntry = pPrereqEntry;
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        osQueueWorkItem(pTracker->pParent,
+                        _prereqTracker_WORKITEM,
+                        pWorkItemArgs,
+                        (OsQueueWorkItemFlags){
+                            .bLockSema = NV_TRUE,
+                            .apiLock = WORKITEM_FLAGS_API_LOCK_READ_ONLY,
+                            .bLockGpuGroupSubdevice = NV_TRUE,
+                            .bFullGpuSanity = NV_TRUE }),
+        _prereqDeferCallback_exit);
+
+    pPrereqEntry->bWorkItemScheduled = NV_TRUE;
+
+_prereqDeferCallback_exit:
+    if ((status != NV_OK) && (pWorkItemArgs != NULL))
+    {
+        portMemFree(pWorkItemArgs);
+    }
+    return status;
+}
+
+/*!
+ * @brief Executes a deferred callback.
+ * First checks if the conditions which led to scheduling the callback are still met.
+ * If they aren't, this is a nop beyond resetting the bWorkItemScheduled flag.
+ *
+ * @param[in]   gpuInstance GPU instance
+ * @param[in]   pArgs       Pointer to args @ref PrereqDeferredWorkItemArgs
+ */
+static void
+_prereqTracker_WORKITEM
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    PrereqDeferredWorkItemArgs *pWorkItemArgs = (PrereqDeferredWorkItemArgs *)pArgs;
+    PrereqTracker *pTracker;
+    PREREQ_ENTRY *pPrereq;
+
+    NV_ASSERT_OR_RETURN_VOID(pWorkItemArgs != NULL);
+    pTracker = pWorkItemArgs->pTracker;
+    pPrereq = pWorkItemArgs->pPrereqEntry;
+
+    pPrereq->bWorkItemScheduled = NV_FALSE;
+    if (!pPrereq->bLastCallbackWasSatisfy)
+    {
+        // Work-item must have been scheduled to handle satisfy, double check that we still want that
+        if (PREREQ_IS_SATISFIED(pPrereq))
+        {
+            pPrereq->bLastCallbackWasSatisfy = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO, "Running deferred callback (%p) for satisfy!\n",
+                      pPrereq->callback);
+
+            NV_ASSERT_OR_RETURN_VOID(pPrereq->callback(pTracker->pParent, NV_TRUE) == NV_OK);
+        }
+        else
+        {
+            NV_BITVECTOR_PRINT(
+                NV_PRINTF(LEVEL_INFO, "Deferred callback (%p) no longer meets satisfy condition! countRequested: %d countSatisfied: %d Dependencies: \n",
+                          pPrereq->callback, pPrereq->countRequested, pPrereq->countSatisfied),
+                &pPrereq->requested);
+        }
+    }
+    else
+    {
+        // Work-item must have been scheduled to retract, double check that we still want that
+        if (!PREREQ_IS_SATISFIED(pPrereq))
+        {
+            NV_PRINTF(LEVEL_INFO, "Running deferred callback (%p) for retract!\n",
+                      pPrereq->callback);
+            pPrereq->bLastCallbackWasSatisfy = NV_FALSE;
+            NV_ASSERT_OR_RETURN_VOID(pPrereq->callback(pTracker->pParent, NV_FALSE) == NV_OK);
+        }
+        else
+        {
+            NV_BITVECTOR_PRINT(
+                NV_PRINTF(LEVEL_INFO, "Deferred callback (%p) no longer meets retract condition! countRequested: %d countSatisfied: %d Dependencies: \n",
+                          pPrereq->callback, pPrereq->countRequested, pPrereq->countSatisfied),
+                &pPrereq->requested);
+        }
+    }
+}
+

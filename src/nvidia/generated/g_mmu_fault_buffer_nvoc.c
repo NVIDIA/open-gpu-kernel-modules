@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x7e1829 = 1;
+char __nvoc_class_id_uniqueness_check__7e1829 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuFaultBuffer;
@@ -33,7 +33,7 @@ void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__Notifier(Notifier*);
 void __nvoc_init__MmuFaultBuffer(MmuFaultBuffer*);
 void __nvoc_init_funcTable_MmuFaultBuffer(MmuFaultBuffer*);
-NV_STATUS __nvoc_ctor_MmuFaultBuffer(MmuFaultBuffer*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_MmuFaultBuffer(MmuFaultBuffer*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_MmuFaultBuffer(MmuFaultBuffer*);
 void __nvoc_dtor_MmuFaultBuffer(MmuFaultBuffer*);
 
@@ -119,19 +119,18 @@ void __nvoc_up_thunk_Notifier_faultbufSetNotificationShare(struct MmuFaultBuffer
 NV_STATUS __nvoc_up_thunk_Notifier_faultbufUnregisterEvent(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_faultbufGetOrAllocNotifShare(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
 
+// Class-specific details for MmuFaultBuffer
 const struct NVOC_CLASS_DEF __nvoc_class_def_MmuFaultBuffer = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(MmuFaultBuffer),
-        /*classId=*/            classId(MmuFaultBuffer),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(MmuFaultBuffer),
+    .classInfo.classId =            classId(MmuFaultBuffer),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "MmuFaultBuffer",
+    .classInfo.name =               "MmuFaultBuffer",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MmuFaultBuffer,
-    /*pCastInfo=*/          &__nvoc_castinfo__MmuFaultBuffer,
-    /*pExportInfo=*/        &__nvoc_export_info__MmuFaultBuffer
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MmuFaultBuffer,
+    .pCastInfo =          &__nvoc_castinfo__MmuFaultBuffer,
+    .pExportInfo =        &__nvoc_export_info__MmuFaultBuffer
 };
 
 // By default, all exported methods are enabled.
@@ -542,45 +541,58 @@ NV_STATUS __nvoc_up_thunk_Notifier_faultbufGetOrAllocNotifShare(struct MmuFaultB
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__MmuFaultBuffer = 
 {
-    /*numEntries=*/     6,
-    /*pExportEntries=*/ __nvoc_exported_method_def_MmuFaultBuffer
+    .numEntries=     6,
+    .pExportEntries= __nvoc_exported_method_def_MmuFaultBuffer
 };
 
+
+// Destruct MmuFaultBuffer object.
 void __nvoc_faultbufDestruct(MmuFaultBuffer*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
-void __nvoc_dtor_MmuFaultBuffer(MmuFaultBuffer *pThis) {
+void __nvoc_dtor_MmuFaultBuffer(MmuFaultBuffer* pThis) {
+
+// Call destructor.
     __nvoc_faultbufDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
     __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_MmuFaultBuffer(MmuFaultBuffer *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_Notifier(Notifier* , struct CALL_CONTEXT *);
-NV_STATUS __nvoc_ctor_MmuFaultBuffer(MmuFaultBuffer *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_MmuFaultBuffer_fail_GpuResource;
-    status = __nvoc_ctor_Notifier(&pThis->__nvoc_base_Notifier, arg_pCallContext);
-    if (status != NV_OK) goto __nvoc_ctor_MmuFaultBuffer_fail_Notifier;
-    __nvoc_init_dataField_MmuFaultBuffer(pThis);
 
-    status = __nvoc_faultbufConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct MmuFaultBuffer object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_Notifier(Notifier *pNotifier, struct CALL_CONTEXT *pCallContext);    // inline
+NV_STATUS __nvoc_ctor_MmuFaultBuffer(MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pMmuFaultBuffer->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_MmuFaultBuffer_fail_GpuResource;
+    status = __nvoc_ctor_Notifier(&pMmuFaultBuffer->__nvoc_base_Notifier, pCallContext);
+    if (status != NV_OK) goto __nvoc_ctor_MmuFaultBuffer_fail_Notifier;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_MmuFaultBuffer(pMmuFaultBuffer);
+
+    // Call the constructor for this class.
+    status = __nvoc_faultbufConstruct(pMmuFaultBuffer, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_MmuFaultBuffer_fail__init;
     goto __nvoc_ctor_MmuFaultBuffer_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_MmuFaultBuffer_fail__init:
-    __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+    __nvoc_dtor_Notifier(&pMmuFaultBuffer->__nvoc_base_Notifier);
 __nvoc_ctor_MmuFaultBuffer_fail_Notifier:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pMmuFaultBuffer->__nvoc_base_GpuResource);
 __nvoc_ctor_MmuFaultBuffer_fail_GpuResource:
 __nvoc_ctor_MmuFaultBuffer_exit:
-
     return status;
 }
 
@@ -626,49 +638,49 @@ void __nvoc_init__MmuFaultBuffer(MmuFaultBuffer *pThis) {
     __nvoc_init_funcTable_MmuFaultBuffer(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    MmuFaultBuffer *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    MmuFaultBuffer *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(MmuFaultBuffer));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(MmuFaultBuffer));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(MmuFaultBuffer));
+    portMemSet(__nvoc_pThis, 0, sizeof(MmuFaultBuffer));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__MmuFaultBuffer(pThis);
-    status = __nvoc_ctor_MmuFaultBuffer(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_MmuFaultBuffer_cleanup;
+    __nvoc_init__MmuFaultBuffer(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_MmuFaultBuffer(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_MmuFaultBuffer_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -677,31 +689,31 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer **ppThis, Dynamic *pPar
 __nvoc_objCreate_MmuFaultBuffer_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(MmuFaultBuffer));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(MmuFaultBuffer));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_MmuFaultBuffer(MmuFaultBuffer **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_MmuFaultBuffer(MmuFaultBuffer **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_MmuFaultBuffer(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_MmuFaultBuffer(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

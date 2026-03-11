@@ -228,7 +228,6 @@ typedef struct {
 #define NV_EVO_NUM_LOCK_PIN_CAPS 16
 
 typedef struct {
-    NvBool supportsInterlaced;
     NvBool supportsSemiPlanar;
     NvBool supportsPlanar;
     NvBool supportsHVFlip;
@@ -519,7 +518,6 @@ typedef enum {
 } NVEvoLockPin;
 
 typedef struct _NVEvoHeadControl {
-    NvBool                      interlaced;
     NVEvoLockMode               clientLock;
     NVEvoLockPin                clientLockPin;
     int                         clientLockoutWindow;
@@ -538,7 +536,7 @@ typedef struct _NVEvoHeadControl {
 
     /*
      * Whether or not this GPU is stereo locked.  True if all heads are either
-     * frame or raster locked, and all heads are driving non-interlaced modes.
+     * frame or raster locked.
      */
     NvBool                      stereoLocked;
 
@@ -955,6 +953,26 @@ enum NvKmsLUTState {
     NvKmsLUTStatePQ            = 2,
 };
 
+#define DISPLAYLESS_MAX_PENDING_FLIPS 32
+
+typedef struct _NVDisplaylessPendingFlipRec {
+    NvBool usingSema;
+    NvU32 acquireValue;
+    NvU32 releaseValue;
+    NVFlipNIsoSurfaceEvoHwState semaSurface;
+} NVDisplaylessPendingFlipRec;
+
+typedef struct _NVDisplaylessWorkerRec {
+    nvkms_timer_handle_t *timer;
+    struct {
+        NvU8 head;
+        NvU8 tail;
+        NVDisplaylessPendingFlipRec q[DISPLAYLESS_MAX_PENDING_FLIPS];
+        NVFlipNIsoSurfaceEvoHwState lastSemaSurface;
+        NvU32 lastReleaseValue;
+    } head[NVKMS_MAX_HEADS_PER_DISP];
+} NVDisplaylessWorkerRec;
+
 /* Device-specific EVO state (subdevice- and channel-independent) */
 typedef struct _NVEvoDevRec {
 
@@ -985,7 +1003,6 @@ typedef struct _NVEvoDevRec {
 
     /* SLI Info */
     struct {
-        NvBool          mosaic;
         struct {
             NvBool      present                     :1;
 
@@ -1150,12 +1167,6 @@ typedef struct _NVEvoDevRec {
      */
     NvBool              isHeadSurfaceSupported : 1;
 
-    /*
-     * vblank Sem Control requires support in resman; that support is not
-     * currently available on Tegra.
-     */
-    NvBool              supportsVblankSemControl : 1;
-
     nvkms_timer_handle_t *postFlipIMPTimer;
     nvkms_timer_handle_t *consoleRestoreTimer;
 
@@ -1165,6 +1176,10 @@ typedef struct _NVEvoDevRec {
 
     NvU32               numClasses;
     NvU32              *supportedClasses;
+    NvBool              displaylessHw;
+    NvU32               displaylessHandle;
+
+    NVDisplaylessWorkerRec displaylessWorker;
 
     struct {
         /* name[0] == '\0' for unused registryKeys[] array elements. */
@@ -1413,8 +1428,6 @@ typedef struct _NVHwModeTimingsEvo {
     struct NvKmsPoint rasterSyncEnd;
     struct NvKmsPoint rasterBlankEnd;
     struct NvKmsPoint rasterBlankStart;
-    NvU32 rasterVertBlank2Start;
-    NvU32 rasterVertBlank2End;
 
     NvU32 pixelClock; /* in kHz */
     enum nvKmsTimingsProtocol protocol;
@@ -1438,7 +1451,6 @@ typedef struct _NVHwModeTimingsEvo {
     /* *SyncPol is TRUE if negative */
     NvBool hSyncPol   : 1;
     NvBool vSyncPol   : 1;
-    NvBool interlaced : 1;
     NvBool doubleScan : 1;
     /*
      * hdmi3D reflects whether this mode is a HDMI 3D frame packed mode. True
@@ -1483,13 +1495,7 @@ static inline NvU16 nvEvoVisibleWidth(const NVHwModeTimingsEvo *pTimings)
 
 static inline NvU16 nvEvoVisibleHeight(const NVHwModeTimingsEvo *pTimings)
 {
-    /* rasterVertBlank2{Start,End} should only be != 0 for interlaced modes. */
-    nvAssert(pTimings->interlaced ||
-             ((pTimings->rasterVertBlank2Start == 0) &&
-              (pTimings->rasterVertBlank2End == 0)));
-
-    return pTimings->rasterBlankStart.y - pTimings->rasterBlankEnd.y +
-           pTimings->rasterVertBlank2Start - pTimings->rasterVertBlank2End;
+    return pTimings->rasterBlankStart.y - pTimings->rasterBlankEnd.y;
 }
 
 /*
@@ -1766,6 +1772,7 @@ typedef struct _NVDispHeadAudioStateEvoRec {
 typedef struct _NVDispHeadInfoFrameStateEvoRec {
     NVT_VIDEO_INFOFRAME_CTRL ctrl;
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorSpecificCtrl;
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empCtrl;
     NvBool hdTimings;
 } NVDispHeadInfoFrameStateEvoRec;
 

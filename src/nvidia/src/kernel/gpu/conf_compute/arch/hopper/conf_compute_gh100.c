@@ -51,7 +51,7 @@ confComputeIsDebugModeEnabled_GH100
     ConfidentialCompute *pConfCompute
 )
 {
-    NvU32 fuseStat = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_OPT_SECURE_GSP_DEBUG_DIS);
+    NvU32 fuseStat = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_OPT_SECURE_GSP_DEBUG_DIS);
     return !FLD_TEST_DRF(_FUSE_ZB, _OPT_SECURE_GSP_DEBUG_DIS, _DATA, _YES, fuseStat);
 }
 
@@ -70,6 +70,7 @@ confComputeIsGpuCcCapable_GH100
 )
 {
     NvU32 reg;
+    NvU32 fuseBaseAddr = gpuGetPrimaryFuseBaseAddr_HAL(pGpu);
 
     if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
     {
@@ -77,11 +78,11 @@ confComputeIsGpuCcCapable_GH100
         return NV_FALSE;
     }
 
-    reg = GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_SPARE_BIT_0);
+    reg = GPU_REG_RD32(pGpu, fuseBaseAddr + NV_FUSE_ZB_SPARE_BIT_0);
     if (FLD_TEST_DRF(_FUSE_ZB, _SPARE_BIT_0, _DATA, _ENABLE, reg))
     {
-        if (FLD_TEST_DRF(_FUSE_ZB, _SPARE_BIT_1, _DATA, _ENABLE, GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_SPARE_BIT_1))
-            && FLD_TEST_DRF(_FUSE_ZB, _SPARE_BIT_2, _DATA, _DISABLE, GPU_REG_RD32(pGpu, NV_FUSE0_PRI_BASE + NV_FUSE_ZB_SPARE_BIT_2)))
+        if (FLD_TEST_DRF(_FUSE_ZB, _SPARE_BIT_1, _DATA, _ENABLE, GPU_REG_RD32(pGpu, fuseBaseAddr + NV_FUSE_ZB_SPARE_BIT_1))
+            && FLD_TEST_DRF(_FUSE_ZB, _SPARE_BIT_2, _DATA, _DISABLE, GPU_REG_RD32(pGpu, fuseBaseAddr + NV_FUSE_ZB_SPARE_BIT_2)))
         {
             return NV_TRUE;
         }
@@ -397,6 +398,44 @@ confComputeGlobalKeyIsUvmKey_GH100
         }
     }
     return confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, globalKeyId);
+}
+
+NV_STATUS
+confComputeRotationNotifHandler_GH100
+(
+    OBJGPU               *pGpu,
+    ConfidentialCompute  *pConfCompute,
+    RM_API               *pRmApi,
+    NvHandle              hClient,
+    KernelChannel        *pKernelChannel,
+    NvBool               *bCheckKeyRotation,
+    NvBool                bSet
+)
+{
+    // Create persistent mapping to key rotation notifier
+    if (bSet)
+    {
+        NV_ASSERT_OK(kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, NV_TRUE));
+    }
+    else
+    {
+        NvU32 h2dKey, d2hKey;
+        NV_ASSERT_OK(confComputeUpdateFreedChannelStats(pGpu, pConfCompute, pKernelChannel));
+        // check if we need to trigger key rotation after freeing this channel
+        KEY_ROTATION_STATUS state;
+        NV_ASSERT_OK(confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, &h2dKey, &d2hKey));
+        NV_ASSERT_OK(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+        if ((state == KEY_ROTATION_STATUS_PENDING) ||
+            (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
+        {
+            *bCheckKeyRotation = NV_TRUE;
+        }
+
+        NV_ASSERT_OK(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, NULL, NV_FALSE));
+        pRmApi->Free(pRmApi, hClient, pKernelChannel->hEncryptStatsBuf);
+        NV_ASSERT_OK(kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, NV_FALSE));
+    }
+    return NV_OK;
 }
 
 NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,

@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xb8e4a2 = 1;
+char __nvoc_class_id_uniqueness_check__b8e4a2 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper;
@@ -30,7 +30,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__MemoryMapper(MemoryMapper*);
 void __nvoc_init_funcTable_MemoryMapper(MemoryMapper*);
-NV_STATUS __nvoc_ctor_MemoryMapper(MemoryMapper*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_MemoryMapper(MemoryMapper*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_MemoryMapper(MemoryMapper*);
 void __nvoc_dtor_MemoryMapper(MemoryMapper*);
 
@@ -106,19 +106,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_memmapperUnmapFrom(struct MemoryMapper *pRe
 NvU32 __nvoc_up_thunk_RsResource_memmapperGetRefCount(struct MemoryMapper *pResource);    // this
 void __nvoc_up_thunk_RsResource_memmapperAddAdditionalDependants(struct RsClient *pClient, struct MemoryMapper *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for MemoryMapper
 const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(MemoryMapper),
-        /*classId=*/            classId(MemoryMapper),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(MemoryMapper),
+    .classInfo.classId =            classId(MemoryMapper),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "MemoryMapper",
+    .classInfo.name =               "MemoryMapper",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MemoryMapper,
-    /*pCastInfo=*/          &__nvoc_castinfo__MemoryMapper,
-    /*pExportInfo=*/        &__nvoc_export_info__MemoryMapper
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_MemoryMapper,
+    .pCastInfo =          &__nvoc_castinfo__MemoryMapper,
+    .pExportInfo =        &__nvoc_export_info__MemoryMapper
 };
 
 // By default, all exported methods are enabled.
@@ -418,38 +417,51 @@ void __nvoc_up_thunk_RsResource_memmapperAddAdditionalDependants(struct RsClient
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__MemoryMapper = 
 {
-    /*numEntries=*/     2,
-    /*pExportEntries=*/ __nvoc_exported_method_def_MemoryMapper
+    .numEntries=     2,
+    .pExportEntries= __nvoc_exported_method_def_MemoryMapper
 };
 
+
+// Destruct MemoryMapper object.
 void __nvoc_memmapperDestruct(MemoryMapper*);
 void __nvoc_dtor_GpuResource(GpuResource*);
-void __nvoc_dtor_MemoryMapper(MemoryMapper *pThis) {
+void __nvoc_dtor_MemoryMapper(MemoryMapper* pThis) {
+
+// Call destructor.
     __nvoc_memmapperDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_MemoryMapper(MemoryMapper *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_MemoryMapper(MemoryMapper *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_MemoryMapper_fail_GpuResource;
-    __nvoc_init_dataField_MemoryMapper(pThis);
 
-    status = __nvoc_memmapperConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct MemoryMapper object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_MemoryMapper(MemoryMapper *pMemoryMapper, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pMemoryMapper->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_MemoryMapper_fail_GpuResource;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_MemoryMapper(pMemoryMapper);
+
+    // Call the constructor for this class.
+    status = __nvoc_memmapperConstruct(pMemoryMapper, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_MemoryMapper_fail__init;
     goto __nvoc_ctor_MemoryMapper_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_MemoryMapper_fail__init:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pMemoryMapper->__nvoc_base_GpuResource);
 __nvoc_ctor_MemoryMapper_fail_GpuResource:
 __nvoc_ctor_MemoryMapper_exit:
-
     return status;
 }
 
@@ -490,49 +502,49 @@ void __nvoc_init__MemoryMapper(MemoryMapper *pThis) {
     __nvoc_init_funcTable_MemoryMapper(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    MemoryMapper *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    MemoryMapper *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(MemoryMapper));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(MemoryMapper));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(MemoryMapper));
+    portMemSet(__nvoc_pThis, 0, sizeof(MemoryMapper));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__MemoryMapper(pThis);
-    status = __nvoc_ctor_MemoryMapper(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_MemoryMapper_cleanup;
+    __nvoc_init__MemoryMapper(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_MemoryMapper(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_MemoryMapper_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -541,31 +553,31 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper **ppThis, Dynamic *pParent,
 __nvoc_objCreate_MemoryMapper_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(MemoryMapper));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(MemoryMapper));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_MemoryMapper(MemoryMapper **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_MemoryMapper(MemoryMapper **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_MemoryMapper(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_MemoryMapper(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

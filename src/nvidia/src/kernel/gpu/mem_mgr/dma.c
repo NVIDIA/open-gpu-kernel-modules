@@ -1254,7 +1254,7 @@ dmaPageArrayGetPhysAddr
     else
     {
         RmPhysAddr *pPteArray = pPageArray->pData;
-        addr = pPteArray[pPageArray->startIndex + pageIndex];
+        addr = pPteArray[pPageArray->startIndex + pageIndex] + pPageArray->PteAdjust;
 
         if (pPageArray->bLocalized)
         {

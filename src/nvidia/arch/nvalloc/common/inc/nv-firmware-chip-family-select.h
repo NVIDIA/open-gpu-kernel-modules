@@ -81,6 +81,7 @@ typedef enum
     NV_FIRMWARE_TASK_MNOC,
     NV_FIRMWARE_TASK_DEBUG,
     NV_FIRMWARE_TASK_ROOT,
+    NV_FIRMWARE_TASK_RM_STATE_MONITOR,
 
     NV_FIRMWARE_TASK_COUNT
 } nv_firmware_task_t;
@@ -104,13 +105,14 @@ const nv_firmware_task_log_info_t *nv_firmware_get_task_log_infos(unsigned *num_
 {
     const static nv_firmware_task_log_info_t infos[] =
     {
-        {"LOGINIT", "INIT", ".fwlogging_init",  NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGRM",   "RM",   ".fwlogging_rm",    NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGINTR", "INTR", ".fwlogging_rm",    NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGVGPU", "VGPU", ".fwlogging_vgpu",  NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGMNOC", "MNOC", ".fwlogging_mnoc",  NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGDBG",  "DBG",  ".fwlogging_debug", NV_FIRMWARE_LIBOS3_SUPPORTED},
-        {"LOGROOT", "ROOT", ".fwlogging_start", NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGINIT", "INIT",   ".fwlogging_init",  NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGRM",   "RM",     ".fwlogging_rm",    NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGINTR", "INTR",   ".fwlogging_rm",    NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGVGPU", "VGPU",   ".fwlogging_vgpu",  NV_FIRMWARE_LIBOS2_SUPPORTED | NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGMNOC", "MNOC",   ".fwlogging_mnoc",  NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGDBG",  "DBG",    ".fwlogging_debug", NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGROOT", "ROOT",   ".fwlogging_start", NV_FIRMWARE_LIBOS3_SUPPORTED},
+        {"LOGRMON", "RMON",   ".fwlogging_rm",    NV_FIRMWARE_LIBOS3_SUPPORTED},
     };
 
     *num_infos = NV_ARRAY_ELEMENTS(infos);

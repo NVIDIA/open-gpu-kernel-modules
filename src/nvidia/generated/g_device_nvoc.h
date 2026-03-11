@@ -60,16 +60,11 @@ extern "C" {
 
 // Forward declaration
 struct KERNEL_HOST_VGPU_DEVICE;
-
 struct OBJVASPACE;
 
-#ifndef __NVOC_CLASS_OBJVASPACE_TYPEDEF__
-#define __NVOC_CLASS_OBJVASPACE_TYPEDEF__
-typedef struct OBJVASPACE OBJVASPACE;
-#endif /* __NVOC_CLASS_OBJVASPACE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVASPACE
-#define __nvoc_class_id_OBJVASPACE 0x6c347f
+#define __nvoc_class_id_OBJVASPACE 0x6c347fu
+typedef struct OBJVASPACE OBJVASPACE;
 #endif /* __nvoc_class_id_OBJVASPACE */
 
 
@@ -184,13 +179,9 @@ struct NVOC_METADATA__Device {
     const struct NVOC_VTABLE__Device vtable;
 };
 
-#ifndef __NVOC_CLASS_Device_TYPEDEF__
-#define __NVOC_CLASS_Device_TYPEDEF__
-typedef struct Device Device;
-#endif /* __NVOC_CLASS_Device_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Device
-#define __nvoc_class_id_Device 0xe0ac20
+#define __nvoc_class_id_Device 0xe0ac20u
+typedef struct Device Device;
 #endif /* __nvoc_class_id_Device */
 
 // Casting support
@@ -208,14 +199,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Device;
 
 NV_STATUS __nvoc_objCreateDynamic_Device(Device**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_Device(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_Device((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_Device(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_Device((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS deviceConstruct_IMPL(struct Device *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_deviceConstruct(arg_pResource, arg_pCallContext, arg_pParams) deviceConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS deviceConstruct_IMPL(struct Device *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_deviceConstruct(pResource, pCallContext, pParams) deviceConstruct_IMPL(pResource, pCallContext, pParams)
 
 void deviceDestruct_IMPL(struct Device *pResource);
 #define __nvoc_deviceDestruct(pResource) deviceDestruct_IMPL(pResource)
@@ -1005,10 +996,12 @@ static inline void deviceAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__deviceAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS deviceControl_IMPL(struct Device *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
 NV_STATUS deviceInternalControlForward_IMPL(struct Device *pDevice, NvU32 command, void *pParams, NvU32 size);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS deviceCtrlCmdBifAspmCyaUpdate_IMPL(struct Device *pDevice, NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS *pBifAspmCyaParams);
 
 NV_STATUS deviceCtrlCmdBifGetPciePowerControlMask_IMPL(struct Device *pDevice, NV0080_CTRL_CMD_BIF_GET_PCIE_POWER_CONTROL_MASK_PARAMS *pBifPciePowerControlParams);
@@ -1020,12 +1013,6 @@ NV_STATUS deviceCtrlCmdDmaUpdatePde2_IMPL(struct Device *pDevice, NV0080_CTRL_DM
 NV_STATUS deviceCtrlCmdDmaSetPageDirectory_IMPL(struct Device *pDevice, NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS *pParams);
 
 NV_STATUS deviceCtrlCmdDmaUnsetPageDirectory_IMPL(struct Device *pDevice, NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS *pParams);
-
-NV_STATUS deviceCtrlCmdDmaFlush_VF(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams);
-
-static inline NV_STATUS deviceCtrlCmdDmaFlush_5baef9(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
 
 NV_STATUS deviceCtrlCmdDmaAdvSchedGetVaCaps_IMPL(struct Device *pDevice, NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS *pParams);
 
@@ -1069,39 +1056,15 @@ NV_STATUS deviceCtrlCmdFifoGetCaps_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO
 
 NV_STATUS deviceCtrlCmdFifoGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_GET_CAPS_V2_PARAMS *pFifoCapsParams);
 
-NV_STATUS deviceCtrlCmdFifoGetEngineContextProperties_VF(struct Device *pDevice, NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams);
-
-static inline NV_STATUS deviceCtrlCmdFifoGetEngineContextProperties_92bfc3(struct Device *pDevice, NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS deviceCtrlCmdFifoStopRunlist_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_STOP_RUNLIST_PARAMS *pStopRunlistParams);
 
 NV_STATUS deviceCtrlCmdFifoStartRunlist_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_START_RUNLIST_PARAMS *pStartRunlistParams);
 
 NV_STATUS deviceCtrlCmdFifoGetChannelList_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *pChannelParams);
 
-NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize_VF(struct Device *pDevice, NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pGetLatencyBufferSizeParams);
-
-static inline NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize_92bfc3(struct Device *pDevice, NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pGetLatencyBufferSizeParams) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS deviceCtrlCmdFifoSetChannelProperties_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pSetChannelPropertiesParams);
 
-static inline NV_STATUS deviceCtrlCmdFifoIdleChannels_46f6a7(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS deviceCtrlCmdFifoIdleChannels_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams);
-
 NV_STATUS deviceCtrlCmdHostGetCaps_IMPL(struct Device *pDevice, NV0080_CTRL_HOST_GET_CAPS_PARAMS *pHostCapsParams);
-
-NV_STATUS deviceCtrlCmdHostGetCapsV2_SOC(struct Device *pDevice, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *pHostCapsParamsV2);
-
-NV_STATUS deviceCtrlCmdHostGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *pHostCapsParamsV2);
 
 NV_STATUS deviceCtrlCmdKPerfCudaLimitSetControl_IMPL(struct Device *pDevice, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *pParams);
 
@@ -1129,12 +1092,6 @@ NV_STATUS deviceCtrlCmdGpuSetSparseTextureComputeMode_IMPL(struct Device *pDevic
 
 NV_STATUS deviceCtrlCmdGpuGetVgxCaps_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_GET_VGX_CAPS_PARAMS *pParams);
 
-NV_STATUS deviceCtrlCmdGpuGetBrandCaps_VF(struct Device *pDevice, NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams);
-
-static inline NV_STATUS deviceCtrlCmdGpuGetBrandCaps_5baef9(struct Device *pDevice, NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 NV_STATUS deviceCtrlCmdGpuVirtualizationSwitchToVga_IMPL(struct Device *pDevice);
 
 NV_STATUS deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams);
@@ -1145,28 +1102,68 @@ NV_STATUS deviceCtrlCmdGpuGetSriovCaps_IMPL(struct Device *pDevice, NV0080_CTRL_
 
 NV_STATUS deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_FIND_SUBDEVICE_HANDLE_PARAM *pParams);
 
-NV_STATUS deviceCtrlCmdMsencGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams);
-
-static inline NV_STATUS deviceCtrlCmdMsencGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-NV_STATUS deviceCtrlCmdBspGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams);
-
-static inline NV_STATUS deviceCtrlCmdBspGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams);
-
-static inline NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_c04480(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 NV_STATUS deviceCtrlCmdOsUnixVTSwitch_IMPL(struct Device *pDevice, NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS *pParams);
 
 NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL(struct Device *pDevice, NV0080_CTRL_OS_UNIX_VT_GET_FB_INFO_PARAMS *pParams);
 
+// HAL method declarations without bodies
+NV_STATUS deviceCtrlCmdDmaFlush_VF(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams);
+
+NV_STATUS deviceCtrlCmdFifoGetEngineContextProperties_VF(struct Device *pDevice, NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams);
+
+NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize_VF(struct Device *pDevice, NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pGetLatencyBufferSizeParams);
+
+NV_STATUS deviceCtrlCmdFifoIdleChannels_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams);
+
+NV_STATUS deviceCtrlCmdHostGetCapsV2_SOC(struct Device *pDevice, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *pHostCapsParamsV2);
+
+NV_STATUS deviceCtrlCmdHostGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *pHostCapsParamsV2);
+
+NV_STATUS deviceCtrlCmdGpuGetBrandCaps_VF(struct Device *pDevice, NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams);
+
+NV_STATUS deviceCtrlCmdMsencGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams);
+
+NV_STATUS deviceCtrlCmdBspGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams);
+
+NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams);
+
+// Inline HAL method definitions
+static inline NV_STATUS deviceCtrlCmdDmaFlush_5baef9(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS deviceCtrlCmdFifoGetEngineContextProperties_92bfc3(struct Device *pDevice, NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize_92bfc3(struct Device *pDevice, NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pGetLatencyBufferSizeParams){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS deviceCtrlCmdFifoIdleChannels_395e98(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS deviceCtrlCmdGpuGetBrandCaps_5baef9(struct Device *pDevice, NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS deviceCtrlCmdMsencGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS deviceCtrlCmdBspGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -40,12 +40,12 @@
 // A monotonic counter as ID that's assigned to every new VidmemInfo.
 // This is used to get internal VidmemInfo for persistent mappings.
 //
-static volatile NvU64 vidmemInfoId = 0;
+static PORT_ATOMIC NvU64 vidmemInfoId = 0;
 
 //
 // A monotonic counter as ID that's assigned to every new 3rd party p2p class.
 //
-static volatile NvU64 p2pTokenId = 0;
+static PORT_ATOMIC NvU64 p2pTokenId = 0;
 
 //
 // We make sure that only one instance of NV50_THIRD_PARTY_P2P can be active at
@@ -118,7 +118,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_ARGUMENT;
         }
 
-        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);
     }
     else if (type == CLI_THIRD_PARTY_P2P_TYPE_NVLINK)
     {
@@ -127,7 +127,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_STATE;
         }
 
-        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);
     }
     else
     {

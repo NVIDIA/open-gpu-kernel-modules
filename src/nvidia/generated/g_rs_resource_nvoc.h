@@ -53,16 +53,11 @@ extern "C" {
 extern "C" {
 #endif
 
-
 struct RsSession;
 
-#ifndef __NVOC_CLASS_RsSession_TYPEDEF__
-#define __NVOC_CLASS_RsSession_TYPEDEF__
-typedef struct RsSession RsSession;
-#endif /* __NVOC_CLASS_RsSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsSession
-#define __nvoc_class_id_RsSession 0x830d90
+#define __nvoc_class_id_RsSession 0x830d90u
+typedef struct RsSession RsSession;
 #endif /* __nvoc_class_id_RsSession */
 
 
@@ -184,29 +179,19 @@ struct RS_RES_FREE_PARAMS_INTERNAL
 };
 
 struct NVOC_EXPORTED_METHOD_DEF;
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct OBJGPUGRP;
 
-#ifndef __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-#define __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-typedef struct OBJGPUGRP OBJGPUGRP;
-#endif /* __NVOC_CLASS_OBJGPUGRP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPUGRP
-#define __nvoc_class_id_OBJGPUGRP 0xe40531
+#define __nvoc_class_id_OBJGPUGRP 0xe40531u
+typedef struct OBJGPUGRP OBJGPUGRP;
 #endif /* __nvoc_class_id_OBJGPUGRP */
 
 
@@ -319,13 +304,9 @@ struct NVOC_METADATA__RsResource {
     const struct NVOC_VTABLE__RsResource vtable;
 };
 
-#ifndef __NVOC_CLASS_RsResource_TYPEDEF__
-#define __NVOC_CLASS_RsResource_TYPEDEF__
-typedef struct RsResource RsResource;
-#endif /* __NVOC_CLASS_RsResource_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RsResource
-#define __nvoc_class_id_RsResource 0xd551cb
+#define __nvoc_class_id_RsResource 0xd551cbu
+typedef struct RsResource RsResource;
 #endif /* __nvoc_class_id_RsResource */
 
 // Casting support
@@ -343,14 +324,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource;
 
 NV_STATUS __nvoc_objCreateDynamic_RsResource(RsResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RsResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_RsResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RsResource(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_RsResource((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS resConstruct_IMPL(struct RsResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_resConstruct(arg_pResource, arg_pCallContext, arg_pParams) resConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS resConstruct_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_resConstruct(pResource, pCallContext, pParams) resConstruct_IMPL(pResource, pCallContext, pParams)
 
 void resDestruct_IMPL(struct RsResource *pResource);
 #define __nvoc_resDestruct(pResource) resDestruct_IMPL(pResource)
@@ -497,6 +478,7 @@ static inline void resAddAdditionalDependants_DISPATCH(struct RsClient *pClient,
     pResource->__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool resCanCopy_IMPL(struct RsResource *pResource);
 
 NV_STATUS resIsDuplicate_IMPL(struct RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate);
@@ -519,7 +501,7 @@ NV_STATUS resMap_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallCo
 
 NV_STATUS resUnmap_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
 
-static inline NvBool resIsPartialUnmapSupported_d69453(struct RsResource *pResource) {
+static inline NvBool resIsPartialUnmapSupported_d69453(struct RsResource *pResource){
     return NV_FALSE;
 }
 
@@ -535,21 +517,21 @@ NvBool resShareCallback_IMPL(struct RsResource *pResource, struct RsClient *pInv
 
 void resAddAdditionalDependants_IMPL(struct RsClient *pClient, struct RsResource *pResource, RsResourceRef *pReference);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
 /* @} */
 
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
@@ -682,14 +664,15 @@ struct RsInterMapping
     RsResourceRef *pContextRef;      ///< A resource used to provide additional context for the mapping (e.g. hDevice)
     ListNode       mappableNode;
     ListNode       contextNode;
+    MapNode        interMappingNode;
     NvU32 flags;                     ///< Flags passed when mapping, same flags also passed when unmapping
     NvU32 flags2;                    ///< Additional flags for the mapping
     NvU64 dmaOffset;
     NvU64 size;
     void *pMemDesc;
 };
-MAKE_LIST(RsInterMappingList, RsInterMapping);
-
+MAKE_INTRUSIVE_MAP(RsInterMappingMap, RsInterMapping, interMappingNode);
+MAKE_MAP(RsInterMappingContextMap, RsInterMappingMap);
 /**
  * Inter-mapping back-reference
  */
@@ -757,7 +740,7 @@ struct RsResourceRef
     RsCpuMappingList cpuMappings;   ///< List of CPU mappings to the resource from this resource reference
     RsCpuMappingBackRefList backRefs;  ///< List of references that have this reference as a mapping context
 
-    RsInterMappingList interMappings;        ///< List of inter-resource mappings created by this resource
+    RsInterMappingContextMap interMappingContextMap;        ///< Map of inter-resource mappings created by this resource, context level
     RsInterMappingBackRefMappableList interBackRefsMappable; ///< List of inter-resource mappings this resource has been mapped into
     RsInterMappingBackRefContextList interBackRefsContext; ///< List of inter-resource mappings this context has been mapped into
 
@@ -765,6 +748,8 @@ struct RsResourceRef
     struct RsSession *pDependantSession; ///< If set, this ref is depended on by a shared session
 
     ListNode   freeNode;        ///< Links to the client's pendingFreeList
+
+    PORT_MEM_ALLOCATOR *pAllocator; ///< Allocator for internal resources
 };
 MAKE_MAP(RsRefMap, RsResourceRef);
 MAKE_INTRUSIVE_LIST(RsRefFreeList, RsResourceRef, freeNode);
@@ -929,6 +914,15 @@ NV_STATUS refAddDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependant
 void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
 
 /**
+ * Allocates/Destroys a new inter-mapping
+ * @param[in] pMapperRef The reference which owns the inter-mapping
+ * @param[in] pInterMapping (Destroy) The inter-mapping to destroy
+ * @param[out] ppInterMapping (Create) Allocates new inter-mapping
+ */
+NV_STATUS refCreateInterMapping(RsResourceRef *pMapperRef, RsInterMapping **ppInterMapping);
+NV_STATUS refDestroyInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pInterMapping);
+
+/**
  * Find, Add, or Remove an inter-mapping between two resources to the Mapper's list of inter-mappings
  * Inter-mappings are stored in the Mapper, and are matched by both the MappableRef and offset.
  *
@@ -937,11 +931,11 @@ void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRe
  *                         If NULL, will be ignored while matching inter-mappings
  * @param[in] dmaOffset The offset value assigned while mapping, used to identify mappings
  * @param[in] pContextRef A reference used during mapping and locking for additional context, used to identify mappings
- * @param[inout] ppMapping Writes the resulting inter-mapping, if successfully created (Add) or found (Find)
+ * @param[in] pInterMapping Writes the resulting inter-mapping, if successfully added (Add)
  * @param[in] pMapping The inter-mapping to remove (Remove)
  */
-NV_STATUS refAddInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, RsResourceRef *pContextRef, RsInterMapping **ppMapping);
-void      refRemoveInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pMapping);
+NV_STATUS refAddInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, NvU64 dmaOffset, RsResourceRef *pContextRef, RsInterMapping *pInterMapping);
+void      refRemoveInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pMapping, NvBool bKeepPerContextMap);
 
 /**
  * Store a resource reference in another reference's cache.

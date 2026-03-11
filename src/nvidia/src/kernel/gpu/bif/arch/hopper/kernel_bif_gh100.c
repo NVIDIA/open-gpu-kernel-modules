@@ -33,11 +33,13 @@
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "kernel/gpu/mc/kernel_mc.h"
+
+#include "published/hopper/gh100/dev_xtl_ep_pri.h"
 
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 
 #include "published/hopper/gh100/hwproject.h"
-#include "published/hopper/gh100/dev_xtl_ep_pri.h"
 #include "published/hopper/gh100/dev_nv_xpl.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_pmc.h"
@@ -1005,7 +1007,8 @@ kbifDoFunctionLevelReset_GH100
     flrDevInitTimeout = BIF_FLR_DEVINIT_COMPLETION_TIMEOUT_DEFAULT *
                         flrDevInitTimeoutScale;
 
-    if (!gpumgrWaitForBarFirewall(
+    if (!gpuWaitForBarFirewallHal_HAL(
+            pGpu,
             gpuGetDomain(pGpu),
             gpuGetBus(pGpu),
             gpuGetDevice(pGpu),
@@ -1050,7 +1053,6 @@ kbifDoFunctionLevelReset_GH100
         {
             NV_PRINTF(LEVEL_ERROR, "Entering secure boot completion wait.\n");
         }
-
 
         if (pKernelFsp != NULL && pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_IS_MISSING) == NV_FALSE )
         {
@@ -1484,14 +1486,14 @@ kbifRestorePcieConfigRegisters_GH100
             // Check if GPU is actually accessible before continue
             osGetPerformanceCounter(&timeStampStart);
             gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-            NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+            NvU32 pmcBoot0 = kmcReadPmcBoot0_HAL(pGpu, GPU_GET_KERNEL_MC(pGpu));
 
             while (pmcBoot0 != pGpu->chipId0)
             {
                 NV_PRINTF(LEVEL_INFO,
                           "GPU not back on the bus after %s, 0x%x != 0x%x!\n",
                           pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit", pmcBoot0, pGpu->chipId0);
-                pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+                pmcBoot0 = kmcReadPmcBoot0_HAL(pGpu, GPU_GET_KERNEL_MC(pGpu));
                 NV_ASSERT(0);
                 status = gpuCheckTimeout(pGpu, &timeout);
                 if (status == NV_ERR_TIMEOUT)
@@ -1646,7 +1648,7 @@ kbifRestoreBarsAndCommand_GH100
     GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS,
                            pKernelBif->cacheData.gpuBootConfigSpace[NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS/sizeof(NvU32)]);
 
-    if (GPU_REG_RD32(pGpu, NV_PMC_BOOT_0) != pGpu->chipId0)
+    if (kmcReadPmcBoot0_HAL(pGpu, GPU_GET_KERNEL_MC(pGpu)) != pGpu->chipId0)
     {
         return NV_ERR_INVALID_READ;
     }
@@ -1727,14 +1729,14 @@ kbifGetEccCounts_GH100
     count += DRF_VAL(_XPL_DL, _ERR_COUNT_SEQ_LUT, _UNCORR_ERR, regVal);
 
     // PCIE XTL
-    regVal = GPU_REG_RD32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS);
+    regVal = REG_RD32(&pKernelBif->pBifXtlAperture, NV_XTL_EP_PRI_DED_ERROR_STATUS);
     if (regVal != 0)
     {
         count += 1;
     }
 
     // PCIE XTL
-    regVal = GPU_REG_RD32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS);
+    regVal = REG_RD32(&pKernelBif->pBifXtlAperture, NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS);
     if (regVal != 0)
     {
         count += 1;
@@ -1890,3 +1892,15 @@ kbifIsC2CP2PSupported_GH100
     return NV_FALSE;
 }
 
+void
+kbifConstructXtlAperture_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 xtlBaseAddress = gpuGetXtlBaseAddr_HAL(pGpu);
+    NV_ASSERT_OR_RETURN_VOID(ioaprtInit(&pKernelBif->pBifXtlAperture,
+                                        pGpu->pIOApertures[DEVICE_INDEX_GPU],
+                                        xtlBaseAddress, DRF_SIZE(NV_XTL_EP_PRI)) == NV_OK);
+}

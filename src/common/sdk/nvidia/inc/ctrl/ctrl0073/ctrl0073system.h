@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 // Source file:      ctrl/ctrl0073/ctrl0073system.finn
 //
 
+#include "nvlimits.h"
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
 /* NV04_DISPLAY_COMMON system-level control commands and parameters */
@@ -2049,6 +2050,7 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS {
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_GATING_DISPCLK     0x0007
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_GATING_POSTRG_CLKS 0x0008
 #define NV0073_CTRL_DISP_LPWR_FEATURE_ID_MSCG                   0x0009
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_GEN_STATS              0x0010
 
 // Parameter/characteristics of Display ALPM
 #define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_INVALID         0x0000
@@ -2228,6 +2230,25 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS {
  * (This property allows Get operation)
  */
 #define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_MSCG_DPS2_VBLANK_TIME_US          (0x0007)
+
+/*!
+ * @brief Parameter/characteristics of General Display Stats
+ *
+ * Following are the Parameter/characteristics for General Display Stats
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_GEN_STATS_INVALID                 (0x0000)
+
+/*!
+ * Property specifies the frame counter for display.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_GEN_STATS_FRAME_COUNTER           (0x0001)
+
+/*!
+ * Property specifies the LOADV counter for display.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_GEN_STATS_LOADV_COUNTER           (0x0002)
 
 /*!
  * @brief Structure to identify display low power feature
@@ -2566,6 +2587,158 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS {
     NvU32 head;
     NvU32 counterValueV;
 } NV0073_CTRL_CMD_SYSTEM_GET_CRASH_LOCK_COUNTER_INFO_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE
+ *
+ * DD sends this command to RM to control the exact refresh rate for framelock.
+ * RM will adjust the pixel clock to this precise value during the next modeset
+ * if framelock is enabled.
+ * The refresh rate is given in the form of (refreshRateNumerator / refreshRateDenominator) * Hz
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.
+ *   displayId
+ *     This specifies a display to configure
+ *   refreshRateNumerator
+ *     This specifies the numerator of the refresh rate fraction
+ *   refreshRateDenominator
+ *     This specifies the denominator of the refresh rate fraction
+ *   hTotal
+ *     This specifies the hTotal of the display
+ *   vTotal
+ *     This specifies the vTotal of the display
+ *
+ *   Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAMETER
+ */
+
+#define NV0073_CTRL_CMD_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE (0x7301a4U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_MAX_GSYNC_DISPLAYS                      32
+
+#define NV0073_CTRL_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE_PARAMS_MESSAGE_ID (0xA4U)
+
+typedef struct NV0073_CTRL_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NV_DECLARE_ALIGNED(NvU64 refreshRateNumerator, 8);
+    NV_DECLARE_ALIGNED(NvU64 refreshRateDenominator, 8);
+    NvU32 hTotal;
+    NvU32 vTotal;
+} NV0073_CTRL_SYSTEM_GSYNC_SET_EXACT_REFRESH_RATE_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK
+ *
+ * Diagnostic query to get the exact pixel clock from RM
+ * The pixel clock rate is given in the form of (refreshRateNumerator / refreshRateDenominator) * Hz
+ *
+ *   displayId
+ *     This specifies a display to query
+ *   pixelClockNumerator
+ *     This specifies the numerator of the pixel clock fraction
+ *   pixelClockDenominator
+ *     This specifies the denominator of the pixel clock fraction
+ *
+ *   Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAMETER
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_NOT_READY
+ *   NV_ERR_INVALID_STATE
+ */
+#define NV0073_CTRL_CMD_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK (0x7301a6U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK_PARAMS_MESSAGE_ID (0xA6U)
+
+typedef struct NV0073_CTRL_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK_PARAMS {
+    NvU32 displayId;
+    NV_DECLARE_ALIGNED(NvU64 pixelClockNumerator, 8);
+    NV_DECLARE_ALIGNED(NvU64 pixelClockDenominator, 8);
+} NV0073_CTRL_SYSTEM_GSYNC_GET_EXACT_PIXEL_CLOCK_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL
+ *
+ * Diagnostic query to get the raster position that is currently being output on a display
+ *
+ *   displayCount
+ *     This specifies how many displays are included
+ *   displayId
+ *     This specifies a display to query
+ *   timestampBeginning
+ *     This is returned by RM to specify the kernel timestamp when reading the values was started
+ *     in units of nanoseconds
+ *   frame
+ *     This is returned by RM to give the current frame counter
+ *   line
+ *     This is returned by RM to give the current line number
+ *   pixel
+ *     This is returned by RM to give the current column in the line
+ *   timestampEnd
+ *     This is returned by RM to specify the kernel timestamp when reading the values was finished
+ *     in units of nanoseconds
+ *   timestampFrequency
+ *     This is returned by RM to specify how many times the kernel timestamp changes per second
+ *     (according to the OS)
+ *
+ *   Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0073_CTRL_CMD_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL (0x7301a5U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL_PARAMS_MESSAGE_ID (0xA5U)
+
+typedef struct NV0073_CTRL_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL_PARAMS {
+    NvU32 displayCount;
+    struct {
+        NvU32 displayId;
+        NV_DECLARE_ALIGNED(NvU64 timestampBeginning, 8);
+        NvU32 frame;
+        NvU32 line;
+        NvU32 pixel;
+        NV_DECLARE_ALIGNED(NvU64 timestampEnd, 8);
+    } displays[NV_MAX_HEADS];
+    NV_DECLARE_ALIGNED(NvU64 timestampFrequency, 8);
+} NV0073_CTRL_SYSTEM_GET_RASTER_FRAME_LINE_PIXEL_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH
+ *
+ * Queries the UEFI allocated ISO BW and Floor BW for Display.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.
+ *   isoBandwidthKBPS
+ *     ISO BW set by UEFI to initialize display
+ *   floorBandwidthKBPS
+ *     Floor BW set by UEFI to initialize display
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_GENERIC
+ */
+
+#define NV0073_CTRL_CMD_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH (0x730161U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID (0x61U)
+
+typedef struct NV0073_CTRL_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 isoBandwidthKBPS;
+    NvU32 floorBandwidthKBPS;
+} NV0073_CTRL_SYSTEM_QUERY_UEFI_DISPLAY_BANDWIDTH_PARAMS;
 
 /* _ctrl0073system_h_ */
 

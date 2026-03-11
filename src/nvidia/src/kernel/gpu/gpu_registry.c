@@ -90,16 +90,14 @@ gpuInitRegistryOverrides_KERNEL
     // Check to see if we have any ThreadState registry overrides
     threadStateInitRegistryOverrides(pGpu);
 
-    // Check to see if we enable surprise removal support
-    // Enable SR support by default, disable if the regkey is set to 0
-    pGpu->bSurpriseRemovalSupported = NV_TRUE;
+    // Check whether surprise removal support is enabled
+    // Surprise removal support is enabled by default
+    // Disable if the regkey is set to NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DISABLE
+    pGpu->bSurpriseRemovalSupported = NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DEFAULT;
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_GPU_SURPRISE_REMOVAL, &data32) == NV_OK)
     {
-        if (data32 == 0)
-        {
-            pGpu->bSurpriseRemovalSupported = NV_FALSE;
-        }
+        pGpu->bSurpriseRemovalSupported = (data32 == NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE);
     }
 
     if (pGpu->bSriovCapable)
@@ -240,6 +238,11 @@ gpuInitRegistryOverrides_KERNEL
         pGpu->setProperty(pGpu, PDB_PROP_GPU_REUSE_INIT_CONTING_MEM, NV_FALSE);
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION, &data32) == NV_OK)
+    {
+        pGpu->bMemsubsysErrDetectionEnabled = (data32 == NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION_ENABLE);
+    }
+
     return NV_OK;
 }
 
@@ -331,6 +334,7 @@ gpuInitInstLocOverrides_IMPL
         pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _BAR, _NCOH, pGpu->instLocOverrides4);
         pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM, NV_TRUE);
         pGpu->instCacheOverride = NV_MEMORY_UNCACHED;
+
     }
     else if (((pGpu->instLocOverrides == NV_REG_STR_RM_INST_LOC_ALL_COH) ||
               (pGpu->instLocOverrides == 0x95555555)) &&
@@ -342,6 +346,7 @@ gpuInitInstLocOverrides_IMPL
         pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _BAR, _COH, pGpu->instLocOverrides4);
         pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM, NV_TRUE);
         pGpu->instCacheOverride = NV_MEMORY_CACHED;
+
     }
 
     //

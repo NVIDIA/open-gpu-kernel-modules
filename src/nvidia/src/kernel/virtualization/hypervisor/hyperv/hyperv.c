@@ -39,8 +39,14 @@ static NvBool _dummyHypervIsP2PSupported(NvU32 gpuMask)
 // non-root partition.
 // If we are running in Child partition, then only we enable NMOS code path.
 //
-#define FEATURE_IDENTIFICATION_LEAF  0x40000003
+#define FEATURE_IDENTIFICATION_LEAF          0x40000003
 #define IMPLEMENTATION_RECOMMENDATIONS_LEAF  0x40000004
+
+#define NESTED_HYPERVISOR  0x00001000   // 12th bit in EAX
+
+#define CREATE_PARTITIONS  0x00000001   //  0th bit in EBX
+#define CPU_MANAGEMENT     0x00001000   // 12th bit in EBX
+
 static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
 {
     NvU32 eax = 0, ebx = 0;
@@ -49,6 +55,7 @@ static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
 
     NV_ASSERT(result != NULL);
     *result = NV_FALSE;
+
     // See if we are in parent/child partition
     if ((osNv_cpuid(FEATURE_IDENTIFICATION_LEAF, 0, &dummyRegister, &ebx, &dummyRegister, &dummyRegister) == 0) ||
         (osNv_cpuid(IMPLEMENTATION_RECOMMENDATIONS_LEAF, 0, &eax, &dummyRegister, &dummyRegister, &dummyRegister) == 0))
@@ -57,13 +64,29 @@ static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
             return NV_ERR_NOT_SUPPORTED;
     }
 
-    // See if CreatePartitions is set (which is 0th bit in ebx),
-    // which determines if we are in parent/root partition.
+    // See if CpuManagement bit is set which determines if we are in parent/root partition.
     // or
-    // when nested virtualization is enabled, CreatePartitions is set.
-    // Hence see if 12th bit of eax is set which indicates if the hypervisor
-    // is nested within a Hyper-V partition.
-    if(!(ebx & 0x1) || (eax & 0x1000))
+    // when CpuManagement bit is not set but CreatePartitions bit is set then
+    // it's a L1VH child partition 
+    // or
+    // when CpuManagement bit is set but NestedHypervisor bit is also set then
+    // it's a nested hypervisor child partition otherwsie it's a regular child partition.
+    if(!(ebx & CPU_MANAGEMENT) && (ebx & CREATE_PARTITIONS))
+    {
+        // We are in L1VH child partition
+        *result = NV_TRUE;
+    }
+    else if ((ebx & CPU_MANAGEMENT) && (eax & NESTED_HYPERVISOR))
+    {
+        // We are in nested hypervisor child partition
+        *result = NV_TRUE;
+    }
+    else if (ebx & CPU_MANAGEMENT)
+    {
+        // We are in parent/root partition
+        *result = NV_FALSE;
+    }
+    else
     {
         // We are in child partition
         *result = NV_TRUE;

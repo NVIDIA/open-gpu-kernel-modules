@@ -96,28 +96,3 @@ typedef struct NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS {
     NvU32                       numStereoPins;
 } NVC370_CTRL_GET_LOCKPINS_CAPS_PARAMS;
 
-/*
- * NVC370_CTRL_CMD_SET_SWAPRDY_GPIO_WAR
- *
- * This command switches SWAP_READY_OUT GPIO between SW
- * and HW control to WAR bug 200374184
- *
- *   bEnable [in]:
- *     This parameter indicates enable/disable external fliplock
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_GENERIC
- */
-
-#define NVC370_CTRL_CMD_SET_SWAPRDY_GPIO_WAR (0xc3700202) /* finn: Evaluated from "(FINN_NVC370_DISPLAY_RG_INTERFACE_ID << 8) | NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS_MESSAGE_ID" */
-
-#define NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS_MESSAGE_ID (0x2U)
-
-typedef struct NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS {
-    NVC370_CTRL_CMD_BASE_PARAMS base;
-    NvBool                      bEnable;
-} NVC370_CTRL_SET_SWAPRDY_GPIO_WAR_PARAMS;
-
-

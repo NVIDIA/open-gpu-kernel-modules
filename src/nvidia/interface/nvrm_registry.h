@@ -995,11 +995,14 @@
 #define NV_REG_STR_RM_INST_VPR_MMU_WRITE_FALSE              (0x00000000)
 #define NV_REG_STR_RM_INST_VPR_MMU_WRITE_TRUE               (0x00000001)
 
-#define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL                   "RMGpuSurpriseRemoval"
 // Type DWORD
 // Encoding boolean
-// If set, this will cause RM mark GPU as lost when it detects 0xFF from register
-// access.
+// 0 - Prevent RM from marking GPU as lost when it detects register reads are not working
+// 1 - (default) RM will mark GPU as lost when it detects register reads are not working
+#define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL                   "RMGpuSurpriseRemoval"
+#define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DISABLE           0x00000000
+#define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE            0x00000001
+#define NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DEFAULT           NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE
 
 #define NV_REG_STR_RM_BLACKLIST_ADDRESSES                "RmBlackListAddresses"
 // Type BINARY:
@@ -1596,7 +1599,7 @@
 #define NV_REG_STR_TASK_RM_WATCHCAT                          "RmEnableRmTaskWatchcat"
 #define NV_REG_STR_TASK_RM_WATCHCAT_ENABLE                    0x00000001
 #define NV_REG_STR_TASK_RM_WATCHCAT_DISABLE                   0x00000000
-#define NV_REG_STR_TASK_RM_WATCHCAT_DEFAULT                   NV_REG_STR_TASK_RM_WATCHCAT_ENABLE
+#define NV_REG_STR_TASK_RM_WATCHCAT_DEFAULT                   NV_REG_STR_TASK_RM_WATCHCAT_DISABLE
 
 // Enable/Disable watchcat in GSP-Plugin for Guest RPC
 // Default is Enabled
@@ -2343,9 +2346,36 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_NO   0x00000000
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_YES  0x00000001
 
-#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL        12:0
+// Following new LCEs are for Blackwell and later.
+// Added these to the end to avoid breaking backward compatibility.
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE10_KEYS         13:13
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE10_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE10_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE11_KEYS         14:14
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE11_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE11_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE12_KEYS         15:15
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE12_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE12_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE13_KEYS         16:16
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE13_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE13_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE14_KEYS         17:17
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE14_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE14_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE15_KEYS         18:18
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE15_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE15_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE16_KEYS         19:19
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE16_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE16_KEYS_YES     0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE17_KEYS         20:20
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE17_KEYS_NO      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE17_KEYS_YES     0x00000001
+
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL        20:0
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_NO     0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES    0x00001fff
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES    0x001fffff
 
 //
 // Set period for "keep-alive" heartbeat message sent between SPDM Requester and Responder.
@@ -2821,10 +2851,6 @@
 #define NV_REG_STR_RM_PVMRL_ENABLE_DEFAULT                        0x00000000
 #define NV_REG_STR_RM_PVMRL_ENABLE_NO                             0x00000000
 #define NV_REG_STR_RM_PVMRL_ENABLE_YES                            0x00000001
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE                           1:1
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_DEFAULT                   0x00000000
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_NO                        0x00000000
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_YES                       0x00000001
 #define NV_REG_STR_RM_PVMRL_WEIGHTED                              3:3
 #define NV_REG_STR_RM_PVMRL_WEIGHTED_DEFAULT                      0x00000000
 #define NV_REG_STR_RM_PVMRL_WEIGHTED_ENABLE                       0x00000000
@@ -2894,6 +2920,16 @@
 
 //
 // Type: Dword
+// This regkey is used to enable/disable Nvlink Encryption with CC
+//
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_WITH_CC                 "RmNvlinkEncryptionWithCC"
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_WITH_CC_MODE            0:0
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_WITH_CC_MODE_DEFAULT    0x00000000
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_WITH_CC_MODE_ENABLE     0x00000001
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_WITH_CC_MODE_DISABLE    0x00000000
+
+//
+// Type: Dword
 // This regkey is used to control the NVLE key refresh settings.
 // Note: Irrespective of this regkey setting, NVLE key refresh will be disabled
 //       when Nvlink encryption is disabled. When Nvlink encryption is enabled,
@@ -2914,6 +2950,16 @@
 #define NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_DEFAULT  0x00000E10
 #define NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_MIN      0x0000003C
 #define NV_REG_STR_RM_NVLINK_NVLE_KEY_REFRESH_INTERVAL_MAX      0x00000E10
+
+//
+// Type: Dword
+// This regkey is used to enable/disable Adatpive Bandwidth Mode (ABM)
+//
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE                   "RmNvlinkAdaptiveBwMode"
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE            0:0
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_DEFAULT    0x00000000
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_YES        0x00000001
+#define NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_NO         0x00000000
 
 //
 // Type: Dword
@@ -3130,5 +3176,146 @@
 #define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_ENABLE       0x1
 #define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE      0x0
 #define NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DEFAULT      NV_REG_STR_RM_CTXSW_TIMEOUT_DEBUG_DUMP_VAL_DISABLE
+
+#define NV_REG_STR_RM_GSP_STALL_DETECTION                        "RmGspStallDetection"
+#define NV_REG_STR_RM_GSP_STALL_DETECTION_DEFAULT                (0x00000001)
+#define NV_REG_STR_RM_GSP_STALL_DETECTION_ENABLE                 (0x00000001)
+#define NV_REG_STR_RM_GSP_STALL_DETECTION_DISABLE                (0x00000000)
+
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS                  "RmGspPreserveUnloadLogs"
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS_DEFAULT          (0x00000000)
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS_DISABLE          (0x00000000)
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS_ENABLE_NO_WRAP   (0x00000001)
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS_ENABLE_WRAP      (0x00000002)
+#define NV_REG_STR_RM_GSP_PRESERVE_UNLOAD_LOGS_ENABLE_ALL       (0x00000003)
+
+#define NV_REG_STR_RM_GSP_TIMEOUT_CLASSIFICATION                 "RmGspTimeoutClassification"
+#define NV_REG_STR_RM_GSP_TIMEOUT_CLASSIFICATION_ENABLE          (0x00000001)
+#define NV_REG_STR_RM_GSP_TIMEOUT_CLASSIFICATION_DISABLE         (0x00000000)
+#define NV_REG_STR_RM_GSP_TIMEOUT_CLASSIFICATION_DEFAULT         NV_REG_STR_RM_GSP_TIMEOUT_CLASSIFICATION_ENABLE
+
+#define NV_REG_STR_RM_GSP_RPC_TIMEOUT_GPU_RESET_THRESHOLD         "RmGspRpcTimeoutGpuResetThreshold"
+#define NV_REG_STR_RM_GSP_RPC_TIMEOUT_GPU_RESET_THRESHOLD_DEFAULT 3
+
+//
+// Type: DWORD
+// Regkey to set GSP-RM Log buffer size for TASK_INIT.
+// Default value: 64KB for stack traces
+//
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_INIT                  "RmGspLogBufferSizeTaskInit"
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_INIT_DEFAULT  0x10000
+
+//
+// Type: DWORD
+// Regkey to set GSP-RM Log buffer size for TASK_INTR.
+// Default value: 256KB ISR debug log on develop/debug builds, 64KB ISR debug log on release builds
+//
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_INTR                  "RmGspLogBufferSizeTaskIntr"
+#if defined(DEBUG) || defined(DEVELOP)
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_INTR_DEFAULT    0x40000
+#else
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_INTR_DEFAULT    0x10000
+#endif
+
+//
+// Type: DWORD
+// Regkey to set GSP-RM Log buffer size for TASK_RM.
+// Default value: 256KB RM debug log on develop/debug builds, 64KB RM debug log on release builds
+//
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_RM                    "RmGspLogBufferSizeTaskRm"
+#if defined(DEBUG) || defined(DEVELOP)
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_RM_DEFAULT    0x40000
+#else
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_RM_DEFAULT    0x10000
+#endif
+
+//
+// Type: DWORD
+// Regkey to set GSP-RM Log buffer size for TASK_MNOC.
+// Default value: 64KB MNOC debug log
+//
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_MNOC                  "RmGspLogBufferSizeTaskMnoc"
+#define NV_REG_STR_RM_GSP_LOG_BUFFER_SIZE_TASK_MNOC_DEFAULT  0x10000
+
+//
+// Type: Dword
+// This regkey toggles whether to enable GSP Trace Crash Logging
+//   0 - Disable        - GSP Trace Crash Logging is disabled.
+//   1 - Enable/Default - GSP Trace Crash Logging is enabled.
+
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING                     "RmGspTraceCrashLogging"
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_DISABLE             0x00000000
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_ENABLE              0x00000001
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_DEFAULT             NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_ENABLE
+
+//
+// Type: Dword
+// Regkey to set the GSP Trace Crash Logging buffer size in number of records.
+//   50 - Default buffer size.
+//
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE         "RmGspTraceCrashLoggingBufferSize"
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_DEFAULT 50
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MIN     10
+#define NV_REG_STR_RM_GSP_TRACE_CRASH_LOGGING_BUFFER_SIZE_MAX     10000
+
+//
+// Enable WAR for bug 4686457 which will flush CPU cache of page tables
+// after update to ensure cache coherency
+//
+// Type: DWORD
+//
+// 0 - Disable WAR (default)
+// 1 - Enable WAR
+//
+#define NV_REG_STR_RM_BUG_4686457_WAR                           "RMBug4686457War"
+#define NV_REG_STR_RM_BUG_4686457_WAR_ENABLE                    (0x00000001)
+#define NV_REG_STR_RM_BUG_4686457_WAR_DISABLE                   (0x00000000)
+#define NV_REG_STR_RM_BUG_4686457_WAR_DEFAULT                   NV_REG_STR_RM_BUG_4686457_WAR_DISABLE
+
+//
+// Type: Dword
+// Regkey to enable/disable Memory Subsystem Error Detection when GSP times out
+//   1 - Enable/Default - Memory Subsystem Error detection is enabled.
+//
+#define NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION            "RmMemSubsystemErrorDetection"
+#define NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION_ENABLE     0x00000001
+#define NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION_DEFAULT    NV_REG_STR_RM_MEMORY_SUBSYSTEM_ERROR_DETECTION_ENABLE
+
+// Type: DWORD
+// Regkey to enable GSP State Monitor
+//   0 - Disable        - GSP State Monitor is disabled.
+//   1 - Enable/Default - GSP State Monitor is enabled.
+//
+#define NV_REG_STR_RM_ENABLE_STATE_MONITOR                      "RMGspStateMonitor"
+#define NV_REG_STR_RM_ENABLE_STATE_MONITOR_DEFAULT              (0x00000001)
+#define NV_REG_STR_RM_ENABLE_STATE_MONITOR_DISABLE              (0x00000000)
+#define NV_REG_STR_RM_ENABLE_STATE_MONITOR_ENABLE               (0x00000001)
+
+//
+// Enable WAR for bug 5564443 which will enable PMU SW I2C
+//
+// Type: DWORD
+//
+// 0 - Disable WAR (default)
+// 1 - Enable WAR  (Enable SW I2C)
+//
+// Do not set enabled at the same time as any other RMUse*I2c.
+//
+#define NV_REG_STR_RM_WAR_5564443                        "RMWar5564443"
+#define NV_REG_STR_RM_WAR_5564443_DISABLE                (0x00000000)
+#define NV_REG_STR_RM_WAR_5564443_ENABLE                 (0x00000001)
+#define NV_REG_STR_RM_WAR_5564443_DEFAULT                NV_REG_STR_RM_WAR_5564443_DISABLE
+
+//
+// Disable API lock READ acquisition for NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT for bug 5785851
+// Type: DWORD
+//
+// 0 - Disable WAR (default)
+// 1 - Enable WAR  (automatically switch API lock acquisition mode to WRITE for all NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT calls)
+//
+#define NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR "RmWar5785851"
+#define NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_FALSE (0x00000000)
+#define NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_TRUE  (0x00000001)
+#define NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_DEFAULT NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_FALSE
 
 #endif // NVRM_REGISTRY_H

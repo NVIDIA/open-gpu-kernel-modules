@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,15 +35,6 @@
  * like this instead of just func(__VA_ARGS__) because some preprocessors treat __VA_ARGS__
  * as a single argument even when it contains commas. */
 #define NVOC_PP_CALL(func, ...) NV_EXPAND(func NV_EXPAND() (__VA_ARGS__))
-
-/*! Macro to help specify prefixes on NVOC classes */
-#define NVOC_PREFIX(x) [[nvoc::prefix(x)]]
-
-/*! Macro to help specify NVOC classes attributes */
-#define NVOC_ATTRIBUTE(str)  [[nvoc::classAttributes("\""#str"\"")]]
-
-/*! Macro to help specify properties on NVOC classes */
-#define NVOC_PROPERTY [[nvoc::property]]
 
 #ifndef NV_PRINTF_STRINGS_ALLOWED
 #if defined(DEBUG) || defined(NV_MODS) || defined(QA_BUILD)
@@ -232,15 +223,43 @@ typedef struct NVOC_RTTI_PROVIDER {
 
 typedef const NVOC_RTTI_PROVIDER *NVOC_RTTI_PROVIDER_ID;
 
+
+// Event visibility from [[nvoc::event_visibility()]] attribute
+typedef enum
+{
+    NVOC_EVENT_VISIBILITY_NONEVENT = 0,
+    NVOC_EVENT_VISIBILITY_PRIVATE,
+    NVOC_EVENT_VISIBILITY_PUBLIC,
+    NVOC_EVENT_VISIBILITY_EXPORT,
+} NVOC_EVENT_VISIBILITY;
+
+
 //! Public metadata about an NVOC class definition.
 typedef struct NVOC_CLASS_INFO
 {
-    const NvU32                  size;
-    const NVOC_CLASS_ID          classId;
-    const NVOC_RTTI_PROVIDER_ID  providerId;
+    // Number of bytes of memory used by the object
+    const NvU32 size;
+
+    struct
+    {
+        // Class or Event ID -- hash sufficient to uniquely identify the class
+        const NVOC_CLASS_ID classId            :24;
+
+        // Unused and always zero
+        const unsigned                         : 6;
+
+        // Event visibility from [[nvoc::event_visibility()]] as applicable per NVOC_EVENT_VISIBILITY enum
+        const unsigned visibility : 2;
+    };
+
+    // Provider ID
+    const NVOC_RTTI_PROVIDER_ID providerId;
+
 #if NV_PRINTF_STRINGS_ALLOWED
-    const char                  *name;
+    // Class name to facilitate debugging logs
+    const char *name;
 #endif
+
 } NVOC_CLASS_INFO;
 
 

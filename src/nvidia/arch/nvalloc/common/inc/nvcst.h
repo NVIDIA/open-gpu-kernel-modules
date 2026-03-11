@@ -357,7 +357,7 @@ VENDORNAME vendorName[] =
 
 //
 // Allowlist all chipsets with which dGPU over PCIe is supported on ARM
-// (both v7 and v8) platforms
+// (both v7 and v8) platforms. Also include IGPU specific chipsets.
 //
 ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
 {
@@ -382,7 +382,8 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x22D6, CS_NVIDIA_T264},        // NVIDIA Tegra RP x8
     {PCI_VENDOR_ID_NVIDIA,      0x22D8, CS_NVIDIA_T264},        // NVIDIA Tegra RP x4
     {PCI_VENDOR_ID_NVIDIA,      0x22DA, CS_NVIDIA_T264},        // NVIDIA Tegra RP x2
-    {PCI_VENDOR_ID_NVIDIA,      0x2B00, CS_NVIDIA_T264},        // NVIDIA Tegra RP iGPU
+    {PCI_VENDOR_ID_NVIDIA,      0x22E6, CS_NVIDIA_T264},        // NVIDIA Tegra iGPU RP
+    {PCI_VENDOR_ID_NVIDIA,      0x2B00, CS_NVIDIA_T264},        // NVIDIA Tegra iGPU
 
     {PCI_VENDOR_ID_APM,         0xe004, CS_APM_STORM},          // Applied Micro X-Gene "Storm"
     {PCI_VENDOR_ID_MARVELL,     0xAF00, CS_MARVELL_THUNDERX2},  // Marvell ThunderX2

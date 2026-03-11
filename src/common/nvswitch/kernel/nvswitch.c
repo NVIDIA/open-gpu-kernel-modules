@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1594,34 +1594,41 @@ _nvswitch_inband_clear_lists
     nvswitch_inband_data_list *curr = NULL;
     nvswitch_inband_data_list *next = NULL;
     nvlink_inband_msg_header_t *msghdr = NULL;
+    NvU64 enabledLinkMask;
 
-    nvListForEachEntry_safe(curr, next,
-                    &device->link[linkId].inbandData.nonpersistent_list, entry)
+    enabledLinkMask = nvswitch_get_enabled_link_mask(device);
+
+    if (nvswitch_is_link_valid(device, linkId) &&
+        (enabledLinkMask & NVBIT64(linkId)))
     {
-        if (bSendNack)
+        nvListForEachEntry_safe(curr, next,
+                        &device->link[linkId].inbandData.nonpersistent_list, entry)
         {
-            msghdr = (nvlink_inband_msg_header_t *)curr->data;
-            nvswitch_send_nack_or_drop(device, linkId, msghdr);
+            if (bSendNack)
+            {
+                msghdr = (nvlink_inband_msg_header_t *)curr->data;
+                nvswitch_send_nack_or_drop(device, linkId, msghdr);
+            }
+
+            nvListDel(&curr->entry);
+            nvswitch_os_free(curr);
         }
 
-        nvListDel(&curr->entry);
-        nvswitch_os_free(curr);
-    }
+        if (bNonPersistentOnly)
+            return;
 
-    if (bNonPersistentOnly)
-        return;
-
-    nvListForEachEntry_safe(curr, next,
-                    &device->link[linkId].inbandData.persistent_list, entry)
-    {
-        if (bSendNack)
+        nvListForEachEntry_safe(curr, next,
+                        &device->link[linkId].inbandData.persistent_list, entry)
         {
-            msghdr = (nvlink_inband_msg_header_t *)curr->data;
-            nvswitch_send_nack_or_drop(device, linkId, msghdr);
-        }
+            if (bSendNack)
+            {
+                msghdr = (nvlink_inband_msg_header_t *)curr->data;
+                nvswitch_send_nack_or_drop(device, linkId, msghdr);
+            }
 
-        nvListDel(&curr->entry);
-        nvswitch_os_free(curr);
+            nvListDel(&curr->entry);
+            nvswitch_os_free(curr);
+        }
     }
 }
 
@@ -1650,9 +1657,14 @@ nvswitch_fabric_state_heartbeat(
     if (device->driver_fabric_state != NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED)
     {
         for (linkId = 0; linkId < nvswitch_get_num_links(device); linkId++)
-            _nvswitch_inband_clear_lists(device, linkId,
+        {
+            if (nvswitch_is_link_valid(device, linkId))
+            {
+                    _nvswitch_inband_clear_lists(device, linkId,
                                          NV_TRUE /* Nack */,
                                          NV_TRUE /* Non-persistent only */);
+            }
+        }
     }
 
     (void)device->hal.nvswitch_write_fabric_state(device);

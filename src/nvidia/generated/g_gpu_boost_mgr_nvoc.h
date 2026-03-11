@@ -149,13 +149,9 @@ struct NVOC_METADATA__OBJGPUBOOSTMGR {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJGPUBOOSTMGR_TYPEDEF__
-#define __NVOC_CLASS_OBJGPUBOOSTMGR_TYPEDEF__
-typedef struct OBJGPUBOOSTMGR OBJGPUBOOSTMGR;
-#endif /* __NVOC_CLASS_OBJGPUBOOSTMGR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPUBOOSTMGR
-#define __nvoc_class_id_OBJGPUBOOSTMGR 0x9f6bbf
+#define __nvoc_class_id_OBJGPUBOOSTMGR 0x9f6bbfu
+typedef struct OBJGPUBOOSTMGR OBJGPUBOOSTMGR;
 #endif /* __nvoc_class_id_OBJGPUBOOSTMGR */
 
 // Casting support
@@ -174,13 +170,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUBOOSTMGR;
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR**, Dynamic*, NvU32);
-#define __objCreate_OBJGPUBOOSTMGR(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJGPUBOOSTMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJGPUBOOSTMGR(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJGPUBOOSTMGR((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS gpuboostmgrConstruct_IMPL(struct OBJGPUBOOSTMGR *arg_pBoostMgr);
-#define __nvoc_gpuboostmgrConstruct(arg_pBoostMgr) gpuboostmgrConstruct_IMPL(arg_pBoostMgr)
+NV_STATUS gpuboostmgrConstruct_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr);
+#define __nvoc_gpuboostmgrConstruct(pBoostMgr) gpuboostmgrConstruct_IMPL(pBoostMgr)
 
 void gpuboostmgrDestruct_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr);
 #define __nvoc_gpuboostmgrDestruct(pBoostMgr) gpuboostmgrDestruct_IMPL(pBoostMgr)
@@ -289,6 +285,12 @@ static inline NvBool gpuboostmgrIsBoostGrpActive(struct OBJGPUBOOSTMGR *pBoostMg
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

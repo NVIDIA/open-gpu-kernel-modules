@@ -270,18 +270,6 @@ struct uvm_va_range_managed_struct
     // stored in the va_block for HMM allocations.
     uvm_va_policy_t policy;
 
-    // Mask of UVM-Lite GPUs for the VA range
-    //
-    // If the preferred location is set to a non-faultable GPU or the CPU, this
-    // mask contains all non-faultable GPUs that are in the accessed by mask and
-    // the preferred location itself if it's a GPU. Empty otherwise.
-    //
-    // All UVM-Lite GPUs have mappings only to the preferred location. The
-    // mappings are initially established only when the pages are resident on
-    // the preferred location, but persist after that until the preferred
-    // location is changed or a GPU stops being a UVM-Lite GPU.
-    uvm_processor_mask_t uvm_lite_gpus;
-
     // Force the next split on this range to fail. Set by error injection ioctl
     // (testing purposes only).
     bool inject_split_error;
@@ -1050,9 +1038,6 @@ uvm_va_block_t *uvm_va_range_block_next(uvm_va_range_managed_t *managed_range, u
 // association to UVM_RANGE_GROUP_ID_NONE if the managed range was previously
 // associated with a non-migratable range group.
 //
-// Changing the preferred location also updates the mask and mappings of GPUs
-// in UVM-Lite mode.
-//
 // If mm != NULL, that mm is used for any CPU mappings which may be created as
 // a result of this call. See uvm_va_block_context_t::mm for details.
 //
@@ -1069,8 +1054,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_managed_t *managed_ra
 // Add a processor to the accessed_by mask and establish any new required
 // mappings.
 //
-// Also update the mask of UVM-Lite GPUs if needed.
-//
 // If mm != NULL, that mm is used for any CPU mappings which may be created as
 // a result of this call. See uvm_va_block_context_t::mm for details.
 //
@@ -1086,8 +1069,6 @@ NV_STATUS uvm_va_range_set_accessed_by(uvm_va_range_managed_t *managed_range,
 // Remove a processor from the accessed_by mask
 //
 // If out_tracker != NULL any block work will be added to that tracker.
-//
-// This also updates the mask and mappings of the UVM-Lite GPUs if required.
 void uvm_va_range_unset_accessed_by(uvm_va_range_managed_t *managed_range,
                                     uvm_processor_id_t processor_id,
                                     uvm_tracker_t *out_tracker);

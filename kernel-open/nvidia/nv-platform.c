@@ -25,6 +25,7 @@
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
+#include <linux/of_address.h>
 
 #include "nv-platform.h"
 #include "nv-linux.h"
@@ -55,7 +56,7 @@ nvidia_soc_isr_kthread_bh(
 
     os_release_mutex(nvl->soc_bh_mutex);
 
-    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_lock, flags);
+    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_info_lock, flags);
     for (irq_count = 0; irq_count < nv->num_soc_irqs; irq_count++)
     {
         if (nv->soc_irq_info[irq_count].irq_num == irq)
@@ -69,20 +70,21 @@ nvidia_soc_isr_kthread_bh(
         }
     }
     nv->current_soc_irq = -1;
-    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_lock, flags);
+    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_info_lock, flags);
 
     return ret;
 }
 
 static irqreturn_t nvidia_soc_isr(int irq, void *arg)
 {
-    unsigned long flags;
+    unsigned long flags = 0;
     irqreturn_t ret;
     nv_linux_state_t *nvl = (void *) arg;
     nv_state_t *nv = NV_STATE_PTR(nvl);
     NvU32 irq_count;
 
     NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_lock, flags);
+    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_info_lock, flags);
 
     /*
      * > Only 1 interrupt at a time is allowed to be serviced.
@@ -100,21 +102,19 @@ static irqreturn_t nvidia_soc_isr(int irq, void *arg)
     {
         if (nv->soc_irq_info[irq_count].bh_pending == NV_TRUE)
         {
+            NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_info_lock, flags);
             NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_lock, flags);
             return IRQ_NONE;
         }
     }
     nv->current_soc_irq = irq;
-    for (irq_count = 0; irq_count < nv->num_soc_irqs; irq_count++)
-    {
-        if (nv->soc_irq_info[irq_count].ref_count == 1)
-        {
-            nv->soc_irq_info[irq_count].ref_count--;
-            disable_irq_nosync(nv->soc_irq_info[irq_count].irq_num);
-        }
-    }
+
+    // Don't hold info lock across callstacks
+    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_info_lock, flags);
 
     ret = nvidia_isr(irq, arg);
+
+    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_info_lock, flags);
     if (ret == IRQ_WAKE_THREAD)
     {
         for (irq_count = 0; irq_count < nv->num_soc_irqs; irq_count++)
@@ -127,17 +127,10 @@ static irqreturn_t nvidia_soc_isr(int irq, void *arg)
     }
     else
     {
-        for (irq_count = 0; irq_count < nv->num_soc_irqs; irq_count++)
-        {
-            if (nv->soc_irq_info[irq_count].ref_count == 0)
-            {
-                nv->soc_irq_info[irq_count].ref_count++;
-                enable_irq(nv->soc_irq_info[irq_count].irq_num);
-            }
-        }
         nv->current_soc_irq = -1;
     }
 
+    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_info_lock, flags);
     NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_lock, flags);
 
     return ret;
@@ -652,6 +645,60 @@ fail:
     return status;
 }
 
+#define DISP_CLK_NUM_PARENTS 2
+// This function gets called only for Tegra
+static NV_STATUS nv_platform_get_disp_clocks_max_rate(struct platform_device *plat_dev,
+                                              nv_state_t *nv)
+{
+    struct device_node *np = plat_dev->dev.of_node;
+    u32 value = 0;
+    u32 disp_clk_rates[DISP_CLK_NUM_PARENTS];
+    NV_STATUS status = NV_OK;
+    int ret = 0;
+
+    nv->clocks.max_dispclk_rate_using_disppllkhz = 0;
+    nv->clocks.max_dispclk_rate_using_sppll0clkoutakhz = 0;
+    nv->clocks.max_hubclk_rate_using_sppll0clkoutbkhz = 0;
+
+    /* Parse disp clock max rates for each possible parent passed by UEFI */
+    ret = of_property_read_u32_array(np, "nvidia,max-disp-clk-rate-khz", disp_clk_rates, DISP_CLK_NUM_PARENTS);
+    if (ret == 0)
+    {
+        nv->clocks.max_dispclk_rate_using_disppllkhz = disp_clk_rates[0];
+        nv->clocks.max_dispclk_rate_using_sppll0clkoutakhz = disp_clk_rates[1];
+    }
+    else if (ret == -EINVAL)
+    {
+        nv_printf(NV_DBG_INFO, "NVRM: nv_platform_get_disp_clocks_max_rate, nvidia,max-disp-clk-rate-khz not specified under display node\n");
+    }
+    else
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_disp_clocks_max_rate, nvidia,max-disp-clk-rate-khz has invalid value\n");
+        status = NV_ERR_GENERIC;
+        goto done;
+    }
+
+    /* Parse hub clock max rate for its parent passed by UEFI */
+    ret = of_property_read_u32(np, "nvidia,max-hub-clk-rate-khz", &value);
+    if (ret == 0)
+    {
+        nv->clocks.max_hubclk_rate_using_sppll0clkoutbkhz = value;
+    }
+    else if (ret == -EINVAL)
+    {
+        nv_printf(NV_DBG_INFO, "NVRM: nv_platform_get_disp_clocks_max_rate, nvidia,max-hub-clk-rate-khz not specified under display node\n");
+    }
+    else
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_get_disp_clocks_max_rate, nvidia,max-hub-clk-rate-khz has invalid value\n");
+        status = NV_ERR_GENERIC;
+        goto done;
+    }
+
+done:
+    return status;
+}
+
 static int nv_platform_register_mapping_devs(struct platform_device *plat_dev,
                                              nv_state_t *nv)
 {
@@ -847,6 +894,14 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     if (status != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_device_display_probe: parsing ISO/NISO StreamIDs failed\n");
+        goto err_release_mem_region_regs;
+    }
+
+    // Parse Display Clocks max rates passed by UEFI through DT
+    status = nv_platform_get_disp_clocks_max_rate(plat_dev, nv);
+    if (status != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: nv_platform_device_display_probe: parsing display clocks max rates failed\n");
         goto err_release_mem_region_regs;
     }
 
@@ -1066,14 +1121,6 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     of_property_read_string(nvl->dev->of_node, "nvidia,backlight-name",
                             &nvl->backlight.device_name);
 
-    /*
-     * TODO bug 2100708: the fake domain is used to opt out of some RM paths
-     *                   that cause issues otherwise, see the bug for details.
-     */
-    nv->pci_info.domain    = 2;
-    nv->pci_info.bus       = 0;
-    nv->pci_info.slot      = 0;
-
     num_probed_nv_devices++;
 
     if (!nv_lock_init_locks(sp, nv))
@@ -1085,6 +1132,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     nvl->safe_to_mmap = NV_TRUE;
     INIT_LIST_HEAD(&nvl->open_files);
     NV_SPIN_LOCK_INIT(&nvl->soc_isr_lock);
+    NV_SPIN_LOCK_INIT(&nvl->soc_isr_info_lock);
 
     if (!rm_init_private_state(sp, nv))
     {
@@ -1108,15 +1156,14 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
      * may discover a partially initialized nvl object in the list
      */
     LOCK_NV_LINUX_DEVICES();
-
-    if (nv_linux_add_device_locked(nvl) != 0)
+    if (nv_linux_assign_minor_locked(nvl) != 0)
     {
         UNLOCK_NV_LINUX_DEVICES();
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to add device\n");
+        nv_printf(NV_DBG_ERRORS, "NVRM: failed to assign minor\n");
         rc = -ENODEV;
         goto err_stop_open_q;
     }
-
+    nv_linux_add_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
 
     rm_set_rm_firmware_requested(sp, nv);
@@ -1163,6 +1210,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
 
 err_remove_device:
     LOCK_NV_LINUX_DEVICES();
+    nv_linux_remove_minor_locked(nvl);
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
 err_stop_open_q:
@@ -1230,6 +1278,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
 
     LOCK_NV_LINUX_DEVICES();
 
+    nv_linux_remove_minor_locked(nvl);
     nv_linux_remove_device_locked(nvl);
 
     /*
@@ -1245,7 +1294,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
 
     nv = NV_STATE_PTR(nvl);
 
-    if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_OPEN))
+    if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_INITIALIZED))
     {
         nv_acpi_unregister_notifier(nvl);
         if (nv->flags & NV_FLAG_PERSISTENT_SW_STATE)
@@ -1548,3 +1597,175 @@ NvBool nv_get_hdcp_enabled(nv_state_t *nv)
 
     return NV_FALSE;
 }
+
+#if defined(CONFIG_OF)
+
+// Global framebuffer cache structure
+typedef struct {
+    NvBool dt_parsed;
+    NvBool dt_success;
+    NvU64 physical_address;
+    NvU32 fb_width;
+    NvU32 fb_height;
+    NvU32 fb_depth;
+    NvU32 fb_pitch;
+    NvU64 fb_size;
+} screen_info_cache_t;
+
+// Global framebuffer cache instance
+static screen_info_cache_t g_screen_info_cache = {
+    .dt_parsed = NV_FALSE,
+    .dt_success = NV_FALSE,
+    .physical_address = 0,
+    .fb_width = 0,
+    .fb_height = 0,
+    .fb_depth = 0,
+    .fb_pitch = 0,
+    .fb_size = 0
+};
+
+NV_STATUS nv_platform_get_screen_info_dt(
+    NvU64 *pPhysicalAddress,
+    NvU32       *pFbWidth,
+    NvU32       *pFbHeight,
+    NvU32       *pFbDepth,
+    NvU32       *pFbPitch,
+    NvU64       *pFbSize
+)
+{
+    //
+    // Try to get the framebuffer information from device tree simple-framebuffer node.
+    // This is particularly useful for Tegra platforms where the bootloader
+    // sets up a simple framebuffer via device tree.
+    //
+
+    struct device_node *fb_node;
+    struct device_node *mem_node;
+    struct resource res;
+    u32 width, height, stride;
+    const char *format;
+    int ret;
+
+    if (g_screen_info_cache.dt_parsed)
+    {
+        if (g_screen_info_cache.dt_success)
+        {
+            *pPhysicalAddress = g_screen_info_cache.physical_address;
+            *pFbWidth = g_screen_info_cache.fb_width;
+            *pFbHeight = g_screen_info_cache.fb_height;
+            *pFbDepth = g_screen_info_cache.fb_depth;
+            *pFbPitch = g_screen_info_cache.fb_pitch;
+            *pFbSize = g_screen_info_cache.fb_size;
+            return NV_OK;
+        }
+        else
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
+    g_screen_info_cache.dt_parsed = NV_TRUE;
+
+    // Look for simple-framebuffer node in chosen
+    fb_node = of_find_node_by_path("/chosen/framebuffer");
+    if (fb_node == NULL)
+    {
+        // Alternative path for some platforms
+        for_each_compatible_node(fb_node, NULL, "simple-framebuffer")
+        {
+            nv_printf(NV_DBG_INFO, "NVRM: Found simple-framebuffer compatible node: %s\n",
+                        fb_node->full_name ? fb_node->full_name : "unknown");
+            if (of_property_read_bool(fb_node, "status") &&
+                !strcmp(of_get_property(fb_node, "status", NULL), "disabled"))
+            {
+                nv_printf(NV_DBG_INFO, "NVRM: Skipping disabled framebuffer node\n");
+                of_node_put(fb_node);
+                continue;
+            }
+            break;
+        }
+    }
+    else
+    {
+        nv_printf(NV_DBG_INFO, "NVRM: Found framebuffer node in /chosen/framebuffer\n");
+    }
+
+    if (fb_node != NULL)
+    {
+        nv_printf(NV_DBG_INFO, "NVRM: Processing framebuffer node: %s\n",
+                    fb_node->full_name ? fb_node->full_name : "unknown");
+        // Get memory region
+        mem_node = of_parse_phandle(fb_node, "memory-region", 0);
+        if (mem_node != NULL)
+        {
+            nv_printf(NV_DBG_INFO, "NVRM: Found memory-region: %s\n",
+                        mem_node->full_name ? mem_node->full_name : "unknown");
+            ret = of_address_to_resource(mem_node, 0, &res);
+            of_node_put(mem_node);
+            if (ret == 0)
+            {
+                nv_printf(NV_DBG_INFO, "NVRM: Memory region: start=0x%llx, size=0x%llx\n",
+                            (NvU64)res.start, (NvU64)resource_size(&res));
+                // Get display parameters
+                if (!of_property_read_u32(fb_node, "width", &width) &&
+                    !of_property_read_u32(fb_node, "height", &height) &&
+                    !of_property_read_u32(fb_node, "stride", &stride) &&
+                    !of_property_read_string(fb_node, "format", &format))
+                {
+                    // Calculate depth from format
+                    u32 depth = 32; // default
+                    if (!strcmp(format, "r5g6b5") || !strcmp(format, "r5g5b5a1") ||
+                        !strcmp(format, "x1r5g5b5") || !strcmp(format, "a1r5g5b5"))
+                    {
+                        depth = 16;
+                    }
+                    else if (!strcmp(format, "r8g8b8"))
+                    {
+                        depth = 24;
+                    }
+                    nv_printf(NV_DBG_INFO, "NVRM: Found simple-framebuffer in DT: %dx%d@%d, addr=0x%llx, size=0x%llx, stride=%d, format=%s\n",
+                                width, height, depth, (NvU64)res.start, (NvU64)resource_size(&res), stride, format);
+
+                    g_screen_info_cache.dt_success = NV_TRUE;
+
+                    g_screen_info_cache.physical_address = res.start;
+                    g_screen_info_cache.fb_width = width;
+                    g_screen_info_cache.fb_height = height;
+                    g_screen_info_cache.fb_depth = depth;
+                    g_screen_info_cache.fb_pitch = stride;
+                    g_screen_info_cache.fb_size = resource_size(&res);
+
+                    *pPhysicalAddress = g_screen_info_cache.physical_address;
+                    *pFbWidth = g_screen_info_cache.fb_width;
+                    *pFbHeight = g_screen_info_cache.fb_height;
+                    *pFbDepth = g_screen_info_cache.fb_depth;
+                    *pFbPitch = g_screen_info_cache.fb_pitch;
+                    *pFbSize = g_screen_info_cache.fb_size;
+
+                    of_node_put(fb_node);
+                    return NV_OK;
+                }
+                else
+                {
+                    nv_printf(NV_DBG_ERRORS, "NVRM: Failed to read display parameters from DT\n");
+                }
+            }
+            else
+            {
+                nv_printf(NV_DBG_ERRORS, "NVRM: Failed to convert memory region to resource: %d\n", ret);
+            }
+        }
+        else
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: No memory-region property found\n");
+        }
+        of_node_put(fb_node);
+    }
+    else
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: No simple-framebuffer node found - fb_node is NULL\n");
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
+}
+#endif // CONFIG_OF

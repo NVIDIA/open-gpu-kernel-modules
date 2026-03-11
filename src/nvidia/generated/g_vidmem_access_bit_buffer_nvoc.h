@@ -46,7 +46,7 @@ extern "C" {
 
 #include "gpu/gpu.h"
 #include "gpu/gpu_resource.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "ctrl/ctrlc763.h"
 #include "class/clc863.h"
 
@@ -169,13 +169,9 @@ struct NVOC_METADATA__VidmemAccessBitBuffer {
     const struct NVOC_VTABLE__VidmemAccessBitBuffer vtable;
 };
 
-#ifndef __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__
-#define __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__
-typedef struct VidmemAccessBitBuffer VidmemAccessBitBuffer;
-#endif /* __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VidmemAccessBitBuffer
-#define __nvoc_class_id_VidmemAccessBitBuffer 0xebb6da
+#define __nvoc_class_id_VidmemAccessBitBuffer 0xebb6dau
+typedef struct VidmemAccessBitBuffer VidmemAccessBitBuffer;
 #endif /* __nvoc_class_id_VidmemAccessBitBuffer */
 
 // Casting support
@@ -193,9 +189,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VidmemAccessBitBuffer;
 
 NV_STATUS __nvoc_objCreateDynamic_VidmemAccessBitBuffer(VidmemAccessBitBuffer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VidmemAccessBitBuffer(VidmemAccessBitBuffer**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VidmemAccessBitBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VidmemAccessBitBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VidmemAccessBitBuffer(VidmemAccessBitBuffer**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VidmemAccessBitBuffer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VidmemAccessBitBuffer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -205,10 +201,10 @@ static inline NV_STATUS vidmemAccessBitBufConstructHelper(struct VidmemAccessBit
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_vidmem_access_bit_buffer_h_disabled
-#define vidmemAccessBitBufConstructHelper(pVidmem, pCallContext, pParams) vidmemAccessBitBufConstructHelper_56cd7a(pVidmem, pCallContext, pParams)
+#define vidmemAccessBitBufConstructHelper(pVidmem, pCallContext, pParams) vidmemAccessBitBufConstructHelper_ac1694(pVidmem, pCallContext, pParams)
 #endif // __nvoc_vidmem_access_bit_buffer_h_disabled
 
-#define __nvoc_vidmemAccessBitBufDestruct(pVidmemAccessBitBuffer) vidmemAccessBitBufDestruct_b3696a(pVidmemAccessBitBuffer)
+#define __nvoc_vidmemAccessBitBufDestruct(pVidmemAccessBitBuffer) vidmemAccessBitBufDestruct_d44104(pVidmemAccessBitBuffer)
 
 NV_STATUS vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer, NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS *pParams);
 #ifdef __nvoc_vidmem_access_bit_buffer_h_disabled
@@ -405,20 +401,24 @@ static inline NV_STATUS vidmemAccessBitBufGetOrAllocNotifShare_DISPATCH(struct V
     return pNotifier->__nvoc_metadata_ptr->vtable.__vidmemAccessBitBufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS vidmemAccessBitBufConstructHelper_56cd7a(struct VidmemAccessBitBuffer *pVidmem, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+NV_STATUS vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer, NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS *pParams);
+
+// HAL method declarations without bodies
+// Inline HAL method definitions
+static inline NV_STATUS vidmemAccessBitBufConstructHelper_ac1694(struct VidmemAccessBitBuffer *pVidmem, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
     return NV_OK;
 }
 
-
-static inline void vidmemAccessBitBufDestruct_b3696a(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer) {
+static inline void vidmemAccessBitBufDestruct_d44104(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer){
     return;
 }
 
-
-NV_STATUS vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer, NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS *pParams);
-
-static inline NV_STATUS __nvoc_vidmemAccessBitBufConstruct(struct VidmemAccessBitBuffer *arg_pVidmemAccessBitBuffer, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return vidmemAccessBitBufConstructHelper(arg_pVidmemAccessBitBuffer, arg_pCallContext, arg_pParams);
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_vidmemAccessBitBufConstruct(struct VidmemAccessBitBuffer *pVidmemAccessBitBuffer, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return vidmemAccessBitBufConstructHelper(pVidmemAccessBitBuffer, pCallContext, pParams);
 }
 
 #undef PRIVATE_FIELD

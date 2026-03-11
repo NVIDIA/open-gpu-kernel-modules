@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -231,6 +231,16 @@ void portUtilExDelayMs(NvU32 milliseconds);
  * chips.
  */
 PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void);
+#endif
+
+#if NVCPU_IS_AARCH64 && !defined(NV_MODS)
+/**
+ * @brief Gets the ARM architectural timer frequency.
+ *
+ * @note This function reads the CNTFRQ_EL0 register which contains the
+ * frequency of the ARM architectural timer in Hz.
+ */
+PORT_UTIL_INLINE NvU64 portUtilExReadArchTimerFreq(void);
 #endif
 
 #if NVCPU_IS_FAMILY_X86 && !defined(NV_MODS) && PORT_IS_MODULE_SUPPORTED(atomic)

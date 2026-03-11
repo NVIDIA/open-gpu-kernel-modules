@@ -197,6 +197,7 @@ typedef NV_STATUS      RpcRestoreHibernationData(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlFlaSetupInstanceMemBlock(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlInternalSriovPromotePmaStream(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlFbGetFsInfo(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcInitGspTraceCrashBuffer(POBJGPU, POBJRPC, NvU64, NvU32);
 typedef NV_STATUS      RpcCtrlSetChannelInterleaveLevel(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlDbgResumeContext(POBJGPU, POBJRPC, NvHandle, NvHandle);
 typedef NV_STATUS      RpcAllocRoot(POBJGPU, POBJRPC, NvHandle);
@@ -353,6 +354,7 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlFlaSetupInstanceMemBlock  *rpcCtrlFlaSetupInstanceMemBlock; /* NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK */
     RpcCtrlInternalSriovPromotePmaStream  *rpcCtrlInternalSriovPromotePmaStream; /* CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM */
     RpcCtrlFbGetFsInfo          *rpcCtrlFbGetFsInfo;          /* CTRL_FB_GET_FS_INFO */
+    RpcInitGspTraceCrashBuffer  *rpcInitGspTraceCrashBuffer;  /* INIT_GSP_TRACE_CRASH_BUFFER */
     RpcCtrlSetChannelInterleaveLevel  *rpcCtrlSetChannelInterleaveLevel; /* CTRL_SET_CHANNEL_INTERLEAVE_LEVEL */
     RpcCtrlDbgResumeContext     *rpcCtrlDbgResumeContext;     /* CTRL_DBG_RESUME_CONTEXT */
     RpcAllocRoot                *rpcAllocRoot;                /* ALLOC_ROOT */
@@ -627,6 +629,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlInternalSriovPromotePmaStream(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlFbGetFsInfo_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlFbGetFsInfo(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcInitGspTraceCrashBuffer_HAL(_pGpu, _pRpc, _arg0, _arg1)  \
+        (_pRpc)->_hal.rpcInitGspTraceCrashBuffer(_pGpu, _pRpc, _arg0, _arg1)
 #define rpcCtrlSetChannelInterleaveLevel_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlSetChannelInterleaveLevel(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlDbgResumeContext_HAL(_pGpu, _pRpc, _arg0, _arg1)  \

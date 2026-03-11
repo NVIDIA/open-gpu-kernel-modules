@@ -29,13 +29,15 @@
 #include "vgpu/rpc.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "fsp/fsp_nvdm_format.h"
+#include "kernel/gpu/bus/kern_bus.h"
+#include "kernel/gpu/mc/kernel_mc.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
 #include "published/hopper/gh100/dev_gc6_island_addendum.h"
 #include "published/hopper/gh100/dev_pmc.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
-#include "published/hopper/gh100/pri_nv_xal_ep.h"
+#include "published/hopper/gh100/dev_nv_xal_ep_zb.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_xtl_ep_pri.h"
 
@@ -252,7 +254,7 @@ gpuHandleSecFault_GH100
     // handleGpuLost first to setGpuDisconnectedProperties so that another reg read does not
     // happen when the notifier is sent below.
     //
-    osHandleGpuLost(pGpu);
+    osHandleGpuLost(pGpu, NV_FALSE);
 
     //
     // Send SEC_FAULT notification. This should tells any MODS test testing for this
@@ -282,27 +284,28 @@ gpuHandleSanityCheckRegReadError_GH100
 )
 {
     // SEC_FAULT possibly detected, confirm by reading NV_PMC_BOOT_0
-    if ((value == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
-        (osGpuReadReg032(pGpu, NV_PMC_BOOT_0) == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT))
+    if ((value == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
+        (kmcReadPmcBoot0_HAL(pGpu, GPU_GET_KERNEL_MC(pGpu)) == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT))
     {
         gpuHandleSecFault_HAL(pGpu);
     }
     else
     {
         NvU32 intr = ~0U;
+        NvU32 xalIntrReg = NV_XAL_BASE_ADDRESS + NV_XAL_EP_ZB_INTR_0;
         {
             //
             // Read the interrupt status using the direct OS reg read call so we don't recurs
             // if we happen to see GPU_READ_PRI_ERROR_CODE there as well (bug 799876)
             //
-            intr = osGpuReadReg032(pGpu, NV_XAL_EP_INTR_0);
+            intr = osGpuReadReg032(pGpu, xalIntrReg);
         }
 
 
         // To be sure, filter this down further by checking the related pri interrupts:
-        if (FLD_TEST_DRF(_XAL_EP, _INTR_0, _PRI_FECSERR, _PENDING, intr) ||
-            FLD_TEST_DRF(_XAL_EP, _INTR_0, _PRI_REQ_TIMEOUT, _PENDING, intr) ||
-            FLD_TEST_DRF(_XAL_EP, _INTR_0, _PRI_RSP_TIMEOUT, _PENDING, intr))
+        if (FLD_TEST_DRF(_XAL_EP_ZB, _INTR_0, _PRI_FECSERR, _PENDING, intr) ||
+            FLD_TEST_DRF(_XAL_EP_ZB, _INTR_0, _PRI_REQ_TIMEOUT, _PENDING, intr) ||
+            FLD_TEST_DRF(_XAL_EP_ZB, _INTR_0, _PRI_RSP_TIMEOUT, _PENDING, intr))
         {
 #if NV_PRINTF_STRINGS_ALLOWED
             const char *errorString = "Unknown SYS_PRI_ERROR_CODE";
@@ -381,6 +384,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
@@ -614,4 +618,36 @@ gpuIsGspToBootInInstInSysMode_GH100
 {
 
     return NV_FALSE;
+}
+
+/*!
+ *  @brief Get XTL base address
+ *
+ *  @param[in]  pGpu    GPU object pointer
+ *
+ *  @return NV_XTL_BASE_ADDRESS
+ */
+NvU32
+gpuGetXtlBaseAddr_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    return NV_XTL_BASE_ADDRESS;
+}
+
+/*!
+ *  @brief Get FUSE base address
+ *
+ *  @param[in]  pGpu    GPU object pointer
+ *
+ *  @return NV_FUSE0_PRI_BASE
+ */
+NvU32
+gpuGetPrimaryFuseBaseAddr_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    return NV_FUSE0_PRI_BASE;
 }

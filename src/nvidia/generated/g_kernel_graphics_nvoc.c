@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xea3fa9 = 1;
+char __nvoc_class_id_uniqueness_check__ea3fa9 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphics;
@@ -59,19 +59,18 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgraphicsStateInitUnlocked(struct OBJGPU *
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgraphicsStatePreLoad(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate, NvU32 arg3);    // this
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgraphicsStatePostUnload(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate, NvU32 arg3);    // this
 
+// Class-specific details for KernelGraphics
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphics = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelGraphics),
-        /*classId=*/            classId(KernelGraphics),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelGraphics),
+    .classInfo.classId =            classId(KernelGraphics),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelGraphics",
+    .classInfo.name =               "KernelGraphics",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelGraphics,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelGraphics,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelGraphics
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelGraphics,
+    .pCastInfo =          &__nvoc_castinfo__KernelGraphics,
+    .pExportInfo =        &__nvoc_export_info__KernelGraphics
 };
 
 
@@ -190,12 +189,12 @@ NV_STATUS __nvoc_down_thunk_KernelGraphics_intrservServiceNotificationInterrupt(
     return kgraphicsServiceNotificationInterrupt(arg1, (struct KernelGraphics *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphics, __nvoc_base_IntrService)), arg3);
 }
 
-// kgraphicsClearInterrupt: virtual halified (2 hals) override (intrserv) base (intrserv)
+// kgraphicsClearInterrupt: virtual halified (2 hals) override (intrserv) base (intrserv) body
 NvBool __nvoc_down_thunk_KernelGraphics_intrservClearInterrupt(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceClearInterruptArguments *arg3) {
     return kgraphicsClearInterrupt(arg1, (struct KernelGraphics *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphics, __nvoc_base_IntrService)), arg3);
 }
 
-// kgraphicsServiceInterrupt: virtual halified (2 hals) override (intrserv) base (intrserv)
+// kgraphicsServiceInterrupt: virtual halified (2 hals) override (intrserv) base (intrserv) body
 NvU32 __nvoc_down_thunk_KernelGraphics_intrservServiceInterrupt(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceServiceInterruptArguments *arg3) {
     return kgraphicsServiceInterrupt(arg1, (struct KernelGraphics *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphics, __nvoc_base_IntrService)), arg3);
 }
@@ -236,20 +235,26 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgraphicsStatePostUnload(struct OBJGPU *pG
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelGraphics = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelGraphics object.
 void __nvoc_kgraphicsDestruct(KernelGraphics*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_IntrService(IntrService*);
-void __nvoc_dtor_KernelGraphics(KernelGraphics *pThis) {
+void __nvoc_dtor_KernelGraphics(KernelGraphics* pThis) {
+
+// Call destructor.
     __nvoc_kgraphicsDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -264,8 +269,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal field -- bCtxswLoggingSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bCtxswLoggingSupported = NV_TRUE;
     }
@@ -278,7 +283,7 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     pThis->bOverrideContextBuffersToGpuCached = NV_FALSE;
 
     // Hal field -- bPeFiroBufferEnabled
-    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000f8UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 */ 
     {
         pThis->bPeFiroBufferEnabled = NV_TRUE;
     }
@@ -297,8 +302,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
 
     // Hal field -- bPerSubcontextContextHeaderSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bPerSubcontextContextHeaderSupported = NV_TRUE;
     }
@@ -309,8 +314,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
 
     // Hal field -- bSetContextBuffersGPUPrivileged
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bSetContextBuffersGPUPrivileged = NV_TRUE;
     }
@@ -321,8 +326,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
 
     // Hal field -- bUcodeSupportsPrivAccessMap
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bUcodeSupportsPrivAccessMap = NV_TRUE;
     }
@@ -333,8 +338,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
 
     // Hal field -- bRtvCbSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bRtvCbSupported = NV_TRUE;
     }
@@ -351,8 +356,8 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
     else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
         {
             pThis->bFecsRecordUcodeSeqnoSupported = NV_TRUE;
         }
@@ -382,22 +387,28 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner
     }
 }
 
-NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_IntrService(IntrService* );
+
+// Construct KernelGraphics object.
+NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE *);
+NV_STATUS __nvoc_ctor_IntrService(IntrService *);
 NV_STATUS __nvoc_ctor_KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelGraphics_fail_OBJENGSTATE;
     status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
     if (status != NV_OK) goto __nvoc_ctor_KernelGraphics_fail_IntrService;
+
+    // Initialize data fields.
     __nvoc_init_dataField_KernelGraphics(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_KernelGraphics_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelGraphics_fail_IntrService:
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
 __nvoc_ctor_KernelGraphics_fail_OBJENGSTATE:
 __nvoc_ctor_KernelGraphics_exit:
-
     return status;
 }
 
@@ -415,20 +426,20 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // kgraphicsAllocGrGlobalCtxBuffers -- halified (2 hals)
+    // kgraphicsAllocGrGlobalCtxBuffers -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgraphicsAllocGrGlobalCtxBuffers__ = &kgraphicsAllocGrGlobalCtxBuffers_46f6a7;
+        pThis->__kgraphicsAllocGrGlobalCtxBuffers__ = &kgraphicsAllocGrGlobalCtxBuffers_395e98;
     }
     else
     {
         pThis->__kgraphicsAllocGrGlobalCtxBuffers__ = &kgraphicsAllocGrGlobalCtxBuffers_TU102;
     }
 
-    // kgraphicsTeardownBug4208224State -- halified (3 hals)
+    // kgraphicsTeardownBug4208224State -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_b3696a;
+        pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_d44104;
     }
     else
     {
@@ -439,11 +450,11 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         // default
         else
         {
-            pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_b3696a;
+            pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_d44104;
         }
     }
 
-    // kgraphicsCreateBug4208224Channel -- halified (2 hals)
+    // kgraphicsCreateBug4208224Channel -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000e0UL) )) /* ChipHal: TU102 | TU104 | TU106 */ 
     {
         pThis->__kgraphicsCreateBug4208224Channel__ = &kgraphicsCreateBug4208224Channel_TU102;
@@ -451,13 +462,13 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     // default
     else
     {
-        pThis->__kgraphicsCreateBug4208224Channel__ = &kgraphicsCreateBug4208224Channel_56cd7a;
+        pThis->__kgraphicsCreateBug4208224Channel__ = &kgraphicsCreateBug4208224Channel_ac1694;
     }
 
-    // kgraphicsInitializeBug4208224WAR -- halified (3 hals)
+    // kgraphicsInitializeBug4208224WAR -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgraphicsInitializeBug4208224WAR__ = &kgraphicsInitializeBug4208224WAR_56cd7a;
+        pThis->__kgraphicsInitializeBug4208224WAR__ = &kgraphicsInitializeBug4208224WAR_ac1694;
     }
     else
     {
@@ -468,14 +479,14 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         // default
         else
         {
-            pThis->__kgraphicsInitializeBug4208224WAR__ = &kgraphicsInitializeBug4208224WAR_56cd7a;
+            pThis->__kgraphicsInitializeBug4208224WAR__ = &kgraphicsInitializeBug4208224WAR_ac1694;
         }
     }
 
-    // kgraphicsIsBug4208224WARNeeded -- halified (3 hals)
+    // kgraphicsIsBug4208224WARNeeded -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgraphicsIsBug4208224WARNeeded__ = &kgraphicsIsBug4208224WARNeeded_3dd2c9;
+        pThis->__kgraphicsIsBug4208224WARNeeded__ = &kgraphicsIsBug4208224WARNeeded_d69453;
     }
     else
     {
@@ -486,14 +497,14 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         // default
         else
         {
-            pThis->__kgraphicsIsBug4208224WARNeeded__ = &kgraphicsIsBug4208224WARNeeded_3dd2c9;
+            pThis->__kgraphicsIsBug4208224WARNeeded__ = &kgraphicsIsBug4208224WARNeeded_d69453;
         }
     }
 
-    // kgraphicsAllocGlobalCtxBuffers -- halified (2 hals)
+    // kgraphicsAllocGlobalCtxBuffers -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgraphicsAllocGlobalCtxBuffers__ = &kgraphicsAllocGlobalCtxBuffers_46f6a7;
+        pThis->__kgraphicsAllocGlobalCtxBuffers__ = &kgraphicsAllocGlobalCtxBuffers_395e98;
     }
     else
     {
@@ -510,7 +521,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsLoadStaticInfo__ = &kgraphicsLoadStaticInfo_KERNEL;
     }
 
-    // kgraphicsClearInterrupt -- virtual halified (2 hals) override (intrserv) base (intrserv)
+    // kgraphicsClearInterrupt -- virtual halified (2 hals) override (intrserv) base (intrserv) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
         pThis->__kgraphicsClearInterrupt__ = &kgraphicsClearInterrupt_5baef9;
@@ -520,7 +531,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsClearInterrupt__ = &kgraphicsClearInterrupt_GP100;
     }
 
-    // kgraphicsServiceInterrupt -- virtual halified (2 hals) override (intrserv) base (intrserv)
+    // kgraphicsServiceInterrupt -- virtual halified (2 hals) override (intrserv) base (intrserv) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
         pThis->__kgraphicsServiceInterrupt__ = &kgraphicsServiceInterrupt_5baef9;
@@ -530,10 +541,10 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsServiceInterrupt__ = &kgraphicsServiceInterrupt_GP100;
     }
 
-    // kgraphicsIsUnrestrictedAccessMapSupported -- halified (2 hals)
+    // kgraphicsIsUnrestrictedAccessMapSupported -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgraphicsIsUnrestrictedAccessMapSupported__ = &kgraphicsIsUnrestrictedAccessMapSupported_3dd2c9;
+        pThis->__kgraphicsIsUnrestrictedAccessMapSupported__ = &kgraphicsIsUnrestrictedAccessMapSupported_d69453;
     }
     // default
     else
@@ -541,10 +552,10 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsIsUnrestrictedAccessMapSupported__ = &kgraphicsIsUnrestrictedAccessMapSupported_PF;
     }
 
-    // kgraphicsGetFecsTraceRdOffset -- halified (3 hals)
+    // kgraphicsGetFecsTraceRdOffset -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgraphicsGetFecsTraceRdOffset__ = &kgraphicsGetFecsTraceRdOffset_4a4dee;
+        pThis->__kgraphicsGetFecsTraceRdOffset__ = &kgraphicsGetFecsTraceRdOffset_b2b553;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -555,7 +566,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsGetFecsTraceRdOffset__ = &kgraphicsGetFecsTraceRdOffset_GA100;
     }
 
-    // kgraphicsSetFecsTraceRdOffset -- halified (4 hals)
+    // kgraphicsSetFecsTraceRdOffset -- halified (4 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
         pThis->__kgraphicsSetFecsTraceRdOffset__ = &kgraphicsSetFecsTraceRdOffset_d44104;
@@ -564,7 +575,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     {
         pThis->__kgraphicsSetFecsTraceRdOffset__ = &kgraphicsSetFecsTraceRdOffset_GP100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgraphicsSetFecsTraceRdOffset__ = &kgraphicsSetFecsTraceRdOffset_GA100;
     }
@@ -573,7 +584,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsSetFecsTraceRdOffset__ = &kgraphicsSetFecsTraceRdOffset_GB100;
     }
 
-    // kgraphicsSetFecsTraceWrOffset -- halified (4 hals)
+    // kgraphicsSetFecsTraceWrOffset -- halified (4 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
         pThis->__kgraphicsSetFecsTraceWrOffset__ = &kgraphicsSetFecsTraceWrOffset_d44104;
@@ -582,7 +593,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     {
         pThis->__kgraphicsSetFecsTraceWrOffset__ = &kgraphicsSetFecsTraceWrOffset_GP100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgraphicsSetFecsTraceWrOffset__ = &kgraphicsSetFecsTraceWrOffset_GA100;
     }
@@ -591,7 +602,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
         pThis->__kgraphicsSetFecsTraceWrOffset__ = &kgraphicsSetFecsTraceWrOffset_GB100;
     }
 
-    // kgraphicsSetFecsTraceHwEnable -- halified (4 hals)
+    // kgraphicsSetFecsTraceHwEnable -- halified (4 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
         pThis->__kgraphicsSetFecsTraceHwEnable__ = &kgraphicsSetFecsTraceHwEnable_d44104;
@@ -600,7 +611,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     {
         pThis->__kgraphicsSetFecsTraceHwEnable__ = &kgraphicsSetFecsTraceHwEnable_GP100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgraphicsSetFecsTraceHwEnable__ = &kgraphicsSetFecsTraceHwEnable_GA100;
     }
@@ -612,7 +623,7 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, GpuHal
     // kgraphicsIsCtxswLoggingEnabled -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgraphicsIsCtxswLoggingEnabled__ = &kgraphicsIsCtxswLoggingEnabled_920139;
+        pThis->__kgraphicsIsCtxswLoggingEnabled__ = &kgraphicsIsCtxswLoggingEnabled_354d57;
     }
     else
     {
@@ -651,62 +662,62 @@ void __nvoc_init__KernelGraphics(KernelGraphics *pThis, GpuHalspecOwner *pGpuhal
     __nvoc_init_funcTable_KernelGraphics(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    KernelGraphics *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    KernelGraphics *__nvoc_pThis;
     GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(KernelGraphics));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(KernelGraphics));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(KernelGraphics));
+    portMemSet(__nvoc_pThis, 0, sizeof(KernelGraphics));
 
-    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
+    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGraphics_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelGraphics(pThis, pGpuhalspecowner, pRmhalspecowner);
-    status = __nvoc_ctor_KernelGraphics(pThis, pGpuhalspecowner, pRmhalspecowner);
-    if (status != NV_OK) goto __nvoc_objCreate_KernelGraphics_cleanup;
+    __nvoc_init__KernelGraphics(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelGraphics(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelGraphics_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -715,29 +726,29 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics **ppThis, Dynamic *pPar
 __nvoc_objCreate_KernelGraphics_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(KernelGraphics));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(KernelGraphics));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_KernelGraphics(KernelGraphics **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_KernelGraphics(KernelGraphics **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_KernelGraphics(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_KernelGraphics(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

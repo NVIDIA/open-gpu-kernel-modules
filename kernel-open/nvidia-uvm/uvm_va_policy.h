@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2023 NVIDIA Corporation
+    Copyright (c) 2022-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -106,7 +106,7 @@ static bool uvm_va_policy_is_default(const uvm_va_policy_t *policy)
     return policy == &uvm_va_policy_default;
 }
 
-bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space_t *va_space);
+bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy);
 
 // Returns the uvm_va_policy_t containing addr or default policy if not found.
 // The va_block can be either a UVM or HMM va_block.

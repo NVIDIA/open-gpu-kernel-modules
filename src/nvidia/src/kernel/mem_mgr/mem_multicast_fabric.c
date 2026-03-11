@@ -81,7 +81,7 @@ typedef struct mem_multicast_fabric_gpu_nvlink_attr
 {
     NvU32   cliqueId;
     NvU64   bwModeEpoch;
-    NvU8    bwMode;
+    NvU16   bwMode;
 } MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR;
 
 typedef struct mem_multicast_fabric_gpu_info
@@ -264,7 +264,7 @@ _memMulticastFabricInitAttachEvent
     NvU64                        gpuFabricProbeHandle,
     NvU64                        key,
     NvU64                        bwModeEpoch,
-    NvU8                         bwMode,
+    NvU16                        bwMode,
     NvU32                        cliqueId,
     NvU16                        exportNodeId,
     NvU16                        index,
@@ -483,7 +483,7 @@ _memMulticastFabricDescriptorEnqueueWait
     pNode = listAppendNew(&pMulticastFabricDesc->waitingClientsList);
     if (pNode == NULL)
     {
-        if (pOsEvent != NULL)
+        if (pValidatedOsEvent != NULL)
             osDereferenceObjectCount(pValidatedOsEvent);
 
         return NV_ERR_NO_MEMORY;
@@ -1087,6 +1087,58 @@ _memMulticastFabricDescriptorFree
     fabricMulticastSetupCacheDelete(pFabric,
                                     pMulticastFabricDesc->inbandReqId);
 
+    //
+    // This block should be executed under pMulticastFabricModuleLock to
+    // make sure it is in sync with memorymulticastfabricTeamSetupResponseCallback().
+    //
+    // Otherwise, we might miss the fabricWakeUpThreadCallback() call if the
+    // memorymulticastfabricTeamSetupResponseCallback() searches the pWq in the
+    // cache before the pWq insertion by the freeing thread, causing the free
+    // thread to wait indefinitely.
+    //
+    // But today we take all GPU locks to sync these paths, so this race should
+    // not be hit.
+    //
+    if (pMulticastFabricDesc->bInbandReqInProgress)
+    {
+        THREAD_STATE_NODE *pThreadNode = NULL;
+        THREAD_STATE_FREE_CALLBACK freeCallback;
+
+        NV_ASSERT_OK(threadStateGetCurrent(&pThreadNode, NULL));
+
+        //
+        // In the process cleanup path or a deferred cleanup path, skip waiting on
+        // the clients which are being torn down. The process could be already in
+        // uninterruptible state at that point, and if for some reason GFM doesn't
+        // respond, we will be stuck indefinitely in the wait queue. Instead march
+        // on, and handle the cleanup later (see memorymulticastfabricTeamSetupResponseCallback)
+        // whenever GFM responds.
+        //
+        // This wait is really required for interruptible cases like NvRmFree(),
+        // to mimic a synchronous op.
+        //
+        if (!((pThreadNode->flags & THREAD_STATE_FLAGS_IS_EXITING) ||
+              (pThreadNode->flags & THREAD_STATE_FLAGS_IS_KERNEL_THREAD)))
+        {
+            OS_WAIT_QUEUE *pWq = NULL;
+            NV_ASSERT_OK(osAllocWaitQueue(&pWq));
+
+            if (pWq != NULL)
+            {
+                NV_ASSERT_OK(fabricMulticastCleanupCacheInsert(pFabric,
+                                            pMulticastFabricDesc->inbandReqId,
+                                            pWq));
+
+
+                freeCallback.pCb = fabricMulticastWaitOnTeamCleanupCallback;
+                freeCallback.pCbData = (void *)pMulticastFabricDesc->inbandReqId;
+
+                NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode,
+                                                              &freeCallback));
+            }
+        }
+    }
+
     // Now I am the only one holding the pMulticastFabricDesc, drop the locks.
     portSyncRwLockReleaseWrite(pMulticastFabricDesc->pLock);
     portSyncRwLockReleaseWrite(pFabric->pMulticastFabricModuleLock);
@@ -1123,46 +1175,6 @@ _memMulticastFabricDescriptorFree
 
         _memMulticastFabricSendInbandRequest(pNode->pGpu, pMulticastFabricDesc,
                                     MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
-    }
-
-    //
-    // In the process cleanup path or a deferred cleanup path, skip waiting on
-    // the clients which are being torn down. The process could be already in
-    // uninterruptible state at that point, and if for some reason GFM doesn't
-    // respond, we will be stuck indefinitely in the wait queue. Instead march
-    // on, and handle the cleanup later (see memorymulticastfabricTeamSetupResponseCallback)
-    // whenever GFM responds.
-    //
-    // This wait is really required for interruptible cases like NvRmFree(),
-    // to mimic a synchronous op.
-    //
-    if (pMulticastFabricDesc->bInbandReqInProgress)
-    {
-        THREAD_STATE_NODE *pThreadNode = NULL;
-        THREAD_STATE_FREE_CALLBACK freeCallback;
-
-        NV_ASSERT_OK(threadStateGetCurrent(&pThreadNode, NULL));
-
-        if (!((pThreadNode->flags & THREAD_STATE_FLAGS_IS_EXITING) ||
-              (pThreadNode->flags & THREAD_STATE_FLAGS_IS_KERNEL_THREAD)))
-        {
-            OS_WAIT_QUEUE *pWq = NULL;
-            NV_ASSERT_OK(osAllocWaitQueue(&pWq));
-
-            if (pWq != NULL)
-            {
-                NV_ASSERT_OK(fabricMulticastCleanupCacheInsert(pFabric,
-                                            pMulticastFabricDesc->inbandReqId,
-                                            pWq));
-
-
-                freeCallback.pCb = fabricMulticastWaitOnTeamCleanupCallback;
-                freeCallback.pCbData = (void *)pMulticastFabricDesc->inbandReqId;
-
-                NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode,
-                                                              &freeCallback));
-            }
-        }
     }
 
     _memMulticastFabricGpuInfoRemove(pMulticastFabricDesc);
@@ -1794,7 +1806,7 @@ _memorymulticastfabricValidateNvlAttrCommon
 (
     MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR *pNvlAttr,
     NvU32                                 cliqueId,
-    NvU8                                  bwMode,
+    NvU16                                 bwMode,
     NvU64                                 bwModeEpoch
 )
 {
@@ -1824,7 +1836,7 @@ _memorymulticastfabricValidateNvlAttr
 (
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc,
     NvU32                            cliqueId,
-    NvU8                             bwMode,
+    NvU16                             bwMode,
     NvU64                            bwModeEpoch
 )
 {
@@ -2549,8 +2561,11 @@ _memorymulticastfabricCtrlDetachMem
 
     if (bRemoveInterMapping)
     {
-        refRemoveInterMapping(RES_GET_REF(pMemoryMulticastFabric),
-                              pAttachMemInfoNode->pInterMapping);
+        RsResourceRef *pMemoryMulticastFabricRef = RES_GET_REF(pMemoryMulticastFabric);
+        RsInterMapping *pInterMapping = pAttachMemInfoNode->pInterMapping;
+
+        refRemoveInterMapping(pMemoryMulticastFabricRef, pInterMapping, NV_FALSE);
+        refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
     }
 
     btreeUnlink(pNode, &pGpuInfo->pAttachMemInfoTree);
@@ -2691,6 +2706,7 @@ _memorymulticastfabricCtrlAttachMem
     MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE *pNode;
     NvU32 gpuMask = NVBIT(gpuGetInstance(pGpu));
     RsInterMapping *pInterMapping;
+    RsResourceRef *pMemoryMulticastFabricRef = RES_GET_REF(pMemoryMulticastFabric);
     if (!rmGpuGroupLockIsOwner(0, GPU_LOCK_GRP_MASK, &gpuMask))
         return NV_ERR_INVALID_LOCK_STATE;
 
@@ -2707,22 +2723,25 @@ _memorymulticastfabricCtrlAttachMem
 
     NV_ASSERT_OR_RETURN(pGpuInfo->bMcflaAlloc, NV_ERR_INVALID_STATE);
 
-    status = refAddInterMapping(RES_GET_REF(pMemoryMulticastFabric),
+    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(pMemoryMulticastFabricRef, &pInterMapping));
+
+    // No partial unmap supported
+    pInterMapping->size = 0;
+
+    status = refAddInterMapping(pMemoryMulticastFabricRef,
                                 RES_GET_REF(pPhysMemory),
+                                pParams->offset,
                                 RES_GET_REF(pSubdevice),
-                                &pInterMapping);
+                                pInterMapping);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
+        refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
         return status;
     }
 
     pInterMapping->flags = pParams->flags;
-    pInterMapping->dmaOffset = pParams->offset;
     pInterMapping->pMemDesc = pPhysMemDesc;
-
-    // No partial unmap supported
-    pInterMapping->size = 0;
 
     status = fabricvaspaceMapPhysMemdesc(pFabricVAS,
                                          pFabricMemDesc,
@@ -2769,7 +2788,8 @@ unmapVas:
     fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, pParams->offset, pParams->mapLength);
 
 removeIntermap:
-    refRemoveInterMapping(RES_GET_REF(pMemoryMulticastFabric), pInterMapping);
+    refRemoveInterMapping(pMemoryMulticastFabricRef, pInterMapping, NV_FALSE);
+    refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
 
     return status;
 }

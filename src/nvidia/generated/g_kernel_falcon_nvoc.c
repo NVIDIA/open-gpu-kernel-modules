@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xb6b1af = 1;
+char __nvoc_class_id_uniqueness_check__b6b1af = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFalcon;
@@ -38,7 +38,8 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelFalcon;
 // Down-thunk(s) to bridge KernelFalcon methods from ancestors (if any)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this);    // super
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCatEngine *arg_this);    // super
-void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // super
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog(struct CrashCatEngine *arg_this);    // super
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args);    // super
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriRead(struct CrashCatEngine *arg_this, NvU32 offset);    // super
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriWrite(struct CrashCatEngine *arg_this, NvU32 offset, NvU32 data);    // super
 void * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineMapBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc);    // super
@@ -53,7 +54,8 @@ NvU32 __nvoc_down_thunk_KernelFalcon_kcrashcatEngineMaskDmemAddr(struct OBJGPU *
 // Up-thunk(s) to bridge KernelFalcon methods to ancestors (if any)
 NvBool __nvoc_up_thunk_KernelCrashCatEngine_kflcnConfigured(struct KernelFalcon *arg_this);    // this
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload(struct KernelFalcon *arg_this);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // this
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog(struct KernelFalcon *arg_this);    // this
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args);    // this
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriRead(struct KernelFalcon *arg_this, NvU32 offset);    // this
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriWrite(struct KernelFalcon *arg_this, NvU32 offset, NvU32 data);    // this
 void * __nvoc_up_thunk_KernelCrashCatEngine_kflcnMapBufferDescriptor(struct KernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc);    // this
@@ -64,22 +66,21 @@ void __nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem(struct KernelFalcon *arg
 const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetScratchOffsets(struct KernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);    // this
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset(struct KernelFalcon *arg_this);    // this
 
+// Class-specific details for KernelFalcon
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
 //  kflcnResetHw
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFalcon = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelFalcon),
-        /*classId=*/            classId(KernelFalcon),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelFalcon),
+    .classInfo.classId =            classId(KernelFalcon),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelFalcon",
+    .classInfo.name =               "KernelFalcon",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelFalcon,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelFalcon
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__KernelFalcon,
+    .pExportInfo =        &__nvoc_export_info__KernelFalcon
 };
 
 
@@ -105,6 +106,9 @@ static const struct NVOC_METADATA__KernelFalcon __nvoc_metadata__KernelFalcon = 
     .vtable.__kflcnUnload__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineUnload__ = &kcrashcatEngineUnload_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineUnload__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload,    // virtual
+    .vtable.__kflcnResetLog__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
+    .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineResetLog__ = &kcrashcatEngineResetLog_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
+    .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineResetLog__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog,    // pure virtual
     .vtable.__kflcnVprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineVprintf__ = &kcrashcatEngineVprintf_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineVprintf__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf,    // pure virtual
@@ -123,8 +127,8 @@ static const struct NVOC_METADATA__KernelFalcon __nvoc_metadata__KernelFalcon = 
     .vtable.__kflcnSyncBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnSyncBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineSyncBufferDescriptor__ = &kcrashcatEngineSyncBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineSyncBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor,    // pure virtual
-    .vtable.__kflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_2fced3,    // virtual halified (singleton optimized)
+    .vtable.__kflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine) body
+    .metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_f2d351,    // virtual halified (singleton optimized) body
     .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetScratchOffsets__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets,    // pure virtual
     .metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetWFL0Offset__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset,    // pure virtual
 };
@@ -158,7 +162,7 @@ NvU32 __nvoc_down_thunk_KernelFalcon_kcrashcatEngineMaskDmemAddr(struct OBJGPU *
 }
 
 
-// 12 up-thunk(s) defined to bridge methods in KernelFalcon to superclasses
+// 13 up-thunk(s) defined to bridge methods in KernelFalcon to superclasses
 
 // kflcnConfigured: virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
 NvBool __nvoc_up_thunk_KernelCrashCatEngine_kflcnConfigured(struct KernelFalcon *arg_this) {
@@ -170,9 +174,14 @@ void __nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload(struct KernelFalcon *arg_t
     kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)));
 }
 
+// kflcnResetLog: virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog(struct KernelFalcon *arg_this) {
+    kcrashcatEngineResetLog((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)));
+}
+
 // kflcnVprintf: virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), bReportStart, fmt, args);
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), errorId, fmt, args);
 }
 
 // kflcnPriRead: virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
@@ -200,22 +209,22 @@ void __nvoc_up_thunk_KernelCrashCatEngine_kflcnSyncBufferDescriptor(struct Kerne
     kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), pBufDesc, offset, size);
 }
 
-// kflcnReadDmem: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+// kflcnReadDmem: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnReadDmem(struct KernelFalcon *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
     kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
 }
 
-// kflcnReadEmem: virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine)
+// kflcnReadEmem: virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine) body
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem(struct KernelFalcon *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
     kcrashcatEngineReadEmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
 }
 
-// kflcnGetScratchOffsets: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+// kflcnGetScratchOffsets: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
 const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetScratchOffsets(struct KernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
     return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)), scratchGroupId);
 }
 
-// kflcnGetWFL0Offset: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+// kflcnGetWFL0Offset: virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset(struct KernelFalcon *arg_this) {
     return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelFalcon, __nvoc_base_KernelCrashCatEngine)));
 }
@@ -223,16 +232,20 @@ NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset(struct KernelFalco
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelFalcon = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelFalcon object.
 void __nvoc_dtor_KernelCrashCatEngine(KernelCrashCatEngine*);
-void __nvoc_dtor_KernelFalcon(KernelFalcon *pThis) {
+void __nvoc_dtor_KernelFalcon(KernelFalcon* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_KernelCrashCatEngine(&pThis->__nvoc_base_KernelCrashCatEngine);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -249,17 +262,23 @@ void __nvoc_init_dataField_KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pG
     pThis->riscvMode = ((NvTristate)2);
 }
 
-NV_STATUS __nvoc_ctor_KernelCrashCatEngine(KernelCrashCatEngine* , GpuHalspecOwner* );
+
+// Construct KernelFalcon object.
+NV_STATUS __nvoc_ctor_KernelCrashCatEngine(KernelCrashCatEngine *, GpuHalspecOwner *pGpuhalspecowner);
 NV_STATUS __nvoc_ctor_KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_KernelCrashCatEngine(&pThis->__nvoc_base_KernelCrashCatEngine, pGpuhalspecowner);
     if (status != NV_OK) goto __nvoc_ctor_KernelFalcon_fail_KernelCrashCatEngine;
+
+    // Initialize data fields.
     __nvoc_init_dataField_KernelFalcon(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_KernelFalcon_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelFalcon_fail_KernelCrashCatEngine:
 __nvoc_ctor_KernelFalcon_exit:
-
     return status;
 }
 
@@ -398,7 +417,7 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
         {
             pThis->__kflcnIsRiscvSelected__ = &kflcnIsRiscvSelected_TU102;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__kflcnIsRiscvSelected__ = &kflcnIsRiscvSelected_GA102;
         }
@@ -435,13 +454,13 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_b3696a;
+            pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_d44104;
         }
         else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
         {
             pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_TU102;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_GA102;
         }
@@ -537,7 +556,7 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
         // default
         else
         {
-            pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_56cd7a;
+            pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_ac1694;
         }
     }
 
@@ -550,7 +569,7 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_56cd7a;
+            pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_ac1694;
         }
         else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
         {
@@ -645,7 +664,7 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T264D */ 
         {
-            pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_b3696a;
+            pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_d44104;
         }
         else
         {
@@ -696,87 +715,87 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     }
 
     // kflcnRiscvIcdWaitForIdle -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdWaitForIdle__ = &kflcnRiscvIcdWaitForIdle_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdWaitForIdle__ = &kflcnRiscvIcdWaitForIdle_46f6a7;
+        pThis->__kflcnRiscvIcdWaitForIdle__ = &kflcnRiscvIcdWaitForIdle_395e98;
     }
 
     // kflcnRiscvIcdReadMem -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdReadMem__ = &kflcnRiscvIcdReadMem_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdReadMem__ = &kflcnRiscvIcdReadMem_46f6a7;
+        pThis->__kflcnRiscvIcdReadMem__ = &kflcnRiscvIcdReadMem_395e98;
     }
 
     // kflcnRiscvIcdReadReg -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdReadReg__ = &kflcnRiscvIcdReadReg_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdReadReg__ = &kflcnRiscvIcdReadReg_46f6a7;
+        pThis->__kflcnRiscvIcdReadReg__ = &kflcnRiscvIcdReadReg_395e98;
     }
 
     // kflcnRiscvIcdRcsr -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdRcsr__ = &kflcnRiscvIcdRcsr_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdRcsr__ = &kflcnRiscvIcdRcsr_46f6a7;
+        pThis->__kflcnRiscvIcdRcsr__ = &kflcnRiscvIcdRcsr_395e98;
     }
 
     // kflcnRiscvIcdRstat -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdRstat__ = &kflcnRiscvIcdRstat_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdRstat__ = &kflcnRiscvIcdRstat_46f6a7;
+        pThis->__kflcnRiscvIcdRstat__ = &kflcnRiscvIcdRstat_395e98;
     }
 
     // kflcnRiscvIcdRpc -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdRpc__ = &kflcnRiscvIcdRpc_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdRpc__ = &kflcnRiscvIcdRpc_46f6a7;
+        pThis->__kflcnRiscvIcdRpc__ = &kflcnRiscvIcdRpc_395e98;
     }
 
     // kflcnRiscvIcdHalt -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdHalt__ = &kflcnRiscvIcdHalt_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdHalt__ = &kflcnRiscvIcdHalt_46f6a7;
+        pThis->__kflcnRiscvIcdHalt__ = &kflcnRiscvIcdHalt_395e98;
     }
 
     // kflcnIcdReadCmdReg -- halified (3 hals) body
@@ -784,15 +803,15 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_4a4dee;
+        pThis->__kflcnIcdReadCmdReg__ = &kflcnIcdReadCmdReg_b2b553;
     }
 
     // kflcnRiscvIcdReadRdata -- halified (3 hals) body
@@ -800,15 +819,15 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_4a4dee;
+        pThis->__kflcnRiscvIcdReadRdata__ = &kflcnRiscvIcdReadRdata_b2b553;
     }
 
     // kflcnRiscvIcdWriteAddress -- halified (3 hals) body
@@ -816,15 +835,15 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_b3696a;
+        pThis->__kflcnRiscvIcdWriteAddress__ = &kflcnRiscvIcdWriteAddress_d44104;
     }
 
     // kflcnIcdWriteCmdReg -- halified (3 hals) body
@@ -832,27 +851,27 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_b3696a;
+        pThis->__kflcnIcdWriteCmdReg__ = &kflcnIcdWriteCmdReg_d44104;
     }
 
     // kflcnCoreDumpPc -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnCoreDumpPc__ = &kflcnCoreDumpPc_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnCoreDumpPc__ = &kflcnCoreDumpPc_46f6a7;
+        pThis->__kflcnCoreDumpPc__ = &kflcnCoreDumpPc_395e98;
     }
 
     // kflcnDumpCoreRegs -- halified (4 hals) body
@@ -860,19 +879,19 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe0UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f8UL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_GB202;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 */ 
     {
         pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_b3696a;
+        pThis->__kflcnDumpCoreRegs__ = &kflcnDumpCoreRegs_d44104;
     }
 
     // kflcnDumpTracepc -- halified (3 hals) body
@@ -880,56 +899,56 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
     {
         pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_TU102;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0f800UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_GA102;
     }
     // default
     else
     {
-        pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_b3696a;
+        pThis->__kflcnDumpTracepc__ = &kflcnDumpTracepc_d44104;
     }
 
     // kflcnDumpPeripheralRegs -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnDumpPeripheralRegs__ = &kflcnDumpPeripheralRegs_TU102;
     }
     // default
     else
     {
-        pThis->__kflcnDumpPeripheralRegs__ = &kflcnDumpPeripheralRegs_b3696a;
+        pThis->__kflcnDumpPeripheralRegs__ = &kflcnDumpPeripheralRegs_d44104;
     }
 
     // kflcnGetEccInterruptMask -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
     {
         pThis->__kflcnGetEccInterruptMask__ = &kflcnGetEccInterruptMask_GB100;
     }
     // default
     else
     {
-        pThis->__kflcnGetEccInterruptMask__ = &kflcnGetEccInterruptMask_4a4dee;
+        pThis->__kflcnGetEccInterruptMask__ = &kflcnGetEccInterruptMask_b2b553;
     }
 
     // kflcnGetFatalHwErrorStatus -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnGetFatalHwErrorStatus__ = &kflcnGetFatalHwErrorStatus_GB100;
     }
     // default
     else
     {
-        pThis->__kflcnGetFatalHwErrorStatus__ = &kflcnGetFatalHwErrorStatus_46f6a7;
+        pThis->__kflcnGetFatalHwErrorStatus__ = &kflcnGetFatalHwErrorStatus_395e98;
     }
 
     // kflcnFatalHwErrorCodeToString -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kflcnFatalHwErrorCodeToString__ = &kflcnFatalHwErrorCodeToString_GB100;
     }
@@ -939,18 +958,18 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, GpuHalspec
         pThis->__kflcnFatalHwErrorCodeToString__ = &kflcnFatalHwErrorCodeToString_GA100;
     }
 
-    // kflcnReadDmem -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    // kflcnReadDmem -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
     pThis->__kflcnReadDmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadDmem;
 
-    // kflcnGetScratchOffsets -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    // kflcnGetScratchOffsets -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
     pThis->__kflcnGetScratchOffsets__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnGetScratchOffsets;
 
-    // kflcnGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine)
+    // kflcnGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kcrashcatEngine) body
     pThis->__kflcnGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset;
 } // End __nvoc_init_funcTable_KernelFalcon_1 with approximately 125 basic block(s).
 
 
-// Initialize vtable(s) for 53 virtual method(s).
+// Initialize vtable(s) for 54 virtual method(s).
 void __nvoc_init_funcTable_KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 43 per-object function pointer(s).
@@ -979,7 +998,7 @@ void __nvoc_init__KernelFalcon(KernelFalcon *pThis, GpuHalspecOwner *pGpuhalspec
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xabcf08 = 1;
+char __nvoc_class_id_uniqueness_check__abcf08 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GenericKernelFalcon;
@@ -995,7 +1014,7 @@ void __nvoc_init__IntrService(IntrService*);
 void __nvoc_init__Object(Object*);
 void __nvoc_init__GenericKernelFalcon(GenericKernelFalcon*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_init_funcTable_GenericKernelFalcon(GenericKernelFalcon*);
-NV_STATUS __nvoc_ctor_GenericKernelFalcon(GenericKernelFalcon*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *arg_pGpu, KernelFalconEngineConfig *arg_pFalconConfig);
+NV_STATUS __nvoc_ctor_GenericKernelFalcon(GenericKernelFalcon*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *pGpu, KernelFalconEngineConfig *pFalconConfig);
 void __nvoc_init_dataField_GenericKernelFalcon(GenericKernelFalcon*);
 void __nvoc_dtor_GenericKernelFalcon(GenericKernelFalcon*);
 
@@ -1006,7 +1025,8 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GenericKernelFalcon;
 // Down-thunk(s) to bridge GenericKernelFalcon methods from ancestors (if any)
 NvBool __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured(struct CrashCatEngine *arg_this);    // super^2
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload(struct CrashCatEngine *arg_this);    // super^2
-void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // super^2
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog(struct CrashCatEngine *arg_this);    // super^2
+void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf(struct CrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args);    // super^2
 NvU32 __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriRead(struct CrashCatEngine *arg_this, NvU32 offset);    // super^2
 void __nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriWrite(struct CrashCatEngine *arg_this, NvU32 offset, NvU32 data);    // super^2
 void * __nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineMapBufferDescriptor(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc);    // super^2
@@ -1024,7 +1044,8 @@ NV_STATUS __nvoc_down_thunk_GenericKernelFalcon_intrservServiceNotificationInter
 // Up-thunk(s) to bridge GenericKernelFalcon methods to ancestors (if any)
 NvBool __nvoc_up_thunk_KernelCrashCatEngine_kflcnConfigured(struct KernelFalcon *arg_this);    // super
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload(struct KernelFalcon *arg_this);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // super
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog(struct KernelFalcon *arg_this);    // super
+void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args);    // super
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriRead(struct KernelFalcon *arg_this, NvU32 offset);    // super
 void __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriWrite(struct KernelFalcon *arg_this, NvU32 offset, NvU32 data);    // super
 void * __nvoc_up_thunk_KernelCrashCatEngine_kflcnMapBufferDescriptor(struct KernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc);    // super
@@ -1039,7 +1060,8 @@ void __nvoc_up_thunk_KernelFalcon_gkflcnRegWrite(struct OBJGPU *pGpu, struct Gen
 NvU32 __nvoc_up_thunk_KernelFalcon_gkflcnMaskDmemAddr(struct OBJGPU *pGpu, struct GenericKernelFalcon *pKernelFlcn, NvU32 addr);    // this
 NvBool __nvoc_up_thunk_KernelCrashCatEngine_gkflcnConfigured(struct GenericKernelFalcon *arg_this);    // this
 void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnUnload(struct GenericKernelFalcon *arg_this);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnVprintf(struct GenericKernelFalcon *arg_this, NvBool bReportStart, const char *fmt, va_list args);    // this
+void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnResetLog(struct GenericKernelFalcon *arg_this);    // this
+void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnVprintf(struct GenericKernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args);    // this
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_gkflcnPriRead(struct GenericKernelFalcon *arg_this, NvU32 offset);    // this
 void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnPriWrite(struct GenericKernelFalcon *arg_this, NvU32 offset, NvU32 data);    // this
 void * __nvoc_up_thunk_KernelCrashCatEngine_gkflcnMapBufferDescriptor(struct GenericKernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc);    // this
@@ -1052,19 +1074,18 @@ NvU32 __nvoc_up_thunk_KernelCrashCatEngine_gkflcnGetWFL0Offset(struct GenericKer
 NvBool __nvoc_up_thunk_IntrService_gkflcnClearInterrupt(struct OBJGPU *pGpu, struct GenericKernelFalcon *pIntrService, IntrServiceClearInterruptArguments *pParams);    // this
 NvU32 __nvoc_up_thunk_IntrService_gkflcnServiceInterrupt(struct OBJGPU *pGpu, struct GenericKernelFalcon *pIntrService, IntrServiceServiceInterruptArguments *pParams);    // this
 
+// Class-specific details for GenericKernelFalcon
 const struct NVOC_CLASS_DEF __nvoc_class_def_GenericKernelFalcon = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(GenericKernelFalcon),
-        /*classId=*/            classId(GenericKernelFalcon),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(GenericKernelFalcon),
+    .classInfo.classId =            classId(GenericKernelFalcon),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "GenericKernelFalcon",
+    .classInfo.name =               "GenericKernelFalcon",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GenericKernelFalcon,
-    /*pCastInfo=*/          &__nvoc_castinfo__GenericKernelFalcon,
-    /*pExportInfo=*/        &__nvoc_export_info__GenericKernelFalcon
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GenericKernelFalcon,
+    .pCastInfo =          &__nvoc_castinfo__GenericKernelFalcon,
+    .pExportInfo =        &__nvoc_export_info__GenericKernelFalcon
 };
 
 
@@ -1106,6 +1127,10 @@ static const struct NVOC_METADATA__GenericKernelFalcon __nvoc_metadata__GenericK
     .metadata__KernelFalcon.vtable.__kflcnUnload__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineUnload__ = &kcrashcatEngineUnload_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineUnload__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload,    // virtual
+    .vtable.__gkflcnResetLog__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnResetLog,    // virtual inherited (kcrashcatEngine) base (kflcn)
+    .metadata__KernelFalcon.vtable.__kflcnResetLog__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
+    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineResetLog__ = &kcrashcatEngineResetLog_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
+    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineResetLog__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog,    // pure virtual
     .vtable.__gkflcnVprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnVprintf,    // virtual inherited (kcrashcatEngine) base (kflcn)
     .metadata__KernelFalcon.vtable.__kflcnVprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineVprintf__ = &kcrashcatEngineVprintf_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
@@ -1130,9 +1155,9 @@ static const struct NVOC_METADATA__GenericKernelFalcon __nvoc_metadata__GenericK
     .metadata__KernelFalcon.vtable.__kflcnSyncBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnSyncBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineSyncBufferDescriptor__ = &kcrashcatEngineSyncBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineSyncBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor,    // pure virtual
-    .vtable.__gkflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_2fced3,    // virtual halified (singleton optimized)
+    .vtable.__gkflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn) body
+    .metadata__KernelFalcon.vtable.__kflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine) body
+    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_f2d351,    // virtual halified (singleton optimized) body
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetScratchOffsets__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets,    // pure virtual
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetWFL0Offset__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset,    // pure virtual
     .vtable.__gkflcnClearInterrupt__ = &__nvoc_up_thunk_IntrService_gkflcnClearInterrupt,    // virtual inherited (intrserv) base (intrserv)
@@ -1173,7 +1198,7 @@ NV_STATUS __nvoc_down_thunk_GenericKernelFalcon_intrservServiceNotificationInter
 }
 
 
-// 17 up-thunk(s) defined to bridge methods in GenericKernelFalcon to superclasses
+// 18 up-thunk(s) defined to bridge methods in GenericKernelFalcon to superclasses
 
 // gkflcnRegRead: virtual halified (3 hals) inherited (kflcn) base (kflcn) body
 NvU32 __nvoc_up_thunk_KernelFalcon_gkflcnRegRead(struct OBJGPU *pGpu, struct GenericKernelFalcon *pKernelFlcn, NvU32 offset) {
@@ -1200,9 +1225,14 @@ void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnUnload(struct GenericKernelFalco
     kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
 }
 
+// gkflcnResetLog: virtual inherited (kcrashcatEngine) base (kflcn)
+void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnResetLog(struct GenericKernelFalcon *arg_this) {
+    kcrashcatEngineResetLog((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
+}
+
 // gkflcnVprintf: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnVprintf(struct GenericKernelFalcon *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), bReportStart, fmt, args);
+void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnVprintf(struct GenericKernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args) {
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), errorId, fmt, args);
 }
 
 // gkflcnPriRead: virtual inherited (kcrashcatEngine) base (kflcn)
@@ -1230,22 +1260,22 @@ void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnSyncBufferDescriptor(struct Gene
     kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), pBufDesc, offset, size);
 }
 
-// gkflcnReadDmem: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+// gkflcnReadDmem: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
 void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnReadDmem(struct GenericKernelFalcon *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
     kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
 }
 
-// gkflcnReadEmem: virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn)
+// gkflcnReadEmem: virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn) body
 void __nvoc_up_thunk_KernelCrashCatEngine_gkflcnReadEmem(struct GenericKernelFalcon *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
     kcrashcatEngineReadEmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
 }
 
-// gkflcnGetScratchOffsets: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+// gkflcnGetScratchOffsets: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
 const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_gkflcnGetScratchOffsets(struct GenericKernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
     return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), scratchGroupId);
 }
 
-// gkflcnGetWFL0Offset: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+// gkflcnGetWFL0Offset: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
 NvU32 __nvoc_up_thunk_KernelCrashCatEngine_gkflcnGetWFL0Offset(struct GenericKernelFalcon *arg_this) {
     return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(GenericKernelFalcon, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
 }
@@ -1263,50 +1293,61 @@ NvU32 __nvoc_up_thunk_IntrService_gkflcnServiceInterrupt(struct OBJGPU *pGpu, st
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__GenericKernelFalcon = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct GenericKernelFalcon object.
 void __nvoc_dtor_KernelFalcon(KernelFalcon*);
 void __nvoc_dtor_IntrService(IntrService*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_GenericKernelFalcon(GenericKernelFalcon *pThis) {
+void __nvoc_dtor_GenericKernelFalcon(GenericKernelFalcon* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_KernelFalcon(&pThis->__nvoc_base_KernelFalcon);
     __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_GenericKernelFalcon(GenericKernelFalcon *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_KernelFalcon(KernelFalcon* , GpuHalspecOwner* , RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_IntrService(IntrService* );
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_GenericKernelFalcon(GenericKernelFalcon *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct OBJGPU * arg_pGpu, KernelFalconEngineConfig * arg_pFalconConfig) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_KernelFalcon(&pThis->__nvoc_base_KernelFalcon, pGpuhalspecowner, pRmhalspecowner);
-    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_KernelFalcon;
-    status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
-    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_IntrService;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_Object;
-    __nvoc_init_dataField_GenericKernelFalcon(pThis);
 
-    status = __nvoc_gkflcnConstruct(pThis, arg_pGpu, arg_pFalconConfig);
+// Construct GenericKernelFalcon object.
+NV_STATUS __nvoc_ctor_KernelFalcon(KernelFalcon *, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_IntrService(IntrService *);
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_GenericKernelFalcon(GenericKernelFalcon *pGenKernFlcn, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner, struct OBJGPU *pGpu, KernelFalconEngineConfig *pFalconConfig) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_KernelFalcon(&pGenKernFlcn->__nvoc_base_KernelFalcon, pGpuhalspecowner, pRmhalspecowner);
+    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_KernelFalcon;
+    status = __nvoc_ctor_IntrService(&pGenKernFlcn->__nvoc_base_IntrService);
+    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_IntrService;
+    status = __nvoc_ctor_Object(&pGenKernFlcn->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GenericKernelFalcon(pGenKernFlcn);
+
+    // Call the constructor for this class.
+    status = __nvoc_gkflcnConstruct(pGenKernFlcn, pGpu, pFalconConfig);
     if (status != NV_OK) goto __nvoc_ctor_GenericKernelFalcon_fail__init;
     goto __nvoc_ctor_GenericKernelFalcon_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_GenericKernelFalcon_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&pGenKernFlcn->__nvoc_base_Object);
 __nvoc_ctor_GenericKernelFalcon_fail_Object:
-    __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
+    __nvoc_dtor_IntrService(&pGenKernFlcn->__nvoc_base_IntrService);
 __nvoc_ctor_GenericKernelFalcon_fail_IntrService:
-    __nvoc_dtor_KernelFalcon(&pThis->__nvoc_base_KernelFalcon);
+    __nvoc_dtor_KernelFalcon(&pGenKernFlcn->__nvoc_base_KernelFalcon);
 __nvoc_ctor_GenericKernelFalcon_fail_KernelFalcon:
 __nvoc_ctor_GenericKernelFalcon_exit:
-
     return status;
 }
 
@@ -1323,18 +1364,18 @@ static void __nvoc_init_funcTable_GenericKernelFalcon_1(GenericKernelFalcon *pTh
     // gkflcnMaskDmemAddr -- virtual halified (4 hals) inherited (kflcn) base (kflcn) body
     pThis->__gkflcnMaskDmemAddr__ = &__nvoc_up_thunk_KernelFalcon_gkflcnMaskDmemAddr;
 
-    // gkflcnReadDmem -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    // gkflcnReadDmem -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
     pThis->__gkflcnReadDmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnReadDmem;
 
-    // gkflcnGetScratchOffsets -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    // gkflcnGetScratchOffsets -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
     pThis->__gkflcnGetScratchOffsets__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnGetScratchOffsets;
 
-    // gkflcnGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn)
+    // gkflcnGetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
     pThis->__gkflcnGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_gkflcnGetWFL0Offset;
 } // End __nvoc_init_funcTable_GenericKernelFalcon_1 with approximately 16 basic block(s).
 
 
-// Initialize vtable(s) for 20 virtual method(s).
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_GenericKernelFalcon(GenericKernelFalcon *pThis) {
 
     // Initialize vtable(s) with 6 per-object function pointer(s).
@@ -1369,62 +1410,62 @@ void __nvoc_init__GenericKernelFalcon(GenericKernelFalcon *pThis, GpuHalspecOwne
     __nvoc_init_funcTable_GenericKernelFalcon(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU *arg_pGpu, KernelFalconEngineConfig *arg_pFalconConfig)
+NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct OBJGPU *pGpu, KernelFalconEngineConfig *pFalconConfig)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    GenericKernelFalcon *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GenericKernelFalcon *__nvoc_pThis;
     GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(GenericKernelFalcon));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GenericKernelFalcon));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
+    portMemSet(__nvoc_pThis, 0, sizeof(GenericKernelFalcon));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
+    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_GenericKernelFalcon_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__GenericKernelFalcon(pThis, pGpuhalspecowner, pRmhalspecowner);
-    status = __nvoc_ctor_GenericKernelFalcon(pThis, pGpuhalspecowner, pRmhalspecowner, arg_pGpu, arg_pFalconConfig);
-    if (status != NV_OK) goto __nvoc_objCreate_GenericKernelFalcon_cleanup;
+    __nvoc_init__GenericKernelFalcon(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_GenericKernelFalcon(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner, pGpu, pFalconConfig);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GenericKernelFalcon_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -1433,31 +1474,31 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dyn
 __nvoc_objCreate_GenericKernelFalcon_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GenericKernelFalcon));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct OBJGPU *arg_pGpu = va_arg(args, struct OBJGPU *);
-    KernelFalconEngineConfig *arg_pFalconConfig = va_arg(args, KernelFalconEngineConfig *);
+NV_STATUS __nvoc_objCreateDynamic_GenericKernelFalcon(GenericKernelFalcon **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct OBJGPU *pGpu = va_arg(__nvoc_args, struct OBJGPU *);
+    KernelFalconEngineConfig *pFalconConfig = va_arg(__nvoc_args, KernelFalconEngineConfig *);
 
-    status = __nvoc_objCreate_GenericKernelFalcon(ppThis, pParent, createFlags, arg_pGpu, arg_pFalconConfig);
+    __nvoc_status = __nvoc_objCreate_GenericKernelFalcon(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pGpu, pFalconConfig);
 
-    return status;
+    return __nvoc_status;
 }
 

@@ -332,13 +332,9 @@ struct NVOC_METADATA__PlatformRequestHandler {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_PlatformRequestHandler_TYPEDEF__
-#define __NVOC_CLASS_PlatformRequestHandler_TYPEDEF__
-typedef struct PlatformRequestHandler PlatformRequestHandler;
-#endif /* __NVOC_CLASS_PlatformRequestHandler_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_PlatformRequestHandler
-#define __nvoc_class_id_PlatformRequestHandler 0x641a7f
+#define __nvoc_class_id_PlatformRequestHandler 0x641a7fu
+typedef struct PlatformRequestHandler PlatformRequestHandler;
 #endif /* __nvoc_class_id_PlatformRequestHandler */
 
 // Casting support
@@ -366,13 +362,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PlatformRequestHandler;
 NV_STATUS __nvoc_objCreateDynamic_PlatformRequestHandler(PlatformRequestHandler**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_PlatformRequestHandler(PlatformRequestHandler**, Dynamic*, NvU32);
-#define __objCreate_PlatformRequestHandler(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_PlatformRequestHandler((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_PlatformRequestHandler(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_PlatformRequestHandler((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS pfmreqhndlrConstruct_IMPL(struct PlatformRequestHandler *arg_pPlatformRequestHandler);
-#define __nvoc_pfmreqhndlrConstruct(arg_pPlatformRequestHandler) pfmreqhndlrConstruct_IMPL(arg_pPlatformRequestHandler)
+NV_STATUS pfmreqhndlrConstruct_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler);
+#define __nvoc_pfmreqhndlrConstruct(pPlatformRequestHandler) pfmreqhndlrConstruct_IMPL(pPlatformRequestHandler)
 
 NV_STATUS pfmreqhndlrStateInit_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler);
 #ifdef __nvoc_platform_request_handler_h_disabled
@@ -537,6 +533,12 @@ static inline NV_STATUS pfmreqhndlrStateSync(struct PlatformRequestHandler *pPla
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

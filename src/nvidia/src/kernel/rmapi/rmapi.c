@@ -45,11 +45,11 @@ typedef struct
     NvU64               timestamp;
     LOCK_TRACE_INFO     traceInfo;
     NvU64               tlsEntryId;
-    volatile NvU32      contentionCount;
+    PORT_ATOMIC NvU32   contentionCount;
     NvU32               lowPriorityAging;
-    volatile NvU64      totalWaitTime;
-    volatile NvU64      totalRwHoldTime;
-    volatile NvU64      totalRoHoldTime;
+    PORT_ATOMIC NvU64   totalWaitTime;
+    PORT_ATOMIC NvU64   totalRwHoldTime;
+    PORT_ATOMIC NvU64   totalRoHoldTime;
 } RMAPI_LOCK;
 
 RsServer          g_resServ;

@@ -146,4 +146,24 @@ typedef struct NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS {
 } NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS;
 
  // extension NV_VERIF_FEATURES
+
+/*
+* NV208F_CTRL_CMD_MMU_GET_NUM_L2TLBS
+*
+* Returns the number of ECC Capable L2TLBs.
+*
+* numL2tlbs [out]
+*   Number of L2tlbs
+*
+* Possible status values returned are:
+*   NV_OK
+*   NV_ERR_NOT_SUPPORTED
+*/
+#define NV208F_CTRL_CMD_MMU_GET_NUM_L2TLBS (0x208f0b06) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_MMU_INTERFACE_ID << 8) | NV208F_CTRL_MMU_GET_NUM_L2TLBS_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_MMU_GET_NUM_L2TLBS_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV208F_CTRL_MMU_GET_NUM_L2TLBS_PARAMS {
+    NvU32 numL2tlbs;
+} NV208F_CTRL_MMU_GET_NUM_L2TLBS_PARAMS;
 /* _ctrl208fmmu_h_ */

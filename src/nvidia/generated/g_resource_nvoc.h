@@ -171,13 +171,9 @@ struct NVOC_METADATA__RmResourceCommon {
     const struct NVOC_RTTI rtti;
 };
 
-#ifndef __NVOC_CLASS_RmResourceCommon_TYPEDEF__
-#define __NVOC_CLASS_RmResourceCommon_TYPEDEF__
-typedef struct RmResourceCommon RmResourceCommon;
-#endif /* __NVOC_CLASS_RmResourceCommon_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RmResourceCommon
-#define __nvoc_class_id_RmResourceCommon 0x8ef259
+#define __nvoc_class_id_RmResourceCommon 0x8ef259u
+typedef struct RmResourceCommon RmResourceCommon;
 #endif /* __nvoc_class_id_RmResourceCommon */
 
 // Casting support
@@ -196,18 +192,24 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
 NV_STATUS __nvoc_objCreateDynamic_RmResourceCommon(RmResourceCommon**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_RmResourceCommon(RmResourceCommon**, Dynamic*, NvU32);
-#define __objCreate_RmResourceCommon(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_RmResourceCommon((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_RmResourceCommon(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_RmResourceCommon((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *arg_pResourceCommmon);
-#define __nvoc_rmrescmnConstruct(arg_pResourceCommmon) rmrescmnConstruct_IMPL(arg_pResourceCommmon)
+NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *pResourceCommmon);
+#define __nvoc_rmrescmnConstruct(pResourceCommmon) rmrescmnConstruct_IMPL(pResourceCommmon)
 
 
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -290,13 +292,9 @@ struct NVOC_METADATA__RmResource {
     const struct NVOC_VTABLE__RmResource vtable;
 };
 
-#ifndef __NVOC_CLASS_RmResource_TYPEDEF__
-#define __NVOC_CLASS_RmResource_TYPEDEF__
-typedef struct RmResource RmResource;
-#endif /* __NVOC_CLASS_RmResource_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_RmResource
-#define __nvoc_class_id_RmResource 0x03610d
+#define __nvoc_class_id_RmResource 0x03610du
+typedef struct RmResource RmResource;
 #endif /* __nvoc_class_id_RmResource */
 
 // Casting support
@@ -314,14 +312,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
 
 NV_STATUS __nvoc_objCreateDynamic_RmResource(RmResource**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_RmResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_RmResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_RmResource(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_RmResource((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS rmresConstruct_IMPL(struct RmResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_rmresConstruct(arg_pResource, arg_pCallContext, arg_pParams) rmresConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS rmresConstruct_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_rmresConstruct(pResource, pCallContext, pParams) rmresConstruct_IMPL(pResource, pCallContext, pParams)
 
 
 // Wrapper macros for halified functions
@@ -453,6 +451,7 @@ static inline void rmresAddAdditionalDependants_DISPATCH(struct RsClient *pClien
     pResource->__nvoc_metadata_ptr->vtable.__rmresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool rmresAccessCallback_IMPL(struct RmResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
 
 NvBool rmresShareCallback_IMPL(struct RmResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);
@@ -471,6 +470,11 @@ NV_STATUS rmresControl_Prologue_IMPL(struct RmResource *pResource, struct CALL_C
 
 void rmresControl_Epilogue_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x8ef259 = 1;
+char __nvoc_class_id_uniqueness_check__8ef259 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon;
@@ -36,20 +36,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RmResourceCommon;
 
 // Up-thunk(s) to bridge RmResourceCommon methods to ancestors (if any)
 
+// Class-specific details for RmResourceCommon
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RmResourceCommon),
-        /*classId=*/            classId(RmResourceCommon),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RmResourceCommon),
+    .classInfo.classId =            classId(RmResourceCommon),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RmResourceCommon",
+    .classInfo.name =               "RmResourceCommon",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__RmResourceCommon,
-    /*pExportInfo=*/        &__nvoc_export_info__RmResourceCommon
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__RmResourceCommon,
+    .pExportInfo =        &__nvoc_export_info__RmResourceCommon
 };
 
 
@@ -71,29 +70,35 @@ const struct NVOC_CASTINFO __nvoc_castinfo__RmResourceCommon = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RmResourceCommon = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_RmResourceCommon(RmResourceCommon *pThis) {
+
+// Destruct RmResourceCommon object.
+void __nvoc_dtor_RmResourceCommon(RmResourceCommon* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RmResourceCommon(RmResourceCommon *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_RmResourceCommon(RmResourceCommon *pThis) {
-    NV_STATUS status = NV_OK;
-    __nvoc_init_dataField_RmResourceCommon(pThis);
 
-    status = __nvoc_rmrescmnConstruct(pThis);
+// Construct RmResourceCommon object.
+NV_STATUS __nvoc_ctor_RmResourceCommon(RmResourceCommon *pResourceCommmon) {
+    NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_RmResourceCommon(pResourceCommmon);
+
+    // Call the constructor for this class.
+    status = __nvoc_rmrescmnConstruct(pResourceCommmon);
     if (status != NV_OK) goto __nvoc_ctor_RmResourceCommon_fail__init;
     goto __nvoc_ctor_RmResourceCommon_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RmResourceCommon_fail__init:
 __nvoc_ctor_RmResourceCommon_exit:
-
     return status;
 }
 
@@ -123,7 +128,7 @@ void __nvoc_init__RmResourceCommon(RmResourceCommon *pThis) {
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x03610d = 1;
+char __nvoc_class_id_uniqueness_check__03610d = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
@@ -136,7 +141,7 @@ void __nvoc_init__RsResource(RsResource*);
 void __nvoc_init__RmResourceCommon(RmResourceCommon*);
 void __nvoc_init__RmResource(RmResource*);
 void __nvoc_init_funcTable_RmResource(RmResource*);
-NV_STATUS __nvoc_ctor_RmResource(RmResource*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_RmResource(RmResource*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_RmResource(RmResource*);
 void __nvoc_dtor_RmResource(RmResource*);
 
@@ -166,19 +171,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource
 NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // this
 void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for RmResource
 const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RmResource),
-        /*classId=*/            classId(RmResource),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RmResource),
+    .classInfo.classId =            classId(RmResource),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RmResource",
+    .classInfo.name =               "RmResource",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RmResource,
-    /*pCastInfo=*/          &__nvoc_castinfo__RmResource,
-    /*pExportInfo=*/        &__nvoc_export_info__RmResource
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RmResource,
+    .pCastInfo =          &__nvoc_castinfo__RmResource,
+    .pExportInfo =        &__nvoc_export_info__RmResource
 };
 
 
@@ -348,43 +352,54 @@ void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pC
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RmResource = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct RmResource object.
 void __nvoc_dtor_RsResource(RsResource*);
 void __nvoc_dtor_RmResourceCommon(RmResourceCommon*);
-void __nvoc_dtor_RmResource(RmResource *pThis) {
+void __nvoc_dtor_RmResource(RmResource* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_RsResource(&pThis->__nvoc_base_RsResource);
     __nvoc_dtor_RmResourceCommon(&pThis->__nvoc_base_RmResourceCommon);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RmResource(RmResource *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_RsResource(RsResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_RmResourceCommon(RmResourceCommon* );
-NV_STATUS __nvoc_ctor_RmResource(RmResource *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_RsResource(&pThis->__nvoc_base_RsResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_RmResource_fail_RsResource;
-    status = __nvoc_ctor_RmResourceCommon(&pThis->__nvoc_base_RmResourceCommon);
-    if (status != NV_OK) goto __nvoc_ctor_RmResource_fail_RmResourceCommon;
-    __nvoc_init_dataField_RmResource(pThis);
 
-    status = __nvoc_rmresConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct RmResource object.
+NV_STATUS __nvoc_ctor_RsResource(RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+NV_STATUS __nvoc_ctor_RmResourceCommon(RmResourceCommon *pResourceCommmon);
+NV_STATUS __nvoc_ctor_RmResource(RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_RsResource(&pResource->__nvoc_base_RsResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_RmResource_fail_RsResource;
+    status = __nvoc_ctor_RmResourceCommon(&pResource->__nvoc_base_RmResourceCommon);
+    if (status != NV_OK) goto __nvoc_ctor_RmResource_fail_RmResourceCommon;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_RmResource(pResource);
+
+    // Call the constructor for this class.
+    status = __nvoc_rmresConstruct(pResource, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_RmResource_fail__init;
     goto __nvoc_ctor_RmResource_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RmResource_fail__init:
-    __nvoc_dtor_RmResourceCommon(&pThis->__nvoc_base_RmResourceCommon);
+    __nvoc_dtor_RmResourceCommon(&pResource->__nvoc_base_RmResourceCommon);
 __nvoc_ctor_RmResource_fail_RmResourceCommon:
-    __nvoc_dtor_RsResource(&pThis->__nvoc_base_RsResource);
+    __nvoc_dtor_RsResource(&pResource->__nvoc_base_RsResource);
 __nvoc_ctor_RmResource_fail_RsResource:
 __nvoc_ctor_RmResource_exit:
-
     return status;
 }
 
@@ -422,49 +437,49 @@ void __nvoc_init__RmResource(RmResource *pThis) {
     __nvoc_init_funcTable_RmResource(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RmResource(RmResource **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_RmResource(RmResource **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    RmResource *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    RmResource *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(RmResource));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(RmResource));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(RmResource));
+    portMemSet(__nvoc_pThis, 0, sizeof(RmResource));
 
-    pThis->__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__RmResource(pThis);
-    status = __nvoc_ctor_RmResource(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_RmResource_cleanup;
+    __nvoc_init__RmResource(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_RmResource(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_RmResource_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -473,31 +488,31 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource **ppThis, Dynamic *pParent, NvU
 __nvoc_objCreate_RmResource_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(RmResource));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(RmResource));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_RmResource(RmResource **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_RmResource(RmResource **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_RmResource(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_RmResource(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

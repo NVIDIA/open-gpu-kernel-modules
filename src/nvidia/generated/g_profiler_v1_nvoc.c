@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x65b4c7 = 1;
+char __nvoc_class_id_uniqueness_check__65b4c7 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Profiler;
@@ -30,7 +30,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__Profiler(Profiler*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_init_funcTable_Profiler(Profiler*, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_Profiler(Profiler*, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_Profiler(Profiler*, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_Profiler(Profiler*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_Profiler(Profiler*);
 
@@ -106,19 +106,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_profilerUnmapFrom(struct Profiler *pResourc
 NvU32 __nvoc_up_thunk_RsResource_profilerGetRefCount(struct Profiler *pResource);    // this
 void __nvoc_up_thunk_RsResource_profilerAddAdditionalDependants(struct RsClient *pClient, struct Profiler *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for Profiler
 const struct NVOC_CLASS_DEF __nvoc_class_def_Profiler = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(Profiler),
-        /*classId=*/            classId(Profiler),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(Profiler),
+    .classInfo.classId =            classId(Profiler),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "Profiler",
+    .classInfo.name =               "Profiler",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Profiler,
-    /*pCastInfo=*/          &__nvoc_castinfo__Profiler,
-    /*pExportInfo=*/        &__nvoc_export_info__Profiler
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_Profiler,
+    .pCastInfo =          &__nvoc_castinfo__Profiler,
+    .pExportInfo =        &__nvoc_export_info__Profiler
 };
 
 // By default, all exported methods are enabled.
@@ -466,18 +465,24 @@ void __nvoc_up_thunk_RsResource_profilerAddAdditionalDependants(struct RsClient 
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__Profiler = 
 {
-    /*numEntries=*/     5,
-    /*pExportEntries=*/ __nvoc_exported_method_def_Profiler
+    .numEntries=     5,
+    .pExportEntries= __nvoc_exported_method_def_Profiler
 };
 
+
+// Destruct Profiler object.
 void __nvoc_profilerDestruct(Profiler*);
 void __nvoc_dtor_GpuResource(GpuResource*);
-void __nvoc_dtor_Profiler(Profiler *pThis) {
+void __nvoc_dtor_Profiler(Profiler* pThis) {
+
+// Call destructor.
     __nvoc_profilerDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_Profiler(Profiler *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -487,22 +492,29 @@ void __nvoc_init_dataField_Profiler(Profiler *pThis, RmHalspecOwner *pRmhalspeco
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_Profiler(Profiler *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_Profiler_fail_GpuResource;
-    __nvoc_init_dataField_Profiler(pThis, pRmhalspecowner);
 
-    status = __nvoc_profilerConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct Profiler object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_Profiler(Profiler *pProfiler, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pProfiler->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_Profiler_fail_GpuResource;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_Profiler(pProfiler, pRmhalspecowner);
+
+    // Call the constructor for this class.
+    status = __nvoc_profilerConstruct(pProfiler, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_Profiler_fail__init;
     goto __nvoc_ctor_Profiler_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_Profiler_fail__init:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pProfiler->__nvoc_base_GpuResource);
 __nvoc_ctor_Profiler_fail_GpuResource:
 __nvoc_ctor_Profiler_exit:
-
     return status;
 }
 
@@ -548,58 +560,58 @@ void __nvoc_init__Profiler(Profiler *pThis, RmHalspecOwner *pRmhalspecowner) {
     __nvoc_init_funcTable_Profiler(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_Profiler(Profiler **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_Profiler(Profiler **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    Profiler *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    Profiler *__nvoc_pThis;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(Profiler));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(Profiler));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(Profiler));
+    portMemSet(__nvoc_pThis, 0, sizeof(Profiler));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_Profiler_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_Profiler_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_Profiler_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_Profiler_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__Profiler(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_Profiler(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_Profiler_cleanup;
+    __nvoc_init__Profiler(__nvoc_pThis, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_Profiler(__nvoc_pThis, pRmhalspecowner, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_Profiler_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -608,31 +620,31 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler **ppThis, Dynamic *pParent, NvU32 c
 __nvoc_objCreate_Profiler_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(Profiler));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(Profiler));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_Profiler(Profiler **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_Profiler(Profiler **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_Profiler(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_Profiler(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

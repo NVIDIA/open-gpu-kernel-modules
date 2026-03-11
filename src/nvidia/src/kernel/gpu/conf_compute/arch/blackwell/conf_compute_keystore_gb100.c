@@ -68,16 +68,16 @@ confComputeKeyStoreDeriveViaChannel_GB100
 (
     ConfidentialCompute *pConfCompute,
     KernelChannel       *pKernelChannel,
-    ROTATE_IV_TYPE       rotateOperation,
-    CC_KMB              *keyMaterialBundle
+    ROTATE_IV_TYPE       rotateOperation
 )
 {
 
     NvU16            keyId;
-    NvLength         keySize = 0;
+    NvU32            flag = 1;
     NvU8            *pKey = NULL;
     const uint8_t   *pStr = NULL;
-    NvU8            curKeySeed[CC_EXPORT_MASTER_KEY_SIZE_BYTES] = {0};
+    NvLength         keySize = 0;
+    NvU8             curKeySeed[CC_EXPORT_MASTER_KEY_SIZE_BYTES] = {0};
 
     //
     // SEC2 Per Channel key support has not been added yet. Hence SEC2 keys need to be restored from keystore.
@@ -118,8 +118,24 @@ confComputeKeyStoreDeriveViaChannel_GB100
                 portMemSet(pKey, 0, sizeof(pConfCompute->channelKeySeed));
                 return NV_ERR_FATAL_ERROR;
             }
-        }
 
+            flag = 1;
+            // LCEs will return an error / interrupt if the key is all 0s.
+            for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
+            {
+                if (pKey[index] != 0)
+                {
+                    flag = 0;
+                    break;
+                }
+            }
+
+            if (flag == 1)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Newly derived key is all zeros.\n");
+                return NV_ERR_FATAL_ERROR;
+            }
+        }
     }
     else
     {

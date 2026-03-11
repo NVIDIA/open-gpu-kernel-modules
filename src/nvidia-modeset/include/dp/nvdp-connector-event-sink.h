@@ -35,6 +35,7 @@ void nvDPLibSetAdaptiveSync(const NVDispEvoRec *pDispEvo, NvU32 head,
 void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo);
 NvBool nvDPLibDpyIsConnected(NVDpyEvoPtr pDpyEvo);
 NvBool nvDPLibDpyIsYuv420ModeSupported(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDPLibDpyUsesHDMIActivePcon(const NVDpyEvoRec *pDpyEvo);
 
 #ifdef __cplusplus
 };

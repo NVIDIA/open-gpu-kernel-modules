@@ -184,6 +184,35 @@ kgmmuSetTlbInvalidateMembarWarParameters_TU102
     return 0;
 }
 
+/*!
+ * @brief Wrapper for kgmmuSetTlbInvalidateMembarWarParameters_TU102 on chips where it is disabled.
+ * 
+ * NOTE: THIS WRAPPER CAN BE CALLED ONLY IN THE GSP TIMEOUT DETECTION PATH!
+ *
+ * kgmmuSetTlbInvalidateMembarWarParameters is currently disabled on Ampere+, 
+ * but it should ideally be enabled according to CL 25254668 description, where the 
+ * function was originally added. We need a way to call this function for memory
+ * error detection, but enabling the HAL on all Ampere+ chips is out of the scope of
+ * the feature. This wrapper to call kgmmuSetTlbInvalidateMembarWarParameters_TU102 
+ * is being added as a stop gap measure till kgmmuSetTlbInvalidateMembarWarParameters
+ * is enabled on all Ampere+ chips.
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelGmmu
+ * @param[in] pParams     Tlb invalidation parameter structure.
+ *
+ */
+void
+kgmmuSetTlbInvalidateMembarParameters_TU102
+(
+    OBJGPU                *pGpu,
+    KernelGmmu            *pKernelGmmu,
+    TLB_INVALIDATE_PARAMS *pParams
+)
+{
+    kgmmuSetTlbInvalidateMembarWarParameters_TU102(pGpu, pKernelGmmu, pParams);
+}
+
 NV_STATUS
 kgmmuGetFaultRegisterMappings_TU102
 (

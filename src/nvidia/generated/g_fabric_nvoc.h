@@ -59,7 +59,7 @@ extern "C" {
 #include "ctrl/ctrl000f.h"
 
 #include "core/thread_state.h"
-#include "rmapi/event.h"
+#include "rmapi/event_api.h"
 #include "rmapi/resource.h"
 #include "containers/list.h"
 #include "nvCpuUuid.h"
@@ -142,7 +142,7 @@ struct Fabric {
     PORT_RWLOCK *PRIVATE_FIELD(pUnimportCacheLock);
     NvP64 PRIVATE_FIELD(pOsImexEvent);
     NvU16 PRIVATE_FIELD(nodeId);
-    volatile NvU64 PRIVATE_FIELD(eventId);
+    _Atomic(NvU64) PRIVATE_FIELD(eventId);
     NvBool PRIVATE_FIELD(bAllowFabricMemAlloc);
     FabricCache PRIVATE_FIELD(fabricMulticastCache);
     PORT_RWLOCK *PRIVATE_FIELD(pMulticastFabriCacheLock);
@@ -155,13 +155,9 @@ struct NVOC_METADATA__Fabric {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_Fabric_TYPEDEF__
-#define __NVOC_CLASS_Fabric_TYPEDEF__
-typedef struct Fabric Fabric;
-#endif /* __NVOC_CLASS_Fabric_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Fabric
-#define __nvoc_class_id_Fabric 0x0ac791
+#define __nvoc_class_id_Fabric 0x0ac791u
+typedef struct Fabric Fabric;
 #endif /* __nvoc_class_id_Fabric */
 
 // Casting support
@@ -180,13 +176,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Fabric;
 NV_STATUS __nvoc_objCreateDynamic_Fabric(Fabric**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Fabric(Fabric**, Dynamic*, NvU32);
-#define __objCreate_Fabric(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_Fabric((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_Fabric(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_Fabric((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS fabricConstruct_IMPL(struct Fabric *arg_pFabric);
-#define __nvoc_fabricConstruct(arg_pFabric) fabricConstruct_IMPL(arg_pFabric)
+NV_STATUS fabricConstruct_IMPL(struct Fabric *pFabric);
+#define __nvoc_fabricConstruct(pFabric) fabricConstruct_IMPL(pFabric)
 
 void fabricDestruct_IMPL(struct Fabric *pFabric);
 #define __nvoc_fabricDestruct(pFabric) fabricDestruct_IMPL(pFabric)
@@ -473,6 +469,12 @@ static inline void fabricMulticastCleanupCacheInvokeCallback(struct Fabric *pFab
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

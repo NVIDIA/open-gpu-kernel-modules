@@ -9139,6 +9139,7 @@ nvswitch_service_minion_link_ls10
                 chip_device->deferredLinkErrors[link].data.nonFatalIntrMask.minionLinkIntr =
                     minionLinkIntr;
                 _nvswitch_create_deferred_link_errors_task_ls10(device, instance, link);
+                break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_NOTIFY:
                 NVSWITCH_PRINT(device, INFO,
                       "%s: Received MINION NOTIFY interrupt on MINION %d : link %d.\n",

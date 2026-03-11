@@ -247,7 +247,7 @@ typedef struct NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NvU32 cliqueId;
     NvU16 nodeId;
-    NvU8  bwMode;
+    NvU16 bwMode;
 } NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS;
 
 /*

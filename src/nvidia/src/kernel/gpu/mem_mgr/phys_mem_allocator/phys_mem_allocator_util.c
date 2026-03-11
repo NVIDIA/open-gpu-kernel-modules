@@ -584,7 +584,7 @@ _pmaEvictPages
         NvU32 flags = 0;
 
         // Localized memory scrub
-        PMA_PAGESTATUS state;
+        PMA_LOCALIZATION_STATUS state;
         NvU32 regId;
         NvU64 frameNum, addrBase;
 
@@ -598,8 +598,8 @@ _pmaEvictPages
             regId = findRegionID(pPma, evictPages[0]);
             addrBase = pPma->pRegDescriptors[regId]->base;
             frameNum = PMA_ADDR2FRAME(evictPages[0], addrBase);
-            state = pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], frameNum, NV_TRUE);
-            if ((state & ATTRIB_LOCALIZED) != 0)
+            state = pPma->pMapInfo->pmaMapReadLocalizationStatus(pPma->pRegions[regId], frameNum);
+            if ((state & LOCALIZATION_STATE_IS_LOCALIZED) != 0)
             {
                 flags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
             }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 #include "gpu/bus/kern_bus.h"
 
 #include "published/hopper/gh100/hwproject.h"
-#include "published/blackwell/gb10b/pri_nv_xal_ep.h"
 #include "published/hopper/gh100/dev_nv_xal_ep_zb.h"
 
 /*!
@@ -45,7 +44,8 @@ kbusWriteBAR0WindowBase_GB10B
     NvU32      base
 )
 {
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, base);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    REG_FLD_WR_DRF_NUM(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE, base);
     return NV_OK;
 }
 
@@ -64,7 +64,8 @@ kbusReadBAR0WindowBase_GB10B
     KernelBus *pKernelBus
 )
 {
-    return GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE);
+    IoAperture *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
+    return REG_RD_DRF(pXalAperture, _XAL_EP_ZB, _BAR0_WINDOW, _BASE);
 }
 
 /*!
@@ -84,7 +85,7 @@ kbusValidateBAR0WindowBase_GB10B
     NvU32      base
 )
 {
-    return base <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE);
+    return base <= DRF_MASK(NV_XAL_EP_ZB_BAR0_WINDOW_BASE);
 }
 
 /*!

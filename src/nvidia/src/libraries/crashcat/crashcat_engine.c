@@ -107,12 +107,12 @@ void crashcatEngineUnload_IMPL
 }
 
 // Non-NVOC wrapper to handle variadic arguments
-void crashcatEnginePrintf(CrashCatEngine *pCrashCatEng, NvBool bReportStart, const char *fmt, ...)
+void crashcatEnginePrintf(CrashCatEngine *pCrashCatEng, NvU64 errorId, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
     // Dispatches virtual function with va_list
-    crashcatEngineVprintf(pCrashCatEng, bReportStart, fmt, args);
+    crashcatEngineVprintf(pCrashCatEng, errorId, fmt, args);
     va_end(args);
 }
 

@@ -91,7 +91,7 @@ typedef struct _def_event_journal
 
 typedef struct _def_sys_error_info
 {
-    volatile NvU32  InUse;                            // Atomically set when a thread is accessing the structure
+    PORT_ATOMIC NvU32  InUse;                            // Atomically set when a thread is accessing the structure
     NvU32           LogCount;                         // Count of Logged Event Messages
     NvU32           ErrorCount;                       // Count of Logged Event Messages
     NvU32           TotalErrorCount;                  // Total Number of Errors Encountered
@@ -147,7 +147,7 @@ typedef struct
 typedef struct
 {
     NvU32                           id;                 // record id
-    volatile NvS32                  inUse;              // indicates the record is actively being used.
+    PORT_ATOMIC NvS32               inUse;              // indicates the record is actively being used.
     NV2080_NOCAT_JOURNAL_GPU_STATE  nocatGpuState;      // contains the state of the
                                                         // associated GPU if there is one,
     NV2080_NOCAT_JOURNAL_ENTRY      nocatJournalEntry;  // the NOCAT report data -- IDs, diag data etc.
@@ -258,13 +258,9 @@ struct NVOC_METADATA__OBJRCDB {
     const struct NVOC_METADATA__OBJTRACEABLE metadata__OBJTRACEABLE;
 };
 
-#ifndef __NVOC_CLASS_OBJRCDB_TYPEDEF__
-#define __NVOC_CLASS_OBJRCDB_TYPEDEF__
-typedef struct OBJRCDB OBJRCDB;
-#endif /* __NVOC_CLASS_OBJRCDB_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJRCDB
-#define __nvoc_class_id_OBJRCDB 0x15dec8
+#define __nvoc_class_id_OBJRCDB 0x15dec8u
+typedef struct OBJRCDB OBJRCDB;
 #endif /* __nvoc_class_id_OBJRCDB */
 
 // Casting support
@@ -290,13 +286,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJRCDB;
 NV_STATUS __nvoc_objCreateDynamic_OBJRCDB(OBJRCDB**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJRCDB(OBJRCDB**, Dynamic*, NvU32);
-#define __objCreate_OBJRCDB(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJRCDB((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJRCDB(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJRCDB((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS rcdbConstruct_IMPL(struct OBJRCDB *arg_pRcdb);
-#define __nvoc_rcdbConstruct(arg_pRcdb) rcdbConstruct_IMPL(arg_pRcdb)
+NV_STATUS rcdbConstruct_IMPL(struct OBJRCDB *pRcdb);
+#define __nvoc_rcdbConstruct(pRcdb) rcdbConstruct_IMPL(pRcdb)
 
 void rcdbDestruct_IMPL(struct OBJRCDB *pRcdb);
 #define __nvoc_rcdbDestruct(pRcdb) rcdbDestruct_IMPL(pRcdb)
@@ -529,6 +525,12 @@ void rcdbCleanupNocatGpuCache_IMPL(struct OBJGPU *pGpu);
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -19,14 +19,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * File:      nvhdmipkt_C971.c
- *
+ */
+
+/** @file  nvhdmipkt_C971.c
  */
 
 #include "nvhdmipkt_common.h"
-/*
- * Purpose:   Provides packet write functions for HDMI library  for NVD5.0 chips
+/** @brief Provides packet write functions for HDMI library for NVD5.0 chips
  */
 #include "nvhdmipkt_class.h"
 #include "nvhdmipkt_internal.h"

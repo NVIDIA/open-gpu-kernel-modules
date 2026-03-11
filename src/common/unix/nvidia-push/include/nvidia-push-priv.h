@@ -25,7 +25,7 @@
 #define __NVIDIA_PUSH_PRIV_H__
 
 #include "nvmisc.h" // NV_ALIGN_UP
-#include "class/cla16f.h" // NVA16F_GP_ENTRY__SIZE
+#include "class/clc46f.h" // NVC46F_GP_ENTRY__SIZE
 
 /*
  * Push buffer constants
@@ -42,7 +42,7 @@
 static inline NvU32 __nvPushGpFifoOffset(const NvPushChannelRec *pChannel)
 {
     nvAssert(pChannel->main.sizeInBytes != 0);
-    return NV_ALIGN_UP(pChannel->main.sizeInBytes, NVA16F_GP_ENTRY__SIZE);
+    return NV_ALIGN_UP(pChannel->main.sizeInBytes, NVC46F_GP_ENTRY__SIZE);
 }
 
 /*
@@ -53,7 +53,7 @@ static inline NvU32 __nvPushProgressTrackerOffset(
 {
     const NvU32 gpFifoOffset = __nvPushGpFifoOffset(pChannel);
     const NvU32 gpFifoLength =
-        pChannel->numGpFifoEntries * NVA16F_GP_ENTRY__SIZE;
+        pChannel->numGpFifoEntries * NVC46F_GP_ENTRY__SIZE;
 
     nvAssert(gpFifoLength != 0);
 

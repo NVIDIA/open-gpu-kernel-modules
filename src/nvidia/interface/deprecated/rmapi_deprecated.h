@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,7 +95,6 @@ void RmDeprecatedI2CAccess(DEPRECATED_CONTEXT *pContext, NVOS_I2C_ACCESS_PARAMS 
 void RmDeprecatedIdleChannels(DEPRECATED_CONTEXT *pContext, NVOS30_PARAMETERS *pArgs);
 void RmDeprecatedVidHeapControl(DEPRECATED_CONTEXT *pContext, NVOS32_PARAMETERS *pArgs);
 void RmDeprecatedAllocMemory(DEPRECATED_CONTEXT *pContext, NVOS02_PARAMETERS *pArgs);
-
 
 /**
  * List of utility functions (used within shims)

@@ -36,7 +36,7 @@
 #include "nv_uvm_types.h"
 #include "nv_uvm_user_types.h"
 #include "nv_uvm_interface.h"
-#include "clb06f.h"
+#include "clc46f.h"
 #include "uvm_conf_computing.h"
 
 
@@ -989,7 +989,7 @@ static void internal_channel_submit_work(uvm_push_t *push, NvU32 push_size, NvU3
     uvm_pushbuffer_t *pushbuffer = uvm_channel_get_pushbuffer(channel);
     uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
 
-    BUILD_BUG_ON(sizeof(*gpfifo_entry) != NVB06F_GP_ENTRY__SIZE);
+    BUILD_BUG_ON(sizeof(*gpfifo_entry) != NVC46F_GP_ENTRY__SIZE);
     UVM_ASSERT(!uvm_channel_is_proxy(channel));
 
     gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + channel->cpu_put;
@@ -3018,10 +3018,16 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
 
             break;
 
-        // For GPU_INTERNAL we want the max possible bandwidth for CEs. For now
-        // assume that the number of PCEs is a good measure.
+        // For GPU_INTERNAL we opt for an LCE optimized for scrubbing, if
+        // available. Otherwise, we want the max possible bandwidth for CEs. For
+        // now assume that the number of PCEs is a good measure.
+        // If not, we fall back to less-used LCEs.
         // TODO: Bug 1735254: Add a direct CE query for local FB bandwidth
         case UVM_CHANNEL_TYPE_GPU_INTERNAL:
+            // Always prefer a scrub-optimized LCE.
+            if (cap0->scrub != cap1->scrub)
+                return cap1->scrub - cap0->scrub;
+
             {
                 int pce_diff = (int)hweight32(cap1->cePceMask) - (int)hweight32(cap0->cePceMask);
 
@@ -3040,6 +3046,7 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
         // system-wide) so just break out to get the default ordering which
         // prioritizes usage count.
         case UVM_CHANNEL_TYPE_MEMOPS:
+
         // For WLC we only care about using a dedicated CE, which requires
         // knowing the global CE mappings. For now just rely on the default
         // ordering, which results on selecting an unused CE (if available).
@@ -3346,21 +3353,6 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
         else {
             manager->conf.pushbuffer_loc = UVM_BUFFER_LOCATION_VID;
         }
-    }
-
-    // 3- GPFIFO/GPPut location
-    // Only support the knobs for GPFIFO/GPPut on Volta+
-    if (!gpu->parent->gpfifo_in_vidmem_supported) {
-        if (manager->conf.gpput_loc == UVM_BUFFER_LOCATION_SYS) {
-            UVM_INFO_PRINT("CAUTION: allocating GPPut in sysmem is NOT supported and may crash the system, using %s "
-                           "instead\n",
-                           buffer_location_to_string(UVM_BUFFER_LOCATION_DEFAULT));
-        }
-
-        manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_DEFAULT;
-        manager->conf.gpput_loc = UVM_BUFFER_LOCATION_DEFAULT;
-
-        return;
     }
 
     gpfifo_loc_value = uvm_channel_gpfifo_loc;
@@ -4118,6 +4110,26 @@ static const char *get_gpput_location_string(uvm_channel_t *channel)
         return buffer_location_to_string(UVM_BUFFER_LOCATION_SYS);
 
     return buffer_location_to_string(channel->pool->manager->conf.gpput_loc);
+}
+
+void uvm_gpu_print_ce_mapping(const uvm_gpu_t *gpu, struct seq_file *s)
+{
+    uvm_channel_type_t type;
+
+    UVM_SEQ_OR_DBG_PRINT(s, "CE channel_type to engine index mapping:\n");
+    for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
+        // For the UVM_CHANNEL_TYPE_GPU_TO_GPU type, we print the default pool,
+        // which may not be the optimal CE (in gpu_to_gpu) on NVLINK-based
+        // systems, as we may have different CEs per peer GPU.
+        uvm_channel_pool_t *channel_pool = gpu->channel_manager->pool_to_use.default_for_type[type];
+
+        if (channel_pool) {
+            UVM_SEQ_OR_DBG_PRINT(s, " %-30s ce %-2u #channels %-2u\n",
+                                    uvm_channel_type_to_string(type),
+                                    channel_pool->engine_index,
+                                    channel_pool->num_channels);
+        }
+    }
 }
 
 static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)

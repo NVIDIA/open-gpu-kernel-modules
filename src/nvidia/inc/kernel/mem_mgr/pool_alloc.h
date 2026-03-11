@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,7 +51,6 @@ typedef enum
     POOL_CONFIG_CTXBUF_256G,    // configure pool for RM internal allocations like ctx buffers with 256GB page size
     POOL_CONFIG_CTXBUF_512M,    // configure pool for RM internal allocations like ctx buffers with 512MB page size
     POOL_CONFIG_CTXBUF_2M,      // configure pool for RM internal allocations like ctx buffers with 2MB page size
-    POOL_CONFIG_CTXBUF_128K,   // configure pool for RM internal allocations like ctx buffers with  128KB page size
     POOL_CONFIG_CTXBUF_64K,     // configure pool for RM internal allocations like ctx buffers with 64KB page size
     POOL_CONFIG_CTXBUF_4K,      // configure pool for RM internal allocations like ctx buffers with 4KB page size
     POOL_CONFIG_MAX_SUPPORTED

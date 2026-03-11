@@ -723,7 +723,7 @@ kceMapPceLceForNvlinkPeers_GB100
     KernelNvlink   *pKernelNvlink         = GPU_GET_KERNEL_NVLINK(pGpu);
     NV_STATUS       status                = NV_OK;
     NvU32           pceMask               = 0;
-    NvU32           peerLinkMask          = 0;
+    NvU64           peerLinkMask          = 0;
     NvU32           gpuInstance           = 0;
     NvU32           pceIndex              = kceGetPce2lceConfigSize1_HAL(pKCe);
     NvBool          bPeerAssigned         = NV_FALSE;
@@ -837,7 +837,7 @@ kceMapPceLceForNvlinkPeers_GB100
                                          sizeof(params));
             NV_ASSERT_OK_OR_RETURN(status);
 
-            FOR_EACH_INDEX_IN_MASK(32, linkId, peerLinkMask)
+            FOR_EACH_INDEX_IN_MASK(64, linkId, peerLinkMask)
             {
                 hshubIndex  = params.hshubIds[linkId];
                 pceIndex    = CE_GET_LOWEST_AVAILABLE_IDX(pAvailablePceMaskForConnectingHub[hshubIndex]);
@@ -854,7 +854,7 @@ kceMapPceLceForNvlinkPeers_GB100
         else
         {
             NvU32 numPcesAssigned    = 0;
-            NvU32 numLinks           = nvPopCount32(peerLinkMask);
+            NvU32 numLinks           = nvPopCount64(peerLinkMask);
             NvU32 connectingHubIndex = 0;
             NvBool bFoundPces;
 
@@ -2146,9 +2146,16 @@ kceGetP2PCes_GB100
 
         if (kceIsCeNvlinkP2P_HAL(pGpu, pKCeLoop))
         {
-            if ((pKCeLoop->nvlinkPeerMask & remoteGpuMask) > 0)
+            if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
             {
                 *pNvlinkP2PCeMask |= NVBIT32(pKCeLoop->publicID);
+            }
+            else
+            {
+                if ((pKCeLoop->nvlinkPeerMask & remoteGpuMask) > 0)
+                {
+                    *pNvlinkP2PCeMask |= NVBIT32(pKCeLoop->publicID);
+                }
             }
         }
     }

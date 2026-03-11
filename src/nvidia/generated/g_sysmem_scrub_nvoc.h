@@ -47,29 +47,19 @@ extern "C" {
 #include "core/core.h"
 #include "gpu/gpu.h"
 
-
 struct CeUtils;
 
-#ifndef __NVOC_CLASS_CeUtils_TYPEDEF__
-#define __NVOC_CLASS_CeUtils_TYPEDEF__
-typedef struct CeUtils CeUtils;
-#endif /* __NVOC_CLASS_CeUtils_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CeUtils
-#define __nvoc_class_id_CeUtils 0x8b8bae
+#define __nvoc_class_id_CeUtils 0x8b8baeu
+typedef struct CeUtils CeUtils;
 #endif /* __nvoc_class_id_CeUtils */
-
 
 
 struct SysmemScrubber;
 
-#ifndef __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-#define __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-typedef struct SysmemScrubber SysmemScrubber;
-#endif /* __NVOC_CLASS_SysmemScrubber_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SysmemScrubber
-#define __nvoc_class_id_SysmemScrubber 0x266962
+#define __nvoc_class_id_SysmemScrubber 0x266962u
+typedef struct SysmemScrubber SysmemScrubber;
 #endif /* __nvoc_class_id_SysmemScrubber */
 
 
@@ -78,21 +68,14 @@ typedef struct
 {
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 semaphoreValue;
-    NODE listNode;
 } SysScrubEntry;
 
-MAKE_INTRUSIVE_LIST(SysScrubList, SysScrubEntry, listNode);
+MAKE_LIST(SysScrubList, SysScrubEntry);
 
 typedef struct
 {
-    // semaphore event handle doesn't take GPU lock
-    PORT_SPINLOCK *pSpinlock;
-
-    // spinlock needs to be taken to use pSysmemScrubber
     struct SysmemScrubber *pSysmemScrubber;
-
     NvU32 refCount;
-    NvU32 bWorkerQueued;
 } SysmemScrubberWorkerParams;
 
 
@@ -131,6 +114,7 @@ struct SysmemScrubber {
     struct CeUtils *pCeUtils;
     SysScrubList asyncScrubList;
     NvBool bAsync;
+    NvBool bCallbackQueued;
     SysmemScrubberWorkerParams *pWorkerParams;
 };
 
@@ -141,13 +125,9 @@ struct NVOC_METADATA__SysmemScrubber {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-#define __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-typedef struct SysmemScrubber SysmemScrubber;
-#endif /* __NVOC_CLASS_SysmemScrubber_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SysmemScrubber
-#define __nvoc_class_id_SysmemScrubber 0x266962
+#define __nvoc_class_id_SysmemScrubber 0x266962u
+typedef struct SysmemScrubber SysmemScrubber;
 #endif /* __nvoc_class_id_SysmemScrubber */
 
 // Casting support
@@ -165,14 +145,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SysmemScrubber;
 
 NV_STATUS __nvoc_objCreateDynamic_SysmemScrubber(SysmemScrubber**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_SysmemScrubber(SysmemScrubber**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu);
-#define __objCreate_SysmemScrubber(ppNewObj, pParent, createFlags, arg_pGpu) \
-    __nvoc_objCreate_SysmemScrubber((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu)
+NV_STATUS __nvoc_objCreate_SysmemScrubber(SysmemScrubber**, Dynamic*, NvU32, struct OBJGPU *pGpu);
+#define __objCreate_SysmemScrubber(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pGpu) \
+    __nvoc_objCreate_SysmemScrubber((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pGpu)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS sysmemscrubConstruct_IMPL(struct SysmemScrubber *arg_pSysmemScrubber, struct OBJGPU *arg_pGpu);
-#define __nvoc_sysmemscrubConstruct(arg_pSysmemScrubber, arg_pGpu) sysmemscrubConstruct_IMPL(arg_pSysmemScrubber, arg_pGpu)
+NV_STATUS sysmemscrubConstruct_IMPL(struct SysmemScrubber *pSysmemScrubber, struct OBJGPU *pGpu);
+#define __nvoc_sysmemscrubConstruct(pSysmemScrubber, pGpu) sysmemscrubConstruct_IMPL(pSysmemScrubber, pGpu)
 
 NV_STATUS sysmemscrubScrubAndFree_IMPL(struct SysmemScrubber *pSysmemScrubber, MEMORY_DESCRIPTOR *pMemDesc);
 #ifdef __nvoc_sysmem_scrub_h_disabled
@@ -191,6 +171,12 @@ void sysmemscrubDestruct_IMPL(struct SysmemScrubber *pSysmemScrubber);
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

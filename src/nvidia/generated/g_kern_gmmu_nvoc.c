@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x29362f = 1;
+char __nvoc_class_id_uniqueness_check__29362f = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGmmu;
@@ -59,19 +59,18 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad(struct OBJGPU *pGpu, str
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3);    // this
 NvBool __nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
 
+// Class-specific details for KernelGmmu
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGmmu = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelGmmu),
-        /*classId=*/            classId(KernelGmmu),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelGmmu),
+    .classInfo.classId =            classId(KernelGmmu),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelGmmu",
+    .classInfo.name =               "KernelGmmu",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelGmmu,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelGmmu,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelGmmu
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelGmmu,
+    .pCastInfo =          &__nvoc_castinfo__KernelGmmu,
+    .pExportInfo =        &__nvoc_export_info__KernelGmmu
 };
 
 
@@ -108,7 +107,7 @@ static const struct NVOC_METADATA__KernelGmmu __nvoc_metadata__KernelGmmu = {
     .metadata__IntrService.vtable.__intrservClearInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservClearInterrupt,    // virtual
     .vtable.__kgmmuServiceInterrupt__ = &kgmmuServiceInterrupt_IMPL,    // virtual override (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt,    // virtual
-    .vtable.__kgmmuServiceNotificationInterrupt__ = &kgmmuServiceNotificationInterrupt_56cd7a,    // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
+    .vtable.__kgmmuServiceNotificationInterrupt__ = &kgmmuServiceNotificationInterrupt_ac1694,    // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
     .metadata__IntrService.vtable.__intrservServiceNotificationInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt,    // virtual
     .vtable.__kgmmuInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
@@ -236,20 +235,26 @@ NvBool __nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent(struct OBJGPU *pGpu, struct Ke
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelGmmu = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelGmmu object.
 void __nvoc_kgmmuDestruct(KernelGmmu*);
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
 void __nvoc_dtor_IntrService(IntrService*);
-void __nvoc_dtor_KernelGmmu(KernelGmmu *pThis) {
+void __nvoc_dtor_KernelGmmu(KernelGmmu* pThis) {
+
+// Call destructor.
     __nvoc_kgmmuDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -264,8 +269,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED, NV_TRUE);
     }
@@ -277,8 +282,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     pThis->setProperty(pThis, PDB_PROP_KGMMU_REDUCE_NR_FAULT_BUFFER_SIZE, NV_FALSE);
 
     // Hal field -- defaultBigPageSize
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->defaultBigPageSize = (64 * 1024);
     }
@@ -288,8 +293,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     }
 
     // Hal field -- bHugePageSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bHugePageSupported = NV_TRUE;
     }
@@ -300,8 +305,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     }
 
     // Hal field -- bPageSize512mbSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0fc00UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0fc00UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bPageSize512mbSupported = NV_TRUE;
     }
@@ -312,8 +317,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     }
 
     // Hal field -- bPageSize256gbSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 */ 
     {
         pThis->bPageSize256gbSupported = NV_TRUE;
     }
@@ -335,8 +340,8 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     }
 
     // Hal field -- bVaspaceInteropSupported
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->bVaspaceInteropSupported = NV_TRUE;
     }
@@ -347,22 +352,28 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuha
     }
 }
 
-NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_IntrService(IntrService* );
+
+// Construct KernelGmmu object.
+NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE *);
+NV_STATUS __nvoc_ctor_IntrService(IntrService *);
 NV_STATUS __nvoc_ctor_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelGmmu_fail_OBJENGSTATE;
     status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
     if (status != NV_OK) goto __nvoc_ctor_KernelGmmu_fail_IntrService;
+
+    // Initialize data fields.
     __nvoc_init_dataField_KernelGmmu(pThis, pGpuhalspecowner, pRmhalspecowner);
     goto __nvoc_ctor_KernelGmmu_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelGmmu_fail_IntrService:
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
 __nvoc_ctor_KernelGmmu_fail_OBJENGSTATE:
 __nvoc_ctor_KernelGmmu_exit:
-
     return status;
 }
 
@@ -383,7 +394,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuStatePostLoad -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuStatePostLoad__ = &kgmmuStatePostLoad_56cd7a;
+        pThis->__kgmmuStatePostLoad__ = &kgmmuStatePostLoad_ac1694;
     }
     else
     {
@@ -393,7 +404,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuStatePreUnload -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuStatePreUnload__ = &kgmmuStatePreUnload_56cd7a;
+        pThis->__kgmmuStatePreUnload__ = &kgmmuStatePreUnload_ac1694;
     }
     else
     {
@@ -407,7 +418,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuGetFaultBufferReservedFbSpaceSize__ = &kgmmuGetFaultBufferReservedFbSpaceSize_4a4dee;
+        pThis->__kgmmuGetFaultBufferReservedFbSpaceSize__ = &kgmmuGetFaultBufferReservedFbSpaceSize_b2b553;
     }
 
     // kgmmuGetMaxBigPageSize -- halified (2 hals) body
@@ -451,21 +462,21 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuInstBlkMagicValueGet -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuInstBlkMagicValueGet__ = &kgmmuInstBlkMagicValueGet_GA10B;
     }
     // default
     else
     {
-        pThis->__kgmmuInstBlkMagicValueGet__ = &kgmmuInstBlkMagicValueGet_46f6a7;
+        pThis->__kgmmuInstBlkMagicValueGet__ = &kgmmuInstBlkMagicValueGet_395e98;
     }
 
     // kgmmuInstBlkPageDirBaseGet -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuInstBlkPageDirBaseGet__ = &kgmmuInstBlkPageDirBaseGet_46f6a7;
+        pThis->__kgmmuInstBlkPageDirBaseGet__ = &kgmmuInstBlkPageDirBaseGet_395e98;
     }
     else
     {
@@ -495,7 +506,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtInitPteApertures -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitPteApertures__ = &kgmmuFmtInitPteApertures_b3696a;
+        pThis->__kgmmuFmtInitPteApertures__ = &kgmmuFmtInitPteApertures_d44104;
     }
     else
     {
@@ -505,7 +516,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtInitPdeApertures -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitPdeApertures__ = &kgmmuFmtInitPdeApertures_b3696a;
+        pThis->__kgmmuFmtInitPdeApertures__ = &kgmmuFmtInitPdeApertures_d44104;
     }
     else
     {
@@ -515,7 +526,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuInvalidateTlb -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuInvalidateTlb__ = &kgmmuInvalidateTlb_f2d351;
+        pThis->__kgmmuInvalidateTlb__ = &kgmmuInvalidateTlb_5baef9;
     }
     else
     {
@@ -537,7 +548,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         pThis->__kgmmuCheckPendingInvalidates__ = &kgmmuCheckPendingInvalidates_5baef9;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgmmuCheckPendingInvalidates__ = &kgmmuCheckPendingInvalidates_TU102;
     }
@@ -551,7 +562,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         pThis->__kgmmuCommitTlbInvalidate__ = &kgmmuCommitTlbInvalidate_5baef9;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgmmuCommitTlbInvalidate__ = &kgmmuCommitTlbInvalidate_TU102;
     }
@@ -563,9 +574,9 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuSetPdbToInvalidate -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuSetPdbToInvalidate__ = &kgmmuSetPdbToInvalidate_b3696a;
+        pThis->__kgmmuSetPdbToInvalidate__ = &kgmmuSetPdbToInvalidate_d44104;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgmmuSetPdbToInvalidate__ = &kgmmuSetPdbToInvalidate_TU102;
     }
@@ -581,14 +592,37 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuSetTlbInvalidateMembarWarParameters__ = &kgmmuSetTlbInvalidateMembarWarParameters_4a4dee;
+        pThis->__kgmmuSetTlbInvalidateMembarWarParameters__ = &kgmmuSetTlbInvalidateMembarWarParameters_b2b553;
+    }
+
+    // kgmmuSetTlbInvalidateMembarParameters -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kgmmuSetTlbInvalidateMembarParameters__ = &kgmmuSetTlbInvalidateMembarParameters_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kgmmuSetTlbInvalidateMembarParameters__ = &kgmmuSetTlbInvalidateMembarParameters_d44104;
+    }
+
+    // kgmmuCheckMemSubsysError -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        pThis->__kgmmuCheckMemSubsysError__ = &kgmmuCheckMemSubsysError_IMPL;
+    }
+    // default
+    else
+    {
+        pThis->__kgmmuCheckMemSubsysError__ = &kgmmuCheckMemSubsysError_ac1694;
     }
 
     // kgmmuSetTlbInvalidationScope -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T264D */ 
     {
-        pThis->__kgmmuSetTlbInvalidationScope__ = &kgmmuSetTlbInvalidationScope_46f6a7;
+        pThis->__kgmmuSetTlbInvalidationScope__ = &kgmmuSetTlbInvalidationScope_395e98;
     }
     else
     {
@@ -602,7 +636,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuFmtInitPteComptagLine__ = &kgmmuFmtInitPteComptagLine_b3696a;
+        pThis->__kgmmuFmtInitPteComptagLine__ = &kgmmuFmtInitPteComptagLine_d44104;
     }
 
     // kgmmuFmtInitPeerPteFld -- halified (2 hals) body
@@ -612,13 +646,13 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuFmtInitPeerPteFld__ = &kgmmuFmtInitPeerPteFld_b3696a;
+        pThis->__kgmmuFmtInitPeerPteFld__ = &kgmmuFmtInitPeerPteFld_d44104;
     }
 
     // kgmmuEnableComputePeerAddressing -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuEnableComputePeerAddressing__ = &kgmmuEnableComputePeerAddressing_56cd7a;
+        pThis->__kgmmuEnableComputePeerAddressing__ = &kgmmuEnableComputePeerAddressing_ac1694;
     }
     else
     {
@@ -628,7 +662,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtInitPte -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitPte__ = &kgmmuFmtInitPte_b3696a;
+        pThis->__kgmmuFmtInitPte__ = &kgmmuFmtInitPte_d44104;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -642,7 +676,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtInitPde -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitPde__ = &kgmmuFmtInitPde_b3696a;
+        pThis->__kgmmuFmtInitPde__ = &kgmmuFmtInitPde_d44104;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -656,7 +690,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtIsVersionSupported -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtIsVersionSupported__ = &kgmmuFmtIsVersionSupported_3dd2c9;
+        pThis->__kgmmuFmtIsVersionSupported__ = &kgmmuFmtIsVersionSupported_d69453;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -668,13 +702,13 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuFmtInitLevels -- halified (5 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kgmmuFmtInitLevels__ = &kgmmuFmtInitLevels_GH10X;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitLevels__ = &kgmmuFmtInitLevels_b3696a;
+        pThis->__kgmmuFmtInitLevels__ = &kgmmuFmtInitLevels_d44104;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -692,7 +726,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuFmtInitPdeMulti -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuFmtInitPdeMulti__ = &kgmmuFmtInitPdeMulti_b3696a;
+        pThis->__kgmmuFmtInitPdeMulti__ = &kgmmuFmtInitPdeMulti_d44104;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -706,7 +740,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuDetermineMaxVASize -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuDetermineMaxVASize__ = &kgmmuDetermineMaxVASize_b3696a;
+        pThis->__kgmmuDetermineMaxVASize__ = &kgmmuDetermineMaxVASize_d44104;
     }
     else
     {
@@ -728,53 +762,53 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuTranslatePtePcfFromSw -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuTranslatePtePcfFromSw__ = &kgmmuTranslatePtePcfFromSw_GH100;
     }
     else
     {
-        pThis->__kgmmuTranslatePtePcfFromSw__ = &kgmmuTranslatePtePcfFromSw_56cd7a;
+        pThis->__kgmmuTranslatePtePcfFromSw__ = &kgmmuTranslatePtePcfFromSw_ac1694;
     }
 
     // kgmmuTranslatePtePcfFromHw -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuTranslatePtePcfFromHw__ = &kgmmuTranslatePtePcfFromHw_GH100;
     }
     else
     {
-        pThis->__kgmmuTranslatePtePcfFromHw__ = &kgmmuTranslatePtePcfFromHw_56cd7a;
+        pThis->__kgmmuTranslatePtePcfFromHw__ = &kgmmuTranslatePtePcfFromHw_ac1694;
     }
 
     // kgmmuTranslatePdePcfFromSw -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuTranslatePdePcfFromSw__ = &kgmmuTranslatePdePcfFromSw_GH100;
     }
     else
     {
-        pThis->__kgmmuTranslatePdePcfFromSw__ = &kgmmuTranslatePdePcfFromSw_56cd7a;
+        pThis->__kgmmuTranslatePdePcfFromSw__ = &kgmmuTranslatePdePcfFromSw_ac1694;
     }
 
     // kgmmuTranslatePdePcfFromHw -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuTranslatePdePcfFromHw__ = &kgmmuTranslatePdePcfFromHw_GH100;
     }
     else
     {
-        pThis->__kgmmuTranslatePdePcfFromHw__ = &kgmmuTranslatePdePcfFromHw_56cd7a;
+        pThis->__kgmmuTranslatePdePcfFromHw__ = &kgmmuTranslatePdePcfFromHw_ac1694;
     }
 
     // kgmmuGetFaultRegisterMappings -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuGetFaultRegisterMappings__ = &kgmmuGetFaultRegisterMappings_46f6a7;
+        pThis->__kgmmuGetFaultRegisterMappings__ = &kgmmuGetFaultRegisterMappings_395e98;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -790,7 +824,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         pThis->__kgmmuGetFaultTypeString__ = &kgmmuGetFaultTypeString_95626c;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kgmmuGetFaultTypeString__ = &kgmmuGetFaultTypeString_GP100;
     }
@@ -802,7 +836,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuChangeReplayableFaultOwnership -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuChangeReplayableFaultOwnership__ = &kgmmuChangeReplayableFaultOwnership_56cd7a;
+        pThis->__kgmmuChangeReplayableFaultOwnership__ = &kgmmuChangeReplayableFaultOwnership_ac1694;
     }
     else
     {
@@ -812,7 +846,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuServiceReplayableFault -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuServiceReplayableFault__ = &kgmmuServiceReplayableFault_46f6a7;
+        pThis->__kgmmuServiceReplayableFault__ = &kgmmuServiceReplayableFault_395e98;
     }
     else
     {
@@ -820,31 +854,31 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuIssueReplayableFaultBufferFlush -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuIssueReplayableFaultBufferFlush__ = &kgmmuIssueReplayableFaultBufferFlush_GH100;
     }
     else
     {
-        pThis->__kgmmuIssueReplayableFaultBufferFlush__ = &kgmmuIssueReplayableFaultBufferFlush_46f6a7;
+        pThis->__kgmmuIssueReplayableFaultBufferFlush__ = &kgmmuIssueReplayableFaultBufferFlush_395e98;
     }
 
     // kgmmuToggleFaultOnPrefetch -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuToggleFaultOnPrefetch__ = &kgmmuToggleFaultOnPrefetch_GH100;
     }
     else
     {
-        pThis->__kgmmuToggleFaultOnPrefetch__ = &kgmmuToggleFaultOnPrefetch_46f6a7;
+        pThis->__kgmmuToggleFaultOnPrefetch__ = &kgmmuToggleFaultOnPrefetch_395e98;
     }
 
     // kgmmuReportFaultBufferOverflow -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuReportFaultBufferOverflow__ = &kgmmuReportFaultBufferOverflow_46f6a7;
+        pThis->__kgmmuReportFaultBufferOverflow__ = &kgmmuReportFaultBufferOverflow_395e98;
     }
     else
     {
@@ -854,7 +888,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuReadFaultBufferGetPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuReadFaultBufferGetPtr__ = &kgmmuReadFaultBufferGetPtr_46f6a7;
+        pThis->__kgmmuReadFaultBufferGetPtr__ = &kgmmuReadFaultBufferGetPtr_395e98;
     }
     else
     {
@@ -864,7 +898,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuWriteFaultBufferGetPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuWriteFaultBufferGetPtr__ = &kgmmuWriteFaultBufferGetPtr_46f6a7;
+        pThis->__kgmmuWriteFaultBufferGetPtr__ = &kgmmuWriteFaultBufferGetPtr_395e98;
     }
     else
     {
@@ -874,7 +908,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuReadFaultBufferPutPtr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuReadFaultBufferPutPtr__ = &kgmmuReadFaultBufferPutPtr_46f6a7;
+        pThis->__kgmmuReadFaultBufferPutPtr__ = &kgmmuReadFaultBufferPutPtr_395e98;
     }
     else
     {
@@ -914,7 +948,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuIsNonReplayableFaultPending -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuIsNonReplayableFaultPending__ = &kgmmuIsNonReplayableFaultPending_3dd2c9;
+        pThis->__kgmmuIsNonReplayableFaultPending__ = &kgmmuIsNonReplayableFaultPending_d69453;
     }
     else
     {
@@ -924,7 +958,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuClientShadowFaultBufferAlloc -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuClientShadowFaultBufferAlloc__ = &kgmmuClientShadowFaultBufferAlloc_56cd7a;
+        pThis->__kgmmuClientShadowFaultBufferAlloc__ = &kgmmuClientShadowFaultBufferAlloc_ac1694;
     }
     else
     {
@@ -934,7 +968,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuClientShadowFaultBufferFree -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuClientShadowFaultBufferFree__ = &kgmmuClientShadowFaultBufferFree_56cd7a;
+        pThis->__kgmmuClientShadowFaultBufferFree__ = &kgmmuClientShadowFaultBufferFree_ac1694;
     }
     else
     {
@@ -942,25 +976,25 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuFaultBufferAllocSharedMemory -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuFaultBufferAllocSharedMemory__ = &kgmmuFaultBufferAllocSharedMemory_GH100;
     }
     else
     {
-        pThis->__kgmmuFaultBufferAllocSharedMemory__ = &kgmmuFaultBufferAllocSharedMemory_56cd7a;
+        pThis->__kgmmuFaultBufferAllocSharedMemory__ = &kgmmuFaultBufferAllocSharedMemory_ac1694;
     }
 
     // kgmmuFaultBufferFreeSharedMemory -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuFaultBufferFreeSharedMemory__ = &kgmmuFaultBufferFreeSharedMemory_GH100;
     }
     else
     {
-        pThis->__kgmmuFaultBufferFreeSharedMemory__ = &kgmmuFaultBufferFreeSharedMemory_b3696a;
+        pThis->__kgmmuFaultBufferFreeSharedMemory__ = &kgmmuFaultBufferFreeSharedMemory_d44104;
     }
 
     // kgmmuSetupWarForBug2720120 -- halified (2 hals) body
@@ -970,15 +1004,15 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuSetupWarForBug2720120__ = &kgmmuSetupWarForBug2720120_56cd7a;
+        pThis->__kgmmuSetupWarForBug2720120__ = &kgmmuSetupWarForBug2720120_ac1694;
     }
 
     // kgmmuTestAccessCounterWriteNak -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) ) ||
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | T234D | T264D */ 
     {
-        pThis->__kgmmuTestAccessCounterWriteNak__ = &kgmmuTestAccessCounterWriteNak_3dd2c9;
+        pThis->__kgmmuTestAccessCounterWriteNak__ = &kgmmuTestAccessCounterWriteNak_d69453;
     }
     else
     {
@@ -988,10 +1022,10 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuCheckAccessCounterBar2FaultServicingState -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuCheckAccessCounterBar2FaultServicingState__ = &kgmmuCheckAccessCounterBar2FaultServicingState_3dd2c9;
+        pThis->__kgmmuCheckAccessCounterBar2FaultServicingState__ = &kgmmuCheckAccessCounterBar2FaultServicingState_d69453;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000006UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 */ 
     {
         pThis->__kgmmuCheckAccessCounterBar2FaultServicingState__ = &kgmmuCheckAccessCounterBar2FaultServicingState_GB100;
     }
@@ -1005,15 +1039,15 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         pThis->__kgmmuGetGraphicsEngineId__ = &kgmmuGetGraphicsEngineId_GV100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuGetGraphicsEngineId__ = &kgmmuGetGraphicsEngineId_GH100;
     }
     // default
     else
     {
-        pThis->__kgmmuGetGraphicsEngineId__ = &kgmmuGetGraphicsEngineId_4a4dee;
+        pThis->__kgmmuGetGraphicsEngineId__ = &kgmmuGetGraphicsEngineId_b2b553;
     }
 
     // kgmmuEnableNvlinkComputePeerAddressing -- halified (2 hals) body
@@ -1029,7 +1063,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuClearNonReplayableFaultIntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuClearNonReplayableFaultIntr__ = &kgmmuClearNonReplayableFaultIntr_b3696a;
+        pThis->__kgmmuClearNonReplayableFaultIntr__ = &kgmmuClearNonReplayableFaultIntr_d44104;
     }
     else
     {
@@ -1039,7 +1073,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuClearReplayableFaultIntr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuClearReplayableFaultIntr__ = &kgmmuClearReplayableFaultIntr_b3696a;
+        pThis->__kgmmuClearReplayableFaultIntr__ = &kgmmuClearReplayableFaultIntr_d44104;
     }
     else
     {
@@ -1047,8 +1081,8 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuReadShadowBufPutIndex -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x70000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x9c000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuReadShadowBufPutIndex__ = &kgmmuReadShadowBufPutIndex_GH100;
     }
@@ -1061,7 +1095,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuPrintFaultInfo -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuPrintFaultInfo__ = &kgmmuPrintFaultInfo_b3696a;
+        pThis->__kgmmuPrintFaultInfo__ = &kgmmuPrintFaultInfo_d44104;
     }
     else
     {
@@ -1115,7 +1149,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuCopyMmuFaults__ = &kgmmuCopyMmuFaults_56cd7a;
+            pThis->__kgmmuCopyMmuFaults__ = &kgmmuCopyMmuFaults_ac1694;
         }
         else
         {
@@ -1132,7 +1166,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuParseFaultPacket__ = &kgmmuParseFaultPacket_56cd7a;
+            pThis->__kgmmuParseFaultPacket__ = &kgmmuParseFaultPacket_ac1694;
         }
         else
         {
@@ -1149,7 +1183,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuFaultBufferClearPackets__ = &kgmmuFaultBufferClearPackets_b3696a;
+            pThis->__kgmmuFaultBufferClearPackets__ = &kgmmuFaultBufferClearPackets_d44104;
         }
         else
         {
@@ -1166,7 +1200,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuFaultBufferGetFault__ = &kgmmuFaultBufferGetFault_fa6e19;
+            pThis->__kgmmuFaultBufferGetFault__ = &kgmmuFaultBufferGetFault_9e2234;
         }
         else
         {
@@ -1183,7 +1217,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuCopyFaultPacketToClientShadowBuffer__ = &kgmmuCopyFaultPacketToClientShadowBuffer_4a4dee;
+            pThis->__kgmmuCopyFaultPacketToClientShadowBuffer__ = &kgmmuCopyFaultPacketToClientShadowBuffer_b2b553;
         }
         else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
         {
@@ -1202,15 +1236,15 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuIsReplayableShadowFaultBufferFull -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf0000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbc000000UL) ) ||
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
         {
             pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_GH100;
         }
         // default
         else
         {
-            pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_3dd2c9;
+            pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_d69453;
         }
     }
     else
@@ -1221,19 +1255,19 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuReadClientShadowBufPutIndex -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000000UL) )) /* ChipHal: GH100 */ 
         {
             pThis->__kgmmuReadClientShadowBufPutIndex__ = &kgmmuReadClientShadowBufPutIndex_GH100;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
         {
             pThis->__kgmmuReadClientShadowBufPutIndex__ = &kgmmuReadClientShadowBufPutIndex_GB100;
         }
         // default
         else
         {
-            pThis->__kgmmuReadClientShadowBufPutIndex__ = &kgmmuReadClientShadowBufPutIndex_4a4dee;
+            pThis->__kgmmuReadClientShadowBufPutIndex__ = &kgmmuReadClientShadowBufPutIndex_b2b553;
         }
     }
     else
@@ -1244,19 +1278,19 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuWriteClientShadowBufPutIndex -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000000UL) )) /* ChipHal: GH100 */ 
         {
             pThis->__kgmmuWriteClientShadowBufPutIndex__ = &kgmmuWriteClientShadowBufPutIndex_GH100;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
         {
             pThis->__kgmmuWriteClientShadowBufPutIndex__ = &kgmmuWriteClientShadowBufPutIndex_GB100;
         }
         // default
         else
         {
-            pThis->__kgmmuWriteClientShadowBufPutIndex__ = &kgmmuWriteClientShadowBufPutIndex_b3696a;
+            pThis->__kgmmuWriteClientShadowBufPutIndex__ = &kgmmuWriteClientShadowBufPutIndex_d44104;
         }
     }
     else
@@ -1269,15 +1303,15 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_GV100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf1f0fc00UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0fc00UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
     {
         pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_GA100;
     }
     // default
     else
     {
-        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_56cd7a;
+        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_ac1694;
     }
 
     // kgmmuFaultBufferMap -- halified (2 hals) body
@@ -1305,7 +1339,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuFaultBufferInit__ = &kgmmuFaultBufferInit_56cd7a;
+            pThis->__kgmmuFaultBufferInit__ = &kgmmuFaultBufferInit_ac1694;
         }
         else
         {
@@ -1314,7 +1348,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuFaultBufferInit__ = &kgmmuFaultBufferInit_56cd7a;
+        pThis->__kgmmuFaultBufferInit__ = &kgmmuFaultBufferInit_ac1694;
     }
 
     // kgmmuFaultBufferDestroy -- halified (3 hals) body
@@ -1322,7 +1356,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuFaultBufferDestroy__ = &kgmmuFaultBufferDestroy_56cd7a;
+            pThis->__kgmmuFaultBufferDestroy__ = &kgmmuFaultBufferDestroy_ac1694;
         }
         else
         {
@@ -1331,7 +1365,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     }
     else
     {
-        pThis->__kgmmuFaultBufferDestroy__ = &kgmmuFaultBufferDestroy_56cd7a;
+        pThis->__kgmmuFaultBufferDestroy__ = &kgmmuFaultBufferDestroy_ac1694;
     }
 
     // kgmmuFaultBufferLoad -- halified (3 hals) body
@@ -1390,7 +1424,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuDisableFaultBuffer__ = &kgmmuDisableFaultBuffer_46f6a7;
+            pThis->__kgmmuDisableFaultBuffer__ = &kgmmuDisableFaultBuffer_395e98;
         }
         else
         {
@@ -1402,16 +1436,20 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
         pThis->__kgmmuDisableFaultBuffer__ = &kgmmuDisableFaultBuffer_92bfc3;
     }
 
-    // kgmmuSetAndGetDefaultFaultBufferSize -- halified (3 hals) body
+    // kgmmuSetAndGetDefaultFaultBufferSize -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuSetAndGetDefaultFaultBufferSize__ = &kgmmuSetAndGetDefaultFaultBufferSize_4a4dee;
+            pThis->__kgmmuSetAndGetDefaultFaultBufferSize__ = &kgmmuSetAndGetDefaultFaultBufferSize_b2b553;
+        }
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        {
+            pThis->__kgmmuSetAndGetDefaultFaultBufferSize__ = &kgmmuSetAndGetDefaultFaultBufferSize_TU102;
         }
         else
         {
-            pThis->__kgmmuSetAndGetDefaultFaultBufferSize__ = &kgmmuSetAndGetDefaultFaultBufferSize_TU102;
+            pThis->__kgmmuSetAndGetDefaultFaultBufferSize__ = &kgmmuSetAndGetDefaultFaultBufferSize_GB100;
         }
     }
     else
@@ -1470,16 +1508,20 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
         pThis->__kgmmuReadMmuFaultInfo__ = &kgmmuReadMmuFaultInfo_a547a8;
     }
 
-    // kgmmuWriteMmuFaultBufferSize -- halified (3 hals) body
+    // kgmmuWriteMmuFaultBufferSize -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
             pThis->__kgmmuWriteMmuFaultBufferSize__ = &kgmmuWriteMmuFaultBufferSize_f2d351;
         }
-        else
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__kgmmuWriteMmuFaultBufferSize__ = &kgmmuWriteMmuFaultBufferSize_TU102;
+        }
+        else
+        {
+            pThis->__kgmmuWriteMmuFaultBufferSize__ = &kgmmuWriteMmuFaultBufferSize_GB100;
         }
     }
     else
@@ -1487,16 +1529,20 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
         pThis->__kgmmuWriteMmuFaultBufferSize__ = &kgmmuWriteMmuFaultBufferSize_f2d351;
     }
 
-    // kgmmuWriteMmuFaultBufferHiLo -- halified (3 hals) body
+    // kgmmuWriteMmuFaultBufferHiLo -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
             pThis->__kgmmuWriteMmuFaultBufferHiLo__ = &kgmmuWriteMmuFaultBufferHiLo_f2d351;
         }
-        else
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__kgmmuWriteMmuFaultBufferHiLo__ = &kgmmuWriteMmuFaultBufferHiLo_TU102;
+        }
+        else
+        {
+            pThis->__kgmmuWriteMmuFaultBufferHiLo__ = &kgmmuWriteMmuFaultBufferHiLo_GB100;
         }
     }
     else
@@ -1507,7 +1553,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuEnableMmuFaultInterrupts -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuEnableMmuFaultInterrupts__ = &kgmmuEnableMmuFaultInterrupts_46f6a7;
+        pThis->__kgmmuEnableMmuFaultInterrupts__ = &kgmmuEnableMmuFaultInterrupts_395e98;
     }
     else
     {
@@ -1517,7 +1563,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuDisableMmuFaultInterrupts -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuDisableMmuFaultInterrupts__ = &kgmmuDisableMmuFaultInterrupts_46f6a7;
+        pThis->__kgmmuDisableMmuFaultInterrupts__ = &kgmmuDisableMmuFaultInterrupts_395e98;
     }
     else
     {
@@ -1527,7 +1573,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuEnableMmuFaultOverflowIntr -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuEnableMmuFaultOverflowIntr__ = &kgmmuEnableMmuFaultOverflowIntr_46f6a7;
+        pThis->__kgmmuEnableMmuFaultOverflowIntr__ = &kgmmuEnableMmuFaultOverflowIntr_395e98;
     }
     else
     {
@@ -1558,19 +1604,19 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuGetFaultType -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x05f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__kgmmuGetFaultType__ = &kgmmuGetFaultType_GV100;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xe0000000UL) ) ||
-                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000fe6UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
+                 ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003f9UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
         {
             pThis->__kgmmuGetFaultType__ = &kgmmuGetFaultType_GB100;
         }
         // default
         else
         {
-            pThis->__kgmmuGetFaultType__ = &kgmmuGetFaultType_46f6a7;
+            pThis->__kgmmuGetFaultType__ = &kgmmuGetFaultType_395e98;
         }
     }
     else
@@ -1584,7 +1630,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T264D */ 
         {
-            pThis->__kgmmuIsP2PUnboundInstFault__ = &kgmmuIsP2PUnboundInstFault_3dd2c9;
+            pThis->__kgmmuIsP2PUnboundInstFault__ = &kgmmuIsP2PUnboundInstFault_d69453;
         }
         else
         {
@@ -1609,7 +1655,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuTestVidmemAccessBitBufferError -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_3dd2c9;
+        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_d69453;
     }
     else
     {
@@ -1619,7 +1665,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuDisableVidmemAccessBitBuf -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuDisableVidmemAccessBitBuf__ = &kgmmuDisableVidmemAccessBitBuf_b3696a;
+        pThis->__kgmmuDisableVidmemAccessBitBuf__ = &kgmmuDisableVidmemAccessBitBuf_d44104;
     }
     else
     {
@@ -1629,7 +1675,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuEnableVidmemAccessBitBuf -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuEnableVidmemAccessBitBuf__ = &kgmmuEnableVidmemAccessBitBuf_46f6a7;
+        pThis->__kgmmuEnableVidmemAccessBitBuf__ = &kgmmuEnableVidmemAccessBitBuf_395e98;
     }
     else
     {
@@ -1639,7 +1685,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuClearAccessCounterWriteNak -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuClearAccessCounterWriteNak__ = &kgmmuClearAccessCounterWriteNak_b3696a;
+        pThis->__kgmmuClearAccessCounterWriteNak__ = &kgmmuClearAccessCounterWriteNak_d44104;
     }
     else
     {
@@ -1649,7 +1695,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuServiceMthdBuffFaultInBar2Fault -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuServiceMthdBuffFaultInBar2Fault__ = &kgmmuServiceMthdBuffFaultInBar2Fault_56cd7a;
+        pThis->__kgmmuServiceMthdBuffFaultInBar2Fault__ = &kgmmuServiceMthdBuffFaultInBar2Fault_ac1694;
     }
     else
     {
@@ -1671,7 +1717,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     {
         if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
         {
-            pThis->__kgmmuFaultCancelIssueInvalidate__ = &kgmmuFaultCancelIssueInvalidate_46f6a7;
+            pThis->__kgmmuFaultCancelIssueInvalidate__ = &kgmmuFaultCancelIssueInvalidate_395e98;
         }
         else
         {
@@ -1686,7 +1732,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuServiceNonReplayableFault -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuServiceNonReplayableFault__ = &kgmmuServiceNonReplayableFault_46f6a7;
+        pThis->__kgmmuServiceNonReplayableFault__ = &kgmmuServiceNonReplayableFault_395e98;
     }
     else
     {
@@ -1696,7 +1742,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuHandleNonReplayableFaultPacket -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuHandleNonReplayableFaultPacket__ = &kgmmuHandleNonReplayableFaultPacket_46f6a7;
+        pThis->__kgmmuHandleNonReplayableFaultPacket__ = &kgmmuHandleNonReplayableFaultPacket_395e98;
     }
     else
     {
@@ -1706,45 +1752,11 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuNotifyNonReplayableFault -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuNotifyNonReplayableFault__ = &kgmmuNotifyNonReplayableFault_46f6a7;
+        pThis->__kgmmuNotifyNonReplayableFault__ = &kgmmuNotifyNonReplayableFault_395e98;
     }
     else
     {
         pThis->__kgmmuNotifyNonReplayableFault__ = &kgmmuNotifyNonReplayableFault_GV100;
-    }
-
-    // kgmmuServiceMmuFault -- halified (3 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
-    {
-        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_46f6a7;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
-    {
-        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_GV100;
-    }
-    else
-    {
-        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_GA100;
-    }
-
-    // kgmmuGetFaultInfoFromFaultPckt -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
-    {
-        pThis->__kgmmuGetFaultInfoFromFaultPckt__ = &kgmmuGetFaultInfoFromFaultPckt_4a4dee;
-    }
-    else
-    {
-        pThis->__kgmmuGetFaultInfoFromFaultPckt__ = &kgmmuGetFaultInfoFromFaultPckt_GV100;
-    }
-
-    // kgmmuServicePriFaults -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
-    {
-        pThis->__kgmmuServicePriFaults__ = &kgmmuServicePriFaults_46f6a7;
-    }
-    else
-    {
-        pThis->__kgmmuServicePriFaults__ = &kgmmuServicePriFaults_GV100;
     }
 } // End __nvoc_init_funcTable_KernelGmmu_1 with approximately 263 basic block(s).
 
@@ -1762,10 +1774,44 @@ static void __nvoc_init_funcTable_KernelGmmu_2(KernelGmmu *pThis, GpuHalspecOwne
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // kgmmuServiceMmuFault -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_395e98;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_GV100;
+    }
+    else
+    {
+        pThis->__kgmmuServiceMmuFault__ = &kgmmuServiceMmuFault_GA100;
+    }
+
+    // kgmmuGetFaultInfoFromFaultPckt -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kgmmuGetFaultInfoFromFaultPckt__ = &kgmmuGetFaultInfoFromFaultPckt_b2b553;
+    }
+    else
+    {
+        pThis->__kgmmuGetFaultInfoFromFaultPckt__ = &kgmmuGetFaultInfoFromFaultPckt_GV100;
+    }
+
+    // kgmmuServicePriFaults -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
+    {
+        pThis->__kgmmuServicePriFaults__ = &kgmmuServicePriFaults_395e98;
+    }
+    else
+    {
+        pThis->__kgmmuServicePriFaults__ = &kgmmuServicePriFaults_GV100;
+    }
+
     // kgmmuServiceUnboundInstBlockFault -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuServiceUnboundInstBlockFault__ = &kgmmuServiceUnboundInstBlockFault_56cd7a;
+        pThis->__kgmmuServiceUnboundInstBlockFault__ = &kgmmuServiceUnboundInstBlockFault_ac1694;
     }
     else
     {
@@ -1775,7 +1821,7 @@ static void __nvoc_init_funcTable_KernelGmmu_2(KernelGmmu *pThis, GpuHalspecOwne
     // kgmmuCheckAndDecideBigPageSize -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000a000UL) )) /* ChipHal: T234D | T264D */ 
     {
-        pThis->__kgmmuCheckAndDecideBigPageSize__ = &kgmmuCheckAndDecideBigPageSize_56cd7a;
+        pThis->__kgmmuCheckAndDecideBigPageSize__ = &kgmmuCheckAndDecideBigPageSize_ac1694;
     }
     else
     {
@@ -1783,44 +1829,44 @@ static void __nvoc_init_funcTable_KernelGmmu_2(KernelGmmu *pThis, GpuHalspecOwne
     }
 
     // kgmmuGetEccCounts -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
     {
         pThis->__kgmmuGetEccCounts__ = &kgmmuGetEccCounts_TU102;
     }
     // default
     else
     {
-        pThis->__kgmmuGetEccCounts__ = &kgmmuGetEccCounts_4a4dee;
+        pThis->__kgmmuGetEccCounts__ = &kgmmuGetEccCounts_b2b553;
     }
 
-    // kgmmuCreateFakeSparseTables -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    // kgmmuCreateFakeSparseTables -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kgmmuCreateFakeSparseTables__ = &kgmmuCreateFakeSparseTables_GH100;
     }
     // default
     else
     {
-        pThis->__kgmmuCreateFakeSparseTables__ = &kgmmuCreateFakeSparseTables_56cd7a;
+        pThis->__kgmmuCreateFakeSparseTables__ = &kgmmuCreateFakeSparseTables_ac1694;
     }
 
-    // kgmmuGetFakeSparseEntry -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    // kgmmuGetFakeSparseEntry -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x04000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kgmmuGetFakeSparseEntry__ = &kgmmuGetFakeSparseEntry_GH100;
     }
     // default
     else
     {
-        pThis->__kgmmuGetFakeSparseEntry__ = &kgmmuGetFakeSparseEntry_fa6e19;
+        pThis->__kgmmuGetFakeSparseEntry__ = &kgmmuGetFakeSparseEntry_9e2234;
     }
-} // End __nvoc_init_funcTable_KernelGmmu_2 with approximately 10 basic block(s).
+} // End __nvoc_init_funcTable_KernelGmmu_2 with approximately 17 basic block(s).
 
 
-// Initialize vtable(s) for 128 virtual method(s).
+// Initialize vtable(s) for 130 virtual method(s).
 void __nvoc_init_funcTable_KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 112 per-object function pointer(s).
+    // Initialize vtable(s) with 114 per-object function pointer(s).
     // To reduce stack pressure with some unoptimized builds, the logic is distributed among 2 functions.
     __nvoc_init_funcTable_KernelGmmu_1(pThis, pGpuhalspecowner, pRmhalspecowner);
     __nvoc_init_funcTable_KernelGmmu_2(pThis, pGpuhalspecowner, pRmhalspecowner);
@@ -1849,62 +1895,62 @@ void __nvoc_init__KernelGmmu(KernelGmmu *pThis, GpuHalspecOwner *pGpuhalspecowne
     __nvoc_init_funcTable_KernelGmmu(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    KernelGmmu *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    KernelGmmu *__nvoc_pThis;
     GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(KernelGmmu));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(KernelGmmu));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(KernelGmmu));
+    portMemSet(__nvoc_pThis, 0, sizeof(KernelGmmu));
 
-    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
+    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGmmu_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelGmmu(pThis, pGpuhalspecowner, pRmhalspecowner);
-    status = __nvoc_ctor_KernelGmmu(pThis, pGpuhalspecowner, pRmhalspecowner);
-    if (status != NV_OK) goto __nvoc_objCreate_KernelGmmu_cleanup;
+    __nvoc_init__KernelGmmu(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelGmmu(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelGmmu_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -1913,29 +1959,29 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu **ppThis, Dynamic *pParent, NvU
 __nvoc_objCreate_KernelGmmu_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(KernelGmmu));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(KernelGmmu));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_KernelGmmu(KernelGmmu **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_KernelGmmu(KernelGmmu **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_KernelGmmu(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_KernelGmmu(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

@@ -95,7 +95,7 @@ typedef enum
 
 typedef enum
 {
-    // Memory type for backing user pages. On Pascal+ it can be evicted.
+    // Memory type for backing user pages. On Turing+ it can be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_USER,
 
     // Memory type for internal UVM allocations. It cannot be evicted.
@@ -203,10 +203,11 @@ typedef enum
 } uvm_pmm_alloc_list_t;
 
 // Maximum chunk sizes per type of allocation in single GPU.
-// The worst case today is Maxwell with 4 allocations sizes for page tables and
-// 2 page sizes used by uvm_mem_t. Notably one of the allocations for page
-// tables is 2M which is our common root chunk size.
-#define UVM_MAX_CHUNK_SIZES 6
+// The worst case today is 2 allocation sizes for page tables (256, 4K) and
+// 3 page sizes used by uvm_mem_t (4K, 64K, 2M) for a total of 4 unique sizes.
+// Notably, one of the allocations for pages is 2M which is our common root
+// chunk size.
+#define UVM_MAX_CHUNK_SIZES 4
 
 // This specifies a maximum GAP between 2 allocation levels.
 #define UVM_PMM_MAX_SUBCHUNKS UVM_CHUNK_SIZE_MAX
@@ -233,6 +234,28 @@ typedef struct
     struct dev_pagemap pagemap;
 } uvm_pmm_gpu_devmem_t;
 #endif
+
+#if defined(CONFIG_PCI_P2PDMA)
+typedef struct
+{
+    // For g_uvm_global.pci_p2pdma_devices
+    struct list_head list_node;
+
+    // A reference to the pci device associated with parent gpu
+    struct pci_dev *pdev;
+
+    // PCI attributes to lookup pci_dev during exit. On cleanup, this will be used to find/get a
+    // reference on pci_dev
+    unsigned int domain;
+    unsigned int bus;
+    unsigned int func;
+
+    // Starting pfn for the device, used to detect if a pgmap is already present
+    unsigned long dev_start_pfn;
+} uvm_pmm_gpu_pci_dev_list_t;
+
+#endif
+void uvm_pmm_pci_p2pdma_cache_exit(void);
 
 #if UVM_IS_CONFIG_HMM()
 typedef struct uvm_pmm_gpu_struct uvm_pmm_gpu_t;
@@ -384,6 +407,21 @@ typedef struct uvm_pmm_gpu_struct
         // workqueue.
         struct list_head va_block_lazy_free;
         nv_kthread_q_item_t va_block_lazy_free_q_item;
+
+        // Count of the number of root chunks "in_eviction". Incremented for
+        // each root chunks that starts the eviction process, and decremented
+        // on eviction success or failure.
+        // Updates are protected by 'list_lock', but it can be queried outside
+        // of the critical section.
+        long in_eviction_count;
+
+        // Count of the number of root chunks that are temporarily pinned.
+        // Incremented each time a root chunk is explicitly pinned or when
+        // merging of a split root chunk results in pinned status.
+        // Decremented on explict chunk unpin or split.
+        // Updates are protected by 'list_lock', but it can be queried outside
+        // of the critical section.
+        long pinned_count;
     } root_chunks;
 
     // Lock protecting PMA allocation, freeing and eviction

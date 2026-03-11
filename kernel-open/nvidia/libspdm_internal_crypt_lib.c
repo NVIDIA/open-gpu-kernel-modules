@@ -27,6 +27,7 @@
 #include "os-interface.h"
 #include "internal_crypt_lib.h"
 #include "library/cryptlib.h"
+#include "nvspdm_cryptlib_extensions.h"
 
 bool libspdm_check_crypto_backend(void)
 {

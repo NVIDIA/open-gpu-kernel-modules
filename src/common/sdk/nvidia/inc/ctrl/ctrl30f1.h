@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -439,6 +439,8 @@ typedef struct NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS {
  *     a G-Sync device directly, then this field contains the ID of the
  *     GPU that acts as a proxy, i.e. the GPU to which this GPU should be
  *     a RasterLock slave.
+ *   gpuCapFlags
+       a bitmap of Gsync-oriented capabilities that this GPU has
  * connectorCount
  *    This parameter indicates the number of GPU connectors available on
  *    the gsync device.  The connector count of the gsync device may be
@@ -460,6 +462,7 @@ typedef struct NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS {
         NvU32 gpuId;
         NvU32 connector;
         NvU32 proxyGpuId;
+        NvU32 gpuCapFlags;
     } gpus[NV30F1_CTRL_MAX_GPUS_PER_GSYNC];
     NvU32 connectorCount;
 } NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS;
@@ -477,6 +480,7 @@ typedef struct NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS {
 #define NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PRIMARY                                       NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_ONE
 #define NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_SECONDARY                                     NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_TWO
 
+#define NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_GPU_CAP_FLAGS_FRAMELOCK_DIFF_RESOLUTIONS      (0x00000001)
 
 
 
@@ -1554,7 +1558,62 @@ typedef NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS NV30F1_CTRL_GSYNC_GET_HOUSE_SYN
 
 typedef NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS NV30F1_CTRL_GSYNC_SET_HOUSE_SYNC_MODE_PARAMS;
 
-#define NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_INPUT  (0x00)
-#define NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_OUTPUT (0x01)
+#define NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_INPUT          (0x00)
+#define NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_OUTPUT         (0x01)
+
+/*
+ * NV30F1_CTRL_CMD_GSYNC_GET_POSSIBLE_REFRESH_RATES
+ *
+ * This command queries what refresh rates a GPU could support for a particular hTotal/vTotal.
+ * RM returns a number of answers in the form of Refresh Rate = (numerator / denominator) * Hz.
+ *
+ * Parameters:
+ *   gpuId
+ *     This parameter is set by the client to indicate the gpuId to query
+ *   hTotal
+ *     This parameter specifies what hTotal to query about
+ *   vTotal
+ *     This parameter specifies what vTotal to query about
+ *   minRefreshRatex10000
+ *     This parameter specifies the minimum refresh rate of answers we are interested in.
+ *     Given in units of 0.0001 Hz
+ *   maxRefreshRatex10000
+ *     This parameter specifies the maximum refresh rate of answers we are interested in.
+ *     Given in units of 0.0001 Hz
+ *   numFractions
+ *     This parameter is returned by RM and declares how many fractions have been returned.
+ *   fractions
+ *     an array of length numFractions containing:
+ *    numerator
+ *      This parameter is returned by RM and is the numerator of the refresh rate.
+ *    denominator
+ *      This parameter is returned by RM and is the denominator of the refresh rate.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_DEVICE
+ *   NV_ERR_NO_MEMORY
+ *   NV_ERR_GENERIC
+ *
+ */
+#define NV30F1_CTRL_CMD_GSYNC_GET_POSSIBLE_REFRESH_RATES (0x30f10189) /* finn: Evaluated from "(FINN_NV30_GSYNC_GSYNC_INTERFACE_ID << 8) | NV30F1_CTRL_GSYNC_GET_POSSIBLE_REFRESH_RATES_PARAMS_MESSAGE_ID" */
+
+#define NV30F1_CTRL_MAX_POSSIBLE_REFRESH_RATE_FRACTIONS  5000
+
+#define NV30F1_CTRL_GSYNC_GET_POSSIBLE_REFRESH_RATES_PARAMS_MESSAGE_ID (0x89U)
+
+typedef struct NV30F1_CTRL_GSYNC_GET_POSSIBLE_REFRESH_RATES_PARAMS {
+    NvU32 gpuId;
+    NvU32 hTotal;
+    NvU32 vTotal;
+    NvU32 minRefreshRatex10000;
+    NvU32 maxRefreshRatex10000;
+    NvU32 numFractions;
+    struct {
+        NV_DECLARE_ALIGNED(NvU64 numerator, 8);
+        NV_DECLARE_ALIGNED(NvU64 denominator, 8);
+    } fractions[NV30F1_CTRL_MAX_POSSIBLE_REFRESH_RATE_FRACTIONS];
+} NV30F1_CTRL_GSYNC_GET_POSSIBLE_REFRESH_RATES_PARAMS;
 
 /* _ctrl30f1_h_ */

@@ -247,7 +247,7 @@ portUtilSpin(void)
     }
 }
 
-#if NVCPU_IS_FAMILY_X86 && !defined(NV_MODS) && PORT_IS_MODULE_SUPPORTED(atomic)
+#if NVCPU_IS_FAMILY_X86 && !defined(NV_MODS) && PORT_IS_MODULE_SUPPORTED(atomic) && !defined(NVOC)
 static NV_FORCEINLINE NvU64
 portUtilExReadTimestampCounterSerialized(void)
 {

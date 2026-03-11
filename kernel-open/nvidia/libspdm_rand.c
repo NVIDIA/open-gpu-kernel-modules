@@ -29,9 +29,3 @@ bool libspdm_random_bytes(uint8_t *output, size_t size)
     get_random_bytes(output, size);
     return true;
 }
-
-// This is specifically allowed by spdm
-bool libspdm_random_seed(const uint8_t *seed, size_t seed_size)
-{
-    return true;
-}

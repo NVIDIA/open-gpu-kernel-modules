@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,8 @@
 #include "dp_deviceimpl.h"
 #include "dp_connectorimpl.h"
 #include "dp_printf.h"
+
+#include "dp_qse.h"
 
 #include "dp_auxbus.h"
 #include "dpringbuffertypes.h"
@@ -91,11 +93,8 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       bFromResumeToNAB(false),
       bAttachOnResume(false),
       bHdcpAuthOnlyOnDemand(true),
-#if DP_OPTION_AUTO_ENABLE_MST_STREAM_ENCR
+      bMstRestoreHdcpStateAtAttach(true),
       bHdcpStrmEncrEnblOnlyOnDemand(false),
-#else
-      bHdcpStrmEncrEnblOnlyOnDemand(true),
-#endif
       constructorFailed(false),
       policyModesetOrderMitigation(false),
       policyForceLTAtNAB(false),
@@ -113,6 +112,10 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       bAudioOverRightPanel(false),
       connectorActive(false),
       firmwareGroup(0),
+      qseNonceGenerator(0),
+      bValidQSERequest(false),
+      message(0),
+      clientId(0),
       bAcpiInitDone(false),
       bIsUefiSystem(false),
       bSkipLt(false),
@@ -120,6 +123,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       bDelayAfterD3(false),
       bKeepOptLinkAlive(false),
       bNoFallbackInPostLQA(false),
+      bIsEncryptionQseValid(true),
       LT2FecLatencyMs(0),
       bFECEnable(false),
       bDscCapBasedOnParent(false),
@@ -175,8 +179,12 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
 
     this->bSkipAssessLinkForEDP = dpRegkeyDatabase.bAssesslinkForEdpSkipped;
 
-    // default bHdcpAuthOnlyOnDemand is true and override to false if regkey bMstAutoHdcpAuthAtAttach set as true.
+    //
+    // Default bHdcpAuthOnlyOnDemand, bMstRestoreHdcpStateAtAttach are true
+    // and override to false if regkeys set as true.
+    //
     this->bHdcpAuthOnlyOnDemand = !dpRegkeyDatabase.bMstAutoHdcpAuthAtAttach;
+    this->bMstRestoreHdcpStateAtAttach = !dpRegkeyDatabase.bMstRestoreHdcpAtAttachSkipped;
 
     if (dpRegkeyDatabase.bOptLinkKeptAlive)
     {
@@ -197,7 +205,16 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     {
         this->maxLinkRateFromRegkey          = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
-    this->bForceDisableTunnelBwAllocation = true;
+
+    if (hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled())
+    {
+        this->bForceDisableTunnelBwAllocation = true;
+    }
+    else
+    {
+        this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
+    }
+
     this->bSkipZeroOuiCache                  = dpRegkeyDatabase.bSkipZeroOuiCache;
     this->bForceHeadShutdownFromRegkey       = dpRegkeyDatabase.bForceHeadShutdown;
     this->bEnableDevId                       = dpRegkeyDatabase.bEnableDevId;
@@ -205,8 +222,9 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bUseMaxDSCCompressionMST           = dpRegkeyDatabase.bUseMaxDSCCompressionMST;
     this->bDisableEffBppSST8b10b             = dpRegkeyDatabase.bDisableEffBppSST8b10b;
     this->bEnableCqaStatsCollection          = dpRegkeyDatabase.bEnableCqaStatsCollection;
-    this->bOptimizeDscBppForTunnellingBw     = dpRegkeyDatabase.bOptimizeDscBppForTunnellingBw;
     this->bEnable128b132bDSCLnkCfgReduction  = dpRegkeyDatabase.bEnable128b132bDSCLnkCfgReduction;
+    this->bDisableNativeDisplayId2xSupport   = dpRegkeyDatabase.bDisableNativeDisplayId2xSupport;
+    this->bIgnoreUnplugUnlessRequested       = dpRegkeyDatabase.bIgnoreUnplugUnlessRequested;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -238,6 +256,62 @@ void ConnectorImpl::readRemoteHdcpCaps()
         return;
     }
 
+    if (linkUseMultistream())
+    {
+        for (Device * i = enumDevices(0); i; i=enumDevices(i))
+        {
+            DeviceImpl * dev = (DeviceImpl *)i;
+            if (dev->isHDCPCap == False)
+            {
+                NvU8 portType;
+                NvU8 peerType;
+                bool bIsPortPresent;
+                peerType = dev->peerDevice;
+                bIsPortPresent = dev->hal->getDownstreamPort(&portType);
+
+                // Skip the Remote DPCD read if the DS is Dongle.
+                if (bIsPortPresent && (peerType == Dongle))
+                {
+                    // BKSV of the dongle might not be ready in some cases.
+                    // Setting it with Branch device value.
+                    hal->getBKSV(&dev->BKSV[0]);
+                    dev->nvBCaps[0] = dev->BCAPS[0] = 0x1;
+                    dev->isHDCPCap = True;
+                    dev->shadow.hdcpCapDone = false;
+                    fireEvents();
+                    continue;
+                }
+                //Issue a new Remote HDCP capability check
+                DP_ASSERT(dev->isDeviceHDCPDetectionAlive == false);
+                if((dev->deviceHDCPDetection = new DeviceHDCPDetection(dev, messageManager, timer)))
+                {
+                    dev->isDeviceHDCPDetectionAlive = true;
+                    dev->deviceHDCPDetection->start();
+                    dev->shadow.hdcpCapDone = false;
+
+                    if (hdcpCapsRetries < 1)
+                    {
+                        timer->queueCallback(this, &tagDelayedHdcpCapRead, 3000);
+                        hdcpCapsRetries++;
+                    }
+                }
+                else
+                {
+                    // For the risk control, make the device as not HDCPCap.
+                    DP_ASSERT(0 && "new failed");
+                    dev->isDeviceHDCPDetectionAlive = false;
+                    dev->isHDCPCap = False;
+
+                    if (!dev->isMultistream())
+                    dev->shadow.hdcpCapDone = true;
+                }
+            }
+            else
+            {
+                DP_PRINTF(DP_FATAL, "DPCONN> This DP1.2 device is HDCP capable");
+            }
+        }
+    }
 }
 
 void ConnectorImpl::discoveryDetectComplete()
@@ -245,6 +319,7 @@ void ConnectorImpl::discoveryDetectComplete()
     fireEvents();
     // no outstanding EDID reads and branch/sink detections for MST
     if (pendingEdidReads.isEmpty() &&
+        pendingDid2Reads.isEmpty() &&
         (!discoveryManager ||
          (discoveryManager->outstandingBranchDetections.isEmpty() &&
           discoveryManager->outstandingSinkDetections.isEmpty())))
@@ -282,7 +357,7 @@ void DisplayPort::DevicePendingEDIDRead::mstEdidCompleted(EdidReadMultistream * 
               from->edid.getName());
     ConnectorImpl * connector = parent;
     parent->applyEdidWARs(from->edid, device);
-    parent->processNewDevice(device, from->edid, true, DISPLAY_PORT, RESERVED);
+    parent->processNewDevice({device, from->edid, device.displayId2x, true, DISPLAY_PORT, RESERVED});
     delete this;
     connector->discoveryDetectComplete();
 }
@@ -294,7 +369,7 @@ void DisplayPort::DevicePendingEDIDRead::mstEdidReadFailed(EdidReadMultistream *
     DP_PRINTF(DP_ERROR, "DP-CONN> Edid read failed: %s (using fallback)",
                from->topologyAddress.toString(sb));
     ConnectorImpl * connector = parent;
-    parent->processNewDevice(device, Edid(), true, DISPLAY_PORT, RESERVED);
+    parent->processNewDevice({device, Edid(), device.displayId2x, true, DISPLAY_PORT, RESERVED});
     delete this;
     connector->discoveryDetectComplete();
 }
@@ -344,25 +419,27 @@ void ConnectorImpl::discoveryNewDevice(const DiscoveryManager::Device & device)
         if (!device.videoSink)
         {
             // Don't read EDID on a device having no videoSink
-            processNewDevice(device, Edid(), false, DISPLAY_PORT, RESERVED);
+            processNewDevice({device, Edid(), DisplayID2x(), false, DISPLAY_PORT, RESERVED});
             return;
         }
         pendingEdidReads.insertBack(new DevicePendingEDIDRead(this, messageManager, device));
     }
     else
     {
-        // Don't try to read the EDID on a branch device
-        processNewDevice(device, Edid(), true, DISPLAY_PORT, RESERVED);
+        processNewDevice({device, Edid(), DisplayID2x(), true, DISPLAY_PORT, RESERVED});
     }
 }
 
-void ConnectorImpl::processNewDevice(const DiscoveryManager::Device & device,
-                                     const Edid & edid,
-                                     bool isMultistream,
-                                     DwnStreamPortType portType,
-                                     DwnStreamPortAttribute portAttribute,
-                                     bool isCompliance)
+void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
 {
+    const DiscoveryManager::Device &device = params.device;
+    const Edid &edid = params.edid;
+    const DisplayID2x & displayId2x = params.displayId2x;
+    bool isMultistream = params.isMultistream;
+    DwnStreamPortType portType = params.portType;
+    DwnStreamPortAttribute portAttribute = params.portAttribute;
+    bool isCompliance = params.isCompliance;
+
     //
     // Ideally we should read EDID here. But instead just report the device
     //   try to find device in list of devices
@@ -430,7 +507,6 @@ void ConnectorImpl::processNewDevice(const DiscoveryManager::Device & device,
                 connector = connectorDisplayPort;
             }
             break;
-
         case ANALOG_VGA:
             connector = connectorVGA;
             break;
@@ -466,6 +542,7 @@ void ConnectorImpl::processNewDevice(const DiscoveryManager::Device & device,
              existingDev->videoSink != hasVideo ||
              existingDev->rawEDID != edid ||
              existingDev->processedEdid != processedEdid ||
+             existingDev->displayId2x != displayId2x ||
              existingDev->connectorType != connector ||
              existingDev->multistream != isMultistream ||
              existingDev->complianceDeviceEdidReadTest != isCompliance ||
@@ -478,9 +555,8 @@ void ConnectorImpl::processNewDevice(const DiscoveryManager::Device & device,
 
     // Complete match, make sure its marked as plugged
     existingDev->plugged = true;
-     if (existingDev->isActive())
+    if (existingDev->isActive())
         existingDev->activeGroup->update(existingDev, true);
-
 
     fireEvents();
     return;
@@ -539,6 +615,7 @@ create:
     newDev->plugged = true;
     newDev->rawEDID = edid;
     newDev->processedEdid = processedEdid;
+    newDev->displayId2x = displayId2x;
     newDev->connectorType = connector;
     newDev->guid = device.peerGuid;
     newDev->peerDevice = device.peerDevice;
@@ -573,7 +650,6 @@ create:
     {
         this->assessLink();
     }
-
     // Postpone the remote HDCPCap read for Dongles
     DP_ASSERT(!isLinkInD3() && "Hdcp probe at D3");
     if (device.peerDevice != Dongle)
@@ -613,6 +689,20 @@ create:
         {
             if (isHDCPAuthOn)
             {
+                // Abort the Authentication
+                DP_PRINTF(DP_WARNING, "DP> Topology limited. Abort Authentication.");
+                isHDCPAuthOn = false;
+                isHopLimitExceeded = true;
+                for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+                    if (group->hdcpEnabled)
+                    {
+                        group-> hdcpSetEncrypted(false);
+                    }
+                }
+                main->configureHDCPAbortAuthentication(KSVTOP);
+                main->configureHDCPDisableAuthentication();
                 isHDCPAuthOn = false;
             }
             isHopLimitExceeded = true;
@@ -913,6 +1003,7 @@ ConnectorImpl::~ConnectorImpl()
     delete discoveryManager;
     pendingEdidReads.clear();
     delete messageManager;
+    delete qseNonceGenerator;
     delete hal;
 }
 
@@ -1207,12 +1298,18 @@ bool ConnectorImpl::compoundQueryAttachTunneling(const DpModesetParams &modesetP
         return true;
     }
 
-    NvU64 bpp = modesetParams.modesetInfo.depth;
-    NvU32 dscFactor = 1U;
+    NvU64 bpp;
+    NvU32 dscFactor;
 
     if (pDscParams->bEnableDsc)
     {
+        bpp = pDscParams->bitsPerPixelX16;
         dscFactor = 16U;
+    }
+    else
+    {
+        bpp = modesetParams.modesetInfo.depth;
+        dscFactor = 1U;
     }
 
     NvU64 modeBwRequired = (modesetParams.modesetInfo.pixelClockHz * bpp)/dscFactor;
@@ -1930,7 +2027,7 @@ bool ConnectorImpl::compoundQueryAttachSSTDsc
 
     availableBandwidthBitsPerSecond = lc.convertMinRateToDataRate() * 8 * lc.lanes;
 
-    if (this-> bOptimizeDscBppForTunnellingBw && hal->isDpTunnelBwAllocationEnabled())
+    if (hal->isDpTunnelBwAllocationEnabled())
     {
         NvU64 freeTunnelingBw = allocatedDpTunnelBw - compoundQueryUsedTunnelingBw;
         if (freeTunnelingBw < availableBandwidthBitsPerSecond)
@@ -2148,6 +2245,18 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
             if ((nativeDev->maxTmdsClkRate) &&
                 (nativeDev->maxTmdsClkRate <
                 ((modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth /24)/2)))
+            {
+                compoundQueryResult = false;
+                SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+                return false;
+            }
+        }
+        else if (modesetParams.colorFormat == dpColorFormat_YCbCr422)
+        {
+            // for YUV422 case, required TMDS Character Rate is same as Pixel Clock Rate from EDID for all BPCs (8/10/12) due to TMDS packing.
+            if ((nativeDev->maxTmdsClkRate) &&
+                (nativeDev->maxTmdsClkRate <
+                (modesetParams.modesetInfo.pixelClockHz)))
             {
                 compoundQueryResult = false;
                 SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
@@ -2572,6 +2681,24 @@ void ConnectorImpl::releaseLinkHandsOff()
     assessLink();
 }
 
+void ConnectorImpl::hdcpActiveGroupsSetECF()
+{
+    NvU64 ecf = 0x0;
+    // Set the ECF for the groups which are already active.
+    for (ListElement *i = this->activeGroups.begin(); i != this->activeGroups.end(); i = i->next)
+    {
+        GroupImpl * group = (GroupImpl *)i;
+        if (group->hdcpEnabled)
+        {
+            NvU64 countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+            NvU64 mask = countOnes << group->timeslot.begin;
+            ecf |= mask;
+        }
+    }
+   // Restore the ECF and trigger ACT
+    main->configureAndTriggerECF(ecf);
+}
+
 //
 //     Timer callback for event management
 //          Uses: fireEvents()
@@ -2579,6 +2706,132 @@ void ConnectorImpl::expired(const void * tag)
 {
     if (tag == &tagFireEvents)
         fireEventsInternal();
+    else if (tag == &tagDelayedHdcpCapRead)
+    {
+        DP_PRINTF(DP_NOTICE, "DPCONN> Delayed HDCP Cap read called.");
+        readRemoteHdcpCaps();
+    }
+    else if (tag == &tagHDCPStreamEncrEnable)
+    {
+        if (!(bHdcpStrmEncrEnblOnlyOnDemand))
+        {
+            while (!(hdcpEnableTransitionGroups.isEmpty()))
+            {
+                GroupImpl* curStrmEncrEnblGroup = hdcpEnableTransitionGroups.pop();
+                if (!(curStrmEncrEnblGroup->hdcpEnabled))
+                {
+                    curStrmEncrEnblGroup->hdcpSetEncrypted(true);
+                }
+            }
+        }
+    }
+    else if (tag == &tagHDCPReauthentication)
+    {
+        if (authRetries < HDCP_AUTHENTICATION_RETRIES)
+        {
+            HDCPState hdcpState = {0};
+
+            // Get hdcp state which will be !HDCP_State_Authenticated for the first entry and
+            // subsequently it will reflect the result of last fired configureHDCPRenegotiate
+            main->configureHDCPGetHDCPState(hdcpState);
+
+            unsigned authDelay = (hdcpState.HDCP_State_22_Capable ?
+                HDCP22_AUTHENTICATION_COOLDOWN : HDCP_AUTHENTICATION_COOLDOWN);
+
+            // Don't fire any reauthentication if we're not done with the modeset
+            if (!intransitionGroups.isEmpty())
+            {
+                isHDCPAuthOn = false;
+                timer->queueCallback(this, &tagHDCPReauthentication,
+                                     authDelay);
+                return;
+            }
+
+            // Clear the ECF & Reauthentication here for the branch device.
+            NvU64 ecf = 0x0;
+            main->configureAndTriggerECF(ecf);
+            isHDCPAuthOn = false;
+
+            authRetries++;
+            isHDCPAuthTriggered = true;
+
+
+            // Skip configureHDCPRenegotiate if HDCP is already enabled from previous
+            // previous call to configureHDCPRenegotiate
+            if (!hdcpState.HDCP_State_Authenticated)
+            {
+                main->configureHDCPRenegotiate();
+                // Get fresh hdcp state after Renegotiate as HDCP1X can be enabled
+                // synchronously by configureHDCPRenegotiate (HDCP2X takes time)
+                main->configureHDCPGetHDCPState(hdcpState);
+            }
+
+            if (hdcpState.HDCP_State_Authenticated)
+            {
+                isHDCPAuthOn = true;
+                authRetries = 0;
+                // Set the ECF for the groups which are already active.
+                hdcpActiveGroupsSetECF();
+                // Enable HDCP for Group
+                if (!(bHdcpStrmEncrEnblOnlyOnDemand))
+                {
+                    timer->queueCallback(this, &tagHDCPStreamEncrEnable, 100);
+                }
+            }
+            else
+            {
+                timer->queueCallback(this, &tagHDCPReauthentication,
+                                     authDelay);
+            }
+            isHDCPReAuthPending = false;
+        }
+        else
+        {
+            isHDCPAuthOn = false;
+        }
+    }
+    else if (tag == &tagSendQseMessage)
+    {
+        if (this->messageManager->isAnyAwaitingQSEReplyDownRequest())
+        {
+            timer->queueCallback(this, &tagSendQseMessage, HDCP_SEND_QSE_MESSAGE_COOLDOWN);
+        }
+        else
+        {
+            for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
+            {
+                GroupImpl * group = (GroupImpl *) i;
+
+                if (group->hdcpEnabled)
+                {
+                    group->streamEncryptionStatusDetection->sendQSEMessage(group, qseReason_Ssc);
+                    timer->queueCallback(group, &(group->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
+                }
+            }
+        }
+    }
+    else if (tag == &tagDelayedHDCPCPIrqHandling)
+    {
+        DP_PRINTF(DP_ERROR, "DPCONN> Delayed HDCP CPIRQ handling due to previous RxStatus read failed.");
+
+        if (handleCPIRQ())
+        {
+            hal->clearInterruptContentProtection();
+        }
+        else
+        {
+            hdcpCpIrqRxStatusRetries++;
+            if (hdcpCpIrqRxStatusRetries < HDCP_CPIRQ_RXSTAUS_RETRIES)
+            {
+                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_CPIRQ_RXSTATUS_COOLDOWN);
+            }
+            else
+            {
+                DP_PRINTF(DP_ERROR, "DPCONN> Delayed HDCP CPIRQ RxStatus probe exceeds max retry and aborted.");
+                hal->clearInterruptContentProtection();
+            }
+        }
+    }
     else if (tag == &tagDpBwAllocationChanged)
     {
         for (Device * i = enumDevices(0); i; i = enumDevices(i))
@@ -2972,11 +3225,18 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
         // In case of mode transition (DSC <-> non-DSC), if the link config is same as previous mode, we need to shut down the head
         // since VBID[6] needs to be updated accordingly
         //
-        if ((bForceHeadShutdownOnModeTransition &&
-            ((modesetInfo.bEnableDsc && targetImpl->lastModesetInfo.bEnableDsc) &&
-             (modesetInfo.bitsPerComponent != targetImpl->lastModesetInfo.bitsPerComponent))) ||
-            ((lowestSelected.getTotalDataRate() == activeLinkConfig.getTotalDataRate()) &&
-             (modesetInfo.bEnableDsc != targetImpl->lastModesetInfo.bEnableDsc)))
+        // Mode change details
+        bool bBpcChange                = (modesetInfo.bitsPerComponent != targetImpl->lastModesetInfo.bitsPerComponent);
+        bool bNoLinkDataRateChange     = (lowestSelected.getTotalDataRate() == activeLinkConfig.getTotalDataRate());
+        // DSC transition classifications
+        bool bDscEnabledForBothModes   = modesetInfo.bEnableDsc && targetImpl->lastModesetInfo.bEnableDsc;
+        bool bDscStateChange           = modesetInfo.bEnableDsc != targetImpl->lastModesetInfo.bEnableDsc;
+        // Determine whether head shutdown is required
+        bool bForceHeadShutdown        = (bForceHeadShutdownOnModeTransition &&
+                                         ((bDscEnabledForBothModes && bBpcChange) ||
+                                         (bDscStateChange && bNoLinkDataRateChange)));
+
+        if (bForceHeadShutdown)
         {
             return true;
         }
@@ -3607,6 +3867,12 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     }
 
 // TODO: Need to check if we can completely remove DP_OPTION_HDCP_12_ENABLED and remove it
+    // Clean up: Clearing ECF
+    if (linkUseMultistream())
+    {
+        targetImpl->hdcpSetEncrypted(false, NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0,  NV_TRUE, NV_FALSE);
+        targetImpl->hdcpEnabled = false;
+    }
 
     beforeAddStream(targetImpl);
 
@@ -3647,6 +3913,15 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         //
         main->setDpStereoMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
         main->setDpMSAParameters(!enableInbandStereoSignaling, modesetParams.msaparams);
+    }
+    else
+    {
+        // CLear MSA parameters
+        NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS msaParams = modesetParams.msaparams;
+        msaParams.bEnableMSA        = false;
+
+        main->setDpStereoMSAParameters(false, msaParams);
+        main->setDpMSAParameters(false, msaParams);
     }
 
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN_STATUS, bLinkTrainingStatus);
@@ -3736,17 +4011,46 @@ void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
     // For DP1.1, let the upstream to turn it back.
     // For DP1.2, we should turn the modeset back if it was on.
     // The authentication will be called off during the modeset.
+    // see Bug 5633477
     //
     HDCPState hdcpState = {0};
     main->configureHDCPGetHDCPState(hdcpState);
-    if ((!hdcpState.HDCP_State_Authenticated) && (isHDCPAuthOn == true)
-        && (currentModesetDeviceGroup->hdcpEnabled))
+    if ((!hdcpState.HDCP_State_Authenticated)
+        && (currentModesetDeviceGroup->hdcpPreviousStatus))
     {
         if (!this->linkUseMultistream())
         {
             currentModesetDeviceGroup->hdcpEnabled = isHDCPAuthOn = false;
         }
+        else if (bMstRestoreHdcpStateAtAttach)
+        {
+            currentModesetDeviceGroup->cancelHdcpCallbacks();
+
+            if (isDP12AuthCap && !isHopLimitExceeded && !isHDCPReAuthPending)
+            {
+                isHDCPReAuthPending = true;
+                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+            }
+        }
     }
+
+    //
+    // RM has the requirement of Head being ARMed to do authentication.
+    // Postpone the authentication until the NAE to do the authentication for DP1.2 as solution.
+    //
+    if (isDP12AuthCap && !isHopLimitExceeded && !isHDCPReAuthPending &&
+        !bHdcpAuthOnlyOnDemand)
+    {
+        isHDCPReAuthPending = true;
+        timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+    }
+
+    if (!bHdcpStrmEncrEnblOnlyOnDemand)
+    {
+        hdcpEnableTransitionGroups.insertFront(currentModesetDeviceGroup);
+    }
+    hdcpCapsRetries = 0;
+    timer->queueCallback(this, &tagDelayedHdcpCapRead, 2000);
 
     fireEvents();
 }
@@ -3773,6 +4077,21 @@ void ConnectorImpl::notifyDetachBegin(Group * target)
         pattern_info.lqsPattern = LINK_QUAL_DISABLED;
         if (!main->physicalLayerSetTestPattern(&pattern_info))
             DP_ASSERT(0 && "Could not set the PHY_TEST_PATTERN");
+    }
+
+    //
+    // At this point Pixels are dropped we can clear ECF,
+    // Force Clear ECF is set to TRUE which will delete time slots and send ACT
+    //
+    if (linkUseMultistream())
+    {
+        if (!(bHdcpStrmEncrEnblOnlyOnDemand) && hdcpEnableTransitionGroups.contains(group))
+        {
+            hdcpEnableTransitionGroups.remove(group);
+        }
+        group->hdcpPreviousStatus = group->hdcpEnabled;
+        group->hdcpSetEncrypted(false, NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0, NV_TRUE, NV_FALSE);
+        group->hdcpEnabled = false;
     }
 
     beforeDeleteStream(group);
@@ -3854,6 +4173,17 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
     {
         currentModesetDeviceGroup->hdcpEnabled = false;
     }
+    //
+    // ToDo: Need to confirm the HW and UpStream SW behavior on DP1.2.
+    // For HW, we need to know whether ECF will be cleared by modeset or not.
+    // For UpStream Sw, we need to know whether the upstream will come to call off then encryption.
+    // TODO: Need to remove this as we are already disabling encryption in Notify Detach Begin
+    //
+    else if ((this->linkUseMultistream()) && (currentModesetDeviceGroup->hdcpEnabled))
+    {
+        currentModesetDeviceGroup->hdcpSetEncrypted(false, NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0, NV_TRUE, NV_FALSE);
+        currentModesetDeviceGroup->hdcpEnabled = false;
+    }
 
     // Update Vbios scratch register
     for (Device * d = currentModesetDeviceGroup->enumDevices(0); d;
@@ -3899,6 +4229,20 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
         //
         else
         {
+             //
+            // - if EDP; disable ASSR after switching off the stream from head
+            //   to prevent corruption (bug 926360)
+            // - disable ASSR before power down link (bug 1641174)
+            //
+            if (main->isEDP())
+            {
+                bool bPanelPowerOn;
+                // if eDP's power has been shutdown here, don't disable ASSR, else it will be turned on by LT.
+                if (main->getEdpPowerData(&bPanelPowerOn, NULL) && bPanelPowerOn)
+                {
+                    main->disableAlternateScramblerReset();
+                }
+            }
             //
             // Power down the links as we have switched away from the monitor.
             // For shared SOR case, we need this to keep SW stats in DP instances in sync.
@@ -3916,6 +4260,26 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
         }
         if (this->policyModesetOrderMitigation && this->modesetOrderMitigation)
             this->modesetOrderMitigation = false;
+    }
+    else // !activeGroups.isEmpty()
+    {
+        if ((this->linkUseMultistream()) && (hdcpState.HDCP_State_Authenticated))
+        {
+            if (hdcpState.HDCP_State_22_Capable)
+            {
+                main->configureAndTriggerECF(0x0);
+                authRetries = 0;
+                isHDCPAuthOn = false;
+                // numOfStream changed, AKE_Init needed to change dpTypeMask
+                main->configureHDCPRenegotiate();
+                // ReAuth, so schedule callback to check state later.
+                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN);
+            }
+            else
+            {
+                hdcpActiveGroupsSetECF();
+            }
+        }
     }
     fireEvents();
 }
@@ -4842,6 +5206,7 @@ bool ConnectorImpl::handleCPIRQ()
     {
         NvBool bReAuthReq = NV_FALSE;
         NvBool bRxIDMsgPending = NV_FALSE;
+        NvBool bHdcp1xReadyPending = NV_FALSE;
         DP_PRINTF(DP_NOTICE, "DP> CP_IRQ HDCP ver:%s RxStatus:0x%2x HDCP Authenticated:%s Encryption:%s",
                   hdcpState.HDCP_State_22_Capable ? "2.2" : "1.x",
                   bStatus,
@@ -4892,6 +5257,10 @@ bool ConnectorImpl::handleCPIRQ()
             {
                 bReAuthReq = NV_TRUE;
             }
+            if (FLD_TEST_DRF(_DPCD, _HDCP_BSTATUS, _READY, _TRUE, bStatus))
+            {
+                bHdcp1xReadyPending = NV_TRUE;
+            }
         }
 
         if (bReAuthReq || bRxIDMsgPending)
@@ -4924,8 +5293,41 @@ bool ConnectorImpl::handleCPIRQ()
                 sstPrim->main->configureHDCPGetHDCPState(hdcpState);
                 isHDCPAuthOn = hdcpState.HDCP_State_Authenticated;
             }
+            else
+            {
+                //
+                // Clear the ECF and issue another authentication and set ECF accordingly.
+                // The flash monitor is expected here.
+                //
+                if (bReAuthReq)
+                {
+                    main->configureAndTriggerECF(0x0);
+                }
+
+                main->configureHDCPRenegotiate(HDCP_DUMMY_CN, HDCP_DUMMY_CKSV,
+                                               !!bReAuthReq, !!bRxIDMsgPending);
+                // If reAuth, schedule callback to check state later.
+                if (bReAuthReq)
+                {
+                    isHDCPAuthOn = false;
+                    timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN);
+                }
+            }
         }
 
+        if (bHdcp1xReadyPending)
+        {
+            DP_PRINTF(DP_NOTICE, "DP> CP_IRQ: HDCP1X READY notification.");
+
+            //
+            // Bug 200305105: Since RM HDCP1.x repeater authentication has polling
+            // loop to check RxStatus READY event, here CPIRQ handling to read RxStatus
+            // cause RM next polling read won't get the one-shot READY event anymore and
+            // repeater authentication fail. The fix is to forward the READY event that
+            // RM detect to continue authentication stage.
+            //
+            main->forwardPendingKsvListReady(bHdcp1xReadyPending);
+        }
         return true;
     }
     else
@@ -4937,6 +5339,106 @@ bool ConnectorImpl::handleCPIRQ()
 
 void ConnectorImpl::handleSSC()
 {
+        //
+        //    Bit 2 : STREAM_STATUS_CHANGED
+        //    When set to a indicates the source must re-check the Stream
+        //    Status with the QUERY_STREAM_ENCRYPTION_STATUS
+        //    message.
+        //
+        // i. Should trigger QueryStreamStatus on all HDCP enabled streams.
+        //     1.  L will change when the KSV list changes (aka new device)
+        //     2.  L will change when the encryption state changes
+        //         a.  The library should attempt to recover from this bad state as soon as possible.
+        //             If the player catches it on its 1/2Hz callback, it will disrupt CP over the entire topology
+        //     3.  The output of QueryStreamStatus must be passed down to RM for validation.
+        //         The status is effectively and indirectly signed by M0, the secret value
+        //         for the immediate link between GPU and first branch.
+        //     4.  The stream status validation function in RM will update the encryption state that
+        //         our hardware signs and returns to the player.
+        //         Thus the DisplayDriver should pass any upstream status calls directly to RM.
+        //
+        // ii. Should watch out that the ready bit is cleared after Binfo read.
+        //
+        DP_PRINTF(DP_NOTICE, "DP> SSC of DP_IRQ");
+
+        //
+        // Enable SSC process by default except when regkey 'DISABLE_SSC' set to 1 in DD's path.
+        //
+        if (!bDisableSSC)
+        {
+            this->messageManager->clearNotYetSentQSEDownRequest();
+
+            timer->cancelCallback(this, &tagSendQseMessage);
+
+            if (!isLinkActive())
+            {
+                DP_PRINTF(DP_WARNING, "DP> SSC of DP_IRQ: Ignored with link down");
+                return;
+            }
+
+            BInfo bInfo;
+            if (hal->getBinfo(bInfo))
+            {
+                if (bInfo.maxCascadeExceeded || bInfo.maxDevsExceeded)
+                {
+                    // Abort the Authentication
+                    DP_PRINTF(DP_ERROR, "DP> StreamStatusChanged: Topology limited. Abort Authentication.");
+
+                    isHDCPAuthOn = false;
+                    isHopLimitExceeded = true;
+
+                    for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
+                    {
+                         GroupImpl * group = (GroupImpl *)i;
+                         if (group->hdcpEnabled)
+                         {
+                             group->hdcpSetEncrypted(false);
+                         }
+                     }
+
+                    main->configureHDCPAbortAuthentication(KSVTOP);
+                    main->configureHDCPDisableAuthentication();
+                    return;
+                }
+                HDCPValidateData hdcpValidateData = {0};
+                NvU64 aN;
+
+                main->configureHDCPValidateLink(hdcpValidateData);
+                aN = hdcpValidateData.aN;
+
+                this->qseNonceGenerator->clientIdBuilder(aN);
+
+                if (this->messageManager->isAnyAwaitingQSEReplyDownRequest())
+                {
+                    // Mark waiting reply's QSE request as invalid.
+                    this->bValidQSERequest = false;
+
+                    // Queue callback to check if pending QSE exist and send QSE message.
+                    timer->queueCallback(this, &tagSendQseMessage, HDCP_SEND_QSE_MESSAGE_COOLDOWN);
+                }
+                else
+                {
+                    this->bValidQSERequest = true;
+
+                    for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
+                    {
+                        GroupImpl * group = (GroupImpl *) i;
+
+                        if (group->hdcpEnabled)
+                        {
+                            group->streamEncryptionStatusDetection->sendQSEMessage(group, qseReason_Ssc);
+                            timer->queueCallback(group, &(group->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
+                        }
+                    }
+                }
+            }
+            else
+                DP_ASSERT(0 && "Unable to get Binfo");
+        }
+        else
+        {
+            DP_PRINTF(DP_WARNING, "DP> StreamStatusChanged: SSC Disabled now.");
+        }
 }
 
 void ConnectorImpl::handleHdmiLinkStatusChanged()
@@ -6838,7 +7340,7 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
             return;
         }
 
-        if (existingDev && existingDev->isPreviouslyFakedMuxDevice() && !existingDev->isMarkedForDeletion())
+        if (existingDev && (existingDev->isPreviouslyFakedMuxDevice() || bIgnoreUnplugUnlessRequested) && !existingDev->isMarkedForDeletion())
         {
             DP_PRINTF(DP_NOTICE, "NotifyLongPulse ignored as there is a previously faked device but it is not marked for deletion");
             if (!statusConnected)
@@ -7097,6 +7599,8 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         delete messageManager;
         messageManager = 0;
         discoveryManager = 0;
+        delete qseNonceGenerator;
+        qseNonceGenerator = 0;
 
         cancelHdcpCallbacks();
 
@@ -7133,6 +7637,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             }
 
             discoveryManager = new DiscoveryManager(messageManager, this, timer, hal);
+            qseNonceGenerator = new QSENonceGenerator();
 
             // Check and clear if any pending message here
             if (hal->clearPendingMsg() ||  bForceClearPendingMsg)
@@ -7170,12 +7675,30 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             assessLink();                                   // Link assessment may re-add a stream
                                                             // and must be done AFTER the messaging system
                                                             // is restored.
+            //
+            // SOR should be able to authentication and enable link encrpytion without being connected to any
+            // head. From the RM code, it has the requirement of Head being ARMed to do authentication.
+            // Postpone the authentication until the NAE to do the authentication for DP1.2 as solution.
+            //
+            DP_ASSERT((isHDCPAuthOn == false) && (isDP12AuthCap == false));
+
+            HDCPState hdcpState = {0};
+            main->configureHDCPGetHDCPState(hdcpState);
+            if (hdcpState.HDCP_State_1X_Capable || hdcpState.HDCP_State_22_Capable)
+            {
+                isDP12AuthCap = true;
+            }
+            else
+            {
+                isDP12AuthCap = false;
+            }
             discoveryManager->notifyLongPulse(true);
         }
         else  // SST case
         {
             DiscoveryManager::Device dev;
             Edid tmpEdid;
+            DisplayID2x tmpDid2x;
             bool isComplianceForEdidTest = false;
             dev.address = Address();
 
@@ -7198,7 +7721,10 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             else
             {
                 dev.peerDevice = DownstreamSink;
-
+                if (hal->isAtLeastVersion(1, 4) && !bDisableNativeDisplayId2xSupport)
+                {
+                    DisplayId2ReadSST(tmpDid2x, auxBus, timer, main);
+                }
                 //  Handle fallback EDID
                 if(!EdidReadSST(tmpEdid, auxBus, timer,
                                 hal->getPendingTestRequestEdidRead(),
@@ -7339,11 +7865,11 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 LegacyPort * port = hal->getLegacyPort(0);
                 DwnStreamPortType portType = port->getDownstreamPortType();
                 dev.maxTmdsClkRate = port->getMaxTmdsClkRate();
-                processNewDevice(dev, tmpEdid, false, portType, port->getDownstreamNonEDIDPortAttribute());
+                processNewDevice({dev, tmpEdid, tmpDid2x, false, portType, port->getDownstreamNonEDIDPortAttribute()});
             }
             else
             {
-                processNewDevice(dev, tmpEdid, false, DISPLAY_PORT, RESERVED, isComplianceForEdidTest);
+                processNewDevice({dev, tmpEdid, tmpDid2x, false, DISPLAY_PORT, RESERVED, isComplianceForEdidTest});
             }
 
             // After processNewDevice, we should not defer any lost device.
@@ -7369,6 +7895,26 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         bDscCapBasedOnParent = false;
         linkAwaitingTransition = false;
 
+        LinkConfiguration linkConfig = getActiveLinkConfig();
+        cancelHdcpCallbacks();
+
+        //
+        // MST or 128b132b need to consider clear ECF and leave that to be handled
+        // at NotifyDetachBegin().
+        // TODO: remove SST handling here and all leave to handled at notifyDetach.
+        //
+        if (!linkUseMultistream()
+            && !linkConfig.bIs128b132bChannelCoding
+            )
+        {
+            // Disable the authentication on the main link
+            main->configureHDCPDisableAuthentication();
+
+            isHDCPAuthOn = isDP12AuthCap = false;
+        }
+
+        delete qseNonceGenerator;
+        qseNonceGenerator = 0;
     }
 completed:
     previousPlugged = statusConnected;
@@ -7823,10 +8369,25 @@ void ConnectorImpl::notifyAcpiInitDone()
     return;
 }
 
+void ConnectorImpl::hdcpRenegotiate(NvU64 cN, NvU64 cKsv)
+{
+    this->main->configureHDCPRenegotiate(cN, cKsv);
+    HDCPState hdcpState = {0};
+    this->main->configureHDCPGetHDCPState(hdcpState);
+    this->isHDCPAuthOn = hdcpState.HDCP_State_Authenticated;
+}
+
 bool ConnectorImpl::getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12)
 {
     hdcpAbortCodesDP12 = 0;
 
+    if (isHopLimitExceeded)
+    {
+        hdcpAbortCodesDP12 =  hdcpAbortCodesDP12 | HDCP_FLAGS_ABORT_HOP_LIMIT_EXCEEDED ;
+    }
+
+    // Video has also expressed the need of bRevoked but we don't think it's needed. Next RFR will have conclusion.
+    return true;
     return false;
 }
 
@@ -7865,6 +8426,9 @@ void ConnectorImpl::cancelHdcpCallbacks()
     timer->cancelCallback(this, &tagHDCPReauthentication);      // Cancel any queue the auth callback.
     timer->cancelCallback(this, &tagDelayedHdcpCapRead);        // Cancel any HDCP cap callbacks.
     timer->cancelCallback(this, &tagHDCPStreamEncrEnable);      // Cancel any queued the stream encr enable callback.
+
+    this->bValidQSERequest = false;
+    timer->cancelCallback(this, &tagSendQseMessage);            // Cancel any queue the qse callback.
 
 
     for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
@@ -8565,6 +9129,48 @@ bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)
     return true;
 }
 
+bool ConnectorImpl::isDpInTunnelingSupported()
+{
+    return hal->isDpInTunnelingSupported();
+}
+
+bool ConnectorImpl::isDpInTunnelingPanelReplayOptimizationSupported()
+{
+    return hal->isDpInTunnelingPanelReplayOptimizationSupported();
+}
+
+bool ConnectorImpl::isDpInTunnelingBwAllocationSupported()
+{
+    return hal->isDpInTunnelingBwAllocationSupported();
+}
+
+bool ConnectorImpl::getUSBDpInAdapterInfo(NvU32 displayId, NV0073_CTRL_DP_USB4_INFO *pInfo)
+{
+    EvoInterface *provider = ((EvoMainLink *)main)->getProvider();
+    NvU32 nvosStatus;
+    NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS dpParams = {0};
+
+    if (!pInfo)
+    {
+        DP_ASSERT(0 && "Invalida argument");
+        return false;
+    }
+
+    dpParams.subDeviceInstance = provider->getSubdeviceIndex();
+    dpParams.displayId = displayId;
+    nvosStatus = provider->rmControl0073(NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO, &dpParams, sizeof dpParams);
+
+    if (nvosStatus != NVOS_STATUS_SUCCESS)
+    {
+        DP_ASSERT(0 && "Unable to get USB4 DP_IN adapter Info");
+        return false;
+    }
+
+    dpMemCopy(pInfo, &(dpParams.usb4Info), sizeof(dpParams.usb4Info));
+
+    return true;
+}
+
 void ConnectorImpl::ensureMstNodesPoweredUp(Group * target)
 {
     if (!target)
@@ -8625,44 +9231,4 @@ void ConnectorImpl::ensureMstNodesPoweredUp(Group * target)
         }
     }
 }
-bool ConnectorImpl::isDpInTunnelingSupported()
-{
-    return hal->isDpInTunnelingSupported();
-}
 
-bool ConnectorImpl::isDpInTunnelingPanelReplayOptimizationSupported()
-{
-    return hal->isDpInTunnelingPanelReplayOptimizationSupported();
-}
-
-bool ConnectorImpl::isDpInTunnelingBwAllocationSupported()
-{
-    return hal->isDpInTunnelingBwAllocationSupported();
-}
-
-bool ConnectorImpl::getUSBDpInAdapterInfo(NvU32 displayId, NV0073_CTRL_DP_USB4_INFO *pInfo)
-{
-    EvoInterface *provider = ((EvoMainLink *)main)->getProvider();
-    NvU32 nvosStatus;
-    NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS dpParams = {0};
-
-    if (!pInfo)
-    {
-        DP_ASSERT(0 && "Invalida argument");
-        return false;
-    }
-
-    dpParams.subDeviceInstance = provider->getSubdeviceIndex();
-    dpParams.displayId = displayId;
-    nvosStatus = provider->rmControl0073(NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO, &dpParams, sizeof dpParams);
-
-    if (nvosStatus != NVOS_STATUS_SUCCESS)
-    {
-        DP_ASSERT(0 && "Unable to get USB4 DP_IN adapter Info");
-        return false;
-    }
-
-    dpMemCopy(pInfo, &(dpParams.usb4Info), sizeof(dpParams.usb4Info));
-
-    return true;
-}

@@ -34,6 +34,7 @@
 //                          Type definitions
 // ****************************************************************************
 typedef struct RusdQueryCache RUSD_QUERY_CACHE;
+typedef struct RusdStaticQueryCache RUSD_STATIC_QUERY_CACHE;
 
 typedef struct GpuSharedDataMap {
     MEMORY_DESCRIPTOR *pMemDesc;
@@ -51,6 +52,7 @@ typedef struct GpuSharedDataMap {
 
     // Private data to assist metrics query
     RUSD_QUERY_CACHE *pRusdQueryCache;
+    RUSD_STATIC_QUERY_CACHE *pRusdStaticQueryCache;
     NvU8 curGroup;
     NvBool bWorkItemPending;
 } GpuSharedDataMap;

@@ -140,13 +140,9 @@ struct NVOC_METADATA__VirtualMemory {
     const struct NVOC_VTABLE__VirtualMemory vtable;
 };
 
-#ifndef __NVOC_CLASS_VirtualMemory_TYPEDEF__
-#define __NVOC_CLASS_VirtualMemory_TYPEDEF__
-typedef struct VirtualMemory VirtualMemory;
-#endif /* __NVOC_CLASS_VirtualMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VirtualMemory
-#define __nvoc_class_id_VirtualMemory 0x2aea5c
+#define __nvoc_class_id_VirtualMemory 0x2aea5cu
+typedef struct VirtualMemory VirtualMemory;
 #endif /* __nvoc_class_id_VirtualMemory */
 
 // Casting support
@@ -164,14 +160,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VirtualMemory;
 
 NV_STATUS __nvoc_objCreateDynamic_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VirtualMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VirtualMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VirtualMemory(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VirtualMemory((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *arg_pVirtualMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_virtmemConstruct(arg_pVirtualMemory, arg_pCallContext, arg_pParams) virtmemConstruct_IMPL(arg_pVirtualMemory, arg_pCallContext, arg_pParams)
+NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *pVirtualMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_virtmemConstruct(pVirtualMemory, pCallContext, pParams) virtmemConstruct_IMPL(pVirtualMemory, pCallContext, pParams)
 
 void virtmemDestruct_IMPL(struct VirtualMemory *pVirtualMemory);
 #define __nvoc_virtmemDestruct(pVirtualMemory) virtmemDestruct_IMPL(pVirtualMemory)
@@ -362,14 +358,20 @@ static inline void virtmemAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__virtmemAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS virtmemMapTo_IMPL(struct VirtualMemory *pVirtualMemory, struct RS_RES_MAP_TO_PARAMS *pParams);
 
 NV_STATUS virtmemUnmapFrom_IMPL(struct VirtualMemory *pVirtualMemory, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
-static inline NvBool virtmemIsPartialUnmapSupported_e661f0(struct VirtualMemory *pVirtualMemory) {
+static inline NvBool virtmemIsPartialUnmapSupported_e661f0(struct VirtualMemory *pVirtualMemory){
     return NV_TRUE;
 }
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

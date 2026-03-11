@@ -348,7 +348,7 @@ static NvBool HsIoctlFlipAssignHwStateOneHead(
     }
 
     /* Apply pParams to pFlipState. */
-    if (!nvCheckFlipPermissions(pOpenDev, pDevEvo, sd, apiHead, pParams)) {
+    if (!nvCheckFlipPermissions(pOpenDev, pDevEvo, apiHead, pParams)) {
         return FALSE;
     }
 

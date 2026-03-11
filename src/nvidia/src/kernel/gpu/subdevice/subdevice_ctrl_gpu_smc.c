@@ -26,8 +26,6 @@
 #include "gpu/gpu.h"
 #include "compute/mps_api.h"
 #include "gpu/subdevice/subdevice.h"
-#include "vgpu/rpc.h"
-#include "vgpu/vgpu_events.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/gr/kernel_graphics_manager.h"

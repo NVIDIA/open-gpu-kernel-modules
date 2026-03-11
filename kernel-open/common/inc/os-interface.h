@@ -163,6 +163,7 @@ void        NV_API_CALL  os_release_rwlock_write          (void *);
 NvBool      NV_API_CALL  os_semaphore_may_sleep           (void);
 NV_STATUS   NV_API_CALL  os_get_version_info              (os_version_info*);
 NV_STATUS   NV_API_CALL  os_get_is_openrm                 (NvBool *);
+NvBool      NV_API_CALL  os_is_bif_reset_supported        (void *);
 NvBool      NV_API_CALL  os_is_isr                        (void);
 NvBool      NV_API_CALL  os_pat_supported                 (void);
 void        NV_API_CALL  os_dump_stack                    (void);
@@ -233,6 +234,7 @@ NV_STATUS   NV_API_CALL  os_find_ns_pid(void *pid_info, NvU32 *ns_pid);
 NvBool      NV_API_CALL  os_is_init_ns(void);
 NV_STATUS   NV_API_CALL  os_iommu_sva_bind(void *arg, void **handle, NvU32 *pasid);
 void        NV_API_CALL  os_iommu_sva_unbind(void *handle);
+NvBool      NV_API_CALL  os_supports_kernel_suspend_notifiers(void);
 
 extern NvU64 os_page_size;
 extern NvU64 os_max_page_size;

@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xbaa900 = 1;
+char __nvoc_class_id_uniqueness_check__baa900 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue;
@@ -26,7 +26,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 void __nvoc_init__Object(Object*);
 void __nvoc_init__CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
 void __nvoc_init_funcTable_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
-NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder, CrashCatQueueConfig *arg_pQueueConfig);
+NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder, CrashCatQueueConfig *pQueueConfig);
 void __nvoc_init_dataField_CrashCatQueue(CrashCatQueue*, CrashCatWayfinder *pCrashcatWayfinder);
 void __nvoc_dtor_CrashCatQueue(CrashCatQueue*);
 
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatQueue;
 
 // Up-thunk(s) to bridge CrashCatQueue methods to ancestors (if any)
 
+// Class-specific details for CrashCatQueue
 const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(CrashCatQueue),
-        /*classId=*/            classId(CrashCatQueue),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(CrashCatQueue),
+    .classInfo.classId =            classId(CrashCatQueue),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "CrashCatQueue",
+    .classInfo.name =               "CrashCatQueue",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CrashCatQueue,
-    /*pCastInfo=*/          &__nvoc_castinfo__CrashCatQueue,
-    /*pExportInfo=*/        &__nvoc_export_info__CrashCatQueue
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CrashCatQueue,
+    .pCastInfo =          &__nvoc_castinfo__CrashCatQueue,
+    .pExportInfo =        &__nvoc_export_info__CrashCatQueue
 };
 
 
@@ -76,18 +75,24 @@ const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatQueue = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatQueue = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct CrashCatQueue object.
 void __nvoc_crashcatQueueDestruct(CrashCatQueue*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_CrashCatQueue(CrashCatQueue *pThis) {
+void __nvoc_dtor_CrashCatQueue(CrashCatQueue* pThis) {
+
+// Call destructor.
     __nvoc_crashcatQueueDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder) {
     CrashCatWayfinderHal *wayfinderHal = &pCrashcatWayfinder->wayfinderHal;
     const unsigned long wayfinderHal_HalVarIdx = (unsigned long)wayfinderHal->__nvoc_HalVarIdx;
@@ -97,22 +102,29 @@ void __nvoc_init_dataField_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder
     PORT_UNREFERENCED_VARIABLE(wayfinderHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder, CrashCatQueueConfig * arg_pQueueConfig) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_CrashCatQueue_fail_Object;
-    __nvoc_init_dataField_CrashCatQueue(pThis, pCrashcatWayfinder);
 
-    status = __nvoc_crashcatQueueConstruct(pThis, arg_pQueueConfig);
+// Construct CrashCatQueue object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_CrashCatQueue(CrashCatQueue *arg_this, CrashCatWayfinder *pCrashcatWayfinder, CrashCatQueueConfig *pQueueConfig) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&arg_this->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_CrashCatQueue_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CrashCatQueue(arg_this, pCrashcatWayfinder);
+
+    // Call the constructor for this class.
+    status = __nvoc_crashcatQueueConstruct(arg_this, pQueueConfig);
     if (status != NV_OK) goto __nvoc_ctor_CrashCatQueue_fail__init;
     goto __nvoc_ctor_CrashCatQueue_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_CrashCatQueue_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&arg_this->__nvoc_base_Object);
 __nvoc_ctor_CrashCatQueue_fail_Object:
 __nvoc_ctor_CrashCatQueue_exit:
-
     return status;
 }
 
@@ -150,58 +162,58 @@ void __nvoc_init__CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashc
     __nvoc_init_funcTable_CrashCatQueue(pThis, pCrashcatWayfinder);
 }
 
-NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue **ppThis, Dynamic *pParent, NvU32 createFlags, CrashCatQueueConfig *arg_pQueueConfig)
+NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, CrashCatQueueConfig *pQueueConfig)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    CrashCatQueue *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    CrashCatQueue *__nvoc_pThis;
     CrashCatWayfinder *pCrashcatWayfinder;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(CrashCatQueue));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(CrashCatQueue));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(CrashCatQueue));
+    portMemSet(__nvoc_pThis, 0, sizeof(CrashCatQueue));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_CrashCatQueue_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_CrashCatQueue_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pCrashcatWayfinder = dynamicCast(pParent, CrashCatWayfinder)) == NULL)
-        pCrashcatWayfinder = objFindAncestorOfType(CrashCatWayfinder, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pCrashcatWayfinder != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_CrashCatQueue_cleanup);
+    if ((pCrashcatWayfinder = dynamicCast(__nvoc_pParent, CrashCatWayfinder)) == NULL)
+        pCrashcatWayfinder = objFindAncestorOfType(CrashCatWayfinder, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pCrashcatWayfinder != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_CrashCatQueue_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__CrashCatQueue(pThis, pCrashcatWayfinder);
-    status = __nvoc_ctor_CrashCatQueue(pThis, pCrashcatWayfinder, arg_pQueueConfig);
-    if (status != NV_OK) goto __nvoc_objCreate_CrashCatQueue_cleanup;
+    __nvoc_init__CrashCatQueue(__nvoc_pThis, pCrashcatWayfinder);
+    __nvoc_status = __nvoc_ctor_CrashCatQueue(__nvoc_pThis, pCrashcatWayfinder, pQueueConfig);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_CrashCatQueue_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -210,30 +222,30 @@ NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue **ppThis, Dynamic *pParen
 __nvoc_objCreate_CrashCatQueue_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(CrashCatQueue));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(CrashCatQueue));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_CrashCatQueue(CrashCatQueue **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    CrashCatQueueConfig *arg_pQueueConfig = va_arg(args, CrashCatQueueConfig *);
+NV_STATUS __nvoc_objCreateDynamic_CrashCatQueue(CrashCatQueue **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    CrashCatQueueConfig *pQueueConfig = va_arg(__nvoc_args, CrashCatQueueConfig *);
 
-    status = __nvoc_objCreate_CrashCatQueue(ppThis, pParent, createFlags, arg_pQueueConfig);
+    __nvoc_status = __nvoc_objCreate_CrashCatQueue(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pQueueConfig);
 
-    return status;
+    return __nvoc_status;
 }
 

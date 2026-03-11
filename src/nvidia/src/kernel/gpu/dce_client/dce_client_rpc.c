@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -328,7 +328,7 @@ void dceclientHandleAsyncRpcCallback
             {
                 PEVENTNOTIFICATION pNotifyList  = NULL;
                 PEVENTNOTIFICATION pNotifyEvent = NULL;
-                Event             *pEvent       = NULL;
+                EventApi          *pEvent       = NULL;
                 NV_STATUS          nvStatus     = NV_OK;
 
                 // Get the notification list that contains this event.
@@ -437,8 +437,9 @@ NV_STATUS rpcRmApiControl_dce
     status = _dceRpcGetRpcResult(pRpc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC_DCE: Failed RM ctrl call cmd:0x%x result 0x%x: %s\n",
-                  cmd, status, nvstatusToString(status));
+        NV_PRINTF_COND(status != NV_ERR_NOT_SUPPORTED, LEVEL_ERROR, LEVEL_INFO,
+                       "NVRM_RPC_DCE: Failed RM ctrl call cmd:0x%x result 0x%x: %s\n",
+                       cmd, status, nvstatusToString(status));
     }
     else
     {
@@ -650,6 +651,9 @@ rpcDceRmInit_dce
     OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
     DceClient *pDceClientrm = GPU_GET_DCECLIENTRM(pGpu);
+    NvU32 maxDispClkRateDisppll = 0;
+    NvU32 maxDispClkRateSppllClkouta = 0;
+    NvU32 maxHubClkRateSppllClkoutb = 0;
 
     rpc_generic_union *msg_data;
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
@@ -672,7 +676,20 @@ rpcDceRmInit_dce
         goto done;
     }
 
-    rpc_params->bInit     = bInit;
+    if (bInit)
+    {
+        status = osTegraSocGetDispClockRates(pGpu->pOsGpuInfo, &maxDispClkRateDisppll, &maxDispClkRateSppllClkouta, &maxHubClkRateSppllClkoutb);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE: Retrieving disp clocks max rate Failed [0x%x]\n", status);
+        }
+    }
+
+    rpc_params->bInit                      = bInit;
+    rpc_params->maxDispClkRateDisppll      = maxDispClkRateDisppll;
+    rpc_params->maxDispClkRateSppllClkouta = maxDispClkRateSppllClkouta;
+    rpc_params->maxHubClkRateSppllClkoutb  = maxHubClkRateSppllClkoutb;
+
     status = _dceRpcIssueAndWait(pRmApi);
     if (status != NV_OK)
     {

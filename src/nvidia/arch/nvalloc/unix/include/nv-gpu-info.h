@@ -33,6 +33,7 @@ typedef struct {
     } pci_info;
 
     NvBool needs_numa_setup;
+    NvBool is_soc_disp;
 
     /*
      * opaque OS-specific pointer; on Linux, this is a pointer to the

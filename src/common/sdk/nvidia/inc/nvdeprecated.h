@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,14 +93,6 @@
  *
  *  @{
  */
-
-/*!
- * RM Config Get/Set API is deprecated and RmControl should be used instead.
- * Bugs: XXXXXX, XXXXXX, etc
- */
-#ifndef NV_DEPRECATED_RM_CONFIG_GET_SET
-#define NV_DEPRECATED_RM_CONFIG_GET_SET     0
-#endif
 
 #ifndef NV_DEPRECATED_NVOS_STATUS
 /* NVOS_STATUS codes is deprecated. NV_STATUS to be used instead */

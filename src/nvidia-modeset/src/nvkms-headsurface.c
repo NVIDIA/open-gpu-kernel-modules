@@ -40,7 +40,7 @@
 #include <class/cl0040.h> /* NV01_MEMORY_LOCAL_USER */
 #include <class/cl003e.h> /* NV01_MEMORY_SYSTEM */
 #include <class/cla06fsubch.h>
-#include <class/clb06f.h> /* MAXWELL_CHANNEL_GPFIFO_A */
+#include <class/clc46f.h> /* TURING_CHANNEL_GPFIFO */
 
 static NvBool AllocNotifiers(NVHsDeviceEvoRec *pHsDevice);
 static void FreeNotifiers(NVHsDeviceEvoRec *pHsDevice);
@@ -1648,10 +1648,10 @@ static void HsFlushL2(
 
     NvPushChannelPtr p = &pHsChannel->nvPush.channel;
     /* Host WFI */
-    nvPushImmedVal(p, NVA06F_SUBCHANNEL_2D, NVB06F_WFI, 0);
+    nvPushImmedVal(p, NVA06F_SUBCHANNEL_2D, NVC46F_WFI, 0);
     /* Flush L2 to backing store */
-    nvPushMethod(p, NVA06F_SUBCHANNEL_2D, NVB06F_MEM_OP_D, 1);
-    nvPushSetMethodData(p, DRF_DEF(B06F, _MEM_OP_D, _OPERATION, _L2_FLUSH_DIRTY));
+    nvPushMethod(p, NVA06F_SUBCHANNEL_2D, NVC46F_MEM_OP_D, 1);
+    nvPushSetMethodData(p, DRF_DEF(C46F, _MEM_OP_D, _OPERATION, _L2_FLUSH_DIRTY));
 }
 
 /*!

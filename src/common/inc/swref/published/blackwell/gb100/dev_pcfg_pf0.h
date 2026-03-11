@@ -120,7 +120,6 @@
 #define NV_PF0_SUBSYSTEM_ID_AND_VENDOR_ID                                                            0x0000002c          /* R--4R */
 #define NV_PF0_LINK_CONTROL_AND_STATUS                                                               0x00000050          /* RW-4R */
 #define NV_PF0_REVISION_ID_AND_CLASS_CODE_BASE_CLASS_CODE_3D                                         0                   /*       */
-#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_UNSUPPORTED_REQUEST_ERROR_STATUS                           20:20               /* RWCVF */
 #define NV_PF0_BASE_ADDRESS_REGISTERS_5                                                              0x00000024          /* RW-4R */
 #define NV_PF0_VF_BAR_0                                                                              0x00000324          /* RW-4R */
 #define NV_PF0_LINK_CAPABILITIES                                                                     0x0000004c          /* R--4R */
@@ -167,6 +166,8 @@
 #define NV_PF0_DEVICE_VENDOR_ID_VENDOR_ID_DEFAULT                                                    0x000010de          /* R-E-V */
 #define NV_PF0_DEVICE_CONTROL_AND_STATUS_EXTENDED_TAG_FIELD_ENABLE                                   8:8                 /* RWIVF */
 #define NV_PF0_DEVICE_CONTROL_2                                                                      0x00000068          /* RW-4R */
+#define NV_PF0_DEVICE_CONTROL_2_LTR_MECHANISM_ENABLE                                                 10:10               /* RWIVF */
+#define NV_PF0_DEVICE_CONTROL_2_LTR_MECHANISM_ENABLE_DEFAULT                                         0x00000000          /* RWI-V */
 #define NV_PF0_DEVICE_CAPABILITIES_FUNCTION_LEVEL_RESET_CAPABILITY                                   28:28               /* R-IVF */
 #define NV_PF0_CORRECTABLE_ERROR_STATUS_RECEIVER_ERROR_STATUS                                        0:0                 /* RWCVF */
 #define NV_PF0_REVISION_ID_AND_CLASS_CODE_SUB_CLASS_CODE                                             23:16               /* R-IVF */
@@ -174,6 +175,43 @@
 #define NV_PF0_BASE_ADDRESS_REGISTERS_0_ADDR_TYPE_64BIT                                              2                   /*       */
 #define NV_PF0_UNCORRECTABLE_ERROR_STATUS                                                            0x0000014c          /* RW-4R */
 #define NV_PF0_UNCORRECTABLE_ERROR_STATUS_DATA_LINK_PROTOCOL_ERROR_STATUS                            4:4                 /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_UNSUPPORTED_REQUEST_ERROR_STATUS                           20:20               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_IDE_CHECK_FAILED_STATUS                                    28:28               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_IDE_CHECK_FAILED_STATUS_DEFAULT                            0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_MISROUTED_IDE_TLP_STATUS                                   29:29               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_MISROUTED_IDE_TLP_STATUS_DEFAULT                           0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_PCRC_CHECK_FAILED_STATUS                                   30:30               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_STATUS_PCRC_CHECK_FAILED_STATUS_DEFAULT                           0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK                                                              0x00000150          /* RW-4R */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_IDE_CHECK_FAILED_MASK                                        28:28               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_IDE_CHECK_FAILED_MASK_DEFAULT                                0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_MISROUTED_IDE_TLP_MASK                                       29:29               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_MISROUTED_IDE_TLP_MASK_DEFAULT                               0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_PCRC_CHECK_FAILED_MASK                                       30:30               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_MASK_PCRC_CHECK_FAILED_MASK_DEFAULT                               0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY                                                          0x00000154          /* RW-4R */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_IDE_CHECK_FAILED_SEVERITY                                28:28               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_IDE_CHECK_FAILED_SEVERITY_DEFAULT                        0x00000001          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_MISROUTED_IDE_TLP_SEVERITY                               29:29               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_MISROUTED_IDE_TLP_SEVERITY_DEFAULT                       0x00000000          /* RWC-V */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_PCRC_CHECK_FAILED_SEVERITY                               30:30               /* RWCVF */
+#define NV_PF0_UNCORRECTABLE_ERROR_SEVERITY_PCRC_CHECK_FAILED_SEVERITY_DEFAULT                       0x00000000          /* RWC-V */
+#define NV_PF0_IDE_CONTROL                                                                           0x000003f0          /* R--4R */
+#define NV_PF0_IDE_CONTROL_FLOW_THROUGH_IDE_STREAM_ENABLED                                           2:2                 /* R-IVF */
+#define NV_PF0_IDE_CONTROL_FLOW_THROUGH_IDE_STREAM_ENABLED_DEFAULT                                   0x00000000          /* R-I-V */
+#define NV_PF0_LINK_IDE_STREAM_CONTROL_0                                                             0x000003f4          /* RW-4R */
+#define NV_PF0_LINK_IDE_STREAM_CONTROL_0_LINK_IDE_STREAM_ENABLE                                      0:0                 /* RWIVF */
+#define NV_PF0_LINK_IDE_STREAM_CONTROL_0_LINK_IDE_STREAM_ENABLE_DEFAULT                              0x00000000          /* RWI-V */
+#define NV_PF0_LINK_IDE_STREAM_STATUS_0                                                              0x000003f8          /* RW-4R */
+#define NV_PF0_LINK_IDE_STREAM_STATUS_0_LINK_IDE_STREAM_STATE                                        3:0                 /* R-IVF */
+#define NV_PF0_LINK_IDE_STREAM_STATUS_0_LINK_IDE_STREAM_STATE_DEFAULT                                0x00000000          /* R-I-V */
+#define NV_PF0_SELECTIVE_IDE_STREAM_CONTROL(i)                                                       (0x00000400+(i)*104) /* RW-4A */
+#define NV_PF0_SELECTIVE_IDE_STREAM_CONTROL_SELECTIVE_IDE_STREAM_ENABLE                              0:0                 /* RWIVF */
+#define NV_PF0_SELECTIVE_IDE_STREAM_CONTROL_SELECTIVE_IDE_STREAM_ENABLE_DEFAULT                      0x00000000          /* RWI-V */
+#define NV_PF0_SELECTIVE_IDE_STREAM_STATUS(i)                                                        (0x00000404+(i)*104) /* RW-4A */
+#define NV_PF0_SELECTIVE_IDE_STREAM_STATUS__SIZE_1                                                   16                  /*       */
+#define NV_PF0_SELECTIVE_IDE_STREAM_STATUS_SELECTIVE_IDE_STREAM_STATE                                3:0                 /* R-IVF */
+#define NV_PF0_SELECTIVE_IDE_STREAM_STATUS_SELECTIVE_IDE_STREAM_STATE_DEFAULT                        0x00000000          /* R-I-V */
 #define NV_PF0_STATUS_COMMAND                                                                        0x00000004          /* RW-4R */
 #define NV_PF0_CORRECTABLE_ERROR_STATUS_ADVISORY_NON_FATAL_ERROR_STATUS                              13:13               /* RWCVF */
 #define NV_PF0_STATUS_COMMAND_IO_SPACE_ENABLE_ENABLE                                                 1                   /*       */

@@ -38,9 +38,9 @@
 #include "nvrm_registry.h"
 #include "diagnostics/tracer.h"
 #include "nvpcie.h"
-#include "vgpu/vgpu_events.h"
 #include "lib/base_utils.h"
 #include "gpu/device/device.h"
+#include "gpu/subdevice/subdevice.h"
 
 /* ------------------------ Macros ------------------------------------------ */
 /* ------------------------ Compile Time Checks ----------------------------- */
@@ -75,9 +75,6 @@ kbifConstructEngine_IMPL
     // Initialize registry overrides
     _kbifInitRegistryOverrides(pGpu, pKernelBif);
 
-    // WAR for Bug 3208922 - disables P2P on Ampere NB
-    kbifApplyWARBug3208922_HAL(pGpu, pKernelBif);
-
     // Disables P2P on VF
     kbifDisableP2PTransactions_HAL(pGpu, pKernelBif);
 
@@ -95,6 +92,9 @@ kbifConstructEngine_IMPL
 
     // Cache GPU link capabilities
     kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+
+    // Construct XTL aperture
+    kbifConstructXtlAperture_HAL(pGpu, pKernelBif);
 
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
@@ -119,7 +119,6 @@ kbifStateInitLocked_IMPL
 )
 {
     OBJSYS    *pSys   = SYS_GET_INSTANCE();
-    OBJOS     *pOS    = SYS_GET_OS(pSys);
     OBJCL     *pCl    = SYS_GET_CL(pSys);
 
     kbifInitXveRegMap_HAL(pGpu, pKernelBif, 1);
@@ -145,7 +144,7 @@ kbifStateInitLocked_IMPL
 
     // Check for OS w/o usable PAT support
     if ((gpuGetBusIntfType_HAL(pGpu) == NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS) &&
-        pOS->getProperty(pOS, PDB_PROP_OS_PAT_UNSUPPORTED))
+        pSys->getProperty(pOS, PDB_PROP_SYS_PAT_UNSUPPORTED))
     {
         NV_PRINTF(LEVEL_INFO,
                   "BIF disabling noncoherent on OS w/o usable PAT support\n");
@@ -178,9 +177,6 @@ kbifStateLoad_IMPL
 
     // Check for stale PCI-E dev ctrl/status errors and AER errors
     kbifClearConfigErrors(pGpu, pKernelBif, NV_TRUE, KBIF_CLEAR_XVE_AER_ALL_MASK);
-
-    // Initialize LTR from config space
-    kbifInitLtr_HAL(pGpu, pKernelBif);
 
     //  Cache PCI config registers to be restored during resume
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
@@ -1775,6 +1771,143 @@ kbifControlGetPCIEInfo_IMPL
 
     pBusInfo->data = data;
     return NV_OK;
+}
+
+/*!
+ * @brief RM control call handler to return requested data from kernel Bif module or redirect it to physical RM
+ *        if the info required is not present in Kernel RM
+ *
+ * @param[in]    pSubdevice    Subdevice object pointer
+ * @param[in]    pParams       Params passed to RM control call
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+subdeviceCtrlCmdBifGetData_IMPL
+(
+  Subdevice                         *pSubdevice,
+  NV2080_CTRL_BIF_GET_DATA_PARAMS   *pParams
+)
+{
+    OBJGPU     *pGpu       = GPU_RES_GET_GPU(pSubdevice);
+    KernelBif  *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+    NV_STATUS   status     = NV_OK;
+    RM_API     *pRmApi     = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    if (pParams->paramSize > NV_ARRAY_ELEMENTS(pParams->paramId))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    switch (pParams->featureId)
+    {
+        case NV2080_CTRL_BIF_FEATURE_ID_CONFIG_REG:
+           status = kbifGetConfigRegData(pGpu, pKernelBif, pParams);
+           break;
+        default:
+           NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                    pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                                    NV2080_CTRL_CMD_INTERNAL_BIF_GET_DATA,
+                                    pParams, sizeof(*pParams)),
+                    subdeviceCtrlCmdBifGetData_IMPL_exit);
+    }
+
+    pParams->flags = (NvU32) status;
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO, "Call failed for feature ID = %d.\n", pParams->featureId);
+    }
+
+subdeviceCtrlCmdBifGetData_IMPL_exit:
+    return status;
+}
+
+/*!
+ * @brief Get pcie config space registers data
+ *
+ * @param[in]    pGpu        GPU object pointer
+ * @param[in]    pKernelBif  KernelBif object pointer
+ * @param[inout] pParams     Params passed to RM control call
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifGetConfigRegData_IMPL
+(
+    OBJGPU                           *pGpu,
+    KernelBif                        *pKernelBif,
+    NV2080_CTRL_BIF_GET_DATA_PARAMS  *pParams
+)
+{
+    NV_STATUS  status     = NV_OK;
+    NvU32      paramSize  = pParams->paramSize;
+    NvU32      id         = 0;
+
+    for (id = 0; id < paramSize; id++)
+    {
+        switch (pParams->paramId[id])
+        {
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_DEVICE_CTRL_STATUS:
+                 pParams->paramVal[id] = kbifGetGpuDevControlStatus(pGpu, pKernelBif);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_LINK_CTRL_STATUS:
+                 pParams->paramVal[id] = kbifGetGpuLinkControlStatus(pGpu, pKernelBif);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_DEVICE_CTRL_STATUS_2:
+                 pParams->paramVal[id] = kbifGetGpuDevControlStatus2(pGpu, pKernelBif);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_LINK_CAP:
+                 pParams->paramVal[id] = kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_L1_PM_SUBSTATES_CTRL1:
+                 pParams->paramVal[id] = kbifGetGpuL1PmSubstatesCtrl1(pGpu, pKernelBif);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_CHECK_FAILED_STATUS:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_CHECK_FAILED_STATUS);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_MISROUTED_TLP_STATUS:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_MISROUTED_TLP_STATUS);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_STATUS:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_STATUS);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_CHECK_FAILED_MASK:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_CHECK_FAILED_MASK);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_MISROUTED_TLP_MASK:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_MISROUTED_TLP_MASK);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_MASK:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_MASK);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_CHECK_FAILED_SEVERITY:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_CHECK_FAILED_SEVERITY);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_MISROUTED_TLP_SEVERITY:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_MISROUTED_TLP_SEVERITY);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_SEVERITY:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_PCRC_CHECK_FAILED_SEVERITY);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_TLP_ENCRYPTION_STATUS:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_TLP_ENCRYPTION_STATUS); 
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_TYPE_LINK_STREAM_ENABLED:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_TYPE_LINK_STREAM_ENABLED);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_TYPE_SELECTIVE_STREAM_ENABLED:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_TYPE_SELECTIVE_STREAM_ENABLED);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_CONFIG_REG_FN0_IDE_TYPE_FLOW_THROUGH_STREAM_ENABLED:
+                 pParams->paramVal[id] = kbifGetIdeInfo_HAL(pGpu, pKernelBif, NV_BIF_PEX_CONFIG_REG_FN0_IDE_TYPE_FLOW_THROUGH_STREAM_ENABLED);
+                 break;     
+            default:
+                 NV_PRINTF(LEVEL_INFO, "Invalid command.\n");
+                 status = NV_ERR_INVALID_REQUEST;
+        }
+    }
+
+    return status;
 }
 
 /*!

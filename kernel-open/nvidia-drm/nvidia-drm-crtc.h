@@ -37,13 +37,7 @@
 
 #include "nvtypes.h"
 #include "nvkms-kapi.h"
-
-enum nv_drm_transfer_function {
-    NV_DRM_TRANSFER_FUNCTION_DEFAULT,
-    NV_DRM_TRANSFER_FUNCTION_LINEAR,
-    NV_DRM_TRANSFER_FUNCTION_PQ,
-    NV_DRM_TRANSFER_FUNCTION_MAX,
-};
+#include "nv_drm_common_ioctl.h"
 
 struct nv_drm_crtc {
     NvU32 head;

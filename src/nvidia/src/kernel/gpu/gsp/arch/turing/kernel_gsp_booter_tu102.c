@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,13 +57,9 @@ s_executeBooterUcode_TU102
 
     NV_PRINTF(LEVEL_INFO, "starting Booter with mailbox0 0x%08x, mailbox1 0x%08x\n", mailbox0, mailbox1);
 
-    pKernelGsp->bLibosLogsPollingEnabled = NV_FALSE;
-
     status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp,
                                      pBooterUcode, pKernelFlcn,
                                      &mailbox0, &mailbox1);
-
-    pKernelGsp->bLibosLogsPollingEnabled = NV_TRUE;
 
     NV_PRINTF(LEVEL_INFO, "after Booter mailbox0 0x%08x, mailbox1 0x%08x\n", mailbox0, mailbox1);
 

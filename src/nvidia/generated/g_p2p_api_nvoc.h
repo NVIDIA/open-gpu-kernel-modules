@@ -146,13 +146,9 @@ struct NVOC_METADATA__P2PApi {
     const struct NVOC_VTABLE__P2PApi vtable;
 };
 
-#ifndef __NVOC_CLASS_P2PApi_TYPEDEF__
-#define __NVOC_CLASS_P2PApi_TYPEDEF__
-typedef struct P2PApi P2PApi;
-#endif /* __NVOC_CLASS_P2PApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_P2PApi
-#define __nvoc_class_id_P2PApi 0x3982b7
+#define __nvoc_class_id_P2PApi 0x3982b7u
+typedef struct P2PApi P2PApi;
 #endif /* __nvoc_class_id_P2PApi */
 
 // Casting support
@@ -170,14 +166,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_P2PApi;
 
 NV_STATUS __nvoc_objCreateDynamic_P2PApi(P2PApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_P2PApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_P2PApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_P2PApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_P2PApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS p2papiConstruct_IMPL(struct P2PApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_p2papiConstruct(arg_pResource, arg_pCallContext, arg_pParams) p2papiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
+NV_STATUS p2papiConstruct_IMPL(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_p2papiConstruct(pResource, pCallContext, pParams) p2papiConstruct_IMPL(pResource, pCallContext, pParams)
 
 void p2papiDestruct_IMPL(struct P2PApi *pResource);
 #define __nvoc_p2papiDestruct(pResource) p2papiDestruct_IMPL(pResource)
@@ -312,6 +308,12 @@ static inline void p2papiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__p2papiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

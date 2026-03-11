@@ -61,6 +61,62 @@
     defined(NV_DT_BINDINGS_INTERCONNECT_TEGRA_ICC_ID_H_PRESENT)
 
 /*!
+ * @brief Returns IMP-relevant data passed by UEFI GOP Driver
+ *
+ * @param[in]   nv            Per GPU Linux state
+ * @param[out]  iso_bw_kbps   ISO BW set by UEFI
+ * @param[out]  floor_bw_kbps DRAM Floor BW set by UEFI
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_GENERIC if there is an error in parsing DT,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available.
+ */
+NV_STATUS NV_API_CALL
+nv_imp_get_uefi_data
+(
+    nv_state_t *nv,
+    NvU32 *iso_bw_kbps,
+    NvU32 *floor_bw_kbps
+)
+{
+    NV_STATUS status = NV_OK;
+
+    *iso_bw_kbps = 0;
+    *floor_bw_kbps = 0;
+#if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    NvU32 value = 0;
+    int ret = 0;
+
+    ret = of_property_read_u32(nvl->dev->of_node, "nvidia,iso-bandwidth-kbps", &value);
+    if (ret != 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to read nvidia,iso-bandwidth-kbps\n");
+        status = NV_ERR_GENERIC;
+    }
+    else
+    {
+        *iso_bw_kbps = value;
+    }
+
+    ret = of_property_read_u32(nvl->dev->of_node, "nvidia,dram-floor-kbps", &value);
+    if (ret != 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to read nvidia,dram-floor-kbps\n");
+        status = NV_ERR_GENERIC;
+    }
+    else
+    {
+        *floor_bw_kbps = value;
+    }
+#else
+    status = NV_ERR_NOT_SUPPORTED;
+#endif
+
+    return status;
+}
+
+/*!
  * @brief Returns IMP-relevant data collected from other modules
  *
  * @param[out]  tegra_imp_import_data   Structure to receive the data

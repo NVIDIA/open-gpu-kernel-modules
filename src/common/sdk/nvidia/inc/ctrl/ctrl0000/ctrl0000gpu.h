@@ -561,10 +561,10 @@ typedef struct NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS {
  *   NV_ERR_OBJECT_NOT_FOUND
  *
  */
-#define NV0000_CTRL_CMD_GPU_GET_UUID_INFO                                   (0x274U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_UUID_INFO_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_GPU_GET_UUID_INFO (0x274U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_UUID_INFO_PARAMS_MESSAGE_ID" */
 
 /* maximum possible number of bytes of GID information */
-#define NV0000_GPU_MAX_GID_LENGTH                                           (0x00000100U)
+#define NV0000_GPU_MAX_GID_LENGTH         (0x00000100U)
 
 #define NV0000_CTRL_GPU_GET_UUID_INFO_PARAMS_MESSAGE_ID (0x74U)
 
@@ -842,41 +842,9 @@ typedef struct NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS {
 #define NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PROPERTIES_OUT 5U
 
 /*
- * NV0000_CTRL_CMD_GPU_LEGACY_CONFIG
- *
- * Path to use legacy RM GetConfig/Set API. This API is being phased out.
- */
-#define NV0000_CTRL_CMD_GPU_LEGACY_CONFIG                (0x282U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS_MESSAGE_ID" */
-
-#define NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS_MESSAGE_ID (0x82U)
-
-typedef struct NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS {
-    NvHandle hContext;    /* [in]  - Handle of object to perform operation on (Device, Subdevice, etc) */
-    NvU32    opType;      /* [in]  - Type of API */
-    NvV32    index;       /* [in]  - command type */
-    NvU32    dataType;    /* [out] - data union type */
-
-    union {
-        struct {
-            NvU8  paramData[NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PARAM_DATA];
-            NvU32 paramSize;
-        } configEx;
-        struct {
-            NvU32 propertyId;
-            NvU32 propertyIn[NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PROPERTIES_IN];
-            NvU32 propertyOut[NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PROPERTIES_OUT];
-        } reservedProperty;
-    } data;
-} NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS;
-
-#define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_GET_EX   (0x00000002U)
-#define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_SET_EX   (0x00000003U)
-#define NV0000_CTRL_GPU_LEGACY_CONFIG_OP_TYPE_RESERVED (0x00000004U)
-
-/*
  * NV0000_CTRL_CMD_IDLE_CHANNELS
  */
-#define NV0000_CTRL_CMD_IDLE_CHANNELS                  (0x283U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_IDLE_CHANNELS                    (0x283U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS_MESSAGE_ID (0x83U)
 
@@ -1124,6 +1092,32 @@ typedef struct NV0000_CTRL_GPU_ASYNC_ATTACH_ID_PARAMS {
 typedef struct NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS {
     NvU32 gpuId;
 } NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_GPU_PCI_READ_WRITE
+ *
+ * This control is supported only on MODS.
+ *
+ */
+
+#define NV0000_CTRL_CMD_GPU_PCI_READ_WRITE_DATA_SIZE_08 0
+#define NV0000_CTRL_CMD_GPU_PCI_READ_WRITE_DATA_SIZE_16 1
+#define NV0000_CTRL_CMD_GPU_PCI_READ_WRITE_DATA_SIZE_32 2
+
+#define NV0000_CTRL_CMD_GPU_PCI_READ_WRITE              (0x291U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_PCI_READ_WRITE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_GPU_PCI_READ_WRITE_PARAMS_MESSAGE_ID (0x91U)
+
+typedef struct NV0000_CTRL_GPU_PCI_READ_WRITE_PARAMS {
+    NvBool bWrite;
+    NvU16  pciDomain;
+    NvU8   pciBus;
+    NvU8   pciDevice;
+    NvU8   pciFunction;
+    NvU8   pciOffset;
+    NvU32  dataSize;
+    NvU32  data;
+} NV0000_CTRL_GPU_PCI_READ_WRITE_PARAMS;
 
 /* _ctrl0000gpu_h_ */
 

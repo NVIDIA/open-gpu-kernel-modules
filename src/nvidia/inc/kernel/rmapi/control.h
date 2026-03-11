@@ -69,9 +69,9 @@ struct RS_CONTROL_COOKIE
     const RS_ACCESS_MASK rightsRequired;
 
     NvBool              bFreeParamCopy;    ///< Indicates that param copies should be cleaned up
-    NvBool              bFreeEmbeddedCopy; ///< Indicates embedded param copies should be cleaned up
-
     RMAPI_PARAM_COPY    paramCopy;
+
+    NvBool              bFreeEmbeddedCopy; ///< Indicates embedded param copies should be cleaned up
     RMAPI_PARAM_COPY    embeddedParamCopies[4];   // Up to 4 embedded pointers per one RmControl identified
 };
 typedef RS_CONTROL_COOKIE RmCtrlExecuteCookie;
@@ -85,7 +85,7 @@ typedef RS_CONTROL_COOKIE RmCtrlExecuteCookie;
 
 typedef struct
 {
-   NvS32 volatile pending;
+   NvS32 PORT_ATOMIC pending;
    NvU32 cpuInst;
    RmCtrlParams rmCtrlDeferredParams;
    NvU8 paramBuffer[RMCTRL_DEFERRED_MAX_PARAM_SIZE];    // buffer to hold rmCtrlDeferredParams.pParams
@@ -129,9 +129,6 @@ NV_STATUS rmControlValidateClientPrivilegeAccess(NvHandle hClient, NvHandle hObj
 // Helper functions for handling embedded parameter copies
 NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmCtrlParams);
 NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmCtrlParams);
-
-#define RM_CLIENT_PTR_ACCESS_CHECK_READ     NVBIT(0)
-#define RM_CLIENT_PTR_ACCESS_CHECK_WRITE    NVBIT(1)
 
 //
 // For NVOC Exported functions

@@ -139,13 +139,9 @@ struct NVOC_METADATA__MemoryFabric {
     const struct NVOC_VTABLE__MemoryFabric vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryFabric_TYPEDEF__
-#define __NVOC_CLASS_MemoryFabric_TYPEDEF__
-typedef struct MemoryFabric MemoryFabric;
-#endif /* __NVOC_CLASS_MemoryFabric_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryFabric
-#define __nvoc_class_id_MemoryFabric 0x127499
+#define __nvoc_class_id_MemoryFabric 0x127499u
+typedef struct MemoryFabric MemoryFabric;
 #endif /* __nvoc_class_id_MemoryFabric */
 
 // Casting support
@@ -163,14 +159,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryFabric;
 
 NV_STATUS __nvoc_objCreateDynamic_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_MemoryFabric(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_MemoryFabric((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_MemoryFabric(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_MemoryFabric((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS memoryfabricConstruct_IMPL(struct MemoryFabric *arg_pMemoryFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_memoryfabricConstruct(arg_pMemoryFabric, arg_pCallContext, arg_pParams) memoryfabricConstruct_IMPL(arg_pMemoryFabric, arg_pCallContext, arg_pParams)
+NV_STATUS memoryfabricConstruct_IMPL(struct MemoryFabric *pMemoryFabric, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_memoryfabricConstruct(pMemoryFabric, pCallContext, pParams) memoryfabricConstruct_IMPL(pMemoryFabric, pCallContext, pParams)
 
 void memoryfabricDestruct_IMPL(struct MemoryFabric *pMemoryFabric);
 #define __nvoc_memoryfabricDestruct(pMemoryFabric) memoryfabricDestruct_IMPL(pMemoryFabric)
@@ -401,6 +397,7 @@ static inline void memoryfabricAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__memoryfabricAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS memoryfabricUnmapFrom_IMPL(struct MemoryFabric *pMemoryFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams);
 
 NvBool memoryfabricCanCopy_IMPL(struct MemoryFabric *pMemoryFabric);
@@ -409,6 +406,7 @@ NV_STATUS memoryfabricCopyConstruct_IMPL(struct MemoryFabric *pMemoryFabric, CAL
 
 NV_STATUS memoryfabricControl_IMPL(struct MemoryFabric *pMemoryFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS memoryfabricCtrlGetInfo_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_INFO_PARAMS *pParams);
 
 NV_STATUS memoryfabricCtrlCmdDescribe_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_DESCRIBE_PARAMS *pParams);
@@ -421,6 +419,10 @@ NV_STATUS memoryfabricCtrlGetNumAttachedMem_IMPL(struct MemoryFabric *pMemoryFab
 
 NV_STATUS memoryfabricCtrlGetPageLevelInfo_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

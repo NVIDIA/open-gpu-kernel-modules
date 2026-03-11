@@ -29,7 +29,6 @@
 #include "class/cl0071.h" // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
-#include "class/cl0042.h" // NV_MEMORY_EXTENDED_USER
 
 #include "ctrl/ctrl0041.h" // NV04_MEMORY
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
@@ -137,8 +136,6 @@ _rmVidHeapControlAllocCommon
 
     if (pUserParams->flags & NVOS32_ALLOC_FLAGS_VIRTUAL)
         externalClassId = NV50_MEMORY_VIRTUAL;
-    else if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pUserParams->attr2))
-        externalClassId = NV_MEMORY_EXTENDED_USER;
     else if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, pUserParams->attr))
         externalClassId = NV01_MEMORY_LOCAL_USER;
     else

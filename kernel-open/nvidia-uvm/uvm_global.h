@@ -156,7 +156,17 @@ struct uvm_global_struct
         uvm_mutex_t lock;
         struct list_head list;
     } devmem_ranges;
+
+    // List of all pci devices and the device information if the PCI P2PDMA registration
+    // is already done for the device. This is an optimization to prevent having to
+    // unregister and re-register on every add_gpu()/remove_gpu(). Depending on the
+    // size of BAR1 region, the cost of registration can be really high.
+    struct {
+        struct list_head list;
+    } pci_p2pdma_devices;
+
 };
+
 
 // Initialize global uvm state
 NV_STATUS uvm_global_init(void);

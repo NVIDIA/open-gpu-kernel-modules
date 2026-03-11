@@ -52,13 +52,9 @@ extern "C" {
 
 typedef struct OBJVMM *POBJVMM;
 
-#ifndef __NVOC_CLASS_OBJVMM_TYPEDEF__
-#define __NVOC_CLASS_OBJVMM_TYPEDEF__
-typedef struct OBJVMM OBJVMM;
-#endif /* __NVOC_CLASS_OBJVMM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVMM
-#define __nvoc_class_id_OBJVMM 0xa030ab
+#define __nvoc_class_id_OBJVMM 0xa030abu
+typedef struct OBJVMM OBJVMM;
 #endif /* __nvoc_class_id_OBJVMM */
 
 
@@ -102,13 +98,9 @@ struct NVOC_METADATA__OBJVMM {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_OBJVMM_TYPEDEF__
-#define __NVOC_CLASS_OBJVMM_TYPEDEF__
-typedef struct OBJVMM OBJVMM;
-#endif /* __NVOC_CLASS_OBJVMM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVMM
-#define __nvoc_class_id_OBJVMM 0xa030ab
+#define __nvoc_class_id_OBJVMM 0xa030abu
+typedef struct OBJVMM OBJVMM;
 #endif /* __nvoc_class_id_OBJVMM */
 
 // Casting support
@@ -127,8 +119,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJVMM;
 NV_STATUS __nvoc_objCreateDynamic_OBJVMM(OBJVMM**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJVMM(OBJVMM**, Dynamic*, NvU32);
-#define __objCreate_OBJVMM(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJVMM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJVMM(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJVMM((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -165,6 +157,12 @@ static inline NV_STATUS vmmGetVaspaceFromId(struct OBJVMM *pVmm, NvU32 vaspaceId
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

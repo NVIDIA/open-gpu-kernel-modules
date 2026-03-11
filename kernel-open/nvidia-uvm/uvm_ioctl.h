@@ -695,28 +695,6 @@ typedef struct
 } UVM_MIGRATE_RANGE_GROUP_PARAMS;
 
 //
-// UvmEnableSystemWideAtomics
-//
-#define UVM_ENABLE_SYSTEM_WIDE_ATOMICS                                UVM_IOCTL_BASE(54)
-
-typedef struct
-{
-    NvProcessorUuid gpu_uuid; // IN
-    NV_STATUS       rmStatus; // OUT
-} UVM_ENABLE_SYSTEM_WIDE_ATOMICS_PARAMS;
-
-//
-// UvmDisableSystemWideAtomics
-//
-#define UVM_DISABLE_SYSTEM_WIDE_ATOMICS                               UVM_IOCTL_BASE(55)
-
-typedef struct
-{
-    NvProcessorUuid gpu_uuid; // IN
-    NV_STATUS       rmStatus; // OUT
-} UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PARAMS;
-
-//
 // Initialize any tracker object such as a queue or counter
 // UvmToolsCreateEventQueue, UvmToolsCreateProcessAggregateCounters,
 // UvmToolsCreateProcessorCounters.

@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xc53a57 = 1;
+char __nvoc_class_id_uniqueness_check__c53a57 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPerf;
@@ -53,19 +53,18 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreUnload(struct OBJGPU *pGpu, s
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePostUnload(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3);    // this
 NvBool __nvoc_up_thunk_OBJENGSTATE_kperfIsPresent(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
 
+// Class-specific details for KernelPerf
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPerf = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(KernelPerf),
-        /*classId=*/            classId(KernelPerf),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(KernelPerf),
+    .classInfo.classId =            classId(KernelPerf),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "KernelPerf",
+    .classInfo.name =               "KernelPerf",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelPerf,
-    /*pCastInfo=*/          &__nvoc_castinfo__KernelPerf,
-    /*pExportInfo=*/        &__nvoc_export_info__KernelPerf
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_KernelPerf,
+    .pCastInfo =          &__nvoc_castinfo__KernelPerf,
+    .pExportInfo =        &__nvoc_export_info__KernelPerf
 };
 
 
@@ -200,16 +199,20 @@ NvBool __nvoc_up_thunk_OBJENGSTATE_kperfIsPresent(struct OBJGPU *pGpu, struct Ke
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelPerf = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct KernelPerf object.
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_dtor_KernelPerf(KernelPerf *pThis) {
+void __nvoc_dtor_KernelPerf(KernelPerf* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -219,17 +222,23 @@ void __nvoc_init_dataField_KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhals
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
+
+// Construct KernelPerf object.
+NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE *);
 NV_STATUS __nvoc_ctor_KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelPerf_fail_OBJENGSTATE;
+
+    // Initialize data fields.
     __nvoc_init_dataField_KernelPerf(pThis, pRmhalspecowner);
     goto __nvoc_ctor_KernelPerf_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_KernelPerf_fail_OBJENGSTATE:
 __nvoc_ctor_KernelPerf_exit:
-
     return status;
 }
 
@@ -245,20 +254,30 @@ static void __nvoc_init_funcTable_KernelPerf_1(KernelPerf *pThis, RmHalspecOwner
     // kperfGpuBoostSyncStateInit -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kperfGpuBoostSyncStateInit__ = &kperfGpuBoostSyncStateInit_56cd7a;
+        pThis->__kperfGpuBoostSyncStateInit__ = &kperfGpuBoostSyncStateInit_ac1694;
     }
     // default
     else
     {
         pThis->__kperfGpuBoostSyncStateInit__ = &kperfGpuBoostSyncStateInit_IMPL;
     }
-} // End __nvoc_init_funcTable_KernelPerf_1 with approximately 2 basic block(s).
+
+    // kperfPerfSetPowerstate -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kperfPerfSetPowerstate__ = &kperfPerfSetPowerstate_ac1694;
+    }
+    else
+    {
+        pThis->__kperfPerfSetPowerstate__ = &kperfPerfSetPowerstate_KERNEL;
+    }
+} // End __nvoc_init_funcTable_KernelPerf_1 with approximately 4 basic block(s).
 
 
-// Initialize vtable(s) for 15 virtual method(s).
+// Initialize vtable(s) for 16 virtual method(s).
 void __nvoc_init_funcTable_KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 1 per-object function pointer(s).
+    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_KernelPerf_1(pThis, pRmhalspecowner);
 }
 
@@ -282,58 +301,58 @@ void __nvoc_init__KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhalspecowner)
     __nvoc_init_funcTable_KernelPerf(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    KernelPerf *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    KernelPerf *__nvoc_pThis;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(KernelPerf));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(KernelPerf));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(KernelPerf));
+    portMemSet(__nvoc_pThis, 0, sizeof(KernelPerf));
 
-    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelPerf_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelPerf_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelPerf_cleanup);
+    if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelPerf_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelPerf(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_KernelPerf(pThis, pRmhalspecowner);
-    if (status != NV_OK) goto __nvoc_objCreate_KernelPerf_cleanup;
+    __nvoc_init__KernelPerf(__nvoc_pThis, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelPerf(__nvoc_pThis, pRmhalspecowner);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelPerf_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -342,29 +361,29 @@ NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf **ppThis, Dynamic *pParent, NvU
 __nvoc_objCreate_KernelPerf_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(KernelPerf));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(KernelPerf));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_KernelPerf(KernelPerf **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_KernelPerf(KernelPerf **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_KernelPerf(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_KernelPerf(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

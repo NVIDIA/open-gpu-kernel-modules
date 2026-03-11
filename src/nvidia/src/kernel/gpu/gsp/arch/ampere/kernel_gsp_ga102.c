@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,16 +30,12 @@
 #include "gpu/conf_compute/conf_compute.h"
 #include "gpu/mem_mgr/rm_page_size.h"
 #include "nverror.h"
-#include "rmgspseq.h"
 
 #include "published/ampere/ga102/dev_falcon_v4.h"
 #include "published/ampere/ga102/dev_riscv_pri.h"
 #include "published/ampere/ga102/dev_falcon_second_pri.h"
 #include "published/ampere/ga102/dev_gsp.h"
 #include "published/ampere/ga102/dev_gsp_addendum.h"
-#include "published/ampere/ga102/dev_gc6_island.h"
-#include "published/ampere/ga102/dev_gc6_island_addendum.h"
-#include "gpu/sec2/kernel_sec2.h"
 
 #define RISCV_BR_ADDR_ALIGNMENT                 (8)
 
@@ -80,23 +76,6 @@ kgspConfigureFalcon_GA102
     kflcnConfigureEngine(pGpu, staticCast(pKernelGsp, KernelFalcon), &falconConfig);
 }
 
-/*!
- * Determine if GSP reload via SEC2 is completed.
- */
-static NvBool
-_kgspIsReloadCompleted
-(
-    OBJGPU  *pGpu,
-    void    *pVoid
-)
-{
-    NvU32 reg;
-
-    reg = GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_14);
-
-    return FLD_TEST_DRF(_PGC6, _BSI_SECURE_SCRATCH_14, _BOOT_STAGE_3_HANDOFF, _VALUE_DONE, reg);
-}
-
 void
 kgspGetGspRmBootUcodeStorage_GA102
 (
@@ -118,89 +97,4 @@ kgspGetGspRmBootUcodeStorage_GA102
         *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_IMAGE_PROD);
         *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_DESC_PROD);
     }
-}
-
-/*!
- * Execute GSP sequencer operation
- *
- * @param[in]   pGpu            GPU object pointer
- * @param[in]   pKernelGsp      KernelGsp object pointer
- * @param[in]   opCode          Sequencer opcode
- * @param[in]   pPayload        Pointer to payload
- * @param[in]   payloadSize     Size of payload in bytes
- *
- * @return NV_OK if the sequencer operation was successful.
- *         Appropriate NV_ERR_xxx value otherwise.
- */
-NV_STATUS
-kgspExecuteSequencerCommand_GA102
-(
-    OBJGPU         *pGpu,
-    KernelGsp      *pKernelGsp,
-    NvU32           opCode,
-    NvU32          *pPayload,
-    NvU32           payloadSize
-)
-{
-    NV_STATUS       status        = NV_OK;
-    KernelFalcon   *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
-    NvU32           secMailbox0   = 0;
-
-    switch (opCode)
-    {
-        case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
-        {
-            RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
-
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
-
-            pKernelGsp->bLibosLogsPollingEnabled = NV_FALSE;
-
-            NV_ASSERT_OK_OR_RETURN(kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon));
-            kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
-
-            NV_PRINTF(LEVEL_INFO, "---------------Starting SEC2 to resume GSP-RM------------\n");
-            // Start SEC2 in order to resume GSP-RM
-            kflcnStartCpu_HAL(pGpu, pKernelSec2Falcon);
-
-            // Wait for reload to be completed.
-            status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
-
-            // Check SEC mailbox.
-            secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
-
-            if ((status != NV_OK) || (secMailbox0 != NV_OK))
-            {
-                NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SEC2-RTOS to resume GSP-RM. SEC2 Mailbox0 is : 0x%x\n", secMailbox0);
-                DBG_BREAKPOINT();
-                return NV_ERR_TIMEOUT;
-            }
-
-            pKernelGsp->bLibosLogsPollingEnabled = NV_TRUE;
-
-            // Program FALCON_OS
-            kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_OS, pRiscvDesc->appVersion);
-
-            // Ensure the CPU is started
-            if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
-            {
-                NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
-            }
-            else
-            {
-                NV_ASSERT_FAILED("Failed to boot GSP");
-                status = NV_ERR_NOT_READY;
-            }
-            break;
-        }
-        default:
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            break;
-        }
-    }
-
-    return status;
 }

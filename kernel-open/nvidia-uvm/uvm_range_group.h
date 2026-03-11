@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -92,10 +92,6 @@ static inline bool uvm_range_group_migratable(uvm_range_group_t *range_group)
 // If range_group is NULL, this function will clear all range group ranges for the given range.
 // It is not necessary to clear a range before overwriting it with a new range_group association.
 NV_STATUS uvm_range_group_assign_range(uvm_va_space_t *va_space, uvm_range_group_t *range_group, NvU64 start, NvU64 end);
-
-// False when the address belongs to a range group range of a non-migratable range group.
-// True otherwise, even if the address is invalid.
-bool uvm_range_group_address_migratable(uvm_va_space_t *va_space, NvU64 address);
 
 // False if all addresses in the range belong to range group ranges of non-migratable range groups.
 // True otherwise, even if the range is invalid.

@@ -125,13 +125,9 @@ struct NVOC_METADATA__SwIntr {
     const struct NVOC_VTABLE__SwIntr vtable;
 };
 
-#ifndef __NVOC_CLASS_SwIntr_TYPEDEF__
-#define __NVOC_CLASS_SwIntr_TYPEDEF__
-typedef struct SwIntr SwIntr;
-#endif /* __NVOC_CLASS_SwIntr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SwIntr
-#define __nvoc_class_id_SwIntr 0x5ca633
+#define __nvoc_class_id_SwIntr 0x5ca633u
+typedef struct SwIntr SwIntr;
 #endif /* __nvoc_class_id_SwIntr */
 
 // Casting support
@@ -155,8 +151,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr;
 NV_STATUS __nvoc_objCreateDynamic_SwIntr(SwIntr**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_SwIntr(SwIntr**, Dynamic*, NvU32);
-#define __objCreate_SwIntr(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_SwIntr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_SwIntr(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_SwIntr((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -272,10 +268,16 @@ static inline NV_STATUS swintrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu
     return pIntrService->__nvoc_metadata_ptr->vtable.__swintrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
+// Virtual method declarations and/or inline definitions
 void swintrRegisterIntrService_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceRecord pRecords[180]);
 
 NvU32 swintrServiceInterrupt_IMPL(OBJGPU *pGpu, struct SwIntr *pSwIntr, IntrServiceServiceInterruptArguments *pParams);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

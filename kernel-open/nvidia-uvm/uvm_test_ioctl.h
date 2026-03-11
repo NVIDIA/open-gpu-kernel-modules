@@ -1148,6 +1148,9 @@ typedef struct
 // counters batch_context's notification cache allocation will fail with
 // NV_ERR_NO_MEMORY.
 //
+// If disable_request_free_mem_region is set, all calls to
+// request_free_mem_region will fail.
+//
 // Note that only one of the gpu_* or access_counters_* setting can be selected
 // at a time.
 #define UVM_TEST_VA_SPACE_INJECT_ERROR                   UVM_TEST_IOCTL_BASE(72)
@@ -1161,6 +1164,7 @@ typedef struct
     NvBool                          gpu_isr_access_counters_alloc_stats_cpu;            // In
     NvBool                          access_counters_batch_context_notifications;        // In
     NvBool                          access_counters_batch_context_notification_cache;   // In
+    NvBool                          disable_devmem;                                     // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS;
@@ -1574,12 +1578,56 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid gpu_uuid;                            // In
-    NvU64 mode;                                          // In 
+    NvU64 mode;                                          // In
     NvU64 granularity_size_kb;                           // Out
     NvU64* current_bits;                                 // Out
     NvU64 current_bits_length;                           // Out
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_DUMP_ACCESS_BITS_PARAMS;
+
+// Register a channel for post-death checking. This causes extra checks to
+// happen during channel unregister. Channel destroy (after detach) will first
+// wait for the time specified in delay_us. If during that window any of the
+// bottom half handlers observe this channel's instance pointer in any
+// notification, usr_error_count_ptr will be incremented.
+#define UVM_TEST_DEAD_CHANNEL                            UVM_TEST_IOCTL_BASE(113)
+typedef struct
+{
+    // The channel to mark for death checks
+    NvS32                           rm_ctrl_fd;                             // In
+    NvHandle                        client;                                 // In
+    NvHandle                        channel;                                // In
+
+    // The user-space pointer to atomically increment if the channel is observed
+    // after death. This must point to an 8-byte allocation and must be aligned
+    // to 8 bytes.
+    NvU64                           usr_error_count_ptr NV_ALIGN_BYTES(8);  // In
+
+    // Delay, in microseconds, that channel destroy will wait between marking a
+    // channel as dead and resuming channel destroy.
+    NvU32                           delay_us;                               // In
+
+    NV_STATUS                       rmStatus;                               // Out
+} UVM_TEST_DEAD_CHANNEL_PARAMS;
+
+// Insert a delay before every iteration (fault buffer fetch) of the non-
+// replayable fault handler. Only one VA space can set this on a given parent
+// GPU at a time. The delay can be removed with a sleep value of 0. The delay
+// will also automatically be removed when the parent GPU is unregistered from
+// the VA space.
+#define UVM_TEST_SET_NON_REPLAYABLE_DELAY                UVM_TEST_IOCTL_BASE(114)
+typedef struct
+{
+    NvProcessorUuid                 gpu_uuid;                   // In
+
+    NvU32                           sleep_per_iteration_us;     // In
+
+    // NV_ERR_INVALID_ARGUMENT  sleep_per_iteration_us is 0 but the current VA
+    //                          space doesn't own the setting.
+    //
+    // NV_ERR_IN_USE            Another VA space currently owns the setting.
+    NV_STATUS                       rmStatus;                   // Out
+} UVM_TEST_SET_NON_REPLAYABLE_DELAY_PARAMS;
 
 #ifdef __cplusplus
 }

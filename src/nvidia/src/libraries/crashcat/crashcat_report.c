@@ -55,7 +55,7 @@ void crashcatReportLog_IMPL(CrashCatReport *pReport)
     NV_ASSERT_OR_RETURN_VOID((pReport->validTags & NVBIT(NV_CRASHCAT_PACKET_TYPE_REPORT)) != 0);
 
     // TODO: acquire mutex to prevent multi-line reports interleaving
-
+    crashcatEngineResetLog(pReport->pEngine);
     crashcatReportLogSource_HAL(pReport);
     crashcatReportLogReporter_HAL(pReport);
 
@@ -84,8 +84,7 @@ void crashcatReportLog_IMPL(CrashCatReport *pReport)
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
-    if (!crashcatReportIsWatchdog_HAL(pReport))
-        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "------------[ end crash report ]------------\n");
+    CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "------------[ end crash report ]------------\n");
 }
 
 // xcause CSR format and codes are a backward-compatible part of the RISC-V standard

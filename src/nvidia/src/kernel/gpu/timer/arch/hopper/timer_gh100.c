@@ -141,7 +141,7 @@ tmrGetTimeEx_GH100
         for (i = 0; i < pTmr->retryTimes; ++i)
         {
             TimeLo = tmrReadTimeLoReg_HAL(pGpu, pTmr, pThreadState);
-            if ((TimeLo & ~DRF_SHIFTMASK(NV_PTIMER_TIME_0_NSEC)) == 0)
+            if ((TimeLo & ~tmrGetNsecShiftMask_HAL(pGpu, pTmr)) == 0)
                 break;
         }
 

@@ -53,7 +53,7 @@
 
 #include <class/cl2080.h> /* NV20_SUBDEVICE_0 */
 #include <class/cl902d.h> /* FERMI_TWOD_A */
-#include <class/cla06f.h> /* KEPLER_CHANNEL_GPFIFO_A */
+#include <class/clc46f.h> /* TURING_CHANNEL_GPFIFO */
 
 /*
  * Define constant buffer indices used by headSurface.
@@ -1488,20 +1488,20 @@ void nvHs3dPushPendingViewportFlip(NVHsChannelEvoPtr pHsChannel)
     const NvU64 gpuAddress = nvPushGetNotifierGpuAddress(p, semIndex, sd);
     const NvU32 payload = pHsChannel->nextOffset;
     const NvU32 semaphoreOperation =
-        DRF_DEF(A06F, _SEMAPHORED, _OPERATION, _RELEASE) |
-        DRF_DEF(A06F, _SEMAPHORED, _RELEASE_WFI, _DIS) |
-        DRF_DEF(A06F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE);
+        DRF_DEF(C46F, _SEMAPHORED, _OPERATION, _RELEASE) |
+        DRF_DEF(C46F, _SEMAPHORED, _RELEASE_WFI, _DIS) |
+        DRF_DEF(C46F, _SEMAPHORED, _RELEASE_SIZE, _4BYTE);
 
     nvAssert(!pHsChannel->viewportFlipPending);
 
     pHsChannel->viewportFlipPending = TRUE;
 
-    nvPushMethod(p, 0, NVA06F_SEMAPHOREA, 4);
+    nvPushMethod(p, 0, NVC46F_SEMAPHOREA, 4);
     nvPushSetMethodDataU64(p, gpuAddress);
     nvPushSetMethodData(p, payload);
     nvPushSetMethodData(p, semaphoreOperation);
 
-    nvPushMethod(p, NVA06F_SUBCHANNEL_3D, NVA06F_NON_STALL_INTERRUPT, 1);
+    nvPushMethod(p, NVA06F_SUBCHANNEL_3D, NVC46F_NON_STALL_INTERRUPT, 1);
     nvPushSetMethodData(p, 0);
     nvPushKickoff(p);
 

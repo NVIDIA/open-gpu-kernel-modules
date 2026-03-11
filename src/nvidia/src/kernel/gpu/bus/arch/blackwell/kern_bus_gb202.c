@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@
 
 #include "published/blackwell/gb202/dev_mmu.h"
 #include "published/blackwell/gb202/dev_ram.h"
-#include "published/blackwell/gb202/pri_nv_xal_ep.h"
+#include "published/blackwell/gb202/dev_nv_xal_ep_zb.h"
 
 #include "nvrm_registry.h"
 
@@ -159,7 +159,7 @@ kbusVerifyBar2_GB202
     if (testAddrSpace != NV_MMU_PTE_APERTURE_VIDEO_MEMORY)
     {
         NV_PRINTF(LEVEL_ERROR,
-            "Test is not supported. NV_XAL_EP_BAR0_WINDOW only supports vidmem\n");
+            "Test is not supported. NV_XAL_EP_ZB_BAR0_WINDOW only supports vidmem\n");
         DBG_BREAKPOINT();
         status = NV_ERR_NOT_SUPPORTED;
         goto kbusVerifyBar2_failed;
@@ -298,10 +298,13 @@ kbusVerifyBar2_GB202
 
     kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(testMemoryOffset >> 16));
 
+#if NV_PRINTF_LEVEL_ENABLED(LEVEL_INFO)
+    IoAperture        *pXalAperture = kbusGetXalAperture_HAL(pGpu, pKernelBus, XAL_BASE);
     NV_PRINTF(LEVEL_INFO,
               "bar0Window = 0x%llx, testMemoryOffset = 0x%llx, testAddrSpace = %d, "
               "_XAL_EP_BAR0_WINDOW = 0x%08x\n", bar0Window, testMemoryOffset,
-              testAddrSpace, GPU_REG_RD32(pGpu, NV_XAL_EP_BAR0_WINDOW));
+              testAddrSpace, REG_RD32(pXalAperture, NV_XAL_EP_ZB_BAR0_WINDOW));
+#endif
 
     temp = (DRF_BASE(NV_PRAMIN) + (NvU32)(testMemoryOffset & 0xffff));
     for(index = 0; index < testMemorySize; index += 4)

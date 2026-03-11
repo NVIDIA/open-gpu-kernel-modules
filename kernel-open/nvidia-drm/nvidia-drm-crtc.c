@@ -282,7 +282,7 @@ static void ctm_3x4_to_csc(struct NvKmsCscMatrix    *nvkms_csc,
     }
 }
 
-static void
+static int
 cursor_plane_req_config_update(struct drm_plane *plane,
                                struct drm_plane_state *plane_state,
                                struct NvKmsKapiCursorRequestedConfig *req_config)
@@ -292,11 +292,14 @@ cursor_plane_req_config_update(struct drm_plane *plane,
 
     if (plane_state->fb == NULL) {
         cursor_req_config_disable(req_config);
-        return;
+        return 0;
     }
 
     memset(req_config, 0, sizeof(*req_config));
     req_config->surface = to_nv_framebuffer(plane_state->fb)->pSurface;
+    if (req_config->surface == NULL) {
+        return -EINVAL;
+    }
     req_config->dstX = plane_state->crtc_x;
     req_config->dstY = plane_state->crtc_y;
 
@@ -311,6 +314,10 @@ cursor_plane_req_config_update(struct drm_plane *plane,
             case DRM_MODE_BLEND_COVERAGE:
                 req_config->compParams.compMode =
                     NVKMS_COMPOSITION_BLENDING_MODE_NON_PREMULT_SURFACE_ALPHA;
+                break;
+            case DRM_MODE_BLEND_PIXEL_NONE:
+                req_config->compParams.compMode =
+                    NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE;
                 break;
             default:
                 /*
@@ -337,6 +344,10 @@ cursor_plane_req_config_update(struct drm_plane *plane,
             case DRM_MODE_BLEND_COVERAGE:
                 req_config->compParams.compMode =
                     NVKMS_COMPOSITION_BLENDING_MODE_NON_PREMULT_ALPHA;
+                break;
+            case DRM_MODE_BLEND_PIXEL_NONE:
+                req_config->compParams.compMode =
+                    NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE;
                 break;
             default:
                 /*
@@ -368,12 +379,14 @@ cursor_plane_req_config_update(struct drm_plane *plane,
     if (old_config.surface == NULL &&
         old_config.surface != req_config->surface) {
         req_config->flags.dstXYChanged = NV_TRUE;
-        return;
+        return 0;
     }
 
     req_config->flags.dstXYChanged =
         old_config.dstX != req_config->dstX ||
         old_config.dstY != req_config->dstY;
+
+    return 0;
 }
 
 static void release_drm_nvkms_surface(struct nv_drm_nvkms_surface *drm_nvkms_surface)
@@ -1171,6 +1184,9 @@ plane_req_config_update(struct drm_plane *plane,
     memset(req_config, 0, sizeof(*req_config));
 
     req_config->config.surface = to_nv_framebuffer(plane_state->fb)->pSurface;
+    if (req_config->config.surface == NULL) {
+        return -EINVAL;
+    }
 
     /* Source values are 16.16 fixed point */
     req_config->config.srcX = plane_state->src_x >> 16;
@@ -1235,6 +1251,10 @@ plane_req_config_update(struct drm_plane *plane,
                 req_config->config.compParams.compMode =
                     NVKMS_COMPOSITION_BLENDING_MODE_NON_PREMULT_SURFACE_ALPHA;
                 break;
+            case DRM_MODE_BLEND_PIXEL_NONE:
+                req_config->config.compParams.compMode =
+                    NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE;
+                break;
             default:
                 /*
                  * We should not hit this, because
@@ -1260,6 +1280,10 @@ plane_req_config_update(struct drm_plane *plane,
             case DRM_MODE_BLEND_COVERAGE:
                 req_config->config.compParams.compMode =
                     NVKMS_COMPOSITION_BLENDING_MODE_NON_PREMULT_ALPHA;
+                break;
+            case DRM_MODE_BLEND_PIXEL_NONE:
+                req_config->config.compParams.compMode =
+                    NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE;
                 break;
             default:
                 /*
@@ -1439,6 +1463,17 @@ plane_req_config_update(struct drm_plane *plane,
                 }
             }
         }
+    }
+
+    /*
+     * Send ILUT configuration to NVKMS if:
+     * - degamma properties changed, OR
+     * - plane is being re-enabled and old req_config had ILUT disabled
+     *   but DRM plane state has ILUT (blob ID didn't change, but NVKMS
+     *   needs to be notified)
+     */
+    if (nv_drm_plane_state->degamma_changed ||
+        (!old_config.ilut.enabled && (nv_drm_plane_state->degamma_drm_lut_surface != NULL))) {
 
         if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
             req_config->config.ilut.enabled = NV_TRUE;
@@ -1455,7 +1490,6 @@ plane_req_config_update(struct drm_plane *plane,
             req_config->config.ilut.offset = 0;
             req_config->config.ilut.vssSegments = 0;
             req_config->config.ilut.lutEntries = 0;
-
         }
         req_config->flags.ilutChanged = NV_TRUE;
     }
@@ -1475,6 +1509,17 @@ plane_req_config_update(struct drm_plane *plane,
                 return -1;
             }
         }
+    }
+
+    /*
+     * Send TMO configuration to NVKMS if:
+     * - tmo properties changed, OR
+     * - plane is being re-enabled and old req_config had TMO disabled
+     *   but DRM plane state has TMO (blob ID didn't change, but NVKMS
+     *   needs to be notified)
+     */
+    if (nv_drm_plane_state->tmo_changed ||
+        (!old_config.tmo.enabled && (nv_drm_plane_state->tmo_drm_lut_surface != NULL))) {
 
         if (nv_drm_plane_state->tmo_drm_lut_surface != NULL) {
             req_config->config.tmo.enabled = NV_TRUE;
@@ -1548,7 +1593,7 @@ static int __nv_drm_cursor_atomic_check(struct drm_plane *plane,
                                         struct drm_plane_state *plane_state)
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
-    int i;
+    int i, ret;
     struct drm_crtc *crtc;
     struct drm_crtc_state *crtc_state;
 
@@ -1568,8 +1613,11 @@ static int __nv_drm_cursor_atomic_check(struct drm_plane *plane,
         }
 
         if (plane_state->crtc == crtc) {
-            cursor_plane_req_config_update(plane, plane_state,
-                                           cursor_req_config);
+            ret = cursor_plane_req_config_update(plane, plane_state,
+                                                 cursor_req_config);
+            if (ret != 0) {
+                return ret;
+            }
         }
     }
 
@@ -1621,7 +1669,7 @@ static int nv_drm_plane_atomic_check(struct drm_plane *plane,
                 return ret;
             }
 
-            if (crtc_state->color_mgmt_changed) {
+            if (crtc_state->color_mgmt_changed || (plane->state->crtc != plane_state->crtc)) {
                 /*
                  * According to the comment in the Linux kernel's
                  * drivers/gpu/drm/drm_color_mgmt.c, if this property is NULL,
@@ -2206,6 +2254,7 @@ nv_drm_atomic_crtc_duplicate_state(struct drm_crtc *crtc)
         drm_property_blob_get(nv_state->regamma_lut);
     }
     nv_state->regamma_divisor = nv_old_state->regamma_divisor;
+    nv_state->regamma_drm_lut_surface = nv_old_state->regamma_drm_lut_surface;
     if (nv_state->regamma_drm_lut_surface) {
         kref_get(&nv_state->regamma_drm_lut_surface->base.refcount);
     }
@@ -2687,7 +2736,8 @@ __nv_drm_plane_create_alpha_blending_properties(struct drm_plane *plane,
         drm_plane_create_alpha_property(plane);
         drm_plane_create_blend_mode_property(plane,
                                              NVBIT(DRM_MODE_BLEND_PREMULTI) |
-                                             NVBIT(DRM_MODE_BLEND_COVERAGE));
+                                             NVBIT(DRM_MODE_BLEND_COVERAGE) |
+                                             NVBIT(DRM_MODE_BLEND_PIXEL_NONE));
     } else if ((validCompModes &
                 NVBIT(NVKMS_COMPOSITION_BLENDING_MODE_PREMULT_ALPHA)) != 0x0 &&
                (validCompModes &
@@ -2695,7 +2745,8 @@ __nv_drm_plane_create_alpha_blending_properties(struct drm_plane *plane,
 
         drm_plane_create_blend_mode_property(plane,
                                              NVBIT(DRM_MODE_BLEND_PREMULTI) |
-                                             NVBIT(DRM_MODE_BLEND_COVERAGE));
+                                             NVBIT(DRM_MODE_BLEND_COVERAGE) |
+                                             NVBIT(DRM_MODE_BLEND_PIXEL_NONE));
    }
 #endif
 }
@@ -2785,7 +2836,11 @@ nv_drm_plane_create(struct drm_device *dev,
         (plane_type == DRM_PLANE_TYPE_CURSOR) ?
             0x0 : pResInfo->caps.layer[layer_idx].validRRTransforms;
 
-    if ((validCompositionModes &
+    /* Primary planes should always use OPAQUE mode, while overlay and cursor
+     * planes prefer PREMULT_ALPHA.
+     */
+    if ((plane_type == DRM_PLANE_TYPE_PRIMARY) &&
+        (validCompositionModes &
          NVBIT(NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE)) != 0x0) {
         defaultCompositionMode = NVKMS_COMPOSITION_BLENDING_MODE_OPAQUE;
     } else if ((validCompositionModes &

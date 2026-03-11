@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2024 NVIDIA Corporation
+    Copyright (c) 2015-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -192,7 +192,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_mana
     status = uvm_va_block_unmap(va_block, va_block_context, UVM_ID_CPU, region, NULL, NULL);
     UVM_ASSERT(status == NV_OK);
 
-    if (uvm_va_policy_is_read_duplicate(&managed_range->policy, managed_range->va_range.va_space)) {
+    if (uvm_va_policy_is_read_duplicate(&managed_range->policy)) {
         status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                            va_block_retry,
                                                            va_block_context,
@@ -216,23 +216,10 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_mana
     if (status != NV_OK)
         return status;
 
-    // 1- Map all UVM-Lite SetAccessedBy GPUs and the preferred location with
-    // RWA permission
-    status = uvm_va_block_map_mask(va_block,
-                                   va_block_context,
-                                   &managed_range->uvm_lite_gpus,
-                                   region,
-                                   NULL,
-                                   UVM_PROT_READ_WRITE_ATOMIC,
-                                   UvmEventMapRemoteCauseCoherence);
-    if (status != NV_OK)
-        goto out;
-
     // 2- Map faultable SetAccessedBy GPUs.
     uvm_processor_mask_and(map_mask,
                            &managed_range->policy.accessed_by,
                            &managed_range->va_range.va_space->can_access[uvm_id_value(policy->preferred_location)]);
-    uvm_processor_mask_andnot(map_mask, map_mask, &managed_range->uvm_lite_gpus);
 
     for_each_gpu_id_in_mask(gpu_id, map_mask) {
         status = uvm_va_block_add_mappings(va_block,
@@ -424,16 +411,7 @@ static NV_STATUS uvm_range_group_prevent_migration(uvm_range_group_t *range_grou
 
             // If the preferred location is a GPU, check that it's not
             // fault-capable
-            if (UVM_ID_IS_GPU(preferred_location) &&
-                uvm_processor_mask_test(&va_space->faultable_processors, preferred_location)) {
-                status = NV_ERR_INVALID_DEVICE;
-                goto done;
-            }
-
-            // Check that all UVM-Lite GPUs are able to access the
-            // preferred location
-            if (!uvm_processor_mask_subset(&managed_range->uvm_lite_gpus,
-                                           &va_space->accessible_from[uvm_id_value(preferred_location)])) {
+            if (UVM_ID_IS_GPU(preferred_location)) {
                 status = NV_ERR_INVALID_DEVICE;
                 goto done;
             }
@@ -644,12 +622,6 @@ NV_STATUS uvm_range_group_assign_range(uvm_va_space_t *va_space, uvm_range_group
     }
 
     return NV_OK;
-}
-
-bool uvm_range_group_address_migratable(uvm_va_space_t *va_space, NvU64 address)
-{
-    uvm_range_group_range_t *rgr = uvm_range_group_range_find(va_space, address);
-    return rgr == NULL || uvm_range_group_migratable(rgr->range_group);
 }
 
 bool uvm_range_group_any_migratable(uvm_va_space_t *va_space, NvU64 start, NvU64 end)

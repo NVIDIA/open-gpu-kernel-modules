@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@
 
 #include "ctrl/ctrl0000/ctrl0000gpuacct.h" // NV0000_CTRL_CMD_GPUACCT_*
 #include "ctrl/ctrl2080/ctrl2080tmr.h" // NV2080_CTRL_CMD_TIMER_SCHEDULE
+#include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT
 
 static NV_STATUS
 releaseDeferRmCtrlBuffer(RmCtrlDeferredCmd* pRmCtrlDeferredCmd)
@@ -241,13 +242,11 @@ serverControlApiCopyIn
 {
     NV_STATUS rmStatus;
     API_STATE *pParamCopy;
-    API_STATE *pEmbeddedParamCopies;
     NvP64 pUserParams;
     NvU32 paramsSize;
 
     NV_ASSERT_OR_RETURN(pCookie != NULL, NV_ERR_INVALID_ARGUMENT);
     pParamCopy = &pCookie->paramCopy;
-    pEmbeddedParamCopies = pCookie->embeddedParamCopies;
     pUserParams = NV_PTR_TO_NvP64(pRmCtrlParams->pParams);
     paramsSize = pRmCtrlParams->paramsSize;
 
@@ -264,7 +263,7 @@ serverControlApiCopyIn
         return rmStatus;
     pCookie->bFreeParamCopy = NV_TRUE;
 
-    rmStatus = embeddedParamCopyIn(pEmbeddedParamCopies, pRmCtrlParams);
+    rmStatus = embeddedParamCopyIn(pCookie->embeddedParamCopies, pRmCtrlParams);
     if (rmStatus != NV_OK)
     {
         rmapiParamsRelease(pParamCopy);
@@ -288,9 +287,7 @@ serverControlApiCopyOut
 {
     NV_STATUS  cpStatus;
     API_STATE *pParamCopy;
-    API_STATE *pEmbeddedParamCopies;
     NvP64      pUserParams;
-    NvBool     bFreeEmbeddedCopy;
     NvBool     bFreeParamCopy;
 
     NV_ASSERT_OR_RETURN(pCookie != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -306,10 +303,8 @@ serverControlApiCopyOut
     }
 
     pParamCopy = &pCookie->paramCopy;
-    pEmbeddedParamCopies = pCookie->embeddedParamCopies;
     pUserParams = pCookie->paramCopy.pUserParams;
     bFreeParamCopy = pCookie->bFreeParamCopy;
-    bFreeEmbeddedCopy = pCookie->bFreeEmbeddedCopy;
 
     if ((rmStatus != NV_OK) &&
         (!(pCookie->ctrlFlags & RMCTRL_FLAGS_COPYOUT_ON_ERROR) ||
@@ -317,18 +312,18 @@ serverControlApiCopyOut
     {
         pParamCopy->flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
 
-        if (bFreeEmbeddedCopy)
+        if (pCookie->bFreeEmbeddedCopy)
         {
-            pEmbeddedParamCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
-            pEmbeddedParamCopies[1].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
-            pEmbeddedParamCopies[2].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
-            pEmbeddedParamCopies[3].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
+            pCookie->embeddedParamCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
+            pCookie->embeddedParamCopies[1].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
+            pCookie->embeddedParamCopies[2].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
+            pCookie->embeddedParamCopies[3].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
         }
     }
 
-    if (bFreeEmbeddedCopy)
+    if (pCookie->bFreeEmbeddedCopy)
     {
-        cpStatus = embeddedParamCopyOut(pEmbeddedParamCopies, pRmCtrlParams);
+        cpStatus = embeddedParamCopyOut(pCookie->embeddedParamCopies, pRmCtrlParams);
         if (rmStatus == NV_OK)
             rmStatus = cpStatus;
         pCookie->bFreeEmbeddedCopy = NV_FALSE;
@@ -630,7 +625,9 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         }
 
         lockInfo.flags |= RM_LOCK_FLAGS_RM_SEMA;
+
         rmStatus = serverControl(&g_resServ, &rmCtrlParams);
+
 epilogue:
         rmapiEpilogue(pRmApi, &rmApiContext);
     }
@@ -914,6 +911,8 @@ serverControlLookupLockFlags
 
     if (lock == RS_LOCK_TOP)
     {
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+
         if (controlFlags & RMCTRL_FLAGS_NO_API_LOCK)
         {
             // NO_API_LOCK requires no access to GPU lock protected data
@@ -948,6 +947,16 @@ serverControlLookupLockFlags
         if (g_resServ.bRouteToPhysicalLockBypass && bUseGspLockingMode)
         {
             *pAccess = LOCK_ACCESS_READ;
+        }
+
+        //
+        // Take API lock in WRITE mode for this control while we investigate why READ mode
+        // acquires cause bug 5785851...
+        //
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR) &&
+            (pRmCtrlParams->cmd == NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT))
+        {
+            *pAccess = LOCK_ACCESS_WRITE;
         }
 
         return NV_OK;

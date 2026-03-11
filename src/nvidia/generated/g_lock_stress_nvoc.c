@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xecce10 = 1;
+char __nvoc_class_id_uniqueness_check__ecce10 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_LockStressObject;
@@ -30,7 +30,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__LockStressObject(LockStressObject*);
 void __nvoc_init_funcTable_LockStressObject(LockStressObject*);
-NV_STATUS __nvoc_ctor_LockStressObject(LockStressObject*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_LockStressObject(LockStressObject*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_LockStressObject(LockStressObject*);
 void __nvoc_dtor_LockStressObject(LockStressObject*);
 
@@ -106,19 +106,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_lockStressObjUnmapFrom(struct LockStressObj
 NvU32 __nvoc_up_thunk_RsResource_lockStressObjGetRefCount(struct LockStressObject *pResource);    // this
 void __nvoc_up_thunk_RsResource_lockStressObjAddAdditionalDependants(struct RsClient *pClient, struct LockStressObject *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for LockStressObject
 const struct NVOC_CLASS_DEF __nvoc_class_def_LockStressObject = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(LockStressObject),
-        /*classId=*/            classId(LockStressObject),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(LockStressObject),
+    .classInfo.classId =            classId(LockStressObject),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "LockStressObject",
+    .classInfo.name =               "LockStressObject",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_LockStressObject,
-    /*pCastInfo=*/          &__nvoc_castinfo__LockStressObject,
-    /*pExportInfo=*/        &__nvoc_export_info__LockStressObject
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_LockStressObject,
+    .pCastInfo =          &__nvoc_castinfo__LockStressObject,
+    .pExportInfo =        &__nvoc_export_info__LockStressObject
 };
 
 // By default, all exported methods are enabled.
@@ -277,6 +276,51 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_LockStre
         /*pClassInfo=*/ &(__nvoc_class_def_LockStressObject.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "lockStressObjCtrlCmdGetLockStressCounters"
+#endif
+    },
+    {               /*  [10] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100009u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &lockStressObjCtrlCmdRecursiveGpuLockTestNoLock_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100009u)
+        /*flags=*/      0x100009u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x100010bu,
+        /*paramSize=*/  sizeof(NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM),
+        /*pClassInfo=*/ &(__nvoc_class_def_LockStressObject.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "lockStressObjCtrlCmdRecursiveGpuLockTestNoLock"
+#endif
+    },
+    {               /*  [11] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100008u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &lockStressObjCtrlCmdRecursiveGpuLockTestAllLock_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100008u)
+        /*flags=*/      0x100008u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x100010cu,
+        /*paramSize=*/  sizeof(NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM),
+        /*pClassInfo=*/ &(__nvoc_class_def_LockStressObject.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "lockStressObjCtrlCmdRecursiveGpuLockTestAllLock"
+#endif
+    },
+    {               /*  [12] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100018u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x100018u)
+        /*flags=*/      0x100018u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x100010du,
+        /*paramSize=*/  sizeof(NV0100_CTRL_CMD_RECURSIVE_GPU_LOCK_TEST_PARAM),
+        /*pClassInfo=*/ &(__nvoc_class_def_LockStressObject.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "lockStressObjCtrlCmdRecursiveGpuLockTestDeviceLock"
 #endif
     },
 };
@@ -538,38 +582,51 @@ void __nvoc_up_thunk_RsResource_lockStressObjAddAdditionalDependants(struct RsCl
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__LockStressObject = 
 {
-    /*numEntries=*/     10,
-    /*pExportEntries=*/ __nvoc_exported_method_def_LockStressObject
+    .numEntries=     13,
+    .pExportEntries= __nvoc_exported_method_def_LockStressObject
 };
 
+
+// Destruct LockStressObject object.
 void __nvoc_lockStressObjDestruct(LockStressObject*);
 void __nvoc_dtor_GpuResource(GpuResource*);
-void __nvoc_dtor_LockStressObject(LockStressObject *pThis) {
+void __nvoc_dtor_LockStressObject(LockStressObject* pThis) {
+
+// Call destructor.
     __nvoc_lockStressObjDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_LockStressObject(LockStressObject *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_LockStressObject(LockStressObject *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_LockStressObject_fail_GpuResource;
-    __nvoc_init_dataField_LockStressObject(pThis);
 
-    status = __nvoc_lockStressObjConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct LockStressObject object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_LockStressObject(LockStressObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pResource->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_LockStressObject_fail_GpuResource;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LockStressObject(pResource);
+
+    // Call the constructor for this class.
+    status = __nvoc_lockStressObjConstruct(pResource, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_LockStressObject_fail__init;
     goto __nvoc_ctor_LockStressObject_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_LockStressObject_fail__init:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pResource->__nvoc_base_GpuResource);
 __nvoc_ctor_LockStressObject_fail_GpuResource:
 __nvoc_ctor_LockStressObject_exit:
-
     return status;
 }
 
@@ -610,49 +667,49 @@ void __nvoc_init__LockStressObject(LockStressObject *pThis) {
     __nvoc_init_funcTable_LockStressObject(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    LockStressObject *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LockStressObject *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(LockStressObject));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LockStressObject));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(LockStressObject));
+    portMemSet(__nvoc_pThis, 0, sizeof(LockStressObject));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__LockStressObject(pThis);
-    status = __nvoc_ctor_LockStressObject(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_LockStressObject_cleanup;
+    __nvoc_init__LockStressObject(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LockStressObject(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LockStressObject_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -661,31 +718,31 @@ NV_STATUS __nvoc_objCreate_LockStressObject(LockStressObject **ppThis, Dynamic *
 __nvoc_objCreate_LockStressObject_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(LockStressObject));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LockStressObject));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_LockStressObject(LockStressObject **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_LockStressObject(LockStressObject **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_LockStressObject(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_LockStressObject(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

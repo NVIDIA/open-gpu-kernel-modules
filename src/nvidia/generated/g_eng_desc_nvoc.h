@@ -67,1504 +67,939 @@ typedef NvU32 ENGDESCRIPTOR;
 //
 // Class declarations to get classIds for use with ENGDESCRIPTOR
 //
-
 struct OBJINVALID;
 
-#ifndef __NVOC_CLASS_OBJINVALID_TYPEDEF__
-#define __NVOC_CLASS_OBJINVALID_TYPEDEF__
-typedef struct OBJINVALID OBJINVALID;
-#endif /* __NVOC_CLASS_OBJINVALID_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJINVALID
-#define __nvoc_class_id_OBJINVALID 0xb33b15
+#define __nvoc_class_id_OBJINVALID 0xb33b15u
+typedef struct OBJINVALID OBJINVALID;
 #endif /* __nvoc_class_id_OBJINVALID */
 
        // classId only.  Not a real class
-
 struct OBJSWENG;
 
-#ifndef __NVOC_CLASS_OBJSWENG_TYPEDEF__
-#define __NVOC_CLASS_OBJSWENG_TYPEDEF__
-typedef struct OBJSWENG OBJSWENG;
-#endif /* __NVOC_CLASS_OBJSWENG_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSWENG
-#define __nvoc_class_id_OBJSWENG 0x95a6f5
+#define __nvoc_class_id_OBJSWENG 0x95a6f5u
+typedef struct OBJSWENG OBJSWENG;
 #endif /* __nvoc_class_id_OBJSWENG */
-
 
 
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
-
 
 
 struct Falcon;
 
-#ifndef __NVOC_CLASS_Falcon_TYPEDEF__
-#define __NVOC_CLASS_Falcon_TYPEDEF__
-typedef struct Falcon Falcon;
-#endif /* __NVOC_CLASS_Falcon_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Falcon
-#define __nvoc_class_id_Falcon 0xdc5264
+#define __nvoc_class_id_Falcon 0xdc5264u
+typedef struct Falcon Falcon;
 #endif /* __nvoc_class_id_Falcon */
-
 
 
 struct OBJMC;
 
-#ifndef __NVOC_CLASS_OBJMC_TYPEDEF__
-#define __NVOC_CLASS_OBJMC_TYPEDEF__
-typedef struct OBJMC OBJMC;
-#endif /* __NVOC_CLASS_OBJMC_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJMC
-#define __nvoc_class_id_OBJMC 0x9aad0e
+#define __nvoc_class_id_OBJMC 0x9aad0eu
+typedef struct OBJMC OBJMC;
 #endif /* __nvoc_class_id_OBJMC */
-
 
 
 struct KernelMc;
 
-#ifndef __NVOC_CLASS_KernelMc_TYPEDEF__
-#define __NVOC_CLASS_KernelMc_TYPEDEF__
-typedef struct KernelMc KernelMc;
-#endif /* __NVOC_CLASS_KernelMc_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelMc
-#define __nvoc_class_id_KernelMc 0x3827ff
+#define __nvoc_class_id_KernelMc 0x3827ffu
+typedef struct KernelMc KernelMc;
 #endif /* __nvoc_class_id_KernelMc */
-
 
 
 struct PrivRing;
 
-#ifndef __NVOC_CLASS_PrivRing_TYPEDEF__
-#define __NVOC_CLASS_PrivRing_TYPEDEF__
-typedef struct PrivRing PrivRing;
-#endif /* __NVOC_CLASS_PrivRing_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_PrivRing
-#define __nvoc_class_id_PrivRing 0x4c57c4
+#define __nvoc_class_id_PrivRing 0x4c57c4u
+typedef struct PrivRing PrivRing;
 #endif /* __nvoc_class_id_PrivRing */
-
 
 
 struct SwIntr;
 
-#ifndef __NVOC_CLASS_SwIntr_TYPEDEF__
-#define __NVOC_CLASS_SwIntr_TYPEDEF__
-typedef struct SwIntr SwIntr;
-#endif /* __NVOC_CLASS_SwIntr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SwIntr
-#define __nvoc_class_id_SwIntr 0x5ca633
+#define __nvoc_class_id_SwIntr 0x5ca633u
+typedef struct SwIntr SwIntr;
 #endif /* __nvoc_class_id_SwIntr */
-
 
 
 struct MemorySystem;
 
-#ifndef __NVOC_CLASS_MemorySystem_TYPEDEF__
-#define __NVOC_CLASS_MemorySystem_TYPEDEF__
-typedef struct MemorySystem MemorySystem;
-#endif /* __NVOC_CLASS_MemorySystem_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemorySystem
-#define __nvoc_class_id_MemorySystem 0x174e21
+#define __nvoc_class_id_MemorySystem 0x174e21u
+typedef struct MemorySystem MemorySystem;
 #endif /* __nvoc_class_id_MemorySystem */
-
 
 
 struct KernelMemorySystem;
 
-#ifndef __NVOC_CLASS_KernelMemorySystem_TYPEDEF__
-#define __NVOC_CLASS_KernelMemorySystem_TYPEDEF__
-typedef struct KernelMemorySystem KernelMemorySystem;
-#endif /* __NVOC_CLASS_KernelMemorySystem_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelMemorySystem
-#define __nvoc_class_id_KernelMemorySystem 0x7faff1
+#define __nvoc_class_id_KernelMemorySystem 0x7faff1u
+typedef struct KernelMemorySystem KernelMemorySystem;
 #endif /* __nvoc_class_id_KernelMemorySystem */
-
 
 
 struct MemoryManager;
 
-#ifndef __NVOC_CLASS_MemoryManager_TYPEDEF__
-#define __NVOC_CLASS_MemoryManager_TYPEDEF__
-typedef struct MemoryManager MemoryManager;
-#endif /* __NVOC_CLASS_MemoryManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryManager
-#define __nvoc_class_id_MemoryManager 0x22ad47
+#define __nvoc_class_id_MemoryManager 0x22ad47u
+typedef struct MemoryManager MemoryManager;
 #endif /* __nvoc_class_id_MemoryManager */
-
 
 
 struct OBJFBFLCN;
 
-#ifndef __NVOC_CLASS_OBJFBFLCN_TYPEDEF__
-#define __NVOC_CLASS_OBJFBFLCN_TYPEDEF__
-typedef struct OBJFBFLCN OBJFBFLCN;
-#endif /* __NVOC_CLASS_OBJFBFLCN_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJFBFLCN
-#define __nvoc_class_id_OBJFBFLCN 0x8a20bf
+#define __nvoc_class_id_OBJFBFLCN 0x8a20bfu
+typedef struct OBJFBFLCN OBJFBFLCN;
 #endif /* __nvoc_class_id_OBJFBFLCN */
-
 
 
 struct OBJHSHUBMANAGER;
 
-#ifndef __NVOC_CLASS_OBJHSHUBMANAGER_TYPEDEF__
-#define __NVOC_CLASS_OBJHSHUBMANAGER_TYPEDEF__
-typedef struct OBJHSHUBMANAGER OBJHSHUBMANAGER;
-#endif /* __NVOC_CLASS_OBJHSHUBMANAGER_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHSHUBMANAGER
-#define __nvoc_class_id_OBJHSHUBMANAGER 0xbb32b9
+#define __nvoc_class_id_OBJHSHUBMANAGER 0xbb32b9u
+typedef struct OBJHSHUBMANAGER OBJHSHUBMANAGER;
 #endif /* __nvoc_class_id_OBJHSHUBMANAGER */
-
 
 
 struct Hshub;
 
-#ifndef __NVOC_CLASS_Hshub_TYPEDEF__
-#define __NVOC_CLASS_Hshub_TYPEDEF__
-typedef struct Hshub Hshub;
-#endif /* __NVOC_CLASS_Hshub_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Hshub
-#define __nvoc_class_id_Hshub 0x5b3331
+#define __nvoc_class_id_Hshub 0x5b3331u
+typedef struct Hshub Hshub;
 #endif /* __nvoc_class_id_Hshub */
-
 
 
 struct OBJTMR;
 
-#ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__
-#define __NVOC_CLASS_OBJTMR_TYPEDEF__
-typedef struct OBJTMR OBJTMR;
-#endif /* __NVOC_CLASS_OBJTMR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJTMR
-#define __nvoc_class_id_OBJTMR 0x9ddede
+#define __nvoc_class_id_OBJTMR 0x9ddedeu
+typedef struct OBJTMR OBJTMR;
 #endif /* __nvoc_class_id_OBJTMR */
-
 
 
 struct VirtMemAllocator;
 
-#ifndef __NVOC_CLASS_VirtMemAllocator_TYPEDEF__
-#define __NVOC_CLASS_VirtMemAllocator_TYPEDEF__
-typedef struct VirtMemAllocator VirtMemAllocator;
-#endif /* __NVOC_CLASS_VirtMemAllocator_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VirtMemAllocator
-#define __nvoc_class_id_VirtMemAllocator 0x899e48
+#define __nvoc_class_id_VirtMemAllocator 0x899e48u
+typedef struct VirtMemAllocator VirtMemAllocator;
 #endif /* __nvoc_class_id_VirtMemAllocator */
-
 
 
 struct Graphics;
 
-#ifndef __NVOC_CLASS_Graphics_TYPEDEF__
-#define __NVOC_CLASS_Graphics_TYPEDEF__
-typedef struct Graphics Graphics;
-#endif /* __NVOC_CLASS_Graphics_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Graphics
-#define __nvoc_class_id_Graphics 0xd334df
+#define __nvoc_class_id_Graphics 0xd334dfu
+typedef struct Graphics Graphics;
 #endif /* __nvoc_class_id_Graphics */
-
 
 
 struct OBJGR;
 
-#ifndef __NVOC_CLASS_OBJGR_TYPEDEF__
-#define __NVOC_CLASS_OBJGR_TYPEDEF__
-typedef struct OBJGR OBJGR;
-#endif /* __NVOC_CLASS_OBJGR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGR
-#define __nvoc_class_id_OBJGR 0xb0940a
+#define __nvoc_class_id_OBJGR 0xb0940au
+typedef struct OBJGR OBJGR;
 #endif /* __nvoc_class_id_OBJGR */
 
             // classId only. Not a real class. Bug 200664045
-
 struct GraphicsManager;
 
-#ifndef __NVOC_CLASS_GraphicsManager_TYPEDEF__
-#define __NVOC_CLASS_GraphicsManager_TYPEDEF__
-typedef struct GraphicsManager GraphicsManager;
-#endif /* __NVOC_CLASS_GraphicsManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GraphicsManager
-#define __nvoc_class_id_GraphicsManager 0x2f465a
+#define __nvoc_class_id_GraphicsManager 0x2f465au
+typedef struct GraphicsManager GraphicsManager;
 #endif /* __nvoc_class_id_GraphicsManager */
-
 
 
 struct KernelGraphicsManager;
 
-#ifndef __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-typedef struct KernelGraphicsManager KernelGraphicsManager;
-#endif /* __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsManager
-#define __nvoc_class_id_KernelGraphicsManager 0xd22179
+#define __nvoc_class_id_KernelGraphicsManager 0xd22179u
+typedef struct KernelGraphicsManager KernelGraphicsManager;
 #endif /* __nvoc_class_id_KernelGraphicsManager */
-
 
 
 struct MIGManager;
 
-#ifndef __NVOC_CLASS_MIGManager_TYPEDEF__
-#define __NVOC_CLASS_MIGManager_TYPEDEF__
-typedef struct MIGManager MIGManager;
-#endif /* __NVOC_CLASS_MIGManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MIGManager
-#define __nvoc_class_id_MIGManager 0xfd75d0
+#define __nvoc_class_id_MIGManager 0xfd75d0u
+typedef struct MIGManager MIGManager;
 #endif /* __nvoc_class_id_MIGManager */
-
 
 
 struct KernelMIGManager;
 
-#ifndef __NVOC_CLASS_KernelMIGManager_TYPEDEF__
-#define __NVOC_CLASS_KernelMIGManager_TYPEDEF__
-typedef struct KernelMIGManager KernelMIGManager;
-#endif /* __NVOC_CLASS_KernelMIGManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelMIGManager
-#define __nvoc_class_id_KernelMIGManager 0x01c1bf
+#define __nvoc_class_id_KernelMIGManager 0x01c1bfu
+typedef struct KernelMIGManager KernelMIGManager;
 #endif /* __nvoc_class_id_KernelMIGManager */
-
 
 
 struct SMDebugger;
 
-#ifndef __NVOC_CLASS_SMDebugger_TYPEDEF__
-#define __NVOC_CLASS_SMDebugger_TYPEDEF__
-typedef struct SMDebugger SMDebugger;
-#endif /* __NVOC_CLASS_SMDebugger_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SMDebugger
-#define __nvoc_class_id_SMDebugger 0x12018b
+#define __nvoc_class_id_SMDebugger 0x12018bu
+typedef struct SMDebugger SMDebugger;
 #endif /* __nvoc_class_id_SMDebugger */
-
 
 
 struct KernelGraphics;
 
-#ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphics_TYPEDEF__
-typedef struct KernelGraphics KernelGraphics;
-#endif /* __NVOC_CLASS_KernelGraphics_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphics
-#define __nvoc_class_id_KernelGraphics 0xea3fa9
+#define __nvoc_class_id_KernelGraphics 0xea3fa9u
+typedef struct KernelGraphics KernelGraphics;
 #endif /* __nvoc_class_id_KernelGraphics */
-
 
 
 struct KernelFifo;
 
-#ifndef __NVOC_CLASS_KernelFifo_TYPEDEF__
-#define __NVOC_CLASS_KernelFifo_TYPEDEF__
-typedef struct KernelFifo KernelFifo;
-#endif /* __NVOC_CLASS_KernelFifo_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelFifo
-#define __nvoc_class_id_KernelFifo 0xf3e155
+#define __nvoc_class_id_KernelFifo 0xf3e155u
+typedef struct KernelFifo KernelFifo;
 #endif /* __nvoc_class_id_KernelFifo */
-
 
 
 struct OBJFIFO;
 
-#ifndef __NVOC_CLASS_OBJFIFO_TYPEDEF__
-#define __NVOC_CLASS_OBJFIFO_TYPEDEF__
-typedef struct OBJFIFO OBJFIFO;
-#endif /* __NVOC_CLASS_OBJFIFO_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJFIFO
-#define __nvoc_class_id_OBJFIFO 0xb02365
+#define __nvoc_class_id_OBJFIFO 0xb02365u
+typedef struct OBJFIFO OBJFIFO;
 #endif /* __nvoc_class_id_OBJFIFO */
-
 
 
 struct OBJOS;
 
-#ifndef __NVOC_CLASS_OBJOS_TYPEDEF__
-#define __NVOC_CLASS_OBJOS_TYPEDEF__
-typedef struct OBJOS OBJOS;
-#endif /* __NVOC_CLASS_OBJOS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJOS
-#define __nvoc_class_id_OBJOS 0xaa1d70
+#define __nvoc_class_id_OBJOS 0xaa1d70u
+typedef struct OBJOS OBJOS;
 #endif /* __nvoc_class_id_OBJOS */
-
 
 
 struct OBJBUS;
 
-#ifndef __NVOC_CLASS_OBJBUS_TYPEDEF__
-#define __NVOC_CLASS_OBJBUS_TYPEDEF__
-typedef struct OBJBUS OBJBUS;
-#endif /* __NVOC_CLASS_OBJBUS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJBUS
-#define __nvoc_class_id_OBJBUS 0xcc4c31
+#define __nvoc_class_id_OBJBUS 0xcc4c31u
+typedef struct OBJBUS OBJBUS;
 #endif /* __nvoc_class_id_OBJBUS */
-
 
 
 struct KernelBus;
 
-#ifndef __NVOC_CLASS_KernelBus_TYPEDEF__
-#define __NVOC_CLASS_KernelBus_TYPEDEF__
-typedef struct KernelBus KernelBus;
-#endif /* __NVOC_CLASS_KernelBus_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelBus
-#define __nvoc_class_id_KernelBus 0xd2ac57
+#define __nvoc_class_id_KernelBus 0xd2ac57u
+typedef struct KernelBus KernelBus;
 #endif /* __nvoc_class_id_KernelBus */
-
 
 
 struct OBJINFOROM;
 
-#ifndef __NVOC_CLASS_OBJINFOROM_TYPEDEF__
-#define __NVOC_CLASS_OBJINFOROM_TYPEDEF__
-typedef struct OBJINFOROM OBJINFOROM;
-#endif /* __NVOC_CLASS_OBJINFOROM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJINFOROM
-#define __nvoc_class_id_OBJINFOROM 0x0e1639
+#define __nvoc_class_id_OBJINFOROM 0x0e1639u
+typedef struct OBJINFOROM OBJINFOROM;
 #endif /* __nvoc_class_id_OBJINFOROM */
-
 
 
 struct Perf;
 
-#ifndef __NVOC_CLASS_Perf_TYPEDEF__
-#define __NVOC_CLASS_Perf_TYPEDEF__
-typedef struct Perf Perf;
-#endif /* __NVOC_CLASS_Perf_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Perf
-#define __nvoc_class_id_Perf 0xed0b65
+#define __nvoc_class_id_Perf 0xed0b65u
+typedef struct Perf Perf;
 #endif /* __nvoc_class_id_Perf */
-
 
 
 struct KernelPerf;
 
-#ifndef __NVOC_CLASS_KernelPerf_TYPEDEF__
-#define __NVOC_CLASS_KernelPerf_TYPEDEF__
-typedef struct KernelPerf KernelPerf;
-#endif /* __NVOC_CLASS_KernelPerf_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelPerf
-#define __nvoc_class_id_KernelPerf 0xc53a57
+#define __nvoc_class_id_KernelPerf 0xc53a57u
+typedef struct KernelPerf KernelPerf;
 #endif /* __nvoc_class_id_KernelPerf */
-
 
 
 struct Pxuc;
 
-#ifndef __NVOC_CLASS_Pxuc_TYPEDEF__
-#define __NVOC_CLASS_Pxuc_TYPEDEF__
-typedef struct Pxuc Pxuc;
-#endif /* __NVOC_CLASS_Pxuc_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Pxuc
-#define __nvoc_class_id_Pxuc 0xba06f5
+#define __nvoc_class_id_Pxuc 0xba06f5u
+typedef struct Pxuc Pxuc;
 #endif /* __nvoc_class_id_Pxuc */
-
 
 
 struct OBJBIF;
 
-#ifndef __NVOC_CLASS_OBJBIF_TYPEDEF__
-#define __NVOC_CLASS_OBJBIF_TYPEDEF__
-typedef struct OBJBIF OBJBIF;
-#endif /* __NVOC_CLASS_OBJBIF_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJBIF
-#define __nvoc_class_id_OBJBIF 0xd1c956
+#define __nvoc_class_id_OBJBIF 0xd1c956u
+typedef struct OBJBIF OBJBIF;
 #endif /* __nvoc_class_id_OBJBIF */
-
 
 
 struct KernelBif;
 
-#ifndef __NVOC_CLASS_KernelBif_TYPEDEF__
-#define __NVOC_CLASS_KernelBif_TYPEDEF__
-typedef struct KernelBif KernelBif;
-#endif /* __NVOC_CLASS_KernelBif_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelBif
-#define __nvoc_class_id_KernelBif 0xdbe523
+#define __nvoc_class_id_KernelBif 0xdbe523u
+typedef struct KernelBif KernelBif;
 #endif /* __nvoc_class_id_KernelBif */
-
 
 
 struct OBJSF;
 
-#ifndef __NVOC_CLASS_OBJSF_TYPEDEF__
-#define __NVOC_CLASS_OBJSF_TYPEDEF__
-typedef struct OBJSF OBJSF;
-#endif /* __NVOC_CLASS_OBJSF_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSF
-#define __nvoc_class_id_OBJSF 0x0bd720
+#define __nvoc_class_id_OBJSF 0x0bd720u
+typedef struct OBJSF OBJSF;
 #endif /* __nvoc_class_id_OBJSF */
-
 
 
 struct OBJGPIO;
 
-#ifndef __NVOC_CLASS_OBJGPIO_TYPEDEF__
-#define __NVOC_CLASS_OBJGPIO_TYPEDEF__
-typedef struct OBJGPIO OBJGPIO;
-#endif /* __NVOC_CLASS_OBJGPIO_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPIO
-#define __nvoc_class_id_OBJGPIO 0x05c7b5
+#define __nvoc_class_id_OBJGPIO 0x05c7b5u
+typedef struct OBJGPIO OBJGPIO;
 #endif /* __nvoc_class_id_OBJGPIO */
-
 
 
 struct ClockManager;
 
-#ifndef __NVOC_CLASS_ClockManager_TYPEDEF__
-#define __NVOC_CLASS_ClockManager_TYPEDEF__
-typedef struct ClockManager ClockManager;
-#endif /* __NVOC_CLASS_ClockManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ClockManager
-#define __nvoc_class_id_ClockManager 0xbcadd3
+#define __nvoc_class_id_ClockManager 0xbcadd3u
+typedef struct ClockManager ClockManager;
 #endif /* __nvoc_class_id_ClockManager */
-
 
 
 struct KernelDisplay;
 
-#ifndef __NVOC_CLASS_KernelDisplay_TYPEDEF__
-#define __NVOC_CLASS_KernelDisplay_TYPEDEF__
-typedef struct KernelDisplay KernelDisplay;
-#endif /* __NVOC_CLASS_KernelDisplay_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelDisplay
-#define __nvoc_class_id_KernelDisplay 0x55952e
+#define __nvoc_class_id_KernelDisplay 0x55952eu
+typedef struct KernelDisplay KernelDisplay;
 #endif /* __nvoc_class_id_KernelDisplay */
-
 
 
 struct OBJDISP;
 
-#ifndef __NVOC_CLASS_OBJDISP_TYPEDEF__
-#define __NVOC_CLASS_OBJDISP_TYPEDEF__
-typedef struct OBJDISP OBJDISP;
-#endif /* __NVOC_CLASS_OBJDISP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDISP
-#define __nvoc_class_id_OBJDISP 0xd1755e
+#define __nvoc_class_id_OBJDISP 0xd1755eu
+typedef struct OBJDISP OBJDISP;
 #endif /* __nvoc_class_id_OBJDISP */
-
 
 
 struct OBJDPU;
 
-#ifndef __NVOC_CLASS_OBJDPU_TYPEDEF__
-#define __NVOC_CLASS_OBJDPU_TYPEDEF__
-typedef struct OBJDPU OBJDPU;
-#endif /* __NVOC_CLASS_OBJDPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDPU
-#define __nvoc_class_id_OBJDPU 0x23486d
+#define __nvoc_class_id_OBJDPU 0x23486du
+typedef struct OBJDPU OBJDPU;
 #endif /* __nvoc_class_id_OBJDPU */
-
 
 
 struct OBJDIP;
 
-#ifndef __NVOC_CLASS_OBJDIP_TYPEDEF__
-#define __NVOC_CLASS_OBJDIP_TYPEDEF__
-typedef struct OBJDIP OBJDIP;
-#endif /* __NVOC_CLASS_OBJDIP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDIP
-#define __nvoc_class_id_OBJDIP 0x1cc271
+#define __nvoc_class_id_OBJDIP 0x1cc271u
+typedef struct OBJDIP OBJDIP;
 #endif /* __nvoc_class_id_OBJDIP */
-
 
 
 struct Fan;
 
-#ifndef __NVOC_CLASS_Fan_TYPEDEF__
-#define __NVOC_CLASS_Fan_TYPEDEF__
-typedef struct Fan Fan;
-#endif /* __NVOC_CLASS_Fan_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Fan
-#define __nvoc_class_id_Fan 0xadd018
+#define __nvoc_class_id_Fan 0xadd018u
+typedef struct Fan Fan;
 #endif /* __nvoc_class_id_Fan */
-
 
 
 struct DisplayInstanceMemory;
 
-#ifndef __NVOC_CLASS_DisplayInstanceMemory_TYPEDEF__
-#define __NVOC_CLASS_DisplayInstanceMemory_TYPEDEF__
-typedef struct DisplayInstanceMemory DisplayInstanceMemory;
-#endif /* __NVOC_CLASS_DisplayInstanceMemory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DisplayInstanceMemory
-#define __nvoc_class_id_DisplayInstanceMemory 0x8223e2
+#define __nvoc_class_id_DisplayInstanceMemory 0x8223e2u
+typedef struct DisplayInstanceMemory DisplayInstanceMemory;
 #endif /* __nvoc_class_id_DisplayInstanceMemory */
-
 
 
 struct KernelHead;
 
-#ifndef __NVOC_CLASS_KernelHead_TYPEDEF__
-#define __NVOC_CLASS_KernelHead_TYPEDEF__
-typedef struct KernelHead KernelHead;
-#endif /* __NVOC_CLASS_KernelHead_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHead
-#define __nvoc_class_id_KernelHead 0x0145e6
+#define __nvoc_class_id_KernelHead 0x0145e6u
+typedef struct KernelHead KernelHead;
 #endif /* __nvoc_class_id_KernelHead */
-
 
 
 struct OBJVOLT;
 
-#ifndef __NVOC_CLASS_OBJVOLT_TYPEDEF__
-#define __NVOC_CLASS_OBJVOLT_TYPEDEF__
-typedef struct OBJVOLT OBJVOLT;
-#endif /* __NVOC_CLASS_OBJVOLT_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVOLT
-#define __nvoc_class_id_OBJVOLT 0xa68120
+#define __nvoc_class_id_OBJVOLT 0xa68120u
+typedef struct OBJVOLT OBJVOLT;
 #endif /* __nvoc_class_id_OBJVOLT */
-
 
 
 struct Intr;
 
-#ifndef __NVOC_CLASS_Intr_TYPEDEF__
-#define __NVOC_CLASS_Intr_TYPEDEF__
-typedef struct Intr Intr;
-#endif /* __NVOC_CLASS_Intr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Intr
-#define __nvoc_class_id_Intr 0xc06e44
+#define __nvoc_class_id_Intr 0xc06e44u
+typedef struct Intr Intr;
 #endif /* __nvoc_class_id_Intr */
-
 
 
 struct OBJHDA;
 
-#ifndef __NVOC_CLASS_OBJHDA_TYPEDEF__
-#define __NVOC_CLASS_OBJHDA_TYPEDEF__
-typedef struct OBJHDA OBJHDA;
-#endif /* __NVOC_CLASS_OBJHDA_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHDA
-#define __nvoc_class_id_OBJHDA 0xd3bfb4
+#define __nvoc_class_id_OBJHDA 0xd3bfb4u
+typedef struct OBJHDA OBJHDA;
 #endif /* __nvoc_class_id_OBJHDA */
-
 
 
 struct I2c;
 
-#ifndef __NVOC_CLASS_I2c_TYPEDEF__
-#define __NVOC_CLASS_I2c_TYPEDEF__
-typedef struct I2c I2c;
-#endif /* __NVOC_CLASS_I2c_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_I2c
-#define __nvoc_class_id_I2c 0x48e035
+#define __nvoc_class_id_I2c 0x48e035u
+typedef struct I2c I2c;
 #endif /* __nvoc_class_id_I2c */
-
 
 
 struct KernelRc;
 
-#ifndef __NVOC_CLASS_KernelRc_TYPEDEF__
-#define __NVOC_CLASS_KernelRc_TYPEDEF__
-typedef struct KernelRc KernelRc;
-#endif /* __NVOC_CLASS_KernelRc_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelRc
-#define __nvoc_class_id_KernelRc 0x4888db
+#define __nvoc_class_id_KernelRc 0x4888dbu
+typedef struct KernelRc KernelRc;
 #endif /* __nvoc_class_id_KernelRc */
-
 
 
 struct OBJRC;
 
-#ifndef __NVOC_CLASS_OBJRC_TYPEDEF__
-#define __NVOC_CLASS_OBJRC_TYPEDEF__
-typedef struct OBJRC OBJRC;
-#endif /* __NVOC_CLASS_OBJRC_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJRC
-#define __nvoc_class_id_OBJRC 0x42d150
+#define __nvoc_class_id_OBJRC 0x42d150u
+typedef struct OBJRC OBJRC;
 #endif /* __nvoc_class_id_OBJRC */
-
 
 
 struct OBJSOR;
 
-#ifndef __NVOC_CLASS_OBJSOR_TYPEDEF__
-#define __NVOC_CLASS_OBJSOR_TYPEDEF__
-typedef struct OBJSOR OBJSOR;
-#endif /* __NVOC_CLASS_OBJSOR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSOR
-#define __nvoc_class_id_OBJSOR 0x5ccbfa
+#define __nvoc_class_id_OBJSOR 0x5ccbfau
+typedef struct OBJSOR OBJSOR;
 #endif /* __nvoc_class_id_OBJSOR */
-
 
 
 struct OBJDAC;
 
-#ifndef __NVOC_CLASS_OBJDAC_TYPEDEF__
-#define __NVOC_CLASS_OBJDAC_TYPEDEF__
-typedef struct OBJDAC OBJDAC;
-#endif /* __NVOC_CLASS_OBJDAC_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDAC
-#define __nvoc_class_id_OBJDAC 0x4b1802
+#define __nvoc_class_id_OBJDAC 0x4b1802u
+typedef struct OBJDAC OBJDAC;
 #endif /* __nvoc_class_id_OBJDAC */
-
 
 
 struct OBJPIOR;
 
-#ifndef __NVOC_CLASS_OBJPIOR_TYPEDEF__
-#define __NVOC_CLASS_OBJPIOR_TYPEDEF__
-typedef struct OBJPIOR OBJPIOR;
-#endif /* __NVOC_CLASS_OBJPIOR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJPIOR
-#define __nvoc_class_id_OBJPIOR 0x0128a3
+#define __nvoc_class_id_OBJPIOR 0x0128a3u
+typedef struct OBJPIOR OBJPIOR;
 #endif /* __nvoc_class_id_OBJPIOR */
-
 
 
 struct OBJHEAD;
 
-#ifndef __NVOC_CLASS_OBJHEAD_TYPEDEF__
-#define __NVOC_CLASS_OBJHEAD_TYPEDEF__
-typedef struct OBJHEAD OBJHEAD;
-#endif /* __NVOC_CLASS_OBJHEAD_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHEAD
-#define __nvoc_class_id_OBJHEAD 0x74dd86
+#define __nvoc_class_id_OBJHEAD 0x74dd86u
+typedef struct OBJHEAD OBJHEAD;
 #endif /* __nvoc_class_id_OBJHEAD */
-
 
 
 struct OBJVGA;
 
-#ifndef __NVOC_CLASS_OBJVGA_TYPEDEF__
-#define __NVOC_CLASS_OBJVGA_TYPEDEF__
-typedef struct OBJVGA OBJVGA;
-#endif /* __NVOC_CLASS_OBJVGA_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVGA
-#define __nvoc_class_id_OBJVGA 0x84e0bc
+#define __nvoc_class_id_OBJVGA 0x84e0bcu
+typedef struct OBJVGA OBJVGA;
 #endif /* __nvoc_class_id_OBJVGA */
-
 
 
 struct Stereo;
 
-#ifndef __NVOC_CLASS_Stereo_TYPEDEF__
-#define __NVOC_CLASS_Stereo_TYPEDEF__
-typedef struct Stereo Stereo;
-#endif /* __NVOC_CLASS_Stereo_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Stereo
-#define __nvoc_class_id_Stereo 0xbbc45d
+#define __nvoc_class_id_Stereo 0xbbc45du
+typedef struct Stereo Stereo;
 #endif /* __nvoc_class_id_Stereo */
-
 
 
 struct OBJOR;
 
-#ifndef __NVOC_CLASS_OBJOR_TYPEDEF__
-#define __NVOC_CLASS_OBJOR_TYPEDEF__
-typedef struct OBJOR OBJOR;
-#endif /* __NVOC_CLASS_OBJOR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJOR
-#define __nvoc_class_id_OBJOR 0x215d6b
+#define __nvoc_class_id_OBJOR 0x215d6bu
+typedef struct OBJOR OBJOR;
 #endif /* __nvoc_class_id_OBJOR */
-
 
 
 struct OBJBSP;
 
-#ifndef __NVOC_CLASS_OBJBSP_TYPEDEF__
-#define __NVOC_CLASS_OBJBSP_TYPEDEF__
-typedef struct OBJBSP OBJBSP;
-#endif /* __NVOC_CLASS_OBJBSP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJBSP
-#define __nvoc_class_id_OBJBSP 0x8f99e1
+#define __nvoc_class_id_OBJBSP 0x8f99e1u
+typedef struct OBJBSP OBJBSP;
 #endif /* __nvoc_class_id_OBJBSP */
-
 
 
 struct OBJCIPHER;
 
-#ifndef __NVOC_CLASS_OBJCIPHER_TYPEDEF__
-#define __NVOC_CLASS_OBJCIPHER_TYPEDEF__
-typedef struct OBJCIPHER OBJCIPHER;
-#endif /* __NVOC_CLASS_OBJCIPHER_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJCIPHER
-#define __nvoc_class_id_OBJCIPHER 0x8dd911
+#define __nvoc_class_id_OBJCIPHER 0x8dd911u
+typedef struct OBJCIPHER OBJCIPHER;
 #endif /* __nvoc_class_id_OBJCIPHER */
-
 
 
 struct OBJFUSE;
 
-#ifndef __NVOC_CLASS_OBJFUSE_TYPEDEF__
-#define __NVOC_CLASS_OBJFUSE_TYPEDEF__
-typedef struct OBJFUSE OBJFUSE;
-#endif /* __NVOC_CLASS_OBJFUSE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJFUSE
-#define __nvoc_class_id_OBJFUSE 0x95ba71
+#define __nvoc_class_id_OBJFUSE 0x95ba71u
+typedef struct OBJFUSE OBJFUSE;
 #endif /* __nvoc_class_id_OBJFUSE */
-
 
 
 struct Jtag;
 
-#ifndef __NVOC_CLASS_Jtag_TYPEDEF__
-#define __NVOC_CLASS_Jtag_TYPEDEF__
-typedef struct Jtag Jtag;
-#endif /* __NVOC_CLASS_Jtag_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Jtag
-#define __nvoc_class_id_Jtag 0xd73cf9
+#define __nvoc_class_id_Jtag 0xd73cf9u
+typedef struct Jtag Jtag;
 #endif /* __nvoc_class_id_Jtag */
-
 
 
 struct OBJHDCP;
 
-#ifndef __NVOC_CLASS_OBJHDCP_TYPEDEF__
-#define __NVOC_CLASS_OBJHDCP_TYPEDEF__
-typedef struct OBJHDCP OBJHDCP;
-#endif /* __NVOC_CLASS_OBJHDCP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHDCP
-#define __nvoc_class_id_OBJHDCP 0x426d44
+#define __nvoc_class_id_OBJHDCP 0x426d44u
+typedef struct OBJHDCP OBJHDCP;
 #endif /* __nvoc_class_id_OBJHDCP */
-
 
 
 struct OBJHDMI;
 
-#ifndef __NVOC_CLASS_OBJHDMI_TYPEDEF__
-#define __NVOC_CLASS_OBJHDMI_TYPEDEF__
-typedef struct OBJHDMI OBJHDMI;
-#endif /* __NVOC_CLASS_OBJHDMI_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHDMI
-#define __nvoc_class_id_OBJHDMI 0x2213b6
+#define __nvoc_class_id_OBJHDMI 0x2213b6u
+typedef struct OBJHDMI OBJHDMI;
 #endif /* __nvoc_class_id_OBJHDMI */
-
 
 
 struct Therm;
 
-#ifndef __NVOC_CLASS_Therm_TYPEDEF__
-#define __NVOC_CLASS_Therm_TYPEDEF__
-typedef struct Therm Therm;
-#endif /* __NVOC_CLASS_Therm_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Therm
-#define __nvoc_class_id_Therm 0x6c1e56
+#define __nvoc_class_id_Therm 0x6c1e56u
+typedef struct Therm Therm;
 #endif /* __nvoc_class_id_Therm */
-
 
 
 struct OBJSEQ;
 
-#ifndef __NVOC_CLASS_OBJSEQ_TYPEDEF__
-#define __NVOC_CLASS_OBJSEQ_TYPEDEF__
-typedef struct OBJSEQ OBJSEQ;
-#endif /* __NVOC_CLASS_OBJSEQ_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSEQ
-#define __nvoc_class_id_OBJSEQ 0x45da4a
+#define __nvoc_class_id_OBJSEQ 0x45da4au
+typedef struct OBJSEQ OBJSEQ;
 #endif /* __nvoc_class_id_OBJSEQ */
-
 
 
 struct OBJDPAUX;
 
-#ifndef __NVOC_CLASS_OBJDPAUX_TYPEDEF__
-#define __NVOC_CLASS_OBJDPAUX_TYPEDEF__
-typedef struct OBJDPAUX OBJDPAUX;
-#endif /* __NVOC_CLASS_OBJDPAUX_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDPAUX
-#define __nvoc_class_id_OBJDPAUX 0xfd2ab9
+#define __nvoc_class_id_OBJDPAUX 0xfd2ab9u
+typedef struct OBJDPAUX OBJDPAUX;
 #endif /* __nvoc_class_id_OBJDPAUX */
-
 
 
 struct Pmu;
 
-#ifndef __NVOC_CLASS_Pmu_TYPEDEF__
-#define __NVOC_CLASS_Pmu_TYPEDEF__
-typedef struct Pmu Pmu;
-#endif /* __NVOC_CLASS_Pmu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Pmu
-#define __nvoc_class_id_Pmu 0xf3d722
+#define __nvoc_class_id_Pmu 0xf3d722u
+typedef struct Pmu Pmu;
 #endif /* __nvoc_class_id_Pmu */
-
 
 
 struct KernelPmu;
 
-#ifndef __NVOC_CLASS_KernelPmu_TYPEDEF__
-#define __NVOC_CLASS_KernelPmu_TYPEDEF__
-typedef struct KernelPmu KernelPmu;
-#endif /* __NVOC_CLASS_KernelPmu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelPmu
-#define __nvoc_class_id_KernelPmu 0xab9d7d
+#define __nvoc_class_id_KernelPmu 0xab9d7du
+typedef struct KernelPmu KernelPmu;
 #endif /* __nvoc_class_id_KernelPmu */
 
 
 struct GCX;
 
-#ifndef __NVOC_CLASS_GCX_TYPEDEF__
-#define __NVOC_CLASS_GCX_TYPEDEF__
-typedef struct GCX GCX;
-#endif /* __NVOC_CLASS_GCX_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GCX
-#define __nvoc_class_id_GCX 0x4507c4
+#define __nvoc_class_id_GCX 0x4507c4u
+typedef struct GCX GCX;
 #endif /* __nvoc_class_id_GCX */
 
 
 struct Lpwr;
 
-#ifndef __NVOC_CLASS_Lpwr_TYPEDEF__
-#define __NVOC_CLASS_Lpwr_TYPEDEF__
-typedef struct Lpwr Lpwr;
-#endif /* __NVOC_CLASS_Lpwr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Lpwr
-#define __nvoc_class_id_Lpwr 0x112230
+#define __nvoc_class_id_Lpwr 0x112230u
+typedef struct Lpwr Lpwr;
 #endif /* __nvoc_class_id_Lpwr */
 
+
+struct Lpsec;
+
+#ifndef __nvoc_class_id_Lpsec
+#define __nvoc_class_id_Lpsec 0x3848adu
+typedef struct Lpsec Lpsec;
+#endif /* __nvoc_class_id_Lpsec */
 
 
 struct OBJISOHUB;
 
-#ifndef __NVOC_CLASS_OBJISOHUB_TYPEDEF__
-#define __NVOC_CLASS_OBJISOHUB_TYPEDEF__
-typedef struct OBJISOHUB OBJISOHUB;
-#endif /* __NVOC_CLASS_OBJISOHUB_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJISOHUB
-#define __nvoc_class_id_OBJISOHUB 0x7c5e0d
+#define __nvoc_class_id_OBJISOHUB 0x7c5e0du
+typedef struct OBJISOHUB OBJISOHUB;
 #endif /* __nvoc_class_id_OBJISOHUB */
-
 
 
 struct Pmgr;
 
-#ifndef __NVOC_CLASS_Pmgr_TYPEDEF__
-#define __NVOC_CLASS_Pmgr_TYPEDEF__
-typedef struct Pmgr Pmgr;
-#endif /* __NVOC_CLASS_Pmgr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Pmgr
-#define __nvoc_class_id_Pmgr 0x894574
+#define __nvoc_class_id_Pmgr 0x894574u
+typedef struct Pmgr Pmgr;
 #endif /* __nvoc_class_id_Pmgr */
-
 
 
 struct OBJHDACODEC;
 
-#ifndef __NVOC_CLASS_OBJHDACODEC_TYPEDEF__
-#define __NVOC_CLASS_OBJHDACODEC_TYPEDEF__
-typedef struct OBJHDACODEC OBJHDACODEC;
-#endif /* __NVOC_CLASS_OBJHDACODEC_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHDACODEC
-#define __nvoc_class_id_OBJHDACODEC 0xa576e2
+#define __nvoc_class_id_OBJHDACODEC 0xa576e2u
+typedef struct OBJHDACODEC OBJHDACODEC;
 #endif /* __nvoc_class_id_OBJHDACODEC */
-
 
 
 struct Spi;
 
-#ifndef __NVOC_CLASS_Spi_TYPEDEF__
-#define __NVOC_CLASS_Spi_TYPEDEF__
-typedef struct Spi Spi;
-#endif /* __NVOC_CLASS_Spi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Spi
-#define __nvoc_class_id_Spi 0x824313
+#define __nvoc_class_id_Spi 0x824313u
+typedef struct Spi Spi;
 #endif /* __nvoc_class_id_Spi */
-
 
 
 struct OBJUVM;
 
-#ifndef __NVOC_CLASS_OBJUVM_TYPEDEF__
-#define __NVOC_CLASS_OBJUVM_TYPEDEF__
-typedef struct OBJUVM OBJUVM;
-#endif /* __NVOC_CLASS_OBJUVM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJUVM
-#define __nvoc_class_id_OBJUVM 0xf9a17d
+#define __nvoc_class_id_OBJUVM 0xf9a17du
+typedef struct OBJUVM OBJUVM;
 #endif /* __nvoc_class_id_OBJUVM */
-
 
 
 struct OBJSEC2;
 
-#ifndef __NVOC_CLASS_OBJSEC2_TYPEDEF__
-#define __NVOC_CLASS_OBJSEC2_TYPEDEF__
-typedef struct OBJSEC2 OBJSEC2;
-#endif /* __NVOC_CLASS_OBJSEC2_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSEC2
-#define __nvoc_class_id_OBJSEC2 0x28c408
+#define __nvoc_class_id_OBJSEC2 0x28c408u
+typedef struct OBJSEC2 OBJSEC2;
 #endif /* __nvoc_class_id_OBJSEC2 */
-
 
 
 struct OBJPMS;
 
-#ifndef __NVOC_CLASS_OBJPMS_TYPEDEF__
-#define __NVOC_CLASS_OBJPMS_TYPEDEF__
-typedef struct OBJPMS OBJPMS;
-#endif /* __NVOC_CLASS_OBJPMS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJPMS
-#define __nvoc_class_id_OBJPMS 0x9e3810
+#define __nvoc_class_id_OBJPMS 0x9e3810u
+typedef struct OBJPMS OBJPMS;
 #endif /* __nvoc_class_id_OBJPMS */
-
 
 
 struct OBJENGSTATE;
 
-#ifndef __NVOC_CLASS_OBJENGSTATE_TYPEDEF__
-#define __NVOC_CLASS_OBJENGSTATE_TYPEDEF__
-typedef struct OBJENGSTATE OBJENGSTATE;
-#endif /* __NVOC_CLASS_OBJENGSTATE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJENGSTATE
-#define __nvoc_class_id_OBJENGSTATE 0x7a7ed6
+#define __nvoc_class_id_OBJENGSTATE 0x7a7ed6u
+typedef struct OBJENGSTATE OBJENGSTATE;
 #endif /* __nvoc_class_id_OBJENGSTATE */
-
 
 
 struct OBJLSFM;
 
-#ifndef __NVOC_CLASS_OBJLSFM_TYPEDEF__
-#define __NVOC_CLASS_OBJLSFM_TYPEDEF__
-typedef struct OBJLSFM OBJLSFM;
-#endif /* __NVOC_CLASS_OBJLSFM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJLSFM
-#define __nvoc_class_id_OBJLSFM 0x9a25e4
+#define __nvoc_class_id_OBJLSFM 0x9a25e4u
+typedef struct OBJLSFM OBJLSFM;
 #endif /* __nvoc_class_id_OBJLSFM */
-
 
 
 struct OBJACR;
 
-#ifndef __NVOC_CLASS_OBJACR_TYPEDEF__
-#define __NVOC_CLASS_OBJACR_TYPEDEF__
-typedef struct OBJACR OBJACR;
-#endif /* __NVOC_CLASS_OBJACR_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJACR
-#define __nvoc_class_id_OBJACR 0xdb32a1
+#define __nvoc_class_id_OBJACR 0xdb32a1u
+typedef struct OBJACR OBJACR;
 #endif /* __nvoc_class_id_OBJACR */
-
 
 
 struct OBJGPULOG;
 
-#ifndef __NVOC_CLASS_OBJGPULOG_TYPEDEF__
-#define __NVOC_CLASS_OBJGPULOG_TYPEDEF__
-typedef struct OBJGPULOG OBJGPULOG;
-#endif /* __NVOC_CLASS_OBJGPULOG_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPULOG
-#define __nvoc_class_id_OBJGPULOG 0xdd19be
+#define __nvoc_class_id_OBJGPULOG 0xdd19beu
+typedef struct OBJGPULOG OBJGPULOG;
 #endif /* __nvoc_class_id_OBJGPULOG */
-
 
 
 struct KernelNvlink;
 
-#ifndef __NVOC_CLASS_KernelNvlink_TYPEDEF__
-#define __NVOC_CLASS_KernelNvlink_TYPEDEF__
-typedef struct KernelNvlink KernelNvlink;
-#endif /* __NVOC_CLASS_KernelNvlink_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelNvlink
-#define __nvoc_class_id_KernelNvlink 0xce6818
+#define __nvoc_class_id_KernelNvlink 0xce6818u
+typedef struct KernelNvlink KernelNvlink;
 #endif /* __nvoc_class_id_KernelNvlink */
-
 
 
 struct Nvlink;
 
-#ifndef __NVOC_CLASS_Nvlink_TYPEDEF__
-#define __NVOC_CLASS_Nvlink_TYPEDEF__
-typedef struct Nvlink Nvlink;
-#endif /* __NVOC_CLASS_Nvlink_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Nvlink
-#define __nvoc_class_id_Nvlink 0x790a3c
+#define __nvoc_class_id_Nvlink 0x790a3cu
+typedef struct Nvlink Nvlink;
 #endif /* __nvoc_class_id_Nvlink */
-
 
 
 struct KernelHwpm;
 
-#ifndef __NVOC_CLASS_KernelHwpm_TYPEDEF__
-#define __NVOC_CLASS_KernelHwpm_TYPEDEF__
-typedef struct KernelHwpm KernelHwpm;
-#endif /* __NVOC_CLASS_KernelHwpm_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHwpm
-#define __nvoc_class_id_KernelHwpm 0xc8c00f
+#define __nvoc_class_id_KernelHwpm 0xc8c00fu
+typedef struct KernelHwpm KernelHwpm;
 #endif /* __nvoc_class_id_KernelHwpm */
-
 
 
 struct OBJHWPM;
 
-#ifndef __NVOC_CLASS_OBJHWPM_TYPEDEF__
-#define __NVOC_CLASS_OBJHWPM_TYPEDEF__
-typedef struct OBJHWPM OBJHWPM;
-#endif /* __NVOC_CLASS_OBJHWPM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJHWPM
-#define __nvoc_class_id_OBJHWPM 0x97e43b
+#define __nvoc_class_id_OBJHWPM 0x97e43bu
+typedef struct OBJHWPM OBJHWPM;
 #endif /* __nvoc_class_id_OBJHWPM */
-
 
 
 struct OBJGPUMON;
 
-#ifndef __NVOC_CLASS_OBJGPUMON_TYPEDEF__
-#define __NVOC_CLASS_OBJGPUMON_TYPEDEF__
-typedef struct OBJGPUMON OBJGPUMON;
-#endif /* __NVOC_CLASS_OBJGPUMON_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPUMON
-#define __nvoc_class_id_OBJGPUMON 0x2b424b
+#define __nvoc_class_id_OBJGPUMON 0x2b424bu
+typedef struct OBJGPUMON OBJGPUMON;
 #endif /* __nvoc_class_id_OBJGPUMON */
-
 
 
 struct OBJGRIDDISPLAYLESS;
 
-#ifndef __NVOC_CLASS_OBJGRIDDISPLAYLESS_TYPEDEF__
-#define __NVOC_CLASS_OBJGRIDDISPLAYLESS_TYPEDEF__
-typedef struct OBJGRIDDISPLAYLESS OBJGRIDDISPLAYLESS;
-#endif /* __NVOC_CLASS_OBJGRIDDISPLAYLESS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGRIDDISPLAYLESS
-#define __nvoc_class_id_OBJGRIDDISPLAYLESS 0x20fd5a
+#define __nvoc_class_id_OBJGRIDDISPLAYLESS 0x20fd5au
+typedef struct OBJGRIDDISPLAYLESS OBJGRIDDISPLAYLESS;
 #endif /* __nvoc_class_id_OBJGRIDDISPLAYLESS */
-
 
 
 struct FECS;
 
-#ifndef __NVOC_CLASS_FECS_TYPEDEF__
-#define __NVOC_CLASS_FECS_TYPEDEF__
-typedef struct FECS FECS;
-#endif /* __NVOC_CLASS_FECS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_FECS
-#define __nvoc_class_id_FECS 0x5ee8dc
+#define __nvoc_class_id_FECS 0x5ee8dcu
+typedef struct FECS FECS;
 #endif /* __nvoc_class_id_FECS */
-
 
 
 struct GPCCS;
 
-#ifndef __NVOC_CLASS_GPCCS_TYPEDEF__
-#define __NVOC_CLASS_GPCCS_TYPEDEF__
-typedef struct GPCCS GPCCS;
-#endif /* __NVOC_CLASS_GPCCS_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GPCCS
-#define __nvoc_class_id_GPCCS 0x4781e8
+#define __nvoc_class_id_GPCCS 0x4781e8u
+typedef struct GPCCS GPCCS;
 #endif /* __nvoc_class_id_GPCCS */
-
 
 
 struct OBJCE;
 
-#ifndef __NVOC_CLASS_OBJCE_TYPEDEF__
-#define __NVOC_CLASS_OBJCE_TYPEDEF__
-typedef struct OBJCE OBJCE;
-#endif /* __NVOC_CLASS_OBJCE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJCE
-#define __nvoc_class_id_OBJCE 0x793ceb
+#define __nvoc_class_id_OBJCE 0x793cebu
+typedef struct OBJCE OBJCE;
 #endif /* __nvoc_class_id_OBJCE */
-
 
 
 struct KernelCE;
 
-#ifndef __NVOC_CLASS_KernelCE_TYPEDEF__
-#define __NVOC_CLASS_KernelCE_TYPEDEF__
-typedef struct KernelCE KernelCE;
-#endif /* __NVOC_CLASS_KernelCE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCE
-#define __nvoc_class_id_KernelCE 0x242aca
+#define __nvoc_class_id_KernelCE 0x242acau
+typedef struct KernelCE KernelCE;
 #endif /* __nvoc_class_id_KernelCE */
-
 
 
 struct OBJMSENC;
 
-#ifndef __NVOC_CLASS_OBJMSENC_TYPEDEF__
-#define __NVOC_CLASS_OBJMSENC_TYPEDEF__
-typedef struct OBJMSENC OBJMSENC;
-#endif /* __NVOC_CLASS_OBJMSENC_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJMSENC
-#define __nvoc_class_id_OBJMSENC 0xe97b6c
+#define __nvoc_class_id_OBJMSENC 0xe97b6cu
+typedef struct OBJMSENC OBJMSENC;
 #endif /* __nvoc_class_id_OBJMSENC */
-
 
 
 struct OBJNVJPG;
 
-#ifndef __NVOC_CLASS_OBJNVJPG_TYPEDEF__
-#define __NVOC_CLASS_OBJNVJPG_TYPEDEF__
-typedef struct OBJNVJPG OBJNVJPG;
-#endif /* __NVOC_CLASS_OBJNVJPG_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJNVJPG
-#define __nvoc_class_id_OBJNVJPG 0x2b3a54
+#define __nvoc_class_id_OBJNVJPG 0x2b3a54u
+typedef struct OBJNVJPG OBJNVJPG;
 #endif /* __nvoc_class_id_OBJNVJPG */
-
 
 
 struct OBJVMMU;
 
-#ifndef __NVOC_CLASS_OBJVMMU_TYPEDEF__
-#define __NVOC_CLASS_OBJVMMU_TYPEDEF__
-typedef struct OBJVMMU OBJVMMU;
-#endif /* __NVOC_CLASS_OBJVMMU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJVMMU
-#define __nvoc_class_id_OBJVMMU 0xdf8918
+#define __nvoc_class_id_OBJVMMU 0xdf8918u
+typedef struct OBJVMMU OBJVMMU;
 #endif /* __nvoc_class_id_OBJVMMU */
-
 
 
 struct Gsp;
 
-#ifndef __NVOC_CLASS_Gsp_TYPEDEF__
-#define __NVOC_CLASS_Gsp_TYPEDEF__
-typedef struct Gsp Gsp;
-#endif /* __NVOC_CLASS_Gsp_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Gsp
-#define __nvoc_class_id_Gsp 0xda3de4
+#define __nvoc_class_id_Gsp 0xda3de4u
+typedef struct Gsp Gsp;
 #endif /* __nvoc_class_id_Gsp */
-
 
 
 struct OBJFSP;
 
-#ifndef __NVOC_CLASS_OBJFSP_TYPEDEF__
-#define __NVOC_CLASS_OBJFSP_TYPEDEF__
-typedef struct OBJFSP OBJFSP;
-#endif /* __NVOC_CLASS_OBJFSP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJFSP
-#define __nvoc_class_id_OBJFSP 0xd39158
+#define __nvoc_class_id_OBJFSP 0xd39158u
+typedef struct OBJFSP OBJFSP;
 #endif /* __nvoc_class_id_OBJFSP */
-
 
 
 struct KernelFsp;
 
-#ifndef __NVOC_CLASS_KernelFsp_TYPEDEF__
-#define __NVOC_CLASS_KernelFsp_TYPEDEF__
-typedef struct KernelFsp KernelFsp;
-#endif /* __NVOC_CLASS_KernelFsp_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelFsp
-#define __nvoc_class_id_KernelFsp 0x87fb96
+#define __nvoc_class_id_KernelFsp 0x87fb96u
+typedef struct KernelFsp KernelFsp;
 #endif /* __nvoc_class_id_KernelFsp */
-
 
 
 struct OBJOFA;
 
-#ifndef __NVOC_CLASS_OBJOFA_TYPEDEF__
-#define __NVOC_CLASS_OBJOFA_TYPEDEF__
-typedef struct OBJOFA OBJOFA;
-#endif /* __NVOC_CLASS_OBJOFA_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJOFA
-#define __nvoc_class_id_OBJOFA 0xdd7bab
+#define __nvoc_class_id_OBJOFA 0xdd7babu
+typedef struct OBJOFA OBJOFA;
 #endif /* __nvoc_class_id_OBJOFA */
-
 
 
 struct KernelIoctrl;
 
-#ifndef __NVOC_CLASS_KernelIoctrl_TYPEDEF__
-#define __NVOC_CLASS_KernelIoctrl_TYPEDEF__
-typedef struct KernelIoctrl KernelIoctrl;
-#endif /* __NVOC_CLASS_KernelIoctrl_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelIoctrl
-#define __nvoc_class_id_KernelIoctrl 0x880c7d
+#define __nvoc_class_id_KernelIoctrl 0x880c7du
+typedef struct KernelIoctrl KernelIoctrl;
 #endif /* __nvoc_class_id_KernelIoctrl */
-
 
 
 struct Ioctrl;
 
-#ifndef __NVOC_CLASS_Ioctrl_TYPEDEF__
-#define __NVOC_CLASS_Ioctrl_TYPEDEF__
-typedef struct Ioctrl Ioctrl;
-#endif /* __NVOC_CLASS_Ioctrl_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Ioctrl
-#define __nvoc_class_id_Ioctrl 0x11ce10
+#define __nvoc_class_id_Ioctrl 0x11ce10u
+typedef struct Ioctrl Ioctrl;
 #endif /* __nvoc_class_id_Ioctrl */
-
 
 
 struct KernelSec2;
 
-#ifndef __NVOC_CLASS_KernelSec2_TYPEDEF__
-#define __NVOC_CLASS_KernelSec2_TYPEDEF__
-typedef struct KernelSec2 KernelSec2;
-#endif /* __NVOC_CLASS_KernelSec2_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelSec2
-#define __nvoc_class_id_KernelSec2 0x2f36c9
+#define __nvoc_class_id_KernelSec2 0x2f36c9u
+typedef struct KernelSec2 KernelSec2;
 #endif /* __nvoc_class_id_KernelSec2 */
-
 
 
 struct KernelGsp;
 
-#ifndef __NVOC_CLASS_KernelGsp_TYPEDEF__
-#define __NVOC_CLASS_KernelGsp_TYPEDEF__
-typedef struct KernelGsp KernelGsp;
-#endif /* __NVOC_CLASS_KernelGsp_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGsp
-#define __nvoc_class_id_KernelGsp 0x311d4e
+#define __nvoc_class_id_KernelGsp 0x311d4eu
+typedef struct KernelGsp KernelGsp;
 #endif /* __nvoc_class_id_KernelGsp */
-
 
 
 struct OBJDCECLIENTRM;
 
-#ifndef __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__
-#define __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__
-typedef struct OBJDCECLIENTRM OBJDCECLIENTRM;
-#endif /* __NVOC_CLASS_OBJDCECLIENTRM_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDCECLIENTRM
-#define __nvoc_class_id_OBJDCECLIENTRM 0x61649c
+#define __nvoc_class_id_OBJDCECLIENTRM 0x61649cu
+typedef struct OBJDCECLIENTRM OBJDCECLIENTRM;
 #endif /* __nvoc_class_id_OBJDCECLIENTRM */
-
 
 
 struct OBJDISPMACRO;
 
-#ifndef __NVOC_CLASS_OBJDISPMACRO_TYPEDEF__
-#define __NVOC_CLASS_OBJDISPMACRO_TYPEDEF__
-typedef struct OBJDISPMACRO OBJDISPMACRO;
-#endif /* __NVOC_CLASS_OBJDISPMACRO_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDISPMACRO
-#define __nvoc_class_id_OBJDISPMACRO 0xa1cad2
+#define __nvoc_class_id_OBJDISPMACRO 0xa1cad2u
+typedef struct OBJDISPMACRO OBJDISPMACRO;
 #endif /* __nvoc_class_id_OBJDISPMACRO */
-
 
 
 struct Nne;
 
-#ifndef __NVOC_CLASS_Nne_TYPEDEF__
-#define __NVOC_CLASS_Nne_TYPEDEF__
-typedef struct Nne Nne;
-#endif /* __NVOC_CLASS_Nne_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Nne
-#define __nvoc_class_id_Nne 0x2487e2
+#define __nvoc_class_id_Nne 0x2487e2u
+typedef struct Nne Nne;
 #endif /* __nvoc_class_id_Nne */
-
 
 
 struct Oob;
 
-#ifndef __NVOC_CLASS_Oob_TYPEDEF__
-#define __NVOC_CLASS_Oob_TYPEDEF__
-typedef struct Oob Oob;
-#endif /* __NVOC_CLASS_Oob_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Oob
-#define __nvoc_class_id_Oob 0x98b919
+#define __nvoc_class_id_Oob 0x98b919u
+typedef struct Oob Oob;
 #endif /* __nvoc_class_id_Oob */
-
 
 
 struct OBJDSI;
 
-#ifndef __NVOC_CLASS_OBJDSI_TYPEDEF__
-#define __NVOC_CLASS_OBJDSI_TYPEDEF__
-typedef struct OBJDSI OBJDSI;
-#endif /* __NVOC_CLASS_OBJDSI_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDSI
-#define __nvoc_class_id_OBJDSI 0x2e9a64
+#define __nvoc_class_id_OBJDSI 0x2e9a64u
+typedef struct OBJDSI OBJDSI;
 #endif /* __nvoc_class_id_OBJDSI */
-
 
 
 struct OBJDCB;
 
-#ifndef __NVOC_CLASS_OBJDCB_TYPEDEF__
-#define __NVOC_CLASS_OBJDCB_TYPEDEF__
-typedef struct OBJDCB OBJDCB;
-#endif /* __NVOC_CLASS_OBJDCB_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJDCB
-#define __nvoc_class_id_OBJDCB 0xf931d4
+#define __nvoc_class_id_OBJDCB 0xf931d4u
+typedef struct OBJDCB OBJDCB;
 #endif /* __nvoc_class_id_OBJDCB */
-
 
 
 struct KernelGmmu;
 
-#ifndef __NVOC_CLASS_KernelGmmu_TYPEDEF__
-#define __NVOC_CLASS_KernelGmmu_TYPEDEF__
-typedef struct KernelGmmu KernelGmmu;
-#endif /* __NVOC_CLASS_KernelGmmu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGmmu
-#define __nvoc_class_id_KernelGmmu 0x29362f
+#define __nvoc_class_id_KernelGmmu 0x29362fu
+typedef struct KernelGmmu KernelGmmu;
 #endif /* __nvoc_class_id_KernelGmmu */
-
 
 
 struct OBJGMMU;
 
-#ifndef __NVOC_CLASS_OBJGMMU_TYPEDEF__
-#define __NVOC_CLASS_OBJGMMU_TYPEDEF__
-typedef struct OBJGMMU OBJGMMU;
-#endif /* __NVOC_CLASS_OBJGMMU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGMMU
-#define __nvoc_class_id_OBJGMMU 0xd7a41d
+#define __nvoc_class_id_OBJGMMU 0xd7a41du
+typedef struct OBJGMMU OBJGMMU;
 #endif /* __nvoc_class_id_OBJGMMU */
 
 
 struct ConfidentialCompute;
 
-#ifndef __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
-#define __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
-typedef struct ConfidentialCompute ConfidentialCompute;
-#endif /* __NVOC_CLASS_ConfidentialCompute_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ConfidentialCompute
-#define __nvoc_class_id_ConfidentialCompute 0x9798cc
+#define __nvoc_class_id_ConfidentialCompute 0x9798ccu
+typedef struct ConfidentialCompute ConfidentialCompute;
 #endif /* __nvoc_class_id_ConfidentialCompute */
 
 
 struct KernelCcu;
 
-#ifndef __NVOC_CLASS_KernelCcu_TYPEDEF__
-#define __NVOC_CLASS_KernelCcu_TYPEDEF__
-typedef struct KernelCcu KernelCcu;
-#endif /* __NVOC_CLASS_KernelCcu_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelCcu
-#define __nvoc_class_id_KernelCcu 0x5d5b68
+#define __nvoc_class_id_KernelCcu 0x5d5b68u
+typedef struct KernelCcu KernelCcu;
 #endif /* __nvoc_class_id_KernelCcu */
 
 
 struct KernelGsplite;
 
-#ifndef __NVOC_CLASS_KernelGsplite_TYPEDEF__
-#define __NVOC_CLASS_KernelGsplite_TYPEDEF__
-typedef struct KernelGsplite KernelGsplite;
-#endif /* __NVOC_CLASS_KernelGsplite_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGsplite
-#define __nvoc_class_id_KernelGsplite 0x927969
+#define __nvoc_class_id_KernelGsplite 0x927969u
+typedef struct KernelGsplite KernelGsplite;
 #endif /* __nvoc_class_id_KernelGsplite */
 
 
 struct KernelHFRP;
 
-#ifndef __NVOC_CLASS_KernelHFRP_TYPEDEF__
-#define __NVOC_CLASS_KernelHFRP_TYPEDEF__
-typedef struct KernelHFRP KernelHFRP;
-#endif /* __NVOC_CLASS_KernelHFRP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHFRP
-#define __nvoc_class_id_KernelHFRP 0xa9fc13
+#define __nvoc_class_id_KernelHFRP 0xa9fc13u
+typedef struct KernelHFRP KernelHFRP;
 #endif /* __nvoc_class_id_KernelHFRP */
 
 
 struct Spdm;
 
-#ifndef __NVOC_CLASS_Spdm_TYPEDEF__
-#define __NVOC_CLASS_Spdm_TYPEDEF__
-typedef struct Spdm Spdm;
-#endif /* __NVOC_CLASS_Spdm_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Spdm
-#define __nvoc_class_id_Spdm 0x261ee8
+#define __nvoc_class_id_Spdm 0x261ee8u
+typedef struct Spdm Spdm;
 #endif /* __nvoc_class_id_Spdm */
 
 
@@ -1630,6 +1065,7 @@ typedef struct Spdm Spdm;
 #define ENG_CLASS_KERNEL_PMU           classId(KernelPmu)
 #define ENG_CLASS_GCX                  classId(GCX)
 #define ENG_CLASS_LPWR                 classId(Lpwr)
+#define ENG_CLASS_LPSEC                classId(Lpsec)
 #define ENG_CLASS_ISOHUB               classId(OBJISOHUB)
 #define ENG_CLASS_PMGR                 classId(Pmgr)
 #define ENG_CLASS_HDACODEC             classId(OBJHDACODEC)
@@ -1781,6 +1217,8 @@ typedef struct Spdm Spdm;
 #define ENG_CONF_COMPUTE         MKENGDESC(ENG_CLASS_CONF_COMPUTE,    0)
 #define ENG_KERNEL_CCU           MKENGDESC(ENG_CLASS_KERNEL_CCU,      0)
 #define ENG_SPDM                 MKENGDESC(classId(Spdm),             0)
+
+// Indexed LPSEC Engine Tag Reference
 
 // Indexed GSPLITE Engine Tag Reference
 

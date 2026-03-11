@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x830542 = 1;
+char __nvoc_class_id_uniqueness_check__830542 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
@@ -38,19 +38,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RsShared;
 
 // Up-thunk(s) to bridge RsShared methods to ancestors (if any)
 
+// Class-specific details for RsShared
 const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RsShared),
-        /*classId=*/            classId(RsShared),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RsShared),
+    .classInfo.classId =            classId(RsShared),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RsShared",
+    .classInfo.name =               "RsShared",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsShared,
-    /*pCastInfo=*/          &__nvoc_castinfo__RsShared,
-    /*pExportInfo=*/        &__nvoc_export_info__RsShared
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsShared,
+    .pCastInfo =          &__nvoc_castinfo__RsShared,
+    .pExportInfo =        &__nvoc_export_info__RsShared
 };
 
 
@@ -76,38 +75,51 @@ const struct NVOC_CASTINFO __nvoc_castinfo__RsShared = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RsShared = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct RsShared object.
 void __nvoc_shrDestruct(RsShared*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_RsShared(RsShared *pThis) {
+void __nvoc_dtor_RsShared(RsShared* pThis) {
+
+// Call destructor.
     __nvoc_shrDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RsShared(RsShared *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_RsShared(RsShared *pThis) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_RsShared_fail_Object;
-    __nvoc_init_dataField_RsShared(pThis);
 
-    status = __nvoc_shrConstruct(pThis);
+// Construct RsShared object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_RsShared(RsShared *pShared) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&pShared->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_RsShared_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_RsShared(pShared);
+
+    // Call the constructor for this class.
+    status = __nvoc_shrConstruct(pShared);
     if (status != NV_OK) goto __nvoc_ctor_RsShared_fail__init;
     goto __nvoc_ctor_RsShared_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RsShared_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&pShared->__nvoc_base_Object);
 __nvoc_ctor_RsShared_fail_Object:
 __nvoc_ctor_RsShared_exit:
-
     return status;
 }
 
@@ -140,49 +152,49 @@ void __nvoc_init__RsShared(RsShared *pThis) {
     __nvoc_init_funcTable_RsShared(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_RsShared(RsShared **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    RsShared *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    RsShared *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(RsShared));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(RsShared));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(RsShared));
+    portMemSet(__nvoc_pThis, 0, sizeof(RsShared));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__RsShared(pThis);
-    status = __nvoc_ctor_RsShared(pThis);
-    if (status != NV_OK) goto __nvoc_objCreate_RsShared_cleanup;
+    __nvoc_init__RsShared(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_RsShared(__nvoc_pThis);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_RsShared_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -191,35 +203,35 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 c
 __nvoc_objCreate_RsShared_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(RsShared));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(RsShared));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_RsShared(RsShared **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_RsShared(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_RsShared(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x830d90 = 1;
+char __nvoc_class_id_uniqueness_check__830d90 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession;
@@ -242,19 +254,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__RsSession;
 
 // Up-thunk(s) to bridge RsSession methods to ancestors (if any)
 
+// Class-specific details for RsSession
 const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(RsSession),
-        /*classId=*/            classId(RsSession),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(RsSession),
+    .classInfo.classId =            classId(RsSession),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "RsSession",
+    .classInfo.name =               "RsSession",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsSession,
-    /*pCastInfo=*/          &__nvoc_castinfo__RsSession,
-    /*pExportInfo=*/        &__nvoc_export_info__RsSession
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_RsSession,
+    .pCastInfo =          &__nvoc_castinfo__RsSession,
+    .pExportInfo =        &__nvoc_export_info__RsSession
 };
 
 
@@ -287,38 +298,51 @@ const struct NVOC_CASTINFO __nvoc_castinfo__RsSession = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__RsSession = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct RsSession object.
 void __nvoc_sessionDestruct(RsSession*);
 void __nvoc_dtor_RsShared(RsShared*);
-void __nvoc_dtor_RsSession(RsSession *pThis) {
+void __nvoc_dtor_RsSession(RsSession* pThis) {
+
+// Call destructor.
     __nvoc_sessionDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_RsShared(&pThis->__nvoc_base_RsShared);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_RsSession(RsSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_RsShared(RsShared* );
-NV_STATUS __nvoc_ctor_RsSession(RsSession *pThis) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_RsShared(&pThis->__nvoc_base_RsShared);
-    if (status != NV_OK) goto __nvoc_ctor_RsSession_fail_RsShared;
-    __nvoc_init_dataField_RsSession(pThis);
 
-    status = __nvoc_sessionConstruct(pThis);
+// Construct RsSession object.
+NV_STATUS __nvoc_ctor_RsShared(RsShared *pShared);
+NV_STATUS __nvoc_ctor_RsSession(RsSession *pSession) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_RsShared(&pSession->__nvoc_base_RsShared);
+    if (status != NV_OK) goto __nvoc_ctor_RsSession_fail_RsShared;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_RsSession(pSession);
+
+    // Call the constructor for this class.
+    status = __nvoc_sessionConstruct(pSession);
     if (status != NV_OK) goto __nvoc_ctor_RsSession_fail__init;
     goto __nvoc_ctor_RsSession_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_RsSession_fail__init:
-    __nvoc_dtor_RsShared(&pThis->__nvoc_base_RsShared);
+    __nvoc_dtor_RsShared(&pSession->__nvoc_base_RsShared);
 __nvoc_ctor_RsSession_fail_RsShared:
 __nvoc_ctor_RsSession_exit:
-
     return status;
 }
 
@@ -353,49 +377,49 @@ void __nvoc_init__RsSession(RsSession *pThis) {
     __nvoc_init_funcTable_RsSession(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32 createFlags)
+NV_STATUS __nvoc_objCreate_RsSession(RsSession **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    RsSession *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    RsSession *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(RsSession));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(RsSession));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(RsSession));
+    portMemSet(__nvoc_pThis, 0, sizeof(RsSession));
 
-    pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_RsShared.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_RsShared.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_RsShared.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_RsShared.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__RsSession(pThis);
-    status = __nvoc_ctor_RsSession(pThis);
-    if (status != NV_OK) goto __nvoc_objCreate_RsSession_cleanup;
+    __nvoc_init__RsSession(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_RsSession(__nvoc_pThis);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_RsSession_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -404,29 +428,29 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32
 __nvoc_objCreate_RsSession_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_RsShared.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_RsShared.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(RsSession));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(RsSession));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
+NV_STATUS __nvoc_objCreateDynamic_RsSession(RsSession **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
 
-    status = __nvoc_objCreate_RsSession(ppThis, pParent, createFlags);
+    __nvoc_status = __nvoc_objCreate_RsSession(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags);
 
-    return status;
+    return __nvoc_status;
 }
 

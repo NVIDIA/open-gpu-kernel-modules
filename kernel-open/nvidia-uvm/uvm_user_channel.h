@@ -209,6 +209,28 @@ struct uvm_user_channel_struct
 
         char fault_packet[UVM_GPU_MMU_MAX_FAULT_PACKET_SIZE];
     } kill_channel;
+
+    struct
+    {
+        struct
+        {
+            // ptr points to a 8-byte buffer within page. This page is readable
+            // and writable by user space.
+            NvU64 *ptr;
+
+            // page containing user's mapping. This field also acts as a flag
+            // indicating whether this channel has been registered for death
+            // checking.
+            struct page *page;
+
+            // Length of time to wait between detach and destroy to see if any
+            // dead channels are reported.
+            NvU32 delay_us;
+
+            // node in parent GPU's dead_channels list
+            struct list_head node;
+        } dead;
+    } test;
 };
 
 // Retains the user channel memory object. uvm_user_channel_destroy_detached and
@@ -257,5 +279,8 @@ void uvm_user_channel_detach(uvm_user_channel_t *user_channel, struct list_head 
 //
 // LOCKING: No lock is required, but the owning GPU must be retained.
 void uvm_user_channel_destroy_detached(uvm_user_channel_t *user_channel);
+
+NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_dead_channel(UVM_TEST_DEAD_CHANNEL_PARAMS *params, struct file *filp);
 
 #endif // __UVM_USER_CHANNEL_H__

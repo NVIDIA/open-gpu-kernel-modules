@@ -51,16 +51,11 @@ extern "C" {
 #include "nvos.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 
-
 struct OBJGPU;
 
-#ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
-#define __NVOC_CLASS_OBJGPU_TYPEDEF__
-typedef struct OBJGPU OBJGPU;
-#endif /* __NVOC_CLASS_OBJGPU_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJGPU
-#define __nvoc_class_id_OBJGPU 0x7ef3cb
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
@@ -144,13 +139,9 @@ struct NVOC_METADATA__UvmChannelRetainer {
     const struct NVOC_VTABLE__UvmChannelRetainer vtable;
 };
 
-#ifndef __NVOC_CLASS_UvmChannelRetainer_TYPEDEF__
-#define __NVOC_CLASS_UvmChannelRetainer_TYPEDEF__
-typedef struct UvmChannelRetainer UvmChannelRetainer;
-#endif /* __NVOC_CLASS_UvmChannelRetainer_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_UvmChannelRetainer
-#define __nvoc_class_id_UvmChannelRetainer 0xa3f03a
+#define __nvoc_class_id_UvmChannelRetainer 0xa3f03au
+typedef struct UvmChannelRetainer UvmChannelRetainer;
 #endif /* __nvoc_class_id_UvmChannelRetainer */
 
 // Casting support
@@ -168,14 +159,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_UvmChannelRetainer;
 
 NV_STATUS __nvoc_objCreateDynamic_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_UvmChannelRetainer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_UvmChannelRetainer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_UvmChannelRetainer(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_UvmChannelRetainer((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS uvmchanrtnrConstruct_IMPL(struct UvmChannelRetainer *arg_pUvmChannelRetainer, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_uvmchanrtnrConstruct(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams) uvmchanrtnrConstruct_IMPL(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams)
+NV_STATUS uvmchanrtnrConstruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_uvmchanrtnrConstruct(pUvmChannelRetainer, pCallContext, pParams) uvmchanrtnrConstruct_IMPL(pUvmChannelRetainer, pCallContext, pParams)
 
 void uvmchanrtnrDestruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer);
 #define __nvoc_uvmchanrtnrDestruct(pUvmChannelRetainer) uvmchanrtnrDestruct_IMPL(pUvmChannelRetainer)
@@ -344,9 +335,14 @@ static inline void uvmchanrtnrAddAdditionalDependants_DISPATCH(struct RsClient *
     pResource->__nvoc_metadata_ptr->vtable.__uvmchanrtnrAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NvBool uvmchanrtnrIsAllocationAllowed_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel);
 
-
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -146,3 +146,38 @@ typedef struct
     return status;
 }
 
+/*!
+ * @brief Retrieves display bandwidth values set by UEFI
+ *
+ * @param[in]  pGpu                         OBJGPU pointer
+ * @param[in]  pKernelDisplay               KernelDisplay pointer
+ * @param[out] uefiIsoBandwidthKBPS         ISO BW set by UEFI (KB/sec)
+ * @param[out] uefiFloorBandwidthKBPS       dramclk freq * pipe width set by UEFI (KB/sec)
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available, or
+ *          NV_ERR_GENERIC if some other kind of error occurred.
+ */
+NV_STATUS
+kdispGetUefiDisplayBandwidth_v04_02
+(
+    OBJGPU                     *pGpu,
+    KernelDisplay              *pKernelDisplay,
+    NvU32                      *uefiIsoBandwidthKBPS,
+    NvU32                      *uefiFloorBandwidthKBPS
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status = osTegraSocGetImpUefiData(pGpu->pOsGpuInfo, uefiIsoBandwidthKBPS, uefiFloorBandwidthKBPS);
+    if (status == NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO, "UEFI has set ISO BW = %u KBPS, floor BW = %u KBPS", *uefiIsoBandwidthKBPS, *uefiFloorBandwidthKBPS);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to retrieve UEFI set ISO BW and floor BW");
+    }
+
+    return status;
+}

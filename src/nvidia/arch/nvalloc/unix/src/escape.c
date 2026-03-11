@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -285,6 +285,74 @@ ct_assert(NV_OFFSETOF(NVOS21_PARAMETERS, hObjectNew) == NV_OFFSETOF(NVOS64_PARAM
 ct_assert(NV_OFFSETOF(NVOS21_PARAMETERS, hClass) == NV_OFFSETOF(NVOS64_PARAMETERS, hClass));
 ct_assert(NV_OFFSETOF(NVOS21_PARAMETERS, pAllocParms) == NV_OFFSETOF(NVOS64_PARAMETERS, pAllocParms));
 
+
+NV_STATUS RmValidateIoctl(NvU32 cmd, NvU32 size)
+{
+    int i = 0;
+    const unsigned int arg_cmd = (cmd & 0xFF);
+    static const struct {
+        unsigned int cmdKey;
+        unsigned int paramSize;
+    } RmIoctlsTable[] = {
+    
+    #define _RM_ESC_IOCTL_ENTRY(_cmd, _type) \
+        { .cmdKey = ((_cmd) & 0xFF), .paramSize = sizeof(_type) }
+
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_STATUS_CODE, nv_ioctl_status_code_t),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_ALLOC_MEMORY, nv_ioctl_nvos02_parameters_with_fd),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_ALLOC_OBJECT, NVOS05_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_FREE, NVOS00_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_CONTROL, NVOS54_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_DUP_OBJECT, NVOS55_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_SHARE, NVOS57_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_I2C_ACCESS, NVOS_I2C_ACCESS_PARAMS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_IDLE_CHANNELS, NVOS30_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_VID_HEAP_CONTROL, NVOS32_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_ACCESS_REGISTRY, NVOS38_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_MAP_MEMORY, nv_ioctl_nvos33_parameters_with_fd),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_UNMAP_MEMORY, NVOS34_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_ALLOC_CONTEXT_DMA2, NVOS39_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_MAP_MEMORY_DMA, NVOS46_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_UNMAP_MEMORY_DMA, NVOS47_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_BIND_CONTEXT_DMA, NVOS49_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_UPDATE_DEVICE_MAPPING_INFO, NVOS56_PARAMETERS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_RM_LOCKLESS_DIAGNOSTIC, NV_LOCKLESS_DIAGNOSTIC_PARAMS),
+        _RM_ESC_IOCTL_ENTRY(NV_ESC_REGISTER_FD, nv_ioctl_register_fd_t),
+    };
+
+    if (arg_cmd == NV_ESC_RM_ALLOC)
+    {
+        if (size == sizeof(NVOS64_PARAMETERS) || size == sizeof(NVOS21_PARAMETERS))
+        {
+            return NV_OK;
+        }
+        else
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: invalid %d structure size!\n", arg_cmd);
+
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(RmIoctlsTable); ++i)
+    {
+        if (arg_cmd == RmIoctlsTable[i].cmdKey)
+        {
+            if (size != RmIoctlsTable[i].paramSize)
+            {
+                nv_printf(NV_DBG_ERRORS, "NVRM: invalid %d structure size, expected %d, got %d!\n",
+                          RmIoctlsTable[i].cmdKey, RmIoctlsTable[i].paramSize, size);
+                // If IOCTL is found and size is mismatched, return NV_ERR_INVALID_ARGUMENT
+                return NV_ERR_INVALID_ARGUMENT;
+            }
+            // If IOCTL is found and size is valid, return NV_OK
+            return NV_OK;
+        }
+    }
+    // If IOCTL is not found, return NV_ERR_INVALID_COMMAND
+    return NV_ERR_INVALID_COMMAND;
+}
+
 NV_STATUS RmIoctl(
     nv_state_t  *nv,
     nv_file_private_t *nvfp,
@@ -293,6 +361,14 @@ NV_STATUS RmIoctl(
     NvU32        dataSize
 )
 {
+    // nvfp->ctl_nvfp
+    ct_assert(sizeof(PORT_ATOMIC nv_file_private_t *) == sizeof(nv_file_private_t *));
+    ct_assert(_Alignof(PORT_ATOMIC nv_file_private_t *) == _Alignof(nv_file_private_t *));
+
+    // nvfp->register_or_refcount
+    ct_assert(sizeof(PORT_ATOMIC NvU32) == sizeof(NvU32));
+    ct_assert(_Alignof(PORT_ATOMIC NvU32) == _Alignof(NvU32));
+
     NV_STATUS            rmStatus = NV_ERR_GENERIC;
     API_SECURITY_INFO    secInfo = { };
 

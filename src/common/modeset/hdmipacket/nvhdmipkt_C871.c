@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,14 +19,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * File:      nvhdmipkt_C871.c
- *
+ */
+
+/** @file  nvhdmipkt_C871.c
  */
 
 #include "nvhdmipkt_common.h"
-/*
- * Purpose:   Provides packet write functions for HDMI library  for T23+ chips
+/** @brief Provides packet write functions for HDMI library for T23x+ chips
  */
 #include "nvhdmipkt_class.h"
 #include "nvhdmipkt_internal.h"

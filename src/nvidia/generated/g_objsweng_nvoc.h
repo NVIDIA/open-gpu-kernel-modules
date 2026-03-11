@@ -118,13 +118,9 @@ struct NVOC_METADATA__OBJSWENG {
     const struct NVOC_VTABLE__OBJSWENG vtable;
 };
 
-#ifndef __NVOC_CLASS_OBJSWENG_TYPEDEF__
-#define __NVOC_CLASS_OBJSWENG_TYPEDEF__
-typedef struct OBJSWENG OBJSWENG;
-#endif /* __NVOC_CLASS_OBJSWENG_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_OBJSWENG
-#define __nvoc_class_id_OBJSWENG 0x95a6f5
+#define __nvoc_class_id_OBJSWENG 0x95a6f5u
+typedef struct OBJSWENG OBJSWENG;
 #endif /* __nvoc_class_id_OBJSWENG */
 
 // Casting support
@@ -148,8 +144,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSWENG;
 NV_STATUS __nvoc_objCreateDynamic_OBJSWENG(OBJSWENG**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
-#define __objCreate_OBJSWENG(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_OBJSWENG((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_OBJSWENG(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_OBJSWENG((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -241,8 +237,14 @@ static inline NvBool swengIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJSWEN
     return pEngstate->__nvoc_metadata_ptr->vtable.__swengIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS swengConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJSWENG *pSweng, ENGDESCRIPTOR arg3);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

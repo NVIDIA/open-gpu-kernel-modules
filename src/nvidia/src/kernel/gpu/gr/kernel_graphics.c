@@ -408,6 +408,8 @@ kgraphicsStateDestroy_IMPL
 {
     fecsBufferTeardown(pGpu, pKernelGraphics);
 
+    kgraphicsInvalidateStaticInfo(pGpu, pKernelGraphics);
+
     portMemFree(pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers);
     pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers = NULL;
 }
@@ -788,13 +790,8 @@ cleanup:
         // to be allocated. We delay them until now to save memory when runs
         // are done without using graphics contexts!
         //
-        // For MIG ESX hypervisor, vGPU stack do not need any GR channel on host so
-        // skip global ctx buffer alloc to save FB memory
-        //
         if (!pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bAllocated &&
-            (!gpuIsClientRmAllocatedCtxBufferEnabled(pGpu) ||
-             (gpuIsSriovEnabled(pGpu) && IS_GFID_PF(gfid) &&
-              !(IS_MIG_IN_USE(pGpu) && hypervisorIsType(OS_HYPERVISOR_VMWARE)))))
+            (!gpuIsClientRmAllocatedCtxBufferEnabled(pGpu)))
         {
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 kgraphicsAllocGrGlobalCtxBuffers_HAL(pGpu, pKernelGraphics, gfid, NULL));
@@ -2156,7 +2153,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     KernelMIGManager                      *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool                                 bNeedMIGWar;
     NvBool                                 bBcStatus;
-    NvBool                                 bClientUserd = IsVOLTAorBetter(pGpu);
     NvBool                                 bAcquireLock = NV_FALSE;
     NvU32                                  sliLoopReentrancy;
     NV_VASPACE_ALLOCATION_PARAMETERS       *pVaParams = NULL;
@@ -2345,7 +2341,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
         cleanup);
 
     // Allocate Userd
-    if (bClientUserd)
     {
         NvU32 userdMemClass = NV01_MEMORY_LOCAL_USER;
         NvU32 ctrlSize;
@@ -2438,10 +2433,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
     // provide a valid offset here.
     //
     pChannelGPFIFOAllocParams->gpFifoOffset  = 0;
-    if (bClientUserd)
-    {
-        pChannelGPFIFOAllocParams->hUserdMemory[0] = KGRAPHICS_CHANNEL_HANDLE_USERD;
-    }
+    pChannelGPFIFOAllocParams->hUserdMemory[0] = KGRAPHICS_CHANNEL_HANDLE_USERD;
 
     if (bNeedMIGWar)
     {
@@ -3462,6 +3454,10 @@ subdeviceCtrlCmdKGrGetSmIssueThrottleCtrl_IMPL
 /*!
  * subdeviceCtrlCmdKGrGetGpcMask
  *
+ * Note:
+ *     For non-MIG/device profiling case, return physical GPC mask
+ *     For MIG case, return MIG local GPC mask
+ *
  * Lock Requirements:
  *      Assert that API lock and GPUs lock held on entry
  */
@@ -3506,7 +3502,7 @@ subdeviceCtrlCmdKGrGetGpcMask_IMPL
  * subdeviceCtrlCmdKGrGetTpcMask
  *
  * Note:
- *   pParams->gpcId is physical GPC id for non-MIG case, but logical GPC id for
+ *   pParams->gpcId is physical GPC id for non-MIG/device profiling case, but logical GPC id for
  *   MIG case.
  *
  * Lock Requirements:

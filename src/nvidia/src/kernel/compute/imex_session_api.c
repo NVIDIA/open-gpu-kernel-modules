@@ -229,6 +229,25 @@ rcAndDisableOutstandingClientsWithImportedMemory
     return channelRcInvoked;
 }
 
+static void
+_setImexRecoveryAction(void)
+{
+    OBJGPU *pGpu = NULL;
+    NvU32 gpuAttachCnt = 0;
+    NvU32 gpuAttachMask = 0;
+    NvU32 i = 0;
+
+    gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);
+    while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &i)) != NULL)
+    {
+        NV_ASSERT_OR_RETURN_VOID(rmGpuLockIsOwner());
+
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_TRUE);
+        gpuRefreshRecoveryAction_HAL(pGpu, NV_TRUE);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_RECOVERY_SQUASH_XID154, NV_FALSE);
+    }
+}
+
 NV_STATUS
 imexsessionapiConstruct_IMPL
 (
@@ -305,6 +324,8 @@ imexsessionapiConstruct_IMPL
 
     fabricEnableMemAlloc(pFabric);
 
+    _setImexRecoveryAction();
+
     return NV_OK;
 
 fail_unset_event:
@@ -364,6 +385,8 @@ imexsessionapiDestruct_IMPL
             NV_PRINTF(LEVEL_ERROR, "Abrupt nvidia-imex daemon shutdown detected, robust channel recovery invoked\n");
         }
     }
+
+    _setImexRecoveryAction();
 }
 
 NV_STATUS

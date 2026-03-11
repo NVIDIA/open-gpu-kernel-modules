@@ -59,6 +59,8 @@ typedef struct
 
     //! Additional root cause information valid only for certain Xids.
     RcRootCause rootCause;
+
+    const void * /* FIFO_CHANNEL_INFO */ pChannelInfo;
 } XidContext;
 
 #endif // XID_CONTEXT_H

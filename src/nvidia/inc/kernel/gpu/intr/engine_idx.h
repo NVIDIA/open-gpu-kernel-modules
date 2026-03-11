@@ -134,6 +134,7 @@
 #define MC_ENGINE_IDX_GR5                           89
 #define MC_ENGINE_IDX_GR6                           90
 #define MC_ENGINE_IDX_GR7                           91
+#define MC_ENGINE_IDX_GR_MAX                        MC_ENGINE_IDX_GR7
 #define MC_ENGINE_IDX_ESCHED                        92
 #define MC_ENGINE_IDX_ESCHED__SIZE                  64
 #define MC_ENGINE_IDX_GR_FECS_LOG                   156
@@ -187,6 +188,9 @@
 
 #define MC_ENGINE_IDX_IS_CE(x) \
     ((MC_ENGINE_IDX_CE(0) <= (x)) && ((x) <= MC_ENGINE_IDX_CE_MAX))
+
+#define MC_ENGINE_IDX_IS_GR(x) \
+    ((MC_ENGINE_IDX_GR0 <= (x)) && ((x) <= MC_ENGINE_IDX_GR_MAX))
 
 // Index OFA reference
 #define MC_ENGINE_IDX_OFA(x)            (MC_ENGINE_IDX_OFA0 + (x))

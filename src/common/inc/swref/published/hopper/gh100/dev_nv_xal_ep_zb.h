@@ -20,8 +20,58 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef __gh100_dev_nv_xal_ep_zb_h__
-#define __gh100_dev_nv_xal_ep_zb_h__
+#ifndef __gh100_dev_nv_xal_ep_zb__h__
+#define __gh100_dev_nv_xal_ep_zb__h__
+
 #define NV_XAL_EP_ZB                               0x00000FFF:0x00000000 /* RW--D */
-#endif // __gh100_dev_nv_xal_ep_zb_h__
+#define NV_XAL_EP_ZB_BAR0_WINDOW_BASE_SHIFT                                         0x000010
+#define NV_XAL_EP_ZB_BAR0_WINDOW_BASE                                                   21:0
+#define NV_XAL_EP_ZB_BAR0_WINDOW                                                  0x00000d40
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY                                        0x00000810
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_TOKEN                                        30:0
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_COMPLETED                              0x00000814
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_TOKEN                              30:0
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_STATUS                            31:31
+#define NV_XAL_EP_ZB_UFLUSH_L2_FLUSH_DIRTY_COMPLETED_STATUS_BUSY                         0x1
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH                                              0x00000800 /* R--4R */
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_TOKEN                                              30:0 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_TOKEN_INIT                                   0x00000000 /* R-I-V */
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED                                    0x00000804 /* R--4R */
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED_TOKEN                                    30:0 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_TOKEN_INIT                         0x00000000 /* R-I-V */
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED_STATUS                                  31:31 /* R-IUF */
+#define NV_XAL_EP_UFLUSH_FB_FLUSH_COMPLETED_STATUS_IDLE                               0x0 /* R-I-V */
+#define NV_XAL_EP_ZB_UFLUSH_FB_FLUSH_COMPLETED_STATUS_BUSY                               0x1 /* R---V */
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED                           0x0000080c
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_TOKEN                           30:0
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_STATUS                         31:31
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_COMPLETED_STATUS_BUSY                      0x1
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS                                     0x00000808
+#define NV_XAL_EP_ZB_UFLUSH_L2_CLEAN_COMPTAGS_TOKEN                                     30:0
+#define NV_XAL_EP_ZB_ZEROS                                                        0x00000900 /* C--4R */
+#define NV_XAL_EP_ZEROS_DATA                                                         31:0 /* C--VF */
+#define NV_XAL_EP_ZEROS_DATA_ZEROS                                             0x00000000 /* C---V */
+#define NV_XAL_EP_ZB_INTR_0                                                       0x00000100
+#define NV_XAL_EP_ZB_INTR_0_FB_ACK_TIMEOUT                                               5:5
+#define NV_XAL_EP_ZB_INTR_0_FB_ACK_TIMEOUT_PENDING                                       0x1
+#define NV_XAL_EP_ZB_INTR_0_PRI_FECSERR                                                  1:1
+#define NV_XAL_EP_ZB_INTR_0_PRI_FECSERR_PENDING                                          0x1
+#define NV_XAL_EP_ZB_INTR_0_PRI_REQ_TIMEOUT                                              2:2
+#define NV_XAL_EP_ZB_INTR_0_PRI_REQ_TIMEOUT_PENDING                                      0x1
+#define NV_XAL_EP_ZB_INTR_0_PRI_RSP_TIMEOUT                                              3:3
+#define NV_XAL_EP_ZB_INTR_0_PRI_RSP_TIMEOUT_PENDING                                      0x1
+#define NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT                             0xbadf0200
+
+#define NV_XAL_EP_ZB_REORDER_ECC_UNCORRECTED_ERR_COUNT                            0x00000364 /* RW-4R */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_TOTAL                            15:0 /* RWIUF */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT                     0x0000 /* RWI-V */
+#define NV_XAL_EP_ZB_REORDER_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                          31:16 /* RWIUF */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT                    0x0000 /* RWI-V */
+
+#define NV_XAL_EP_ZB_P2PREQ_ECC_UNCORRECTED_ERR_COUNT                             0x0000037c /* RW-4R */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_TOTAL                             15:0 /* RWIUF */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT                      0x0000 /* RWI-V */
+#define NV_XAL_EP_ZB_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                           31:16 /* RWIUF */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT                     0x0000 /* RWI-V */
+#endif // __gh100_dev_nv_xal_ep_zb__h__
 

@@ -28,7 +28,6 @@
 #include "gpu/mem_mgr/mem_desc.h"
 
 #include "virtualization/hypervisor/hypervisor.h"
-#include "vgpu/vgpu_events.h"
 
 #include "published/turing/tu102/dev_mmu.h"
 #include "published/turing/tu102/kind_macros.h"

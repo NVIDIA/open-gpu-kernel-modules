@@ -96,13 +96,9 @@ struct NVOC_METADATA__KernelHostVgpuDeviceShr {
     const struct NVOC_METADATA__RsShared metadata__RsShared;
 };
 
-#ifndef __NVOC_CLASS_KernelHostVgpuDeviceShr_TYPEDEF__
-#define __NVOC_CLASS_KernelHostVgpuDeviceShr_TYPEDEF__
-typedef struct KernelHostVgpuDeviceShr KernelHostVgpuDeviceShr;
-#endif /* __NVOC_CLASS_KernelHostVgpuDeviceShr_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHostVgpuDeviceShr
-#define __nvoc_class_id_KernelHostVgpuDeviceShr 0xe32156
+#define __nvoc_class_id_KernelHostVgpuDeviceShr 0xe32156u
+typedef struct KernelHostVgpuDeviceShr KernelHostVgpuDeviceShr;
 #endif /* __nvoc_class_id_KernelHostVgpuDeviceShr */
 
 // Casting support
@@ -121,13 +117,13 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHostVgpuDeviceShr;
 NV_STATUS __nvoc_objCreateDynamic_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr**, Dynamic*, NvU32);
-#define __objCreate_KernelHostVgpuDeviceShr(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelHostVgpuDeviceShr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelHostVgpuDeviceShr(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelHostVgpuDeviceShr((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kernelhostvgpudeviceshrConstruct_IMPL(struct KernelHostVgpuDeviceShr *arg_pKernelHostVgpuDeviceShr);
-#define __nvoc_kernelhostvgpudeviceshrConstruct(arg_pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrConstruct_IMPL(arg_pKernelHostVgpuDeviceShr)
+NV_STATUS kernelhostvgpudeviceshrConstruct_IMPL(struct KernelHostVgpuDeviceShr *pKernelHostVgpuDeviceShr);
+#define __nvoc_kernelhostvgpudeviceshrConstruct(pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrConstruct_IMPL(pKernelHostVgpuDeviceShr)
 
 void kernelhostvgpudeviceshrDestruct_IMPL(struct KernelHostVgpuDeviceShr *pKernelHostVgpuDeviceShr);
 #define __nvoc_kernelhostvgpudeviceshrDestruct(pKernelHostVgpuDeviceShr) kernelhostvgpudeviceshrDestruct_IMPL(pKernelHostVgpuDeviceShr)
@@ -136,6 +132,12 @@ void kernelhostvgpudeviceshrDestruct_IMPL(struct KernelHostVgpuDeviceShr *pKerne
 // Wrapper macros for halified functions
 
 // Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 
@@ -229,13 +231,9 @@ struct NVOC_METADATA__KernelHostVgpuDeviceApi {
     const struct NVOC_VTABLE__KernelHostVgpuDeviceApi vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelHostVgpuDeviceApi_TYPEDEF__
-#define __NVOC_CLASS_KernelHostVgpuDeviceApi_TYPEDEF__
-typedef struct KernelHostVgpuDeviceApi KernelHostVgpuDeviceApi;
-#endif /* __NVOC_CLASS_KernelHostVgpuDeviceApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHostVgpuDeviceApi
-#define __nvoc_class_id_KernelHostVgpuDeviceApi 0xb12d7d
+#define __nvoc_class_id_KernelHostVgpuDeviceApi 0xb12d7du
+typedef struct KernelHostVgpuDeviceApi KernelHostVgpuDeviceApi;
 #endif /* __nvoc_class_id_KernelHostVgpuDeviceApi */
 
 // Casting support
@@ -253,14 +251,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHostVgpuDeviceApi;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelHostVgpuDeviceApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelHostVgpuDeviceApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelHostVgpuDeviceApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelHostVgpuDeviceApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *arg_pKernelHostVgpuDeviceApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kernelhostvgpudeviceapiConstruct(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams) kernelhostvgpudeviceapiConstruct_IMPL(arg_pKernelHostVgpuDeviceApi, arg_pCallContext, arg_pParams)
+NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kernelhostvgpudeviceapiConstruct(pKernelHostVgpuDeviceApi, pCallContext, pParams) kernelhostvgpudeviceapiConstruct_IMPL(pKernelHostVgpuDeviceApi, pCallContext, pParams)
 
 NV_STATUS kernelhostvgpudeviceapiCopyConstruct_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 #ifdef __nvoc_kernel_hostvgpudeviceapi_h_disabled
@@ -579,8 +577,10 @@ static inline NV_STATUS kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(str
     return pNotifier->__nvoc_metadata_ptr->vtable.__kernelhostvgpudeviceapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
 NvBool kernelhostvgpudeviceapiCanCopy_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *pParams);
 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *pParams);
@@ -605,6 +605,10 @@ NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(struct KernelHostV
 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_SET_PLACEMENT_ID_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -35,7 +35,7 @@ void __nvoc_init_halspec_CrashCatReportHal(CrashCatReportHal *pCrashCatReportHal
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xde4777 = 1;
+char __nvoc_class_id_uniqueness_check__de4777 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatReport;
@@ -46,7 +46,7 @@ void __nvoc_init__Object(Object*);
 void __nvoc_init__CrashCatReport(CrashCatReport*,
         NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version, CrashCatImplementer CrashCatReportHal_implementer);
 void __nvoc_init_funcTable_CrashCatReport(CrashCatReport*);
-NV_STATUS __nvoc_ctor_CrashCatReport(CrashCatReport*, void **arg_ppReportBytes, NvLength arg_bytesRemaining);
+NV_STATUS __nvoc_ctor_CrashCatReport(CrashCatReport*, void **ppReportBytes, NvLength bytesRemaining);
 void __nvoc_init_dataField_CrashCatReport(CrashCatReport*);
 void __nvoc_dtor_CrashCatReport(CrashCatReport*);
 
@@ -58,19 +58,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatReport;
 
 // Up-thunk(s) to bridge CrashCatReport methods to ancestors (if any)
 
+// Class-specific details for CrashCatReport
 const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatReport = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(CrashCatReport),
-        /*classId=*/            classId(CrashCatReport),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(CrashCatReport),
+    .classInfo.classId =            classId(CrashCatReport),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "CrashCatReport",
+    .classInfo.name =               "CrashCatReport",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CrashCatReport,
-    /*pCastInfo=*/          &__nvoc_castinfo__CrashCatReport,
-    /*pExportInfo=*/        &__nvoc_export_info__CrashCatReport
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_CrashCatReport,
+    .pCastInfo =          &__nvoc_castinfo__CrashCatReport,
+    .pExportInfo =        &__nvoc_export_info__CrashCatReport
 };
 
 
@@ -96,18 +95,24 @@ const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatReport = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatReport = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct CrashCatReport object.
 void __nvoc_crashcatReportDestruct(CrashCatReport*);
 void __nvoc_dtor_Object(Object*);
-void __nvoc_dtor_CrashCatReport(CrashCatReport *pThis) {
+void __nvoc_dtor_CrashCatReport(CrashCatReport* pThis) {
+
+// Call destructor.
     __nvoc_crashcatReportDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_CrashCatReport(CrashCatReport *pThis) {
     CrashCatReportHal *reportHal = &pThis->reportHal;
     const unsigned long reportHal_HalVarIdx = (unsigned long)reportHal->__nvoc_HalVarIdx;
@@ -116,22 +121,29 @@ void __nvoc_init_dataField_CrashCatReport(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_CrashCatReport(CrashCatReport *pThis, void ** arg_ppReportBytes, NvLength arg_bytesRemaining) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_CrashCatReport_fail_Object;
-    __nvoc_init_dataField_CrashCatReport(pThis);
 
-    status = __nvoc_crashcatReportConstruct(pThis, arg_ppReportBytes, arg_bytesRemaining);
+// Construct CrashCatReport object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_CrashCatReport(CrashCatReport *arg_this, void **ppReportBytes, NvLength bytesRemaining) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&arg_this->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_CrashCatReport_fail_Object;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CrashCatReport(arg_this);
+
+    // Call the constructor for this class.
+    status = __nvoc_crashcatReportConstruct(arg_this, ppReportBytes, bytesRemaining);
     if (status != NV_OK) goto __nvoc_ctor_CrashCatReport_fail__init;
     goto __nvoc_ctor_CrashCatReport_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_CrashCatReport_fail__init:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&arg_this->__nvoc_base_Object);
 __nvoc_ctor_CrashCatReport_fail_Object:
 __nvoc_ctor_CrashCatReport_exit:
-
     return status;
 }
 
@@ -143,7 +155,7 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal);
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 
-    // crashcatReportSourceContainment -- halified (2 hals)
+    // crashcatReportSourceContainment -- halified (2 hals) body
     if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000004UL) )) /* CrashCatReportHal: V1_LIBOS3 */ 
     {
         pThis->__crashcatReportSourceContainment__ = &crashcatReportSourceContainment_V1_LIBOS3;
@@ -226,50 +238,50 @@ void __nvoc_init__CrashCatReport(CrashCatReport *pThis,
     __nvoc_init_funcTable_CrashCatReport(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport **ppThis, Dynamic *pParent, NvU32 createFlags,
-        NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version, CrashCatImplementer CrashCatReportHal_implementer, void **arg_ppReportBytes, NvLength arg_bytesRemaining)
+NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags,
+        NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version, CrashCatImplementer CrashCatReportHal_implementer, void **ppReportBytes, NvLength bytesRemaining)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    CrashCatReport *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    CrashCatReport *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(CrashCatReport));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(CrashCatReport));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(CrashCatReport));
+    portMemSet(__nvoc_pThis, 0, sizeof(CrashCatReport));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__CrashCatReport(pThis, CrashCatReportHal_version, CrashCatReportHal_implementer);
-    status = __nvoc_ctor_CrashCatReport(pThis, arg_ppReportBytes, arg_bytesRemaining);
-    if (status != NV_OK) goto __nvoc_objCreate_CrashCatReport_cleanup;
+    __nvoc_init__CrashCatReport(__nvoc_pThis, CrashCatReportHal_version, CrashCatReportHal_implementer);
+    __nvoc_status = __nvoc_ctor_CrashCatReport(__nvoc_pThis, ppReportBytes, bytesRemaining);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_CrashCatReport_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -278,33 +290,33 @@ NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport **ppThis, Dynamic *pPar
 __nvoc_objCreate_CrashCatReport_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(CrashCatReport));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(CrashCatReport));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_CrashCatReport(CrashCatReport **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version = va_arg(args, NV_CRASHCAT_PACKET_FORMAT_VERSION);
-    CrashCatImplementer CrashCatReportHal_implementer = va_arg(args, CrashCatImplementer);
-    void **arg_ppReportBytes = va_arg(args, void **);
-    NvLength arg_bytesRemaining = va_arg(args, NvLength);
+NV_STATUS __nvoc_objCreateDynamic_CrashCatReport(CrashCatReport **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    NV_CRASHCAT_PACKET_FORMAT_VERSION CrashCatReportHal_version = va_arg(__nvoc_args, NV_CRASHCAT_PACKET_FORMAT_VERSION);
+    CrashCatImplementer CrashCatReportHal_implementer = va_arg(__nvoc_args, CrashCatImplementer);
+    void **ppReportBytes = va_arg(__nvoc_args, void **);
+    NvLength bytesRemaining = va_arg(__nvoc_args, NvLength);
 
-    status = __nvoc_objCreate_CrashCatReport(ppThis, pParent, createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining);
+    __nvoc_status = __nvoc_objCreate_CrashCatReport(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, ppReportBytes, bytesRemaining);
 
-    return status;
+    return __nvoc_status;
 }
 

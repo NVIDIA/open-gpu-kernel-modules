@@ -158,7 +158,7 @@ nvswitch_record_error
 )
 {
     NvU32 idx_error;
-    NvU32 description_len = (NvU32)nvswitch_os_strlen(description) - 2; //take out leading and trailing quotation
+    NvU32 description_len = (description != NULL) ? (NvU32)nvswitch_os_strlen(description) - 2 : 0; //take out leading and trailing quotation
 
     NVSWITCH_ASSERT(errors != NULL);
     NVSWITCH_ASSERT(data_size <= sizeof(errors->error_log[idx_error].data));
@@ -200,7 +200,10 @@ nvswitch_record_error
         errors->error_log[idx_error].error_resolved = error_resolved;
         errors->error_log[idx_error].line       = line;
         errors->error_log[idx_error].data_size  = data_size;
-        nvswitch_os_memcpy(&errors->error_log[idx_error].description, description + 1, description_len);
+        if (description_len > 0)
+        {
+            nvswitch_os_memcpy(&errors->error_log[idx_error].description, description + 1, description_len);
+        }
 
         // Log tracking info
         errors->error_log[idx_error].timer_count = nvswitch_hw_counter_read_counter(device);

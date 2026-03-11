@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -439,7 +439,14 @@ typedef struct rpc_get_static_data_v27_01
     NvU8       payload[];
 } rpc_get_static_data_v27_01;
 
-typedef rpc_get_static_data_v27_01 rpc_get_static_data_v;
+typedef struct rpc_get_static_data_v2D_00
+{
+    NvU32      offset;
+    NvU32      size;
+    NvU8       payload[];
+} rpc_get_static_data_v2D_00;
+
+typedef rpc_get_static_data_v2D_00 rpc_get_static_data_v;
 
 typedef struct rpc_get_consolidated_gr_static_info_v1B_04
 {
@@ -906,7 +913,14 @@ typedef struct rpc_ctrl_get_nvlink_status_v2B_11
     NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2B_11 ctrlParams;
 } rpc_ctrl_get_nvlink_status_v2B_11;
 
-typedef rpc_ctrl_get_nvlink_status_v2B_11 rpc_ctrl_get_nvlink_status_v;
+typedef struct rpc_ctrl_get_nvlink_status_v2D_01
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01 ctrlParams;
+} rpc_ctrl_get_nvlink_status_v2D_01;
+
+typedef rpc_ctrl_get_nvlink_status_v2D_01 rpc_ctrl_get_nvlink_status_v;
 
 typedef struct rpc_ctrl_get_p2p_caps_v1F_0D
 {
@@ -985,13 +999,6 @@ typedef struct rpc_ctrl_pma_stream_update_get_put_v29_0B
 } rpc_ctrl_pma_stream_update_get_put_v29_0B;
 
 typedef rpc_ctrl_pma_stream_update_get_put_v29_0B rpc_ctrl_pma_stream_update_get_put_v;
-
-typedef struct rpc_ctrl_fb_get_info_v2_v25_0A
-{
-    NvHandle   hClient;
-    NvHandle   hObject;
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A ctrlParams;
-} rpc_ctrl_fb_get_info_v2_v25_0A;
 
 typedef struct rpc_ctrl_fb_get_info_v2_v27_00
 {
@@ -1564,15 +1571,19 @@ typedef struct rpc_dump_protobuf_component_v18_12
 
 typedef rpc_dump_protobuf_component_v18_12 rpc_dump_protobuf_component_v;
 
-typedef struct rpc_run_cpu_sequencer_v17_00
+typedef struct rpc_load_exec_generic_bootloader_v1_00
 {
-    NvU32      bufferSizeDWord;
-    NvU32      cmdIndex;
-    NvU32      regSaveArea[8];
-    NvU32      commandBuffer[];
-} rpc_run_cpu_sequencer_v17_00;
+    NvU32      data;
+} rpc_load_exec_generic_bootloader_v1_00;
 
-typedef rpc_run_cpu_sequencer_v17_00 rpc_run_cpu_sequencer_v;
+typedef rpc_load_exec_generic_bootloader_v1_00 rpc_load_exec_generic_bootloader_v;
+
+typedef struct rpc_load_exec_hs_binary_v1_00
+{
+    NvU32      data;
+} rpc_load_exec_hs_binary_v1_00;
+
+typedef rpc_load_exec_hs_binary_v1_00 rpc_load_exec_hs_binary_v;
 
 typedef struct rpc_post_event_v17_00
 {
@@ -1662,6 +1673,9 @@ typedef struct rpc_dce_rm_init_v01_00
 {
     NvBool     bInit;
     NvU32      hInternalClient;
+    NvU32      maxDispClkRateDisppll;
+    NvU32      maxDispClkRateSppllClkouta;
+    NvU32      maxHubClkRateSppllClkoutb;
 } rpc_dce_rm_init_v01_00;
 
 typedef rpc_dce_rm_init_v01_00 rpc_dce_rm_init_v;
@@ -1974,12 +1988,30 @@ typedef struct rpc_trigger_bugcheck_v01_00
 
 typedef rpc_trigger_bugcheck_v01_00 rpc_trigger_bugcheck_v;
 
+typedef struct rpc_update_grid_displayless_params_v01_00
+{
+    NvU32      numHeads;
+    NvU32      maxHResolution;
+    NvU32      maxVResolution;
+    NvU64      maxPixels NV_ALIGN_BYTES(8);
+} rpc_update_grid_displayless_params_v01_00;
+
+typedef rpc_update_grid_displayless_params_v01_00 rpc_update_grid_displayless_params_v;
+
 typedef struct rpc_bind_bar2_v01_00
 {
     NvU64      bindAddress NV_ALIGN_BYTES(8);
 } rpc_bind_bar2_v01_00;
 
 typedef rpc_bind_bar2_v01_00 rpc_bind_bar2_v;
+
+typedef struct rpc_init_gsp_trace_crash_buffer_v03_00
+{
+    NvU64      pa NV_ALIGN_BYTES(8);
+    NvU32      size;
+} rpc_init_gsp_trace_crash_buffer_v03_00;
+
+typedef rpc_init_gsp_trace_crash_buffer_v03_00 rpc_init_gsp_trace_crash_buffer_v;
 
 
 #endif
@@ -3930,6 +3962,44 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_static_data_v25_0E = {
     #endif
     .header_length = sizeof(rpc_get_static_data_v25_0E),
     .fdesc = vmiopd_fdesc_t_rpc_get_static_data_v25_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_static_data_v2D_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_static_data_v2D_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v2D_00, offset),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "offset"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v2D_00, size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "size"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v2D_00, payload),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_static_data_v2D_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_static_data",
+    #endif
+    .header_length = sizeof(rpc_get_static_data_v2D_00),
+    .fdesc = vmiopd_fdesc_t_rpc_get_static_data_v2D_00
 };
 #endif
 
@@ -5885,6 +5955,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_nvlink_status_v28_09 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v2D_01
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_nvlink_status_v2D_01[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v2D_01, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v2D_01, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v2D_01, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_nvlink_status_v2D_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_nvlink_status",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_nvlink_status_v2D_01),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_nvlink_status_v2D_01
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v23_04
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_nvlink_status_v23_04[] = {
     {
@@ -6282,43 +6389,6 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v27_00 = {
     #endif
     .header_length = sizeof(rpc_ctrl_fb_get_info_v2_v27_00),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v27_00
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v25_0A
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A[] = {
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, hClient),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hClient"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, hObject),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hObject"
-        #endif
-    },
-    {
-        .vtype                = vtype_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A,
-        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, ctrlParams),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "ctrlParams"
-        #endif
-    },
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_ctrl_fb_get_info_v2",
-    #endif
-    .header_length = sizeof(rpc_ctrl_fb_get_info_v2_v25_0A),
-    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A
 };
 #endif
 
@@ -8810,36 +8880,13 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dump_protobuf_component_v18_12 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_run_cpu_sequencer_v17_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00[] = {
+#ifndef SKIP_PRINT_rpc_load_exec_generic_bootloader_v1_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_load_exec_generic_bootloader_v1_00[] = {
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, bufferSizeDWord),
+        .offset               = NV_OFFSETOF(rpc_load_exec_generic_bootloader_v1_00, data),
         #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "bufferSizeDWord"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, cmdIndex),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "cmdIndex"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32_array,
-        .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, regSaveArea),
-        .array_length         = 8,
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "regSaveArea"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32_array,
-        .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, commandBuffer),
-        .array_length         = 0,
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "commandBuffer"
+        .name                 = "data"
         #endif
     },
     {
@@ -8847,12 +8894,35 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00[] = {
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_run_cpu_sequencer_v17_00 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_load_exec_generic_bootloader_v1_00 = {
     #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_run_cpu_sequencer",
+    .name = "rpc_load_exec_generic_bootloader",
     #endif
-    .header_length = sizeof(rpc_run_cpu_sequencer_v17_00),
-    .fdesc = vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00
+    .header_length = sizeof(rpc_load_exec_generic_bootloader_v1_00),
+    .fdesc = vmiopd_fdesc_t_rpc_load_exec_generic_bootloader_v1_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_load_exec_hs_binary_v1_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_load_exec_hs_binary_v1_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_load_exec_hs_binary_v1_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "data"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_load_exec_hs_binary_v1_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_load_exec_hs_binary",
+    #endif
+    .header_length = sizeof(rpc_load_exec_hs_binary_v1_00),
+    .fdesc = vmiopd_fdesc_t_rpc_load_exec_hs_binary_v1_00
 };
 #endif
 
@@ -9253,6 +9323,27 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dce_rm_init_v01_00[] = {
         .offset               = NV_OFFSETOF(rpc_dce_rm_init_v01_00, hInternalClient),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hInternalClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_dce_rm_init_v01_00, maxDispClkRateDisppll),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxDispClkRateDisppll"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_dce_rm_init_v01_00, maxDispClkRateSppllClkouta),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxDispClkRateSppllClkouta"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_dce_rm_init_v01_00, maxHubClkRateSppllClkoutb),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxHubClkRateSppllClkoutb"
         #endif
     },
     {
@@ -10482,6 +10573,50 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_trigger_bugcheck_v01_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_update_grid_displayless_params_v01_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_grid_displayless_params_v01_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_update_grid_displayless_params_v01_00, numHeads),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "numHeads"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_update_grid_displayless_params_v01_00, maxHResolution),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxHResolution"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_update_grid_displayless_params_v01_00, maxVResolution),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxVResolution"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_update_grid_displayless_params_v01_00, maxPixels),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "maxPixels"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_update_grid_displayless_params_v01_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_update_grid_displayless_params",
+    #endif
+    .header_length = sizeof(rpc_update_grid_displayless_params_v01_00),
+    .fdesc = vmiopd_fdesc_t_rpc_update_grid_displayless_params_v01_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_bind_bar2_v01_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_bind_bar2_v01_00[] = {
     {
@@ -10502,6 +10637,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_bind_bar2_v01_00 = {
     #endif
     .header_length = sizeof(rpc_bind_bar2_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_bind_bar2_v01_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_init_gsp_trace_crash_buffer_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00[] = {
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_init_gsp_trace_crash_buffer_v03_00, pa),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "pa"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_init_gsp_trace_crash_buffer_v03_00, size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "size"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_init_gsp_trace_crash_buffer",
+    #endif
+    .header_length = sizeof(rpc_init_gsp_trace_crash_buffer_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00
 };
 #endif
 
@@ -10859,6 +11024,13 @@ vmiopd_mdesc_t *rpcdebugGpuExecRegOps_v12_01(void)
 vmiopd_mdesc_t *rpcdebugGetStaticData_v25_0E(void)
 {
     return &vmiopd_mdesc_t_rpc_get_static_data_v25_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_static_data_v2D_00
+vmiopd_mdesc_t *rpcdebugGetStaticData_v2D_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_static_data_v2D_00;
 }
 #endif
 
@@ -11233,6 +11405,13 @@ vmiopd_mdesc_t *rpcdebugCtrlGetNvlinkStatus_v28_09(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v2D_01
+vmiopd_mdesc_t *rpcdebugCtrlGetNvlinkStatus_v2D_01(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_nvlink_status_v2D_01;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v23_04
 vmiopd_mdesc_t *rpcdebugCtrlGetNvlinkStatus_v23_04(void)
 {
@@ -11307,13 +11486,6 @@ vmiopd_mdesc_t *rpcdebugCtrlPmaStreamUpdateGetPut_v29_0B(void)
 vmiopd_mdesc_t *rpcdebugCtrlFbGetInfoV2_v27_00(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v27_00;
-}
-#endif
-
-#ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v25_0A
-vmiopd_mdesc_t *rpcdebugCtrlFbGetInfoV2_v25_0A(void)
-{
-    return &vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A;
 }
 #endif
 
@@ -11779,10 +11951,17 @@ vmiopd_mdesc_t *rpcdebugDumpProtobufComponent_v18_12(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_run_cpu_sequencer_v17_00
-vmiopd_mdesc_t *rpcdebugRunCpuSequencer_v17_00(void)
+#ifndef SKIP_PRINT_rpc_load_exec_generic_bootloader_v1_00
+vmiopd_mdesc_t *rpcdebugLoadExecGenericBootloader_v1_00(void)
 {
-    return &vmiopd_mdesc_t_rpc_run_cpu_sequencer_v17_00;
+    return &vmiopd_mdesc_t_rpc_load_exec_generic_bootloader_v1_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_load_exec_hs_binary_v1_00
+vmiopd_mdesc_t *rpcdebugLoadExecHsBinary_v1_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_load_exec_hs_binary_v1_00;
 }
 #endif
 
@@ -12108,10 +12287,24 @@ vmiopd_mdesc_t *rpcdebugTriggerBugcheck_v01_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_update_grid_displayless_params_v01_00
+vmiopd_mdesc_t *rpcdebugUpdateGridDisplaylessParams_v01_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_update_grid_displayless_params_v01_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_bind_bar2_v01_00
 vmiopd_mdesc_t *rpcdebugBindBar2_v01_00(void)
 {
     return &vmiopd_mdesc_t_rpc_bind_bar2_v01_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_init_gsp_trace_crash_buffer_v03_00
+vmiopd_mdesc_t *rpcdebugInitGspTraceCrashBuffer_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_init_gsp_trace_crash_buffer_v03_00;
 }
 #endif
 
@@ -12192,6 +12385,7 @@ typedef union rpc_generic_union {
     rpc_gpu_exec_reg_ops_v12_01 gpu_exec_reg_ops_v12_01;
     rpc_gpu_exec_reg_ops_v gpu_exec_reg_ops_v;
     rpc_get_static_data_v25_0E get_static_data_v25_0E;
+    rpc_get_static_data_v2D_00 get_static_data_v2D_00;
     rpc_get_static_data_v27_01 get_static_data_v27_01;
     rpc_get_static_data_v get_static_data_v;
     rpc_get_consolidated_gr_static_info_v1B_04 get_consolidated_gr_static_info_v1B_04;
@@ -12294,6 +12488,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_get_zbc_clear_table_entry_v ctrl_get_zbc_clear_table_entry_v;
     rpc_ctrl_get_nvlink_status_v2B_11 ctrl_get_nvlink_status_v2B_11;
     rpc_ctrl_get_nvlink_status_v28_09 ctrl_get_nvlink_status_v28_09;
+    rpc_ctrl_get_nvlink_status_v2D_01 ctrl_get_nvlink_status_v2D_01;
     rpc_ctrl_get_nvlink_status_v23_04 ctrl_get_nvlink_status_v23_04;
     rpc_ctrl_get_nvlink_status_v ctrl_get_nvlink_status_v;
     rpc_ctrl_get_p2p_caps_v1F_0D ctrl_get_p2p_caps_v1F_0D;
@@ -12314,7 +12509,6 @@ typedef union rpc_generic_union {
     rpc_ctrl_pma_stream_update_get_put_v29_0B ctrl_pma_stream_update_get_put_v29_0B;
     rpc_ctrl_pma_stream_update_get_put_v ctrl_pma_stream_update_get_put_v;
     rpc_ctrl_fb_get_info_v2_v27_00 ctrl_fb_get_info_v2_v27_00;
-    rpc_ctrl_fb_get_info_v2_v25_0A ctrl_fb_get_info_v2_v25_0A;
     rpc_ctrl_fb_get_info_v2_v2B_00 ctrl_fb_get_info_v2_v2B_00;
     rpc_ctrl_fb_get_info_v2_v ctrl_fb_get_info_v2_v;
     rpc_ctrl_fifo_set_channel_properties_v1A_16 ctrl_fifo_set_channel_properties_v1A_16;
@@ -12431,8 +12625,10 @@ typedef union rpc_generic_union {
     rpc_gsp_rm_control_v gsp_rm_control_v;
     rpc_dump_protobuf_component_v18_12 dump_protobuf_component_v18_12;
     rpc_dump_protobuf_component_v dump_protobuf_component_v;
-    rpc_run_cpu_sequencer_v17_00 run_cpu_sequencer_v17_00;
-    rpc_run_cpu_sequencer_v run_cpu_sequencer_v;
+    rpc_load_exec_generic_bootloader_v1_00 load_exec_generic_bootloader_v1_00;
+    rpc_load_exec_generic_bootloader_v load_exec_generic_bootloader_v;
+    rpc_load_exec_hs_binary_v1_00 load_exec_hs_binary_v1_00;
+    rpc_load_exec_hs_binary_v load_exec_hs_binary_v;
     rpc_post_event_v17_00 post_event_v17_00;
     rpc_post_event_v post_event_v;
     rpc_rc_triggered_v17_02 rc_triggered_v17_02;
@@ -12524,8 +12720,12 @@ typedef union rpc_generic_union {
     rpc_ctrl_cmd_internal_gpu_check_cts_id_valid_v ctrl_cmd_internal_gpu_check_cts_id_valid_v;
     rpc_trigger_bugcheck_v01_00 trigger_bugcheck_v01_00;
     rpc_trigger_bugcheck_v trigger_bugcheck_v;
+    rpc_update_grid_displayless_params_v01_00 update_grid_displayless_params_v01_00;
+    rpc_update_grid_displayless_params_v update_grid_displayless_params_v;
     rpc_bind_bar2_v01_00 bind_bar2_v01_00;
     rpc_bind_bar2_v bind_bar2_v;
+    rpc_init_gsp_trace_crash_buffer_v03_00 init_gsp_trace_crash_buffer_v03_00;
+    rpc_init_gsp_trace_crash_buffer_v init_gsp_trace_crash_buffer_v;
 } rpc_generic_union;
 
 #endif

@@ -988,3 +988,96 @@ bitVectorLowestNBits_IMPL
     return NV_OK;
 }
 
+/**
+ * @brief Gets slice from pSrcBitVector for a range and stores it in pDstBitVector
+ *
+ * @param[in]  pSrcBitVector     Source bitvector
+ * @param[in]  srcBitVectorLast  Size of source bitvector
+ * @param[out] pDstBitVector     Destination bitvector
+ * @param[in]  dstBitVectorLast  Size of destination bitvector
+ * @param[in]  range             Range to extract from source
+ *
+ * @note The extracted slice is shifted to start at bit 0 in the destination
+ */
+NV_STATUS
+bitVectorGetSliceToBitVector_IMPL
+(
+    const NV_BITVECTOR *pSrcBitVector,
+    NvU16 srcBitVectorLast,
+    NV_BITVECTOR *pDstBitVector,
+    NvU16 dstBitVectorLast,
+    NV_RANGE range
+)
+{
+    NvU32 srcBit, dstBit = 0;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pSrcBitVector != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pDstBitVector != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(range.hi != NV_U64_MAX, NV_ERR_INVALID_ARGUMENT); // detect underflow
+    NV_ASSERT_OR_RETURN(rangeContains(rangeMake(0, srcBitVectorLast - 1), range),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(rangeLength(range) <= dstBitVectorLast, NV_ERR_INVALID_ARGUMENT);
+
+    // Clear the destination bitvector first
+    status = bitVectorClrAll_IMPL(pDstBitVector, dstBitVectorLast);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    // Copy each bit from source range to destination starting at bit 0
+    for (srcBit = (NvU32)range.lo; srcBit <= (NvU32)range.hi; srcBit++, dstBit++)
+    {
+        if (bitVectorTest_IMPL(pSrcBitVector, srcBitVectorLast, srcBit))
+        {
+            status = bitVectorSet_IMPL(pDstBitVector, dstBitVectorLast, dstBit);
+            if (status != NV_OK)
+            {
+                return status;
+            }
+        }
+    }
+
+    return NV_OK;
+}
+
+/**
+ * @brief Gets slice from pSrcBitVector at offset with size and stores it in pDstBitVector
+ *
+ * @param[in]  pSrcBitVector     Source bitvector
+ * @param[in]  srcBitVectorLast  Size of source bitvector
+ * @param[out] pDstBitVector     Destination bitvector
+ * @param[in]  dstBitVectorLast  Size of destination bitvector
+ * @param[in]  offset            Starting bit offset in source
+ * @param[in]  size              Number of bits to extract
+ *
+ * @note The extracted slice is shifted to start at bit 0 in the destination
+ */
+NV_STATUS
+bitVectorGetSliceToBitVectorAtOffset_IMPL
+(
+    const NV_BITVECTOR *pSrcBitVector,
+    NvU16 srcBitVectorLast,
+    NV_BITVECTOR *pDstBitVector,
+    NvU16 dstBitVectorLast,
+    NvU32 offset,
+    NvU32 size
+)
+{
+    NV_RANGE range;
+
+    NV_ASSERT_OR_RETURN(pSrcBitVector != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pDstBitVector != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(size > 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(offset + size <= srcBitVectorLast, NV_ERR_INVALID_ARGUMENT);
+
+    // Create range from offset and size
+    range = rangeMake(offset, offset + size - 1);
+
+    // Call the range-based function
+    return bitVectorGetSliceToBitVector_IMPL(pSrcBitVector, srcBitVectorLast,
+                                           pDstBitVector, dstBitVectorLast,
+                                           range);
+}
+

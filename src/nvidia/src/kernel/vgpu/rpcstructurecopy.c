@@ -73,7 +73,7 @@ NV_STATUS deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_v1A_0D(VGPU_FB_GET_LTC_INFO_F
 
         vgpu_fb_get_ltc_info_for_fbp_v1A_0D = (void*)(buffer + *offset);
 
-        for (i = 0; i < MAX_FBPS; i++)
+        for (i = 0; i < MAX_FBPS_v1A_0D; i++)
         {
             (*vgpuFbGetLtcInfoForFbp)[i].fbpIndex = vgpu_fb_get_ltc_info_for_fbp_v1A_0D->fbLtcInfoForFbp[i].fbpIndex;
             (*vgpuFbGetLtcInfoForFbp)[i].ltcMask  = vgpu_fb_get_ltc_info_for_fbp_v1A_0D->fbLtcInfoForFbp[i].ltcMask;
@@ -82,6 +82,41 @@ NV_STATUS deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_v1A_0D(VGPU_FB_GET_LTC_INFO_F
     }
 
     *offset += sizeof(VGPU_FB_GET_LTC_INFO_FOR_FBP_v1A_0D);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_v2D_03(VGPU_FB_GET_LTC_INFO_FOR_FBP *vgpuFbGetLtcInfoForFbp, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If vgpuFbGetLtcInfoForFbp and buffer are valid, then copy data and return the offset
+    if (vgpuFbGetLtcInfoForFbp && buffer)
+    {
+        VGPU_FB_GET_LTC_INFO_FOR_FBP_v2D_03 *vgpu_fb_get_ltc_info_for_fbp_v2D_03 = NULL;
+        NvU32 i;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_FB_GET_LTC_INFO_FOR_FBP_v2D_03))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        vgpu_fb_get_ltc_info_for_fbp_v2D_03 = (void*)(buffer + *offset);
+
+        for (i = 0; i < MAX_FBPS_v2D_03; i++)
+        {
+            (*vgpuFbGetLtcInfoForFbp)[i].fbpIndex = vgpu_fb_get_ltc_info_for_fbp_v2D_03->fbLtcInfoForFbp[i].fbpIndex;
+            (*vgpuFbGetLtcInfoForFbp)[i].ltcMask  = vgpu_fb_get_ltc_info_for_fbp_v2D_03->fbLtcInfoForFbp[i].ltcMask;
+            (*vgpuFbGetLtcInfoForFbp)[i].ltcCount = vgpu_fb_get_ltc_info_for_fbp_v2D_03->fbLtcInfoForFbp[i].ltcCount;
+        }
+    }
+
+    *offset += sizeof(VGPU_FB_GET_LTC_INFO_FOR_FBP_v2D_03);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -1064,6 +1099,65 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PAR
 
 }
 
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2D_02(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS *floorsweepMaskParams,
+    NvU8 *buffer,
+    NvU32 bufferSize,
+    NvU32 *offset
+)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (floorsweepMaskParams && buffer)
+    {
+        NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2D_02 *floorsweep_mask_params_v2D_02 = NULL;
+        NvU32 i = 0, j = 0;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2D_02))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        floorsweep_mask_params_v2D_02 = (void*)(buffer + *offset);
+
+        for (i = 0; i < NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04; i++)
+        {
+            for (j = 0; j < NV2080_CTRL_INTERNAL_GR_MAX_GPC_v2D_02; j++)
+            {
+                floorsweepMaskParams->floorsweepingMasks[i].tpcMask[j] =
+                    floorsweep_mask_params_v2D_02->floorsweepingMasks[i].tpcMask[j];
+                floorsweepMaskParams->floorsweepingMasks[i].tpcCount[j] =
+                    floorsweep_mask_params_v2D_02->floorsweepingMasks[i].tpcCount[j];
+                floorsweepMaskParams->floorsweepingMasks[i].numPesPerGpc[j] =
+                    floorsweep_mask_params_v2D_02->floorsweepingMasks[i].numPesPerGpc[j];
+                floorsweepMaskParams->floorsweepingMasks[i].mmuPerGpc[j] =
+                    floorsweep_mask_params_v2D_02->floorsweepingMasks[i].mmuPerGpc[j];
+                floorsweepMaskParams->floorsweepingMasks[i].zcullMask[j] =
+                    floorsweep_mask_params_v2D_02->floorsweepingMasks[i].zcullMask[j];
+            }
+
+            floorsweepMaskParams->floorsweepingMasks[i].gpcMask =
+                floorsweep_mask_params_v2D_02->floorsweepingMasks[i].gpcMask;
+            floorsweepMaskParams->floorsweepingMasks[i].physGpcMask =
+                floorsweep_mask_params_v2D_02->floorsweepingMasks[i].physGpcMask;
+
+            for (j = 0; j < NV2080_CTRL_INTERNAL_MAX_TPC_PER_GPC_COUNT_v1C_03; j++)
+            {
+                floorsweepMaskParams->floorsweepingMasks[i].tpcToPesMap[j] = floorsweep_mask_params_v2D_02->floorsweepingMasks[i].tpcToPesMap[j];
+            }
+        }
+    }
+
+    *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v2D_02);
+
+    return NVOS_STATUS_SUCCESS;
+
+}
+
 NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS_v1B_05(NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS *zcullInfoParams, NvU8 *buffer,
                                                                                   NvU32 bufferSize, NvU32 *offset)
 {
@@ -1201,6 +1295,76 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_v
     }
 
     *offset += sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_v1E_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_DISPLAYLESS_INFO_v24_08(VGPU_DISPLAYLESS_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        _grid_displayless_info_v24_08 *grid_displayless_info = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(_grid_displayless_info_v24_08))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        grid_displayless_info = (void*)(buffer + *offset);
+
+        // numHeads
+        pVSI->heads.numHeads                  = grid_displayless_info->heads.numHeads;
+        pVSI->heads.maxNumHeads               = grid_displayless_info->heads.maxNumHeads;
+
+        // Read from plugin maxResolution supported for this vGPU.
+        pVSI->maxRes.headIndex       = grid_displayless_info->maxResolution.headIndex;
+        pVSI->maxRes.maxHResolution  = grid_displayless_info->maxResolution.maxHResolution;
+        pVSI->maxRes.maxVResolution  = grid_displayless_info->maxResolution.maxVResolution;
+
+    }
+    *offset += sizeof(_grid_displayless_info_v24_08);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_DISPLAYLESS_INFO_v2D_00(VGPU_DISPLAYLESS_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        _grid_displayless_info_v2D_00 *grid_displayless_info = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(_grid_displayless_info_v2D_00))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        grid_displayless_info = (void*)(buffer + *offset);
+
+        // numHeads
+        pVSI->heads.numHeads                  = grid_displayless_info->heads.numHeads;
+        pVSI->heads.maxNumHeads               = grid_displayless_info->heads.maxNumHeads;
+
+        // Read from plugin maxResolution supported for this vGPU.
+        pVSI->maxRes.headIndex       = grid_displayless_info->maxResolution.headIndex;
+        pVSI->maxRes.maxHResolution  = grid_displayless_info->maxResolution.maxHResolution;
+        pVSI->maxRes.maxVResolution  = grid_displayless_info->maxResolution.maxVResolution;
+
+    }
+    *offset += sizeof(_grid_displayless_info_v2D_00);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -1533,6 +1697,71 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v2B_08(VGPU_STATIC_INFO *pVSI, NvU8 *buff
         }
     }
     *offset += sizeof(VGPU_STATIC_DATA_v2B_08);
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_STATIC_DATA_v2D_00(VGPU_STATIC_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        VGPU_STATIC_DATA_v2D_00 *vgpu_static_data_v2D_00 = NULL;
+        NvU32 i;
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_STATIC_DATA_v2D_00))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+        vgpu_static_data_v2D_00 = (void*)(buffer + *offset);
+        pVSI->fbTaxLength            = vgpu_static_data_v2D_00->fbTaxLength;
+        pVSI->fbLength               = vgpu_static_data_v2D_00->fbLength;
+        pVSI->fbBusWidth             = vgpu_static_data_v2D_00->fbBusWidth;
+        pVSI->fbioMask               = vgpu_static_data_v2D_00->fbioMask;
+        pVSI->fbpMask                = vgpu_static_data_v2D_00->fbpMask;
+        pVSI->ltcMask                = vgpu_static_data_v2D_00->ltcMask;
+        pVSI->ltsCount               = vgpu_static_data_v2D_00->ltsCount;
+        pVSI->subProcessIsolation    = vgpu_static_data_v2D_00->subProcessIsolation;
+        pVSI->sizeL2Cache            = vgpu_static_data_v2D_00->sizeL2Cache;
+        pVSI->poisonFuseEnabled      = vgpu_static_data_v2D_00->poisonFuseEnabled;
+        pVSI->guestManagedHwAlloc    = vgpu_static_data_v2D_00->guestManagedHwAlloc;
+
+        // gpuname
+        portMemCopy(pVSI->adapterName, sizeof(pVSI->adapterName),
+                    vgpu_static_data_v2D_00->gpuName.adapterName, sizeof(pVSI->adapterName));
+        portMemCopy(pVSI->adapterName_Unicode, sizeof(pVSI->adapterName_Unicode),
+                    vgpu_static_data_v2D_00->gpuName.adapterName_Unicode, sizeof(pVSI->adapterName_Unicode));
+        portMemCopy(pVSI->shortGpuNameString, sizeof(pVSI->shortGpuNameString),
+                    vgpu_static_data_v2D_00->gpuName.shortGpuNameString, sizeof(pVSI->adapterName));
+        pVSI->bSplitVasBetweenServerClientRm = vgpu_static_data_v2D_00->bSplitVasBetweenServerClientRm;
+        pVSI->maxSupportedPageSize           = vgpu_static_data_v2D_00->maxSupportedPageSize;
+        pVSI->bFlaSupported                  = vgpu_static_data_v2D_00->bFlaSupported;
+        pVSI->bPerRunlistChannelRamEnabled   = vgpu_static_data_v2D_00->bPerRunlistChannelRamEnabled;
+        pVSI->bAtsSupported                  = vgpu_static_data_v2D_00->bAtsSupported;
+        pVSI->bPerSubCtxheaderSupported      = vgpu_static_data_v2D_00->bPerSubCtxheaderSupported;
+        pVSI->bC2CLinkUp                     = vgpu_static_data_v2D_00->bC2CLinkUp;
+        pVSI->bLocalEgmEnabled               = vgpu_static_data_v2D_00->bLocalEgmEnabled;
+        pVSI->localEgmPeerId                 = vgpu_static_data_v2D_00->localEgmPeerId;
+        pVSI->bSelfHostedMode                = vgpu_static_data_v2D_00->bSelfHostedMode;
+        pVSI->ceFaultMethodBufferDepth       = vgpu_static_data_v2D_00->ceFaultMethodBufferDepth;
+        pVSI->pcieGpuLinkCaps                = vgpu_static_data_v2D_00->pcieGpuLinkCaps;
+        portMemCopy(pVSI->grCapsBits, sizeof(pVSI->grCapsBits),
+                    vgpu_static_data_v2D_00->grCapsBits, sizeof(vgpu_static_data_v2D_00->grCapsBits));
+
+        for (i = 0; i < NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX_v27_01; i++)
+        {
+            pVSI->engineList[i] = vgpu_static_data_v2D_00->engineList[i];
+        }
+        for (i = 0; i < NV2080_ENGINE_TYPE_NVJPEG_SIZE; i++)
+        {
+            portMemCopy((void*)&pVSI->jpegCaps[i], sizeof(pVSI->jpegCaps[i]),
+                        (void*)&vgpu_static_data_v2D_00->jpegCaps[i], sizeof(vgpu_static_data_v2D_00->jpegCaps[i]));
+        }
+    }
+    *offset += sizeof(VGPU_STATIC_DATA_v2D_00);
     return NVOS_STATUS_SUCCESS;
 }
 

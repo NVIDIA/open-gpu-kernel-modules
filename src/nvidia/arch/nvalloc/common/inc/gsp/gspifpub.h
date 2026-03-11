@@ -70,6 +70,8 @@ typedef struct GSP_ACR_BOOT_GSP_RM_PARAMS
     NvU32          wprCarveoutSize;
     // Whether to boot GSP-RM or GSP-Proxy through ACR
     NvBool         bIsGspRmBoot;
+    // Whether inst-in-sys mode is enabled or not
+    NvBool         bInstInSysMode;
 } GSP_ACR_BOOT_GSP_RM_PARAMS;
 
 /*!

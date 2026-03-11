@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/gpu.h"
 
-#include "published/turing/tu102/dev_ce.h"
+#include "published/turing/tu102/dev_ce_base.h"
 
 #define NVLINK_CE_AUTO_CONFIG_TABLE_DEFAULT_ENTRY      0
 
@@ -186,13 +186,13 @@ kceGetNvlinkAutoConfigCeValues_TU102
         if (grceSharedLce != 0xF)
         {
             // GRCE is shared
-            pGrceConfig[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 1) |
-                                   DRF_NUM(_CE, _GRCE_CONFIG, _SHARED_LCE, grceSharedLce);
+            pGrceConfig[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 1) |
+                                   DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, grceSharedLce);
         }
         else
         {
             // GRCE got its own PCE
-            pGrceConfig[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 0);
+            pGrceConfig[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 0);
         }
     }
     *pExposeCeMask = nvLinkCeAutoConfigTable_TU102[topoIdx].exposeCeMask;
@@ -220,12 +220,12 @@ done:
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pCe   OBJCE pointer
  *
- * @return  NV_CE_GRCE_CONFIG__SIZE_1
+ * @return  NV_CE_BASE_GRCE_CONFIG__SIZE_1
  *
  */
 NvU32 kceGetGrceConfigSize1_TU102(KernelCE* kce)
 {
-    return NV_CE_GRCE_CONFIG__SIZE_1;
+    return NV_CE_BASE_GRCE_CONFIG__SIZE_1;
 }
 
 /*!
@@ -235,10 +235,10 @@ NvU32 kceGetGrceConfigSize1_TU102(KernelCE* kce)
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pCe   OBJCE pointer
  *
- * @return  NV_CE_PCE2LCE_CONFIG__SIZE_1
+ * @return  NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1
  *
  */
 NvU32 kceGetPce2lceConfigSize1_TU102(KernelCE* kce)
 {
-    return NV_CE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
 }

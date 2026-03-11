@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2023 NVIDIA Corporation
+    Copyright (c) 2018-2025 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -358,20 +358,22 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
     // puts them on the deferred free list.
     uvm_va_space_down_write(va_space);
     uvm_va_space_detach_all_user_channels(va_space, &deferred_free_list);
-    uvm_processor_mask_and(retained_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
+    uvm_processor_mask_copy(retained_gpus, &va_space->registered_gpus);
     uvm_global_gpu_retain(retained_gpus);
     uvm_va_space_up_write(va_space);
 
     // It's ok to use retained_gpus outside the lock since there can only be one
     // thread executing in uvm_va_space_mm_shutdown at a time.
 
-    // Flush the fault buffer on all registered faultable GPUs.
+    // Flush the replayable fault buffer on all registered faultable GPUs.
     // This will avoid spurious cancels of stale pending translated
-    // faults after we set UVM_VA_SPACE_MM_STATE_RELEASED later.
+    // faults after we set UVM_VA_SPACE_MM_STATE_RELEASED later. This is
+    // unnecessary for non-replayable faults because that handler ignores faults
+    // if the channel has been destroyed, before the mm is checked.
     uvm_parent_processor_mask_zero(&flushed_parent_gpus);
     for_each_gpu_in_mask(gpu, retained_gpus) {
         if (!uvm_parent_processor_mask_test_and_set(&flushed_parent_gpus, gpu->parent->id))
-            uvm_gpu_fault_buffer_flush(gpu);
+            uvm_gpu_replayable_buffer_flush(gpu);
     }
 
     uvm_global_gpu_release(retained_gpus);

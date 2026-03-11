@@ -130,13 +130,9 @@ struct NVOC_METADATA__ConfidentialComputeApi {
     const struct NVOC_VTABLE__ConfidentialComputeApi vtable;
 };
 
-#ifndef __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__
-#define __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__
-typedef struct ConfidentialComputeApi ConfidentialComputeApi;
-#endif /* __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_ConfidentialComputeApi
-#define __nvoc_class_id_ConfidentialComputeApi 0xea5cb0
+#define __nvoc_class_id_ConfidentialComputeApi 0xea5cb0u
+typedef struct ConfidentialComputeApi ConfidentialComputeApi;
 #endif /* __nvoc_class_id_ConfidentialComputeApi */
 
 // Casting support
@@ -154,14 +150,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialComputeApi;
 
 NV_STATUS __nvoc_objCreateDynamic_ConfidentialComputeApi(ConfidentialComputeApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_ConfidentialComputeApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_ConfidentialComputeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_ConfidentialComputeApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_ConfidentialComputeApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS confComputeApiConstruct_IMPL(struct ConfidentialComputeApi *arg_pConfComputeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_confComputeApiConstruct(arg_pConfComputeApi, arg_pCallContext, arg_pParams) confComputeApiConstruct_IMPL(arg_pConfComputeApi, arg_pCallContext, arg_pParams)
+NV_STATUS confComputeApiConstruct_IMPL(struct ConfidentialComputeApi *pConfComputeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_confComputeApiConstruct(pConfComputeApi, pCallContext, pParams) confComputeApiConstruct_IMPL(pConfComputeApi, pCallContext, pParams)
 
 void confComputeApiDestruct_IMPL(struct ConfidentialComputeApi *pConfComputeApi);
 #define __nvoc_confComputeApiDestruct(pConfComputeApi) confComputeApiDestruct_IMPL(pConfComputeApi)
@@ -406,6 +402,8 @@ static inline void confComputeApiAddAdditionalDependants_DISPATCH(struct RsClien
     pResource->__nvoc_metadata_ptr->vtable.__confComputeApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS confComputeApiCtrlCmdSystemGetCapabilities_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *pParams);
 
 NV_STATUS confComputeApiCtrlCmdSystemGetGpusState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams);
@@ -428,6 +426,10 @@ NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL(struct ConfidentialC
 
 NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #endif // CONF_COMPUTE_H

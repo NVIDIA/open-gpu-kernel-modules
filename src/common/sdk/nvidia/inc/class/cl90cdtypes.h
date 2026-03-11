@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@ extern "C" {
 #define NV_EVENT_BUFFER_RECORD_TYPE_RATS_GSP_TRACE                            (8)
 #define NV_EVENT_BUFFER_RECORD_TYPE_NVTELEMETRY_REPORT_EVENT_SUBDEVICE        (132)
 #define NV_EVENT_BUFFER_RECORD_TYPE_FECS_CTX_SWITCH                           (134)
-
+#define NV_EVENT_BUFFER_RECORD_TYPE_NOCAT_NOTIFY                              (16)
 
 #ifdef __cplusplus
 };     /* extern "C" */

@@ -103,7 +103,11 @@
         #define UVM_HMM_RANGE_FAULT_SUPPORTED() 0
     #endif
 
-    #define UVM_CAN_USE_MMU_NOTIFIERS() 1
+    #if defined(CONFIG_MMU_NOTIFIER)
+        #define UVM_CAN_USE_MMU_NOTIFIERS() 1
+    #else
+        #define UVM_CAN_USE_MMU_NOTIFIERS() 0
+    #endif
 
 //
 // printk.h already defined pr_fmt, so we have to redefine it so the pr_*
@@ -114,12 +118,6 @@
 #define pr_fmt(fmt) NVIDIA_UVM_PRETTY_PRINTING_PREFIX fmt
 
 #define NV_UVM_GFP_FLAGS (GFP_KERNEL | __GFP_NOMEMALLOC)
-
-#if defined(NV_GET_DEV_PAGEMAP_HAS_PGMAP_ARG)
-    #define NV_GET_DEV_PAGEMAP(pfn) get_dev_pagemap(pfn, NULL)
-#else
-    #define NV_GET_DEV_PAGEMAP get_dev_pagemap
-#endif
 
 /* Return a nanosecond-precise value */
 static inline NvU64 NV_GETTIME(void)

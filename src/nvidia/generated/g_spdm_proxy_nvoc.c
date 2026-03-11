@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x5b722d = 1;
+char __nvoc_class_id_uniqueness_check__5b722d = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_SpdmProxy;
@@ -36,20 +36,19 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SpdmProxy;
 
 // Up-thunk(s) to bridge SpdmProxy methods to ancestors (if any)
 
+// Class-specific details for SpdmProxy
 // Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_SpdmProxy = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(SpdmProxy),
-        /*classId=*/            classId(SpdmProxy),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(SpdmProxy),
+    .classInfo.classId =            classId(SpdmProxy),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "SpdmProxy",
+    .classInfo.name =               "SpdmProxy",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__SpdmProxy,
-    /*pExportInfo=*/        &__nvoc_export_info__SpdmProxy
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__SpdmProxy,
+    .pExportInfo =        &__nvoc_export_info__SpdmProxy
 };
 
 
@@ -71,25 +70,30 @@ const struct NVOC_CASTINFO __nvoc_castinfo__SpdmProxy = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__SpdmProxy = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
-void __nvoc_dtor_SpdmProxy(SpdmProxy *pThis) {
+
+// Destruct SpdmProxy object.
+void __nvoc_dtor_SpdmProxy(SpdmProxy* pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_SpdmProxy(SpdmProxy *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
+
+// Construct SpdmProxy object.
 NV_STATUS __nvoc_ctor_SpdmProxy(SpdmProxy *pThis) {
     NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
     __nvoc_init_dataField_SpdmProxy(pThis);
     goto __nvoc_ctor_SpdmProxy_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_SpdmProxy_exit:
-
     return status;
 }
 

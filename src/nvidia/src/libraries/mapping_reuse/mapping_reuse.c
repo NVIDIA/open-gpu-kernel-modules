@@ -316,7 +316,7 @@ err_unmap:
     {
         void *pCur = token.pList;
         pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx,
-            mrangeMake(token.pList->newMappingNode.virtualOffset, range.size));
+            mrangeMake(token.pList->newMappingNode.virtualOffset, token.pList->size));
         token.pList = token.pList->newMappingNode.pNextEntry;
         PORT_FREE(pReuseMappingDb->pAllocator, pCur);
     }

@@ -268,6 +268,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GPCS_PER_DIELET            NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GPCS_PER_DIELET
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_MAX_NUM_SMC_ENGINES_PER_DIELET NV0080_CTRL_GR_INFO_INDEX_LITTER_MAX_NUM_SMC_ENGINES_PER_DIELET
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_CPC_PER_GPC                NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_CPC_PER_GPC
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_NVLINK_MASK              NV0080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_NVLINK_MASK
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_C2C_MASK                 NV0080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_C2C_MASK
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_PCIE_MASK                NV0080_CTRL_GR_INFO_INDEX_LITTER_HSHUB_PCIE_MASK
 
 /* When adding a new INDEX, please update INDEX_MAX and MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
@@ -1675,6 +1678,7 @@ typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_V2_PARAMS {
 
 #define NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MAX_LIST_SIZE (0xFFU)
 #define NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_MASK          (0x0U)
+#define NV2080_CTRL_GR_SM_ISSUE_THROTTLE_CTRL_CREDIT        (0x1U)
 
 /*
  * NV2080_CTRL_CMD_GR_GET_SM_ISSUE_THROTTLE_CTRL
@@ -1990,5 +1994,32 @@ typedef struct NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS {
     NvU32 tpcReconfigMask;
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
 } NV2080_CTRL_GR_GET_TPC_RECONFIG_MASK_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GR_TEST_CTXSW_ERROR_LOGS
+ *
+ * This command provides an interface to test CTXSW print logs from
+ * the context switch microcode. This is test only interface.
+ *
+ *    expectedCharCount[IN]
+ *      This parameter specifies the number of characters to retrieve
+ *      and print.
+ *    bUseInterrupt[IN]
+ *      This flag is used to indicate if an interrupt is to be issued prior to 
+ *      ctxsw ucode dumping its prints to the buffer. 
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV2080_CTRL_CMD_GR_TEST_CTXSW_ERROR_LOGS (0x2080123eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_TEST_CTXSW_ERROR_LOGS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GR_TEST_CTXSW_ERROR_LOGS_PARAMS_MESSAGE_ID (0x3EU)
+
+typedef struct NV2080_CTRL_GR_TEST_CTXSW_ERROR_LOGS_PARAMS {
+    NvU32  expectedCharCount;
+    NvBool bUseInterrupt;
+} NV2080_CTRL_GR_TEST_CTXSW_ERROR_LOGS_PARAMS;
 
 /* _ctrl2080gr_h_ */

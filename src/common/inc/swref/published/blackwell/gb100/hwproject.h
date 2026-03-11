@@ -32,5 +32,9 @@
 #define NV_LTC_PRI_BASE                      0x140000
 #define NV_LTC_PRI_STRIDE                    0x2000
 #define NV_LTS_PRI_STRIDE                    0x200
+#define NV_PBUS0_PRI_BASE                    0x1000
+#define NV_HUBMMU0_PRI_BASE                  0x880000
+#define NV_PGRAPH_BASE                       0x400000
+#define NV_PTIMER0_PRI_BASE                  0x9000
 
 #endif // __gb100_hwproject_h__

@@ -45,20 +45,20 @@
 //     #endif
 // 3) Do the same thing for the function definition, and for any structs that
 //    are taken as arguments to these functions.
-// 4) Let this change propagate over to cuda_a and bugfix_main, so that the CUDA
+// 4) Let this change propagate over to bugfix_main, so that the CUDA
 //    and nvidia-cfg libraries can start using the new API by bumping up the API
 //    version number it's using.
 //    Places where UVM_API_REVISION is defined are:
-//      drivers/gpgpu/cuda/cuda.nvmk (cuda_a)
+//      drivers/gpgpu/cuda/cuda.nvmk (bugfix_main)
 //      drivers/setup/linux/nvidia-cfg/makefile.nvmk (bugfix_main)
-// 5) Once the bugfix_main and cuda_a changes have made it back into chips_a,
+// 5) Once the bugfix_main changes have made it back into chips_a,
 //    remove the old API declaration, definition, and any old structs that were
 //    in use.
 
 #ifndef _UVM_H_
 #define _UVM_H_
 
-#define UVM_API_LATEST_REVISION 13
+#define UVM_API_LATEST_REVISION 14
 
 #if !defined(UVM_API_REVISION)
 #error "please define UVM_API_REVISION macro to a desired version number or UVM_API_LATEST_REVISION macro"
@@ -335,6 +335,12 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 // NvRmControl(NVC637_CTRL_CMD_GET_UUID). Otherwise, if the GPU is not SMC
 // capable or SMC enabled, the physical GPU UUID must be used.
 //
+// GPU registration may fail if certain features, such as those required to
+// support pageable memory on systems without hardware support, could not be
+// initialised. Registration may succeed if callers retry after explicitly
+// requesting these features be disabled when calling UvmInitialize(), for
+// example by passing UVM_INIT_FLAGS_DISABLE_HMM.
+//
 // Arguments:
 //     gpuUuid: (INPUT)
 //         UUID of the physical GPU to register.
@@ -344,6 +350,12 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //         This should be NULL if the GPU is not SMC capable or SMC enabled.
 //
 // Error codes:
+//
+//     NV_ERR_BUSY_RETRY:
+//         Registration of the GPU failed because not all features required
+//         to support the VA space could be enabled. Caller should retry after
+//         disabling certain features when creating the VA space.
+//
 //     NV_ERR_NO_MEMORY:
 //         Internal memory allocation failed.
 //
@@ -1123,7 +1135,6 @@ NV_STATUS UvmAllowMigrationRangeGroups(const NvU64 *rangeGroupIds,
 //     for (i = 0; i < accessedByCount; i++) {
 //         UvmSetAccessedBy(base, length, &accessedByUuids[i]);
 //     }
-//     UvmSetRangeGroup(base, length, rangeGroupId);
 //     UvmMigrate(base, length, preferredLocationUuid, 0);
 //
 // Please see those APIs for further details on their behavior. If an error is
@@ -1183,8 +1194,7 @@ NV_STATUS UvmAlloc(void                  *base,
                    NvLength               length,
                    const NvProcessorUuid *preferredLocationUuid,
                    const NvProcessorUuid *accessedByUuids,
-                   NvLength               accessedByCount,
-                   NvU64                  rangeGroupId);
+                   NvLength               accessedByCount);
 
 //------------------------------------------------------------------------------
 // UvmFree
@@ -2339,19 +2349,6 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // a file backed shared mapping and least one GPU in the system supports
 // transparent access to pageable memory, the behavior below is not guaranteed.
 //
-// If any pages in the VA range are associated with a range group that was made
-// non-migratable via UvmPreventMigrationRangeGroups, then those pages are
-// migrated immediately to the specified preferred location and mapped according
-// to policies specified in UvmPreventMigrationRangeGroups. Otherwise, this API
-// neither migrates pages nor does it populate unpopulated pages. Note that if
-// the specified preferred location is a fault-capable GPU and at least one page
-// in the VA range is associated with a non-migratable range group, then an
-// error is returned. Additionally, if the specified preferred location is a
-// non-fault capable GPU and at least one page in the VA range is associated
-// with a non-migratable range group, an error is returned if another
-// non-fault-capable GPU is present in the accessed-by list of that page but P2P
-// support has not been enabled between both GPUs.
-//
 // When a page is in its preferred location, a fault from another processor will
 // not cause a migration if a mapping for that page from that processor can be
 // established without migrating the page. Individual faulting pages will still
@@ -2783,99 +2780,6 @@ NV_STATUS UvmUnsetAccessedBy(void                  *base,
 //
 //------------------------------------------------------------------------------
 NV_STATUS UvmDiscard(void *base, NvLength length, NvU64 flags);
-
-//------------------------------------------------------------------------------
-// UvmEnableSystemWideAtomics
-//
-// Enables software-assisted system-wide atomics support on the specified GPU.
-// Any system-wide atomic operation issued from this GPU is now guaranteed to be
-// atomic with respect to all accesses from other processors that also support
-// system-wide atomics regardless of whether that support is enabled on those
-// other processors or not.
-//
-// The class of atomic operations from the GPU that are considered system-wide
-// is GPU architecture dependent. All atomic operations from the CPU are always
-// considered to be system-wide and support for system-wide atomics on the CPU
-// is always considered to be enabled.
-//
-// System-wide atomics which cannot be natively supported in hardware are
-// emulated using virtual mappings and page faults. For example, assume a
-// virtual address which is resident in CPU memory and has CPU memory as its
-// preferred location. A GPU with system-wide atomics enabled but without native
-// atomics support to CPU memory will not have atomics enabled in its virtual
-// mapping of the page that contains that address. If that GPU performs an
-// atomic operation, the access will fault, all other processors' mappings to
-// that page will have their write permissions revoked, the faulting GPU will be
-// granted atomic permissions in its virtual mapping, and the faulting GPU will
-// retry its access. Further atomic accesses from that GPU will not cause page
-// faults until another processor attempts a write access to the same page.
-//
-// Multiple calls to this API for the same GPU are not refcounted, i.e. calling
-// this API for a GPU for which software-assisted system-wide atomics support
-// has already been enabled results in a no-op.
-//
-// The GPU must have been registered using UvmRegisterGpu prior to making this
-// call. By default, software-assisted system-wide atomics support is enabled
-// when a GPU is registered.
-//
-// Arguments:
-//     gpuUuid: (INPUT)
-//         UUID of the physical GPU if the GPU is not SMC capable or SMC
-//         enabled, or the GPU instance UUID of the partition to enable
-//         software-assisted system-wide atomics on.
-//
-// Error codes:
-//     NV_ERR_NO_MEMORY:
-//         Internal memory allocation failed.
-//
-//     NV_ERR_INVALID_DEVICE:
-//         The GPU referred to by gpuUuid was not registered.
-//
-//     NV_ERR_NOT_SUPPORTED:
-//         The GPU does not support system-wide atomic operations, or the GPU
-//         has hardware support for scoped atomic operations.
-//
-//     NV_ERR_GENERIC:
-//         Unexpected error. We try hard to avoid returning this error code,
-//         because it is not very informative.
-//
-//------------------------------------------------------------------------------
-NV_STATUS UvmEnableSystemWideAtomics(const NvProcessorUuid *gpuUuid);
-
-//------------------------------------------------------------------------------
-// UvmDisableSystemWideAtomics
-//
-// Disables software-assisted system-wide atomics support on the specified GPU.
-// Any atomic operation from this GPU is no longer guaranteed to be atomic with
-// respect to accesses from other processors in the system, even if the
-// operation has system-wide scope at the instruction level.
-//
-// The GPU must have been registered using UvmRegisterGpu prior to making this
-// call. It is however ok to call this API for GPUs that do not have support for
-// system-wide atomic operations enabled. If the GPU is unregistered via
-// UvmUnregisterGpu and then registered again via UvmRegisterGpu, support for
-// software-assisted system-wide atomics will be enabled.
-//
-// Arguments:
-//     gpuUuid: (INPUT)
-//         UUID of the physical GPU if the GPU is not SMC capable or SMC
-//         enabled, or the GPU instance UUID of the partition to disable
-//         software-assisted system-wide atomics on.
-//
-// Error codes:
-//     NV_ERR_INVALID_DEVICE:
-//         The GPU referred to by gpuUuid was not registered.
-//
-//     NV_ERR_NOT_SUPPORTED:
-//         The GPU does not support system-wide atomic operations, or the GPU
-//         has hardware support for scoped atomic operations.
-//
-//     NV_ERR_GENERIC:
-//         Unexpected error. We try hard to avoid returning this error code,
-//         because it is not very informative.
-//
-//------------------------------------------------------------------------------
-NV_STATUS UvmDisableSystemWideAtomics(const NvProcessorUuid *gpuUuid);
 
 //------------------------------------------------------------------------------
 // UvmGetFileDescriptor

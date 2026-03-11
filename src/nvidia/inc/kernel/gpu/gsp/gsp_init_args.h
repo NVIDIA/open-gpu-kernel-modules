@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,11 @@ typedef struct {
     NvU32 pageTableEntryCount;
     NvLength cmdQueueOffset;
     NvLength statQueueOffset;
+    NvLength queueElementHdrSize;
+    NvLength queueElementSizeMin;
+    NvLength queueElementSizeMax;
+    NvU32 queueHeaderAlign;
+    NvU32 queueElementAlign;    
 } MESSAGE_QUEUE_INIT_ARGUMENTS;
 
 typedef struct {
@@ -64,6 +69,11 @@ typedef struct
         NvU64                         size;
     } sysmemHeapArgs;
 
+    struct 
+    {
+        NvU64                         pa;
+        NvU64                         size;
+    } rmStateMonitorBufferArgs;
 } GSP_ARGUMENTS_CACHED;
 
 #endif // GSP_INIT_ARGS_H

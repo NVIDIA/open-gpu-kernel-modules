@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x654166 = 1;
+char __nvoc_class_id_uniqueness_check__654166 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine;
@@ -36,10 +36,12 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine;
 
 // Up-thunk(s) to bridge CrashCatEngine methods to ancestors (if any)
 
+// Class-specific details for CrashCatEngine
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
 //  crashcatEngineConfigured
 //  crashcatEngineVprintf
+//  crashcatEngineResetLog
 //  crashcatEnginePriRead
 //  crashcatEnginePriWrite
 //  crashcatEngineMapBufferDescriptor
@@ -49,17 +51,15 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine;
 //  crashcatEngineGetWFL0Offset
 const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(CrashCatEngine),
-        /*classId=*/            classId(CrashCatEngine),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(CrashCatEngine),
+    .classInfo.classId =            classId(CrashCatEngine),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "CrashCatEngine",
+    .classInfo.name =               "CrashCatEngine",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
-    /*pCastInfo=*/          &__nvoc_castinfo__CrashCatEngine,
-    /*pExportInfo=*/        &__nvoc_export_info__CrashCatEngine
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) NULL,
+    .pCastInfo =          &__nvoc_castinfo__CrashCatEngine,
+    .pExportInfo =        &__nvoc_export_info__CrashCatEngine
 };
 
 
@@ -72,6 +72,7 @@ static const struct NVOC_METADATA__CrashCatEngine __nvoc_metadata__CrashCatEngin
     .vtable.__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL,    // virtual
     .vtable.__crashcatEngineConfigured__ = NULL,    // pure virtual
     .vtable.__crashcatEngineVprintf__ = NULL,    // pure virtual
+    .vtable.__crashcatEngineResetLog__ = NULL,    // pure virtual
     .vtable.__crashcatEnginePriRead__ = NULL,    // pure virtual
     .vtable.__crashcatEnginePriWrite__ = NULL,    // pure virtual
     .vtable.__crashcatEngineMapBufferDescriptor__ = NULL,    // pure virtual
@@ -92,31 +93,39 @@ const struct NVOC_CASTINFO __nvoc_castinfo__CrashCatEngine = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__CrashCatEngine = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct CrashCatEngine object.
 void __nvoc_crashcatEngineDestruct(CrashCatEngine*);
-void __nvoc_dtor_CrashCatEngine(CrashCatEngine *pThis) {
+void __nvoc_dtor_CrashCatEngine(CrashCatEngine* pThis) {
+
+// Call destructor.
     __nvoc_crashcatEngineDestruct(pThis);
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_CrashCatEngine(CrashCatEngine *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_CrashCatEngine(CrashCatEngine *pThis) {
-    NV_STATUS status = NV_OK;
-    __nvoc_init_dataField_CrashCatEngine(pThis);
 
-    status = __nvoc_crashcatEngineConstruct(pThis);
+// Construct CrashCatEngine object.
+NV_STATUS __nvoc_ctor_CrashCatEngine(CrashCatEngine *arg_this) {
+    NV_STATUS status = NV_OK;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CrashCatEngine(arg_this);
+
+    // Call the constructor for this class.
+    status = __nvoc_crashcatEngineConstruct(arg_this);
     if (status != NV_OK) goto __nvoc_ctor_CrashCatEngine_fail__init;
     goto __nvoc_ctor_CrashCatEngine_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_CrashCatEngine_fail__init:
 __nvoc_ctor_CrashCatEngine_exit:
-
     return status;
 }
 
@@ -126,7 +135,7 @@ static void __nvoc_init_funcTable_CrashCatEngine_1(CrashCatEngine *pThis) {
 } // End __nvoc_init_funcTable_CrashCatEngine_1
 
 
-// Initialize vtable(s) for 10 virtual method(s).
+// Initialize vtable(s) for 11 virtual method(s).
 void __nvoc_init_funcTable_CrashCatEngine(CrashCatEngine *pThis) {
     __nvoc_init_funcTable_CrashCatEngine_1(pThis);
 }

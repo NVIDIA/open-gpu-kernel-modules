@@ -242,6 +242,9 @@ namespace DisplayPort
 
     struct HDCPValidateData
     {
+        NvU8 vP[NV0073_CTRL_HDCP_VPRIME_SIZE];
+        NvU64 aN;
+        NvU64 mP;
     };
 
     typedef enum

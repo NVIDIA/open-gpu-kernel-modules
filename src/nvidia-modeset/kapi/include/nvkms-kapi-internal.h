@@ -103,6 +103,7 @@ struct NvKmsKapiDevice {
     NvU32 subDeviceMask;
 
     NvBool isSOC;
+    NvBool isSOCDisplay;
     NvKmsDispIOCoherencyModes isoIOCoherencyModes;
     NvKmsDispIOCoherencyModes nisoIOCoherencyModes;
     NvBool supportsSyncpts;

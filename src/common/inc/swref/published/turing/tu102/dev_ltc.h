@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,5 @@
 #define __tu102_dev_ltc_h_
 
 #define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT                  0x001404f8 /* RW-4R */
-#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_TOTAL                  15:0 /* RWIVF */
-#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT           0x0000 /* RWI-V */
-#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                31:16 /* RWIVF */
-#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT          0x0000 /* RWI-V */
 
 #endif // __tu102_dev_ltc_h_

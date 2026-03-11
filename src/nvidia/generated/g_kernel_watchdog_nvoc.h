@@ -140,13 +140,9 @@ struct NVOC_METADATA__KernelWatchdog {
     const struct NVOC_VTABLE__KernelWatchdog vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelWatchdog_TYPEDEF__
-#define __NVOC_CLASS_KernelWatchdog_TYPEDEF__
-typedef struct KernelWatchdog KernelWatchdog;
-#endif /* __NVOC_CLASS_KernelWatchdog_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelWatchdog
-#define __nvoc_class_id_KernelWatchdog 0x7ace3d
+#define __nvoc_class_id_KernelWatchdog 0x7ace3du
+typedef struct KernelWatchdog KernelWatchdog;
 #endif /* __nvoc_class_id_KernelWatchdog */
 
 // Casting support
@@ -164,14 +160,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelWatchdog;
 
 NV_STATUS __nvoc_objCreateDynamic_KernelWatchdog(KernelWatchdog**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_KernelWatchdog(KernelWatchdog**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_KernelWatchdog(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_KernelWatchdog((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_KernelWatchdog(KernelWatchdog**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_KernelWatchdog(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_KernelWatchdog((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS kwdtConstruct_IMPL(struct KernelWatchdog *arg_pKernelWatchdog, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_kwdtConstruct(arg_pKernelWatchdog, arg_pCallContext, arg_pParams) kwdtConstruct_IMPL(arg_pKernelWatchdog, arg_pCallContext, arg_pParams)
+NV_STATUS kwdtConstruct_IMPL(struct KernelWatchdog *pKernelWatchdog, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_kwdtConstruct(pKernelWatchdog, pCallContext, pParams) kwdtConstruct_IMPL(pKernelWatchdog, pCallContext, pParams)
 
 void kwdtDestruct_IMPL(struct KernelWatchdog *arg_this);
 #define __nvoc_kwdtDestruct(arg_this) kwdtDestruct_IMPL(arg_this)
@@ -330,6 +326,12 @@ static inline void kwdtAddAdditionalDependants_DISPATCH(struct RsClient *pClient
     pResource->__nvoc_metadata_ptr->vtable.__kwdtAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 #endif // _KERNEL_WATCHDOG_H_

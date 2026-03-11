@@ -253,6 +253,15 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
     NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
                  NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__)
 
+#define NV_ERROR_LOG_COND(pGpu, num, fmt, ...)                          \
+    do {                                                                \
+        if ((num) != 0) {                                               \
+            NV_ERROR_LOG(pGpu, num, fmt, ##__VA_ARGS__);                \
+        } else {                                                        \
+            NV_ERROR_LOG_DATA(pGpu, num, fmt, ##__VA_ARGS__);           \
+        }                                                               \
+    } while (0)
+
 void nvErrorLog(void *pVoid, XidContext context, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);
 void nvErrorLog2_va(void * pGpu, XidContext context, NvBool oobLogging, const char * pFormat, ...);

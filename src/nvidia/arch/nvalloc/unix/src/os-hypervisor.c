@@ -915,6 +915,10 @@ void osWakeRemoveVgpu(NvU32 gpuId, NvU32 returnStatus)
     os_call_vgpu_vfio((void *)&vgpu_info, CMD_VFIO_WAKE_REMOVE_GPU);
 }
 
+NvBool osIsGridSupported(OBJGPU *pGpu)
+{
+    return (os_is_grid_supported() || os_get_grid_csp_support() || hypervisorIsVgxHyper());
+}
 
 NvU32 osGetGridCspSupport(void)
 {

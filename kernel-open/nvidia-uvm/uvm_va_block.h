@@ -157,12 +157,6 @@ typedef struct
     // which case we need to initialize the entire big range.
     bool initialized_big;
 
-    // Sticky state to split PTEs to 4k and keep them there. Used when a fatal
-    // fault has been detected on this GPU to avoid false dependencies within
-    // the uTLB for fatal and non-fatal faults on the same larger PTE, which
-    // could lead to wrong fault attribution.
-    bool force_4k_ptes;
-
     // This table shows the HW PTE states given all permutations of pte_is_2m,
     // big_ptes, and pte_bits. Note that the first row assumes that the 4k page
     // tables have been allocated (if not, then no PDEs are allocated either).
@@ -211,7 +205,7 @@ typedef struct
     // The block might not be able to fit any big PTEs, in which case this
     // bitmap is always zero. Use uvm_va_block_gpu_num_big_pages to find the
     // number of valid bits in this mask.
-    DECLARE_BITMAP(big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
+    DECLARE_BITMAP(big_ptes, UVM_BIG_PAGES_PER_UVM_VA_BLOCK);
 
     // See the comments for uvm_va_block_mmap_t::cpu.pte_bits.
     //
@@ -969,8 +963,6 @@ NV_STATUS uvm_va_block_unmap_mask(uvm_va_block_t *va_block,
                                   const uvm_page_mask_t *unmap_page_mask);
 
 // Function called when the preferred location changes. Notably:
-// - Mark all CPU pages as dirty because the new processor may not have
-//   up-to-date data.
 // - Unmap the preferred location's processor from any pages in this region
 //   which are not resident on the preferred location.
 //
@@ -1041,9 +1033,7 @@ NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
 //
 // NV_ERR_INVALID_ADDRESS       The VA block is logically dead (zombie)
 // NV_ERR_INVALID_ACCESS_TYPE   The vma corresponding to the VA range does not
-//                              allow access_type permissions, or migration is
-//                              disallowed and processor_id cannot access the
-//                              range remotely (UVM-Lite).
+//                              allow access_type permissions.
 // NV_ERR_INVALID_OPERATION     The access would violate the policies specified
 //                              by UvmPreventMigrationRangeGroups.
 //
@@ -1055,8 +1045,7 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_processor_id_t processor_id,
                                                  uvm_page_index_t page_index,
-                                                 uvm_fault_access_type_t access_type,
-                                                 bool allow_migration);
+                                                 uvm_fault_access_type_t access_type);
 
 // Set a va_block discarded, unmap the block and revoke its residency status
 //
@@ -1197,13 +1186,6 @@ void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
 // the two GPUs, in either direction.
 // LOCKING: The caller must hold the va_block lock
 void uvm_va_block_disable_peer(uvm_va_block_t *va_block, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1);
-
-// Unmap any mappings from GPU to the preferred location.
-//
-// The GPU has to be in UVM-Lite mode.
-//
-// LOCKING: The caller must hold the va_block lock
-void uvm_va_block_unmap_preferred_location_uvm_lite(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
 
 // Frees all memory under this block associated with this GPU. Any portion of
 // the block which is resident on the GPU is evicted to sysmem before being
@@ -1611,21 +1593,6 @@ size_t uvm_va_block_gpu_chunk_index_range(NvU64 start,
                                           uvm_gpu_t *gpu,
                                           uvm_page_index_t page_index,
                                           uvm_chunk_size_t *out_chunk_size);
-
-// If there are any resident CPU pages in the block, mark them as dirty
-void uvm_va_block_mark_cpu_dirty(uvm_va_block_t *va_block);
-
-// Sets the internal state required to handle fault cancellation
-//
-// This function may require allocating page tables to split big pages into 4K
-// pages. If allocation-retry was required as part of the operation and was
-// successful, NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case the
-// block's lock was unlocked and relocked.
-//
-// va_block_context must not be NULL.
-//
-// LOCKING: The caller must hold the va_block lock.
-NV_STATUS uvm_va_block_set_cancel(uvm_va_block_t *va_block, uvm_va_block_context_t *block_context, uvm_gpu_t *gpu);
 
 //
 // uvm_va_block_region_t helpers
@@ -2193,43 +2160,29 @@ static NvU64 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
         return uvm_va_block_page_size_gpu(va_block, processor_id, page_index);
 }
 
-// Returns the big page size for the GPU VA space of the block
-NvU64 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
-
 // Returns the number of big pages in the VA block for the given size
-size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU64 big_page_size);
-
-// Returns the number of big pages in the VA block for the big page size on the
-// given GPU
-static size_t uvm_va_block_gpu_num_big_pages(uvm_va_block_t *va_block, uvm_gpu_t *gpu)
-{
-    return uvm_va_block_num_big_pages(va_block, uvm_va_block_gpu_big_page_size(va_block, gpu));
-}
+size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block);
 
 // Returns the start address of the given big page index and big page size
-NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU64 big_page_size);
+NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index);
 
 // Returns the region [start, end] of the given big page index and big page size
-uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block,
-                                                   size_t big_page_index,
-                                                   NvU64 big_page_size);
+uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block, size_t big_page_index);
 
 // Returns the largest sub-region region of [start, end] which can fit big
 // pages. If the region cannot fit any big pages, an invalid region (0, 0) is
 // returned.
-uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU64 big_page_size);
+uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block);
 
 // Returns the largest sub-region region of 'region' which can fit big pages.
 // If the region cannot fit any big pages, an invalid region (0, 0) is returned.
-uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_block,
-                                                          uvm_va_block_region_t region,
-                                                          NvU64 big_page_size);
+uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_block, uvm_va_block_region_t region);
 
 // Returns the big page index (the bit index within
 // uvm_va_block_gpu_state_t::big_ptes) corresponding to page_index. If
 // page_index cannot be covered by a big PTE due to alignment or block size,
-// MAX_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
-size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU64 big_page_size);
+// UVM_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
+size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Returns the new residency for a page that faulted or triggered access counter
 // notifications. The read_duplicate output parameter indicates if the page

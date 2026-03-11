@@ -238,7 +238,7 @@ typedef struct nv_dynamic_power_s
      */
     NvBool deferred_idle_enabled;
 
-    nv_dynamic_power_state_t state;
+    PORT_ATOMIC nv_dynamic_power_state_t state;
     NvS32 refcount;
 
     /*
@@ -316,9 +316,6 @@ typedef struct
     nv_reg_entry_t *pRegistry;
 
     nv_dynamic_power_t dynamic_power;
-
-    /* Flag to check if the GPU needs 4K page isolation. */
-    NvBool b_4k_page_isolation_required;
 
     /* Flag to check if GPU mobile config is enabled */
     NvBool b_mobile_config_enabled;

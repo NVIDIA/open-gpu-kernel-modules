@@ -58,6 +58,7 @@ extern "C" {
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "ctrl/ctrl0080/ctrl0080dma.h"
 #include "ctrl/ctrl90f1.h"
+#include "class/cl00f8.h"
 #include "gpu/mem_mgr/mem_desc.h"
 
 #include "containers/list.h"
@@ -195,13 +196,9 @@ struct NVOC_METADATA__FABRIC_VASPACE {
     const struct NVOC_VTABLE__FABRIC_VASPACE vtable;
 };
 
-#ifndef __NVOC_CLASS_FABRIC_VASPACE_TYPEDEF__
-#define __NVOC_CLASS_FABRIC_VASPACE_TYPEDEF__
-typedef struct FABRIC_VASPACE FABRIC_VASPACE;
-#endif /* __NVOC_CLASS_FABRIC_VASPACE_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_FABRIC_VASPACE
-#define __nvoc_class_id_FABRIC_VASPACE 0x8c8f3d
+#define __nvoc_class_id_FABRIC_VASPACE 0x8c8f3du
+typedef struct FABRIC_VASPACE FABRIC_VASPACE;
 #endif /* __nvoc_class_id_FABRIC_VASPACE */
 
 // Casting support
@@ -220,8 +217,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_FABRIC_VASPACE;
 NV_STATUS __nvoc_objCreateDynamic_FABRIC_VASPACE(FABRIC_VASPACE**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_FABRIC_VASPACE(FABRIC_VASPACE**, Dynamic*, NvU32);
-#define __objCreate_FABRIC_VASPACE(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_FABRIC_VASPACE((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_FABRIC_VASPACE(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_FABRIC_VASPACE((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -529,6 +526,7 @@ static inline NV_STATUS fabricvaspaceFreeV2_DISPATCH(struct FABRIC_VASPACE *pVAS
     return pVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceFreeV2__(pVAS, vAddr, pSize);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS fabricvaspaceConstruct__IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags);
 
 NV_STATUS fabricvaspaceAlloc_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSize, VAS_ALLOC_FLAGS flags, NvU64 *pAddr);
@@ -549,12 +547,17 @@ void fabricvaspaceUnpinRootPageDir_IMPL(struct FABRIC_VASPACE *pFabricVAS, struc
 
 void fabricvaspaceInvalidateTlb_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pUnused, VAS_PTE_UPDATE_TYPE type);
 
-static inline NvU64 fabricvaspaceGetUCFlaStart(struct FABRIC_VASPACE *pFabricVAS) {
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvU64 fabricvaspaceGetUCFlaStart(struct FABRIC_VASPACE *pFabricVAS){
     struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
     return pFabricVAS_PRIVATE->ucFabricBase;
 }
 
-static inline NvU64 fabricvaspaceGetUCFlaLimit(struct FABRIC_VASPACE *pFabricVAS) {
+static inline NvU64 fabricvaspaceGetUCFlaLimit(struct FABRIC_VASPACE *pFabricVAS){
     struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
     return pFabricVAS_PRIVATE->ucFabricLimit;
 }

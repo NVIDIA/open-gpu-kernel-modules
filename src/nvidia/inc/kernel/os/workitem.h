@@ -26,15 +26,20 @@
 
 #include "nvtypes.h"
 #include "nvstatus.h"
+#include "nvmisc.h"
 
 struct OBJGPU;
+typedef void OSWorkItemFunction(NvU32 gpuInstance, void *);
 
+#define OS_MAX_QUEUED_WORKITEMS 32
 
 typedef enum
 {
     WORKITEM_FLAGS_API_LOCK_NOT_ACQUIRED = 0,
     WORKITEM_FLAGS_API_LOCK_READ_WRITE,
     WORKITEM_FLAGS_API_LOCK_READ_ONLY
+// prevents compiler warning about unchecked enum case in switch statements
+#define WORKITEM_FLAGS_API_LOCK_ENUM_LAST WORKITEM_FLAGS_API_LOCK_READ_ONLY
 } WorkItemFlagsApiLock;
 
 typedef struct
@@ -49,7 +54,7 @@ typedef struct
     // the priority ordering should be GPUS > GROUP_DEVICE > GROUP_SUBDEVICE
     //
     NvU32 bLockSema:1;
-    WorkItemFlagsApiLock apiLock:2;
+    WorkItemFlagsApiLock apiLock:NV_BITFIELD_SIZE_64(WORKITEM_FLAGS_API_LOCK_ENUM_LAST);
     NvU32 bLockGpus:1;
     NvU32 bLockGpuGroupDevice:1;
     NvU32 bLockGpuGroupSubdevice:1;
@@ -59,16 +64,24 @@ typedef struct
     // One of the above LOCK_GPU flags must be provided when using this flag.
     //
     NvU32 bFullGpuSanity:1;
-    NvU32 bForPmResume:1;
 
     NvU32 bDropOnUnloadQueueFlush:1;
 } OsQueueWorkItemFlags;
 
-typedef void OSWorkItemFunction(NvU32 gpuInstance, void *);
+typedef struct
+{
+    OSWorkItemFunction *pFunction;
+    void *pParams;
+    OsQueueWorkItemFlags flags;
+} WorkItemItem;
+
 typedef void OSSystemWorkItemFunction(void *);
 NV_STATUS  osQueueWorkItem(struct OBJGPU *pGpu, OSWorkItemFunction pFunction, void *pParams, OsQueueWorkItemFlags flags);
 
 NV_STATUS  osQueueSystemWorkItem(OSSystemWorkItemFunction, void *);
-
+WorkItemItem * osGetDeferredWorkItems(NvU64 *workitemBegin, NvU64 *workitemEnd);
+NvS32 osExecuteOneDeferredWorkItem(struct OBJGPU *pGpu);
+NvU64 osGetLastDeferredExecutionTime(void);
+NvU64 osGetTotalDeferredExecutionTime(void);
 
 #endif // _OS_WORKITEM_H_

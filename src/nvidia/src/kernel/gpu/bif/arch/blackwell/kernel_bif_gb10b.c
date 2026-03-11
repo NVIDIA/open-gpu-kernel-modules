@@ -25,6 +25,7 @@
 #include "gpu/bif/kernel_bif.h"
 
 #include "published/blackwell/gb10b/dev_xtl_ep_pcfg_gpu.h"
+#include "published/blackwell/gb10b/dev_xtl_ep_pri.h"
 
 void
 kbifReadPcieCplCapsFromConfigSpace_GB10B
@@ -63,4 +64,17 @@ kbifReadPcieCplCapsFromConfigSpace_GB10B
     {
         *pBifAtomicsmask |= BIF_PCIE_CPL_ATOMICS_CAS_128;
     }
+}
+
+void
+kbifConstructXtlAperture_GB10B
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 xtlBaseAddress = gpuGetXtlBaseAddr_HAL(pGpu);
+    NV_ASSERT_OR_RETURN_VOID(ioaprtInit(&pKernelBif->pBifXtlAperture,
+                                        pGpu->pIOApertures[DEVICE_INDEX_GPU],
+                                        xtlBaseAddress, DRF_SIZE(NV_XTL_EP_PRI)) == NV_OK);
 }

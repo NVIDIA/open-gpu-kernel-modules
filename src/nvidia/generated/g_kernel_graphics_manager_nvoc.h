@@ -51,7 +51,7 @@ extern "C" {
 #include "kernel/gpu/gr/kernel_graphics_context.h"
 
 #define KGRMGR_MAX_GR                  8
-#define KGRMGR_MAX_GPC                 16
+#define KGRMGR_MAX_GPC                 32
 #define GR_INDEX_INVALID               0xFFFFFFFF
 #define KGRMGR_MAX_GPCGRP              4
 
@@ -105,7 +105,7 @@ struct KernelGraphicsManager {
     struct KernelGraphicsManager *__nvoc_pbase_KernelGraphicsManager;    // kgrmgr
 
     // Vtable with 1 per-object function pointer
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KGRMGR_IS_MISSING inherited from OBJENGSTATE
@@ -137,7 +137,7 @@ struct KernelGraphicsManager_PRIVATE {
     struct KernelGraphicsManager *__nvoc_pbase_KernelGraphicsManager;    // kgrmgr
 
     // Vtable with 1 per-object function pointer
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (4 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KGRMGR_IS_MISSING inherited from OBJENGSTATE
@@ -177,13 +177,9 @@ struct NVOC_METADATA__KernelGraphicsManager {
     const struct NVOC_VTABLE__KernelGraphicsManager vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-#define __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__
-typedef struct KernelGraphicsManager KernelGraphicsManager;
-#endif /* __NVOC_CLASS_KernelGraphicsManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelGraphicsManager
-#define __nvoc_class_id_KernelGraphicsManager 0xd22179
+#define __nvoc_class_id_KernelGraphicsManager 0xd22179u
+typedef struct KernelGraphicsManager KernelGraphicsManager;
 #endif /* __nvoc_class_id_KernelGraphicsManager */
 
 // Casting support
@@ -207,8 +203,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsManager;
 NV_STATUS __nvoc_objCreateDynamic_KernelGraphicsManager(KernelGraphicsManager**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelGraphicsManager(KernelGraphicsManager**, Dynamic*, NvU32);
-#define __objCreate_KernelGraphicsManager(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelGraphicsManager((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelGraphicsManager(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelGraphicsManager((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -512,51 +508,57 @@ static inline NvBool kgrmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Kernel
     return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS kgrmgrConstructEngine_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg2, ENGDESCRIPTOR arg3);
+// Virtual method declarations and/or inline definitions
+NV_STATUS kgrmgrConstructEngine_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, ENGDESCRIPTOR arg3);
 
-void kgrmgrStateDestroy_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg2);
+void kgrmgrStateDestroy_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg_this);
 
-NV_STATUS kgrmgrGetVeidsFromGpcCount_GA100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NV_STATUS kgrmgrGetVeidsFromGpcCount_GB10B(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, NvU32 gpcCount, NvU32 *pVeidCount);
 
-NV_STATUS kgrmgrGetVeidsFromGpcCount_GB100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
+NV_STATUS kgrmgrGetVeidsFromGpcCount_GA100(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, NvU32 gpcCount, NvU32 *pVeidCount);
 
-NV_STATUS kgrmgrGetVeidsFromGpcCount_GB10B(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
+NV_STATUS kgrmgrGetVeidsFromGpcCount_GB100(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, NvU32 gpcCount, NvU32 *pVeidCount);
 
-static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_46f6a7(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount) {
+// Inline HAL method definitions
+static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_395e98(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, NvU32 gpcCount, NvU32 *pVeidCount){
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NvU64 kgrmgrGetGrIdxVeidMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU32 grIdx) {
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvU64 kgrmgrGetGrIdxVeidMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU32 grIdx){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return pKernelGraphicsManager_PRIVATE->grIdxVeidMask[grIdx];
 }
 
-static inline const GRMGR_LEGACY_KGRAPHICS_STATIC_INFO *kgrmgrGetLegacyKGraphicsStaticInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+static inline const GRMGR_LEGACY_KGRAPHICS_STATIC_INFO * kgrmgrGetLegacyKGraphicsStaticInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return &pKernelGraphicsManager_PRIVATE->legacyKgraphicsStaticInfo;
 }
 
-static inline void kgrmgrSetGrIdxVeidMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU32 grIdx, NvU64 mask) {
+static inline void kgrmgrSetGrIdxVeidMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU32 grIdx, NvU64 mask){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     pKernelGraphicsManager_PRIVATE->grIdxVeidMask[grIdx] = mask;
 }
 
-static inline NvU64 kgrmgrGetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+static inline NvU64 kgrmgrGetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return pKernelGraphicsManager_PRIVATE->veidInUseMask;
 }
 
-static inline void kgrmgrSetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU64 mask) {
+static inline void kgrmgrSetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU64 mask){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     pKernelGraphicsManager_PRIVATE->veidInUseMask = mask;
 }
 
-static inline KGRMGR_FECS_GLOBAL_TRACE_INFO *kgrmgrGetFecsGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+static inline KGRMGR_FECS_GLOBAL_TRACE_INFO * kgrmgrGetFecsGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return pKernelGraphicsManager_PRIVATE->pFecsGlobalTraceInfo;
 }
 
-static inline KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO *kgrmgrGetFecsVgpuGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+static inline KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO * kgrmgrGetFecsVgpuGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return pKernelGraphicsManager_PRIVATE->pFecsVgpuGlobalTraceInfo;
 }

@@ -49,6 +49,7 @@ typedef struct {
 static NvBool
 ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
                       const struct NvKmsModeValidationParams *pParams,
+                      const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                       struct NvKmsValidateModeIndexReply *pReply,
                       NVEvoInfoStringPtr pInfoString,
                       const NvU32 requestedModeIndex,
@@ -56,6 +57,7 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
 static NvBool
 ValidateModeIndexVesa(NVDpyEvoPtr pDpyEvo,
                       const struct NvKmsModeValidationParams *pParams,
+                      const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                       struct NvKmsValidateModeIndexReply *pReply,
                       NVEvoInfoStringPtr pInfoString,
                       const NvU32 requestedModeIndex,
@@ -72,12 +74,14 @@ static NvBool ConstructModeTimingsMetaData(
     struct NvKmsMode *pKmsMode,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl);
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl);
 
 static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                            const struct NvKmsMode *pKmsMode,
                            const EvoValidateModeFlags *flags,
                            const struct NvKmsModeValidationParams *pParams,
+                           const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                            NVEvoInfoStringPtr pInfoString,
                            struct NvKmsModeValidationValidSyncs *pValidSyncs,
                            struct NvKmsUsageBounds *pModeUsage);
@@ -100,6 +104,8 @@ nvValidateModeIndex(NVDpyEvoPtr pDpyEvo,
                     struct NvKmsValidateModeIndexReply *pReply)
 {
     const struct NvKmsModeValidationParams *pParams = &pRequest->modeValidation;
+    const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams =
+        &pRequest->dpyOutputColor;
     const NvU32 requestedModeIndex = pRequest->modeIndex;
     NVEvoInfoStringRec infoString;
     NvU32 currentModeIndex = 0;
@@ -110,14 +116,16 @@ nvValidateModeIndex(NVDpyEvoPtr pDpyEvo,
     nvInitInfoString(&infoString, nvKmsNvU64ToPointer(pRequest->pInfoString),
                      pRequest->infoStringSize);
 
-    done = ValidateModeIndexEdid(pDpyEvo, pParams, pReply, &infoString,
-                                 requestedModeIndex, &currentModeIndex);
+    done = ValidateModeIndexEdid(pDpyEvo, pParams, pDpyOutputColorParams,
+                                 pReply, &infoString, requestedModeIndex,
+                                 &currentModeIndex);
     if (done) {
         goto out;
     }
 
-    done = ValidateModeIndexVesa(pDpyEvo, pParams, pReply, &infoString,
-                                 requestedModeIndex, &currentModeIndex);
+    done = ValidateModeIndexVesa(pDpyEvo, pParams, pDpyOutputColorParams,
+                                 pReply, &infoString, requestedModeIndex,
+                                 &currentModeIndex);
     if (done) {
         goto out;
     }
@@ -152,7 +160,8 @@ nvValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                                       &kmsMode,
                                       &evoFlags,
                                       NULL /* pInfoFrameCtrl */,
-                                      NULL /* pVSInfoFrameCtrl */)) {
+                                      NULL /* pVSInfoFrameCtrl */,
+                                      NULL /* pEmpCtrl */)) {
         pReply->valid = FALSE;
         return;
     }
@@ -164,6 +173,7 @@ nvValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                                  &kmsMode,
                                  &evoFlags,
                                  &pRequest->modeValidation,
+                                 &pRequest->dpyOutputColor,
                                  &infoString,
                                  &pReply->validSyncs,
                                  &pReply->modeUsage);
@@ -328,6 +338,7 @@ static enum NvYuv420Mode GetYUV420Value(
 static NvBool
 ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
                       const struct NvKmsModeValidationParams *pParams,
+                      const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                       struct NvKmsValidateModeIndexReply *pReply,
                       NVEvoInfoStringPtr pInfoString,
                       const NvU32 requestedModeIndex,
@@ -413,6 +424,7 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
                                      &kmsMode,
                                      &flags,
                                      pParams,
+                                     pDpyOutputColorParams,
                                      pInfoString,
                                      &pReply->validSyncs,
                                      &pReply->modeUsage);
@@ -452,6 +464,7 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
                                  &pWorkArea->stereoKmsMode,
                                  &flags,
                                  pParams,
+                                 pDpyOutputColorParams,
                                  pInfoString,
                                  &pWorkArea->stereoValidSyncs,
                                  &pWorkArea->stereoModeUsage);
@@ -812,6 +825,7 @@ static const NvModeTimings VesaModesTable[] = {
 static NvBool
 ValidateModeIndexVesa(NVDpyEvoPtr pDpyEvo,
                       const struct NvKmsModeValidationParams *pParams,
+                      const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                       struct NvKmsValidateModeIndexReply *pReply,
                       NVEvoInfoStringPtr pInfoString,
                       const NvU32 requestedModeIndex,
@@ -842,6 +856,7 @@ ValidateModeIndexVesa(NVDpyEvoPtr pDpyEvo,
                                      &kmsMode,
                                      &flags,
                                      pParams,
+                                     pDpyOutputColorParams,
                                      pInfoString,
                                      &pReply->validSyncs,
                                      &pReply->modeUsage);
@@ -1088,12 +1103,9 @@ static NvBool ValidateModeTimings(
     nvDpySetValidSyncsEvo(pDpyEvo, pValidSyncs);
 
     if (pModeTimings->interlaced) {
-        NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
-        if (!pEvoSubDev->capabilities.misc.supportsInterlaced) {
-            LogModeValidationEnd(pDispEvo, pInfoString,
-                "Interlaced modes are not supported on this GPU");
-            return FALSE;
-        }
+        LogModeValidationEnd(pDispEvo, pInfoString,
+            "Interlaced modes are not supported");
+        return FALSE;
     }
 
     if ((flags->source != NvKmsModeSourceEdid) &&
@@ -1426,9 +1438,8 @@ static NvBool ValidateModeTimings(
         if (pValidSyncs->vertRefreshHz1k.numRanges > 0) {
 
             /*
-             * note: we expect RRx1k to be field rate for interlaced
-             * modes, (undoubled) frame rate for doublescan modes, and
-             * (doubled) frame rate for HDMI 3D modes.
+             * note: we expect RRx1k to be (undoubled) frame rate for
+             * doublescan modes and (doubled) frame rate for HDMI 3D modes.
              */
             NvU32 vRefresh = pModeTimings->RRx1k;
 
@@ -1523,34 +1534,6 @@ static NvBool ValidateModeTimings(
         return FALSE;
     }
 
-    if (pModeTimings->hdmi3D && pModeTimings->interlaced) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "Interlaced frame packed HDMI 3D modes are not supported.");
-        return FALSE;
-    }
-
-    if (pModeTimings->interlaced &&
-        nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) &&
-        (overrides & NVKMS_MODE_VALIDATION_ALLOW_DP_INTERLACED) == 0) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "Interlaced modes are not supported over DisplayPort");
-        return FALSE;
-    }
-
-    if (pModeTimings->interlaced &&
-        (overrides & NVKMS_MODE_VALIDATION_NO_INTERLACED_MODES)) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "Interlaced modes are not allowed");
-        return FALSE;
-    }
-
-    if (pModeTimings->interlaced &&
-        pParams->stereoMode != NVKMS_STEREO_DISABLED) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "Interlaced modes are not allowed with stereo");
-        return FALSE;
-    }
-
     if (flags->dscPassThrough &&
             (pParams->dscMode == NVKMS_DSC_MODE_FORCE_DISABLE)) {
         LogModeValidationEnd(pDispEvo, pInfoString,
@@ -1613,6 +1596,81 @@ void LogViewPort(NVEvoInfoStringPtr pInfoString,
                "  Vertical Taps          %s", str);
 }
 
+static NvBool GetDpyOutputColor(
+    const NVDpyEvoRec *pDpyEvo,
+    const enum NvYuv420Mode yuv420Mode,
+    const struct NvKmsDpyOutputColorParams *pDpyOutputColorParam,
+    NVDpyAttributeColor *pDpyColor)
+{
+    const enum NvKmsOutputColorimetry colorimetry =
+        NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
+    enum NvKmsDpyAttributeColorRangeValue requestedColorRange =
+        NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
+    enum NvKmsDpyAttributeColorBpcValue requestedColorBpc =
+        pDpyOutputColorParam->bpcSpecified ?
+            pDpyOutputColorParam->bpc :
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+    enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace =
+        pDpyOutputColorParam->formatSpecified ?
+            pDpyOutputColorParam->format :
+            NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB;
+
+    /*
+     * Choose current colorSpace and colorRange based on the current mode
+     * timings and the requested color space and range.
+     */
+    if (!nvChooseCurrentColorSpaceAndRangeEvo(pDpyEvo,
+                                              yuv420Mode,
+                                              colorimetry,
+                                              requestedColorSpace,
+                                              requestedColorBpc,
+                                              requestedColorRange,
+                                              &pDpyColor->format,
+                                              &pDpyColor->bpc,
+                                              &pDpyColor->range)) {
+        return FALSE;
+    }
+    pDpyColor->colorimetry = colorimetry;
+
+    return TRUE;
+}
+
+static NvBool ValidateDpyOutputColor(
+    const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
+    NVDpyAttributeColor *pDpyColor)
+{
+    if (pDpyOutputColorParams->formatSpecified) {
+        NvBool ret = FALSE;
+
+        switch (pDpyColor->format) {
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+                ret = (pDpyOutputColorParams->format ==
+                       NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB);
+                break;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
+                ret = (pDpyOutputColorParams->format ==
+                       NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr422);
+                break;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
+                ret = (pDpyOutputColorParams->format ==
+                       NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr444);
+                 break;
+             default:
+                break;
+        }
+        if (!ret) {
+            return ret;
+        }
+    }
+
+    if (pDpyOutputColorParams->bpcSpecified &&
+            (pDpyColor->bpc != pDpyOutputColorParams->bpc)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 /*
  * Validate pModeTimings for use on pDpy.  If the mode is valid, use
  * pDev->disp.ConstructHwModeTimings() to assign pHwModeTimings and
@@ -1622,6 +1680,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                            const struct NvKmsMode *pKmsMode,
                            const EvoValidateModeFlags *flags,
                            const struct NvKmsModeValidationParams *pParams,
+                           const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
                            NVEvoInfoStringPtr pInfoString,
                            struct NvKmsModeValidationValidSyncs *pValidSyncs,
                            struct NvKmsUsageBounds *pModeUsage)
@@ -1683,14 +1742,11 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     nvEvoLogInfoString(pInfoString,
             "DSCPassThrough: %s", flags->dscPassThrough ? "Yes" : "No");
 
-    if (pModeTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
-        dpyColor.format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
-        dpyColor.bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-        dpyColor.range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
-        dpyColor.colorimetry = NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
-    } else if (!nvGetDefaultDpyColor(&supportedColorFormats, &dpyColor)) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "Failed to get default color space and Bpc");
+    if (!GetDpyOutputColor(pDpyEvo,
+                           pModeTimings->yuv420Mode,
+                           pDpyOutputColorParams,
+                           &dpyColor)) {
+        LogModeValidationEnd(pDispEvo, pInfoString, "Failed to select output color");
         goto done;
     }
 
@@ -1700,10 +1756,10 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
      * can report any failures as part of the mode validation
      * reporting.
      *
-     * XXX For certain modes like doublescan, interlaced, and YUV 4:2:0
-     * emulated mode, the timings stored in the pTimingsEvo constructed
-     * here are different than the timings in pModeTimings used for validation
-     * earlier in this function.
+     * XXX For certain modes like doublescan and YUV 4:2:0 emulated mode, the
+     * timings stored in the pTimingsEvo constructed here are different than
+     * the timings in pModeTimings used for validation earlier in this
+     * function.
      *
      * In certain cases (like pclk validation for YUV 4:2:0 modes, which store
      * a doubled pclk in pModeTimings and the real pclk in pTimingsEvo) we
@@ -1788,6 +1844,12 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     }
 
     nvAssert(impOutNumHeads > 0);
+
+    if (!ValidateDpyOutputColor(pDpyOutputColorParams, &dpyColor)) {
+        LogModeValidationEnd(pDispEvo, pInfoString,
+                             "Mode is not possible with requested output color");
+        goto done;
+    }
 
     /* Log modevalidation information about the viewport. */
 
@@ -1926,7 +1988,17 @@ const NVT_TIMING *nvFindEdidNVT_TIMING
     return NULL;
 }
 
-static void ConstructVSInfoFrameCtrls(
+static void ConstructEmpInfoFrameCtrl(
+    const NVT_TIMING *pTiming,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpCtrl)
+{
+    pEmpCtrl->version = NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21A;
+    pEmpCtrl->ITTiming = 1;
+    pEmpCtrl->BaseRefreshRate = pTiming->etc.rr;
+    pEmpCtrl->BaseVFP = pTiming->VFrontPorch; 
+}
+
+static void ConstructVSInfoFrameCtrl(
     const NVT_TIMING *pTiming,
     const NvBool hdmi3D,
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSCtrl)
@@ -1978,12 +2050,14 @@ static NvBool ConstructModeTimingsMetaData(
     struct NvKmsMode *pKmsMode,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     EvoValidateModeFlags flags = { 0 };
     NVT_VIDEO_INFOFRAME_CTRL infoFrameCtrl;
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vsInfoFrameCtrl = { };
+    NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL empInfoFrameCtrl = { };
     NvModeTimings modeTimings = pKmsMode->timings;
     const NVT_TIMING *pTiming;
 
@@ -2064,7 +2138,8 @@ static NvBool ConstructModeTimingsMetaData(
          */
         if (nvDpyIsHdmiEvo(pDpyEvo)) {
             NvTiming_ConstructVideoInfoframeCtrl(&timing, &infoFrameCtrl);
-            ConstructVSInfoFrameCtrls(&timing, hdmi3D, &vsInfoFrameCtrl);
+            ConstructVSInfoFrameCtrl(&timing, hdmi3D, &vsInfoFrameCtrl);
+            ConstructEmpInfoFrameCtrl(&timing, &empInfoFrameCtrl);
         }
 
         goto done;
@@ -2090,6 +2165,9 @@ done:
     if (pVSInfoFrameCtrl != NULL) {
         *pVSInfoFrameCtrl = vsInfoFrameCtrl;
     }
+    if (pEmpInfoFrameCtrl != NULL) {
+        *pEmpInfoFrameCtrl = empInfoFrameCtrl;
+    }
     pKmsMode->timings = modeTimings;
 
     return TRUE;
@@ -2114,7 +2192,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 NVDpyAttributeColor *pDpyColor,
                                 NVHwModeTimingsEvo *pTimingsEvo,
                                 NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
-                                NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl)
+                                NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
+                                NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     EvoValidateModeFlags flags;
     struct NvKmsMode kmsMode = *pKmsMode;
@@ -2127,7 +2206,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                       &kmsMode,
                                       &flags,
                                       pInfoFrameCtrl,
-                                      pVSInfoFrameCtrl)) {
+                                      pVSInfoFrameCtrl,
+                                      pEmpInfoFrameCtrl)) {
         return FALSE;
     }
 

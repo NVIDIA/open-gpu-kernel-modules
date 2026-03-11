@@ -129,13 +129,9 @@ struct NVOC_METADATA__VgpuApi {
     const struct NVOC_VTABLE__VgpuApi vtable;
 };
 
-#ifndef __NVOC_CLASS_VgpuApi_TYPEDEF__
-#define __NVOC_CLASS_VgpuApi_TYPEDEF__
-typedef struct VgpuApi VgpuApi;
-#endif /* __NVOC_CLASS_VgpuApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_VgpuApi
-#define __nvoc_class_id_VgpuApi 0x7774f5
+#define __nvoc_class_id_VgpuApi 0x7774f5u
+typedef struct VgpuApi VgpuApi;
 #endif /* __nvoc_class_id_VgpuApi */
 
 // Casting support
@@ -153,14 +149,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VgpuApi;
 
 NV_STATUS __nvoc_objCreateDynamic_VgpuApi(VgpuApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_VgpuApi(VgpuApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_VgpuApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_VgpuApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_VgpuApi(VgpuApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_VgpuApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_VgpuApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vgpuapiConstruct_IMPL(struct VgpuApi *arg_pVgpuApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_vgpuapiConstruct(arg_pVgpuApi, arg_pCallContext, arg_pParams) vgpuapiConstruct_IMPL(arg_pVgpuApi, arg_pCallContext, arg_pParams)
+NV_STATUS vgpuapiConstruct_IMPL(struct VgpuApi *pVgpuApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_vgpuapiConstruct(pVgpuApi, pCallContext, pParams) vgpuapiConstruct_IMPL(pVgpuApi, pCallContext, pParams)
 
 void vgpuapiDestruct_IMPL(struct VgpuApi *pVgpuApi);
 #define __nvoc_vgpuapiDestruct(pVgpuApi) vgpuapiDestruct_IMPL(pVgpuApi)
@@ -349,12 +345,18 @@ static inline void vgpuapiAddAdditionalDependants_DISPATCH(struct RsClient *pCli
     pResource->__nvoc_metadata_ptr->vtable.__vgpuapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams);
 
 NV_STATUS vgpuapiCtrlCmdVgpuDisplayCleanupSurface_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams);
 
 NV_STATUS vgpuapiCtrlCmdVGpuGetConfig_IMPL(struct VgpuApi *pVgpuApi, NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

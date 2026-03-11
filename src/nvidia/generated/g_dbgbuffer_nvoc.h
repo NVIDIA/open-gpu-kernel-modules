@@ -134,13 +134,9 @@ struct NVOC_METADATA__DebugBufferApi {
     const struct NVOC_VTABLE__DebugBufferApi vtable;
 };
 
-#ifndef __NVOC_CLASS_DebugBufferApi_TYPEDEF__
-#define __NVOC_CLASS_DebugBufferApi_TYPEDEF__
-typedef struct DebugBufferApi DebugBufferApi;
-#endif /* __NVOC_CLASS_DebugBufferApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_DebugBufferApi
-#define __nvoc_class_id_DebugBufferApi 0x5e7a1b
+#define __nvoc_class_id_DebugBufferApi 0x5e7a1bu
+typedef struct DebugBufferApi DebugBufferApi;
 #endif /* __nvoc_class_id_DebugBufferApi */
 
 // Casting support
@@ -158,14 +154,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DebugBufferApi;
 
 NV_STATUS __nvoc_objCreateDynamic_DebugBufferApi(DebugBufferApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_DebugBufferApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_DebugBufferApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_DebugBufferApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_DebugBufferApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS dbgbufConstruct_IMPL(struct DebugBufferApi *arg_pDebugBufferApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_dbgbufConstruct(arg_pDebugBufferApi, arg_pCallContext, arg_pParams) dbgbufConstruct_IMPL(arg_pDebugBufferApi, arg_pCallContext, arg_pParams)
+NV_STATUS dbgbufConstruct_IMPL(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_dbgbufConstruct(pDebugBufferApi, pCallContext, pParams) dbgbufConstruct_IMPL(pDebugBufferApi, pCallContext, pParams)
 
 void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
 #define __nvoc_dbgbufDestruct(pDebugBufferApi) dbgbufDestruct_IMPL(pDebugBufferApi)
@@ -324,6 +320,7 @@ static inline void dbgbufAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__dbgbufAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS dbgbufMap_IMPL(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);
 
 NV_STATUS dbgbufUnmap_IMPL(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
@@ -332,6 +329,11 @@ NV_STATUS dbgbufGetMapAddrSpace_IMPL(struct DebugBufferApi *pDebugBufferApi, CAL
 
 NV_STATUS dbgbufGetMemoryMappingDescriptor_IMPL(struct DebugBufferApi *pDebugBufferApi, MEMORY_DESCRIPTOR **ppMemDesc);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

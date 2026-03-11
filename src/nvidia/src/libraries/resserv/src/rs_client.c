@@ -1040,6 +1040,7 @@ _clientConstructResourceRef
     pResourceRef->pParentRef = pParentRef;
     pResourceRef->hResource = hResource;
     pResourceRef->depth = 0;
+    pResourceRef->pAllocator = pAllocator;
 
     multimapInit(&pResourceRef->childRefMap, pAllocator);
     multimapInit(&pResourceRef->cachedRefMap, pAllocator);
@@ -1047,7 +1048,7 @@ _clientConstructResourceRef
     multimapInit(&pResourceRef->depBackRefMap, pAllocator);
     listInit(&pResourceRef->cpuMappings, pAllocator);
     listInitIntrusive(&pResourceRef->backRefs);
-    listInit(&pResourceRef->interMappings, pAllocator);
+    mapInit(&pResourceRef->interMappingContextMap, pAllocator);
     listInitIntrusive(&pResourceRef->interBackRefsContext);
     listInitIntrusive(&pResourceRef->interBackRefsMappable);
     listInit(&pResourceRef->sharePolicyList, pAllocator);
@@ -1073,13 +1074,13 @@ clientDestructResourceRef_IMPL
     NV_ASSERT(listCount(&pResourceRef->cpuMappings) == 0);
     NV_ASSERT(listCount(&pResourceRef->interBackRefsMappable) == 0);
     NV_ASSERT(listCount(&pResourceRef->interBackRefsContext) == 0);
-    NV_ASSERT(listCount(&pResourceRef->interMappings) == 0);
+    NV_ASSERT(mapCount(&pResourceRef->interMappingContextMap) == 0);
 
     listDestroy(&pResourceRef->backRefs);
     listDestroy(&pResourceRef->cpuMappings);
     listDestroy(&pResourceRef->interBackRefsMappable);
     listDestroy(&pResourceRef->interBackRefsContext);
-    listDestroy(&pResourceRef->interMappings);
+    mapDestroy(&pResourceRef->interMappingContextMap);
     listDestroy(&pResourceRef->sharePolicyList);
 
     // All children should be free
@@ -1314,28 +1315,31 @@ _clientUnmapInterMappings
 {
     NV_STATUS status;
     RsResourceRef *pMapperRef = pCallContext->pResourceRef;
-    RsInterMapping *pMapping;
+    RsInterMappingMap *pInterMappings = mapFindGEQ(&pMapperRef->interMappingContextMap, 0);
 
-    pMapping = listHead(&pMapperRef->interMappings);
-    while (pMapping != NULL)
+    while (pInterMappings != NULL)
     {
-        status = _unmapInterMapping(pCallContext->pServer, pClient, pMapperRef,
-                                    pMapping, pLockInfo, &pCallContext->secInfo);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to auto-unmap (status=0x%x) hClient %x: hMapper: %x\n",
-                      status, pClient->hClient, pMapperRef->hResource);
-            NV_PRINTF(LEVEL_ERROR, "hMappable: %x hContext: %x\n",
-                      pMapping->pMappableRef->hResource, pMapping->pContextRef->hResource);
+        RsInterMappingMap *pNextInterMappings = mapNext(&pMapperRef->interMappingContextMap, pInterMappings);
+        RsInterMapping *pMapping = mapFindGEQ(pInterMappings, 0);
 
-            if (pMapping == listHead(&pMapperRef->interMappings))
+        while (pMapping != NULL)
+        {
+            RsInterMapping *pNextMapping = mapNext(pInterMappings, pMapping);
+            status = _unmapInterMapping(pCallContext->pServer, pClient, pMapperRef,
+                                        pMapping, pLockInfo, &pCallContext->secInfo);
+
+            if (status != NV_OK)
             {
-                NV_ASSERT(0);
-                refRemoveInterMapping(pMapperRef, pMapping);
+                NV_PRINTF(LEVEL_ERROR, "Failed to auto-unmap (status=0x%x) hClient %x: hMapper: %x\n",
+                          status, pClient->hClient, pMapperRef->hResource);
+                NV_PRINTF(LEVEL_ERROR, "hMappable: %x hContext: %x\n",
+                          pMapping->pMappableRef->hResource, pMapping->pContextRef->hResource);
             }
+
+            pMapping = pNextMapping;
         }
 
-        pMapping = listHead(&pMapperRef->interMappings);
+        pInterMappings = pNextInterMappings;
     }
 }
 
@@ -1379,7 +1383,7 @@ _clientUnmapInterBackRefMappings
             if (pBackRefItem == pCurHead)
             {
                 NV_ASSERT(0);
-                refRemoveInterMapping(pMapperRef, pMapping);
+                refRemoveInterMapping(pMapperRef, pMapping, NV_FALSE);
             }
         }
 

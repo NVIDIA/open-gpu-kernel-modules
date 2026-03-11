@@ -31,7 +31,7 @@
 
 #include "nvidia-push-types.h"
 
-#include "class/cla16f.h"
+#include "class/clc46f.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,11 +110,11 @@ static inline void nvPushInlineData(NvPushChannelPtr p, const void *data,
 static inline NvU32 nvPushMaxMethodCount(const NvPushChannelRec *p)
 {
     /*
-     * The number of methods that can be specified in one NVA16F_DMA_METHOD
-     * header is limited by the bit field size of NVA16F_DMA_METHOD_COUNT: 28:16
+     * The number of methods that can be specified in one NVC46F_DMA_METHOD
+     * header is limited by the bit field size of NVC46F_DMA_METHOD_COUNT: 28:16
      * (i.e., maximum representable value 8191).
      */
-    const NvU32 maxFromMethodCountMask = DRF_MASK(NVA16F_DMA_METHOD_COUNT);
+    const NvU32 maxFromMethodCountMask = DRF_MASK(NVC46F_DMA_METHOD_COUNT);
 
     /*
      * Further, the method count must be smaller than half the total pushbuffer
@@ -145,49 +145,44 @@ static inline NvU32 nvPushMaxMethodCount(const NvPushChannelRec *p)
     nvAssert(!(~DRF_MASK(NV ## d ## r ## f) & (n)))
 
 #if defined(DEBUG)
-#include "class/clc36f.h"    /* VOLTA_CHANNEL_GPFIFO_A */
-
 /*
- * When pushing GPFIFO methods (NVA16F_SEMAPHORE[ABCD]), all four
+ * When pushing GPFIFO methods (NVC46F_SEMAPHORE[ABCD]), all four
  * methods must be pushed together.  If the four methods are not
  * pushed together, nvidia-push might wrap, injecting its progress
  * tracking semaphore release methods in the middle, and perturb the
- * NVA16F_SEMAPHOREA_OFFSET_UPPER and NVA16F_SEMAPHOREB_OFFSET_LOWER
+ * NVC46F_SEMAPHOREA_OFFSET_UPPER and NVC46F_SEMAPHOREB_OFFSET_LOWER
  * channel state.
  *
  * Return whether the methods described by the arguments include some,
  * but not all, of A, B, C, and D.  I.e., if the range starts at B, C,
  * or D, or if the range ends at A, B, or C.
  *
- * Perform a similar check for Volta+ semaphore methods
- * NVC36F_SEM_ADDR_LO..NVC36F_SEM_EXECUTE.  Note that we always check for both
- * sets of methods, regardless of the GPU we're actually running on.  This is
- * okay since:
- * a) the NVC36F_SEM_ADDR_LO..NVC36F_SEM_EXECUTE method offsets were not used
- *    for anything from (a16f..c36f].
- * b) the SEMAPHORE[ABCD] methods still exist on the newer classes (they
- *    haven't been reused for anything else)
+ * Perform a similar check for the newer semaphore methods
+ * NVC46F_SEM_ADDR_LO..NVC46F_SEM_EXECUTE.  Note that we always check for both
+ * sets of methods, even for GPUs using classes where the old methods have been
+ * removed.  This is okay since the SEMAPHORE[ABCD] methods haven't been reused
+ * for anything else.
  */
 static inline NvBool __nvPushStartSplitsSemaphore(
     NvU32 method,
     NvU32 count,
     NvU32 secOp)
 {
-    ct_assert(NVA16F_SEMAPHOREA < NVA16F_SEMAPHORED);
-    ct_assert(NVC36F_SEM_ADDR_LO < NVC36F_SEM_EXECUTE);
+    ct_assert(NVC46F_SEMAPHOREA < NVC46F_SEMAPHORED);
+    ct_assert(NVC46F_SEM_ADDR_LO < NVC46F_SEM_EXECUTE);
 
     /*
      * compute start and end as inclusive; if not incrementing, we
      * assume end==start
      */
     const NvU32 start = method;
-    const NvU32 end = (secOp == NVA16F_DMA_SEC_OP_INC_METHOD) ?
+    const NvU32 end = (secOp == NVC46F_DMA_SEC_OP_INC_METHOD) ?
         (method + ((count - 1) * 4)) : method;
 
-    return ((start >  NVA16F_SEMAPHOREA)  && (start <= NVA16F_SEMAPHORED))  ||
-           ((end   >= NVA16F_SEMAPHOREA)  && (end   <  NVA16F_SEMAPHORED))  ||
-           ((start >  NVC36F_SEM_ADDR_LO) && (start <= NVC36F_SEM_EXECUTE)) ||
-           ((end   >= NVC36F_SEM_ADDR_LO) && (end   <  NVC36F_SEM_EXECUTE));
+    return ((start >  NVC46F_SEMAPHOREA)  && (start <= NVC46F_SEMAPHORED))  ||
+           ((end   >= NVC46F_SEMAPHOREA)  && (end   <  NVC46F_SEMAPHORED))  ||
+           ((start >  NVC46F_SEM_ADDR_LO) && (start <= NVC46F_SEM_EXECUTE)) ||
+           ((end   >= NVC46F_SEM_ADDR_LO) && (end   <  NVC46F_SEM_EXECUTE));
 }
 #endif /* DEBUG */
 
@@ -211,30 +206,30 @@ static inline NvBool __nvPushStartSplitsSemaphore(
     nvAssert(!__nvPushStartSplitsSemaphore(                           \
                                       (_offset),                      \
                                       (_count),                       \
-                                      NVA16F_DMA_SEC_OP ## _opcode)); \
-    ASSERT_DRF_DEF(A16F, _DMA, _SEC_OP, _opcode);                     \
-    ASSERT_DRF_NUM(A16F, _DMA, _METHOD_COUNT, _count);                \
-    ASSERT_DRF_NUM(A16F, _DMA, _METHOD_SUBCHANNEL, _subch);           \
-    ASSERT_DRF_NUM(A16F, _DMA, _METHOD_ADDRESS, (_offset) >> 2);      \
+                                      NVC46F_DMA_SEC_OP ## _opcode)); \
+    ASSERT_DRF_DEF(C46F, _DMA, _SEC_OP, _opcode);                     \
+    ASSERT_DRF_NUM(C46F, _DMA, _METHOD_COUNT, _count);                \
+    ASSERT_DRF_NUM(C46F, _DMA, _METHOD_SUBCHANNEL, _subch);           \
+    ASSERT_DRF_NUM(C46F, _DMA, _METHOD_ADDRESS, (_offset) >> 2);      \
     nvPushHeader((_push_buffer), _segment, (_count),                  \
-        DRF_DEF(A16F, _DMA, _SEC_OP,               _opcode)  |        \
-        DRF_NUM(A16F, _DMA, _METHOD_COUNT,         _count)   |        \
-        DRF_NUM(A16F, _DMA, _METHOD_SUBCHANNEL,    _subch)   |        \
-        DRF_NUM(A16F, _DMA, _METHOD_ADDRESS,    (_offset) >> 2));     \
+        DRF_DEF(C46F, _DMA, _SEC_OP,               _opcode)  |        \
+        DRF_NUM(C46F, _DMA, _METHOD_COUNT,         _count)   |        \
+        DRF_NUM(C46F, _DMA, _METHOD_SUBCHANNEL,    _subch)   |        \
+        DRF_NUM(C46F, _DMA, _METHOD_ADDRESS,    (_offset) >> 2));     \
 }
 
 // The GPU can encode a 13-bit constant method/data pair in a single DWORD.
 #define nvPushImmedValSegment(_push_buffer, _segment, _subch, _offset, _data) { \
-    ASSERT_DRF_NUM(A16F, _DMA, _IMMD_DATA, _data);                    \
-    ASSERT_DRF_NUM(A16F, _DMA, _METHOD_SUBCHANNEL, _subch);           \
-    ASSERT_DRF_NUM(A16F, _DMA, _METHOD_ADDRESS, (_offset) >> 2);      \
+    ASSERT_DRF_NUM(C46F, _DMA, _IMMD_DATA, _data);                    \
+    ASSERT_DRF_NUM(C46F, _DMA, _METHOD_SUBCHANNEL, _subch);           \
+    ASSERT_DRF_NUM(C46F, _DMA, _METHOD_ADDRESS, (_offset) >> 2);      \
     if ((_push_buffer)->_segment.freeDwords < 1)                      \
         __nvPushMakeRoom((_push_buffer), 1);                          \
     __nvPushSetMethodDataSegment(&(_push_buffer)->_segment,           \
-        DRF_DEF(A16F, _DMA, _SEC_OP,     _IMMD_DATA_METHOD)  |        \
-        DRF_NUM(A16F, _DMA, _IMMD_DATA,             _data)   |        \
-        DRF_NUM(A16F, _DMA, _METHOD_SUBCHANNEL,    _subch)   |        \
-        DRF_NUM(A16F, _DMA, _METHOD_ADDRESS,    (_offset) >> 2));     \
+        DRF_DEF(C46F, _DMA, _SEC_OP,     _IMMD_DATA_METHOD)  |        \
+        DRF_NUM(C46F, _DMA, _IMMD_DATA,             _data)   |        \
+        DRF_NUM(C46F, _DMA, _METHOD_SUBCHANNEL,    _subch)   |        \
+        DRF_NUM(C46F, _DMA, _METHOD_ADDRESS,    (_offset) >> 2));     \
     (_push_buffer)->_segment.freeDwords--;                            \
 }
 

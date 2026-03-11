@@ -46,6 +46,7 @@
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
+#include "ctrl/ctrl2080/ctrl2080tmr.h"
 #include "ctrl/ctrl2080/ctrl2080unix.h"
 
 /*!
@@ -145,6 +146,7 @@ gpuSubdeviceRmctrlAllowlist_T234D[] =
     NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT,
     NV2080_CTRL_CMD_OS_UNIX_ALLOW_DISALLOW_GCOFF,
     NV2080_CTRL_CMD_OS_UNIX_AUDIO_DYNAMIC_POWER,
+    NV2080_CTRL_CMD_TIMER_GET_GPU_CPU_TIME_CORRELATION_INFO,
 };
 
 static NV_STATUS

@@ -135,13 +135,9 @@ struct NVOC_METADATA__NvjpgContext {
     const struct NVOC_VTABLE__NvjpgContext vtable;
 };
 
-#ifndef __NVOC_CLASS_NvjpgContext_TYPEDEF__
-#define __NVOC_CLASS_NvjpgContext_TYPEDEF__
-typedef struct NvjpgContext NvjpgContext;
-#endif /* __NVOC_CLASS_NvjpgContext_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_NvjpgContext
-#define __nvoc_class_id_NvjpgContext 0x08c1ce
+#define __nvoc_class_id_NvjpgContext 0x08c1ceu
+typedef struct NvjpgContext NvjpgContext;
 #endif /* __nvoc_class_id_NvjpgContext */
 
 // Casting support
@@ -159,9 +155,9 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvjpgContext;
 
 NV_STATUS __nvoc_objCreateDynamic_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_NvjpgContext(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_NvjpgContext((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_NvjpgContext(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_NvjpgContext((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
@@ -380,17 +376,21 @@ static inline NV_STATUS nvjpgctxGetOrAllocNotifShare_DISPATCH(struct NvjpgContex
     return pNotifier->__nvoc_metadata_ptr->vtable.__nvjpgctxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS nvjpgctxConstructHal_KERNEL(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
 
 void nvjpgctxDestructHal_KERNEL(struct NvjpgContext *pNvjpgContext);
 
-
-static inline NV_STATUS __nvoc_nvjpgctxConstruct(struct NvjpgContext *arg_pNvjpgContext, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams) {
-    return nvjpgctxConstructHal(arg_pNvjpgContext, arg_pCallContext, arg_pParams);
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NV_STATUS __nvoc_nvjpgctxConstruct(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams){
+    return nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams);
 }
 
-static inline void __nvoc_nvjpgctxDestruct(struct NvjpgContext *pNvjpgContext) {
+static inline void __nvoc_nvjpgctxDestruct(struct NvjpgContext *pNvjpgContext){
     nvjpgctxDestructHal(pNvjpgContext);
 }
 

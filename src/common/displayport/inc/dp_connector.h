@@ -105,6 +105,14 @@ namespace DisplayPort
         connectorVGA
     };
 
+    typedef enum
+    {
+        // Read DID2x first, then read EDID regardless of DID2x availability.
+        DISPLAYID2_MST_POLICY_DID2X_THEN_EDID = 0,
+        // Read DID2x first, then read EDID only if DID2x is not available.
+        DISPLAYID2_MST_POLICY_DID2X_ONLY = 1,
+    } DISPLAYID2_MST_POLICY;
+
     typedef struct portMap
     {
         NvU16   validMap;       // port i is valid = bit i is high
@@ -230,6 +238,8 @@ namespace DisplayPort
         // Copies RawEDID into client buffer. Fails if the buffer is too small
         virtual bool            getRawEDID(char * buffer, unsigned size) const = 0;
 
+        virtual unsigned        getDisplayId2xSize() const = 0;
+        virtual bool            getDisplayId2x(char * buffer, unsigned size) const = 0;
         virtual bool            getPCONCaps(PCONCaps *pPCONCaps) = 0;
 
         virtual bool            isFallbackEdid() = 0;           // is the device edid a fallback one?
@@ -384,6 +394,7 @@ namespace DisplayPort
         virtual void destroy() = 0;                 // Destroy the group object
 
         // Toggles the encryption status for the stream.
+        virtual bool hdcpSetEncrypted(bool encrypted, NvU8 streamType = NV0073_CTRL_SPECIFIC_HDCP_CTRL_HDCP22_TYPE_0, NvBool bForceClear = NV_FALSE, NvBool bAddStreamBack = NV_FALSE) = 0;
         // Returns whether encryption is currently enabled.
         virtual bool hdcpGetEncrypted() = 0;
 
@@ -670,6 +681,15 @@ namespace DisplayPort
         virtual void setPolicyForceLTAtNAB(bool enabled) = 0;
 
         //
+        //  Set the policy of reading DID2x on MST devices.
+        //  Valid values are 0-1.
+        //  0 - DID2x then EDID.    - DPLib will read DID2x then EDID before reporting device to client.
+        //  1 - DID2x only.         - DPLib will only read DID2x and ignore EDID.
+        //  Default value is 0.
+        //  All other values are reserved.
+        //
+        virtual void setDisplayId2MSTPolicy(DISPLAYID2_MST_POLICY policy) = 0;
+        //
         //  There are cases where OS does not detach heads from connector immediately after hot-unplug,
         //  on next hot-plug there is no guarantee that newly connected sink is capable to drive existing
         //  raster timings. Flush mode has following restriction
@@ -722,6 +742,8 @@ namespace DisplayPort
         virtual void resetDp11ProtocolForced() = 0;
         virtual bool isDp11ProtocolForced() = 0;
 
+        // Operates at the Link Level. Causes reauthentication of the entire link.
+        virtual void hdcpRenegotiate(NvU64 cN, NvU64 cKsv) = 0;
         virtual bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12) = 0;
 
         virtual bool getOuiSink(unsigned &ouiId, unsigned char * modelName,

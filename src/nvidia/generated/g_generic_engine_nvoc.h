@@ -127,13 +127,9 @@ struct NVOC_METADATA__GenericEngineApi {
     const struct NVOC_VTABLE__GenericEngineApi vtable;
 };
 
-#ifndef __NVOC_CLASS_GenericEngineApi_TYPEDEF__
-#define __NVOC_CLASS_GenericEngineApi_TYPEDEF__
-typedef struct GenericEngineApi GenericEngineApi;
-#endif /* __NVOC_CLASS_GenericEngineApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_GenericEngineApi
-#define __nvoc_class_id_GenericEngineApi 0x4bc329
+#define __nvoc_class_id_GenericEngineApi 0x4bc329u
+typedef struct GenericEngineApi GenericEngineApi;
 #endif /* __nvoc_class_id_GenericEngineApi */
 
 // Casting support
@@ -151,14 +147,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GenericEngineApi;
 
 NV_STATUS __nvoc_objCreateDynamic_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_GenericEngineApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_GenericEngineApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_GenericEngineApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_GenericEngineApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS genapiConstruct_IMPL(struct GenericEngineApi *arg_pGenericEngineApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_genapiConstruct(arg_pGenericEngineApi, arg_pCallContext, arg_pParams) genapiConstruct_IMPL(arg_pGenericEngineApi, arg_pCallContext, arg_pParams)
+NV_STATUS genapiConstruct_IMPL(struct GenericEngineApi *pGenericEngineApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_genapiConstruct(pGenericEngineApi, pCallContext, pParams) genapiConstruct_IMPL(pGenericEngineApi, pCallContext, pParams)
 
 void genapiDestruct_IMPL(struct GenericEngineApi *pGenericEngineApi);
 #define __nvoc_genapiDestruct(pGenericEngineApi) genapiDestruct_IMPL(pGenericEngineApi)
@@ -201,6 +197,16 @@ static inline NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled(struct GenericEngineAp
 }
 #else // __nvoc_generic_engine_h_disabled
 #define genapiCtrlCmdBBXIsNVMFlushEnabled(pGenericEngineApi, pParams) genapiCtrlCmdBBXIsNVMFlushEnabled_IMPL(pGenericEngineApi, pParams)
+#endif // __nvoc_generic_engine_h_disabled
+
+NV_STATUS genapiCtrlCmdBBXGetTimeData_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS *pParams);
+#ifdef __nvoc_generic_engine_h_disabled
+static inline NV_STATUS genapiCtrlCmdBBXGetTimeData(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("GenericEngineApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_generic_engine_h_disabled
+#define genapiCtrlCmdBBXGetTimeData(pGenericEngineApi, pParams) genapiCtrlCmdBBXGetTimeData_IMPL(pGenericEngineApi, pParams)
 #endif // __nvoc_generic_engine_h_disabled
 
 
@@ -357,12 +363,14 @@ static inline void genapiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__nvoc_metadata_ptr->vtable.__genapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS genapiMap_IMPL(struct GenericEngineApi *pGenericEngineApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);
 
 NV_STATUS genapiGetMapAddrSpace_IMPL(struct GenericEngineApi *pGenericEngineApi, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
 NV_STATUS genapiControl_IMPL(struct GenericEngineApi *pGenericEngineApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
+// Exported method declarations and/or inline definitions
 NV_STATUS genapiCtrlCmdMasterGetErrorIntrOffsetMask_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *pParams);
 
 NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *pParams);
@@ -371,6 +379,12 @@ NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_IMPL(struct GenericEngineApi *pGeneri
 
 NV_STATUS genapiCtrlCmdBBXIsNVMFlushEnabled_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS *pParams);
 
+NV_STATUS genapiCtrlCmdBBXGetTimeData_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_TIME_DATA_PARAMS *pParams);
+
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

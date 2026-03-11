@@ -141,13 +141,9 @@ struct NVOC_METADATA__KernelHFRP {
     const struct NVOC_VTABLE__KernelHFRP vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelHFRP_TYPEDEF__
-#define __NVOC_CLASS_KernelHFRP_TYPEDEF__
-typedef struct KernelHFRP KernelHFRP;
-#endif /* __NVOC_CLASS_KernelHFRP_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelHFRP
-#define __nvoc_class_id_KernelHFRP 0xa9fc13
+#define __nvoc_class_id_KernelHFRP 0xa9fc13u
+typedef struct KernelHFRP KernelHFRP;
 #endif /* __nvoc_class_id_KernelHFRP */
 
 // Casting support
@@ -175,8 +171,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHFRP;
 NV_STATUS __nvoc_objCreateDynamic_KernelHFRP(KernelHFRP**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelHFRP(KernelHFRP**, Dynamic*, NvU32);
-#define __objCreate_KernelHFRP(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelHFRP((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelHFRP(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelHFRP((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -407,10 +403,16 @@ static inline NvBool khfrpIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelH
     return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS khfrpStatePreInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelHFRP *pHfrp);
 
 NV_STATUS khfrpConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelHFRP *pHfrp, ENGDESCRIPTOR engDesc);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

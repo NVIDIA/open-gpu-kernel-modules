@@ -21,6 +21,8 @@
 
 *******************************************************************************/
 
+#include <linux/sched.h>
+
 #include "uvm_common.h"
 #include "uvm_ioctl.h"
 #include "uvm_linux.h"
@@ -63,6 +65,12 @@ static NV_STATUS handle_fault(struct vm_area_struct *vma, unsigned long start, u
         ret = UVM_HANDLE_MM_FAULT(vma, start + (i * PAGE_SIZE), fault_flags);
         if (ret & VM_FAULT_ERROR)
             return errno_to_nv_status(vm_fault_to_errno(ret, fault_flags));
+
+       // Depending on the kernel version and the active preemption model,
+       // calls to handle_mm_fault might not have had a chance to check for
+       // for scheduling points. Insert an explicit yield point here to prevent
+       // large buffers from triggering soft lockup timeout.
+       cond_resched();
     }
 
     return NV_OK;

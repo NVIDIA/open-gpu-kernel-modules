@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,7 +42,10 @@
 #include "dp_discovery.h"
 #include "dp_groupimpl.h"
 #include "dp_deviceimpl.h"
+#include "dp_qse.h"
 #include "./dptestutil/dp_testmessage.h"
+
+#include "dp_displayid2.h"
 
 // HDCP abort codes
 #define    HDCP_FLAGS_ABORT_DEVICE_REVOKED     0x00000800 // Abort due to a revoked device in DP1.2 topology
@@ -71,6 +74,8 @@ static inline unsigned getDataClockMultiplier(NvU64 linkRate, NvU64 laneCount)
 
 namespace DisplayPort
 {
+
+    class QSENonceGenerator;
 
     typedef enum
     {
@@ -137,6 +142,7 @@ namespace DisplayPort
         bool    bPConConnected;                 // HDMI2.1-Protocol Converter (Support SRC control mode) connected.
         bool    bSkipAssessLinkForPCon;         // Skip assessLink() for PCON. DD will call assessFRLLink later.
         bool    bHdcpAuthOnlyOnDemand;          // True if only initiate Hdcp authentication on demand and MST won't auto-trigger authenticate at device attach.
+        bool    bMstRestoreHdcpStateAtAttach;   // True if restore previous HDCP state at attach
         bool    bHdcpStrmEncrEnblOnlyOnDemand;  // True if only initiate Hdcp Stream Encryption Enable on demand and MST won't auto-trigger.
         bool    bReassessMaxLink;               // Retry assessLink() if the first assessed link config is lower than the panel max config.
 
@@ -252,7 +258,19 @@ namespace DisplayPort
         List pendingEdidReads;                   // List of DevicePendingEDIDRead structures.
                                                  // This list tracks the currently in progress MST Edid Reads
 
+        List pendingDid2Reads;                   // List of DevicePendingDID2Read structures.
+                                                     // This list tracks the currently in progress MST Did2 Reads
+
         Device          * lastDeviceSetForVbios;
+
+        QSENonceGenerator * qseNonceGenerator;
+
+        // Tells whether requests made by library to Downstream Device (i.e QSE messages sent to Branch Device) and RM
+        // (i.e KSV validation and Stream Validation requests sent by library to RM after getting QSE message reply from Downstream)
+        // during querying stream status is valid or not.
+        bool        bValidQSERequest;
+        ListElement       * message;             // Outstanding QSE message pointer for which Stream Validation submission failed.
+        NvU8              * clientId;            // ClientId of the group for which Stream Validation submission failed.
 
         // Flag which gets set when ACPI init is done. DD calls notifyAcpiInitDone to tell client that ACPI init is completed
         // & client can now initiate DDC EDID read for a device which supports EDID through SBIOS
@@ -260,12 +278,6 @@ namespace DisplayPort
 
         // Flag to check if the system is UEFI.
         bool        bIsUefiSystem;
-
-        //
-        // Flag to enable accounting available DP tunnelling BW while generating PPS
-        // for the mode
-        //
-        bool        bOptimizeDscBppForTunnellingBw;
 
         //
         // Flag to minimize link config for SST if it is 128b/132b.
@@ -342,6 +354,12 @@ namespace DisplayPort
         //
         bool        bForceHeadShutdownOnModeTransition;
 
+         // Use max DSC compression for MST topologies
+        bool        bUseMaxDSCCompressionMST;
+
+        // Flag to tell whether to send QSE after stream encryption on
+        bool        bIsEncryptionQseValid;
+
         bool        bReportDeviceLostBeforeNew;
         bool        bDisableSSC;
         bool        bEnableFastLT;
@@ -361,9 +379,6 @@ namespace DisplayPort
         bool        bForceHeadShutdownFromRegkey;
 
         bool        bForceHeadShutdownPerMonitor;
-
-         // Use max DSC compression for MST topologies
-         bool        bUseMaxDSCCompressionMST;
 
         // Enable stats collection for compoundQueryAttach()
         bool        bEnableCqaStatsCollection;
@@ -417,6 +432,9 @@ namespace DisplayPort
         // Use regkey DP_DSC_DEVID_WAR to toggle this flag.
         bool        bEnableDevId;
 
+        // To skip NLP similar to fakeMuxDevice on non-DSC DDS
+        bool        bIgnoreUnplugUnlessRequested;
+
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
 
@@ -426,15 +444,24 @@ namespace DisplayPort
         void setPolicyForceLTAtNAB(bool enabled);
         void setPolicyAssessLinkSafely(bool enabled);
 
+        void setDisplayId2MSTPolicy(DISPLAYID2_MST_POLICY policy) { return; };
+        virtual void discoveryNewDevice(const DiscoveryManager::Device &device);
+        bool bDisableNativeDisplayId2xSupport;
+
         void discoveryDetectComplete();
-        void discoveryNewDevice(const DiscoveryManager::Device &device);
         void discoveryLostDevice(const Address &address);
-        void processNewDevice(const DiscoveryManager::Device &device,
-            const Edid &edid,
-            bool isMultistream,
-            DwnStreamPortType portType,
-            DwnStreamPortAttribute portAttribute,
-            bool isCompliance = false);
+
+        struct ProcessNewDeviceParams {
+            const DiscoveryManager::Device &device;
+            const Edid &edid;
+            const DisplayID2x &displayId2x;
+            bool isMultistream;
+            DwnStreamPortType portType;
+            DwnStreamPortAttribute portAttribute;
+            bool isCompliance;
+        };
+
+        void processNewDevice(const ProcessNewDeviceParams &params);
 
         void applyEdidWARs(Edid &edid, DiscoveryManager::Device &device);
         virtual void handleEdidWARs(Edid &edid, DiscoveryManager::Device &device){};
@@ -564,6 +591,7 @@ namespace DisplayPort
         char tagHDCPReauthentication;
         char tagDelayedHdcpCapRead;
         char tagDelayedHDCPCPIrqHandling;
+        char tagSendQseMessage;
         char tagDpBwAllocationChanged;
         char tagHDCPStreamEncrEnable;
 
@@ -706,6 +734,8 @@ namespace DisplayPort
         virtual bool allocateTimeslice(GroupImpl * targetGroup);
         void freeTimeslice(GroupImpl * targetGroup);
         void flushTimeslotsToHardware();
+        void hdcpRenegotiate(NvU64 cN, NvU64 cKsv);
+        void hdcpActiveGroupsSetECF();
         bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12);
         bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 &chipRevision);
         bool hdcpValidateKsv(const NvU8 *ksv, NvU32 Size);

@@ -28,8 +28,6 @@
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
 
-#include "vgpu/vgpu_events.h"
-
 #include "published/blackwell/gb10b/dev_fault.h"
 
 /**

@@ -587,6 +587,9 @@ vgpuconfigapiCtrlCmdVgpuConfigGetVgpuTypeInfo_IMPL
         pParams->vgpuTypeInfo.gpuInstanceProfileId = PARTITIONID_INVALID;
     }
 
+    pParams->vgpuTypeInfo.nominalFbRegionSize =
+            vgpuMgrGetPlacementRegionSize(pGpu, &pPgpuInfo->vgpuNominalFbSize, vgpuTypeInfo);
+
     pVgpuTypeSupportedPlacementInfo = &vgpuTypeInfo->vgpuTypeSupportedPlacementInfo;
 
     /* Placement size is same for a vGPU in both Heterogeneous and Homogeneous mode */

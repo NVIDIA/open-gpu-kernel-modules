@@ -318,6 +318,12 @@ krcReportXid_IMPL
         const char    *procName = NULL;
         char           pidStr[12] = "";
 
+        if (pKernelChannel == NULL && context.pChannelInfo != NULL)
+        {
+            KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+            pKernelChannel = kfifoKernelChannelFromInfo(pGpu, pKernelFifo, *(FIFO_CHANNEL_INFO*)context.pChannelInfo);
+        }
+
         //
         // When the channel context is available, use the allocating process'
         // PID/name, which were populated when the channel was allocated.

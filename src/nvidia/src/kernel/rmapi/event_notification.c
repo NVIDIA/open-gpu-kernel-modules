@@ -60,7 +60,7 @@ typedef struct
     // Incremented under event list spinlock when a notification is pending for
     // this event, decremented for each notification sent (not under spinlock).
     //
-    volatile NvS32 pendingNotifyCount;
+    PORT_ATOMIC NvS32 pendingNotifyCount;
 } ENGINE_EVENT_NOTIFICATION;
 
 //

@@ -48,6 +48,8 @@
 #include "vgpu/vgpu_version.h"
 #include "virtualization/kernel_vgpu_mgr.h"
 
+#include "ctrl/ctrl2080/ctrl2080perf.h"
+#include "kernel/gpu/perf/kern_perf.h"
 #include "platform/chipset/chipset_info.h"
 #include "platform/chipset/chipset.h"
 #include "platform/cpu.h"
@@ -1273,7 +1275,61 @@ cliresCtrlCmdSystemNotifyEvent_IMPL
         }
 
         case NV0000_CTRL_SYSTEM_EVENT_TYPE_POWER_SOURCE:
-            status = NV_ERR_NOT_SUPPORTED;
+        {
+            OBJGPU     *pGpu      = NULL;
+            NvU32       gpuMask   = 0;
+            NvU32       gpuIndex  = 0;
+            NvU32       gpuCount  = 0;
+
+            NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS params = {0};
+
+            params.powerStateInfo.powerState = (pParams->eventData == NV0000_CTRL_SYSTEM_EVENT_DATA_POWER_BATTERY) ?
+                                               NV2080_CTRL_PERF_POWER_SOURCE_BATTERY :
+                                               NV2080_CTRL_PERF_POWER_SOURCE_AC;
+
+            // First check to make sure all GPUs are powered up
+            gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+            pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+            while (pGpu)
+            {
+                if (!gpuIsGpuFullPower(pGpu))
+                {
+                    status = NV_ERR_GPU_NOT_FULL_POWER;
+                    break;
+                }
+                pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+            }
+
+            // Skip any extra work if we're not in full power
+            if (status == NV_ERR_GPU_NOT_FULL_POWER)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "NV0000_CTRL_SYSTEM_EVENT_TYPE_POWER_SOURCE called in power down state.\n");
+                NV_PRINTF(LEVEL_WARNING,
+                          "      Returning NV_ERR_GPU_NOT_FULL_POWER.\n");
+                break;
+            }
+
+            gpuMask   = 0;
+            gpuIndex  = 0;
+            gpuCount  = 0;
+
+            // OK, we need to loop over all gpus in the system
+            gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+            pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+            while (pGpu)
+            {
+                KernelPerf *pKernelPerf  = GPU_GET_KERNEL_PERF(pGpu);
+
+                if (pKernelPerf)
+                {
+                    NV_CHECK_OK(status, LEVEL_ERROR,
+                                kperfPerfSetPowerstate(pGpu, pKernelPerf, &params));
+                }
+
+                pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+            }
+        }
             break;
 
         default:
@@ -2900,6 +2956,12 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             NvU16 dataSize = sizeof(header) + sizeof(common) + sizeof(entries);
             pData = portMemAllocNonPaged(dataSize);
 
+            if (pData == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto nvpcf2xGetDynamicParams_exit;
+            }
+
             portMemSet(&header, 0, sizeof(header));
 
             header.version    = pParams->version;
@@ -3049,7 +3111,7 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
                 {
                     pParams->dcTspLongTimescaleLimitOverridemA = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
                             _OUTPUT_PARAM5, _CMD0_UNSIGNED, entriesOut.param5);
-                    pParams->dcTspShortTimescaleLimitmA = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                    pParams->dcTspShortTimescaleLimitOverridemA = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
                             _OUTPUT_PARAM6, _CMD0_UNSIGNED, entriesOut.param6);
                 }
             }
@@ -3065,6 +3127,12 @@ nvpcf2xGetDynamicParams_exit:
             NvU16 dataSize =  NVPCF0100_CTRL_CONFIG_2X_BUFF_SIZE_MAX;
 
             pData = portMemAllocNonPaged(dataSize);
+
+            if (pData == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto nvpcf2xGetStaticParams_exit;
+            }
 
             if ((rc = osCallACPI_DSM(pGpu,
                             ACPI_DSM_FUNCTION_NVPCF_2X,
@@ -4932,7 +5000,6 @@ cliresCtrlCmdClientGetAddrSpaceType_IMPL
     switch (memType)
     {
         case ADDR_SYSMEM:
-        case ADDR_EGM:
             pParams->addrSpaceType = NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_SYSMEM;
             break;
         case ADDR_FBMEM:
@@ -5367,63 +5434,6 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
     }
 
     return status;
-}
-
-NV_STATUS
-cliresCtrlCmdLegacyConfig_IMPL
-(
-    RmClientResource *pRmCliRes,
-    NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams
-)
-{
-    NvHandle      hClient            = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RsClient     *pClient            = RES_GET_CLIENT(pRmCliRes);
-    RmClient     *pRmClient          = dynamicCast(pClient, RmClient);
-    NvHandle      hDeviceOrSubdevice = pParams->hContext;
-    NvHandle      hDevice;
-    OBJGPU       *pGpu;
-    GpuResource  *pGpuResource;
-    NV_STATUS     rmStatus           = NV_OK;
-    CALL_CONTEXT *pCallContext       = resservGetTlsCallContext();
-
-    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
-    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
-
-    //
-    // Clients pass in device or subdevice as context for NvRmConfigXyz.
-    //
-    rmStatus = gpuresGetByDeviceOrSubdeviceHandle(pClient,
-                                                  hDeviceOrSubdevice,
-                                                  &pGpuResource);
-    if (rmStatus != NV_OK)
-        return rmStatus;
-
-    hDevice = RES_GET_HANDLE(GPU_RES_GET_DEVICE(pGpuResource));
-    pGpu    = GPU_RES_GET_GPU(pGpuResource);
-
-    //
-    // GSP client builds should have these legacy APIs disabled,
-    // but a monolithic build running in offload mode can still reach here,
-    // so log those cases and bail early to keep the same behavior.
-    //
-    NV_ASSERT_OR_RETURN(!IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
-
-    GPU_RES_SET_THREAD_BC_STATE(pGpuResource);
-
-    pParams->dataType = pParams->opType;
-
-    switch (pParams->opType)
-    {
-        default:
-            PORT_UNREFERENCED_VARIABLE(pGpu);
-            PORT_UNREFERENCED_VARIABLE(hDevice);
-            PORT_UNREFERENCED_VARIABLE(hClient);
-            rmStatus = NV_ERR_NOT_SUPPORTED;
-            break;
-    }
-
-    return rmStatus;
 }
 
 NV_STATUS

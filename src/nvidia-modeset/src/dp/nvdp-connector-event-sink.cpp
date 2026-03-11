@@ -531,6 +531,14 @@ NvBool nvDPLibDpyIsYuv420ModeSupported(const NVDpyEvoRec *pDpyEvo)
     return (dev != NULL) && (dev->getSDPExtnForColorimetrySupported());
 }
 
+NvBool nvDPLibDpyUsesHDMIActivePcon(const NVDpyEvoRec *pDpyEvo)
+{
+    DisplayPort::Device *dev = (pDpyEvo->dp.pDpLibDevice != NULL) ?
+        pDpyEvo->dp.pDpLibDevice->device : NULL;
+    return (dev != NULL) &&
+           (dev->getConnectorType() == DisplayPort::connectorHDMI);
+}
+
 // Adaptive-Sync is enabled/disabled by setting the MSA_TIMING_PAR_IGNORE_EN
 // bit in the DOWNSPREAD_CTRL register (DP spec 1.4a appendix K)
 void nvDPLibSetAdaptiveSync(const NVDispEvoRec *pDispEvo, NvU32 head,

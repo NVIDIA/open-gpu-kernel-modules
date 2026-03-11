@@ -190,6 +190,20 @@ SUBPARSER(override)
         }
     } else if (idLen == 5 && nvkms_memcmp(key, "tegra", 5) == 0){
         gpuId = NVKMS_DEVICE_ID_TEGRA;
+    } else if (idLen == 11 && nvkms_memcmp(key, "rm-soc-disp", 11) == 0) {
+        for (size_t i = 0; i < numdevs; i++) {
+            if (devs[i].is_soc_disp) {
+                gpuId = devs[i].gpu_id;
+                break;
+            }
+        }
+
+        if (gpuId == NV0000_CTRL_GPU_INVALID_ID) {
+            nvEvoLog(EVO_LOG_WARN, "Error in override entry: "
+                     "No RM soc-disp device found");
+            nvClearDpyOverrides();
+            return FALSE;
+        }
     } else {
         nvEvoLog(EVO_LOG_WARN, "Syntax error in override entry: "
                  "Unknown GPU designator: %.*s", (int)idLen, key);

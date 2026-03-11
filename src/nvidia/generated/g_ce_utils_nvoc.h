@@ -82,16 +82,11 @@ typedef struct
 
 } CEUTILS_MEMCOPY_PARAMS;
 
-
 struct KernelChannel;
 
-#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
-#define __NVOC_CLASS_KernelChannel_TYPEDEF__
-typedef struct KernelChannel KernelChannel;
-#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelChannel
-#define __nvoc_class_id_KernelChannel 0x5d8d70
+#define __nvoc_class_id_KernelChannel 0x5d8d70u
+typedef struct KernelChannel KernelChannel;
 #endif /* __nvoc_class_id_KernelChannel */
 
 
@@ -160,13 +155,9 @@ struct NVOC_METADATA__CeUtils {
     const struct NVOC_METADATA__Object metadata__Object;
 };
 
-#ifndef __NVOC_CLASS_CeUtils_TYPEDEF__
-#define __NVOC_CLASS_CeUtils_TYPEDEF__
-typedef struct CeUtils CeUtils;
-#endif /* __NVOC_CLASS_CeUtils_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CeUtils
-#define __nvoc_class_id_CeUtils 0x8b8bae
+#define __nvoc_class_id_CeUtils 0x8b8baeu
+typedef struct CeUtils CeUtils;
 #endif /* __nvoc_class_id_CeUtils */
 
 // Casting support
@@ -184,14 +175,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtils;
 
 NV_STATUS __nvoc_objCreateDynamic_CeUtils(CeUtils**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_CeUtils(CeUtils**, Dynamic*, NvU32, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *arg_pAllocParams);
-#define __objCreate_CeUtils(ppNewObj, pParent, createFlags, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams) \
-    __nvoc_objCreate_CeUtils((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams)
+NV_STATUS __nvoc_objCreate_CeUtils(CeUtils**, Dynamic*, NvU32, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *pAllocParams);
+#define __objCreate_CeUtils(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pGpu, pKernelMIGGPUInstance, pAllocParams) \
+    __nvoc_objCreate_CeUtils((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pGpu, pKernelMIGGPUInstance, pAllocParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS ceutilsConstruct_IMPL(struct CeUtils *arg_pCeUtils, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *arg_pAllocParams);
-#define __nvoc_ceutilsConstruct(arg_pCeUtils, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams) ceutilsConstruct_IMPL(arg_pCeUtils, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams)
+NV_STATUS ceutilsConstruct_IMPL(struct CeUtils *pCeUtils, struct OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *pAllocParams);
+#define __nvoc_ceutilsConstruct(pCeUtils, pGpu, pKernelMIGGPUInstance, pAllocParams) ceutilsConstruct_IMPL(pCeUtils, pGpu, pKernelMIGGPUInstance, pAllocParams)
 
 void ceutilsDestruct_IMPL(struct CeUtils *pCeUtils);
 #define __nvoc_ceutilsDestruct(pCeUtils) ceutilsDestruct_IMPL(pCeUtils)
@@ -277,7 +268,13 @@ static inline NvBool ceutilsUsesPreferredCe(struct CeUtils *pCeUtils) {
 // Wrapper macros for halified functions
 
 // Dispatch functions
-static inline NvBool ceutilsIsSubmissionPaused(struct CeUtils *pCeUtils) {
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvBool ceutilsIsSubmissionPaused(struct CeUtils *pCeUtils){
     return pCeUtils->submissionPausedRefCount != 0;
 }
 
@@ -362,13 +359,9 @@ struct NVOC_METADATA__CeUtilsApi {
     const struct NVOC_VTABLE__CeUtilsApi vtable;
 };
 
-#ifndef __NVOC_CLASS_CeUtilsApi_TYPEDEF__
-#define __NVOC_CLASS_CeUtilsApi_TYPEDEF__
-typedef struct CeUtilsApi CeUtilsApi;
-#endif /* __NVOC_CLASS_CeUtilsApi_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CeUtilsApi
-#define __nvoc_class_id_CeUtilsApi 0x2eb528
+#define __nvoc_class_id_CeUtilsApi 0x2eb528u
+typedef struct CeUtilsApi CeUtilsApi;
 #endif /* __nvoc_class_id_CeUtilsApi */
 
 // Casting support
@@ -386,14 +379,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtilsApi;
 
 NV_STATUS __nvoc_objCreateDynamic_CeUtilsApi(CeUtilsApi**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_CeUtilsApi(CeUtilsApi**, Dynamic*, NvU32, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_CeUtilsApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_CeUtilsApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_CeUtilsApi(CeUtilsApi**, Dynamic*, NvU32, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_CeUtilsApi(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_CeUtilsApi((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS ceutilsapiConstruct_IMPL(struct CeUtilsApi *arg_pCeUtilsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_ceutilsapiConstruct(arg_pCeUtilsApi, arg_pCallContext, arg_pParams) ceutilsapiConstruct_IMPL(arg_pCeUtilsApi, arg_pCallContext, arg_pParams)
+NV_STATUS ceutilsapiConstruct_IMPL(struct CeUtilsApi *pCeUtilsApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_ceutilsapiConstruct(pCeUtilsApi, pCallContext, pParams) ceutilsapiConstruct_IMPL(pCeUtilsApi, pCallContext, pParams)
 
 void ceutilsapiDestruct_IMPL(struct CeUtilsApi *pCeUtilsApi);
 #define __nvoc_ceutilsapiDestruct(pCeUtilsApi) ceutilsapiDestruct_IMPL(pCeUtilsApi)
@@ -582,12 +575,18 @@ static inline void ceutilsapiAddAdditionalDependants_DISPATCH(struct RsClient *p
     pResource->__nvoc_metadata_ptr->vtable.__ceutilsapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS ceutilsapiCtrlCmdMemset_IMPL(struct CeUtilsApi *pCeUtilsApi, NV0050_CTRL_MEMSET_PARAMS *pParams);
 
 NV_STATUS ceutilsapiCtrlCmdMemcopy_IMPL(struct CeUtilsApi *pCeUtilsApi, NV0050_CTRL_MEMCOPY_PARAMS *pParams);
 
 NV_STATUS ceutilsapiCtrlCmdCheckProgress_IMPL(struct CeUtilsApi *pCeUtilsApi, NV0050_CTRL_CHECK_PROGRESS_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

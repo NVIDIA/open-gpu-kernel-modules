@@ -50,7 +50,6 @@ TYPEDEF_BITVECTOR(MC_ENGINE_BITVECTOR);
 #include "g_rpc_hal.h" // For RPC_HAL_IFACES
 #include "g_rpc_odb.h" // For RPC_HAL_IFACES
 
-#define RPC_TIMEOUT_GPU_RESET_THRESHOLD 3  // Reset GPU after 3 back to back GSP RPC timeout
 #define RPC_TIMEOUT_PRINT_RATE_SKIP   29 // skip 29 of 30 prints
 
 #define SLOW_RPC_THRESHOLD_US 66000

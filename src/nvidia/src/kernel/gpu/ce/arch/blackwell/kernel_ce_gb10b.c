@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 
-#include "published/blackwell/gb10b/dev_ce.h"
 #include "published/blackwell/gb10b/dev_ce_base.h"
 
 /*!
@@ -35,7 +34,7 @@
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pCe   OBJCE pointer
  *
- * @return  NV_CE_PCE2LCE_CONFIG__SIZE_1
+ * @return  NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1
  *
  */
 NvU32
@@ -44,7 +43,7 @@ kceGetPce2lceConfigSize1_GB10B
     KernelCE *pKCe
 )
 {
-    return NV_CE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**

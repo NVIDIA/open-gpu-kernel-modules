@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -183,6 +183,19 @@ PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 
 #else
 #define portUtilExReadTimestampCounter_SUPPORTED 0
+#endif
+
+#if NVCPU_IS_AARCH64 && !defined(NV_MODS)
+PORT_UTIL_INLINE NvU64 portUtilExReadArchTimerFreq(void)
+{
+    NvU64 freq = 0;
+    __asm__ __volatile__ ("mrs %0, cntfrq_el0" : "=r" (freq));
+    return freq;
+}
+#define portUtilExReadArchTimerFreq_SUPPORTED 1
+
+#else
+#define portUtilExReadArchTimerFreq_SUPPORTED 0
 #endif
 
 #endif // _NVPORT_UTIL_GCC_CLANG_H_

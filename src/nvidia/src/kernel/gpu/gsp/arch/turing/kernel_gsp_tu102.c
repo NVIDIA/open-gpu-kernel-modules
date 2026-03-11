@@ -33,7 +33,6 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "vgpu/rpc.h"
-#include "rmgspseq.h"
 #include "core/thread_state.h"
 #include "os/os.h"
 #include "nverror.h"
@@ -55,6 +54,8 @@
 
 #include "g_all_dcl_pb.h"
 #include "lib/protobuf/prb.h"
+
+static NvBool _kgspIsProcessorSuspended(OBJGPU *pGpu, void *pVoid);
 
 void
 kgspConfigureFalcon_TU102
@@ -313,23 +314,6 @@ kgspFreeBootArgs_TU102
 }
 
 /*!
- * Determine if GSP reload via SEC2 is completed.
- */
-static NvBool
-_kgspIsReloadCompleted
-(
-    OBJGPU  *pGpu,
-    void    *pVoid
-)
-{
-    NvU32 reg;
-
-    reg = GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_14);
-
-    return FLD_TEST_DRF(_PGC6, _BSI_SECURE_SCRATCH_14, _BOOT_STAGE_3_HANDOFF, _VALUE_DONE, reg);
-}
-
-/*!
  * Set command queue head for CPU to GSP message queue
  *
  * @param[in]   pGpu            GPU object pointer
@@ -542,12 +526,25 @@ kgspBootstrap_TU102
         return status;
     }
 
+    // Send init RPCs necessary for GSP-RM booting, before creating OBJGPU.
+    // Skips for suspend/resume as GSP saves/restores context
+    if (bootMode == KGSP_BOOT_MODE_NORMAL)
+    {
+        status = kgspSendInitRpcs(pGpu, pKernelGsp);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "kgspSendInitRpcs failed 0x%x!\n", status);
+            return status;
+        }
+    }
+
     // Program FALCON_OS
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
     kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_OS, pRiscvDesc->appVersion);
 
-    // Ensure the CPU is started
-    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+    // Ensure the CPU has started
+    // Note: In rare cases, GSP-RM may make enough progress by this point to suspend waiting for Kernel RM.
+    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon) || _kgspIsProcessorSuspended(pGpu, pKernelGsp))
     {
         NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
     }
@@ -897,81 +894,6 @@ kgspPopulateWprMeta_TU102
 }
 
 /*!
- * Execute GSP sequencer operation
- *
- * @param[in]   pGpu            GPU object pointer
- * @param[in]   pKernelGsp      KernelGsp object pointer
- * @param[in]   opCode          Sequencer opcode
- * @param[in]   pPayload        Pointer to payload
- * @param[in]   payloadSize     Size of payload in bytes
- *
- * @return NV_OK if the sequencer operation was successful.
- *         Appropriate NV_ERR_xxx value otherwise.
- */
-NV_STATUS
-kgspExecuteSequencerCommand_TU102
-(
-    OBJGPU         *pGpu,
-    KernelGsp      *pKernelGsp,
-    NvU32           opCode,
-    NvU32          *pPayload,
-    NvU32           payloadSize
-)
-{
-    NV_STATUS       status        = NV_OK;
-    KernelFalcon   *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
-    NvU32           secMailbox0   = 0;
-
-    switch (opCode)
-    {
-        case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
-        {
-            KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
-
-            NV_ASSERT_OK_OR_RETURN(kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon));
-            kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
-
-            NV_PRINTF(LEVEL_INFO, "---------------Starting SEC2 to resume GSP-RM------------\n");
-            // Start SEC2 in order to resume GSP-RM
-            kflcnStartCpu_HAL(pGpu, pKernelSec2Falcon);
-
-            // Wait for reload to be completed.
-            status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
-
-            // Check SEC mailbox.
-            secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
-
-            if ((status != NV_OK) || (secMailbox0 != NV_OK))
-            {
-                NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SEC2-RTOS to resume GSP-RM. SEC2 Mailbox0 is : 0x%x\n", secMailbox0);
-                DBG_BREAKPOINT();
-                return NV_ERR_TIMEOUT;
-            }
-
-            // Ensure the CPU is started
-            if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
-            {
-                NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
-            }
-            else
-            {
-                NV_ASSERT_FAILED("Failed to boot GSP");
-                status = NV_ERR_NOT_READY;
-            }
-            break;
-        }
-
-        default:
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            break;
-        }
-    }
-
-    return status;
-}
-
-/*!
  * Reset the GSP HW
  *
  * @return NV_OK if the GSP HW was properly reset
@@ -1037,22 +959,20 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
+            NvU64 errorId = 0;
+
+            // Watchdog timeouts do not have an XID associated with them
+            // as they are not considered as errors
             if (crashcatReportIsWatchdog_HAL(pReport))
             {
-                NV_PRINTF(LEVEL_INFO, "Assign a CrashcatReport to pWatchdogReport\n");
-                //
-                // Keep the first report until the corresponding RPC is done
-                // Before that, subsequent reports are ignored
-                //
-                if (pKernelGsp->pWatchdogReport != NULL)
-                    objDelete(pReport);
-                else
-                    pKernelGsp->pWatchdogReport = pReport;
-
-                continue;
+                errorId = 0; 
+                pKernelGsp->bWatchdogReported = NV_TRUE;
             }
-
-            if (kgspCrashCatReportImpactsGspRm(pReport))
+            else
+                errorId = GSP_ERROR;
+            
+            // only errors impact GSP-RM health. Timeouts are not considered as errors
+            if (kgspCrashCatReportImpactsGspRm(pReport) && !crashcatReportIsWatchdog_HAL(pReport))
                 bHealthy = NV_FALSE;
 
             NV_PRINTF(LEVEL_ERROR,
@@ -1062,7 +982,7 @@ kgspHealthCheck_TU102
 
             crashcatReportLog(pReport);
 
-            kgspPostCrashcatReportToNocat(pGpu, pKernelGsp, pReport, GSP_ERROR);
+            kgspPostCrashcatReportToNocat(pGpu, pKernelGsp, pReport, errorId);
 
             objDelete(pReport);
         }
@@ -1200,6 +1120,11 @@ kgspService_TU102
     return kflcnGetPendingHostInterrupts(pGpu, pKernelFalcon);
 }
 
+// For LibOS2 this is called LIBOS_INTERRUPT_PROCESSOR_SUSPENDED
+// For LibOS3 it got renamed to the #define we use below but the binary
+// values are identical and the usage is the same.
+#define INTERRUPT_PROCESSOR_SUSPENDED_VALUE 0x80000000
+
 static NvBool
 _kgspIsProcessorSuspended
 (
@@ -1213,7 +1138,7 @@ _kgspIsProcessorSuspended
     // Check for LIBOS_INTERRUPT_PROCESSOR_SUSPENDED in mailbox
     mailbox = kflcnRegRead_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon),
                                NV_PFALCON_FALCON_MAILBOX0);
-    return (mailbox == 0x80000000);
+    return (mailbox & INTERRUPT_PROCESSOR_SUSPENDED_VALUE) != 0;
 }
 
 NV_STATUS
@@ -1370,6 +1295,17 @@ kgspDumpMailbox_TU102
         data = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(idx));
         NV_PRINTF(LEVEL_ERROR, "GSP: MAILBOX(%d) = 0x%08X\n", idx, data);
     }
+}
+
+NvU32
+kgspReadMailbox_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 idx
+)
+{
+    return GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(idx));
 }
 
 void

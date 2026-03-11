@@ -94,10 +94,11 @@ struct KernelMc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMc *__nvoc_pbase_KernelMc;    // kmc
 
-    // Vtable with 3 per-object function pointers
+    // Vtable with 4 per-object function pointers
     NV_STATUS (*__kmcWritePmcEnableReg__)(struct OBJGPU *, struct KernelMc * /*this*/, NvU32, NvBool, NvBool);  // halified (3 hals) body
     NV_STATUS (*__kmcPrepareForXVEReset__)(struct OBJGPU *, struct KernelMc * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kmcGetMcBar0MapInfo__)(struct OBJGPU *, struct KernelMc * /*this*/, NvU64 *, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kmcGetMcBar0MapInfo__)(struct OBJGPU *, struct KernelMc * /*this*/, NvU64 *, NvU32 *);  // halified (3 hals) body
+    NvU32 (*__kmcReadPmcBoot0__)(struct OBJGPU *, struct KernelMc * /*this*/);  // halified (3 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KMC_IS_MISSING inherited from OBJENGSTATE
@@ -132,13 +133,9 @@ struct NVOC_METADATA__KernelMc {
     const struct NVOC_VTABLE__KernelMc vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelMc_TYPEDEF__
-#define __NVOC_CLASS_KernelMc_TYPEDEF__
-typedef struct KernelMc KernelMc;
-#endif /* __NVOC_CLASS_KernelMc_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelMc
-#define __nvoc_class_id_KernelMc 0x3827ff
+#define __nvoc_class_id_KernelMc 0x3827ffu
+typedef struct KernelMc KernelMc;
 #endif /* __nvoc_class_id_KernelMc */
 
 // Casting support
@@ -162,8 +159,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelMc;
 NV_STATUS __nvoc_objCreateDynamic_KernelMc(KernelMc**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
-#define __objCreate_KernelMc(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelMc((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelMc(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelMc((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -182,6 +179,9 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
 #define kmcGetMcBar0MapInfo_FNPTR(pKernelMc) pKernelMc->__kmcGetMcBar0MapInfo__
 #define kmcGetMcBar0MapInfo(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo_DISPATCH(pGpu, pKernelMc, arg3, arg4)
 #define kmcGetMcBar0MapInfo_HAL(pGpu, pKernelMc, arg3, arg4) kmcGetMcBar0MapInfo_DISPATCH(pGpu, pKernelMc, arg3, arg4)
+#define kmcReadPmcBoot0_FNPTR(pKernelMc) pKernelMc->__kmcReadPmcBoot0__
+#define kmcReadPmcBoot0(pGpu, pKernelMc) kmcReadPmcBoot0_DISPATCH(pGpu, pKernelMc)
+#define kmcReadPmcBoot0_HAL(pGpu, pKernelMc) kmcReadPmcBoot0_DISPATCH(pGpu, pKernelMc)
 #define kmcConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kmcConstructEngine(pGpu, pEngstate, arg3) kmcConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
 #define kmcInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
@@ -226,6 +226,10 @@ static inline NV_STATUS kmcPrepareForXVEReset_DISPATCH(struct OBJGPU *pGpu, stru
 
 static inline NV_STATUS kmcGetMcBar0MapInfo_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4) {
     return pKernelMc->__kmcGetMcBar0MapInfo__(pGpu, pKernelMc, arg3, arg4);
+}
+
+static inline NvU32 kmcReadPmcBoot0_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
+    return pKernelMc->__kmcReadPmcBoot0__(pGpu, pKernelMc);
 }
 
 static inline NV_STATUS kmcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pEngstate, ENGDESCRIPTOR arg3) {
@@ -276,30 +280,46 @@ static inline NvBool kmcIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelMc 
     return pEngstate->__nvoc_metadata_ptr->vtable.__kmcIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kmcStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
 
 NV_STATUS kmcStateLoad_IMPL(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS kmcWritePmcEnableReg_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5);
 
 NV_STATUS kmcWritePmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5);
 
-static inline NV_STATUS kmcWritePmcEnableReg_5baef9(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 NV_STATUS kmcPrepareForXVEReset_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
-
-static inline NV_STATUS kmcPrepareForXVEReset_56cd7a(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
-    return NV_OK;
-}
 
 NV_STATUS kmcGetMcBar0MapInfo_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4);
 
-static inline NV_STATUS kmcGetMcBar0MapInfo_46f6a7(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4) {
+NV_STATUS kmcGetMcBar0MapInfo_GB100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4);
+
+NvU32 kmcReadPmcBoot0_GM107(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
+
+NvU32 kmcReadPmcBoot0_GB100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
+
+// Inline HAL method definitions
+static inline NV_STATUS kmcWritePmcEnableReg_5baef9(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg3, NvBool arg4, NvBool arg5){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS kmcPrepareForXVEReset_ac1694(struct OBJGPU *pGpu, struct KernelMc *pKernelMc){
+    return NV_OK;
+}
+
+static inline NV_STATUS kmcGetMcBar0MapInfo_395e98(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg3, NvU32 *arg4){
     return NV_ERR_NOT_SUPPORTED;
 }
 
+static inline NvU32 kmcReadPmcBoot0_b2b553(struct OBJGPU *pGpu, struct KernelMc *pKernelMc){
+    return 0;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

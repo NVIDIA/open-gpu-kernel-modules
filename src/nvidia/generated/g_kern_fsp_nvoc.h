@@ -123,8 +123,8 @@ struct KernelFsp {
     NvU64 (*__kfspGetExtraReservedMemorySize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspWaitForGspTargetMaskReleased__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NvBool (*__kfspRequiresBug3957833WAR__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
-    NV_STATUS (*__kfspFrtsSysmemLocationProgram__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
-    void (*__kfspFrtsSysmemLocationClear__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kfspFrtsSysmemLocationProgram__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
+    void (*__kfspFrtsSysmemLocationClear__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     void (*__kfspCheckForClockBoostCapability__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspSendClockBoostRpc__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8);  // halified (2 hals) body
 
@@ -185,13 +185,9 @@ struct NVOC_METADATA__KernelFsp {
     const struct NVOC_VTABLE__KernelFsp vtable;
 };
 
-#ifndef __NVOC_CLASS_KernelFsp_TYPEDEF__
-#define __NVOC_CLASS_KernelFsp_TYPEDEF__
-typedef struct KernelFsp KernelFsp;
-#endif /* __NVOC_CLASS_KernelFsp_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_KernelFsp
-#define __nvoc_class_id_KernelFsp 0x87fb96
+#define __nvoc_class_id_KernelFsp 0x87fb96u
+typedef struct KernelFsp KernelFsp;
 #endif /* __nvoc_class_id_KernelFsp */
 
 // Casting support
@@ -231,8 +227,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFsp;
 NV_STATUS __nvoc_objCreateDynamic_KernelFsp(KernelFsp**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
-#define __objCreate_KernelFsp(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_KernelFsp((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_KernelFsp(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_KernelFsp((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -282,6 +278,14 @@ static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKer
 }
 #else // __nvoc_kern_fsp_h_disabled
 #define kfspPollForResponse(pGpu, pKernelFsp) kfspPollForResponse_IMPL(pGpu, pKernelFsp)
+#endif // __nvoc_kern_fsp_h_disabled
+
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline void kfspResetGspFmcErrorCode(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspResetGspFmcErrorCode(pGpu, pKernelFsp) kfspResetGspFmcErrorCode_d44104(pGpu, pKernelFsp)
 #endif // __nvoc_kern_fsp_h_disabled
 
 
@@ -378,6 +382,7 @@ static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKer
 #define kfspSendClockBoostRpc_FNPTR(pKernelFsp) pKernelFsp->__kfspSendClockBoostRpc__
 #define kfspSendClockBoostRpc(pGpu, pKernelFsp, cmd) kfspSendClockBoostRpc_DISPATCH(pGpu, pKernelFsp, cmd)
 #define kfspSendClockBoostRpc_HAL(pGpu, pKernelFsp, cmd) kfspSendClockBoostRpc_DISPATCH(pGpu, pKernelFsp, cmd)
+#define kfspResetGspFmcErrorCode_HAL(pGpu, pKernelFsp) kfspResetGspFmcErrorCode(pGpu, pKernelFsp)
 #define kfspInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kfspInitMissing(pGpu, pEngstate) kfspInitMissing_DISPATCH(pGpu, pEngstate)
 #define kfspStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -574,6 +579,7 @@ static inline NvBool kfspIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelFs
     return pEngstate->__nvoc_metadata_ptr->vtable.__kfspIsPresent__(pGpu, pEngstate);
 }
 
+// Virtual method declarations and/or inline definitions
 NV_STATUS kfspConstructEngine_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, ENGDESCRIPTOR arg3);
 
 NV_STATUS kfspStateUnload_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 flags);
@@ -582,192 +588,205 @@ void kfspStateDestroy_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NV_STATUS kfspSendAndReadMessageAsync_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize, AsyncRpcCallback callback, void *pCallbackArgs);
 
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
 NV_STATUS kfspConstructHal_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NV_STATUS kfspConstructHal_56cd7a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_OK;
-}
 
 NV_STATUS kfspSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
 
 NV_STATUS kfspSendPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
 
-static inline NV_STATUS kfspSendPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS kfspReadPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
 
 NV_STATUS kfspReadPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
-
-static inline NV_STATUS kfspReadPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NvBool kfspCanSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvBool kfspCanSendPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NvBool kfspCanSendPacket_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_FALSE;
-}
-
 NvBool kfspIsResponseAvailable_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvBool kfspIsResponseAvailable_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NvBool kfspIsResponseAvailable_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_FALSE;
-}
 
 NvU32 kfspGetMaxSendPacketSize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvU32 kfspGetMaxSendPacketSize_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NvU32 kfspGetMaxSendPacketSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return 0;
-}
-
 NvU32 kfspGetMaxRecvPacketSize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvU32 kfspGetMaxRecvPacketSize_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NvU32 kfspGetMaxRecvPacketSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return 0;
-}
-
 NvBool kfspGspFmcIsEnforced_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NvBool kfspGspFmcIsEnforced_3dd2c9(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_FALSE;
-}
 
 NV_STATUS kfspPrepareBootCommands_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NV_STATUS kfspPrepareBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_OK;
-}
-
 NV_STATUS kfspSendBootCommands_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NV_STATUS kfspSendBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_OK;
-}
 
 NV_STATUS kfspPrepareAndSendBootCommands_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NV_STATUS kfspPrepareAndSendBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_OK;
-}
-
 NV_STATUS kfspWaitForSecureBoot_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-NV_STATUS kfspWaitForSecureBoot_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NV_STATUS kfspWaitForSecureBoot_GB202(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NV_STATUS kfspWaitForSecureBoot_46f6a7(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS kfspWaitForSecureBoot_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvU8 kfspNvdmToSeid_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType);
 
-static inline NvU8 kfspNvdmToSeid_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType) {
-    return 0;
-}
-
 NvU32 kfspCreateMctpHeader_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq);
-
-static inline NvU32 kfspCreateMctpHeader_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq) {
-    return 0;
-}
 
 NvU32 kfspCreateNvdmHeader_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 nvdmType);
 
-static inline NvU32 kfspCreateNvdmHeader_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 nvdmType) {
-    return 0;
-}
-
 NV_STATUS kfspGetPacketInfo_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag);
-
-static inline NV_STATUS kfspGetPacketInfo_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS kfspValidateMctpPayloadHeader_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size);
 
-static inline NV_STATUS kfspValidateMctpPayloadHeader_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS kfspProcessNvdmMessage_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size);
 
-static inline NV_STATUS kfspProcessNvdmMessage_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS kfspProcessCommandResponse_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size);
-
-static inline NV_STATUS kfspProcessCommandResponse_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 void kfspDumpDebugState_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 void kfspDumpDebugState_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline void kfspDumpDebugState_b3696a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return;
-}
-
 NV_STATUS kfspErrorCode2NvStatusMap_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 errorCode);
-
-static inline NV_STATUS kfspErrorCode2NvStatusMap_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 errorCode) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NvU64 kfspGetExtraReservedMemorySize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NvU64 kfspGetExtraReservedMemorySize_4a4dee(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return 0;
-}
-
 NV_STATUS kfspWaitForGspTargetMaskReleased_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-static inline NV_STATUS kfspWaitForGspTargetMaskReleased_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NvBool kfspRequiresBug3957833WAR_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NvBool kfspRequiresBug3957833WAR_3dd2c9(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_FALSE;
-}
-
 NV_STATUS kfspFrtsSysmemLocationProgram_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline NV_STATUS kfspFrtsSysmemLocationProgram_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS kfspFrtsSysmemLocationProgram_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 void kfspFrtsSysmemLocationClear_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline void kfspFrtsSysmemLocationClear_d44104(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return;
-}
+void kfspFrtsSysmemLocationClear_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 void kfspCheckForClockBoostCapability_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-static inline void kfspCheckForClockBoostCapability_b3696a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
-    return;
-}
-
 NV_STATUS kfspSendClockBoostRpc_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 cmd);
 
-static inline NV_STATUS kfspSendClockBoostRpc_56cd7a(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 cmd) {
+// Inline HAL method definitions
+static inline NV_STATUS kfspConstructHal_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
     return NV_OK;
 }
 
+static inline NV_STATUS kfspSendPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspReadPacket_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool kfspCanSendPacket_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_FALSE;
+}
+
+static inline NvBool kfspIsResponseAvailable_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_FALSE;
+}
+
+static inline NvU32 kfspGetMaxSendPacketSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return 0;
+}
+
+static inline NvU32 kfspGetMaxRecvPacketSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return 0;
+}
+
+static inline NvBool kfspGspFmcIsEnforced_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_FALSE;
+}
+
+static inline NV_STATUS kfspPrepareBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_OK;
+}
+
+static inline NV_STATUS kfspSendBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_OK;
+}
+
+static inline NV_STATUS kfspPrepareAndSendBootCommands_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_OK;
+}
+
+static inline NV_STATUS kfspWaitForSecureBoot_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU8 kfspNvdmToSeid_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType){
+    return 0;
+}
+
+static inline NvU32 kfspCreateMctpHeader_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq){
+    return 0;
+}
+
+static inline NvU32 kfspCreateNvdmHeader_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 nvdmType){
+    return 0;
+}
+
+static inline NV_STATUS kfspGetPacketInfo_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size, MCTP_PACKET_STATE *pPacketState, NvU8 *pTag){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspValidateMctpPayloadHeader_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspProcessNvdmMessage_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspProcessCommandResponse_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pBuffer, NvU32 size){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void kfspDumpDebugState_d44104(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return;
+}
+
+static inline NV_STATUS kfspErrorCode2NvStatusMap_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 errorCode){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU64 kfspGetExtraReservedMemorySize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return 0;
+}
+
+static inline NV_STATUS kfspWaitForGspTargetMaskReleased_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool kfspRequiresBug3957833WAR_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_FALSE;
+}
+
+static inline NV_STATUS kfspFrtsSysmemLocationProgram_395e98(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void kfspFrtsSysmemLocationClear_d44104(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return;
+}
+
+static inline void kfspCheckForClockBoostCapability_d44104(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return;
+}
+
+static inline NV_STATUS kfspSendClockBoostRpc_ac1694(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 cmd){
+    return NV_OK;
+}
+
+static inline void kfspResetGspFmcErrorCode_d44104(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

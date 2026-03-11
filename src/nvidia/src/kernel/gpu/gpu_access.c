@@ -1222,7 +1222,7 @@ gpuVerifyExistence_IMPL
 
     if (regVal != pGpu->chipId0)
     {
-        osHandleGpuLost(pGpu);
+        osHandleGpuLost(pGpu, NV_TRUE);
         regVal = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
         if (regVal != pGpu->chipId0)
         {
@@ -1269,7 +1269,7 @@ gpuSanityCheckRegRead_IMPL
                     NvU32 testValue = osGpuReadReg032(pGpu, NV_PMC_BOOT_0);
                     if (testValue == GPU_REG_VALUE_INVALID)
                     {
-                        osHandleGpuLost(pGpu);
+                        osHandleGpuLost(pGpu, NV_TRUE);
                         *pValue8 = osGpuReadReg008(pGpu, addr);
                     }
                 }
@@ -1286,7 +1286,7 @@ gpuSanityCheckRegRead_IMPL
                     NvU32 testValue = osGpuReadReg032(pGpu, NV_PMC_BOOT_0);
                     if (testValue == GPU_REG_VALUE_INVALID)
                     {
-                        osHandleGpuLost(pGpu);
+                        osHandleGpuLost(pGpu, NV_TRUE);
                         *pValue16 = osGpuReadReg016(pGpu, addr);
                     }
                 }
@@ -1303,7 +1303,7 @@ gpuSanityCheckRegRead_IMPL
                     NvU32 testValue = osGpuReadReg032(pGpu, NV_PMC_BOOT_0);
                     if (testValue == GPU_REG_VALUE_INVALID)
                     {
-                        osHandleGpuLost(pGpu);
+                        osHandleGpuLost(pGpu, NV_TRUE);
                         *pValue32 = osGpuReadReg032(pGpu, addr);
                     }
                 }

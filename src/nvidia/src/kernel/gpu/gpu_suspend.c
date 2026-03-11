@@ -37,7 +37,6 @@
 #include "gpu/gsp/gsp_init_args.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/pmu/kern_pmu.h"
-#include "rmgspseq.h"
 #include "core/thread_state.h"
 #include "vgpu/rpc.h"
 #include "gpu/mem_sys/kern_mem_sys.h"

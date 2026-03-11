@@ -27,6 +27,7 @@
  * @brief   Provides the implementation for BLACKWELL chip specific FSP HAL
  *          interfaces.
  */
+#include "kernel/gpu/gpu.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/fsp/kern_fsp_retval.h"
 #include "gpu/gsp/kernel_gsp.h"
@@ -40,6 +41,10 @@
 #include "published/blackwell/gb100/dev_fsp_addendum.h"
 #include "published/blackwell/gb100/dev_gsp.h"
 #include "published/blackwell/gb100/dev_oob_pri.h"
+#include "published/blackwell/gb100/dev_bus_zb.h"
+#include "published/blackwell/gb100/dev_bus_zb_addendum.h"
+#include "published/blackwell/gb100/dev_top_zb.h"
+#include "published/blackwell/gb100/hwproject.h"
 
 #include "os/os.h"
 #include "nvRmReg.h"
@@ -375,4 +380,57 @@ kfspGetMaxRecvPacketSize_GB100
     }
 
     return kfspGetMaxRecvPacketSize_GH100(pGpu, pKernelFsp);
+}
+
+void
+kfspFrtsSysmemLocationClear_GB100
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    const DEVICE_INFO_ENTRY *pEntry;
+    NV_STATUS status = gpuGetOneDeviceEntry(pGpu,
+                                            NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_PBUS,
+                                            DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                            0,
+                                            DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                            &pEntry);
+
+    NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
+
+    GPU_REG_WR32(
+        pGpu,
+        pEntry->devicePriBase + NV_PBUS_ZB_SW_FRTS_INSECURE_CONFIG,
+        REF_DEF(NV_PBUS_ZB_SW_FRTS_INSECURE_CONFIG_SIZE_4K, _INVALID));
+    GPU_REG_WR32(
+        pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_FRTS_INSECURE_ADDR_HI32, 0U);
+    GPU_REG_WR32(
+        pGpu, pEntry->devicePriBase + NV_PBUS_ZB_SW_FRTS_INSECURE_ADDR_LO32, 0U);
+}
+
+NV_STATUS
+kfspFrtsSysmemLocationProgram_GB100
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NV_ASSERT_OR_RETURN(pKernelFsp->pSysmemFrtsMemdesc != NULL, NV_ERR_INVALID_STATE);
+    RmPhysAddr frtsSysmemAddr = memdescGetPhysAddr(pKernelFsp->pSysmemFrtsMemdesc, AT_GPU, 0U);
+
+    GPU_REG_WR32(
+        pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_FRTS_INSECURE_ADDR_LO32, NvU64_LO32(frtsSysmemAddr));
+    GPU_REG_WR32(
+        pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_FRTS_INSECURE_ADDR_HI32, NvU64_HI32(frtsSysmemAddr));
+    GPU_REG_WR32(
+        pGpu,
+        NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_FRTS_INSECURE_CONFIG,
+        FLD_SET_DRF(
+            _PBUS_ZB, _SW_FRTS_INSECURE_CONFIG, _MEDIA_TYPE, _SYSMEM,
+        REF_NUM(
+            NV_PBUS_ZB_SW_FRTS_INSECURE_CONFIG_SIZE_4K,
+            (memdescGetSize(pKernelFsp->pSysmemFrtsMemdesc) >>
+                NV_PBUS_ZB_SW_FRTS_INSECURE_CONFIG_SIZE_4K_SHIFT))));
+    return NV_OK;
 }

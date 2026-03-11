@@ -65,29 +65,19 @@ typedef struct _PMA PMA;
 
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS
 
-
 struct CeUtils;
 
-#ifndef __NVOC_CLASS_CeUtils_TYPEDEF__
-#define __NVOC_CLASS_CeUtils_TYPEDEF__
-typedef struct CeUtils CeUtils;
-#endif /* __NVOC_CLASS_CeUtils_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_CeUtils
-#define __nvoc_class_id_CeUtils 0x8b8bae
+#define __nvoc_class_id_CeUtils 0x8b8baeu
+typedef struct CeUtils CeUtils;
 #endif /* __nvoc_class_id_CeUtils */
-
 
 
 struct SysmemScrubber;
 
-#ifndef __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-#define __NVOC_CLASS_SysmemScrubber_TYPEDEF__
-typedef struct SysmemScrubber SysmemScrubber;
-#endif /* __NVOC_CLASS_SysmemScrubber_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_SysmemScrubber
-#define __nvoc_class_id_SysmemScrubber 0x266962
+#define __nvoc_class_id_SysmemScrubber 0x266962u
+typedef struct SysmemScrubber SysmemScrubber;
 #endif /* __nvoc_class_id_SysmemScrubber */
 
 
@@ -514,6 +504,7 @@ struct __nvoc_inner_struc_MemoryManager_2__ {
     NvU64 minFBPSize;
     NvU32 fbRegionPriority[16];
     NvU64 ReservedConsoleDispMemSize;
+    NvU64 ReservedConsoleDispMemBase;
     NvU32 lowerRangeMag;
     NvU32 lowerRangeScale;
     NvU32 middleRangeMag;
@@ -548,7 +539,7 @@ struct MemoryManager {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct MemoryManager *__nvoc_pbase_MemoryManager;    // memmgr
 
-    // Vtable with 87 per-object function pointers
+    // Vtable with 88 per-object function pointers
     NvU64 (*__memmgrDeterminePageSize__)(struct MemoryManager * /*this*/, NvHandle, NvU64, NvU32, NvU32, NvU32 *, NvU32 *);  // halified (2 hals) body
     NV_STATUS (*__memmgrFreeHwResources__)(OBJGPU *, struct MemoryManager * /*this*/, FB_ALLOC_INFO *);  // halified (2 hals) body
     NV_STATUS (*__memmgrCreateHeap__)(struct MemoryManager * /*this*/);  // halified (2 hals) body
@@ -593,7 +584,7 @@ struct MemoryManager {
     NvU32 (*__memmgrGetMessageKind__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NvU32 (*__memmgrGetDefaultPteKindForNoHandle__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__memmgrGetFlaKind__)(OBJGPU *, struct MemoryManager * /*this*/, NvU32 *);  // halified (2 hals) body
-    NvBool (*__memmgrIsMemDescSupportedByFla__)(OBJGPU *, struct MemoryManager * /*this*/, MEMORY_DESCRIPTOR *);  // halified (3 hals)
+    NvBool (*__memmgrIsMemDescSupportedByFla__)(OBJGPU *, struct MemoryManager * /*this*/, MEMORY_DESCRIPTOR *);  // halified (3 hals) body
     NvBool (*__memmgrIsValidFlaPageSize__)(OBJGPU *, struct MemoryManager * /*this*/, NvU64, NvBool);  // halified (3 hals) body
     NvU32 (*__memmgrGetHwPteKindFromSwPteKind__)(OBJGPU *, struct MemoryManager * /*this*/, NvU32);  // halified (2 hals) body
     NvU32 (*__memmgrGetSwPteKindFromHwPteKind__)(OBJGPU *, struct MemoryManager * /*this*/, NvU32);  // halified (2 hals) body
@@ -633,6 +624,7 @@ struct MemoryManager {
     NV_STATUS (*__memmgrDestroyScanoutCarveoutHeap__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__memmgrDuplicateFromScanoutCarveoutRegion__)(POBJGPU, struct MemoryManager * /*this*/, PMEMORY_DESCRIPTOR);  // halified (2 hals) body
     NvBool (*__memmgrIsMemoryIoCoherent__)(OBJGPU *, struct MemoryManager * /*this*/, NV_MEMORY_ALLOCATION_PARAMS *);  // halified (2 hals) body
+    NV_STATUS (*__memmgrSc7SrInitGsp__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NvU8 (*__memmgrGetLocalizedOffset__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NvBool (*__memmgrIsFlaSysmemSupported__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
     NvBool (*__memmgrGetLocalizedMemorySupported__)(OBJGPU *, struct MemoryManager * /*this*/);  // halified (2 hals) body
@@ -687,8 +679,6 @@ struct MemoryManager {
     NvBool bDisableAsyncScrubforMods;
     NvBool bUseVasForCeMemoryOps;
     NvBool bCePhysicalVidmemAccessNotSupported;
-    NvBool bRmExecutingEccScrub;
-    NvBool bBug1441072EccScrubWar;
     NvU64 heapStartOffset;
     NvU64 rsvdMemoryBase;
     NvU64 rsvdMemorySize;
@@ -757,13 +747,9 @@ struct NVOC_METADATA__MemoryManager {
     const struct NVOC_VTABLE__MemoryManager vtable;
 };
 
-#ifndef __NVOC_CLASS_MemoryManager_TYPEDEF__
-#define __NVOC_CLASS_MemoryManager_TYPEDEF__
-typedef struct MemoryManager MemoryManager;
-#endif /* __NVOC_CLASS_MemoryManager_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_MemoryManager
-#define __nvoc_class_id_MemoryManager 0x22ad47
+#define __nvoc_class_id_MemoryManager 0x22ad47u
+typedef struct MemoryManager MemoryManager;
 #endif /* __nvoc_class_id_MemoryManager */
 
 // Casting support
@@ -787,8 +773,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryManager;
 NV_STATUS __nvoc_objCreateDynamic_MemoryManager(MemoryManager**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
-#define __objCreate_MemoryManager(ppNewObj, pParent, createFlags) \
-    __nvoc_objCreate_MemoryManager((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+#define __objCreate_MemoryManager(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags) \
+    __nvoc_objCreate_MemoryManager((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags))
 
 
 // Wrapper macros for implementation functions
@@ -1050,9 +1036,9 @@ static inline PFB_REGION_DESCRIPTOR memmgrLookupFbRegionByOffset(OBJGPU *pGpu, s
 #define memmgrLookupFbRegionByOffset(pGpu, pMemoryManager, fbOffset, fbLimit) memmgrLookupFbRegionByOffset_IMPL(pGpu, pMemoryManager, fbOffset, fbLimit)
 #endif // __nvoc_mem_mgr_h_disabled
 
-NV_STATUS memmgrFillMemdescForPhysAttr_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, NvU64 *arg5, NvU32 *arg6, NvU32 *arg7, NvU32 *arg8, NvU32 *arg9, NvU32 *arg10, NvU64 *arg11);
+NV_STATUS memmgrFillMemdescForPhysAttr_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, NvU64 *arg5, NvU32 *arg6, NvU32 *arg7, NvS32 *arg8, NvU32 *arg9, NvU32 *arg10, NvU64 *arg11);
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrFillMemdescForPhysAttr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, NvU64 *arg5, NvU32 *arg6, NvU32 *arg7, NvU32 *arg8, NvU32 *arg9, NvU32 *arg10, NvU64 *arg11) {
+static inline NV_STATUS memmgrFillMemdescForPhysAttr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, NvU64 *arg5, NvU32 *arg6, NvU32 *arg7, NvS32 *arg8, NvU32 *arg9, NvU32 *arg10, NvU64 *arg11) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -1131,7 +1117,7 @@ static inline NV_STATUS memmgrReserveVbiosVgaRegions(OBJGPU *pGpu, struct Memory
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveVbiosVgaRegions(pGpu, pMemoryManager) memmgrReserveVbiosVgaRegions_56cd7a(pGpu, pMemoryManager)
+#define memmgrReserveVbiosVgaRegions(pGpu, pMemoryManager) memmgrReserveVbiosVgaRegions_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1140,7 +1126,7 @@ static inline NV_STATUS memmgrReserveConsoleRegion(OBJGPU *pGpu, struct MemoryMa
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveConsoleRegion(pGpu, pMemoryManager) memmgrReserveConsoleRegion_56cd7a(pGpu, pMemoryManager)
+#define memmgrReserveConsoleRegion(pGpu, pMemoryManager) memmgrReserveConsoleRegion_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 void memmgrReleaseConsoleRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
@@ -1214,7 +1200,7 @@ static inline NvBool memmgrComprMappingSupported(struct MemoryManager *pMemoryMa
     return NV_FALSE;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrComprMappingSupported(pMemoryManager, arg2) memmgrComprMappingSupported_88bc07(pMemoryManager, arg2)
+#define memmgrComprMappingSupported(pMemoryManager, arg2) memmgrComprMappingSupported_e661f0(pMemoryManager, arg2)
 #endif // __nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrGetKindComprFromMemDesc_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg2, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);
@@ -1291,7 +1277,7 @@ static inline NV_STATUS memmgrScrubInit(OBJGPU *pGpu, struct MemoryManager *pMem
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrScrubInit(pGpu, pMemoryManager) memmgrScrubInit_56cd7a(pGpu, pMemoryManager)
+#define memmgrScrubInit(pGpu, pMemoryManager) memmgrScrubInit_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrInitInternalChannels_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
@@ -1327,7 +1313,7 @@ static inline void memmgrScrubInternalRegions(OBJGPU *pGpu, struct MemoryManager
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrScrubInternalRegions(pGpu, pMemoryManager) memmgrScrubInternalRegions_b3696a(pGpu, pMemoryManager)
+#define memmgrScrubInternalRegions(pGpu, pMemoryManager) memmgrScrubInternalRegions_d44104(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1336,7 +1322,7 @@ static inline NvBool memmgrEccScrubInProgress(OBJGPU *pGpu, struct MemoryManager
     return NV_FALSE;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrEccScrubInProgress(pGpu, pMemoryManager) memmgrEccScrubInProgress_3dd2c9(pGpu, pMemoryManager)
+#define memmgrEccScrubInProgress(pGpu, pMemoryManager) memmgrEccScrubInProgress_d69453(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1352,7 +1338,7 @@ static inline void memmgrScrubDestroy(OBJGPU *pGpu, struct MemoryManager *pMemor
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrScrubDestroy(pGpu, pMemoryManager) memmgrScrubDestroy_b3696a(pGpu, pMemoryManager)
+#define memmgrScrubDestroy(pGpu, pMemoryManager) memmgrScrubDestroy_d44104(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1360,7 +1346,7 @@ static inline void memmgrScrubMemory(OBJGPU *pGpu, struct MemoryManager *pMemory
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrScrubMemory(pGpu, pMemoryManager, arg3, arg4) memmgrScrubMemory_b3696a(pGpu, pMemoryManager, arg3, arg4)
+#define memmgrScrubMemory(pGpu, pMemoryManager, arg3, arg4) memmgrScrubMemory_d44104(pGpu, pMemoryManager, arg3, arg4)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1443,7 +1429,7 @@ static inline NV_STATUS memmgrInitFbRegionsHal(OBJGPU *pGpu, struct MemoryManage
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrInitFbRegionsHal(pGpu, pMemoryManager) memmgrInitFbRegionsHal_56cd7a(pGpu, pMemoryManager)
+#define memmgrInitFbRegionsHal(pGpu, pMemoryManager) memmgrInitFbRegionsHal_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1461,7 +1447,7 @@ static inline NvBool memmgrVerifyDepthSurfaceAttrs(struct MemoryManager *pMemory
     return NV_FALSE;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrVerifyDepthSurfaceAttrs(pMemoryManager, arg2, arg3) memmgrVerifyDepthSurfaceAttrs_88bc07(pMemoryManager, arg2, arg3)
+#define memmgrVerifyDepthSurfaceAttrs(pMemoryManager, arg2, arg3) memmgrVerifyDepthSurfaceAttrs_e661f0(pMemoryManager, arg2, arg3)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1479,7 +1465,7 @@ static inline NvBool memmgrVerifyComprAttrs(struct MemoryManager *pMemoryManager
     return NV_FALSE;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrVerifyComprAttrs(pMemoryManager, arg2, arg3, arg4) memmgrVerifyComprAttrs_88bc07(pMemoryManager, arg2, arg3, arg4)
+#define memmgrVerifyComprAttrs(pMemoryManager, arg2, arg3, arg4) memmgrVerifyComprAttrs_e661f0(pMemoryManager, arg2, arg3, arg4)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1488,7 +1474,7 @@ static inline NvBool memmgrIsKindBlocklinear(struct MemoryManager *pMemoryManage
     return NV_FALSE;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrIsKindBlocklinear(pMemoryManager, arg2) memmgrIsKindBlocklinear_3dd2c9(pMemoryManager, arg2)
+#define memmgrIsKindBlocklinear(pMemoryManager, arg2) memmgrIsKindBlocklinear_d69453(pMemoryManager, arg2)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1497,7 +1483,7 @@ static inline NvU32 memmgrChooseKindCompressCForMS2(OBJGPU *pGpu, struct MemoryM
     return 0;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrChooseKindCompressCForMS2(pGpu, pMemoryManager, arg3) memmgrChooseKindCompressCForMS2_4a4dee(pGpu, pMemoryManager, arg3)
+#define memmgrChooseKindCompressCForMS2(pGpu, pMemoryManager, arg3) memmgrChooseKindCompressCForMS2_b2b553(pGpu, pMemoryManager, arg3)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1688,7 +1674,7 @@ static inline NV_STATUS memmgrValidateFBEndReservation(OBJGPU *pGpu, struct Memo
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrValidateFBEndReservation(pGpu, pMemoryManager) memmgrValidateFBEndReservation_56cd7a(pGpu, pMemoryManager)
+#define memmgrValidateFBEndReservation(pGpu, pMemoryManager) memmgrValidateFBEndReservation_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrAllocReservedFBRegionMemdesc_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **ppMemdesc, NvU64 rangeStart, NvU64 allocSize, NvU64 memdescFlags, NV_FB_ALLOC_RM_INTERNAL_OWNER allocTag);
@@ -1707,7 +1693,7 @@ static inline NV_STATUS memmgrReserveMemoryForFakeWPR(OBJGPU *pGpu, struct Memor
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveMemoryForFakeWPR(pGpu, pMemoryManager) memmgrReserveMemoryForFakeWPR_56cd7a(pGpu, pMemoryManager)
+#define memmgrReserveMemoryForFakeWPR(pGpu, pMemoryManager) memmgrReserveMemoryForFakeWPR_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1716,7 +1702,7 @@ static inline NV_STATUS memmgrReserveMemoryForPmu(OBJGPU *pGpu, struct MemoryMan
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveMemoryForPmu(pGpu, pMemoryManager) memmgrReserveMemoryForPmu_56cd7a(pGpu, pMemoryManager)
+#define memmgrReserveMemoryForPmu(pGpu, pMemoryManager) memmgrReserveMemoryForPmu_ac1694(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrReserveMemoryForFsp_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
@@ -1743,7 +1729,7 @@ static inline NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr(OBJGPU *pGpu, st
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrReserveVgaWorkspaceMemDescForFbsr(pGpu, pMemoryManager) memmgrReserveVgaWorkspaceMemDescForFbsr_46f6a7(pGpu, pMemoryManager)
+#define memmgrReserveVgaWorkspaceMemDescForFbsr(pGpu, pMemoryManager) memmgrReserveVgaWorkspaceMemDescForFbsr_395e98(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1752,7 +1738,7 @@ static inline NV_STATUS memmgrCalculateHeapOffsetWithGSP(OBJGPU *pGpu, struct Me
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrCalculateHeapOffsetWithGSP(pGpu, pMemoryManager, offset) memmgrCalculateHeapOffsetWithGSP_46f6a7(pGpu, pMemoryManager, offset)
+#define memmgrCalculateHeapOffsetWithGSP(pGpu, pMemoryManager, offset) memmgrCalculateHeapOffsetWithGSP_395e98(pGpu, pMemoryManager, offset)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1761,7 +1747,7 @@ static inline NV_STATUS memmgrSaveDisplayFrmReservedRegion(OBJGPU *pGpu, struct 
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrSaveDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrSaveDisplayFrmReservedRegion_46f6a7(pGpu, pMemoryManager)
+#define memmgrSaveDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrSaveDisplayFrmReservedRegion_395e98(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1770,7 +1756,7 @@ static inline NV_STATUS memmgrRestoreDisplayFrmReservedRegion(OBJGPU *pGpu, stru
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_mem_mgr_h_disabled
-#define memmgrRestoreDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrRestoreDisplayFrmReservedRegion_46f6a7(pGpu, pMemoryManager)
+#define memmgrRestoreDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrRestoreDisplayFrmReservedRegion_395e98(pGpu, pMemoryManager)
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -2090,6 +2076,9 @@ static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryM
 #define memmgrIsMemoryIoCoherent_FNPTR(pMemoryManager) pMemoryManager->__memmgrIsMemoryIoCoherent__
 #define memmgrIsMemoryIoCoherent(pGpu, pMemoryManager, pAllocData) memmgrIsMemoryIoCoherent_DISPATCH(pGpu, pMemoryManager, pAllocData)
 #define memmgrIsMemoryIoCoherent_HAL(pGpu, pMemoryManager, pAllocData) memmgrIsMemoryIoCoherent_DISPATCH(pGpu, pMemoryManager, pAllocData)
+#define memmgrSc7SrInitGsp_FNPTR(pMemoryManager) pMemoryManager->__memmgrSc7SrInitGsp__
+#define memmgrSc7SrInitGsp(pGpu, pMemoryManager) memmgrSc7SrInitGsp_DISPATCH(pGpu, pMemoryManager)
+#define memmgrSc7SrInitGsp_HAL(pGpu, pMemoryManager) memmgrSc7SrInitGsp_DISPATCH(pGpu, pMemoryManager)
 #define memmgrGetLocalizedOffset_FNPTR(pMemoryManager) pMemoryManager->__memmgrGetLocalizedOffset__
 #define memmgrGetLocalizedOffset(pGpu, pMemoryManager) memmgrGetLocalizedOffset_DISPATCH(pGpu, pMemoryManager)
 #define memmgrGetLocalizedOffset_HAL(pGpu, pMemoryManager) memmgrGetLocalizedOffset_DISPATCH(pGpu, pMemoryManager)
@@ -2481,6 +2470,10 @@ static inline NvBool memmgrIsMemoryIoCoherent_DISPATCH(OBJGPU *pGpu, struct Memo
     return pMemoryManager->__memmgrIsMemoryIoCoherent__(pGpu, pMemoryManager, pAllocData);
 }
 
+static inline NV_STATUS memmgrSc7SrInitGsp_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrSc7SrInitGsp__(pGpu, pMemoryManager);
+}
+
 static inline NvU8 memmgrGetLocalizedOffset_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return pMemoryManager->__memmgrGetLocalizedOffset__(pGpu, pMemoryManager);
 }
@@ -2517,218 +2510,7 @@ static inline NvBool memmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Memory
     return pEngstate->__nvoc_metadata_ptr->vtable.__memmgrIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS memmgrSavePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-
-NV_STATUS memmgrRestorePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-
-static inline NV_STATUS memmgrReserveVbiosVgaRegions_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-static inline NV_STATUS memmgrReserveConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-NV_STATUS memmgrGetKindComprForGpu_KERNEL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg2, OBJGPU *pGpu, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);
-
-
-static inline NvBool memmgrComprMappingSupported_88bc07(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg2) {
-    return NV_TRUE;
-}
-
-
-static inline NV_STATUS memmgrScrubInit_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-static inline void memmgrGetScrubState_f2d351(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3, NvU64 *arg4, NvBool *arg5) {
-    NV_ASSERT_PRECOMP(0);
-}
-
-
-static inline void memmgrScrubInternalRegions_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
-
-
-static inline NvBool memmgrEccScrubInProgress_3dd2c9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_FALSE;
-}
-
-NvBool memmgrEccScrubInProgress_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvBool memmgrEccScrubInProgress_88bc07(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_TRUE;
-}
-
-
-static inline void memmgrAsyncScrubRegion_f2d351(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg3, NvU64 arg4) {
-    NV_ASSERT_PRECOMP(0);
-}
-
-
-static inline void memmgrScrubDestroy_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
-
-
-static inline void memmgrScrubMemory_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3, NvU64 arg4) {
-    return;
-}
-
-void memmgrScrubMemory_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3, NvU64 arg4);
-
-
-static inline NV_STATUS memmgrMemUtilsMemSetBlocking_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3, RmPhysAddr arg4, NvU64 arg5) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrMemUtilsMemSet_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3, RmPhysAddr arg4, NvU64 arg5, NvU32 arg6, NvU32 *arg7) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrMemUtilsAllocateEccScrubber_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrMemUtilsAllocateEccAllocScrubber_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrUpdateSurfaceCompression_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, Memory *arg3, NvBool arg4) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-
-NV_STATUS memmgrInitFbRegionsHal_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NV_STATUS memmgrInitFbRegionsHal_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-NvU64 memmgrGetVgpuHostRmReservedFb_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
-
-NvU64 memmgrGetVgpuHostRmReservedFb_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
-
-NvU64 memmgrGetVgpuHostRmReservedFb_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
-
-static inline NvU64 memmgrGetVgpuHostRmReservedFb_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId) {
-    return 0;
-}
-
-
-static inline NvBool memmgrVerifyDepthSurfaceAttrs_88bc07(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU32 arg3) {
-    return NV_TRUE;
-}
-
-
-NV_STATUS memmgrAllocMemToSaveVgaWorkspace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4);
-
-static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-
-static inline NvBool memmgrVerifyComprAttrs_88bc07(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU32 arg3, NvU32 arg4) {
-    return NV_TRUE;
-}
-
-
-static inline NvBool memmgrIsKindBlocklinear_3dd2c9(struct MemoryManager *pMemoryManager, NvU32 arg2) {
-    return NV_FALSE;
-}
-
-
-static inline NvU32 memmgrChooseKindCompressCForMS2_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3) {
-    return 0;
-}
-
-
-static inline NV_STATUS memmgrGetUncompressedKindForMS2_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvU32 *arg4) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-
-NvBool memmgrIsSurfaceBlockLinear_TU102(struct MemoryManager *pMemoryManager, Memory *arg2, NvU32 arg3);
-
-
-static inline void memmgrChannelPushSemaphoreMethodsBlock_f2d351(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU64 arg3, NvU32 arg4, NvU32 **arg5) {
-    NV_ASSERT_PRECOMP(0);
-}
-
-
-static inline void memmgrChannelPushAddressMethodsBlock_f2d351(struct MemoryManager *pMemoryManager, NvBool arg2, NvU32 arg3, RmPhysAddr arg4, NvU32 **arg5) {
-    NV_ASSERT_PRECOMP(0);
-}
-
-
-static inline NV_STATUS memmgrValidateFBEndReservation_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-static inline NV_STATUS memmgrReserveMemoryForFakeWPR_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-static inline NV_STATUS memmgrReserveMemoryForPmu_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-
-void memmgrFreeFbsrMemory_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-
-static inline NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-
-static inline NV_STATUS memmgrCalculateHeapOffsetWithGSP_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *offset) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrSaveDisplayFrmReservedRegion_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-static inline NV_STATUS memmgrRestoreDisplayFrmReservedRegion_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-NV_STATUS memmgrGetCarveoutRegionInfo_KERNEL(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
-
-NV_STATUS memmgrGetCarveoutRegionInfo_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
-
-static inline NV_STATUS memmgrGetCarveoutRegionInfo_56cd7a(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams) {
-    return NV_OK;
-}
-
-
+// Virtual method declarations and/or inline definitions
 NV_STATUS memmgrConstructEngine_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, ENGDESCRIPTOR arg3);
 
 NV_STATUS memmgrStatePreInitLocked_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
@@ -2745,477 +2527,217 @@ NV_STATUS memmgrStateUnload_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryMana
 
 void memmgrStateDestroy_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-NvU64 memmgrDeterminePageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2);
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+NV_STATUS memmgrSavePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrDeterminePageSize_b845ef(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2) {
-    return 4096;
-}
+NV_STATUS memmgrRestorePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NvU64 memmgrDeterminePageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2);
 
 NV_STATUS memmgrFreeHwResources_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3);
 
-static inline NV_STATUS memmgrFreeHwResources_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrCreateHeap_IMPL(struct MemoryManager *pMemoryManager);
-
-static inline NV_STATUS memmgrCreateHeap_56cd7a(struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-static inline NV_STATUS memmgrInitFbRegions_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrInitFbRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrAllocateConsoleRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
-NV_STATUS memmgrAllocateConsoleRegion_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+NV_STATUS memmgrAllocateConsoleRegion_T234D(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrAllocateConsoleRegion_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+NV_STATUS memmgrAllocateConsoleRegion_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrGetKindComprForGpu_KERNEL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg2, OBJGPU *pGpu, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);
+
 NV_STATUS memmgrScrubHandlePostSchedulingEnable_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrScrubHandlePostSchedulingEnable_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
+NvBool memmgrEccScrubInProgress_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrScrubHandlePreSchedulingDisable_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrScrubHandlePreSchedulingDisable_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
+void memmgrScrubMemory_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3, NvU64 arg4);
 
 NV_STATUS memmgrMemUtilsChannelInitialize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3);
 
-static inline NV_STATUS memmgrMemUtilsChannelInitialize_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    return NV_OK;
-}
-
 NV_STATUS memmgrMemUtilsCopyEngineInitialize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3);
-
-static inline NV_STATUS memmgrMemUtilsCopyEngineInitialize_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrMemUtilsSec2CtxInit_GH100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3);
 
-static inline NV_STATUS memmgrMemUtilsSec2CtxInit_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrMemUtilsGetCopyEngineClass_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pClass);
-
-static inline NV_STATUS memmgrMemUtilsGetCopyEngineClass_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pClass) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrMemUtilsCreateMemoryAlias_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3);
 
-static inline NV_STATUS memmgrMemUtilsCreateMemoryAlias_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    return NV_OK;
-}
-
 NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_GH100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvBool arg4, RmPhysAddr arg5, NvU32 arg6, NV_ADDRESS_SPACE arg7);
-
-static inline NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_3dd2c9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvBool arg4, RmPhysAddr arg5, NvU32 arg6, NV_ADDRESS_SPACE arg7) {
-    return NV_FALSE;
-}
 
 NV_STATUS memmgrAllocHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo);
 
-static inline NV_STATUS memmgrAllocHal_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrFreeHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo, PRMTIMEOUT pTimeout);
-
-static inline NV_STATUS memmgrFreeHal_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo, PRMTIMEOUT pTimeout) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS memmgrGetBankPlacementData_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pBankPlacementLowData);
 
-static inline NV_STATUS memmgrGetBankPlacementData_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pBankPlacementLowData) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 void memmgrDirtyForPmTest_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool partialDirty);
 
-static inline void memmgrDirtyForPmTest_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool partialDirty) {
-    return;
-}
-
 NvU64 memmgrGetReservedHeapSizeMb_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU64 memmgrGetReservedHeapSizeMb_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
 
 NV_STATUS memmgrAllocDetermineAlignment_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment);
 
 NV_STATUS memmgrAllocDetermineAlignment_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment);
 
-static inline NV_STATUS memmgrAllocDetermineAlignment_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-NvU64 memmgrGetMaxContextSize_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-NvU64 memmgrGetMaxContextSize_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-NvU64 memmgrGetMaxContextSize_AD102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+NV_STATUS memmgrInitFbRegionsHal_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NvU64 memmgrGetMaxContextSize_AD104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+NvU64 memmgrGetMaxContextSize_AD102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NvU64 memmgrGetMaxContextSize_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 NvU64 memmgrGetMaxContextSize_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrGetMaxContextSize_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
+NvU64 memmgrGetMaxContextSize_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 void memmgrHandleSizeOverrides_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline void memmgrHandleSizeOverrides_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
-
 NV_STATUS memmgrFinishHandleSizeOverrides_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NV_STATUS memmgrFinishHandleSizeOverrides_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrGetBAR1InfoForDevice_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Device *pDevice, PGETBAR1INFO bar1Info);
 
-static inline NV_STATUS memmgrGetBAR1InfoForDevice_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Device *pDevice, PGETBAR1INFO bar1Info) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NvU64 memmgrGetFbTaxSize_VF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrGetFbTaxSize_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
+NvU64 memmgrGetVgpuHostRmReservedFb_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
+
+NvU64 memmgrGetVgpuHostRmReservedFb_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
+
+NvU64 memmgrGetVgpuHostRmReservedFb_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
 
 void memmgrScrubRegistryOverrides_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 void memmgrScrubRegistryOverrides_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline void memmgrScrubRegistryOverrides_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
-
 NvU64 memmgrGetRsvdSizeForSr_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrGetRsvdSizeForSr_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
+NV_STATUS memmgrAllocMemToSaveVgaWorkspace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4);
 
 NvBool memmgrComparePhysicalAddresses_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvU64 arg4, NvU32 arg5, NvU64 arg6);
 
-static inline NvBool memmgrComparePhysicalAddresses_86b752(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvU64 arg4, NvU32 arg5, NvU64 arg6) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
-}
-
 RmPhysAddr memmgrGetInvalidOffset_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline RmPhysAddr memmgrGetInvalidOffset_c732fb(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 4294967295U;
-}
 
 NvU64 memmgrGetAddrSpaceSizeMB_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrGetAddrSpaceSizeMB_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
 NvU64 memmgrGetUsableMemSizeMB_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU64 memmgrGetUsableMemSizeMB_13cd8d(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_PRECOMP(0);
-    return 0;
-}
 
 NvBool memmgrIsKindCompressible_TU102(struct MemoryManager *pMemoryManager, NvU32 arg2);
 
-static inline NvBool memmgrIsKindCompressible_3dd2c9(struct MemoryManager *pMemoryManager, NvU32 arg2) {
-    return NV_FALSE;
-}
-
 NvU32 memmgrGetPteKindBl_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU32 memmgrGetPteKindBl_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-static inline NvU32 memmgrGetPteKindBl_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
 
 NvU32 memmgrGetPteKindPitch_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU32 memmgrGetPteKindPitch_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
-NvU32 memmgrChooseKindZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
+NvU32 memmgrChooseKindZ_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
 NvU32 memmgrChooseKindZ_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
-NvU32 memmgrChooseKindZ_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
-
-static inline NvU32 memmgrChooseKindZ_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-NvU32 memmgrChooseKindCompressZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
-
-NvU32 memmgrChooseKindCompressZ_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
+NvU32 memmgrChooseKindZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
 NvU32 memmgrChooseKindCompressZ_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
-static inline NvU32 memmgrChooseKindCompressZ_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
+NvU32 memmgrChooseKindCompressZ_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
+
+NvU32 memmgrChooseKindCompressZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
 NvU32 memmgrChooseKindCompressC_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3);
 
-static inline NvU32 memmgrChooseKindCompressC_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
 NvU32 memmgrGetPteKindGenericMemoryCompressible_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU32 memmgrGetPteKindGenericMemoryCompressible_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
-NvU32 memmgrGetUncompressedKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
-
-NvU32 memmgrGetUncompressedKind_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
 
 NvU32 memmgrGetUncompressedKind_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
 
-static inline NvU32 memmgrGetUncompressedKind_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
+NvU32 memmgrGetUncompressedKind_GB202(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
 
-NvU32 memmgrGetCompressedKind_TU102(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc);
-
-NvU32 memmgrGetCompressedKind_GB202(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc);
+NvU32 memmgrGetUncompressedKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
 
 NvU32 memmgrGetCompressedKind_GB20B(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc);
 
-static inline NvU32 memmgrGetCompressedKind_d1515c(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, kind);
-}
+NvU32 memmgrGetCompressedKind_GB202(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc);
+
+NvU32 memmgrGetCompressedKind_TU102(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc);
 
 NV_STATUS memmgrChooseKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3, NvU32 arg4, NvU32 *arg5);
 
-static inline NV_STATUS memmgrChooseKind_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3, NvU32 arg4, NvU32 *arg5) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-NvBool memmgrIsKind_TU102(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg2, NvU32 arg3);
+NvBool memmgrIsKind_GB20B(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg2, NvU32 arg3);
 
 NvBool memmgrIsKind_GB202(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg2, NvU32 arg3);
 
-NvBool memmgrIsKind_GB20B(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg2, NvU32 arg3);
+NvBool memmgrIsKind_TU102(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg2, NvU32 arg3);
 
 NvU32 memmgrGetMessageKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU32 memmgrGetMessageKind_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
 NvU32 memmgrGetDefaultPteKindForNoHandle_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU32 memmgrGetDefaultPteKindForNoHandle_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
+NvBool memmgrIsSurfaceBlockLinear_TU102(struct MemoryManager *pMemoryManager, Memory *arg2, NvU32 arg3);
 
 NV_STATUS memmgrGetFlaKind_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *arg3);
 
-static inline NV_STATUS memmgrGetFlaKind_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NvBool memmgrIsMemDescSupportedByFla_GB100(OBJGPU *arg1, struct MemoryManager *arg_this, MEMORY_DESCRIPTOR *arg3);
 
-NvBool memmgrIsMemDescSupportedByFla_GA100(OBJGPU *arg1, struct MemoryManager *arg2, MEMORY_DESCRIPTOR *arg3);
-
-NvBool memmgrIsMemDescSupportedByFla_GB100(OBJGPU *arg1, struct MemoryManager *arg2, MEMORY_DESCRIPTOR *arg3);
-
-static inline NvBool memmgrIsMemDescSupportedByFla_46f6a7(OBJGPU *arg1, struct MemoryManager *arg2, MEMORY_DESCRIPTOR *arg3) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NvBool memmgrIsMemDescSupportedByFla_GA100(OBJGPU *arg1, struct MemoryManager *arg_this, MEMORY_DESCRIPTOR *arg3);
 
 NvBool memmgrIsValidFlaPageSize_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 pageSize, NvBool bIsMulticast);
 
 NvBool memmgrIsValidFlaPageSize_GB100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 pageSize, NvBool bIsMulticast);
 
-static inline NvBool memmgrIsValidFlaPageSize_3dd2c9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 pageSize, NvBool bIsMulticast) {
-    return NV_FALSE;
-}
-
 NvU32 memmgrGetHwPteKindFromSwPteKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind);
-
-static inline NvU32 memmgrGetHwPteKindFromSwPteKind_6a0a80(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind) {
-    return pteKind;
-}
 
 NvU32 memmgrGetSwPteKindFromHwPteKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind);
 
-static inline NvU32 memmgrGetSwPteKindFromHwPteKind_6a0a80(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind) {
-    return pteKind;
-}
-
 void memmgrGetPteKindForScrubber_TU102(struct MemoryManager *pMemoryManager, NvU32 *arg2);
-
-static inline void memmgrGetPteKindForScrubber_f2d351(struct MemoryManager *pMemoryManager, NvU32 *arg2) {
-    NV_ASSERT_PRECOMP(0);
-}
 
 NvU32 memmgrGetCtagOffsetFromParams_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3);
 
-static inline NvU32 memmgrGetCtagOffsetFromParams_1a0c2b(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3) {
-    return -1;
-}
-
 void memmgrSetCtagOffsetInParams_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3, NvU32 arg4);
-
-static inline void memmgrSetCtagOffsetInParams_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3, NvU32 arg4) {
-    return;
-}
 
 NvU32 memmgrDetermineComptag_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3);
 
-static inline NvU32 memmgrDetermineComptag_13cd8d(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3) {
-    NV_ASSERT_PRECOMP(0);
-    return 0;
-}
-
 NV_STATUS memmgrScrubMapDoorbellRegion_GV100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3);
-
-static inline NV_STATUS memmgrScrubMapDoorbellRegion_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrSetAllocParameters_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo);
 
-static inline NV_STATUS memmgrSetAllocParameters_dffb6f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo) {
-    NV_ASSERT_PRECOMP(0);
-    return NV_OK;
-}
-
 void memmgrCalcReservedFbSpaceForUVM_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3);
-
-static inline void memmgrCalcReservedFbSpaceForUVM_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3) {
-    return;
-}
 
 void memmgrCalcReservedFbSpaceHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5);
 
-static inline void memmgrCalcReservedFbSpaceHal_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5) {
-    return;
-}
+NvU32 memmgrGetGrHeapReservationSize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NvU32 memmgrGetGrHeapReservationSize_VF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU32 memmgrGetGrHeapReservationSize_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
-NvU32 memmgrGetGrHeapReservationSize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU32 memmgrGetRunlistEntriesReservedFbSpace_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
 NvU32 memmgrGetRunlistEntriesReservedFbSpace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NvU32 memmgrGetUserdReservedFbSpace_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
 
 NvU32 memmgrGetUserdReservedFbSpace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrCheckReservedMemorySize_GK104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrCheckReservedMemorySize_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
 NV_STATUS memmgrInitReservedMemory_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg3);
-
-static inline NV_STATUS memmgrInitReservedMemory_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg3) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrPreInitReservedMemory_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrPreInitReservedMemory_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
 NV_STATUS memmgrReadMmuLock_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool *pbIsValid, NvU64 *pMmuLockLo, NvU64 *pMmuLockHi);
-
-static inline NV_STATUS memmgrReadMmuLock_ccda6f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool *pbIsValid, NvU64 *pMmuLockLo, NvU64 *pMmuLockHi) {
-    *pbIsValid = NV_FALSE;
-    return NV_OK;
-}
 
 NV_STATUS memmgrBlockMemLockedMemory_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrBlockMemLockedMemory_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
-
 NV_STATUS memmgrInsertUnprotectedRegionAtBottomOfFb_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pSize);
-
-static inline NV_STATUS memmgrInsertUnprotectedRegionAtBottomOfFb_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pSize) {
-    return NV_OK;
-}
-
-NV_STATUS memmgrInitBaseFbRegions_FWCLIENT(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-NV_STATUS memmgrInitBaseFbRegions_VF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-NV_STATUS memmgrInitBaseFbRegions_GP102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrInitBaseFbRegions_T234(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrInitBaseFbRegions_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
+NV_STATUS memmgrInitBaseFbRegions_GP102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrInitBaseFbRegions_VF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrInitBaseFbRegions_FWCLIENT(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 void memmgrGetDisablePlcKind_GA100(struct MemoryManager *pMemoryManager, NvU32 *pteKind);
-
-static inline void memmgrGetDisablePlcKind_b3696a(struct MemoryManager *pMemoryManager, NvU32 *pteKind) {
-    return;
-}
 
 void memmgrEnableDynamicPageOfflining_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 void memmgrEnableDynamicPageOfflining_GA102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline void memmgrEnableDynamicPageOfflining_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
-
 NV_STATUS memmgrSetMemDescPageSize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, RM_ATTR_PAGE_SIZE arg5);
-
-static inline NV_STATUS memmgrSetMemDescPageSize_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, RM_ATTR_PAGE_SIZE arg5) {
-    return NV_OK;
-}
-
-static inline NV_STATUS memmgrSetPartitionableMem_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
 
 NV_STATUS memmgrSetPartitionableMem_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
@@ -3225,183 +2747,622 @@ NV_STATUS memmgrAllocMIGGPUInstanceMemory_PF(OBJGPU *pGpu, struct MemoryManager 
 
 NV_STATUS memmgrGetBlackListPagesForHeap_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap);
 
-static inline NV_STATUS memmgrGetBlackListPagesForHeap_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrGetBlackListPages_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount);
 
 NV_STATUS memmgrGetBlackListPages_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount);
 
-static inline NV_STATUS memmgrGetBlackListPages_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange_VF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct NV_RANGE *pMemoryRange);
-
-static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct NV_RANGE *pMemoryRange) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NvU32 memmgrGetFBEndReserveSizeEstimate_GB100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NvU32 memmgrGetFBEndReserveSizeEstimate_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-NV_STATUS memmgrInitZeroFbRegionsHal_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+void memmgrFreeFbsrMemory_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrInitZeroFbRegionsHal_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_OK;
-}
+NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrInitZeroFbRegionsHal_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NV_STATUS memmgrAllocScanoutCarveoutRegionResources_GB10B(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc);
 
-static inline NV_STATUS memmgrAllocScanoutCarveoutRegionResources_46f6a7(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrAllocFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc);
-
-static inline NV_STATUS memmgrAllocFromScanoutCarveoutRegion_46f6a7(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 void memmgrFreeScanoutCarveoutRegionResources_GB10B(struct MemoryManager *pMemoryManager, NvU64 base);
 
-static inline void memmgrFreeScanoutCarveoutRegionResources_b3696a(struct MemoryManager *pMemoryManager, NvU64 base) {
-    return;
-}
-
 void memmgrFreeFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc);
-
-static inline void memmgrFreeFromScanoutCarveoutRegion_b3696a(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
-    return;
-}
 
 NV_STATUS memmgrCreateScanoutCarveoutHeap_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NV_STATUS memmgrCreateScanoutCarveoutHeap_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS memmgrDestroyScanoutCarveoutHeap_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline NV_STATUS memmgrDestroyScanoutCarveoutHeap_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc);
 
-static inline NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_46f6a7(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc) {
-    return NV_ERR_NOT_SUPPORTED;
-}
+NV_STATUS memmgrGetCarveoutRegionInfo_GB10B(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
+
+NV_STATUS memmgrGetCarveoutRegionInfo_KERNEL(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams);
 
 NvBool memmgrIsMemoryIoCoherent_GB20B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 
-static inline NvBool memmgrIsMemoryIoCoherent_88bc07(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData) {
-    return NV_TRUE;
-}
+NV_STATUS memmgrSc7SrInitGsp_GB10B(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 NvU8 memmgrGetLocalizedOffset_GB100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU8 memmgrGetLocalizedOffset_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
 NvBool memmgrIsFlaSysmemSupported_GB100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvBool memmgrIsFlaSysmemSupported_3dd2c9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return NV_FALSE;
+// Inline HAL method definitions
+static inline NvU64 memmgrDeterminePageSize_3eaa85(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2){
+    return 4096;
 }
 
-static inline NvBool memmgrGetLocalizedMemorySupported_88bc07(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+static inline NV_STATUS memmgrFreeHwResources_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrCreateHeap_ac1694(struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrInitFbRegions_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReserveVbiosVgaRegions_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReserveConsoleRegion_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrAllocateConsoleRegion_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NvBool memmgrComprMappingSupported_e661f0(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg2){
     return NV_TRUE;
 }
 
-static inline NvBool memmgrGetLocalizedMemorySupported_3dd2c9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+static inline NV_STATUS memmgrScrubInit_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrScrubHandlePostSchedulingEnable_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline void memmgrGetScrubState_f2d351(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3, NvU64 *arg4, NvBool *arg5){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void memmgrScrubInternalRegions_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return;
+}
+
+static inline NvBool memmgrEccScrubInProgress_e661f0(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_TRUE;
+}
+
+static inline NvBool memmgrEccScrubInProgress_d69453(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
     return NV_FALSE;
 }
 
-static inline NvBool memmgrIsLocalEgmSupported(struct MemoryManager *pMemoryManager) {
+static inline void memmgrAsyncScrubRegion_f2d351(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg3, NvU64 arg4){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline NV_STATUS memmgrScrubHandlePreSchedulingDisable_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline void memmgrScrubDestroy_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return;
+}
+
+static inline void memmgrScrubMemory_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3, NvU64 arg4){
+    return;
+}
+
+static inline NV_STATUS memmgrMemUtilsMemSetBlocking_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3, RmPhysAddr arg4, NvU64 arg5){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsMemSet_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3, RmPhysAddr arg4, NvU64 arg5, NvU32 arg6, NvU32 *arg7){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsAllocateEccScrubber_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsAllocateEccAllocScrubber_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsChannelInitialize_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrMemUtilsCopyEngineInitialize_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrMemUtilsSec2CtxInit_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsGetCopyEngineClass_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pClass){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrMemUtilsCreateMemoryAlias_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    return NV_OK;
+}
+
+static inline NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_d69453(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvBool arg4, RmPhysAddr arg5, NvU32 arg6, NV_ADDRESS_SPACE arg7){
+    return NV_FALSE;
+}
+
+static inline NV_STATUS memmgrAllocHal_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrFreeHal_92bfc3(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo, PRMTIMEOUT pTimeout){
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrUpdateSurfaceCompression_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, Memory *arg3, NvBool arg4){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS memmgrGetBankPlacementData_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pBankPlacementLowData){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void memmgrDirtyForPmTest_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool partialDirty){
+    return;
+}
+
+static inline NvU64 memmgrGetReservedHeapSizeMb_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NV_STATUS memmgrAllocDetermineAlignment_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS memmgrInitFbRegionsHal_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NvU64 memmgrGetMaxContextSize_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline void memmgrHandleSizeOverrides_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return;
+}
+
+static inline NV_STATUS memmgrFinishHandleSizeOverrides_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrGetBAR1InfoForDevice_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Device *pDevice, PGETBAR1INFO bar1Info){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU64 memmgrGetFbTaxSize_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU64 memmgrGetVgpuHostRmReservedFb_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId){
+    return 0;
+}
+
+static inline void memmgrScrubRegistryOverrides_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return;
+}
+
+static inline NvU64 memmgrGetRsvdSizeForSr_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvBool memmgrVerifyDepthSurfaceAttrs_e661f0(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU32 arg3){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg3, MEMORY_DESCRIPTOR **arg4){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NvBool memmgrComparePhysicalAddresses_86b752(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvU64 arg4, NvU32 arg5, NvU64 arg6){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
+}
+
+static inline RmPhysAddr memmgrGetInvalidOffset_0b83bf(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 4294967295U;
+}
+
+static inline NvU64 memmgrGetAddrSpaceSizeMB_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU64 memmgrGetUsableMemSizeMB_13cd8d(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    NV_ASSERT_PRECOMP(0);
+    return 0;
+}
+
+static inline NvBool memmgrVerifyComprAttrs_e661f0(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU32 arg3, NvU32 arg4){
+    return NV_TRUE;
+}
+
+static inline NvBool memmgrIsKindCompressible_d69453(struct MemoryManager *pMemoryManager, NvU32 arg2){
+    return NV_FALSE;
+}
+
+static inline NvBool memmgrIsKindBlocklinear_d69453(struct MemoryManager *pMemoryManager, NvU32 arg2){
+    return NV_FALSE;
+}
+
+static inline NvU32 memmgrGetPteKindBl_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrGetPteKindBl_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrGetPteKindPitch_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrChooseKindZ_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrChooseKindCompressZ_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrChooseKindCompressC_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrChooseKindCompressCForMS2_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3){
+    return 0;
+}
+
+static inline NvU32 memmgrGetPteKindGenericMemoryCompressible_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrGetUncompressedKind_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NV_STATUS memmgrGetUncompressedKindForMS2_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg3, NvU32 *arg4){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NvU32 memmgrGetCompressedKind_d1515c(struct MemoryManager *pMemoryManager, NvU32 kind, NvBool bDisablePlc){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, kind);
+}
+
+static inline NV_STATUS memmgrChooseKind_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg3, NvU32 arg4, NvU32 *arg5){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrGetMessageKind_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrGetDefaultPteKindForNoHandle_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NV_STATUS memmgrGetFlaKind_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool memmgrIsMemDescSupportedByFla_395e98(OBJGPU *arg1, struct MemoryManager *arg_this, MEMORY_DESCRIPTOR *arg3){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool memmgrIsValidFlaPageSize_d69453(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 pageSize, NvBool bIsMulticast){
+    return NV_FALSE;
+}
+
+static inline NvU32 memmgrGetHwPteKindFromSwPteKind_26237f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind){
+    return pteKind;
+}
+
+static inline NvU32 memmgrGetSwPteKindFromHwPteKind_26237f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind){
+    return pteKind;
+}
+
+static inline void memmgrGetPteKindForScrubber_f2d351(struct MemoryManager *pMemoryManager, NvU32 *arg2){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline NvU32 memmgrGetCtagOffsetFromParams_fc0f62(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3){
+    return -1;
+}
+
+static inline void memmgrSetCtagOffsetInParams_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg3, NvU32 arg4){
+    return;
+}
+
+static inline NvU32 memmgrDetermineComptag_13cd8d(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg3){
+    NV_ASSERT_PRECOMP(0);
+    return 0;
+}
+
+static inline void memmgrChannelPushSemaphoreMethodsBlock_f2d351(struct MemoryManager *pMemoryManager, NvU32 arg2, NvU64 arg3, NvU32 arg4, NvU32 **arg5){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void memmgrChannelPushAddressMethodsBlock_f2d351(struct MemoryManager *pMemoryManager, NvBool arg2, NvU32 arg3, RmPhysAddr arg4, NvU32 **arg5){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline NV_STATUS memmgrScrubMapDoorbellRegion_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg3){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrSetAllocParameters_dffb6f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo){
+    NV_ASSERT_PRECOMP(0);
+    return NV_OK;
+}
+
+static inline void memmgrCalcReservedFbSpaceForUVM_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3){
+    return;
+}
+
+static inline void memmgrCalcReservedFbSpaceHal_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg3, NvU64 *arg4, NvU64 *arg5){
+    return;
+}
+
+static inline NvU32 memmgrGetGrHeapReservationSize_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrGetRunlistEntriesReservedFbSpace_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvU32 memmgrGetUserdReservedFbSpace_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NV_STATUS memmgrCheckReservedMemorySize_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrInitReservedMemory_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg3){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrPreInitReservedMemory_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReadMmuLock_ccda6f(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool *pbIsValid, NvU64 *pMmuLockLo, NvU64 *pMmuLockHi){
+    *pbIsValid = NV_FALSE;
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrBlockMemLockedMemory_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrInsertUnprotectedRegionAtBottomOfFb_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pSize){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrInitBaseFbRegions_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline void memmgrGetDisablePlcKind_d44104(struct MemoryManager *pMemoryManager, NvU32 *pteKind){
+    return;
+}
+
+static inline void memmgrEnableDynamicPageOfflining_d44104(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return;
+}
+
+static inline NV_STATUS memmgrSetMemDescPageSize_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg3, ADDRESS_TRANSLATION arg4, RM_ATTR_PAGE_SIZE arg5){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrSetPartitionableMem_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrGetBlackListPagesForHeap_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrGetBlackListPages_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct NV_RANGE *pMemoryRange){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrValidateFBEndReservation_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReserveMemoryForFakeWPR_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReserveMemoryForPmu_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrCalculateHeapOffsetWithGSP_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *offset){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrInitZeroFbRegionsHal_ac1694(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_OK;
+}
+
+static inline NV_STATUS memmgrAllocScanoutCarveoutRegionResources_395e98(struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData, NvU32 owner, NvU32 *pHeapFlag, MEMORY_DESCRIPTOR *pMemDesc){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrAllocFromScanoutCarveoutRegion_395e98(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NvU32 owner, NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc, NvU32 *pHeapFlag, PMEMORY_DESCRIPTOR *ppMemDesc){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void memmgrFreeScanoutCarveoutRegionResources_d44104(struct MemoryManager *pMemoryManager, NvU64 base){
+    return;
+}
+
+static inline void memmgrFreeFromScanoutCarveoutRegion_d44104(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc){
+    return;
+}
+
+static inline NV_STATUS memmgrCreateScanoutCarveoutHeap_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrDestroyScanoutCarveoutHeap_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_395e98(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrSaveDisplayFrmReservedRegion_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrRestoreDisplayFrmReservedRegion_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrGetCarveoutRegionInfo_ac1694(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams){
+    return NV_OK;
+}
+
+static inline NvBool memmgrIsMemoryIoCoherent_e661f0(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_MEMORY_ALLOCATION_PARAMS *pAllocData){
+    return NV_TRUE;
+}
+
+static inline NV_STATUS memmgrSc7SrInitGsp_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU8 memmgrGetLocalizedOffset_b2b553(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return 0;
+}
+
+static inline NvBool memmgrIsFlaSysmemSupported_d69453(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_FALSE;
+}
+
+static inline NvBool memmgrGetLocalizedMemorySupported_e661f0(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_TRUE;
+}
+
+static inline NvBool memmgrGetLocalizedMemorySupported_d69453(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
+    return NV_FALSE;
+}
+
+// Static dispatch method declarations
+// Static inline method definitions
+static inline NvBool memmgrIsLocalEgmSupported(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bLocalEgmSupported;
 }
 
-static inline NvBool memmgrIsLocalEgmEnabled(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsLocalEgmEnabled(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bLocalEgmEnabled;
 }
 
-static inline NvU32 memmgrLocalEgmPeerId(struct MemoryManager *pMemoryManager) {
+static inline NvU32 memmgrLocalEgmPeerId(struct MemoryManager *pMemoryManager){
     return pMemoryManager->localEgmPeerId;
 }
 
-static inline NvU64 memmgrLocalEgmBaseAddress(struct MemoryManager *pMemoryManager) {
+static inline NvU64 memmgrLocalEgmBaseAddress(struct MemoryManager *pMemoryManager){
     return pMemoryManager->localEgmBasePhysAddr;
 }
 
-static inline NvBool memmgrIsScrubOnFreeEnabled(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsScrubOnFreeEnabled(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bScrubOnFreeEnabled;
 }
 
-static inline NvBool memmgrIsFastScrubberEnabled(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsFastScrubberEnabled(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bFastScrubberEnabled;
 }
 
-static inline NvBool memmgrUseVasForCeMemoryOps(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrUseVasForCeMemoryOps(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bUseVasForCeMemoryOps;
 }
 
-static inline NvBool memmgrRmExecutingEccScrub(struct MemoryManager *pMemoryManager) {
-    return pMemoryManager->bRmExecutingEccScrub;
-}
-
-static inline NvBool memmgrBug1441072EccScrubWar(struct MemoryManager *pMemoryManager) {
-    return pMemoryManager->bBug1441072EccScrubWar;
-}
-
-static inline NvBool memmgrIsPmaInitialized(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsPmaInitialized(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bPmaInitialized;
 }
 
-static inline void memmgrSetPmaInitialized(struct MemoryManager *pMemoryManager, NvBool val) {
+static inline void memmgrSetPmaInitialized(struct MemoryManager *pMemoryManager, NvBool val){
     pMemoryManager->bPmaInitialized = val;
 }
 
-static inline NvBool memmgrAreFbRegionsSupported(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrAreFbRegionsSupported(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bFbRegionsSupported;
 }
 
-static inline NvBool memmgrIsPmaSupportedOnPlatform(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsPmaSupportedOnPlatform(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bPmaSupportedOnPlatform;
 }
 
-static inline NvBool memmgrIsPmaEnabled(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsPmaEnabled(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bPmaEnabled;
 }
 
-static inline NvBool memmgrIsPmaForcePersistence(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrIsPmaForcePersistence(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bPmaForcePersistence;
 }
 
-static inline void memmgrSetPmaForcePersistence(struct MemoryManager *pMemoryManager, NvBool val) {
+static inline void memmgrSetPmaForcePersistence(struct MemoryManager *pMemoryManager, NvBool val){
     pMemoryManager->bPmaForcePersistence = val;
 }
 
-static inline NvBool memmgrAreClientPageTablesPmaManaged(struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrAreClientPageTablesPmaManaged(struct MemoryManager *pMemoryManager){
     return pMemoryManager->bClientPageTablesPmaManaged;
 }
 
-static inline void memmgrSetClientPageTablesPmaManaged(struct MemoryManager *pMemoryManager, NvBool val) {
+static inline void memmgrSetClientPageTablesPmaManaged(struct MemoryManager *pMemoryManager, NvBool val){
     pMemoryManager->bClientPageTablesPmaManaged = val;
 }
 
-static inline NvU64 memmgrGetRsvdMemoryBase(struct MemoryManager *pMemoryManager) {
+static inline NvU64 memmgrGetRsvdMemoryBase(struct MemoryManager *pMemoryManager){
     return pMemoryManager->rsvdMemoryBase;
 }
 
-static inline NvU64 memmgrGetRsvdMemorySize(struct MemoryManager *pMemoryManager) {
+static inline NvU64 memmgrGetRsvdMemorySize(struct MemoryManager *pMemoryManager){
     return pMemoryManager->rsvdMemorySize;
 }
 
-static inline NvBool memmgrBug3922001DisableCtxBufOnSim(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+static inline NvBool memmgrBug3922001DisableCtxBufOnSim(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
     return pMemoryManager->bBug3922001DisableCtxBufOnSim;
 }
 

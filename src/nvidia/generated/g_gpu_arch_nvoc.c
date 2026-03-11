@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x4b33af = 1;
+char __nvoc_class_id_uniqueness_check__4b33af = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuArch;
@@ -32,7 +32,7 @@ void __nvoc_init__GpuArch(GpuArch*,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         TEGRA_CHIP_TYPE TegraChipHal_tegraType);
 void __nvoc_init_funcTable_GpuArch(GpuArch*);
-NV_STATUS __nvoc_ctor_GpuArch(GpuArch*, NvU32 arg_chipArch, NvU32 arg_chipImpl, NvU32 arg_hidrev, TEGRA_CHIP_TYPE arg_tegraType);
+NV_STATUS __nvoc_ctor_GpuArch(GpuArch*, NvU32 chipArch, NvU32 chipImpl, NvU32 hidrev, TEGRA_CHIP_TYPE tegraType);
 void __nvoc_init_dataField_GpuArch(GpuArch*);
 void __nvoc_dtor_GpuArch(GpuArch*);
 
@@ -44,19 +44,18 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuArch;
 
 // Up-thunk(s) to bridge GpuArch methods to ancestors (if any)
 
+// Class-specific details for GpuArch
 const struct NVOC_CLASS_DEF __nvoc_class_def_GpuArch = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(GpuArch),
-        /*classId=*/            classId(GpuArch),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(GpuArch),
+    .classInfo.classId =            classId(GpuArch),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "GpuArch",
+    .classInfo.name =               "GpuArch",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GpuArch,
-    /*pCastInfo=*/          &__nvoc_castinfo__GpuArch,
-    /*pExportInfo=*/        &__nvoc_export_info__GpuArch
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_GpuArch,
+    .pCastInfo =          &__nvoc_castinfo__GpuArch,
+    .pExportInfo =        &__nvoc_export_info__GpuArch
 };
 
 
@@ -86,18 +85,22 @@ const struct NVOC_CASTINFO __nvoc_castinfo__GpuArch = {
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuArch = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct GpuArch object.
 void __nvoc_dtor_Object(Object*);
 void __nvoc_dtor_GpuHalspecOwner(GpuHalspecOwner*);
-void __nvoc_dtor_GpuArch(GpuArch *pThis) {
+void __nvoc_dtor_GpuArch(GpuArch* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
     __nvoc_dtor_GpuHalspecOwner(&pThis->__nvoc_base_GpuHalspecOwner);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     ChipHal *chipHal = &staticCast(pThis, GpuHalspecOwner)->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -106,8 +109,8 @@ void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // Hal field -- bGpuArchIsZeroFb
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000300UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
     {
         pThis->bGpuArchIsZeroFb = ((NvBool)(0 == 0));
     }
@@ -118,7 +121,7 @@ void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     }
 
     // Hal field -- bGpuarchSupportsIgpuRg
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
     {
         pThis->bGpuarchSupportsIgpuRg = ((NvBool)(0 == 0));
     }
@@ -129,27 +132,34 @@ void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     }
 }
 
-NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_GpuHalspecOwner(GpuHalspecOwner* );
-NV_STATUS __nvoc_ctor_GpuArch(GpuArch *pThis, NvU32 arg_chipArch, NvU32 arg_chipImpl, NvU32 arg_hidrev, TEGRA_CHIP_TYPE arg_tegraType) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
-    if (status != NV_OK) goto __nvoc_ctor_GpuArch_fail_Object;
-    status = __nvoc_ctor_GpuHalspecOwner(&pThis->__nvoc_base_GpuHalspecOwner);
-    if (status != NV_OK) goto __nvoc_ctor_GpuArch_fail_GpuHalspecOwner;
-    __nvoc_init_dataField_GpuArch(pThis);
 
-    status = __nvoc_gpuarchConstruct(pThis, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType);
+// Construct GpuArch object.
+NV_STATUS __nvoc_ctor_Object(Object *);
+NV_STATUS __nvoc_ctor_GpuHalspecOwner(GpuHalspecOwner *);
+NV_STATUS __nvoc_ctor_GpuArch(GpuArch *pGpuArch, NvU32 chipArch, NvU32 chipImpl, NvU32 hidrev, TEGRA_CHIP_TYPE tegraType) {
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_Object(&pGpuArch->__nvoc_base_Object);
+    if (status != NV_OK) goto __nvoc_ctor_GpuArch_fail_Object;
+    status = __nvoc_ctor_GpuHalspecOwner(&pGpuArch->__nvoc_base_GpuHalspecOwner);
+    if (status != NV_OK) goto __nvoc_ctor_GpuArch_fail_GpuHalspecOwner;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GpuArch(pGpuArch);
+
+    // Call the constructor for this class.
+    status = __nvoc_gpuarchConstruct(pGpuArch, chipArch, chipImpl, hidrev, tegraType);
     if (status != NV_OK) goto __nvoc_ctor_GpuArch_fail__init;
     goto __nvoc_ctor_GpuArch_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_GpuArch_fail__init:
-    __nvoc_dtor_GpuHalspecOwner(&pThis->__nvoc_base_GpuHalspecOwner);
+    __nvoc_dtor_GpuHalspecOwner(&pGpuArch->__nvoc_base_GpuHalspecOwner);
 __nvoc_ctor_GpuArch_fail_GpuHalspecOwner:
-    __nvoc_dtor_Object(&pThis->__nvoc_base_Object);
+    __nvoc_dtor_Object(&pGpuArch->__nvoc_base_Object);
 __nvoc_ctor_GpuArch_fail_Object:
 __nvoc_ctor_GpuArch_exit:
-
     return status;
 }
 
@@ -166,8 +176,8 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     {
         pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_T234D;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000c00UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000300UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
     {
         pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_GB10B;
     }
@@ -181,22 +191,33 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     }
 
     // gpuarchGetDmaAddrWidth -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x80000000UL) )) /* ChipHal: GB10B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
     {
         pThis->__gpuarchGetDmaAddrWidth__ = &gpuarchGetDmaAddrWidth_GB10B;
     }
     // default
     else
     {
-        pThis->__gpuarchGetDmaAddrWidth__ = &gpuarchGetDmaAddrWidth_4a4dee;
+        pThis->__gpuarchGetDmaAddrWidth__ = &gpuarchGetDmaAddrWidth_b2b553;
     }
-} // End __nvoc_init_funcTable_GpuArch_1 with approximately 6 basic block(s).
+
+    // gpuarchGetGpcFuseStatusOffset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
+    {
+        pThis->__gpuarchGetGpcFuseStatusOffset__ = &gpuarchGetGpcFuseStatusOffset_GB10B;
+    }
+    // default
+    else
+    {
+        pThis->__gpuarchGetGpcFuseStatusOffset__ = &gpuarchGetGpcFuseStatusOffset_b2b553;
+    }
+} // End __nvoc_init_funcTable_GpuArch_1 with approximately 8 basic block(s).
 
 
-// Initialize vtable(s) for 2 virtual method(s).
+// Initialize vtable(s) for 3 virtual method(s).
 void __nvoc_init_funcTable_GpuArch(GpuArch *pThis) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
+    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_GpuArch_1(pThis);
 }
 
@@ -223,51 +244,51 @@ void __nvoc_init__GpuArch(GpuArch *pThis,
     __nvoc_init_funcTable_GpuArch(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_GpuArch(GpuArch **ppThis, Dynamic *pParent, NvU32 createFlags,
+NV_STATUS __nvoc_objCreate_GpuArch(GpuArch **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
-        TEGRA_CHIP_TYPE TegraChipHal_tegraType, NvU32 arg_chipArch, NvU32 arg_chipImpl, NvU32 arg_hidrev, TEGRA_CHIP_TYPE arg_tegraType)
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType, NvU32 chipArch, NvU32 chipImpl, NvU32 hidrev, TEGRA_CHIP_TYPE tegraType)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    GpuArch *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GpuArch *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(GpuArch));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GpuArch));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(GpuArch));
+    portMemSet(__nvoc_pThis, 0, sizeof(GpuArch));
 
-    pThis->__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__GpuArch(pThis, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType);
-    status = __nvoc_ctor_GpuArch(pThis, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType);
-    if (status != NV_OK) goto __nvoc_objCreate_GpuArch_cleanup;
+    __nvoc_init__GpuArch(__nvoc_pThis, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType);
+    __nvoc_status = __nvoc_ctor_GpuArch(__nvoc_pThis, chipArch, chipImpl, hidrev, tegraType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GpuArch_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -276,37 +297,37 @@ NV_STATUS __nvoc_objCreate_GpuArch(GpuArch **ppThis, Dynamic *pParent, NvU32 cre
 __nvoc_objCreate_GpuArch_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(GpuArch));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GpuArch));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_GpuArch(GpuArch **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    NvU32 ChipHal_arch = va_arg(args, NvU32);
-    NvU32 ChipHal_impl = va_arg(args, NvU32);
-    NvU32 ChipHal_hidrev = va_arg(args, NvU32);
-    TEGRA_CHIP_TYPE TegraChipHal_tegraType = va_arg(args, TEGRA_CHIP_TYPE);
-    NvU32 arg_chipArch = va_arg(args, NvU32);
-    NvU32 arg_chipImpl = va_arg(args, NvU32);
-    NvU32 arg_hidrev = va_arg(args, NvU32);
-    TEGRA_CHIP_TYPE arg_tegraType = va_arg(args, TEGRA_CHIP_TYPE);
+NV_STATUS __nvoc_objCreateDynamic_GpuArch(GpuArch **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    NvU32 ChipHal_arch = va_arg(__nvoc_args, NvU32);
+    NvU32 ChipHal_impl = va_arg(__nvoc_args, NvU32);
+    NvU32 ChipHal_hidrev = va_arg(__nvoc_args, NvU32);
+    TEGRA_CHIP_TYPE TegraChipHal_tegraType = va_arg(__nvoc_args, TEGRA_CHIP_TYPE);
+    NvU32 chipArch = va_arg(__nvoc_args, NvU32);
+    NvU32 chipImpl = va_arg(__nvoc_args, NvU32);
+    NvU32 hidrev = va_arg(__nvoc_args, NvU32);
+    TEGRA_CHIP_TYPE tegraType = va_arg(__nvoc_args, TEGRA_CHIP_TYPE);
 
-    status = __nvoc_objCreate_GpuArch(ppThis, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, arg_chipArch, arg_chipImpl, arg_hidrev, arg_tegraType);
+    __nvoc_status = __nvoc_objCreate_GpuArch(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, TegraChipHal_tegraType, chipArch, chipImpl, hidrev, tegraType);
 
-    return status;
+    return __nvoc_status;
 }
 

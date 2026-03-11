@@ -59,6 +59,8 @@
 #include "os-interface.h"
 #endif
 
+#include "griddisplayless/objgriddisplayless.h"
+
 #include "nv_sriov_defines.h"
 #include "nvrm_registry.h"
 #include "vgpu/dev_vgpu.h"
@@ -588,7 +590,6 @@ static NV_STATUS _setupGspHibernateShrdBuff(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV_STATUS status;
     NvU32 memFlags = 0;
 
-    portDbgPrintf("Alloc shared hibernation buffer for vGPU GSP\n");
     status = _allocRpcMemDesc(pGpu,
                               VGPU_GSP_HIBERNATION_SHRD_BUFF_SIZE,
                               NV_MEMORY_CONTIGUOUS,
@@ -1276,6 +1277,8 @@ static NV_STATUS _vgpuGspSendSetupRequest(OBJGPU *pGpu, NvU64 scratchRegVal)
 {
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pRpc != NULL), NV_ERR_INVALID_POINTER);
+
     // Write the scratch registers
     rpcVgpuGspWriteScratchRegister_HAL(pRpc, pGpu, scratchRegVal);
 
@@ -1416,6 +1419,8 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
         NvU64 gfn = 0;
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);
 
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, (pRpc != NULL), NV_ERR_INVALID_POINTER);
+
         NV_PRINTF(LEVEL_INFO, "RPC: Response buf addr IOVA   0x%llx\n", pVGpu->gspCtrlBuf->v1.responseBuf.addr);
 
         gfn = memdescGetPte(pVGpu->gspResponseBufInfo.pMemDesc, AT_CPU, 0) >> RM_PAGE_SHIFT;
@@ -1489,8 +1494,12 @@ void vgpuGspTeardownBuffers(OBJGPU *pGpu)
 NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
 {
     NV_STATUS status = NV_OK;
-    OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
+    OBJVGPU *pVGpu = NULL;
     VGPU_STATIC_INFO *pVSInfo = GPU_GET_STATIC_INFO(pGpu);
+
+    pVGpu = GPU_GET_VGPU(pGpu);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pVGpu != NULL), NV_ERR_INVALID_POINTER);
 
     if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
@@ -1499,6 +1508,8 @@ NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
 
     // Modifying the DMA address size to the value supported by the hardware
     osDmaSetAddressSize(pGpu->pOsGpuInfo, gpuarchGetSystemPhysAddrWidth_HAL(gpuGetArch(pGpu)));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pVGpu->pRpc != NULL), NV_ERR_INVALID_POINTER);
 
     rpcSendMessage_FNPTR(pVGpu->pRpc) = _rpcSendMessage_VGPUGSP;
     rpcRecvPoll_FNPTR(pVGpu->pRpc)    = _rpcRecvPoll_VGPUGSP;
@@ -1998,11 +2009,12 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (vgpu_rpc_message_header_v->rpc_result == NV_VGPU_MSG_RESULT_RPC_API_CONTROL_NOT_SUPPORTED)
             return NV_VGPU_MSG_RESULT_RPC_API_CONTROL_NOT_SUPPORTED;
-
-        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_WARNING,
-                       "RPC failed with status 0x%08x for fn %d!\n",
-                       vgpu_rpc_message_header_v->rpc_result,
-                       expectedFunc);
+        {
+            NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_WARNING,
+                           "RPC failed with status 0x%08x for fn %d!\n",
+                           vgpu_rpc_message_header_v->rpc_result,
+                           expectedFunc);
+        }
 
         if (vgpu_rpc_message_header_v->rpc_result < DRF_BASE(NV_VGPU_MSG_RESULT__VMIOP))
             return vgpu_rpc_message_header_v->rpc_result;
@@ -3040,23 +3052,26 @@ _freeGfxpBuffer
     KernelGraphicsContext *pKernelGraphicsContext
 )
 {
-    NV_STATUS   status     = NV_OK;
-    Subdevice  *pSubDevice = NULL;
-    RM_API     *pRmApi     = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvHandle    hClient    = NV01_NULL_OBJECT;
-    RsClient   *pClient;
-    NvU32       subdeviceInstance;
-    NvU8        i;
-
-    VGPU_GFXP_BUFFERS * pVgpuGfxpBuffers = kgrctxGetVgpuGfxpBuffers(pGpu, pKernelGraphicsContext);
+    NV_STATUS          status           = NV_OK;
+    Subdevice         *pSubDevice       = NULL;
+    RM_API            *pRmApi           = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvHandle           hClient          = NV01_NULL_OBJECT;
+    VGPU_GFXP_BUFFERS *pVgpuGfxpBuffers = NULL;
+    RsClient          *pClient;
+    NvU32              subdeviceInstance;
+    NvU8               i;
 
     if ((pGpu == NULL) ||
         (pDevice == NULL) ||
-        (pKernelGraphicsContext == NULL) ||
-        (pVgpuGfxpBuffers == NULL))
+        (pKernelGraphicsContext == NULL))
     {
         return;
     }
+
+    pVgpuGfxpBuffers = kgrctxGetVgpuGfxpBuffers(pGpu, pKernelGraphicsContext);
+
+    if (pVgpuGfxpBuffers == NULL)
+        return;
 
     pClient = RES_GET_CLIENT(pDevice);
     hClient = pClient->hClient;
@@ -3608,8 +3623,6 @@ _allocateGfxpBuffer
     NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS pParams;
     VGPU_GFXP_BUFFERS* pVgpuGfxpBuffers = NULL;
 
-    NV_ASSERT(kgrctxGetVgpuGfxpBuffers(pGpu, pKernelGraphicsContext) == NULL);
-
     if ((pGpu == NULL) ||
         (pClient == NULL) ||
         (pKernelChannel == NULL) ||
@@ -3617,6 +3630,8 @@ _allocateGfxpBuffer
     {
         return;
     }
+
+    NV_ASSERT(kgrctxGetVgpuGfxpBuffers(pGpu, pKernelGraphicsContext) == NULL);
 
     subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     pVSI = GPU_GET_STATIC_INFO(pGpu);
@@ -4622,7 +4637,7 @@ NV_STATUS rpcDmaControl_v24_05(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvH
 }
 
 NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
-                               void *pParamStructPtr, NvU32 paramSize)
+                                void *pParamStructPtr, NvU32 paramSize)
 {
 
     if ((pParamStructPtr == NULL && paramSize != 0) ||
@@ -6918,6 +6933,12 @@ NV_STATUS rpcCtrlTimerSetGrTickFreq_v1A_1F(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle 
     NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS *pParams = (NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS *)pParamStructPtr;
     rpc_ctrl_timer_set_gr_tick_freq_v1A_1F *rpc_buffer_params = &rpc_message->ctrl_timer_set_gr_tick_freq_v1A_1F;
 
+    // Hopper and later architectures, hardware does not support changing the GR Tick frequency
+    if (IsHOPPERorBetter(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CTRL_TIMER_SET_GR_TICK_FREQ,
                                       sizeof(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F));
     if (status != NV_OK)
@@ -8180,6 +8201,79 @@ NV_STATUS rpcCtrlGetNvlinkStatus_v2B_11(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hCl
     return status;
 }
 
+NV_STATUS rpcCtrlGetNvlinkStatus_v2D_01(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NvU32 numLinksRead = 0;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *pParams = (NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *)pParamStructPtr;
+    rpc_ctrl_get_nvlink_status_v2D_01 *rpc_params = &rpc_message->ctrl_get_nvlink_status_v2D_01;
+
+    // Calculate how many links we can fit in one RPC
+    NvU32 rpcHeaderSize = sizeof(rpc_message_header_v);
+    NvU32 rpcStructSize = sizeof(rpc_ctrl_get_nvlink_status_v2D_01);
+    NvU32 linkInfoSize  = sizeof(NV2080_CTRL_NVLINK_LINK_STATUS_INFO_v28_09);
+    NvU32 totalLinks = NV2080_CTRL_NVLINK_MAX_LINKS_v2D_01;
+
+    NvU32 rpcStructOverhead = rpcStructSize - (linkInfoSize * totalLinks);
+
+    // Available space for linkInfo in the 4KB buffer
+    NvU32 availableSpace = pRpc->maxRpcSize - rpcHeaderSize - rpcStructOverhead;
+    NvU32 maxLinksPerRpc = availableSpace / linkInfoSize;
+    
+    // Safety check
+    if (maxLinksPerRpc == 0) {
+        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: Insufficient space for any links in RPC buffer\n");
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    // Initialize the output structure
+    portMemSet(pParams, 0, sizeof(*pParams));
+
+    // Loop to handle both single-pass and multi-pass
+    while (numLinksRead < totalLinks) {
+        NvU32 linksToRead = NV_MIN(totalLinks - numLinksRead, maxLinksPerRpc);
+        
+        // Create a mask for the links we want to read in this pass
+        NvU64 linkMask = 0;
+        for (NvU32 i = 0; i < linksToRead; i++) {
+            linkMask |= (1ULL << (numLinksRead + i)); // Use absolute mask
+        }
+
+        // Calculate actual message size for THIS pass
+        NvU32 actualMessageSize = rpcStructOverhead + (linksToRead * linkInfoSize);
+
+        status = rpcWriteCommonHeader(pGpu,
+                                      pRpc,
+                                      NV_VGPU_MSG_FUNCTION_CTRL_GET_NVLINK_STATUS,
+                                      actualMessageSize);
+        if (status != NV_OK)
+            return status;
+
+        rpc_params->hClient = hClient;
+        rpc_params->hObject = hObject;
+
+        // Set the mask to indicate which links to read
+        rpc_params->ctrlParams.enabledLinks.masks[0] = linkMask;
+        rpc_params->ctrlParams.enabledLinks.lenMasks = 1;
+
+        status = serialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+        if (status != NV_OK)
+            return status;
+
+        status = _issueRpcAndWait(pGpu, pRpc);
+        if (status != NV_OK)
+            return status;
+
+        status = deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v2D_01(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
+        if (status != NV_OK)
+            return status;
+
+        numLinksRead += linksToRead;
+    }
+
+    return status;
+}
+
 NV_STATUS rpcCtrlGetP2pCaps_v1F_0D(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
     NV_STATUS status;
@@ -8233,34 +8327,6 @@ NV_STATUS rpcCtrlGetP2pCapsMatrix_v1A_0E(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hC
         return status;
 
     status = deserialize_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS_v18_0A(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    return status;
-}
-
-NV_STATUS rpcCtrlFbGetInfoV2_v25_0A(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
-{
-    NV_STATUS status;
-    NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams = (NV2080_CTRL_FB_GET_INFO_V2_PARAMS *)pParamStructPtr;
-    rpc_ctrl_fb_get_info_v2_v25_0A *rpc_params = &rpc_message->ctrl_fb_get_info_v2_v25_0A;
-
-    status = rpcWriteCommonHeader(pGpu,
-                                  pRpc,
-                                  NV_VGPU_MSG_FUNCTION_CTRL_FB_GET_INFO_V2,
-                                  sizeof(rpc_ctrl_fb_get_info_v2_v25_0A));
-    if (status != NV_OK)
-        return status;
-
-    rpc_params->hClient = hClient;
-    rpc_params->hObject = hObject;
-
-    status = serialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    if (status != NV_OK)
-        return status;
-
-    status = _issueRpcAndWait(pGpu, pRpc);
-    if (status != NV_OK)
-        return status;
-
-    status = deserialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
     return status;
 }
 
@@ -9691,6 +9757,124 @@ exit :
     return status;
 }
 
+NV_STATUS
+rpcGetStaticData_v2D_00(OBJGPU *pGpu, OBJRPC *pRpc)
+{
+    NV_STATUS           status;
+    NvU32               headerLength;
+    NvU32               offset          = 0;
+    NvU32               remainedBytes   = 0;
+    NvU32               size            = 0;
+    NvU32               maxPayloadSize  = 0;
+    NvU32               totalRpcSize    = 0;
+    NvU8               *pRpcPayload     = NULL;
+    VGPU_STATIC_INFO   *pVSI            = GPU_GET_STATIC_INFO(pGpu);
+    OBJGRIDDISPLAYLESS *pGridDisplayless = GPU_GET_GRIDDISPLAYLESS(pGpu);
+
+    headerLength = sizeof(rpc_message_header_v) + sizeof(rpc_get_static_data_v2D_00);
+    if (headerLength > pRpc->maxRpcSize)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "vGPU static data parameters size (0x%x) exceed message_buffer "
+                  "size (0x%x)\n", headerLength, pRpc->maxRpcSize);
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    status = getStaticDataRpcBufferSize(pGpu, &pRpc->rpcStructureCopy, &totalRpcSize);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "getStaticDataRpcBufferSize is failed. status: 0x%x\n", status);
+        return status;
+    }
+
+    maxPayloadSize = pRpc->maxRpcSize - headerLength;
+    remainedBytes = totalRpcSize;
+    // Create a temporary buffer
+    pRpcPayload = portMemAllocNonPaged(totalRpcSize);
+    if (pRpcPayload == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "no memory for temporary buffer\n");
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    offset = 0;
+    while (remainedBytes)
+    {
+        if (remainedBytes > maxPayloadSize)
+        {
+            size = maxPayloadSize;
+        }
+        else
+        {
+            size = remainedBytes;
+        }
+
+        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_GET_STATIC_DATA,
+                                      sizeof(rpc_get_static_data_v2D_00) + size);
+        if (status != NV_OK)
+            goto exit;
+
+        rpc_message->get_static_data_v2D_00.offset = offset;
+        rpc_message->get_static_data_v2D_00.size   = size;
+        status = _issueRpcAndWait(pGpu, pRpc);
+        if (status != NV_OK)
+            goto exit;
+
+        portMemCopy(pRpcPayload + offset, size, rpc_message->get_static_data_v2D_00.payload, size);
+        offset += size;
+        remainedBytes -= size;
+    }
+
+    status = copyPayloadToStaticData(pGpu, &pRpc->rpcStructureCopy, pRpcPayload, totalRpcSize, pVSI);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to copy the data from RPC to Static Info buffer. Status :%x\n", status);
+        goto exit;
+    }
+    
+    status = griddisplaylessUpdateHeadNumInfo(pGridDisplayless,
+                (NVA083_CTRL_VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS *)&pVSI->heads);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to set the numHeads param in GRIDDISPLAYLESS object. Status :%x\n",
+                  status);
+        goto exit;
+    }
+
+    status = griddisplaylessUpdateMaxResInfo(pGridDisplayless,
+                (NVA083_CTRL_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS *)&pVSI->maxRes);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to set maximum allowed resolution param in GRIDDISPLAYLESS "
+                  "object. Status :%x\n", status);
+        goto exit;
+    }
+
+    status = griddisplaylessUpdateMaxPixels(pGridDisplayless, pVSI->vgpuConfig.maxPixels);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to set maximum allowed pixel limit param in GRIDDISPLAYLESS "
+                  "object. Status :%x\n", status);
+        goto exit;
+    }
+
+    NV_RM_RPC_GET_CONSOLIDATED_GR_STATIC_INFO(pGpu, status);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: GET_CONSOLIDATED_GR_STATIC_INFO failed.\n");
+        goto exit;
+    }
+
+exit :
+    portMemFree(pRpcPayload);
+    return status;
+}
+
 NV_STATUS rpcGetConsolidatedGrStaticInfo_v1B_04(OBJGPU *pGpu, OBJRPC *pRpc)
 {
     NV_STATUS status;
@@ -10606,8 +10790,7 @@ NV_STATUS rpcInvalidateTlb_v23_03(OBJGPU *pGpu, OBJRPC *pRpc, NvU64 pdbAddress, 
  * Tells GSP-RM about the overall system environment, such as what physical
  * memory addresses to use.
  *
- * Note that this is an asynchronous RPC.  It is stuffed into the message queue
- * before the GSP is booted.
+ * This is an init RPC for GSP-RM early boot.
  */
 NV_STATUS rpcGspSetSystemInfo_v17_00
 (
@@ -10619,8 +10802,6 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
-        OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
         GspSystemInfo *rpcInfo = (GspSystemInfo *)&rpc_message->gsp_set_system_info_v17_00.data;
         const NvU32 messageLength = sizeof(rpc_message_header_v) + sizeof(*rpcInfo);
@@ -10635,145 +10816,15 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
             return NV_ERR_INSUFFICIENT_RESOURCES;
         }
 
+        NV_ASSERT_OR_RETURN(pKernelGsp->pSystemInfo != NULL, NV_ERR_INVALID_STATE);
+
         status = rpcWriteCommonHeader(pGpu, pRpc,
                                     NV_VGPU_MSG_FUNCTION_GSP_SET_SYSTEM_INFO,
                                     sizeof(GspSystemInfo));
         if (status != NV_OK)
             return status;
 
-        rpcInfo->gpuPhysAddr           = pGpu->busInfo.gpuPhysAddr;
-        rpcInfo->gpuPhysFbAddr         = pGpu->busInfo.gpuPhysFbAddr;
-        rpcInfo->gpuPhysInstAddr       = pGpu->busInfo.gpuPhysInstAddr;
-        rpcInfo->gpuPhysIoAddr         = pGpu->busInfo.gpuPhysIoAddr;
-        rpcInfo->nvDomainBusDeviceFunc = pGpu->busInfo.nvDomainBusDeviceFunc;
-        rpcInfo->oorArch               = (NvU8)pGpu->busInfo.oorArch;
-
-        // Cache GPU SSID info
-        rpcInfo->PCIDeviceID           = pGpu->idInfo.PCIDeviceID;
-        rpcInfo->PCISubDeviceID        = pGpu->idInfo.PCISubDeviceID;
-        rpcInfo->PCIRevisionID         = pGpu->idInfo.PCIRevisionID;
-
-        KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-        if (pKernelBif != NULL)
-        {
-            status = kbifGetPciConfigSpacePriMirror_HAL(pGpu, pKernelBif,
-                                                        &rpcInfo->pciConfigMirrorBase,
-                                                        &rpcInfo->pciConfigMirrorSize);
-
-            // PCIe config space mirror is removed on Blackwell+ chips, so NV_ERR_NO_SUCH_DOMAIN is expected.
-            NV_ASSERT(status == NV_OK ||
-                      status == NV_ERR_NO_SUCH_DOMAIN);
-
-            // Cache MNOC interface support
-            rpcInfo->bMnocAvailable = pKernelBif->bMnocAvailable;
-
-            // Cache L1SS enablement from chipset side
-            rpcInfo->chipsetL1ssEnable = pKernelBif->chipsetL1ssEnable;
-
-            // Cache Pcie Power Control Info
-            rpcInfo->pciePowerControlValue    = pKernelBif->pciePowerControlInfo.pciePowerControlValue;
-            rpcInfo->bPciePowerControlPresent = pKernelBif->pciePowerControlInfo.bPciePowerControlPresent;
-
-            // Cache FLR and 64b Bar0 support
-            rpcInfo->bFlrSupported     = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED);
-            rpcInfo->b64bBar0Supported = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_64BIT_BAR0_SUPPORTED);
-
-            // Cache pcie link capabilities from config space
-            rpcInfo->pcieConfigReg.linkCap = pKernelBif->pcieConfigReg.linkCap;
-        }
-
-        if (IS_SIMULATION(pGpu))
-        {
-            rpcInfo->simAccessBufPhysAddr = memdescGetPhysAddr(pKernelGsp->pMemDesc_simAccessBuf, AT_GPU, 0);
-        }
-        else
-        {
-            rpcInfo->simAccessBufPhysAddr = 0ULL;
-        }
-
-        if (pKernelGsp->pNotifyOpSurfMemDesc != NULL)
-        {
-            rpcInfo->notifyOpSharedSurfacePhysAddr = memdescGetPhysAddr(pKernelGsp->pNotifyOpSurfMemDesc, AT_GPU, 0);
-        }
-        else
-        {
-            rpcInfo->notifyOpSharedSurfacePhysAddr = 0ULL;
-        }
-        rpcInfo->pcieAtomicsOpMask = GPU_GET_KERNEL_BIF(pGpu) ?
-            GPU_GET_KERNEL_BIF(pGpu)->osPcieAtomicsOpMask : 0U;
-        rpcInfo->pcieAtomicsCplDeviceCapMask = GPU_GET_KERNEL_BIF(pGpu) ?
-            GPU_GET_KERNEL_BIF(pGpu)->pcieAtomicsCplDeviceCapMask : 0U;
-        rpcInfo->consoleMemSize = GPU_GET_MEMORY_MANAGER(pGpu)->Ram.ReservedConsoleDispMemSize;
-        rpcInfo->maxUserVa      = osGetMaxUserVa();
-        rpcInfo->bEnableDynamicGranularityPageArrays = pSys->bEnableDynamicGranularityPageArrays;
-
-        OBJCL *pCl = SYS_GET_CL(SYS_GET_INSTANCE());
-        if (pCl != NULL)
-        {
-            clSyncWithGsp(pCl, rpcInfo);
-        }
-
-        rpcInfo->hostPageSize = osGetPageSize();
-
-        // Fill in the cached ACPI method data
-        rpcInfo->acpiMethodData = pGpu->acpiMethodData;
-        rpcInfo->bSystemHasMux = pGpu->bSystemHasMux;
-
-        // Fill in ASPM related GPU flags
-        rpcInfo->bGpuBehindBridge         = pGpu->getProperty(pGpu, PDB_PROP_GPU_BEHIND_BRIDGE);
-        rpcInfo->bUpstreamL0sUnsupported  = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L0S_UNSUPPORTED);
-        rpcInfo->bUpstreamL1Unsupported   = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_UNSUPPORTED);
-        rpcInfo->bUpstreamL1PorSupported  = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_POR_SUPPORTED);
-        rpcInfo->bUpstreamL1PorMobileOnly = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_POR_MOBILE_ONLY);
-        rpcInfo->upstreamAddressValid     = pGpu->gpuClData.upstreamPort.addr.valid;
-
-        rpcInfo->hypervisorType           = hypervisorGetHypervisorType(pHypervisor);
-        rpcInfo->virtualConfigBits        = pGpu->virtualConfigBits;
-        rpcInfo->bIsPassthru              = pGpu->bIsPassthru;
-
-        // Fill in VF related GPU flags
-        rpcInfo->gspVFInfo.totalVFs           = pGpu->sriovState.totalVFs;
-        rpcInfo->gspVFInfo.firstVFOffset      = pGpu->sriovState.firstVFOffset;
-        rpcInfo->gspVFInfo.FirstVFBar0Address = pGpu->sriovState.firstVFBarAddress[0];
-        rpcInfo->gspVFInfo.FirstVFBar1Address = pGpu->sriovState.firstVFBarAddress[1];
-        rpcInfo->gspVFInfo.FirstVFBar2Address = pGpu->sriovState.firstVFBarAddress[2];
-        rpcInfo->gspVFInfo.b64bitBar0         = pGpu->sriovState.b64bitVFBar0;
-        rpcInfo->gspVFInfo.b64bitBar1         = pGpu->sriovState.b64bitVFBar1;
-        rpcInfo->gspVFInfo.b64bitBar2         = pGpu->sriovState.b64bitVFBar2;
-
-        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-        rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;
-
-        rpcInfo->bIsPrimary = pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE);
-        rpcInfo->bIsUnixHdmiFrlComplianceEnabled =
-            pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_HDMI_FRL_COMPLIANCE_ENABLED);
-        rpcInfo->bS0ixSupport = pSys->getProperty(pSys, PDB_PROP_SYS_SUPPORTS_S0IX);
-#if defined(NV_UNIX) && !RMCFG_FEATURE_MODS_FEATURES
-        rpcInfo->isGridBuild = os_is_grid_supported();
-#endif
-        rpcInfo->gridBuildCsp = osGetGridCspSupport();
-        rpcInfo->bPreserveVideoMemoryAllocations = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend;
-
-        // Indicate whether the driver supports NV2080_NOTIFIERS_UCODE_RESET event.
-        rpcInfo->bTdrEventSupported = pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT);
-
-        KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-        if (pKernelDisplay != NULL)
-        {
-            rpcInfo->bFeatureStretchVblankCapable = pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE);
-            rpcInfo->bWindowChannelAlwaysMapped = pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_WINDOW_CHANNEL_ALWAYS_MAPPED);
-        }
-
-        KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-        if (pKernelFsp != NULL)
-        {
-            rpcInfo->bClockBoostSupported = pKernelFsp->bClockBoostSupported;
-        }
-
-        if (RMCFG_FEATURE_PLATFORM_WINDOWS)
-        {
-            rpcInfo->bGspNocatEnabled = NV_TRUE;
-        }
+        portMemCopy(rpcInfo, sizeof(*rpcInfo), pKernelGsp->pSystemInfo, sizeof(GspSystemInfo));
 
         status = _issueRpcAsync(pGpu, pRpc);
     }
@@ -10784,8 +10835,7 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 /*
  * Transfers registry entries from CPU-RM to GSP-RM during init.
  *
- * Note that this is an asynchronous RPC.  It is stuffed into the message queue
- * before the GSP is booted.
+ * This is an init RPC for GSP-RM early boot.
  */
 NV_STATUS rpcSetRegistry_v17_00
 (
@@ -10797,22 +10847,20 @@ NV_STATUS rpcSetRegistry_v17_00
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        NvU32 regTableSize = 0;
+        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+        NvU32 regTableSize = pKernelGsp->regTableSize;
         NvU32 totalSize;
         NvU32 remainingMessageSize;
         PACKED_REGISTRY_TABLE *pRegTable;
         rpc_message_header_v *largeRpcBuffer = NULL;
+
+        NV_ASSERT_OR_RETURN(pKernelGsp->pRegTable != NULL, NV_ERR_INVALID_STATE);
 
         status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_SET_REGISTRY, 0);
         if (status != NV_OK)
             return status;
 
         remainingMessageSize = pRpc->maxRpcSize - sizeof(rpc_message_header_v);
-
-        // Compute size of registry table
-        status = osPackageRegistry(pGpu, NULL, &regTableSize);
-        if (status != NV_OK)
-            return status;
 
         //
         // SET_REGISTRY is async RPC. If registry table exceeds size of
@@ -10841,9 +10889,7 @@ NV_STATUS rpcSetRegistry_v17_00
             pRegTable = (PACKED_REGISTRY_TABLE *)&rpc_message;
         }
 
-        status = osPackageRegistry(pGpu, pRegTable, &regTableSize);
-        if (status != NV_OK)
-            goto fail;
+        portMemCopy(pRegTable, regTableSize, pKernelGsp->pRegTable, regTableSize);
 
         if (largeRpcBuffer != NULL)
         {
@@ -10855,7 +10901,6 @@ NV_STATUS rpcSetRegistry_v17_00
             status = _issueRpcAsync(pGpu, pRpc);
         }
 
-    fail:
         portMemFree(largeRpcBuffer);
     }
 
@@ -10991,9 +11036,9 @@ NV_STATUS rpcRmApiControl_GSP
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
 
     rpc_message_header_v *large_message_copy = NULL;
-    rpc_gsp_rm_control_v03_00 *rpc_params = &rpc_message->gsp_rm_control_v03_00;
+    rpc_gsp_rm_control_v03_00 *rpc_params = NULL;
 
-    const NvU32 fixed_param_size = sizeof(rpc_message_header_v) + sizeof(*rpc_params);
+    const NvU32 fixed_param_size = sizeof(rpc_message_header_v) + sizeof(rpc_gsp_rm_control_v03_00);
     NvU32 message_buffer_remaining = pRpc->maxRpcSize - fixed_param_size;
     NvU32 rpc_params_size;
     NvU32 total_size;
@@ -11099,7 +11144,7 @@ NV_STATUS rpcRmApiControl_GSP
     }
 
     // Initialize these values now that paramsSize is known
-    rpc_params_size = sizeof(*rpc_params) + paramsSize;
+    rpc_params_size = sizeof(rpc_gsp_rm_control_v03_00) + paramsSize;
     total_size = fixed_param_size + paramsSize;
 
     // Write the header assuming one record.  If continuation records are used,
@@ -11108,6 +11153,7 @@ NV_STATUS rpcRmApiControl_GSP
         rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_GSP_RM_CONTROL, rpc_params_size),
         done);
 
+    rpc_params = &rpc_message->gsp_rm_control_v03_00;
     rpc_params->hClient        = hClient;
     rpc_params->hObject        = hObject;
     rpc_params->cmd            = cmd;
@@ -11275,14 +11321,14 @@ NV_STATUS rpcRmApiAlloc_GSP
     OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
 
-    rpc_gsp_rm_alloc_v03_00 *rpc_params = &rpc_message->gsp_rm_alloc_v03_00;
+    rpc_gsp_rm_alloc_v03_00 *rpc_params = NULL;
     CALL_CONTEXT callContext = {0};
     NvU32 flags = RMAPI_ALLOC_FLAGS_NONE;
     NvU32 paramsSize;
     void *pOriginalParams = pAllocParams;
     NvBool bNullAllowed;
 
-    const NvU32 fixed_param_size = sizeof(rpc_message_header_v) + sizeof(*rpc_params);
+    const NvU32 fixed_param_size = sizeof(rpc_message_header_v) + sizeof(rpc_gsp_rm_alloc_v03_00);
     const NvU32 message_buffer_remaining = pRpc->maxRpcSize - fixed_param_size;
 
     NvU32 gpuMaskRelease = 0;
@@ -11320,6 +11366,7 @@ NV_STATUS rpcRmApiAlloc_GSP
                              sizeof(rpc_gsp_rm_alloc_v03_00)),
         done);
 
+    rpc_params = &rpc_message->gsp_rm_alloc_v03_00;
     rpc_params->hClient    = hClient;
     rpc_params->hParent    = hParent;
     rpc_params->hObject    = hObject;
@@ -11393,7 +11440,7 @@ NV_STATUS rpcRmApiDupObject_GSP
 {
     OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
-    NVOS55_PARAMETERS_v03_00 *rpc_params = &rpc_message->dup_object_v03_00.params;
+    NVOS55_PARAMETERS_v03_00 *rpc_params = NULL;
     NV_STATUS status;
     NvU32 gpuMaskRelease = 0;
 
@@ -11410,6 +11457,7 @@ NV_STATUS rpcRmApiDupObject_GSP
     if (status != NV_OK)
         goto done;
 
+    rpc_params = &rpc_message->dup_object_v03_00.params;
     rpc_params->hClient     = hClient;
     rpc_params->hParent     = hParent;
     rpc_params->hObject     = *phObject;
@@ -11441,7 +11489,7 @@ NV_STATUS rpcRmApiFree_GSP
 {
     OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
     OBJRPC *pRpc = GPU_GET_RPC(pGpu);
-    NVOS00_PARAMETERS_v03_00 *rpc_params = &rpc_message->free_v03_00.params;
+    NVOS00_PARAMETERS_v03_00 *rpc_params = NULL;
     NV_STATUS status = NV_OK;
     NvU32 gpuMaskRelease = 0;
 
@@ -11458,6 +11506,7 @@ NV_STATUS rpcRmApiFree_GSP
     if (status != NV_OK)
         goto done;
 
+    rpc_params = &rpc_message->free_v03_00.params;
     rpc_params->hRoot = hClient;
     rpc_params->hObjectParent = NV01_NULL_OBJECT;
     rpc_params->hObjectOld = hObject;
@@ -11774,5 +11823,28 @@ NV_STATUS rpcCtrlCmdInternalGpuCheckCtsIdValid_v2B_12
 
     status = deserialize_NV2080_CTRL_INTERNAL_GPU_CHECK_CTS_ID_VALID_PARAMS_v2B_12(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
 
+    return status;
+}
+
+NV_STATUS rpcInitGspTraceCrashBuffer_v03_00
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc,
+    NvU64 pa,
+    NvU32 size
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_INIT_GSP_TRACE_CRASH_BUFFER,
+                                        sizeof(rpc_init_gsp_trace_crash_buffer_v03_00));
+        if (status != NV_OK)
+            return status;
+
+        rpc_message->init_gsp_trace_crash_buffer_v03_00.pa = pa;
+        rpc_message->init_gsp_trace_crash_buffer_v03_00.size = size;
+        status = _issueRpcAndWait(pGpu, pRpc);
+    }
     return status;
 }

@@ -42,6 +42,11 @@ extern "C" {
 #include "rs_access.h"
 #include "nvcfg_sdk.h"
 
+#if defined(NVRISCV_LIBFSP_BUILD)
+#if NVRISCV_LIBFSP_BUILD
+#include <libc.h>
+#endif
+#endif
 
 // Temporary include. Please include this directly instead of nvos.h
 #include "alloc/alloc_channel.h"
@@ -1277,11 +1282,6 @@ typedef struct
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_WRITE        0x00000000
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_ONLY         0x00000001
 
-// Deprecated. To be deleted once client code has removed references.
-#define NVOS32_ATTR2_USE_EGM                                 24:24
-#define NVOS32_ATTR2_USE_EGM_FALSE                      0x00000000
-#define NVOS32_ATTR2_USE_EGM_TRUE                       0x00000001
-
 //
 // Allow client allocations to go to protected/unprotected video/system memory.
 // When Ampere Protected Model aka APM or Confidential Compute is enabled and
@@ -1804,6 +1804,15 @@ typedef struct
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP                              19:19
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_DISABLE                      (0x00000000)
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_ENABLE                       (0x00000001)
+
+//
+// Internal use only
+// Can be used to set mappings path to PCIe when coherent C2C link is present 
+// 
+#define NVOS33_FLAGS_BUS                                           21:20
+#define NVOS33_FLAGS_BUS_DEFAULT                                   0
+#define NVOS33_FLAGS_BUS_COHERENT_LINK                             1
+#define NVOS33_FLAGS_BUS_PCIE                                      2
 
 // Internal use only
 #define NVOS33_FLAGS_OS_DESCRIPTOR                                 22:22
@@ -2659,10 +2668,17 @@ nvPowerStateFailureInit
     NVPOWERSTATE_FAILURE *pFailure
 )
 {
+#if !defined(NVRISCV_LIBFSP_BUILD) || !NVRISCV_LIBFSP_BUILD
     (void)NVMISC_MEMSET(
         pFailure,
         0x0,
         sizeof(*pFailure));
+#else
+    (void)memset(
+        pFailure,
+        0x0,
+        sizeof(*pFailure));
+#endif
 }
 
 /*!

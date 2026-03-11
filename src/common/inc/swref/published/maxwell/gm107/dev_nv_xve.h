@@ -162,6 +162,10 @@
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_CLEAR              0x00000001 /* -W--C */
 #define NV_XVE_CYA_2                                             0x00000704 /* RW-4R */
 #define NV_XVE_DEVICE_CONTROL_STATUS_2                           0x000000A0 /* RWI4R */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2_LTR_ENABLE                10:10 /* RWIVF */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2_LTR_ENABLE_INIT           0x00000000 /* RWI-V */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2_LTR_ENABLE_DISABLED       0x00000000 /* RW--V */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2_LTR_ENABLE_ENABLED        0x00000001 /* RW--V */
 #define NV_XVE_L1_PM_SUBSTATES_CTRL1                             0x00000260 /* RW-4R */
 #define NV_XVE_SW_RESET                                          0x00000718 /* RW-4R */
 #define NV_XVE_SW_RESET_RESET                                           0:0 /* RWCVF */

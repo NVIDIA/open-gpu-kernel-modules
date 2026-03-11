@@ -85,8 +85,6 @@ typedef struct _NvPushChannelRec *NvPushChannelPtr;
 
 typedef struct _nv_push_hal {
     void (*kickoff)(struct _NvPushChannelRec*, NvU32 oldGpPut, NvU32 newGpPut);
-    void (*releaseTimelineSemaphore)(NvPushChannelPtr, void *cpuAddress, NvU64 gpuAddress, NvU64 val);
-    void (*acquireTimelineSemaphore)(NvPushChannelPtr, NvU64 gpuAddress, NvU64 val);
     struct {
         /* Requires USERD memory to be specified at channel allocation */
         NvU32 clientAllocatesUserD                      :1;

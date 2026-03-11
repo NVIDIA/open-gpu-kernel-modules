@@ -45,4 +45,16 @@ void      nv_soc_free_irqs(nv_state_t *nv);
 
 #define NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE (NV_SUPPORTS_PLATFORM_DEVICE && NV_SUPPORTS_DCE_CLIENT_IPC)
 
+#if defined(CONFIG_OF)
+NV_STATUS   nv_platform_get_screen_info_dt(
+    NvU64 *pPhysicalAddress,
+    NvU32 *pFbWidth,
+    NvU32 *pFbHeight,
+    NvU32 *pFbDepth,
+    NvU32 *pFbPitch,
+    NvU64 *pFbSize
+);
+
+#endif // CONFIG_OF
+
 #endif

@@ -41,6 +41,7 @@ struct KernelGsp;
 struct KernelSec2;
 struct KernelGsplite;
 struct Spdm;
+struct Lpsec;
 
 //
 // Default segment for bindata to put the data arrays to paged memory.

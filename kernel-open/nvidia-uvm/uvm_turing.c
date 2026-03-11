@@ -28,10 +28,6 @@
 
 void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 {
-    parent_gpu->tlb_batch.va_invalidate_supported = true;
-
-    parent_gpu->tlb_batch.va_range_invalidate_supported = true;
-
     // TODO: Bug 1767241: Run benchmarks to figure out a good number
     parent_gpu->tlb_batch.max_ranges = 8;
 
@@ -64,26 +60,9 @@ void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->max_host_va = 1ULL << 40;
 
-    // Turing can map sysmem with any page size
-    parent_gpu->can_map_sysmem_with_large_pages = true;
-
-    // Prefetch instructions will generate faults
-    parent_gpu->prefetch_fault_supported = true;
-
-    // Turing can place GPFIFO in vidmem
-    parent_gpu->gpfifo_in_vidmem_supported = true;
-
-    parent_gpu->replayable_faults_supported = true;
-
-    parent_gpu->non_replayable_faults_supported = true;
-
     parent_gpu->access_counters_serialize_clear_ops_by_type = false;
 
     parent_gpu->access_bits_supported = false;
-
-    parent_gpu->fault_cancel_va_supported = true;
-
-    parent_gpu->scoped_atomics_supported = true;
 
     // SW method is not currently supported on Turing.
     // See Bug 3254782: [RM] Support clear_faulted SW method on Volta and Turing
@@ -91,13 +70,9 @@ void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->has_clear_faulted_channel_method = true;
 
-    parent_gpu->sparse_mappings_supported = true;
-
     parent_gpu->map_remap_larger_page_promotion = false;
 
     parent_gpu->smc.supported = false;
-
-    parent_gpu->plc_supported = true;
 
     parent_gpu->ats.no_ats_range_required = false;
 

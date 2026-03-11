@@ -52,16 +52,11 @@ extern "C" {
 #include "class/cla0bc.h"
 #include "ctrl/ctrla0bc.h"
 
-
 struct Memory;
 
-#ifndef __NVOC_CLASS_Memory_TYPEDEF__
-#define __NVOC_CLASS_Memory_TYPEDEF__
-typedef struct Memory Memory;
-#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_Memory
-#define __nvoc_class_id_Memory 0x4789f2
+#define __nvoc_class_id_Memory 0x4789f2u
+typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
@@ -172,13 +167,9 @@ struct NVOC_METADATA__NvencSession {
     const struct NVOC_VTABLE__NvencSession vtable;
 };
 
-#ifndef __NVOC_CLASS_NvencSession_TYPEDEF__
-#define __NVOC_CLASS_NvencSession_TYPEDEF__
-typedef struct NvencSession NvencSession;
-#endif /* __NVOC_CLASS_NvencSession_TYPEDEF__ */
-
 #ifndef __nvoc_class_id_NvencSession
-#define __nvoc_class_id_NvencSession 0x3434af
+#define __nvoc_class_id_NvencSession 0x3434afu
+typedef struct NvencSession NvencSession;
 #endif /* __nvoc_class_id_NvencSession */
 
 // Casting support
@@ -196,14 +187,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvencSession;
 
 NV_STATUS __nvoc_objCreateDynamic_NvencSession(NvencSession**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_NvencSession(NvencSession**, Dynamic*, NvU32, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __objCreate_NvencSession(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
-    __nvoc_objCreate_NvencSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+NV_STATUS __nvoc_objCreate_NvencSession(NvencSession**, Dynamic*, NvU32, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __objCreate_NvencSession(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams) \
+    __nvoc_objCreate_NvencSession((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pCallContext, pParams)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS nvencsessionConstruct_IMPL(struct NvencSession *arg_pNvencSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
-#define __nvoc_nvencsessionConstruct(arg_pNvencSession, arg_pCallContext, arg_pParams) nvencsessionConstruct_IMPL(arg_pNvencSession, arg_pCallContext, arg_pParams)
+NV_STATUS nvencsessionConstruct_IMPL(struct NvencSession *pNvencSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+#define __nvoc_nvencsessionConstruct(pNvencSession, pCallContext, pParams) nvencsessionConstruct_IMPL(pNvencSession, pCallContext, pParams)
 
 void nvencsessionDestruct_IMPL(struct NvencSession *pNvencSession);
 #define __nvoc_nvencsessionDestruct(pNvencSession) nvencsessionDestruct_IMPL(pNvencSession)
@@ -382,10 +373,16 @@ static inline void nvencsessionAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvoc_metadata_ptr->vtable.__nvencsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
 NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
 
 NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams);
 
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
 #undef PRIVATE_FIELD
 
 

@@ -195,18 +195,6 @@ workItemLocksAcquire(NvU32 gpuInstance, OsQueueWorkItemFlags flags, OsQueueWorkI
                 goto done;
             }
         }
-
-        if (flags.bForPmResume)
-        {
-            if (!FULL_GPU_SANITY_FOR_PM_RESUME(pGpu))
-            {
-                status = NV_ERR_INVALID_STATE;
-                NV_PRINTF(LEVEL_ERROR,
-                          "GPU isn't full power and isn't in resume codepath! gpuInstance = 0x%x.\n",
-                          gpuInstance);
-                goto done;
-            }
-        }
     }
 
 done:

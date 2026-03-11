@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x007a98 = 1;
+char __nvoc_class_id_uniqueness_check__007a98 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_SystemMemory;
@@ -31,7 +31,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_StandardMemory;
 void __nvoc_init__StandardMemory(StandardMemory*);
 void __nvoc_init__SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_init_funcTable_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
-NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_SystemMemory(SystemMemory*, GpuHalspecOwner *pGpuhalspecowner);
 void __nvoc_dtor_SystemMemory(SystemMemory*);
 
@@ -134,19 +134,18 @@ NV_STATUS __nvoc_up_thunk_RsResource_sysmemUnmapFrom(struct SystemMemory *pResou
 NvU32 __nvoc_up_thunk_RsResource_sysmemGetRefCount(struct SystemMemory *pResource);    // this
 void __nvoc_up_thunk_RsResource_sysmemAddAdditionalDependants(struct RsClient *pClient, struct SystemMemory *pResource, RsResourceRef *pReference);    // this
 
+// Class-specific details for SystemMemory
 const struct NVOC_CLASS_DEF __nvoc_class_def_SystemMemory = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(SystemMemory),
-        /*classId=*/            classId(SystemMemory),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(SystemMemory),
+    .classInfo.classId =            classId(SystemMemory),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "SystemMemory",
+    .classInfo.name =               "SystemMemory",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_SystemMemory,
-    /*pCastInfo=*/          &__nvoc_castinfo__SystemMemory,
-    /*pExportInfo=*/        &__nvoc_export_info__SystemMemory
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_SystemMemory,
+    .pCastInfo =          &__nvoc_castinfo__SystemMemory,
+    .pExportInfo =        &__nvoc_export_info__SystemMemory
 };
 
 // By default, all exported methods are enabled.
@@ -483,18 +482,24 @@ void __nvoc_up_thunk_RsResource_sysmemAddAdditionalDependants(struct RsClient *p
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__SystemMemory = 
 {
-    /*numEntries=*/     2,
-    /*pExportEntries=*/ __nvoc_exported_method_def_SystemMemory
+    .numEntries=     2,
+    .pExportEntries= __nvoc_exported_method_def_SystemMemory
 };
 
+
+// Destruct SystemMemory object.
 void __nvoc_sysmemDestruct(SystemMemory*);
 void __nvoc_dtor_StandardMemory(StandardMemory*);
-void __nvoc_dtor_SystemMemory(SystemMemory *pThis) {
+void __nvoc_dtor_SystemMemory(SystemMemory* pThis) {
+
+// Call destructor.
     __nvoc_sysmemDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_StandardMemory(&pThis->__nvoc_base_StandardMemory);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner) {
     ChipHal *chipHal = &pGpuhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -504,22 +509,29 @@ void __nvoc_init_dataField_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pG
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 }
 
-NV_STATUS __nvoc_ctor_StandardMemory(StandardMemory* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_StandardMemory(&pThis->__nvoc_base_StandardMemory, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_SystemMemory_fail_StandardMemory;
-    __nvoc_init_dataField_SystemMemory(pThis, pGpuhalspecowner);
 
-    status = __nvoc_sysmemConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct SystemMemory object.
+NV_STATUS __nvoc_ctor_StandardMemory(StandardMemory *pStandardMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_SystemMemory(SystemMemory *pStandardMemory, GpuHalspecOwner *pGpuhalspecowner, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_StandardMemory(&pStandardMemory->__nvoc_base_StandardMemory, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_SystemMemory_fail_StandardMemory;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_SystemMemory(pStandardMemory, pGpuhalspecowner);
+
+    // Call the constructor for this class.
+    status = __nvoc_sysmemConstruct(pStandardMemory, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_SystemMemory_fail__init;
     goto __nvoc_ctor_SystemMemory_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_SystemMemory_fail__init:
-    __nvoc_dtor_StandardMemory(&pThis->__nvoc_base_StandardMemory);
+    __nvoc_dtor_StandardMemory(&pStandardMemory->__nvoc_base_StandardMemory);
 __nvoc_ctor_SystemMemory_fail_StandardMemory:
 __nvoc_ctor_SystemMemory_exit:
-
     return status;
 }
 
@@ -580,58 +592,58 @@ void __nvoc_init__SystemMemory(SystemMemory *pThis, GpuHalspecOwner *pGpuhalspec
     __nvoc_init_funcTable_SystemMemory(pThis, pGpuhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    SystemMemory *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    SystemMemory *__nvoc_pThis;
     GpuHalspecOwner *pGpuhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(SystemMemory));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SystemMemory));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(SystemMemory));
+    portMemSet(__nvoc_pThis, 0, sizeof(SystemMemory));
 
-    pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_SystemMemory_cleanup);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_SystemMemory_cleanup);
 
     // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, pParent);
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_SystemMemory_cleanup);
+    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
+        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
+    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_SystemMemory_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__SystemMemory(pThis, pGpuhalspecowner);
-    status = __nvoc_ctor_SystemMemory(pThis, pGpuhalspecowner, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_SystemMemory_cleanup;
+    __nvoc_init__SystemMemory(__nvoc_pThis, pGpuhalspecowner);
+    __nvoc_status = __nvoc_ctor_SystemMemory(__nvoc_pThis, pGpuhalspecowner, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SystemMemory_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -640,31 +652,31 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent,
 __nvoc_objCreate_SystemMemory_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(SystemMemory));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(SystemMemory));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_SystemMemory(SystemMemory **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    CALL_CONTEXT *arg_pCallContext = va_arg(args, CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_SystemMemory(SystemMemory **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_SystemMemory(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_SystemMemory(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

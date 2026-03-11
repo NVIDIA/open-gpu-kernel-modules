@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "dp_auxdefs.h"
 
 // Regkey Names
+#define NV_DP_REGKEY_DISABLE_QSES                     "DISABLE_QSES"
 #define NV_DP_REGKEY_OVERRIDE_DPCD_REV                "OVERRIDE_DPCD_REV"
 #define NV_DP_REGKEY_DISABLE_SSC                      "DISABLE_SSC" // SSC (Stream Status Changed)
 #define NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING        "ENABLE_FAST_LINK_TRAINING"
@@ -48,6 +49,7 @@
 #define NV_DP_REGKEY_DISABLE_DSC                      "DISABLE_DSC"
 #define NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP          "HP_WAR_2189772"
 #define NV_DP_REGKEY_MST_AUTO_HDCP_AUTH_AT_ATTACH     "DP_MST_AUTO_HDCP_AUTH_AT_ATTACH"
+#define NV_DP_REGKEY_MST_RESTORE_HDCP_AT_ATTACH_SKIPPED "DP_MST_RESTORE_HDCP_AT_ATTACH_SKIPPED"
 #define NV_DP_REGKEY_ENABLE_MSA_OVER_MST              "ENABLE_MSA_OVER_MST"
 #define NV_DP_REGKEY_DISABLE_DOWNSPREAD               "DISABLE_DOWNSPREAD"
 
@@ -98,7 +100,6 @@
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
 #define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
 
-#define NV_DP_REGKEY_ENABLE_FIX_FOR_5147205         "DP_ENABLE_5147205_FIX"
 // Bug 5088957 : Force head shutdown in DpLib
 #define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
 
@@ -112,12 +113,11 @@
 
 #define NV_DP_REGKEY_IGNORE_CAPS_AND_FORCE_HIGHEST_LC  "DP_IGNORE_CAPS_AND_FORCE_HIGHEST_LC_WAR"
 
-// This regkey ensures DP IMP takes DP tunnelling BW into account while calculating DSC BPP
-#define NV_DP_REGKEY_OPTIMIZE_DSC_BPP_FOR_TUNNELLING_BW            "OPTIMIZE_DSC_BPP_FOR_TUNNELLING_BW"
-
 // This regkey disables GR-3336 that disables minimizing link config if it is 128b/132b.
-#define NV_DP_REGKEY_ENABLE_128b132b_DSC_LNK_CFG_REDUCTION        "ENABLE_128b132b_DSC_LNK_CFG_REDUCTION"
+#define NV_DP_REGKEY_ENABLE_128b132b_DSC_LNK_CFG_REDUCTION   "ENABLE_128b132b_DSC_LNK_CFG_REDUCTION"
 
+#define NV_DP_REGKEY_DISABLE_NATIVE_DISPLAYID2X_SUPPORT    "DISABLE_NATIVE_DISPLAYID2X_SUPPORT"
+#define NV_DP_REGKEY_FORCE_NLPIGNORE_DDS                   "DP_FORCE_NLPIGNORE_DDS"
 //
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
@@ -129,6 +129,7 @@ struct DP_REGKEY_DATABASE
 {
     bool  bInitialized; // set to true after the first EvoMainLink instance is constructed
     // Below are regkey values
+    bool  bQsesDisabled;
     NvU32 dpcdRevOveride;
     bool  bSscDisabled;
     bool  bFastLinkTrainingEnabled;
@@ -142,6 +143,7 @@ struct DP_REGKEY_DATABASE
     bool  bDscDisabled;
     bool  bAssesslinkForEdpSkipped;
     bool  bMstAutoHdcpAuthAtAttach;
+    bool  bMstRestoreHdcpAtAttachSkipped;
     bool  bMsaOverMstEnabled;
     bool  bOptLinkKeptAlive;
     bool  bOptLinkKeptAliveMst;
@@ -159,14 +161,14 @@ struct DP_REGKEY_DATABASE
     bool  bDisableAvoidHBR3War;
     bool  bCableVconnSourceUnknownWar;
     bool  bSkipZeroOuiCache;
-    bool  bEnable5147205Fix;
     bool  bForceHeadShutdown;
     bool  bEnableDevId;
     bool  bEnableCqaStatsCollection;
     bool  bIgnoreCapsAndForceHighestLc;
-    bool  bOptimizeDscBppForTunnellingBw;
     bool  bEnable128b132bDSCLnkCfgReduction;
+    bool  bDisableNativeDisplayId2xSupport;
     bool  bUseMaxDSCCompressionMST;
+    bool  bIgnoreUnplugUnlessRequested;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

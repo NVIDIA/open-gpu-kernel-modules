@@ -16,7 +16,7 @@
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xbd2ff3 = 1;
+char __nvoc_class_id_uniqueness_check__bd2ff3 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
@@ -33,7 +33,7 @@ void __nvoc_init__GpuResource(GpuResource*);
 void __nvoc_init__Notifier(Notifier*);
 void __nvoc_init__DispChannel(DispChannel*);
 void __nvoc_init_funcTable_DispChannel(DispChannel*);
-NV_STATUS __nvoc_ctor_DispChannel(DispChannel*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma);
+NV_STATUS __nvoc_ctor_DispChannel(DispChannel*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma);
 void __nvoc_init_dataField_DispChannel(DispChannel*);
 void __nvoc_dtor_DispChannel(DispChannel*);
 
@@ -119,19 +119,18 @@ void __nvoc_up_thunk_Notifier_dispchnSetNotificationShare(struct DispChannel *pN
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnUnregisterEvent(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
 
+// Class-specific details for DispChannel
 const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannel),
-        /*classId=*/            classId(DispChannel),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(DispChannel),
+    .classInfo.classId =            classId(DispChannel),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannel",
+    .classInfo.name =               "DispChannel",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannel,
-    /*pCastInfo=*/          &__nvoc_castinfo__DispChannel,
-    /*pExportInfo=*/        &__nvoc_export_info__DispChannel
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannel,
+    .pCastInfo =          &__nvoc_castinfo__DispChannel,
+    .pExportInfo =        &__nvoc_export_info__DispChannel
 };
 
 
@@ -442,45 +441,58 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChanne
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannel = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct DispChannel object.
 void __nvoc_dispchnDestruct(DispChannel*);
 void __nvoc_dtor_GpuResource(GpuResource*);
 void __nvoc_dtor_Notifier(Notifier*);
-void __nvoc_dtor_DispChannel(DispChannel *pThis) {
+void __nvoc_dtor_DispChannel(DispChannel* pThis) {
+
+// Call destructor.
     __nvoc_dispchnDestruct(pThis);
+
+// Recurse to superclass destructors.
     __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
     __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_DispChannel(DispChannel *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_Notifier(Notifier* , struct CALL_CONTEXT *);
-NV_STATUS __nvoc_ctor_DispChannel(DispChannel *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, NvU32 arg_isDma) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_ctor_DispChannel_fail_GpuResource;
-    status = __nvoc_ctor_Notifier(&pThis->__nvoc_base_Notifier, arg_pCallContext);
-    if (status != NV_OK) goto __nvoc_ctor_DispChannel_fail_Notifier;
-    __nvoc_init_dataField_DispChannel(pThis);
 
-    status = __nvoc_dispchnConstruct(pThis, arg_pCallContext, arg_pParams, arg_isDma);
+// Construct DispChannel object.
+NV_STATUS __nvoc_ctor_GpuResource(GpuResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);    // inline
+NV_STATUS __nvoc_ctor_Notifier(Notifier *pNotifier, struct CALL_CONTEXT *pCallContext);    // inline
+NV_STATUS __nvoc_ctor_DispChannel(DispChannel *pDispChannel, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuResource(&pDispChannel->__nvoc_base_GpuResource, pCallContext, pParams);
+    if (status != NV_OK) goto __nvoc_ctor_DispChannel_fail_GpuResource;
+    status = __nvoc_ctor_Notifier(&pDispChannel->__nvoc_base_Notifier, pCallContext);
+    if (status != NV_OK) goto __nvoc_ctor_DispChannel_fail_Notifier;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DispChannel(pDispChannel);
+
+    // Call the constructor for this class.
+    status = __nvoc_dispchnConstruct(pDispChannel, pCallContext, pParams, isDma);
     if (status != NV_OK) goto __nvoc_ctor_DispChannel_fail__init;
     goto __nvoc_ctor_DispChannel_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_DispChannel_fail__init:
-    __nvoc_dtor_Notifier(&pThis->__nvoc_base_Notifier);
+    __nvoc_dtor_Notifier(&pDispChannel->__nvoc_base_Notifier);
 __nvoc_ctor_DispChannel_fail_Notifier:
-    __nvoc_dtor_GpuResource(&pThis->__nvoc_base_GpuResource);
+    __nvoc_dtor_GpuResource(&pDispChannel->__nvoc_base_GpuResource);
 __nvoc_ctor_DispChannel_fail_GpuResource:
 __nvoc_ctor_DispChannel_exit:
-
     return status;
 }
 
@@ -526,49 +538,49 @@ void __nvoc_init__DispChannel(DispChannel *pThis) {
     __nvoc_init_funcTable_DispChannel(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, NvU32 arg_isDma)
+NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    DispChannel *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DispChannel *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(DispChannel));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DispChannel));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(DispChannel));
+    portMemSet(__nvoc_pThis, 0, sizeof(DispChannel));
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__DispChannel(pThis);
-    status = __nvoc_ctor_DispChannel(pThis, arg_pCallContext, arg_pParams, arg_isDma);
-    if (status != NV_OK) goto __nvoc_objCreate_DispChannel_cleanup;
+    __nvoc_init__DispChannel(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DispChannel(__nvoc_pThis, pCallContext, pParams, isDma);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DispChannel_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -577,38 +589,38 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
 __nvoc_objCreate_DispChannel_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(DispChannel));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DispChannel));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_DispChannel(DispChannel **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-    NvU32 arg_isDma = va_arg(args, NvU32);
+NV_STATUS __nvoc_objCreateDynamic_DispChannel(DispChannel **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+    NvU32 isDma = va_arg(__nvoc_args, NvU32);
 
-    status = __nvoc_objCreate_DispChannel(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams, arg_isDma);
+    __nvoc_status = __nvoc_objCreate_DispChannel(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams, isDma);
 
-    return status;
+    return __nvoc_status;
 }
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0x10dec3 = 1;
+char __nvoc_class_id_uniqueness_check__10dec3 = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio;
@@ -625,7 +637,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
 void __nvoc_init__DispChannel(DispChannel*);
 void __nvoc_init__DispChannelPio(DispChannelPio*);
 void __nvoc_init_funcTable_DispChannelPio(DispChannelPio*);
-NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_DispChannelPio(DispChannelPio*);
 void __nvoc_dtor_DispChannelPio(DispChannelPio*);
 
@@ -741,19 +753,18 @@ void __nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare(struct DispChannelP
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
 
+// Class-specific details for DispChannelPio
 const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannelPio),
-        /*classId=*/            classId(DispChannelPio),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(DispChannelPio),
+    .classInfo.classId =            classId(DispChannelPio),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannelPio",
+    .classInfo.name =               "DispChannelPio",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelPio,
-    /*pCastInfo=*/          &__nvoc_castinfo__DispChannelPio,
-    /*pExportInfo=*/        &__nvoc_export_info__DispChannelPio
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelPio,
+    .pCastInfo =          &__nvoc_castinfo__DispChannelPio,
+    .pExportInfo =        &__nvoc_export_info__DispChannelPio
 };
 
 
@@ -1095,36 +1106,47 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispCha
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelPio = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct DispChannelPio object.
 void __nvoc_dtor_DispChannel(DispChannel*);
-void __nvoc_dtor_DispChannelPio(DispChannelPio *pThis) {
+void __nvoc_dtor_DispChannelPio(DispChannelPio* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_DispChannel(&pThis->__nvoc_base_DispChannel);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_DispChannelPio(DispChannelPio *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_DispChannel(DispChannel* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *, NvU32);
-NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_DispChannel(&pThis->__nvoc_base_DispChannel, arg_pCallContext, arg_pParams, NV_FALSE);
-    if (status != NV_OK) goto __nvoc_ctor_DispChannelPio_fail_DispChannel;
-    __nvoc_init_dataField_DispChannelPio(pThis);
 
-    status = __nvoc_dispchnpioConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct DispChannelPio object.
+NV_STATUS __nvoc_ctor_DispChannel(DispChannel *pDispChannel, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma);    // inline
+NV_STATUS __nvoc_ctor_DispChannelPio(DispChannelPio *pDispChannelPio, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_DispChannel(&pDispChannelPio->__nvoc_base_DispChannel, pCallContext, pParams, NV_FALSE);
+    if (status != NV_OK) goto __nvoc_ctor_DispChannelPio_fail_DispChannel;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DispChannelPio(pDispChannelPio);
+
+    // Call the constructor for this class.
+    status = __nvoc_dispchnpioConstruct(pDispChannelPio, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_DispChannelPio_fail__init;
     goto __nvoc_ctor_DispChannelPio_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_DispChannelPio_fail__init:
-    __nvoc_dtor_DispChannel(&pThis->__nvoc_base_DispChannel);
+    __nvoc_dtor_DispChannel(&pDispChannelPio->__nvoc_base_DispChannel);
 __nvoc_ctor_DispChannelPio_fail_DispChannel:
 __nvoc_ctor_DispChannelPio_exit:
-
     return status;
 }
 
@@ -1171,49 +1193,49 @@ void __nvoc_init__DispChannelPio(DispChannelPio *pThis) {
     __nvoc_init_funcTable_DispChannelPio(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    DispChannelPio *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DispChannelPio *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(DispChannelPio));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DispChannelPio));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(DispChannelPio));
+    portMemSet(__nvoc_pThis, 0, sizeof(DispChannelPio));
 
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__DispChannelPio(pThis);
-    status = __nvoc_ctor_DispChannelPio(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_DispChannelPio_cleanup;
+    __nvoc_init__DispChannelPio(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DispChannelPio(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DispChannelPio_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -1222,37 +1244,37 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
 __nvoc_objCreate_DispChannelPio_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(DispChannelPio));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DispChannelPio));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_DispChannelPio(DispChannelPio **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_DispChannelPio(DispChannelPio **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_DispChannelPio(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_DispChannelPio(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__0xfe3d2e = 1;
+char __nvoc_class_id_uniqueness_check__fe3d2e = 1;
 #endif
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma;
@@ -1269,7 +1291,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel;
 void __nvoc_init__DispChannel(DispChannel*);
 void __nvoc_init__DispChannelDma(DispChannelDma*);
 void __nvoc_init_funcTable_DispChannelDma(DispChannelDma*);
-NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma*, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma*, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 void __nvoc_init_dataField_DispChannelDma(DispChannelDma*);
 void __nvoc_dtor_DispChannelDma(DispChannelDma*);
 
@@ -1385,19 +1407,18 @@ void __nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare(struct DispChannelD
 NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
 NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
 
+// Class-specific details for DispChannelDma
 const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma = 
 {
-    /*classInfo=*/ {
-        /*size=*/               sizeof(DispChannelDma),
-        /*classId=*/            classId(DispChannelDma),
-        /*providerId=*/         &__nvoc_rtti_provider,
+    .classInfo.size =               sizeof(DispChannelDma),
+    .classInfo.classId =            classId(DispChannelDma),
+    .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*name=*/               "DispChannelDma",
+    .classInfo.name =               "DispChannelDma",
 #endif
-    },
-    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelDma,
-    /*pCastInfo=*/          &__nvoc_castinfo__DispChannelDma,
-    /*pExportInfo=*/        &__nvoc_export_info__DispChannelDma
+    .objCreatefn =        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_DispChannelDma,
+    .pCastInfo =          &__nvoc_castinfo__DispChannelDma,
+    .pExportInfo =        &__nvoc_export_info__DispChannelDma
 };
 
 
@@ -1739,36 +1760,47 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispCha
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__DispChannelDma = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    .numEntries=     0,
+    .pExportEntries= 0
 };
 
+
+// Destruct DispChannelDma object.
 void __nvoc_dtor_DispChannel(DispChannel*);
-void __nvoc_dtor_DispChannelDma(DispChannelDma *pThis) {
+void __nvoc_dtor_DispChannelDma(DispChannelDma* pThis) {
+
+// Recurse to superclass destructors.
     __nvoc_dtor_DispChannel(&pThis->__nvoc_base_DispChannel);
+
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
-
 void __nvoc_init_dataField_DispChannelDma(DispChannelDma *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_DispChannel(DispChannel* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *, NvU32);
-NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
-    NV_STATUS status = NV_OK;
-    status = __nvoc_ctor_DispChannel(&pThis->__nvoc_base_DispChannel, arg_pCallContext, arg_pParams, NV_TRUE);
-    if (status != NV_OK) goto __nvoc_ctor_DispChannelDma_fail_DispChannel;
-    __nvoc_init_dataField_DispChannelDma(pThis);
 
-    status = __nvoc_dispchndmaConstruct(pThis, arg_pCallContext, arg_pParams);
+// Construct DispChannelDma object.
+NV_STATUS __nvoc_ctor_DispChannel(DispChannel *pDispChannel, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvU32 isDma);    // inline
+NV_STATUS __nvoc_ctor_DispChannelDma(DispChannelDma *pDispChannelDma, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_DispChannel(&pDispChannelDma->__nvoc_base_DispChannel, pCallContext, pParams, NV_TRUE);
+    if (status != NV_OK) goto __nvoc_ctor_DispChannelDma_fail_DispChannel;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DispChannelDma(pDispChannelDma);
+
+    // Call the constructor for this class.
+    status = __nvoc_dispchndmaConstruct(pDispChannelDma, pCallContext, pParams);
     if (status != NV_OK) goto __nvoc_ctor_DispChannelDma_fail__init;
     goto __nvoc_ctor_DispChannelDma_exit; // Success
 
+    // Unwind on error.
 __nvoc_ctor_DispChannelDma_fail__init:
-    __nvoc_dtor_DispChannel(&pThis->__nvoc_base_DispChannel);
+    __nvoc_dtor_DispChannel(&pDispChannelDma->__nvoc_base_DispChannel);
 __nvoc_ctor_DispChannelDma_fail_DispChannel:
 __nvoc_ctor_DispChannelDma_exit:
-
     return status;
 }
 
@@ -1815,49 +1847,49 @@ void __nvoc_init__DispChannelDma(DispChannelDma *pThis) {
     __nvoc_init_funcTable_DispChannelDma(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams)
+NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams)
 {
-    NV_STATUS status;
-    Object *pParentObj = NULL;
-    DispChannelDma *pThis;
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DispChannelDma *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, ppThis != NULL && *ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        pThis = *ppThis;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
     }
 
     // Allocate memory
     else
     {
-        pThis = portMemAllocNonPaged(sizeof(DispChannelDma));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pThis != NULL, NV_ERR_NO_MEMORY);
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DispChannelDma));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(pThis, 0, sizeof(DispChannelDma));
+    portMemSet(__nvoc_pThis, 0, sizeof(DispChannelDma));
 
-    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
+    __nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
-        pParentObj = dynamicCast(pParent, Object);
-        objAddChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
     }
     else
     {
-        pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__DispChannelDma(pThis);
-    status = __nvoc_ctor_DispChannelDma(pThis, arg_pCallContext, arg_pParams);
-    if (status != NV_OK) goto __nvoc_objCreate_DispChannelDma_cleanup;
+    __nvoc_init__DispChannelDma(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DispChannelDma(__nvoc_pThis, pCallContext, pParams);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DispChannelDma_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *ppThis = pThis;
+    *__nvoc_ppThis = __nvoc_pThis;
 
     // Success
     return NV_OK;
@@ -1866,31 +1898,31 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
 __nvoc_objCreate_DispChannelDma_cleanup:
 
     // Unlink the child from the parent if it was linked above.
-    if (pParentObj != NULL)
-        objRemoveChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
-    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(pThis, 0, sizeof(DispChannelDma));
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DispChannelDma));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
     {
-        portMemFree(pThis);
-        *ppThis = NULL;
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
     }
 
     // Failure
-    return status;
+    return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_DispChannelDma(DispChannelDma **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
-    NV_STATUS status;
-    struct CALL_CONTEXT *arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
-    struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
+NV_STATUS __nvoc_objCreateDynamic_DispChannelDma(DispChannelDma **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    NV_STATUS __nvoc_status;
+    struct CALL_CONTEXT *pCallContext = va_arg(__nvoc_args, struct CALL_CONTEXT *);
+    struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams = va_arg(__nvoc_args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
-    status = __nvoc_objCreate_DispChannelDma(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);
+    __nvoc_status = __nvoc_objCreate_DispChannelDma(__nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pCallContext, pParams);
 
-    return status;
+    return __nvoc_status;
 }
 

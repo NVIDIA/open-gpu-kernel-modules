@@ -33,21 +33,13 @@ NV_STATUS
 gpuGetNameString_T234D
 (
     OBJGPU *pGpu,
-    NvU32 type,
     void *nameStringBuffer
 )
 {
     const char name[] = "T234D";
     const NvU32 inputLength = NV2080_GPU_MAX_NAME_STRING_LENGTH;
 
-    if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
-    {
-        portStringCopy(nameStringBuffer, inputLength, name, sizeof(name));
-    }
-    else
-    {
-        portStringConvertAsciiToUtf16(nameStringBuffer, inputLength, name, sizeof(name));
-    }
+    portStringCopy(nameStringBuffer, inputLength, name, sizeof(name));
 
     return NV_OK;
 }
@@ -59,7 +51,7 @@ gpuGetShortNameString_T234D
     NvU8 *nameStringBuffer
 )
 {
-    return gpuGetNameString_T234D(pGpu, NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII, nameStringBuffer);
+    return gpuGetNameString_T234D(pGpu, nameStringBuffer);
 }
 
 NvU32 gpuGetSimulationModeHal_T234D(OBJGPU *pGpu)

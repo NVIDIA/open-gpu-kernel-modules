@@ -27,6 +27,7 @@
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mmu/kern_gmmu.h"
+#include "lib/base_utils.h"
 
 #include "nvrm_registry.h"
 
@@ -34,6 +35,7 @@
 #include "gpu/bus/kern_bus.h"
 
 #include "published/maxwell/gm107/dev_ram.h"
+#include "published/maxwell/gm107/dev_esched_pbdma.h"
 #include "published/maxwell/gm107/dev_mmu.h"
 
 
@@ -165,7 +167,6 @@ kfifoStatePostLoad_GM107
 )
 {
     NV_STATUS                      status     = NV_OK;
-    const PREALLOCATED_USERD_INFO *pUserdInfo = kfifoGetPreallocatedUserdInfo(pKernelFifo);
 
     if (!(flags & GPU_STATE_FLAGS_PRESERVING))
     {
@@ -222,10 +223,6 @@ kfifoStatePostLoad_GM107
         }
     }
 
-    // Since we have successfully setup BAR1 USERD rsvd memory
-    // lets inform hw (only if the snoop is not disabled.)
-    kfifoSetupBar1UserdSnoop_HAL(pGpu, pKernelFifo, NV_TRUE, pUserdInfo->userdBar1MapStartOffset);
-
     if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
         status = kfifoTriggerPostSchedulingEnableCallback(pGpu, pKernelFifo);
@@ -267,9 +264,6 @@ kfifoStatePreUnload_GM107
 
         // As we have forced here SLI broadcast mode, temporarily reset the reentrancy count
         sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
-
-        // Ask host to stop snooping
-        kfifoSetupBar1UserdSnoop_HAL(pGpu, pKernelFifo, NV_FALSE, 0);
 
         // Restore the reentrancy count
         gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
@@ -413,19 +407,6 @@ kfifoRunlistSetId_GM107
                   "Channel has already been assigned a runlist incompatible with this "
                   "engine (requested: 0x%x current: 0x%x).\n", runlistId,
                   kchannelGetRunlistId(pKernelChannel));
-        return NV_ERR_INVALID_STATE;
-    }
-
-    //
-    // For TSG channel, the RL should support TSG.
-    // We relax this requirement if the channel is TSG wrapped by RM.
-    // In that case, RM won't write the TSG header in the RL.
-    //
-    if (!kfifoRunlistIsTsgHeaderSupported_HAL(pGpu, pKernelFifo, runlistId) &&
-        (pKernelChannel->pKernelChannelGroupApi != NULL) &&
-        !pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Runlist does not support TSGs\n");
         return NV_ERR_INVALID_STATE;
     }
 
@@ -1057,35 +1038,6 @@ kfifoGetEnginePartnerList_GM107
 }
 
 /**
- * @brief Check if the runlist has TSG support
- *
- * Currently, we only enable the TSG runlist for GR
- *
- *  @return NV_TRUE if TSG is supported, NV_FALSE if not
- */
-NvBool
-kfifoRunlistIsTsgHeaderSupported_GM107
-(
-    OBJGPU *pGpu,
-    KernelFifo *pKernelFifo,
-    NvU32 runlistId
-)
-{
-    NvU32 tmp_runlist;
-
-    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_ENG_DESC,
-        ENG_GR(0), ENGINE_INFO_TYPE_RUNLIST, &tmp_runlist) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "can't find runlist ID for engine ENG_GR(0)!\n");
-        NV_ASSERT(0);
-        return NV_FALSE;
-    }
-
-    return tmp_runlist == runlistId;
-}
-
-/**
  * @brief Get the runlist entry size
  *
  * @param pKernelFifo
@@ -1115,423 +1067,6 @@ kfifoRunlistGetBaseShift_GM107
 )
 {
     return NV_RAMRL_BASE_SHIFT;
-}
-
-/**
- * @brief Pre-allocate BAR1 userd space
- *
- * @param   pGpu
- * @param   pKernelFifo
- *
- * @returns NV_STATUS
- */
-NV_STATUS
-kfifoPreAllocUserD_GM107
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo
-)
-{
-    OBJGPU     *pParentGpu             = gpumgrGetParentGPU(pGpu);
-    KernelFifo *pParentKernelFifo      = GPU_GET_KERNEL_FIFO(pParentGpu);
-    KernelBus  *pKernelBus             = GPU_GET_KERNEL_BUS(pGpu);
-    NvBool      bCoherentCpuMapping    = NV_FALSE;
-    NV_STATUS   status                 = NV_OK;
-    NvU64       temp                   = 0;
-    NvU32       userdSize;
-    NvU32       userdShift;
-    NvU32       numChannels;
-    NvBool      bFifoFirstInit;
-    NvU32       flags                  = MEMDESC_FLAGS_NONE;
-    NvU32       mapFlags               = BUS_MAP_FB_FLAGS_MAP_DOWNWARDS |
-                                         BUS_MAP_FB_FLAGS_MAP_UNICAST;
-    NvU32       currentGpuInst         = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    CHID_MGR   *pChidMgr               = kfifoGetChidMgr(pGpu, pKernelFifo, 0);
-
-    MemoryManager     *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
-    KernelMIGManager  *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    PREALLOCATED_USERD_INFO *pUserdInfo  = &pParentKernelFifo->userdInfo;
-
-    NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
-
-    // We don't support RM allocated USERD for vGPU guest with SRIOV
-    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-    {
-        return NV_OK;
-    }
-
-    bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
-
-    if (pUserdInfo->userdBar1CpuPtr == NULL)
-    {
-        bFifoFirstInit = NV_TRUE;
-    }
-    else
-    {
-        mapFlags |= BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED;
-        bFifoFirstInit = NV_FALSE;
-    }
-
-    //
-    // Allocate the physical memory associated with the UserD if this is
-    // the first GPU to init fifo. This relies on the assumption that
-    // UserD is shared physmem.
-    //
-    if (bFifoFirstInit)
-    {
-        pUserdInfo->userdBar1MapStartOffset   =  0;
-        pUserdInfo->userdBar1MapSize          =  0;
-
-        // This is a WAR for HW bug 600241
-        if (pUserdInfo->userdAperture == ADDR_SYSMEM)
-        {
-            pKernelFifo->bUserdInSystemMemory = NV_TRUE;
-        }
-    }
-
-    kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, &userdShift);
-
-    numChannels = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
-
-    // Alloc USERD of size numChannels * sizeof( USERD ) for each gpu
-    status = memdescCreate(&pUserdInfo->userdPhysDesc[currentGpuInst], pGpu,
-                           userdSize * numChannels,
-                           1ULL << userdShift,
-                           NV_TRUE,
-                           pUserdInfo->userdAperture,
-                           pUserdInfo->userdAttr,
-                           flags);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Could not memdescCreate for USERD for %x #channels\n",
-                  numChannels);
-        DBG_BREAKPOINT();
-        goto fail;
-    }
-    temp = pUserdInfo->userdPhysDesc[currentGpuInst]->Size;
-
-    //
-    // For vGPU, do not allocate USERD memory in guest.
-    // vGPU does all HW management in host, so host RM will
-    // allocate the real USERD memory.
-    //
-    if (IS_VIRTUAL(pGpu))
-    {
-        // Force page size to 4KB to match host phys access
-        memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager,
-                                     pUserdInfo->userdPhysDesc[currentGpuInst],
-                                     AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
-        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
-        if (bFifoFirstInit)
-        {
-            pUserdInfo->userdBar1MapStartOffset = kfifoGetUserdBar1MapStartOffset_HAL(pGpu, pKernelFifo);
-        }
-    }
-    else
-    {
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_81, 
-                        pUserdInfo->userdPhysDesc[currentGpuInst]);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Could not allocate USERD for %x #channels\n",
-                      numChannels);
-            DBG_BREAKPOINT();
-            goto fail;
-        }
-
-        // Force page size to 4KB in broadcast to match host phys access
-        memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUserdInfo->userdPhysDesc[currentGpuInst],
-                                     AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
-        mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_4K;
-
-        //
-        // If coherent link is available, just get a coherent mapping to USERD and
-        // lie about the BAR1 offset, since we are not using BAR1
-        // TODO: Make these bar1 offsets unicast on each gpu as well
-        //
-        if (bCoherentCpuMapping &&
-            (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
-        {
-
-            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in FBMEM).\n");
-            NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-            NV_ASSERT(pUserdInfo->userdPhysDesc[currentGpuInst]->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
-
-            if (bFifoFirstInit)
-            {
-                pUserdInfo->userdBar1MapStartOffset =  pUserdInfo->userdPhysDesc[currentGpuInst]->_pteArray[0] +
-                                                       pUserdInfo->userdPhysDesc[currentGpuInst]->PteAdjust;
-            }
-        }
-        //
-        // get sysmem mapping for USERD if USERD is in sysmem and reflected BAR access is not allowed
-        //
-        else if ((bCoherentCpuMapping &&
-                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
-                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
-                 kbusIsBar1Disabled(pKernelBus))
-        {
-            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in SYSMEM).\n");
-
-            if (bFifoFirstInit)
-            {
-                pUserdInfo->userdBar1MapStartOffset =
-                        memdescGetPhysAddr(pUserdInfo->userdPhysDesc[currentGpuInst], AT_CPU, 0);
-            }
-        }
-        else
-        {
-            // vGpu may boot with partitioning enabled but that's not true for host RM
-            if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
-            {
-                status = NV_ERR_INVALID_STATE;
-                NV_PRINTF(LEVEL_ERROR, "Pre-allocated USERD is not supported with MIG\n");
-                DBG_BREAKPOINT();
-                goto fail;
-            }
-            // Now BAR1 map it
-            status = kbusMapFbApertureSingle(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
-                                             &pUserdInfo->userdBar1MapStartOffset,
-                                             &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
-
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Could not map USERD to BAR1\n");
-                DBG_BREAKPOINT();
-                goto fail;
-            }
-
-            // Add current GPU to list of GPUs referencing pFifo userD bar1
-            pUserdInfo->userdBar1RefMask |= NVBIT(pGpu->gpuInstance);
-        }
-    }
-
-    if (bFifoFirstInit)
-    {
-        pUserdInfo->userdBar1MapSize = NvU64_LO32(temp);
-
-        if (bCoherentCpuMapping &&
-            (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
-        {
-            status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                                                   pUserdInfo->userdPhysDesc[currentGpuInst],
-                                                   0,
-                                                   pUserdInfo->userdBar1MapSize,
-                                                   NV_PROTECT_READ_WRITE,
-                                                   (void**)&pUserdInfo->userdBar1CpuPtr,
-                                                   (void**)&pUserdInfo->userdBar1Priv);
-        }
-        else if ((bCoherentCpuMapping &&
-                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
-                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) &&
-                 !kbusIsBar1Disabled(pKernelBus))
-        {
-            status = osMapPciMemoryKernelOld(pGpu,
-                                             pUserdInfo->userdBar1MapStartOffset,
-                                             pUserdInfo->userdBar1MapSize,
-                                             NV_PROTECT_READ_WRITE,
-                                             (void**)&pUserdInfo->userdBar1CpuPtr,
-                                             NV_MEMORY_CACHED);
-        }
-        else if (kbusIsBar1Disabled(pKernelBus))
-        {
-            status = memdescMap(pUserdInfo->userdPhysDesc[currentGpuInst],
-                                0,
-                                pUserdInfo->userdBar1MapSize,
-                                NV_TRUE,
-                                NV_PROTECT_READ_WRITE,
-                                (void**)&pUserdInfo->userdBar1CpuPtr,
-                                (void**)&pUserdInfo->userdBar1Priv);
-        }
-        else
-        {
-            // Cpu map the BAR1 snoop range
-            status = osMapPciMemoryKernelOld(pGpu, gpumgrGetGpuPhysFbAddr(pGpu) +
-                                             pUserdInfo->userdBar1MapStartOffset,
-                                             pUserdInfo->userdBar1MapSize,
-                                             NV_PROTECT_READ_WRITE,
-                                             (void**)&pUserdInfo->userdBar1CpuPtr,
-                                             NV_MEMORY_UNCACHED);
-        }
-
-        if ((pUserdInfo->userdBar1CpuPtr == NULL) && (status != NV_OK))
-        {
-            NV_PRINTF(LEVEL_ERROR, "Could not cpu map BAR1 snoop range\n");
-            DBG_BREAKPOINT();
-            goto fail;
-        }
-    }
-
-    NV_PRINTF(LEVEL_INFO,
-              "USERD Preallocated phys @ 0x%llx bar1 offset @ 0x%llx of size 0x%x\n",
-              memdescGetPhysAddr(pUserdInfo->userdPhysDesc[currentGpuInst], AT_GPU, 0),
-              pUserdInfo->userdBar1MapStartOffset,
-              pUserdInfo->userdBar1MapSize);
-
-    return status;
-
-fail:
-    kfifoFreePreAllocUserD_HAL(pGpu, pKernelFifo);
-
-    return status;
-}
-
-/**
- * @brief Free the pre-allocated BAR1 userd space
- *
- * @param   pGpu
- * @param   pKernelFifo
- *
- * @returns NV_STATUS
- */
-void
-kfifoFreePreAllocUserD_GM107
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo
-)
-{
-    OBJGPU            *pParentGpu           = gpumgrGetParentGPU(pGpu);
-    KernelBus         *pKernelBus           = GPU_GET_KERNEL_BUS(pGpu);
-    NvU32              currentGpuInst       = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    KernelFifo        *pParentKernelFifo    = GPU_GET_KERNEL_FIFO(pParentGpu);
-    PREALLOCATED_USERD_INFO *pUserdInfo     = &pParentKernelFifo->userdInfo;
-    NvBool             bCoherentCpuMapping  = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-        (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM);
-
-    // We don't support RM allocated USERD for vGPU guest with SRIOV
-    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-    {
-        return;
-    }
-
-    if (gpumgrGetBcEnabledStatus(pGpu))
-    {
-        DBG_BREAKPOINT();
-    }
-
-    if (bCoherentCpuMapping)
-    {
-        NV_PRINTF(LEVEL_INFO, "Unmapping USERD from NVLINK.\n");
-        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-    }
-
-    if (pUserdInfo->userdBar1CpuPtr)
-    {
-        if (bCoherentCpuMapping)
-        {
-            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                pUserdInfo->userdPhysDesc[currentGpuInst],
-                pUserdInfo->userdBar1CpuPtr,
-                pUserdInfo->userdBar1Priv);
-        }
-        else if (kbusIsBar1Disabled(pKernelBus))
-        {
-            memdescUnmap(pUserdInfo->userdPhysDesc[currentGpuInst],
-                            NV_TRUE,
-                            (void*)pUserdInfo->userdBar1CpuPtr,
-                            (void*)pUserdInfo->userdBar1Priv);
-        }
-        else
-        {
-            osUnmapPciMemoryKernelOld(pGpu, pUserdInfo->userdBar1CpuPtr);
-        }
-
-        pUserdInfo->userdBar1CpuPtr = NULL;
-    }
-
-    if (pUserdInfo->userdBar1MapSize)
-    {
-        if ((!IS_VIRTUAL(pGpu)) && (!bCoherentCpuMapping))
-        {
-            if ((pUserdInfo->userdBar1RefMask & NVBIT(pGpu->gpuInstance)) != 0)
-            {
-                //
-                // Unmap in UC for each GPU with a pKernelFifo userd
-                // reference mapped through bar1
-                //
-                kbusUnmapFbApertureSingle(pGpu, pKernelBus,
-                                          pUserdInfo->userdPhysDesc[currentGpuInst],
-                                          pUserdInfo->userdBar1MapStartOffset,
-                                          pUserdInfo->userdBar1MapSize,
-                                          BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_PRE_INIT);
-                pUserdInfo->userdBar1RefMask &= (~NVBIT(pGpu->gpuInstance));
-            }
-
-        }
-    }
-
-    // Unallocated memdescFrees are allowed.
-    memdescFree(pUserdInfo->userdPhysDesc[currentGpuInst]);
-    memdescDestroy(pUserdInfo->userdPhysDesc[currentGpuInst]);
-    pUserdInfo->userdPhysDesc[currentGpuInst] = NULL;
-    NV_PRINTF(LEVEL_INFO, "Freeing preallocated USERD phys and bar1 range\n");
-}
-
-//
-// Returns the BAR1 offset and size of the entire USERD mapping.
-//
-NV_STATUS
-kfifoGetUserdBar1MapInfo_GM107
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvU64      *pBar1MapOffset,
-    NvU32      *pBar1MapSize
-)
-{
-    const PREALLOCATED_USERD_INFO *pUserdInfo = kfifoGetPreallocatedUserdInfo(pKernelFifo);
-
-    // We don't support RM allocated USERD in vGPU guest with SRIOV
-    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-    {
-        *pBar1MapOffset = 0;
-        *pBar1MapSize   = 0;
-
-        return NV_OK;
-    }
-
-    if (pUserdInfo->userdBar1MapSize == 0 )
-    {
-        NV_PRINTF(LEVEL_ERROR, "BAR1 map of USERD has not been setup yet\n");
-        NV_ASSERT( 0 );
-        return NV_ERR_GENERIC;
-    }
-
-    *pBar1MapOffset = pUserdInfo->userdBar1MapStartOffset;
-    *pBar1MapSize   = pUserdInfo->userdBar1MapSize;
-
-    return NV_OK;
-}
-
-/**
- * @brief Determines the aperture and attribute of memory where userd is located.
- *
- * @param pKernelFifo[in]
- * @param pUserdAperture[out]
- * @param pUserdAttribute[out]
- *
- * @returns NV_STATUS
- */
-NV_STATUS
-kfifoGetUserdLocation_GM107
-(
-    KernelFifo *pKernelFifo,
-    NvU32 *pUserdAperture,
-    NvU32 *pUserdAttribute
-)
-{
-    const PREALLOCATED_USERD_INFO *pUserdInfo = kfifoGetPreallocatedUserdInfo(pKernelFifo);
-
-    NV_ASSERT_OR_RETURN(pUserdAperture != NULL && pUserdAttribute != NULL,
-                        NV_ERR_INVALID_POINTER);
-
-    *pUserdAperture = pUserdInfo->userdAperture;
-    *pUserdAttribute = pUserdInfo->userdAttr;
-
-    return NV_OK;
 }
 
 /**
@@ -1584,4 +1119,34 @@ kfifoCheckEngine_GM107
     *pPresent = (status == NV_OK) && bEschedDriven;
 
     return NV_OK;
+}
+
+/*
+ * @  Function to write gpfifo info in RAMFC
+ * @param[in] pGpu           - GPU object pointer
+ * @param[in] pKernelFifo    - KernelFifo pointer
+ * @param[in] pInstMem       - CPU pointer to instance mem
+ * @param[in] gpFifoOffset   - GPFIFO virtual address
+ * @param[in] gpFifoEntries  - GPFIFO entries
+ */
+void
+kfifoWriteRamfcGpfifo_GM107
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    NvU8          *pInstMem,
+    NvU64         gpFifoOffset,
+    NvU32         gpFifoEntries
+)
+{
+    // GPBASE
+    NV_ASSERT(FLD_TEST_DRF(_PBDMA, _GP_BASE, _RSVD, _ZERO, NvU64_LO32(gpFifoOffset)));
+    MEM_WR32( pInstMem + SF_OFFSET( NV_RAMFC_GP_BASE ), NvU64_LO32( gpFifoOffset ) );
+
+    MEM_WR32( pInstMem + SF_OFFSET( NV_RAMFC_GP_BASE_HI ),
+              DRF_NUM( _PBDMA, _GP_BASE_HI, _OFFSET, NvU64_HI32( gpFifoOffset ) ) |
+              DRF_NUM( _PBDMA, _GP_BASE_HI, _LIMIT2, nvLogBase2( gpFifoEntries ) ) );
+
+    MEM_WR32( pInstMem + SF_OFFSET( NV_RAMFC_GP_PUT), 0 );
+    MEM_WR32( pInstMem + SF_OFFSET( NV_RAMFC_GP_GET), 0 );
 }
