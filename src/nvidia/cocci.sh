@@ -23,6 +23,21 @@ pfunc_filter() {
 	esac
 }
 
+rpc_hal_init_filter() {
+	# What a hack, take 2!
+	#
+	# To modify structure initialization to use designated initializers, we
+	# post-process a cocci patch that simply removes the init to inject
+	# lines that add the correct initialization, based on the fact that the
+	# field member is mentioned in a trailing comment. To make that a valid
+	# diff, we fix it up using recountdiff.
+	case "$1" in
+		pre)	;;
+		diff)	sed 's|^-\( *\)\([^ ]\+\), *// *\([^ ]\+\)$|&\n+\1.\3 = \2,|' | recountdiff; ;;
+		post)	;;
+	esac
+}
+
 null_filter() {
 	case "$1" in
 		pre)	;;
@@ -55,7 +70,9 @@ fi
 SCRIPT=$1; shift
 SPATCH=$1; shift
 
-if ! check_prog "$SPATCH" coccinelle; then
+if ! check_prog "$SPATCH" coccinelle || \
+   ! check_prog recountdiff patchutils;
+then
 	echo >&2 "error: missing required programs!"
 	exit 2
 fi
