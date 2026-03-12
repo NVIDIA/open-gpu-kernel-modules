@@ -935,11 +935,11 @@ unmap_and_exit:
 
 const MMU_WALK_CALLBACKS g_bar2WalkCallbacks =
 {
-    _bar2WalkCBLevelAlloc,
-    _bar2WalkCBLevelFree,
-    _bar2WalkCBUpdatePdb,
-    _bar2WalkCBUpdatePde,
-    _bar2WalkCBFillEntries,
-    NULL,
-    _bar2WalkCBWriteBuffer,
+    .LevelAlloc  = _bar2WalkCBLevelAlloc,
+    .LevelFree   = _bar2WalkCBLevelFree,
+    .UpdatePdb   = _bar2WalkCBUpdatePdb,
+    .UpdatePde   = _bar2WalkCBUpdatePde,
+    .FillEntries = _bar2WalkCBFillEntries,
+    .CopyEntries = NULL,
+    .WriteBuffer = _bar2WalkCBWriteBuffer,
 };
