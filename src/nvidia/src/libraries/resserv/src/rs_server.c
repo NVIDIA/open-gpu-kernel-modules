@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1698,7 +1698,9 @@ serverCopyResource
 
     status = clientGetResourceRef(pClientSrc, pParams->hResourceSrc, &pResourceRefSrc);
     if (status != NV_OK)
+    {
         goto done;
+    }
 
     if (pResourceRefSrc->bInvalidated)
     {
@@ -1708,7 +1710,9 @@ serverCopyResource
 
     status = clientGetResourceRef(pClientDst, pParams->hParentDst, &pParams->pDstParentRef);
     if (status != NV_OK)
+    {
         return status;
+    }
 
     if (!resCanCopy(pResourceRefSrc->pResource))
     {

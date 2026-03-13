@@ -987,7 +987,8 @@ channelFillSec2Pb
 
     *pMethodLength = 0;
     NvU32 methodSize = (NvU32)((NvU8*)pPtr - (NvU8*)pStartPtr);
-    NV_ASSERT_OR_RETURN(methodSize <= pChannel->methodSizePerBlock, NV_ERR_INVALID_STATE);
+    NV_ASSERT_TRUE_OR_GOTO(status, methodSize <= pChannel->methodSizePerBlock,
+        NV_ERR_INVALID_STATE, cleanup);
     *pMethodLength = methodSize;
 
 cleanup:

@@ -4350,11 +4350,11 @@ _kgspPrepareSystemInfo
 {
     NV_STATUS status;
 
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     GspSystemInfo *rpcInfo = portMemAllocPaged(sizeof(GspSystemInfo));
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (rpcInfo == NULL)
         return NV_ERR_NO_MEMORY;

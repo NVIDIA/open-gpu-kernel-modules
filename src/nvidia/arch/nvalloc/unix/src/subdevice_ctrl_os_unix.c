@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,7 +68,8 @@ subdeviceCtrlCmdOsUnixVidmemPersistenceStatus_IMPL
     nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
     nv_priv_t  *nvp  = NV_GET_NV_PRIV(nv);
 
-    pParams->bVidmemPersistent = (nv->preserve_vidmem_allocations || nvp->s0ix_pm_enabled);
+    pParams->bVidmemPersistent = (nv->preserve_vidmem_allocations || nvp->s0ix_pm_enabled ||
+                                  nv->supports_tegra_igpu_rg);
 
     return NV_OK;
 }

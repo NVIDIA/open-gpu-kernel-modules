@@ -5092,12 +5092,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Subdevic
 #endif
     },
     {               /*  [330] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40040u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) &subdeviceCtrlCmdFifoDisableUsermodeChannels_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
-        /*flags=*/      0x40u,
+        /*pFunc=*/      (void (*)(void)) &subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40040u)
+        /*flags=*/      0x40040u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x20801117u,
         /*paramSize=*/  sizeof(NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS),
@@ -10185,6 +10185,16 @@ static void __nvoc_init_funcTable_Subdevice_1(Subdevice *pThis, RmHalspecOwner *
         pThis->__subdeviceCtrlCmdFifoRotateKeys__ = &subdeviceCtrlCmdFifoRotateKeys_IMPL;
     }
 
+    // subdeviceCtrlCmdFifoDisableUsermodeChannels -- halified (2 hals) exported (id=0x20801117) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__subdeviceCtrlCmdFifoDisableUsermodeChannels__ = &subdeviceCtrlCmdFifoDisableUsermodeChannels_ac1694;
+    }
+    else
+    {
+        pThis->__subdeviceCtrlCmdFifoDisableUsermodeChannels__ = &subdeviceCtrlCmdFifoDisableUsermodeChannels_5baef9;
+    }
+
     // subdeviceCtrlCmdFifoGetUserdLocation -- halified (2 hals) exported (id=0x2080110d) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -10415,13 +10425,13 @@ static void __nvoc_init_funcTable_Subdevice_1(Subdevice *pThis, RmHalspecOwner *
     {
         pThis->__subdeviceCtrlCmdCcuGetSampleInfo__ = &subdeviceCtrlCmdCcuGetSampleInfo_5baef9;
     }
-} // End __nvoc_init_funcTable_Subdevice_1 with approximately 108 basic block(s).
+} // End __nvoc_init_funcTable_Subdevice_1 with approximately 110 basic block(s).
 
 
-// Initialize vtable(s) for 84 virtual method(s).
+// Initialize vtable(s) for 85 virtual method(s).
 void __nvoc_init_funcTable_Subdevice(Subdevice *pThis, RmHalspecOwner *pRmhalspecowner, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 54 per-object function pointer(s).
+    // Initialize vtable(s) with 55 per-object function pointer(s).
     __nvoc_init_funcTable_Subdevice_1(pThis, pRmhalspecowner, pGpuhalspecowner);
 }
 

@@ -7081,6 +7081,7 @@ kmigmgrInitGPUInstanceRunlistBufPools_IMPL
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance
 )
 {
+    NV_STATUS         status = NV_OK;
     RM_ENGINE_TYPE    rmEngineType;
     KernelFifo       *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
     CTX_BUF_INFO     *runlistBufInfo = NULL;
@@ -7136,29 +7137,44 @@ kmigmgrInitGPUInstanceRunlistBufPools_IMPL
         //
         for (i = 0; i < rlCount; i++)
         {
-            NV_ASSERT_OK_OR_RETURN(kfifoGetRunlistBufInfo(pGpu, pKernelFifo, runlistId,
-                                   0, &rlSize, &rlAlign));
+            NV_ASSERT_OK_OR_GOTO(status,
+                kfifoGetRunlistBufInfo(pGpu, pKernelFifo, runlistId,
+                                      0, &rlSize, &rlAlign),
+                cleanup);
+
             runlistBufInfo[i].size = rlSize;
             runlistBufInfo[i].align = rlAlign;
             runlistBufInfo[i].attr = RM_ATTR_PAGE_SIZE_DEFAULT;
             runlistBufInfo[i].bContig = NV_TRUE;
         }
 
-        NV_ASSERT_OK_OR_RETURN(ctxBufPoolInit(pGpu, pHeap, &pKernelFifo->pRunlistBufPool[rmEngineType]));
-        NV_ASSERT_OR_RETURN(pKernelFifo->pRunlistBufPool[rmEngineType] != NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OK_OR_GOTO(status,
+            ctxBufPoolInit(pGpu, pHeap, &pKernelFifo->pRunlistBufPool[rmEngineType]),
+            cleanup);
+
+        NV_ASSERT_TRUE_OR_GOTO(status,
+            pKernelFifo->pRunlistBufPool[rmEngineType] != NULL,
+            NV_ERR_INVALID_STATE, cleanup);
 
         //
         // Skip scrubber for runlist buffer alloctions since gpu instance scrubber is not setup yet
         // and it will be destroyed before deleting the runlist buffer pool.
         //
         ctxBufPoolSetScrubSkip(pKernelFifo->pRunlistBufPool[rmEngineType], NV_TRUE);
-        NV_ASSERT_OK_OR_RETURN(ctxBufPoolReserve(pGpu, pKernelFifo->pRunlistBufPool[rmEngineType], &runlistBufInfo[0], rlCount));
 
+        NV_ASSERT_OK_OR_GOTO(status,
+            ctxBufPoolReserve(pGpu, pKernelFifo->pRunlistBufPool[rmEngineType],
+                              &runlistBufInfo[0], rlCount),
+            cleanup);
+
+cleanup:
         portMemFree(runlistBufInfo);
         runlistBufInfo = NULL;
+        if (status != NV_OK)
+            break;
     }
 
-    return NV_OK;
+    return status;
 }
 
 /*

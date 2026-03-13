@@ -135,7 +135,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 54 per-object function pointers
+    // Vtable with 55 per-object function pointers
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
     NV_STATUS (*__subdeviceCtrlCmdBiosGetSKUInfo__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *);  // halified (2 hals) exported (id=0x20800808)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetPostTime__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_BIOS_GET_POST_TIME_PARAMS *);  // halified (2 hals) exported (id=0x20800809) body
@@ -167,6 +167,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdFifoDisableChannelsForKeyRotation__)(struct Subdevice * /*this*/, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS *);  // halified (2 hals) exported (id=0x2080111a) body
     NV_STATUS (*__subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2__)(struct Subdevice * /*this*/, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS *);  // halified (2 hals) exported (id=0x2080111b) body
     NV_STATUS (*__subdeviceCtrlCmdFifoRotateKeys__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS *);  // halified (2 hals) exported (id=0x2080111c) body
+    NV_STATUS (*__subdeviceCtrlCmdFifoDisableUsermodeChannels__)(struct Subdevice * /*this*/, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *);  // halified (2 hals) exported (id=0x20801117) body
     NV_STATUS (*__subdeviceCtrlCmdFifoGetUserdLocation__)(struct Subdevice * /*this*/, NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS *);  // halified (2 hals) exported (id=0x2080110d) body
     NV_STATUS (*__subdeviceCtrlCmdFifoObjschedGetCaps__)(struct Subdevice * /*this*/, NV2080_CTRL_FIFO_OBJSCHED_GET_CAPS_PARAMS *);  // halified (2 hals) exported (id=0x20801122) body
     NV_STATUS (*__subdeviceCtrlCmdFifoConfigCtxswTimeout__)(struct Subdevice * /*this*/, NV2080_CTRL_FIFO_CONFIG_CTXSW_TIMEOUT_PARAMS *);  // halified (2 hals) exported (id=0x20801110) body
@@ -1773,16 +1774,6 @@ static inline NV_STATUS subdeviceCtrlCmdFifoDisableChannels(struct Subdevice *pS
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdFifoDisableChannels(pSubdevice, pDisableChannelParams) subdeviceCtrlCmdFifoDisableChannels_IMPL(pSubdevice, pDisableChannelParams)
-#endif // __nvoc_subdevice_h_disabled
-
-NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams);
-#ifdef __nvoc_subdevice_h_disabled
-static inline NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_subdevice_h_disabled
-#define subdeviceCtrlCmdFifoDisableUsermodeChannels(pSubdevice, pParams) subdeviceCtrlCmdFifoDisableUsermodeChannels_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_GET_CHANNEL_MEM_INFO_PARAMS *pChannelMemParams);
@@ -6135,6 +6126,9 @@ static inline NV_STATUS subdeviceCtrlCmdBifGetData(struct Subdevice *pSubdevice,
 #define subdeviceCtrlCmdFifoRotateKeys_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdFifoRotateKeys__
 #define subdeviceCtrlCmdFifoRotateKeys(pSubdevice, pRotateKeyParams) subdeviceCtrlCmdFifoRotateKeys_DISPATCH(pSubdevice, pRotateKeyParams)
 #define subdeviceCtrlCmdFifoRotateKeys_HAL(pSubdevice, pRotateKeyParams) subdeviceCtrlCmdFifoRotateKeys_DISPATCH(pSubdevice, pRotateKeyParams)
+#define subdeviceCtrlCmdFifoDisableUsermodeChannels_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdFifoDisableUsermodeChannels__
+#define subdeviceCtrlCmdFifoDisableUsermodeChannels(pSubdevice, pParams) subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdFifoDisableUsermodeChannels_HAL(pSubdevice, pParams) subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdFifoGetUserdLocation_FNPTR(pSubdevice) pSubdevice->__subdeviceCtrlCmdFifoGetUserdLocation__
 #define subdeviceCtrlCmdFifoGetUserdLocation(pSubdevice, pUserdLocationParams) subdeviceCtrlCmdFifoGetUserdLocation_DISPATCH(pSubdevice, pUserdLocationParams)
 #define subdeviceCtrlCmdFifoGetUserdLocation_HAL(pSubdevice, pUserdLocationParams) subdeviceCtrlCmdFifoGetUserdLocation_DISPATCH(pSubdevice, pUserdLocationParams)
@@ -6394,6 +6388,10 @@ static inline NV_STATUS subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_DISP
 
 static inline NV_STATUS subdeviceCtrlCmdFifoRotateKeys_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS *pRotateKeyParams) {
     return pSubdevice->__subdeviceCtrlCmdFifoRotateKeys__(pSubdevice, pRotateKeyParams);
+}
+
+static inline NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdFifoDisableUsermodeChannels__(pSubdevice, pParams);
 }
 
 static inline NV_STATUS subdeviceCtrlCmdFifoGetUserdLocation_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS *pUserdLocationParams) {
@@ -6887,8 +6885,6 @@ NV_STATUS subdeviceCtrlCmdGetPhysicalChannelCount_IMPL(struct Subdevice *pSubdev
 NV_STATUS subdeviceCtrlCmdFifoGetInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_GET_INFO_PARAMS *pFifoInfoParams);
 
 NV_STATUS subdeviceCtrlCmdFifoDisableChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *pDisableChannelParams);
-
-NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_GET_CHANNEL_MEM_INFO_PARAMS *pChannelMemParams);
 
@@ -7996,6 +7992,14 @@ static inline NV_STATUS subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_395e
 
 static inline NV_STATUS subdeviceCtrlCmdFifoRotateKeys_395e98(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_ROTATE_KEYS_PARAMS *pRotateKeyParams){
     return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_ac1694(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams){
+    return NV_OK;
+}
+
+static inline NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_5baef9(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams){
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 static inline NV_STATUS subdeviceCtrlCmdFifoGetUserdLocation_395e98(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS *pUserdLocationParams){

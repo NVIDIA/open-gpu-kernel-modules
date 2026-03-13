@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1187,7 +1187,7 @@ kgspIssueNotifyOp_GH100
     RMTIMEOUT timeout;
 
     ct_assert(sizeof(PORT_ATOMIC NvU32) == sizeof(NvU32));
-    ct_assert(_Alignof(PORT_ATOMIC NvU32) == _Alignof(NvU32));
+    ct_assert(NV_ALIGNOF(PORT_ATOMIC NvU32) == NV_ALIGNOF(NvU32));
 
     // 1. Validate the arguments.
     NV_CHECK_OR_RETURN(LEVEL_ERROR, opCode < GSP_NOTIFY_OP_OPCODE_MAX, NV_ERR_INVALID_ARGUMENT);

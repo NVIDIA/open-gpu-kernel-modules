@@ -5,7 +5,7 @@
     (defined(RMCFG_FEATURE_PLATFORM_GSP) && RMCFG_FEATURE_PLATFORM_GSP == 1) || \
     defined(NV_DCECORE)
 
-#define NV_VERSION_STRING               "595.44.02"
+#define NV_VERSION_STRING               "595.44.03"
 
 #else
 

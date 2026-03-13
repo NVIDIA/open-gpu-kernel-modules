@@ -704,11 +704,11 @@ osCreateOsDescriptorFromPhysAddr
 
     if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
     {
-        NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, size, os_page_size));
+        NV_ASSERT_OK_OR_GOTO(rmStatus, memdescSetAllocSizeFields(pMemDesc, size, os_page_size), cleanup_pages);
     }
     else
     {
-        NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, size, NV_RM_PAGE_SIZE));
+        NV_ASSERT_OK_OR_GOTO(rmStatus, memdescSetAllocSizeFields(pMemDesc, size, NV_RM_PAGE_SIZE), cleanup_pages);
     }
 
     // If IOMMU skip flag wasn't set earlier, create IOVA mapping.

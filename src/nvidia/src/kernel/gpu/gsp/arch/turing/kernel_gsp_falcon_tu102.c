@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -336,6 +336,8 @@ s_prepareHsFalconWithLoader
     // Note: adapted from _vbiosFwseclicCmdOffloadToFlcn
     ucodePACode = memdescGetPhysAddr(pUcode->pCodeMemDesc, AT_GPU, 0);
     ucodePAData = memdescGetPhysAddr(pUcode->pDataMemDesc, AT_GPU, 0);
+
+    portMemSet(&blDmemDesc, 0, sizeof(RM_FLCN_BL_DMEM_DESC));
 
     blDmemDesc.signature[0] = 0;
     blDmemDesc.signature[1] = 0;

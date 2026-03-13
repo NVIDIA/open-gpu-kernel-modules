@@ -237,7 +237,7 @@ GspMsgQueuesInit
         memdescCreate(&pMQCollection->pSharedMemDesc, pGpu, sharedBufSize,
             RM_PAGE_SIZE, NV_MEMORY_NONCONTIGUOUS, ADDR_SYSMEM, NV_MEMORY_CACHED,
             flags),
-        done);
+        error_ret);
 
     memdescSetFlag(pMQCollection->pSharedMemDesc, MEMDESC_FLAGS_KERNEL_MODE, NV_TRUE);
 

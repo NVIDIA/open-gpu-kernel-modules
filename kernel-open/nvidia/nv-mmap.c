@@ -957,15 +957,22 @@ void NV_API_CALL nv_set_safe_to_mmap_locked(
 }
 
 #if !NV_CAN_CALL_VMA_START_WRITE
+
+#if defined(VM_REFCNT_EXCLUDE_READERS_FLAG)
+#define NV_VMA_LOCK_OFFSET VM_REFCNT_EXCLUDE_READERS_FLAG
+#else
+#define NV_VMA_LOCK_OFFSET VMA_LOCK_OFFSET
+#endif
+
 static NvBool nv_vma_enter_locked(struct vm_area_struct *vma, NvBool detaching)
 {
-    NvU32 tgt_refcnt = VMA_LOCK_OFFSET;
+    NvU32 tgt_refcnt = NV_VMA_LOCK_OFFSET;
     NvBool interrupted = NV_FALSE;
     if (!detaching)
     {
         tgt_refcnt++;
     }
-    if (!refcount_add_not_zero(VMA_LOCK_OFFSET, &vma->vm_refcnt))
+    if (!refcount_add_not_zero(NV_VMA_LOCK_OFFSET, &vma->vm_refcnt))
     {
         return NV_FALSE;
     }
@@ -995,7 +1002,7 @@ static NvBool nv_vma_enter_locked(struct vm_area_struct *vma, NvBool detaching)
     if (interrupted)
     {
         // Clean up on error: release refcount and dep_map
-        refcount_sub_and_test(VMA_LOCK_OFFSET, &vma->vm_refcnt);
+        refcount_sub_and_test(NV_VMA_LOCK_OFFSET, &vma->vm_refcnt);
         rwsem_release(&vma->vmlock_dep_map, _RET_IP_);
         return NV_FALSE;
     }
@@ -1011,7 +1018,7 @@ void nv_vma_start_write(struct vm_area_struct *vma)
 {
     NvU32 mm_lock_seq;
     NvBool locked;
-    if (__is_vma_write_locked(vma, &mm_lock_seq))
+    if (nv_is_vma_write_locked(vma, &mm_lock_seq))
         return;
 
     locked = nv_vma_enter_locked(vma, NV_FALSE);
@@ -1020,7 +1027,7 @@ void nv_vma_start_write(struct vm_area_struct *vma)
     if (locked)
     {
         NvBool detached;
-        detached = refcount_sub_and_test(VMA_LOCK_OFFSET, &vma->vm_refcnt);
+        detached = refcount_sub_and_test(NV_VMA_LOCK_OFFSET, &vma->vm_refcnt);
         rwsem_release(&vma->vmlock_dep_map, _RET_IP_);
         WARN_ON_ONCE(detached);
     }

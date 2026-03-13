@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -494,26 +494,6 @@ NV_STATUS NV_API_CALL nv_soc_device_reset(nv_state_t *nv)
             {
                 status = NV_ERR_GENERIC;
                 nv_printf(NV_DBG_ERRORS, "NVRM: reset_control_reset failed, rc: %d\n", rc);
-                goto out;
-            }
-        }
-
-        if (nvl->hdacodec_reset != NULL)
-        {
-            /*
-             * HDACODEC reset control is shared between display driver and audio driver.
-             * Since reset_control_reset toggles the reset signal, we prefer to use
-             * reset_control_deassert. Additionally, since Audio driver uses
-             * reset_control_bulk_deassert() which internally calls reset_control_deassert,
-             * we must use reset_control_deassert, because consumers must not use
-             * reset_control_reset on shared reset lines when reset_control_deassert has
-             * been used.
-             */
-            rc = reset_control_deassert(nvl->hdacodec_reset);
-            if (rc != 0)
-            {
-                status = NV_ERR_GENERIC;
-                nv_printf(NV_DBG_ERRORS, "NVRM: hdacodec reset_control_deassert failed, rc: %d\n", rc);
                 goto out;
             }
         }
@@ -1077,26 +1057,6 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
         {
             nv_printf(NV_DBG_ERRORS, "NVRM: mipi_cal devm_reset_control_get failed, err: %ld\n",  PTR_ERR(nvl->mipi_cal_reset));
             nvl->mipi_cal_reset = NULL;
-        }
-
-        /*
-         * In T23x, HDACODEC is part of the same power domain as NVDisplay, so
-         * unpowergating the DISP domain also results in the HDACODEC reset
-         * being de-asserted. However, in T26x, HDACODEC is being moved
-         * out to a separate always-on domain, so we need to explicitly de-assert
-         * the HDACODEC reset in RM. We don't have good way to differentiate
-         * between T23x vs T264x at this place. So if there is failure to read
-         * "hdacodec_reset" from DT silently ignore it for now. In long term we
-         * should really look into using the devm_reset_control_bulk* APIs and
-         * see if this is feasible if we're ultimately just getting and
-         * asserting/deasserting all of the resets specified in DT together all of
-         * the time, and if there's no scenarios in which we need to only use a 
-         * specific set of reset(s) at a given point.
-         */
-        nvl->hdacodec_reset = devm_reset_control_get(nvl->dev, "hdacodec_reset");
-        if (IS_ERR(nvl->hdacodec_reset))
-        {
-            nvl->hdacodec_reset = NULL;
         }
     }
 

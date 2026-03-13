@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -164,7 +164,7 @@ _gpushareddataUpdateSeqOpen
     NvU64 seqVal;
 
     ct_assert(sizeof(PORT_ATOMIC NvU64) == sizeof(NvU64));
-    ct_assert(_Alignof(PORT_ATOMIC NvU64) == _Alignof(NvU64));
+    ct_assert(NV_ALIGNOF(PORT_ATOMIC NvU64) == NV_ALIGNOF(NvU64));
 
     // Initialize seq to RUSD_SEQ_START at first write. If never written before, seq is treated as an invalid timestamp
     if (MEM_RD64(pSeq) == 0LLU)

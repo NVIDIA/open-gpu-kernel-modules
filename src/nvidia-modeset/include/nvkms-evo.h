@@ -89,7 +89,8 @@ NvBool nvValidateHwModeTimingsViewPort(const NVDevEvoRec *pDevEvo,
                                        NVHwModeTimingsEvoPtr pTimings,
                                        NVEvoInfoStringPtr pInfoString);
 void nvAssignDefaultUsageBounds(const NVDispEvoRec *pDispEvo,
-                                NVHwModeViewPortEvo *pViewPort);
+                                NVHwModeViewPortEvo *pViewPort,
+                                const struct NvKmsModeValidationParams *pModeValidationParams);
 void nvUnionUsageBounds(const struct NvKmsUsageBounds *a,
                         const struct NvKmsUsageBounds *b,
                         struct NvKmsUsageBounds *ret);

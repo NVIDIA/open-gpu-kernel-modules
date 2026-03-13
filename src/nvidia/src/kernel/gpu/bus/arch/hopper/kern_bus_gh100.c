@@ -1072,6 +1072,7 @@ kbusCreateCoherentCpuMapping_GH100
                 reservedRegions, COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1,
                 &numReservedRegions, wprRegions, 2);
         
+            NV_ASSERT_OR_RETURN(status == NV_OK, NV_ERR_GENERIC);
             NV_ASSERT(numReservedRegions <= COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1);
         }
     

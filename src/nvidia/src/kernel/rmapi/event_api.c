@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -378,23 +378,23 @@ eventapiInit_IMPL
         pNotifierClient = pRsClient;
     }
 
-    if (pNotifierClient != NULL)
-    {
-        RsResourceRef *pNotifierRef;
-        INotifier *pNotifier;
-        if (clientGetResourceRef(pNotifierClient, hNotifierResource, &pNotifierRef) != NV_OK)
-            return NV_ERR_INVALID_OBJECT;
+    if (pNotifierClient == NULL)
+        return NV_ERR_INVALID_CLIENT;
 
-        pNotifier = dynamicCast(pNotifierRef->pResource, INotifier);
-        if (pNotifier == NULL)
-            return NV_ERR_INVALID_OBJECT;
+    RsResourceRef *pNotifierRef;
+    INotifier *pNotifier;
+    if (clientGetResourceRef(pNotifierClient, hNotifierResource, &pNotifierRef) != NV_OK)
+        return NV_ERR_INVALID_OBJECT;
 
-        rmStatus = inotifyGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, &pNotifierShare);
-        if (rmStatus != NV_OK)
-            return rmStatus;
+    pNotifier = dynamicCast(pNotifierRef->pResource, INotifier);
+    if (pNotifier == NULL)
+        return NV_ERR_INVALID_OBJECT;
 
-        *pppEventNotification = inotifyGetNotificationListPtr(pNotifierShare->pNotifier);
-    }
+    rmStatus = inotifyGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, &pNotifierShare);
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    *pppEventNotification = inotifyGetNotificationListPtr(pNotifierShare->pNotifier);
 
     serverRefShare(&g_resServ, staticCast(pNotifierShare, RsShared));
     pEvent->pNotifierShare = pNotifierShare;

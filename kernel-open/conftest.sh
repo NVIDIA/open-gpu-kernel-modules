@@ -5117,6 +5117,26 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_GET_VBLANK_TIMESTAMP" "" "types"
         ;;
 
+        is_vma_write_locked_has_mm_lock_seq_arg)
+            #
+            # Determine if __is_vma_write_locked() takes only a single
+            # 'struct vm_area_struct *' argument.
+            #
+            # Commit 22f7639f2f03 ("mm/vma: improve and document
+            # __is_vma_write_locked()") removed the 'unsigned int *mm_lock_seq'
+            # parameter in v7.0-rc1.
+            #
+            CODE="
+            #include <linux/mm.h>
+            #include <linux/mmap_lock.h>
+            int conftest_is_vma_write_locked_has_mm_lock_seq_arg(struct vm_area_struct *vma) {
+                unsigned int mm_lock_seq;
+                return __is_vma_write_locked(vma, &mm_lock_seq);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IS_VMA_WRITE_LOCKED_HAS_MM_LOCK_SEQ_ARG" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please
         # avoid specifying -rc kernels, and only use SHAs that actually exist

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1351,7 +1351,6 @@ typedef struct nv_linux_state_s {
     struct reset_control *nvdisplay_reset;
     struct reset_control *dsi_core_reset;
     struct reset_control *mipi_cal_reset;
-    struct reset_control *hdacodec_reset;
 
     /*
      * nv_imp_icc_path represents the interconnect path across which display

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -833,10 +833,11 @@ kceMapPceLceForNvlinkPeers_GA100
         portMemSet(pParams, 0, sizeof(*pParams));
         pParams->linkMask = peerLinkMask;
 
-        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                     NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS,
-                                     pParams, sizeof(*pParams));
-        NV_ASSERT_OK_OR_RETURN(status);
+        NV_ASSERT_OK_OR_GOTO(status,
+            knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS,
+                                pParams, sizeof(*pParams)),
+            done);
 
         FOR_EACH_INDEX_IN_MASK(32, linkId, peerLinkMask)
         {
@@ -893,6 +894,7 @@ kceMapPceLceForNvlinkPeers_GA100
         status = NV_WARN_NOTHING_TO_DO;
     }
 
+done:
     portMemFree(pParams);
     return status;
 }

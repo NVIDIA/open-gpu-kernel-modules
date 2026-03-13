@@ -779,7 +779,10 @@ kfifoChidMgrAllocChid_IMPL
         /* Channel USERD manipuliation only supported without GFID */
         if (bForceUserdPage)
         {
-            NV_ASSERT_OR_RETURN(!bForceInternalIdx, NV_ERR_INVALID_STATE);
+            NV_ASSERT_TRUE_OR_GOTO(status,
+                !bForceInternalIdx,
+                NV_ERR_INVALID_STATE,
+                fail);
             ChID64 = ((NvU64)userdPageIdx) *
                          pChidMgr->pGlobalChIDHeap->ownerGranularity +
                      internalIdx;
@@ -809,8 +812,9 @@ kfifoChidMgrAllocChid_IMPL
             }
         }
 
-        NV_ASSERT_OK_OR_RETURN(
-            pChidMgr->pGlobalChIDHeap->eheapSetAllocRange(pChidMgr->pGlobalChIDHeap, rangeLo, rangeHi));
+        NV_ASSERT_OK_OR_GOTO(status,
+            pChidMgr->pGlobalChIDHeap->eheapSetAllocRange(pChidMgr->pGlobalChIDHeap, rangeLo, rangeHi),
+            fail);
 
         status = pChidMgr->pGlobalChIDHeap->eheapAlloc(
             pChidMgr->pGlobalChIDHeap, // This Heap
@@ -890,7 +894,6 @@ kfifoChidMgrAllocChid_IMPL
     return NV_OK;
 
 fail:
-    // We already know that pIsolationID is non-NULL here.
     portMemFree(pIsolationID);
     return status;
 }

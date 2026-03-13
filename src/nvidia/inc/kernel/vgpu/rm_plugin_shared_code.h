@@ -3408,7 +3408,7 @@ return_t deserialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03(NV2080_CTRL_B
     {
         dest->connectionType    = src->connectionType;
         dest->peerId            = src->peerId;
-        dest->bSpaAccessOnly    = src->bSpaAccessOnly;
+        dest->bSpaAccessOnly    = (NvBool)src->bSpaAccessOnly;
         dest->bUseUuid          = src->bUseUuid;
 
         portMemCopy(dest->remoteGpuUuid,
@@ -3436,7 +3436,7 @@ return_t deserialize_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v29_08(NV2080_CTRL_B
         dest->connectionType    = src->connectionType;
         dest->peerId            = src->peerId;
         dest->bEgmPeer          = src->bEgmPeer;
-        dest->bSpaAccessOnly    = src->bSpaAccessOnly;
+        dest->bSpaAccessOnly    = (NvBool)src->bSpaAccessOnly;
         dest->bUseUuid          = src->bUseUuid;
         dest->remoteGpuId       = src->remoteGpuId;
 

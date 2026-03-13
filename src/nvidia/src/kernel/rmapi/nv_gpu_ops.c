@@ -2545,8 +2545,11 @@ NV_STATUS nvGpuOpsAddressSpaceCreate(struct gpuDevice *device,
     vaParams.flags  = gpuVaSpace->vaSize ?
                       NV_VASPACE_ALLOCATION_FLAGS_SHARED_MANAGEMENT :
                       NV_VASPACE_ALLOCATION_FLAGS_NONE;
-    if (enableAts) {
-        NV_ASSERT_OR_RETURN(vaParams.flags != NV_VASPACE_ALLOCATION_FLAGS_NONE, NV_ERR_INVALID_ARGUMENT);
+    if (enableAts)
+    {
+        NV_ASSERT_TRUE_OR_GOTO(status,
+            vaParams.flags != NV_VASPACE_ALLOCATION_FLAGS_NONE,
+            NV_ERR_INVALID_ARGUMENT, cleanup_struct);
         vaParams.flags |= NV_VASPACE_ALLOCATION_FLAGS_ENABLE_NVLINK_ATS;
     }
 
@@ -2569,7 +2572,7 @@ NV_STATUS nvGpuOpsAddressSpaceCreate(struct gpuDevice *device,
                             sizeof(vaParams));
     if (status != NV_OK)
     {
-        goto cleanup_struct;
+        goto cleanup_vaspace;
     }
 
     // If base & Size were not provided before, they would have been filled now

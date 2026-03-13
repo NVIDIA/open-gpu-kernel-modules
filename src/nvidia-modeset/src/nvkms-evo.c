@@ -6541,11 +6541,45 @@ static void AssignGuaranteedSOCBounds(const NVDevEvoRec *pDevEvo,
 }
 
 /*
- * Initialize the given NvKmsUsageBounds. Ask for everything supported by the HW
- * by default.  Later, based on what IMP says, we will scale back as needed.
+ * Filter surface memory formats based on maximum pixel depth.
+ * Returns a new bitmask with only formats that have bpp <= maxPixelDepth.
+ * If maxPixelDepth is 0, returns the original mask (no filtering).
+ */
+static NvU64 FilterFormatsByPixelDepth(NvU64 formats, NvU8 maxPixelDepth)
+{
+    NvU64 filtered = 0;
+    enum NvKmsSurfaceMemoryFormat format;
+
+    if (maxPixelDepth == 0) {
+        return formats;
+    }
+
+    for (format = NvKmsSurfaceMemoryFormatMin;
+         format <= NvKmsSurfaceMemoryFormatMax;
+         format++) {
+        const NvKmsSurfaceMemoryFormatInfo *pFormatInfo;
+
+        if (!(formats & NVBIT64(format))) {
+            continue;
+        }
+
+        pFormatInfo = nvKmsGetSurfaceMemoryFormatInfo(format);
+        if (pFormatInfo->depth <= maxPixelDepth) {
+            filtered |= NVBIT64(format);
+        }
+    }
+
+    return filtered;
+}
+
+/*
+ * Initialize the given NvKmsUsageBounds. Ask for everything supported by the HW,
+ * filtered against any client-specified constraints.  Later, based on what IMP says,
+ * we will scale back as needed.
  */
 void nvAssignDefaultUsageBounds(const NVDispEvoRec *pDispEvo,
-                                NVHwModeViewPortEvo *pViewPort)
+                                NVHwModeViewPortEvo *pViewPort,
+                                const struct NvKmsModeValidationParams *pModeValidationParams)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     struct NvKmsUsageBounds *pPossible = &pViewPort->possibleUsage;
@@ -6555,7 +6589,10 @@ void nvAssignDefaultUsageBounds(const NVDispEvoRec *pDispEvo,
         struct NvKmsScalingUsageBounds *pScaling = &pPossible->layer[i].scaling;
 
         pPossible->layer[i].supportedSurfaceMemoryFormats =
-            pDevEvo->caps.layerCaps[i].supportedSurfaceMemoryFormats;
+            FilterFormatsByPixelDepth(
+                pDevEvo->caps.layerCaps[i].supportedSurfaceMemoryFormats,
+                pModeValidationParams->maxUsageBoundPixelDepth[i]);
+
         pPossible->layer[i].usable =
             (pPossible->layer[i].supportedSurfaceMemoryFormats != 0);
         if (!pPossible->layer[i].usable) {
@@ -6609,7 +6646,8 @@ ConstructHwModeTimingsViewPort(const NVDispEvoRec *pDispEvo,
                                NVHwModeTimingsEvoPtr pTimings,
                                NVEvoInfoStringPtr pInfoString,
                                const struct NvKmsSize *pViewPortSizeIn,
-                               const struct NvKmsRect *pViewPortOut)
+                               const struct NvKmsRect *pViewPortOut,
+                               const struct NvKmsModeValidationParams *pParams)
 {
     NVHwModeViewPortEvoPtr pViewPort = &pTimings->viewPort;
     NvU32 outWidth, outHeight;
@@ -6700,7 +6738,7 @@ ConstructHwModeTimingsViewPort(const NVDispEvoRec *pDispEvo,
         }
     }
 
-    nvAssignDefaultUsageBounds(pDispEvo, &pTimings->viewPort);
+    nvAssignDefaultUsageBounds(pDispEvo, &pTimings->viewPort, pParams);
 
     return TRUE;
 }
@@ -6958,7 +6996,7 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
 
     ret = ConstructHwModeTimingsViewPort(pDpyEvo->pDispEvo, pTimings,
                                          pInfoString, pViewPortSizeIn,
-                                         pViewPortOut);
+                                         pViewPortOut, pParams);
 
     if (!ret) {
         return ret;

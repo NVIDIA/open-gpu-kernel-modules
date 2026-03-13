@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -514,6 +514,16 @@ typedef struct
 #define NV_DECLARE_ALIGNED(TYPE_VAR, ALIGN) __declspec(align(ALIGN)) TYPE_VAR
 #elif defined(__arm)
 #define NV_DECLARE_ALIGNED(TYPE_VAR, ALIGN) __align(ALIGN) TYPE_VAR
+#endif
+
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define NV_ALIGNOF(type) _Alignof(type)
+#elif defined(__cplusplus) && (__cplusplus >= 201103L)
+#define NV_ALIGNOF(type) alignof(type)
+#elif defined(__GNUC__) || defined(__clang__)
+#define NV_ALIGNOF(type) __alignof__(type)
+#elif defined(_MSC_VER)
+#define NV_ALIGNOF(type) __alignof(type)
 #endif
 
  /***************************************************************************\

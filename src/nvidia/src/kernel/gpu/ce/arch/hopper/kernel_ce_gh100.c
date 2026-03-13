@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1166,6 +1166,7 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         FOR_EACH_INDEX_IN_MASK(32, phyLinkId, peerLinkMask)
         {
             NvU32 hshubId = params.hshubIds[phyLinkId];
+            NV_ASSERT_OR_RETURN(hshubId < NV_CE_MAX_HSHUBS, NV_ERR_INVALID_STATE);
             linksPerHshub[hshubId]++;
 
             if (linksPerHshub[hshubId] > maxLinksConnectedHshub)
@@ -1175,6 +1176,12 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
             }
         }
         FOR_EACH_INDEX_IN_MASK_END;
+
+        // If no peer links were found, maxConnectedHshubId is still the sentinel value
+        if (maxConnectedHshubId >= NV_CE_MAX_HSHUBS)
+        {
+            return NV_OK;
+        }
 
         //
         // Iterate through all Async LCEs to track which HSHUB should

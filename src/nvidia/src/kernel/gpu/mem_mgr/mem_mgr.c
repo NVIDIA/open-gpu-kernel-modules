@@ -774,7 +774,7 @@ memmgrVerifyGspDmaOps_IMPL
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NV_STATUS status = NV_OK;
-    MEMORY_DESCRIPTOR *pMemDesc;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NvU8 *pTestBuffer;
     NvU32 testData = 0xdeadbeef;
     TRANSFER_SURFACE surf = {0};
@@ -793,7 +793,7 @@ memmgrVerifyGspDmaOps_IMPL
 
     status = memdescCreate(&pMemDesc, pGpu, RM_PAGE_SIZE, RM_PAGE_SIZE,
                            NV_TRUE, ADDR_FBMEM, NV_MEMORY_UNCACHED, 0);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     memdescTagAlloc(status,
                     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_20, pMemDesc);

@@ -2921,7 +2921,7 @@ static NV_STATUS add_gpu(const NvProcessorUuid *gpu_uuid,
 #if UVM_IS_CONFIG_HMM()
     // HMM was disabled when first initialising the parent so we can't support
     // it now. Tell the caller to retry with it disabled.
-    else if (!parent_gpu->devmem && enable_hmm) {
+    else if (!parent_gpu->devmem && enable_hmm && uvm_hmm_is_enabled_system_wide()) {
         status = NV_ERR_BUSY_RETRY;
         goto error;
     }

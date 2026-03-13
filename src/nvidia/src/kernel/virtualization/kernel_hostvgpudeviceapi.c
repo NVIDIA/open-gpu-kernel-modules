@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1136,18 +1136,20 @@ kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL
 
         portMemSet(&tmpEngineInfo, 0, sizeof(ENGINE_INFO));
 
-        NV_ASSERT_OK_OR_RETURN(kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, &tmpEngineInfo, pMigDevice));
-
-        rmStatus = vgpuMgrReserveSystemChannelIDs(pGpu,
-                                                  vgpuTypeInfo,
-                                                  pKernelHostVgpuDevice->gfid,
-                                                  pKernelHostVgpuDevice->chidOffset,
-                                                  pKernelHostVgpuDevice->channelCount,
-                                                  pMigDevice,
-                                                  pParams->numChannels,
-                                                  pKernelHostVgpuDevice->placementId,
-                                                  tmpEngineInfo.engineInfoListSize,
-                                                  tmpEngineInfo.engineInfoList);
+        rmStatus = kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, &tmpEngineInfo, pMigDevice);
+        if (rmStatus == NV_OK)
+        {
+            rmStatus = vgpuMgrReserveSystemChannelIDs(pGpu,
+                                                      vgpuTypeInfo,
+                                                      pKernelHostVgpuDevice->gfid,
+                                                      pKernelHostVgpuDevice->chidOffset,
+                                                      pKernelHostVgpuDevice->channelCount,
+                                                      pMigDevice,
+                                                      pParams->numChannels,
+                                                      pKernelHostVgpuDevice->placementId,
+                                                      tmpEngineInfo.engineInfoListSize,
+                                                      tmpEngineInfo.engineInfoList);
+        }
 
         portMemFree(tmpEngineInfo.engineInfoList);
         tmpEngineInfo.engineInfoList = NULL;

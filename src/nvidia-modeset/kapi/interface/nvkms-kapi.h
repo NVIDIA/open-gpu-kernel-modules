@@ -604,7 +604,17 @@ struct NvKmsKapiGpuInfo {
     MIGDeviceId   migDevice;
 };
 
+/*
+ * Linux kernel options CONFIG_RANDSTRUCT_* randomize structs that are composed
+ * entirely of function pointers, but can only control struct layout for sources
+ * built by kbuild. NvKmsKapiCallbacks is shared between kbuild-built
+ * nvidia-drm.ko, and the "OS-agnostic" portions of nvidia-modeset.ko (not built
+ * by kbuild). Add a _padding member to disable struct randomization.
+ *
+ * Refer to https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1033
+ */
 struct NvKmsKapiCallbacks {
+    int  _padding;
     void (*suspendResume)(NvBool suspend);
     void (*remove)(NvU32 gpuId);
     void (*probe)(const struct NvKmsKapiGpuInfo *gpu_info);

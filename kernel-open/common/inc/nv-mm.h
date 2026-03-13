@@ -216,6 +216,16 @@ static inline void nv_vma_flags_clear_word(struct vm_area_struct *vma, unsigned 
     ACCESS_PRIVATE(vma, __vm_flags) &= ~flags;
 #endif
 }
+
+static inline int nv_is_vma_write_locked(struct vm_area_struct *vma, unsigned int *mm_lock_seq)
+{
+#if defined(NV_IS_VMA_WRITE_LOCKED_HAS_MM_LOCK_SEQ_ARG)
+    return __is_vma_write_locked(vma, mm_lock_seq);
+#else
+    *mm_lock_seq = __vma_raw_mm_seqnum(vma);
+    return __is_vma_write_locked(vma);
+#endif
+}
 #endif // !NV_CAN_CALL_VMA_START_WRITE
 
 static inline void nv_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)

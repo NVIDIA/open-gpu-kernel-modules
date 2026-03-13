@@ -79,6 +79,7 @@ typedef void OSSystemWorkItemFunction(void *);
 NV_STATUS  osQueueWorkItem(struct OBJGPU *pGpu, OSWorkItemFunction pFunction, void *pParams, OsQueueWorkItemFlags flags);
 
 NV_STATUS  osQueueSystemWorkItem(OSSystemWorkItemFunction, void *);
+NV_STATUS  osQueueSystemWorkItemWithFlags(OSSystemWorkItemFunction, void *pParams, OsQueueWorkItemFlags flags);
 WorkItemItem * osGetDeferredWorkItems(NvU64 *workitemBegin, NvU64 *workitemEnd);
 NvS32 osExecuteOneDeferredWorkItem(struct OBJGPU *pGpu);
 NvU64 osGetLastDeferredExecutionTime(void);

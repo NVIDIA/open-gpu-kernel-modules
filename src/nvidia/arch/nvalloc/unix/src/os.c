@@ -839,6 +839,44 @@ NV_STATUS osQueueSystemWorkItem(
     return status;
 }
 
+NV_STATUS osQueueSystemWorkItemWithFlags(
+    OSSystemWorkItemFunction pFunction,
+    void *pParams,
+    OsQueueWorkItemFlags flags
+)
+{
+    nv_work_item_t *pWi;
+    NV_STATUS status;
+
+    pWi = portMemAllocNonPaged(sizeof(nv_work_item_t));
+
+    if (NULL == pWi)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    pWi->flags = (OsQueueWorkItemFlags){0};
+    pWi->flags.bDontFreeParams         = flags.bDontFreeParams;
+    pWi->flags.bLockSema               = flags.bLockSema;
+    pWi->flags.apiLock                 = flags.apiLock;
+    pWi->flags.bLockGpus               = flags.bLockGpus;
+    pWi->flags.bLockGpuGroupDevice     = flags.bLockGpuGroupDevice;
+    pWi->flags.bLockGpuGroupSubdevice  = flags.bLockGpuGroupSubdevice;
+    pWi->flags.bFullGpuSanity          = flags.bFullGpuSanity;
+    pWi->flags.bDropOnUnloadQueueFlush = flags.bDropOnUnloadQueueFlush;
+    pWi->func.pSystemFunction = pFunction;
+    pWi->pData = pParams;
+
+    status = os_queue_work_item(NULL, pWi);
+
+    if (NV_OK != status)
+    {
+        portMemFree((void *)pWi);
+    }
+
+    return status;
+}
+
 void osQueueMMUFaultHandler(OBJGPU *pGpu)
 {
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
@@ -1050,16 +1088,19 @@ NV_STATUS osAllocPagesInternal(
         goto done;
     }
 
+    // Associate pMemData with pMemDesc immediately to ensure cleanup on error
+    memdescSetMemData(pMemDesc, pMemData, NULL);
+
     // Guest allocated memory is already initialized
     if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
     {
         if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
         {
-            NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, osPageCount * os_page_size, os_page_size));
+            NV_ASSERT_OK_OR_GOTO(status, memdescSetAllocSizeFields(pMemDesc, osPageCount * os_page_size, os_page_size), done);
         }
         else
         {
-            NV_ASSERT_OK_OR_RETURN(memdescSetAllocSizeFields(pMemDesc, rmPageCount * RM_PAGE_SIZE, RM_PAGE_SIZE));
+            NV_ASSERT_OK_OR_GOTO(status, memdescSetAllocSizeFields(pMemDesc, rmPageCount * RM_PAGE_SIZE, RM_PAGE_SIZE), done);
         }
     }
 
@@ -1069,7 +1110,7 @@ NV_STATUS osAllocPagesInternal(
     //
     if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
     {
-        NV_ASSERT_OR_RETURN(pMemDesc->pageArrayGranularity == os_page_size, NV_ERR_INVALID_ARGUMENT);
+        NV_ASSERT_TRUE_OR_GOTO(status, pMemDesc->pageArrayGranularity == os_page_size, NV_ERR_INVALID_ARGUMENT, done);
     }
     else if (NV_RM_PAGE_SIZE < os_page_size &&
             !memdescGetContiguity(pMemDesc, AT_CPU))
@@ -1078,10 +1119,8 @@ NV_STATUS osAllocPagesInternal(
                                 pMemDesc->PageCount);
     }
 
-    memdescSetMemData(pMemDesc, pMemData, NULL);
-
     if ((pGpu != NULL) && IS_VIRTUAL(pGpu))
-        NV_ASSERT_OK_OR_RETURN(vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE));
+        NV_ASSERT_OK_OR_GOTO(status, vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE), done);
 done:
     return status;
 }

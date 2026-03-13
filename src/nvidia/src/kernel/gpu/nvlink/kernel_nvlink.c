@@ -1837,6 +1837,10 @@ knvlinkUpdatePostRxDetectLinkMask_IMPL
 
     FOR_EACH_IN_BITVECTOR(&pKernelNvlink->enabledLinks, i)
     {
+        if (i >= pKernelNvlink->maxNumLinks)
+        {
+            break;
+        }
         pKernelNvlink->nvlinkLinks[i].laneRxdetStatusMask = params.laneRxdetStatusMask[i];
     }
     FOR_EACH_IN_BITVECTOR_END();

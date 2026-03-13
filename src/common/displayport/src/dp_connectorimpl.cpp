@@ -1551,6 +1551,8 @@ bool ConnectorImpl::compoundQueryAttachMSTIsDscPossible
                 ((dev->devDoingDscDecompression == dev) &&
                 (dev->isLogical() && dev->parent)))
             {
+                DP_ASSERT((dev->devDoingDscDecompression != NULL) &&
+                          (dev->parent != NULL));
                 //
                 // If DSC decoding is going to happen at sink's parent or
                 // decoding will be done by sink but sink is a logical port,

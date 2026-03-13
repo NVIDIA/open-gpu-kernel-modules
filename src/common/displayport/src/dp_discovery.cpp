@@ -462,7 +462,7 @@ void DiscoveryManager::BranchDetection::messageFailed(MessageManager::Message * 
     if (from == &linkAddressMessage)
     {
         if (retriesLinkAddressMessage < DPCD_LINK_ADDRESS_MESSAGE_RETRIES &&
-            (nakData->reason == NakDefer || nakData->reason == NakTimeout))
+            (nakData->reason == NakDefer || nakData->reason == NakTimeout || nakData->reason == NakLinkFailure))
         {
             retriesLinkAddressMessage++;
             retryLinkAddressMessage = true;
