@@ -69,9 +69,9 @@ typedef NvU32 (*GpuReadRegCallback)(OBJGPU *, void *, NvU32 addr, NvU32 accessSi
 
 union GPUHWREG
 {
-    volatile NvV8 Reg008[1];
-    volatile NvV16 Reg016[1];
-    volatile NvV32 Reg032[1];
+    volatile __DECLARE_FLEX_ARRAY(NvV8, Reg008);
+    volatile __DECLARE_FLEX_ARRAY(NvV16, Reg016);
+    volatile __DECLARE_FLEX_ARRAY(NvV32, Reg032);
 };
 
 typedef union  GPUHWREG  GPUHWREG;
