@@ -1600,6 +1600,8 @@ NvBool RmInitPrivateState(
 
     pNv->sysmem_mapped_console = pGpuArch->bGpuArchIsZeroFb;
 
+    // XXX: objDelete(pGpuArch) as it's dynamically allocated, see src/nvidia/src/kernel/gpu_mgr/gpu_mgr.c:gpumgrGetGpuArch_IMPL()
+
     kvgpumgrAttachGpu(pNv->gpu_id);
 
     os_mem_set(nvp, 0, sizeof(*nvp));
