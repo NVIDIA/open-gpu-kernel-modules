@@ -1230,7 +1230,7 @@ nv_dma_buf_mmap(
     NvU32 i = 0;
     nv_dma_buf_file_private_t *priv = buf->priv;
     unsigned long addr = vma->vm_start;
-    NvU32 total_skip_size = 0;
+    NvU64 total_skip_size = 0;
     NvU64 total_map_len  = NV_VMA_SIZE(vma);
     NvU64 off_in_range_array = 0;
     NvU32 index;
@@ -1341,7 +1341,7 @@ found_start_page:
     nv_vm_flags_set(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
 
     // Create user mapping
-    for (; i < (priv->num_objects && (addr < vma->vm_end)); i++)
+    for (; (i < priv->num_objects) && (addr < vma->vm_end); i++)
     {
         NvU32 range_count = priv->handles[i].memArea.numRanges;
 
