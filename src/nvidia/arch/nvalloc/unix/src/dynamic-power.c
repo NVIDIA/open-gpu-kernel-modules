@@ -155,6 +155,17 @@ static NvU32 dynamicPowerSupportGpuMask = 0;
 #define IGPU_RG_BLOCKER_CHECK_AND_METHOD_FLUSH_TIME (700 * 1000 * 1000)
 
 //
+// Maximum number of times RmRemoveIdleHoldoff() can reschedule itself
+// before forcefully calling nv_indicate_idle(). This prevents infinite
+// rescheduling when GC6 prerequisites cannot be met (e.g., AC power mode
+// blocks GC6 entry). After this threshold, D3cold entry is forced via the
+// autosuspend path (without GC6 entry checks).
+// With GC6_PRECONDITION_CHECK_TIME = 5 seconds:
+//  4 reschedules = ~20 seconds of waiting before fallback to autosuspend
+//
+#define MAX_IDLE_HOLDOFF_RESCHEDULES 4
+
+//
 // Cap Maximum FB allocation size for GCOFF. If regkey value is greater
 // than this value then it will be capped to this value.
 //
@@ -1137,6 +1148,10 @@ os_ref_dynamic_power(
 
     ref = nvp->dynamic_power.refcount++;
 
+    NV_PRINTF(LEVEL_INFO, "[RTD3] os_ref_dynamic_power: mode=%d, refcount %d->%d, state=%s\n",
+              mode, ref, ref + 1,
+              nv_dynamic_power_state_string(nvp->dynamic_power.state));
+
     NV_ASSERT(ref >= 0);
 
     if (ref > 0)
@@ -1321,6 +1336,10 @@ os_unref_dynamic_power(
 
     ref = --nvp->dynamic_power.refcount;
 
+    NV_PRINTF(LEVEL_INFO, "[RTD3] os_unref_dynamic_power: mode=%d, refcount %d->%d, state=%s\n",
+              mode, ref + 1, ref,
+              nv_dynamic_power_state_string(nvp->dynamic_power.state));
+
     NV_ASSERT(ref >= 0);
 
     if (ref == 0) {
@@ -1463,10 +1482,29 @@ static void RmRemoveIdleHoldoff(
         {
             nv_indicate_idle(nv);
             nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
+            nvp->dynamic_power.idle_holdoff_reschedule_count = 0;  // Reset counter on success
+        }
+        /*
+         * Prevent infinite rescheduling when GC6 is unavailable (e.g., AC mode).
+         * After a limited number of retries, force nv_indicate_idle()
+         * to allow runtime suspend fallback (D3 entry without GC6).
+         */
+        else if (nvp->dynamic_power.idle_holdoff_reschedule_count < MAX_IDLE_HOLDOFF_RESCHEDULES)
+        {
+            // Increment reschedule counter and reschedule
+            nvp->dynamic_power.idle_holdoff_reschedule_count++;
+            RmScheduleCallbackToRemoveIdleHoldoff(pGpu);
         }
         else
         {
-            RmScheduleCallbackToRemoveIdleHoldoff(pGpu);
+            // Max reschedules reached: force nv_indicate_idle to break infinite loop
+            // This allows D3cold entry via autosuspend path even when GC6 is not available
+            NV_PRINTF(LEVEL_WARNING,
+                      "NVRM: [RTD3] RmRemoveIdleHoldoff: GC6 unavailable after %d reschedules, forcing nv_indicate_idle\n",
+                      MAX_IDLE_HOLDOFF_RESCHEDULES);
+            nv_indicate_idle(nv);
+            nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
+            nvp->dynamic_power.idle_holdoff_reschedule_count = 0;  // Reset counter
         }
     }
 }
@@ -1798,6 +1836,7 @@ void RmDestroyDeferredDynamicPowerManagement(
     {
         nv_indicate_idle(nv);
         nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
+        nvp->dynamic_power.idle_holdoff_reschedule_count = 0;  // Reset counter
     }
 
     RmCancelDynamicPowerCallbacks(pGpu);
@@ -2053,6 +2092,7 @@ static void RmScheduleCallbackToRemoveIdleHoldoff(
         else
         {
             nvp->dynamic_power.b_idle_holdoff = NV_TRUE;
+            nvp->dynamic_power.idle_holdoff_reschedule_count = 0;  // Initialize counter
         }
     }
 }
@@ -2612,6 +2652,7 @@ NV_STATUS NV_API_CALL rm_power_management(
                             nv_indicate_idle(pNv);
                             RmCancelCallbackToRemoveIdleHoldoff(pGpu);
                             nvp->dynamic_power.b_idle_holdoff = NV_FALSE;
+                            nvp->dynamic_power.idle_holdoff_reschedule_count = 0;  // Reset counter
                         }
 
                         //

@@ -4463,10 +4463,16 @@ void NV_API_CALL rm_power_source_change_event(
     // state has actually changed. If not, return without waking the GPU.
     if ((first_event_seen != NV_FALSE) && (last_event_val == event_val))
     {
+        NV_PRINTF(LEVEL_INFO, "[RTD3] rm_power_source_change_event: "
+                  "suppressed duplicate event_val=%u (%s)\n",
+                  event_val, event_val ? "battery" : "AC");
         return;
     }
     else
     {
+        NV_PRINTF(LEVEL_INFO, "[RTD3] rm_power_source_change_event: "
+                  "processing event_val=%u (%s)\n",
+                  event_val, event_val ? "battery" : "AC");
         first_event_seen = NV_TRUE;
         last_event_val = event_val;
     }
