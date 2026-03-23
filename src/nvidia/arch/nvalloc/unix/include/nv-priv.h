@@ -287,6 +287,17 @@ typedef struct nv_dynamic_power_s
     NvU32 idle_holdoff_reschedule_count;
 
     /*
+     * Counter to track clients disallowing GCOFF.
+     */
+    NvU32 clients_gcoff_disallow_refcount;
+
+    /*
+     * Maximum FB allocation size which can be saved in system memory
+     * while doing GCOFF based dynamic PM.
+     */
+    NvU64 gcoff_max_fb_size;
+
+    /*
      * NVreg_DynamicPowerManagement regkey value set by the user
      */
     NvU32 dynamic_power_regkey;
