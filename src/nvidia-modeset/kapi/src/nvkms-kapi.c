@@ -692,7 +692,7 @@ static void FreeDeviceForSurpriseRemoval(struct NvKmsKapiDevice *device)
     device->pKmsOpen = NULL;
 
     /* Lower the reference count of gpu - this is safe, no hardware access */
-    nvkms_close_gpu(device->gpuId);
+    nvkms_close_gpu(device->gpuId, NV_TRUE /* reset_aware */);
 
     /* Free kernel memory resources */
     if (device->pSema != NULL) {
