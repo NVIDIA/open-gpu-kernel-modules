@@ -100,6 +100,30 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
             break;
     }
 
+    /*
+     * For force-enabled connectors, probe the real physical state first
+     * (without forcing) so we can set link-status to Bad when the sink
+     * disappears. This lets userspace compositors trigger a modeset for
+     * link re-training when the sink returns (e.g. a TV switching back
+     * from built-in apps to its HDMI input).
+     */
+    if (pDetectParams->forceConnected) {
+        struct NvKmsKapiDynamicDisplayParams physicalProbe;
+
+        memset(&physicalProbe, 0, sizeof(physicalProbe));
+        physicalProbe.handle = nv_encoder->hDisplay;
+
+        if (nvKms->getDynamicDisplayInfo(nv_dev->pDevice, &physicalProbe)) {
+            if (!physicalProbe.connected) {
+                drm_connector_set_link_status_property(
+                    connector, DRM_MODE_LINK_STATUS_BAD);
+            } else {
+                drm_connector_set_link_status_property(
+                    connector, DRM_MODE_LINK_STATUS_GOOD);
+            }
+        }
+    }
+
 #if defined(NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID)
     if (connector->override_edid) {
 #else
