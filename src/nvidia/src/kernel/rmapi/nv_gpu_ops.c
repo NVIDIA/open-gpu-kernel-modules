@@ -8984,6 +8984,16 @@ NV_STATUS nvGpuOpsSetPageDirectory(struct gpuAddressSpace *vaSpace,
                              NV0080_CTRL_CMD_DMA_SET_PAGE_DIRECTORY,
                              &params,
                              sizeof(params));
+    if (status != NV_OK)
+    {
+        if (vaspaceIsExternallyOwned(pVAS))
+        {
+            nvGpuOpsEnableVaSpaceChannels(vaSpace);
+        }
+        _nvGpuOpsLocksRelease(&acquiredLocks);
+        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+        return status;
+    }
 
     //
     // Store page table root DMA Address (GPU Physical Address) for RM client
