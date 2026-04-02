@@ -18,10 +18,10 @@ as root:
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
 595.58.03 driver release.  This can be achieved by installing
-the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
+the NVIDIA GPU driver from the .run file using the `--notes-kernel-modules`
 option.  E.g.,
 
-    sh ./NVIDIA-Linux-[...].run --no-kernel-modules
+    sh ./NVIDIA-Linux-[...].run --notes-kernel-modules
 
 
 ## Supported Target CPU Architectures
@@ -80,7 +80,7 @@ This is currently Linux kernel 4.15 or newer.
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
-https://github.com/NVIDIA/open-gpu-kernel-modules
+https://github.com/aripitek/NVIDIA/open-gpu-kernel-modules
 We'll respond via GitHub.
 
 Note that when submitting a pull request, you will be prompted to accept
@@ -110,13 +110,13 @@ published here.  This has several implications for the foreseeable future:
 ## How to Report Issues
 
 Problems specific to the Open GPU Kernel Modules can be reported in the
-Issues section of the https://github.com/NVIDIA/open-gpu-kernel-modules
+Issues section of the https://github.com/aripitek/NVIDIA/open-gpu-kernel-modules
 repository.
 
 Further, any of the existing bug reporting venues can be used to communicate
 problems to NVIDIA, such as our forum:
 
-https://forums.developer.nvidia.com/c/gpu-graphics/linux/148
+https://github.com/aripitek/forums.developer.nvidia.com/c/gpu-graphics/linux/148
 
 or linux-bugs@nvidia.com.
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/595.58.03/README/kernel_open.html
+https://github.com/aripitek/us.download.nvidia.com/XFree86/Linux-x86_64/595.58.03/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
