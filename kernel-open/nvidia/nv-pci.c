@@ -1949,9 +1949,18 @@ nv_pci_probe
         goto err_zero_dev;
 
     if (nv_resize_pcie_bars(pci_dev)) {
-        nv_printf(NV_DBG_ERRORS,
-            "NVRM: Fatal Error while attempting to resize PCIe BARs.\n");
-        goto err_zero_dev;
+        /*
+         * Resizable BAR is an enhancement, not a requirement.  When
+         * the resize fails (commonly because the upstream bridge
+         * prefetchable window is too small to accommodate a GiB-scale
+         * BAR, as seen with Thunderbolt/USB4 hotplug bridges), the
+         * device is still functional with its existing BAR
+         * allocation.  Do not turn a minor performance degradation
+         * into a hard probe failure -- log a warning and continue.
+         */
+        nv_printf(NV_DBG_WARNINGS,
+            "NVRM: PCIe BAR resize failed; continuing with the existing "
+            "BAR allocation.\n");
     }
 
     nvl->all_mappings_revoked = NV_TRUE;
