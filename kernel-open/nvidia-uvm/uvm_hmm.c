@@ -344,41 +344,48 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
     if (!uvm_hmm_is_enabled(va_space))
         return;
 
-    devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
-    devmem_end = devmem_start + gpu->mem_info.size;
-
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
-    // There could be pages with page->zone_device_data pointing to the va_space
-    // which may be about to be freed. Migrate those back to the CPU so we don't
-    // fault on them. Normally infinite retries are bad, but we don't have any
-    // option here. Device-private pages can't be pinned so migration should
-    // eventually succeed. Even if we did eventually bail out of the loop we'd
-    // just stall in memunmap_pages() anyway.
-    do {
-        retry = false;
+    // gpu->parent->devmem is only initialized when device-private memory
+    // was successfully set up for this GPU in init_parent_gpu(). If it
+    // was not (e.g. uvm_pmm_devmem_init() failed or was never called),
+    // there are no device-private pages to evict — skip straight to
+    // block unregistration.
+    if (gpu->parent->devmem) {
+        devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
+        devmem_end = devmem_start + gpu->mem_info.size;
 
-        for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
-            struct page *page = pfn_to_page(pfn);
+        // There could be pages with page->zone_device_data pointing to the va_space
+        // which may be about to be freed. Migrate those back to the CPU so we don't
+        // fault on them. Normally infinite retries are bad, but we don't have any
+        // option here. Device-private pages can't be pinned so migration should
+        // eventually succeed. Even if we did eventually bail out of the loop we'd
+        // just stall in memunmap_pages() anyway.
+        do {
+            retry = false;
 
-            // No need to keep scanning if no HMM pages are allocated for this
-            // va_space.
-            if (!atomic64_read(&va_space->hmm.allocated_page_count))
-                break;
+            for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
+                struct page *page = pfn_to_page(pfn);
 
-            UVM_ASSERT(is_device_private_page(page));
+                // No need to keep scanning if no HMM pages are allocated for this
+                // va_space.
+                if (!atomic64_read(&va_space->hmm.allocated_page_count))
+                    break;
 
-            // This check is racy because nothing stops the page being freed and
-            // even reused. That doesn't matter though - worst case the
-            // migration fails, we retry and find the va_space doesn't match.
-            if (uvm_pmm_devmem_page_to_va_space(page) == va_space) {
-                if (uvm_hmm_pmm_gpu_evict_pfn(pfn) != NV_OK)
-                    retry = true;
+                UVM_ASSERT(is_device_private_page(page));
+
+                // This check is racy because nothing stops the page being freed and
+                // even reused. That doesn't matter though - worst case the
+                // migration fails, we retry and find the va_space doesn't match.
+                if (uvm_pmm_devmem_page_to_va_space(page) == va_space) {
+                    if (uvm_hmm_pmm_gpu_evict_pfn(pfn) != NV_OK)
+                        retry = true;
+                }
             }
-        }
-    } while (retry);
+        } while (retry);
+    }
 
     uvm_range_tree_for_each(node, &va_space->hmm.blocks) {
         va_block = hmm_va_block_from_node(node);
