@@ -208,6 +208,25 @@ static int nv_resize_pcie_bars(struct pci_dev *pci_dev) {
         return 0;
     }
 
+#if defined(NV_PCI_IS_THUNDERBOLT_ATTACHED_PRESENT)
+    /*
+     * Thunderbolt / USB4 hotplug bridges have a small prefetchable MMIO
+     * window that cannot accommodate a GiB-scale resized BAR.  Skip
+     * the resize attempt proactively rather than trying and failing,
+     * which avoids an uninformative -ENOENT in the kernel log and
+     * sidesteps the failure path entirely.
+     */
+    if (pci_is_thunderbolt_attached(pci_dev))
+    {
+        nv_printf(NV_DBG_INFO,
+                  "NVRM: %04x:%02x:%02x.%x: device is downstream of Thunderbolt, "
+                  "skipping BAR1 resize\n",
+                  NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+        return 0;
+    }
+#endif
+
     // Check if BAR1 has PCIe rebar capabilities
     sizes = pci_rebar_get_possible_sizes(pci_dev, NV_GPU_BAR1);
     if (sizes == 0) {
