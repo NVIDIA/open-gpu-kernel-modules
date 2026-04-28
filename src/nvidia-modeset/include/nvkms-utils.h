@@ -167,6 +167,9 @@ static inline NvU64 nvCtxDmaOffsetFromBytes(NvU64 ctxDmaOffset)
 
 NvU8 nvPixelDepthToBitsPerComponent(enum nvKmsPixelDepth pixelDepth);
 
+NvU32 nvDscPpsGetBitsPerComponent(const NvU32 *pps);
+NvU32 nvDscComputeFlatnessDetThresh(NvU32 bpc);
+
 typedef enum {
     EVO_LOG_WARN,
     EVO_LOG_ERROR,

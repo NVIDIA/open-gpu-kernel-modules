@@ -1358,11 +1358,7 @@ static void EvoSetHdmiDscParamsC9(const NVDispEvoRec *pDispEvo,
              pDscInfo->type == NV_DSC_INFO_EVO_TYPE_HDMI);
 
     bpc = nvPixelDepthToBitsPerComponent(pixelDepth);
-    if (bpc < 8) {
-        nvAssert(bpc >= 8);
-        bpc = 8;
-    }
-    flatnessDetThresh = (2 << (bpc - 8));
+    flatnessDetThresh = nvDscComputeFlatnessDetThresh(bpc);
 
     nvDmaSetStartEvoMethod(pChannel, NVC97D_HEAD_SET_DSC_CONTROL(head), 1);
     nvDmaSetEvoMethodData(pChannel,
@@ -1408,15 +1404,20 @@ static void EvoSetDpDscParamsC9(const NVDispEvoRec *pDispEvo,
                               const NVDscInfoEvoRec *pDscInfo)
 {
     NVEvoChannelPtr pChannel = pDispEvo->pDevEvo->core;
-    NvU32 flatnessDetThresh;
+    NvU32 bpc, flatnessDetThresh;
     NvU32 i;
 
     nvAssert(pDscInfo->type == NV_DSC_INFO_EVO_TYPE_DP);
 
-    // XXX: I'm pretty sure that this is wrong.
-    // BitsPerPixelx16 is something like (24 * 16) = 384, and 2 << (384 - 8) is
-    // an insanely large number.
-    flatnessDetThresh = (2 << (pDscInfo->dp.bitsPerPixelX16 - 8)); /* ??? */
+    /*
+     * Extract bits_per_component from the PPS that was already computed
+     * by the DP library.  The DP path does not receive a pixelDepth
+     * parameter (unlike HDMI), so we read bpc from PPS byte 3 bits [7:4].
+     *
+     * Per VESA DSC 1.2a: flatness_det_thresh = 2 << (bpc - 8).
+     */
+    bpc = nvDscPpsGetBitsPerComponent(pDscInfo->dp.pps);
+    flatnessDetThresh = nvDscComputeFlatnessDetThresh(bpc);
 
     nvAssert((pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_DUAL) ||
                 (pDscInfo->dp.dscMode == NV_DSC_EVO_MODE_SINGLE));
