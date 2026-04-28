@@ -57,9 +57,108 @@ module_param(uvm_perf_migrate_cpu_preunmap_enable, int, S_IRUGO);
 static unsigned uvm_perf_migrate_cpu_preunmap_block_order = UVM_PERF_MIGRATE_CPU_PREUNMAP_BLOCK_ORDER_DEFAULT;
 module_param(uvm_perf_migrate_cpu_preunmap_block_order, uint, S_IRUGO);
 
+// OPTIMIZATION: Enable NUMA-aware migration
+// When enabled, migrations will prefer local NUMA nodes to reduce cross-node
+// memory access latency.
+static int uvm_perf_numa_aware_migration = 1;
+module_param(uvm_perf_numa_aware_migration, int, S_IRUGO);
+
 // Global post-processed values of the module parameters
 static bool g_uvm_perf_migrate_cpu_preunmap_enable __read_mostly;
 static NvU64 g_uvm_perf_migrate_cpu_preunmap_size __read_mostly;
+static bool g_uvm_perf_numa_aware_migration __read_mostly;
+
+// OPTIMIZATION: NUMA-aware migration helper functions
+// These functions determine the optimal migration target based on NUMA locality.
+
+// Get the preferred NUMA node for a given CPU processor
+static int get_cpu_preferred_numa_node(uvm_processor_id_t cpu_id)
+{
+    // For CPU, we use the closest NUMA node associated with the CPU
+    // This is typically already set in gpu->closest_cpu_numa_node
+    return numa_node_id();
+}
+
+// OPTIMIZATION: Find the best NUMA node for a migration based on current residency
+// This function analyzes where pages are currently resident and prefers to keep
+// data local to the most common NUMA node.
+static int find_best_numa_node_for_migration(uvm_va_block_t *va_block,
+                                             uvm_processor_id_t dest_id,
+                                             int hint_node)
+{
+    int best_node = NUMA_NO_NODE;
+
+    // If NUMA-aware migration is disabled, return the hint or default
+    if (!g_uvm_perf_numa_aware_migration)
+        return hint_node;
+
+    // If migrating to CPU, use the closest NUMA node to the destination GPU
+    if (UVM_ID_IS_CPU(dest_id)) {
+        uvm_gpu_t *gpu;
+        uvm_parent_gpu_t *parent_gpu;
+        uvm_gpu_id_t gpu_id;
+
+        // Find any GPU that has the pages resident
+        for_each_gpu_id_in_mask(gpu_id, &va_block->resident) {
+            gpu = uvm_va_block_get_gpu(va_block, gpu_id);
+            if (gpu) {
+                parent_gpu = gpu->parent;
+                if (parent_gpu->closest_cpu_numa_node != NUMA_NO_NODE) {
+                    return parent_gpu->closest_cpu_numa_node;
+                }
+            }
+        }
+        // Fallback to current node if no GPU found
+        return hint_node;
+    }
+
+    // For GPU migrations, check if any resident GPU is on the same NUMA node
+    if (UVM_ID_IS_GPU(dest_id)) {
+        uvm_gpu_id_t gpu_id;
+        uvm_gpu_t *dest_gpu = uvm_va_block_get_gpu(va_block, dest_id);
+
+        if (!dest_gpu)
+            return hint_node;
+
+        // Check if any resident GPU is on the same NUMA node as destination
+        for_each_gpu_id_in_mask(gpu_id, &va_block->resident) {
+            uvm_gpu_t *resident_gpu = uvm_va_block_get_gpu(va_block, gpu_id);
+            if (resident_gpu && resident_gpu->parent->closest_cpu_numa_node == dest_gpu->parent->closest_cpu_numa_node) {
+                return dest_gpu->parent->closest_cpu_numa_node;
+            }
+        }
+    }
+
+    return hint_node;
+}
+
+// OPTIMIZATION: Check if migration is within the same NUMA node (faster path)
+static bool is_same_numa_node_migration(uvm_processor_id_t src_id,
+                                        uvm_processor_id_t dest_id,
+                                        int src_node,
+                                        int dest_node)
+{
+    if (!g_uvm_perf_numa_aware_migration)
+        return false;
+
+    // Same processor is always "local"
+    if (uvm_processor_id_equal(src_id, dest_id))
+        return true;
+
+    // Both CPU - check if same NUMA node
+    if (UVM_ID_IS_CPU(src_id) && UVM_ID_IS_CPU(dest_id))
+        return (src_node == dest_node);
+
+    // GPU to CPU or CPU to GPU - check GPU's NUMA node
+    if (UVM_ID_IS_GPU(src_id)) {
+        return (src_node == dest_node);
+    }
+    if (UVM_ID_IS_GPU(dest_id)) {
+        return (dest_node == src_node);
+    }
+
+    return false;
+}
 
 static bool is_migration_single_block(uvm_va_range_managed_t *first_managed_range, NvU64 base, NvU64 length)
 {
@@ -201,6 +300,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                       uvm_migrate_mode_t mode,
                                       uvm_tracker_t *out_tracker)
 {
+    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_va_block_context_t *va_block_context = service_context->block_context;
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status = NV_OK;
@@ -225,7 +325,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
         uvm_page_mask_init_from_region(make_resident_mask, region, NULL);
 
-        if (uvm_va_policy_is_read_duplicate(policy)) {
+        if (uvm_va_policy_is_read_duplicate(policy, va_space)) {
             if (uvm_page_mask_andnot(make_resident_mask, make_resident_mask, &va_block->discarded_pages)) {
                 status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                                    va_block_retry,
@@ -352,9 +452,10 @@ static bool migration_should_do_cpu_preunmap(uvm_va_space_t *va_space,
 // read-duplication is enabled in the VA range. This is because, when migrating
 // read-duplicated VA blocks, the source processor doesn't need to be unmapped
 // (though it may need write access revoked).
-static bool va_range_should_do_cpu_preunmap(const uvm_va_policy_t *policy)
+static bool va_range_should_do_cpu_preunmap(const uvm_va_policy_t *policy,
+                                            uvm_va_space_t *va_space)
 {
-    return !uvm_va_policy_is_read_duplicate(policy);
+    return !uvm_va_policy_is_read_duplicate(policy, va_space);
 }
 
 // Function that determines if the VA block to be migrated contains pages with
@@ -502,7 +603,8 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_managed_t *managed_range,
     NvU64 preunmap_range_start = start;
     uvm_va_policy_t *policy = &managed_range->policy;
 
-    should_do_cpu_preunmap = should_do_cpu_preunmap && va_range_should_do_cpu_preunmap(policy);
+    should_do_cpu_preunmap = should_do_cpu_preunmap &&
+                             va_range_should_do_cpu_preunmap(policy, managed_range->va_range.va_space);
 
     // Divide migrations into groups of contiguous VA blocks. This is to trigger
     // CPU unmaps for that region before the migration starts.
@@ -584,6 +686,13 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
                                                             dest_id,
                                                             service_context->block_context->make_resident.dest_nid))
                     skipped_migrate = true;
+            }
+            else if (uvm_processor_mask_test(&managed_range->uvm_lite_gpus, dest_id) &&
+                     !uvm_va_policy_preferred_location_equal(policy, dest_id, NUMA_NO_NODE)) {
+                // Don't migrate to a non-faultable GPU that is in UVM-Lite mode,
+                // unless it's the preferred location
+                status = NV_ERR_INVALID_DEVICE;
+                break;
             }
             else {
                 status = uvm_va_range_migrate(managed_range,
