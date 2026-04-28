@@ -663,7 +663,12 @@ static void nv_drm_handle_hotplug_event(struct work_struct *work)
     struct nv_drm_device *nv_dev =
         container_of(dwork, struct nv_drm_device, hotplug_event_work);
 
-    drm_kms_helper_hotplug_event(nv_dev->dev);
+    /*
+     * Use drm_helper_hpd_irq_event() so connector->detect() is run and
+     * connector status is refreshed; drm_kms_helper_hotplug_event() only
+     * sends a uevent without updating status.
+     */
+    drm_helper_hpd_irq_event(nv_dev->dev);
 }
 
 static int nv_drm_dev_load(struct drm_device *dev)
