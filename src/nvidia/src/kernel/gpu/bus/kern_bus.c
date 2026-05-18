@@ -1304,10 +1304,16 @@ kbusGetGpuFbPhysAddressForRdma_IMPL
     NvU64     *pPhysAddr
 )
 {
-    if((bForcePcie) &&
-       (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)))
+    if (bForcePcie &&
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
     {
-        return NV_ERR_NOT_SUPPORTED;
+        NvU32 allow_p2p = 0;
+
+        // Experimental: NVreg_AllowP2PWithoutCoherentMapping=1 bypasses the gate.
+        (void) osReadRegistryDword(pGpu,
+                  NV_REG_STR_ALLOW_P2P_WITHOUT_COHERENT_MAPPING, &allow_p2p);
+        if (!allow_p2p)
+            return NV_ERR_NOT_SUPPORTED;
     }
 
     //
