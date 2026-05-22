@@ -184,6 +184,9 @@ $(obj)/%.clean.o: $(obj)/%.stub.o FORCE
 ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
 
+ifeq ($(USE_KBUILD),1)
+ ccflags-y += -DNV_USE_KBUILD
+endif
 
 $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
