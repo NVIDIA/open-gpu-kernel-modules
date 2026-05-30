@@ -77,11 +77,13 @@ halmgrCreateHal_IMPL
 
     NV_ASSERT_OR_RETURN(halImpl < HAL_IMPL_MAXIMUM, NV_ERR_INVALID_ARGUMENT);
 
+    // Guard against duplicate registration, would silently leak the existing object mem leak
+    NV_ASSERT_OR_RETURN(pHalMgr->pHalList[halImpl] == NULL, NV_ERR_INVALID_STATE);
+
     status = objCreate(&pHal, pHalMgr, OBJHAL);
     if (status != NV_OK)
         return status;
 
-    // Store away the object pointer for this particular HAL object
     pHalMgr->pHalList[halImpl] = pHal;
 
     return NV_OK;
