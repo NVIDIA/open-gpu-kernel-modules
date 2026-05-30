@@ -278,6 +278,8 @@ p2papiConstruct_IMPL
     NV_STATUS                status;
     NvBool                   bP2PWriteCapable = NV_FALSE;
     NvBool                   bP2PReadCapable = NV_FALSE;
+    NvBool                   bMainP2PMappingCreated = NV_FALSE;
+    NvBool                   bEgmP2PMappingCreated = NV_FALSE;
     NV503B_ALLOC_PARAMETERS *pNv503bAllocParams = pParams->pAllocParams;
     NvU32                    flags = pNv503bAllocParams->flags;
     NvBool                   bSpaAccessOnly = FLD_TEST_DRF(503B, _FLAGS, _P2P_TYPE, _SPA, flags);
@@ -587,42 +589,37 @@ p2papiConstruct_IMPL
 
     if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pLocalGpu) || !IS_VIRTUAL(pLocalGpu))
     {
-        //
-        // TODO: This function need to have a cleanup path when this function
-        //       fails after kbusCreateP2PMaping(), busBindLocalGfidForP2P()
-        //       and busBindRemoteGfidForP2P(). The current state, the
-        //       function just returns an error. Bug 4016670 filed to track
-        //       the effort.
-        //
 
         // setup the p2p resources
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                               kbusCreateP2PMapping_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu,
                                                        pRemoteKernelBus, &peer1, &peer2,
                                                        pP2PApi->attributes));
+        bMainP2PMappingCreated = NV_TRUE;
         if (bEgmPeer)
         {
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                   kbusCreateP2PMapping_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu,
                                                            pRemoteKernelBus, &egmPeer1, &egmPeer2,
                                                            pP2PApi->attributes |
-                                                           DRF_DEF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES)));
+                                                           DRF_DEF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES)), cleanup);
+            bEgmP2PMappingCreated = NV_TRUE;
         }
 
         if ((p2pConnectionType == P2P_CONNECTIVITY_PCIE_BAR1) &&
             (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL))
         {
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                   kbusGetBar1P2PDmaInfo_HAL(pLocalGpu, pRemoteGpu,
                                       pRemoteKernelBus,
                                       &pNv503bAllocParams->l2pBar1P2PDmaInfo.dma_address,
-                                      &pNv503bAllocParams->l2pBar1P2PDmaInfo.dma_size));
+                                      &pNv503bAllocParams->l2pBar1P2PDmaInfo.dma_size), cleanup);
 
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                   kbusGetBar1P2PDmaInfo_HAL(pRemoteGpu, pLocalGpu,
                                       pLocalKernelBus,
                                       &pNv503bAllocParams->p2lBar1P2PDmaInfo.dma_address,
-                                      &pNv503bAllocParams->p2lBar1P2PDmaInfo.dma_size));
+                                      &pNv503bAllocParams->p2lBar1P2PDmaInfo.dma_size), cleanup);
         }
     }
 
@@ -632,16 +629,16 @@ p2papiConstruct_IMPL
         IS_VIRTUAL_WITH_SRIOV(pGpu) &&
         gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
     {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                               _p2papiReservePeerID(pLocalGpu, pLocalKernelBus, pRemoteGpu,
                                                    pRemoteKernelBus, pNv503bAllocParams, pP2PApi,
-                                                   &peer1, &peer2, NV_FALSE, bSpaAccessOnly));
+                                                   &peer1, &peer2, NV_FALSE, bSpaAccessOnly), cleanup);
         if (bEgmPeer)
         {
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                                   _p2papiReservePeerID(pLocalGpu, pLocalKernelBus, pRemoteGpu,
                                                        pRemoteKernelBus, pNv503bAllocParams, pP2PApi,
-                                                       &egmPeer1, &egmPeer2, NV_TRUE, bSpaAccessOnly));
+                                                       &egmPeer1, &egmPeer2, NV_TRUE, bSpaAccessOnly), cleanup);
         }
     }
 
@@ -663,7 +660,7 @@ p2papiConstruct_IMPL
                                sizeof(*pNv503bAllocParams),
                                status);
         if (status != NV_OK)
-            return status;
+            goto cleanup;
     }
 
     //
@@ -676,8 +673,8 @@ p2papiConstruct_IMPL
         {
             goto remote_fla_bind;
         }
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                              kbusSetupBindFla_HAL(pLocalGpu, pLocalKernelBus, pP2PApi->localGfid));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                              kbusSetupBindFla_HAL(pLocalGpu, pLocalKernelBus, pP2PApi->localGfid), cleanup);
     }
 
 remote_fla_bind:
@@ -688,26 +685,47 @@ remote_fla_bind:
         {
             if (!IS_VIRTUAL(pRemoteGpu))
             {
-                return status;
+                goto cleanup;
             }
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  kbusSetupBindFla_HAL(pRemoteGpu, pRemoteKernelBus, pP2PApi->remoteGfid));
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                  kbusSetupBindFla_HAL(pRemoteGpu, pRemoteKernelBus, pP2PApi->remoteGfid), cleanup);
         }
     }
 
     // Adding P2PApi as a dependant of 2 Subdevices, P2PApi must be destroyed before OBJGPU destruction
-    NV_ASSERT_OK_OR_RETURN(refAddDependant(RES_GET_REF(pSubDevice), pCallContext->pResourceRef));
+    NV_ASSERT_OK_OR_GOTO(status, refAddDependant(RES_GET_REF(pSubDevice), pCallContext->pResourceRef), cleanup);
     if (hDevice != hPeerDevice)
     {
-        NV_ASSERT_OK_OR_RETURN(refAddDependant(RES_GET_REF(pPeerSubDevice), pCallContext->pResourceRef));
+        NV_ASSERT_OK_OR_GOTO(status, refAddDependant(RES_GET_REF(pPeerSubDevice), pCallContext->pResourceRef), cleanup);
     }
 
     if (status == NV_OK)
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pLocalKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, NV_ERR_INSUFFICIENT_RESOURCES);
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pRemoteKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, NV_ERR_INSUFFICIENT_RESOURCES);
+        NV_CHECK_OR_ELSE(LEVEL_ERROR, pLocalKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, status = NV_ERR_INSUFFICIENT_RESOURCES; goto cleanup);
+        NV_CHECK_OR_ELSE(LEVEL_ERROR, pRemoteKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, status = NV_ERR_INSUFFICIENT_RESOURCES; goto cleanup);
         pLocalKernelBus->totalP2pObjectsAliveRefCount++;
         pRemoteKernelBus->totalP2pObjectsAliveRefCount++;
+    }
+
+cleanup:
+    //
+    // Bug 4016670: if construct failed after creating the P2P mapping(s),
+    // remove them so we do not leak the peer IOMMU mapping / bus refcount
+    // (which would otherwise outlive teardown and trip the IOVAS / memdesc
+    // asserts). On the success path status == NV_OK and nothing is removed.
+    //
+    if (status != NV_OK)
+    {
+        if (bEgmP2PMappingCreated)
+            (void)kbusRemoveP2PMapping_HAL(pLocalGpu, pLocalKernelBus,
+                                            pRemoteGpu, pRemoteKernelBus,
+                                            egmPeer1, egmPeer2,
+                                            pP2PApi->attributes |
+                                            DRF_DEF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES));
+        if (bMainP2PMappingCreated)
+            (void)kbusRemoveP2PMapping_HAL(pLocalGpu, pLocalKernelBus,
+                                            pRemoteGpu, pRemoteKernelBus,
+                                            peer1, peer2, pP2PApi->attributes);
     }
 
     return status;
