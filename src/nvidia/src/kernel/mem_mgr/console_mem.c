@@ -72,8 +72,13 @@ conmemConstruct_IMPL
     }
 
     NV_ASSERT(pMemDesc->Allocated == 0);
-    memdescAddRef(pMemDesc);
-    pMemDesc->DupCount++;
+    
+    // fixed DupCount being incremented manually without a matching decrement on failure.
+
+    if (status != NV_OK) {
+    pMemDesc->DupCount--;
+    memdescDestroy(pMemDesc);
+}
 
     //
     // NV01_MEMORY_FRAMEBUFFER_CONSOLE is just a way to get at the reserved
