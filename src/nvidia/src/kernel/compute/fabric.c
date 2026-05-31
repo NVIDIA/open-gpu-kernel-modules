@@ -892,12 +892,12 @@ fabricConstruct_IMPL
 
     return NV_OK;
 
-//TODO: Remove the WAR to suppress unused label warning
-goto fail;
-fail:
-    fabricDestruct_IMPL(pFabric);
-    return status;
-}
+// Removed the WAR to suppress unused label warning.
+
+    fail:
+        fabricDestruct_IMPL(pFabric);
+        return status;
+    }
 
 void
 fabricDestruct_IMPL
