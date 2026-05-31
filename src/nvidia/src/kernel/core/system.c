@@ -861,6 +861,8 @@ sysSyncExternalFabricMgmtWAR_IMPL
     return status;
 }
 
+
+// use separate gpuLockMask for acquire and release so gpumgrGetGpuAttachInfo can't clobber it and cause a lock imbalance.
 static void
 _sysRefreshAllGpuRecoveryAction
 (
@@ -872,10 +874,11 @@ _sysRefreshAllGpuRecoveryAction
     NvU32      i;
     NvU32      gpuCount;
     NvU32      gpuIndex;
+    NvU32      gpuLockMask;
     NvU32      gpuMask;
 
     NV_ASSERT_OK_OR_ELSE(status,
-        rmGpuGroupLockAcquire(0, GPU_LOCK_GRP_ALL, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_NONE, &gpuMask),
+        rmGpuGroupLockAcquire(0, GPU_LOCK_GRP_ALL, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_NONE, &gpuLockMask),
         return);
 
     gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
@@ -888,7 +891,7 @@ _sysRefreshAllGpuRecoveryAction
         }
     }
 
-    rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+    rmGpuGroupLockRelease(gpuLockMask, GPUS_LOCK_FLAGS_NONE);
 }
 
 void
