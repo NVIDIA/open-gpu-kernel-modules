@@ -41,17 +41,19 @@ static inline
 void __nv_drm_gem_dma_buf_free(struct nv_drm_gem_object *nv_gem)
 {
     struct nv_drm_device *nv_dev = nv_gem->nv_dev;
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct nv_drm_gem_dma_buf *nv_dma_buf = to_nv_dma_buf(nv_gem);
 
     /*
-     * Only call nvKms->freeMemory if pDevice is valid and device is not
-     * in surprise removal. During hot-unplug, nvidia_modeset internal state
-     * may be corrupted before this destructor runs from delayed_fput.
+     * Only call nvKms->freeMemory if pDevice is valid and removal has not
+     * started. During hot-unplug, nvidia_modeset internal state may be
+     * corrupted before this destructor runs from delayed_fput.
      */
-    if (nv_dma_buf->base.pMemory && nv_dev->pDevice != NULL &&
-        !nv_dev->inSurpriseRemoval) {
+    if (nv_dma_buf->base.pMemory && pDevice != NULL &&
+        !READ_ONCE(nv_dev->inSurpriseRemoval) &&
+        !READ_ONCE(nv_dev->inRemoval)) {
         /* Free NvKmsKapiMemory handle associated with this gem object */
-        nvKms->freeMemory(nv_dev->pDevice, nv_dma_buf->base.pMemory);
+        nvKms->freeMemory(pDevice, nv_dma_buf->base.pMemory);
     }
 
     drm_prime_gem_destroy(&nv_gem->base, nv_dma_buf->sgt);

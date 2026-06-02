@@ -30,6 +30,7 @@
 #include "nvkms-rm.h"
 #include "nvkms-rmapi.h"
 #include "nvkms-evo1.h"
+#include "nvkms-prealloc.h"
 #include "nvkms-utils.h"
 
 #include "hdmi_spec.h"

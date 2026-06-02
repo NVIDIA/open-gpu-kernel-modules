@@ -942,9 +942,19 @@ static void nv_drm_dev_unload(struct drm_device *dev)
      * Use freeDeviceForSurpriseRemoval which only releases kernel resources
      * without attempting any hardware access.
      */
-    if (nv_dev->inSurpriseRemoval) {
+    /*
+     * For Thunderbolt eGPU hot-unplug, pci_channel_offline() returns false
+     * (it's a controlled PCIe removal, not a bus error), so inSurpriseRemoval
+     * is not set.  However, the GPU hardware is physically gone.  Use
+     * freeDeviceForSurpriseRemoval for ALL removals triggered via nv_drm_remove
+     * (inRemoval = TRUE) so we never attempt hardware-level RM teardown against
+     * a device that is no longer on the bus.  This suppresses the
+     * kgmmuInvalidateTlb / dmaFreeMapping error flood in the kernel log.
+     */
+    if (READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
         NV_DRM_DEV_LOG_INFO(nv_dev,
-            "Surprise removal detected, skipping hardware access");
+            "GPU removal detected (surprise or eGPU hot-unplug), skipping hardware access");
 
         /* Wake up any processes waiting on flip events */
         wake_up_all(&nv_dev->flip_event_wq);
@@ -956,8 +966,8 @@ static void nv_drm_dev_unload(struct drm_device *dev)
         drm_kms_helper_poll_fini(dev);
         drm_mode_config_cleanup(dev);
 
-        pDevice = nv_dev->pDevice;
-        nv_dev->pDevice = NULL;
+        pDevice = READ_ONCE(nv_dev->pDevice);
+        WRITE_ONCE(nv_dev->pDevice, NULL);
 
         mutex_unlock(&nv_dev->lock);
 
@@ -1013,8 +1023,8 @@ static void nv_drm_dev_unload(struct drm_device *dev)
 
     /* Unset NvKmsKapiDevice */
 
-    pDevice = nv_dev->pDevice;
-    nv_dev->pDevice = NULL;
+    pDevice = READ_ONCE(nv_dev->pDevice);
+    WRITE_ONCE(nv_dev->pDevice, NULL);
 
     mutex_unlock(&nv_dev->lock);
 
@@ -1968,6 +1978,8 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
                       DRM_UNLOCKED|DRM_MASTER),
 };
 
+static void nv_drm_dev_release(struct drm_device *dev);
+
 static struct drm_driver nv_drm_driver = {
 
     .driver_features        =
@@ -2040,6 +2052,7 @@ static struct drm_driver nv_drm_driver = {
 #endif
 
     .load                   = nv_drm_load_noop,
+    .release                = nv_drm_dev_release,
 
     .postclose              = nv_drm_postclose,
     .open                   = nv_drm_open,
@@ -2232,10 +2245,13 @@ failed_drm_register:
 failed_drm_load:
 
     drm_dev_put(dev);
+    nv_dev = NULL;
 
 failed_drm_alloc:
 
-    nv_drm_free(nv_dev);
+    if (nv_dev != NULL) {
+        nv_drm_free(nv_dev);
+    }
 }
 
 /*
@@ -2307,7 +2323,22 @@ static void nv_drm_dev_destroy(struct nv_drm_device *nv_dev)
 
     nv_drm_dev_unload(dev);
     drm_dev_put(dev);
-    nv_drm_free(nv_dev);
+}
+
+static void nv_drm_dev_release(struct drm_device *dev)
+{
+    struct nv_drm_device *nv_dev;
+
+    if (dev == NULL) {
+        return;
+    }
+
+    nv_dev = dev->dev_private;
+    dev->dev_private = NULL;
+
+    if (nv_dev != NULL) {
+        nv_drm_free(nv_dev);
+    }
 }
 
 /*
@@ -2345,19 +2376,32 @@ void nv_drm_remove(NvU32 gpuId)
         NV_DRM_DEV_LOG_INFO(nv_dev, "Removing device");
 
         /*
+         * Mark the device as being removed BEFORE drm_dev_unplug to close
+         * the race window where delayed_fput callbacks (e.g. DMA-buf release)
+         * check pDevice != NULL and proceed to call into nvidia_modeset state
+         * that may have already been freed by nv_drm_dev_unload running
+         * concurrently on another CPU.  Setting inRemoval first ensures all
+         * destructor guards skip nvKms calls from this point on.
+         */
+        WRITE_ONCE(nv_dev->inRemoval, NV_TRUE);
+
+        /*
          * Check if this is a surprise removal (hot-unplug) by testing
          * if the PCI channel is offline. This happens when:
          * - Thunderbolt eGPU is physically disconnected
          * - GPU falls off the bus unexpectedly
-         * 
-         * For normal driver unload (rmmod), the PCI channel remains online.
-         * We only skip NVKMS hardware access during surprise removal.
+         *
+         * Note: for Thunderbolt eGPU hot-unplug pci_channel_offline() often
+         * returns false (controlled PCIe hot-remove, not a bus error), so
+         * inSurpriseRemoval may not be set.  inRemoval above handles that.
+         * We keep inSurpriseRemoval for the hardware-access-skip path in
+         * nv_drm_dev_unload (freeDeviceForSurpriseRemoval vs freeDevice).
          */
         pdev = nv_drm_get_pci_dev(nv_dev->dev);
         if (pdev != NULL && pci_channel_offline(pdev)) {
             NV_DRM_DEV_LOG_INFO(nv_dev,
                 "PCI channel offline - surprise removal detected");
-            nv_dev->inSurpriseRemoval = NV_TRUE;
+            WRITE_ONCE(nv_dev->inSurpriseRemoval, NV_TRUE);
 
             /* Wake up any processes waiting on flip events */
             wake_up_all(&nv_dev->flip_event_wq);

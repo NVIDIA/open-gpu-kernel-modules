@@ -213,14 +213,17 @@ static void __nv_drm_prime_fence_context_destroy(
     struct nv_drm_fence_context *nv_fence_context)
 {
     struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct nv_drm_prime_fence_context *nv_prime_fence_context =
         to_nv_prime_fence_context(nv_fence_context);
 
     /*
-     * Skip nvKms calls if device is being surprise-removed.
-     * The nvidia_modeset internal state may be corrupted.
+     * Skip nvKms calls if device is being removed or was surprise-removed.
+     * The nvidia_modeset internal state may be freed before this destructor
+     * runs from delayed_fput (race between drm_dev_unplug and pDevice NULL).
      */
-    if (nv_dev->pDevice == NULL || nv_dev->inSurpriseRemoval) {
+    if (pDevice == NULL || READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
         /* Force signal pending fences and free */
         spin_lock(&nv_prime_fence_context->lock);
         nv_drm_gem_prime_force_fence_signal(nv_prime_fence_context);
@@ -233,7 +236,7 @@ static void __nv_drm_prime_fence_context_destroy(
      * Free channel event before destroying the fence context, otherwise event
      * callback continue to get called.
      */
-    nvKms->freeChannelEvent(nv_dev->pDevice, nv_prime_fence_context->cb);
+    nvKms->freeChannelEvent(pDevice, nv_prime_fence_context->cb);
 
     /* Force signal all pending fences and empty pending list */
     spin_lock(&nv_prime_fence_context->lock);
@@ -244,12 +247,12 @@ static void __nv_drm_prime_fence_context_destroy(
 
     /* Free nvkms resources */
 
-    nvKms->unmapMemory(nv_dev->pDevice,
+    nvKms->unmapMemory(pDevice,
                        nv_prime_fence_context->pSemSurface,
                        NVKMS_KAPI_MAPPING_TYPE_KERNEL,
                        (void *) nv_prime_fence_context->pLinearAddress);
 
-    nvKms->freeMemory(nv_dev->pDevice, nv_prime_fence_context->pSemSurface);
+    nvKms->freeMemory(pDevice, nv_prime_fence_context->pSemSurface);
 
     nv_drm_free(nv_fence_context);
 }
@@ -1017,12 +1020,19 @@ __nv_drm_semsurf_ctx_reg_callbacks(struct nv_drm_semsurf_fence_ctx *ctx)
 
 {
     struct nv_drm_device *nv_dev = ctx->base.nv_dev;
-    struct nv_drm_semsurf_fence_callback *newCallback =
-        __nv_drm_semsurf_new_callback(ctx);
+    struct nv_drm_semsurf_fence_callback *newCallback;
     struct NvKmsKapiSemaphoreSurfaceCallback *newNvKmsCallback;
     NvU64 newWaitValue;
     unsigned long newTimeout;
     NvKmsKapiRegisterWaiterResult kapiRet;
+
+    if (READ_ONCE(nv_dev->pDevice) == NULL ||
+        READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
+        return;
+    }
+
+    newCallback = __nv_drm_semsurf_new_callback(ctx);
 
     if (!newCallback) {
         NV_DRM_DEV_LOG_ERR(
@@ -1135,6 +1145,7 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
     struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
     struct nv_drm_semsurf_fence_ctx *ctx =
         to_semsurf_fence_ctx(nv_fence_context);
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct NvKmsKapiSemaphoreSurfaceCallback *pendingNvKmsCallback;
     NvU64 pendingWaitValue;
     unsigned long flags;
@@ -1146,6 +1157,20 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
     nv_drm_workthread_shutdown(&ctx->worker);
 
     nv_timer_delete_sync(&ctx->timer.kernel_timer);
+
+    if (pDevice == NULL || READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
+        if (ctx->callback.local) {
+            nv_drm_free(ctx->callback.local);
+            ctx->callback.local = NULL;
+            ctx->callback.nvKms = NULL;
+        }
+
+        __nv_drm_semsurf_force_complete_pending(ctx);
+
+        nv_drm_free(nv_fence_context);
+        return;
+    }
 
     /*
      * The semaphore surface could still be sending callbacks, so it is still
@@ -1164,14 +1189,14 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
 
     if (pendingNvKmsCallback) {
         WARN_ON(pendingWaitValue == 0);
-        nvKms->unregisterSemaphoreSurfaceCallback(nv_dev->pDevice,
+        nvKms->unregisterSemaphoreSurfaceCallback(pDevice,
                                                   ctx->pSemSurface,
                                                   ctx->base.fenceSemIndex,
                                                   pendingWaitValue,
                                                   pendingNvKmsCallback);
     }
 
-    nvKms->freeSemaphoreSurface(nv_dev->pDevice, ctx->pSemSurface);
+    nvKms->freeSemaphoreSurface(pDevice, ctx->pSemSurface);
 
     /*
      * Now that the semaphore surface, the timer, and the workthread are gone:

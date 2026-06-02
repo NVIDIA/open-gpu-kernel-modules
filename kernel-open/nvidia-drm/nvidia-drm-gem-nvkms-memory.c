@@ -39,16 +39,18 @@
 static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
 {
     struct nv_drm_device *nv_dev = nv_gem->nv_dev;
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
         to_nv_nvkms_memory(nv_gem);
 
     /*
-     * Skip nvKms calls if pDevice is NULL or inSurpriseRemoval is set.
+     * Skip nvKms calls if pDevice is NULL or removal has started.
      * During hot-unplug, the nvidia_modeset internal state (semaphores,
      * memory handles) may be corrupted or freed before this destructor
      * runs from delayed_fput. The memory resources are gone with the GPU.
      */
-    if (nv_dev->pDevice == NULL || nv_dev->inSurpriseRemoval) {
+    if (pDevice == NULL || READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
         nv_drm_free(nv_nvkms_memory);
         return;
     }
@@ -64,7 +66,7 @@ static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
         }
 #endif
 
-        nvKms->unmapMemory(nv_dev->pDevice,
+        nvKms->unmapMemory(pDevice,
                            nv_nvkms_memory->base.pMemory,
                            NVKMS_KAPI_MAPPING_TYPE_USER,
                            nv_nvkms_memory->pPhysicalAddress);
@@ -76,12 +78,12 @@ static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
 
     /* Decrement GC6 blocker if it's still held */
     if (nv_nvkms_memory->was_mmapped) {
-        nvKms->gc6BlockerRefCntDec(nv_dev->pDevice);
+        nvKms->gc6BlockerRefCntDec(pDevice);
     }
 
     /* Free NvKmsKapiMemory handle associated with this gem object */
 
-    nvKms->freeMemory(nv_dev->pDevice, nv_nvkms_memory->base.pMemory);
+    nvKms->freeMemory(pDevice, nv_nvkms_memory->base.pMemory);
 
     nv_drm_free(nv_nvkms_memory);
 }

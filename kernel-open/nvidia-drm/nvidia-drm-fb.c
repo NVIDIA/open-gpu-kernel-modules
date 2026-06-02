@@ -55,6 +55,7 @@ static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 static void nv_drm_framebuffer_destroy(struct drm_framebuffer *fb)
 {
     struct nv_drm_device *nv_dev = to_nv_device(fb->dev);
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct nv_drm_framebuffer *nv_fb = to_nv_framebuffer(fb);
 
     /* Cleaup core framebuffer object */
@@ -64,13 +65,14 @@ static void nv_drm_framebuffer_destroy(struct drm_framebuffer *fb)
     /* Free NvKmsKapiSurface associated with this framebuffer object */
 
     /*
-     * Only call nvKms->destroySurface if pDevice is valid and device is not
-     * in surprise removal. During hot-unplug, nvidia_modeset internal state
-     * may be corrupted before this destructor runs from delayed_fput.
+     * Only call nvKms->destroySurface if pDevice is valid and removal has not
+     * started. During hot-unplug, nvidia_modeset internal state may be
+     * corrupted before this destructor runs from delayed_fput.
      */
 
-    if (nv_dev->pDevice != NULL && !nv_dev->inSurpriseRemoval && nv_fb->pSurface != NULL) {
-        nvKms->destroySurface(nv_dev->pDevice, nv_fb->pSurface);
+    if (pDevice != NULL && !READ_ONCE(nv_dev->inSurpriseRemoval) &&
+        !READ_ONCE(nv_dev->inRemoval) && nv_fb->pSurface != NULL) {
+        nvKms->destroySurface(pDevice, nv_fb->pSurface);
     }
 
     __nv_drm_framebuffer_free(nv_fb);

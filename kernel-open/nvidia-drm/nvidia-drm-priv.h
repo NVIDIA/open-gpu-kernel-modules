@@ -176,6 +176,15 @@ struct nv_drm_device {
      */
     NvBool inSurpriseRemoval;
 
+    /*
+     * Set to NV_TRUE for ALL removals (both surprise and normal) before
+     * drm_dev_unplug is called. This closes the race window between
+     * drm_dev_unplug and pDevice being NULLed in nv_drm_dev_unload,
+     * during which delayed_fput callbacks could call into freed
+     * nvidia_modeset state (e.g. drm_gem_dmabuf_release path).
+     */
+    NvBool inRemoval;
+
     struct drm_property *nv_out_fence_property;
     struct drm_property *nv_input_colorspace_property;
     struct drm_property *nv_hdcp_level_property;
