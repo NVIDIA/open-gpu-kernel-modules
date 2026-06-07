@@ -2,7 +2,8 @@ name: Report a functional bug 🐛
 description: |
   Functional bugs affect operation or stability of the driver or hardware.
 
-  Bugs with the closed source driver must be reported on the forums (see link on New Issue page below).
+  Bugs that reproduce with both open and proprietary kernel modules should
+  include that comparison below so maintainers can route them appropriately.
 labels:
   - "bug"
 body:
@@ -21,14 +22,18 @@ body:
     description: "Which open-gpu-kernel-modules version are you running? Be as specific as possible: SHA is best when built from specific commit."
   validations:
     required: true
-- type: checkboxes
-  id: sw_driver_proprietary
+- type: textarea
+  id: sw_driver_comparison
   attributes:
-    label: "Please confirm this issue does not happen with the proprietary driver (of the same version). This issue tracker is only for bugs specific to the open kernel driver."
-    options:
-    - label: "I confirm that this does not happen with the proprietary driver package."
+    label: Comparison with proprietary kernel module
+    description: |
+      If a proprietary kernel module package is available for the same driver
+      version and your GPU, please say whether the issue reproduces there too.
+      If you cannot test that configuration, say why.
+    placeholder: |
+      Example: I could not test the proprietary kernel module because ...
   validations:
-    required: true
+    required: false
 - type: input
   id: sw_host_os
   attributes:
