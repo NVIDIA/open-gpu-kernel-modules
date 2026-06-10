@@ -843,6 +843,12 @@ NvU32 cur_debuglevel = 0xffffffff;
  */
 inline void NV_API_CALL out_string(const char *str)
 {
+    if ((str == NULL) || (str[0] == '\0') ||
+        ((str[0] == '\n') && (str[1] == '\0')))
+    {
+        return;
+    }
+
     printk("%s", str);
 }
 
