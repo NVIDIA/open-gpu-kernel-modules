@@ -1732,6 +1732,15 @@ NvBool DeviceImpl::getDSCSupport()
         }
     }
 
+    else if (hal->isVirtualSinkDpcdFallback())
+    {
+        //
+        // Forced/sink-less connector (EDID override, no AUX): assume the
+        // virtual sink can decompress DSC so that high-bandwidth modes pass
+        // validation. The stream is never decoded by a real device.
+        //
+        dscCaps.bDSCDecompressionSupported = true;
+    }
     else
     {
         DP_PRINTF(DP_ERROR, "DP-DEV> DSC Support AUX READ failed for %s!", address.toString(sb));
@@ -2308,6 +2317,12 @@ bool DeviceImpl::getFECSupport()
         bFECSupported = this->bandwidth.enum_path.bPathFECCapable;
     }
 
+    else if (hal->isVirtualSinkDpcdFallback())
+    {
+        // Forced/sink-less connector: claim FEC so the DSC path is usable.
+        bFECSupported = true;
+    }
+
     else if (AuxBus::success == this->getDpcdData(NV_DPCD14_FEC_CAPABILITY,
         &byte, sizeof(byte), &size, &nakReason))
     {
@@ -2560,6 +2575,30 @@ bool DeviceImpl::readAndParseDSCCaps()
     if(AuxBus::success != this->getDpcdData(NV_DPCD14_DSC_SUPPORT,
         &rawDscCaps[0], sizeof(rawDscCaps), &sizeCompleted, &nakReason))
     {
+        if (hal->isVirtualSinkDpcdFallback())
+        {
+            //
+            // Forced/sink-less connector: synthesize DSC decoder caps
+            // modeled on a typical DSC 1.2 4K high-refresh monitor.
+            //
+            rawDscCaps[0x0] = 0x01; // decompression supported
+            rawDscCaps[0x1] = 0x21; // DSC algorithm revision 1.2
+            rawDscCaps[0x2] = 0x00; // RC buffer block size
+            rawDscCaps[0x3] = 0x0F; // RC buffer size
+            rawDscCaps[0x4] = 0xFF; // slice caps 1: up to 12 slices
+            rawDscCaps[0x5] = 0x03; // line buffer bit depth: 12
+            rawDscCaps[0x6] = 0x01; // block prediction supported
+            rawDscCaps[0x7] = 0xFF; // max bits per pixel LSB
+            rawDscCaps[0x8] = 0x03; // max bits per pixel MSB (1023/16 bpp)
+            rawDscCaps[0x9] = 0x1F; // color formats: RGB + all YCbCr
+            rawDscCaps[0xA] = 0x0E; // color depth: 8/10/12 bpc
+            rawDscCaps[0xB] = 0xEE; // peak throughput 1000 MP/s both modes
+            rawDscCaps[0xC] = 0x10; // max slice width 5120 px
+            rawDscCaps[0xD] = 0x00; // slice caps 2
+            rawDscCaps[0xE] = 0x00; // branch throughput
+            rawDscCaps[0xF] = 0x00; // bpp increment: 1/16
+            return parseDscCaps(&rawDscCaps[0], sizeof(rawDscCaps));
+        }
         DP_PRINTF(DP_ERROR, "DP-DEV> Error querying DSC Caps on %s!", this->address.toString(sb));
         return false;
     }

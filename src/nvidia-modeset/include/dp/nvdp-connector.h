@@ -35,7 +35,12 @@ NVDPLibConnectorPtr nvDPCreateConnector(NVConnectorEvoPtr pConnectorEvo);
 void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
                          NvBool connected);
 
+void nvDPNotifyVirtualSinkLongPulse(NVConnectorEvoPtr pConnectorEvo,
+                                    NvBool connected);
+
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector);
+
+NvBool nvDPConnectorIsPlugged(const NVConnectorEvoRec *pConnectorEvo);
 
 void nvDPDestroyConnector(NVDPLibConnectorPtr pNVDpLibConnector);
 

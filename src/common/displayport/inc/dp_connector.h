@@ -630,6 +630,7 @@ namespace DisplayPort
 
         // Notify library of hotplug/IRQ
         virtual void notifyLongPulse(bool statusConnected) = 0;
+        virtual void notifyVirtualSinkLongPulse(bool statusConnected) = 0;
         virtual void notifyShortPulse() = 0;
 
         // Notify Library when ACPI initialization is done

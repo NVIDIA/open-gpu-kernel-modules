@@ -760,6 +760,7 @@ namespace DisplayPort
         virtual void disconnectDeviceList();
         void notifyLongPulseInternal(bool statusConnected);
         virtual void notifyLongPulse(bool status);
+        virtual void notifyVirtualSinkLongPulse(bool status);
         virtual void notifyShortPulse();
         virtual Group * newGroup();
         virtual void destroy();

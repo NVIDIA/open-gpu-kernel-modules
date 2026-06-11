@@ -305,6 +305,8 @@ namespace DisplayPort
         virtual void overrideOptimalLinkRate(LinkRate optimalLinkRate) = 0;
 
         virtual bool isDpcdOffline() = 0;
+        virtual bool isVirtualSinkDpcdFallback() = 0;
+        virtual void setVirtualSinkDpcdFallback(bool bEnable) = 0;
         virtual void setAuxBus(AuxBus * bus) = 0;
         virtual NvU32 getVideoFallbackSupported() = 0;
         //
@@ -596,6 +598,7 @@ namespace DisplayPort
         AuxRetry  bus;
         Timer    * timer;
         bool      dpcdOffline;
+        bool      bVirtualSinkDpcdFallback;
         bool      bGrantsPostLtRequest;
         bool      pc2Disabled;
         bool      uprequestEnable;
@@ -795,7 +798,8 @@ namespace DisplayPort
 
         public:
         DPCDHALImpl(AuxBus * bus, Timer * timer)
-        : bus(bus), timer(timer), bGrantsPostLtRequest(false), uprequestEnable(false),
+        : bus(bus), timer(timer), bVirtualSinkDpcdFallback(false),
+          bGrantsPostLtRequest(false), uprequestEnable(false),
           upstreamIsSource(false), bMultistream(false), bGpuFECSupported(false),
           bBypassILREdpRevCheck(false), overrideDpcdMaxLinkRate(0),
           overrideDpcdRev(0), gpuDPSupportedVersions(0)
@@ -832,6 +836,16 @@ namespace DisplayPort
         bool isDpcdOffline()
         {
             return dpcdOffline;
+        }
+
+        bool isVirtualSinkDpcdFallback()
+        {
+            return bVirtualSinkDpcdFallback;
+        }
+
+        void setVirtualSinkDpcdFallback(bool bEnable)
+        {
+            bVirtualSinkDpcdFallback = bEnable;
         }
 
         void setDPCDOffline(bool bOffline)

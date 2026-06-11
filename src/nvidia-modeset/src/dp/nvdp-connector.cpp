@@ -121,6 +121,22 @@ void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
 
 }
 
+void nvDPNotifyVirtualSinkLongPulse(NVConnectorEvoPtr pConnectorEvo,
+                                    NvBool connected)
+{
+    NVDPLibConnectorPtr pNVDpLibConnector = pConnectorEvo->pDpLibConnector;
+    DisplayPort::Connector *c = pNVDpLibConnector->connector;
+
+    pNVDpLibConnector->plugged = connected;
+    c->notifyVirtualSinkLongPulse(connected);
+}
+
+NvBool nvDPConnectorIsPlugged(const NVConnectorEvoRec *pConnectorEvo)
+{
+    return (pConnectorEvo->pDpLibConnector != NULL) &&
+           pConnectorEvo->pDpLibConnector->plugged;
+}
+
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector)
 {
     DisplayPort::Connector *c = pNVDpLibConnector->connector;

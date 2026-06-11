@@ -7348,6 +7348,7 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
 {
     NvU32 muxState = 0;
     NV_DPTRACE_INFO(HOTPLUG, statusConnected, connectorActive, previousPlugged);
+    hal->setVirtualSinkDpcdFallback(false);
 
     if (!connectorActive)
     {
@@ -7424,6 +7425,18 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
         }
     }
 
+    this->notifyLongPulseInternal(statusConnected);
+}
+
+void ConnectorImpl::notifyVirtualSinkLongPulse(bool statusConnected)
+{
+    if (!connectorActive)
+    {
+        DP_PRINTF(DP_ERROR, "DP> Got a virtual-sink long pulse before any connector is active!!");
+        return;
+    }
+
+    hal->setVirtualSinkDpcdFallback(statusConnected);
     this->notifyLongPulseInternal(statusConnected);
 }
 
@@ -9313,4 +9326,3 @@ void ConnectorImpl::ensureMstNodesPoweredUp(Group * target)
         }
     }
 }
-
