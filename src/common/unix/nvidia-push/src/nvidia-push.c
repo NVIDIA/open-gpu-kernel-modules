@@ -347,6 +347,7 @@ static NvBool nvWriteGpEntry(
 
     NvU32 nextGpPut;
     NvU32 *gpPointer;
+    NvU64 baseTime, currentTime;
     const NvU32 entriesNeeded = NV_PUSH_NUM_GPFIFO_ENTRIES_PER_KICKOFF;
     NvPushDevicePtr pDevice = push_buffer->pDevice;
 
@@ -359,9 +360,19 @@ static NvBool nvWriteGpEntry(
     nvAssert((nextGpPut % 2) == 0);
 
     // Wait for a free entry in the buffer
-    while (nextGpPut == ReadGpGetOffset(push_buffer)) {
+    for (baseTime = currentTime = nvPushImportGetMilliSeconds(pDevice);
+         nextGpPut == ReadGpGetOffset(push_buffer);
+         currentTime = nvPushImportGetMilliSeconds(pDevice)) {
+
         if (nvPushCheckChannelError(push_buffer)) {
             nvAssert(!"A channel error occurred in nvWriteGpEntry()");
+            return FALSE;
+        }
+
+        if (currentTime > (baseTime + NV_PUSH_NOTIFIER_SHORT_TIMEOUT) &&
+            !push_buffer->noTimeout) {
+            nvPushImportLogError(pDevice,
+                "Timed out waiting for a free GPFIFO entry.");
             return FALSE;
         }
     }
