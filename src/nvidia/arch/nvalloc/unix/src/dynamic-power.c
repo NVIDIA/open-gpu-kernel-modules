@@ -2288,6 +2288,7 @@ RmPowerManagement(
                 if (nvp->pm_state.InHibernate)
                 {
                     gpuResumeFromHibernate(pGpu);
+                    nvp->pm_state.InHibernate = NV_FALSE;
                 }
                 else
                 {
