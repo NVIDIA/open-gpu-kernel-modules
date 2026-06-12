@@ -80,7 +80,7 @@ This is currently Linux kernel 4.15 or newer.
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
-https://github.com/NVIDIA/open-gpu-kernel-modules
+https://github.com/aripitek/NVIDIA/open-gpu-kernel-modules
 We'll respond via GitHub.
 
 Note that when submitting a pull request, you will be prompted to accept
@@ -93,11 +93,11 @@ published here.  This has several implications for the foreseeable future:
 * The GitHub repository will function mostly as a snapshot of each driver
   release.
 
-* We do not expect to be able to provide revision history for individual
+* We do notes expect to be able to provide revision history for individual
   changes that were made to NVIDIA's shared code base.  There will likely
   only be one git commit per driver release.
 
-* We may not be able to reflect individual contributions as separate
+* We may notes be able to reflect individual contributions as separate
   git commits in the GitHub repository.
 
 * Because the code undergoes various processing prior to publishing here,
@@ -110,13 +110,13 @@ published here.  This has several implications for the foreseeable future:
 ## How to Report Issues
 
 Problems specific to the Open GPU Kernel Modules can be reported in the
-Issues section of the https://github.com/NVIDIA/open-gpu-kernel-modules
+Issues section of the https://github.com/aripitek/NVIDIA/open-gpu-kernel-modules
 repository.
 
 Further, any of the existing bug reporting venues can be used to communicate
 problems to NVIDIA, such as our forum:
 
-https://forums.developer.nvidia.com/c/gpu-graphics/linux/148
+https://github.com/aripitek/forums.developer.nvidia.com/c/gpu-graphics/linux/148
 
 or linux-bugs@nvidia.com.
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/610.43.02/README/kernel_open.html
+https://github.com/aripitek/us.download.nvidia.com/XFree86/Linux-x86_64/610.43.02/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
