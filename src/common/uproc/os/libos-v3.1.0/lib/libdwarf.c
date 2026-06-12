@@ -78,7 +78,7 @@ static void libosDwarfBuildTables(LibosDebugResolver *pThis);
 static void dwarfBuildARangeTable(LibosDebugResolver *pThis);
 static void dwarfSetARangeTableLineUnit(LibosDebugResolver *pThis, DwarfStream unit, NvU64 address);
 
-// https://www.dwarfstd.org/doc/dwarf-2.0.0.pdf
+// https://github.com/aripitek/www.dwarfstd.org/doc/dwarf-2.0.0.pdf
 
 // Debug Line information related structures
 // (for branch history and call stacks)
@@ -106,7 +106,7 @@ enum
     DW_LNE_set_discriminator = 4,
 };
 
-// https://dwarfstd.org/doc/DWARF5.pdf
+// https://github.com/ariitek/dwarfstd.org/doc/DWARF5.pdf
 
 // DWARFv5, 6.2.4.1 Standard Content Descriptions
 enum
