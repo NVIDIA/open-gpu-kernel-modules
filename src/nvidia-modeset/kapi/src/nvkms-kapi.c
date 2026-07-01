@@ -475,7 +475,7 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
 
     /* Allocate NVKMS device */
 
-    nvkms_strncpy(
+    nvkms_strscpy(
         paramsAlloc->request.versionString,
         NV_VERSION_STRING,
         sizeof(paramsAlloc->request.versionString));

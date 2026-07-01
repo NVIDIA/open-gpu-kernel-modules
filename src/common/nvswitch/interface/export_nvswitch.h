@@ -28,6 +28,12 @@
 extern "C" {
 #endif
 
+#if defined(NV_KERNEL_INTERFACE_LAYER) && defined(NV_LINUX)
+#include <linux/types.h>  /* ssize_t */
+#else
+#include <sys/types.h>   /* ssize_t */
+#endif
+
 #include "nv_stdarg.h"
 #include "nvlink_common.h"
 #include "ioctl_common_nvswitch.h"
@@ -803,12 +809,12 @@ nvswitch_os_strlen
     const char *str
 );
 
-char*
-nvswitch_os_strncpy
+ssize_t
+nvswitch_os_strscpy
 (
     char *pDest,
     const char *pSrc,
-    NvLength length
+    NvLength count
 );
 
 int

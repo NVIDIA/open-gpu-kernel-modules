@@ -770,8 +770,7 @@ NvU32 NV_API_CALL os_get_current_process(void)
 void NV_API_CALL os_get_current_process_name(char *buf, NvU32 len)
 {
     task_lock(current);
-    strncpy(buf, current->comm, len - 1);
-    buf[len - 1] = '\0';
+    strscpy(buf, current->comm, len);
     task_unlock(current);
 }
 

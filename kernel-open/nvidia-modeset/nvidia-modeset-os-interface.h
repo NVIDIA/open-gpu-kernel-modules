@@ -149,9 +149,9 @@ int    nvkms_memcmp     (const void *s1,
 size_t nvkms_strlen     (const char *s);
 int    nvkms_strcmp     (const char *s1,
                          const char *s2);
-char*  nvkms_strncpy    (char *dest,
+ssize_t nvkms_strscpy   (char *dest,
                          const char *src,
-                         size_t n);
+                         size_t count);
 void   nvkms_usleep     (NvU64 usec);
 NvU64  nvkms_get_usec   (void);
 int    nvkms_copyin     (void *kptr,

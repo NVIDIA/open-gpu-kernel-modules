@@ -664,9 +664,9 @@ int nvkms_strcmp(const char *s1, const char *s2)
     return strcmp(s1, s2);
 }
 
-char* nvkms_strncpy(char *dest, const char *src, size_t n)
+ssize_t nvkms_strscpy(char *dest, const char *src, size_t count)
 {
-    return strncpy(dest, src, n);
+    return strscpy(dest, src, count);
 }
 
 void nvkms_usleep(NvU64 usec)

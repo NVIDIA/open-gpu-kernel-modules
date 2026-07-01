@@ -807,12 +807,12 @@ nvswitch_os_strlen
     const char *str
 );
 
-char*
-nvswitch_os_strncpy
+ssize_t
+nvswitch_os_strscpy
 (
     char *pDest,
     const char *pSrc,
-    NvLength length
+    NvLength count
 );
 
 int

@@ -2059,7 +2059,7 @@ nvswitch_os_read_registry_dword
         return -NVL_ERR_GENERIC;
     }
 
-    strncpy(regkey_val, regkey_val_start, regkey_val_len);
+    memcpy(regkey_val, regkey_val_start, regkey_val_len);
     regkey_val[regkey_val_len] = '\0';
 
     if (nvswitch_os_strtouint(regkey_val, data) != 0)
@@ -2406,15 +2406,15 @@ nvswitch_os_strlen
     return strlen(str);
 }
 
-char*
-nvswitch_os_strncpy
+ssize_t
+nvswitch_os_strscpy
 (
     char *dest,
     const char *src,
-    NvLength length
+    NvLength count
 )
 {
-    return strncpy(dest, src, length);
+    return strscpy(dest, src, count);
 }
 
 int

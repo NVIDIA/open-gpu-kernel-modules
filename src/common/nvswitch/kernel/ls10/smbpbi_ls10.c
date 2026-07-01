@@ -178,10 +178,9 @@ nvswitch_smbpbi_send_init_data_ls10
     cmd.hdr.size   = RM_SOE_CMD_SIZE(SMBPBI, INIT_DATA);
     cmd.cmd.smbpbiCmd.cmdType = RM_SOE_SMBPBI_CMD_ID_INIT_DATA;
 
-    nvswitch_os_strncpy((char *)pInitDataCmd->driverVersionString,
+    nvswitch_os_strscpy((char *)pInitDataCmd->driverVersionString,
                         NV_VERSION_STRING,
                         sizeof(pInitDataCmd->driverVersionString));
-    pInitDataCmd->driverVersionString[sizeof(pInitDataCmd->driverVersionString) - 1] = 0;
 
     nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn,
