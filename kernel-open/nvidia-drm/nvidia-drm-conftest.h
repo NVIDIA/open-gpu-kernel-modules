@@ -217,4 +217,17 @@ vmf_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
 
 #endif /* defined(NV_BSD) */
 
+/*
+ * Kernel commit 5164f7e7ff8e ("drm: Rename struct drm_atomic_state
+ * to drm_atomic_commit") renamed the struct and all associated functions.
+ */
+#if defined(NV_DRM_ATOMIC_COMMIT_PRESENT)
+#define drm_atomic_state            drm_atomic_commit
+#define drm_atomic_state_alloc      drm_atomic_commit_alloc
+#define drm_atomic_state_put        drm_atomic_commit_put
+#define drm_atomic_state_init       drm_atomic_commit_init
+#define drm_atomic_state_default_clear  drm_atomic_commit_default_clear
+#define drm_atomic_state_default_release drm_atomic_commit_default_release
+#endif
+
 #endif /* defined(__NVIDIA_DRM_CONFTEST_H__) */

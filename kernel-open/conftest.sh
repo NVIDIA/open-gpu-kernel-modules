@@ -3254,6 +3254,33 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PTEP_GET_PRESENT" "" "functions"
         ;;
 
+        drm_atomic_commit_present)
+            #
+            # Determine if the kernel has renamed struct drm_atomic_state
+            # to struct drm_atomic_commit.
+            #
+            # Linux kernel commit 5164f7e7ff8e ("drm: Rename struct drm_atomic_state
+            # to drm_atomic_commit") renames the
+            # struct and all associated functions.
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <drm/drm_atomic.h>
+
+            void conftest(void) {
+                struct drm_atomic_commit *state = NULL;
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+                echo "#define NV_DRM_ATOMIC_COMMIT_PRESENT" | append_conftest "types"
+            else
+                echo "#undef NV_DRM_ATOMIC_COMMIT_PRESENT" | append_conftest "types"
+            fi
+        ;;
+
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'
