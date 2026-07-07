@@ -547,6 +547,7 @@ gpuboostmgrGpuItr_IMPL
  * @return NV_ERR_OBJECT_NOT_FOUND if SGBG is not found
  * @return  NV_ERR_INVALID_ARGUMENT Null or incorrect arguments passed in.
  */
+
 NV_STATUS
 gpuboostmgrGetBoostGrpIdFromGpu_IMPL
 (
@@ -556,7 +557,7 @@ gpuboostmgrGetBoostGrpIdFromGpu_IMPL
 )
 {
     NvU32   i;
-    NvU32   index = 0;
+    NvU32   index;
     OBJGPU *pGpuTemp = NULL;
 
     *pBoostGrpId = NV0000_SYNC_GPU_BOOST_INVALID_GROUP_ID;
@@ -564,8 +565,12 @@ gpuboostmgrGetBoostGrpIdFromGpu_IMPL
     NV_ASSERT_OR_RETURN(NULL != pGpu, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pBoostGrpId, NV_ERR_INVALID_ARGUMENT);
 
-    for (i = 0; i < pBoostMgr->groupCount; i++)
+    for (i = 0; i < NV0000_SYNC_GPU_BOOST_MAX_GROUPS; i++)
     {
+        if (NV_OK != gpuboostmgrValidateGroupId(pBoostMgr, i))
+            continue;
+
+         index = 0;
         while (NULL != (pGpuTemp = gpuboostmgrGpuItr(pBoostMgr, i, &index)))
         {
             if (pGpuTemp->gpuId == pGpu->gpuId)
