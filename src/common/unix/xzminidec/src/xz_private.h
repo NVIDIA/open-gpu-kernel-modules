@@ -11,9 +11,14 @@
 #define XZ_PRIVATE_H
 
 #ifdef __KERNEL__
+#	include "conftest.h"
 #	include <linux/xz.h>
 #	include <linux/kernel.h>
-#	include <asm/unaligned.h>
+#	ifdef NV_LINUX_UNALIGNED_H_PRESENT
+#		include <linux/unaligned.h>
+#	else
+#		include <asm/unaligned.h>
+#	endif
 	/* XZ_PREBOOT may be defined only via decompress_unxz.c. */
 #	ifndef XZ_PREBOOT
 #		include <linux/slab.h>
