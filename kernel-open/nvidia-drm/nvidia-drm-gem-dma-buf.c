@@ -151,7 +151,7 @@ nv_drm_gem_prime_import_sg_table(struct drm_device *dev,
     BUG_ON(dma_buf->size % PAGE_SIZE);
 
     pMemory = NULL;
-    if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+    if (drm_core_check_feature(dev, DRIVER_MODESET) && nv_dev->pDevice != NULL) {
         pMemory = nvKms->getSystemMemoryHandleFromDmaBuf(nv_dev->pDevice,
                                                   (NvP64)(NvUPtr)dma_buf,
                                                   dma_buf->size - 1);

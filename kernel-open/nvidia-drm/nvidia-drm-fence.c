@@ -1390,6 +1390,7 @@ __nv_drm_semsurf_ctx_add_pending(struct nv_drm_semsurf_fence_ctx *ctx,
                                  NvU64 timeoutMS)
 {
     struct list_head *pending;
+    NvU64 fence_seqno;
     unsigned long flags;
 
     if (timeoutMS > NV_DRM_SEMAPHORE_SURFACE_FENCE_MAX_TIMEOUT_MS) {
@@ -1401,14 +1402,28 @@ __nv_drm_semsurf_ctx_add_pending(struct nv_drm_semsurf_fence_ctx *ctx,
     INIT_LIST_HEAD(&nv_fence->pending_node);
 
     nv_fence->timeout = nv_drm_timeout_from_ms(timeoutMS);
+    fence_seqno = __nv_drm_get_semsurf_fence_seqno(nv_fence);
 
     spin_lock_irqsave(&ctx->lock, flags);
+
+    /*
+     * Most callers append increasing wait values. Fast-path append in that
+     * case to avoid scanning the whole list on each fence creation.
+     */
+    if (!list_empty(&ctx->pending_fences)) {
+        struct nv_drm_semsurf_fence *tail_fence =
+            list_last_entry(&ctx->pending_fences,
+                            struct nv_drm_semsurf_fence, pending_node);
+        if (__nv_drm_get_semsurf_fence_seqno(tail_fence) <= fence_seqno) {
+            list_add_tail(&nv_fence->pending_node, &ctx->pending_fences);
+            goto added_pending;
+        }
+    }
 
     list_for_each(pending, &ctx->pending_fences) {
         struct nv_drm_semsurf_fence *pending_fence =
             list_entry(pending, typeof(*pending_fence), pending_node);
-        if (__nv_drm_get_semsurf_fence_seqno(pending_fence) >
-            __nv_drm_get_semsurf_fence_seqno(nv_fence)) {
+        if (__nv_drm_get_semsurf_fence_seqno(pending_fence) > fence_seqno) {
             /* Inserts 'nv_fence->pending_node' before 'pending' */
             list_add_tail(&nv_fence->pending_node, pending);
             break;
@@ -1416,13 +1431,10 @@ __nv_drm_semsurf_ctx_add_pending(struct nv_drm_semsurf_fence_ctx *ctx,
     }
 
     if (list_empty(&nv_fence->pending_node)) {
-        /*
-         * Inserts 'fence->pending_node' at the end of 'ctx->pending_fences',
-         * or as the head if the list is empty
-         */
         list_add_tail(&nv_fence->pending_node, &ctx->pending_fences);
     }
 
+added_pending:
     /* Fence is live starting... now! */
     spin_unlock_irqrestore(&ctx->lock, flags);
 

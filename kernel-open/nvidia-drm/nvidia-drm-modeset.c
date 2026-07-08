@@ -137,22 +137,24 @@ static bool __will_generate_flip_event(struct drm_crtc *crtc,
 
 static int __nv_drm_put_back_post_fence_fd(
     struct nv_drm_plane_state *plane_state,
+    struct nv_drm_device *nv_dev,
     const struct NvKmsKapiLayerReplyConfig *layer_reply_config)
 {
     int fd = layer_reply_config->postSyncptFd;
-    int ret = 0;
 
     if ((fd >= 0) && (plane_state->fd_user_ptr != NULL)) {
-        ret = copy_to_user(plane_state->fd_user_ptr, &fd, sizeof(fd));
-        if (ret != 0) {
-            return ret;
+        if (copy_to_user(plane_state->fd_user_ptr, &fd, sizeof(fd)) != 0) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to copy post fence FD to userspace");
+            return -EFAULT;
         }
 
         /*! set back to Null and let set_property specify it again */
         plane_state->fd_user_ptr = NULL;
     }
 
-    return ret;
+    return 0;
 }
 
 struct nv_drm_plane_fence_cb_data {
@@ -301,7 +303,7 @@ static int __nv_drm_convert_in_fences(
         default:
             NV_DRM_DEV_LOG_ERR(
                 nv_dev,
-                "Failed plane fence callback registration");
+                "Failed plane fence callback registration, ret=%d", ret);
             /* Fence callback registration failed */
             nvKms->cancelDisplaySemaphore(nv_dev->pDevice, semaphore_index);
             nv_drm_free(fence_data);
@@ -316,7 +318,6 @@ static int __nv_drm_get_syncpt_data(
     struct nv_drm_device *nv_dev,
     struct drm_crtc *crtc,
     struct drm_crtc_state *old_crtc_state,
-    struct NvKmsKapiRequestedModeSetConfig *requested_config,
     struct NvKmsKapiModeSetReplyConfig *reply_config)
 {
     struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
@@ -356,6 +357,7 @@ static int __nv_drm_get_syncpt_data(
 
         ret = __nv_drm_put_back_post_fence_fd(
             plane_state,
+            nv_dev,
             &head_reply_config->layerReplyConfig[nv_plane->layer_idx]);
 
         if (ret != 0) {
@@ -499,6 +501,11 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                                    &reply_config,
                                    commit)) {
         if (commit || reply_config.flipResult != NV_KMS_FLIP_RESULT_IN_PROGRESS) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to apply modeset config (commit=%u, flipResult=%u)",
+                commit,
+                reply_config.flipResult);
             return -EINVAL;
         }
     }
@@ -516,7 +523,7 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
         for_each_old_crtc_in_state(state, crtc, old_crtc_state, i) {
             /*! loop over affected crtcs and get NvKmsKapiModeSetReplyConfig */
             ret = __nv_drm_get_syncpt_data(
-                      nv_dev, crtc, old_crtc_state, requested_config, &reply_config);
+                      nv_dev, crtc, old_crtc_state, &reply_config);
             if (ret != 0) {
                 return ret;
             }
@@ -682,7 +689,9 @@ static void __nv_drm_handle_flip_event(struct nv_drm_crtc *nv_crtc)
     }
     spin_unlock(&dev->event_lock);
 
-    wake_up_all(&nv_dev->flip_event_wq);
+    if (nv_flip != NULL) {
+        wake_up_all(&nv_dev->flip_event_wq);
+    }
 
     nv_drm_free(nv_flip);
 }
