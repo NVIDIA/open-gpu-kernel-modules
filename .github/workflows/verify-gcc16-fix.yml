@@ -1,0 +1,27 @@
+name: verify-gcc16-fix
+
+on:
+  push:
+    branches: [ fix-gcc16-ice-flcn-ls10 ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GCC 16
+        run: |
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
+          sudo apt-get install -y gcc-16 g++-16
+          gcc-16 --version
+
+      - name: Install build deps + matching kernel headers
+        run: |
+          sudo apt-get install -y build-essential libelf-dev "linux-headers-$(uname -r)"
+
+      - name: Build kernel modules with GCC 16
+        run: |
+          make modules -j$(nproc) CC=gcc-16
