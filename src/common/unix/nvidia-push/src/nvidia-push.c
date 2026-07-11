@@ -627,6 +627,7 @@ void __nvPushMakeRoom(NvPushChannelPtr push_buffer, NvU32 count)
     NvU32 getOffset;
     NvU32 putOffset;
     NvBool fenceToEnd = FALSE;
+    NvU64 baseTime, currentTime;
 
     putOffset = (NvU32) ((char *)push_buffer->main.buffer -
                          (char *)push_buffer->main.base);
@@ -639,12 +640,35 @@ void __nvPushMakeRoom(NvPushChannelPtr push_buffer, NvU32 count)
     }
     nvAssert(putOffset == push_buffer->main.putOffset);
 
-    while (count >= push_buffer->main.freeDwords) {
+    for (baseTime = currentTime =
+             nvPushImportGetMilliSeconds(push_buffer->pDevice);
+         count >= push_buffer->main.freeDwords;
+         currentTime = nvPushImportGetMilliSeconds(push_buffer->pDevice)) {
+
         if (nvPushCheckChannelError(push_buffer)) {
             nvAssert(!"A channel error occurred in __nvPushMakeRoom()");
             // Unlike with non-gpfifo channels, RC recovery can't reset GET to
             // 0 so we need to continue as if we just started waiting for space.
             return __nvPushMakeRoom(push_buffer, count);
+        }
+
+        if (currentTime > (baseTime + NV_PUSH_NOTIFIER_SHORT_TIMEOUT) &&
+            !push_buffer->noTimeout) {
+            // GET has stopped advancing and no channel error was raised, so no
+            // room will ever free up. Don't spin forever: this function is
+            // void and its callers write unconditionally once it returns, so
+            // give them in-bounds space by wrapping the write pointer back to
+            // the start of the pushbuffer and declaring it free. Each method
+            // write is asserted smaller than sizeInBytes/8, so a full-buffer
+            // grant is always enough. The methods land only in this channel's
+            // own pushbuffer, which the stalled GPU never reads; the ensuing
+            // kickoff fails and the caller (e.g. DIFR prefetch) gives up.
+            nvPushImportLogError(push_buffer->pDevice,
+                "Timed out waiting for room in the pushbuffer.");
+            push_buffer->main.putOffset = 0;
+            push_buffer->main.buffer = push_buffer->main.base;
+            push_buffer->main.freeDwords = push_buffer->main.sizeInBytes >> 2;
+            return;
         }
 
         getOffset = nvPushReadGetOffset(push_buffer, TRUE);
