@@ -52,6 +52,7 @@ COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_2args.cocci
 COCCI_SCRIPTS_ARGS += fix_nvoc_pfunc_use.cocci
 COCCI_SCRIPTS_ARGS += fix_hal_iface_init.cocci
 COCCI_SCRIPTS_ARGS += fix_rpc_hal_init.cocci:rpc_hal_init
+COCCI_SCRIPTS_ARGS += fix_nv_inline.cocci
 
 COCCI_SCRIPTS := $(filter %.cocci,$(subst :, ,$(COCCI_SCRIPTS_ARGS)))
 COCCI_PATCHES  = $(addprefix 0???-,$(COCCI_SCRIPTS:.cocci=.diff))
