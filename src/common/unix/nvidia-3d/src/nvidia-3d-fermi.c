@@ -69,7 +69,9 @@ static void *DecompressUsingXz(
         return NULL;
     }
 
+#if XZ_INTERNAL_CRC32
     xz_crc32_init();
+#endif
 
     xzState = xz_dec_init(XZ_SINGLE, 0);
 
