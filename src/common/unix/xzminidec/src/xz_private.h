@@ -107,6 +107,11 @@
 #	endif
 #endif
 
+/* In Linux, this is used to make extern functions static when needed. */
+#ifndef XZ_EXTERN
+#	define XZ_EXTERN extern
+#endif
+
 /*
  * Allocate memory for LZMA2 decoder. xz_dec_lzma2_reset() must be used
  * before calling xz_dec_lzma2_run().
