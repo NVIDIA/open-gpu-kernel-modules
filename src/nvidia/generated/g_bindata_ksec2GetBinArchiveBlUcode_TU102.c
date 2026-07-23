@@ -135,7 +135,7 @@ static const BINDATA_ARCHIVE __ksec2GetBinArchiveBlUcode_TU102 =
 
 
 #if defined(BINDATA_INCLUDE_FUNCTION)
-const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct KernelSec2 *pKernelSec2)
+const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2)
 {
     return &__ksec2GetBinArchiveBlUcode_TU102;
 }
@@ -143,7 +143,7 @@ const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct KernelSec2 *pKerne
 
 
 #if defined(BINDATA_INCLUDE_FUNCTION_STUB)
-const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct KernelSec2 *pKernelSec2)
+const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2)
 {
     return NULL;
 }

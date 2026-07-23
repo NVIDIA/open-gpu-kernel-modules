@@ -32,7 +32,7 @@
 #include "gpu/gpu_access.h"
 #include "published/ampere/ga102/dev_vm.h"
 
-void rpcVgpuGspWriteScratchRegister_GA102(OBJGPU *pGpu, NvU64 scratchRegVal)
+NV_STATUS rpcVgpuGspWriteScratchRegister_GA102(OBJGPU *pGpu, NvU64 scratchRegVal)
 {
     // Write the scratch register
     GPU_VREG_WR32(pGpu, 
@@ -41,11 +41,13 @@ void rpcVgpuGspWriteScratchRegister_GA102(OBJGPU *pGpu, NvU64 scratchRegVal)
     GPU_VREG_WR32(pGpu, 
         NV_VIRTUAL_FUNCTION_PRIV_MAILBOX_SCRATCH(NV_VF_SCRATCH_REGISTER_GUEST_RPC_LO),
         NvU64_LO32(scratchRegVal));
+    return NV_OK;
 }
 
-void rpcVgpuGspRingDoorbell_GA102(OBJGPU *pGpu, NvU32 doorbellToken)
+NV_STATUS rpcVgpuGspRingDoorbell_GA102(OBJGPU *pGpu, NvU32 doorbellToken)
 {
     // Ring the setup doorbell to send the request
     GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_DOORBELL, doorbellToken);
+    return NV_OK;
 }
 
