@@ -107,7 +107,6 @@ cxx_cflags_filter += -std=gnu11
 # C++ incompatible gcc plugins (as of now):
 # - SIZE_OVERFLOW: lacks METHOD_TYPE handling (and probably others)
 # - RESPECTRE: too complex
-# - AUTOSLAB: not needed (operator new calls into the C runtime)
 ifeq ($(CONFIG_PAX_SIZE_OVERFLOW),y)
 cxx_cflags_filter += -DSIZE_OVERFLOW_PLUGIN
 cxx_cflags_filter += -fplugin=%/size_overflow_plugin.so
@@ -117,12 +116,6 @@ ifeq ($(CONFIG_PAX_RESPECTRE_PLUGIN),y)
 cxx_cflags_filter += -DRESPECTRE_PLUGIN%
 cxx_cflags_filter += -fplugin=%/respectre_plugin.so
 cxx_cflags_filter += -fplugin-arg-respectre_plugin%
-endif
-ifeq ($(CONFIG_PAX_AUTOSLAB_PLUGIN),y)
-cxx_cflags_filter += -DAUTOSLAB_PLUGIN
-cxx_cflags_filter += -DAUTOSLAB_BASENAME%
-cxx_cflags_filter += -fplugin=%/autoslab_plugin.so
-cxx_cflags_filter += -fplugin-arg-autoslab_plugin%
 endif
 
 CXX_FLAGS := $(nv-modeset-kernel-cxxflags)
