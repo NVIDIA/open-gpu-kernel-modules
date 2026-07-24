@@ -42,9 +42,9 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_dup_address_space(nvidia_stack_t *, nvgpuDevi
 NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_destroy(nvidia_stack_t *, nvgpuAddressSpaceHandle_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_alloc_fb(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvLength, NvU64 *, nvgpuAllocInfo_t);
 
-NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_alloc_pages(nvidia_stack_t *, void *, NvLength, NvU32 , nvgpuPmaAllocationOptions_t, NvU64 *);
-NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_free_pages(nvidia_stack_t *, void *, NvU64 *, NvLength , NvU32, NvU32);
-NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_pin_pages(nvidia_stack_t *, void *, NvU64 *, NvLength , NvU32, NvU32);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_alloc_pages(nvidia_stack_t *, void *, NvLength, NvU64, nvgpuPmaAllocationOptions_t, NvU64 *);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_free_pages(nvidia_stack_t *, void *, NvU64 *, NvLength, NvU64, NvU32);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_pin_pages(nvidia_stack_t *, void *, NvU64 *, NvLength, NvU64, NvU32);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_get_pma_object(nvidia_stack_t *, nvgpuDeviceHandle_t, void **, const nvgpuPmaStatistics_t *);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_pma_register_callbacks(nvidia_stack_t *sp, void *, nvPmaEvictPagesCallback, nvPmaEvictRangeCallback, void *);
 void       NV_API_CALL  rm_gpu_ops_pma_unregister_callbacks(nvidia_stack_t *sp, void *);
@@ -53,7 +53,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_alloc_sys(nvidia_stack_t *, nvgpuAddre
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_get_p2p_caps(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuDeviceHandle_t, nvgpuP2PCapsParams_t);
 
-NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, NvLength, void **, NvU32);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, NvLength, void **, NvU64);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_ummap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, void*);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_tsg_allocate(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, const nvgpuTsgAllocParams_t *, nvgpuTsgHandle_t *);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_tsg_destroy(nvidia_stack_t *, nvgpuTsgHandle_t);
