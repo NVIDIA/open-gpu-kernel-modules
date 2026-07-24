@@ -84,7 +84,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_create (
     gpuDeviceHandle device,
     NvU64 vaBase,
     NvU64 vaSize,
-    NvU32 enableAts,
+    NvBool enableAts,
     gpuAddressSpaceHandle *vaSpace,
     gpuAddressSpaceInfo *vaSpaceInfo)
 {
@@ -672,7 +672,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_destroy_access_cntr_info(nvidia_stack_t *sp,
 NV_STATUS  NV_API_CALL  rm_gpu_ops_enable_access_cntr(nvidia_stack_t *sp,
                                                       gpuDeviceHandle device,
                                                       gpuAccessCntrInfo *accessCntrInfo,
-                                                      gpuAccessCntrConfig *accessCntrConfig)
+                                                      const gpuAccessCntrConfig *accessCntrConfig)
 {
     NV_STATUS rmStatus;
     void *fp;
