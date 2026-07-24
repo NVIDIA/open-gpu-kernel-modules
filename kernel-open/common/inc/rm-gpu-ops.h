@@ -37,7 +37,7 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_create_session (nvidia_stack_t *, nvgpuSessio
 NV_STATUS  NV_API_CALL  rm_gpu_ops_destroy_session (nvidia_stack_t *, nvgpuSessionHandle_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_device_create (nvidia_stack_t *, nvgpuSessionHandle_t, const nvgpuInfo_t *, const NvProcessorUuid *, nvgpuDeviceHandle_t *, NvBool);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_device_destroy (nvidia_stack_t *, nvgpuDeviceHandle_t);
-NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_create(nvidia_stack_t *, nvgpuDeviceHandle_t, unsigned long long, unsigned long long, NvBool, nvgpuAddressSpaceHandle_t *, nvgpuAddressSpaceInfo_t);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_create(nvidia_stack_t *, nvgpuDeviceHandle_t, NvU64, NvU64, NvBool, nvgpuAddressSpaceHandle_t *, nvgpuAddressSpaceInfo_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_dup_address_space(nvidia_stack_t *, nvgpuDeviceHandle_t, NvHandle, NvHandle, nvgpuAddressSpaceHandle_t *, nvgpuAddressSpaceInfo_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_address_space_destroy(nvidia_stack_t *, nvgpuAddressSpaceHandle_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_alloc_fb(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvLength, NvU64 *, nvgpuAllocInfo_t);
