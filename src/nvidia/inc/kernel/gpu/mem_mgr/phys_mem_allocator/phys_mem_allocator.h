@@ -43,6 +43,7 @@
 #include "nvport/nvport.h"
 #include "map_defines.h"
 #include "nvmisc.h"
+#include "nv_uvm_types.h"
 
 #if defined(SRT_BUILD)
 #define RMCFG_MODULE_x 1
@@ -160,9 +161,9 @@ typedef void (*pmaUpdateStatsCb_t)(void *pCtx, NvU64 freeFrames);
  */
 typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU64 pageSize, NvU64 *pPages,
                                        NvU32 count, NvU64 physBegin, NvU64 physEnd,
-                                       MEMORY_PROTECTION prot);
+                                       UVM_PMA_GPU_MEMORY_TYPE prot);
 typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 physEnd,
-                                       MEMORY_PROTECTION prot);
+                                       UVM_PMA_GPU_MEMORY_TYPE prot);
 
 /*!
  * @brief This must be called before any other PMA functions. Returns a PMA
