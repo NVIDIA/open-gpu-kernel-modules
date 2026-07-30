@@ -40,6 +40,10 @@
 
 #include <acpi/video.h>
 
+#if defined(CONFIG_ACPI)
+#include <linux/acpi.h>
+#endif
+
 #include "nvstatus.h"
 
 #include "nv-modeset-interface.h"
@@ -1315,7 +1319,19 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
     int i;
 
 #if defined(NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE)
-    if (!acpi_video_backlight_use_native()) {
+    /*
+     * acpi_video_backlight_use_native() consults ACPI state that is never
+     * populated when the kernel is booted with "acpi=off", so only consult
+     * it when ACPI is actually enabled at runtime.  Otherwise, fall through
+     * and register NVIDIA's own backlight device as if native ACPI
+     * backlight were unavailable.
+     */
+#if defined(CONFIG_ACPI)
+    if (!acpi_disabled && !acpi_video_backlight_use_native())
+#else
+    if (!acpi_video_backlight_use_native())
+#endif
+    {
 #if defined(NV_ACPI_VIDEO_REGISTER_BACKLIGHT)
         nvkms_log(NVKMS_LOG_LEVEL_INFO, NVKMS_LOG_PREFIX,
                   "ACPI reported no NVIDIA native backlight available; attempting to use ACPI backlight.");
