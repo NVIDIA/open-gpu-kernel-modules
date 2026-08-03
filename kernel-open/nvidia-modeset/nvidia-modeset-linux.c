@@ -544,6 +544,9 @@ NvBool nvkms_syncpt_op(
 
 static struct semaphore nvkms_lock;
 
+/* Set while surprise-removal teardown owns nvkms_lock. */
+static NvBool nvkms_gpu_loss_lock_held;
+
 /*************************************************************************
  * User clients of NVKMS may need to be synchronized with suspend/resume
  * operations.  This depends on the state of the system when the NVKMS
@@ -1260,12 +1263,22 @@ NvBool nvkms_open_gpu(NvU32 gpuId, NvBool reset_aware)
 void nvkms_close_gpu(NvU32 gpuId, NvBool reset_aware)
 {
     nvidia_modeset_stack_ptr stack = NULL;
+    const NvBool gpu_loss_lock_held = READ_ONCE(nvkms_gpu_loss_lock_held);
 
     if (__rm_ops.alloc_stack(&stack) != 0) {
+        if (gpu_loss_lock_held) {
+            WRITE_ONCE(nvkms_gpu_loss_lock_held, NV_FALSE);
+            up(&nvkms_lock);
+        }
         return;
     }
 
     __rm_ops.close_gpu(gpuId, stack, reset_aware);
+
+    if (gpu_loss_lock_held) {
+        WRITE_ONCE(nvkms_gpu_loss_lock_held, NV_FALSE);
+        up(&nvkms_lock);
+    }
 
     __rm_ops.free_stack(stack);
 }
@@ -1276,16 +1289,15 @@ void nvkms_gpu_lost(NvU32 gpuId)
      * Mark the GPU as lost in NVKMS. This prevents hardware access
      * and cancels pending timers that might try to access the removed GPU.
      *
-     * NOTE: We intentionally do NOT take nvkms_lock here because this function
-     * may be called from contexts that already hold the lock (e.g., during
-     * module unload). The gpuLost flag is a simple boolean that can be safely
-     * written without a lock - any racing operation will either:
-     * 1. See gpuLost=TRUE and bail out early
-     * 2. See gpuLost=FALSE but hit the 0xFFFFFFFF check when reading hardware
-     *
-     * A memory barrier ensures the write is visible to other CPUs promptly.
+     * Take nvkms_lock before changing the state. This drains any ioctl that
+     * is already using the device and keeps the lock held until the matching
+     * nvkms_close_gpu() has released the final device reference.
      */
+    down(&nvkms_lock);
     nvKmsGpuLost(gpuId);
+
+    /* Make the matching nvkms_close_gpu() release this lock. */
+    WRITE_ONCE(nvkms_gpu_loss_lock_held, NV_TRUE);
 
     /* Ensure gpuLost write is visible to other CPUs */
     smp_wmb();

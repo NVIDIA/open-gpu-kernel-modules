@@ -399,4 +399,3 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
 void nvkms_unregister_backlight(struct nvkms_backlight_device *nvkms_bd);
 
 #endif /* _NVIDIA_MODESET_OS_INTERFACE_H_ */
-

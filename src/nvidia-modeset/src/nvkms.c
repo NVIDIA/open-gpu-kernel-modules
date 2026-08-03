@@ -301,6 +301,15 @@ static NvBool GetPerOpenDevAndDisp(
         return FALSE;
     }
 
+    /*
+     * Surprise removal invalidates the underlying device before its open
+     * handles are torn down. Reject late display ioctls rather than allowing
+     * them to dereference stale display state.
+     */
+    if (pOpenDev->pDevEvo == NULL || pOpenDev->pDevEvo->gpuLost) {
+        return FALSE;
+    }
+
     pOpenDisp = nvEvoGetPointerFromApiHandle(&pOpenDev->dispHandles,
                                              dispHandle);
 
