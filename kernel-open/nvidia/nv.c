@@ -424,7 +424,15 @@ nv_alloc_t *nvos_create_alloc(
         return NULL;
     }
 
-    at->page_table = kvzalloc(pt_size, NV_GFP_KERNEL);
+    /*
+     * kvmalloc()/kvzalloc() reject sizes larger than INT_MAX before
+     * falling back to vmalloc. Large registered system-memory ranges can
+     * require a page table larger than that, so use vzalloc() directly.
+     */
+    if (pt_size > (NvU64)INT_MAX)
+	at->page_table = vzalloc(pt_size);
+    else
+	at->page_table = kvzalloc(pt_size, NV_GFP_KERNEL);
     if (at->page_table == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate page table\n");
