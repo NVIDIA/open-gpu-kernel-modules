@@ -185,6 +185,12 @@ void DPCDHALImpl::parseAndReadCaps()
         // Set an invalid state here and make sure we REMEMBER we couldn't get the caps
         caps.revisionMajor = 0;
         dpcdOffline = true;
+
+        //
+        // Forced/sink-less connector (EDID override, no AUX): fall back to
+        // fake caps so discovery can proceed and create a device.
+        //
+        populateFakeDpcd();
         return;
     }
 
@@ -634,6 +640,14 @@ bool DPCDHALImpl::getSDPExtnForColorimetry()
 {
     bool bSDPExtnForColorimetry = false;
     NvU8 byte = 0;
+    if (dpcdOffline)
+    {
+        //
+        // Forced/sink-less connector: claim VSC SDP colorimetry support so
+        // HDR signaling can be enabled. No real sink interprets the SDP.
+        //
+        return true;
+    }
     if (caps.extendedRxCapsPresent)
     {
         if (AuxRetry::ack == bus.read(NV_DPCD14_EXTENDED_DPRX_FEATURE_ENUM_LIST, &byte,  sizeof byte))
@@ -996,7 +1010,7 @@ void DPCDHALImpl::populateFakeDpcd()
     // this should be extended in for more dpcd offsets in future.
     //
     caps.revisionMajor = 0x1;
-    caps.revisionMinor = 0x1;
+    caps.revisionMinor = 0x4;
     caps.supportsESI = false;
     caps.maxLinkRate = dp2LinkRate_8_10Gbps;
     caps.maxLaneCount = 4;

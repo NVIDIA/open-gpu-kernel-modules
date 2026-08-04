@@ -121,6 +121,12 @@ void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
 
 }
 
+NvBool nvDPConnectorIsPlugged(const NVConnectorEvoRec *pConnectorEvo)
+{
+    return (pConnectorEvo->pDpLibConnector != NULL) &&
+           pConnectorEvo->pDpLibConnector->plugged;
+}
+
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector)
 {
     DisplayPort::Connector *c = pNVDpLibConnector->connector;
