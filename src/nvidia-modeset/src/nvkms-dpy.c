@@ -22,6 +22,7 @@
  */
 
 #include "dp/nvdp-device.h"
+#include "dp/nvdp-connector.h"
 #include "dp/nvdp-connector-event-sink.h"
 
 #include "nvkms-api-types.h"
@@ -3128,6 +3129,15 @@ NvBool nvDpyGetDynamicData(
         connectedList = nvDPLibDpyIsConnected(pDpyEvo) ?
             oneDpyIdList : nvEmptyDpyIdList();
     } else if (pRequest->forceConnected) {
+        if (nvConnectorUsesDPLib(pConnectorEvo) &&
+            !nvDPConnectorIsPlugged(pConnectorEvo)) {
+            /*
+             * Forced sink-less DP connector (EDID override): simulate a
+             * virtual-sink plug so DPLib performs discovery with fake DPCD
+             * caps scoped to this explicit force-connected path.
+             */
+            nvDPNotifyVirtualSinkLongPulse(pConnectorEvo, TRUE);
+        }
         connectedList = oneDpyIdList;
     } else if (pRequest->forceDisconnected) {
         connectedList = nvEmptyDpyIdList();

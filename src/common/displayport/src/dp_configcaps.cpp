@@ -185,11 +185,21 @@ void DPCDHALImpl::parseAndReadCaps()
         // Set an invalid state here and make sure we REMEMBER we couldn't get the caps
         caps.revisionMajor = 0;
         dpcdOffline = true;
+        if (bVirtualSinkDpcdFallback)
+        {
+            //
+            // Forced/sink-less connector (EDID override, no AUX): fall back to
+            // fake caps so discovery can proceed and create a device.
+            //
+            populateFakeDpcd();
+            caps.revisionMinor = 0x4;
+        }
         return;
     }
 
     // reset the faked dpcd flag since real LT should be possible now.
     dpcdOffline = false;
+    bVirtualSinkDpcdFallback = false;
 
     // reset edp revision to 0
     caps.eDpRevision = 0;
@@ -634,6 +644,14 @@ bool DPCDHALImpl::getSDPExtnForColorimetry()
 {
     bool bSDPExtnForColorimetry = false;
     NvU8 byte = 0;
+    if (dpcdOffline && bVirtualSinkDpcdFallback)
+    {
+        //
+        // Forced/sink-less connector: claim VSC SDP colorimetry support so
+        // HDR signaling can be enabled. No real sink interprets the SDP.
+        //
+        return true;
+    }
     if (caps.extendedRxCapsPresent)
     {
         if (AuxRetry::ack == bus.read(NV_DPCD14_EXTENDED_DPRX_FEATURE_ENUM_LIST, &byte,  sizeof byte))
@@ -3180,4 +3198,3 @@ DPCDHAL * DisplayPort::MakeDPCDHAL(AuxBus *  bus, Timer * timer, MainLink * main
         return new DPCDHALImpl(bus, timer);
     }
 }
-
