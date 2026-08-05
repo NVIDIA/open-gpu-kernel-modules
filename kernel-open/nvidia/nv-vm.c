@@ -168,7 +168,9 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
 
     if (at->flags.contig)
     {
-        nv_set_contig_memory_type(&at->page_table[0], at->num_pages, type);
+        // Skip if the (single) allocation never happened (e.g. OOM cleanup).
+        if (at->page_table[0].virt_addr != 0)
+            nv_set_contig_memory_type(&at->page_table[0], at->num_pages, type);
         return;
     }
 
@@ -197,6 +199,12 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
         for (i = 0; i < at->num_pages; i++)
         {
             page_ptr = &at->page_table[i];
+            // Stop at the first unallocated slot. On a partial-allocation
+            // failure the tail of page_table is zeroed; touching those slots
+            // would call set_memory_wb() on PFN 0 ("freeing invalid memtype
+            // [mem 0x0-0xfff]") once per slot -- a huge loop under the RM lock.
+            if (page_ptr->virt_addr == 0)
+                break;
             page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
 #if defined(NV_SET_MEMORY_ARRAY_UC_PRESENT)
             pages[i] = (unsigned long)page_address(page);
@@ -204,11 +212,14 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
             pages[i] = page;
 #endif
         }
+        if (i > 0)
+        {
 #if defined(NV_SET_MEMORY_ARRAY_UC_PRESENT)
-        nv_set_memory_array_type(pages, at->num_pages, type);
+            nv_set_memory_array_type(pages, i, type);
 #elif defined(NV_SET_PAGES_ARRAY_UC_PRESENT)
-        nv_set_pages_array_type(pages, at->num_pages, type);
+            nv_set_pages_array_type(pages, i, type);
 #endif
+        }
         os_free_mem(pages);
     }
 
@@ -220,7 +231,12 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
     else
     {
         for (i = 0; i < at->num_pages; i++)
+        {
+            // Stop at the first unallocated slot (see comment above).
+            if (at->page_table[i].virt_addr == 0)
+                break;
             nv_set_contig_memory_type(&at->page_table[i], 1, type);
+        }
     }
 }
 
