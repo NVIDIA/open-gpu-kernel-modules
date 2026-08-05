@@ -3465,7 +3465,8 @@ NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
                     colorFormatsInfo.yuv444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
-                } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
+                } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc != 0 &&
+                           pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
                     colorFormatsInfo.yuv444.maxBpc =
