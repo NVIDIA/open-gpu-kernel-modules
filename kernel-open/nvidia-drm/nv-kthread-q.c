@@ -58,44 +58,56 @@
 static int _main_loop(void *args)
 {
     nv_kthread_q_t *q = (nv_kthread_q_t *)args;
+    LIST_HEAD(local_list);
     nv_kthread_q_item_t *q_item = NULL;
+    unsigned long processed_count = 0;
     unsigned long flags;
 
     while (1) {
         // Normally this thread is never interrupted. However,
-        // down_interruptible (instead of down) is called here,
+        // wait_event_interruptible (instead of wait_event) is called here,
         // in order to avoid being classified as a potentially
         // hung task, by the kernel watchdog.
-        while (down_interruptible(&q->q_sem))
-            NVQ_WARN("Interrupted during semaphore wait\n");
+        while (wait_event_interruptible(q->q_wait_queue,
+                                        atomic_read(&q->main_loop_should_exit) ||
+                                        atomic_read(&q->pending_count)))
+            NVQ_WARN("Interrupted during queue wait\n");
 
         if (atomic_read(&q->main_loop_should_exit))
             break;
 
         spin_lock_irqsave(&q->q_lock, flags);
 
-        // The q_sem semaphore prevents us from getting here unless there is
-        // at least one item in the list, so an empty list indicates a bug.
+        // pending_count prevents us from getting here unless there is at least
+        // one item in the list, so an empty list indicates a bug.
         if (unlikely(list_empty(&q->q_list_head))) {
             spin_unlock_irqrestore(&q->q_lock, flags);
             NVQ_WARN("_main_loop: Empty queue: q: 0x%p\n", q);
             continue;
         }
 
-        // Consume one item from the queue
-        q_item = list_first_entry(&q->q_list_head,
-                                   nv_kthread_q_item_t,
-                                   q_list_node);
-
-        list_del_init(&q_item->q_list_node);
+        list_splice_init(&q->q_list_head, &local_list);
 
         spin_unlock_irqrestore(&q->q_lock, flags);
 
-        // Run the item
-        q_item->function_to_run(q_item->function_args);
+        processed_count = 0;
 
-        // Make debugging a little simpler by clearing this between runs:
-        q_item = NULL;
+        while (!list_empty(&local_list)) {
+            q_item = list_first_entry(&local_list,
+                                      nv_kthread_q_item_t,
+                                      q_list_node);
+
+            list_del_init(&q_item->q_list_node);
+
+            // Run the item
+            q_item->function_to_run(q_item->function_args);
+            ++processed_count;
+
+            // Make debugging a little simpler by clearing this between runs:
+            q_item = NULL;
+        }
+
+        atomic_sub(processed_count, &q->pending_count);
     }
 
     while (!kthread_should_stop())
@@ -123,7 +135,7 @@ void nv_kthread_q_stop(nv_kthread_q_t *q)
         atomic_set(&q->main_loop_should_exit, 1);
 
         // Wake up the kthread so that it can see that it needs to stop:
-        up(&q->q_sem);
+        wake_up(&q->q_wait_queue);
 
         kthread_stop(q->q_kthread);
         q->q_kthread = NULL;
@@ -206,7 +218,8 @@ int nv_kthread_q_init_on_node(nv_kthread_q_t *q, const char *q_name, int preferr
 
     INIT_LIST_HEAD(&q->q_list_head);
     spin_lock_init(&q->q_lock);
-    sema_init(&q->q_sem, 0);
+    init_waitqueue_head(&q->q_wait_queue);
+    atomic_set(&q->pending_count, 0);
 
     if (preferred_node == NV_KTHREAD_NO_NODE) {
         q->q_kthread = kthread_create(_main_loop, q, q_name);
@@ -241,18 +254,22 @@ static int _raw_q_schedule(nv_kthread_q_t *q, nv_kthread_q_item_t *q_item)
 {
     unsigned long flags;
     int ret = 1;
+    int should_wake = 0;
 
     spin_lock_irqsave(&q->q_lock, flags);
 
-    if (likely(list_empty(&q_item->q_list_node)))
+    if (likely(list_empty(&q_item->q_list_node))) {
         list_add_tail(&q_item->q_list_node, &q->q_list_head);
-    else
+        should_wake = (atomic_inc_return(&q->pending_count) == 1);
+    }
+    else {
         ret = 0;
+    }
 
     spin_unlock_irqrestore(&q->q_lock, flags);
 
-    if (likely(ret))
-        up(&q->q_sem);
+    if (likely(ret) && should_wake)
+        wake_up(&q->q_wait_queue);
 
     return ret;
 }
