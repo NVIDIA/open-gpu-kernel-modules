@@ -45,6 +45,8 @@
 struct nv_drm_gem_object;
 
 struct nv_drm_gem_object_funcs {
+    /* Called before drm_gem_object_release() to stop callbacks and signal fences */
+    void (*prepare_release)(struct nv_drm_gem_object *nv_gem);
     void (*free)(struct nv_drm_gem_object *nv_gem);
     struct sg_table *(*prime_get_sg_table)(struct nv_drm_gem_object *nv_gem);
     void *(*prime_vmap)(struct nv_drm_gem_object *nv_gem);

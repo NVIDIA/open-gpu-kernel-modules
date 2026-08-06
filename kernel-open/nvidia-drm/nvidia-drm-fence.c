@@ -41,6 +41,8 @@
 struct nv_drm_fence_context;
 
 struct nv_drm_fence_context_ops {
+    /* Called before drm_gem_object_release() to stop callbacks and signal fences */
+    void (*prepare_destroy)(struct nv_drm_fence_context *nv_fence_context);
     void (*destroy)(struct nv_drm_fence_context *nv_fence_context);
 };
 
@@ -205,7 +207,12 @@ to_nv_prime_fence_context(struct nv_drm_fence_context *nv_fence_context) {
     return container_of(nv_fence_context, struct nv_drm_prime_fence_context, base);
 }
 
-static void __nv_drm_prime_fence_context_destroy(
+/*
+ * Prepare for destruction - stop callbacks and signal fences.
+ * This must be called BEFORE drm_gem_object_release() to prevent
+ * race conditions with kernel shrinker/drm_exec infrastructure.
+ */
+static void __nv_drm_prime_fence_context_prepare_destroy(
     struct nv_drm_fence_context *nv_fence_context)
 {
     struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
@@ -224,6 +231,18 @@ static void __nv_drm_prime_fence_context_destroy(
     nv_drm_gem_prime_force_fence_signal(nv_prime_fence_context);
 
     spin_unlock(&nv_prime_fence_context->lock);
+}
+
+/*
+ * Final destruction - free NVKMS resources and the structure itself.
+ * Called after drm_gem_object_release() has completed.
+ */
+static void __nv_drm_prime_fence_context_destroy(
+    struct nv_drm_fence_context *nv_fence_context)
+{
+    struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
+    struct nv_drm_prime_fence_context *nv_prime_fence_context =
+        to_nv_prime_fence_context(nv_fence_context);
 
     /* Free nvkms resources */
 
@@ -238,6 +257,7 @@ static void __nv_drm_prime_fence_context_destroy(
 }
 
 static struct nv_drm_fence_context_ops nv_drm_prime_fence_context_ops = {
+    .prepare_destroy = __nv_drm_prime_fence_context_prepare_destroy,
     .destroy = __nv_drm_prime_fence_context_destroy,
 };
 
@@ -402,6 +422,21 @@ static inline struct nv_drm_fence_context *to_nv_fence_context(
 }
 
 /*
+ * Prepare fence context for release - stop callbacks and signal fences.
+ * Called BEFORE drm_gem_object_release() to prevent race with kernel
+ * shrinker/drm_exec.
+ */
+static void
+__nv_drm_fence_context_gem_prepare_release(struct nv_drm_gem_object *nv_gem)
+{
+    struct nv_drm_fence_context *nv_fence_context = to_nv_fence_context(nv_gem);
+
+    if (nv_fence_context->ops->prepare_destroy) {
+        nv_fence_context->ops->prepare_destroy(nv_fence_context);
+    }
+}
+
+/*
  * Tear down of the 'struct nv_drm_fence_context' object is not expected
  * to be happen from any worker thread, if that happen it causes dead-lock
  * because tear down sequence calls to flush all existing
@@ -416,6 +451,7 @@ __nv_drm_fence_context_gem_free(struct nv_drm_gem_object *nv_gem)
 }
 
 const struct nv_drm_gem_object_funcs nv_fence_context_gem_ops = {
+    .prepare_release = __nv_drm_fence_context_gem_prepare_release,
     .free = __nv_drm_fence_context_gem_free,
 };
 
@@ -1112,7 +1148,12 @@ __nv_drm_semsurf_ctx_reg_callbacks(struct nv_drm_semsurf_fence_ctx *ctx)
     }
 }
 
-static void __nv_drm_semsurf_fence_ctx_destroy(
+/*
+ * Prepare for destruction - stop callbacks, timers, and signal fences.
+ * This must be called BEFORE drm_gem_object_release() to prevent
+ * race conditions with kernel shrinker/drm_exec infrastructure.
+ */
+static void __nv_drm_semsurf_fence_ctx_prepare_destroy(
     struct nv_drm_fence_context *nv_fence_context)
 {
     struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
@@ -1154,22 +1195,17 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
                                                   pendingNvKmsCallback);
     }
 
-    nvKms->freeSemaphoreSurface(nv_dev->pDevice, ctx->pSemSurface);
-
     /*
-     * Now that the semaphore surface, the timer, and the workthread are gone:
-     *
-     * -No more RM/NVKMS callbacks will arrive, nor are any in progress. Freeing
-     *  the semaphore surface cancels all its callbacks associated with this
-     *  instance of it, and idles any pending callbacks.
+     * Now that the timer and the workthread are gone:
      *
      * -No more timer callbacks will arrive, nor are any in flight.
      *
      * -The workthread has been idled and is no longer running.
      *
-     * Further, given the destructor is running, no other references to the
-     * fence context exist, so this code can assume no concurrent access to the
-     * fence context's data will happen from here on out.
+     * Clean up local callback data and force-signal all pending fences.
+     * This must happen BEFORE drm_gem_object_release() so the kernel's
+     * drm_exec/shrinker infrastructure doesn't try to access our dma_resv
+     * while we still have active fences.
      */
 
     if (ctx->callback.local) {
@@ -1179,6 +1215,20 @@ static void __nv_drm_semsurf_fence_ctx_destroy(
     }
 
     __nv_drm_semsurf_force_complete_pending(ctx);
+}
+
+/*
+ * Final destruction - free NVKMS resources and the structure itself.
+ * Called after drm_gem_object_release() has completed.
+ */
+static void __nv_drm_semsurf_fence_ctx_destroy(
+    struct nv_drm_fence_context *nv_fence_context)
+{
+    struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
+    struct nv_drm_semsurf_fence_ctx *ctx =
+        to_semsurf_fence_ctx(nv_fence_context);
+
+    nvKms->freeSemaphoreSurface(nv_dev->pDevice, ctx->pSemSurface);
 
     nv_drm_free(nv_fence_context);
 }
@@ -1218,6 +1268,7 @@ __nv_drm_semsurf_ctx_timeout_callback(nv_drm_timer *timer)
 
 static struct nv_drm_fence_context_ops
 nv_drm_semsurf_fence_ctx_ops = {
+    .prepare_destroy = __nv_drm_semsurf_fence_ctx_prepare_destroy,
     .destroy = __nv_drm_semsurf_fence_ctx_destroy,
 };
 
