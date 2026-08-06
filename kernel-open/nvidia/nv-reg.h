@@ -300,6 +300,37 @@
 #define NV_REG_ENABLE_PCIE_GEN3 NV_REG_STRING(__NV_ENABLE_PCIE_GEN3)
 
 /*
+ * Option: AllowP2PWithoutCoherentMapping
+ *
+ * Description:
+ *
+ * DMA-BUF and GPUDirect RDMA paths are gated behind
+ * PDB_PROP_GPU_COHERENT_CPU_MAPPING, which is set on platforms with
+ * NVLink/C2C interconnects (Grace Superchip) or zero-framebuffer SoCs
+ * (GB10B/Thor). On all other hardware the paths return
+ * NV_ERR_NOT_SUPPORTED.
+ *
+ * When this option is set to a non-zero value, the coherent-mapping
+ * check is bypassed, permitting DMA-BUF export of CUDA memory to
+ * other kernel drivers (e.g. mlx5_ib) on hardware NVIDIA does not
+ * officially validate for this path. The operator is responsible for
+ * the P2P feasibility constraints: IOMMU in 1:1 / passthrough /
+ * disabled mode, GPU and importing device behind the same PCIe root
+ * complex, no ACS isolation between them.
+ *
+ * This is completely unsupported!
+ *
+ * Possible Values:
+ *
+ *  0: enforce coherent-mapping gate (default)
+ *  1: bypass coherent-mapping gate
+ */
+
+#define __NV_ALLOW_P2P_WITHOUT_COHERENT_MAPPING AllowP2PWithoutCoherentMapping
+#define NV_REG_ALLOW_P2P_WITHOUT_COHERENT_MAPPING \
+    NV_REG_STRING(__NV_ALLOW_P2P_WITHOUT_COHERENT_MAPPING)
+
+/*
  * Option: MemoryPoolSize
  *
  * Description:
@@ -1029,6 +1060,7 @@ NV_DEFINE_REG_ENTRY(__NV_DEVICE_FILE_GID, 0);
 NV_DEFINE_REG_ENTRY(__NV_DEVICE_FILE_MODE, 0666);
 NV_DEFINE_REG_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS, 1);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_PCIE_GEN3, 0);
+NV_DEFINE_REG_ENTRY(__NV_ALLOW_P2P_WITHOUT_COHERENT_MAPPING, 0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_MSI, 1);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_STREAM_MEMOPS, 0);
 NV_DEFINE_REG_ENTRY(__NV_RM_PROFILING_ADMIN_ONLY_PARAMETER, 1);
@@ -1095,6 +1127,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_MSI),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_GEN3),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ALLOW_P2P_WITHOUT_COHERENT_MAPPING),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_MEMORY_POOL_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_KMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_VMALLOC_HEAP_MAX_SIZE),

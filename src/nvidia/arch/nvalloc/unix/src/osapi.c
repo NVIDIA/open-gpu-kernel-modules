@@ -1523,8 +1523,13 @@ RmDmabufGetClientAndDevice(
     if (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE)
     {
         KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+        NvU32 allow_p2p = 0;
 
-        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+        // Experimental: NVreg_AllowP2PWithoutCoherentMapping=1 bypasses the gate.
+        (void) osReadRegistryDword(pGpu,
+                  NV_REG_STR_ALLOW_P2P_WITHOUT_COHERENT_MAPPING, &allow_p2p);
+        if ((!allow_p2p &&
+             !pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)) ||
             pKernelBus->bBar1Disabled ||
             IS_MIG_ENABLED(pGpu))
         {

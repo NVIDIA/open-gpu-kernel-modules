@@ -2898,7 +2898,22 @@ NvBool nv_pci_is_valid_topology_for_direct_pci(
 
     if (!nv->coherent)
     {
-        return NV_FALSE;
+        nvidia_stack_t *sp = NULL;
+        NvU32 allow_p2p = 0;
+
+        // Experimental: NVreg_AllowP2PWithoutCoherentMapping=1 bypasses the gate.
+        if (nv_kmem_cache_alloc_stack(&sp) != 0)
+        {
+            return NV_FALSE;
+        }
+        (void) rm_read_registry_dword(sp, nv,
+                  NV_REG_ALLOW_P2P_WITHOUT_COHERENT_MAPPING, &allow_p2p);
+        nv_kmem_cache_free_stack(sp);
+
+        if (!allow_p2p)
+        {
+            return NV_FALSE;
+        }
     }
 
     if (pdev0->dev.iommu_group == pdev1->dev.iommu_group)

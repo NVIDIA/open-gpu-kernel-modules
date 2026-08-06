@@ -3106,6 +3106,10 @@
 #define NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_DEFAULT  NV_REG_STR_RM_GPUDIRECT_RDMA_FORCE_SPA_NO
 
 // Type DWORD (Boolean)
+// Experimental opt-in to bypass coherent-mapping gate; see kernel-open/nvidia/nv-reg.h.
+#define NV_REG_STR_ALLOW_P2P_WITHOUT_COHERENT_MAPPING   "AllowP2PWithoutCoherentMapping"
+
+// Type DWORD (Boolean)
 // Disable the check for FSP's fuse error detection status during boot.
 // By default, the check would be enabled and we would bail out during boot on error.
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK           "RmDisableFspFuseErrorCheck"
