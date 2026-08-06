@@ -805,9 +805,10 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     params.exposeCeMask = exposeCeMask;
     params.bUpdateNvlinkPceLce = bUpdateNvlinkPceLce;
 
-    NV_ASSERT_OK_OR_RETURN(
-        rmapiControlCacheFreeForControl(gpuGetInstance(pGpu),
-                                        NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK));
+    status = rmapiControlCacheFreeForControl(gpuGetInstance(pGpu),
+                                             NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK);
+    if (status != NV_OK)
+        goto cleanup;
 
     // For GSP clients, the update needs to be routed through ctrl call
     params.shimInstance = pKCe->shimInstance;
@@ -822,7 +823,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     {
         NV_PRINTF(LEVEL_ERROR,
             "Failed to update PCE-LCE mappings. Return\n");
-        return status;
+        goto cleanup;
     }
 
     //
@@ -833,6 +834,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     //
     status = kceUpdateClassDB_HAL(pGpu, pKCe);
 
+cleanup:
     ceResumeCeUtilsScheduling(pGpu);
 
     return status;
