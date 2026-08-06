@@ -26,7 +26,20 @@ else
   ifdef SYSSRC
     KERNEL_SOURCES := $(SYSSRC)
   else
+    # if it's set then prefer dkms ${kernelvar} over uname -r, error if they don't match
+    KERNEL_UNAME ?= $(kernelver)
     KERNEL_UNAME ?= $(shell uname -r)
+    ifeq ($(kernelver),)
+      # kernelver is not set
+    else
+      # ensure kernelver matches a (potentially) given KERNEL_UNAME or error
+      ifeq ($(kernelver),$(KERNEL_UNAME))
+        $(info KERNEL_UNAME = $(KERNEL_UNAME))
+      else
+        $(error KERNEL_UNAME '$(KERNEL_UNAME)' is not equal to dkms kernelver '$(kernelver)')
+      endif
+    endif
+
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
     KERNEL_SOURCES := $(shell ((test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source) || (test -d $(KERNEL_MODLIB)/build/source && echo $(KERNEL_MODLIB)/build/source)) || echo $(KERNEL_MODLIB)/build)
   endif
