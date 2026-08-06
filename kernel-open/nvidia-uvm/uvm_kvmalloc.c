@@ -295,6 +295,29 @@ void *__uvm_kvmalloc_zero(size_t size, const char *file, int line, const char *f
     return p;
 }
 
+// OPTIMIZATION: Calculate growth size with power-of-2 strategy to reduce
+// repeated reallocations when incrementally growing buffers.
+static size_t calc_realloc_growth_size(size_t new_size)
+{   
+    size_t growth_size = new_size;
+
+    // For allocations larger than threshold, use power-of-2 growth
+    // to reduce repeated reallocations. This is especially beneficial
+    // for data structures that grow incrementally (lists, buffers).
+    if (new_size > UVM_KMALLOC_THRESHOLD) {
+        // Round up to next power of 2
+        growth_size = 1;
+        while (growth_size < new_size)
+            growth_size <<= 1;
+
+        // Cap at reasonable maximum to avoid excessive memory waste
+        if (growth_size > 256 * 1024)  // 256KB max
+            growth_size = new_size;
+    }
+
+    return growth_size;
+}
+
 void uvm_kvfree(void *p)
 {
     if (!p)
@@ -332,6 +355,7 @@ static void *realloc_from_vmalloc(void *p, size_t new_size)
 {
     uvm_vmalloc_hdr_t *old_hdr = get_hdr(p);
     void *new_p;
+    size_t growth_size;
 
     if (new_size == 0) {
         vfree(old_hdr);
@@ -341,13 +365,26 @@ static void *realloc_from_vmalloc(void *p, size_t new_size)
     if (new_size == old_hdr->alloc_size)
         return p;
 
+    // OPTIMIZATION: Use growth size calculation to reduce reallocations
+    growth_size = calc_realloc_growth_size(new_size);
+
+    // If the growth size is the same as original, return the original pointer
+    if (growth_size == old_hdr->alloc_size)
+        return p;
+
+    // If growth size fits in the original allocation, just update the header
+    if (growth_size <= old_hdr->alloc_size) {
+        old_hdr->alloc_size = growth_size;
+        return p;
+    }
+
     // vmalloc has no realloc functionality so we need to do a separate alloc +
-    // copy.
-    new_p = alloc_internal(new_size, false);
+    // copy with the calculated growth size.
+    new_p = alloc_internal(growth_size, false);
     if (!new_p)
         return NULL;
 
-    memcpy(new_p, p, min(new_size, old_hdr->alloc_size));
+    memcpy(new_p, p, min(old_hdr->alloc_size, growth_size));
     vfree(old_hdr);
     return new_p;
 }
