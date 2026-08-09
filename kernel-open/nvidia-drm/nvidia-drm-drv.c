@@ -1519,7 +1519,8 @@ static int nv_drm_revoke_modeset_permission(struct drm_device *dev,
 
     ret = drm_atomic_commit(state);
 done:
-    nv_drm_atomic_state_base_put(state);
+    if (state)
+        nv_drm_atomic_state_base_put(state);
 
 #if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
     DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
