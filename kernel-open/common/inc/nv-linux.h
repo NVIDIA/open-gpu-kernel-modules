@@ -1724,7 +1724,7 @@ typedef enum
 #else
 #include <linux/gpio/driver.h>
 
-static inline int __to_hwgpio(const struct gpio_device *gdev,
+static inline int __to_hwgpio(struct gpio_device *gdev,
                               const struct of_phandle_args *gpiospec)
 {
 #if defined(CONFIG_OF_GPIO)
