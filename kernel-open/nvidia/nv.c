@@ -157,11 +157,12 @@ NvU32 num_nv_devices = 0;
 NvU32 num_probed_nv_devices = 0;
 
 /*
- * Global list and table of per-device state
- * note: both nv_linux_devices and nv_linux_minor_bitmap
+ * Global lists and table of per-device state
+ * note: nv_linux_devices, nv_linux_removing_devices, and nv_linux_minor_bitmap
  *       are protected by nv_linux_devices_lock
  */
 nv_linux_state_t *nv_linux_devices;
+static nv_linux_state_t *nv_linux_removing_devices;
 static DECLARE_BITMAP(nv_linux_minor_bitmap, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1);
 
 // Global state for the control device
@@ -587,6 +588,7 @@ nv_module_state_init(nv_stack_t *sp)
     }
 
     nv_linux_devices = NULL;
+    nv_linux_removing_devices = NULL;
     bitmap_clear(nv_linux_minor_bitmap, 0, NV_MINOR_DEVICE_NUMBER_REGULAR_MAX + 1);
     NV_INIT_MUTEX(&nv_linux_devices_lock);
     init_rwsem(&nv_system_pm_lock);
@@ -1160,16 +1162,14 @@ static nv_linux_state_t *find_minor(NvU32 minor)
     return nvl;
 }
 
-/*
- * Search the global list of nv devices for the one with the given gpu_id.
- * If found, nvl is returned with nvl->ldata_lock taken.
- */
-static nv_linux_state_t *find_gpu_id(NvU32 gpu_id)
+/* Caller must hold nv_linux_devices_lock. Returns nvl with ldata_lock taken. */
+static nv_linux_state_t *find_gpu_id_in_list_locked(
+    nv_linux_state_t *head,
+    NvU32 gpu_id
+)
 {
-    nv_linux_state_t *nvl;
+    nv_linux_state_t *nvl = head;
 
-    LOCK_NV_LINUX_DEVICES();
-    nvl = nv_linux_devices;
     while (nvl != NULL)
     {
         nv_state_t *nv = NV_STATE_PTR(nvl);
@@ -1181,35 +1181,96 @@ static nv_linux_state_t *find_gpu_id(NvU32 gpu_id)
         nvl = nvl->next;
     }
 
+    return nvl;
+}
+
+/*
+ * Search the global list of active nv devices for the one with the given
+ * gpu_id. If found, nvl is returned with nvl->ldata_lock taken.
+ */
+static nv_linux_state_t *find_gpu_id(NvU32 gpu_id)
+{
+    nv_linux_state_t *nvl;
+
+    LOCK_NV_LINUX_DEVICES();
+    nvl = find_gpu_id_in_list_locked(nv_linux_devices, gpu_id);
     UNLOCK_NV_LINUX_DEVICES();
     return nvl;
 }
 
 /*
- * Search the global list of nv devices for the one with the given UUID. Devices
- * with missing UUID information are ignored. If found, nvl is returned with
- * nvl->ldata_lock taken.
+ * Find a device for the release half of an earlier successful get. Devices
+ * being removed are hidden from new gets but must remain discoverable until
+ * their existing references have been released.
  */
-nv_linux_state_t *find_uuid(const NvU8 *uuid)
+static nv_linux_state_t *find_gpu_id_for_release(NvU32 gpu_id)
 {
-    nv_linux_state_t *nvl = NULL;
+    nv_linux_state_t *nvl;
+
+    LOCK_NV_LINUX_DEVICES();
+    nvl = find_gpu_id_in_list_locked(nv_linux_devices, gpu_id);
+    if (nvl == NULL)
+    {
+        nvl = find_gpu_id_in_list_locked(nv_linux_removing_devices, gpu_id);
+    }
+    UNLOCK_NV_LINUX_DEVICES();
+
+    return nvl;
+}
+
+/* Caller must hold nv_linux_devices_lock. Returns nvl with ldata_lock taken. */
+static nv_linux_state_t *find_uuid_in_list_locked(
+    nv_linux_state_t *head,
+    const NvU8 *uuid
+)
+{
+    nv_linux_state_t *nvl;
     nv_state_t *nv;
     const NvU8 *dev_uuid;
 
-    LOCK_NV_LINUX_DEVICES();
-
-    for (nvl = nv_linux_devices; nvl; nvl = nvl->next)
+    for (nvl = head; nvl; nvl = nvl->next)
     {
         nv = NV_STATE_PTR(nvl);
         down(&nvl->ldata_lock);
         dev_uuid = nv_get_cached_uuid(nv);
         if (dev_uuid && memcmp(dev_uuid, uuid, GPU_UUID_LEN) == 0)
-            goto out;
+        {
+            return nvl;
+        }
         up(&nvl->ldata_lock);
     }
 
-out:
+    return NULL;
+}
+
+/*
+ * Search the global list of active nv devices for the one with the given UUID.
+ * Devices with missing UUID information are ignored. If found, nvl is returned
+ * with nvl->ldata_lock taken.
+ */
+nv_linux_state_t *find_uuid(const NvU8 *uuid)
+{
+    nv_linux_state_t *nvl;
+
+    LOCK_NV_LINUX_DEVICES();
+    nvl = find_uuid_in_list_locked(nv_linux_devices, uuid);
     UNLOCK_NV_LINUX_DEVICES();
+    return nvl;
+}
+
+/* Find a device for the release half of an earlier successful UUID get. */
+static nv_linux_state_t *find_uuid_for_release(const NvU8 *uuid)
+{
+    nv_linux_state_t *nvl;
+
+    LOCK_NV_LINUX_DEVICES();
+    nvl = find_uuid_in_list_locked(nv_linux_devices, uuid);
+    if (nvl == NULL)
+    {
+        nvl = find_uuid_in_list_locked(nv_linux_removing_devices, uuid);
+    }
+    UNLOCK_NV_LINUX_DEVICES();
+
     return nvl;
 }
 
@@ -5335,7 +5396,7 @@ void nvidia_dev_put(NvU32 gpu_id, nvidia_stack_t *sp, NvBool reset_aware)
     nv_linux_state_t *nvl;
 
     /* Takes nvl->ldata_lock */
-    nvl = find_gpu_id(gpu_id);
+    nvl = find_gpu_id_for_release(gpu_id);
     if (!nvl)
         return;
 
@@ -5414,7 +5475,7 @@ void nvidia_dev_put_uuid(const NvU8 *uuid, nvidia_stack_t *sp)
     /* Callers must already have called nvidia_dev_get_uuid() */
 
     /* Takes nvl->ldata_lock */
-    nvl = find_uuid(uuid);
+    nvl = find_uuid_for_release(uuid);
     if (!nvl)
         return;
 
@@ -5456,7 +5517,7 @@ int nvidia_dev_unblock_gc6(const NvU8 *uuid, nvidia_stack_t *sp)
     /* Callers must already have called nvidia_dev_get_uuid() */
 
     /* Takes nvl->ldata_lock */
-    nvl = find_uuid(uuid);
+    nvl = find_uuid_for_release(uuid);
     if (!nvl)
         return -ENODEV;
 
@@ -5652,6 +5713,34 @@ void nv_linux_remove_device_locked(nv_linux_state_t *nvl)
         for (tnvl = nv_linux_devices; tnvl->next != nvl;  tnvl = tnvl->next);
         tnvl->next = nvl->next;
     }
+}
+
+/* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
+void nv_linux_move_device_to_removing_locked(nv_linux_state_t *nvl)
+{
+    nv_linux_remove_device_locked(nvl);
+
+    nvl->next = nv_linux_removing_devices;
+    nv_linux_removing_devices = nvl;
+}
+
+/* caller should hold nv_linux_devices_lock using LOCK_NV_LINUX_DEVICES */
+void nv_linux_remove_removing_device_locked(nv_linux_state_t *nvl)
+{
+    nv_linux_state_t **link = &nv_linux_removing_devices;
+
+    while ((*link != NULL) && (*link != nvl))
+    {
+        link = &(*link)->next;
+    }
+
+    if (WARN_ON(*link == NULL))
+    {
+        return;
+    }
+
+    *link = nvl->next;
+    nvl->next = NULL;
 }
 
 int nv_linux_init_open_q(nv_linux_state_t *nvl)
