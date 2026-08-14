@@ -34,7 +34,7 @@
 #ifndef GPU_CPER_H
 #define GPU_CPER_H
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #include "cper.h"
 

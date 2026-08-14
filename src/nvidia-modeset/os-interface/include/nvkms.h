@@ -25,11 +25,7 @@
 #define __NV_KMS_H__
 
 #include "nvtypes.h"
-#if defined(NV_KERNEL_INTERFACE_LAYER) && defined(NV_LINUX)
-#include <linux/stddef.h> /* size_t */
-#else
-#include <stddef.h>       /* size_t */
-#endif
+#include <nv-stddef.h> /* size_t, NULL */
 
 #include "nvkms-kapi.h"
 

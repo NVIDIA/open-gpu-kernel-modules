@@ -38,6 +38,12 @@
 #include "nv-chardev-numbers.h"
 #include "nv-platform.h"
 
+#ifndef NV_HAVE_ATOMIC_UNCHECKED_T
+#define atomic_unchecked_t	atomic_t
+#define atomic64_unchecked_t	atomic64_t
+#define atomic_long_unchecked_t	atomic_long_t
+#endif
+
 #ifndef AUTOCONF_INCLUDED
 #if defined(NV_GENERATED_AUTOCONF_H_PRESENT)
 #include <generated/autoconf.h>

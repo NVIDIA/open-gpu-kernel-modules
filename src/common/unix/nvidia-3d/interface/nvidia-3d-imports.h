@@ -29,7 +29,7 @@
 #ifndef __NVIDIA_3D_IMPORTS_H__
 #define __NVIDIA_3D_IMPORTS_H__
 
-#include <stddef.h> /* size_t */
+#include <nv-stddef.h> /* size_t */
 
 void *nv3dImportAlloc(size_t size);
 void nv3dImportFree(void *ptr);

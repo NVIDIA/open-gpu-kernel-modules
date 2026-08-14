@@ -1,5 +1,5 @@
-SRCS ?=
-SRCS_CXX ?=
+SRCS :=
+SRCS_CXX :=
 
 SRCS += generated/g_access_cntr_buffer_nvoc.c
 SRCS += generated/g_all_dcl_pb.c
@@ -1055,3 +1055,6 @@ SRCS += src/libraries/utils/nvassert.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/libdwarf.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/libelf.c
 SRCS += ../common/uproc/os/libos-v3.1.0/lib/liblogdecode.c
+
+LINKER_SCRIPT := nv-kernel.ld
+EXPORTS_LINK_COMMAND := exports_link_command.txt

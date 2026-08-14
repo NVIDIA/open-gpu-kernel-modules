@@ -27,7 +27,7 @@
 #ifdef NVRM
 
 #    include <core/core.h>
-#    include <stddef.h> // size_t
+#    include <nv-stddef.h> // size_t
 
 #define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) portDbgExPrintfLevel(level, fmt, ##__VA_ARGS__)
 
@@ -39,6 +39,7 @@
 #include "time.h"
 #endif
 
+#    include <stddef.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <ctype.h>
@@ -74,8 +75,6 @@
 #ifndef LIBOS_LOG_DECODE_PRINTF
 #define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) printf(fmt, ...)
 #endif
-
-#include <stddef.h>
 
 #include "nvtypes.h"
 #include "nvstatus.h"

@@ -33,7 +33,7 @@
 #include "nv_mode_timings.h"
 #include "timing/nvtiming.h"
 
-#include <stddef.h> /* size_t */
+#include <nv-stddef.h> /* size_t */
 
 /*
  * Macros used for printing values divided by 1000 without floating

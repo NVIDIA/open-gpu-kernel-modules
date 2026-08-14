@@ -39,7 +39,7 @@
 #include "nvswitch/ls10/ptop_discovery_ip.h"
 #include "nvswitch/ls10/dev_minion_ip.h"
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 /* ------------------------ Macros ----------------------------------------- */
 #define TNVL_MAX_CERT_CHAIN_SIZE         (0x1000)

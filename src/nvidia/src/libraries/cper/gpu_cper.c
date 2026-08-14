@@ -26,7 +26,7 @@
  * @brief NVIDIA GPU-specific CPER section implementation
  */
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #include "cper/gpu_cper.h"
 #include "nvport/nvport.h"

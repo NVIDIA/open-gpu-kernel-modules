@@ -43,7 +43,13 @@
 #include "uvm_devmem.h"
 
 uvm_global_t g_uvm_global;
-static struct UvmEventsLinux g_exported_uvm_events;
+static struct UvmEventsLinux g_exported_uvm_events = {
+    .isrTopHalf = uvm_isr_top_half_entry,
+    .suspend = uvm_suspend_entry,
+    .resume = uvm_resume_entry,
+    .drainP2P = uvm_suspend_and_drainP2P_entry,
+    .resumeP2P = uvm_resumeP2P_entry,
+};
 static bool g_ops_registered = false;
 
 unsigned uvm_force_conf_computing = 0;
@@ -52,12 +58,6 @@ module_param(uvm_force_conf_computing, uint, S_IRUGO);
 static NV_STATUS uvm_register_callbacks(void)
 {
     NV_STATUS status = NV_OK;
-
-    g_exported_uvm_events.isrTopHalf = uvm_isr_top_half_entry;
-    g_exported_uvm_events.suspend = uvm_suspend_entry;
-    g_exported_uvm_events.resume = uvm_resume_entry;
-    g_exported_uvm_events.drainP2P = uvm_suspend_and_drainP2P_entry;
-    g_exported_uvm_events.resumeP2P = uvm_resumeP2P_entry;
 
     // Register the UVM callbacks with the main GPU driver:
     status = uvm_rm_locked_call(nvUvmInterfaceRegisterUvmEvents(&g_exported_uvm_events));

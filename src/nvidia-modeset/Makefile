@@ -2,12 +2,17 @@
 # Makefile for nv-modeset-kernel.o
 ###########################################################################
 
+ifeq ($(USE_KBUILD),1)
+$(error nv-modeset-kernel.o gets build as part of kernel-open/)
+endif
+
 NV_MODULE_LOGGING_NAME ?= nvidia-modeset
 
 VERSION_MK_DIR = ../../
 include ../../utils.mk
 
 include srcs.mk
+include defs.mk
 
 ##############################################################################
 # Helper functions to determine the compiler type
@@ -34,51 +39,11 @@ LD_HAS_FORCE_GROUP_ALLOCATION = \
 ALL_SRCS = $(SRCS) $(SRCS_CXX)
 ALL_SRCS += $(NVIDSTRING)
 
-SRC_COMMON = ../common
-
 CONDITIONAL_CFLAGS :=
 
-CFLAGS += -include $(SRC_COMMON)/sdk/nvidia/inc/cpuopsys.h
-
-CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc
-CFLAGS += -I $(SRC_COMMON)/sdk/nvidia/inc/hw
-CFLAGS += -I $(SRC_COMMON)/shared/inc
-CFLAGS += -I $(SRC_COMMON)/inc
-CFLAGS += -I $(SRC_COMMON)/softfloat/nvidia
-CFLAGS += -I $(SRC_COMMON)/softfloat/source/include
-CFLAGS += -I $(SRC_COMMON)/softfloat/source/8086-SSE
-CFLAGS += -I $(SRC_COMMON)/unix/common/utils/interface
-CFLAGS += -I $(SRC_COMMON)/unix/common/inc
-CFLAGS += -I $(SRC_COMMON)/modeset
-CFLAGS += -I os-interface/include
-CFLAGS += -I kapi/interface
-CFLAGS += -I ../nvidia/arch/nvalloc/unix/include
-CFLAGS += -I interface
-CFLAGS += -I include
-CFLAGS += -I kapi/include
-CFLAGS += -I generated
-CFLAGS += -I $(SRC_COMMON)/displayport/inc
-CFLAGS += -I $(SRC_COMMON)/displayport/inc/dptestutil
-CFLAGS += -I $(SRC_COMMON)/inc/displayport
-
-CFLAGS += -DNDEBUG
-CFLAGS += -D_LANGUAGE_C
-CFLAGS += -D__NO_CTYPE
-
-CFLAGS += -DNV_CPU_INTRINSICS_KERNEL
-CFLAGS += -DNVHDMIPKT_RM_CALLS_INTERNAL=0
-CFLAGS += -DNVHDMIPKT_NVKMS
-
-# XXX it would be nice to only define these for appropriate files...
-CFLAGS += -DSOFTFLOAT_ROUND_ODD
-CFLAGS += -DSOFTFLOAT_FAST_DIV32TO16
-CFLAGS += -DSOFTFLOAT_FAST_DIV64TO32
-
-# Tell nvtiming to use nvkms import functions
-CFLAGS += -DNVT_USE_NVKMS
-
-# Tell SMG we're being compiled into kernel
-CFLAGS += -DNV_SMG_IN_NVKMS
+CFLAGS += $(addprefix -include ,$(NV_INCLUDE))
+CFLAGS += $(addprefix -I ,$(NV_INCDIRS))
+CFLAGS += $(NV_DEFINES)
 
 CFLAGS += -Wformat
 CFLAGS += -Wreturn-type
@@ -183,19 +148,6 @@ CXX_ONLY_CFLAGS += -fcheck-new
 
 SHADER_OBJS =
 
-CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/interface
-CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/interface
-CFLAGS += -I $(SRC_COMMON)/unix/nvidia-3d/include
-CFLAGS += -I $(SRC_COMMON)/unix/nvidia-push/include
-CFLAGS += -I $(SRC_COMMON)/unix/xzminidec/interface
-CFLAGS += -I $(SRC_COMMON)/unix/nvidia-headsurface
-CFLAGS += -I src/shaders
-
-CFLAGS += -DNV_PUSH_IN_KERNEL
-CFLAGS += -DNV_XZ_CUSTOM_MEM_HOOKS
-CFLAGS += -DNV_XZ_USE_NVTYPES
-CFLAGS += -DXZ_DEC_SINGLE
-
 # Compress the shaders and embed in ELF object files.
 define COMPRESS_SHADERS
 $$(OUTPUTDIR)/$(1)_shaders.xz: src/shaders/g_$(1)_shaders
@@ -207,11 +159,7 @@ $$(eval $$(call READ_ONLY_OBJECT_FROM_FILE_RULE,$$(OUTPUTDIR)/$(1)_shaders.xz))
 SHADER_OBJS += $$(OUTPUTDIR)/$(1)_shaders.xz.o
 endef
 
-$(eval $(call COMPRESS_SHADERS,turing))
-$(eval $(call COMPRESS_SHADERS,ampere))
-$(eval $(call COMPRESS_SHADERS,hopper))
-$(eval $(call COMPRESS_SHADERS,blackwell))
-$(eval $(call COMPRESS_SHADERS,gb20x))
+$(foreach shader, $(SHADERS), $(eval $(call COMPRESS_SHADERS,$(shader))))
 
 OBJS = $(call BUILD_OBJECT_LIST,$(ALL_SRCS))
 OBJS += $(SHADER_OBJS)

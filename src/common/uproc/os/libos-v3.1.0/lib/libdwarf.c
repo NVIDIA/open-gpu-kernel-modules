@@ -23,7 +23,7 @@
 
 #ifdef NVRM
 
-#    include <stddef.h>
+#    include <nv-stddef.h>
 #    include <nvport/nvport.h>
 #    define printf(fmt, ...) nv_printf(LEVEL_ERROR, fmt, ##__VA_ARGS__)
 

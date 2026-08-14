@@ -446,7 +446,8 @@ _pmaEvictContiguous
         PSCRUB_NODE pPmaScrubList = NULL;
         portSyncMutexRelease(pPma->pAllocLock);
 
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd,
+                                    (UVM_PMA_GPU_MEMORY_TYPE)prot);
 
         portSyncMutexAcquire(pPma->pAllocLock);
 
@@ -497,7 +498,8 @@ scrub_exit:
     }
     else
     {
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd,
+                                    (UVM_PMA_GPU_MEMORY_TYPE)prot);
         NV_PRINTF(LEVEL_INFO, "evictRangeCb returned with status %llx\n", (NvU64)status);
     }
 
@@ -571,7 +573,8 @@ _pmaEvictPages
 
         portSyncMutexRelease(pPma->pAllocLock);
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                            (NvU32)evictPageCount, physBegin, physEnd, prot);
+                            (NvU32)evictPageCount, physBegin, physEnd,
+                            (UVM_PMA_GPU_MEMORY_TYPE)prot);
         portSyncMutexAcquire(pPma->pAllocLock);
 
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
@@ -629,7 +632,8 @@ scrub_exit:
     else
     {
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                                (NvU32)evictPageCount, physBegin, physEnd, prot);
+                                (NvU32)evictPageCount, physBegin, physEnd,
+                                (UVM_PMA_GPU_MEMORY_TYPE)prot);
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
     }
 

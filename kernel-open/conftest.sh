@@ -2201,6 +2201,48 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VM_OPS_FAULT_REMOVED_VMA_ARG" "" "types"
         ;;
 
+        vm_ops_access_size_t_len)
+            #
+            # Determine if vma.vm_ops.access takes an int or size_t len arg.
+            # Acronym key:
+            #   vma: struct vm_area_struct
+            #   vm_ops: struct vm_operations_struct
+            #
+            # The type gets changed by the grsecurity kernel patch.
+            #
+            CODE="
+            #include <linux/mm.h>
+            static ssize_t conftest_access(struct vm_area_struct *vma, unsigned long addr,
+                                           void *buf, size_t len, int write)
+            {
+                return -EINVAL;
+            }
+
+            struct vm_operations_struct vm_ops = {
+                .access = conftest_access,
+            };"
+
+            compile_check_conftest "$CODE" "NV_VM_OPS_ACCESS_SIZE_T_LEN" "" "types"
+        ;;
+
+        atomic_unchecked_t)
+            #
+            # Determine if atomic_unchecked_t is available.
+            #
+            # atomic*_unchecked_t is a grsecurity-specific type extension.
+            #
+            CODE="
+            #include <linux/atomic.h>
+
+            static atomic_unchecked_t a;
+
+            int conftest_atomic_unchecked_t(void) {
+                return atomic_inc_return(&a);
+            }"
+
+            compile_check_conftest "$CODE" "NV_HAVE_ATOMIC_UNCHECKED_T" "" "types"
+        ;;
+
         is_export_symbol_present_*)
             export_symbol_present_conftest $(echo $1 | cut -f5- -d_)
         ;;
@@ -5033,8 +5075,9 @@ compile_test() {
             CODE="
             #include <drm/drm_atomic_helper.h>
 
-            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
-                                                         const struct drm_display_mode *mode) {
+            static enum drm_mode_status
+            conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                              const struct drm_display_mode *mode) {
                 return 0;
             }
 

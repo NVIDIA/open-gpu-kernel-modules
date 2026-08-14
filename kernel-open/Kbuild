@@ -39,8 +39,94 @@ NV_BUILD_TYPE ?= release
 #
 ASSIGN_PER_OBJ_CFLAGS = \
  $(foreach _cflags_variable, \
- $(notdir $(1)) $(1), \
+ $(sort $(notdir $(1)) $(1)), \
  $(eval $(addprefix CFLAGS_,$(_cflags_variable)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object CFLAGS_REMOVE.
+#
+ASSIGN_PER_OBJ_CFLAGS_REMOVE = \
+ $(foreach _cflags_variable, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix CFLAGS_REMOVE_,$(_cflags_variable)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object LDFLAGS.
+#
+ASSIGN_PER_OBJ_LDFLAGS = \
+ $(foreach _ldflags_variable, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix LDFLAGS_,$(_ldflags_variable)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object OBJCOPYFLAGS.
+#
+ASSIGN_PER_OBJ_OBJCOPYFLAGS = \
+ $(foreach _objcopyflags_variable, \
+ $(sort $(notdir $(1)) $(1)i), \
+ $(eval $(addprefix OBJCOPYFLAGS_,$(_objcopyflags_variable)) += $(2)))
+
+
+#
+# Define rule for generating a source file containing identification information
+# for the build.
+#
+# $(1) string name
+# $(2) module name
+# $(3) prerequisite object files
+##############################################################################
+
+NV_BUILD_USER         ?= $(shell whoami)
+NV_BUILD_HOST         ?= $(shell hostname)
+
+ifndef TARGET_OS
+  TARGET_OS           := $(shell uname)
+endif
+
+ifndef TARGET_ARCH
+  ifneq ($(TARGET_OS),SunOS)
+    TARGET_ARCH       := $(shell uname -m)
+  else
+    TARGET_ARCH       := $(shell isainfo -n)
+  endif
+  TARGET_ARCH         := $(subst i386,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i486,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i586,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst i686,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst amd64,x86_64,$(TARGET_ARCH))
+endif
+
+DATE                  ?= date
+
+NVIDSTRING ?= g_nvid_string.c
+
+ifeq ($(NV_BUILD_TYPE),debug)
+  NVIDSTRING_BUILD_TYPE_STRING = Debug Build
+else ifeq ($(NV_BUILD_TYPE),develop)
+  NVIDSTRING_BUILD_TYPE_STRING = Develop Build
+else ifeq ($(NV_BUILD_TYPE),release)
+  NVIDSTRING_BUILD_TYPE_STRING = Release Build
+else
+  NVIDSTRING_BUILD_TYPE_STRING = Custom '$(NV_BUILD_TYPE)' Build
+endif
+
+# NV_VERSION_STRING is set as preprocessor define
+NVIDIA_NVID_VERSION := \"NV_VERSION_STRING\"
+
+define GENERATE_NVIDSTRING
+  $(1)_BUILD_NVID := NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_NVID_VERSION)
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDSTRING_BUILD_TYPE_STRING)
+  ifneq ($$(NVIDIA_NVID_EXTRA),)
+    $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  $$(NVIDIA_NVID_EXTRA)
+  endif
+  $(1)_BUILD_NVID := $$($$(strip $(1))_BUILD_NVID)  ($$(NV_BUILD_USER)@$$(NV_BUILD_HOST))
+  # g_nvid_string.c depends on all objects except g_nvid_string.o, and version.mk
+  # $(NVIDSTRING) evaluated early, to allow reusing it
+  $$(obj)/$(NVIDSTRING): $$(adprefix $$(obj)/,$$(filter-out $(NVIDSTRING:.c=.o), $(3))) $$(VERSION_MK)
+	@mkdir -p $$(dir $$@)
+	@echo "const char $(1)[] = \"nvidia id: $$($$(strip $(1))_BUILD_NVID)  `$$(DATE)`\";" > $$@
+	@echo "const char *const p$$(strip $(1)) = $(1) + 11;" >> $$@;
+endef
 
 
 #
@@ -70,13 +156,42 @@ endif
 quiet_cmd_symlink = SYMLINK $@
  cmd_symlink = ln -sf $(abspath $<) $@
 
+#
+# Command to neuter .modinfo section for stub modules which are our hacky
+# attempt to make kbuild support nested compound objects.
+#
+# Intended usage:
+#
+#   # stub module
+#   obj-m += nv-kernel.stub.o
+#   nv-kernel.stub-y := ...
+#
+#   # real module wanting to make use of nv-kernel.o
+#   obj-m += ndidia.o
+#   nvidia-y += nv-kernel.clean.o ...
+#
+
+MOD_STUB := common/mod_stub.o
+
+# not really needed, but to have conftest be the very first
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(MOD_STUB)
+
+$(obj)/%.clean.o: OBJCOPYFLAGS += --rename-section .modinfo=.discard.modinfo
+$(obj)/%.clean.o: $(obj)/%.stub.o FORCE
+	$(call if_changed,objcopy)
+
+# early flags, which may be filtered for USE_KBUILD=1 builds
+ccflags-y += -I$(src)/common/inc
+ccflags-y += -I$(src)
+
+ifeq ($(USE_KBUILD),1)
+ ccflags-y += -DNV_USE_KBUILD
+endif
 
 $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
 
 
-ccflags-y += -I$(src)/common/inc
-ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
 ccflags-y += -DNV_VERSION_STRING=\"610.57.04\"

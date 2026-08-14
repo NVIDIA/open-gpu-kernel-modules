@@ -24,7 +24,6 @@
 #ifndef __UVM_MMU_H__
 #define __UVM_MMU_H__
 
-#include "uvm_forward_decl.h"
 #include "uvm_hal_types.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_types.h"
