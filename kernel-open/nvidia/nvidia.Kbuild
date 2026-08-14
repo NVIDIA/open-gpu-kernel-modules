@@ -75,12 +75,12 @@ $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_OBJECTS), $(NVIDIA_CFLAGS))
 # nv-procfs.c requires nv-compiler.h
 #
 
-NV_COMPILER_VERSION_HEADER = $(obj)/nv_compiler.h
+NV_COMPILER_VERSION_HEADER = nv_compiler.h
 
-$(NV_COMPILER_VERSION_HEADER):
+$(obj)/$(NV_COMPILER_VERSION_HEADER):
 	@echo \#define NV_COMPILER \"`$(CC) -v 2>&1 | tail -n 1`\" > $@
 
-$(obj)/nvidia/nv-procfs.o: $(NV_COMPILER_VERSION_HEADER)
+$(obj)/nvidia/nv-procfs.o: $(obj)/$(NV_COMPILER_VERSION_HEADER)
 
 clean-files += $(NV_COMPILER_VERSION_HEADER)
 
