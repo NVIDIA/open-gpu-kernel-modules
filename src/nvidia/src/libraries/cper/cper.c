@@ -26,7 +26,7 @@
  * @brief UEFI CPER (Common Platform Error Record) composition library implementation
  */
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #include "cper/cper.h"
 #include "cper/gpu_cper.h"

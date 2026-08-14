@@ -548,17 +548,17 @@ _gmmuSwToHwLevel
 
 const MMU_TRACE_CALLBACKS g_gmmuTraceCallbacks =
 {
-    _gmmuIsPte,          // isPte
-    _gmmuGetFmtPde,      // getFmtPde
-    _gmmuGetFmtPte,      // getFmtPte
-    _gmmuGetPdePa,       // getPdePa
-    _gmmuGetPtePa,       // getPtePa
-    _gmmuPrintPdb,       // printPdb
-    _gmmuPrintPde,       // printPde
-    _gmmuPrintPt,        // printPt
-    _gmmuPrintPte,       // printPte
-    _gmmuIsInvalidPdeOk, // isInvalidPdeOk
-    _gmmuPdeAddrSpace,   // pdeAddrSpace
-    _gmmuPteAddrSpace,   // pteAddrSpace
-    _gmmuSwToHwLevel,    // swToHwLevel
+    .isPte          = _gmmuIsPte,
+    .getFmtPde      = _gmmuGetFmtPde,
+    .getFmtPte      = _gmmuGetFmtPte,
+    .getPdePa       = _gmmuGetPdePa,
+    .getPtePa       = _gmmuGetPtePa,
+    .printPdb       = _gmmuPrintPdb,
+    .printPde       = _gmmuPrintPde,
+    .printPt        = _gmmuPrintPt,
+    .printPte       = _gmmuPrintPte,
+    .isInvalidPdeOk = _gmmuIsInvalidPdeOk,
+    .pdeAddrSpace   = _gmmuPdeAddrSpace,
+    .pteAddrSpace   = _gmmuPteAddrSpace,
+    .swToHwLevel    = _gmmuSwToHwLevel,
 };

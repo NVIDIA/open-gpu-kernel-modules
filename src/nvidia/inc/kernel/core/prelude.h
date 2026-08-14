@@ -23,12 +23,10 @@
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
 
-/* ------------------------ C library --------------------------------------- */
-#include <stddef.h>                 // NULL
-
 /* ------------------------ SDK includes ------------------------------------ */
 
 #include "nvtypes.h"
+#include "nv-stddef.h"
 #include "nvrangetypes.h"
 #include "nvstatus.h"
 #include "nvmisc.h"

@@ -27,4 +27,4 @@
  */
 
 // We used to have custom implementations in here, but now we just take the standard ones
-#include <stdarg.h>   // define va_*
+#include <nv_stdarg.h>   // define va_*

@@ -37,7 +37,7 @@
 //
 
 #include <nvtypes.h>
-#include <stddef.h>      // size_t
+#include <nv-stddef.h>      // size_t
 
 #include "dp_object.h"
 #include "dp_ringbuffer.h"

@@ -5033,8 +5033,9 @@ compile_test() {
             CODE="
             #include <drm/drm_atomic_helper.h>
 
-            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
-                                                         const struct drm_display_mode *mode) {
+            static enum drm_mode_status
+            conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                              const struct drm_display_mode *mode) {
                 return 0;
             }
 

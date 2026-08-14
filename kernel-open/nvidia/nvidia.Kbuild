@@ -9,8 +9,21 @@
 include $(src)/nvidia/nvidia-sources.Kbuild
 NVIDIA_OBJECTS = $(patsubst %.c,%.o,$(NVIDIA_SOURCES))
 
+ifneq ($(NV_PREPARE_ONLY),1)
 obj-m += nvidia.o
 nvidia-y := $(NVIDIA_OBJECTS)
+endif
+
+ifeq ($(USE_KBUILD),1)
+# build nv-kernel.o using Linux's kbuild system
+nvidia_src := ../src/nvidia
+include $(src)/$(nvidia_src)/nvidia.Kbuild
+
+nvidia-y += $(NV_KERNEL_O)
+
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(NV_KERNEL_O_OBJS)
+
+else # !USE_KBUILD
 
 NVIDIA_KO = nvidia/nvidia.ko
 
@@ -46,6 +59,7 @@ $(obj)/$(NVIDIA_BINARY_OBJECT_O): $(NVIDIA_BINARY_OBJECT) FORCE
 	$(call if_changed,symlink)
 
 nvidia-y += $(NVIDIA_BINARY_OBJECT_O)
+endif
 
 
 #
@@ -75,12 +89,12 @@ $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_OBJECTS), $(NVIDIA_CFLAGS))
 # nv-procfs.c requires nv-compiler.h
 #
 
-NV_COMPILER_VERSION_HEADER = $(obj)/nv_compiler.h
+NV_COMPILER_VERSION_HEADER = nv_compiler.h
 
-$(NV_COMPILER_VERSION_HEADER):
+$(obj)/$(NV_COMPILER_VERSION_HEADER):
 	@echo \#define NV_COMPILER \"`$(CC) -v 2>&1 | tail -n 1`\" > $@
 
-$(obj)/nvidia/nv-procfs.o: $(NV_COMPILER_VERSION_HEADER)
+$(obj)/nvidia/nv-procfs.o: $(obj)/$(NV_COMPILER_VERSION_HEADER)
 
 clean-files += $(NV_COMPILER_VERSION_HEADER)
 
@@ -97,8 +111,10 @@ NVIDIA_INTERFACE := nvidia/nv-interface.o
 # before v5.6 looks at "always"; kernel versions between v5.12 and v5.6
 # look at both.
 
+ifneq ($(NV_PREPARE_ONLY),1)
 always += $(NVIDIA_INTERFACE)
 always-y += $(NVIDIA_INTERFACE)
+endif
 
 $(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS))
 	$(LD) -r -o $@ $^

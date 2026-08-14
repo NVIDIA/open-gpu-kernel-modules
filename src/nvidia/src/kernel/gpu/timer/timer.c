@@ -1769,7 +1769,7 @@ tmrapiDeregisterEvents_IMPL(TimerApi *pTimerApi)
 // inner callback and calls it correctly from itself. Hacky but it should work around the
 // limitations in the SDK (all RM derived types undefined, so TIMEPROC type is impossible).
 //
-typedef NvU32 (*TMR_CALLBACK_FUNCTION)(void *pCallbackData);
+typedef void (*TMR_CALLBACK_FUNCTION)(void *pCallbackData);
 
 typedef struct
 {
@@ -1822,7 +1822,7 @@ tmrCtrlCmdEventCreate
 )
 {
     NV_STATUS         rc;
-    TMR_EVENT        *pEvent;
+    TMR_EVENT        *pEvent = NULL;
     wrapperStorage_t *pWrapper;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 

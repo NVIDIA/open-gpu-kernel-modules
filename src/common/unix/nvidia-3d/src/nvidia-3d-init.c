@@ -289,15 +289,15 @@ static NvBool GetSpaVersion(
 }
 
 static const Nv3dHal _nv3dHalTuring = {
-    _nv3dInitChannelTuring,                         /* initChannel */
-    _nv3dAssignNv3dTextureTuring,                   /* assignNv3dTexture */
-    _nv3dSetVertexStreamEndTuring,                  /* setVertexStreamEnd */
+    .initChannel        = _nv3dInitChannelTuring,
+    .assignNv3dTexture  = _nv3dAssignNv3dTextureTuring,
+    .setVertexStreamEnd = _nv3dSetVertexStreamEndTuring,
 };
 
 static const Nv3dHal _nv3dHalHopper = {
-    _nv3dInitChannelHopper,                         /* initChannel */
-    _nv3dAssignNv3dTextureHopper,                   /* assignNv3dTexture */
-    _nv3dSetVertexStreamEndTuring,                  /* setVertexStreamEnd */
+    .initChannel        = _nv3dInitChannelHopper,
+    .assignNv3dTexture  = _nv3dAssignNv3dTextureHopper,
+    .setVertexStreamEnd = _nv3dSetVertexStreamEndTuring,
 };
 
 NvBool nv3dAllocDevice(

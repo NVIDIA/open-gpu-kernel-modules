@@ -25,7 +25,7 @@
  *  @brief Provides packet write functions for HDMI library for Ampere+ chips
  */
 
-#include <stddef.h>
+#include <nv-stddef.h>
 #include "nvhdmipkt_common.h"
 #include "nvhdmipkt_class.h"
 

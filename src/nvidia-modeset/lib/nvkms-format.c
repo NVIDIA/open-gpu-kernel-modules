@@ -25,7 +25,7 @@
 #include "nv_common_utils.h"
 #include "nvctassert.h"
 
-#include <stddef.h>
+#include <nv-stddef.h>
 
 #define RGB_ENTRY(_format, _depth, _bytesPerPixel) \
     [NvKmsSurfaceMemoryFormat##_format] = { \
