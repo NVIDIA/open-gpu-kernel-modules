@@ -237,7 +237,7 @@ static NvU64 nv_get_max_sysmem_address(void)
         {
             zone = &NODE_DATA(node_id)->node_zones[zone_id];
 
-            if (!populated_zone(zone))
+            if (!managed_zone(zone))
                 continue;
 
             global_max_pfn = max(global_max_pfn, (NvU64)zone_end_pfn(zone));
