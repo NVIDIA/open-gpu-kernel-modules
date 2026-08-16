@@ -6123,8 +6123,8 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
             {
                gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
                                        NULL, 0, 0, 0);
+               os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
             }
-            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
         }
         rmapiLockRelease();
     }
