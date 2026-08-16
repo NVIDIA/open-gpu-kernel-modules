@@ -172,6 +172,8 @@ static void RmScheduleCallbackToIndicateIdle(OBJGPU *);
 static NvBool RmCheckForGcxSupportOnCurrentState(OBJGPU *);
 static void RmScheduleCallbackToRemoveIdleHoldoff(OBJGPU *);
 static void RmQueueIdleSustainedWorkitem(OBJGPU *);
+static void RmReplayNvpcfNotify(NvU32, void *);
+static void RmQueueNvpcfReplay(OBJGPU *);
 
 /*!
  * @brief Wrapper that checks lock order for the dynamic power mutex.  Locking
@@ -374,6 +376,7 @@ static void RmForceGpuNotIdle(
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
     nv_dynamic_power_state_t old_state;
     NvBool ret;
+    NvBool bReplayNvpcf = NV_FALSE;
 
     acquireDynamicPowerMutex(nvp);
 
@@ -383,6 +386,8 @@ static void RmForceGpuNotIdle(
     {
     case NV_DYNAMIC_POWER_STATE_IDLE_INDICATED:
         nv_indicate_not_idle(nv);
+        bReplayNvpcf = nvp->dynamic_power.nvpcf_notify_pending;
+        nvp->dynamic_power.nvpcf_notify_pending = NV_FALSE;
         NV_ASSERT(nvp->dynamic_power.deferred_idle_enabled);
         RmScheduleCallbackForIdlePreConditions(pGpu);
         /* fallthrough */
@@ -407,6 +412,11 @@ static void RmForceGpuNotIdle(
     nv_release_mmap_lock(nv);
 
     releaseDynamicPowerMutex(nvp);
+
+    if (bReplayNvpcf)
+    {
+        RmQueueNvpcfReplay(pGpu);
+    }
 }
 
 /*!
@@ -1109,6 +1119,7 @@ os_ref_dynamic_power(
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
     NV_STATUS status = NV_OK;
     NvS32 ref;
+    NvBool bReplayNvpcf = NV_FALSE;
 
     if (nvp == NULL)
     {
@@ -1163,6 +1174,8 @@ os_ref_dynamic_power(
                 nvp->dynamic_power.refcount--;
                 break;
             }
+            bReplayNvpcf = nvp->dynamic_power.nvpcf_notify_pending;
+            nvp->dynamic_power.nvpcf_notify_pending = NV_FALSE;
             if (nvp->dynamic_power.deferred_idle_enabled)
             {
                 RmScheduleCallbackForIdlePreConditions(NV_GET_NV_PRIV_PGPU(nv));
@@ -1184,6 +1197,11 @@ os_ref_dynamic_power(
     }
 
     releaseDynamicPowerMutex(nvp);
+
+    if (bReplayNvpcf)
+    {
+        RmQueueNvpcfReplay(NV_GET_NV_PRIV_PGPU(nv));
+    }
 
     return status;
 }
@@ -1457,6 +1475,65 @@ static void RmRemoveIdleHoldoff(
             RmScheduleCallbackToRemoveIdleHoldoff(pGpu);
         }
     }
+}
+
+static void RmReplayNvpcfNotify(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+
+    gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                            NULL, 0, 0, 0);
+}
+
+static void RmQueueNvpcfReplay(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS status = osQueueWorkItem(pGpu,
+                           RmReplayNvpcfNotify,
+                           NULL,
+                           (OsQueueWorkItemFlags){.bLockGpuGroupSubdevice = NV_TRUE});
+
+    if (status != NV_OK)
+    {
+        nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+        nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+
+        acquireDynamicPowerMutex(nvp);
+        nvp->dynamic_power.nvpcf_notify_pending = NV_TRUE;
+        releaseDynamicPowerMutex(nvp);
+
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to queue deferred NVPCF notification: 0x%x\n",
+                  status);
+    }
+}
+
+/* Check under the mutex so a concurrent resume cannot race the defer. */
+NvBool RmDeferNvpcfNotifyIfIdle(
+    nv_state_t *nv
+)
+{
+    nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+    NvBool bDefer;
+
+    if (nvp == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    acquireDynamicPowerMutex(nvp);
+    bDefer = nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_INDICATED;
+    if (bDefer)
+    {
+        nvp->dynamic_power.nvpcf_notify_pending = NV_TRUE;
+    }
+    releaseDynamicPowerMutex(nvp);
+
+    return bDefer;
 }
 
 /*!
