@@ -227,12 +227,21 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
 static NvU64 nv_get_max_sysmem_address(void)
 {
     NvU64 global_max_pfn = 0ULL;
+    struct zone *zone;
     int node_id;
+    int zone_id;
 
     for_each_online_node(node_id)
     {
-        // node_end_pfn() returns the next PFN after the last PFN in the node.
-        global_max_pfn = max(global_max_pfn, (NvU64)node_end_pfn(node_id));
+        for (zone_id = 0; zone_id <= ZONE_NORMAL; zone_id++)
+        {
+            zone = &NODE_DATA(node_id)->node_zones[zone_id];
+
+            if (!managed_zone(zone))
+                continue;
+
+            global_max_pfn = max(global_max_pfn, (NvU64)zone_end_pfn(zone));
+        }
     }
 
     return (global_max_pfn << PAGE_SHIFT) - 1;
