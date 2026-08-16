@@ -27,6 +27,7 @@
 #include "nv-linux.h"
 #include "nvstatus.h"
 #include "nv.h"
+#include "hwmon-entry.h"
 
 static const nvidia_modeset_callbacks_t *nv_modeset_callbacks;
 
@@ -73,6 +74,8 @@ void nvidia_modeset_resume(NvU32 gpuId)
 
 void nvidia_modeset_remove(NvU32 gpuId)
 {
+    nvhwmon_driver_gpu_remove(gpuId);
+
     if (nv_modeset_callbacks && nv_modeset_callbacks->remove)
     {
         nv_modeset_callbacks->remove(gpuId);
@@ -103,13 +106,20 @@ static void nvidia_modeset_get_gpu_info(nv_gpu_info_t *gpu_info,
 
 void nvidia_modeset_probe(const nv_linux_state_t *nvl)
 {
+    nv_gpu_info_t gpu_info;
+
+    /*
+     * hwmon also consumes gpu_info, so collect it even when modeset has no
+     * probe callback registered.
+     */
+    nvidia_modeset_get_gpu_info(&gpu_info, nvl);
+
     if (nv_modeset_callbacks && nv_modeset_callbacks->probe)
     {
-        nv_gpu_info_t gpu_info;
-
-        nvidia_modeset_get_gpu_info(&gpu_info, nvl);
         nv_modeset_callbacks->probe(&gpu_info);
     }
+
+    nvhwmon_driver_gpu_add(&gpu_info);
 }
 
 static NvU32 nvidia_modeset_enumerate_gpus(nv_gpu_info_t *gpu_info)

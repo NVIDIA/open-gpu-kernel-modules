@@ -120,6 +120,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     CALL_CONTEXT     *pCallContext = resservGetTlsCallContext();
     RmCtrlParams     *pRmCtrlParams = pCallContext->pControlParams;
     NvBool            bUseMigratableOps;
+    NvBool            bSkipPermissionValidation;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
         NV_ERR_INVALID_LOCK_STATE);
@@ -152,6 +153,9 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     // used by the migratable ops function.
     //
     bUseMigratableOps = (pOpSmIds != NULL);
+    // The user register access map does not constrain kernel RM clients.
+    bSkipPermissionValidation =
+        pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL;
     //
     // If in a VM, do RPC to the host that has hw access.
     //
@@ -196,7 +200,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     }
 
     status = gpuValidateRegOps(pGpu, pRegOps, regOpCount, bNonTransactional,
-                               isClientGspPlugin, NV_FALSE);
+                               isClientGspPlugin, bSkipPermissionValidation);
     if (status != NV_OK)
     {
         return status;

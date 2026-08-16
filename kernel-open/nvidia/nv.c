@@ -54,6 +54,7 @@
 #include "nv-kthread-q.h"
 #include "nv-dmabuf.h"
 #include "nv-caps-imex.h"
+#include "hwmon-entry.h"
 
 /*
  * Commit aefb2f2e619b ("x86/bugs: Rename CONFIG_RETPOLINE =>
@@ -202,6 +203,8 @@ struct semaphore nv_linux_devices_lock;
 // True if at least one of the successfully probed devices support ATS
 // Assigned at device probe (module init) time
 NvBool nv_ats_supported;
+
+static bool hwmon_initialized;
 
 // allow an easy way to convert all debug printfs related to events
 // back and forth between 'info' and 'errors'
@@ -992,6 +995,17 @@ static int __init nvidia_init_module(void)
         goto partial_chrdev_exit;
     }
 
+    rc = nvhwmon_driver_init();
+    if (rc < 0)
+    {
+        nv_printf(NV_DBG_WARNINGS,
+                  "NVRM: hwmon initialization failed: %d\n", rc);
+    }
+    else
+    {
+        hwmon_initialized = true;
+    }
+
     __nv_init_sp = sp;
 
     return 0;
@@ -1034,6 +1048,12 @@ procfs_exit:
 static void __exit nvidia_exit_module(void)
 {
     nvidia_stack_t *sp = __nv_init_sp;
+
+    if (hwmon_initialized)
+    {
+        nvhwmon_driver_exit();
+        hwmon_initialized = false;
+    }
 
     nv_unregister_chrdev(NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE, 1,
         &nv_linux_control_device_cdev);

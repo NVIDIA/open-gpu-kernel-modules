@@ -8,9 +8,11 @@
 
 include $(src)/nvidia/nvidia-sources.Kbuild
 NVIDIA_OBJECTS = $(patsubst %.c,%.o,$(NVIDIA_SOURCES))
+NVHWMON_OBJECTS = $(patsubst %.c,%.o,$(NVHWMON_SOURCES))
 
 obj-m += nvidia.o
 nvidia-y := $(NVIDIA_OBJECTS)
+nvidia-y += $(NVHWMON_OBJECTS)
 
 NVIDIA_KO = nvidia/nvidia.ko
 
@@ -70,6 +72,11 @@ endif
 
 $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_OBJECTS), $(NVIDIA_CFLAGS))
 
+NVHWMON_CFLAGS += -I$(src)/../src/common/sdk/nvidia/inc
+NVHWMON_CFLAGS += -I$(src)/../src/nvidia/arch/nvalloc/unix/include
+
+$(call ASSIGN_PER_OBJ_CFLAGS, $(NVHWMON_OBJECTS), $(NVHWMON_CFLAGS))
+
 
 #
 # nv-procfs.c requires nv-compiler.h
@@ -100,7 +107,10 @@ NVIDIA_INTERFACE := nvidia/nv-interface.o
 always += $(NVIDIA_INTERFACE)
 always-y += $(NVIDIA_INTERFACE)
 
-$(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS))
+# nv-interface.o is a separate relocatable interface object, not an input to
+# nvidia-y. Keep NVHWMON_OBJECTS here so the interface object exports the same
+# in-tree hwmon additions without linking them twice into nvidia.ko.
+$(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS) $(NVHWMON_OBJECTS))
 	$(LD) -r -o $@ $^
 
 
@@ -109,6 +119,7 @@ $(obj)/$(NVIDIA_INTERFACE): $(addprefix $(obj)/,$(NVIDIA_OBJECTS))
 #
 
 NV_OBJECTS_DEPEND_ON_CONFTEST += $(NVIDIA_OBJECTS)
+NV_OBJECTS_DEPEND_ON_CONFTEST += $(NVHWMON_OBJECTS)
 
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_pages_uc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_memory_uc

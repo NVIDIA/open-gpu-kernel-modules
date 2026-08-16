@@ -1,5 +1,6 @@
 NVIDIA_SOURCES ?=
 NVIDIA_SOURCES_CXX ?=
+NVHWMON_SOURCES ?=
 
 NVIDIA_SOURCES += nvidia/nv-platform.c
 NVIDIA_SOURCES += nvidia/nv-dsi-parse-panel-props.c
@@ -59,3 +60,10 @@ NVIDIA_SOURCES += nvidia/nvlink_caps.c
 NVIDIA_SOURCES += nvidia/linux_nvswitch.c
 NVIDIA_SOURCES += nvidia/procfs_nvswitch.c
 NVIDIA_SOURCES += nvidia/i2c_nvswitch.c
+NVHWMON_SOURCES += nvidia/hwmon-main.c
+NVHWMON_SOURCES += nvidia/hwmon-rm.c
+NVHWMON_SOURCES += nvidia/hwmon-rusd.c
+NVHWMON_SOURCES += nvidia/hwmon-thermal.c
+NVHWMON_SOURCES += nvidia/hwmon-temp-limit.c
+NVHWMON_SOURCES += nvidia/hwmon-fan.c
+NVHWMON_SOURCES += nvidia/hwmon-device.c
