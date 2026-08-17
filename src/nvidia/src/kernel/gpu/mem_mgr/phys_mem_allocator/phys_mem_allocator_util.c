@@ -463,20 +463,23 @@ _pmaEvictContiguous
             // The evicting contiguous range is marked as ATTRIB_EVICTING
             // and hence there will be no page stealing.
             //
-            NvU64 count;
+            NvU64 count = 0;
             NvU32 flags = 0;
 
             // Localized not supported on NUMA yet
 
-            if ((status = scrubSubmitPages(pPma->pScrubObj, (NvU32)evictSize, &evictStart,
-                                           1, &pPmaScrubList, &count, flags)) != NV_OK)
+            status = scrubSubmitPages(pPma->pScrubObj, (NvU32)evictSize, &evictStart,
+                                      1, &pPmaScrubList, &count, flags);
+
+            if (count > 0)
+                _pmaClearScrubBit(pPma, pPmaScrubList, count);
+
+            if (status != NV_OK)
             {
                 status = NV_ERR_INSUFFICIENT_RESOURCES;
                 goto scrub_exit;
             }
 
-            if (count > 0)
-                _pmaClearScrubBit(pPma, pPmaScrubList, count);
         }
 
         if ((status = _pmaCheckScrubbedPages(pPma, evictSize, &evictStart, 1)) != NV_OK)
@@ -608,10 +611,11 @@ _pmaEvictPages
         // Don't need to mark ATTRIB_SCRUBBING to protect the pages because they are already pinned
         status = scrubSubmitPages(pPma->pScrubObj, pageSize, evictPages,
                                   (NvU32)evictPageCount, &pPmaScrubList, &count, flags);
-        NV_ASSERT_OR_GOTO((status == NV_OK), scrub_exit);
 
         if (count > 0)
             _pmaClearScrubBit(pPma, pPmaScrubList, count);
+
+        NV_ASSERT_OR_GOTO((status == NV_OK), scrub_exit);
 
         // Wait for our scrubbing to complete
        status = _pmaCheckScrubbedPages(pPma, pageSize, evictPages, (NvU32)evictPageCount);
@@ -1384,4 +1388,3 @@ pmaIsBlacklistingAddrUnique
     }
     return NV_TRUE;
 }
-
