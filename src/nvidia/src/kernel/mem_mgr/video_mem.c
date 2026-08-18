@@ -161,6 +161,12 @@ _vidmemPmaAllocate
                                 pAllocData->attr);
     }
 
+    // RMDisableNoncontigAlloc applies to PMA-managed heaps too, not just heapAlloc().
+    if (!pMemoryManager->bAllowNoncontiguousAllocation)
+    {
+        bContig = NV_TRUE;
+    }
+
     NV_PRINTF(LEVEL_INFO, "PMA input\n");
     NV_PRINTF(LEVEL_INFO, "          Owner: 0x%x\n", pAllocData->owner);
     NV_PRINTF(LEVEL_INFO, "        hMemory: 0x%x\n", pAllocRequest->hMemory);
@@ -324,7 +330,7 @@ retry_alloc:
         portMemFree(pAllocRequest->pPmaAllocInfo[subdevInst]);
         pAllocRequest->pPmaAllocInfo[subdevInst] = NULL;
 
-        if (bContig)
+        if (bContig && pMemoryManager->bAllowNoncontiguousAllocation)
         {
             if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _ALLOW_NONCONTIGUOUS, pAllocData->attr) ||
                 (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pAllocData->attr) &&
