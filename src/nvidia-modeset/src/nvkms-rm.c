@@ -5577,9 +5577,9 @@ NvBool nvRmMuxPre(const NVDpyEvoRec *pDpyEvo, NvMuxState state)
     params.flags = DRF_DEF(0073_CTRL_DFP, _DISP_MUX_FLAGS, _SR_ENTER_SKIP, _NO);
 
     if (state == MUX_STATE_DISCRETE) {
-        params.flags = NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_IGPU_TO_DGPU;
+        params.flags |= NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_IGPU_TO_DGPU;
     } else if (state == MUX_STATE_INTEGRATED) {
-        params.flags = NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_DGPU_TO_IGPU;
+        params.flags |= NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_DGPU_TO_IGPU;
     } else {
         return FALSE;
     }
@@ -5672,12 +5672,12 @@ NvBool nvRmMuxPost(const NVDpyEvoRec *pDpyEvo, NvMuxState state)
     }
 
     params.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
-    params.flags = DRF_DEF(0073_CTRL_DFP, _DISP_MUX_FLAGS, _SR_ENTER_SKIP, _NO);
+    params.flags = DRF_DEF(0073_CTRL_DFP, _DISP_MUX_FLAGS, _SR_EXIT_SKIP, _NO);
 
     if (state == MUX_STATE_DISCRETE) {
-        params.flags = NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_IGPU_TO_DGPU;
+        params.flags |= NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_IGPU_TO_DGPU;
     } else if (state == MUX_STATE_INTEGRATED) {
-        params.flags = NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_DGPU_TO_IGPU;
+        params.flags |= NV0073_CTRL_DFP_DISP_MUX_FLAGS_SWITCH_TYPE_DGPU_TO_IGPU;
     } else {
         return FALSE;
     }
