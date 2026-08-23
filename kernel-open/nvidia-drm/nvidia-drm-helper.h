@@ -170,6 +170,11 @@ typedef struct drm_atomic_state nv_drm_atomic_state_base_t;
 #define NV_DRM_PLANE_ATOMIC_CHECK_HAS_FULL_STATE_ARG
 #endif
 
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_ATOMIC_STATE_ARG) || \
+    defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG)
+#define NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FULL_STATE_ARG
+#endif
+
 static inline nv_drm_atomic_state_base_t *
 nv_drm_atomic_state_base_alloc(struct drm_device *dev)
 {

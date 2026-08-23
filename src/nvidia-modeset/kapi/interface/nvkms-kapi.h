@@ -1188,6 +1188,24 @@ struct NvKmsKapiFunctionsTable {
     );
 
     /*!
+     * Move the cursor on the specified head.
+     *
+     * \param [in]  device  A device allocated using allocateDevice().
+     * \param [in]  head    Target head index.
+     * \param [in]  x       New X coordinate in display space.
+     * \param [in]  y       New Y coordinate in display space.
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*moveCursor)
+    (
+        struct NvKmsKapiDevice *device,
+        const NvU32 head,
+        const NvS16 x,
+        const NvS16 y
+    );
+
+    /*!
      * Return status of flip.
      *
      * \param  [in]  device   A device allocated using allocateDevice().

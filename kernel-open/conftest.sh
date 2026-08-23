@@ -1631,6 +1631,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_LEGACY_GAMMA_SET_PRESENT" "" "functions"
         ;;
 
+        drm_atomic_helper_unprepare_planes)
+            #
+            # Determine if the function drm_atomic_helper_unprepare_planes() is
+            # present.
+            #
+            # Added by commit 456ff66cb87b ("drm/atomic-helper: Add
+            # drm_atomic_helper_unprepare_planes") in v6.8 (2023-12-19).
+            # Prior to v6.8, drm_atomic_helper_cleanup_planes was used.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+            void conftest_drm_atomic_helper_unprepare_planes(void) {
+                drm_atomic_helper_unprepare_planes();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_UNPREPARE_PLANES_PRESENT" "" "functions"
+        ;;
+
         drm_plane_create_color_properties)
             #
             # Determine if the function drm_plane_create_color_properties() is
@@ -3289,6 +3307,94 @@ compile_test() {
                 echo "#define NV_DRM_PLANE_ATOMIC_CHECK_HAS_ATOMIC_STATE_ARG" | append_conftest "types"
             else
                 echo "#undef NV_DRM_PLANE_ATOMIC_CHECK_HAS_ATOMIC_STATE_ARG" | append_conftest "types"
+            fi
+        ;;
+
+        drm_plane_helper_funcs_has_atomic_async_check)
+            #
+            # Determine if drm_plane_helper_funcs has atomic_async_check member.
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <drm/drm_modeset_helper_vtables.h>
+            void conftest_drm_plane_helper_funcs_has_atomic_async_check(void) {
+                struct drm_plane_helper_funcs funcs;
+                funcs.atomic_async_check = NULL;
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+                echo "#define NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK" | append_conftest "types"
+            else
+                echo "#undef NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK" | append_conftest "types"
+            fi
+        ;;
+
+        drm_plane_atomic_async_check_has_atomic_state_arg)
+            #
+            # Determine if drm_plane_helper_funcs::atomic_async_check takes 'state'
+            # argument of 'struct drm_atomic_state' type.
+            #
+            # Commit 881db09bc588 / 7c11b99a8e58 in v5.13 passes the full atomic state to
+            # drm_plane_helper_funcs::atomic_async_check() and atomic_async_update().
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <drm/drm_modeset_helper_vtables.h>
+            static const struct drm_plane_helper_funcs *funcs;
+            typeof(*funcs->atomic_async_check) conftest_drm_plane_atomic_async_check_has_atomic_state_arg;
+            #if defined(NV_DRM_ATOMIC_COMMIT_STRUCT_PRESENT)
+            int conftest_drm_plane_atomic_async_check_has_atomic_state_arg(
+                    struct drm_plane *plane, struct drm_atomic_commit *state) {
+                return 0;
+            }
+            #else
+            int conftest_drm_plane_atomic_async_check_has_atomic_state_arg(
+                    struct drm_plane *plane, struct drm_atomic_state *state) {
+                return 0;
+            }
+            #endif" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+                echo "#define NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_ATOMIC_STATE_ARG" | append_conftest "types"
+            else
+                echo "#undef NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_ATOMIC_STATE_ARG" | append_conftest "types"
+            fi
+        ;;
+
+        drm_plane_atomic_async_check_has_flip_arg)
+            #
+            # Determine if drm_plane_helper_funcs::atomic_async_check takes 'bool' (flip)
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <drm/drm_modeset_helper_vtables.h>
+            static const struct drm_plane_helper_funcs *funcs;
+            typeof(*funcs->atomic_async_check) conftest_drm_plane_atomic_async_check_has_flip_arg;
+            #if defined(NV_DRM_ATOMIC_COMMIT_STRUCT_PRESENT)
+            int conftest_drm_plane_atomic_async_check_has_flip_arg(
+                    struct drm_plane *plane, struct drm_atomic_commit *state, bool flip) {
+                return 0;
+            }
+            #else
+            int conftest_drm_plane_atomic_async_check_has_flip_arg(
+                    struct drm_plane *plane, struct drm_atomic_state *state, bool flip) {
+                return 0;
+            }
+            #endif" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+                echo "#define NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG" | append_conftest "types"
+            else
+                echo "#undef NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG" | append_conftest "types"
             fi
         ;;
 
