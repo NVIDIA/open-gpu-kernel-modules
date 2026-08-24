@@ -1742,7 +1742,7 @@ fence_context_sync_lookup_failed:
     nv_drm_gem_object_unreference_unlocked(&nv_fence_context->base);
 
 done:
-    return 0;
+    return ret;
 }
 
 int nv_drm_semsurf_fence_attach_ioctl(struct drm_device *dev,
