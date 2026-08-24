@@ -1231,19 +1231,42 @@ __nv_drm_semsurf_fence_ctx_new(
     struct NvKmsKapiSemaphoreSurface *pSemSurface;
     uint8_t *semMapping;
     uint8_t *maxSubmittedMapping;
+    NvU64 surfaceSize = 0;
     char worker_name[20+16+1]; /* strlen(nvidia-drm/timeline-) + 16 for %llx + NUL */
 
     pSemSurface = nvKms->importSemaphoreSurface(nv_dev->pDevice,
                                                 p->nvkms_params_ptr,
                                                 p->nvkms_params_size,
                                                 (void **)&semMapping,
-                                                (void **)&maxSubmittedMapping);
+                                                (void **)&maxSubmittedMapping,
+                                                &surfaceSize);
     if (!pSemSurface) {
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
             "Failed to import semaphore surface");
 
         goto failed;
+    }
+
+    /*
+     * The index is provided by userspace as a 64-bit value. Reject values
+     * outside the imported surface before shifting the CPU mappings by them,
+     * and before truncating to the 32-bit RM semaphore index below. The
+     * max-submitted value must fit within one stride so that indexing the
+     * semaphore mapping also bounds the max-submitted mapping.
+     */
+    if (nv_dev->semsurf_stride == 0 ||
+        (nv_dev->semsurf_max_submitted_offset + sizeof(NvU64)) >
+            nv_dev->semsurf_stride ||
+        p->index >= (surfaceSize / nv_dev->semsurf_stride) ||
+        p->index > NV_U32_MAX) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Invalid semaphore index %" NvU64_fmtu " for semaphore surface of %"
+            NvU64_fmtu " bytes",
+            p->index, surfaceSize);
+
+        goto failed_alloc_fence_context;
     }
 
     /*
