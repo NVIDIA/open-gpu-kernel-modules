@@ -335,7 +335,8 @@ static NV_STATUS uvm_suspend(void)
 
         uvm_parent_gpu_set_isr_suspended(gpu->parent, true);
 
-        nv_kthread_q_flush(&gpu->parent->isr.bottom_half_q);
+        if (gpu->parent->isr.replayable_faults.handling)
+            nv_kthread_q_flush(&gpu->parent->isr.bottom_half_q);
 
         if (gpu->parent->isr.non_replayable_faults.handling)
             nv_kthread_q_flush(&gpu->parent->isr.kill_channel_q);
