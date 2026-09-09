@@ -2352,8 +2352,205 @@ static const struct drm_plane_funcs nv_plane_funcs = {
     .format_mod_supported   = nv_drm_plane_format_mod_supported,
 };
 
+#if defined(NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK)
+
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG)
+static int nv_drm_plane_atomic_async_check(struct drm_plane *plane,
+                                           nv_drm_atomic_state_base_t *state,
+                                           bool flip)
+#elif defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_ATOMIC_STATE_ARG)
+static int nv_drm_plane_atomic_async_check(struct drm_plane *plane,
+                                           nv_drm_atomic_state_base_t *state)
+#else
+static int nv_drm_plane_atomic_async_check(struct drm_plane *plane,
+                                           struct drm_plane_state *plane_state)
+#endif
+{
+    struct drm_plane_state *old_plane_state = plane->state;
+    struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
+    struct drm_crtc *crtc;
+    struct nv_drm_plane_state *nv_plane_state;
+    struct nv_drm_plane_state *nv_old_plane_state;
+
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FULL_STATE_ARG)
+    struct drm_plane_state *plane_state =
+        drm_atomic_get_new_plane_state(state, plane);
+#endif
+
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG)
+    if (flip) {
+        return -EINVAL;
+    }
+#endif
+
+    if (plane->type != DRM_PLANE_TYPE_CURSOR) {
+        return -EINVAL;
+    }
+
+    if (nv_dev->subOwnershipGranted) {
+        return -EINVAL;
+    }
+
+    if (plane_state == NULL || old_plane_state == NULL) {
+        return -EINVAL;
+    }
+
+    if (plane_state->crtc == NULL || plane_state->fb == NULL ||
+        old_plane_state->crtc == NULL || old_plane_state->fb == NULL) {
+        return -EINVAL;
+    }
+
+    /* CRTC and Framebuffer must not change */
+    if (plane_state->crtc != old_plane_state->crtc ||
+        plane_state->fb != old_plane_state->fb) {
+        return -EINVAL;
+    }
+
+    /*
+     * Target CRTC must be active (not in DPMS off / suspend / modeset disable).
+     * In legacy cursor updates, CRTC is not in the atomic transaction state,
+     * so reading crtc->state directly is safe because caller holds modeset locks.
+     */
+    crtc = plane_state->crtc;
+    if (crtc->state == NULL || !crtc->state->active) {
+        return -EINVAL;
+    }
+
+    /* Destination and Source dimensions must match and cannot change */
+    if (plane_state->crtc_w != old_plane_state->crtc_w ||
+        plane_state->crtc_h != old_plane_state->crtc_h ||
+        plane_state->src_w != old_plane_state->src_w ||
+        plane_state->src_h != old_plane_state->src_h) {
+        return -EINVAL;
+    }
+
+    /* Source offset must be (0, 0) - hardware cursor does not support cropping */
+    if (plane_state->src_x != 0 || plane_state->src_y != 0 ||
+        plane_state->src_x != old_plane_state->src_x ||
+        plane_state->src_y != old_plane_state->src_y) {
+        return -EINVAL;
+    }
+
+    /* Hardware cursor requires 1:1 scaling (no up/down-scaling) */
+    if ((plane_state->src_w >> 16) != plane_state->crtc_w ||
+        (plane_state->src_h >> 16) != plane_state->crtc_h) {
+        return -EINVAL;
+    }
+
+    /* Rotation, Alpha, and Blending mode must not change */
+    if (plane_state->rotation != old_plane_state->rotation ||
+        plane_state->alpha != old_plane_state->alpha ||
+        plane_state->pixel_blend_mode != old_plane_state->pixel_blend_mode) {
+        return -EINVAL;
+    }
+
+    /* Z-order must not change */
+    if (plane_state->zpos != old_plane_state->zpos ||
+        plane_state->normalized_zpos != old_plane_state->normalized_zpos) {
+        return -EINVAL;
+    }
+
+    /* Color properties (encoding, range) must not change */
+    if (plane_state->color_encoding != old_plane_state->color_encoding ||
+        plane_state->color_range != old_plane_state->color_range) {
+        return -EINVAL;
+    }
+
+    /* If explicit fencing is attached, full atomic commit is required */
+    if (plane_state->fence != NULL) {
+        return -EINVAL;
+    }
+
+    /* Check driver-private plane state extensions */
+    nv_plane_state = to_nv_drm_plane_state(plane_state);
+    nv_old_plane_state = to_nv_drm_plane_state(old_plane_state);
+
+    if (nv_plane_state->input_colorspace != nv_old_plane_state->input_colorspace ||
+        nv_plane_state->degamma_changed ||
+        nv_plane_state->tmo_changed ||
+        nv_plane_state->degamma_tf != nv_old_plane_state->degamma_tf ||
+        nv_plane_state->degamma_lut != nv_old_plane_state->degamma_lut ||
+        nv_plane_state->tmo_lut != nv_old_plane_state->tmo_lut) {
+        return -EINVAL;
+    }
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    if (nv_plane_state->hdr_output_metadata != nv_old_plane_state->hdr_output_metadata) {
+        return -EINVAL;
+    }
+#endif
+
+    /* Coordinates must fit in signed 16-bit integers for NvKms */
+    if (plane_state->crtc_x < S16_MIN || plane_state->crtc_x > S16_MAX ||
+        plane_state->crtc_y < S16_MIN || plane_state->crtc_y > S16_MAX) {
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FULL_STATE_ARG)
+static void nv_drm_plane_atomic_async_update(struct drm_plane *plane,
+                                             nv_drm_atomic_state_base_t *state)
+#else
+static void nv_drm_plane_atomic_async_update(struct drm_plane *plane,
+                                             struct drm_plane_state *plane_state)
+#endif
+{
+#if defined(NV_DRM_PLANE_ATOMIC_ASYNC_CHECK_HAS_FULL_STATE_ARG)
+    struct drm_plane_state *plane_state =
+        drm_atomic_get_new_plane_state(state, plane);
+#endif
+    struct nv_drm_crtc *nv_crtc;
+    struct nv_drm_device *nv_dev;
+
+    if (plane->state == NULL || plane_state == NULL) {
+        return;
+    }
+
+    plane->state->crtc_x = plane_state->crtc_x;
+    plane->state->crtc_y = plane_state->crtc_y;
+    plane->state->crtc_w = plane_state->crtc_w;
+    plane->state->crtc_h = plane_state->crtc_h;
+    plane->state->src_x  = plane_state->src_x;
+    plane->state->src_y  = plane_state->src_y;
+    plane->state->src_w  = plane_state->src_w;
+    plane->state->src_h  = plane_state->src_h;
+
+    if (WARN_ON_ONCE(plane->state->crtc == NULL ||
+                     plane->state->crtc->state == NULL ||
+                     !plane->state->crtc->state->active)) {
+        return;
+    }
+
+    nv_crtc = to_nv_crtc(plane->state->crtc);
+    nv_dev = to_nv_device(plane->dev);
+
+    if (nv_crtc != NULL && nv_dev != NULL && nvKms != NULL && nvKms->moveCursor != NULL) {
+        NvBool status = nvKms->moveCursor(
+                nv_dev->pDevice,
+                nv_crtc->head,
+                (NvS16)plane->state->crtc_x,
+                (NvS16)plane->state->crtc_y);
+
+        if (!status) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to move cursor on head %u to (%d, %d)",
+                nv_crtc->head,
+                plane->state->crtc_x,
+                plane->state->crtc_y);
+        }
+    }
+}
+#endif /* NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK */
+
 static const struct drm_plane_helper_funcs nv_plane_helper_funcs = {
     .atomic_check   = nv_drm_plane_atomic_check,
+#if defined(NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK)
+    .atomic_async_check  = nv_drm_plane_atomic_async_check,
+    .atomic_async_update = nv_drm_plane_atomic_async_update,
+#endif
 };
 
 static void nv_drm_crtc_destroy(struct drm_crtc *crtc)
