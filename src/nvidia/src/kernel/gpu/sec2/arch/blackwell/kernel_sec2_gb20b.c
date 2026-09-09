@@ -39,7 +39,7 @@
 #include "fsp/fsp_caps_query_rpc.h"
 
 #include "published/blackwell/gb20b/dev_sec_pri.h"
-#include "published/blackwell/gb20b/dev_boot_zb.h"
+#include "published/blackwell/gb20b/dev_pmc_zb.h"
 #include "published/blackwell/gb20b/dev_falcon_v4.h"
 #include "published/blackwell/gb20b/dev_bus_zb.h"
 #include "published/blackwell/gb20b/hwproject.h"
@@ -47,7 +47,7 @@
 #include "mctp_format.h"
 #include "nvdm_format.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nverror.h"
 
 #include "gpu/conf_compute/conf_compute.h"
@@ -286,7 +286,7 @@ ksec2ValidateMctpPayloadHeader_GB20B
     mctpMessageType = REF_VAL(MCTP_MSG_HEADER_TYPE, mctpPayloadHeader);
     if (mctpMessageType != MCTP_MSG_HEADER_TYPE_VENDOR_PCI)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid MCTP Message type 0x%0x, expecting 0x7e (Vendor Defined PCI)\n",
+        NV_PRINTF(LEVEL_ERROR, "Invalid MCTP Message type 0x%08x, expecting 0x7e (Vendor Defined PCI)\n",
                   mctpMessageType);
         return NV_ERR_INVALID_DATA;
     }
@@ -294,7 +294,7 @@ ksec2ValidateMctpPayloadHeader_GB20B
     mctpVendorId = REF_VAL(MCTP_MSG_HEADER_VENDOR_ID, mctpPayloadHeader);
     if (mctpVendorId != MCTP_MSG_HEADER_VENDOR_ID_NV)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid PCI Vendor Id 0x%0x, expecting 0x10de (Nvidia)\n",
+        NV_PRINTF(LEVEL_ERROR, "Invalid PCI Vendor Id 0x%08x, expecting 0x10de (Nvidia)\n",
                   mctpVendorId);
         return NV_ERR_INVALID_DATA;
     }
@@ -339,7 +339,7 @@ ksec2ProcessNvdmMessage_GB20B
             status = ksec2ProcessCommandResponse_HAL(pGpu, pKernelSec2, pBuffer, size);
             break;
         default:
-            NV_PRINTF(LEVEL_ERROR, "Unknown or unsupported NVDM type received: 0x%0x\n",
+            NV_PRINTF(LEVEL_ERROR, "Unknown or unsupported NVDM type received: 0x%08x\n",
                       nvdmType);
             status = NV_ERR_NOT_SUPPORTED;
             break;
@@ -374,12 +374,12 @@ ksec2ProcessCommandResponse_GB20B
 
     if (size < (headerSize + sizeof(NVDM_PAYLOAD_COMMAND_RESPONSE)))
     {
-        NV_PRINTF(LEVEL_ERROR, "Expected SEC2 command response, but packet is not big enough for payload. Size: 0x%0x\n", size);
+        NV_PRINTF(LEVEL_ERROR, "Expected SEC2 command response, but packet is not big enough for payload. Size: 0x%08x\n", size);
         return NV_ERR_INVALID_DATA;
     }
 
     pCmdResponse = (NVDM_PAYLOAD_COMMAND_RESPONSE *)&(pBuffer[1]);
-    NV_PRINTF(LEVEL_INFO, "Received SEC2 command response. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
+    NV_PRINTF(LEVEL_INFO, "Received SEC2 command response. Task ID: 0x%08x Command type: 0x%08x Error code: 0x%08x\n",
               pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
 
     status = ksec2ErrorCode2NvStatusMap_HAL(pGpu, pKernelSec2, pCmdResponse->errorCode);
@@ -389,7 +389,7 @@ ksec2ProcessCommandResponse_GB20B
     }
     else if (status != NV_ERR_OBJECT_NOT_FOUND)
     {
-        NV_PRINTF(LEVEL_ERROR, "SEC2 response reported error. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "SEC2 response reported error. Task ID: 0x%08x Command type: 0x%08x Error code: 0x%08x\n",
                 pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
     }
 

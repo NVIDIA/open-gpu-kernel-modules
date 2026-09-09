@@ -1860,6 +1860,16 @@ static inline NV_STATUS dispcmnCtrlCmdSpecificHdcpCtrl(struct DispCommon *pDispC
 #define dispcmnCtrlCmdSpecificHdcpCtrl(pDispCommon, pParams) dispcmnCtrlCmdSpecificHdcpCtrl_IMPL(pDispCommon, pParams)
 #endif // __nvoc_disp_objs_h_disabled
 
+NV_STATUS dispcmnCtrlCmdSpecificHdcpKeyDecryption_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdSpecificHdcpKeyDecryption(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdSpecificHdcpKeyDecryption(pDispCommon, pParams) dispcmnCtrlCmdSpecificHdcpKeyDecryption_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
 NV_STATUS dispcmnCtrlCmdSpecificGetHdcpRepeaterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS *pParams);
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispcmnCtrlCmdSpecificGetHdcpRepeaterInfo(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS *pParams) {
@@ -2670,6 +2680,16 @@ static inline NV_STATUS dispcmnCtrlCmdDpSetLaneData(struct DispCommon *pDispComm
 #define dispcmnCtrlCmdDpSetLaneData(pDispCommon, pParams) dispcmnCtrlCmdDpSetLaneData_IMPL(pDispCommon, pParams)
 #endif // __nvoc_disp_objs_h_disabled
 
+NV_STATUS dispcmnCtrlCmdDpSetWarFlags_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpSetWarFlags(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpSetWarFlags(pDispCommon, pParams) dispcmnCtrlCmdDpSetWarFlags_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
 NV_STATUS dispcmnCtrlCmdDpGetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams);
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispcmnCtrlCmdDpGetTestpattern(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams) {
@@ -3304,6 +3324,8 @@ NV_STATUS dispcmnCtrlCmdSpecificGetHdcpState_IMPL(struct DispCommon *pDispCommon
 
 NV_STATUS dispcmnCtrlCmdSpecificHdcpCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS *pParams);
 
+NV_STATUS dispcmnCtrlCmdSpecificHdcpKeyDecryption_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS *pParams);
+
 NV_STATUS dispcmnCtrlCmdSpecificGetHdcpRepeaterInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDCP_REPEATER_INFO_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdSpecificGetHdcpDiagnostics_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_HDCP_DIAGNOSTICS_PARAMS *pParams);
@@ -3465,6 +3487,8 @@ NV_STATUS dispcmnCtrlCmdCalculateDpImp_IMPL(struct DispCommon *pDispCommon, NV00
 NV_STATUS dispcmnCtrlCmdDpGetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpSetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDpSetWarFlags_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpGetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams);
 

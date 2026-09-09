@@ -180,7 +180,7 @@ thirdpartyp2pCtrlCmdRegisterPid_IMPL
     NV_STATUS status;
 
     pClient = serverutilGetClientUnderLock(pRegisterPidParams->hClient);
-    NV_ASSERT_OR_RETURN(pClient != NULL, NV_ERR_INVALID_CLIENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pClient != NULL, NV_ERR_INVALID_CLIENT);
 
     pid = pClient->ProcID;
 

@@ -526,6 +526,10 @@ static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_a094e1(struct Kernel
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
 
+static inline NV_STATUS kchangrpapiCtrlProgramSysmemPromote_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
+}
+
 static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct KernelChannelGroupApi *pKernelChannelGroupApi, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannelGroupApi->hKernelGraphicsContext);
 }
@@ -538,7 +542,7 @@ static inline NV_STATUS kchangrpapiCtrlSetLgSectorPromotion_a094e1(struct Kernel
 
 
 
-NV_STATUS CliGetChannelGroup(NvHandle, NvHandle, RsResourceRef**, NvHandle*);
+NV_STATUS CliGetChannelGroup(struct RsClient*, NvHandle, RsResourceRef**, NvHandle*);
 
 #endif // KERNEL_CHANNEL_GROUP_API_H
 

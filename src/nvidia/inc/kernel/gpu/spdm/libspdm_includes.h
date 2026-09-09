@@ -47,7 +47,7 @@
          __spdmStatus = (expr);                                         \
          if (LIBSPDM_STATUS_IS_ERROR(__spdmStatus))                     \
          {                                                              \
-             NV_PRINTF(LEVEL_ERROR, "SPDM failed with status 0x%0x\n",  \
+             NV_PRINTF(LEVEL_ERROR, "SPDM failed with status 0x%08x\n", \
                        __spdmStatus);                                   \
              status = NV_ERR_GENERIC;                                   \
              goto ErrorExit;                                            \

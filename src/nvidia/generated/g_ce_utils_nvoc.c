@@ -43,6 +43,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtils =
 {
     .classInfo.size =               sizeof(CeUtils),
     .classInfo.classId =            classId(CeUtils),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "CeUtils",
@@ -328,6 +329,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtilsApi =
 {
     .classInfo.size =               sizeof(CeUtilsApi),
     .classInfo.classId =            classId(CeUtilsApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "CeUtilsApi",

@@ -79,7 +79,9 @@
  *            mapped on the FLA owner GPU. However, if HW/FW supports loopback, this flag can be
  *            used to force create GVA->FLA loopback mappings. This flag is a NOP for flexible FLA
  *            allocations.
- *
+ *        HANDLE_TRANSLATION
+ *            Must be passed when using handles (true or emulated) for accessing fabric memory.
+ *            Only FLEXIBLE_FLA flavor is supported. Only supported on Blackwell+.
  *
  *  map.offset [IN]
  *    Offset into the physical memory descriptor.
@@ -109,6 +111,7 @@
 #define NV00F8_ALLOC_FLAGS_FORCE_CONTIGUOUS           NVBIT(2)
 #define NV00F8_ALLOC_FLAGS_READ_ONLY                  NVBIT(3)
 #define NV00F8_ALLOC_FLAGS_FORCE_UC_LOOPBACK          NVBIT(4)
+#define NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION         NVBIT(5)
 
 
 

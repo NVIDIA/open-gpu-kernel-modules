@@ -85,6 +85,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_P2PApi =
 {
     .classInfo.size =               sizeof(P2PApi),
     .classInfo.classId =            classId(P2PApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "P2PApi",

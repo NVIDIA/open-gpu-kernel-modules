@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 610.57.04.
+version 615.71.09.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-610.57.04 driver release.  This can be achieved by installing
+615.71.09 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -41,6 +41,7 @@ E.g.,
     # compile on x86_64 for aarch64
     make modules -j$(nproc)         \
         TARGET_ARCH=aarch64         \
+        ARCH=arm64                  \
         CC=aarch64-linux-gnu-gcc    \
         LD=aarch64-linux-gnu-ld     \
         AR=aarch64-linux-gnu-ar     \
@@ -185,7 +186,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/610.57.04/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/615.71.09/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -952,6 +953,7 @@ Subsystem Device ID.
 | NVIDIA GB200                                            | 2941 10DE 20D5 |
 | NVIDIA GB200                                            | 2941 10DE 21C9 |
 | NVIDIA GB200                                            | 2941 10DE 21CA |
+| NVIDIA GB200                                            | 2941 10DE 22C4 |
 | NVIDIA DRIVE P2021                                      | 29BB 10DE 207C |
 | NVIDIA GeForce RTX 5090                                 | 2B85           |
 | NVIDIA GeForce RTX 5090 D                               | 2B87           |
@@ -979,6 +981,7 @@ Subsystem Device ID.
 | NVIDIA RTX 6000D                                        | 2BB9 10DE 2279 |
 | NVIDIA GeForce RTX 5080                                 | 2C02           |
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |
+| NVIDIA GeForce RTX 5070                                 | 2C09           |
 | NVIDIA GeForce RTX 5090 Laptop GPU                      | 2C18           |
 | NVIDIA GeForce RTX 5080 Laptop GPU                      | 2C19           |
 | NVIDIA RTX PRO 4500 Blackwell                           | 2C31 1028 2051 |
@@ -1018,10 +1021,6 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU      | 2DB9           |
 | NVIDIA GeForce RTX 5050 Laptop GPU                      | 2DD8           |
 | NVIDIA RTX PRO 500 Blackwell Embedded GPU               | 2DF9           |
-| NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)      | 2E03 1043 1484 |
-| NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)      | 2E03 1043 3309 |
-| NVIDIA RTX Spark N1X (5120-core Blackwell RTX GPU)      | 2E06 1043 1484 |
-| NVIDIA RTX Spark N1X (5120-core Blackwell RTX GPU)      | 2E06 1043 3309 |
 | NVIDIA GB10                                             | 2E12 10DE 21EC |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5060                                 | 2F06           |

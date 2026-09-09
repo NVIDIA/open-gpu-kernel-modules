@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -187,7 +187,7 @@ typedef struct NV2080_CTRL_ECC_GET_SRAM_UNIQUE_UNCORR_COUNTS_PARAMS {
  *   address
  *     Specific injection address for DRAM
  */
-#define NV2080_CTRL_CMD_ECC_INJECT_ERROR                         (0x20803403) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_ECC_INTERFACE_ID << 8) | NV2080_CTRL_ECC_INJECT_ERROR_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_ECC_INJECT_ERROR                          (0x20803403) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_ECC_INTERFACE_ID << 8) | NV2080_CTRL_ECC_INJECT_ERROR_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_ECC_INJECT_ERROR_PARAMS_MESSAGE_ID (0x3U)
 

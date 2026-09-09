@@ -39,6 +39,10 @@ extern "C" {
 #endif
 
 #include "nv-kernel-interface-api.h"
+#include "nv-dev-printf.h"
+
+typedef struct nv_state_t PORT_DEVICE;
+
 void NV_API_CALL os_dbg_breakpoint(void);
 void NV_API_CALL out_string(const char *str);
 int  NV_API_CALL nv_printf(NvU32 debuglevel, const char *format, ...);
@@ -69,6 +73,41 @@ portDbgPrintString
 
 #define PORT_BREAKPOINT() os_dbg_breakpoint()
 #define PORT_DUMP_STACK() os_dump_stack()
+
+PORT_DEBUG_INLINE NV_LOG_LEVEL
+_portDbgDeviceLevelToNvLogLevel
+(
+    PORT_LOG_LEVEL level
+)
+{
+    static const NV_LOG_LEVEL sLevels[] =
+    {
+        [PORT_LOG_LEVEL_DEBUG]   = NV_LOG_LEVEL_DEBUG,
+        [PORT_LOG_LEVEL_INFO]    = NV_LOG_LEVEL_INFO,
+        [PORT_LOG_LEVEL_NOTICE]  = NV_LOG_LEVEL_NOTICE,
+        [PORT_LOG_LEVEL_WARNING] = NV_LOG_LEVEL_WARNING,
+        [PORT_LOG_LEVEL_ERROR]   = NV_LOG_LEVEL_ERROR,
+        [PORT_LOG_LEVEL_CRIT]    = NV_LOG_LEVEL_CRIT,
+        [PORT_LOG_LEVEL_ALERT]   = NV_LOG_LEVEL_ALERT,
+    };
+
+    if ((NvU32)level >= (NvU32)(sizeof(sLevels) / sizeof(sLevels[0])))
+        return NV_LOG_LEVEL_INFO;
+
+    return sLevels[level];
+}
+
+PORT_DEBUG_INLINE void
+portDbgDeviceVPrintf
+(
+    PORT_DEVICE *pDevice,
+    PORT_LOG_LEVEL level,
+    const char *format,
+    va_list     args
+)
+{
+    nv_dev_vprintf((struct nv_state_t *)pDevice, _portDbgDeviceLevelToNvLogLevel(level), format, args);
+}
 
 #ifdef __cplusplus
 }

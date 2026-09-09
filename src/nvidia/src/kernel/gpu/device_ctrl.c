@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,6 +136,20 @@ deviceCtrlCmdGpuModifyGpuSwStatePersistence_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    if (osIsInitOnProbeEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Legacy persistence mode has no functional effect while init-on-probe is active\n");
+
+        gpuMask = gpumgrGetGpuMask(pGpu);
+        index = 0;
+        while ((pTmpGpu = gpumgrGetNextGpu(gpuMask, &index)) != NULL)
+        {
+            osSetCachedPersistenceMode(pTmpGpu->pOsGpuInfo, bEnable);
+        }
+        return NV_OK;
+    }
+
     // Get the gpuMask for the device pGpu belongs to
     gpuMask = gpumgrGetGpuMask(pGpu);
 
@@ -170,6 +184,15 @@ deviceCtrlCmdGpuQueryGpuSwStatePersistence_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    if (osIsInitOnProbeEnabled(pGpu->pOsGpuInfo))
+    {
+        pParams->swStatePersistence =
+            osGetCachedPersistenceMode(pGpu->pOsGpuInfo)
+                ? NV0080_CTRL_GPU_SW_STATE_PERSISTENCE_ENABLED
+                : NV0080_CTRL_GPU_SW_STATE_PERSISTENCE_DISABLED;
+        return NV_OK;
+    }
 
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PERSISTENT_SW_STATE))
     {

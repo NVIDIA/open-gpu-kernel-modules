@@ -37,6 +37,7 @@
 #include <linux/cpuset.h>
 #include <linux/sys_soc.h>
 
+#include <linux/shmem_fs.h>
 #include <linux/pid.h>
 #include <linux/pid_namespace.h>
 #if defined(CONFIG_LOCKDEP)
@@ -44,13 +45,14 @@
 #endif // CONFIG_LOCKDEP
 #if defined(NV_MISC_CGROUP_PRESENT)
 #include <linux/cgroup.h>
-#define NV_USE_MISC_CGROUP
 #endif // NV_MISC_CGROUP_PRESENT
 #if defined(NV_DMEM_CGROUP_PRESENT)
-#define NV_USE_DMEM_CGROUP_API
-#undef NV_USE_MISC_CGROUP
 #include <linux/cgroup_dmem.h>
 #endif // NV_DMEM_CGROUP_PRESENT
+
+#include <linux/mm.h>
+#include <linux/vmalloc.h>
+#include <linux/pci_regs.h>
 
 extern char *NVreg_TemporaryFilePath;
 
@@ -653,7 +655,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
         }
         if (*address == NULL)
         {
-            *address = nv_vmalloc(alloc_size);
+            *address = nv_vmalloc(alloc_size, GFP_KERNEL);
             alloc_size |= VMALLOC_ALLOCATION_SIZE_FLAG;
         }
     }
@@ -896,6 +898,102 @@ int NV_API_CALL nv_printf(NvU32 debuglevel, const char *printf_format, ...)
         va_end(arglist);
 
         NV_SPIN_UNLOCK_IRQRESTORE(&nv_error_string_lock, flags);
+    }
+
+    return chars_written;
+}
+
+int NV_API_CALL nv_vprintf(NvU32 debuglevel, const char *printf_format, va_list arglist)
+{
+    int chars_written = 0;
+
+    if (debuglevel >= ((cur_debuglevel >> 4) & 0x3))
+    {
+        size_t length;
+        unsigned long flags;
+        va_list arglistCopy;
+
+        length = strlen(printf_format);
+        if (length < 1)
+            return 0;
+
+        NV_SPIN_LOCK_IRQSAVE(&nv_error_string_lock, flags);
+
+        memcpy(nv_error_string, KERN_CONT, sizeof(KERN_CONT) - 1);
+        memcpy(nv_error_string + sizeof(KERN_CONT) - 1, printf_format, length + 1);
+
+        va_copy(arglistCopy, arglist);
+        chars_written = vprintk(nv_error_string, arglistCopy);
+        va_end(arglistCopy);
+
+        NV_SPIN_UNLOCK_IRQRESTORE(&nv_error_string_lock, flags);
+    }
+
+    return chars_written;
+}
+
+static int
+_nv_log_level_to_linux_syslog_level(NV_LOG_LEVEL level)
+{
+    switch (level)
+    {
+        case NV_LOG_LEVEL_ALERT:   return LOGLEVEL_ALERT;
+        case NV_LOG_LEVEL_CRIT:    return LOGLEVEL_CRIT;
+        case NV_LOG_LEVEL_ERROR:   return LOGLEVEL_ERR;
+        case NV_LOG_LEVEL_WARNING: return LOGLEVEL_WARNING;
+        case NV_LOG_LEVEL_NOTICE:  return LOGLEVEL_NOTICE;
+        case NV_LOG_LEVEL_INFO:    return LOGLEVEL_INFO;
+        case NV_LOG_LEVEL_DEBUG:   return LOGLEVEL_DEBUG;
+        default:                   return LOGLEVEL_INFO;
+    }
+}
+
+int NV_API_CALL nv_dev_printf(struct nv_state_t *nv, NV_LOG_LEVEL level, const char *printf_format, ...)
+{
+    va_list arglist;
+    int chars_written;
+
+    va_start(arglist, printf_format);
+    chars_written = nv_dev_vprintf(nv, level, printf_format, arglist);
+    va_end(arglist);
+
+    return chars_written;
+}
+
+int NV_API_CALL nv_dev_vprintf(struct nv_state_t *nv, NV_LOG_LEVEL level, const char *printf_format, va_list arglist)
+{
+    int chars_written = 0;
+    nv_linux_state_t *nvl;
+    struct device *dev;
+    va_list arglistCopy;
+
+    if (nv == NULL)
+        return 0;
+
+    nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    dev = (nvl != NULL) ? nvl->dev : NULL;
+    if (dev == NULL)
+        return 0;
+
+    //
+    // Prepend the visible "<driver> <dev_name>: " prefix in the format the
+    // same way Linux's _dev_printk() does. dev_vprintk_emit() on its own
+    // only attaches device info to the structured syslog metadata; it does
+    // not inject a visible prefix into the message text. Without this
+    // wrapping, portDbgDevicePrintf() callers would show up in dmesg
+    // without the "<driver> <bus-id>:" prefix the API was intended to
+    // provide (e.g. "nvidia 0000:c1:00.0: ...").
+    //
+    {
+        struct va_format vaf;
+
+        va_copy(arglistCopy, arglist);
+        vaf.fmt = printf_format;
+        vaf.va  = &arglistCopy;
+        chars_written = dev_printk_emit(_nv_log_level_to_linux_syslog_level(level),
+                                        dev, "%s %s: %pV",
+                                        dev_driver_string(dev), dev_name(dev), &vaf);
+        va_end(arglistCopy);
     }
 
     return chars_written;
@@ -1702,7 +1800,7 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
 (
     NvS32  nid,
     NvU32  size,
-    NvU32  flag,
+    NvU32  flags,
     NvU64 *pAddress
 )
 {
@@ -1738,9 +1836,28 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
      *                              non-essential memory will also benefit the
      *                              system as a whole.
      *
-     * 6. (Optional) __GFP_RECLAIM: Used to allow/forbid reclaim.
+     * 6. __GFP_ACCOUNT:            Used to track/account for allocations with cgroups.
+     *                              The first attempt at adding this flag caused crashes
+     *                              in some tests using CentOS and old kernels (4.18).
+     *                              UVM has a similar guard against older versions, so we're
+     *                              using one here to be at-or-later than the versions we
+     *                              support for vidmem cgroup tracking (5.14+)
+     *
+     * 7. (Optional) __GFP_RECLAIM: Used to allow/forbid reclaim.
      *                              This is part of GFP_USER and consequently
      *                              GFP_HIGHUSER_MOVABLE.
+     *
+     * 8. (Optional) __GFP_NOMEMALLOC: Used to prevent access to "atomic" reserves.
+     *                                 Kernels 6.4+ removed __GFP_ATOMIC and
+     *                                 replaced the functionality with a negative
+     *                                 check for DIRECT_RECLAIM. Having access to
+     *                                 atomic reserves comes with constraints and
+     *                                 it can grow the dynamic part of the reserves.
+     *                                 Since kernel 6.6 the static reseves are only
+     *                                 32 pages for ZONE_MOVABLE so it's ok to not
+     *                                 have access to the reserves.
+     *                              
+     *
      *
      * Some of these flags are relatively more recent, with the last of them
      * (GFP_HIGHUSER_MOVABLE) having been added with this Linux kernel commit:
@@ -1754,9 +1871,20 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
     gfp_mask = __GFP_THISNODE | GFP_HIGHUSER_MOVABLE | __GFP_COMP |
                __GFP_NOWARN | __GFP_RETRY_MAYFAIL;
 
-    if (flag & NV_ALLOC_PAGES_NODE_SKIP_RECLAIM)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+    if (flags & NV_ALLOC_PAGES_NODE_DO_ACCOUNT)
+    {
+        gfp_mask |= __GFP_ACCOUNT;
+    }
+#endif
+
+    if (flags & NV_ALLOC_PAGES_NODE_SKIP_RECLAIM)
     {
         gfp_mask &= ~(__GFP_RECLAIM);
+        // Skipping direct reclaim on highorder allocations would grow
+        // highatomic reserves, prevent this with __GFP_NOMEMALLOC.
+        if (order > 0)
+            gfp_mask |= __GFP_NOMEMALLOC;
     }
 
     alloc_addr = alloc_pages_node(nid, gfp_mask, order);
@@ -1849,60 +1977,81 @@ NV_STATUS NV_API_CALL os_numa_memblock_size
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL os_open_temporary_file
+NV_STATUS NV_API_CALL os_allocate_temporary_file
 (
-    void **ppFile
+    void **ppFile,
+    NvU64 size
 )
 {
+    struct file *file = ERR_PTR(-EOPNOTSUPP);
 #if NV_FILESYSTEM_ACCESS_AVAILABLE
-#if defined(O_TMPFILE)
-    struct file *file;
     const char *default_path = "/tmp";
     const int flags = O_TMPFILE | O_LARGEFILE | O_RDWR;
     const char *path = NVreg_TemporaryFilePath;
 
-    /*
-     * The filp_open() call below depends on the current task's fs_struct
-     * (current->fs), which may already be NULL if this is called during
-     * process teardown.
-     */
-    if (current->fs == NULL)
-    {
-        return NV_ERR_OPERATING_SYSTEM;
-    }
-
     if (!path)
     {
-        path = default_path;
-    }
-
-    file = filp_open(path, flags, 0);
-    if (IS_ERR(file))
-    {
-        if ((path != default_path) && (PTR_ERR(file) == -ENOENT))
+#if defined(mk_vma_flags)
+        file = shmem_file_setup("nvidia-tmp", 0, mk_vma_flags(VMA_NORESERVE_BIT));
+#else
+        file = shmem_file_setup("nvidia-tmp", 0, VM_NORESERVE);
+#endif
+        if (!IS_ERR(file))
         {
-            nv_printf(NV_DBG_ERRORS,
-                      "NVRM: The temporary file path specified via the NVreg_TemporaryFilePath\n"
-                      "NVRM: module parameter does not exist. Defaulting to /tmp.\n");
-
-            file = filp_open(default_path, flags, 0);
+                file->f_flags |= O_LARGEFILE;
         }
     }
 
+    if (path)
+    {
+        /*
+         * The filp_open() call below depends on the current task's fs_struct
+         * (current->fs), which may already be NULL if this is called during
+         * process teardown.
+         */
+        if (current->fs == NULL)
+        {
+            return NV_ERR_OPERATING_SYSTEM;
+        }
+
+        file = filp_open(path, flags, 0);
+        if (IS_ERR(file) && path != default_path)
+        {
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: The temporary file path specified via the NVreg_TemporaryFilePath\n"
+                      "NVRM: module parameter could not be opened (error %ld).\n",
+                      PTR_ERR(file));
+        }
+    }
+#endif
+
     if (IS_ERR(file))
     {
+        nv_printf(NV_DBG_INFO,
+                  "NVRM: os_allocate_temporary_file failed: %ld\n",
+                  PTR_ERR(file));
         return NV_ERR_OPERATING_SYSTEM;
     }
+
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
+    if (size > 0)
+    {
+        int fallocate_ret = vfs_fallocate(file, 0, 0, (loff_t)size);
+        if (fallocate_ret < 0)
+        {
+            filp_close(file, NULL);
+            if (fallocate_ret == -EOPNOTSUPP)
+            {
+                return NV_ERR_NOT_SUPPORTED;
+            }
+            return NV_ERR_INSUFFICIENT_RESOURCES;
+        }
+    }
+#endif
 
     *ppFile = (void *)file;
 
     return NV_OK;
-#else
-    return NV_ERR_NOT_SUPPORTED;
-#endif
-#else
-    return NV_ERR_NOT_SUPPORTED;
-#endif
 }
 
 void NV_API_CALL os_close_file
@@ -2271,7 +2420,8 @@ NV_STATUS NV_API_CALL os_tegra_igpu_perf_boost
 (
     void *handle,
     NvBool enable,
-    NvU32 duration
+    NvU32 duration,
+    int boost_type
 )
 {
 #if defined(CONFIG_PM_DEVFREQ) && defined(NV_UPDATE_DEVFREQ_PRESENT)
@@ -2286,7 +2436,7 @@ NV_STATUS NV_API_CALL os_tegra_igpu_perf_boost
             return NV_ERR_NOT_SUPPORTED;
         }
 
-        err = nvl->devfreq_enable_boost(nvl->dev, duration);
+        err = nvl->devfreq_enable_boost(nvl->dev, duration, boost_type);
         if (err != 0)
         {
             return NV_ERR_OPERATING_SYSTEM;
@@ -2310,6 +2460,11 @@ NV_STATUS NV_API_CALL os_tegra_igpu_perf_boost
 #else // !defined(CONFIG_PM_DEVFREQ) || !defined(NV_UPDATE_DEVFREQ_PRESENT)
     return NV_ERR_NOT_SUPPORTED;
 #endif
+}
+
+NvU64 NV_API_CALL os_get_reclaimable_memory_usage(void)
+{
+    return nv_get_reclaimable_memory_usage();
 }
 
 /*
@@ -2809,24 +2964,93 @@ NvBool NV_API_CALL os_supports_kernel_suspend_notifiers(void)
     return (NVreg_UseKernelSuspendNotifiers == 1);
 }
 
-#if defined(NV_USE_DMEM_CGROUP_API)
 NvU32 NV_API_CALL os_cgroup_implementation(void)
 {
-    return OS_CGROUP_IMPL_DMEM;
+#if defined(NV_DMEM_CGROUP_PRESENT)
+    if (cgroup_subsys_enabled(dmem_cgrp_subsys))
+        return OS_CGROUP_IMPL_DMEM;
+#endif
+#if defined(NV_MISC_CGROUP_PRESENT)
+    if (cgroup_subsys_enabled(misc_cgrp_subsys))
+        return OS_CGROUP_IMPL_MISC;
+#endif
+    return OS_CGROUP_IMPL_NONE;
 }
 
-void* NV_API_CALL os_dmem_cgroup_register_region(NvU64 size, const char *name)
+void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo, int impl)
+{
+    struct task_struct *task;
+    struct pid *p;
+    int subsys_id;
+
+    if (pidInfo)
+        p = pidInfo;
+    else
+        p = find_vpid(pid);
+
+    if (!p)
+        return NULL;
+
+    task = pid_task(p, PIDTYPE_PID);
+    if (!task)
+        return NULL;
+
+    switch (impl)
+    {
+#if defined(NV_DMEM_CGROUP_PRESENT)
+        case OS_CGROUP_IMPL_DMEM:
+            subsys_id = dmem_cgrp_id;
+            break;
+#endif
+#if defined(NV_MISC_CGROUP_PRESENT)
+        case OS_CGROUP_IMPL_MISC:
+            subsys_id = misc_cgrp_id;
+            break;
+#endif
+        default:
+            return NULL;
+    }
+    return task_cgroup(task, subsys_id);
+}
+
+#if defined(NV_DMEM_CGROUP_PRESENT) || defined(NV_MISC_CGROUP_PRESENT)
+void* NV_API_CALL os_cgroup_parent(void *cgroup)
+{
+    if (cgroup == NULL)
+        return NULL;
+
+    return cgroup_parent(cgroup);
+}
+#else
+void* NV_API_CALL os_cgroup_parent(void *cgroup) { return NULL; }
+#endif
+
+#if defined(NV_DMEM_CGROUP_PRESENT)
+void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, NvU64 precharge, void **prechargePool)
 {
     void *region = dmem_cgroup_register_region(size, name);
     if (IS_ERR(region))
     {
         return NULL;
     }
+
+    if (precharge > 0)
+    {
+        int err = dmem_cgroup_try_charge(region, precharge, (struct dmem_cgroup_pool_state **)prechargePool, NULL);
+        if (err)
+        {
+            dmem_cgroup_unregister_region(region);
+            region = NULL;
+        }
+    }
+
     return region;
 }
 
-void NV_API_CALL os_dmem_cgroup_unregister_region(void *region)
+void NV_API_CALL os_dmem_cgroup_unregister_region(void *region, void *prechargePool, NvU64 precharge)
 {
+    if (precharge > 0)
+        dmem_cgroup_uncharge(prechargePool, precharge);
     dmem_cgroup_unregister_region(region);
 }
 
@@ -2848,42 +3072,29 @@ void NV_API_CALL os_dmem_cgroup_uncharge(void *pool, NvU64 size)
     dmem_cgroup_uncharge(pool, size);
 }
 
-#else // defined(NV_USE_DMEM_CGROUP_API)
-void* NV_API_CALL os_dmem_cgroup_register_region(NvU64 size, const char *name) { return NULL; }
-void NV_API_CALL os_dmem_cgroup_unregister_region(void *region) {}
+void NV_API_CALL os_dmem_cgroup_pool_state_put(void *pool)
+{
+    dmem_cgroup_pool_state_put(pool);
+}
+
+NvBool NV_API_CALL os_dmem_cgroup_state_evict_valuable(void *limit_pool, void *test_pool, NvBool ignore_low, NvBool *ret_hit_low)
+{
+    bool kernel_ret_hit_low;
+    NvBool kernel_result = dmem_cgroup_state_evict_valuable(limit_pool, test_pool, ignore_low, &kernel_ret_hit_low);
+    if (ret_hit_low)
+        *ret_hit_low = kernel_ret_hit_low;
+    return kernel_result;
+}
+#else // !defined()
+void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, NvU64 precharge, void **prechargePool) { return NULL; }
+void NV_API_CALL os_dmem_cgroup_unregister_region(void *region, void *prechargePool, NvU64 precharge) {}
 NV_STATUS NV_API_CALL os_dmem_cgroup_try_charge(void *region, NvU64 size, void **ret_pool, void **ret_limit_pool) { return NV_OK; }
 void NV_API_CALL os_dmem_cgroup_uncharge(void *pool, NvU64 size) {}
-#endif // defined(NV_USE_DMEM_CGROUP_API)
+void NV_API_CALL os_dmem_cgroup_pool_state_put(void *pool) {}
+NvBool NV_API_CALL os_dmem_cgroup_state_evict_valuable(void *limit_pool, void *test_pool, NvBool ignore_low, NvBool *ret_hit_low) { return NV_FALSE; }
+#endif
 
-#if defined(NV_USE_MISC_CGROUP)
-NvU32 NV_API_CALL os_cgroup_implementation(void)
-{
-    return OS_CGROUP_IMPL_MISC;
-}
-
-void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo)
-{
-    struct pid *p;
-
-    if (pidInfo)
-        p = pidInfo;
-    else
-        p = find_vpid(pid);
-
-    if (!p)
-        return NULL;
-
-    struct task_struct *task = pid_task(p, PIDTYPE_PID);
-    if (!task)
-        return NULL;
-
-    struct cgroup_subsys_state *css = task_css(task, misc_cgrp_id);
-    if (!css)
-        return NULL;
-
-    return css->cgroup;
-}
-
+#if defined(NV_MISC_CGROUP_PRESENT)
 void* NV_API_CALL os_cgroup_get_from_fd(NvU32 fd)
 {
     void *cgroup = cgroup_get_from_fd(fd);
@@ -2891,21 +3102,19 @@ void* NV_API_CALL os_cgroup_get_from_fd(NvU32 fd)
         return NULL;
     return cgroup;
 }
+
 void NV_API_CALL os_cgroup_put(void *cgroup)
 {
     if (cgroup != NULL)
         cgroup_put(cgroup);
 }
 
-#else // defined(NV_USE_MISC_CGROUP)
-void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo) { return NULL; }
+void NV_API_CALL os_cgroup_get(void *cgroup)
+{
+    cgroup_get(cgroup);
+}
+#else // !defined(NV_MISC_CGROUP_PRESENT)
 void* NV_API_CALL os_cgroup_get_from_fd(NvU32 fd) { return NULL; }
 void NV_API_CALL os_cgroup_put(void *cgroup) {}
-#endif // defined(NV_USE_MISC_CGROUP)
-
-#if (!defined(NV_USE_MISC_CGROUP) && !defined(NV_USE_DMEM_CGROUP_API))
-NvU32 NV_API_CALL os_cgroup_implementation(void)
-{
-    return OS_CGROUP_IMPL_NONE;
-}
+void NV_API_CALL os_cgroup_get(void *cgroup) {}
 #endif

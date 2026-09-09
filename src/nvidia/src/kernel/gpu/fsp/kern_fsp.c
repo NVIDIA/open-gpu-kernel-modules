@@ -62,10 +62,8 @@
 */
 static void kfspInitRegistryOverrides(OBJGPU *, KernelFsp *);
 static NV_STATUS kfspWaitForResponse(OBJGPU *pGpu, KernelFsp *pKernelFsp);
-static NV_INLINE void kfspSetResponseTimeout(OBJGPU *pGpu, KernelFsp *pKernelFsp);
+static NV_INLINE void kfspSetResponseTimeout(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU32 timeoutUs);
 static NV_INLINE NV_STATUS kfspCheckResponseTimeout(OBJGPU *pGpu, KernelFsp *pKernelFsp);
-static NV_STATUS kfspSendMessage(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType);
-static NV_STATUS kfspReadMessage(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pPayloadBuffer, NvU32 payloadBufferSize);
 static NV_STATUS kfspPollForAsyncResponse(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pEvent);
 static void kfspProcessAsyncResponseCallback(NvU32 gpuInstance, void *pCallbackArgs);
 static void kfspProcessAsyncResponse(OBJGPU *pGpu,KernelFsp *pKernelFsp);
@@ -94,11 +92,22 @@ kfspConstructEngine_IMPL
 
     kfspClearAsyncResponseState(pKernelFsp);
 
+    //
+    // Create a timer event for polling FSP async responses.
+    // This may not be supported in all environments (e.g., MODS), in which
+    // case we'll use synchronous polling instead.
+    //
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                       tmrEventCreate(pTmr, &(pKernelFsp->pPollEvent),
-                                      kfspPollForAsyncResponse, NULL,
-                                      TMR_FLAGS_NONE));
+    NV_STATUS tmrStatus = tmrEventCreate(pTmr, &(pKernelFsp->pPollEvent),
+                                         kfspPollForAsyncResponse, NULL,
+                                         TMR_FLAGS_NONE);
+    if (tmrStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "OS timer not supported for FSP (status=0x%x), will use synchronous polling\n",
+                  tmrStatus);
+        pKernelFsp->pPollEvent = NULL;
+    }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kfspConstructHal_HAL(pGpu, pKernelFsp));
 
@@ -165,20 +174,6 @@ kfspInitRegistryOverrides
         NV_PRINTF(LEVEL_ERROR, "FSP's fuse error detection status check "
                                "during boot is disabled using the regkey.\n");
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED, NV_FALSE);
-    }
-
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FSP_USE_MNOC, &data) == NV_OK)
-    {
-        if ((data & NV_REG_STR_RM_FSP_USE_MNOC_CPU) != 0)
-        {
-            NV_PRINTF(LEVEL_ERROR, "CPU will use MNOC mailbox to communicate with FSP\n");
-            pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU, NV_TRUE);
-        }
-        if ((data & NV_REG_STR_RM_FSP_USE_MNOC_GSP) != 0)
-        {
-            NV_PRINTF(LEVEL_ERROR, "GSP will use MNOC MCTP to communicate with FSP\n");
-            pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_GSP, NV_TRUE);
-        }
     }
 }
 
@@ -260,8 +255,12 @@ kfspCleanupBootState_IMPL
     KernelFsp *pKernelFsp
 )
 {
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    tmrEventDestroy(pTmr, pKernelFsp->pPollEvent);
+    if (pKernelFsp->pPollEvent != NULL)
+    {
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+        tmrEventDestroy(pTmr, pKernelFsp->pPollEvent);
+        pKernelFsp->pPollEvent = NULL;
+    }
 
     portMemFree(pKernelFsp->pCotPayload);
     pKernelFsp->pCotPayload = NULL;
@@ -320,7 +319,6 @@ kfspStateDestroy_IMPL
         memdescDestroy(pKernelFsp->pVidmemFrtsMemdesc);
         pKernelFsp->pVidmemFrtsMemdesc = NULL;
     }
-
 }
 
 /*
@@ -380,6 +378,7 @@ kfspPollForCanSend_IMPL
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
+ * @param[in] timeoutUs  Timeout value in microseconds
  *
  * @return NV_OK, or NV_ERR_TIMEOUT
  */
@@ -387,10 +386,11 @@ NV_STATUS
 kfspPollForResponse_IMPL
 (
     OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
+    KernelFsp *pKernelFsp,
+    NvU32      timeoutUs
 )
 {
-    kfspSetResponseTimeout(pGpu, pKernelFsp);
+    kfspSetResponseTimeout(pGpu, pKernelFsp, timeoutUs);
     return kfspWaitForResponse(pGpu, pKernelFsp);
 }
 
@@ -440,15 +440,17 @@ kfspWaitForResponse
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
+ * @param[in] timeoutUs  Timeout value in microseconds
  */
 static NV_INLINE void
 kfspSetResponseTimeout
 (
-    OBJGPU *pGpu,
-    KernelFsp *pKernelFsp
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU32      timeoutUs
 )
 {
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &(pKernelFsp->rpcTimeout),
+    gpuSetTimeout(pGpu, timeoutUs, &(pKernelFsp->rpcTimeout),
                   GPU_TIMEOUT_FLAGS_OSTIMER);
 }
 
@@ -471,7 +473,7 @@ kfspCheckResponseTimeout
 }
 
 /*!
- * @brief Send a MCTP message to FSP via EMEM
+ * @brief Send a MCTP message to FSP
  *
  * @param[in] pGpu               OBJGPU pointer
  * @param[in] pKernelFsp         KernelFsp pointer
@@ -481,7 +483,7 @@ kfspCheckResponseTimeout
  *
  * @return NV_OK, or NV_ERR_*
  */
-static NV_STATUS
+NV_STATUS
 kfspSendMessage
 (
     OBJGPU    *pGpu,
@@ -595,7 +597,7 @@ failed:
  * @return NV_OK, NV_ERR_INVALID_DATA, NV_ERR_INSUFFICIENT_RESOURCES, or errors
  *         from functions called within
  */
-static NV_STATUS
+NV_STATUS
 kfspReadMessage
 (
     OBJGPU    *pGpu,
@@ -628,7 +630,7 @@ kfspReadMessage
         NvU8  tag;
 
         // Wait for next packet
-        status = kfspPollForResponse(pGpu, pKernelFsp);
+        status = kfspPollForResponse(pGpu, pKernelFsp, GPU_TIMEOUT_DEFAULT);
         if (status != NV_OK)
         {
             goto done;
@@ -737,7 +739,7 @@ kfspSendAndReadMessage_IMPL
         return status;
     }
 
-    status = kfspPollForResponse(pGpu, pKernelFsp);
+    status = kfspPollForResponse(pGpu, pKernelFsp, GPU_TIMEOUT_DEFAULT);
     if (status != NV_OK)
     {
         return status;
@@ -959,12 +961,20 @@ kfspScheduleAsyncResponseCheck
         return NV_ERR_IN_USE;
     }
 
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    NV_STATUS status = tmrEventScheduleRel(pTmr, pKernelFsp->pPollEvent,
-                                           ASYNC_FSP_POLL_PERIOD_MS * 1000 * 1000);
-    if (status != NV_OK)
+    //
+    // If OS timers are not supported (e.g., MODS), fall back to synchronous polling.
+    // In this case, we don't schedule an async timer callback but instead will poll
+    // synchronously when needed.
+    //
+    if (pKernelFsp->pPollEvent != NULL)
     {
-        return status;
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+        NV_STATUS status = tmrEventScheduleRel(pTmr, pKernelFsp->pPollEvent,
+                                               ASYNC_FSP_POLL_PERIOD_MS * 1000 * 1000);
+        if (status != NV_OK)
+        {
+            return status;
+        }
     }
 
     pKernelFsp->rpcState.callback = callback;
@@ -972,7 +982,7 @@ kfspScheduleAsyncResponseCheck
     pKernelFsp->rpcState.pResponseBuffer = pBuffer;
     pKernelFsp->rpcState.responseBufferSize = bufferSize;
 
-    kfspSetResponseTimeout(pGpu, pKernelFsp);
+    kfspSetResponseTimeout(pGpu, pKernelFsp, GPU_TIMEOUT_DEFAULT);
     pKernelFsp->bBusy = NV_TRUE;
 
     return NV_OK;
@@ -1036,7 +1046,7 @@ kfspEmitGpuInitErrorCper_IMPL
         goto done;
 
     NV_CPER_NV_EVENT_PARAMS eventParams = {0};
-    eventParams.eventLinkId =
+    eventParams.traceId =
         cperRecordIdToSequence(((const NV_CPER_RECORD_HEADER *)pCperBytes)->recordId);
     eventParams.severity = NV_CPER_SEVERITY_FATAL;
     eventParams.sectionFlags = NV_CPER_SECTION_FLAG_PRIMARY;
@@ -1063,7 +1073,11 @@ kfspEmitGpuInitErrorCper_IMPL
         goto done;
 
     if (pGpu->bCperDumpEnabled)
-        cperDumpRecord(pCperBytes, recordSize, CPER_LOG_LEVEL_FW_BUG);
+        cperDumpRecord((PORT_DEVICE *)pGpu->pOsGpuInfo,
+                       PORT_LOG_LEVEL_ERROR,
+                       pCperBytes,
+                       recordSize,
+                       CPER_LOG_LEVEL_FW_BUG);
 
     cperStatus = opEventLogAppend(pCperBytes, recordSize);
     if (cperStatus != NV_OK)

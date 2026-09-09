@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,9 @@
 #include "nvkms-headsurface-swapgroup.h"
 #include "nvkms-flip.h" /* nvFlipEvo */
 
+
+#include "class/clcb70.h" /* NVCB70_DISPLAY */
+
 #include "dp/nvdp-connector.h"
 
 #include "nvUnixVersion.h" /* NV_VERSION_STRING */
@@ -72,6 +75,9 @@
  * nvKmsIoctl(ALLOC_DEVICE), and freed during nvKmsIoctl(FREE_DEVICE).
  */
 
+
+#define NVKMS_USER_SPACE_DISALLOWED_EVENTS_MASK \
+     (1 << NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED)
 
 /*
  * When the NVKMS device file is opened, the per-open structure could
@@ -1424,6 +1430,16 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
     pParams->reply.numHeads = pDevEvo->numApiHeads;
     pParams->reply.numDisps = pDevEvo->nDispEvo;
 
+    /*
+     * SoC products whose display is driven by the dGPU-style display class
+     * and needs the resume connector re-probe workaround (bug 6422321;
+     * removal tracked by bug 6556017).  NVCC70_DISPLAY-based products may
+     * need to be added here later.  The reply is zero-initialized above, so
+     * the field is false on builds without this display class.
+     */
+    pParams->reply.isSocDgpuDisplayNeedingWar =
+        (pDevEvo->dispClass == NVCB70_DISPLAY);
+
     ct_assert(ARRAY_LEN(pParams->reply.dispHandles) ==
               ARRAY_LEN(pOpenDev->disp));
 
@@ -1481,6 +1497,15 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
 
     pParams->reply.supportsVblankSyncObjects =
         pDevEvo->hal->caps.supportsVblankSyncObjects;
+
+    pParams->reply.supportsColorPassthrough =
+        pDevEvo->hal->caps.supportsColorPassthrough;
+
+    pParams->reply.supportsFlipSynchronizedInfoframes =
+        pDevEvo->supportsFlipSynchronizedInfoframes;
+
+    pParams->reply.supportsGenericSharedInfoFrames =
+        pDevEvo->caps.supportsGenericSharedInfoFrames;
 
     if (pOpen->clientType == NVKMS_CLIENT_KERNEL_SPACE) {
         pParams->reply.vtFbBaseAddress = pDevEvo->vtFbInfo.baseAddress;
@@ -2364,36 +2389,6 @@ static NvBool SetLut(struct NvKmsPerOpen *pOpen,
     nvEvoSetLut(pDispEvo,
                 pParams->request.head, TRUE /* kickoff */,
                 &pParams->request.common);
-
-    return TRUE;
-}
-
-static NvBool CheckLutNotifier(struct NvKmsPerOpen *pOpen,
-                               void *pParamsVoid)
-{
-    struct NvKmsCheckLutNotifierParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDispEvoPtr pDispEvo;
-
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
-        return FALSE;
-    }
-
-    pDispEvo = pOpenDisp->pDispEvo;
-
-    if (!nvApiHeadIsActive(pDispEvo, pParams->request.head)) {
-        return FALSE;
-    }
-
-    if (pParams->request.waitForCompletion) {
-        nvEvoWaitForLUTNotifier(pDispEvo, pParams->request.head);
-    }
-
-    pParams->reply.complete = nvEvoIsLUTNotifierComplete(pDispEvo,
-                                                         pParams->request.head);
 
     return TRUE;
 }
@@ -3329,6 +3324,11 @@ static NvBool DeclareEventInterest(struct NvKmsPerOpen *pOpen,
     struct NvKmsDeclareEventInterestParams *pParams = pParamsVoid;
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
+
+    if ((pOpen->clientType == NVKMS_CLIENT_USER_SPACE) &&
+        (pParams->request.interestMask & NVKMS_USER_SPACE_DISALLOWED_EVENTS_MASK)) {
+        return FALSE;
+    } 
 
     pOpen->ioctl.eventInterestMask = pParams->request.interestMask;
 
@@ -5103,7 +5103,6 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_SET_CURSOR_IMAGE, SetCursorImage),
         ENTRY(NVKMS_IOCTL_MOVE_CURSOR, MoveCursor),
         ENTRY_CUSTOM_USER(NVKMS_IOCTL_SET_LUT, SetLut),
-        ENTRY(NVKMS_IOCTL_CHECK_LUT_NOTIFIER, CheckLutNotifier),
         ENTRY(NVKMS_IOCTL_IDLE_BASE_CHANNEL, IdleBaseChannel),
         ENTRY_CUSTOM_USER(NVKMS_IOCTL_FLIP, Flip),
         ENTRY(NVKMS_IOCTL_DECLARE_DYNAMIC_DPY_INTEREST,
@@ -6089,8 +6088,10 @@ PixelDepthString(enum nvKmsPixelDepth pixelDepth)
     case NVKMS_PIXEL_DEPTH_18_444: return "18";
     case NVKMS_PIXEL_DEPTH_24_444: return "24";
     case NVKMS_PIXEL_DEPTH_30_444: return "30";
-    case NVKMS_PIXEL_DEPTH_20_422: return "20"; 
+    case NVKMS_PIXEL_DEPTH_36_444: return "36";
     case NVKMS_PIXEL_DEPTH_16_422: return "16";
+    case NVKMS_PIXEL_DEPTH_20_422: return "20";
+    case NVKMS_PIXEL_DEPTH_24_422: return "24";
     }
 
     return "";
@@ -6107,9 +6108,11 @@ PixelFormatString(enum nvKmsPixelDepth pixelDepth,
         case NVKMS_PIXEL_DEPTH_18_444: 
         case NVKMS_PIXEL_DEPTH_24_444:
         case NVKMS_PIXEL_DEPTH_30_444:
+        case NVKMS_PIXEL_DEPTH_36_444:
             return "4:4:4";
-        case NVKMS_PIXEL_DEPTH_20_422: 
         case NVKMS_PIXEL_DEPTH_16_422:
+        case NVKMS_PIXEL_DEPTH_20_422:
+        case NVKMS_PIXEL_DEPTH_24_422:
             return "4:2:2";
         }
         break;
@@ -6120,6 +6123,23 @@ PixelFormatString(enum nvKmsPixelDepth pixelDepth,
     }
 
     return "";
+}
+
+static const char *VrrTypeToString(enum NvKmsDpyVRRType type)
+{
+    switch (type) {
+    case NVKMS_DPY_VRR_TYPE_NONE:
+        return "None";
+    case NVKMS_DPY_VRR_TYPE_GSYNC_V2:
+        return "G-SYNC Pulsar";
+    case NVKMS_DPY_VRR_TYPE_GSYNC:
+        return "G-SYNC";
+    case NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED:
+    case NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED:
+        return "AdaptiveSync";
+    }
+
+    return "Unknown";
 }
 
 static void
@@ -6219,6 +6239,10 @@ ProcFsPrintHeads(
                             PixelDepthString(pHeadState->pixelDepth),
                             PixelFormatString(pHeadState->pixelDepth,
                                               pHwModeTimings->yuv420Mode));
+
+                    nvEvoLogInfoString(&infoString,
+                            "  vrr mode                   : %s",
+                            VrrTypeToString(pHwModeTimings->vrr.type));
                 }
                 outString(data, buffer);
             }
@@ -6282,11 +6306,23 @@ ProcFsPrintDpys(
                     nvEvoLogInfoString(&infoString,
                             "  dpy                        : %s", name);
 
+                    if (pDpyEvo->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
+                        nvEvoLogInfoString(&infoString,
+                                "   vrr capability            : %s",
+                                VrrTypeToString(pDpyEvo->vrr.type));
+                    }
+
                     if (pDpyEvo->edid.length) {
                         NvU32 i;
                         const NvU8 *buf = pDpyEvo->edid.buffer;
+                        const char *descriptorName = "edid";
+
+                        if (pDpyEvo->edid.isNativeDID) {
+                            descriptorName = "native displayid";
+                        }
+
                         nvEvoLogInfoStringRaw(&infoString,
-                            "   edid                      :");
+                            "   %-26s:", descriptorName);
 
                         for (i = 0; i < pDpyEvo->edid.length; i++) {
                             if (i % 16 == 0) {
@@ -6453,13 +6489,18 @@ static void ConsoleRestoreTimerFired(void *dataPtr, NvU32 dataU32)
  * \param[in]  eventType  The NVKMS_EVENT_TYPE_
  * \param[in]  attribute  The NvKmsDpyAttribute; only used for
  *                        NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED.
- * \param[in]  NvS64      The NvKmsDpyAttribute value; only used for
- *                        NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED.
+ * \param[in]  value      The NvKmsDpyAttribute value; only used for
+ *                        NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED and
+ *                        NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED
+ * \param[in]  clear      Only valid for NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED.
+ *                        When set to NV_TRUE cp is considered disabled
+ *                        and topology will be cleared.
  */
 static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
                             const NvU32 eventType,
                             const enum NvKmsDpyAttribute attribute,
-                            const NvS64 value)
+                            const NvS64 value,
+                            const NvBool clear)
 {
     struct NvKmsPerOpen *pOpen;
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
@@ -6479,6 +6520,14 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
             continue;
         }
 
+        // Block *_CP_TOPOLOGY_* event from userspace client as here we are 
+        // passing a pointer to kernel data struct which is meant for kernel
+        // space clients like nv-drm
+        if ((eventType == NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED) &&
+            (pOpen->clientType == NVKMS_CLIENT_USER_SPACE)) {
+            continue;
+        }
+
         event.eventType = eventType;
 
         switch (eventType) {
@@ -6487,6 +6536,25 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
             event.u.dpyChanged.deviceHandle = deviceHandle;
             event.u.dpyChanged.dispHandle = dispHandle;
             event.u.dpyChanged.dpyId = pDpyEvo->id;
+            break;
+
+        case NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED:
+            event.u.dpyCpChanged.deviceHandle = deviceHandle;
+            event.u.dpyCpChanged.dispHandle = dispHandle;
+            event.u.dpyCpChanged.dpyId = pDpyEvo->id;
+            event.u.dpyCpChanged.cp = (enum NvKmsContentProtection)(value);
+            break;
+
+        case NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED:
+            event.u.dpyCpTopologyChanged.deviceHandle = deviceHandle;
+            event.u.dpyCpTopologyChanged.dispHandle = dispHandle;
+            event.u.dpyCpTopologyChanged.dpyId = pDpyEvo->id;
+            event.u.dpyCpTopologyChanged.topology = (const void*)(pDpyEvo->pConnectorEvo->cpTopology);
+            if (clear) {
+                nvkms_memset(pDpyEvo->pConnectorEvo->cpTopology, 0, NVKMS_HDCP_TOPOLOGY_SIZE);
+            } else {
+                nvGetContentProtectionTopology(pDpyEvo->pConnectorEvo, pDpyEvo->pConnectorEvo->cpTopology);
+            }
             break;
 
         case NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED:
@@ -6533,7 +6601,36 @@ void nvSendDpyEventEvo(const NVDpyEvoRec *pDpyEvo, const NvU32 eventType)
     nvAssert(eventType != NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED);
     SendDpyEventEvo(pDpyEvo, eventType,
                     0 /* attribute (unused) */,
-                    0 /* value (unused) */ );
+                    0 /* value (unused) */,
+                    NV_FALSE);
+}
+
+void nvSendDpyContentProtectionEventEvo(const NVDpyEvoRec *pDpyEvo,
+                                        /* only used if queryCp=false */
+                                        enum NvKmsContentProtection cp,
+                                        NvBool queryCp)
+{
+    NvS64 value;
+
+    if (queryCp) {
+        value = (NvS64)nvGetContentProtectionState(pDpyEvo);
+    } else {
+        value = (NvS64)cp;
+    }
+
+    SendDpyEventEvo(pDpyEvo, NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED,
+                    0, /* attribute (unused) */
+                    value,
+                    NV_FALSE /* clear (unused) */);
+}
+
+void nvSendDpyContentProtectionTopologyEventEvo(const NVDpyEvoRec *pDpyEvo,
+                                                NvBool clear)
+{
+    SendDpyEventEvo(pDpyEvo, NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED,
+                    0, /* attribute (unused) */
+                    0, /* value (unused) */
+                    clear);
 }
 
 void nvSendDpyAttributeChangedEventEvo(const NVDpyEvoRec *pDpyEvo,
@@ -6542,7 +6639,7 @@ void nvSendDpyAttributeChangedEventEvo(const NVDpyEvoRec *pDpyEvo,
 {
     SendDpyEventEvo(pDpyEvo,
                     NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED,
-                    attribute, value);
+                    attribute, value, NV_FALSE);
 }
 
 void nvSendFrameLockAttributeChangedEventEvo(

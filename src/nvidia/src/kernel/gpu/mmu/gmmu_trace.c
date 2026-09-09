@@ -200,14 +200,17 @@ _gmmuPrintPdb
 )
 {
 #if NV_PRINTF_LEVEL_ENABLED(LEVEL_INFO)
-    PMEMORY_DESCRIPTOR pPDB        = vaspaceGetPageDirBase(pVAS, pGpu);
-    KernelGmmu        *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    GMMU_APERTURE      aperture    = kgmmuGetMemAperture(pKernelGmmu, pPDB);
+    PMEMORY_DESCRIPTOR  pPDB        = vaspaceGetPageDirBase(pVAS, pGpu);
+    KernelGmmu         *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    GMMU_APERTURE       aperture    = kgmmuGetMemAperture(pKernelGmmu, pPDB);
+    const GMMU_FMT     *pFmt        = vaspaceGetGmmuFmt(pVAS, pGpu);
 
-    NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx] PDB: ", va, vaLimit);
+    if (pFmt->mode == GMMU_FMT_MODE_PTR)
+    {
+        NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx] PDB: ", va, vaLimit);
+    }
 
-    _gmmuPrintPa(memdescGetPtePhysAddr(pPDB, VAS_ADDRESS_TRANSLATION(pVAS), 0),
-                 aperture, 0);
+    _gmmuPrintPa(memdescGetPtePhysAddr(pPDB, VAS_ADDRESS_TRANSLATION(pVAS), 0), aperture, 0);
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "\n");
 #endif
 }
@@ -269,7 +272,8 @@ _gmmuPrintPde
 
     _gmmuPrintPa(pa, aperture, 0);
 
-    if (pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    if ((pFmtGmmu->mode == GMMU_FMT_MODE_PTR && pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    )
     {
         NvU32 pdePcfSw   = 0;
         NvU32 pdePcfHw   = 0;
@@ -281,12 +285,15 @@ _gmmuPrintPde
                                                 pdePcfHw,
                                                 aperture,
                                                 &pdePcfSw) == NV_OK);
-        NV_PRINTF_EX(NV_PRINTF_MODULE,
-                     LEVEL_INFO,
-                     "(Sparse=%d, Vol=%d, ATS=%d)",
-                     ((pdePcfSw >> SW_MMU_PCF_SPARSE_IDX) & 0x1),
-                     ((pdePcfSw >> SW_MMU_PCF_UNCACHED_IDX) & 0x1),
-                     ((pdePcfSw >> SW_MMU_PCF_ATS_ALLOWED_IDX) & 0x1));
+        if (pFmtGmmu->mode == GMMU_FMT_MODE_PTR)
+        {
+            NV_PRINTF_EX(NV_PRINTF_MODULE,
+                        LEVEL_INFO,
+                        "(Sparse=%d, Vol=%d, ATS=%d)",
+                        ((pdePcfSw >> SW_MMU_PCF_SPARSE_IDX) & 0x1),
+                        ((pdePcfSw >> SW_MMU_PCF_UNCACHED_IDX) & 0x1),
+                        ((pdePcfSw >> SW_MMU_PCF_ATS_ALLOWED_IDX) & 0x1));
+        }
     }
     else
     {
@@ -441,9 +448,10 @@ _gmmuIsInvalidPdeOk
     const GMMU_FMT         *pFmtGmmu    = (GMMU_FMT*)pFmt;
     const GMMU_FMT_PDE     *pFmtPde     = (GMMU_FMT_PDE*)pFmtEntry;
     const GMMU_ENTRY_VALUE *pGmmuEntry  = (GMMU_ENTRY_VALUE*)pPde;
-    NvBool bSparse  = NV_FALSE;
+    NvBool                  bSparse     = NV_FALSE;
 
-    if (pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    if ((pFmtGmmu->mode == GMMU_FMT_MODE_PTR && pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    )
     {
         KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
         NvU32       pdePcfHw = 0;
@@ -528,22 +536,32 @@ _gmmuSwToHwLevel
     const GMMU_FMT *pFmtGmmu = (GMMU_FMT*)pFmt;
     NvU32 maxV3Levels        = 0;
 
-    switch (pFmtGmmu->version)
+    if (pFmtGmmu->mode == GMMU_FMT_MODE_PTR)
     {
-    case GMMU_FMT_VERSION_3:
-        maxV3Levels = (pFmtGmmu->pRoot->virtAddrBitHi == 56) ? 5 : 4;
-        NV_ASSERT_OR_RETURN(level < maxV3Levels, 0);
-        return (maxV3Levels - 1) - level;
-    case GMMU_FMT_VERSION_2:
-        NV_ASSERT_OR_RETURN(level < 4, 0);
-        return 3 - level;
-    case GMMU_FMT_VERSION_1:
-        NV_ASSERT_OR_RETURN(level == 0, 0);
-        return 0;
-    default:
-        NV_ASSERT(0);
-        return 0;
+        switch (pFmtGmmu->version)
+        {
+        case GMMU_FMT_VERSION_3:
+            maxV3Levels = (pFmtGmmu->pRoot->virtAddrBitHi == 56) ? 5 : 4;
+            NV_ASSERT_OR_RETURN(level < maxV3Levels, 0);
+            return (maxV3Levels - 1) - level;
+        case GMMU_FMT_VERSION_2:
+            NV_ASSERT_OR_RETURN(level < 4, 0);
+            return 3 - level;
+        case GMMU_FMT_VERSION_1:
+            NV_ASSERT_OR_RETURN(level == 0, 0);
+            return 0;
+        default:
+            NV_ASSERT(0);
+            return 0;
+        }
     }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unrecognized format mode: %d", pFmtGmmu->mode);
+        NV_ASSERT(0);
+    }
+
+    return 0;
 }
 
 const MMU_TRACE_CALLBACKS g_gmmuTraceCallbacks =

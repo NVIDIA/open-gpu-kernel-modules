@@ -125,6 +125,9 @@ struct uvm_global_struct
 
     bool cdmm_enabled;
 
+    // Indicates whether there is a non-ATS GPU in the system.
+    bool have_non_ats_devices;
+
     // List of all active VA spaces
     struct
     {

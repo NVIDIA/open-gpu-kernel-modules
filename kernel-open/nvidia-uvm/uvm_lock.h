@@ -139,6 +139,20 @@
 //      UVM driver calls into RM. In other words, mmap_lock and the RM GPUs lock
 //      are mutually exclusive.
 //
+// - DMA-BUF resv lock (dma_resv)
+//      Order: UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK
+//      Wound-wait mutex (ww_mutex)
+//      Exclusive lock per exported DMA-BUF.
+//
+//      Imported DMA-BUF resources by UVM are tracked by VA ranges. Multiple
+//      such ranges may refer to a single resource obtained from an exporter.
+//
+//      Exporters may issue the invalidate_mappings() callback to any attached
+//      GPU. The callback holds the dma_resv lock, though the callback must
+//      first clear all GMMU mappings before it is safe to tear down dma all
+//      mappings with dma_buf_unmap_attachment under this lock. Thus this lock
+//      should be taken before va_space or subsequent locks.
+//
 // - Global VA spaces list lock
 //      Order: UVM_LOCK_ORDER_VA_SPACES_LIST
 //      Mutex which protects g_uvm_global.va_spaces state.
@@ -250,6 +264,12 @@
 //      Exclusive lock (mutex) per external VA range, per GPU.
 //
 //      Protects the per-GPU sub-range tree mappings in each external VA range.
+//
+// - DMA-BUF Allocation Tree lock
+//      Order: UVM_LOCK_ORDER_DMA_BUF_RANGE_TREE
+//      Exclusive lock (mutex) per DMA-BUF VA range, per GPU.
+//
+//      Protects the per-GPU sub-range tree mappings in each DMA-BUF VA range.
 //
 // - GPU semaphore pool lock (semaphore_pool->mutex)
 //      Order: UVM_LOCK_ORDER_GPU_SEMAPHORE_POOL
@@ -507,10 +527,12 @@ typedef enum
     UVM_LOCK_ORDER_ISR,
     UVM_LOCK_ORDER_MMAP_LOCK,
     UVM_LOCK_ORDER_VA_SPACES_LIST,
+    UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK,
     UVM_LOCK_ORDER_VA_SPACE_SERIALIZE_WRITERS,
     UVM_LOCK_ORDER_VA_SPACE_READ_ACQUIRE_WRITE_RELEASE_LOCK,
     UVM_LOCK_ORDER_VA_SPACE,
     UVM_LOCK_ORDER_EXT_RANGE_TREE,
+    UVM_LOCK_ORDER_DMA_BUF_RANGE_TREE,
     UVM_LOCK_ORDER_GPU_SEMAPHORE_POOL,
     UVM_LOCK_ORDER_RM_API,
     UVM_LOCK_ORDER_RM_GPUS,
@@ -643,6 +665,14 @@ bool __uvm_locking_initialized(void);
   #define uvm_check_locked_mmap_lock(mm, flags) \
            __uvm_check_locked(nv_mmap_get_lock(mm), UVM_LOCK_ORDER_MMAP_LOCK, (flags))
 
+  // Helpers for recording DMA-BUF lock usage.
+  #define uvm_record_lock_dma_resv() \
+          uvm_record_lock_raw((void*)UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK, UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK, \
+                              UVM_LOCK_FLAGS_MODE_EXCLUSIVE)
+  #define uvm_record_unlock_dma_resv() \
+          uvm_record_unlock_raw((void*)UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK, UVM_LOCK_ORDER_DMA_BUF_RESV_LOCK, \
+                                UVM_LOCK_FLAGS_MODE_EXCLUSIVE)
+
   // Helpers for recording RM API lock usage around UVM-RM interfaces
   #define uvm_record_lock_rm_api() \
           uvm_record_lock_raw((void*)UVM_LOCK_ORDER_RM_API, UVM_LOCK_ORDER_RM_API, \
@@ -682,6 +712,9 @@ bool __uvm_locking_initialized(void);
   #define uvm_record_unlock_mmap_lock_write_out_of_order UVM_IGNORE_EXPR
 
   #define uvm_check_locked_mmap_lock                     uvm_check_locked
+
+  #define uvm_record_lock_dma_resv()
+  #define uvm_record_unlock_dma_resv()
 
   #define uvm_record_lock_rm_api()
   #define uvm_record_unlock_rm_api()
@@ -749,6 +782,19 @@ bool __uvm_locking_initialized(void);
         typeof(mm) _mm = (mm);                          \
         nv_mmap_write_unlock(_mm);                      \
         uvm_record_unlock_mmap_lock_write(_mm);         \
+    })
+
+// Helpers for locking dma_resv lock and recording its usage.
+#define uvm_dma_resv_lock(resv) ({                      \
+        typeof(resv) _resv = (resv);                    \
+        uvm_record_lock_dma_resv();                     \
+        dma_resv_lock(_resv, NULL);                     \
+    })
+
+#define uvm_dma_resv_unlock(resv) ({                    \
+        typeof(resv) _resv = (resv);                    \
+        dma_resv_unlock(_resv);                         \
+        uvm_record_unlock_dma_resv();                   \
     })
 
 // Helper for calling a UVM-RM interface function with lock recording

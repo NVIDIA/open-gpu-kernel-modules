@@ -38,6 +38,8 @@
 #include "detect-self-hosted.h"
 //#include "hopper/gh100/dev_se_seb.h"
 
+#include "gpu/keystore/keystore.h"
+
 /*!
  * check if debug mode is enabled.
  *
@@ -185,6 +187,41 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING)));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_GSP_CPU_LOCKED_RPC,
+                                                     CC_LKEYID_GSP_CPU_LOCKED_RPC_STR,
+                                                     portStringLength(CC_LKEYID_GSP_CPU_LOCKED_RPC_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_CPU_GSP_LOCKED_RPC,
+                                                     CC_LKEYID_CPU_GSP_LOCKED_RPC_STR,
+                                                     portStringLength(CC_LKEYID_CPU_GSP_LOCKED_RPC_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_GSP_CPU_DMA,
+                                                     CC_LKEYID_GSP_CPU_DMA_STR,
+                                                     portStringLength(CC_LKEYID_GSP_CPU_DMA_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_CPU_GSP_DMA,
+                                                     CC_LKEYID_CPU_GSP_DMA_STR,
+                                                     portStringLength(CC_LKEYID_CPU_GSP_DMA_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT,
+                                                     CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR,
+                                                     portStringLength(CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT,
+                                                     CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR,
+                                                     portStringLength(CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pGspKeystore, CC_KEYSPACE_GSP_SIZE,
+                                                     CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING,
+                                                     CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR,
+                                                     portStringLength(CC_LKEYID_CPU_GSP_NVLE_P2P_WRAPPING_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
             break;
         case MC_ENGINE_IDX_SEC2:
         {
@@ -222,6 +259,55 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_DATA_USER,
+                                                     CC_LKEYID_CPU_SEC2_DATA_USER_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_DATA_USER_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_USER,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_USER_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_HMAC_USER_STR),
+                                                     KEYSTORE_USAGE_HMAC_SHA256));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_DATA_KERN,
+                                                     CC_LKEYID_CPU_SEC2_DATA_KERN_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_DATA_KERN_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_KERN,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_KERN_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_HMAC_KERN_STR),
+                                                     KEYSTORE_USAGE_HMAC_SHA256));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_DATA_SCRUBBER,
+                                                     CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR),
+                                                     KEYSTORE_USAGE_AES_256_GCM));
+            NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER,
+                                                     CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR,
+                                                     portStringLength(CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR),
+                                                     KEYSTORE_USAGE_HMAC_SHA256));
+
+            AES_256_GCM_DATA aesData = {0};
+            portMemCopy(aesData.ivMask, KEYSTORE_AES_256_GCM_IV_SIZE_BYTES,
+                        params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_USER].ivMask,
+                        KEYSTORE_AES_256_GCM_IV_SIZE_BYTES);
+            NV_ASSERT_OK_OR_RETURN(keystoreSetData(pConfCompute->pSec2Keystore,
+                                                   CC_LKEYID_CPU_SEC2_DATA_USER, &aesData, sizeof(aesData)));
+
+            portMemCopy(aesData.ivMask, KEYSTORE_AES_256_GCM_IV_SIZE_BYTES,
+                        params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_KERNEL].ivMask,
+                        KEYSTORE_AES_256_GCM_IV_SIZE_BYTES);
+            NV_ASSERT_OK_OR_RETURN(keystoreSetData(pConfCompute->pSec2Keystore,
+                                                   CC_LKEYID_CPU_SEC2_DATA_KERN, &aesData, sizeof(aesData)));
+
+            portMemCopy(aesData.ivMask, KEYSTORE_AES_256_GCM_IV_SIZE_BYTES,
+                        params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_SCRUBBER].ivMask,
+                        KEYSTORE_AES_256_GCM_IV_SIZE_BYTES);
+            NV_ASSERT_OK_OR_RETURN(keystoreSetData(pConfCompute->pSec2Keystore,
+                                                   CC_LKEYID_CPU_SEC2_DATA_SCRUBBER, &aesData, sizeof(aesData)));
         }
         break;
 

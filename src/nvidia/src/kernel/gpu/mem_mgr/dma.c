@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "diagnostics/profiler.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/gpu_vaspace.h"
+#include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virtual_mem.h"
 #include "rmapi/mapping_list.h"
 #include "class/cl0000.h"
@@ -278,9 +279,12 @@ deviceCtrlCmdDmaGetPteInfo_IMPL
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-                          vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), pRmCtrlParams->hObject,
-                                                            pParams->hVASpace, &pVAS));
+    if (pVAS == NULL)
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
+            vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), pRmCtrlParams->hObject,
+                                              pParams->hVASpace, &pVAS));
+    }
 
     status = vaspaceGetPteInfo(pVAS, pGpu, pParams, NULL);
     if (status != NV_OK)
@@ -411,8 +415,8 @@ deviceCtrlCmdDmaSetVASpaceSize_IMPL
     }
 
     OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
-    NV_ASSERT_OR_RETURN(pGVAS != NULL, NV_ERR_NOT_SUPPORTED);
-    NV_ASSERT_OK_OR_RETURN(gvaspaceResize(pGVAS, pParams));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGVAS != NULL, NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gvaspaceResize(pGVAS, pParams));
 
     return NV_OK;
 }
@@ -1159,10 +1163,11 @@ dmaPageArrayInitWithFlags
  * Initialize an abstracted page array from a memory descriptor.
  */
 void
-dmaPageArrayInitFromMemDesc
+dmaPageArrayInitFromMemDescForGpu
 (
     DMA_PAGE_ARRAY     *pPageArray,         //!< [out] Abstracted page array.
     MEMORY_DESCRIPTOR  *pMemDesc,           //!< [in] Memory descriptor.
+    OBJGPU             *pGpu,               //!< [in] GPU to get the PTE array for.
     ADDRESS_TRANSLATION addressTranslation  //!< [in] Address translation for page array.
 )
 {
@@ -1184,10 +1189,27 @@ dmaPageArrayInitFromMemDesc
     }
 
     dmaPageArrayInitWithFlags(pPageArray,
-        memdescGetPteArray(pMemDesc, addressTranslation),
+        (pGpu != NULL) ?
+            memdescGetPteArrayForGpu(pMemDesc, pGpu, addressTranslation) :
+            memdescGetPteArray(pMemDesc, addressTranslation),
         memdescGetPteArraySize(pMemDesc, addressTranslation),
         pageArrayFlags,
         pMemDesc->localizedMask);
+}
+
+/*!
+ * Initialize an abstracted page array from a memory descriptor.
+ */
+void
+dmaPageArrayInitFromMemDesc
+(
+    DMA_PAGE_ARRAY     *pPageArray,         //!< [out] Abstracted page array.
+    MEMORY_DESCRIPTOR  *pMemDesc,           //!< [in] Memory descriptor.
+    ADDRESS_TRANSLATION addressTranslation  //!< [in] Address translation for page array.
+)
+{
+    dmaPageArrayInitFromMemDescForGpu(pPageArray, pMemDesc, NULL,
+                                      addressTranslation);
 }
 
 /*!

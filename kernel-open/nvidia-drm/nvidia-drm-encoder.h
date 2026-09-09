@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -55,6 +55,14 @@ nv_drm_add_encoder(struct drm_device *dev, NvKmsKapiDisplay hDisplay);
 
 void nv_drm_handle_display_change(struct nv_drm_device *nv_dev,
                                   NvKmsKapiDisplay hDisplay);
+
+void nv_drm_handle_display_cp_change(struct nv_drm_device *nv_dev,
+                                     NvKmsKapiDisplay hDisplay,
+                                     enum NvKmsContentProtection cp);
+
+void nv_drm_handle_display_cp_topology_change(struct nv_drm_device *nv_dev,
+                                              NvKmsKapiDisplay hDisplay,
+                                              const void *topology);
 
 void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
                                              NvKmsKapiDisplay hDisplay);

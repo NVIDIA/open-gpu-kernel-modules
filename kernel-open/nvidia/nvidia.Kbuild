@@ -70,17 +70,41 @@ endif
 
 $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_OBJECTS), $(NVIDIA_CFLAGS))
 
+#
+# Remove ftrace instrumentation from the kernel interface objects so that
+# only the pre-built nv-kernel.o contributes __patchable_function_entries.
+#
+# The prebuilt nv-kernel.o distributed in the GPU driver package is
+# currently compiled by gcc 10.3. When built with NV_KERNEL_TRACING=1 on
+# aarch64, the gcc-generated __patchable_function_entries sections lack
+# the SHF_LINK_ORDER flag. When building the kernel interface layer with
+# a more recent gcc, the compiler DOES set SHF_LINK_ORDER, and the linker
+# refuses to merge sections with mismatched flags ("has both ordered and
+# unordered sections").
+#
+# Until we update the gcc version used for the prebuilt nv-kernel.o,
+# strip CC_FLAGS_FTRACE from the per-object CFLAGS to avoid the collision.
+# This has the downside that the functions in the kernel interface objects
+# won't be traceable via ftrace, but the functions within nv-kernel.o will
+# be traceable.
+#
+# Scoped to arm64 so x86 interface objects keep their ftrace flags (and
+# __mcount_loc contributions).
+#
+ifeq ($(ARCH),arm64)
+ $(call ASSIGN_PER_OBJ_CFLAGS_REMOVE, $(NVIDIA_OBJECTS), $(CC_FLAGS_FTRACE))
+endif
 
 #
 # nv-procfs.c requires nv-compiler.h
 #
 
-NV_COMPILER_VERSION_HEADER = $(obj)/nv_compiler.h
+NV_COMPILER_VERSION_HEADER = nv_compiler.h
 
-$(NV_COMPILER_VERSION_HEADER):
+$(obj)/$(NV_COMPILER_VERSION_HEADER):
 	@echo \#define NV_COMPILER \"`$(CC) -v 2>&1 | tail -n 1`\" > $@
 
-$(obj)/nvidia/nv-procfs.o: $(NV_COMPILER_VERSION_HEADER)
+$(obj)/nvidia/nv-procfs.o: $(obj)/$(NV_COMPILER_VERSION_HEADER)
 
 clean-files += $(NV_COMPILER_VERSION_HEADER)
 
@@ -127,6 +151,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += jiffies_to_timespec
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_enable_atomic_ops_to_root
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pcie_is_cxl
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += cxl_init_supported
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vga_tryget
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_platform_has
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_attr_guest_sev_snp
@@ -164,8 +189,11 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += shrinker_alloc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vma_flags_set_word
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_flags_set
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += get_dev_pagemap_has_pgmap_arg
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += use_dma_iommu
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += sg_alloc_table_from_pages_segment
 
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_vmap_pfn
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_sme_active
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_swiotlb_map_sg_attrs
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_swiotlb_dma_ops
@@ -205,6 +233,8 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_iommu_dev_disable_featu
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl___vma_start_write
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_lockdep_register_key
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_find_dvsec_capability
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_wait_for_device_probe
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_dma_iova_try_alloc
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += vmf_insert_pfn_prot
 NV_CONFTEST_TYPE_COMPILE_TESTS += sysfs_slab_unlink
@@ -216,6 +246,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += remove_memory_has_nid_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += add_memory_driver_managed_has_mhp_flags_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += num_registered_fb
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_driver_has_driver_managed_dma
+NV_CONFTEST_TYPE_COMPILE_TESTS += device_has_tdi_enabled
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_queue_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
@@ -223,16 +254,19 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += of_property_for_each_u32_has_internal_args
 NV_CONFTEST_TYPE_COMPILE_TESTS += platform_driver_struct_remove_returns_void
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_create_has_no_owner_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += class_devnode_has_const_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += pm_qos_read_value_supported
 NV_CONFTEST_TYPE_COMPILE_TESTS += devfreq_dev_profile_has_is_cooling_device
 NV_CONFTEST_TYPE_COMPILE_TESTS += devfreq_has_freq_table
 NV_CONFTEST_TYPE_COMPILE_TESTS += devfreq_has_suspend_freq
 NV_CONFTEST_TYPE_COMPILE_TESTS += has_enum_pidtype_tgid
 NV_CONFTEST_TYPE_COMPILE_TESTS += bpmp_mrq_has_strap_set
 NV_CONFTEST_TYPE_COMPILE_TESTS += register_shrinker_has_format_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += nr_kernel_misc_reclaimable
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_resize_resource_has_exclude_bars_arg
-NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += dmem_cgrp_id
 NV_CONFTEST_TYPE_COMPILE_TESTS += misc_cgrp_id
+NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += percpu_mm_counter
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

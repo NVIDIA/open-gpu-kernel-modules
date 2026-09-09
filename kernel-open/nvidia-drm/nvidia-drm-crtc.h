@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -177,6 +177,9 @@ struct nv_drm_crtc_state {
     uint64_t regamma_divisor;
     struct nv_drm_lut_surface *regamma_drm_lut_surface;
     NvBool regamma_changed;
+
+    NvBool postcomp_color_passthrough;
+    NvBool postcomp_color_passthrough_changed;
 };
 
 static inline struct nv_drm_crtc_state *to_nv_crtc_state(struct drm_crtc_state *state)
@@ -246,6 +249,8 @@ struct nv_drm_nvkms_surface_params {
 struct nv_drm_lut_surface {
     struct nv_drm_nvkms_surface base;
     struct {
+        NvU32 vssSegmentEntries;
+
         NvU32 vssSegments;
         enum NvKmsLUTVssType vssType;
 
@@ -253,7 +258,12 @@ struct nv_drm_lut_surface {
         enum NvKmsLUTFormat entryFormat;
 
     } properties;
+
+    struct nv_drm_device *nv_dev;
+    struct list_head pool_entry;
 };
+
+void nv_free_drm_lut_surface_pool(struct nv_drm_device *nv_dev);
 
 struct nv_drm_plane_state {
     struct drm_plane_state base;
@@ -278,6 +288,9 @@ struct nv_drm_plane_state {
     struct drm_property_blob *tmo_lut;
     struct nv_drm_lut_surface *tmo_drm_lut_surface;
     NvBool tmo_changed;
+
+    NvBool precomp_color_passthrough;
+    NvBool precomp_color_passthrough_changed;
 };
 
 static inline struct nv_drm_plane_state *to_nv_drm_plane_state(struct drm_plane_state *state)

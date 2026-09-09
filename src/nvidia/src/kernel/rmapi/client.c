@@ -109,9 +109,29 @@ rmclientConstruct_IMPL
     }
     else
     {
-        pClient->ProcID = osGetCurrentProcess();
+        if ((pSecInfo->procIDOverride != 0) ||
+            (pSecInfo->procIDOverrideMagic != 0))
+        {
+            NV_ASSERT(pSecInfo->procIDOverrideMagic == API_SECURITY_INFO_PROC_ID_OVERRIDE_MAGIC);
+            NV_ASSERT(pSecInfo->procIDOverride != 0);
+            NV_ASSERT(pClient->cachedPrivilege >= RS_PRIV_LEVEL_KERNEL);
+        }
+
+        if ((pSecInfo->procIDOverride != 0) &&
+            (pSecInfo->procIDOverrideMagic == API_SECURITY_INFO_PROC_ID_OVERRIDE_MAGIC) &&
+            (pClient->cachedPrivilege >= RS_PRIV_LEVEL_KERNEL))
+        {
+            pClient->ProcID = pSecInfo->procIDOverride;
+        }
+        else
+        {
+            pClient->ProcID = osGetCurrentProcess();
+        }
+
         if (pClient->cachedPrivilege <= RS_PRIV_LEVEL_USER_ROOT)
+        {
             pClient->pOsPidInfo = osGetPidInfo();
+        }
     }
 
     // Set user-friendly client name from current process

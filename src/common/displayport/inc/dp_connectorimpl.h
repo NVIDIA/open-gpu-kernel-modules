@@ -127,9 +127,9 @@ namespace DisplayPort
         bool    isHDCPAuthTriggered;            // To tell whether HDCP Auth is triggered and only cleared at unplug/device detach for MST.
         bool    isHopLimitExceeded;             // To tell the current topology is over limitation.
         bool    bIsDiscoveryDetectActive;       // To tell device discovery is active ( isDiscoveryDetectComplete is also used as DD notify and not want to impacts that. )
+        bool    bNotifyDetectCompletePending;   // To tell if we are pending to notify detect complete to client.
         bool    isDiscoveryDetectComplete;      // To tell device discovery is finished.
         bool    bDeferNotifyLostDevice;         // To tell if we should defer notify lost device event to client.
-        bool    bSkipPanelPowerWrite;           // Skip writing panel power state when the regkey is set.
 
         HDCPValidateData hdcpValidateData;      // Cache the HDCP ValidateData.
         unsigned authRetries;                   // Retry counter for the authentication.
@@ -253,11 +253,13 @@ namespace DisplayPort
 
         bool previousPlugged;
         bool connectorActive;                    // Keep track of if connector is active to serve any IRQ
+        bool bClientForcedConnected;             // True if client has forced a connection
 
         Group           * firmwareGroup;         // The group used for book-keeping when we're in firmware mode
 
         List pendingEdidReads;                   // List of DevicePendingEDIDRead structures.
                                                  // This list tracks the currently in progress MST Edid Reads
+        List pendingPowerUpPhyMessages;          // List of pending async POWER_UP_PHY messages.
 
         List pendingDid2Reads;                   // List of DevicePendingDID2Read structures.
                                                      // This list tracks the currently in progress MST Did2 Reads
@@ -325,6 +327,11 @@ namespace DisplayPort
         //
         bool        bKeepOptLinkAlive;
 
+        bool        bSwAutoReadWarActive;
+
+        // Force max link config during mode-set for DP compliance testing devices
+        bool        bForceMaxLinkConfig;
+
         // Keep both DP and FRL link alive to save time.
         bool        bKeepLinkAliveForPCON;
 
@@ -355,14 +362,8 @@ namespace DisplayPort
         //
         bool        bForceHeadShutdownOnModeTransition;
 
-        // Use max DSC compression for MST topologies
+         // Use max DSC compression for MST topologies
         bool        bUseMaxDSCCompressionMST;
-
-        //
-        // Sets connector to HDMI for Dongle if
-        // port type is DP++.
-        //
-        bool        bSetConnectorHdmiForDongle;
 
         // Flag to tell whether to send QSE after stream encryption on
         bool        bIsEncryptionQseValid;
@@ -383,9 +384,18 @@ namespace DisplayPort
         // On eDP, do not cache the source OUI if it reads 0. See bug 4793112
         bool        bSkipZeroOuiCache;
 
+        // Cache panel FW checksum per device when regkey is set.
+        bool        bEnablePanelFwRevisionCache;
+
         bool        bForceHeadShutdownFromRegkey;
 
         bool        bForceHeadShutdownPerMonitor;
+
+        // Bug 4949066: Disable pclk WAR applied for LG monitors when regkey is set
+        bool        bDisable4949066PclkWar;
+
+        // When true, DP2.x falls back to the legacy >= head-shutdown policy (regkey-driven, see dp_regkeydatabase.h).
+        bool        bUseLegacyHeadShutdownPolicy;
 
         // Enable stats collection for compoundQueryAttach()
         bool        bEnableCqaStatsCollection;
@@ -400,6 +410,15 @@ namespace DisplayPort
 
         // Set to true when a DSC mode is requested.
         bool bFECEnable;
+
+        // Disable NO_VCPF WAR for DP_MST Tunneling via regkey
+        bool bDisableDpMstTunnelingNoVcpfWar;
+
+        // Disable FEC for DP_MST Tunneling via regkey
+        bool bDisableDpMstTunnelingFec;
+
+        // Disable FEC for eDP
+        bool bDisableFecOnEdp;
 
         // Save link config before entering PSR.
         LinkConfiguration psrLinkConfig;
@@ -439,9 +458,6 @@ namespace DisplayPort
         // Use regkey DP_DSC_DEVID_WAR to toggle this flag.
         bool        bEnableDevId;
 
-        // To skip NLP similar to fakeMuxDevice on non-DSC DDS
-        bool        bIgnoreUnplugUnlessRequested;
-
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
 
@@ -473,6 +489,7 @@ namespace DisplayPort
         void applyEdidWARs(Edid &edid, DiscoveryManager::Device &device);
         virtual void handleEdidWARs(Edid &edid, DiscoveryManager::Device &device){};
         void applyRegkeyOverrides(const DP_REGKEY_DATABASE &dpRegkeyDatabase);
+        bool isInternalDpTunnelTbt3Downstream();
 
         ResStatusNotifyMessage ResStatus;
 
@@ -625,6 +642,9 @@ namespace DisplayPort
             unsigned headIndex,
             ModesetInfo modesetInfo);
 
+        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
+                                                    bool bSameTimings);
+
         virtual bool isLinkTrainingNeededForModeset(ModesetInfo modesetInfo);
 
         virtual bool notifyAttachBegin(Group * target,      // Group of panels we're attaching to this head
@@ -662,7 +682,7 @@ namespace DisplayPort
         virtual void readRemoteHdcpCaps();
         virtual void notifyAttachEnd(bool modesetCancelled);
         virtual void notifyDetachBegin(Group * target);
-        virtual void notifyDetachEnd(bool bKeepOdAlive = false);
+        virtual void notifyDetachEnd(bool bKeepOdAlive = false, bool bKeepLinkOn = false);
         virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig,
                                             const ModesetInfo &modesetInfo,
                                             const DscParams *pDscParams = NULL);
@@ -712,7 +732,9 @@ namespace DisplayPort
         void populateDscBranchCaps(DSC_INFO* dscInfo, DeviceImpl * dev);
         void populateDscModesetInfo(MODESET_INFO * pModesetInfo, const DpModesetParams * pModesetParams);
 
-        virtual bool train(const LinkConfiguration &lConfig, bool force, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
+        virtual bool train(const LinkConfiguration &lConfig, bool force,
+                           LinkTrainingType trainType = NORMAL_LINK_TRAINING,
+                           bool bAllowFullFallback = false);
         virtual bool validateLinkConfiguration(const LinkConfiguration &lConfig);
 
         virtual bool assessPCONLinkCapability(PCONLinkControl *params);
@@ -722,7 +744,8 @@ namespace DisplayPort
         bool setDeviceDscState(Device * dev, bool bEnableDsc);
 
         // the lowest level function(nearest to the hal) for the connector.
-        bool rawTrain(const LinkConfiguration &lConfig, bool force, LinkTrainingType linkTrainingType);
+        bool rawTrain(const LinkConfiguration &lConfig, bool force, LinkTrainingType linkTrainingType,
+                      bool bAllowFullFallback = false);
 
         virtual bool enableFlush();
         virtual bool beforeAddStream(GroupImpl * group, bool force=false, bool forFlushMode = false);
@@ -738,6 +761,8 @@ namespace DisplayPort
         bool deleteAllVirtualChannels();
         void clearTimeslices();
         virtual void applyTimeslotWAR(unsigned &slot_count){};
+        unsigned calculateAllocatePayloadPBN(unsigned basePBN, unsigned slotCount);
+        NvU32 calculateHwAllocatedPbn(unsigned basePBN, int slotCount);
         virtual bool allocateTimeslice(GroupImpl * targetGroup);
         void freeTimeslice(GroupImpl * targetGroup);
         void flushTimeslotsToHardware();
@@ -760,6 +785,7 @@ namespace DisplayPort
         virtual void disconnectDeviceList();
         void notifyLongPulseInternal(bool statusConnected);
         virtual void notifyLongPulse(bool status);
+        virtual void setClientForcedConnected(bool enabled);
         virtual void notifyShortPulse();
         virtual Group * newGroup();
         virtual void destroy();
@@ -770,6 +796,7 @@ namespace DisplayPort
         virtual bool isFlushSupported();
         virtual bool isStreamCloningEnabled();
         virtual bool isFECSupported();
+        bool disableFecOnEdp() const;
         virtual bool isFECCapable();
         virtual NvU32 maxLinkRateSupported();
         bool setPreferredLinkConfig(LinkConfiguration &lc, bool commit,
@@ -852,6 +879,18 @@ namespace DisplayPort
         virtual bool isDpInTunnelingPanelReplayOptimizationSupported();
         virtual bool isDpInTunnelingBwAllocationSupported();
         virtual bool getUSBDpInAdapterInfo(NvU32 displayId, NV0073_CTRL_DP_USB4_INFO *pInfo);
+    };
+
+    struct PendingPowerUpPhyMessage : public ListElement, public MessageManager::Message::MessageEventSink
+    {
+        ConnectorImpl     * connector;
+        Address             deviceAddress;
+        PowerUpPhyMessage   powerUpPhyMessage;
+
+        PendingPowerUpPhyMessage(ConnectorImpl * connector, const Address & deviceAddress);
+        void post();
+        void messageFailed(MessageManager::Message * from, NakData * nakData);
+        void messageCompleted(MessageManager::Message * from);
     };
 
     //

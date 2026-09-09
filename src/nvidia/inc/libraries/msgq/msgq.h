@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,11 @@
 #ifndef MSGQ_H
 #define MSGQ_H
 
+#include <nvtypes.h>
+
 // Handle used to refer to queues.
 typedef void *msgqHandle;
+typedef struct OBJGPU OBJGPU;
 
 // Minimal size of message
 #define MSGQ_MSG_SIZE_MIN           16
@@ -34,13 +37,6 @@ typedef void *msgqHandle;
 #define MSGQ_META_MIN_ALIGN        3U // 2^3 = 8
 #define MSGQ_META_MAX_ALIGN       12U // 4096.  Used to sanity-check alignment
                                       // parameters.  Increase if needed.
-// If set we swap read pointers (for bidirectional communication).
-// That way each peers can have their "receive" channel mapped RO
-#define MSGQ_FLAGS_SWAP_RX          1
-
-#define FCN_FLAG_NOTIFY_MSG_WRITE   0
-#define FCN_FLAG_NOTIFY_MSG_READ    1
-
 // msgqFcnBackendRw flags
 #define FCN_FLAG_BACKEND_ACCESS_MASK       0x0001
 #define FCN_FLAG_BACKEND_ACCESS_READ       0x0000
@@ -54,16 +50,6 @@ typedef void *msgqHandle;
  * Hook functions. In future it should be possible to replace them (as an
  * option) with compile time macros.
  */
-
-// Notify other peer that queue state change.
-// Should return 0 on success.
-typedef int (*msgqFcnNotifyRemote)(int isRead, void *pArg);
-
-// Generic cache operation function (may be flush, zero, invalidate)
-typedef void (*msgqFcnCacheOp)(const volatile void *pAddr, unsigned size);
-
-// Generic barrier
-typedef void (*msgqFcnBarrier)(void);
 
 // Function to access backend memory (if it's not memory mapped).
 // Keep in mind than when using it, pointers given by peek can't be trusted
@@ -90,12 +76,7 @@ int msgqInit(msgqHandle *pHandle, void *pBuffer);
  * know what you're doing).
  */
 
-void msgqSetNotification(msgqHandle handle, msgqFcnNotifyRemote fcn, void *pArg);
 void msgqSetBackendRw(msgqHandle handle, msgqFcnBackendRw fcn, void *pArg);
-void msgqSetRxInvalidate(msgqHandle handle, msgqFcnCacheOp fcn);
-void msgqSetTxFlush(msgqHandle handle, msgqFcnCacheOp fcn);
-void msgqSetZero(msgqHandle handle, msgqFcnCacheOp fcn);
-void msgqSetBarrier(msgqHandle handle, msgqFcnBarrier fcn);
 
 /**
  * @brief Creates outgoing queue. That includes initializing of backend.
@@ -106,29 +87,30 @@ void msgqSetBarrier(msgqHandle handle, msgqFcnBarrier fcn);
  * @param msgSize Size of message (in bytes).
  * @param hdrAlign Alignment of header (2^n).
  * @param entryAlign Alignment of entry (2^n).
- * @param flags For now only SWAP_RX is to be used.
+ * @param pGpu pGpu that owns the queue
+ * @param regHead Register address for the TX head (write) pointer.
+ * @param regTail Register address for the TX tail (read) pointer.
  * @return 0 on success.
- *
- * After TX was created, optional notification callback is executed.
  */
 int msgqTxCreate(msgqHandle handle, void *pBackingStore, unsigned size, unsigned msgSize,
-                 unsigned hdrAlign, unsigned entryAlign, unsigned flags);
+                 unsigned hdrAlign, unsigned entryAlign, OBJGPU *pGpu, NvU32 regHead, NvU32 regTail);
 
 /**
  * @brief Links into RX buffer (initialized by third party).
  * @param handle queue (must be already initialized with msgqInit())
- * @param pBackingStore memory buffer (or cookie if backendRW is used). As a
- * general rule it must be mapped RW to us. With SWAP_RX it can be RO.
+ * @param pBackingStore memory buffer (or cookie if backendRW is used).
  * @param size Size of buffer (in bytes)
  * @param msgSize Size of message (in bytes)
+ * @param regHead Register address for the RX head (write) pointer.
+ * @param regTail Register address for the RX tail (read) pointer.
  * @return 0 on success
  * Note that msgSize and size are there only to do sanity check. Backing store
  * must be already initialized.
  *
- * After link is estabilished, optional notification callback is executed.
+ * Must call msgqTxCreate() first.
  */
 int msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size,
-               unsigned msgSize);
+               unsigned msgSize, NvU32 regHead, NvU32 regTail);
 
 /**
  * @brief Get number of free out messages.
@@ -167,16 +149,6 @@ void *msgqTxGetWriteBuffer(msgqHandle handle, unsigned n);
 int msgqTxSubmitBuffers(msgqHandle handle, unsigned n);
 
 /**
- * @brief Synchronize TX channel.
- * @param handle
- * @return Number of free buffers.
- *
- * This function is similar to msgqTxGetFreeSpace(), except it invalidates cache
- * to get latest read pointer.
- */
-int msgqTxSync(msgqHandle handle);
-
-/**
  * @brief Get number of unread messages in TX channel
  * @param handle
  * @return Number of messages. 0 if queue is empty or not linked. 
@@ -213,15 +185,5 @@ const void *msgqRxGetReadBuffer(msgqHandle handle, unsigned n);
  * This function (may) notify other side that messages were consumed.
  */
 int msgqRxMarkConsumed(msgqHandle handle, unsigned n);
-
-/**
- * @brief Synchronize RX channel.
- * @param handle
- * @return Number of pending messages
- *
- * This function is similar to msgqRxGetReadAvailable(), except it invalidates
- * cache to get latest write pointer.
- */
-int msgqRxSync(msgqHandle handle);
 
 #endif // MSGQ_H

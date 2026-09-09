@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,9 @@
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "os/os.h"
+#include "gpu/spdm/spdm.h"
+
+#include "kernel/gpu/conf_compute/conf_compute.h"
 
 static NV_STATUS _knvlinkCreateIoctrl(OBJGPU *, KernelNvlink *, NvU32);
 static NV_STATUS _knvlinkFilterDiscoveredLinks(OBJGPU *, KernelNvlink *);
@@ -253,13 +256,37 @@ knvlinkConstructEngine_IMPL
     }
 
     {
-        NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = gpumgrGetNvlinkRecoveryInfo(gpuGetDBDF(pGpu));
+        NVLINK_RESILIENCY_INFO *pInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
+        PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalNonPaged();
+        NvU64 timingLogLgSize = KNVLINK_RESILIENCY_TIMING_LOG_LG2_SIZE;
 
         NV_ASSERT_OR_RETURN(pInfo != NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pAlloc != NULL, NV_ERR_NO_MEMORY);
+
+        // Clear the resiliency info
+        portMemSet(pInfo, 0, sizeof(NVLINK_RESILIENCY_INFO));
+        portAtomicSetU32(&pInfo->uvmIdle, NVLINK_RESILIENCY_INFO_UVM_IDLE_NOT_SET);
+
         // Mark recovery info as valid for use by error recovery workqueues
         pInfo->bValid = NV_TRUE;
         pInfo->DomainBusDevice = gpuGetDBDF(pGpu);
         pInfo->active = 0;
+        pInfo->lfmQuiesceRetryCount = 0;
+        pInfo->abmRetryCount = 0;
+
+        pKernelNvlink->uncontainedErrorAbortTimeoutNs = NVLINK_UNCONTAINED_ERROR_ABORT_PERIOD_NS;
+        pKernelNvlink->trafficQuiesceAbortTimeoutNs = NVLINK_TRAFFIC_QUIESCE_ABORT_PERIOD_NS;
+        portAtomicSetU32(&pKernelNvlink->resiliencyTimingSeqCounter, 0U);
+        portAtomicSetU32(&pKernelNvlink->uncontainedRecoverySeqId, 0U);
+        portAtomicSetU32(&pKernelNvlink->trafficQuiesceSeqId, 0U);
+        portAtomicSetU32(&pKernelNvlink->resiliencyTimingWriteCount, 0U);
+
+        // Ringbuf backing capacity is fixed to a power-of-two depth (32 entries).
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, ringbufConstructDynamic(&pKernelNvlink->resiliencyTimingLog,
+            timingLogLgSize,
+            pAlloc));
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkSetupResiliencyCallbacks_HAL(pGpu, pKernelNvlink, pInfo));
     }
 
     return NV_OK;
@@ -1270,8 +1297,8 @@ knvlinkIsUncontainedErrorRecoveryActive_IMPL
     KernelNvlink *pKernelNvlink
 )
 {
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = gpumgrGetNvlinkRecoveryInfo(gpuGetDBDF(pGpu));
-    return ((pInfo != NULL) && pInfo->bValid && (portAtomicOrU32(&pInfo->active, 0) != 0));
+    NVLINK_RESILIENCY_INFO *pInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
+    return ((pInfo != NULL) && pInfo->bValid && (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0) != 0));
 }
 
 void
@@ -1283,6 +1310,7 @@ knvlinkDestruct_IMPL
     OBJGPU       *pGpu          = ENG_GET_GPU(pKernelNvlink);
     KernelIoctrl *pKernelIoctrl = NULL;
     NvU32         ioctrlIdx;
+    NVLINK_RESILIENCY_INFO *pInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
 
     // Destroy the RM NVLink state
     _knvlinkPurgeState(pGpu, pKernelNvlink);
@@ -1299,7 +1327,13 @@ knvlinkDestruct_IMPL
     }
 
     // Unload the nvlink core library
+    ringbufDestruct(&pKernelNvlink->resiliencyTimingLog);
     knvlinkCoreDriverUnloadWar(pGpu, pKernelNvlink);
+
+    if (pInfo != NULL)
+    {
+        knvlinkDestroyResiliencyCallbacks_HAL(pGpu, pKernelNvlink, pInfo);
+    }
 }
 
 /**

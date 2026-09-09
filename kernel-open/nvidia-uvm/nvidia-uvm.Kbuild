@@ -52,10 +52,10 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += list_is_first
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ioasid_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_pasid_drop
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += for_each_sgtable_dma_page
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += folio_test_swapcache
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += page_pgmap
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_notifier_ops_arch_invalidate_secondary_tlbs
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_vma_added_flags
@@ -70,8 +70,10 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
 NV_CONFTEST_TYPE_COMPILE_TESTS += sg_dma_page_iter
 NV_CONFTEST_TYPE_COMPILE_TESTS += struct_page_has_zone_device_data
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_device_coherent_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += dma_buf_supports_dynamic_importer
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present___iowrite64_lo_hi
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_make_device_exclusive
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_dma_iova_try_alloc

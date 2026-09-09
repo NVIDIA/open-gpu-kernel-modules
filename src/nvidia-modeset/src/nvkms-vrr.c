@@ -80,8 +80,8 @@
  */
 
 static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
-                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
-                               const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES]);
+                               const NvU32 applyAllowVrrApiHeadMask,
+                               const NvU32 vrrActiveApiHeadMask);
 
 static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo,
                                   NvBool vrrEnabled,
@@ -95,7 +95,8 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo,
  */
 static NvBool DpyIsGsync(const NVDpyEvoRec *pDpyEvo)
 {
-    return nvIsGsyncDpyVrrType(pDpyEvo->vrr.type);
+    return nvIsGsyncDpyVrrType(pDpyEvo->vrr.type) ||
+           nvIsGsyncV2DpyVrrType(pDpyEvo->vrr.type);
 }
 
 static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
@@ -417,12 +418,10 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
     }
 
     // set vrr on all apiHeads to inactive
-    NvU32 fullApiHeadMasks[NVKMS_MAX_SUBDEVICES];
-    NvU32 emptyApiHeadMasks[NVKMS_MAX_SUBDEVICES];
-    nvkms_memset(fullApiHeadMasks, 0xFF, sizeof(fullApiHeadMasks));
-    nvkms_memset(emptyApiHeadMasks, 0, sizeof(emptyApiHeadMasks));
+    const NvU32 fullApiHeadMask = ~0u;
+    const NvU32 emptyApiHeadMask = 0;
 
-    SetVrrActivePriv(pDevEvo, fullApiHeadMasks, emptyApiHeadMasks);
+    SetVrrActivePriv(pDevEvo, fullApiHeadMask, emptyApiHeadMask);
     RmDisableVrr(pDevEvo);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
@@ -678,7 +677,7 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     }
 }
 
-static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHeadMask, 
+static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHeadMask,
                                 NvU32 enableApiHeadMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
@@ -768,58 +767,39 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHea
     }
 }
 
-static void SetStallLockOneDev(NVDevEvoPtr pDevEvo, 
-                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES], 
-                               const NvU32 enableApiHeadMasks[NVKMS_MAX_SUBDEVICES])
-{
-    NVDispEvoPtr pDispEvo;
-    NvU32 dispIndex;
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        SetStallLockOneDisp(pDispEvo, 
-                            applyAllowVrrApiHeadMasks[dispIndex], enableApiHeadMasks[dispIndex]);
-    }
-}
-
 /*!
  * Modify the VRR state to activate or deactivate VRR on the heads of a pDevEvo.
  */
 static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
-                               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
-                               const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES])
+                               const NvU32 applyAllowVrrApiHeadMask,
+                               const NvU32 vrrActiveApiHeadMask)
 {
-    NvU32 sd, apiHead;
-    NvU32 currVrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    NvU32 apiHead;
+    NvU32 currVrrActiveApiHeadMask = 0;
     NvBool isUpdate;
-    NVDispEvoPtr pDispEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
-    nvkms_memset(currVrrActiveApiHeadMasks, 0, sizeof(currVrrActiveApiHeadMasks));
     isUpdate = NV_FALSE;
-    
+
     if (!pDevEvo->vrr.enabled) {
         return NV_TRUE;
     }
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        pDispEvo = pDevEvo->pDispEvo[sd];
-        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
-            if (pDispEvo->apiHeadState[apiHead].vrr.active) {
-                currVrrActiveApiHeadMasks[sd] |= (1 << apiHead);
-            }
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (pDispEvo->apiHeadState[apiHead].vrr.active) {
+            currVrrActiveApiHeadMask |= (1 << apiHead);
         }
     }
 
     // check if we are asking to update the existing activeMasks
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++){
-        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
-            if (!(applyAllowVrrApiHeadMasks[sd] & (1 << apiHead))) {
-                continue;
-            }
-            if ((vrrActiveApiHeadMasks[sd] & (1 << apiHead)) != 
-                (currVrrActiveApiHeadMasks[sd] & (1 << apiHead))) {
-                isUpdate = NV_TRUE;
-                break;
-            }
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
+        }
+        if ((vrrActiveApiHeadMask & (1 << apiHead)) !=
+            (currVrrActiveApiHeadMask & (1 << apiHead))) {
+            isUpdate = NV_TRUE;
+            break;
         }
     }
 
@@ -827,28 +807,26 @@ static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
         return NV_TRUE;
     }
 
-    SetStallLockOneDev(pDevEvo, applyAllowVrrApiHeadMasks, 
-                       vrrActiveApiHeadMasks);
+    SetStallLockOneDisp(pDispEvo, applyAllowVrrApiHeadMask,
+                        vrrActiveApiHeadMask);
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        pDispEvo = pDevEvo->gpus[sd].pDispEvo;
-        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
-            if (!(applyAllowVrrApiHeadMasks[sd] & (1 << apiHead))) {
-                continue;
-            }
-            pDispEvo->apiHeadState[apiHead].vrr.active = 
-                (vrrActiveApiHeadMasks[sd] & (1 << apiHead)) > 0;
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
+            continue;
         }
+        pDispEvo->apiHeadState[apiHead].vrr.active =
+            (vrrActiveApiHeadMask & (1 << apiHead)) > 0;
     }
+
     return NV_TRUE;
 }
 
 void nvSetVrrActive(NVDevEvoPtr pDevEvo,
-                    const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
-                    const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES])
+                    const NvU32 applyAllowVrrApiHeadMask,
+                    const NvU32 vrrActiveApiHeadMask)
 {
-    if (!SetVrrActivePriv(pDevEvo, applyAllowVrrApiHeadMasks, 
-                          vrrActiveApiHeadMasks)) {
+    if (!SetVrrActivePriv(pDevEvo, applyAllowVrrApiHeadMask,
+                          vrrActiveApiHeadMask)) {
         nvDisableVrr(pDevEvo);
     }
 }
@@ -901,14 +879,13 @@ void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
 }
 
 void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo,
-                                   const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES])
+                                   const NvU32 applyAllowVrrApiHeadMask)
 {
     NVDispEvoPtr pDispEvo;
     NvU32 dispIndex, apiHead;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         NvBool pendingCursorMotionUnflipped = NV_FALSE;
-        NvU32 applyAllowVrrApiHeadMask = applyAllowVrrApiHeadMasks[dispIndex];
 
         for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
             if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {

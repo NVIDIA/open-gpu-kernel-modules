@@ -97,6 +97,34 @@ NvBool nvDPGetEDID(const NVDpyEvoRec *pDpyEvo, void *buffer, unsigned int size)
     return pDpLibDevice->device->getEDID((char *)buffer, size);
 }
 
+unsigned int nvDPGetDisplayId2xSize(const NVDpyEvoRec *pDpyEvo)
+{
+    NVDPLibDevicePtr pDpLibDevice = pDpyEvo->dp.pDpLibDevice;
+
+    nvAssert(nvDpyUsesDPLib(pDpyEvo));
+
+    if (!pDpLibDevice) {
+        return 0;
+    }
+
+    return pDpLibDevice->device->getDisplayId2xSize();
+}
+
+NvBool nvDPGetDisplayId2x(const NVDpyEvoRec *pDpyEvo, void *buffer,
+                          unsigned int size)
+{
+    NVDPLibDevicePtr pDpLibDevice = pDpyEvo->dp.pDpLibDevice;
+
+    nvAssert(nvDpyUsesDPLib(pDpyEvo));
+
+    if (!pDpLibDevice) {
+        return FALSE;
+    }
+
+    return pDpLibDevice->device->getDisplayId2x((char *)buffer, size);
+
+}
+
 void nvDPGetDpyGUID(NVDpyEvoPtr pDpyEvo)
 {
     NVDPLibDevicePtr pDpLibDevice;
@@ -169,4 +197,18 @@ NvBool nvDPDpyGetDpcdRevision(const NVDpyEvoRec *pDpyEvo,
     }
 
     return pDpyEvo->dp.pDpLibDevice->device->getDpcdRevision(major, minor);
+}
+
+NvBool nvDPDpyIsHdcp1XCap(const NVDpyEvoRec *pDpyEvo)
+{
+    nvAssert(nvDpyUsesDPLib(pDpyEvo));
+    nvAssert(pDpyEvo->dp.pDpLibDevice);
+    return pDpyEvo->dp.pDpLibDevice->device->isHdcp1XCapable() ? TRUE : FALSE;
+}
+
+NvBool nvDPDpyIsHdcp2XCap(const NVDpyEvoRec *pDpyEvo)
+{
+    nvAssert(nvDpyUsesDPLib(pDpyEvo));
+    nvAssert(pDpyEvo->dp.pDpLibDevice);
+    return pDpyEvo->dp.pDpLibDevice->device->isHdcp2XCapable() ? TRUE : FALSE;
 }

@@ -38,6 +38,8 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "gpu/fifo/kernel_channel.h"
+#include "gpu/fifo/kernel_fifo.h"
 #include "kernel/rmapi/event_api.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/gpu_fabric_probe.h"
@@ -152,23 +154,13 @@ static void
 vgpuRcErrorRecovery
 (
     OBJGPU *pGpu,
-    NvU32   chID,
+    KernelChannel *pKernelChannel,
     NvU32   exceptType,
     RM_ENGINE_TYPE rmEngineType
 )
 {
-    CHID_MGR                *pChidMgr = NULL;
-    KernelChannel           *pKernelChannel;
-    KernelFifo              *pKernelFifo      = GPU_GET_KERNEL_FIFO(pGpu);
-    NV_STATUS                status           = NV_OK;
     FIFO_MMU_EXCEPTION_DATA  mmuExceptionData = {0};
 
-    status = kfifoGetChidMgrFromType(pGpu, pKernelFifo, ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
-                                     (NvU32)rmEngineType, &pChidMgr);
-    NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
-
-    pKernelChannel = kfifoChidMgrGetKernelChannel(pGpu, pKernelFifo, pChidMgr,
-                                                  chID);
     NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pKernelChannel != NULL);
 
     //
@@ -227,6 +219,23 @@ void vgpuServiceEventRC(OBJGPU *pGpu, OBJVGPU *pVGpu, VGPU_EVENT_BUF_ENTRY *pEve
     NvU32 chID       = pEventEntry->rcChid;
     RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(nv2080EngineID);
 
+    KernelFifo    *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    KernelChannel *pKernelChannel = NULL;
+    CHID_MGR      *pChidMgr = NULL;
+
+    if (kfifoGetChidMgrFromType(pGpu, pKernelFifo, ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                 (NvU32)rmEngineType, &pChidMgr) == NV_OK && pChidMgr != NULL)
+    {
+        pKernelChannel = kfifoChidMgrGetKernelChannel(pGpu, pKernelFifo, pChidMgr, chID);
+    }
+
+    // If handles were unknown to the plugin, look them up from the channel
+    if (hClient == NV01_NULL_OBJECT && pKernelChannel != NULL)
+    {
+        hClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
+        hObject = RES_GET_PARENT_HANDLE(pKernelChannel);
+    }
+
     NV_PRINTF(LEVEL_ERROR,
               "ROBUST_CHANNEL error occurred (hClient = 0x%x hFifo = 0x%x chID = %d exceptType = %d engineID = 0x%x (0x%x)) ...\n",
               hClient, hObject, chID, exceptType, nv2080EngineID, rmEngineType);
@@ -254,7 +263,50 @@ void vgpuServiceEventRC(OBJGPU *pGpu, OBJVGPU *pVGpu, VGPU_EVENT_BUF_ENTRY *pEve
             return);
     }
 
-    vgpuRcErrorRecovery(pGpu, chID, exceptType, rmEngineType);
+    vgpuRcErrorRecovery(pGpu, pKernelChannel, exceptType, rmEngineType);
+}
+
+static void
+vgpuServiceEventRCInstblk
+(
+    OBJGPU               *pGpu,
+    OBJVGPU              *pVGpu,
+    VGPU_EVENT_BUF_ENTRY *pEventEntry
+)
+{
+    NvU32          exceptType       = pEventEntry->info32;
+    NvU32          nv2080EngineID   = pEventEntry->info16;
+    RM_ENGINE_TYPE rmEngineType     = gpuGetRmEngineType(nv2080EngineID);
+    KernelFifo    *pKernelFifo      = GPU_GET_KERNEL_FIFO(pGpu);
+    KernelChannel *pKernelChannel   = NULL;
+
+    INST_BLOCK_DESC instblk;
+    instblk.address  = ((NvU64)pEventEntry->timestampHi << 32) | pEventEntry->timestampLo;
+    instblk.aperture = pEventEntry->status;
+    instblk.gfid     = GPU_GFID_PF;
+
+    NV_PRINTF(LEVEL_ERROR,
+              "ROBUST_CHANNEL error occurred (exceptType = %d engineID = 0x%x (0x%x) instblkAddr = 0x%llx) ...\n",
+              exceptType, nv2080EngineID, rmEngineType, instblk.address);
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+        kfifoConvertInstToKernelChannel_HAL(pGpu, pKernelFifo, &instblk, &pKernelChannel) == NV_OK);
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pKernelChannel != NULL);
+
+    krcErrorSetNotifier(pGpu, GPU_GET_KERNEL_RC(pGpu),
+                        pKernelChannel,
+                        exceptType,
+                        rmEngineType,
+                        RC_NOTIFIER_SCOPE_TSG);
+
+    krcErrorInvokeCallback(pGpu, GPU_GET_KERNEL_RC(pGpu),
+                           pKernelChannel,
+                           NULL,
+                           exceptType,
+                           ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_FATAL,
+                           rmEngineType,
+                           INVALID_RCDB_RCDIAG_INDEX);
 }
 
 void vgpuServiceEventVnc(OBJGPU *pGpu, OBJVGPU *pVGpu)
@@ -402,7 +454,7 @@ cleanup:
 void vgpuServiceEventTracing(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
 #if KERNEL_GSP_TRACING_RATS_ENABLED
-    gspTraceServiceVgpuEventTracing(pGpu);
+    gspRatsServiceVgpuEventTracing(pGpu);
 #endif
 }
 
@@ -432,6 +484,10 @@ void vgpuServiceEvents(OBJGPU *pGpu, OBJVGPU *pVGpu)
             {
                 case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR:
                     vgpuServiceEventRC(pGpu, pVGpu, pEventEntry);
+                    break;
+
+                case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR_INSTBLK:
+                    vgpuServiceEventRCInstblk(pGpu, pVGpu, pEventEntry);
                     break;
 
                 case NV_VGPU_EV_FLAGS_TYPE_VNC:

@@ -83,6 +83,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       isHDCPReAuthPending(false),
       isHDCPAuthTriggered(false),
       isHopLimitExceeded(false),
+      bNotifyDetectCompletePending(false),
       isDiscoveryDetectComplete(false),
       bDeferNotifyLostDevice(false),
       hdcpValidateData(),
@@ -111,6 +112,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       linkState(DP_TRANSPORT_MODE_INIT),
       bAudioOverRightPanel(false),
       connectorActive(false),
+      bClientForcedConnected(false),
       firmwareGroup(0),
       qseNonceGenerator(0),
       bValidQSERequest(false),
@@ -122,10 +124,15 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       bMitigateZombie(false),
       bDelayAfterD3(false),
       bKeepOptLinkAlive(false),
+      bSwAutoReadWarActive(false),
+      bForceMaxLinkConfig(false),
       bNoFallbackInPostLQA(false),
       bIsEncryptionQseValid(true),
       LT2FecLatencyMs(0),
       bFECEnable(false),
+      bDisableDpMstTunnelingNoVcpfWar(false),
+      bDisableDpMstTunnelingFec(false),
+      bDisableFecOnEdp(false),
       bDscCapBasedOnParent(false),
       allocatedDpTunnelBw(0),
       inTransitionHeadMask(0x0),
@@ -156,6 +163,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     // This is used for accessing DP1.2/DP1.4 specific register space & features
     //
     hal->setGpuDPSupportedVersions(main->getGpuDpSupportedVersions());
+    auxBus->setGpuDPSupportedVersions(main->getGpuDpSupportedVersions());
 
     // Set if GPU supports FEC. Check panel FEC caps only if GPU supports it.
     hal->setGpuFECSupported(main->isFECSupported());
@@ -173,6 +181,13 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     if (main->isDpTunnelingHwBugWarEnabled())
     {
         hal->setIgnoreDiaLttprInterlaneAlignStatus();
+        hal->setIgnoreDiaNonLttprCrDoneStatus();
+        hal->setOverrideExtendedWakeCapsForDpTunneling();
+
+        if (!dpRegkeyDatabase.bDisableDpTunLttprCapsChunkRead)
+        {
+            hal->setChunkedLttprCapsReadForDpTunneling();
+        }
     }
 
     hal->setConnectorTypeC(main->isConnectorUSBTypeC());
@@ -186,7 +201,6 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
               "All regkeys are invalid because dpRegkeyDatabase is not initialized!");
 
     this->bSkipAssessLinkForEDP = dpRegkeyDatabase.bAssesslinkForEdpSkipped;
-    this->bSkipPanelPowerWrite  = dpRegkeyDatabase.bSkipPanelPowerWrite;
 
     //
     // Default bHdcpAuthOnlyOnDemand, bMstRestoreHdcpStateAtAttach are true
@@ -215,7 +229,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
         this->maxLinkRateFromRegkey          = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
 
-    if (hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled())
+    if (main->isDpTunnelingHwBugWarEnabled())
     {
         this->bForceDisableTunnelBwAllocation = true;
     }
@@ -225,16 +239,20 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     }
 
     this->bSkipZeroOuiCache                  = dpRegkeyDatabase.bSkipZeroOuiCache;
+    this->bEnablePanelFwRevisionCache        = dpRegkeyDatabase.bEnablePanelFwRevisionCache;
     this->bForceHeadShutdownFromRegkey       = dpRegkeyDatabase.bForceHeadShutdown;
+    this->bUseLegacyHeadShutdownPolicy       = dpRegkeyDatabase.bUseLegacyHeadShutdownPolicy;
     this->bEnableDevId                       = dpRegkeyDatabase.bEnableDevId;
     this->bIgnoreCapsAndForceHighestLc       = dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc;
     this->bUseMaxDSCCompressionMST           = dpRegkeyDatabase.bUseMaxDSCCompressionMST;
+    this->bDisable4949066PclkWar             = dpRegkeyDatabase.bDisable4949066PclkWar;
     this->bDisableEffBppSST8b10b             = dpRegkeyDatabase.bDisableEffBppSST8b10b;
     this->bEnableCqaStatsCollection          = dpRegkeyDatabase.bEnableCqaStatsCollection;
     this->bEnable128b132bDSCLnkCfgReduction  = dpRegkeyDatabase.bEnable128b132bDSCLnkCfgReduction;
     this->bDisableNativeDisplayId2xSupport   = dpRegkeyDatabase.bDisableNativeDisplayId2xSupport;
-    this->bIgnoreUnplugUnlessRequested       = dpRegkeyDatabase.bIgnoreUnplugUnlessRequested;
-    this->bSetConnectorHdmiForDongle         = dpRegkeyDatabase.bSetConnectorHdmiForDongle;
+    this->bDisableDpMstTunnelingNoVcpfWar    = dpRegkeyDatabase.bDisableDpMstTunnelingNoVcpfWar;
+    this->bDisableDpMstTunnelingFec          = dpRegkeyDatabase.bDisableDpMstTunnelingFec;
+    this->bDisableFecOnEdp                   = dpRegkeyDatabase.bDisableFecOnEdp;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -260,6 +278,12 @@ void ConnectorImpl::setPolicyAssessLinkSafely(bool enabled)
 //
 void ConnectorImpl::readRemoteHdcpCaps()
 {
+    if (!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> readRemoteHdcpCaps called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     if (hdcpCapsRetries)
     {
         fireEvents();
@@ -337,6 +361,7 @@ void ConnectorImpl::discoveryDetectComplete()
         bDeferNotifyLostDevice = false;
         isDiscoveryDetectComplete = true;
         bIsDiscoveryDetectActive = false;
+        bNotifyDetectCompletePending = true;
 
         // Complete detection and see if can enter power saving state.
         isNoActiveStreamAndPowerdown();
@@ -512,8 +537,7 @@ void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
             {
                 connector = connectorHDMI;
             }
-            else if(bSetConnectorHdmiForDongle &&
-                    device.peerDevice == Dongle)
+            else if(device.peerDevice == Dongle)
             {
                 connector = connectorHDMI;
             }
@@ -647,7 +671,7 @@ create:
     NV_DPTRACE_INFO(NEW_SINK_DETECTED, newDev->address.size(), addrBuffer[0], addrBuffer[1], addrBuffer[2], addrBuffer[3],
                         newDev->multistream, newDev->rawEDID.getManufId(), newDev->rawEDID.getProductId());
 
-    if(newDev->rawEDID.getManufId() ==  0x6D1E)
+    if(newDev->rawEDID.getManufId() ==  0x6D1E && !this->bDisable4949066PclkWar)
     {
         newDev->bApplyPclkWarBug4949066 = true;
     }
@@ -690,6 +714,8 @@ create:
                 newDev->shadow.hdcpCapDone = true;
         }
     }
+
+    newDev->setMaxUncompressedPixelRateValid();
 
     newDev->vrrEnablement = new VrrEnablement(newDev);
     if (!newDev->vrrEnablement)
@@ -781,28 +807,36 @@ create:
         // Following this assesslink calls fireEvents() which will report
         // the new devies to clients and client will have the correct DSC caps.
         //
-        bool bGpuDscSupported;
-
-        // Check GPU DSC Support
-        main->getDscCaps(&bGpuDscSupported);
-        if (bGpuDscSupported)
+        if (isInternalDpTunnelTbt3Downstream())
         {
-            if (newDev->getDSCSupport())
-            {
-                // Read and parse DSC caps only if panel supports DSC
-                newDev->readAndParseDSCCaps();
+            newDev->resetDscAndFecCaps();
+            DP_PRINTF(DP_NOTICE, "DP> Skipping DSC/FEC probe for TBT3 downstream device (LTTPR count = 0)");
+        }
+        else
+        {
+            bool bGpuDscSupported;
 
-                // Read and Parse Branch Specific DSC Caps
-                if (!newDev->isVideoSink() && !newDev->isAudioSink())
+            // Check GPU DSC Support
+            main->getDscCaps(&bGpuDscSupported);
+            if (bGpuDscSupported)
+            {
+                if (newDev->getDSCSupport())
                 {
-                    newDev->readAndParseBranchSpecificDSCCaps();
-                }
-            }
+                    // Read and parse DSC caps only if panel supports DSC
+                    newDev->readAndParseDSCCaps();
 
-            if (!processedEdid.WARFlags.bIgnoreDscCap)
-            {
-                // Check if DSC is possible for the device and if so, set DSC Decompression device.
-                newDev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                    // Read and Parse Branch Specific DSC Caps
+                    if (!newDev->isVideoSink() && !newDev->isAudioSink())
+                    {
+                        newDev->readAndParseBranchSpecificDSCCaps();
+                    }
+                }
+
+                if (!processedEdid.WARFlags.bIgnoreDscCap)
+                {
+                    // Check if DSC is possible for the device and if so, set DSC Decompression device.
+                    newDev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                }
             }
         }
     }
@@ -831,13 +865,28 @@ create:
 
     // Read panel replay capabilities
     newDev->getPanelReplayCaps();
+
+    //
+    // Pre-populate the panel FW checksum cache at discovery time so
+    // the VRR watermark check never re-reads DPCD 0x040A/0x040B on subsequent calls.
+    //
+    if (bEnablePanelFwRevisionCache)
+    {
+        if (newDev->readPanelFwSwRevision())
+        {
+            newDev->bPanelFwSwRevisionValid = true;
+        }
+    }
     // Read ALPM caps on panel
     newDev->getAlpmCaps();
 
     // Get Panel FEC support only if GPU supports FEC
-    if (this->isFECSupported())
+    if (!isInternalDpTunnelTbt3Downstream())
     {
-        newDev->getFECSupport();
+        if (this->isFECSupported())
+        {
+            newDev->getFECSupport();
+        }
     }
 
     if (main->supportMSAOverMST())
@@ -1018,6 +1067,7 @@ ConnectorImpl::~ConnectorImpl()
     delete discoveryManager;
     pendingEdidReads.clear();
     pendingDid2Reads.clear();
+    pendingPowerUpPhyMessages.clear();
     delete messageManager;
     delete qseNonceGenerator;
     delete hal;
@@ -1055,6 +1105,7 @@ Group * ConnectorImpl::resume(bool firmwareLinkHandsOff,
     Group  * result = 0;
     hardwareWasReset();
     previousPlugged = false;
+    bClientForcedConnected = false;
     connectorActive = true;
     bIsUefiSystem = isUefiSystem;
 
@@ -1120,6 +1171,7 @@ Group * ConnectorImpl::resume(bool firmwareLinkHandsOff,
 void ConnectorImpl::pause()
 {
     connectorActive = false;
+    pendingPowerUpPhyMessages.clear();
     if (messageManager)
     {
         messageManager->pause();
@@ -1204,6 +1256,16 @@ LinkConfiguration ConnectorImpl::initMaxLinkConfig()
 
 void ConnectorImpl::beginCompoundQuery(const bool bForceEnableFEC)
 {
+    //
+    // If the connector is not active, don't infer the leaf link
+    // the SBM failures might results in 19c bug check.
+    //
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> beginCompoundQuery called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     if (linkGuessed && (main->getSorIndex() != DP_INVALID_SOR_INDEX))
     {
         assessLink();
@@ -1374,6 +1436,12 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
     NvU64 endUs = 0;
     NvU64 duration = 0;
 
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> compoundQueryAttach called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
     if (bEnableCqaStatsCollection)
         startUs = timer->getTimeUs();
 
@@ -1495,7 +1563,26 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
     CompoundQueryAttachMSTInfo localInfo;
     NvBool result = true;
 
+    if (!modesetParams.modesetInfo.pixelClockHz ||
+        !modesetParams.modesetInfo.surfaceWidth)
+    {
+        DP_ASSERT(!"DPCONN> pixelCLockHz or surfaceWidth with zero value passed to compoundQueryAttachMST!");
+        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_ZERO_VALUE_PARAMS)
+        return false;
+    }
+
     localInfo.localModesetInfo = modesetParams.modesetInfo;
+    //
+    // compoundQueryAttachMSTGeneric scales localModesetInfo.depth in place,
+    // and compoundQueryAttachMSTDsc mutates other localModesetInfo fields
+    // (bEnableDsc, colorFormat) on PPS-success. The retry paths below may
+    // call MSTGeneric again after an intervening MSTDsc that declined DSC
+    // (PPS fail or bandwidth check - fail at leaf node, leaves stale state
+    // in localModesetInfo). Re-scaling already scaled depth overflows NvU32
+    // for surfaceWidth in [4093, 4096] the product lands on exactly 2^32 and wraps to 0,
+    // which then propagates into RM IMP. Restore the full localModesetInfo from the original
+    // modeset info before each potential non-DSC retry. See bug 6112174.
+    //
     if (this->preferredLinkConfig.isValid())
         localInfo.lc = preferredLinkConfig;
     else
@@ -1514,6 +1601,10 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
         if (!result)
         {
             return false;
+        }
+        if (!pDscParams->bEnableDsc)
+        {
+            localInfo.localModesetInfo = modesetParams.modesetInfo;
         }
 
         compoundQueryResult = compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
@@ -1536,10 +1627,31 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
                 return false;
             }
 
+            //
+            // If this max-compression MSTDsc retry also declined DSC (PPS
+            // fail) we fall through to a non-DSC MSTGeneric retry; reset
+            // localModesetInfo so the retry doesn't re-scale the already-
+            // scaled depth left by the first MSTGeneric. Key off
+            // pDscParams->bEnableDsc (not localModesetInfo.bEnableDsc):
+            // the first MSTDsc above may have succeeded and set
+            // localModesetInfo.bEnableDsc=true, which a subsequent PPS-fail
+            // does not clear. See bug 6112174.
+            //
+            if (!pDscParams->bEnableDsc)
+                localInfo.localModesetInfo = modesetParams.modesetInfo;
             return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
                                                  pDscParams, pErrorCode);
         }
         return compoundQueryResult;
+    }
+
+    DeviceImpl * nativeDev = this->findDeviceInList(Address());
+    if (nativeDev && nativeDev->getMaxUncompressedPixelRateValid())
+    {
+        if ((nativeDev->getMaxUncompressedPixelRate()*PCLK_MHZ_TO_HZ) < modesetParams.modesetInfo.pixelClockHz)
+        {
+            return false;
+        }
     }
 
     return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
@@ -1905,19 +2017,30 @@ bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
 {
     // I. Evaluate use of local link bandwidth
 
-    //      Calculate the PBN required
+    // Calculate the PBN required
     unsigned base_pbn, slots, slots_pbn;
     localInfo->lc.pbnRequired(localInfo->localModesetInfo, base_pbn, slots, slots_pbn);
 
-    //      Accumulate the amount of PBN rounded up to nearest timeslot
+    // Accumulate the amount of PBN rounded up to nearest timeslot.
     compoundQueryLocalLinkPBN += slots_pbn;
+    //
+    // If NO_VCPF WAR is enabled, then the DP Branch Device adds +1 time-slot per DP stream due to the 0.3% overhead.
+    // To limit the available time-slots at DPTX to prevent the system from enumerating modes that would exceed the 63 time-slot limit
+    // at the DP_MST Branch Device, add +1 time-slot per DP stream to the compoundQueryLocalLinkPBN.
+    // Refer Bug 5795004.
+    //
+    if (hal->isDpInTunnelingSupported() && (!this->bDisableDpMstTunnelingNoVcpfWar) && (localInfo->lc.lanes == 4U) && main->isDpTunnelingHwBugWarEnabled())
+    {
+        compoundQueryLocalLinkPBN += localInfo->lc.PBNForSlots(1U);
+    }
+
     if (compoundQueryLocalLinkPBN > localInfo->lc.pbnTotal())
     {
         compoundQueryResult = false;
         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
     }
 
-    //      Verify the min blanking, etc
+    // Verify the min blanking, etc.
     Watermark dpinfo;
 
     if (this->isFECSupported())
@@ -1970,6 +2093,11 @@ bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
     if (!compoundQueryResult)
     {
         compoundQueryLocalLinkPBN -= slots_pbn;
+        // Subtract 1 PBN from compoundQueryLocalLinkPBN which was added for DP_MST Tunneling NO_VCPF WAR.
+        if (hal->isDpInTunnelingSupported() && (!this->bDisableDpMstTunnelingNoVcpfWar) && (localInfo->lc.lanes == 4U) && main->isDpTunnelingHwBugWarEnabled())
+        {
+            compoundQueryLocalLinkPBN -= localInfo->lc.PBNForSlots(1U);
+        }
     }
 
     return compoundQueryResult;
@@ -2321,6 +2449,16 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
     }
     else
     {
+        NvBool bMaxUncompressedPixelRateCheck = true;
+
+        if (nativeDev->getMaxUncompressedPixelRateValid())
+        {
+            if ((nativeDev->getMaxUncompressedPixelRate()*PCLK_MHZ_TO_HZ) < modesetParams.modesetInfo.pixelClockHz)
+            {
+                bMaxUncompressedPixelRateCheck = false;
+            }
+        }
+
         if ((lc.peakRate == dp2LinkRate_8_10Gbps) &&
             (main->isAvoidHBR3WAREnabled()) &&
             (compoundQueryAttachSSTIsDscPossible(modesetParams, pDscParams)))
@@ -2330,7 +2468,8 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
 
             if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||
                 (modesetParams.modesetInfo.mode == DSC_DUAL) ||
-                (!this->willLinkSupportModeSST(lowerLc, modesetParams.modesetInfo, pDscParams)))
+                !(bMaxUncompressedPixelRateCheck &&
+                  this->willLinkSupportModeSST(lowerLc, modesetParams.modesetInfo, pDscParams)))
             {
                 if (pDscParams && pDscParams->forceDsc != DSC_FORCE_DISABLE)
                 {
@@ -2348,7 +2487,8 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
 
         if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||                   // DD has forced DSC Enable
             (modesetParams.modesetInfo.mode == DSC_DUAL) ||                                 // DD decided to use 2 Head 1 OR mode
-            (!this->willLinkSupportModeSST(lc, modesetParams.modesetInfo, pDscParams)))     // Mode is not possible without DSC
+            !(bMaxUncompressedPixelRateCheck &&
+              this->willLinkSupportModeSST(lc, modesetParams.modesetInfo, pDscParams)))     // Mode is not possible without DSC
         {
             // If DP IMP fails without DSC or client requested to force DSC
             if (pDscParams && pDscParams->forceDsc != DSC_FORCE_DISABLE)
@@ -2715,6 +2855,24 @@ void ConnectorImpl::hdcpActiveGroupsSetECF()
     }
    // Restore the ECF and trigger ACT
     main->configureAndTriggerECF(ecf);
+    // Inform ConnectorEventSink that we have enabled HDCP (ECF) on this Device
+    if (!bHdcpStrmEncrEnblOnlyOnDemand)
+    {
+        for (ListElement *i = this->activeGroups.begin(); i != this->activeGroups.end(); i = i->next)
+        {
+            GroupImpl* group = (GroupImpl*)i;
+            if (group->hdcpEnabled)
+            {
+                for (Device* d = ((Group*)group)->enumDevices(0); d != 0; d = ((Group*)group)->enumDevices(d))
+                {
+                    if (((DeviceImpl*)d)->isHDCPCap == True)
+                    {
+                        sink->notifyHDCPEnabled(d, True);
+                    }
+                }
+            }
+        }
+    }
 }
 
 //
@@ -2822,6 +2980,21 @@ void ConnectorImpl::expired(const void * tag)
 
                 if (group->hdcpEnabled)
                 {
+                    //
+                    // Bug 5764757: skip QSES when not applicable to this stream -
+                    // either the group targets a branch Logical Port (0x8..0xF)
+                    // or the link uses 128b/132b channel coding (UHBR/HDCP 2.x).
+                    // See GroupImpl::isQSESApplicable.
+                    //
+                    if (!group->isQSESApplicable())
+                    {
+                        DP_PRINTF(DP_NOTICE,
+                                  "DP-QSE> Stream %d: QSES not applicable; "
+                                  "skipping QSES probe.",
+                                  group->streamIndex);
+                        continue;
+                    }
+
                     group->streamEncryptionStatusDetection->sendQSEMessage(group, qseReason_Ssc);
                     timer->queueCallback(group, &(group->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
                 }
@@ -2891,7 +3064,7 @@ void ConnectorImpl::fireEvents()
     }
 
     // If there were any queue an immediate callback to handle them
-    if (eventsPending || isDiscoveryDetectComplete)
+    if (eventsPending || bNotifyDetectCompletePending)
     {
         {
             // Queue the fireEventsInternal.
@@ -3035,6 +3208,34 @@ void ConnectorImpl::fireEventsInternal()
 
         if (dev->isPendingNewDevice())
         {
+            //
+            // Bug 6394009: MST mode-enumeration vs discovery race.
+            //
+            // For MST, a sink's newDevice() can be fired (e.g. right after its EDID
+            // read completes) while sibling branch/sink/EDID discovery on the same
+            // connector is still outstanding (pendingEdidReads / outstandingBranch /
+            // outstandingSink not yet empty, so isDiscoveryDetectComplete == false).
+            // DD synchronously runs CQA (compoundQueryAttach) during newDevice(), but
+            // CQA is rejected while discovery is incomplete (see compoundQueryAttach:
+            // "called when connector is not active or when detection is in progress").
+            // That rejection drops every timing and forces the 640x480 failsafe timing
+            // for the affected MST monitor.
+            //
+            // Defer reporting MST new devices until discovery has fully completed so
+            // CQA runs against a stable topology. The device is left pending and gets
+            // reported when discoveryDetectComplete() -> fireEvents() re-enters this
+            // path with isDiscoveryDetectComplete == true, preserving the
+            // newDevice -> notifyDetectComplete ordering seen by DD.
+            //
+            if (linkUseMultistream() &&
+                (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+            {
+                DP_PRINTF(DP_NOTICE,
+                          "DPCONN> Deferring MST newDevice %s until discovery completes",
+                          dev->address.toString(sb));
+                continue;
+            }
+
             if (bReportDeviceLostBeforeNew && bDeferNotifyLostDevice)
             {
                 // Let's try to find if there's a device pending lost on the same address
@@ -3095,11 +3296,12 @@ void ConnectorImpl::fireEventsInternal()
             //
             allocatedDpTunnelBwShadow = allocatedDpTunnelBw;
             allocatedDpTunnelBw = getMaxTunnelBw();
+
             sink->newDevice(dev);
         }
     }
 
-    if (isDiscoveryDetectComplete)
+    if (bNotifyDetectCompletePending)
     {
         //
         // Bug 200236666 :
@@ -3131,7 +3333,12 @@ void ConnectorImpl::fireEventsInternal()
 
         if (!bDeferNotifyDetectComplete)
         {
-            isDiscoveryDetectComplete = false;
+            //
+            // Setting isDiscoveryDetectComplete to true, now DPLIB can proceed and handle the cleint requests.
+            // Setting bNotifyDetectCompletePending to false, to indicate that the detect complete notification has been sent.
+            // 
+            isDiscoveryDetectComplete = true;
+            bNotifyDetectCompletePending = false;
             DP_PRINTF(DP_NOTICE, "DP-CONN> NotifyDetectComplete");
             sink->notifyDetectComplete();
         }
@@ -3169,6 +3376,12 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
                                          unsigned headIndex,
                                          ModesetInfo modesetInfo)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> isHeadShutDownNeeded called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
     if (bForceHeadShutdownFromRegkey || bForceHeadShutdownPerMonitor)
     {
         return true;
@@ -3281,9 +3494,22 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
         // mode, we will hang the HW since head would still be driving
         // the higher mode at the time of link train.
         //
-        else if ((lowestSelected.getTotalDataRate()) >= (activeLinkConfig.getTotalDataRate()))
+        else
         {
-            bHeadShutdownNeeded = false;
+            // For the "same timings" check we only care about the fields that drive PCLK
+            // and raster programming -- pixel clock, raster size, and blanking.
+            const ModesetInfo &lastMs = targetImpl->lastModesetInfo;
+            const bool bSameTimings =
+                modesetInfo.pixelClockHz      == lastMs.pixelClockHz      &&
+                modesetInfo.rasterWidth       == lastMs.rasterWidth       &&
+                modesetInfo.rasterHeight      == lastMs.rasterHeight      &&
+                modesetInfo.rasterBlankStartX == lastMs.rasterBlankStartX &&
+                modesetInfo.rasterBlankEndX   == lastMs.rasterBlankEndX;
+
+            if (avoidHeadShutdownForLinkConfig(lowestSelected, bSameTimings))
+            {
+                bHeadShutdownNeeded = false;
+            }
         }
     }
     else
@@ -3299,8 +3525,31 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     return bHeadShutdownNeeded;
 }
 
+bool ConnectorImpl::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
+                                                   bool /*bSameTimings*/)
+{
+    // DP1.x: keep legacy data-rate >= behavior; not affected by the UHBR TU window.
+    bool bAvoidShutdown = (targetLc.getTotalDataRate() >= activeLinkConfig.getTotalDataRate());
+    DP_PRINTF(DP_NOTICE, "DP1.x avoidHeadShutdown: target=%llu active=%llu result=%d",
+              targetLc.getTotalDataRate(), activeLinkConfig.getTotalDataRate(), bAvoidShutdown);
+    return bAvoidShutdown;
+}
+
 bool ConnectorImpl::isLinkTrainingNeededForModeset(ModesetInfo modesetInfo)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> isLinkTrainingNeededForModeset called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_ASSERT(0 && "DPCONN> isLinkTrainingNeededForModeset called when Plugged Stateis false!");
+        return false;
+    }
+
     // Force highestLink config in SST
     bool bSkipLowestConfigCheck      = false;
     bool bIsModeSupported            = false;
@@ -3606,6 +3855,19 @@ bool ConnectorImpl::needToEnableFEC(const DpPreModesetParams &params)
 
 void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> dpPreModeset called when connector is not active or when detection is in progress!");
+        return;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_ASSERT(0 && "DPCONN> dpPreModeset called when Plugged State is false!");
+        return;
+    }
+
     this->bFECEnable |= this->needToEnableFEC(params);
 
     DP_ASSERT(this->inTransitionHeadMask == 0x0);
@@ -3678,6 +3940,19 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     Device     *newDev                   = target->enumDevices(0);
     DeviceImpl *dev                      = (DeviceImpl *)newDev;
 
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyAttachBegin... called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_PRINTF(DP_ERROR, "DP> notifyAttachBegin called when Plugged State is false!");
+        return false;
+    }
+
     if (hal->isDpTunnelBwAllocationEnabled() &&
         ((allocatedDpTunnelBwShadow != 0) ||
          (allocatedDpTunnelBw == 0)))
@@ -3711,10 +3986,17 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         }
     }
 
-    DP_PRINTF(DP_NOTICE, "DPCONN> Notify Attach Begin (Head %d, pclk %" NvU64_fmtu " raster %d x %d  %d bpp)",
-              modesetParams.headIndex, pixelClockHz, rasterWidth, rasterHeight, depth);
+    DP_PRINTF(DP_NOTICE, "DPCONN> Notify Attach Begin (Head %d, pclk %" NvU64_fmtu " raster %d x %d  %d bpp, DSC %d, FEC %d)",
+              modesetParams.headIndex, pixelClockHz, rasterWidth, rasterHeight, depth, bEnableDsc, bEnableFEC);
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN, modesetParams.headIndex, pixelClockHz, rasterWidth, rasterHeight,
                        depth, bEnableDsc, bEnableFEC);
+
+    if (linkUseMultistream() && hal->isDpInTunnelingSupported() && this->bDisableDpMstTunnelingFec)
+    {
+        // Disable FEC for DP_MST Tunneling.
+        DP_PRINTF(DP_NOTICE, "DPCONN> Forcing FEC disable for DP_MST Tunneling");
+        bEnableFEC = false;
+    }
 
     if (!depth || !pixelClockHz)
     {
@@ -3968,6 +4250,19 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 //
 void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyAttachEnd called when connector is not active or when detection is in progress!");
+        return;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_PRINTF(DP_ERROR, "DP> notifyAttachEnd called when Plugged State is false!");
+        return;
+    }
+
     GroupImpl* currentModesetDeviceGroup = NULL;
     DP_PRINTF(DP_NOTICE, "DPCONN> Notify Attach End");
     NV_DPTRACE_INFO(NOTIFY_ATTACH_END);
@@ -4018,7 +4313,8 @@ void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
     //
     if (((currentModesetDeviceGroup->singleHeadMultiStreamMode == DP_SINGLE_HEAD_MULTI_STREAM_MODE_MST) &&
         (currentModesetDeviceGroup->singleHeadMultiStreamID > DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY)) ||
-        (hal->isDpInTunnelingSupported() && linkUseMultistream() && main->isDpTunnelingHwBugWarEnabled()))
+        (hal->isDpInTunnelingSupported() && linkUseMultistream() && main->isDpTunnelingHwBugWarEnabled() &&
+         activeLinkConfig.bEnableFEC))
     {
         DP_ASSERT(linkUseMultistream() && "it should be multistream link to configure single head MST");
         hal->payloadTableClearACT();
@@ -4082,6 +4378,12 @@ void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
 // Notify library before/after shutdown (update)
 void ConnectorImpl::notifyDetachBegin(Group * target)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyDetachBegin called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     if (!target)
         target = firmwareGroup;
 
@@ -4150,8 +4452,14 @@ void ConnectorImpl::notifyDetachBegin(Group * target)
 //  2. unmark zombies (they were plugged zombies, they might want to get link trained next time)
 //  3. mark head as detached (so that we can delete any HPD unplugged devices)
 //
-void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
+void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyDetachEnd called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     GroupImpl* currentModesetDeviceGroup = NULL;
     DP_PRINTF(DP_NOTICE, "DPCONN> Notify detach end");
     NV_DPTRACE_INFO(NOTIFY_DETACH_END);
@@ -4279,7 +4587,18 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
             // lost device not yet detached. Avoid to powerdown for the case for following
             // device discovery hdcp probe.
             //
-            if (!bIsDiscoveryDetectActive)
+            // If discovery detect is not active and the link should not be kept on,
+            // then power down the link.
+            //
+            // Next mode-set information is available with DD. DD passes this intent to DPLib via bKeepLinkOn.
+            // a) bKeepLinkOn = true:
+            //    - DD indicates that streams on the MST link are being reconfigured (e.g., refresh rate change).
+            //    - DPLib skips powerdownLink() to keep the link active, avoiding unnecessary re-link-training on the subsequent mode-set.
+            //b) bKeepLinkOn = false:
+            //    - DD indicates the last stream on the DP MST link is being disabled (e.g., hot-unplug or full disconnect).
+            //    - DPLib proceeds to power down the link normally.
+            //
+            if (!bIsDiscoveryDetectActive && !bKeepLinkOn)
                 powerdownLink(!main->skipPowerdownEdpPanelWhenHeadDetach() && !bKeepOdAlive);
         }
         if (this->policyModesetOrderMitigation && this->modesetOrderMitigation)
@@ -4287,7 +4606,18 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
     }
     else // !activeGroups.isEmpty()
     {
-        if ((this->linkUseMultistream()) && (hdcpState.HDCP_State_Authenticated))
+        bool allActiveGroupsInTransition = true;
+        for (ListElement* e = activeGroups.begin(); e != activeGroups.end(); e = e->next)
+        {
+            GroupImpl* group = (GroupImpl*)e;
+            if (!(intransitionGroups.contains(group)))
+            {
+                allActiveGroupsInTransition = false;
+                break;
+            }
+        }
+
+        if ((this->linkUseMultistream()) && (hdcpState.HDCP_State_Authenticated) && (!allActiveGroupsInTransition))
         {
             if (hdcpState.HDCP_State_22_Capable)
             {
@@ -4882,6 +5212,7 @@ bool ConnectorImpl::allocateMaxDpTunnelBw()
 void ConnectorImpl::assessLink(LinkTrainingType trainType)
 {
     this->bSkipLt = false;  // Assesslink should never skip LT, so let's reset it in case it was set.
+    const bool bAllowFullFallback = true;
     bool  bLinkStateToggle = false;
     NvU32 retryCount = 0;
 
@@ -4901,7 +5232,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
 
     if (trainType == NO_LINK_TRAINING)
     {
-        train(preferredLinkConfig, false, trainType);
+        train(preferredLinkConfig, false, trainType, bAllowFullFallback);
         return;
     }
 
@@ -5109,7 +5440,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             {
                 break;
             }
-            if (!train(lConfig, false /* do not force LT */))
+            if (!train(lConfig, false /* do not force LT */, NORMAL_LINK_TRAINING, bAllowFullFallback))
             {
                 //
                 // Note that now train() handles fallback, activeLinkConfig
@@ -5131,7 +5462,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             {
                 // If there is no active link, force LT to max before disable flush
                 lConfig = _maxLinkConfig;
-                train(lConfig, true);
+                train(lConfig, true, NORMAL_LINK_TRAINING, bAllowFullFallback);
             }
         }
         disableFlush();
@@ -5162,7 +5493,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             bIsFlushModeEnabled = enableFlush();
             if (bIsFlushModeEnabled)
             {
-                train(preFlushModeActiveLinkConfig, true);
+                train(preFlushModeActiveLinkConfig, true, NORMAL_LINK_TRAINING, bAllowFullFallback);
                 disableFlush();
             }
             linkGuessed = true;
@@ -5183,23 +5514,33 @@ done:
 
     if (bLinkStateToggle)
     {
-        DP_PRINTF(DP_NOTICE, "DP> Link state toggled, reading DSC caps now");
-        // Read panel DSC support only if GPU supports DSC
-        bool bGpuDscSupported;
-        main->getDscCaps(&bGpuDscSupported);
-        if (bGpuDscSupported)
+        if (isInternalDpTunnelTbt3Downstream())
         {
-            for (Device * i = enumDevices(0); i; i=enumDevices(i))
+            for (Device * i = enumDevices(0); i; i = enumDevices(i))
             {
-                DeviceImpl * dev = (DeviceImpl *)i;
-                if(dev->getDSCSupport())
+                ((DeviceImpl *)i)->resetDscAndFecCaps();
+            }
+        }
+        else
+        {
+            DP_PRINTF(DP_NOTICE, "DP> Link state toggled, reading DSC caps now");
+            // Read panel DSC support only if GPU supports DSC
+            bool bGpuDscSupported;
+            main->getDscCaps(&bGpuDscSupported);
+            if (bGpuDscSupported)
+            {
+                for (Device * i = enumDevices(0); i; i=enumDevices(i))
                 {
-                    // Read and parse DSC caps only if panel and GPU supports DSC
-                    dev->readAndParseDSCCaps();
-                }
-                if (!(dev->processedEdid.WARFlags.bIgnoreDscCap))
-                {
-                    dev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                    DeviceImpl * dev = (DeviceImpl *)i;
+                    if(dev->getDSCSupport())
+                    {
+                        // Read and parse DSC caps only if panel and GPU supports DSC
+                        dev->readAndParseDSCCaps();
+                    }
+                    if (!(dev->processedEdid.WARFlags.bIgnoreDscCap))
+                    {
+                        dev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                    }
                 }
             }
         }
@@ -5450,6 +5791,21 @@ void ConnectorImpl::handleSSC()
 
                         if (group->hdcpEnabled)
                         {
+                            //
+                            // Bug 5764757: skip QSES when not applicable to this
+                            // stream - either the group targets a branch Logical
+                            // Port (0x8..0xF) or the link uses 128b/132b channel
+                            // coding (UHBR/HDCP 2.x). See GroupImpl::isQSESApplicable.
+                            //
+                            if (!group->isQSESApplicable())
+                            {
+                                DP_PRINTF(DP_NOTICE,
+                                          "DP-QSE> Stream %d: QSES not applicable; "
+                                          "skipping QSES probe.",
+                                          group->streamIndex);
+                                continue;
+                            }
+
                             group->streamEncryptionStatusDetection->sendQSEMessage(group, qseReason_Ssc);
                             timer->queueCallback(group, &(group->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
                         }
@@ -5831,10 +6187,14 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             }
         }
 
-        if (bPConConnected || bKeepOptLinkAlive)
+        if (bPConConnected || bKeepOptLinkAlive || bForceMaxLinkConfig)
         {
-            // When PCON is connected, always LT to max to avoid LT.
-            // When bKeepOptLinkAlive is set, we need to LT to max to avoid LT.
+            //
+            // Need to do LT at maximum link configuration for the following:
+            // a) PCON is connected
+            // b) bKeepOptLinkAlive is TRUE, link is not powered down post link assessment
+            // c) bForceMaxLinkConfig is TRUE
+            //
             bSkipLowestConfigCheck = true;
         }
 
@@ -5992,12 +6352,15 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
         //
 
         // for MST; the setPreferred calls assessLink directly.
-        if (preferredLinkConfig.isValid() && (activeLinkConfig != preferredLinkConfig))
+        if (preferredLinkConfig.isValid())
         {
-            if (!train(preferredLinkConfig, false))
+            if (activeLinkConfig != preferredLinkConfig)
             {
-                DP_PRINTF(DP_ERROR, "DP-CONN> Preferred linkconfig could not be applied. Forcing on gpu side.");
-                train(preferredLinkConfig, true);
+                if (!train(preferredLinkConfig, false))
+                {
+                    DP_PRINTF(DP_ERROR, "DP-CONN> Preferred linkconfig could not be applied. Forcing on gpu side.");
+                    train(preferredLinkConfig, true);
+                }
             }
             return true;
         }
@@ -6417,7 +6780,7 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
 }
 
 bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
-                          LinkTrainingType trainType)
+                          LinkTrainingType trainType, bool bAllowFullFallback)
 {
     LinkTrainingType preferredTrainingType = trainType;
     bool result = true;
@@ -6481,7 +6844,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
             if (activeLinkConfig.multistream != lConfig.multistream)
             {
                 activeLinkConfig.lanes = 0;
-                rawTrain(activeLinkConfig, true, NORMAL_LINK_TRAINING);
+                rawTrain(activeLinkConfig, true, NORMAL_LINK_TRAINING, bAllowFullFallback);
             }
         }
 
@@ -6503,11 +6866,11 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     }
 
     activeLinkConfig = lConfig;
-    result = rawTrain(lConfig, force, preferredTrainingType);
+    result = rawTrain(lConfig, force, preferredTrainingType, bAllowFullFallback);
 
     // If NLT or FLT failed, then fallback to normal LT again
     if (!result && (preferredTrainingType != NORMAL_LINK_TRAINING))
-        result = rawTrain(lConfig, force, NORMAL_LINK_TRAINING);
+        result = rawTrain(lConfig, force, NORMAL_LINK_TRAINING, bAllowFullFallback);
 
     if (!result)
         activeLinkConfig.lanes = 0;
@@ -6671,6 +7034,7 @@ bool ConnectorImpl::enableFlush()
     // 2. The next link training call must not skip programming the hardware.
     //    Otherwise, EVO will hang if the head is still active when flush mode is disabled.
     //
+    const bool bFecEnabledBeforeFlush = activeLinkConfig.bEnableFEC;
     activeLinkConfig = LinkConfiguration();
     bSkipLt = false;
 
@@ -6701,7 +7065,8 @@ bool ConnectorImpl::enableFlush()
         afterDeleteStream(g);
     }
 
-    if (hal->isDpInTunnelingSupported() && linkUseMultistream() && main->isDpTunnelingHwBugWarEnabled())
+    if (hal->isDpInTunnelingSupported() && linkUseMultistream() && main->isDpTunnelingHwBugWarEnabled() &&
+        bFecEnabledBeforeFlush)
     {
         hal->payloadAllocate(0, 0, 0x3F);
         main->triggerACT();
@@ -6712,7 +7077,8 @@ bool ConnectorImpl::enableFlush()
 
 //
 // This is a wrapper for call to mainlink::train().
-bool ConnectorImpl::rawTrain(const LinkConfiguration & lConfig, bool force, LinkTrainingType linkTrainingType)
+bool ConnectorImpl::rawTrain(const LinkConfiguration & lConfig, bool force, LinkTrainingType linkTrainingType,
+                             bool bAllowFullFallback)
 {
     {
         //
@@ -6722,11 +7088,18 @@ bool ConnectorImpl::rawTrain(const LinkConfiguration & lConfig, bool force, Link
         //
         if (lConfig.disablePostLTRequest)
         {
-            return (main->train(lConfig, force, linkTrainingType, &activeLinkConfig, bSkipLt, false,
-                    hal->getPhyRepeaterCount()));
+            LinkTrainParameters trainParams(lConfig, force, linkTrainingType,
+                                            &activeLinkConfig, bSkipLt, false,
+                                            hal->getPhyRepeaterCount(),
+                                            bAllowFullFallback);
+            return main->train(trainParams);
         }
-        return (main->train(lConfig, force, linkTrainingType, &activeLinkConfig, bSkipLt, hal->isPostLtAdjustRequestSupported(),
-            hal->getPhyRepeaterCount()));
+        LinkTrainParameters trainParams(lConfig, force, linkTrainingType,
+                                        &activeLinkConfig, bSkipLt,
+                                        hal->isPostLtAdjustRequestSupported(),
+                                        hal->getPhyRepeaterCount(),
+                                        bAllowFullFallback);
+        return main->train(trainParams);
     }
 }
 
@@ -6750,6 +7123,10 @@ bool ConnectorImpl::deleteAllVirtualChannels()
     {
         ClearPayloadIdTableMessage clearPayload;
         NakData nack;
+
+        // If message manager is not initialized, return false
+        if(!this->messageManager)
+           return false;
 
         if (this->messageManager->send(&clearPayload, nack))
             return true;
@@ -6834,6 +7211,33 @@ bool ConnectorImpl::checkIsModePossibleMST(GroupImpl *targetGroup)
     return true;
 }
 
+/*!
+ * @brief Calculate the PBN value to be sent in the ALLOCATE_PAYLOAD Sideband Message.
+ *
+ * @param[in]   basePBN     Base PBN computed from the mode requirements
+ * @param[in]   slotCount   Number of timeslots allocated for the stream
+ *
+ * @return      PBN value to use in the ALLOCATE_PAYLOAD SBM
+ */
+unsigned ConnectorImpl::calculateAllocatePayloadPBN(unsigned basePBN, unsigned slotCount)
+{
+    if (hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled())
+    {
+        if (this->bDisableDpMstTunnelingNoVcpfWar || (activeLinkConfig.lanes != 4))
+        {
+            return basePBN;
+        }
+        else
+        {
+            DP_PRINTF(DP_NOTICE, "DP-TS> Applying 0.3 percent down-spread overhead for PBN in ALLOCATE_PAYLOAD SBM: base_pbn=%d, PBN(before overhead)=%u", basePBN, activeLinkConfig.PBNForSlots(slotCount));
+            unsigned pbn = (NvU32)(divide_ceil(activeLinkConfig.PBNForSlots(slotCount) * 1003, 1000));
+            DP_PRINTF(DP_NOTICE, "DP-TS> Applying 0.3 percent down-spread overhead for PBN in ALLOCATE_PAYLOAD SBM: PBN(after overhead)=%u", pbn);
+            return pbn;
+        }
+    }
+    return basePBN;
+}
+
 bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
 {
     unsigned base_pbn, slot_count, slots_pbn;
@@ -6872,11 +7276,34 @@ bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
 
     targetGroup->timeslot.count = slot_count;
     targetGroup->timeslot.begin = firstSlot;
-    targetGroup->timeslot.PBN = base_pbn;
+    targetGroup->timeslot.PBN = calculateAllocatePayloadPBN(base_pbn, slot_count);
     targetGroup->timeslot.hardwareDirty = true;
     freeSlots -= slot_count;
 
     return true;
+}
+
+/*!
+ * @brief Calculate the allocated PBN value for programming the SF_DP_STREAM_BW HW register.
+ *
+ * @param[in]   basePBN     Base PBN from timeslot.PBN
+ * @param[in]   slotCount   Number of timeslots allocated for the stream
+ * @return      PBN value to program in SF_DP_STREAM_BW HW register for rate governing
+ */
+NvU32 ConnectorImpl::calculateHwAllocatedPbn(unsigned basePBN, int slotCount)
+{
+    if (hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled())
+    {
+        if (this->bDisableDpMstTunnelingNoVcpfWar || (activeLinkConfig.lanes != 4))
+        {
+            return basePBN;
+        }
+        else
+        {
+            return activeLinkConfig.PBNForSlots(slotCount);
+        }
+    }
+    return basePBN;
 }
 
 void ConnectorImpl::flushTimeslotsToHardware()
@@ -6889,6 +7316,7 @@ void ConnectorImpl::flushTimeslotsToHardware()
         {
             group->timeslot.hardwareDirty = false;
             bool bEnable2Head1Or = false;
+            NvU32 allocatedPbn = 0;
 
             if ((group->lastModesetInfo.mode == DSC_DUAL) ||
                 (group->lastModesetInfo.mode == DSC_DROP))
@@ -6896,12 +7324,13 @@ void ConnectorImpl::flushTimeslotsToHardware()
                 bEnable2Head1Or = true;
             }
 
+            allocatedPbn = calculateHwAllocatedPbn(group->timeslot.PBN, group->timeslot.count);
             main->configureMultiStream(group->headIndex,
                                        group->timeslot.watermarks.hBlankSym,
                                        group->timeslot.watermarks.vBlankSym,
                                        group->timeslot.begin,
                                        group->timeslot.begin+group->timeslot.count - 1,
-                                       group->timeslot.PBN,
+                                       allocatedPbn,
                                        activeLinkConfig.PBNForSlots(group->timeslot.count),
                                        group->colorFormat,
                                        group->singleHeadMultiStreamID,
@@ -7001,6 +7430,39 @@ void ConnectorImpl::afterDeleteStream(GroupImpl * group)
         {
             DP_PRINTF(DP_ERROR, "DP> Delete stream failed.  Device did not acknowledge stream deletion ACT!");
             DP_ASSERT(0);
+        }
+    }
+
+    //
+    // After stream deletion, check if this was the last MST stream and delete all virtual channels if so
+    //
+    if (linkUseMultistream() && group)
+    {
+        //
+        // Check if this is the last MST stream (excluding the current group being deleted)
+        //
+        bool isLastMstStream = true;
+        for (ListElement * i = activeGroups.begin(); i != activeGroups.end(); i = i->next)
+        {
+            GroupImpl * activeGroup = (GroupImpl *)i;
+            // Skip the group that was just deleted
+            if (activeGroup == group)
+                continue;
+            // Check if this active group has MST timeslots allocated
+            if (activeGroup->isHeadAttached() &&
+                (activeGroup->isTimeslotAllocated() || activeGroup->timeslot.count > 0))
+            {
+                isLastMstStream = false;
+                break;
+            }
+        }
+        // If this was the last MST stream, delete all virtual channels after the stream is deleted
+        if (isLastMstStream)
+        {
+            if (!deleteAllVirtualChannels())
+            {
+                DP_PRINTF(DP_WARNING, "DP> Failed to delete all virtual channels after last MST stream deletion.");
+            }
         }
     }
 }
@@ -7356,6 +7818,11 @@ void ConnectorImpl::disconnectDeviceList()
     }
 }
 
+void ConnectorImpl::setClientForcedConnected(bool enabled)
+{
+    bClientForcedConnected = enabled;
+}
+
 // status == true: attach, == false: detach
 void ConnectorImpl::notifyLongPulse(bool statusConnected)
 {
@@ -7388,12 +7855,6 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
                 DP_PRINTF(DP_NOTICE, "Calling notifyDetectComplete");
                 sink->notifyDetectComplete();
             }
-            return;
-        }
-
-        if (existingDev && bIgnoreUnplugUnlessRequested && !statusConnected && !existingDev->isMarkedForDeletion())
-        {
-            sink->notifyDetectComplete();
             return;
         }
     }
@@ -7584,6 +8045,9 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         }
 
         // Apply Oui WARs here
+        main->setDpWarFlag(NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE, false);
+        bSwAutoReadWarActive = false;
+
         this->applyOuiWARs();
 
         hal->notifySDPErrDetectionCapability();
@@ -7643,9 +8107,11 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         delete discoveryManager;
         isDiscoveryDetectComplete = false;
         bIsDiscoveryDetectActive = true;
+        bNotifyDetectCompletePending = false;
 
         pendingEdidReads.clear();   // destroy any half completed requests
         pendingDid2Reads.clear();
+        pendingPowerUpPhyMessages.clear();
         delete messageManager;
         messageManager = 0;
         discoveryManager = 0;
@@ -7890,11 +8356,28 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 // be different than what we assessed before. So we skip the link
                 // power down in assessLink() in such cases
                 //
-                if (tmpEdid.WARFlags.keepLinkAlive)
+                // For DP Tunneling, keep link alive setting is not supported.
+                // Between assessLink() and mode-set's link training, due to SOR re-assignment, link is lost.
+                // On SOR re-assignment, DIA's LTTPR maintains the link status but DPRX Sink's link status is lost.
+                // This difference in link status causes link training failure and multiple link training attempts
+                // during mode-set.
+                //
+                if (tmpEdid.WARFlags.keepLinkAlive && !hal->isDpInTunnelingSupported())
                 {
                     DP_PRINTF(DP_NOTICE, "tmpEdid.WARFlags.keepLinkAlive = true, set bKeepOptLinkAlive to true. (keep link alive after assessLink())");
                     bKeepOptLinkAlive = true;
                 }
+
+                //
+                // Force max link config during mode-set for DP compliance testing devices
+                // UCD-500, M42De
+                //
+                if (tmpEdid.WARFlags.keepLinkAlive && tmpEdid.WARFlags.forceMaxLinkConfig)
+                {
+                    DP_PRINTF(DP_NOTICE, "tmpEdid.WARFlags.forceMaxLinkConfig = true, set bForceMaxLinkConfig to true. (force max link config during mode-set)");
+                    bForceMaxLinkConfig = true;
+                }
+
                 // Ack the test response, no matter it is a ref sink or not
                 if (hal->getPendingTestRequestEdidRead())
                 {
@@ -7972,8 +8455,11 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         //
         delete discoveryManager;
         isDiscoveryDetectComplete = false;
+        bNotifyDetectCompletePending = false;
+        bIsDiscoveryDetectActive = false;
         pendingEdidReads.clear();   // destroy any half completed requests
         pendingDid2Reads.clear();
+        pendingPowerUpPhyMessages.clear();
         bDeferNotifyLostDevice = false;
 
         delete messageManager;
@@ -7981,9 +8467,13 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         discoveryManager = 0;
         bAcpiInitDone = false;
         bKeepOptLinkAlive = false;
+        bForceMaxLinkConfig = false;
         bNoFallbackInPostLQA = false;
         bDscCapBasedOnParent = false;
         linkAwaitingTransition = false;
+
+        main->setDpWarFlag(NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE, false);
+        bSwAutoReadWarActive = false;
 
         LinkConfiguration linkConfig = getActiveLinkConfig();
         cancelHdcpCallbacks();
@@ -8013,6 +8503,8 @@ completed:
 
     if (!statusConnected)
     {
+        // setting isDiscoveryDetectComplete to true to gracefully handle the unplug sequence (detach sequence)
+        isDiscoveryDetectComplete = true;
         sink->notifyDetectComplete();
         return;
     }
@@ -8072,6 +8564,10 @@ void ConnectorImpl::notifyShortPulse()
         return;
     }
     DP_PRINTF(DP_INFO, "DP> IRQ");
+    if (bSwAutoReadWarActive)
+    {
+        (void)hal->readLegacyIrqBlock();
+    }
     hal->notifyIRQ();
 
     // Handle CP_IRQ
@@ -8371,6 +8867,13 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
 
     dev = enumDevices(0);
     DeviceImpl * nativeDev = (DeviceImpl *)dev;
+
+    if (this->linkUseMultistream() && activeLinkConfig.isValid() && !activeGroups.isEmpty())
+    {
+        DP_PRINTF(DP_ERROR, "DPCONN> Link config should not be changed without stream detach when there are active streams in MST mode");
+        return false;
+    }
+
     if (preferredLinkConfig.lanes || preferredLinkConfig.peakRate || preferredLinkConfig.minRate)
         DP_ASSERT(0 && "Missing reset call for a preveious set preferred call");
 
@@ -8561,10 +9064,6 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
     if (!buffer)
         return;
 
-    // Return immediately if DSC is not supported
-    if(FLD_TEST_DRF(_DPCD14, _DSC_SUPPORT, _DECOMPRESSION, _YES, buffer[0]) != 1)
-        return;
-
     DeviceImpl * existingDev = findDeviceInList(Address());
 
     // Return immediately if we already have a device
@@ -8585,19 +9084,28 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
     newDev->bIsFakedMuxDevice           = true;
     newDev->bIsPreviouslyFakedMuxDevice = false;
 
-    // Initialize DSC state
-    newDev->dscCaps.bDSCSupported = true;
-    newDev->dscCaps.bDSCDecompressionSupported = true;
-    if (!(newDev->setRawDscCaps(buffer, DP_MIN(bufferSize, DSC_CAPS_SIZE))))
+    // Set DSC caps to false by default for non-DSC panels
+    newDev->dscCaps.bDSCSupported = false;
+	// For DSC panels, override with correct caps
+    if(FLD_TEST_DRF(_DPCD14, _DSC_SUPPORT, _DECOMPRESSION, _YES, buffer[0]) == 1)
     {
-        DP_ASSERT(0 && "Faking DSC caps failed!");
+        // Initialize DSC state
+        newDev->dscCaps.bDSCSupported = true;
+        newDev->dscCaps.bDSCDecompressionSupported = true;
+        if (!(newDev->setRawDscCaps(buffer, DP_MIN(bufferSize, DSC_CAPS_SIZE))))
+        {
+            DP_ASSERT(0 && "Faking DSC caps failed!");
+        }
+        newDev->bDSCPossible = true;
+        newDev->devDoingDscDecompression = newDev;
     }
-    newDev->bDSCPossible = true;
-    newDev->devDoingDscDecompression = newDev;
 
     populateAllDpConfigs();
     deviceList.insertBack(newDev);
     sink->newDevice(newDev);
+    isDiscoveryDetectComplete = true;
+    bNotifyDetectCompletePending = false;
+    bIsDiscoveryDetectActive = false;
     sink->notifyDetectComplete();
 }
 
@@ -8646,9 +9154,19 @@ bool ConnectorImpl::isFECSupported()
     return main->isFECSupported();
 }
 
+bool ConnectorImpl::disableFecOnEdp() const
+{
+    return (main->isEDP() && bDisableFecOnEdp);
+}
+
 bool ConnectorImpl::isFECCapable()
 {
     DeviceImpl *dev;
+
+    if (isInternalDpTunnelTbt3Downstream())
+    {
+        return false;
+    }
 
     for (Device * i = enumDevices(0); i; i = enumDevices(i))
     {
@@ -8896,21 +9414,10 @@ bool ConnectorImpl::updatePsrLinkState(bool bTurnOnLink)
 {
     bool bRet = true;
     bool bEnteredFlushMode = false;
-    bool bSetPanelPower = true;
 
     if (bTurnOnLink)
     {
-        //
-        // If we are skipping panel power write when the regkey is set and the
-        // panel is already in D0, then we don't need to set it to D0.
-        //
-        if (this->bSkipPanelPowerWrite &&
-            (hal->getPowerState() == PowerStateD0))
-        {
-            bSetPanelPower = false;
-        }
-
-        if (bSetPanelPower)
+        if (hal->getPowerState() != PowerStateD0)
         {
             hal->setPowerState(PowerStateD0);
         }
@@ -9214,7 +9721,9 @@ bool ConnectorImpl::isLinkAwaitingTransition()
 void ConnectorImpl::configInit()
 {
     // Reset branch specific flags
-    bKeepOptLinkAlive = 0;
+    bKeepOptLinkAlive = false;
+    bSwAutoReadWarActive = false;
+    bForceMaxLinkConfig = false;
     bNoFallbackInPostLQA = 0;
     LT2FecLatencyMs = 0;
     bDscCapBasedOnParent = false;
@@ -9236,6 +9745,13 @@ bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)
 bool ConnectorImpl::isDpInTunnelingSupported()
 {
     return hal->isDpInTunnelingSupported();
+}
+
+bool ConnectorImpl::isInternalDpTunnelTbt3Downstream()
+{
+    return main->isInternalDpTunnelingSupported() &&
+           hal->isDpInTunnelingSupported() &&
+           (hal->getPhyRepeaterCount() == 0);
 }
 
 bool ConnectorImpl::isDpInTunnelingPanelReplayOptimizationSupported()
@@ -9275,11 +9791,70 @@ bool ConnectorImpl::getUSBDpInAdapterInfo(NvU32 displayId, NV0073_CTRL_DP_USB4_I
     return true;
 }
 
+PendingPowerUpPhyMessage::PendingPowerUpPhyMessage
+(
+    ConnectorImpl * connector,
+    const Address & deviceAddress
+)
+    : connector(connector),
+      deviceAddress(deviceAddress)
+{
+}
+
+void PendingPowerUpPhyMessage::post()
+{
+    if (!connector->messageManager)
+    {
+        delete this;
+        return;
+    }
+
+    powerUpPhyMessage.set(deviceAddress.parent(), deviceAddress.tail(), NV_TRUE);
+    connector->pendingPowerUpPhyMessages.insertBack(this);
+    connector->messageManager->post(&powerUpPhyMessage, this);
+}
+
+void PendingPowerUpPhyMessage::messageFailed
+(
+    MessageManager::Message * from,
+    NakData * nakData
+)
+{
+    DP_ASSERT(from == &powerUpPhyMessage);
+    DP_USED(from);
+
+    Address::StringBuffer buffer;
+    NakReason reason = nakData ? nakData->reason : NakUndefined;
+    DP_PRINTF(DP_WARNING, "DPCONN> POWER_UP_PHY failed for device %s (reason: %d)",
+              deviceAddress.toString(buffer), reason);
+
+    DP_USED(buffer);
+    DP_USED(reason);
+    delete this;
+}
+
+void PendingPowerUpPhyMessage::messageCompleted
+(
+    MessageManager::Message * from
+)
+{
+    DP_ASSERT(from == &powerUpPhyMessage);
+    DP_USED(from);
+
+    delete this;
+}
+
 void ConnectorImpl::ensureMstNodesPoweredUp(Group * target)
 {
     if (!target)
     {
         DP_PRINTF(DP_ERROR, "DPCONN> sendPowerUpPhyMessages: NULL target group. Returning Early.");
+        return;
+    }
+
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> ensureMstNodesPoweredUp called when connector is not active or when detection is in progress!");
         return;
     }
 
@@ -9290,49 +9865,27 @@ void ConnectorImpl::ensureMstNodesPoweredUp(Group * target)
             continue;
 
         Address deviceAddress = dev->getTopologyAddress();
-        Address::StringBuffer buffer;
-        DP_USED(buffer);
 
         // Only applicable for MST devices (address size > 1)
         if (deviceAddress.size() <= 1)
             continue;
 
-        NakData nakData;
-        PowerUpPhyMessage powerUpPhyMessage;
-
-        // Set message: parent address, port on parent, path message enabled
-        // isPathMessage = NV_TRUE ensures all branch devices along the path process it
-        powerUpPhyMessage.set(deviceAddress.parent(), deviceAddress.tail(), NV_TRUE);
-
+        Address::StringBuffer buffer;
+        DP_USED(buffer);
         DP_PRINTF(DP_NOTICE, "DPCONN> Sending POWER_UP_PHY for device %s (port %d)",
                   deviceAddress.toString(buffer), deviceAddress.tail());
 
-        if (!messageManager->send(&powerUpPhyMessage, nakData))
-        {
-            DP_PRINTF(DP_ERROR, "DPCONN> POWER_UP_PHY failed for device %s (reason: %d)",
-                      deviceAddress.toString(buffer), nakData.reason);
+        PendingPowerUpPhyMessage * pendingPowerUpPhyMessage =
+            new PendingPowerUpPhyMessage(this, deviceAddress);
 
-            switch (nakData.reason)
-            {
-                case NakTimeout:
-                    DP_PRINTF(DP_ERROR, "DPCONN> POWER_UP_PHY timeout");
-                    break;
-                case NakInvalidRAD:
-                    DP_PRINTF(DP_ERROR, "DPCONN> POWER_UP_PHY invalid RAD");
-                    break;
-                case NakDefer:
-                    DP_PRINTF(DP_ERROR, "DPCONN> POWER_UP_PHY deferred");
-                    break;
-                default:
-                    DP_PRINTF(DP_ERROR, "DPCONN> POWER_UP_PHY NAK reason: %d", nakData.reason);
-                    break;
-            }
-        }
-        else
+        if (!pendingPowerUpPhyMessage)
         {
-            DP_PRINTF(DP_NOTICE, "DPCONN> POWER_UP_PHY succeeded for device %s",
+            DP_PRINTF(DP_ERROR, "DPCONN> Failed to allocate POWER_UP_PHY message for device %s",
                       deviceAddress.toString(buffer));
+            continue;
         }
+
+        pendingPowerUpPhyMessage->post();
     }
 }
 

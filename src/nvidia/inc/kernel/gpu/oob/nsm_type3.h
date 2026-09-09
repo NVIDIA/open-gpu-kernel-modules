@@ -60,6 +60,9 @@
 //! @ref TYPE3_GET_MEMORY_CAPACITY_UTILIZATION
 #define NSM_TYPE3_CMD_GET_MEMORY_CAPACITY_UTILIZATION            0xAD
 
+//! @ref TYPE3_CLOCK_LIMITS
+#define NSM_TYPE3_CMD_SET_CLOCK_LIMIT                            0x10
+
 /** @} TYPE3_CMDS */
 
 /** \defgroup TYPE3_GET_MAXIMUM_CUSTOMER_BOOST_CLOCK \
@@ -298,6 +301,77 @@ struct nsm_type3_get_memory_capacity_utilization_response
      * sets aside a small amount of memory for book-keeping.
      */
     NvU32 used_memory_mib;
+};
+
+/**
+ * \defgroup TYPE3_CLOCK_LIMITS Clock Limits
+ * @{
+ */
+
+/**
+ * \defgroup CLOCK_LIMIT_IDS Clock Limit IDs
+ * @{
+ *
+ */
+
+//! ID used to set Graphics clock
+#define NSM_TYPE3_CLOCK_LIMIT_ID_GRAPHICS_CLOCK         0x00
+
+//! ID used to set memory clock
+#define NSM_TYPE3_CLOCK_LIMIT_ID_MEMORY_CLOCK           0x01
+
+/** @} CLOCK_LIMIT_IDS */
+
+/**
+ * \defgroup TYPE3_CLOCK_LIMITS_FLAGS Set clock limits flags
+ * @{
+ *
+ * Persistence flags for Clock locking
+ */
+
+//! Bit indicating persistence mode for Set clock limit
+#define NSM_TYPE3_SET_CLOCK_LIMITS_PERSISTENCE              0:0
+
+//! Clock limits won't be persisted across driver unload and reloads.
+#define NSM_TYPE3_SET_CLOCK_LIMITS_PERSISTENCE_DISABLED       0
+
+//! Clock limits will be persisted across driver unload and reload.
+#define NSM_TYPE3_SET_CLOCK_LIMITS_PERSISTENCE_ENABLED        1
+
+//! Flag to clear clock limits. Limit value will be ignored.
+#define NSM_TYPE3_SET_CLOCK_LIMITS_CLEAR_LIMIT              1:1
+
+//! Clear limits flag is not set.
+#define NSM_TYPE3_SET_CLOCK_LIMITS_CLEAR_LIMIT_UNSET          0
+
+//! Clear limits flag is set
+#define NSM_TYPE3_SET_CLOCK_LIMITS_CLEAR_LIMIT_SET            1
+
+/** @} TYPE3_CLOCK_LIMITS_FLAGS */
+
+/**
+ * @brief Set Clock Limits
+ *
+ * This command is used to request a particular clock frequency limit. The GPU
+ * will lock the frequency to the nearest valid frequency to the one which has
+ * been requested.
+ */
+struct nsm_type3_set_clock_limits_request {
+    //! Id for the clock from the table above
+    NvU8 clock_id;
+
+    /**
+     * @brief Flags for setting clock limits
+     *
+     * Refer to @ref TYPE3_CLOCK_LIMITS_FLAGS
+     */
+    NvU8 flags;
+
+    //! Minimum clock frequency limit desired by the client.
+    NvU32 limit_min_mhz;
+
+    //! Maximum clock frequency limit desired by the client.
+    NvU32 limit_max_mhz;
 };
 
 #pragma pack()

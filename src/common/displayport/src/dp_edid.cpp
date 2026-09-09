@@ -32,6 +32,7 @@
 #include "dp_internal.h"
 #include "dp_edid.h"
 #include "dp_printf.h"
+#include "dp_regkeydatabase.h"
 
 using namespace DisplayPort;
 
@@ -418,6 +419,17 @@ unsigned Edid::getEdidSize() const
 void DisplayPort::Edid::swap(Edid & right)
 {
     swapBuffers(buffer, right.buffer);
+
+    if (dpRegkeyDatabase.bEnableSstEdidRecoveryFix)
+    {
+        bool tmp;
+        tmp = forcedCheckSum;  forcedCheckSum  = right.forcedCheckSum;  right.forcedCheckSum  = tmp;
+        tmp = fallbackEdid;    fallbackEdid    = right.fallbackEdid;    right.fallbackEdid    = tmp;
+        tmp = patchedChecksum; patchedChecksum = right.patchedChecksum; right.patchedChecksum = tmp;
+
+        right.validateCheckSum();
+    }
+
     validateCheckSum();
 }
 

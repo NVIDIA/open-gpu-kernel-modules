@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "containers/eheap_old.h"
 
 #include "ctrl/ctrla06c.h"  // NVA06C_CTRL_INTERLEAVE_LEVEL_*
+
 
 // Static functions
 static void _kchangrpFreeAllEngCtxDescs(OBJGPU *pGpu, KernelChannelGroup *pKernelChannelGroup);
@@ -105,7 +106,10 @@ kchangrpInit_IMPL
     OBJGPU                *pGpu,
     KernelChannelGroup    *pKernelChannelGroup,
     OBJVASPACE            *pVAS,
-    NvU32                  gfid
+    NvU32                  gfid,
+    NvBool                 bFixedGrpID,
+    NvU32                  requestedGrpID,
+    NvBool                 bGspOwned
 )
 {
     NV_STATUS         status       = NV_OK;
@@ -170,15 +174,16 @@ kchangrpInit_IMPL
 
     pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistId);
 
-    NV_ASSERT_OK_OR_RETURN(kfifoChidMgrAllocChannelGroupHwID(pGpu, pKernelFifo, pChidMgr, &grpID));
+    if (bFixedGrpID)
+    {
+        grpID = requestedGrpID;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(kfifoChidMgrAllocChannelGroupHwID(pGpu, pKernelFifo,
+                           pChidMgr, &grpID, bFixedGrpID, bGspOwned));
 
     pKernelChannelGroup->grpID = grpID;
     pKernelChannelGroup->timesliceUs = kfifoChannelGroupGetDefaultTimeslice_HAL(pKernelFifo);
-
-    NV_ASSERT_OK_OR_GOTO(status,
-        kfifoChannelGroupSetTimeslice(pGpu, pKernelFifo, pKernelChannelGroup,
-            pKernelChannelGroup->timesliceUs, NV_TRUE),
-        failed);
 
     NV_ASSERT_OK_OR_GOTO(status,
         kfifoChannelListCreate(pGpu, pKernelFifo, &pKernelChannelGroup->pChanList),
@@ -247,7 +252,7 @@ kchangrpInit_IMPL
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  " Fault method buffer allocation failed for group ID 0x%0x with status 0x%0x\n",
+                  " Fault method buffer allocation failed for group ID 0x%08x with status 0x%08x\n",
                   grpID, status);
         DBG_BREAKPOINT();
         goto failed;
@@ -267,7 +272,7 @@ kchangrpInit_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          " Fault method buffer BAR2 mapping failed for group ID 0x%0x with status 0x%0x\n",
+                          " Fault method buffer BAR2 mapping failed for group ID 0x%08x with status 0x%08x\n",
                           grpID, status);
                 DBG_BREAKPOINT();
                 goto failed;
@@ -527,7 +532,6 @@ kchangrpAddChannel_IMPL
     NV_STATUS       status;
     KernelFifo     *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
     NvU32           maxChanCount;
-    NvU32           subdevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     KernelCtxShare *pKernelCtxShare;
 
 
@@ -574,9 +578,9 @@ kchangrpAddChannel_IMPL
 
     // Initialize channel's interleave level to match TSG's
     NV_ASSERT_OK_OR_RETURN(
-        kchangrpSetInterleaveLevel(pGpu,
-                             pKernelChannelGroup,
-                             pKernelChannelGroup->pInterleaveLevel[subdevInst]));
+            kchangrpSetInterleaveLevel(pGpu,
+                                pKernelChannelGroup,
+                                pKernelChannelGroup->pInterleaveLevel[gpumgrGetSubDeviceInstanceFromGpu(pGpu)]));
 
     return NV_OK;
 }
@@ -645,6 +649,7 @@ kchangrpRemoveChannel_IMPL
                     index);
             }
         }
+
     }
 
     return NV_OK;
@@ -776,4 +781,27 @@ kchangrpGetEngineContextMemDesc_IMPL
 FIFO_TSG_INFO kchangrpGetInfo_IMPL(KernelChannelGroup *pKernelChannelGroup)
 {
     return (FIFO_TSG_INFO){pKernelChannelGroup->grpID, pKernelChannelGroup->runlistId};
+}
+
+/**
+ * @brief Sched interleave level for channel group
+ *
+ * This function scheds interleave level for channel group
+ * and for all channels in channel group
+ *
+ * @param pGpu
+ * @param pKernelChannelGroup
+ * @param value
+ *
+ * @returns NV_OK on success
+ */
+NV_STATUS kchangrpSetInterleaveLevelSched_IMPL
+(
+    OBJGPU             *pGpu,
+    KernelChannelGroup *pKernelChannelGroup,
+    NvU32 value
+)
+{
+
+    return NV_OK;
 }

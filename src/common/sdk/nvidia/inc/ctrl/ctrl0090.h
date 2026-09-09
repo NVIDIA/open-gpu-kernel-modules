@@ -128,6 +128,43 @@ typedef struct NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS {
 #define NV0090_CTRL_CMD_PROGRAM_VIDMEM_PROMOTE          (0x900107) /* finn: Evaluated from "(FINN_NV0090_KERNEL_GRAPHICS_CONTEXT_INTERFACE_ID << 8) | 0x7" */
 #define NV0090_CTRL_CMD_INTERNAL_PROGRAM_VIDMEM_PROMOTE (0x900108) /* finn: Evaluated from "(FINN_NV0090_KERNEL_GRAPHICS_CONTEXT_INTERFACE_ID << 8) | 0x8" */
 
+/**
+ * NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE
+ *
+ * @brief This control call is used to set the promotion policies to sysmem through
+ * per-TSG config
+ *
+ * If the request is for less bytes than the current PROMOTE setting, then
+ * the request is promoted. For example if the request size is for 32B and
+ * 64B promotion is turned on for that unit, then the request to sysmem will be
+ * for all the bytes to the 64B aligned address.
+ *
+ * @param[in] all
+ *   An input parameter which represents SYSMEM_ALL_PROMOTE.
+ *
+ * @return NV_OK on success, or
+ *         NV_ERR_INVALID_ARGUMENT or
+ *         NV_ERR_INVALID_STATE
+ */
+typedef enum NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE {
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE_NONE = 0,
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE_64B = 1,
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE_128B = 2,
+} NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE;
+
+typedef struct NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_FIELD {
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_SIZE size;
+} NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_FIELD;
+
+#define NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS_MESSAGE_ID (0xDU)
+
+typedef struct NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS {
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_FIELD all;
+} NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS;
+
+#define NV0090_CTRL_CMD_PROGRAM_SYSMEM_PROMOTE          (0x90010e) /* finn: Evaluated from "(FINN_NV0090_KERNEL_GRAPHICS_CONTEXT_INTERFACE_ID << 8) | 0xE" */
+#define NV0090_CTRL_CMD_INTERNAL_PROGRAM_SYSMEM_PROMOTE (0x90010f) /* finn: Evaluated from "(FINN_NV0090_KERNEL_GRAPHICS_CONTEXT_INTERFACE_ID << 8) | 0xF" */
+
 /*
  * NV0090_CTRL_SET_LG_SECTOR_PROMOTION
  *

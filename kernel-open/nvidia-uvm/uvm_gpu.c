@@ -46,6 +46,9 @@
 #include "uvm_linux.h"
 #include "uvm_mmu.h"
 #include "uvm_kvmalloc.h"
+#if UVM_USE_DMA_IOVA_API()
+#include <linux/dma-mapping.h>
+#endif
 
 #define UVM_PROC_GPUS_PEER_DIR_NAME "peers"
 
@@ -123,7 +126,13 @@ static void fill_parent_gpu_info(uvm_parent_gpu_t *parent_gpu, const UvmGpuInfo 
         // 47-bit address space holds the routing information for each peer.
         // Currently, this is limited to a 16GB framebuffer window size.
         parent_gpu->nvswitch_info.fabric_memory_window_start = gpu_info->nvswitchMemoryWindowStart;
-        parent_gpu->nvswitch_info.egm_fabric_memory_window_start = gpu_info->nvswitchEgmMemoryWindowStart;
+        if (gpu_info->flaWindowForCpuMemNode.bSupported) {
+            parent_gpu->egm.fabric_memory_window_start = gpu_info->flaWindowForCpuMemNode.flaStart;
+            parent_gpu->egm.window_size = gpu_info->flaWindowForCpuMemNode.flaSize;
+        }
+        else {
+            parent_gpu->egm.fabric_memory_window_start = gpu_info->nvswitchEgmMemoryWindowStart;
+        }
     }
 
     parent_gpu->ats.non_pasid_ats_enabled = gpu_info->nonPasidAtsSupport;
@@ -1470,9 +1479,23 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);
     parent_gpu->dma_addressable_start = gpu_platform_info->dma_addressable_start;
     parent_gpu->dma_addressable_limit = gpu_platform_info->dma_addressable_limit;
-    parent_gpu->egm.enabled = gpu_info->egmEnabled;
+    // RM considers gpu_info->egmEnabled as "legacy" EGM and FLA EGM as
+    // EGM over FLA. Therefore, the two settings are mutually exclusive.
+    // However, it would make it easier for us to gate EGM (both styles)
+    // using a single variable.
+    UVM_ASSERT(!(gpu_info->egmEnabled && gpu_info->flaWindowForCpuMemNode.bSupported));
+    parent_gpu->egm.enabled = gpu_info->egmEnabled || gpu_info->flaWindowForCpuMemNode.bSupported;
     parent_gpu->egm.local_peer_id = gpu_info->egmPeerId;
-    parent_gpu->egm.base_address = gpu_info->egmBaseAddr;
+    parent_gpu->egm.legacy = !gpu_info->flaWindowForCpuMemNode.bSupported;
+    if (!parent_gpu->egm.legacy) {
+        UVM_ASSERT(parent_gpu->rm_info.gpuArch >= NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GR100);
+        parent_gpu->egm.base_address = gpu_info->flaWindowForCpuMemNode.dmaAddrBase;
+        parent_gpu->egm.identity_iommu = gpu_info->flaWindowForCpuMemNode.bIdentityDmaMap;
+    }
+    else {
+        parent_gpu->egm.base_address = gpu_info->egmBaseAddr;
+    }
+
     parent_gpu->access_counters_supported = (gpu_info->accessCntrBufferCount != 0);
 
     status = uvm_rm_locked_call(nvUvmInterfaceGetFbInfo(parent_gpu->rm_device, &fb_info));
@@ -2464,17 +2487,24 @@ static NV_STATUS parent_peers_init(uvm_parent_gpu_t *parent_gpu0,
     parent_peer_caps->link_type = link_type;
     parent_peer_caps->total_link_line_rate_mbyte_per_s = p2p_caps_params.totalLinkLineRateMBps;
 
-    if (parent_gpu0->egm.enabled || parent_gpu1->egm.enabled)
+    if (uvm_parent_gpu_egm_enabled(parent_gpu0) || uvm_parent_gpu_egm_enabled(parent_gpu1))
         UVM_ASSERT(parent_peer_caps->link_type >= UVM_GPU_LINK_NVLINK_2);
 
     // Initialize peer ids and establish peer mappings
     // Peer id from min(gpu_id0, gpu_id1) -> max(gpu_id0, gpu_id1)
     parent_peer_caps->peer_ids[0] = p2p_caps_params.peerIds[0];
-    parent_peer_caps->egm_peer_ids[0] = p2p_caps_params.egmPeerIds[0];
-
-    // Peer id from max(gpu_id0, gpu_id1) -> min(gpu_id0, gpu_id1)
     parent_peer_caps->peer_ids[1] = p2p_caps_params.peerIds[1];
-    parent_peer_caps->egm_peer_ids[1] = p2p_caps_params.egmPeerIds[1];
+
+    // RM does not set egmPeerIds for Rubin+ where the EGM carveout is no
+    // longer supported. Intead, it uses the normal peer IDs for FLA EGM.
+    if (!uvm_parent_gpu_egm_is_legacy(parent_gpu0) || !uvm_parent_gpu_egm_is_legacy(parent_gpu1)) {
+        parent_peer_caps->egm_peer_ids[0] = parent_peer_caps->peer_ids[0];
+        parent_peer_caps->egm_peer_ids[1] = parent_peer_caps->peer_ids[1];
+    }
+    else {
+        parent_peer_caps->egm_peer_ids[0] = p2p_caps_params.egmPeerIds[0];
+        parent_peer_caps->egm_peer_ids[1] = p2p_caps_params.egmPeerIds[1];
+    }
 
     parent_peer_caps->optimalNvlinkWriteCEs[0] = p2p_caps_params.optimalNvlinkWriteCEs[0];
     parent_peer_caps->optimalNvlinkWriteCEs[1] = p2p_caps_params.optimalNvlinkWriteCEs[1];
@@ -3286,12 +3316,15 @@ uvm_aperture_t uvm_gpu_egm_peer_aperture(uvm_parent_gpu_t *local_gpu, uvm_parent
     uvm_parent_gpu_peer_t *peer_caps;
     NvU8 peer_id;
 
-    if (local_gpu == remote_gpu) {
-        UVM_ASSERT(local_gpu->egm.enabled);
+    if (uvm_parent_id_equal(local_gpu->id, remote_gpu->id)) {
+        if (!uvm_parent_gpu_egm_is_legacy(local_gpu))
+            return UVM_APERTURE_SYS;
+
+        UVM_ASSERT(uvm_parent_gpu_egm_enabled(local_gpu));
         peer_id = local_gpu->egm.local_peer_id;
     }
     else {
-        UVM_ASSERT(remote_gpu->egm.enabled);
+        UVM_ASSERT(uvm_parent_gpu_egm_enabled(remote_gpu));
 
         peer_caps = parent_gpu_peer_caps(local_gpu, remote_gpu);
 
@@ -3302,7 +3335,22 @@ uvm_aperture_t uvm_gpu_egm_peer_aperture(uvm_parent_gpu_t *local_gpu, uvm_parent
             peer_id = peer_caps->egm_peer_ids[1];
     }
 
-    return UVM_APERTURE_PEER(peer_id);
+    return UVM_APERTURE_EGM_PEER(peer_id);
+}
+
+NV_STATUS uvm_test_query_egm_state(UVM_TEST_QUERY_EGM_STATE_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    uvm_gpu_t *gpu;
+
+    gpu = uvm_va_space_retain_gpu_by_uuid(va_space, &params->gpu_uuid);
+    if (!gpu)
+        return NV_ERR_INVALID_DEVICE;
+
+    params->enabled = uvm_parent_gpu_egm_enabled(gpu->parent);
+    uvm_gpu_release(gpu);
+
+    return NV_OK;
 }
 
 NvU64 uvm_gpu_peer_ref_count(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
@@ -3387,18 +3435,22 @@ bool uvm_gpu_address_is_peer(uvm_gpu_t *gpu, uvm_gpu_address_t address)
         }
     }
     else {
-        if (uvm_aperture_is_peer(address.aperture)) {
+        if (uvm_aperture_is_peer(address.aperture))
+            return true;
+
+        if (uvm_aperture_is_egm(address.aperture)) {
             uvm_parent_processor_mask_t peer_parent_gpus;
             uvm_parent_gpu_t *peer_parent_gpu;
 
             // Local EGM accesses don't go over NVLINK
-            if (gpu->parent->egm.enabled && address.aperture == gpu->parent->egm.local_peer_id)
+            if (uvm_parent_gpu_egm_enabled(gpu->parent) && uvm_parent_gpu_egm_is_legacy(gpu->parent) &&
+                UVM_APERTURE_EGM_PEER_ID(address.aperture) == gpu->parent->egm.local_peer_id)
                 return false;
 
             uvm_spin_lock(&gpu->peer_info.peer_gpu_lock);
             uvm_parent_gpus_from_processor_mask(&peer_parent_gpus, &gpu->peer_info.peer_gpu_mask);
             for_each_parent_gpu_in_mask(peer_parent_gpu, &peer_parent_gpus) {
-                if (!peer_parent_gpu->egm.enabled)
+                if (!uvm_parent_gpu_egm_enabled(peer_parent_gpu))
                     continue;
 
                 // EGM uses peer IDs but they are different from VIDMEM peer
@@ -3976,12 +4028,13 @@ NV_STATUS uvm_gpu_map_cpu_pages_no_invalidate(uvm_gpu_t *gpu, struct page *page,
 
     UVM_ASSERT(PAGE_ALIGNED(size));
 
+    // This is also the path we take when EGM is enabled but the
+    // IOMMU is OFF or in IDENTITY domain.
     dma_addr = dma_map_page(&parent_gpu->pci_dev->dev, page, 0, size, DMA_BIDIRECTIONAL);
     if (dma_mapping_error(&parent_gpu->pci_dev->dev, dma_addr))
         return NV_ERR_OPERATING_SYSTEM;
 
-    if (dma_addr < parent_gpu->dma_addressable_start ||
-        dma_addr + size - 1 > parent_gpu->dma_addressable_limit) {
+    if (dma_addr < parent_gpu->dma_addressable_start || dma_addr + size - 1 > parent_gpu->dma_addressable_limit) {
         dma_unmap_page(&parent_gpu->pci_dev->dev, dma_addr, size, DMA_BIDIRECTIONAL);
         UVM_ERR_PRINT_RL("PCI mapped range [0x%llx, 0x%llx) not in the addressable range [0x%llx, 0x%llx), GPU %s\n",
                          dma_addr,
@@ -3994,7 +4047,73 @@ NV_STATUS uvm_gpu_map_cpu_pages_no_invalidate(uvm_gpu_t *gpu, struct page *page,
 
     atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
     *dma_address_out = uvm_parent_gpu_dma_addr_to_gpu_addr(parent_gpu, dma_addr);
+    return NV_OK;
+}
 
+NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
+                                        struct page *page,
+                                        size_t size,
+                                        NvU64 *dma_address_out)
+{
+    unsigned long node_start = node_start_pfn(page_to_nid(page)) << PAGE_SHIFT;
+    dma_addr_t dma_addr = 0;
+    NV_STATUS status = NV_OK;
+
+    // This function only actually needs the parent GPU, but it takes in the
+    // sub GPU for API symmetry with uvm_gpu_map_cpu_pages().
+    UVM_ASSERT(PAGE_ALIGNED(size));
+
+    *dma_address_out = dma_addr;
+
+    // If EGM is not enabled, we don't create any mappings. They shouldn't
+    // be needed in such a case anyway.
+    // If EGM is enabled but it's legacy EGM, we also don't need a mapping
+    // because the EGM PA is based on the page's physical address in
+    // SYSMEM.
+    if (!uvm_parent_gpu_egm_enabled(parent_gpu) || uvm_parent_gpu_egm_is_legacy(parent_gpu))
+        return NV_OK;
+
+    if (uvm_parent_gpu_egm_iommu_is_identity(parent_gpu)) {
+        phys_addr_t phys_addr = page_to_phys(page);
+        dma_addr = phys_addr - node_start;
+    }
+    else {
+#if UVM_USE_DMA_IOVA_API()
+        // Note that the check below also implies kernels >= 6.17+, where
+        // the DMA IOVA API is available. RM will only enable EGM with FLA
+        // mappings and create DMA IOVA windows only on those kernel.
+        struct dma_iova_state state = {.addr = uvm_parent_gpu_egm_iova_address(parent_gpu),
+                                       .__size = uvm_parent_gpu_egm_window_size(parent_gpu)};
+        phys_addr_t phys_addr = page_to_phys(page);
+        NvU64 offset = phys_addr - node_start;
+        int ret;
+
+        UVM_ASSERT(page_to_nid(page) == parent_gpu->closest_cpu_numa_node);
+        UVM_ASSERT(size <= uvm_parent_gpu_egm_window_size(parent_gpu));
+        ret = dma_iova_link(&parent_gpu->pci_dev->dev, &state, phys_addr, offset, size, DMA_BIDIRECTIONAL, 0);
+        if (ret != 0) {
+            status = errno_to_nv_status(ret);
+            goto done;
+        }
+
+        ret = dma_iova_sync(&parent_gpu->pci_dev->dev, &state, offset, size);
+        if (ret != 0) {
+            dma_iova_unlink(&parent_gpu->pci_dev->dev, &state, offset, size, DMA_BIDIRECTIONAL, 0);
+            status = errno_to_nv_status(ret);
+            goto done;
+        }
+
+        dma_addr = offset;
+
+        atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
+
+done:
+#else
+        status = NV_ERR_NOT_SUPPORTED;
+#endif
+    }
+
+    *dma_address_out = dma_addr;
     return NV_OK;
 }
 
@@ -4018,8 +4137,27 @@ void uvm_parent_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_addr
     UVM_ASSERT(PAGE_ALIGNED(size));
 
     dma_address = gpu_addr_to_dma_addr(parent_gpu, dma_address);
+
     dma_unmap_page(&parent_gpu->pci_dev->dev, dma_address, size, DMA_BIDIRECTIONAL);
     atomic64_sub(size, &parent_gpu->mapped_cpu_pages_size);
+}
+
+void uvm_parent_gpu_unmap_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size)
+{
+    if (!uvm_parent_gpu_egm_enabled(parent_gpu) || uvm_parent_gpu_egm_is_legacy(parent_gpu))
+        return;
+
+#if UVM_USE_DMA_IOVA_API()
+    if (!uvm_parent_gpu_egm_iommu_is_identity(parent_gpu)) {
+        // See comment in uvm_gpu_map_cpu_pages_no_invalidate.
+        struct dma_iova_state state = {.addr = uvm_parent_gpu_egm_iova_address(parent_gpu),
+                                       .__size = uvm_parent_gpu_egm_window_size(parent_gpu)};
+        dma_iova_unlink(&parent_gpu->pci_dev->dev, &state, dma_address, size, DMA_BIDIRECTIONAL, 0);
+        atomic64_sub(size, &parent_gpu->mapped_cpu_pages_size);
+    }
+#endif
+
+    return;
 }
 
 // This function implements the UvmRegisterGpu API call, as described in uvm.h.

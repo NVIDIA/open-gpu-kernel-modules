@@ -246,6 +246,11 @@ AuxRetry::status AuxRetry::read(int address, NvU8 * buffer, unsigned size, unsig
     return ack;
 }
 
+bool AuxRetry::isDevicePlugged()
+{
+    return aux->isDevicePlugged();
+}
+
 //
 //    Similar to writeTransaction except that it supports writing
 //    larger spans than AuxBus::transactionSize()

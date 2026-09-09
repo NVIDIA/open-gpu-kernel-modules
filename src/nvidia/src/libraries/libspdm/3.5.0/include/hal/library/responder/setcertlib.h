@@ -24,6 +24,9 @@
 extern bool libspdm_is_in_trusted_environment(
 #if LIBSPDM_HAL_PASS_SPDM_CONTEXT
     void *spdm_context
+#else
+    // NVIDIA_EDIT: resolve the warning "function declaration isn't a prototype [-Werror=strict-prototypes]"
+    void
 #endif
     );
 

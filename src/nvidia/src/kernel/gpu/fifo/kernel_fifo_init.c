@@ -24,6 +24,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "kernel/gpu/bus/kern_bus.h"
 
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
@@ -77,6 +78,7 @@ kfifoStateLoad_IMPL
 )
 {
     NV_STATUS status = NV_OK;
+
     if (
         (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING)) ||
         (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
@@ -199,6 +201,7 @@ kfifoStateInitLocked_IMPL
     if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo) &&
         !pKernelFifo->bPerRunlistChramOverride)
     {
+
         //
         // On production platforms. SRIOV gets enabled
         // only on host RM for SR-IOV capable SKUs (See gpuInitRegistryOverrides).
@@ -211,13 +214,10 @@ kfifoStateInitLocked_IMPL
             NV_PRINTF(LEVEL_INFO, "%s per runlist channel RAM in guest RM\n",
                       pVSI->bPerRunlistChannelRamEnabled ? "Enabling" : "Disabling");
         }
-        else
+        else if (gpuIsSriovEnabled(pGpu))
         {
-            if (gpuIsSriovEnabled(pGpu))
-            {
-                NV_PRINTF(LEVEL_INFO, "Enabling per runlist channel RAM on host RM\n");
-                pKernelFifo->bUsePerRunlistChram = NV_TRUE;
-            }
+            NV_PRINTF(LEVEL_INFO, "Enabling per runlist channel RAM on host RM\n");
+            pKernelFifo->bUsePerRunlistChram = NV_TRUE;
         }
     }
 
@@ -290,6 +290,8 @@ kfifoStateDestroy_IMPL
     // Free up allocated memory.
     //
     kfifoChidMgrDestruct(pKernelFifo);
+
+    kfifoUnmapVfPage(pGpu, pKernelFifo);
 
     // Destroy regardless of NULL, if pointers are null, is just a NOP
     memdescDestroy(pKernelFifo->pRegVF);

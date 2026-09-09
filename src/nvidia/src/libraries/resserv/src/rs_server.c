@@ -1515,7 +1515,8 @@ serverControl
             if (status != NV_OK)
                 goto done;
 
-            if (!pClientEntry->pClient->bActive)
+            // Exempt internal so that RM can clean up clients
+            if (!pParams->bInternal && !pClientEntry->pClient->bActive)
             {
                 status = NV_ERR_INVALID_STATE;
                 goto done;
@@ -1531,7 +1532,9 @@ serverControl
             if (status != NV_OK)
                 goto done;
 
-            if (!pClientEntry->pClient->bActive || !pSecondClientEntry->pClient->bActive)
+            // Exempt internal so that RM can clean up clients
+            if (!pParams->bInternal &&
+                (!pClientEntry->pClient->bActive || !pSecondClientEntry->pClient->bActive))
             {
                 status = NV_ERR_INVALID_STATE;
                 goto done;

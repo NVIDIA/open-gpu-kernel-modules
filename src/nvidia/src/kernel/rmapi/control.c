@@ -252,6 +252,11 @@ serverControlApiCopyIn
 
     RMAPI_PARAM_COPY_INIT(*pParamCopy, pRmCtrlParams->pParams, pUserParams, 1, paramsSize);
 
+    if (!(pCookie->ctrlFlags & RMCTRL_FLAGS_NON_PRIVILEGED))
+    {
+        pParamCopy->flags |= RMAPI_PARAM_COPY_FLAGS_PRIVILEGED_SIZE_LIMIT;
+    }
+
     if (pCookie->apiCopyFlags & RMCTRL_API_COPY_FLAGS_SKIP_COPYIN_ZERO_BUFFER)
     {
         pParamCopy->flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;

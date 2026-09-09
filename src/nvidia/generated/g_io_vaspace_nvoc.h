@@ -170,7 +170,7 @@ struct OBJIOVASPACE {
 };
 
 
-// Vtable with 27 per-class function pointers
+// Vtable with 29 per-class function pointers
 struct NVOC_VTABLE__OBJIOVASPACE {
     NV_STATUS (*__iovaspaceConstruct___)(struct OBJIOVASPACE * /*this*/, NvU32, NvU32, NvU64, NvU64, NvU64, NvU64, NvU32);  // virtual override (vaspace) base (vaspace)
     NV_STATUS (*__iovaspaceAlloc__)(struct OBJIOVASPACE * /*this*/, NvU64, NvU64, NvU64, NvU64, NvU64, VAS_ALLOC_FLAGS, NvU64 *);  // virtual override (vaspace) base (vaspace)
@@ -192,6 +192,8 @@ struct NVOC_VTABLE__OBJIOVASPACE {
     NvBool (*__iovaspaceIsAtsEnabled__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__iovaspaceGetPasid__)(struct OBJIOVASPACE * /*this*/, NvU32 *);  // inline virtual inherited (vaspace) base (vaspace) body
     PMEMORY_DESCRIPTOR (*__iovaspaceGetPageDirBase__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
+    const GMMU_FMT * (*__iovaspaceGetGmmuFmt__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
+    NV_STATUS (*__iovaspaceGetMmuWalker__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, MMU_WALK **);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__iovaspacePinRootPageDir__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
     void (*__iovaspaceUnpinRootPageDir__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__iovaspaceInvalidateTlb__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, VAS_PTE_UPDATE_TYPE);  // virtual inherited (vaspace) base (vaspace)
@@ -307,6 +309,10 @@ static inline void iovaspaceDestroyMapping(struct OBJIOVASPACE *pIOVAS, PIOVAMAP
 #define iovaspaceGetPasid(pVAS, pPasid) iovaspaceGetPasid_DISPATCH(pVAS, pPasid)
 #define iovaspaceGetPageDirBase_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetPageDirBase__
 #define iovaspaceGetPageDirBase(pVAS, pGpu) iovaspaceGetPageDirBase_DISPATCH(pVAS, pGpu)
+#define iovaspaceGetGmmuFmt_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetGmmuFmt__
+#define iovaspaceGetGmmuFmt(pVAS, pGpu) iovaspaceGetGmmuFmt_DISPATCH(pVAS, pGpu)
+#define iovaspaceGetMmuWalker_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetMmuWalker__
+#define iovaspaceGetMmuWalker(pVAS, pGpu, ppWalk) iovaspaceGetMmuWalker_DISPATCH(pVAS, pGpu, ppWalk)
 #define iovaspacePinRootPageDir_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspacePinRootPageDir__
 #define iovaspacePinRootPageDir(pVAS, pGpu) iovaspacePinRootPageDir_DISPATCH(pVAS, pGpu)
 #define iovaspaceUnpinRootPageDir_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceUnpinRootPageDir__
@@ -401,6 +407,14 @@ static inline NV_STATUS iovaspaceGetPasid_DISPATCH(struct OBJIOVASPACE *pVAS, Nv
 
 static inline PMEMORY_DESCRIPTOR iovaspaceGetPageDirBase_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu) {
     return pVAS->__nvoc_metadata_ptr->vtable.__iovaspaceGetPageDirBase__(pVAS, pGpu);
+}
+
+static inline const GMMU_FMT * iovaspaceGetGmmuFmt_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__iovaspaceGetGmmuFmt__(pVAS, pGpu);
+}
+
+static inline NV_STATUS iovaspaceGetMmuWalker_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__iovaspaceGetMmuWalker__(pVAS, pGpu, ppWalk);
 }
 
 static inline NV_STATUS iovaspacePinRootPageDir_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu) {

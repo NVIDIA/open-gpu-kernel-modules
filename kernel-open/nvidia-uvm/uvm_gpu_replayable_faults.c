@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1259,12 +1259,11 @@ static void fault_entry_duplicate_flags(uvm_fault_service_batch_context_t *batch
 // need to be cancelled since they disappear on replay.
 //
 // The UVM driver considers two scenarios for logical permissions violation:
-// - All access types are invalid. For example, when faulting from a processor
-// that doesn't have access to the preferred location of a range group when it
-// is not migratable. In this case all accesses to the page must be cancelled.
+// - Access types are invalid, see:
+//   uvm_va_block.h:uvm_va_block_check_logical_permissions()
 // - Write/atomic accesses are invalid. Basically, when trying to modify a
-// read-only VA range. In this case we restrict fault cancelling to those types
-// of accesses.
+//   read-only VA range. In this case we restrict fault cancelling to those
+//   types of accesses.
 //
 // Return values:
 // - service_access_type: highest access type that can be serviced.
@@ -1534,8 +1533,12 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_va_space_t *gpu_va_spa
                 if (service_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE)
                     flags |= FAULT_FLAG_WRITE;
 
+                // handle_mm_fault() may call hmm_invalidate() so we can't call it with the block lock held
+                uvm_mutex_unlock(&va_block->lock);
                 UVM_HANDLE_MM_FAULT(block_context->block_context->hmm.vma,
                                     uvm_va_block_cpu_page_address(va_block, page_index), flags);
+                uvm_mutex_lock(&va_block->lock);
+
                 continue;
             }
         }

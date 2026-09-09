@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include "gpu/rpc/objrpc.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
+#include "utils/nvrange.h"
 #include "platform/sli/sli.h"
 #include "nvrm_registry.h"
 #include "gpu/gsp/gsp_static_config.h"
@@ -318,6 +319,36 @@ kmemsysStatePostLoad_IMPL
         {
             NV_PRINTF(LEVEL_ERROR, "ATS peer setup failed.\n");
             return status;
+        }
+    }
+
+    //
+    // GB20Y iGPU family (GB20B...): After the ACR HW scrubber zeros the CBC
+    // backing store in DRAM, invalidate the L2 cache (including the CBC
+    // comptag cache) so the LTC discards any stale entries and re-reads
+    // from the clean backing store on first access.
+    //
+    // gpuRequiresCbcSrScrub_HAL returns NV_TRUE for GB20Y... chips on
+    // coldboot, FLR, hibernate-resume, and driver reload — exactly the
+    // scenarios where ACR scrubs the CBC SR region.  It returns NV_FALSE
+    // for sleep resume and GC6 exit (state preserved) and for all other
+    // chip families (default HAL returns NV_FALSE).
+    //
+    // Pure invalidate (FLAGS_ALL without FLAGS_CLEAN) so we discard L2
+    // entries rather than writing potentially stale data back to DRAM.
+    //
+    {
+        NvBool bCbcScrub = gpuRequiresCbcSrScrub_HAL(pGpu);
+        if (bCbcScrub)
+        {
+            NV_STATUS l2Status;
+            l2Status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem,
+                           NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_ALL);
+            if (l2Status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "L2 CBC cache invalidate failed: 0x%x\n", l2Status);
+            }
         }
     }
 
@@ -920,15 +951,18 @@ kmemsysSetupCoherentCpuLink_IMPL
 {
     KernelBus     *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64          numaOnlineSize = 0;
+    NvU64          rmclientAvailableFbSize = 0;
     NvU64          coherentCpuFbSize = 0;
     NvU32          data32;
     NvS32          numaNodeId     = NV0000_CTRL_NO_NUMA_NODE;
+    NvU64          fbSize         = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
     NvU64          memblockSize   = 0;
     NvU64          rsvdFastSize   = 0;
     NvU64          rsvdSlowSize   = 0;
     NvU64          rsvdISOSize    = 0;
     NvU64          totalRsvdBytes = 0;
+    NvU64          wprTotalSize   = 0;
+    NV_RANGE       wprRegions[2]  = { NV_RANGE_EMPTY, NV_RANGE_EMPTY };
 
     // Parse regkey here
     if ((osReadRegistryDword(pGpu,
@@ -960,7 +994,7 @@ kmemsysSetupCoherentCpuLink_IMPL
         // Otherwise, if we are still unable to determine the CPU-coherent size, assume whole FB is CPU-coherent
         if (coherentCpuFbSize == 0)
         {
-            coherentCpuFbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+            coherentCpuFbSize = fbSize;
         }
     }
 
@@ -1001,7 +1035,10 @@ kmemsysSetupCoherentCpuLink_IMPL
 
     pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + coherentCpuFbSize;
 
-    NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+    }
 
     memmgrCalcReservedFbSpaceHal_HAL(pGpu, pMemoryManager, &rsvdFastSize, &rsvdSlowSize, &rsvdISOSize);
 
@@ -1016,24 +1053,48 @@ kmemsysSetupCoherentCpuLink_IMPL
     //
     totalRsvdBytes += NV_ALIGN_UP(pMemoryManager->rsvdMemorySize, 0x10000);
     totalRsvdBytes += (rsvdFastSize + rsvdSlowSize + rsvdISOSize);
+
     totalRsvdBytes += pMemoryManager->Ram.reservedMemSize;
+
+    //
+    // coherentCpuFbSize (from platform firmware/ACPI) may already exclude
+    // WPR1 and WPR2 regions. Ram.reservedMemSize accounts for the entire
+    // GSP carveout (non-WPR heap + WPR1 + WPR2). Subtracting the full
+    // reservedMemSize would double-count the WPR portion that was already
+    // excluded from coherentCpuFbSize. Read the actual WPR extents from
+    // hardware registers and subtract only the non-WPR remainder.
+    //
+    if (!IS_VIRTUAL(pGpu))
+    {
+        kbusCarveoutWprs_HAL(pGpu, pKernelBus, wprRegions);
+
+        if (!rangeIsEmpty(wprRegions[0]))
+            wprTotalSize += rangeLength(wprRegions[0]);
+        if (!rangeIsEmpty(wprRegions[1]))
+            wprTotalSize += rangeLength(wprRegions[1]);
+
+        if (wprTotalSize != 0 && fbSize > coherentCpuFbSize && (fbSize - coherentCpuFbSize >= wprTotalSize))
+            totalRsvdBytes -= wprTotalSize;
+    }
 
     // For SRIOV guest, take into account FB tax paid on host side for each VF
     // This FB tax is non zero only for SRIOV guest RM environment.
     totalRsvdBytes += memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
 
     //
+    // Memblock alignment is only required when onlining memory to the kernel
+    // as a NUMA node. Skip the align-down when NUMA onlining is disabled to
+    // avoid wasting memory unnecessarily.
+    //
     // TODO: make sure the onlineable memory is aligned to memblockSize
     // Currently, if we have leftover memory, it'll just be wasted because no
     // one can access it. If FB size itself is memblock size unaligned(because
     // of CBC and row remapper deductions), then the memory wastage is unavoidable.
     //
-    numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(coherentCpuFbSize - totalRsvdBytes, memblockSize);
-
     if (IS_PASSTHRU(pGpu) && pKernelMemorySystem->bBug3656943WAR)
     {
         // For passthrough case, reserved memory size is fixed as 1GB
-        NvU64 rsvdSize = 1 * 1024 * 1024 * 1024;
+        NvU64 rsvdSize = 1ULL * 1024 * 1024 * 1024;
 
         NV_ASSERT_OR_RETURN(rsvdSize >= totalRsvdBytes, NV_ERR_INVALID_STATE);
         totalRsvdBytes = rsvdSize;
@@ -1044,17 +1105,26 @@ kmemsysSetupCoherentCpuLink_IMPL
         // wasted being part of non onlined region which can't be avoided
         // per the design.
         //
-        numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(coherentCpuFbSize - totalRsvdBytes, 512 * 1024 * 1024);
+        memblockSize = 512ULL * 1024 * 1024;
+    }
+
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        rmclientAvailableFbSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(coherentCpuFbSize - totalRsvdBytes, memblockSize);
+    }
+    else
+    {
+        rmclientAvailableFbSize = coherentCpuFbSize - totalRsvdBytes;
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "coherentCpuFbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
-              coherentCpuFbSize, totalRsvdBytes, numaOnlineSize);
+              "coherentCpuFbSize: 0x%llx NUMA reserved memory size: 0x%llx client available memory size: 0x%llx\n",
+              coherentCpuFbSize, totalRsvdBytes, rmclientAvailableFbSize);
 
     if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
     {
         pKernelMemorySystem->numaOnlineBase   = KMEMSYS_FB_NUMA_ONLINE_BASE;
-        pKernelMemorySystem->numaOnlineSize   = numaOnlineSize;
+        pKernelMemorySystem->numaOnlineSize   = rmclientAvailableFbSize;
         //
         // TODO: Bug 1945658: Soldier through on GPU memory add
         // failure(which is often possible because of missing auto online
@@ -1069,11 +1139,12 @@ kmemsysSetupCoherentCpuLink_IMPL
         // VMALLOC_START region when memory is not added.
         //
         NV_ASSERT_OK(kmemsysNumaAddMemory_HAL(pGpu, pKernelMemorySystem, 0, 0,
-                                              numaOnlineSize, &numaNodeId));
+                                              rmclientAvailableFbSize, &numaNodeId));
     }
     pGpu->numaNodeId = numaNodeId;
 
-    NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, numaOnlineSize, bFlush));
+    // Validate C2C mapping for TDISP partition before creating coherent CPU mappings.
+    NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, rmclientAvailableFbSize, coherentCpuFbSize, bFlush));
 
     // Switch the toggle for coherent link mapping only if migration is successful
     pGpu->setProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING, NV_TRUE);

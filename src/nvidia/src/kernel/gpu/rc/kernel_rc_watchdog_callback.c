@@ -57,7 +57,7 @@ _krcThwapChannel
 )
 {
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
+    KernelWatchdogState *pWatchdogState = &pKernelWatchdog->watchdogState;
 
     KernelChannel *pKernelChannel = kfifoChidMgrGetKernelChannel(
         pGpu, pKernelFifo,
@@ -109,7 +109,7 @@ _krcTestChannelRecovery
 )
 {
     NvU32 chid;
-    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
+    KernelWatchdogState *pWatchdogState = &pKernelWatchdog->watchdogState;
 
     for (chid = 0; chid < 32; chid++)
     {
@@ -143,23 +143,21 @@ void krcWatchdogTimerProc
 )
 {
     KernelWatchdog *pKernelWatchdog = (KernelWatchdog *)data;
-    
-    // TODO: (Bug 4154640) Below functions are not ready to support KernelWatchdog, so bail out if pKernelWatchdog is not NULL
-    if (pKernelWatchdog == NULL)
-    {
-        //
-        // These calls shouldn't occur during a hibernate/standby enter or resume
-        // sequence or if the GPU is lost, which will cause a system hang.
-        //
-        if (gpuIsGpuFullPower(pGpu) &&
-            !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
-        {
-            KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
 
-            krcWatchdog_HAL(pGpu, pKernelRc, pKernelWatchdog);
-            krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc, pKernelWatchdog);
-            krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc, pKernelWatchdog);
-        }
+    NV_ASSERT_OR_RETURN_VOID(pKernelWatchdog != NULL);
+
+    //
+    // These calls shouldn't occur during a hibernate/standby enter or resume
+    // sequence or if the GPU is lost, which will cause a system hang.
+    //
+    if (gpuIsGpuFullPower(pGpu) &&
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+
+        krcWatchdog_HAL(pGpu, pKernelRc, pKernelWatchdog);
+        krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc, pKernelWatchdog);
+        krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc, pKernelWatchdog);
     }
 }
 
@@ -180,8 +178,8 @@ krcWatchdog_IMPL
     NvU64 currentTime;
     NvBool allNotifiersWritten = NV_TRUE;
     NV_STATUS rmStatus;
-    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
-    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
+    KernelWatchdogState *pWatchdogState = &pKernelWatchdog->watchdogState;
+    KernelWatchdogPersistent *pWatchdogPersistent = &pKernelWatchdog->watchdogPersistent;
 
     // Do nothing if robust channels are not enabled
     if (!pKernelRc->bRobustChannelsEnabled)
@@ -201,8 +199,8 @@ krcWatchdog_IMPL
             (WATCHDOG_RESET_QUEUE_SIZE - 1));
     }
 
-    if ((WATCHDOG_FLAGS_DISABLED !=
-         (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED)) &&
+    if ((WATCHDOG_FLAGS_DISABLED != (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED)) &&
+        (WATCHDOG_FLAGS_PAUSED   != (pWatchdogState->flags & WATCHDOG_FLAGS_PAUSED))   &&
         gpuIsGpuFullPower(pGpu))
     {
         //
@@ -389,11 +387,12 @@ void krcWatchdogCallbackVblankRecovery_IMPL
     NvU32           head;
     KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     MC_ENGINE_BITVECTOR intrDispPending;
-    KernelWatchdogState *pWatchdogState = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogState : &pKernelRc->watchdog);
-    KernelWatchdogPersistent *pWatchdogPersistent = ((pKernelWatchdog != NULL) ? &pKernelWatchdog->watchdogPersistent : &pKernelRc->watchdogPersistent);
+    KernelWatchdogState *pWatchdogState = &pKernelWatchdog->watchdogState;
+    KernelWatchdogPersistent *pWatchdogPersistent = &pKernelWatchdog->watchdogPersistent;
 
-    if (!pKernelRc->bRobustChannelsEnabled ||
+    if (!pKernelRc->bRobustChannelsEnabled                ||
         (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED) ||
+        (pWatchdogState->flags & WATCHDOG_FLAGS_PAUSED)   ||
         !gpuIsGpuFullPower(pGpu) || (pKernelDisplay == NULL))
     {
         return;

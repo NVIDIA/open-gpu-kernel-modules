@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,7 +56,6 @@
 
 #include <ctrl/ctrl0073/ctrl0073dfp.h> // NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS
 #include <ctrl/ctrl0073/ctrl0073system.h> // NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH
-#include <ctrl/ctrl0080/ctrl0080gpu.h> // NV0080_CTRL_CMD_GPU_*
 #include <ctrl/ctrl0080/ctrl0080unix.h> // NV0080_CTRL_OS_UNIX_VT_SWITCH_*
 #include <ctrl/ctrl30f1.h> // NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_*
 #include <ctrl/ctrl5070/ctrl5070rg.h> // NV5070_CTRL_CMD_GET_FRAMELOCK_HEADER_LOCKPINS
@@ -793,10 +792,12 @@ static NvBool HeadStateIsHdmiTmdsDeepColor(const NVDispHeadStateEvoRec *pHeadSta
         switch (pHeadState->pixelDepth) {
             case NVKMS_PIXEL_DEPTH_18_444:
             case NVKMS_PIXEL_DEPTH_24_444:
-            case NVKMS_PIXEL_DEPTH_20_422:
             case NVKMS_PIXEL_DEPTH_16_422:
+            case NVKMS_PIXEL_DEPTH_20_422:
+            case NVKMS_PIXEL_DEPTH_24_422:
                 return FALSE;
             case NVKMS_PIXEL_DEPTH_30_444:
+            case NVKMS_PIXEL_DEPTH_36_444:
                 return TRUE;
         }
     }
@@ -1569,34 +1570,6 @@ static void UnlockLockGroup(NVLockGroup *pLockGroup)
         pDispEvo->pLockGroup = NULL;
     }
 
-    /*
-     * Disable any SLI video bridge features we may have enabled for locking.
-     * This is a separate loop from the above in order to handle both cases:
-     *
-     * a) Multiple pDispEvos on the same pDevEvo (linked RM-SLI): all disps in
-     *    the lock group will share the same pDevEvo.  In that case we should
-     *    not call RM to disable the video bridge power across the entire
-     *    device until we've disabled locking on all GPUs).  This loop will
-     *    call nvEvoUpdateSliVideoBridge() redundantly for the same pDevEvo,
-     *    but those calls will be filtered out.  (If we did this in the loop
-     *    above, RM would broadcast the video bridge disable call to all pDisps
-     *    on the first call, even before we've disabled locking on them.)
-     *
-     * b) Each pDispEvo on a separate pDevEvo (client-side SLI or no SLI, when
-     *    a video bridge is present): in that case each pDispEvo has a separate
-     *    pDevEvo, and we need to call nvEvoUpdateSliVideoBridge() on each.
-     *    (It would be okay in this case to call nvEvoUpdateSliVideoBridge() in
-     *    the loop above since it will only disable the video bridge power for
-     *    one GPU at a time.)
-     */
-    for (i = (int)pRasterLockGroup->numDisps - 1; i >= 0; i--) {
-        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[i];
-        NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-
-        pDevEvo->sli.bridge.powerNeededForRasterLock = FALSE;
-        nvEvoUpdateSliVideoBridge(pDevEvo);
-    }
-
     nvFree(pLockGroup);
 }
 
@@ -1690,40 +1663,6 @@ void nvEvoLockStatePostModeset(NVDevEvoPtr pDevEvo, const NvBool doRasterLock)
     }
 
     nvFree(pRasterLockGroups);
-}
-
-/*!
- * Updates the hardware based on software needs tracked in pDevEvo->sli.bridge.
- * Call this function after changing any of those needs variables.
- */
-void nvEvoUpdateSliVideoBridge(NVDevEvoPtr pDevEvo)
-{
-    NV0080_CTRL_GPU_SET_VIDLINK_PARAMS params = { 0 };
-    const NvBool enable = pDevEvo->sli.bridge.powerNeededForRasterLock;
-    NvU32 status;
-
-    if (pDevEvo->sli.bridge.powered == enable) {
-        return;
-    }
-
-    if (enable) {
-        /* SLI should be prohibited earlier if no bridge is present. */
-        nvAssert(pDevEvo->sli.bridge.present);
-    }
-
-    params.enable = enable ?
-        NV0080_CTRL_GPU_SET_VIDLINK_ENABLE_TRUE :
-        NV0080_CTRL_GPU_SET_VIDLINK_ENABLE_FALSE;
-
-    status = nvRmApiControl(nvEvoGlobal.clientHandle,
-                            pDevEvo->deviceHandle,
-                            NV0080_CTRL_CMD_GPU_SET_VIDLINK,
-                            &params, sizeof(params));
-    if (status != NV_OK) {
-        nvAssert(!"NV0080_CTRL_CMD_GPU_SET_VIDLINK failed");
-    }
-
-    pDevEvo->sli.bridge.powered = enable;
 }
 
 /*
@@ -2153,18 +2092,6 @@ exitHeadLoop:
             } else {
                 gpusLocked = TRUE;
             }
-        }
-
-        /*
-         * On certain GPUs, we need to enable the video bridge (MIO pads) when
-         * enabling rasterlock.  Note that we don't disable in this function,
-         * so if gpusLocked is true for any iteration of these loops, this bit
-         * will be on.
-         */
-        if (gpusLocked && NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
-                NV0073_CTRL_SYSTEM_CAPS_RASTER_LOCK_NEEDS_MIO_POWER)) {
-            pDevEvo->sli.bridge.powerNeededForRasterLock = TRUE;
-            nvEvoUpdateSliVideoBridge(pDevEvo);
         }
 
         /* If anything changed, update the hardware */
@@ -2696,7 +2623,7 @@ NvBool nvGetDefaultDpyColor(
     return TRUE;
 }
 
-NvBool nvChooseColorRangeEvo(
+void nvChooseColorRangeEvo(
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     const enum NvKmsDpyAttributeCurrentColorFormatValue colorFormat,
     const enum NvKmsDpyAttributeColorBpcValue colorBpc,
@@ -2718,25 +2645,37 @@ NvBool nvChooseColorRangeEvo(
     } else {
         *pColorRange = requestedColorRange;
     }
-
-    return TRUE;
 }
 
 static enum NvKmsDpyAttributeColorBpcValue ChooseColorBpc(
+    const NVDpyEvoRec *pDpyEvo,
     const enum NvKmsDpyAttributeColorBpcValue requested,
     const enum NvKmsDpyAttributeColorBpcValue max,
     const enum NvKmsDpyAttributeColorBpcValue min)
 {
-    if ((requested == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) ||
-            (requested > max)) {
-        return max;
+    enum NvKmsDpyAttributeColorBpcValue result = requested;
+
+    if ((result == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) ||
+            (result > max)) {
+        result = max;
+    } else if (requested < min) {
+        result = min;
     }
 
-    if (requested < min) {
-        return min;
+    if (nvDpyIsHdmiEvo(pDpyEvo) &&
+        !nvDpyIsHdmiDepth30Evo(pDpyEvo) &&
+        (result == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10)) {
+        /*
+         * It's possible that (minBpc < result < maxBpc), result = 10bpc,
+         * and 10bpc is unsupported (Turing HDMI). Check this case here. This
+         * should only happen if a bpc was explicitly requested, since otherwise
+         * the maxBpc is chosen, and maxBpc is guaranteed to be supported. 
+         */
+        nvAssert(requested != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN);
+        return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
     }
 
-    return requested;
+    return result;
 }
 
 static NvBool IsYuv42010BPCSupported(
@@ -2823,34 +2762,50 @@ NvBool nvChooseCurrentColorFormatAndRangeEvo(
             maxBpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
         }
 
-        newColorBpc = ChooseColorBpc(requestedColorBpc,
+        newColorBpc = ChooseColorBpc(pDpyEvo,
+                                     requestedColorBpc,
                                      maxBpc,
                                      NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
 
         nvAssert(colorFormatsInfo.rgb444.maxBpc >=
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
     } else {
+        NvBool colorFormatSpecified = TRUE;
         /*
          * Note this is an assignment between different enum types. Checking the
          * value of requested color format and then assigning the value to current
          * color format, to avoid warnings about cross-enum assignment.
          */
         switch (requestedColorFormat) {
+        case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN:
+            colorFormatSpecified = FALSE;
+            /* fall through */
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_RGB:
             newColorFormat = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB;
-            newColorBpc = ChooseColorBpc(requestedColorBpc,
+            newColorBpc = ChooseColorBpc(pDpyEvo,
+                                         requestedColorBpc,
                                          colorFormatsInfo.rgb444.maxBpc,
                                          colorFormatsInfo.rgb444.minBpc);
-            break;
+            if (colorFormatSpecified ||
+                ((newColorBpc == requestedColorBpc) ||
+                 /* If neither a color format nor bpc is specified, prefer RGB at its max bpc */
+                 (requestedColorBpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN))) {
+
+                break;
+            }
+            /* fall through */
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr422:
             newColorFormat = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422;
-            newColorBpc = ChooseColorBpc(requestedColorBpc,
+            newColorBpc = ChooseColorBpc(pDpyEvo,
+                                         requestedColorBpc,
                                          colorFormatsInfo.yuv422.maxBpc,
                                          colorFormatsInfo.yuv422.minBpc);
-            break;
+            if (colorFormatSpecified || (newColorBpc == requestedColorBpc)) break;
+            /* fall through */
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr444:
             newColorFormat = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444;
-            newColorBpc = ChooseColorBpc(requestedColorBpc,
+            newColorBpc = ChooseColorBpc(pDpyEvo,
+                                         requestedColorBpc,
                                          colorFormatsInfo.yuv444.maxBpc,
                                          colorFormatsInfo.yuv444.minBpc);
             break;
@@ -2869,15 +2824,32 @@ NvBool nvChooseCurrentColorFormatAndRangeEvo(
         return FALSE;
     }
 
-    if (!nvChooseColorRangeEvo(requestedColorRange, newColorFormat,
-                               newColorBpc, &newColorRange)) {
-    }
+    nvChooseColorRangeEvo(requestedColorRange, newColorFormat,
+                          newColorBpc, &newColorRange);
 
     *pCurrentColorFormat = newColorFormat;
     *pCurrentColorRange = newColorRange;
     *pCurrentColorBpc = newColorBpc;
 
     return TRUE;
+}
+
+void nvUpdateCoreFid(
+    NVDispEvoPtr pDispEvo,
+    const NvU32 apiHead,
+    NVEvoUpdateState *pUpdateState
+)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+
+    if (!pDevEvo->supportsFlipSynchronizedInfoframes) {
+        return;
+    }
+
+    pApiHeadState->coreFid++;
+    pDevEvo->hal->SetCoreFid(pDispEvo, apiHead, pUpdateState);
 }
 
 void nvUpdateCurrentHardwareColorFormatAndRangeEvo(
@@ -3191,6 +3163,12 @@ void nvChooseDitheringEvo(
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
                 currDithering.depth =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_10_BITS;
+                break;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+                nvEvoLogDevDebug(pConnectorEvo->pDispEvo->pDevEvo,
+                                 EVO_LOG_WARN,
+                                 "Dithering is not supported for 12 BPC");
+                currDithering.enabled = FALSE;
                 break;
             default:
                 nvAssert(!"Unknown BPC");
@@ -3540,45 +3518,193 @@ NvBool nvFramelockSetControlUnsyncEvo(NVDispEvoPtr pDispEvo, const NvU32 headMas
 }
 
 /*
- * UpdateEvoLockState()
+ * LockState* -- helpers for UpdateEvoLockState.
  *
- * Update the hardware based on the Assembly state, if it is different from the
- * current Armed state.  This should be called after transitioning through
- * states in the EVO state machine to propagate all of the necessary values to
- * HW.
+ * LockStateOp identifies one of the four lock state operations using
+ * one-hot encoding. The order of the values is important, because
+ * they are iterated in sequence by LockStateNotifyGls() to notify
+ * GLS in the correct order.
  */
-static void UpdateEvoLockState(void)
+typedef enum {
+    LOCK_STATE_DISABLE_CLIENT = (1 << 0),
+    LOCK_STATE_DISABLE_SERVER = (1 << 1),
+    LOCK_STATE_ENABLE_SERVER  = (1 << 2),
+    LOCK_STATE_ENABLE_CLIENT  = (1 << 3),
+} LockStateOp;
+
+#define IS_SERVER_OP(op) (!!((op) & (LOCK_STATE_DISABLE_SERVER | LOCK_STATE_ENABLE_SERVER)))
+#define IS_ENABLE_OP(op) (!!((op) & (LOCK_STATE_ENABLE_SERVER  | LOCK_STATE_ENABLE_CLIENT)))
+
+static void LockStateApplyChange(
+    LockStateOp op,
+    NvU8 cache[][NVKMS_MAX_HEADS_PER_DISP])
 {
-    NVDispEvoPtr pDispEvo;
-    NVFrameLockEvoPtr pFrameLockEvo;
-    unsigned int sd;
+    NvBool enable    = IS_ENABLE_OP(op);
+    NvBool server    = IS_SERVER_OP(op);
     NVDevEvoPtr pDevEvo;
-    NvBool ret;
-    enum {
-        FIRST_ITERATION,
-        DISABLE_UNNEEDED_CLIENTS = FIRST_ITERATION,
-        DISABLE_UNNEEDED_SERVER,
-        COMPUTE_HOUSE_SYNC,
-        UPDATE_HOUSE_SYNC,
-        ENABLE_SERVER,
-        ENABLE_CLIENTS,
-        LAST_ITERATION = ENABLE_CLIENTS,
-    } iteration;
-    struct {
-        unsigned char disableServer:1;
-        unsigned char disableClient:1;
-        unsigned char enableServer:1;
-        unsigned char enableClient:1;
-    } cache[NV_MAX_DEVICES][NVKMS_MAX_HEADS_PER_DISP];
+    NVDispEvoPtr pDispEvo;
+    unsigned int sd;
 
-    nvkms_memset(cache, 0, sizeof(cache));
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        if (!pDevEvo->gpus || pDevEvo->displayHandle == 0) {
+            continue;
+        }
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+            NvU32 *pMaskArmed = server ? &pEvoSubDev->frameLockServerMaskArmed
+                                       : &pEvoSubDev->frameLockClientMaskArmed;
+            NvU32  maskAssy   = server ?  pEvoSubDev->frameLockServerMaskAssy
+                                       :  pEvoSubDev->frameLockClientMaskAssy;
+            NvU32  needsMask  = enable ? (maskAssy    & ~(*pMaskArmed))
+                                       : (*pMaskArmed &  ~maskAssy);
+            unsigned int head;
+            NvBool ret;
 
-    /* XXX NVKMS TODO: idle base channel, first? */
+            if (!needsMask) {
+                continue;
+            }
 
-    /*
-     * Stereo lock mode is enabled if all heads are either raster locked or
-     * frame locked, and if all heads are not using interlaced mode.
-     */
+            ret = enable ? FramelockSetControlSync(pDispEvo, needsMask, server)
+                         : nvFramelockSetControlUnsyncEvo(pDispEvo, needsMask, server);
+            nvAssert(ret);
+            if (!ret) {
+                continue;
+            }
+
+            if (enable) {
+                *pMaskArmed |= needsMask;
+            } else {
+                *pMaskArmed &= ~needsMask;
+            }
+
+            FOR_ALL_HEADS(head, needsMask) {
+                cache[GpuIndex(pDevEvo, sd)][head] |= op;
+            }
+        }
+    }
+}
+
+static void LockStateComputeAndUpdateHouseSync(void)
+{
+    NVFrameLockEvoPtr pFrameLockEvo;
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    unsigned int sd;
+
+    FOR_ALL_EVO_FRAMELOCKS(pFrameLockEvo) {
+        pFrameLockEvo->houseSyncAssy = FALSE;
+    }
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        if (!pDevEvo->gpus || pDevEvo->displayHandle == 0) {
+            continue;
+        }
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+            if (pEvoSubDev->frameLockHouseSync) {
+                pDispEvo->pFrameLockEvo->houseSyncAssy = TRUE;
+            }
+        }
+    }
+    FOR_ALL_EVO_FRAMELOCKS(pFrameLockEvo) {
+        /*
+         * Since nvFrameLockSetUseHouseSyncEvo sets house sync output mode
+         * in addition to house sync input mode and input polarity, this
+         * needs to be done unconditionally, even if a house sync state
+         * transition hasn't occurred.
+         */
+        if (!nvFrameLockSetUseHouseSyncEvo(pFrameLockEvo,
+                                           pFrameLockEvo->houseSyncAssy)) {
+            nvAssert(!"Setting house sync failed");
+        } else {
+            pFrameLockEvo->houseSyncArmed = pFrameLockEvo->houseSyncAssy;
+        }
+    }
+}
+
+static void LockStateProgramGpuExtRefClkAndHeadControl(void)
+{
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    unsigned int sd;
+
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        if (!pDevEvo->gpus || pDevEvo->displayHandle == 0) {
+            continue;
+        }
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            NvBool needUpdate = FALSE;
+            NVEvoUpdateState updateState = { };
+            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+            NvU32 extRefClkMaskAssy, extRefClkUpdateMask;
+            NvU32 possibleHeadMask;
+            NvBool refClkChanged[NVKMS_MAX_HEADS_PER_DISP] = { FALSE };
+            unsigned int head;
+
+            extRefClkMaskAssy = pEvoSubDev->frameLockExtRefClkMaskAssy;
+
+            /* Set the external reference clock, if different */
+            extRefClkUpdateMask = extRefClkMaskAssy ^
+                pEvoSubDev->frameLockExtRefClkMaskArmed;
+
+            FOR_ALL_HEADS(head, extRefClkUpdateMask) {
+                NvBool extRefClkNeeded =
+                    !!(extRefClkMaskAssy & (1 << head));
+
+                SetRefClk(pDevEvo, sd, head, extRefClkNeeded, &updateState);
+                refClkChanged[head] = TRUE;
+
+                /* Update armed state for this head */
+                pEvoSubDev->frameLockExtRefClkMaskArmed =
+                    (pEvoSubDev->frameLockExtRefClkMaskArmed & (~(1 << head))) |
+                    (extRefClkMaskAssy & (1 << head));
+            }
+
+            /*
+             * After the above process, the armed state should match
+             * assembly state.
+             */
+            nvAssert(extRefClkMaskAssy ==
+                     pEvoSubDev->frameLockExtRefClkMaskArmed);
+
+            /* Update the HEAD_SET_CONTROL EVO method state */
+            possibleHeadMask = nvGetActiveHeadMask(pDispEvo);
+
+            FOR_ALL_HEADS(head, possibleHeadMask) {
+                if (nvkms_memcmp(&pEvoSubDev->headControl[head],
+                                 &pEvoSubDev->headControlAssy[head],
+                                 sizeof(NVEvoHeadControl))) {
+
+                    pEvoSubDev->headControl[head] =
+                        pEvoSubDev->headControlAssy[head];
+                    pDevEvo->hal->SetHeadControl(pDevEvo, sd, head,
+                                                 &updateState);
+                    needUpdate = TRUE;
+                } else if (refClkChanged[head]) {
+                    needUpdate = TRUE;
+                }
+            }
+
+            if (needUpdate) {
+                nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
+                                      TRUE /* releaseElv */);
+            }
+        }
+    }
+}
+
+
+/*
+ * Compute and cache whether each GPU can use stereo lock mode.
+ *
+ * Stereo lock mode is enabled if all heads are either raster locked or
+ * frame locked, and if all heads are not using interlaced mode.
+ */
+static void LockStateComputeStereoLockMode(void)
+{
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    unsigned int sd;
+
     FOR_ALL_EVO_DEVS(pDevEvo) {
         if (!pDevEvo->gpus) {
             continue;
@@ -3643,311 +3769,116 @@ static void UpdateEvoLockState(void)
             }
         }
     }
+}
+
+/*
+ * Inform GLS of all framelock enable/disable actions recorded in cache.
+ *
+ * GLS uses this information to do things like enable fake stereo to get
+ * stereo sync when stereo apps start without flickering the displays.
+ *
+ * Events must be sent in the same order the hardware actions were taken:
+ * disable clients, disable server, enable server, enable clients.
+ */
+static void LockStateNotifyGls(
+    const NvU8 cache[][NVKMS_MAX_HEADS_PER_DISP])
+{
+    LockStateOp op;
+
+    for (op = LOCK_STATE_DISABLE_CLIENT; op <= LOCK_STATE_ENABLE_CLIENT; op <<= 1) {
+        NVDevEvoPtr pDevEvo;
+        NVDispEvoPtr pDispEvo;
+        unsigned int sd;
+
+        FOR_ALL_EVO_DEVS(pDevEvo) {
+            if (!pDevEvo->gpus || pDevEvo->displayHandle == 0) {
+                continue;
+            }
+            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+                NvU32 head;
+                for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
+                    if (!nvHeadIsActive(pDispEvo, head)) {
+                        continue;
+                    }
+                    if (cache[GpuIndex(pDevEvo, sd)][head] & op) {
+                        nvUpdateGLSFramelock(pDispEvo, head,
+                                             IS_ENABLE_OP(op),
+                                             IS_SERVER_OP(op));
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+ * UpdateEvoLockState()
+ *
+ * Update the hardware based on the Assembly state, if it is different from the
+ * current Armed state.  This should be called after transitioning through
+ * states in the EVO state machine to propagate all of the necessary values to
+ * HW.
+ */
+static void LockStateAssertAssyArmed(void)
+{
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    unsigned int sd;
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+        if (!pDevEvo->gpus || pDevEvo->displayHandle == 0) {
+            continue;
+        }
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            nvAssert(pDevEvo->gpus[sd].frameLockServerMaskArmed ==
+                     pDevEvo->gpus[sd].frameLockServerMaskAssy);
+            nvAssert(pDevEvo->gpus[sd].frameLockClientMaskArmed ==
+                     pDevEvo->gpus[sd].frameLockClientMaskAssy);
+        }
+    }
+}
+
+static void UpdateEvoLockState(void)
+{
+    NvU8 cache[NV_MAX_DEVICES][NVKMS_MAX_HEADS_PER_DISP];
+    nvkms_memset(cache, 0, sizeof(cache));
+
+    /* XXX NVKMS TODO: idle base channel, first? */
+
+    LockStateComputeStereoLockMode();
 
     /*
      * Go through every GPU on the system, making its framelock state match the
      * assembly state that we've saved.
      *
-     * We do this in six steps, in order to keep the overall system state sane
-     * throughout:
+     * We do this in six steps. The GPU EVO methods (ext ref clk, head control)
+     * are programmed after house sync and before enabling server/clients,
+     * ensuring the GPU heads are listening for crashlock pulses before the
+     * P2061 starts sending them.
+     *
      * 1. Disable any clients we no longer need
      * 2. Disable server we no longer need
-     * 3. Compute which framelock devices need house sync
-     * 4. Update framelock devices with new house sync info
+     * 3. Compute which framelock devices (e.g. P2061 boards) need house sync
+     *    and update them
+     * 4. Program GPU ext ref clk and head control (EVO methods)
      * 5. Enable new server
      * 6. Enable new clients
+     *
+     * Note: pDevEvo->displayHandle == 0 may happen during init, when setting
+     * initial modes on one device while other devices have not yet been
+     * allocated. Skip these devices for now; we'll come back later when
+     * they've been brought up.
      */
-    for (iteration = FIRST_ITERATION;
-         iteration <= LAST_ITERATION;
-         iteration++) {
+    LockStateApplyChange(LOCK_STATE_DISABLE_CLIENT, cache);
+    LockStateApplyChange(LOCK_STATE_DISABLE_SERVER, cache);
+    LockStateComputeAndUpdateHouseSync();
+    LockStateProgramGpuExtRefClkAndHeadControl();
+    LockStateApplyChange(LOCK_STATE_ENABLE_SERVER,  cache);
+    LockStateApplyChange(LOCK_STATE_ENABLE_CLIENT,  cache);
 
-        if (iteration == COMPUTE_HOUSE_SYNC) {
-            /* First, clear assy state */
-            FOR_ALL_EVO_FRAMELOCKS(pFrameLockEvo) {
-                pFrameLockEvo->houseSyncAssy = FALSE;
-            }
-        }
+    /* Verify all assy masks were fully promoted to armed. */
+    LockStateAssertAssyArmed();
 
-        if (iteration == UPDATE_HOUSE_SYNC) {
-            FOR_ALL_EVO_FRAMELOCKS(pFrameLockEvo) {
-                /*
-                 * Since nvFrameLockSetUseHouseSyncEvo sets house sync
-                 * output mode in addition to house sync input mode and
-                 * input polarity, this needs to be done unconditionally,
-                 * even if a house sync state transition hasn't occurred.
-                 */
-                if (!nvFrameLockSetUseHouseSyncEvo(
-                        pFrameLockEvo, pFrameLockEvo->houseSyncAssy)) {
-                    nvAssert(!"Setting house sync failed");
-                } else {
-                    pFrameLockEvo->houseSyncArmed =
-                        pFrameLockEvo->houseSyncAssy;
-                }
-            }
-
-            continue;
-        }
-
-        FOR_ALL_EVO_DEVS(pDevEvo) {
-
-            if (!pDevEvo->gpus) {
-                continue;
-            }
-
-            if (pDevEvo->displayHandle == 0) {
-                /*
-                 * This may happen during init, when setting initial modes on
-                 * one device while other devices have not yet been allocated.
-                 * Skip these devices for now; we'll come back later when
-                 * they've been brought up.
-                 */
-                continue;
-            }
-
-            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-                NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
-                NvBool server = FALSE;
-                NvU32 needsEnableMask = 0, needsDisableMask = 0;
-                unsigned int head;
-
-                switch (iteration) {
-                case COMPUTE_HOUSE_SYNC:
-                    /* Accumulate house sync across pDisps */
-                    if (pEvoSubDev->frameLockHouseSync) {
-                        pDispEvo->pFrameLockEvo->houseSyncAssy = TRUE;
-                    }
-                    break;
-                case DISABLE_UNNEEDED_CLIENTS:
-                    needsDisableMask = pEvoSubDev->frameLockClientMaskArmed &
-                                       ~pEvoSubDev->frameLockClientMaskAssy;
-                    server = FALSE;
-                    break;
-                case DISABLE_UNNEEDED_SERVER:
-                    needsDisableMask = pEvoSubDev->frameLockServerMaskArmed &
-                                       ~pEvoSubDev->frameLockServerMaskAssy;
-                    server = TRUE;
-                    break;
-                case ENABLE_SERVER:
-                    needsEnableMask = pEvoSubDev->frameLockServerMaskAssy &
-                                      ~pEvoSubDev->frameLockServerMaskArmed;
-                    server = TRUE;
-                    break;
-                case ENABLE_CLIENTS:
-                    needsEnableMask = pEvoSubDev->frameLockClientMaskAssy &
-                                      ~pEvoSubDev->frameLockClientMaskArmed;
-                    server = FALSE;
-                    break;
-                case UPDATE_HOUSE_SYNC:
-                    nvAssert(!"Shouldn't reach here");
-                    break;
-                }
-
-                if (needsDisableMask) {
-                    ret = nvFramelockSetControlUnsyncEvo(pDispEvo,
-                                                         needsDisableMask,
-                                                         server);
-                    nvAssert(ret);
-
-                    if (ret) {
-                        if (server) {
-                            pEvoSubDev->frameLockServerMaskArmed &=
-                                ~needsDisableMask;
-
-                            FOR_ALL_HEADS(head, needsDisableMask) {
-                                cache[GpuIndex(pDevEvo, sd)][head].disableServer = TRUE;
-                            }
-                        } else {
-                            pEvoSubDev->frameLockClientMaskArmed &=
-                                ~needsDisableMask;
-
-                            FOR_ALL_HEADS(head, needsDisableMask) {
-                                cache[GpuIndex(pDevEvo, sd)][head].disableClient = TRUE;
-                            }
-                        }
-                    }
-                }
-                if (needsEnableMask) {
-                    ret = FramelockSetControlSync(pDispEvo,
-                                                  needsEnableMask,
-                                                  server);
-
-                    nvAssert(ret);
-
-                    if (ret) {
-                        if (server) {
-                            pEvoSubDev->frameLockServerMaskArmed |=
-                                needsEnableMask;
-
-                            FOR_ALL_HEADS(head, needsEnableMask) {
-                                cache[GpuIndex(pDevEvo, sd)][head].enableServer = TRUE;
-                            }
-                        } else {
-                            pEvoSubDev->frameLockClientMaskArmed |=
-                                needsEnableMask;
-
-                            FOR_ALL_HEADS(head, needsEnableMask) {
-                                cache[GpuIndex(pDevEvo, sd)][head].enableClient = TRUE;
-                            }
-                        }
-                    }
-                }
-
-                /* After the above process, we should have "promoted" assy
-                 * to armed */
-                if (iteration == LAST_ITERATION) {
-                    nvAssert(pEvoSubDev->frameLockServerMaskArmed ==
-                             pEvoSubDev->frameLockServerMaskAssy);
-                    nvAssert(pEvoSubDev->frameLockClientMaskArmed ==
-                             pEvoSubDev->frameLockClientMaskAssy);
-                }
-            }
-        }
-    }
-
-    /*
-     * Update the EVO HW state.  Make this a separate set of loops to not
-     * confuse the one above
-     */
-    FOR_ALL_EVO_DEVS(pDevEvo) {
-
-        if (!pDevEvo->gpus) {
-            continue;
-        }
-
-        if (pDevEvo->displayHandle == 0) {
-            continue;
-        }
-
-        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-            NvBool needUpdate = FALSE;
-            NVEvoUpdateState updateState = { };
-            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
-            NvU32 extRefClkMaskAssy, extRefClkUpdateMask;
-            NvU32 possibleHeadMask;
-            NvBool refClkChanged[NVKMS_MAX_HEADS_PER_DISP] = { FALSE };
-            unsigned int head;
-
-            extRefClkMaskAssy = pEvoSubDev->frameLockExtRefClkMaskAssy;
-
-            /* Set the external reference clock, if different */
-            extRefClkUpdateMask = extRefClkMaskAssy ^
-                pEvoSubDev->frameLockExtRefClkMaskArmed;
-
-            FOR_ALL_HEADS(head, extRefClkUpdateMask) {
-                NvBool extRefClkNeeded =
-                    !!(extRefClkMaskAssy & (1 << head));
-
-                SetRefClk(pDevEvo, sd, head, extRefClkNeeded, &updateState);
-                refClkChanged[head] = TRUE;
-
-                /* Update armed state for this head */
-                pEvoSubDev->frameLockExtRefClkMaskArmed =
-                    (pEvoSubDev->frameLockExtRefClkMaskArmed &
-                     (~(1 << head))) |
-                    (extRefClkMaskAssy & (1 << head));
-            }
-            /* After the above process, the armed state should match
-             * assembly state */
-            nvAssert(extRefClkMaskAssy ==
-                     pEvoSubDev->frameLockExtRefClkMaskArmed);
-
-            /* Update the HEAD_SET_CONTROL EVO method state */
-
-            possibleHeadMask = nvGetActiveHeadMask(pDispEvo);
-
-            FOR_ALL_HEADS(head, possibleHeadMask) {
-                if (nvkms_memcmp(&pEvoSubDev->headControl[head],
-                                 &pEvoSubDev->headControlAssy[head],
-                                 sizeof(NVEvoHeadControl))) {
-
-                    pEvoSubDev->headControl[head] =
-                        pEvoSubDev->headControlAssy[head];
-                    pDevEvo->hal->SetHeadControl(pDevEvo, sd, head,
-                                                 &updateState);
-                    needUpdate = TRUE;
-                } else if (refClkChanged[head]) {
-                    needUpdate = TRUE;
-                }
-            }
-
-            if (needUpdate) {
-                nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
-                                      TRUE /* releaseElv */);
-            }
-        }
-    }
-
-    /*
-     * Inform GLS of framelock changes.  It uses this information to do things
-     * like enable fake stereo to get stereo sync when stereo apps start
-     * without flickering the displays.
-     */
-    for (iteration = FIRST_ITERATION;
-         iteration <= LAST_ITERATION;
-         iteration++) {
-
-        FOR_ALL_EVO_DEVS(pDevEvo) {
-
-            if (!pDevEvo->gpus) {
-                continue;
-            }
-
-            if (pDevEvo->displayHandle == 0) {
-                continue;
-            }
-
-            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-                NvU32 head;
-                for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-                    NvBool sendEvent = FALSE;
-                    NvBool enable = FALSE, server = FALSE;
-
-                    if (!nvHeadIsActive(pDispEvo, head)) {
-                        continue;
-                    }
-
-                    switch (iteration) {
-                    case DISABLE_UNNEEDED_CLIENTS:
-                        if (cache[GpuIndex(pDevEvo, sd)][head].disableClient) {
-                            enable = FALSE;
-                            server = FALSE;
-                            sendEvent = TRUE;
-                        }
-                        break;
-                    case DISABLE_UNNEEDED_SERVER:
-                        if (cache[GpuIndex(pDevEvo, sd)][head].disableServer) {
-                            enable = FALSE;
-                            server = TRUE;
-                            sendEvent = TRUE;
-                        }
-                        break;
-                    case ENABLE_SERVER:
-                        if (cache[GpuIndex(pDevEvo, sd)][head].enableServer) {
-                            enable = TRUE;
-                            server = TRUE;
-                            sendEvent = TRUE;
-                        }
-                        break;
-                    case ENABLE_CLIENTS:
-                        if (cache[GpuIndex(pDevEvo, sd)][head].enableClient) {
-                            enable = TRUE;
-                            server = FALSE;
-                            sendEvent = TRUE;
-                        }
-                        break;
-                    case UPDATE_HOUSE_SYNC:
-                    case COMPUTE_HOUSE_SYNC:
-                        sendEvent = FALSE;
-                        break;
-                    }
-
-                    if (sendEvent) {
-                        nvUpdateGLSFramelock(pDispEvo, head, enable, server);
-                    }
-                }
-            }
-        }
-    }
+    LockStateNotifyGls(cache);
 }
 
 /*
@@ -4728,7 +4659,7 @@ static void EvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo, const NvU32 apiHead)
                                         notifier,
                                         &updateState,
                                         TRUE /* releaseElv */);
-        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate |= notify;
+        pDevEvo->lut.apiHead[apiHead].waitForPreviousUpdate |= notify;
     }
 
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
@@ -4819,24 +4750,20 @@ struct NvKmsCompositionParams nvDefaultCursorCompositionParams(const NVDevEvoRec
 
 static NvBool ValidateConnectorTypes(const NVDevEvoRec *pDevEvo)
 {
-    const NVDispEvoRec *pDispEvo;
+    const NVDispEvoRec *pDispEvo = pDevEvo->pDispEvo[0];
+    const NVEvoCapabilities *pEvoCaps = &pDevEvo->capabilities;
+    const NVEvoMiscCaps *pMiscCaps = &pEvoCaps->misc;
     const NVConnectorEvoRec *pConnectorEvo;
-    NvU32 dispIndex;
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        const NVEvoSubDevRec *pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
-        const NVEvoCapabilities *pEvoCaps = &pEvoSubDev->capabilities;
-        const NVEvoMiscCaps *pMiscCaps = &pEvoCaps->misc;
-
-        FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
-            if (!pMiscCaps->supportsDSI &&
-                pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
-                nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                            "DSI connectors are unsupported!");
-                return FALSE;
-            }
+    FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
+        if (!pMiscCaps->supportsDSI &&
+            pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
+            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                        "DSI connectors are unsupported!");
+            return FALSE;
         }
     }
+
     return TRUE;
 }
 
@@ -5542,6 +5469,26 @@ static void RestoreSorAssignList(NVDispEvoRec *pDispEvo,
     }
 }
 
+static void AllocDIFRState(NVDevEvoPtr pDevEvo)
+{
+    pDevEvo->pDifrState = nvDIFRAllocate(pDevEvo);
+    if (pDevEvo->pDifrState) {
+        if (!nvRmRegisterDIFREventHandler(pDevEvo)) {
+            nvDIFRFree(pDevEvo->pDifrState);
+            pDevEvo->pDifrState = NULL;
+        }
+    }
+}
+
+static void FreeDIFRState(NVDevEvoPtr pDevEvo)
+{
+    if (pDevEvo->pDifrState) {
+        nvRmUnregisterDIFREventHandler(pDevEvo);
+        nvDIFRFree(pDevEvo->pDifrState);
+        pDevEvo->pDifrState = NULL;
+    }
+}
+
 NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo)
 {
     struct {
@@ -5598,11 +5545,14 @@ NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo)
         }
     }
 
+    AllocDIFRState(pDevEvo);
+
     return TRUE;
 }
 
 void nvSuspendDevEvo(NVDevEvoRec *pDevEvo)
 {
+    FreeDIFRState(pDevEvo);
     nvFreeCoreChannelEvo(pDevEvo);
 }
 
@@ -5621,9 +5571,8 @@ void nvFreeCoreChannelEvo(NVDevEvoPtr pDevEvo)
 
     nvEvoCancelPostFlipIMPTimer(pDevEvo);
 
-    NvU32 fullApiHeadMasks[NVKMS_MAX_SUBDEVICES];
-    nvkms_memset(fullApiHeadMasks, 0xFF, sizeof(fullApiHeadMasks));
-    nvCancelVrrFrameReleaseTimers(pDevEvo, fullApiHeadMasks);
+    const NvU32 fullApiHeadMask = ~0u;
+    nvCancelVrrFrameReleaseTimers(pDevEvo, fullApiHeadMask);
 
     nvCancelLowerDispBandwidthTimer(pDevEvo);
 
@@ -5737,7 +5686,7 @@ NVEvoLockPin nvEvoGetPinForSignal(const NVDispEvoRec *pDispEvo,
                                   NVEvoSubDevPtr pEvoSubDev,
                                   NVEvoLockSignal signal)
 {
-    NVEvoLockPinCaps *caps = pEvoSubDev->capabilities.pin;
+    NVEvoLockPinCaps *caps = pDispEvo->pDevEvo->capabilities.pin;
     NvU32 pin;
 
     switch (signal) {
@@ -5887,8 +5836,6 @@ NvBool nvLayerSetPositionEvo(
         }
 
         for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
-            NvU32 layer;
-
             if ((pRequest->disp[sd].requestedHeadsBitMask &
                  NVBIT(apiHead)) == 0) {
                 continue;
@@ -5896,27 +5843,6 @@ NvBool nvLayerSetPositionEvo(
 
             if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
                 continue;
-            }
-
-            for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
-                const NvS16 x = pRequest->disp[sd].head[apiHead].layerPosition[layer].x;
-                const NvS16 y = pRequest->disp[sd].head[apiHead].layerPosition[layer].y;
-
-                if ((pRequest->disp[sd].head[apiHead].requestedLayerBitMask &
-                        NVBIT(layer)) == 0x0) {
-                    continue;
-                }
-
-                /*
-                 * Error out if a requested layer does not support position
-                 * updates and the requested position is not (0, 0).
-                 */
-                if (!pDevEvo->caps.layerCaps[layer].supportsWindowMode &&
-                    (x != 0 || y != 0)) {
-                    nvEvoLogDebug(EVO_LOG_ERROR, "Layer %d does not support "
-                                                 "position updates.", layer);
-                    return FALSE;
-                }
             }
         }
     }
@@ -6432,14 +6358,13 @@ NvBool nvValidateHwModeTimingsViewPort(const NVDevEvoRec *pDevEvo,
     const NvU32 inHeight  = pViewPort->in.height;
     const NvU32 outWidth  = pViewPort->out.width;
     const NvU32 outHeight = pViewPort->out.height;
+    const NvU32 maxViewport = pDevEvo->caps.maxViewportDimension;
     NVEvoScalerTaps hTaps, vTaps;
 
-    /*
-     * As per the MFS, there is a restriction for the width and height
-     * of ViewPortIn and ViewPortOut
-     */
-    if (inWidth > 8192 || inHeight > 8192 ||
-        outWidth > 8192 || outHeight > 8192) {
+    if ((inWidth > maxViewport) ||
+        (inHeight > maxViewport) ||
+        (outWidth > maxViewport) ||
+        (outHeight > maxViewport)) {
         nvEvoLogInfoString(pInfoString,
                            "Viewport dimensions exceed hardware capabilities");
         return FALSE;
@@ -6719,6 +6644,8 @@ static NvBool FrlOverrideForYCbCr422(
 static NvBool GetDfpHdmiProtocol(
     const NVDpyEvoRec *pDpyEvo,
     const struct NvKmsModeValidationParams *pValidationParams,
+    const NvBool colorFormatSpecified,
+    const NvBool colorBpcSpecified,
     NVDpyAttributeColor *pDpyColor,
     NVHwModeTimingsEvoPtr pTimings,
     enum nvKmsTimingsProtocol *pTimingsProtocol,
@@ -6758,8 +6685,9 @@ static NvBool GetDfpHdmiProtocol(
         return TRUE;
     }
 
-    if (!nvEvoHdmiTmdsMaxPixelClockCheck(pDpyEvo, pValidationParams,
-                                         pDpyColor, pTimings, pInfoString)) {
+    if (!nvEvoHdmiTmdsMaxPixelClockCheck(pDpyEvo, pValidationParams, colorFormatSpecified,
+                                         colorBpcSpecified, pDpyColor,
+                                         pTimings, pInfoString)) {
         return FALSE;
     }
 
@@ -6793,6 +6721,8 @@ static NvBool GetDfpHdmiProtocol(
 
 static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
                              const struct NvKmsModeValidationParams *pParams,
+                             const NvBool colorFormatSpecified,
+                             const NvBool colorBpcSpecified,
                              NVDpyAttributeColor *pDpyColor,
                              NVHwModeTimingsEvoPtr pTimings,
                              NVEvoInfoStringPtr pInfoString)
@@ -6807,7 +6737,8 @@ static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
 
     if (pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
         if (nvDpyIsHdmiEvo(pDpyEvo)) {
-            if (!GetDfpHdmiProtocol(pDpyEvo, pParams, pDpyColor, pTimings,
+            if (!GetDfpHdmiProtocol(pDpyEvo, pParams, colorFormatSpecified,
+                                    colorBpcSpecified, pDpyColor, pTimings,
                                     &timingsProtocol, pInfoString)) {
                 return FALSE;
             }
@@ -6890,6 +6821,8 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsSize *pViewPortSizeIn,
                                    const struct NvKmsRect *pViewPortOut,
                                    const NvBool dscPassThrough,
+                                   const NvBool colorFormatSpecified,
+                                   const NvBool colorBpcSpecified,
                                    NVDpyAttributeColor *pDpyColor,
                                    NVHwModeTimingsEvoPtr pTimings,
                                    const struct
@@ -6920,7 +6853,8 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
         pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
     }
 
-    ret = GetDfpProtocol(pDpyEvo, pParams, pDpyColor, pTimings, pInfoString);
+    ret = GetDfpProtocol(pDpyEvo, pParams, colorFormatSpecified, colorBpcSpecified,
+                         pDpyColor, pTimings, pInfoString);
 
     if (!ret) {
         return ret;
@@ -6961,11 +6895,19 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
 }
 
 static NvBool IsColorBpcSupported(
+    const NVDpyEvoRec *pDpyEvo,
     const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     const enum NvKmsDpyAttributeCurrentColorFormatValue format,
     const enum NvKmsDpyAttributeColorBpcValue bpc)
 {
     nvAssert(format != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420);
+
+    if (nvDpyIsHdmiEvo(pDpyEvo) &&
+        (!nvDpyIsHdmiDepth30Evo(pDpyEvo)) &&
+        (bpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10)) {
+        
+        return FALSE;
+    }
 
     switch (format) {
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
@@ -6984,40 +6926,46 @@ static NvBool IsColorBpcSupported(
     return FALSE;
 }
 
-NvBool nvDowngradeColorBpc(
+static NvBool DowngradeColorBpc(
+    const NVDpyEvoRec *pDpyEvo,
     const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     NVDpyAttributeColor *pDpyColor)
 {
     switch (pDpyColor->bpc) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+            if (IsColorBpcSupported(pDpyEvo,
+                                    pSupportedColorFormats,
+                                    pDpyColor->format,
+                                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10)) {
+                pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                break;
+            }
+            /* fall through */
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+            /* If we are using YUV420, 8BPC is always supported */
+            if ((pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420) ||
+                IsColorBpcSupported(pDpyEvo,
+                                    pSupportedColorFormats,
+                                    pDpyColor->format,
+                                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8)) {
+                pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                break;
+            }
+            /* fall through */
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
             if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
                 return FALSE;
             }
-            /* If we are using YUV420, 8BPC is always supported */
-            if (pDpyColor->format != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420) {
-                if (!IsColorBpcSupported(pSupportedColorFormats,
-                                         pDpyColor->format,
-                                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8)) {
-                    return FALSE;
-                }
-            }
-            pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
-            /* At depth 18 only RGB and full range are allowed */
-            if (pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB) {
-                if (!IsColorBpcSupported(pSupportedColorFormats,
-                                         pDpyColor->format,
-                                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
-                    return FALSE;
-                }
-
+            if (IsColorBpcSupported(pDpyEvo,
+                                     pSupportedColorFormats,
+                                     pDpyColor->format,
+                                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
                 pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                /* At depth 18 only full range is allowed */
                 pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
-            } else {
-                return FALSE;
+                break;
             }
-            break;
+            /* fall through */
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN:
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6:
             return FALSE;
@@ -7029,26 +6977,50 @@ NvBool nvDowngradeColorBpc(
 NvBool nvDowngradeColorFormatAndBpc(
     const NVDpyEvoRec *pDpyEvo,
     const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
+    const NvBool colorFormatSpecified,
+    const NvBool bpcSpecified,
     NVDpyAttributeColor *pDpyColor)
 {
-    if (nvDowngradeColorBpc(pSupportedColorFormats, pDpyColor)) {
-        return TRUE;
+    if (!bpcSpecified) {
+        if (DowngradeColorBpc(pDpyEvo, pSupportedColorFormats, pDpyColor)) {
+            return TRUE;
+        }
     }
 
-    switch (pDpyColor->format) {
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
-            if (pSupportedColorFormats->yuv422.maxBpc !=
-                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
-                pDpyColor->format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422;
-                pDpyColor->bpc = pSupportedColorFormats->yuv422.maxBpc;
-                pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
-                return TRUE;
-            }
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422: /* fallthrough */
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
-            break;
+    if (!colorFormatSpecified) {
+        switch (pDpyColor->format) {
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
+                if (pSupportedColorFormats->yuv422.maxBpc !=
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+
+                    if (!bpcSpecified) {
+                        pDpyColor->bpc = pSupportedColorFormats->yuv422.maxBpc;
+                    }
+                    /* The downgrade is only valid if we can pick pDpyColor->bpc */
+                    if (ChooseColorBpc(pDpyEvo, pDpyColor->bpc, pSupportedColorFormats->yuv422.maxBpc,
+                                       pSupportedColorFormats->yuv422.minBpc) != pDpyColor->bpc) {
+                        /*
+                         * This can only fail if a BPC was specified, otherwise we use yuv422.maxBpc,
+                         * which is guaranteed to be supported by the GPU + display. 
+                         */   
+                        nvAssert(bpcSpecified);
+                        break;
+                    }
+
+                    if (pDpyColor->bpc < GetMinRequiredBpc(pDpyColor->colorimetry)) {
+                        break;
+                    }
+                    pDpyColor->format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422;
+                    pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
+
+                    return TRUE;
+                }
+                break;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422: /* fallthrough */
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
+                break;
+        }
     }
 
     return FALSE;
@@ -7062,6 +7034,8 @@ NvBool nvDowngradeColorFormatAndBpc(
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
+                           const NvBool colorFormatSpecified,
+                           const NvBool colorBpcSpecified,
                            NVDpyAttributeColor *pDpyColor,
                            const NvBool b2Heads1Or,
                            NVDscInfoEvoRec *pDscInfo,
@@ -7089,7 +7063,9 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
 
     if (!nvDPValidateModeForDpyEvo(pDpyEvo, &dpyColor, pParams, pTimings,
                                    b2Heads1Or, pDscInfo)) {
-        if (nvDowngradeColorFormatAndBpc(pDpyEvo, &supportedColorFormats, &dpyColor)) {
+        if (nvDowngradeColorFormatAndBpc(pDpyEvo, &supportedColorFormats,
+                                         colorFormatSpecified, colorBpcSpecified,
+                                         &dpyColor)) {
              goto tryAgain;
         }
         /*
@@ -7571,10 +7547,8 @@ static NvBool DownGradeMetaModeUsageBounds(
     int i;
 
     // XXX assume the heads have equal capabilities
-    // XXX assume the gpus have equal capabilities
 
-    const NVEvoHeadCaps *pHeadCaps =
-        &pDevEvo->gpus[0].capabilities.head[0];
+    const NVEvoHeadCaps *pHeadCaps = &pDevEvo->capabilities.head[0];
 
 
     for (i = 0; i < ARRAY_LEN(downgradeFuncs); i++) {
@@ -8154,24 +8128,22 @@ static void UpdateLUTNotifierTracking(
     NVDispEvoPtr pDispEvo)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
     NvU32 i;
 
-    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
-        int notifier = pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier;
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.notifiers); i++) {
+        int notifier = pDevEvo->lut.notifierState.notifiers[i].notifier;
 
-        if (!pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+        if (!pDevEvo->lut.notifierState.notifiers[i].waiting) {
             continue;
         }
 
-        if (!pDevEvo->hal->IsCompNotifierComplete(pDevEvo->pDispEvo[dispIndex],
-                                                  notifier)) {
+        if (!pDevEvo->hal->IsCompNotifierComplete(pDispEvo, notifier)) {
             continue;
         }
 
-        pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &=
-            ~pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask;
-        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting = FALSE;
+        pDevEvo->lut.notifierState.waitingApiHeadMask &=
+            ~pDevEvo->lut.notifierState.notifiers[i].apiHeadMask;
+        pDevEvo->lut.notifierState.notifiers[i].waiting = FALSE;
     }
 }
 
@@ -8183,8 +8155,7 @@ NvBool nvEvoLUTNotifiersNeedCommit(
     NVDispEvoPtr pDispEvo)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
-    NvU32 apiHeadMask = pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask;
+    NvU32 apiHeadMask = pDevEvo->lut.notifierState.stagedApiHeadMask;
 
     return apiHeadMask != 0;
 }
@@ -8204,10 +8175,10 @@ int nvEvoCommitLUTNotifiers(
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const int dispIndex = pDispEvo->displayOwner;
-    NvU32 apiHeadMask = pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask;
+    NvU32 apiHeadMask = pDevEvo->lut.notifierState.stagedApiHeadMask;
     int i;
 
-    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask = 0;
+    pDevEvo->lut.notifierState.stagedApiHeadMask = 0;
 
     UpdateLUTNotifierTracking(pDispEvo);
 
@@ -8215,7 +8186,7 @@ int nvEvoCommitLUTNotifiers(
         return -1;
     }
 
-    if (pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &
+    if (pDevEvo->lut.notifierState.waitingApiHeadMask &
         apiHeadMask) {
         /*
          * an apiHead in the requested list is already waiting on a
@@ -8225,19 +8196,19 @@ int nvEvoCommitLUTNotifiers(
         return -1;
     }
 
-    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.notifiers); i++) {
         int notifier = (dispIndex * NVKMS_MAX_HEADS_PER_DISP) + i + 1;
 
-        if (pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+        if (pDevEvo->lut.notifierState.notifiers[i].waiting) {
             continue;
         }
 
         /* use this notifier */
-        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier = notifier;
-        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting = TRUE;
-        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask = apiHeadMask;
+        pDevEvo->lut.notifierState.notifiers[i].notifier = notifier;
+        pDevEvo->lut.notifierState.notifiers[i].waiting = TRUE;
+        pDevEvo->lut.notifierState.notifiers[i].apiHeadMask = apiHeadMask;
 
-        pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask |=
+        pDevEvo->lut.notifierState.waitingApiHeadMask |=
             apiHeadMask;
 
         return notifier;
@@ -8255,9 +8226,8 @@ void nvEvoClearStagedLUTNotifiers(
     NVDispEvoPtr pDispEvo)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
 
-    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask = 0;
+    pDevEvo->lut.notifierState.stagedApiHeadMask = 0;
 }
 
 /*
@@ -8275,12 +8245,11 @@ void nvEvoStageLUTNotifier(
     NvU32 apiHead)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
 
-    nvAssert((pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask &
+    nvAssert((pDevEvo->lut.notifierState.stagedApiHeadMask &
              NVBIT(apiHead)) == 0);
 
-    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask |=
+    pDevEvo->lut.notifierState.stagedApiHeadMask |=
         NVBIT(apiHead);
 }
 
@@ -8293,11 +8262,10 @@ NvBool nvEvoIsLUTNotifierComplete(
     NvU32 apiHead)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
 
     UpdateLUTNotifierTracking(pDispEvo);
 
-    return (pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &
+    return (pDevEvo->lut.notifierState.waitingApiHeadMask &
             NVBIT(apiHead)) == 0;
 }
 
@@ -8312,21 +8280,20 @@ void nvEvoWaitForLUTNotifier(
     NvU32 apiHead)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
     int i;
 
     if (nvEvoIsLUTNotifierComplete(pDispEvo, apiHead)) {
         return;
     }
 
-    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
-        int notifier = pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier;
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.notifiers); i++) {
+        int notifier = pDevEvo->lut.notifierState.notifiers[i].notifier;
 
-        if (!pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+        if (!pDevEvo->lut.notifierState.notifiers[i].waiting) {
             continue;
         }
 
-        if ((pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask &
+        if ((pDevEvo->lut.notifierState.notifiers[i].apiHeadMask &
             NVBIT(apiHead)) == 0) {
 
             continue;
@@ -8343,26 +8310,24 @@ static void EvoIncrementCurrentLutIndex(NVDispEvoRec *pDispEvo,
                                         const NvBool outputLutEnabled)
 {
     NvU32 head;
-    const int dispIndex = pDispEvo->displayOwner;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const int numLUTs = ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT);
     NVDispApiHeadStateEvoRec *pApiHeadState =
         &pDispEvo->apiHeadState[apiHead];
 
-    pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curLUTIndex++;
-    pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curLUTIndex %= numLUTs;
-    pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curBaseLutEnabled = baseLutEnabled;
-    pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curOutputLutEnabled = outputLutEnabled;
+    pDevEvo->lut.apiHead[apiHead].curLUTIndex++;
+    pDevEvo->lut.apiHead[apiHead].curLUTIndex %= numLUTs;
+    pDevEvo->lut.apiHead[apiHead].curBaseLutEnabled = baseLutEnabled;
+    pDevEvo->lut.apiHead[apiHead].curOutputLutEnabled = outputLutEnabled;
 
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
-        const NvU32 curLutIndex =
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curLUTIndex;
+        const NvU32 curLutIndex = pDevEvo->lut.apiHead[apiHead].curLUTIndex;
         NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
         pHeadState->lut.outputLutEnabled =
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curOutputLutEnabled;
+            pDevEvo->lut.apiHead[apiHead].curOutputLutEnabled;
         pHeadState->lut.baseLutEnabled =
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curBaseLutEnabled;
+            pDevEvo->lut.apiHead[apiHead].curBaseLutEnabled;
         pHeadState->lut.pCurrSurface =
             pDevEvo->lut.apiHead[apiHead].LUT[curLutIndex];
 
@@ -8418,7 +8383,7 @@ static void ScheduleLutUpdate(NVDispEvoRec *pDispEvo,
     nvCancelLutUpdateEvo(pDispEvo, apiHead);
 
     /* schedule a new timer */
-    pDevEvo->lut.apiHead[apiHead].disp[pDispEvo->displayOwner].updateTimer =
+    pDevEvo->lut.apiHead[apiHead].updateTimer =
         nvkms_alloc_timer(UpdateLUTTimerNVKMS,
                           pDispEvo, data,
                           usec);
@@ -8514,17 +8479,14 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
                  const struct NvKmsSetLutCommonParams *pParams)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const int dispIndex = pDispEvo->displayOwner;
-    const int curLUT = pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curLUTIndex;
+    const int curLUT = pDevEvo->lut.apiHead[apiHead].curLUTIndex;
     const NvBool waitForPreviousUpdate =
-        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate;
+        pDevEvo->lut.apiHead[apiHead].waitForPreviousUpdate;
     const int numLUTs = ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT);
     const int lutToFill = (curLUT + 1) % numLUTs;
     NVSurfaceEvoPtr pSurfEvo = pDevEvo->lut.apiHead[apiHead].LUT[lutToFill];
-    NvBool baseLutEnabled =
-        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curBaseLutEnabled ;
-    NvBool outputLutEnabled =
-        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curOutputLutEnabled;
+    NvBool baseLutEnabled = pDevEvo->lut.apiHead[apiHead].curBaseLutEnabled;
+    NvBool outputLutEnabled = pDevEvo->lut.apiHead[apiHead].curOutputLutEnabled;
 
     if (!pParams->input.specified && !pParams->output.specified) {
         return;
@@ -8585,11 +8547,10 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
 
         // If this LUT update is synchronous, then sync before returning.
         if (pParams->synchronous &&
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate) {
+            pDevEvo->lut.apiHead[apiHead].waitForPreviousUpdate) {
 
             nvEvoWaitForLUTNotifier(pDispEvo, apiHead);
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate =
-                FALSE;
+            pDevEvo->lut.apiHead[apiHead].waitForPreviousUpdate = FALSE;
         }
     } else {
         // Schedule a timer to kick off an update later.
@@ -8787,11 +8748,7 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
         return FALSE;
     }
 
-    if (pDevEvo->pDifrState) {
-        nvRmUnregisterDIFREventHandler(pDevEvo);
-        nvDIFRFree(pDevEvo->pDifrState);
-        pDevEvo->pDifrState = NULL;
-    }
+    FreeDIFRState(pDevEvo);
 
     if (pDevEvo->pNvKmsOpenDev != NULL) {
         /*
@@ -9025,6 +8982,26 @@ NVDevEvoPtr nvAllocDevEvo(const struct NvKmsAllocDeviceRequest *pRequest,
         goto done;
     }
 
+    /*
+     *  TODO: Implement flip synchronized infoframe support for DP connector.
+     */
+    pDevEvo->supportsFlipSynchronizedInfoframes = (pDevEvo->hal->SetCoreFid != NULL);
+
+    for (NvU32 dispIndex = 0;
+         (dispIndex < pDevEvo->nDispEvo && pDevEvo->supportsFlipSynchronizedInfoframes);
+         dispIndex++)
+    {
+        const NVDispEvoRec *pDispEvo = pDevEvo->pDispEvo[dispIndex];
+        const NVConnectorEvoRec *pConnectorEvo;
+
+        FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
+            if (pConnectorEvo->type != NVKMS_CONNECTOR_TYPE_HDMI) {
+                pDevEvo->supportsFlipSynchronizedInfoframes = NV_FALSE;
+                break;
+            }
+        }
+    }
+
     nvAllocFrameLocksEvo(pDevEvo);
 
     if (!pDevEvo->hal->AllocRmCtrlObject(pDevEvo)) {
@@ -9084,17 +9061,7 @@ NVDevEvoPtr nvAllocDevEvo(const struct NvKmsAllocDeviceRequest *pRequest,
 
     status = NVKMS_ALLOC_DEVICE_STATUS_SUCCESS;
 
-    /*
-     * We can't allocate DIFR state if h/w doesn't support it. Only register
-     * event handlers with DIFR state.
-     */
-    pDevEvo->pDifrState = nvDIFRAllocate(pDevEvo);
-    if (pDevEvo->pDifrState) {
-        if (!nvRmRegisterDIFREventHandler(pDevEvo)) {
-            nvDIFRFree(pDevEvo->pDifrState);
-            pDevEvo->pDifrState = NULL;
-        }
-    }
+    AllocDIFRState(pDevEvo);
 
     /* fall through */
 
@@ -9560,7 +9527,12 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
     const NVDispHeadStateEvoRec *pHeadState =
         &pDevEvo->pDispEvo[0]->headState[head];
     const NVEvoWindowCaps *pWinCaps =
-        &pDevEvo->gpus[0].capabilities.window[pChannel->instance];
+        &pDevEvo->capabilities.window[pChannel->instance];
+
+    // Don't tone map if passthrough mode is enabled.
+    if (pHwState->precompColorPassthrough) {
+        return FALSE;
+    }
 
     // Don't tone map if flipped to NULL.
     if (!pHwState->pSurfaceEvo[NVKMS_LEFT]) {
@@ -9628,6 +9600,8 @@ enum nvKmsPixelDepth nvEvoDpyColorToPixelDepth(
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
             switch (pDpyColor->bpc) {
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+                    return NVKMS_PIXEL_DEPTH_36_444;
                 case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
                     return NVKMS_PIXEL_DEPTH_30_444;
                 case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
@@ -9640,6 +9614,8 @@ enum nvKmsPixelDepth nvEvoDpyColorToPixelDepth(
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422:
             nvAssert(pDpyColor->bpc != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6);
             switch (pDpyColor->bpc) {
+                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+                    return NVKMS_PIXEL_DEPTH_24_422;
                 case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
                     return NVKMS_PIXEL_DEPTH_20_422;
                 case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6: /* fallthrough */
@@ -9840,9 +9816,8 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const struct NvKmsModeValidationParams *pParams)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
-    const NvU32 sd = pDispEvo->displayOwner;
     const NVEvoHeadCaps *pHeadCaps =
-        &pDispEvo->pDevEvo->gpus[sd].capabilities.head[0];
+        &pDispEvo->pDevEvo->capabilities.head[0];
 
     /* The 2Heads1OR mode can not be used if GPU does not
      * support merge mode, or */

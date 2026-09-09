@@ -58,6 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHwpm =
 {
     .classInfo.size =               sizeof(KernelHwpm),
     .classInfo.classId =            classId(KernelHwpm),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelHwpm",
@@ -241,8 +242,8 @@ void __nvoc_init_dataField_KernelHwpm(KernelHwpm *pThis, GpuHalspecOwner *pGpuha
     }
 
     // NVOC Property Hal field -- PDB_PROP_KHWPM_HES_CWD_SUPPORTED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xb8000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KHWPM_HES_CWD_SUPPORTED, NV_TRUE);
     }
@@ -318,7 +319,7 @@ static void __nvoc_init_funcTable_KernelHwpm_1(KernelHwpm *pThis, GpuHalspecOwne
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GH100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) )) /* ChipHal: GB10B | GB10C */ 
     {
         pThis->__khwpmGetCblockInfo__ = &khwpmGetCblockInfo_GB10B;
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "rmapi/event_buffer.h"
+#include "diagnostics/op_event_log.h"  // opEventLog singleton + opevtlogTrySetKeepNewest
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "core/locks.h"
@@ -34,17 +35,28 @@
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi_utils.h"
 #include "kernel/gpu/gr/fecs_event_list.h"
+
 #include "gpu/bus/kern_bus.h"
 #include "mem_mgr/no_device_mem.h"
 #include "class/cl90ce.h"
 #include "class/cl0040.h"
+#include "nvos.h"
 #include "gpu/gsp/gsp_trace_rats_macro.h"
 
-static NV_STATUS _allocAndMapMemory(CALL_CONTEXT *pCallContext, NvP64 pAddress, MEMORY_DESCRIPTOR** ppMemDesc, NvU64 size, NvBool bKernel,
-    NvP64* pKernelAddr, NvP64* pKernelPriv, NvP64* pUserAddr, NvP64* pUserPriv, Subdevice *pSubdevice);
+static NV_STATUS _allocAndMapMemory(CALL_CONTEXT *pCallContext, NvP64 pAddress, MEMORY_DESCRIPTOR** ppMemDesc, NvU64 size,
+    NvP64* pKernelAddr, NvP64* pKernelPriv, Subdevice *pSubdevice);
+
+static NV_STATUS _mapExternalSysmemToKernelOnGsp(Memory *pMemory, NvU32 protect, NvP64 *pKernelAddr);
+
+static NV_STATUS _eventBufferMapExternalBacking(Memory *pMemory, CALL_CONTEXT *pCallContext,
+    NvHandle hMapperClient, NvHandle hMapperDevice, NvBool bKernel, NvBool bUsingVgpuStagingBuffer,
+    NvU32 flags, NvP64 *pKernelAddr);
 
 static void _unmapAndFreeMemory(MEMORY_DESCRIPTOR *pMemDesc, NvBool bKernel, NvP64 kernelAddr,
     NvP64 kernelPriv, NvP64 userAddr, NvP64 userPriv);
+
+static NV_STATUS _createInternalUserMapping(MEMORY_DESCRIPTOR *pMemDesc, NvU64 size, NvBool bKernel,
+    NvP64 *pReturnedValue, NvP64 *pCleanupAddr, NvP64 *pCleanupPriv);
 
 NV_STATUS
 eventbufferConstruct_IMPL
@@ -64,9 +76,11 @@ eventbufferConstruct_IMPL
     NvBool                            bKernel;
 
     NvU32                             recordBufferSize;
-    NvP64                             kernelNotificationhandle;
+    NvP64                             kernelNotificationhandle = 0;
     Subdevice                        *pSubdevice     = NULL;
-    NvBool                            bInternalAlloc = (pAllocParams->hBufferHeader == 0);
+    NvBool                            bInternalAlloc  = ((pAllocParams->hBufferHeader == 0) &&
+                                                         (pAllocParams->hRecordBuffer == 0) &&
+                                                         (pAllocParams->hVardataBuffer == 0));
     NvBool                            bNoDeviceMem   = NV_FALSE;
     NvBool                            bUsingVgpuStagingBuffer = NV_FALSE;
     OBJGPU                           *pGpu           = NULL;
@@ -194,12 +208,19 @@ eventbufferConstruct_IMPL
         NvBool bRequireReadOnly = bUsingVgpuStagingBuffer || !bKernel;
         NvU32 flags = 0;
 
-        // Allow the mapping to succeed when HCC is enabled in devtools mode
-        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-        if (pKernelBus != NULL && kbusIsBarAccessBlocked(pKernelBus) &&
-            gpuIsCCDevToolsModeEnabled(pGpu))
+        // Allow the mapping to succeed when HCC is enabled in devtools mode.
+        // pGpu is only populated when hSubDevice != 0; the DEVICELESS /
+        // sysmem-only path (hSubDevice == 0 + bNoDeviceMem) legitimately
+        // reaches here with pGpu == NULL, and CC HCC-mapping doesn't apply
+        // to non-device memory anyway.
+        if (pGpu != NULL)
         {
-            flags = FLD_SET_DRF(OS33, _FLAGS, _ALLOW_MAPPING_ON_HCC, _YES, flags);
+            KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+            if (pKernelBus != NULL && kbusIsBarAccessBlocked(pKernelBus) &&
+                gpuIsCCDevToolsModeEnabled(pGpu))
+            {
+                flags = FLD_SET_DRF(OS33, _FLAGS, _ALLOW_MAPPING_ON_HCC, _YES, flags);
+            }
         }
 
         if (bUsingVgpuStagingBuffer)
@@ -230,37 +251,11 @@ eventbufferConstruct_IMPL
 
         if (!bNoDeviceMem)
         {
-            RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-            NvHandle hMemory = RES_GET_HANDLE(pMemory);
-
-            // Dup memory object under CPU-RM's hClient
-            if (!bKernel)
-            {
-                status = pRmApi->DupObject(pRmApi,
-                                           hMapperClient,
-                                           hMapperDevice,
-                                           &hMemory,
-                                           pCallContext->pClient->hClient,
-                                           hMemory, 0);
-                if (status != NV_OK)
-                {
-                    goto cleanup;
-                }
-            }
-
-            status = pRmApi->MapToCpu(pRmApi,
-                                      hMapperClient,
-                                      hMapperDevice,
-                                      hMemory,
-                                      0,
-                                      pMemory->Length,
-                                      &pKernelMap->headerAddr,
-                                      flags);
-
+            status = _eventBufferMapExternalBacking(pMemory, pCallContext, hMapperClient,
+                                                    hMapperDevice, bKernel, bUsingVgpuStagingBuffer,
+                                                    flags, &pKernelMap->headerAddr);
             if (status != NV_OK)
-            {
                 goto cleanup;
-            }
         }
         else
         {
@@ -290,36 +285,11 @@ eventbufferConstruct_IMPL
 
         if (!bNoDeviceMem)
         {
-            RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-            NvHandle hMemory = RES_GET_HANDLE(pMemory);
-
-            // Dup memory object under CPU-RM's hClient
-            if (!bKernel)
-            {
-                status = pRmApi->DupObject(pRmApi,
-                                           hMapperClient,
-                                           hMapperDevice,
-                                           &hMemory,
-                                           pCallContext->pClient->hClient,
-                                           hMemory, 0);
-                if (status != NV_OK)
-                {
-                    goto cleanup;
-                }
-            }
-
-            status = pRmApi->MapToCpu(pRmApi,
-                                      hMapperClient,
-                                      hMapperDevice,
-                                      hMemory,
-                                      0,
-                                      pMemory->Length,
-                                      &pKernelMap->recordBuffAddr,
-                                      flags);
+            status = _eventBufferMapExternalBacking(pMemory, pCallContext, hMapperClient,
+                                                    hMapperDevice, bKernel, bUsingVgpuStagingBuffer,
+                                                    flags, &pKernelMap->recordBuffAddr);
             if (status != NV_OK)
-            {
                 goto cleanup;
-            }
         }
         else
         {
@@ -350,35 +320,35 @@ eventbufferConstruct_IMPL
 
             if (!bNoDeviceMem)
             {
-                RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-                NvHandle hMemory = RES_GET_HANDLE(pMemory);
-
-                // Dup memory object under CPU-RM's hClient
-                if (!bKernel)
+                if (RMCFG_FEATURE_PLATFORM_GSP)
                 {
-                    status = pRmApi->DupObject(pRmApi,
-                                               hMapperClient,
-                                               hMapperDevice,
-                                               &hMemory,
-                                               pCallContext->pClient->hClient,
-                                               hMemory, 0);
+                    status = _mapExternalSysmemToKernelOnGsp(pMemory,
+                                                             bUsingVgpuStagingBuffer
+                                                                 ? NV_PROTECT_READABLE
+                                                                 : NV_PROTECT_READ_WRITE,
+                                                             &pKernelMap->vardataBuffAddr);
                     if (status != NV_OK)
-                    {
                         goto cleanup;
-                    }
                 }
-
-                status = pRmApi->MapToCpu(pRmApi,
-                                          hMapperClient,
-                                          hMapperDevice,
-                                          hMemory,
-                                          0,
-                                          pMemory->Length,
-                                          &pKernelMap->vardataBuffAddr,
-                                          flags);
-                if (status != NV_OK)
+                else
                 {
-                    goto cleanup;
+                    RM_API  *pRmApi  = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+                    NvHandle hMemory = RES_GET_HANDLE(pMemory);
+
+                    if (!bKernel)
+                    {
+                        status = pRmApi->DupObject(pRmApi, hMapperClient, hMapperDevice, &hMemory,
+                                                   pCallContext->pClient->hClient, hMemory, 0);
+                        if (status != NV_OK)
+                            goto cleanup;
+                    }
+
+                    status = pRmApi->MapToCpu(pRmApi, hMapperClient, hMapperDevice, hMemory,
+                                              0, pMemory->Length,
+                                              &pKernelMap->vardataBuffAddr,
+                                              flags);
+                    if (status != NV_OK)
+                        goto cleanup;
                 }
             }
             else
@@ -403,12 +373,18 @@ eventbufferConstruct_IMPL
                                     pAllocParams->bufferHeader,
                                     &pEventBuffer->pHeaderDesc,
                                     sizeof(NV_EVENT_BUFFER_HEADER),
-                                    bKernel,
                                     &pKernelMap->headerAddr,
                                     &pKernelMap->headerPriv,
-                                    &pClientMap->headerAddr,
-                                    &pClientMap->headerPriv,
                                     pSubdevice);
+        if (status != NV_OK)
+            goto cleanup;
+
+        status = _createInternalUserMapping(pEventBuffer->pHeaderDesc,
+                                              sizeof(NV_EVENT_BUFFER_HEADER),
+                                              bKernel,
+                                              &pAllocParams->bufferHeader,
+                                              &pClientMap->headerAddr,
+                                              &pClientMap->headerPriv);
         if (status != NV_OK)
             goto cleanup;
 
@@ -416,12 +392,18 @@ eventbufferConstruct_IMPL
                                     pAllocParams->recordBuffer,
                                     &pEventBuffer->pRecordBufDesc,
                                     recordBufferSize,
-                                    bKernel,
                                     &pKernelMap->recordBuffAddr,
                                     &pKernelMap->recordBuffPriv,
-                                    &pClientMap->recordBuffAddr,
-                                    &pClientMap->recordBuffPriv,
                                     pSubdevice);
+        if (status != NV_OK)
+            goto cleanup;
+
+        status = _createInternalUserMapping(pEventBuffer->pRecordBufDesc,
+                                              recordBufferSize,
+                                              bKernel,
+                                              &pAllocParams->recordBuffer,
+                                              &pClientMap->recordBuffAddr,
+                                              &pClientMap->recordBuffPriv);
         if (status != NV_OK)
             goto cleanup;
     }
@@ -443,13 +425,19 @@ eventbufferConstruct_IMPL
                     pAllocParams->vardataBuffer,
                     &pEventBuffer->pVardataBufDesc,
                     pAllocParams->vardataBufferSize,
-                    bKernel,
                     &pKernelMap->vardataBuffAddr,
                     &pKernelMap->vardataBuffPriv,
-                    &pClientMap->vardataBuffAddr,
-                    &pClientMap->vardataBuffPriv,
                     pSubdevice);
 
+            if (status != NV_OK)
+                goto cleanup;
+
+            status = _createInternalUserMapping(pEventBuffer->pVardataBufDesc,
+                                                  pAllocParams->vardataBufferSize,
+                                                  bKernel,
+                                                  &pAllocParams->vardataBuffer,
+                                                  &pClientMap->vardataBuffAddr,
+                                                  &pClientMap->vardataBuffPriv);
             if (status != NV_OK)
                 goto cleanup;
         }
@@ -460,19 +448,36 @@ eventbufferConstruct_IMPL
                                      pAllocParams->vardataFreeThreshold);
     }
 
-    kernelNotificationhandle = (NvP64)pAllocParams->notificationHandle;
-    if (bKernel != NV_TRUE)
-        status = osUserHandleToKernelPtr(pCallContext->pClient->hClient,
-                                         kernelNotificationhandle,
-                                         &kernelNotificationhandle);
+    //
+    // Public 0x90cd notificationHandle resolution. Producer-owned listener
+    // entries are managed by producer state.
+    //
+    if (pAllocParams->notificationHandle != 0)
+    {
+        if (bKernel == NV_TRUE)
+        {
+            kernelNotificationhandle = (NvP64)pAllocParams->notificationHandle;
+        }
+        else
+        {
+            status = osUserHandleToKernelPtr(pCallContext->pClient->hClient,
+                                             (NvP64)pAllocParams->notificationHandle,
+                                             &kernelNotificationhandle);
+            if (status != NV_OK)
+                goto cleanup;
+        }
+    }
 
     eventBufferInitNotificationHandle(&pEventBuffer->producerInfo, kernelNotificationhandle);
     eventBufferSetEnable(&pEventBuffer->producerInfo, NV_FALSE);
 
-    // return user mode mappings
-    pAllocParams->bufferHeader = pClientMap->headerAddr;
-    pAllocParams->recordBuffer = pClientMap->recordBuffAddr;
-    pAllocParams->vardataBuffer = pClientMap->vardataBuffAddr;
+    // Return user-mode mappings for internal allocs.
+    if (bInternalAlloc)
+    {
+        pAllocParams->bufferHeader  = pClientMap->headerAddr;
+        pAllocParams->recordBuffer  = pClientMap->recordBuffAddr;
+        pAllocParams->vardataBuffer = pClientMap->vardataBuffAddr;
+    }
 
     return NV_OK;
 
@@ -500,6 +505,16 @@ eventbufferDestruct_IMPL
 
     resGetFreeParams(staticCast(pEventBuffer, RsResource), &pCallContext, NULL);
 
+    // Producer state must drop owned listener entries before the normal
+    // listener walk and memory unmaps below.
+    if (pEventBuffer->pProducerState != NULL)
+    {
+        EventBufferProducerState *pState = pEventBuffer->pProducerState;
+        pEventBuffer->pProducerState = NULL;
+        pState->destroy(pEventBuffer, pState);
+    }
+
+    // Public 0x90cd notificationHandle ref taken by construct.
     if (notificationHandle != NULL)
     {
         osDereferenceObjectCount(notificationHandle);
@@ -509,9 +524,8 @@ eventbufferDestruct_IMPL
     videoRemoveAllBindpoints(pEventBuffer);
     fecsRemoveAllBindpoints(pEventBuffer);
 #if KERNEL_GSP_TRACING_RATS_ENABLED
-    gspTraceRemoveAllBindpoints(pEventBuffer);
+    gspRatsRemoveAllBindpoints(pEventBuffer);
 #endif
-
 
     _unmapAndFreeMemory(pEventBuffer->pHeaderDesc, bKernel, pKernelMap->headerAddr,
         pKernelMap->headerPriv, pClientMap->headerAddr, pClientMap->headerPriv);
@@ -537,11 +551,8 @@ _allocAndMapMemory
     NvP64 pAddress,
     MEMORY_DESCRIPTOR** ppMemDesc,
     NvU64 size,
-    NvBool bKernel,
     NvP64* pKernelAddr,
     NvP64* pKernelPriv,
-    NvP64* pUserAddr,
-    NvP64* pUserPriv,
     Subdevice *pSubdevice
 )
 {
@@ -554,7 +565,8 @@ _allocAndMapMemory
     if (pSubdevice != NULL)
         pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    NV_ASSERT_OR_RETURN(pSubdevice != NULL && pGpu != NULL, NV_ERR_INVALID_STATE);
+    if (pSubdevice != NULL)
+        NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
 
     status = memdescCreate(ppMemDesc, pGpu, size, 0, NV_MEMORY_CONTIGUOUS,
             ADDR_SYSMEM, NV_MEMORY_WRITECOMBINED, MEMDESC_FLAGS_CPU_ONLY);
@@ -576,18 +588,91 @@ _allocAndMapMemory
 
     portMemSet(NvP64_VALUE(*pKernelAddr), 0, size);
 
-    // map memory to user VA space
-    status = memdescMap(pMemDesc, 0, size, bKernel, NV_PROTECT_READABLE,
-            pUserAddr, pUserPriv);
-
-    if (status != NV_OK)
-        goto cleanup;
-
     return NV_OK;
 
 cleanup:
-    _unmapAndFreeMemory(pMemDesc, bKernel, *pKernelAddr, *pKernelPriv, *pUserAddr, *pUserPriv);
+    _unmapAndFreeMemory(pMemDesc, NV_TRUE, *pKernelAddr, *pKernelPriv, NvP64_NULL, NvP64_NULL);
     return status;
+}
+
+static NV_STATUS
+_mapExternalSysmemToKernelOnGsp
+(
+    Memory *pMemory,
+    NvU32   protect,
+    NvP64  *pKernelAddr
+)
+{
+    NV_STATUS status;
+
+    NV_ASSERT_OR_RETURN(pMemory != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pMemory->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pKernelAddr != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    //
+    // Physical RM cannot use RMAPI MapToCpu; memMap_IMPL is a Kernel-RM path and asserts there.
+    // Cross-registered sysmem backing handles (host-side NV01_MEMORY_SYSTEM with
+    // _REGISTER_MEMDESC_TO_PHYS_RM_TRUE) surface on GSP as a Memory object with address space
+    // ADDR_SYSMEM; memCreateKernelMapping populates that Memory object's cached GSP kernel VA and
+    // caches it via memdescSetKernelMapping for reuse. protect comes from the caller
+    // (NV_PROTECT_READABLE for vgpu staging buffers, NV_PROTECT_READ_WRITE for everything else).
+    //
+    if (memdescGetAddressSpace(pMemory->pMemDesc) != ADDR_SYSMEM)
+        return NV_ERR_NOT_SUPPORTED;
+
+    status = memCreateKernelMapping(pMemory, protect, NV_FALSE);
+    if (status != NV_OK)
+        return status;
+
+    if (pMemory->KernelVAddr == NvP64_NULL)
+        return NV_ERR_INVALID_STATE;
+
+    *pKernelAddr = pMemory->KernelVAddr;
+    return NV_OK;
+}
+
+//
+// Map an externally-supplied EventBuffer backing handle into kernel space.
+// On GSP the registered sysmem is mapped via its cached Memory kernel VA;
+// elsewhere it is dup'd under the mapper client (when not already kernel)
+// and mapped through RMAPI MapToCpu.
+//
+static NV_STATUS
+_eventBufferMapExternalBacking
+(
+    Memory       *pMemory,
+    CALL_CONTEXT *pCallContext,
+    NvHandle      hMapperClient,
+    NvHandle      hMapperDevice,
+    NvBool        bKernel,
+    NvBool        bUsingVgpuStagingBuffer,
+    NvU32         flags,
+    NvP64        *pKernelAddr
+)
+{
+    if (RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        return _mapExternalSysmemToKernelOnGsp(pMemory,
+                   bUsingVgpuStagingBuffer ? NV_PROTECT_READABLE : NV_PROTECT_READ_WRITE,
+                   pKernelAddr);
+    }
+    else
+    {
+        RM_API   *pRmApi  = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        NvHandle  hMemory = RES_GET_HANDLE(pMemory);
+        NV_STATUS status;
+
+        if (!bKernel)
+        {
+            status = pRmApi->DupObject(pRmApi, hMapperClient, hMapperDevice, &hMemory,
+                                       pCallContext->pClient->hClient, hMemory, 0);
+            if (status != NV_OK)
+                return status;
+        }
+
+        return pRmApi->MapToCpu(pRmApi, hMapperClient, hMapperDevice, hMemory,
+                                0, pMemory->Length, pKernelAddr, flags);
+    }
 }
 
 static void
@@ -612,6 +697,27 @@ _unmapAndFreeMemory
 
     memdescFree(pMemDesc);
     memdescDestroy(pMemDesc);
+}
+
+static NV_STATUS
+_createInternalUserMapping
+(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64              size,
+    NvBool             bKernel,
+    NvP64             *pReturnedValue,
+    NvP64             *pCleanupAddr,
+    NvP64             *pCleanupPriv
+)
+{
+    NV_STATUS status;
+
+    status = memdescMap(pMemDesc, 0, size, bKernel, NV_PROTECT_READABLE, pCleanupAddr, pCleanupPriv);
+    if (status != NV_OK)
+        return status;
+
+    *pReturnedValue = *pCleanupAddr;
+    return NV_OK;
 }
 
 NV_STATUS
@@ -649,16 +755,51 @@ eventbuffertBufferCtrlCmdEnableEvent_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    // KEEP_NEWEST breaks the live ring math used by bMaintainRecordCount.
+    if ((pEnableParams->flags & NV_EVENT_BUFFER_FLAG_OVERFLOW_POLICY_KEEP_NEWEST) &&
+        pEventBuffer->producerInfo.bMaintainRecordCount)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // Snapshot the transition-to-enabled decision before any mutation
+    // so it still reflects the pre-call state when telemetry runs below.
+    //
     if (pEnableParams->enable && !pEventBuffer->producerInfo.isEnabled)
     {
         updateTelemetry = NV_TRUE;
     }
 
-    eventBufferSetEnable(&pEventBuffer->producerInfo, pEnableParams->enable);
     if (pEnableParams->flags & NV_EVENT_BUFFER_FLAG_OVERFLOW_POLICY_KEEP_NEWEST)
-        eventBufferSetKeepNewest(&pEventBuffer->producerInfo, NV_TRUE);
+    {
+        //
+        // Op-event delivery cannot tolerate overwrites of unconsumed
+        // records, so the OpEventLog rejects this transition while any
+        // 0x90d0 bind targets pEventBuffer. opevtlogTrySetKeepNewest
+        // performs the bind-existence check and the isKeepNewest flip
+        // atomically under pPushMutex so register/unregister can't race.
+        // opEventLog may be NULL during early init / late teardown; in
+        // those windows no binds can exist, so direct apply is safe.
+        //
+        if (opEventLog != NULL)
+        {
+            status = opevtlogTrySetKeepNewest(opEventLog, pEventBuffer, NV_TRUE);
+            if (status != NV_OK)
+                return status;
+        }
+        else
+        {
+            eventBufferSetKeepNewest(&pEventBuffer->producerInfo, NV_TRUE);
+        }
+    }
     else if (pEnableParams->flags & NV_EVENT_BUFFER_FLAG_OVERFLOW_POLICY_KEEP_OLDEST)
+    {
+        // KEEP_OLDEST is always safe for op-event binds; direct setter.
         eventBufferSetKeepNewest(&pEventBuffer->producerInfo, NV_FALSE);
+    }
+
+    eventBufferSetEnable(&pEventBuffer->producerInfo, pEnableParams->enable);
 
     // NvTelemetry requires a valid subdevice
     if (updateTelemetry && pEventBuffer->hSubDevice)
@@ -675,7 +816,10 @@ eventbuffertBufferCtrlCmdEnableEvent_IMPL
         status = subdeviceGetByHandle(RES_GET_CLIENT(pEventBuffer),
                 pEventBuffer->hSubDevice, &pSubDevice);
         if (status != NV_OK)
+        {
+            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
             return status;
+        }
 
         GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
@@ -694,9 +838,11 @@ eventbuffertBufferCtrlCmdUpdateGet_IMPL
     EVENT_BUFFER_PRODUCER_INFO *pProducerInfo = &pEventBuffer->producerInfo;
     NvP64 pVardataBuf = pEventBuffer->kernelMapInfo.vardataBuffAddr;
 
+    // Vardata get is bufferSize-inclusive: bufferSize is the end sentinel
+    // used to distinguish "consumed through end" from "get at start".
     if ((pUpdateParams->recordBufferGet >= eventBufferGetRecordBufferCount(pProducerInfo)) ||
         (pVardataBuf == NvP64_NULL && pUpdateParams->varDataBufferGet > 0) ||
-        (pVardataBuf != NvP64_NULL && pUpdateParams->varDataBufferGet >= eventBufferGetVardataBufferCount(pProducerInfo)))
+        (pVardataBuf != NvP64_NULL && pUpdateParams->varDataBufferGet > eventBufferGetVardataBufferCount(pProducerInfo)))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -730,9 +876,16 @@ eventbuffertBufferCtrlCmdPostTelemetryEvent_IMPL
 }
 
 NV_STATUS
-eventBufferAdd(EventBuffer* pEventBuffer, void *pEventData, NvU32 recordType, NvBool *pBNotify, NvP64 *pHandle)
+eventbufferAddWithSubtype_IMPL
+(
+    EventBuffer *pEventBuffer,
+    EVENT_BUFFER_PRODUCER_DATA *pEventData,
+    NvU32 recordType,
+    NvU32 recordSubtype,
+    NvBool *pBNotify,
+    NvP64 *pHandle
+)
 {
-    EVENT_BUFFER_PRODUCER_DATA *pProducerData = (EVENT_BUFFER_PRODUCER_DATA*)pEventData;
     RECORD_BUFFER_INFO *pRBI;
     NV_EVENT_BUFFER_HEADER *pHeader;
 
@@ -745,7 +898,7 @@ eventBufferAdd(EventBuffer* pEventBuffer, void *pEventData, NvU32 recordType, Nv
     NV_ASSERT_OR_RETURN(pHeader->recordPut < pRBI->totalRecordCount, NV_ERR_INVALID_STATE);
 
     eventBufferProducerAddEvent(&pEventBuffer->producerInfo,
-        recordType, 0, pProducerData);
+        recordType, recordSubtype, pEventData);
 
     *pBNotify = (!pEventBuffer->bNotifyPending) &&
                 (eventBufferIsNotifyThresholdMet(&pEventBuffer->producerInfo));
@@ -753,7 +906,159 @@ eventBufferAdd(EventBuffer* pEventBuffer, void *pEventData, NvU32 recordType, Nv
     return NV_OK;
 }
 
-NvBool eventBufferIsEmpty(EventBuffer *pEventBuffer)
+NV_STATUS
+eventbufferAdd_IMPL
+(
+    EventBuffer *pEventBuffer,
+    EVENT_BUFFER_PRODUCER_DATA *pEventData,
+    NvU32 recordType,
+    NvBool *pBNotify,
+    NvP64 *pHandle
+)
+{
+    return eventbufferAddWithSubtype(pEventBuffer, pEventData, recordType, 0, pBNotify, pHandle);
+}
+
+// Drop-on-full publish with broadcast notify. Keep separate from
+// eventbufferTryAddNotify, which has no-drop publish and bClientRM-only
+// POST semantics.
+NV_STATUS
+eventbufferAddNotify_IMPL
+(
+    EventBuffer *pEventBuffer,
+    EVENT_BUFFER_PRODUCER_DATA *pEventData,
+    NvU32 recordType,
+    NvU32 recordSubtype,
+    NvU32 notifyIndex,
+    OBJGPU *pGpu
+)
+{
+    NvBool bNotify = NV_FALSE;
+    NvP64 notificationHandle = NvP64_NULL;
+    NV_STATUS status;
+
+    status = eventbufferAddWithSubtype(pEventBuffer, pEventData, recordType, recordSubtype,
+                                       &bNotify, &notificationHandle);
+    if (status != NV_OK)
+        return status;
+
+    if (bNotify && notificationHandle)
+    {
+        osEventNotification(pGpu, pEventBuffer->pListeners, notifyIndex, pEventData, 0);
+        pEventBuffer->bNotifyPending = NV_TRUE;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+eventbufferTryAddNotify_IMPL
+(
+    EventBuffer *pEventBuffer,
+    EVENT_BUFFER_PRODUCER_DATA *pEventData,
+    NvU32 recordType,
+    NvU32 recordSubtype,
+    OBJGPU *pGpu
+)
+{
+    EVENT_BUFFER_PRODUCER_INFO *pInfo = &pEventBuffer->producerInfo;
+    RECORD_BUFFER_INFO         *pRBI;
+    NV_EVENT_BUFFER_HEADER     *pHeader;
+    NV_STATUS                   status;
+
+    if (!pInfo->isEnabled)
+        return NV_WARN_NOTHING_TO_DO;
+
+    pRBI    = &pInfo->recordBuffer;
+    pHeader = pRBI->pHeader;
+    NV_ASSERT_OR_RETURN(pHeader->recordPut < pRBI->totalRecordCount, NV_ERR_INVALID_STATE);
+
+    // No-drop publish; returns NV_ERR_INSUFFICIENT_RESOURCES on full rings.
+    status = eventBufferProducerTryAddEvent(pInfo, recordType, recordSubtype, pEventData);
+    if (status != NV_OK)
+        return status;
+
+    // Best-effort exact-event POST on threshold crossings. Publish success
+    // stays NV_OK even if POST fails; bNotifyPending is set only after a
+    // successful POST so a later crossing can retry.
+    if (!pEventBuffer->bNotifyPending &&
+        eventBufferIsNotifyThresholdMet(pInfo))
+    {
+        EVENTNOTIFICATION *pListener;
+
+        for (pListener = pEventBuffer->pListeners;
+             pListener != NULL;
+             pListener = pListener->Next)
+        {
+            if (!pListener->bClientRM)
+                continue;
+
+            if (osNotifyEvent(pGpu, pListener, 0, 0, NV_OK, NV_FALSE) == NV_OK)
+                pEventBuffer->bNotifyPending = NV_TRUE;
+        }
+    }
+
+    return NV_OK;
+}
+
+NvBool eventbufferIsEmpty_IMPL(EventBuffer *pEventBuffer)
 {
     return pEventBuffer->producerInfo.recordBuffer.pHeader->recordCount == 0;
+}
+
+NV_STATUS
+eventbufferRegisterProducerState_IMPL
+(
+    EventBuffer              *pEventBuffer,
+    EventBufferProducerState *pState
+)
+{
+    NV_ASSERT_OR_RETURN(pEventBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pState       != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pState->destroy != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Single-producer-per-buffer.
+    if (pEventBuffer->pProducerState != NULL)
+        return NV_ERR_STATE_IN_USE;
+
+    pEventBuffer->pProducerState = pState;
+    return NV_OK;
+}
+
+void
+eventbufferAddListener_IMPL
+(
+    EventBuffer       *pEventBuffer,
+    EVENTNOTIFICATION *pEntry
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(pEventBuffer != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pEntry       != NULL);
+
+    pEntry->Next             = pEventBuffer->pListeners;
+    pEventBuffer->pListeners = pEntry;
+}
+
+void
+eventbufferRemoveListener_IMPL
+(
+    EventBuffer       *pEventBuffer,
+    EVENTNOTIFICATION *pEntry
+)
+{
+    EVENTNOTIFICATION **ppCursor;
+
+    NV_ASSERT_OR_RETURN_VOID(pEventBuffer != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pEntry       != NULL);
+
+    for (ppCursor = &pEventBuffer->pListeners; *ppCursor != NULL;
+         ppCursor = &(*ppCursor)->Next)
+    {
+        if (*ppCursor == pEntry)
+        {
+            *ppCursor = pEntry->Next;
+            pEntry->Next = NULL;
+            return;
+        }
+    }
 }

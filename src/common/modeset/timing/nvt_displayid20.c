@@ -141,9 +141,12 @@ NvTiming_DisplayID2ValidationMask(
     // Strong validation to follow for the displayid2 data blocks
     if (bIsStrongValidation == NV_TRUE && pDisplayId20Info != NULL)
     {
+        // Store raw version/checksum errors so the caller can read the full validation failure reason.
+        pDisplayId20Info->validation_fail_reason |= ret;
+
         if (!pDisplayId20Info->valid_data_blocks.product_id_present)
         {
-            ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_PRODUCT_IDENTIFY);
+            pDisplayId20Info->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_PRODUCT_IDENTIFY);
         }
 
         if (pDisplayId20Info->primary_use_case >= PRODUCT_PRIMARY_USE_GENERIC_DISPLAY &&
@@ -154,7 +157,7 @@ NvTiming_DisplayID2ValidationMask(
                   pDisplayId20Info->valid_data_blocks.type7Timing_present       &&
                   pDisplayId20Info->total_timings))
             {
-                ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
+                pDisplayId20Info->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
             }
         }
 
@@ -169,13 +172,18 @@ NvTiming_DisplayID2ValidationMask(
                 if ( pDisplayId20Info->timing[j].HVisible != pDisplayId20Info->display_param.h_pixels ||
                      pDisplayId20Info->timing[j].VVisible != pDisplayId20Info->display_param.v_pixels )
                 {
-                    ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
+                    pDisplayId20Info->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
                     break;
                 }
             }
         }
         // TODO : go on the next data block validation if it existed.
         // TODO : validate extension blocks
+    }
+
+    if (pDisplayId20Info != NULL)
+    {
+        ret |= pDisplayId20Info->validation_fail_reason;
     }
 
     return ret;
@@ -301,10 +309,6 @@ parseDisplayId20SectionDataBlocks(
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_DISPLAY_PARAM:
                 pDisplayIdInfo->valid_data_blocks.parameters_present             = NV_TRUE;
-                if (pDisplayIdInfo->display_param.audio_speakers_integrated == AUDIO_SPEAKER_INTEGRATED_SUPPORTED)
-                {
-                    pDisplayIdInfo->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
-                }
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_TIMING_7:
                 pDisplayIdInfo->valid_data_blocks.type7Timing_present            = NV_TRUE;
@@ -456,16 +460,33 @@ parseDisplayId20ProductIdentity(
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
 {
     NVT_STATUS status = NVT_STATUS_SUCCESS;
+    NvU32 productStringLen = 0;
+    NvU32 productStringPayloadLen = 0;
+    NvBool invalidProductNameSize = NV_FALSE;
     NVT_DISPLAYID_PRODUCT_IDENTITY *pProductIdentity = NULL;
     const DISPLAYID_2_0_PROD_IDENTIFICATION_BLOCK *pProductIdBlock = NULL;
 
     pProductIdBlock = (const DISPLAYID_2_0_PROD_IDENTIFICATION_BLOCK *)pDataBlock;
 
-    // add more validation if needed
+    if ((pProductIdBlock->header.data_bytes < DISPLAYID_2_0_PRODUCT_IDENTITY_MIN_LEN) ||
+        (pProductIdBlock->product_name_string_size > NVT_DISPLAYID_2_0_PRODUCT_STRING_MAX_LEN))
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    productStringPayloadLen = pProductIdBlock->header.data_bytes - DISPLAYID_2_0_PRODUCT_IDENTITY_MIN_LEN;
 
     if (pDisplayIdInfo == NULL) return status;
 
+    invalidProductNameSize = (pProductIdBlock->product_name_string_size != productStringPayloadLen);
+    if (invalidProductNameSize)
+    {
+        nvt_assert(0 && "Invalid DisplayID2 Product Identity product name size");
+        pDisplayIdInfo->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_PRODUCT_NAME_SIZE);
+    }
+
     pProductIdentity = &pDisplayIdInfo->product_identity;
+    productStringLen = pProductIdBlock->product_name_string_size;
 
     pProductIdentity->vendor_id = (pProductIdBlock->vendor[0] << 16) |
         (pProductIdBlock->vendor[1] << 8) |
@@ -482,13 +503,18 @@ parseDisplayId20ProductIdentity(
         pProductIdBlock->model_year :
         pProductIdBlock->model_year + 2000;
 
-    if (pProductIdBlock->product_name_string_size != 0)
+    if (productStringLen > productStringPayloadLen)
+    {
+        productStringLen = productStringPayloadLen;
+    }
+
+    if (productStringLen != 0)
     {
         NVMISC_STRNCPY((char *)pProductIdentity->product_string,
             (const char *)pProductIdBlock->product_name_string,
-            pProductIdBlock->product_name_string_size);
+            productStringLen);
     }
-    pProductIdentity->product_string[pProductIdBlock->product_name_string_size] = '\0';
+    pProductIdentity->product_string[productStringLen] = '\0';
 
     return status;
 }
@@ -2023,5 +2049,315 @@ updateColorFormatForDisplayId20Timings(
                                                    pDisplayId20Info->interface_features.yuv420.bpc.bpc16);
     }
 }
+
+#define DISPLAYID20_UBIT10(UBIT12) ((UBIT12) >> 2)
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS NV_STDCALL
+NvTiming_DisplayId20MapToEdidInfo(
+    const NVT_DISPLAYID_2_0_INFO *pDisplayId2Info,
+    NVT_EDID_INFO *pEdidInfo
+)
+{
+    NvU32 i;
+    NvU32 productStringLen = 0;
+    NvU32 lddCopyLen = 0;
+
+    if (pEdidInfo == NULL || pDisplayId2Info == NULL)
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    pEdidInfo->bIsNativeDID2   = NV_TRUE;
+
+    /** @brief Common EDIDInfo setting
+     */
+    pEdidInfo->version         = NVT_EDID_VER_1_4;
+    pEdidInfo->input.u.digital.video_interface = NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_DISPLAYPORT_SUPPORTED;
+    pEdidInfo->input.isDigital = 1;
+
+    /** @brief Translates the product ID (0x20h) to the relate blob in EDID.
+     *         DisplayId2 always prvoide the Production Identification Data Block
+     *
+     *    [Mandatory Data Block in DisplayId2]
+     * 
+     *    VESA Descriptor :  DisplayId2         ---------------- Mapping ---------->     EDID   [0x8h-0x11h]
+     *
+     *    Data Block Name :  Production Identification Data Block             Vendor & Product Identification
+     *
+     *    Data Block Field: "Manufacture/ Vendor Id"                           "ID Manufacture Name" [08h-09h] *
+     *         DisplayId2 support 3bytes IEEE OUIs definition at https://standards.ieee.org/develop/regauth/oui/
+     *         However the EDID used the 2bytes PNP ID  https://www.microsoft.com/whdc/system/pnppwr/pnp/pnpid.mspx
+     *         I just put the another one byte in m_pEdidInfo for using it in the furture.
+     *    Data Block Field: "Product ID Code"                                  "ID Product Code" [0Ah-0Bh]
+     *          Direct assignment
+     *    Data Block Field: "Serial Number"                                    "ID Serial Number" [0Ch-0Fh]
+     *          Direct assignment
+     *    Data Block Field: "Week/Year of Manufacture"                         "Week and Year of Manu" [10h-11h]
+     *          Direct assignment
+     *    Data Block Field: "Product Name String"                              "18 Byte Descriptors with 0xFC tag"
+     *          Tools uses Display Descriptor 0xFC tag valus in EDID as product string name with 13bytes length.
+     *          copy DisplayId2's Product Name String over it. this has 13 bytes limiation, so if we need to show >13bytes
+     *          string length, we need to add more code to handle it by using DisplayId2 field or add a another string 
+     *          field in EDID.
+     */
+    pEdidInfo->manuf_id      = (NvU16)((pDisplayId2Info->product_identity.vendor_id & 0x0000ffff) >> 0);
+    pEdidInfo->manuf_id_hi   = (NvU8)((pDisplayId2Info->product_identity.vendor_id & 0x00ff0000) >> 16);
+    pEdidInfo->product_id    = pDisplayId2Info->product_identity.product_id;
+    pEdidInfo->serial_number = pDisplayId2Info->product_identity.serial_number;
+    pEdidInfo->week          = (NvU8)pDisplayId2Info->product_identity.week;
+    pEdidInfo->year          = pDisplayId2Info->product_identity.year;
+
+    // 4.1.5 Product Name
+    // EDID only support characters length are 13, so only copy the first 12 length contents from DID2
+    while ((productStringLen < NVT_DISPLAYID_2_0_PRODUCT_STRING_MAX_LEN) &&
+           (pDisplayId2Info->product_identity.product_string[productStringLen] != '\0'))
+    {
+        productStringLen++;
+    }
+
+    if (productStringLen > 0)
+    {
+        pEdidInfo->ldd[0].tag = NVT_EDID_DISPLAY_DESCRITPOR_DPN;
+        // Keep the full native DID2 name in the EDID-shaped bridge; ldd[] is only the EDID projection.
+        NVMISC_MEMCPY(pEdidInfo->ext_displayid20.product_identity.product_string,
+                      pDisplayId2Info->product_identity.product_string,
+                      productStringLen);
+        pEdidInfo->ext_displayid20.product_identity.product_string[productStringLen] = '\0';
+
+        lddCopyLen = NV_MIN(productStringLen, NVT_EDID_LDD_PAYLOAD_SIZE - 1);
+        NVMISC_MEMCPY(pEdidInfo->ldd[0].u.product_name.str,
+                      pDisplayId2Info->product_identity.product_string,
+                      lddCopyLen);
+        pEdidInfo->ldd[0].u.product_name.str[lddCopyLen] = '\0';
+    }
+
+    /** @brief Parameters Data Block (0x21h) shall define the monitor's global parameters
+     *
+     *  [Mandatory Data Block in DisplayId2]
+     *  These fields did not mapping one by one in between DisplayId2 and EDID, we need to go through
+     *  all the different stored values in the EDID and assign it.
+     *
+     *    VESA Descriptor :  DisplayId2         ---------------- Mapping ---------->     EDID    [0x14h-18h]
+     *
+     *    Data Block Name :  Display Parameters Data Block                              "Basic Display Parameters & Features"
+     *
+     *    Data Block Field: "Hori/Verti Image Size"                                     "Screen Size X/Y" [15h-16h]
+     *         Convert DisplayId2 micro meter to centimeter and assign to screen_size_x/y
+     *    Data Block Field: "Hori/Verti Pixel Count"                                    "N/A"
+     *         This is for the navtive source mode H/V value. Right now it only used by the validation in DisplayId2
+     *    Data Block Field: "Feaure Flags"                                              "N/A"
+     *         1. Audio speaker information describes speaker routing (integrated vs. external jack);
+     *            interface audio support is advertised by the Interface Features or CTA data blocks.
+     *         2. color Information only supported CIE1931
+     *         3. Need to discuss Luminance Information usage in the future.
+     *         4. Need to discuss Scan Orientation usage in the future.
+     *    Data Block Field: " Native Color Chromaticity Fields"                         "color characteristics: 10 Bytes " [19h-22h]
+     *         Change to 10bits and assign RGBW point value
+     *    Data Block Field: "Native Luminance-related Fields"                           "N/A"
+     *         This is a NEW field in DisplayId2, I do a transfermaiton in interface feature data block sectoin.
+     */
+
+    // 4.2.3 Feature Support Flags Field
+    // N/A
+
+    if (pDisplayId2Info->valid_data_blocks.parameters_present)
+    {
+        // DisplayId 2.0 : Screen Size X/Y is not present, so we need to convert the micro meter to centimeter and assign to screen_size_x/y
+        pEdidInfo->screen_size_x = (NvU8)(pDisplayId2Info->display_param.h_image_size_micro_meter / 10000);
+        pEdidInfo->screen_size_y = (NvU8)(pDisplayId2Info->display_param.v_image_size_micro_meter / 10000);
+    }
+
+    if (pDisplayId2Info->display_param.color_map_standard == COLOR_MAP_CIE_1931)
+    {
+        pEdidInfo->cc_red_x   = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[0].x);
+        pEdidInfo->cc_red_y   = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[0].y);
+        pEdidInfo->cc_green_x = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[1].x);
+        pEdidInfo->cc_green_y = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[1].y);
+        pEdidInfo->cc_blue_x  = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[2].x);
+        pEdidInfo->cc_blue_y  = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.primaries[2].y);
+        pEdidInfo->cc_white_x = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.white.x);
+        pEdidInfo->cc_white_y = DISPLAYID20_UBIT10(pDisplayId2Info->display_param.white.y);
+    }
+
+    pEdidInfo->input.u.digital.bpc = NVT_COLORDEPTH_HIGHEST_BPC(pDisplayId2Info->display_param.native_color_depth);
+    pEdidInfo->gamma = pDisplayId2Info->display_param.gamma_x100;
+
+    /** @brief Copy the DisplayId20 Type VII (0x22h) timing[] to EDID detail timing[]
+     *
+     *  [Mandatory Data Block in DisplayId2]
+     *  DisplayId2 and EDID used the same NVT_TIMING structure from the different (20bytes vs. 18bytes) source raw value.
+     *  we can do directly assignment.
+     *
+     *    VESA Descriptor :  DisplayId2         ---------------- Mapping ---------->     EDID   [36h-47h]
+     *
+     *    Data Block Name :  Type VII Timing- Detailed Timing                            18 Byte Descriptors
+     *           20bytes length supported in Type VII, hwever it always parsed as NVT_TIMING which is same as EDID details timing
+     */        
+    nvt_assert(pEdidInfo->total_timings == 0 && "It exists EDID timings before mapping DisplayId20");
+    if (pEdidInfo->total_timings != 0)
+    {
+        pEdidInfo->total_timings = 0;
+        NVMISC_MEMSET(pEdidInfo->timing, 0, sizeof(pEdidInfo->timing));
+    }
+
+    if (pDisplayId2Info->total_timings <= COUNT(pEdidInfo->timing))
+    {
+        for (i = 0; i < pDisplayId2Info->total_timings; i++)
+        {
+            pEdidInfo->timing[pEdidInfo->total_timings++] = pDisplayId2Info->timing[i];
+        }
+    }
+
+    /** @brief Interface Data Block (0x26h) is to decide the YUV444/YUV422/YUV420 parameters supported in the dispalys or not.
+     *         It also defined the HDR important inforamtion.
+     *
+     *  [Mandatory Data Block in DisplayId2]
+     *    
+     *    VESA Descriptor :  DisplayId2         ---------------- Mapping ---------->     EDID   [0x14h]
+     *
+     *    Data Block Name : Display Inteface Features                                    "Video Input Define"  [0x14h]
+     *
+     *    Data Block Field: Color Depth for "RGB/YUV444/YUV422/YUV420 "                  "Color Bit Depth / Color Encoding"  [0x14h, 0x18h]
+     *         loop through all the timings and check if it support YUV444/YUV422
+     *         if it is supported, updated the color encoding YUV444/YUV4222 corresponding.
+     *    Data Block Field: "Mini YUV420 pixel rate"                                     "N/A"
+     *         This is new to DisplayId2, we can create a new field in pEdidInfo, or use the pDisplayid2 directly in the future for YUV420 supported.
+     *    Data Block Field: "Audio Capability"                                           "N/A"
+     *         1. This field shall also provided the audio data block from CTA861 to get more details
+     *         2. here only update the basic_caps in CTA861ext in EDID to show the audio support it or not.
+     *    Data Block Field: " Native Color Space and EOTF"                               "N/A"
+     *         1. Co-working with Parameters Data Block to get the correct luminance.
+     *         2. We need to transfer the IEEE 754 half-precision to decimal and then change to 1byte based on the CTA861 HDR Static Metadata Data Block
+     *         3. Updated restricted color space at the the byte1 and byte2 of colorimetry in CTA861
+     */
+    if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv444.bpcs))
+    {
+        pEdidInfo->u.feature_ver_1_4_digital.support_ycrcb_444 = 1;
+    }
+
+    if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv422.bpcs))
+    {
+        pEdidInfo->u.feature_ver_1_4_digital.support_ycrcb_422 = 1;
+    }
+
+    for (i = 0; i < pDisplayId2Info->interface_features.combination_count; i++)
+    {
+        if (pDisplayId2Info->interface_features.colorspace_eotf_combination[i].eotf == INTERFACE_EOTF_SMPTE_ST2084 &&
+            pDisplayId2Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_BT2020)
+        {
+            NvU32 fp32MaxFull, fp32Max10Pct, fp32Min;
+            NvU32 maxLumin, max10PctLumin, minLumin;
+            NvU32 cta861Max, cta861MaxAvg, cta861Min;
+
+            pEdidInfo->hdr_static_metadata_info.static_metadata_type = 1;
+            pEdidInfo->hdr_static_metadata_info.supported_eotf.smpte_st_2084_eotf = 1;
+            pEdidInfo->hdr_static_metadata_info.supported_eotf.trad_gamma_hdr_eotf = 1;
+
+            fp32MaxFull  = nvt_fp16ToFP32(pDisplayId2Info->display_param.native_max_luminance_full_coverage);
+            fp32Max10Pct = nvt_fp16ToFP32(pDisplayId2Info->display_param.native_max_luminance_10_percent_rect_coverage);
+            fp32Min      = nvt_fp16ToFP32(pDisplayId2Info->display_param.native_min_luminance);
+
+            // Extract integer luminance from fp32 bit pattern: value = (1 + mantissa/2^23) * 2^(exp-127)
+            // Approximate for CTA-861 conversion (result is NvU8)
+            {
+                NvU32 exp_bits, mant_bits;
+                exp_bits  = (fp32Max10Pct >> 23) & 0xFF;
+                mant_bits = fp32Max10Pct & 0x7FFFFF;
+                max10PctLumin = (exp_bits >= 127) ? (((0x800000 | mant_bits) >> 23) << (exp_bits - 127)) : 0;
+
+                exp_bits  = (fp32MaxFull >> 23) & 0xFF;
+                mant_bits = fp32MaxFull & 0x7FFFFF;
+                maxLumin = (exp_bits >= 127) ? (((0x800000 | mant_bits) >> 23) << (exp_bits - 127)) : 0;
+
+                exp_bits  = (fp32Min >> 23) & 0xFF;
+                mant_bits = fp32Min & 0x7FFFFF;
+                minLumin = (exp_bits >= 127) ? (((0x800000 | mant_bits) >> 23) << (exp_bits - 127)) : 0;
+            }
+
+            // CTA-861: cv = sqrt(luminance / 50) * 32, cv = sqrt(minLum * 100 / maxCv) * 255
+            cta861Max    = nvt_sqrt((max10PctLumin * 1024) / 50) * 32 / 32;
+            cta861MaxAvg = nvt_sqrt((maxLumin * 1024) / 50) * 32 / 32;
+            cta861Min    = (cta861Max > 0) ? nvt_sqrt((minLumin * 100 * 1024) / cta861Max) * 255 / 32 : 0;
+
+            pEdidInfo->hdr_static_metadata_info.max_cll  = (NvU8)((cta861Max > 255) ? 255 : cta861Max);
+            pEdidInfo->hdr_static_metadata_info.max_fall = (NvU8)((cta861MaxAvg > 255) ? 255 : cta861MaxAvg);
+            pEdidInfo->hdr_static_metadata_info.min_cll  = (NvU8)((cta861Min > 255) ? 255 : cta861Min);
+        }
+
+        if (pDisplayId2Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_SRGB)
+        {
+            if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv444.bpcs) ||
+                IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv422.bpcs) ||
+                IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv420.bpcs))
+            {
+                pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_sYCC_601;
+            }
+        }
+
+        if (pDisplayId2Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_ADOBE_RGB)
+        {
+            pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_AdobeRGB;
+        }
+
+        if (pDisplayId2Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_DCI_P3)
+        {
+            pEdidInfo->ext861.colorimetry.byte2 |= NVT_CEA861_COLORIMETRY_ST2113RGB;
+        }
+
+        if (pDisplayId2Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_BT2020)
+        {
+            pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020RGB;
+
+            if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv444.bpcs) ||
+                IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv422.bpcs) ||
+                IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId2Info->interface_features.yuv420.bpcs))
+            {
+                pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020YCC;
+            }
+        }
+    }
+
+    /** @brief Translates the 81h CTA861 all data blocks and vsdb to the relate blob in EDID.
+     *         DisplayId2 always needs to provide the CTA861 Audio and HDR Static Metadata Data Block if needed
+     */    
+    
+    pEdidInfo->ext861            = pDisplayId2Info->cta.cta861_info;
+    pEdidInfo->total_extensions  = pDisplayId2Info->extension_count;
+    pEdidInfo->ext861.basic_caps = pDisplayId2Info->basic_caps;
+
+    if (pDisplayId2Info->cta.cta861_info.valid.H14B_VSDB)
+    {
+        pEdidInfo->hdmiLlcInfo = pDisplayId2Info->vendor_specific.hdmiLlc;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.H20_HF_VSDB)
+    {
+        pEdidInfo->hdmiForumInfo = pDisplayId2Info->vendor_specific.hfvs;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.nvda_vsdb)
+    {
+        pEdidInfo->nvdaVsdbInfo = pDisplayId2Info->vendor_specific.nvVsdb;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.msft_vsdb)
+    {
+        pEdidInfo->msftVsdbInfo = pDisplayId2Info->vendor_specific.msftVsdb;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.hdr_static_metadata &&
+        !pEdidInfo->hdr_static_metadata_info.supported_eotf.smpte_st_2084_eotf)
+    {
+        pEdidInfo->hdr_static_metadata_info = pDisplayId2Info->cta.hdrInfo;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.dv_static_metadata)
+    {
+        pEdidInfo->dv_static_metadata_info = pDisplayId2Info->cta.dvInfo;
+    }
+    if (pDisplayId2Info->cta.cta861_info.valid.hdr10Plus)
+    {
+        pEdidInfo->hdr10PlusInfo = pDisplayId2Info->cta.hdr10PlusInfo;
+    }
+
+    return NVT_STATUS_SUCCESS;
+}
+
 POP_SEGMENTS
 

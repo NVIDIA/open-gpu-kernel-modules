@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -320,6 +320,9 @@
 #endif
 #if RMCFG_MODULE_KERNEL_HFRP && GPU_CHILD_MODULE(KERNEL_HFRP)
     GPU_CHILD_SINGLE_INST( KernelHFRP,              GPU_GET_KERNEL_HFRP,              1,                NV_FALSE,        pKernelHfrp       )
+#endif
+#if GPU_CHILD_MODULE(KERNEL_OOB)
+    GPU_CHILD_SINGLE_INST( KernelOob,            GPU_GET_KERNEL_OOB,                  1,                NV_FALSE,        pKernelOob        )
 #endif
 
 // Undefine the entry macros to simplify call sites

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #include "dp/nvdp-device.h"
+#include "dp/nvdp-connector.h"
 #include "dp/nvdp-connector-event-sink.h"
 
 #include "nvkms-api-types.h"
@@ -57,6 +58,19 @@
 #define TMDS_SINGLE_LINK_PCLK_MAX 165000
 #define TMDS_DUAL_LINK_PCLK_MAX 330000
 
+#define EDID_V1_HEADER_LENGTH          0x08
+
+#define EDID_V1_INDEX_VERSION          0x12
+#define EDID_V1_VERSION_NUMBER         0x01
+
+#define DISPLAYID_V2_HEADER_LENGTH     0x04
+
+#define DISPLAYID_V2_VERSION_INDEX     0x00
+#define DISPLAYID_V2_VERSION_NUMBER    0x20
+
+static const NvU8 EDID_V1_HEADER[EDID_V1_HEADER_LENGTH] =
+    { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00 };
+
 static void DpyGetDynamicDfpProperties(
     NVDpyEvoPtr pDpyEvo,
     const NvBool disableACPIBrightnessHotkeys);
@@ -81,6 +95,9 @@ static void ClearEdid                     (NVDpyEvoPtr pDpyEvo, const NvBool bSe
 static void ClearCustomEdid               (const NVDpyEvoRec *pDpyEvo);
 static void WriteEdidToResman             (const NVDpyEvoRec *pDpyEvo,
                                            const NVEdidRec *pEdid);
+static NvBool ReadAndValidateNativeDID    (const NVDpyEvoRec *pDpyEvo,
+                                           NVEdidRec *pEdid,
+                                           NVEvoInfoStringPtr pInfoString);
 static void PatchAndParseEdid             (const NVDpyEvoRec *pDpyEvo,
                                            NVEdidPtr pEdid,
                                            NVParsedEdidEvoPtr,
@@ -95,6 +112,12 @@ static void AssignDpyEvoName              (NVDpyEvoPtr pDpyEvo);
 
 static NvBool IsConnectorTMDS             (NVConnectorEvoPtr);
 
+static const NVT_TIMING VesaEstablished640x480 =
+{
+    640, 0, 16, 96, 800, NVT_H_SYNC_NEGATIVE, 480, 0, 10, 2, 525,
+    NVT_V_SYNC_NEGATIVE, NVT_PROGRESSIVE, 2518, 25175, 0,
+    {0, 60, 60000, 0, 1, {0}, {0}, {0}, {0}, NVT_STATUS_EDID_EST, "EDID_Established"}
+};
 
 static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
@@ -102,6 +125,13 @@ static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm
 
     pDispEvo->connectedDisplays =
         nvDpyIdListMinusDpyId(pDispEvo->connectedDisplays, pDpyEvo->id);
+
+    /* Report video extcon disconnect for TMDS (HDMI) connectors */
+    nvHdmiReportExtconVideoState(pDpyEvo->pConnectorEvo, FALSE);
+
+    if (nvDpyUsesDPLib(pDpyEvo) && !nvDpyEvoIsDPMST(pDpyEvo)) {
+        nvDPSetClientForcedConnected(pDpyEvo->pConnectorEvo, FALSE);
+    }
 
     ClearEdid(pDpyEvo, bSendHdmiCapsToRm);
 }
@@ -115,6 +145,14 @@ static NvBool DpyConnectEvo(
     pDispEvo->connectedDisplays =
         nvAddDpyIdToDpyIdList(pDpyEvo->id, pDispEvo->connectedDisplays);
 
+    /* Report video extcon connect for TMDS (HDMI) connectors */
+    nvHdmiReportExtconVideoState(pDpyEvo->pConnectorEvo, TRUE);
+
+    if (nvDpyUsesDPLib(pDpyEvo) && !nvDpyEvoIsDPMST(pDpyEvo)) {
+        nvDPSetClientForcedConnected(pDpyEvo->pConnectorEvo,
+                                        pParams->request.forceConnected);
+    }
+
     DpyGetDynamicDfpProperties(pDpyEvo, pParams->request.disableACPIBrightnessHotkeys);
     nvDPGetDpyGUID(pDpyEvo);
 
@@ -127,7 +165,7 @@ static NvBool DpyConnectEvo(
         ReadAndApplyEdidEvo(pDpyEvo, pParams);
     }
 
-    nvUpdateInfoFrames(pDpyEvo);
+    nvUpdateInfoFrames(pDpyEvo, FALSE);
 
     return TRUE;
 }
@@ -190,30 +228,63 @@ static void DpyAssignColorSpaceCaps(NVDpyEvoPtr pDpyEvo,
     pDpyEvo->colorSpaceCaps.ycbcr444Capable = ycbr444_cap;
 }
 
+typedef enum {
+    NVKMS_OVERRIDE_NONE,
+    NVKMS_OVERRIDE_EDID,
+    NVKMS_OVERRIDE_NATIVE_DID,    
+} NvKmsMetadataOverrideType;
 
-
-static NvBool GetEdidOverride(
+static NvKmsMetadataOverrideType GetDisplayMetadataOverride(
     const struct NvKmsQueryDpyDynamicDataRequest *pRequest,
     NVEdidRec *pEdid)
 {
     if ((pRequest == NULL) ||
-        !pRequest->overrideEdid ||
+        !pRequest->overrideMetadata ||
         (pRequest->edid.bufferSize == 0) ||
         (pRequest->edid.bufferSize > sizeof(pRequest->edid.buffer))) {
-        return FALSE;
+        return NVKMS_OVERRIDE_NONE;
     }
 
     pEdid->buffer = nvAlloc(pRequest->edid.bufferSize);
 
     if (pEdid->buffer == NULL) {
-        return FALSE;
+        return NVKMS_OVERRIDE_NONE;
     }
 
     nvkms_memcpy(pEdid->buffer, pRequest->edid.buffer, pRequest->edid.bufferSize);
 
     pEdid->length = pRequest->edid.bufferSize;
 
-    return TRUE;
+    // Check for EDID header
+    if (pEdid->length <= EDID_V1_INDEX_VERSION) {
+        goto displayid;
+    }
+
+    if (nvkms_memcmp(&EDID_V1_HEADER, pEdid->buffer, EDID_V1_HEADER_LENGTH)) {
+        goto displayid;
+    }
+
+    if (pEdid->buffer[EDID_V1_INDEX_VERSION] == EDID_V1_VERSION_NUMBER) {
+        return NVKMS_OVERRIDE_EDID;
+    }
+
+displayid:
+    // Check for DisplayID header
+    if (pEdid->length < DISPLAYID_V2_HEADER_LENGTH) {
+        goto fail;
+    }
+
+    if ((pEdid->buffer[DISPLAYID_V2_VERSION_INDEX] & 0xf0) ==
+         DISPLAYID_V2_VERSION_NUMBER) {
+        return NVKMS_OVERRIDE_NATIVE_DID;
+    }
+
+fail:
+    nvFree(pEdid->buffer);
+    pEdid->length = 0;
+    pEdid->buffer = NULL;
+
+    return NVKMS_OVERRIDE_NONE;
 }
 
 /*!
@@ -229,26 +300,48 @@ NvBool nvDpyReadAndParseEdidEvo(
     NVParsedEdidEvoPtr *ppParsedEdid,
     NVEvoInfoStringPtr pInfoString)
 {
-    NvBool ignoreEdid = FALSE;
+    NvBool ignoreMetadata = FALSE;
     NvBool ignoreEdidChecksum = FALSE;
+    NvKmsMetadataOverrideType metadataOverride = NVKMS_OVERRIDE_NONE;
 
     if (pRequest != NULL) {
-        ignoreEdid = pRequest->ignoreEdid;
+        ignoreMetadata = pRequest->ignoreMetadata;
         ignoreEdidChecksum = pRequest->ignoreEdidChecksum;
     }
 
     nvkms_memset(pEdid, 0, sizeof(*pEdid));
 
-    /* Just return an empty EDID if requested. */
-    if (ignoreEdid) {
+    /* Just return empty metadata if requested. */
+    if (ignoreMetadata) {
         return TRUE;
     }
 
-    /* Load any custom EDID, (or see if DP lib has EDID) */
     ClearCustomEdid(pDpyEvo);
 
-    if ((pRequest && GetEdidOverride(pRequest, pEdid)) ||
-        ReadEdidFromDP(pDpyEvo, pEdid)) {
+    /* Load any custom metadata, if available */
+    metadataOverride = GetDisplayMetadataOverride(pRequest, pEdid);
+        
+    /*
+     * This will handle the case where the metadata override contains a
+     * DisplayID blob
+     */
+    if ((metadataOverride != NVKMS_OVERRIDE_EDID) &&
+        ReadAndValidateNativeDID(pDpyEvo, pEdid, pInfoString)) {
+
+        goto patchAndParseEdid;
+    }
+
+    /*
+     * If we failed to validate a native DisplayID override, do not
+     * attempt to read an EDID.
+     */
+    if (metadataOverride == NVKMS_OVERRIDE_NATIVE_DID) {
+        goto fail;
+    }
+
+    /* At this point, we do not have native DisplayID available. */
+
+    if ((metadataOverride == NVKMS_OVERRIDE_EDID) || ReadEdidFromDP(pDpyEvo, pEdid)) {
         /* XXX [VSM] Write, clear and re-read the EDID to/from RM here to make
          * sure RM and X agree on the final EDID bits.  Once RM no longer
          * parses the EDID, we can avoid doing this for DP devices.
@@ -277,6 +370,7 @@ validateEdid:
         goto fail;
     }
 
+patchAndParseEdid:
     *ppParsedEdid = nvCalloc(1, sizeof(**ppParsedEdid));
     if (*ppParsedEdid == NULL) {
         goto fail;
@@ -287,7 +381,6 @@ validateEdid:
     return TRUE;
 
 fail:
-
     /* We failed to read a valid EDID.  Free any EDID buffer allocated above. */
     nvFree(pEdid->buffer);
     pEdid->buffer = NULL;
@@ -371,6 +464,7 @@ static void ApplyNewEdid(
     }
     pDpyEvo->edid.buffer = pEdid->buffer;
     pDpyEvo->edid.length = pEdid->length;
+    pDpyEvo->edid.isNativeDID = pEdid->isNativeDID;
 
     if (pParsedEdid != NULL) {
         nvkms_memcpy(&pDpyEvo->parsedEdid, pParsedEdid,
@@ -637,7 +731,7 @@ static void ReadAndApplyEdidEvo(
     struct NvKmsQueryDpyDynamicDataParams *pParams)
 {
     const struct NvKmsQueryDpyDynamicDataRequest *pRequest = NULL;
-    NVEdidRec edid = {NULL, 0};
+    NVEdidRec edid = {NULL, 0, FALSE};
     NVParsedEdidEvoPtr pParsedEdid = NULL;
     NVEvoInfoStringRec infoString;
     NvBool readSuccess;
@@ -807,7 +901,6 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-    NvU32 displayOwner = pDispEvo->displayOwner;
     NVEvoPassiveDpDongleType passiveDpDongleType;
     NV0073_CTRL_SPECIFIC_GET_PCLK_LIMIT_PARAMS params = { 0 };
     NvU32 passiveDpDongleMaxPclkKHz;
@@ -863,7 +956,7 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
      */
     if (pDevEvo->gpus != NULL) {
 
-        NVEvoSorCaps *sorCaps = pDevEvo->gpus[displayOwner].capabilities.sor;
+        NVEvoSorCaps *sorCaps = pDevEvo->capabilities.sor;
         NvU32 orIndex = pConnectorEvo->or.primary;
 
         if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
@@ -879,7 +972,8 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
         if (nvDpyIsHdmiEvo(pDpyEvo)) {
             pDpyEvo->maxPixelClockKHz =
                 pDpyEvo->maxSingleLinkPixelClockKHz =
-                sorCaps[orIndex].maxTMDSClkKHz;
+                nvHdmiTmdsGetPixelClockKHz(pDpyEvo,
+                                           sorCaps[orIndex].maxTMDSClkKHz);
 
             nvkms_memset(&pDpyEvo->hdmi.srcCaps, 0, sizeof(pDpyEvo->hdmi.srcCaps));
             nvkms_memset(&pDpyEvo->hdmi.sinkCaps, 0, sizeof(pDpyEvo->hdmi.sinkCaps));
@@ -1538,6 +1632,11 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
 {
     int k;
     NVParsedEdidEvoPtr pParsedEdid;
+    const char *descriptorName = "EDID";
+
+    if (pDpyEvo->parsedEdid.valid && pDpyEvo->edid.isNativeDID) {
+        descriptorName = "Native DisplayID";
+    }
 
     static const struct {
         NVT_TIMING_TYPE type;
@@ -1644,21 +1743,28 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
 
     nvEvoLogInfoString(pInfoString, "");
     nvEvoLogInfoString(pInfoString,
-                       "--- EDID for %s ---", pDpyEvo->name);
+                       "--- %s for %s ---", descriptorName, pDpyEvo->name);
 
     if (!pDpyEvo->parsedEdid.valid) {
         nvEvoLogInfoString(pInfoString, "");
-        nvEvoLogInfoString(pInfoString, "No EDID Available.");
+        nvEvoLogInfoString(pInfoString, "No %s Available.", descriptorName);
         nvEvoLogInfoString(pInfoString, "");
         goto done;
     }
 
     pParsedEdid = &pDpyEvo->parsedEdid;
 
-    nvEvoLogInfoString(pInfoString,
-                       "EDID Version                 : %d.%d",
-                       pParsedEdid->info.version >> 8,
-                       pParsedEdid->info.version & 0xff);
+    if (!pDpyEvo->edid.isNativeDID) {
+        nvEvoLogInfoString(pInfoString,
+                           "EDID Version                 : %d.%d",
+                           pParsedEdid->info.version >> 8,
+                           pParsedEdid->info.version & 0xff);
+    } else {
+        nvEvoLogInfoString(pInfoString,
+                           "Native DisplayID Version     : %d.%d",
+                           pParsedEdid->info.ext_displayid20.version,
+                           pParsedEdid->info.ext_displayid20.revision);
+    }
 
     nvEvoLogInfoString(pInfoString,
                        "Manufacturer                 : %s",
@@ -1687,26 +1793,31 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
 
     /*
      * despite the name feature_ver_1_3, the below features are
-     * reported on all EDID versions
+     * reported on all EDID versions. These features are not reported
+     * in DisplayID.
      */
-    nvEvoLogInfoString(pInfoString,
-                       "DPMS Capabilities            :%s%s%s",
-                       pParsedEdid->info.u.feature_ver_1_3.support_standby ?
-                       " Standby" : "",
-                       pParsedEdid->info.u.feature_ver_1_3.support_suspend ?
-                       " Suspend" : "",
-                       pParsedEdid->info.u.feature_ver_1_3.support_active_off ?
-                       " Active Off" : "");
+    if (!pDpyEvo->edid.isNativeDID) {
+        nvEvoLogInfoString(pInfoString,
+                           "DPMS Capabilities            :%s%s%s",
+                           pParsedEdid->info.u.feature_ver_1_3.support_standby ?
+                           " Standby" : "",
+                           pParsedEdid->info.u.feature_ver_1_3.support_suspend ?
+                           " Suspend" : "",
+                           pParsedEdid->info.u.feature_ver_1_3.support_active_off ?
+                           " Active Off" : "");
+    }
 
     nvEvoLogInfoString(pInfoString,
                        "Input Type                   : %s",
                        pParsedEdid->info.input.isDigital ?
                        "Digital" : "Analog");
 
-    nvEvoLogInfoString(pInfoString,
-                       "Prefer first detailed timing : %s",
-                       pParsedEdid->info.u.feature_ver_1_3.preferred_timing_is_native ?
-                       "Yes" : "No");
+    if (!pDpyEvo->edid.isNativeDID) {
+        nvEvoLogInfoString(pInfoString,
+                           "Prefer first detailed timing : %s",
+                           pParsedEdid->info.u.feature_ver_1_3.preferred_timing_is_native ?
+                           "Yes" : "No");
+    }
 
     if (pParsedEdid->info.version == NVT_EDID_VER_1_3) {
         nvEvoLogInfoString(pInfoString,
@@ -1716,18 +1827,20 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
     }
 
     if (pParsedEdid->info.version >= NVT_EDID_VER_1_4) {
-        NvBool continuousFrequency = FALSE;
-        if (pParsedEdid->info.input.isDigital) {
-            continuousFrequency =
-                pParsedEdid->info.u.feature_ver_1_4_digital.continuous_frequency;
-        } else {
-            continuousFrequency =
-                pParsedEdid->info.u.feature_ver_1_4_analog.continuous_frequency;
-        }
+        if (!pDpyEvo->edid.isNativeDID) {
+            NvBool continuousFrequency = FALSE;
+            if (pParsedEdid->info.input.isDigital) {
+                continuousFrequency =
+                    pParsedEdid->info.u.feature_ver_1_4_digital.continuous_frequency;
+            } else {
+                continuousFrequency =
+                    pParsedEdid->info.u.feature_ver_1_4_analog.continuous_frequency;
+            }
 
-        nvEvoLogInfoString(pInfoString,
-                           "Supports Continuous Frequency: %s",
-                           continuousFrequency ? "Yes" : "No");
+            nvEvoLogInfoString(pInfoString,
+                               "Supports Continuous Frequency: %s",
+                               continuousFrequency ? "Yes" : "No");
+        }
 
         nvEvoLogInfoString(pInfoString,
                            "EDID 1.4 YCbCr 422 support   : %s",
@@ -1760,7 +1873,7 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
                        NV_VA_DIV_1000_POINT_1(pParsedEdid->limits.max_v_rate_hzx1k));
 
     nvEvoLogInfoString(pInfoString,
-                       "EDID maximum pixel clock     : "
+                       "Maximum pixel clock          : "
                        NV_FMT_DIV_1000_POINT_1 " MHz",
                        NV_VA_DIV_1000_POINT_1(pParsedEdid->limits.max_pclk_10khz * 10));
 
@@ -2063,7 +2176,7 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
 
  done:
     nvEvoLogInfoString(pInfoString,
-                       "--- End of EDID for %s ---", pDpyEvo->name);
+                       "--- End of %s for %s ---", descriptorName, pDpyEvo->name);
     nvEvoLogInfoString(pInfoString, "");
 }
 
@@ -2263,11 +2376,67 @@ static void CreateParsedEdidFromNVT_TIMING(
     pParsedEdid->valid = TRUE;
 }
 
+static NvBool ReadAndValidateNativeDID(
+    const NVDpyEvoRec *pDpyEvo,
+    NVEdidRec *pEdid,
+    NVEvoInfoStringPtr pInfoString
+)
+{
+    NvU32 length;
+    NvU8 *buffer = NULL;
+    NvBool override = (pEdid->length > 0);
+
+    const NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+
+    if (!override) {
+        if (!nvDpyUsesDPLib(pDpyEvo)) {
+            goto fail;
+        }
+
+        length = nvDPGetDisplayId2xSize(pDpyEvo);
+        if (length == 0) {
+            goto fail;
+        }
+
+        buffer = nvCalloc(length, 1);
+        if (buffer == NULL) {
+            goto fail;
+        }
+
+        if (!nvDPGetDisplayId2x(pDpyEvo, buffer, length)) {
+            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                         "Failed to read native DisplayID for %s",
+                         pDpyEvo->name);
+            goto fail;
+        }
+    } else {
+        length = pEdid->length;
+        buffer = pEdid->buffer;
+    }
+
+    if (NvTiming_DisplayID2ValidationMask(buffer, NULL, FALSE) != 0) {
+        nvEvoLogInfoString(pInfoString,
+                           "The native DisplayID for display device %s is invalid.",
+                           pDpyEvo->name);
+        goto fail;
+    }
+
+    pEdid->length = length;
+    pEdid->buffer = buffer;
+    pEdid->isNativeDID = TRUE;
+
+    return TRUE;
+fail:
+    if (!override) {
+        nvFree(buffer);
+    }
+    return FALSE;
+}
+
 /*
  * PatchAndParseEdid() - use the nvtiming library to parse the EDID data.  The
  * EDID data provided in the 'pEdid' argument may be patched or modified.
  */
-
 static void PatchAndParseEdid(
     const NVDpyEvoRec *pDpyEvo,
     NVEdidPtr pEdid,
@@ -2284,12 +2453,27 @@ static void PatchAndParseEdid(
 
     nvkms_memset(pParsedEdid, 0, sizeof(*pParsedEdid));
 
-    PrePatchEdid(pDpyEvo, pEdid, pInfoString);
+    if (pEdid->isNativeDID) {
+        status = NvTiming_parseDisplayId20Info(pEdid->buffer, pEdid->length,
+                                               &pParsedEdid->info.ext_displayid20);
+        if (status == NVT_STATUS_SUCCESS) {
+            status = NvTiming_DisplayId20MapToEdidInfo(&pParsedEdid->info.ext_displayid20,
+                                                       &pParsedEdid->info);
+        }
+       
+        if ((status == NVT_STATUS_SUCCESS) &&
+            (pParsedEdid->info.total_timings < NVT_EDID_MAX_TOTAL_TIMING)) {
+            /* Patch in the fallback 640x480 timing */
+            pParsedEdid->info.timing[pParsedEdid->info.total_timings] = VesaEstablished640x480;
+            pParsedEdid->info.total_timings++;
+        } 
+    } else {
+        PrePatchEdid(pDpyEvo, pEdid, pInfoString);
+        /* parse the majority of information from the EDID */
 
-    /* parse the majority of information from the EDID */
-
-    status = NvTiming_ParseEDIDInfo(pEdid->buffer, pEdid->length,
-                                    &pParsedEdid->info);
+        status = NvTiming_ParseEDIDInfo(pEdid->buffer, pEdid->length,
+                                        &pParsedEdid->info);
+    }
 
     if (status != NVT_STATUS_SUCCESS) {
         return;
@@ -2309,16 +2493,41 @@ static void PatchAndParseEdid(
 
     pParsedEdid->serialNumberString[0] = '\0';
 
-    for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++) {
-        if (pParsedEdid->info.ldd[i].tag == NVT_EDID_DISPLAY_DESCRIPTOR_DPSN) {
-            ct_assert(sizeof(pParsedEdid->info.ldd[i].u.serial_number.str) <
-                      sizeof(pParsedEdid->serialNumberString));
-            nvkms_memcpy(pParsedEdid->serialNumberString,
-                         pParsedEdid->info.ldd[i].u.serial_number.str,
-                         sizeof(pParsedEdid->info.ldd[i].u.serial_number.str));
-            pParsedEdid->serialNumberString[
-                sizeof(pParsedEdid->serialNumberString) - 1] = '\0';
-            break;
+    if (pEdid->isNativeDID) {
+        /* If pParsedEdid was derived from native DisplayID, a
+         * NVT_EDID_DISPLAY_DESCRIPTOR_DPSN LDD block will not be present.
+         * Instead, construct the serial number string from the integral value
+         * in pEdidInfo->serial_number.
+         */
+        NvU32 currByte;
+        NvU32 mask = 0xff;
+        NvU32 shift = 0;
+        pParsedEdid->serialNumberString[10] = '\0';
+
+        for (i = 9; i > 1; i -= 2) {
+            currByte = (pParsedEdid->info.serial_number & mask) >> shift;
+
+            pParsedEdid->serialNumberString[i] = nvHexDigitToChar(currByte & 0xf);
+            pParsedEdid->serialNumberString[i - 1] = nvHexDigitToChar((currByte & 0xf0) >> 4);
+
+            mask <<= 8;
+            shift += 8;
+        }
+
+        pParsedEdid->serialNumberString[0] = '0';
+        pParsedEdid->serialNumberString[1] = 'x';
+    } else {
+        for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++) {
+            if (pParsedEdid->info.ldd[i].tag == NVT_EDID_DISPLAY_DESCRIPTOR_DPSN) {
+                ct_assert(sizeof(pParsedEdid->info.ldd[i].u.serial_number.str) <
+                          sizeof(pParsedEdid->serialNumberString));
+                nvkms_memcpy(pParsedEdid->serialNumberString,
+                             pParsedEdid->info.ldd[i].u.serial_number.str,
+                             sizeof(pParsedEdid->info.ldd[i].u.serial_number.str));
+                pParsedEdid->serialNumberString[
+                    sizeof(pParsedEdid->serialNumberString) - 1] = '\0';
+                break;
+            }
         }
     }
 
@@ -2346,20 +2555,22 @@ static void PatchAndParseEdid(
 
     pParsedEdid->valid = TRUE;
 
-    /* resize the EDID buffer, if necessary */
+    if (!pEdid->isNativeDID) {
+        /* resize the EDID buffer, if necessary */
 
-    edidSize = NVT_EDID_ACTUAL_SIZE(&pParsedEdid->info);
+        edidSize = NVT_EDID_ACTUAL_SIZE(&pParsedEdid->info);
 
-    if (edidSize < pEdid->length) {
-        NvU8 *pEdidData = nvAlloc(edidSize);
+        if (edidSize < pEdid->length) {
+            NvU8 *pEdidData = nvAlloc(edidSize);
 
-        if (pEdidData != NULL) {
-            nvkms_memcpy(pEdidData, pEdid->buffer, edidSize);
+            if (pEdidData != NULL) {
+                nvkms_memcpy(pEdidData, pEdid->buffer, edidSize);
 
-            nvFree(pEdid->buffer);
+                nvFree(pEdid->buffer);
 
-            pEdid->buffer = pEdidData;
-            pEdid->length = edidSize;
+                pEdid->buffer = pEdidData;
+                pEdid->length = edidSize;
+            }
         }
     }
 }
@@ -2622,22 +2833,120 @@ static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
     const NVDispHeadStateEvoRec *pHeadState =
                                 &pDispEvo->headState[head];
     DPSDP_DESCRIPTOR sdp = { };
-    NvEvoInfoFrameTransmitControl transmitCtrl =
-        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_INIT;
+    NvEvoInfoFrameTransmitControl transmitCtrl;
+    transmitCtrl.frequency =
+        NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_INIT;
 
     ConstructHdrInfoFrameSdp(pDispEvo, head, &sdp);
 
     switch (pHeadState->hdrInfoFrame.state) {
         case NVKMS_HDR_INFOFRAME_STATE_DISABLED:
-            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME;
+            transmitCtrl.frequency = NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_SINGLE_FRAME;
             break;
         case NVKMS_HDR_INFOFRAME_STATE_ENABLED:
         case NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING:
-            transmitCtrl = NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
+            transmitCtrl.frequency = NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME;
             break;
     }
 
-    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, transmitCtrl, &sdp);
+    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, &transmitCtrl, &sdp);
+}
+
+static NvU8 GetVscSdpPixelEncoding(
+    enum NvKmsDpyAttributeCurrentColorFormatValue format)
+{
+    switch (format) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
+            return SDP_VSC_PIX_ENC_RGB;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
+            return SDP_VSC_PIX_ENC_YCBCR444;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422:
+            return SDP_VSC_PIX_ENC_YCBCR422;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
+            return SDP_VSC_PIX_ENC_YCBCR420;
+        default:
+            nvAssert(!"unrecognized color format");
+            return SDP_VSC_PIX_ENC_RGB;
+    }
+}
+
+static NvU8 GetVscSdpColorimetry(
+    enum NvKmsDpyAttributeCurrentColorFormatValue format,
+    enum NvKmsOutputColorimetry colorimetry,
+    NvBool hdTimings)
+{
+    if (format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB) {
+        switch (colorimetry) {
+            case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+                return SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_ITU_R_BT2020_RGB;
+            case NVKMS_OUTPUT_COLORIMETRY_BT601:
+            case NVKMS_OUTPUT_COLORIMETRY_BT709:
+            case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+                return SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_SRGB;
+        }
+    } else {
+        switch (colorimetry) {
+            case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+                return SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT2020_YCBCR;
+            case NVKMS_OUTPUT_COLORIMETRY_BT601:
+                return SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601;
+            case NVKMS_OUTPUT_COLORIMETRY_BT709:
+                return SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709;
+            case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+                return hdTimings ?
+                    SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709 :
+                    SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601;
+        }
+    }
+
+    return SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_SRGB;
+}
+
+static NvU8 GetVscSdpBitDepth(
+    enum NvKmsDpyAttributeCurrentColorFormatValue format,
+    enum NvKmsDpyAttributeColorBpcValue bpc)
+{
+    if (format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB) {
+        switch (bpc) {
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+                return SDP_VSC_BIT_DEPTH_RGB_12BPC;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+                return SDP_VSC_BIT_DEPTH_RGB_10BPC;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
+                return SDP_VSC_BIT_DEPTH_RGB_8BPC;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6:
+                return SDP_VSC_BIT_DEPTH_RGB_6BPC;
+            default:
+                nvAssert(!"Invalid bpc value for RGB format");
+                return SDP_VSC_BIT_DEPTH_RGB_8BPC;
+        }
+    } else {
+        switch (bpc) {
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12:
+                return SDP_VSC_BIT_DEPTH_YCBCR_12BPC;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+                return SDP_VSC_BIT_DEPTH_YCBCR_10BPC;
+            case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
+                return SDP_VSC_BIT_DEPTH_YCBCR_8BPC;
+            default:
+                nvAssert(!"Invalid bpc value for YCbCr format");
+                return SDP_VSC_BIT_DEPTH_YCBCR_8BPC;
+        }
+    }
+}
+
+static NvU8 GetVscSdpDynamicRange(
+    enum NvKmsDpyAttributeColorRangeValue range)
+{
+    switch (range) {
+        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL:
+            return SDP_VSC_DYNAMIC_RANGE_VESA;
+        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED:
+            return SDP_VSC_DYNAMIC_RANGE_CEA;
+        default:
+            nvAssert(!"Invalid colorRange value");
+            return SDP_VSC_DYNAMIC_RANGE_VESA;
+    }
 }
 
 void nvConstructDpVscSdp(const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
@@ -2648,116 +2957,23 @@ void nvConstructDpVscSdp(const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
 
     sdp->dataSize = SDP_VSC_VALID_DATA_BYTES_PSR2_COLOR;
 
-    // Header
-    // Per DP1.3 spec
+    /* Header - Per DP1.3 spec */
     sdp->hb.hb0 = 0;
     sdp->hb.hb1 = SDP_PACKET_TYPE_VSC;
     sdp->hb.revisionNumber = SDP_VSC_REVNUM_STEREO_PSR2_COLOR;
     sdp->hb.numValidDataBytes = SDP_VSC_VALID_DATA_BYTES_PSR2_COLOR;
 
+    /* Data block */
     sdp->db.stereoInterface = 0;
     sdp->db.psrState = 0;
     sdp->db.contentType = SDP_VSC_CONTENT_TYPE_GRAPHICS;
-    switch (pDpyColor->format) {
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
-            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_RGB;
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
-            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR444;
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422:
-            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR422;
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
-            sdp->db.pixEncoding = SDP_VSC_PIX_ENC_YCBCR420;
-            break;
-        default:
-            nvAssert(!"unrecognized color format");
-            break;
-    }
 
-    switch (pDpyColor->format) {
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB:
-            switch (pDpyColor->colorimetry) {
-                case NVKMS_OUTPUT_COLORIMETRY_BT2100:
-                    sdp->db.colorimetryFormat =
-                        SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_ITU_R_BT2020_RGB;
-                    break;
-                case NVKMS_OUTPUT_COLORIMETRY_BT601:
-                case NVKMS_OUTPUT_COLORIMETRY_BT709:
-                case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
-                    sdp->db.colorimetryFormat =
-                        SDP_VSC_COLOR_FMT_RGB_COLORIMETRY_SRGB;
-                    break;
-            }
-
-            switch (pDpyColor->bpc) {
-                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
-                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_10BPC;
-                    break;
-                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
-                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_8BPC;
-                    break;
-                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6:
-                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_RGB_6BPC;
-                    break;
-                default:
-                    nvAssert(!"Invalid bpc value for RBG format");
-                    break;
-            }
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr444:
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr422:
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
-            switch (pDpyColor->colorimetry) {
-                case NVKMS_OUTPUT_COLORIMETRY_BT2100:
-                    sdp->db.colorimetryFormat =
-                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT2020_YCBCR;
-                    break;
-                case NVKMS_OUTPUT_COLORIMETRY_BT601:
-                    sdp->db.colorimetryFormat =
-                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601;
-                    break;
-                case NVKMS_OUTPUT_COLORIMETRY_BT709:
-                    sdp->db.colorimetryFormat =
-                        SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709;
-                    break;
-                case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
-                    sdp->db.colorimetryFormat =
-                        (pInfoFrame->hdTimings ?
-                            SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT709 :
-                            SDP_VSC_COLOR_FMT_YCBCR_COLORIMETRY_ITU_R_BT601);
-                    break;
-            }
-
-            switch (pDpyColor->bpc) {
-                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
-                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_10BPC;
-                    break;
-                case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
-                    sdp->db.bitDepth = SDP_VSC_BIT_DEPTH_YCBCR_8BPC;
-                    break;
-                default:
-                    nvAssert(!"Invalid bpc value for YUV color format");
-                    break;
-            }
-            break;
-        default:
-            nvAssert(!"unrecognized color format");
-            break;
-    }
-
-    switch (pDpyColor->range) {
-        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL:
-            sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_VESA;
-            break;
-        case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED:
-            sdp->db.dynamicRange = SDP_VSC_DYNAMIC_RANGE_CEA;
-            break;
-        default:
-            nvAssert(!"Invalid colorRange value");
-            break;
-    }
+    sdp->db.pixEncoding = GetVscSdpPixelEncoding(pDpyColor->format);
+    sdp->db.colorimetryFormat = GetVscSdpColorimetry(pDpyColor->format,
+                                                     pDpyColor->colorimetry,
+                                                     pInfoFrame->hdTimings);
+    sdp->db.bitDepth = GetVscSdpBitDepth(pDpyColor->format, pDpyColor->bpc);
+    sdp->db.dynamicRange = GetVscSdpDynamicRange(pDpyColor->range);
 }
 
 /*
@@ -2772,9 +2988,10 @@ static void UpdateDpVscSdpInfoFrame(
 {
     DPSDP_DESCRIPTOR sdp = { };
     const NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const NvEvoInfoFrameTransmitControl transmitCtrl =
-        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
-    
+    NvEvoInfoFrameTransmitControl transmitCtrl;
+    transmitCtrl.frequency =
+        NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME;
+
     /*
      * If the hardware supports the VSC SDP programming using the core
      * channel, the VSC SDP is already programmed during modeset.
@@ -2788,7 +3005,7 @@ static void UpdateDpVscSdpInfoFrame(
     nvConstructDpVscSdp(pInfoFrame, pDpyColor,
                         (DPSDP_DP_VSC_SDP_DESCRIPTOR *) &sdp);
 
-    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, transmitCtrl, &sdp);
+    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, &transmitCtrl, &sdp);
 }
 
 static void UpdateDpInfoFrames(const NVDispEvoRec *pDispEvo,
@@ -2812,8 +3029,10 @@ static void SDRTransition(void *dataPtr, NvU32 dataU32)
     NvU32 head;
     NVDpyEvoRec *pDpyEvo = dataPtr;
     NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NVDispApiHeadStateEvoRec *pApiHeadState =
         &pDispEvo->apiHeadState[pDpyEvo->apiHead];
+    NvBool flipSynchronizeInfoframes = pDevEvo->supportsFlipSynchronizedInfoframes;
 
     nvCancelSDRTransitionTimer(pDpyEvo);
 
@@ -2827,7 +3046,7 @@ static void SDRTransition(void *dataPtr, NvU32 dataU32)
         pHeadState->hdrInfoFrame.state = NVKMS_HDR_INFOFRAME_STATE_DISABLED;
     }
 
-    nvUpdateInfoFrames(pDpyEvo);
+    nvUpdateInfoFrames(pDpyEvo, flipSynchronizeInfoframes);
 }
 
 static
@@ -2844,12 +3063,14 @@ void ScheduleSDRTransitionTimer(NVDpyEvoRec *pDpyEvo)
                           2000000 /* 2 seconds */);
 }
 
-void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
+void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo, NvBool flipSynchronized)
 {
     NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
-    const NVDispApiHeadStateEvoRec *pApiHeadState;
+    NVDispApiHeadStateEvoRec *pApiHeadState;
     const NVDispHeadStateEvoRec *pHeadState;
     NvU32 head;
+
+    NvEvoInfoFrameTransmitControl transmitCtrl;
 
     if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
         return;
@@ -2871,10 +3092,14 @@ void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
                            &pApiHeadState->attributes.color,
                            &pApiHeadState->infoFrame);
     } else {
+        transmitCtrl.newFlipSynchronized = flipSynchronized;
+        transmitCtrl.newFid = pApiHeadState->coreFid;
         nvUpdateHdmiInfoFrames(pDispEvo,
                                head,
                                &pApiHeadState->attributes.color,
                                &pApiHeadState->infoFrame,
+                               &pApiHeadState->infoFrame.flipState,
+                               &transmitCtrl,
                                pDpyEvo);
     }
 
@@ -3071,7 +3296,7 @@ NvBool nvDpyGetDynamicData(
         if (pDpyOverride->connected && !pRequest->forceDisconnected) {
             /*
              * If display is overridden as connected, treat the request as if it
-             * had both forceConnected and overrideEdid set, unless the request
+             * had both forceConnected and overrideMetadata set, unless the request
              * had forceDisconnected set.
              *
              * If the request already had an EDID override, honor that EDID instead
@@ -3080,13 +3305,13 @@ NvBool nvDpyGetDynamicData(
             NvBool old = pRequest->forceConnected;
             pRequest->forceConnected = TRUE;
 
-            if (!pRequest->overrideEdid) {
+            if (!pRequest->overrideMetadata) {
                 size_t len = nvReadDpyOverrideEdid(pDpyOverride,
                                                    pRequest->edid.buffer,
                                                    ARRAY_LEN(pRequest->edid.buffer));
 
                 if (len != 0) {
-                    pRequest->overrideEdid = TRUE;
+                    pRequest->overrideMetadata = TRUE;
                     pRequest->edid.bufferSize = len;
                 } else {
                     pRequest->forceConnected = old;
@@ -3220,6 +3445,7 @@ NvBool nvDpyGetDynamicData(
 
     if (pDpyEvo->edid.length > 0) {
         pReply->edid.bufferSize = pDpyEvo->edid.length;
+        pReply->edid.isNativeDID = pDpyEvo->edid.isNativeDID;
         nvkms_memcpy(pReply->edid.buffer, pDpyEvo->edid.buffer, pDpyEvo->edid.length);
     }
 
@@ -3351,8 +3577,8 @@ void nvDpyUpdateAdaptiveSyncSdp(const NVDpyEvoRec *pDpyEvo,
     DPSDP_DESCRIPTOR sdp = { };
     NVT_ADAPTIVE_SYNC_SDP_CTRL sdpCtrl = { };
 
-    NvEvoInfoFrameTransmitControl transmitCtrl =
-        NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME;
+    NvEvoInfoFrameTransmitControl transmitCtrl = { 0 };
+    transmitCtrl.frequency = NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME;
 
     if (!pDevEvo->caps.adaptiveSyncSdpSupported) {
         return;
@@ -3370,7 +3596,29 @@ void nvDpyUpdateAdaptiveSyncSdp(const NVDpyEvoRec *pDpyEvo,
     NvTiming_ConstructAdaptiveSyncSDP(&sdpCtrl, (NVT_ADAPTIVE_SYNC_SDP *) &(sdp.hb));
     sdp.dataSize = NVT_DP_ADAPTIVE_SYNC_SDP_LENGTH;
 
-    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, transmitCtrl, &sdp);
+    pDevEvo->hal->SendDpInfoFrameSdp(pDispEvo, head, &transmitCtrl, &sdp);
+}
+
+/*
+ * GetMaxOutputColorBpc() - Centralized helper to determine max output BPC
+ *
+ * This function considers both the EDID-reported BPC capability and the
+ * module parameter limit to determine the effective maximum output BPC.
+ */
+static enum NvKmsDpyAttributeColorBpcValue GetMaxOutputColorBpc(
+    const NVT_EDID_INFO *pEdidInfo)
+{
+    const NvU32 edidBpc = pEdidInfo->input.u.digital.bpc;
+    const NvU32 moduleParamBpc = nvkms_max_output_color_bpc();
+    const NvU32 maxBpc = NV_MIN(edidBpc, moduleParamBpc);
+
+    if (maxBpc >= 12) {
+        return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12;
+    } else if (maxBpc >= 10) {
+        return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+    } else {
+        return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+    }
 }
 
 static enum NvKmsDpyAttributeColorBpcValue GetYuv422MaxBpc(
@@ -3389,18 +3637,22 @@ static enum NvKmsDpyAttributeColorBpcValue GetYuv422MaxBpc(
 
     if (pDpyEvo->parsedEdid.info.version >= NVT_EDID_VER_1_4) {
         if (pDpyEvo->parsedEdid.info.u.feature_ver_1_4_digital.support_ycrcb_422) {
-            if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 10) {
-                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
-            } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 8) {
-                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-            }
+            return GetMaxOutputColorBpc(&pDpyEvo->parsedEdid.info);
         }
     } else {
         nvAssert(!nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo));
 
         if (p861Info->revision >= NVT_CEA861_REV_A &&
                 !!(p861Info->basic_caps & NVT_CEA861_CAP_YCbCr_422)) {
-            return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+            const NvU32 moduleParamBpc = nvkms_max_output_color_bpc();
+
+            if (moduleParamBpc >= 12) {
+                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12;
+            } else if (moduleParamBpc >= 10) {
+                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+            } else {
+                return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            }
         }
     }
 
@@ -3460,21 +3712,16 @@ NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
 
             if (pDpyEvo->parsedEdid.valid &&
                 info->input.isDigital && info->version >= NVT_EDID_VER_1_4) {
-                if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 10) {
-                    colorFormatsInfo.rgb444.maxBpc =
-                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
-                    colorFormatsInfo.yuv444.maxBpc =
-                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
-                } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
+                if (info->input.u.digital.bpc < 8) {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
                     colorFormatsInfo.yuv444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
                 } else {
-                    colorFormatsInfo.rgb444.maxBpc =
-                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-                    colorFormatsInfo.yuv444.maxBpc =
-                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                    enum NvKmsDpyAttributeColorBpcValue maxBpc =
+                        GetMaxOutputColorBpc(info);
+                    colorFormatsInfo.rgb444.maxBpc = maxBpc;
+                    colorFormatsInfo.yuv444.maxBpc = maxBpc;
                 }
 
                 colorFormatsInfo.rgb444.minBpc =
@@ -3537,18 +3784,30 @@ NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
                 }
             }
         } else {
-            colorFormatsInfo.rgb444.maxBpc =
-                nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
-                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+            if (nvDpyIsHdmiDepth36Evo(pDpyEvo)) {
+                colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12;
+            } else if (nvDpyIsHdmiDepth30Evo(pDpyEvo)) {
+                colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+            } else {
+                colorFormatsInfo.rgb444.maxBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            }
             colorFormatsInfo.rgb444.minBpc =
                 NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
 
             if (nvDpyIsHdmiEvo(pDpyEvo)) {
-                colorFormatsInfo.yuv444.maxBpc =
-                    nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
-                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+                if (nvDpyIsHdmiDepth36Evo(pDpyEvo)) {
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12;
+                } else if (nvDpyIsHdmiDepth30Evo(pDpyEvo)) {
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                } else {
+                    colorFormatsInfo.yuv444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                }
                 colorFormatsInfo.yuv444.minBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
 

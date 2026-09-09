@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -590,6 +590,11 @@ void dmaPageArrayInit(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCou
 
 void dmaPageArrayInitWithFlags(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCount,
                                NvU64 flags, NvU64 localizedMask);
+
+void dmaPageArrayInitFromMemDescForGpu(DMA_PAGE_ARRAY *pPageArray,
+                                       MEMORY_DESCRIPTOR *pMemDesc,
+                                       struct OBJGPU *pGpu,
+                                       ADDRESS_TRANSLATION addressTranslation);
 
 void dmaPageArrayInitFromMemDesc(DMA_PAGE_ARRAY *pPageArray,
                                  MEMORY_DESCRIPTOR *pMemDesc,

@@ -99,7 +99,7 @@ chandesConstruct_IMPL
     //
     if (kfifoIsHostEngineExpansionSupported(pKernelFifo) &&
         RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)) &&
-       ((gpuIsCCorApmFeatureEnabled(pGpu) || bMIGInUse) ||
+       ((gpuIsCCFeatureEnabled(pGpu) || bMIGInUse) ||
         kfifoIsPerRunlistChramEnabled(pKernelFifo)))
     {
         if (rmapiutilIsExternalClassIdInternalOnly(pParams->externalClassId))

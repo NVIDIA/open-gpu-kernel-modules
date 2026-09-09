@@ -7,7 +7,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 //
 
 #ifndef _G_RMCFG_UTIL_H_
@@ -117,6 +117,8 @@ NvBool rmcfg_IsGB102(POBJGPU pGpu);
 NvBool rmcfg_IsGB102orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB10B(POBJGPU pGpu);
 NvBool rmcfg_IsGB10BorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB10C(POBJGPU pGpu);
+NvBool rmcfg_IsGB10CorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB110(POBJGPU pGpu);
 NvBool rmcfg_IsGB110orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGB112(POBJGPU pGpu);

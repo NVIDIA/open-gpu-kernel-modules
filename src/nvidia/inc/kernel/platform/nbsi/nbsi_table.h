@@ -298,6 +298,10 @@ typedef struct _NBSI_UID0
 } NBSI_UID0;
 #pragma pack()
 
+#if PORT_COMPILER_IS_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunaligned-access"
+#endif
 #pragma pack(1)
 typedef struct _NBSI_UID
 {
@@ -319,6 +323,9 @@ typedef struct _NBSI_UID
       } Platform;
 } NBSI_UID;
 #pragma pack()
+#if PORT_COMPILER_IS_CLANG
+#pragma clang diagnostic pop
+#endif
 
 #pragma pack(1)
 typedef struct _DSM_GEN_OBJ_HDR

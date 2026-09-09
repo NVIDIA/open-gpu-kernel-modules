@@ -92,7 +92,8 @@ gmmuFmtPdePhysAddrFld
     const GMMU_APERTURE aperture
 )
 {
-    if (pPde->version == GMMU_FMT_VERSION_3)
+    if ((pPde->mode == GMMU_FMT_MODE_PTR && pPde->version == GMMU_FMT_VERSION_3)
+    )
     {
         // GMMU_FMT_VERSION_3 uses a unified PDE field
         return &pPde->fldAddr;

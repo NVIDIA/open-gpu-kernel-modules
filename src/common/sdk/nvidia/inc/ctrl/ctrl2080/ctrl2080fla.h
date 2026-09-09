@@ -183,13 +183,22 @@ typedef struct NV2080_CTRL_FLA_GET_RANGE_PARAMS {
  * NV2080_CTRL_CMD_FLA_GET_FABRIC_MEM_STATS
  *
  * This command returns the total size and the free size of the fabric vaspace.
- * Note: This returns the information for the FABRIC_VASPACE_A class.
+ * Note: This returns the information for the FABRIC_VASPACE_A class and
+ * reports both the pointer heap and emulated-handle heap. If the
+ * emulated-handle heap is not configured, emulatedHandleTotalSize and
+ * emulatedHandleFreeSize are returned as zero.
  *
  *   totalSize[OUT]
- *      - Total fabric vaspace.
+ *      - Total pointer-heap fabric vaspace.
  *
  *   freeSize [OUT]
- *      - Available fabric vaspace.
+ *      - Available pointer-heap fabric vaspace.
+ *
+ *   emulatedHandleTotalSize[OUT]
+ *      - Total emulated-handle-heap fabric vaspace.
+ *
+ *   emulatedHandleFreeSize [OUT]
+ *      - Available emulated-handle-heap fabric vaspace.
  *
  * Possible status values returned are:
  *
@@ -203,6 +212,8 @@ typedef struct NV2080_CTRL_FLA_GET_RANGE_PARAMS {
 typedef struct NV2080_CTRL_FLA_GET_FABRIC_MEM_STATS_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
     NV_DECLARE_ALIGNED(NvU64 freeSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 emulatedHandleTotalSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 emulatedHandleFreeSize, 8);
 } NV2080_CTRL_FLA_GET_FABRIC_MEM_STATS_PARAMS;
 
 // _ctrl2080fla_h_

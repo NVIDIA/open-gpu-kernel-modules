@@ -27,6 +27,7 @@
 #include "kernel/gpu/ce/kernel_ce_shared.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/bus/kern_bus.h"
+#include "kernel/gpu/intr/intr.h"
 
 #include "vgpu/vgpu_events.h"
 
@@ -35,6 +36,7 @@
 #include "published/ampere/ga100/dev_ctrl.h"
 #include "published/ampere/ga100/dev_runlist.h"
 #include "published/ampere/ga100/dev_vm.h"
+#include "published/ampere/ga100/dev_esched_pbdma.h"
 
 NV_STATUS
 kfifoEngineInfoXlate_GA100
@@ -139,29 +141,6 @@ kfifoChannelGroupGetLocalMaxSubcontext_GA100
     return kfifoChannelGroupGetLocalMaxSubcontext_GM107(pGpu, pKernelFifo,
                                                         pKernelChannelGroup,
                                                         bLegacyMode);
-}
-
-/*!
- * @brief Update the usermode doorbell register with work submit token to notify
- *        host that work is available on this channel.
- *
- * @param[in] pGpu
- * @param[in] pKernelFifo
- * @param[in] workSubmitToken Token to update the doorbell with
- */
-NV_STATUS
-kfifoUpdateUsermodeDoorbell_GA100
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvU32       workSubmitToken
-)
-{
-    NV_PRINTF(LEVEL_INFO, "Poking workSubmitToken 0x%x\n", workSubmitToken);
-
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_DOORBELL, workSubmitToken);
-
-    return NV_OK;
 }
 
 /*!
@@ -954,42 +933,139 @@ kfifoCompleteChannelHalt_GA100
     } while (FLD_TEST_DRF(_RUNLIST, _PREEMPT, _RUNLIST_PREEMPT_PENDING, _TRUE, runlistVal));
 }
 
-/*!
- * @brief Update the usermode doorbell register with work submit token to notify
- *        host that work is available on this channel.
+
+/**
+ * @brief Sets up the the per-context notification interrupt vector in RAMFC
  *
- * @param[in] pGpu
- * @param[in] pFifo
- * @param[in] pKernelChannel  Channel to ring the doorbell for
+ * Host uses the value programmed in this field to decide which interrupt
+ * vector to send a context's PBDMA nonstall interrupt on, and whether to send
+ * it to CPU or to GSP or to both
  */
-NV_STATUS
-kfifoRingChannelDoorBell_GA100
+void
+kfifoInitRamfcIntrNotify_GA100
 (
-    OBJGPU          *pGpu,
-    KernelFifo      *pKernelFifo,
-    KernelChannel   *pKernelChannel
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
 )
 {
-    NvU32        workSubmitToken;
+    Intr *pIntr = GPU_GET_INTR(pGpu);
+    NvU32  intrVector, engineIdx;
 
-    // Updating the usermode doorbell is different for CPU vs. GSP.
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+
     //
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    // Until we start using per-context nonstall interrupts from the PBDMA,
+    // we'll maintain legacy behavior by setting up the context's nonstall
+    // interrupt vector to be the same as the engine's nonstall interrupt
+    // vector
+    //
+    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_RUNLIST,
+                                 kchannelGetRunlistId(pKernelChannel), ENGINE_INFO_TYPE_MC,
+                                 &engineIdx) != NV_OK)
     {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo,
-                                                            pKernelChannel, &workSubmitToken,
-                                                            NV_TRUE));
-        NV_ASSERT_OK_OR_RETURN(kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo,
-                                                               workSubmitToken));
+        NV_PRINTF(LEVEL_ERROR, "Failed to translate from runlistId "
+            "0x%x to its ENGINE_INFO_TYPE_MC\n", kchannelGetRunlistId(pKernelChannel));
+        DBG_BREAKPOINT();
+        return;
     }
-    else
-    {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo,
-                                                                        pKernelChannel, &workSubmitToken));
 
-        NV_ASSERT_OK_OR_RETURN(kfifoUpdateInternalDoorbellForUsermode_HAL(pGpu, pKernelFifo,
-                                                                          workSubmitToken,
-                                                                          kchannelGetRunlistId(pKernelChannel)));
+    intrVector = intrGetVectorFromEngineId(pGpu, pIntr, engineIdx, NV_TRUE);
+    kfifoInitRamfcIntrNotifyRouting_HAL(pGpu, pKernelFifo, intrVector, pInstMem);
+}
+
+/**
+ * @brief Actually writes the per-context notification interrupt vector in RAMFC
+ *
+ * Host uses the value programmed in this field to decide which interrupt
+ * vector to send a context's PBDMA nonstall interrupt on, and whether to send
+ * it to CPU or to GSP or to both.
+ */
+void
+kfifoInitRamfcIntrNotifyRouting_GA100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    NvU32             intrVector,
+    NvU8             *pInstMem
+)
+{
+    NvU32 intrCtrl;
+
+    if ((DRF_SHIFTMASK(NV_PBDMA_INTR_NOTIFY_VECTOR) & intrVector) != intrVector)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Interrupt vector (0x%x) is larger "
+            "than the space in RAMFC to hold it\n", intrVector);
+        DBG_BREAKPOINT();
+        return;
     }
+
+    intrCtrl = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY));
+    intrCtrl = FLD_SET_DRF_NUM(_PBDMA, _INTR_NOTIFY, _VECTOR, intrVector, intrCtrl);
+    intrCtrl = FLD_SET_DRF(_PBDMA, _INTR_NOTIFY, _CTRL_GSP, _DISABLE, intrCtrl);
+    intrCtrl = FLD_SET_DRF(_PBDMA, _INTR_NOTIFY, _CTRL_CPU, _ENABLE, intrCtrl);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY), intrCtrl);
+}
+
+/**
+ * @brief Initialize SCG Type info in RAMFC
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void
+kfifoInitRamfcSubctx_GA100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 data;
+
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+
+    NV_ASSERT(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
+
+    // Set the channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PBDMA, _SET_CHANNEL_INFO, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+
+    // Set the engine context VEID to channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID));
+    data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE_WFI, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID), data);
+}
+
+/**
+ * @brief Initializes the channel ID in RAMFC
+ */
+NV_STATUS
+kfifoInitRamfcChid_GA100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32          chId;
+    NvU32          data;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+    
+    chId = pKernelChannel->ChID;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PBDMA, _SET_CHANNEL_INFO, _CHID, chId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+
     return NV_OK;
 }

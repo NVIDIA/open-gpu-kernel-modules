@@ -266,18 +266,19 @@ gpuInitInstLocOverrides_IMPL
           FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32));
 
     //
-    // If Hopper CC mode or protected pcie is enabled, move all except few buffers to FB
+    // If Hopper CC mode or protected pcie or CC-NVLE mode is enabled, move all except few buffers to FB
     // Exception: when TDISP mode is enabled.
     //
     if ((bRegKeyCCEnabled ||
          gpuIsCCEnabledInHw_HAL(pGpu) ||
-         gpuIsMultiGpuNvleEnabledInHw_HAL(pGpu))
+         gpuIsCCMultiGpuNvleModeEnabled(pGpu))
         )
     {
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;
         pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_VID;
         pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_VID;
         pGpu->instLocOverrides4 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides5 = NV_REG_STR_RM_INST_LOC_ALL_VID;
 
         // Only FW_SEC_LIC & FLCN UCODE buffers are required to be in NCOH now. These will be moved to VIDMEM eventually.
         pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _FW_SEC_LIC_COMMAND, _NCOH, pGpu->instLocOverrides4);
@@ -293,6 +294,7 @@ gpuInitInstLocOverrides_IMPL
         osReadRegistryDword(pGpu, NV_REG_STR_RM_INST_LOC_2, &pGpu->instLocOverrides2);
         osReadRegistryDword(pGpu, NV_REG_STR_RM_INST_LOC_3, &pGpu->instLocOverrides3);
         osReadRegistryDword(pGpu, NV_REG_STR_RM_INST_LOC_4, &pGpu->instLocOverrides4);
+        osReadRegistryDword(pGpu, NV_REG_STR_RM_INST_LOC_5, &pGpu->instLocOverrides5);
 
         //
         // Currently only InstLoc uses the global registry override
@@ -314,11 +316,13 @@ gpuInitInstLocOverrides_IMPL
         ((pGpu->instLocOverrides == 0) || (pGpu->instLocOverrides == 0x10000000)) &&
         pGpu->instLocOverrides2 == 0 &&
         pGpu->instLocOverrides3 == 0 &&
-        pGpu->instLocOverrides4 == 0)
+        pGpu->instLocOverrides4 == 0 &&
+        pGpu->instLocOverrides5 == 0)
     {
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_COH;
         pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_COH;
+        pGpu->instLocOverrides5 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         // Leave instLocOverrides4 as _DEFAULT until all flavors are tested.
     }
 
@@ -444,6 +448,7 @@ _gpuInitGlobalSurfaceOverride
             pGpu->instLocOverrides2 = 0;
             pGpu->instLocOverrides3 = FLD_SET_DRF(_REG_STR_RM, _INST_LOC_3, _FLCNINST, _VID, pGpu->instLocOverrides3);
             pGpu->instLocOverrides4 = 0;
+            pGpu->instLocOverrides5 = 0;
         }
         else
         {
@@ -461,6 +466,7 @@ _gpuInitGlobalSurfaceOverride
             pGpu->instLocOverrides2 = pGpu->instLocOverrides;
             pGpu->instLocOverrides3 = pGpu->instLocOverrides;
             pGpu->instLocOverrides4 = pGpu->instLocOverrides;
+            pGpu->instLocOverrides5 = pGpu->instLocOverrides;
         }
     }
 }

@@ -122,6 +122,9 @@ kchangrpapiConstruct_IMPL
     pAllocParams = pParams->pAllocParams;
     hVASpace     = pAllocParams->hVASpace;
 
+    // Internal fields must be cleared when RMAPI call is from client
+    pAllocParams->internalFlags = 0;
+
     NV_ASSERT_OK_OR_GOTO(rmStatus,
         serverAllocShareWithHalspecParent(&g_resServ, classInfo(KernelChannelGroup),
                                           &pShared, staticCast(pGpu, Object)),
@@ -140,13 +143,7 @@ kchangrpapiConstruct_IMPL
 
     pKernelChannelGroupApi->hVASpace = hVASpace;
 
-    rmStatus = serverGetClientUnderLock(&g_resServ, pParams->hClient, &pClient);
-    if (rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid client handle!\n");
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        goto failed;
-    }
+    pClient = pCallContext->pClient;
 
     rmStatus = deviceGetByHandle(pClient, pParams->hParent, &pDevice);
     if (rmStatus != NV_OK)
@@ -271,9 +268,23 @@ kchangrpapiConstruct_IMPL
         }
     }
 
-    NV_ASSERT_OK_OR_GOTO(rmStatus,
-                         kchangrpInit(pGpu, pKernelChannelGroup, pVAS, gfid),
-                         failed);
+    {
+        //
+        // On GSP: decode tsgID and flags from internalFlags set by kernel-RM.
+        // On kernel-RM: internalFlags was cleared above, so these remain NV_FALSE/0.
+        //
+        NvBool bFixedTsgID = FLD_TEST_DRF(_KERNELCHANNELGROUP, _ALLOC_INTERNALFLAGS,
+                                          _TSG_ID_VALID, _TRUE, pAllocParams->internalFlags);
+        NvU32  requestedTsgID = DRF_VAL(_KERNELCHANNELGROUP, _ALLOC_INTERNALFLAGS,
+                                        _TSG_ID, pAllocParams->internalFlags);
+        NvBool bGspOwned = FLD_TEST_DRF(_KERNELCHANNELGROUP, _ALLOC_INTERNALFLAGS,
+                                        _GSP_OWNED, _YES, pAllocParams->internalFlags);
+
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+                             kchangrpInit(pGpu, pKernelChannelGroup, pVAS, gfid,
+                                          bFixedTsgID, requestedTsgID, bGspOwned),
+                             failed);
+    }
     bTsgAllocated = NV_TRUE;
 
     pKernelChannelGroupApi->hLegacykCtxShareSync  = 0;
@@ -293,10 +304,10 @@ kchangrpapiConstruct_IMPL
 
     // Default interleave level
     NV_ASSERT_OK_OR_GOTO(
-        rmStatus,
-        kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup,
-                                   NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM),
-        failed);
+            rmStatus,
+            kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup,
+                                       NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM),
+            failed);
 
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -422,6 +433,26 @@ kchangrpapiConstruct_IMPL
 
     NV_PRINTF(LEVEL_INFO, "Adding group Id: %d hClient:0x%x\n",
               pKernelChannelGroup->grpID, pParams->hClient);
+
+    //
+    // Encode grpID in alloc params so GSP allocates the same TSG ID.
+    // This mirrors how ChID is encoded in channel alloc params.
+    //
+    // Skip this on vGPU host: vGPU plugin (vmiop-vgpu) pre-allocates TSGs locally
+    // on GSP that kernel-RM is not aware of. Forcing kernel-RM's grpID onto GSP
+    // would collide with those plugin TSGs.
+    //
+    if (IS_GSP_CLIENT(pGpu) &&
+        !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+        !(pParams->allocFlags & RMAPI_ALLOC_FLAGS_SKIP_RPC))
+    {
+        pAllocParams->internalFlags = FLD_SET_DRF_NUM(
+            _KERNELCHANNELGROUP, _ALLOC_INTERNALFLAGS, _TSG_ID,
+            pKernelChannelGroup->grpID, pAllocParams->internalFlags);
+        pAllocParams->internalFlags = FLD_SET_DRF(
+            _KERNELCHANNELGROUP, _ALLOC_INTERNALFLAGS, _TSG_ID_VALID, _TRUE,
+            pAllocParams->internalFlags);
+    }
 
     if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) &&
         !(pParams->allocFlags & RMAPI_ALLOC_FLAGS_SKIP_RPC))
@@ -807,14 +838,13 @@ kchangrpapiCanCopy_IMPL
 NV_STATUS
 CliGetChannelGroup
 (
-    NvHandle                 hClient,
+    RsClient                *pClient,
     NvHandle                 hChanGrp,
     RsResourceRef          **ppChanGrpRef,
     NvHandle                *phDevice
 )
 {
     NV_STATUS status;
-    RsClient *pRsClient;
     RsResourceRef *pResourceRef;
     RsResourceRef *pParentRef;
 
@@ -823,12 +853,7 @@ CliGetChannelGroup
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pRsClient);
-    NV_ASSERT(status == NV_OK);
-    if (status != NV_OK)
-        return status;
-
-    status = clientGetResourceRefByType(pRsClient, hChanGrp,
+    status = clientGetResourceRefByType(pClient, hChanGrp,
                                         classId(KernelChannelGroupApi),
                                         &pResourceRef);
     if (status != NV_OK)
@@ -1436,5 +1461,137 @@ kchangrpapiCtrlCmdGetInterleaveLevel_IMPL
     pParams->tsgInterleaveLevel = pKernelChannelGroup->pInterleaveLevel[subdevInst];
 
     return NV_OK;
+}
+
+NV_STATUS
+kchangrpapiCtrlCmdPreempt_IMPL
+(
+    KernelChannelGroupApi      *pKernelChannelGroupApi,
+    NVA06C_CTRL_PREEMPT_PARAMS *pPreemptParams
+)
+{
+    if (pKernelChannelGroupApi == NULL)
+        return NV_ERR_INVALID_OBJECT;
+
+    OBJGPU             *pGpu = GPU_RES_GET_GPU(pKernelChannelGroupApi);
+    NV_STATUS           status = NV_OK;
+    NvBool              bChanGrpDisabled = NV_FALSE;
+    NV_STATUS           tmpStatus = NV_OK;
+    KernelChannelGroup *pKernelChannelGroup = pKernelChannelGroupApi->pKernelChannelGroup;
+    RsResourceRef      *pResourceRef = RES_GET_REF(pKernelChannelGroupApi);
+    CLASSDESCRIPTOR    *pClass = NULL;
+    KernelFifo         *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+    if (pKernelChannelGroupApi->pKernelChannelGroup == NULL)
+        return NV_ERR_INVALID_OBJECT;
+
+    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) // Perform an RPC if vGPU or GSP client
+    {
+        NV_RM_RPC_CONTROL(pGpu, RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi),
+                          RES_GET_HANDLE(pKernelChannelGroupApi),
+                          NVA06C_CTRL_CMD_PREEMPT,
+                          pPreemptParams, sizeof(NVA06C_CTRL_PREEMPT_PARAMS),
+                          status);
+    }
+    // Execute locally if current RM instance is the runlist owner or not a vGPU or GSP client
+    else
+    {
+#if NV_PRINTF_STRINGS_ALLOWED
+        const char *waitStr = pPreemptParams->bWait ? "with" : "without";
+        const char *timeoutStr = pPreemptParams->bManualTimeout ? "enabled" : "disabled";
+
+        NV_PRINTF(LEVEL_INFO,
+                  "Preempting Channelgroup 0x%x %s wait for completion. Client override "
+                  "of timeout is %s. The value of the manual timeout is %u microseconds.\n",
+                  RES_GET_HANDLE(pKernelChannelGroupApi), waitStr, timeoutStr,
+                  pPreemptParams->timeoutUs);
+#else // NV_PRINTF_STRINGS_ALLOWED
+        NV_PRINTF(LEVEL_INFO,
+                  "Preempting Channelgroup 0x%x.  Wait for completion: %c. Client override "
+                  "of timeout: %c. The value of the manual timeout is %u microseconds.\n",
+                  RES_GET_HANDLE(pKernelChannelGroupApi),
+                  pPreemptParams->bWait ? 'Y' : 'N',
+                  pPreemptParams->bManualTimeout ? 'Y' : 'N',
+                  pPreemptParams->timeoutUs);
+#endif // NV_PRINTF_STRINGS_ALLOWED
+
+        if (pPreemptParams->bWait &&
+            pPreemptParams->bManualTimeout &&
+            pPreemptParams->timeoutUs > NVA06C_CTRL_CMD_PREEMPT_MAX_MANUAL_TIMEOUT_US)
+        {
+            NV_PRINTF(LEVEL_NOTICE,
+                      "manual timeout of 0x%x microseconds exceeds maximum allowed by this "
+                      "control call, 0x%x microseconds.\n",
+                      pPreemptParams->timeoutUs,
+                      NVA06C_CTRL_CMD_PREEMPT_MAX_MANUAL_TIMEOUT_US);
+
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        if (pKernelChannelGroup == NULL)
+            return NV_ERR_INVALID_OBJECT;
+
+        status = gpuGetClassByClassId(pGpu, pResourceRef->externalClassId, &pClass);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "class %x not supported\n",
+                      pResourceRef->externalClassId);
+            return status;
+        }
+        NV_ASSERT_OR_RETURN(pClass != NULL, NV_ERR_INVALID_OBJECT);
+
+        /*
+         * Disable TSG so we will always preempt.
+         * We now have to wait for both PBDMA and Engines to preempt the TSG.
+         * If TSG is not disabled, the TSG can be loaded back after PBDMA preempt OR
+         * after the first engine premept which can result in timeout of engine preempt.
+         */
+        if (pPreemptParams->bWait)
+        {
+            // Disable TSG - it will do SLI loop
+            status = kfifoChannelGroupDisable(pGpu, pKernelFifo, pKernelChannelGroup);
+            NV_ASSERT_OR_GOTO(status == NV_OK, out);
+            bChanGrpDisabled = NV_TRUE;
+        }
+
+        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+
+        pClass = NULL;
+        status = gpuGetClassByClassId(pGpu, pResourceRef->externalClassId, &pClass);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "class %x not supported\n",
+                      pResourceRef->externalClassId);
+            SLI_LOOP_BREAK;
+        }
+
+        if (pClass == NULL)
+        {
+            DBG_BREAKPOINT();
+            status = NV_ERR_INVALID_OBJECT;
+            SLI_LOOP_BREAK;
+        }
+
+        SLI_LOOP_END
+
+        tmpStatus = gpuGetClassByClassId(pGpu, pResourceRef->externalClassId, &pClass);
+        NV_ASSERT(tmpStatus == NV_OK && pClass != NULL);
+
+    out:
+        /* Re-enable TSG */
+        if (bChanGrpDisabled)
+        {
+            // Re-enable previously disabled channels - it will do SLI loop
+            tmpStatus = kfifoChannelGroupEnable(pGpu, pKernelFifo,
+                                                   pKernelChannelGroup);
+
+            // Fallthrough to free resources
+            NV_ASSERT(tmpStatus == NV_OK);
+
+            if (status == NV_OK)
+                status = tmpStatus;
+        }
+    }
+    return status;
 }
 

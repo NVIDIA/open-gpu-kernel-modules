@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,6 +50,7 @@
 #include "nvstatus.h"
 #include "nvstatuscodes.h"
 
+
 #define NVLINK_INBAND_MAX_MSG_SIZE     5120
 #define NVLINK_INBAND_MSG_MAGIC_ID_FM  0xadbc
 
@@ -68,7 +69,10 @@
 #define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REQ_V2          9
 #define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP_V2          10
 #define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_UPDATE_REQ_V2   11
-#define NVLINK_INBAND_MSG_TYPE_MAX                       12
+#define NVLINK_INBAND_MSG_TYPE_GPU_AMAP_CONFIG_REQ       12
+#define NVLINK_INBAND_MSG_TYPE_GPU_GET_CURRENT_STATE_REQ 13
+#define NVLINK_INBAND_MSG_TYPE_GPU_GET_CURRENT_STATE_RSP 14
+#define NVLINK_INBAND_MSG_TYPE_MAX                       15
 
 /* Nvlink Inband message packet header */
 typedef struct
@@ -81,18 +85,20 @@ typedef struct
     NvU8      reserved[8];       /* For future use. Must be initialized to zero */
 } nvlink_inband_msg_header_t;
 
-#define NVLINK_INBAND_GPU_PROBE_CAPS_SRIOV_ENABLED              NVBIT(0)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE               NVBIT(1)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_EGM_SUPPORT                NVBIT(2)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_ATS_SUPPORT                NVBIT(3)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_LINK_RETRAIN_SUPPORT       NVBIT(4)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_ADAPTIVE_BANDWIDTH_SUPPORT NVBIT(5)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_HEALTH_SUMMARY             NVBIT(6)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_GPU_PROBE_REQUEST_ACTION   NVBIT(7)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_MC_RETRY                   NVBIT(8)
-#define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE_V2            NVBIT(9)
-/* Bits 10-12 reserved */
-#define NVLINK_INBAND_GPU_PROBE_CAPS_ADAPTIVE_BANDWIDTH_AND_LINK_RETRAIN_FIX NVBIT(13)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_SRIOV_ENABLED                             NVBIT(0)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE                              NVBIT(1)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_EGM_SUPPORT                               NVBIT(2)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_ATS_SUPPORT                               NVBIT(3)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_LINK_RETRAIN_SUPPORT                      NVBIT(4)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_ADAPTIVE_BANDWIDTH_SUPPORT                NVBIT(5)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_HEALTH_SUMMARY                            NVBIT(6)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_GPU_PROBE_REQUEST_ACTION                  NVBIT(7)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_MC_RETRY                                  NVBIT(8)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE_V2                           NVBIT(9)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_MULTI_CLIQUE_SUPPORT                      NVBIT(10)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_TRAFFIC_QUIESCE_SUPPORT                   NVBIT(11)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_NON_DISRUPTIVE_LINK_MASK_CHANGE           NVBIT(12)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_ADAPTIVE_BANDWIDTH_AND_LINK_RETRAIN_FIX   NVBIT(13)
 
 /* Add more caps as need in the future */
 
@@ -135,6 +141,10 @@ typedef struct
 #define NVLINK_INBAND_FM_CAPS_ADAPTIVE_BANDWIDTH_MODE_ENABLED   NVBIT64(8)
 #define NVLINK_INBAND_FM_CAPS_UC_LOOPBACK_ENABLED               NVBIT64(9)
 #define NVLINK_INBAND_FM_CAPS_PROBE_REQ_RSP_V2                  NVBIT64(10)
+#define NVLINK_INBAND_FM_CAPS_UVM_FLA_ENABLED                   NVBIT64(11)
+#define NVLINK_INBAND_FM_CAPS_MULTI_CLIQUE_SUPPORT              NVBIT64(12)
+#define NVLINK_INBAND_FM_CAPS_DEGRADED_CLIQUE_SUPPORT           NVBIT64(13)
+#define NVLINK_INBAND_FM_CAPS_UC_HANDLE_EQ_UC_POINTER_CLIQUE    NVBIT64(14)
 
 #define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW                    1:0
 #define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED      0
@@ -171,6 +181,11 @@ typedef struct
 #define NVLINK_INBAND_FABRIC_HEALTH_MASK_PARTITION_ASSIGNED_NOT_SUPPORTED 0U
 #define NVLINK_INBAND_FABRIC_HEALTH_MASK_PARTITION_ASSIGNED_TRUE          1U
 #define NVLINK_INBAND_FABRIC_HEALTH_MASK_PARTITION_ASSIGNED_FALSE         2U
+
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE                 15:14
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE_NOT_SUPPORTED   0U
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED       1U
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED    2U
 
 #define NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED                  0U
 #define NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_HEALTHY                        1U
@@ -217,7 +232,9 @@ typedef struct
     NvU32  gpaAddressEGMHi;       /* GPA Address for EGM. Don't use if EGM support is not present in GFM */
     NvU8   maxRbmLinks;           /* Max RBM mode supported */
     NvU32  remapTableIdx;         /* remap table index for the GPU */
-    NvU8   reserved[11];          /* For future use. Must be initialized to zero */
+    NvU16  degradedCliqueId;      /* Clique id when GPU is in the degraded state */
+    NvU32  ucHandleCliqueId;      /* Unicast handle clique id when GPU is in a healthy state */
+    NvU8   reserved[5];           /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct
@@ -247,7 +264,13 @@ typedef struct
     NvU32  degradedCliqueId;                /* Identifies the communication degraded clique this GPU belongs to */
     NvUuid clusterUuid;                     /* Cluster UUID to which this node belongs */
     NvU16  fabricPartitionId;               /* Partition ID if the GPU belongs to a fabric partition */
-    NvU8   reserved[70];                    /* For future use. Must be initialized to zero */
+    NvU8   uvmAddressStart;                 /* UVM starting address for the GPU */
+    NvU8   uvmAddressRange;                 /* UVM Address Range for the GPU */
+    NvU32  mcPointerCliqueId;               /* multicast pointer clique this GPU belongs to */
+    NvU32  ucHandleCliqueId;                /* unicast handle clique this GPU belongs to */
+    NvU32  mcHandleCliqueId;                /* multicast handle clique this GPU belongs to */
+    NvU32  mcPushCliqueId;                  /* multicast push clique this GPU belongs to */
+    NvU8   reserved[52];                    /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_v2_t;
 
 typedef struct
@@ -272,7 +295,8 @@ typedef struct
     NvU32  epoch;                 /* Epoch to be matched by RM when allowing P2P between GPUs */
     NvU8   action;                /* Action request from FM */
     NvU64  linkMask;              /* Enabled link mask */
-    NvU8   reserved[19];          /* For future use. Must be initialized to zero */
+    NvU32  ucHandleCliqueId;      /* Unicast handle clique id when GPU is in a healthy state */
+    NvU8   reserved[15];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_update_req_t;
 
 typedef struct
@@ -288,11 +312,15 @@ typedef struct
     NvU64  enabledLinkMask64;           /* Mask containing bits indicating updated enabled link mask: [64,128) */
     NvU64  rbmSupportedLinkCount0;      /* Mask containing bits indicating supported RBM Modes(where the i-th bit represents the predicate is_rbm_mode_i_supported): [0,64) */
     NvU64  rbmSupportedLinkCount64;     /* Mask containing bits indicating supported RBM Modes(where the i-th bit represents the predicate is_rbm_mode_i_supported): [64,128) */
-    NvU32  cliqueId;                    /* Identifies the communication clique this GPU belongs to */
+    NvU32  cliqueId;                    /* Default is communication clique this GPU belongs to (if MULTI_CLIQUE_SUPPORT is enabled, this is unicast pointer clique) */
     NvU32  fabricHealthMask;            /* Mask containing bits indicating various fabric health parameters */
     NvU32  epoch;                       /* Epoch to be matched by RM when allowing P2P between GPUs */
     NvU8   action;                      /* Action request from FM */
-    NvU8   reserved[131];               /* For future use. Must be initialized to zero */
+    NvU32  ucHandleCliqueId;            /* unicast handle clique this GPU belongs to */
+    NvU32  mcPointerCliqueId;           /* multicast pointer clique this GPU belongs to */
+    NvU32  mcHandleCliqueId;            /* multicast handle clique this GPU belongs to */
+    NvU32  mcPushCliqueId;              /* multicast push clique this GPU belongs to */
+    NvU8   reserved[115];               /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_update_req_v2_t;
 
 typedef struct
@@ -300,6 +328,56 @@ typedef struct
     nvlink_inband_msg_header_t               msgHdr;
     nvlink_inband_gpu_probe_update_req_v2_t  probeUpdate;
 } nvlink_inband_gpu_probe_update_req_v2_msg_t;
+
+
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC                   1:0
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_NOT_SUPPORTED     0x0
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_TRUE              0x1
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE             0x2
+
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING                 3:2
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_NOT_SUPPORTED   0x0
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_TRUE            0x1
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE           0x2
+
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED                  5:4
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_NOT_SUPPORTED    0x0
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_TRUE             0x1
+#define NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_FALSE            0x2
+
+typedef struct
+{
+    NvU64  gpuHandle;       /* Unique handle assigned by initialization entity for this GPU */
+    NvU8   reserved[176];   /* reserved for future use */
+} nvlink_inband_gpu_get_current_state_req_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t                       msgHdr;
+    nvlink_inband_gpu_get_current_state_req_t        currStateReq;
+} nvlink_inband_gpu_get_current_state_req_msg_t;
+
+typedef struct
+{
+    NvU64  gpuHandle;             /* Unique handle assigned by initialization entity for this GPU */
+    NvU64  supportedFieldMask0;   /* Mask containing bits indicating supported fields: [0,64) */
+    NvU64  supportedFieldMask64;  /* Mask containing bits indicating supported fields: [64,128) */
+    NvU64  enabledLinkMask0;      /* Mask containing bits indicating enabled link mask: [0,64) */
+    NvU64  enabledLinkMask64;     /* Mask containing bits indicating enabled link mask: [64,128) */
+    NvU64  sleepLinkMask0;        /* Mask containing bits indicating sleep link mask: [0,64) Not used, reserved for future use.*/
+    NvU64  sleepLinkMask64;       /* Mask containing bits indicating sleep link mask: [64,128) Not used, reserved for future use.*/
+    NvU32  fabricHealthMask;      /* Mask containing bits indicating various fabric health parameters */
+    NvU32  gpuStateFlags;         /* Flags indicating various GPU states */
+    NvU32  cliqueId;              /* Identifies the communication clique this GPU belongs to */
+    NvU8   rbmLinkCount;           /* Number of links to be used for Reduced Bandwidth mode */
+    NvU8   reserved[115];          /* For future use. Must be initialized to zero */
+} nvlink_inband_gpu_get_current_state_rsp_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t                       msgHdr;
+    nvlink_inband_gpu_get_current_state_rsp_t        currStateRsp;
+} nvlink_inband_gpu_get_current_state_rsp_msg_t;
 
 typedef struct
 {
@@ -316,10 +394,12 @@ typedef struct
     nvlink_inband_mc_team_setup_req_t    mcTeamSetupReq;
 } nvlink_inband_mc_team_setup_req_msg_t;
 
+#define NVLINK_INBAND_MC_TEAM_SETUP_FLAG_HANDLE_TRANSLATION NVBIT32(1)
+
 typedef struct
 {
     NvU64 mcAllocSize;           /* Multicast allocation size requested */
-    NvU32 flags;                 /* For future use. Must be initialized to zero */
+    NvU32 flags;                 /* NVLINK_INBAND_MC_TEAM_SETUP_FLAG_X */
     NvU8  doNotUse[8];           /* Don't not use, NVL5+ doesn't copy these fields */
     NvU16 numGpuHandles;         /* Number of GPUs in this team */
     NvU16 numKeys;               /* Number of keys (a.k.a request ID) used by FM to send response */
@@ -424,6 +504,59 @@ typedef struct
 typedef nvlink_inband_mc_team_setup_rsp_t nvlink_inband_mc_team_setup_replay_rsp_t;
 typedef nvlink_inband_mc_team_setup_rsp_msg_t nvlink_inband_mc_team_setup_replay_rsp_msg_t;
 
+#define NVLINK_INBAND_MAX_HSHUB 6
+#define NVLINK_INBAND_MAX_NVLMUX 12
+#define NVLINK_INBAND_MAX_NVLINK_PER_HSHUB 12
+
+#define NVLINK_INBAND_AMAP_INVALID_CFG   0 // invalidate all AMAP config on the GPU
+#define NVLINK_INBAND_AMAP_UNICAST_CFG   1 // configure a valid unicast AMAP
+#define NVLINK_INBAND_AMAP_MULTICAST_CFG 2 // configure a valid multicast AMAP
+
+#define NVLINK_INBAND_NVLMUX_CONFIG_0 0 // 0???0, 1???1, 2???2 (straight-through)
+#define NVLINK_INBAND_NVLMUX_CONFIG_1 1 // 0???0, 2???1, 1???2
+#define NVLINK_INBAND_NVLMUX_CONFIG_2 2 // 1???0, 0???1, 2???2
+#define NVLINK_INBAND_NVLMUX_CONFIG_3 3 // 1???0, 2???1, 0???2
+#define NVLINK_INBAND_NVLMUX_CONFIG_4 4 // 2???0, 1???1, 0???2
+#define NVLINK_INBAND_NVLMUX_CONFIG_5 5 // 2???0, 0???1, 1???2
+#define NVLINK_INBAND_NVLMUX_CONFIG_MIN 0 // minimum value for param validation
+#define NVLINK_INBAND_NVLMUX_CONFIG_MAX 5 // maximum value for param validation
+
+#define NVLINK_INBAND_HSHUB_CFG_FLAG_SWAP_0_5_AND_1_4_AND_2_3    NVBIT(0)
+#define NVLINK_INBAND_HSHUB_CFG_FLAG_SWAP_2_4                    NVBIT(1)
+#define NVLINK_INBAND_HSHUB_CFG_FLAG_SWAP_1_3                    NVBIT(2)
+
+typedef struct
+{
+    NvU8   index;             /* physical MUX index */
+    NvU8   muxCfg;            /* NVLINK_INBAND_NVLMUX_CONFIG_X */
+} nvlink_inband_gpu_nvlmux_cfg_t;
+
+typedef struct
+{
+    NvU8   index;       /* physical HSHUB index */
+    NvU8   numNVLinks;  /* number of activate NVLinks on this HSHUB */
+} nvlink_inband_gpu_hshub_cfg_t;
+
+typedef struct
+{
+    NvU64  gpuHandle;        /* GPU Handle allocated in GPU probe response */
+    NvU8   numMUXes;         /* number of MUXs on the GPU */
+    nvlink_inband_gpu_nvlmux_cfg_t muxConfig[NVLINK_INBAND_MAX_NVLMUX];
+    NvU8   amapId;           /* an identifier to support multiple amaps on the GPU */
+    NvU8   cfgType;          /* NVLINK_INBAND_AMAP_INVALID/UNICAST/MULTICAST_CFG */
+    NvU64  enabledLinkMask0; /* updated enabled link mask: [0,64) */
+    NvU64  enabledLinkMask64;/* updated enabled link mask: [64,128) */
+    NvU32  flags;            /* NVLINK_INBAND_HSHUB_CFG_FLAG_ */
+    NvU8   numHSHUBs;        /* number of HSHUBs on the GPU */
+    nvlink_inband_gpu_hshub_cfg_t  hshubConfig[NVLINK_INBAND_MAX_HSHUB];
+} nvlink_inband_gpu_amap_cfg_req_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t           msgHdr;
+    nvlink_inband_gpu_amap_cfg_req_t     amapCfgReq;
+} nvlink_inband_gpu_amap_cfg_req_msg_t;
+
 #pragma pack(pop)
 
 /********************* Don't add any message structs after this line ******************************/
@@ -470,7 +603,8 @@ static NV_INLINE NvU8 nvlinkGetFabricHealthSummary
     }
 
     if (REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW, fabricHealth) == NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW_TRUE ||
-        REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_ROUTE_UPDATE, fabricHealth) == NVLINK_INBAND_FABRIC_HEALTH_MASK_ROUTE_UPDATE_TRUE)
+        REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_ROUTE_UPDATE, fabricHealth) == NVLINK_INBAND_FABRIC_HEALTH_MASK_ROUTE_UPDATE_TRUE ||
+        REF_VAL(NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE, fabricHealth) == NVLINK_INBAND_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED)
     {
         return NVLINK_INBAND_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY;
     }

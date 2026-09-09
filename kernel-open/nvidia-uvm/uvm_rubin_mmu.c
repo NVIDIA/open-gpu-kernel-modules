@@ -28,6 +28,11 @@
 #include "hwref/rubin/gr100/dev_fault.h"
 #include "hwref/rubin/gr100/dev_mmu.h"
 
+// Field defines which are unmaintained by HW
+#define NV_MMU_VER3_PTE_ADDRESS_SYS  51 : 12
+#define NV_MMU_VER3_PTE_ADDRESS_PEER 51 : 12
+#define NV_MMU_VER3_PTE_ADDRESS_VID  39 : 12
+
 static uvm_mmu_mode_hal_t rubin_mmu_mode_hal;
 
 NvU16 uvm_hal_rubin_mmu_client_id_to_utlb_id(NvU16 client_id)
@@ -153,6 +158,111 @@ static NvU64 poisoned_pte_rubin(uvm_page_tree_t *tree)
     return WRITE_HWCONST64(pte_bits, _MMU_VER3, PTE, PCF, PRIVILEGE_RO_NO_ATOMIC_UNCACHED_ACD);
 }
 
+// PTE Permission Control Flags
+static NvU64 pte_pcf(uvm_prot_t prot, NvU64 flags)
+{
+    bool ac = !(flags & UVM_MMU_PTE_FLAGS_ACCESS_COUNTERS_DISABLED);
+    bool cached = flags & UVM_MMU_PTE_FLAGS_CACHED;
+
+    UVM_ASSERT(prot != UVM_PROT_NONE);
+    UVM_ASSERT((flags & ~UVM_MMU_PTE_FLAGS_MASK) == 0);
+
+    if (ac) {
+        switch (prot) {
+            case UVM_PROT_READ_ONLY:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RO_NO_ATOMIC_CACHED_ACE :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RO_NO_ATOMIC_UNCACHED_ACE;
+            case UVM_PROT_READ_WRITE:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RW_NO_ATOMIC_CACHED_ACE :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RW_NO_ATOMIC_UNCACHED_ACE;
+            case UVM_PROT_READ_WRITE_ATOMIC:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RW_ATOMIC_CACHED_ACE :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RW_ATOMIC_UNCACHED_ACE;
+            default:
+                break;
+        }
+    }
+    else {
+        switch (prot) {
+            case UVM_PROT_READ_ONLY:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RO_NO_ATOMIC_CACHED_ACD :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RO_NO_ATOMIC_UNCACHED_ACD;
+            case UVM_PROT_READ_WRITE:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RW_NO_ATOMIC_CACHED_ACD :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RW_NO_ATOMIC_UNCACHED_ACD;
+            case UVM_PROT_READ_WRITE_ATOMIC:
+                return cached ? NV_MMU_VER3_PTE_PCF_REGULAR_RW_ATOMIC_CACHED_ACD :
+                                NV_MMU_VER3_PTE_PCF_REGULAR_RW_ATOMIC_UNCACHED_ACD;
+            default:
+                break;
+        }
+    }
+
+    // Unsupported PCF
+    UVM_ASSERT_MSG(0, "Unsupported PTE PCF: prot: %s, ac: %d, cached: %d\n", uvm_prot_string(prot), ac, cached);
+
+    return NV_MMU_VER3_PTE_PCF_INVALID;
+}
+
+static NvU64 make_pte_rubin(uvm_aperture_t aperture, NvU64 address, uvm_prot_t prot, NvU64 flags)
+{
+    NvU8 aperture_bits = 0;
+    NvU64 pte_bits = 0;
+
+    UVM_ASSERT(prot != UVM_PROT_NONE);
+    UVM_ASSERT((flags & ~UVM_MMU_PTE_FLAGS_MASK) == 0);
+
+    // valid 0:0
+    pte_bits |= HWCONST64(_MMU_VER3, PTE, VALID, TRUE);
+
+    // aperture 2:1
+    if (aperture == UVM_APERTURE_SYS)
+        aperture_bits = NV_MMU_VER3_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+    else if (aperture == UVM_APERTURE_SYS_NON_COHERENT)
+        aperture_bits = NV_MMU_VER3_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+    else if (aperture == UVM_APERTURE_VID)
+        aperture_bits = NV_MMU_VER3_PTE_APERTURE_VIDEO_MEMORY;
+    else if (uvm_aperture_is_peer(aperture) || uvm_aperture_is_egm(aperture))
+        aperture_bits = NV_MMU_VER3_PTE_APERTURE_PEER_MEMORY;
+    else
+        UVM_ASSERT_MSG(0, "Invalid aperture: %d\n", aperture);
+
+    pte_bits |= HWVALUE64(_MMU_VER3, PTE, APERTURE, aperture_bits);
+
+    // PCF (permission control flags) 7:3
+    if (uvm_aperture_is_egm(aperture)) {
+        // FLA Unicast mappings require *_ACD PCF flags.
+        flags |= UVM_MMU_PTE_FLAGS_ACCESS_COUNTERS_DISABLED;
+    }
+
+    pte_bits |= HWVALUE64(_MMU_VER3, PTE, PCF, pte_pcf(prot, flags));
+
+    // kind 11:8
+    if (uvm_aperture_is_egm(aperture))
+        pte_bits |= HWVALUE64(_MMU_VER3, PTE, KIND, NV_MMU_PTE_KIND_SMSKED_MESSAGE);
+    else
+        pte_bits |= HWVALUE64(_MMU_VER3, PTE, KIND, NV_MMU_PTE_KIND_GENERIC_MEMORY);
+
+    address >>= NV_MMU_VER3_PTE_ADDRESS_SHIFT;
+
+    if (aperture == UVM_APERTURE_VID) {
+        // vid address 39:12
+        pte_bits |= HWVALUE64(_MMU_VER3, PTE, ADDRESS_VID, address);
+    }
+    else {
+        // sys/peer address 51:12
+        pte_bits |= HWVALUE64(_MMU_VER3, PTE, ADDRESS, address);
+
+        // peer id 63:61
+        if (uvm_aperture_is_peer(aperture))
+            pte_bits |= HWVALUE64(_MMU_VER3, PTE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
+        else if (uvm_aperture_is_egm(aperture))
+            pte_bits |= HWVALUE64(_MMU_VER3, PTE, PEER_ID, UVM_APERTURE_EGM_PEER_ID(aperture));
+    }
+
+    return pte_bits;
+}
+
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_rubin(void)
 {
     static bool initialized = false;
@@ -168,6 +278,7 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_rubin(void)
 
         rubin_mmu_mode_hal = *blackwell_mmu_mode_hal;
         rubin_mmu_mode_hal.poisoned_pte = poisoned_pte_rubin;
+        rubin_mmu_mode_hal.make_pte = make_pte_rubin;
 
         initialized = true;
     }

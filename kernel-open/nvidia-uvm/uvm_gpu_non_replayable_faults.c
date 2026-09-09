@@ -441,15 +441,18 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
     // If this is a ATS processor and the page is already resident in the correct location
     // then it should already be mapped on the CPU so handle this as a minor fault.
     if (uvm_va_block_is_hmm(va_block) && gpu->parent->ats_supported) {
-        uvm_page_mask_t *resident_pages = uvm_va_block_resident_mask_get(va_block, gpu->id, NUMA_NO_NODE);
-
-        if (resident_pages && uvm_page_mask_test(resident_pages, page_index)) {
+        uvm_va_block_page_resident_processors(va_block, page_index,
+                                              &service_context->block_context->scratch_processor_mask);
+        if (uvm_processor_mask_test(&service_context->block_context->scratch_processor_mask, gpu->id)) {
             unsigned int flags = FAULT_FLAG_REMOTE;
             if (fault_entry->fault_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE)
                 flags |= FAULT_FLAG_WRITE;
 
+            // handle_mm_fault() may call hmm_invalidate() so we can't call it with the block lock held
+            uvm_mutex_unlock(&va_block->lock);
             UVM_HANDLE_MM_FAULT(service_context->block_context->hmm.vma,
                                 uvm_va_block_cpu_page_address(va_block, page_index), flags);
+            uvm_mutex_lock(&va_block->lock);
 
             return NV_OK;
         }

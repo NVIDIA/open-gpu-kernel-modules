@@ -36,6 +36,10 @@
 
 #include <linux/dma-fence.h>
 
+#if defined(NV_DRM_SYNCOBJ_FEATURES_PRESENT)
+#include <drm/drm_syncobj.h>
+#endif
+
 #define NV_DRM_SEMAPHORE_SURFACE_FENCE_MAX_TIMEOUT_MS 5000
 
 struct nv_drm_fence_context;
@@ -1824,6 +1828,178 @@ done:
     }
 
     return ret;
+}
+
+int nv_drm_semsurf_export_to_syncobj_point_ioctl(struct drm_device *dev,
+                                                  void *data,
+                                                  struct drm_file *filep)
+{
+#if defined(NV_DRM_SYNCOBJ_FEATURES_PRESENT)
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    struct drm_nvidia_semsurf_export_to_syncobj_point_params *p = data;
+    struct nv_drm_fence_context *nv_fence_context = NULL;
+    struct dma_fence *fence = NULL;
+    struct drm_syncobj *syncobj = NULL;
+    struct dma_fence_chain *chain = NULL;
+    int ret = -EINVAL;
+
+    if (nv_dev->pDevice == NULL) {
+        ret = -EOPNOTSUPP;
+        goto done;
+    }
+
+    /* Lookup the fence context */
+    nv_fence_context = __nv_drm_fence_context_lookup(
+        filep,
+        p->fence_context_handle);
+
+    if (!nv_fence_context) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to look up nv fence context: 0x%08x",
+            p->fence_context_handle);
+        goto done;
+    }
+
+    if (nv_fence_context->ops != &nv_drm_semsurf_fence_ctx_ops) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Wrong fence context type: 0x%08x",
+            p->fence_context_handle);
+        goto done;
+    }
+
+    /* Lookup the DRM syncobj */
+    syncobj = drm_syncobj_find(filep, p->syncobj_handle);
+    if (!syncobj) {
+        ret = -ENOENT;
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to find syncobj: 0x%08x",
+            p->syncobj_handle);
+        goto done;
+    }
+
+#if defined(NV_DMA_FENCE_CHAIN_ALLOC_PRESENT)
+    chain = dma_fence_chain_alloc();
+#else
+    chain = kzalloc(sizeof(struct dma_fence_chain), GFP_KERNEL);
+#endif
+    if (!chain) {
+        ret = -ENOMEM;
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to allocate dmabuf chain");
+        goto done;
+    }
+
+    /* Create a fence for the semsurf timeline point */
+    fence = __nv_drm_semsurf_fence_ctx_create_fence(
+        nv_dev,
+        to_semsurf_fence_ctx(nv_fence_context),
+        p->wait_value,
+        NV_DRM_SEMAPHORE_SURFACE_FENCE_MAX_TIMEOUT_MS);
+
+    if (IS_ERR(fence)) {
+        ret = PTR_ERR(fence);
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to create fence for wait_value: %llu",
+            p->wait_value);
+        goto done;
+    }
+
+    /* Replace the syncobj timeline point with our fence */
+    drm_syncobj_add_point(syncobj, chain, fence, p->syncobj_point);
+
+    ret = 0;
+
+done:
+    if (syncobj) {
+        drm_syncobj_put(syncobj);
+    }
+
+    if (fence) {
+        dma_fence_put(fence);
+    }
+
+    if (nv_fence_context) {
+        nv_drm_gem_object_unreference_unlocked(&nv_fence_context->base);
+    }
+
+    return ret;
+#else
+    return -EOPNOTSUPP;
+#endif /* NV_DRM_SYNCOBJ_FEATURES_PRESENT */
+}
+
+int nv_drm_syncobj_get_syncfd_ioctl(struct drm_device *dev,
+                                    void *data,
+                                    struct drm_file *filep)
+{
+#if defined(NV_DRM_SYNCOBJ_FEATURES_PRESENT)
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    struct drm_nvidia_syncobj_get_syncfd_params *p = data;
+    struct drm_syncobj *syncobj = NULL;
+    struct dma_fence *fence = NULL;
+    int ret = -EINVAL;
+    int fd;
+
+    if (nv_dev->pDevice == NULL) {
+        ret = -EOPNOTSUPP;
+        goto done;
+    }
+
+    /* Lookup the DRM syncobj */
+    syncobj = drm_syncobj_find(filep, p->syncobj_handle);
+    if (!syncobj) {
+        ret = -ENOENT;
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to find syncobj: 0x%08x",
+            p->syncobj_handle);
+        goto done;
+    }
+
+    /* Find the fence at the specified timeline point */
+    ret = drm_syncobj_find_fence(filep, p->syncobj_handle, p->syncobj_point,
+                                  0 /* flags */, &fence);
+    if (ret) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to find fence for syncobj 0x%08x at point %llu",
+            p->syncobj_handle,
+            p->syncobj_point);
+        goto done;
+    }
+
+    /* Create a sync FD for the fence */
+    fd = nv_drm_create_sync_file(fence);
+    if (fd < 0) {
+        ret = fd;
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to create sync file from fence on syncobj 0x%08x",
+            p->syncobj_handle);
+        goto fence_found;
+    }
+
+    p->fd = fd;
+    ret = 0;
+
+fence_found:
+    /* Release this function's reference to the fence */
+    dma_fence_put(fence);
+
+done:
+    if (syncobj) {
+        drm_syncobj_put(syncobj);
+    }
+
+    return ret;
+#else
+    return -EOPNOTSUPP;
+#endif /* NV_DRM_SYNCOBJ_FEATURES_PRESENT */
 }
 
 #endif /* NV_DRM_AVAILABLE */

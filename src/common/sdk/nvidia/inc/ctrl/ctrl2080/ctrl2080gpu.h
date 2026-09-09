@@ -43,13 +43,14 @@
 #define NV_GRID_LICENSE_FEATURE_VIRTUAL_WORKSTATION_EDITION "Quadro-Virtual-DWS,5.0;GRID-Virtual-WS,2.0;GRID-Virtual-WS-Ext,2.0"
 #define NV_GRID_LICENSE_FEATURE_GAMING_EDITION              "GRID-vGaming,8.0"
 #define NV_GRID_LICENSE_FEATURE_COMPUTE_EDITION             "NVIDIA-vComputeServer,9.0"
+#define NV_GRID_LICENSE_FEATURE_VGAMEDEV_EDITION            "NVIDIA-vGameDev,21.0"
 
 #define NV_GRID_LICENSED_PRODUCT_VWS                "NVIDIA RTX Virtual Workstation"
 #define NV_GRID_LICENSED_PRODUCT_GAMING             "NVIDIA Cloud Gaming"
 #define NV_GRID_LICENSED_PRODUCT_VPC                "NVIDIA Virtual PC"
 #define NV_GRID_LICENSED_PRODUCT_VAPPS              "NVIDIA Virtual Applications"
-#define NV_GRID_LICENSED_PRODUCT_COMPUTE            "NVIDIA Virtual Compute Server"
 #define NV_GRID_LICENSED_PRODUCT_VGPU_FOR_COMPUTE   "NVIDIA vGPU for Compute"
+#define NV_GRID_LICENSED_PRODUCT_VGAMEDEV           "NVIDIA RTX Virtual Game Dev"
 
 
 
@@ -2208,7 +2209,7 @@ typedef struct NV2080_CTRL_GPU_GET_VPR_CAPS_PARAMS {
  */
 #define NV2080_CTRL_CMD_GPU_GET_PES_INFO                       (0x20800168U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_PES_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_CMD_GPU_GET_PES_INFO_MAX_TPC_PER_GPC_COUNT 10U
+#define NV2080_CTRL_CMD_GPU_GET_PES_INFO_MAX_TPC_PER_GPC_COUNT 15U
 
 #define NV2080_CTRL_GPU_GET_PES_INFO_PARAMS_MESSAGE_ID (0x68U)
 
@@ -3880,7 +3881,7 @@ typedef struct NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS {
  */
 #define NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES (0x2080019bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xC8U
+#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xC9U
 
 #define NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID (0x9BU)
 
@@ -4196,10 +4197,39 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_PARTITION_ASSIGNED_TRUE          1
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_PARTITION_ASSIGNED_FALSE         2
 
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE                15:14
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_NOT_SUPPORTED  0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED      1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED   2
+
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_NOT_SUPPORTED 0
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_HEALTHY 1
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_UNHEALTHY 2
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_SUMMARY_LIMITED_CAPACITY 3
+
+#define NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER   0
+#define NV_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER 1
+#define NV_FABRIC_CLIQUE_TYPE_UNICAST_HANDLE    2
+#define NV_FABRIC_CLIQUE_TYPE_MULTICAST_HANDLE  3
+
+
+
+/*!
+ * NV2080_CTRL_GPU_FABRIC_CLIQUE
+ *
+ * This structure defines a clique.
+ *
+ * type
+ *   - Type of the clique, see NV_FABRIC_CLIQUE_TYPE_*
+ * id
+ *   - Unique ID of the clique assigned by the GFM
+ */
+typedef struct NV2080_CTRL_GPU_FABRIC_CLIQUE {
+    NvU8  type;
+    NvU32 id;
+} NV2080_CTRL_GPU_FABRIC_CLIQUE;
+
+#define NV2080_CTRL_GPU_FABRIC_CLIQUE_MAX_SIZE 32U
 
 /*!
  * NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS
@@ -4230,6 +4260,12 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
  *            NV2080_CTRL_GPU_FABRIC_PROBE_CAP_*
  *  fabricCliqueId[OUT]
  *      - Unique ID of a set of GPUs within a fabric partition that can perform P2P
+ *      - This is same as Unicast and Multicast Pointer Clique on the pre-existing
+ *        system. This field is now deprecated and will be removed in future.
+ *  fabricCliques[OUT]
+ *      - Unique clique IDs of a set of GPUs within a fabric partition that can perform specific P2P operations
+ *  fabricNumCliques[OUT]
+ *      - Number of unique cliques returned by the call
  *  fabricHealthMask[OUT]
  *      - Mask where bits indicate different status about the health of the fabric
  *  fabricHealthSummary[OUT]
@@ -4238,14 +4274,17 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xA3U)
 
 typedef struct NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS {
-    NvU8      state;
-    NV_STATUS status;
-    NvU8      clusterUuid[NV2080_GPU_FABRIC_CLUSTER_UUID_LEN];
-    NvU16     fabricPartitionId;
+    NvU8                          state;
+    NV_STATUS                     status;
+    NvU8                          clusterUuid[NV2080_GPU_FABRIC_CLUSTER_UUID_LEN];
+    NvU16                         fabricPartitionId;
     NV_DECLARE_ALIGNED(NvU64 fabricCaps, 8);
-    NvU32     fabricCliqueId;
-    NvU32     fabricHealthMask;
-    NvU8      fabricHealthSummary;
+    NvU32                         fabricCliqueId;
+    NV2080_CTRL_GPU_FABRIC_CLIQUE fabricCliques[NV2080_CTRL_GPU_FABRIC_CLIQUE_MAX_SIZE];
+    NvU8                          fabricNumCliques;
+    NvU32                         fabricHealthMask;
+    NvU8                          fabricHealthSummary;
+    NV_DECLARE_ALIGNED(NvU64 numProbeReqs, 8);
 } NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS;
 
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO (0x208001a3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */
@@ -4850,7 +4889,7 @@ typedef struct NV2080_CTRL_GPU_CHECK_MEM_SUBSYS_ERROR_PARAMS {
     NvU32 flags;
 } NV2080_CTRL_GPU_CHECK_MEM_SUBSYS_ERROR_PARAMS;
 
-/* 
+/*
  * NV2080_CTRL_CMD_GPU_GET_DEFAULT_TIMEOUT
  *
  * @brief Returns the RM default timeout in ms
@@ -4926,8 +4965,8 @@ typedef struct NV2080_CTRL_CMD_GPU_IS_RESET_COUPLED_PARAMS {
  * NV2080_CTRL_CMD_GPU_GET_DIELET_INFO
  *
  * Returns a list of dielet type/physical mask pairs.
- * 
- * If a given dielet type may be present on a given arch but all instances are floorswept, a mask of 0x0 will be returned. 
+ *
+ * If a given dielet type may be present on a given arch but all instances are floorswept, a mask of 0x0 will be returned.
  * If a given dielet type cannot exist on a given arch, no record for the dielet should be returned.
  *
  *   dieletPairs[OUT]
@@ -4965,7 +5004,7 @@ typedef struct NV2080_CTRL_GPU_GET_DIELET_INFO_PARAMS {
  * NV2080_CTRL_CMD_GPU_GET_UNIT_INFO_FROM_DIELET
  *
  * Returns a floorswept mask of a HW unit given a dielet type, dielet index, and HW unit.
- * 
+ *
  *   dieletType [IN]
  *     One of the types defined in NV2080_CTRL_GPU_DIELET_TYPE.
  *   dieletIndex [IN]
@@ -5022,5 +5061,40 @@ typedef struct NV2080_CTRL_GPU_GET_UNIT_FS_INFO_FROM_DIELET_PARAMS {
 typedef struct NV2080_CTRL_GPU_SET_MIGRATION_BLOCK_PARAMS {
     NvBool bIsDevtoolInUse;
 } NV2080_CTRL_GPU_SET_MIGRATION_BLOCK_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_GPU_GET_EGM_INFO
+ *
+ * This command returns EGM (Extended GPU Memory) information for this GPU,
+ * read from the ACPI _DSD Device-Specific Data properties.
+ *
+ * EGM is coherent system memory (Sysmem) accessible via the C2C coherent
+ * link, used in Grace based self hosted platforms. Kernel-mode clients
+ * (KMD/MCDM) use this command to discover EGM placement without direct
+ * access to OS-layer internals.
+ *
+ *   egmPhysAddr
+ *     Base physical address of the EGM region (nvidia,egm-base-pa).
+ *   egmSize
+ *     Size in bytes of the EGM region (nvidia,egm-size).
+ *   egmNodeId
+ *     NUMA node identifier derived from the ACPI proximity domain
+ *     (nvidia,egm-pxm). On Windows the proximity domain value is used
+ *     directly as the node ID.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_GPU_GET_EGM_INFO (0x208001fb) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS_MESSAGE_ID (0xfbU)
+
+typedef struct NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 egmPhysAddr, 8);
+    NV_DECLARE_ALIGNED(NvU64 egmSize, 8);
+    NvS32 egmNodeId;
+} NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS;
 
 /* _ctrl2080gpu_h_ */

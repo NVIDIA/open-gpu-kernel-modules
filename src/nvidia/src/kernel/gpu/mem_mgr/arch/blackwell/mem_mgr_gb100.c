@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,17 +54,6 @@ memmgrIsMemDescSupportedByFla_GB100
     return memmgrIsMemDescSupportedByFla_GA100(pFlaOwnerGpu, pFlaOwnerMemoryManager, pPhysMemDesc);
 }
 
-NvU32
-memmgrGetFBEndReserveSizeEstimate_GB100
-(
-    OBJGPU *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    const NvU32 ESTIMATED_RESERVE_FB = 0x220000;
-
-    return ESTIMATED_RESERVE_FB;
-}
 
 NvU8
 memmgrGetLocalizedOffset_GB100

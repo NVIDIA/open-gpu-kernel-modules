@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -192,9 +192,8 @@ typedef struct
     // Flags to help decide GSP-FW flow.
     NvU8 flags;
 
-    // Pad structure to exactly 256 bytes.  Can replace padding with additional
-    // fields without incrementing revision.  Padding initialized to 0.
-    NvU8 padding[2];
+    // NV_REG_STR_RM_GSP_PAGING_CONFIG bitmask, passed from kernel RM
+    NvU16 pagingConfig;
 
     //
     // Starts at gspFwWprEnd+frtsSize b/c FRTS is positioned
@@ -205,38 +204,18 @@ typedef struct
 
     // BL to use for verification (i.e. Booter says OK to boot)
     NvU64 verified;  // 0x0 -> unverified, 0xa0a0a0a0a0a0a0a0 -> verified
+
+    // No more padding available. Structure is exactly 256 bytes.
+    // Any new fields require increasing the structure size and bumping revision.
 } GspFwWprMeta;
 
 #define GSP_FW_WPR_META_VERIFIED  0xa0a0a0a0a0a0a0a0ULL
 #define GSP_FW_WPR_META_REVISION  1
 #define GSP_FW_WPR_META_MAGIC     0xdc3aae21371a60b3ULL
 
-#define GSP_FW_WPR_HEAP_FREE_REGION_COUNT 128
-
-typedef struct
-{
-    //
-    // offset relative to GspFwWprMeta FBMEM PA
-    // describes a region at [offs, offs + length)
-    //
-    NvU32 offs; // start, inclusive
-    NvU32 length;
-} GspFwHeapFreeRegion;
-
-typedef struct
-{
-    NvU64 magic;
-    NvU32 nregions;
-    GspFwHeapFreeRegion regions[GSP_FW_WPR_HEAP_FREE_REGION_COUNT];
-} GspFwHeapFreeList;
-
-#define GSP_FW_HEAP_FREE_LIST_MAGIC 0x4845415046524545ULL
-
 #define GSP_FW_FLAGS                                       8:0
 #define GSP_FW_FLAGS_CLOCK_BOOST                           NVBIT(0)
-#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT               NVBIT(1)
 #define GSP_FW_FLAGS_PPCIE_ENABLED                         NVBIT(2)
 #define GSP_FW_FLAGS_MULTI_GPU_NVLE_ENABLED                NVBIT(3)
-#define GSP_FW_FLAGS_SCAN_RECOVERY_MARGIN                  NVBIT(4)
 
 #endif // GSP_FW_WPR_META_H_

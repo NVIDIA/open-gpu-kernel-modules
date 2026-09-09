@@ -445,6 +445,19 @@ typedef enum _NVLOG_ARGTYPE
 } NVLOG_ARGTYPE;
 
 // Default flags for NvLog registry, used for single-buffer option or the read fails
+
+//
+// Primary NvLog buffer size default. On WoA we want a 4 MB primary buffer
+// for debug (see NVBug 6178378), but the shared BUFFER_SIZE_DEFAULT drives
+// six nonpaged buffers via NVLOG_DEFAULT_FLAGS/FLAGS2/FLAGS4-7, so we override
+// only the primary here instead of raising the shared default.
+//
+#if NVOS_IS_WINDOWS && NVCPU_IS_AARCH64
+#define NVLOG_PRIMARY_BUFFER_SIZE_KB   4096
+#else
+#define NVLOG_PRIMARY_BUFFER_SIZE_KB   NV_REG_STR_RM_NVLOG_BUFFER_SIZE_DEFAULT
+#endif
+
 #ifndef   NVLOG_DEFAULT_FLAGS
 #define   NVLOG_DEFAULT_FLAGS                                                  \
     (                                                                          \
@@ -457,7 +470,7 @@ typedef enum _NVLOG_ARGTYPE
                 DRF_DEF(LOG, _BUFFER_FLAGS, _LOCKING,    _STATE)    |          \
                 DRF_DEF(LOG, _BUFFER_FLAGS, _OCA,        _YES)                 \
             ))                                                      |          \
-        DRF_DEF(_REG_STR_RM, _NVLOG, _BUFFER_SIZE,   _DEFAULT)      |          \
+        DRF_NUM(_REG_STR_RM, _NVLOG, _BUFFER_SIZE,   NVLOG_PRIMARY_BUFFER_SIZE_KB) | \
         DRF_NUM(_REG_STR_RM, _NVLOG, _RUNTIME_LEVEL, 0)             |          \
         DRF_DEF(_REG_STR_RM, _NVLOG, _TIMESTAMP,     _64)           |          \
         DRF_DEF(_REG_STR_RM, _NVLOG, _INITED,        _YES)                     \

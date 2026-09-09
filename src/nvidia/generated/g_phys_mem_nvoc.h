@@ -104,12 +104,12 @@ struct NVOC_VTABLE__PhysicalMemory {
     NV_STATUS (*__physmemIsReady__)(struct PhysicalMemory * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__physmemIsGpuMapAllowed__)(struct PhysicalMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__physmemIsExportAllowed__)(struct PhysicalMemory * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__physmemAccessCallback__)(struct PhysicalMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__physmemShareCallback__)(struct PhysicalMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__physmemControlSerialization_Prologue__)(struct PhysicalMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__physmemControlSerialization_Epilogue__)(struct PhysicalMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__physmemControl_Prologue__)(struct PhysicalMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__physmemControl_Epilogue__)(struct PhysicalMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__physmemAccessCallback__)(struct PhysicalMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__physmemShareCallback__)(struct PhysicalMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__physmemControlSerialization_Prologue__)(struct PhysicalMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__physmemControlSerialization_Epilogue__)(struct PhysicalMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__physmemControl_Prologue__)(struct PhysicalMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__physmemControl_Epilogue__)(struct PhysicalMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__physmemPreDestruct__)(struct PhysicalMemory * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__physmemControlFilter__)(struct PhysicalMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__physmemIsPartialUnmapSupported__)(struct PhysicalMemory * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -263,27 +263,27 @@ static inline NvBool physmemIsExportAllowed_DISPATCH(struct PhysicalMemory *pMem
     return pMemory->__nvoc_metadata_ptr->vtable.__physmemIsExportAllowed__(pMemory);
 }
 
-static inline NvBool physmemAccessCallback_DISPATCH(struct PhysicalMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool physmemAccessCallback_DISPATCH(struct PhysicalMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__physmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool physmemShareCallback_DISPATCH(struct PhysicalMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool physmemShareCallback_DISPATCH(struct PhysicalMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__physmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS physmemControlSerialization_Prologue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS physmemControlSerialization_Prologue_DISPATCH(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__physmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void physmemControlSerialization_Epilogue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void physmemControlSerialization_Epilogue_DISPATCH(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__physmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS physmemControl_Prologue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS physmemControl_Prologue_DISPATCH(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__physmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void physmemControl_Epilogue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void physmemControl_Epilogue_DISPATCH(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__physmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

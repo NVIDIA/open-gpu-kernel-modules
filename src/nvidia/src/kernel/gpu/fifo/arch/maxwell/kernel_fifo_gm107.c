@@ -555,7 +555,7 @@ kfifoConvertInstToKernelChannel_GM107
 (
     OBJGPU           *pGpu,
     KernelFifo       *pKernelFifo,
-    INST_BLOCK_DESC  *pInst,
+    const INST_BLOCK_DESC  *pInst,
     KernelChannel   **ppKernelChannel
 )
 {
@@ -647,6 +647,7 @@ _isEngineInfoTypeValidForOnlyHostDriven(ENGINE_INFO_TYPE type)
         case ENGINE_INFO_TYPE_PBDMA_ID:
         case ENGINE_INFO_TYPE_CHRAM_PRI_BASE:
         case ENGINE_INFO_TYPE_FIFO_TAG:
+        case ENGINE_INFO_TYPE_IS_PREEMPTABLE:
             return NV_TRUE;
         case ENGINE_INFO_TYPE_ENG_DESC:
         case ENGINE_INFO_TYPE_RM_ENGINE_TYPE:

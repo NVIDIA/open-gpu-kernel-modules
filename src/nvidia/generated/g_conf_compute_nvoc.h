@@ -160,7 +160,7 @@ struct ConfidentialCompute {
     NV_STATUS (*__confComputeEnableInternalKeyRotationSupport__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (3 hals) body
     NvBool (*__confComputeIsDebugModeEnabled__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
     NvBool (*__confComputeIsGpuCcCapable__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (3 hals) body
-    NV_STATUS (*__confComputeTestPlatformSupport__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__confComputeTestPlatformSupport__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__confComputeDeriveSessionKeys__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
     void (*__confComputeKeyStoreDepositIvMask__)(struct ConfidentialCompute * /*this*/, NvU32, void *);  // halified (2 hals) body
     NV_STATUS (*__confComputeKeyStoreUpdateKey__)(struct ConfidentialCompute * /*this*/, NvU32);  // halified (2 hals) body
@@ -214,6 +214,8 @@ struct ConfidentialCompute {
     NvU64 PRIVATE_FIELD(keyRotationThresholdDelta);
     NvU64 PRIVATE_FIELD(keyRotationUpperThreshold);
     NvU64 PRIVATE_FIELD(keyRotationLowerThreshold);
+    struct Keystore *PRIVATE_FIELD(pGspKeystore);
+    struct Keystore *PRIVATE_FIELD(pSec2Keystore);
 };
 
 
@@ -910,6 +912,8 @@ NvBool confComputeIsGpuCcCapable_GH100(struct OBJGPU *pGpu, struct ConfidentialC
 NvBool confComputeIsGpuCcCapable_GB100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
 
 NV_STATUS confComputeTestPlatformSupport_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+NV_STATUS confComputeTestPlatformSupport_GB100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
 
 NV_STATUS confComputeDeriveSessionKeys_KERNEL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
 

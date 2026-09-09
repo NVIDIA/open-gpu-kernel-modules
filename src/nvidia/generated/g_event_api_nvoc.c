@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NotifShare =
 {
     .classInfo.size =               sizeof(NotifShare),
     .classInfo.classId =            classId(NotifShare),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "NotifShare",
@@ -306,6 +307,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_EventApi =
 {
     .classInfo.size =               sizeof(EventApi),
     .classInfo.classId =            classId(EventApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "EventApi",
@@ -714,6 +716,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier =
 {
     .classInfo.size =               sizeof(INotifier),
     .classInfo.classId =            classId(INotifier),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "INotifier",
@@ -845,6 +848,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier =
 {
     .classInfo.size =               sizeof(Notifier),
     .classInfo.classId =            classId(Notifier),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "Notifier",

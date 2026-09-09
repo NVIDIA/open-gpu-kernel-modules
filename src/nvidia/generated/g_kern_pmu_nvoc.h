@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,9 +58,6 @@ extern "C" {
 #include "liblogdecode.h"
 
 #define PMU_LOG_BUFFER_MAX_SIZE 0x1000
-
-// This value is used in both Physical-RM and Kernel-RM
-#define PMU_RESERVED_MEMORY_SURFACES_SIZE 0x1040000
 
 /*!
  * Alignment to use for reserved memory region
@@ -221,14 +218,14 @@ static inline NvU32 kpmuReservedMemoryMiscSizeGet(struct KernelPmu *pKernelPmu) 
 #define kpmuReservedMemoryMiscSizeGet(pKernelPmu) kpmuReservedMemoryMiscSizeGet_IMPL(pKernelPmu)
 #endif // __nvoc_kern_pmu_h_disabled
 
-NvU64 kpmuReservedMemoryOffsetGet_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
+NvU64 kpmuComputeReservedMemoryOffset_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu, NvU64 fbSize);
 #ifdef __nvoc_kern_pmu_h_disabled
-static inline NvU64 kpmuReservedMemoryOffsetGet(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
+static inline NvU64 kpmuComputeReservedMemoryOffset(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu, NvU64 fbSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelPmu was disabled!");
     return 0;
 }
 #else // __nvoc_kern_pmu_h_disabled
-#define kpmuReservedMemoryOffsetGet(pGpu, pKernelPmu) kpmuReservedMemoryOffsetGet_IMPL(pGpu, pKernelPmu)
+#define kpmuComputeReservedMemoryOffset(pGpu, pKernelPmu, fbSize) kpmuComputeReservedMemoryOffset_IMPL(pGpu, pKernelPmu, fbSize)
 #endif // __nvoc_kern_pmu_h_disabled
 
 NV_STATUS kpmuInitLibosLoggingStructures_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);

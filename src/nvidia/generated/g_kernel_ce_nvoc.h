@@ -154,7 +154,7 @@ struct KernelCE {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelCE *__nvoc_pbase_KernelCE;    // kce
 
-    // Vtable with 40 per-object function pointers
+    // Vtable with 41 per-object function pointers
     NvBool (*__kceIsPresent__)(OBJGPU *, struct KernelCE * /*this*/);  // virtual halified (2 hals) override (engstate) base (engstate) body
     NV_STATUS (*__kceStateUnload__)(OBJGPU *, struct KernelCE * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     NV_STATUS (*__kceStateLoad__)(OBJGPU *, struct KernelCE * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
@@ -195,6 +195,7 @@ struct KernelCE {
     NvBool (*__kceIsGenXorHigherSupported__)(OBJGPU *, struct KernelCE * /*this*/, NvU32);  // halified (3 hals) body
     void (*__kceApplyGen4orHigherMapping__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *, NvU32 *, NvU32, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kceGetGrceMaskReg__)(OBJGPU *, struct KernelCE * /*this*/, NvU32 *);  // halified (2 hals) body
+    NvU32 (*__kceGetGroupIdStride__)(struct KernelCE * /*this*/);  // halified (2 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KCE_IS_MISSING inherited from OBJENGSTATE
@@ -529,6 +530,9 @@ static inline NV_STATUS kceGetCeFromNvlinkConfig(OBJGPU *pGpu, struct KernelCE *
 #define kceGetGrceMaskReg_FNPTR(pKCe) pKCe->__kceGetGrceMaskReg__
 #define kceGetGrceMaskReg(pGpu, pKCe, pGrceMask) kceGetGrceMaskReg_DISPATCH(pGpu, pKCe, pGrceMask)
 #define kceGetGrceMaskReg_HAL(pGpu, pKCe, pGrceMask) kceGetGrceMaskReg_DISPATCH(pGpu, pKCe, pGrceMask)
+#define kceGetGroupIdStride_FNPTR(arg_this) arg_this->__kceGetGroupIdStride__
+#define kceGetGroupIdStride(arg_this) kceGetGroupIdStride_DISPATCH(arg_this)
+#define kceGetGroupIdStride_HAL(arg_this) kceGetGroupIdStride_DISPATCH(arg_this)
 #define kceInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kceInitMissing(pGpu, pEngstate) kceInitMissing_DISPATCH(pGpu, pEngstate)
 #define kceStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -729,6 +733,10 @@ static inline void kceApplyGen4orHigherMapping_DISPATCH(OBJGPU *pGpu, struct Ker
 
 static inline NV_STATUS kceGetGrceMaskReg_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask) {
     return pKCe->__kceGetGrceMaskReg__(pGpu, pKCe, pGrceMask);
+}
+
+static inline NvU32 kceGetGroupIdStride_DISPATCH(struct KernelCE *arg_this) {
+    return arg_this->__kceGetGroupIdStride__(arg_this);
 }
 
 static inline void kceInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
@@ -954,6 +962,8 @@ void kceApplyGen4orHigherMapping_GA100(OBJGPU *pGpu, struct KernelCE *pCe, NvU32
 
 NV_STATUS kceGetGrceMaskReg_GB202(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask);
 
+NvU32 kceGetGroupIdStride_GB100(struct KernelCE *arg_this);
+
 // Inline HAL method definitions
 static inline NvBool kceIsPresent_d69453(OBJGPU *pGpu, struct KernelCE *pKCe){
     return NV_FALSE;
@@ -1121,6 +1131,10 @@ static inline void kceApplyGen4orHigherMapping_d44104(OBJGPU *pGpu, struct Kerne
 
 static inline NV_STATUS kceGetGrceMaskReg_395e98(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *pGrceMask){
     return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvU32 kceGetGroupIdStride_b2b553(struct KernelCE *arg_this){
+    return 0;
 }
 
 // Static dispatch method declarations

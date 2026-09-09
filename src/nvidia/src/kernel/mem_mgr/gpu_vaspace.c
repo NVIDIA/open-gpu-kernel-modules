@@ -1899,6 +1899,20 @@ gvaspaceGetGmmuFmt_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
     return pGpuState->pFmt;
 }
 
+NV_STATUS
+gvaspaceGetMmuWalker_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu, MMU_WALK **ppWalk)
+{
+    GVAS_GPU_STATE *pGpuState;
+
+    NV_ASSERT_OR_RETURN(ppWalk != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
+    NV_ASSERT_OR_RETURN(pGpuState != NULL, NV_ERR_INVALID_STATE);
+
+    *ppWalk = pGpuState->pWalk;
+    return NV_OK;
+}
+
 GVAS_GPU_STATE *
 gvaspaceGetGpuState_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
 {
@@ -2878,8 +2892,8 @@ gvaspaceExternalRootDirCommit_IMPL
     vaLimitOld = pVAS->vasLimit;
     vaLimitNew = mmuFmtEntryIndexVirtAddrHi(pGpuState->pFmt->pRoot, 0, pParams->numEntries - 1);
 
-    NV_ASSERT_OR_RETURN(vaLimitNew >= pGVAS->vaLimitInternal, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(vaLimitNew <= pGVAS->vaLimitMax,      NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, vaLimitNew >= pGVAS->vaLimitInternal, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, vaLimitNew <= pGVAS->vaLimitMax,      NV_ERR_INVALID_ARGUMENT);
 
     // We have to truncate this later so we check for overflow here
     NV_ASSERT_OR_RETURN((NvU64)pParams->numEntries * (NvU64)pGpuState->pFmt->pRoot->entrySize <= NV_U32_MAX,
@@ -2991,7 +3005,8 @@ gvaspaceExternalRootDirCommit_IMPL
         mmuWalkGetPageLevelInfo(pGpuState->pWalk, pGpuState->pFmt->pRoot, 0,
                                 (const MMU_WALK_MEMDESC**)&pGpuState->pRootInternal,
                                 &rootSizeOld);
-        NV_ASSERT(NULL != pGpuState->pRootInternal);
+        NV_CHECK_OR_ELSE(LEVEL_ERROR, NULL != pGpuState->pRootInternal,
+            status = NV_ERR_INVALID_STATE; goto catch);
 
         // TODO: Proper refcount with memdesc cleanup - inverse of memdescFree/memdescDestroy.
         ++pGpuState->pRootInternal->RefCount;
@@ -3116,7 +3131,7 @@ gvaspaceExternalRootDirRevoke_IMPL
         return status;
     }
 
-    NV_ASSERT_OR_RETURN(NULL != pGpuState->pRootInternal, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, NULL != pGpuState->pRootInternal, NV_ERR_INVALID_STATE);
 
     pRootMemNew = pGpuState->pRootInternal;
     rootSizeNew = (NvU32)pRootMemNew->Size;
@@ -3199,8 +3214,8 @@ gvaspaceResize_IMPL
     }
 
     // Shrinking VAS space is not currently supported.
-    NV_ASSERT_OR_RETURN(vaLimitNew >= pVAS->vasLimit,    NV_ERR_INVALID_LIMIT);
-    NV_ASSERT_OR_RETURN(vaLimitNew <= pGVAS->vaLimitMax, NV_ERR_INVALID_LIMIT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, vaLimitNew >= pVAS->vasLimit,    NV_ERR_INVALID_LIMIT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, vaLimitNew <= pGVAS->vaLimitMax, NV_ERR_INVALID_LIMIT);
 
     if (gvaspaceIsInternalVaRestricted(pGVAS))
     {
@@ -3741,84 +3756,20 @@ gvaspaceGetPageLevelInfo_IMPL
     NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams
 )
 {
-    OBJVASPACE          *pVAS       = staticCast(pGVAS, OBJVASPACE);
-    MMU_WALK            *pWalk      = NULL;
-    const MMU_FMT_LEVEL *pLevelFmt  = NULL;
-    const MMU_FMT_LEVEL *pTargetFmt = NULL;
-    NvU32                level      = 0;
-    NvU32                sublevel   = 0;
-    GVAS_GPU_STATE      *pGpuState;
+    OBJVASPACE     *pVAS = staticCast(pGVAS, OBJVASPACE);
+    GVAS_GPU_STATE *pGpuState;
 
-    if (NULL == pGVAS->pGpuStates)
+    if (pGVAS->pGpuStates == NULL)
     {
         // TODO: VMM must be enabled - remove once default.
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    pGpuState  = gvaspaceGetGpuState(pGVAS, pGpu);
-    NV_ASSERT_OR_RETURN(NULL != pGpuState, NV_ERR_INVALID_ARGUMENT);
+    pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
+    NV_ASSERT_OR_RETURN(pGpuState != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    pWalk      = pGpuState->pWalk;
-    pLevelFmt  = pGpuState->pFmt->pRoot;
-
-    pTargetFmt = mmuFmtFindLevelWithPageShift(pLevelFmt, BIT_IDX_64(pParams->pageSize));
-    NV_ASSERT_OR_RETURN(NULL != pTargetFmt, NV_ERR_INVALID_ARGUMENT);
-
-    for (level = 0; NULL != pLevelFmt; ++level)
-    {
-        MEMORY_DESCRIPTOR *pMemDesc = NULL;
-        NvU32              memSize  = 0;
-
-        NV_ASSERT_OR_RETURN(level < GMMU_FMT_MAX_LEVELS, NV_ERR_INVALID_STATE);
-
-        NV_ASSERT_OK_OR_RETURN(
-            mmuWalkGetPageLevelInfo(pWalk, pLevelFmt, pParams->virtAddress,
-                                    (const MMU_WALK_MEMDESC**)&pMemDesc, &memSize));
-        if (NULL == pMemDesc)
-        {
-            break;
-        }
-
-        pParams->levels[level].pFmt = (MMU_FMT_LEVEL *) pLevelFmt;
-        pParams->levels[level].size = memSize;
-
-        // Copy level formats
-        portMemCopy((void *)&(pParams->levels[level].levelFmt), sizeof(MMU_FMT_LEVEL), (void *)pLevelFmt, sizeof(MMU_FMT_LEVEL));
-
-        for (sublevel = 0; (sublevel < MMU_FMT_MAX_SUB_LEVELS) && (sublevel < pLevelFmt->numSubLevels); sublevel++)
-        {
-            portMemCopy((void *)&(pParams->levels[level].sublevelFmt[sublevel]), sizeof(MMU_FMT_LEVEL), (void *)(pLevelFmt->subLevels + sublevel), sizeof(MMU_FMT_LEVEL));
-        }
-
-        pParams->levels[level].physAddress =
-            memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0);
-
-        switch (memdescGetAddressSpace(pMemDesc))
-        {
-            case ADDR_FBMEM:
-                pParams->levels[level].aperture = GMMU_APERTURE_VIDEO;
-                break;
-            case ADDR_SYSMEM:
-                if (NV_MEMORY_CACHED == memdescGetCpuCacheAttrib(pMemDesc))
-                {
-                    pParams->levels[level].aperture = GMMU_APERTURE_SYS_COH;
-                }
-                else
-                {
-                    pParams->levels[level].aperture = GMMU_APERTURE_SYS_NONCOH;
-                }
-                break;
-            default:
-                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
-        }
-
-        pParams->levels[level].entryIndex = mmuFmtVirtAddrToEntryIndex(pLevelFmt, pParams->virtAddress);
-        pLevelFmt = mmuFmtGetNextLevel(pLevelFmt, pTargetFmt);
-    }
-
-    pParams->numLevels = level;
-
-    return NV_OK;
+    return vaspaceGetPageLevelInfoCommon(pVAS, pGpuState->pWalk, pGpuState->pFmt->pRoot, pParams->virtAddress,
+                                         pParams->pageSize, &pParams->numLevels, pParams->levels);
 }
 
 NV_STATUS

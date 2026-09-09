@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,17 +103,17 @@ NvBool nvEvo1NvtToHdmiInfoFramePacketType(const NvU32 srcType, NvU8 *pDstType)
 }
 
 static NVHDMIPKT_TC EvoInfoFrameToHdmiLibTransmitCtrl(
-    NvEvoInfoFrameTransmitControl src,
+    const NvEvoInfoFrameTransmitControl *src,
     NvBool needChecksum)
 {
     NVHDMIPKT_TC hdmiLibTransmitCtrl =
         NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
 
-    switch (src) {
-        case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME:
+    switch (src->frequency) {
+        case NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_SINGLE_FRAME:
             hdmiLibTransmitCtrl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_SINGLE_FRAME;
             break;
-        case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME:
+        case NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME:
             hdmiLibTransmitCtrl = NVHDMIPKT_TRANSMIT_CONTROL_ENABLE_EVERY_FRAME;
             break;
     }
@@ -128,7 +128,7 @@ static NVHDMIPKT_TC EvoInfoFrameToHdmiLibTransmitCtrl(
 
 void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                              const NvU32 head,
-                             const NvEvoInfoFrameTransmitControl transmitCtrl,
+                             const NvEvoInfoFrameTransmitControl *transmitCtrl,
                              const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
                              const NvU32 infoframeSize,
                              NvBool needChecksum)
@@ -244,6 +244,7 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
 
 void nvEvo1DisableHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head,
+                                const NvEvoInfoFrameTransmitControl *transmitCtrl,
                                 const NvU8 nvtInfoFrameType)
 {
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
@@ -328,7 +329,7 @@ static void SendAdaptiveSyncSdp(const NVDispEvoRec *pDispEvo,
 
 void nvEvo1SendDpInfoFrameSdp(const NVDispEvoRec *pDispEvo,
                               const NvU32 head,
-                              const NvEvoInfoFrameTransmitControl transmitCtrl,
+                              const NvEvoInfoFrameTransmitControl *transmitCtrl,
                               const DPSDP_DESCRIPTOR *sdp)
 {
     NvU32 ret;
@@ -340,18 +341,18 @@ void nvEvo1SendDpInfoFrameSdp(const NVDispEvoRec *pDispEvo,
     };
 
     if (sdp->hb.hb1 == NVT_DP_ADAPTIVE_SYNC_SDP_PACKET_TYPE) {
-        nvAssert(transmitCtrl == NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME);
+        nvAssert(transmitCtrl->frequency == NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME);
         SendAdaptiveSyncSdp(pDispEvo, head, sdp);
         return;
     }
 
-    switch (transmitCtrl) {
-        case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_EVERY_FRAME:
+    switch (transmitCtrl->frequency) {
+        case NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME:
             params.transmitControl =
                 DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL,
                         _SINGLE_FRAME, _DISABLE);
             break;
-        case NV_EVO_INFOFRAME_TRANSMIT_CONTROL_SINGLE_FRAME:
+        case NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_SINGLE_FRAME:
             params.transmitControl =
                 DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL,
                         _SINGLE_FRAME, _ENABLE);

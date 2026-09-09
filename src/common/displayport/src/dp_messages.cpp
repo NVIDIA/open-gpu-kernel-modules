@@ -31,6 +31,7 @@
 #include "dp_bitstream.h"
 #include "dp_splitter.h"
 #include "dp_messages.h"
+#include "dp_messagecodings.h"
 #include "dp_merger.h"
 #include "dp_list.h"
 #include "dp_tracing.h"
@@ -72,11 +73,21 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
     NvU64 startTime, elapsedTime;
     message->bBusyWaiting = true;
     message->setMessagePriority(NV_DP_SBMSG_PRIORITY_LEVEL_1);
+    hal->updateDPCDOfflineRetryOnNack();
+    if (hal->isDpcdOffline())
+    {
+        DP_PRINTF(DP_WARNING, "DP-MM> Device went offline SBM request failed");
+        // setting Nak reason to Timeout, as we haven't received any reply from the device and device went offline
+        completion.nakData.reason = NakTimeout;
+        completion.failed = true;
+        nakData = completion.nakData;
+        return false;
+    }
     post(message, &completion);
     startTime = timer->getTimeUs();
     do
     {
-        hal->updateDPCDOffline();
+        hal->updateDPCDOfflineRetryOnNack();
         if (hal->isDpcdOffline())
         {
             DP_PRINTF(DP_WARNING, "DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
@@ -122,18 +133,44 @@ bool MessageManager::send(MessageManager::Message * message, Message::MessageEve
     NvU64 startTime, elapsedTime;
     message->bBusyWaiting = true;
     message->setMessagePriority(NV_DP_SBMSG_PRIORITY_LEVEL_1);
+    hal->updateDPCDOfflineRetryOnNack();
+    if (hal->isDpcdOffline())
+    {
+        DP_PRINTF(DP_WARNING, "DP-MM> Device went offline SBM request failed");
+        // setting Nak reason to Timeout, as we haven't received any reply from the device and device went offline
+        completion.nakData.reason = NakTimeout;
+        completion.failed = true;
+        if(sink)
+        {
+            sink->messageFailed(message, &completion.nakData);
+        }
+        return false;
+    }
     post(message, &completion);
     startTime = timer->getTimeUs();
 
     do
     {
-        hal->updateDPCDOffline();
+        hal->updateDPCDOfflineRetryOnNack();
         if (hal->isDpcdOffline())
         {
             DP_PRINTF(DP_WARNING, "DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
                       message, message->requestIdentifier, ((message->state).target).toString(sb));
-            completion.nakData.reason = NakDpcdFail;
+            // setting Nak reason to Timeout, as we haven't received any reply from the device and device went offline
+            completion.nakData.reason = NakTimeout;
             completion.failed = true;
+            message->sink=NULL;
+            if (message->parent && !message->parent->isBeingDestroyed)
+            {
+                message->parent->awaitingReplyDownRequest.remove(message);
+                message->parent->clearPendingMsg();
+                message->parent->transmitAwaitingDownRequests();
+                message->parent->transmitAwaitingUpReplies();
+            }
+            if(sink)
+            {
+                sink->messageFailed(message, &completion.nakData);
+            }
             break;
         }
 
@@ -477,7 +514,41 @@ void MessageManager::onUpRequestReceived(bool status, EncodedMessage * message)
         }
     }
 
-    DP_ASSERT(0 && "Warning: Unknown upstream UP_REQ message");
+    // No receiver handled this up request; NAK it per DP spec.
+    DP_PRINTF(DP_WARNING, "DP-MM> Unknown upstream request, replying with NAK up reply");
+    sendNakForUnknownUpRequest(message);
+}
+
+void MessageManager::sendNakForUnknownUpRequest(EncodedMessage * message)
+{
+    BitStreamReader reader(&message->buffer, 0, message->buffer.length * 8);
+
+    reader.readOrDefault(1, 0);
+    unsigned reqId = reader.readOrDefault(7, 0);
+
+    if (nakUpReply)
+    {
+        nakUpReply->clear();
+        delete nakUpReply;
+    }
+
+    // 19-byte NAK reply: zero GUID (source has no sideband GUID) +
+    // NakBadParam ("invalid request syntax") + 0 data.
+    nakUpReply = new GenericUpReplyMessage(message->address, reqId,
+                                           true         /* bReplyIsNack */,
+                                           true         /* bBroadcast */,
+                                           false        /* bPath */,
+                                           NULL         /* nakGuid = zero GUID */,
+                                           NakBadParam  /* NAK_Reason */,
+                                           0            /* NAK_Data */);
+    if (!nakUpReply)
+    {
+        // Allocation failed; drop the NAK rather than deref a NULL Message in post().
+        DP_PRINTF(DP_ERROR, "DP-MM> Failed to allocate NAK up reply; dropping unknown up-request");
+        return;
+    }
+
+    postReply(nakUpReply, &nakUpReplyEvtSink);
 }
 
 
@@ -589,6 +660,13 @@ MessageManager::~MessageManager()
     // Do not reclaim the memory of our registered receivers
     while (!messageReceivers.isEmpty())
         messageReceivers.remove(messageReceivers.front());
+
+    if (nakUpReply)
+    {
+        nakUpReply->clear();
+        delete nakUpReply;
+        nakUpReply = NULL;
+    }
 }
 
 ParseResponseStatus MessageManager::Message::parseResponse(EncodedMessage * message)

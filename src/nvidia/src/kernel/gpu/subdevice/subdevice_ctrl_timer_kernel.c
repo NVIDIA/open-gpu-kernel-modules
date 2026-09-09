@@ -503,6 +503,11 @@ subdeviceCtrlCmdTimerSetGrTickFreq_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    if (!tmrIsGrTickFreqChangeSupported(pGpu, pTmr))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     pRefcnt = pTmr->pGrTickFreqRefcnt;
 
     hSubDevice = RES_GET_HANDLE(pSubdevice);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -354,6 +354,9 @@ typedef struct NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS {
  *      User defined watermark that triggers RPC to kernel of traces
  *      HINT: set higher for more frequent trace updates
  *
+ *  targetTask[IN]
+ *      NV_RATS_TARGET_ID to bind the tracing buffer to
+ *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
@@ -368,6 +371,7 @@ typedef struct NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 tracepointMask, 8);
     NvU32    gspLoggingBufferSize;
     NvU32    gspLoggingBufferWatermark;
+    NvU16    targetTask;
 } NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS;
 
  /*

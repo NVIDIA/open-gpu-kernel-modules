@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,59 +72,6 @@ kgmmuSetTlbInvalidationScope_GA100
             break;
         default:
             return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return NV_OK;
-}
-
-/*!
- * @brief   Validates fabric base address.
- *
- * @param   pKernelGmmu
- * @param   fabricBaseAddr
- *
- * @returns On success, NV_OK.
- *          On failure, returns NV_ERR_XXX.
- */
-NV_STATUS
-kgmmuValidateFabricBaseAddress_GA100
-(
-    KernelGmmu *pKernelGmmu,
-    NvU64       fabricBaseAddr
-)
-{
-    OBJGPU        *pGpu = ENG_GET_GPU(pKernelGmmu);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64 fbSizeBytes;
-    NvU64 fbUpperLimit;
-
-    fbSizeBytes = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
-
-    //
-    // Ampere SKUs will be paired with NVSwitches (Limerock) supporting 2K
-    // mapslots that can cover 64GB each. Make sure that the fabric base
-    // address being used is valid to cover whole frame buffer.
-    //
-
-    // Check if fabric address is aligned to mapslot size.
-    if (fabricBaseAddr & (NVBIT64(36) - 1))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Align fbSize to mapslot size.
-    fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(36));
-
-    // Check for integer overflow
-    if (!portSafeAddU64(fabricBaseAddr, fbSizeBytes, &fbUpperLimit))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Make sure the address range doesn't go beyond the limit, (2K * 64GB).
-    if (fbUpperLimit > NVBIT64(47))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
     }
 
     return NV_OK;
@@ -399,7 +346,9 @@ kgmmuServiceMmuFault_GA100
     }
     else
     {
-        status = kgmmuServiceMmuFault_GV100(pGpu, pKernelGmmu, pParsedFaultInfo, pMmuExceptionData);
+        if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+            status = kgmmuServiceMmuFault_VF(pGpu, pKernelGmmu, pParsedFaultInfo, pMmuExceptionData);
+
     }
 
     return status;

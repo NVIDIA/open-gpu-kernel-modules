@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,11 +41,16 @@ typedef struct {
 
     struct NvKmsPoint viewPortPointIn;
     struct NvKmsSetLutCommonParams lut;
+    NvBool postcompColorPassthrough;
+
+    NvBool hdmiVsifMetadataEnabled;
 
     struct {
-        NvU32 viewPortPointIn  : 1;
-        NvU32 hdr              : 1;
-        NvU32 dithering        : 1;
+        NvU32 viewPortPointIn          : 1;
+        NvU32 hdr                      : 1;
+        NvU32 dithering                : 1;
+        NvU32 postcompColorPassthrough : 1;
+        NvU32 hdmiVsifMetadata         : 1;
     } dirty;
 } NVProposedFlipStateOneApiHead;
 

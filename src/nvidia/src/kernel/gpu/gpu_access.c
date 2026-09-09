@@ -194,7 +194,10 @@ _regWriteUnicast
         return;
     }
 
-    gpuHandleWriteRegisterFilter(pGpu, deviceIndex, instance, addr, val, size, &flags, pThreadState, NV_FALSE);
+    if (gpuMappingHasRegisterFilters(pMapping))
+    {
+        gpuHandleWriteRegisterFilter(pGpu, deviceIndex, instance, addr, val, size, &flags, pThreadState, NV_FALSE);
+    }
 
     if (!(flags & REGISTER_FILTER_FLAGS_WRITE))
     {
@@ -346,8 +349,11 @@ ioaprtWriteRegUnicast
             return;
         }
 
-        gpuHandleWriteRegisterFilter(pGpu, deviceIndex, instance, regAddr,
-                                      val, size, &flags, NULL, NV_TRUE);
+        if (gpuMappingHasRegisterFilters(pMapping))
+        {
+            gpuHandleWriteRegisterFilter(pGpu, deviceIndex, instance, regAddr,
+                                          val, size, &flags, NULL, NV_TRUE);
+        }
     }
 
     if (!(flags & REGISTER_FILTER_FLAGS_WRITE))
@@ -529,8 +535,11 @@ ioaprtReadReg
             return (~0);
         }
 
-        returnValue = gpuHandleReadRegisterFilter(pGpu, deviceIndex, instance,
-                                                   regAddr, size, &flags, NULL, NV_TRUE);
+        if (gpuMappingHasRegisterFilters(pMapping))
+        {
+            returnValue = gpuHandleReadRegisterFilter(pGpu, deviceIndex, instance,
+                                                       regAddr, size, &flags, NULL, NV_TRUE);
+        }
     }
 
     if (!(flags & REGISTER_FILTER_FLAGS_READ))
@@ -648,8 +657,11 @@ _regRead
     if (status != NV_OK)
         return returnValue;
 
-    returnValue = gpuHandleReadRegisterFilter(pGpu, deviceIndex, instance,
-                                               addr, size, &flags, pThreadState, NV_FALSE);
+    if (gpuMappingHasRegisterFilters(pMapping))
+    {
+        returnValue = gpuHandleReadRegisterFilter(pGpu, deviceIndex, instance,
+                                                   addr, size, &flags, pThreadState, NV_FALSE);
+    }
 
     if (!(flags & REGISTER_FILTER_FLAGS_READ))
     {
@@ -1428,8 +1440,23 @@ swbcaprtReadReg32_IMPL
 
 #if defined(DEBUG)
     NvU32 i;
+    NvBool bMismatchFound = NV_FALSE;
+
     for (i = 1; i < pAperture->numApertures; i++)
-        NV_ASSERT(REG_RD32(&pAperture->pApertures[i], addr) == val);
+    {
+        NvU32 reg = REG_RD32(&pAperture->pApertures[i], addr);
+        if (reg != val)
+        {
+            NV_PRINTF(LEVEL_ERROR, "swbcaprtRead mismatch(offset=0x%08x): 0x%08x@0x%08x != 0x%08x@0x%08x (instance %d)\n",
+                addr, val, REG_GET_ADDR(&pAperture->pApertures[0], addr),
+                reg, REG_GET_ADDR(&pAperture->pApertures[i], addr), i);
+            bMismatchFound = NV_TRUE;
+        }
+    }
+
+    if (bMismatchFound)
+            PORT_DUMP_STACK();
+
 #endif // defined(DEBUG)
 
     return val;

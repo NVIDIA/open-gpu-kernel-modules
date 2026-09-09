@@ -121,12 +121,12 @@ struct NVOC_VTABLE__VirtualMemory {
     NV_STATUS (*__virtmemIsReady__)(struct VirtualMemory * /*this*/, NvBool);  // virtual inherited (mem) base (stdmem)
     NvBool (*__virtmemIsGpuMapAllowed__)(struct VirtualMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (stdmem) body
     NvBool (*__virtmemIsExportAllowed__)(struct VirtualMemory * /*this*/);  // inline virtual inherited (mem) base (stdmem) body
-    NvBool (*__virtmemAccessCallback__)(struct VirtualMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (stdmem)
-    NvBool (*__virtmemShareCallback__)(struct VirtualMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__virtmemControlSerialization_Prologue__)(struct VirtualMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__virtmemControlSerialization_Epilogue__)(struct VirtualMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__virtmemControl_Prologue__)(struct VirtualMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__virtmemControl_Epilogue__)(struct VirtualMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    NvBool (*__virtmemAccessCallback__)(struct VirtualMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (stdmem)
+    NvBool (*__virtmemShareCallback__)(struct VirtualMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (stdmem)
+    NV_STATUS (*__virtmemControlSerialization_Prologue__)(struct VirtualMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    void (*__virtmemControlSerialization_Epilogue__)(struct VirtualMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    NV_STATUS (*__virtmemControl_Prologue__)(struct VirtualMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    void (*__virtmemControl_Epilogue__)(struct VirtualMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
     void (*__virtmemPreDestruct__)(struct VirtualMemory * /*this*/);  // virtual inherited (res) base (stdmem)
     NV_STATUS (*__virtmemControlFilter__)(struct VirtualMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (stdmem)
     NvU32 (*__virtmemGetRefCount__)(struct VirtualMemory * /*this*/);  // virtual inherited (res) base (stdmem)
@@ -318,27 +318,27 @@ static inline NvBool virtmemIsExportAllowed_DISPATCH(struct VirtualMemory *pMemo
     return pMemory->__nvoc_metadata_ptr->vtable.__virtmemIsExportAllowed__(pMemory);
 }
 
-static inline NvBool virtmemAccessCallback_DISPATCH(struct VirtualMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool virtmemAccessCallback_DISPATCH(struct VirtualMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__virtmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool virtmemShareCallback_DISPATCH(struct VirtualMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool virtmemShareCallback_DISPATCH(struct VirtualMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__virtmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS virtmemControlSerialization_Prologue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS virtmemControlSerialization_Prologue_DISPATCH(struct VirtualMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__virtmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void virtmemControlSerialization_Epilogue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void virtmemControlSerialization_Epilogue_DISPATCH(struct VirtualMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__virtmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS virtmemControl_Prologue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS virtmemControl_Prologue_DISPATCH(struct VirtualMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__virtmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void virtmemControl_Epilogue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void virtmemControl_Epilogue_DISPATCH(struct VirtualMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__virtmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

@@ -1868,13 +1868,12 @@ cliresCtrlCmdEventGetSystemEventData_IMPL
     NV0000_CTRL_GET_SYSTEM_EVENT_DATA_PARAMS *pSystemEventDataParams
 )
 {
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pRmCliRes), RmClient);
 
-    if (pClient == NULL)
+    if (pRmClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
-    return eventSystemDequeueEvent(&pClient->CliSysEventInfo.eventQueue,
+    return eventSystemDequeueEvent(&pRmClient->CliSysEventInfo.eventQueue,
                                    pSystemEventDataParams);
 }
 
@@ -2962,7 +2961,7 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
     if (pGpu == NULL)
     {
-        NV_ASSERT(pGpu);
+        NV_CHECK(LEVEL_ERROR, pGpu);
         return NV_ERR_INVALID_REQUEST;
     }
 
@@ -3694,8 +3693,8 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
     NvU32 i;
 
-    NV_ASSERT_OR_RETURN(pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,    NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pParams->component <  NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,    NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component <  NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
 
     if ((pParams->component == NVDUMP_COMPONENT_NVLOG_RM) || (pParams->component == NVDUMP_COMPONENT_NVLOG_ALL))
     {
@@ -3769,8 +3768,8 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
-    NV_ASSERT_OR_RETURN(pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,   NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pParams->component < NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,   NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component < NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
 
     if ((pParams->component == NVDUMP_COMPONENT_NVLOG_RM) || (pParams->component == NVDUMP_COMPONENT_NVLOG_ALL))
     {
@@ -3831,8 +3830,8 @@ cliresCtrlCmdNvdGetNvlog_IMPL
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
-    NV_ASSERT_OR_RETURN(pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,    NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pParams->component <  NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component >= NV0000_CTRL_NVD_DUMP_COMPONENT_NVLOG,    NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->component <  NV0000_CTRL_NVD_DUMP_COMPONENT_RESERVED, NV_ERR_INVALID_ARGUMENT);
 
     if ((pParams->component == NVDUMP_COMPONENT_NVLOG_RM) || (pParams->component == NVDUMP_COMPONENT_NVLOG_ALL))
     {
@@ -4860,8 +4859,7 @@ cliresCtrlCmdSetSubProcessID_IMPL
     NV0000_CTRL_SET_SUB_PROCESS_ID_PARAMS *pParams
 )
 {
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
+    RmClient *pClient = dynamicCast(RES_GET_CLIENT(pRmCliRes), RmClient);
 
     if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
@@ -4884,8 +4882,7 @@ cliresCtrlCmdDisableSubProcessUserdIsolation_IMPL
     NV0000_CTRL_DISABLE_SUB_PROCESS_USERD_ISOLATION_PARAMS *pParams
 )
 {
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
+    RmClient *pClient = dynamicCast(RES_GET_CLIENT(pRmCliRes), RmClient);
 
     if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
@@ -4947,7 +4944,7 @@ cliresCtrlCmdSyncGpuBoostGroupCreate_IMPL
 
     // Create the boost group
     status = gpuboostmgrCreateGroup(pBoostMgr, &pParams->boostConfig);
-    NV_ASSERT(NV_OK == status);
+    NV_CHECK(LEVEL_ERROR, NV_OK == status);
     return status;
 }
 
@@ -4972,7 +4969,7 @@ cliresCtrlCmdSyncGpuBoostGroupDestroy_IMPL
 
     // Destroy the boost group
     status = gpuboostmgrDestroyGroup(pBoostMgr, pParams->boostGroupId);
-    NV_ASSERT(NV_OK == status);
+    NV_CHECK(LEVEL_ERROR, NV_OK == status);
     return status;
 }
 
@@ -4995,7 +4992,7 @@ cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = gpuboostmgrQueryGroups(pBoostMgr, pParams);
-    NV_ASSERT(NV_OK == status);
+    NV_CHECK(LEVEL_ERROR, NV_OK == status);
     return status;
 }
 
@@ -5056,16 +5053,14 @@ cliresCtrlCmdClientGetAddrSpaceType_IMPL
     NV0000_CTRL_CLIENT_GET_ADDR_SPACE_TYPE_PARAMS *pParams
 )
 {
-    NvHandle         hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
     CALL_CONTEXT     callContext;
-    RsClient        *pRsClient;
+    RsClient        *pRsClient = RES_GET_CLIENT(pRmCliRes);
     RsResourceRef   *pResourceRef;
     Memory          *pMemory = NULL;
     GpuResource     *pGpuResource = NULL;
     NV_ADDRESS_SPACE memType;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, pParams->hObject, &pResourceRef));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pRsClient, pParams->hObject, &pResourceRef));
 
     portMemSet(&callContext, 0, sizeof(callContext));
     callContext.pClient = pRsClient;
@@ -5368,36 +5363,6 @@ cliresCtrlCmdGpuGetMemOpEnable_IMPL
     return status;
 }
 
-NV_STATUS
-cliresCtrlCmdGpuDisableNvlinkInit_IMPL
-(
-    RmClientResource *pRmCliRes,
-    NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *pParams
-)
-{
-    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pRmCliRes), RmClient);
-    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-
-    NV_ASSERT_OR_RETURN(NULL != pRmClient, NV_ERR_INVALID_CLIENT);
-    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
-    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-
-    if (!rmclientIsCapableOrAdmin(pRmClient,
-                                  NV_RM_CAP_EXT_FABRIC_MGMT,
-                                  pCallContext->secInfo.privLevel))
-    {
-        NV_PRINTF(LEVEL_WARNING, "Non-privileged context issued privileged cmd\n");
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-
-    if (pParams->gpuId == NV0000_CTRL_GPU_INVALID_ID)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return gpumgrSetGpuInitDisabledNvlinks(pParams->gpuId, pParams->mask,
-                                           &pParams->links, pParams->bSkipHwNvlinkDisable);
-}
 
 NV_STATUS
 cliresCtrlCmdGpuSetNvlinkBwMode_IMPL
@@ -5717,17 +5682,21 @@ cliresCtrlCmdSystemReadCper_IMPL
     NV0000_CTRL_SYSTEM_READ_CPER_PARAMS *pParams
 )
 {
-    NV_STATUS status = NV_OK;
-    NvU32 cursor;
-    CperBufferListIter it;
-    NvBool bFound = NV_FALSE;
-    NvBool bUseUuid = NV_FALSE;
+    NV_STATUS status;
     NV_CPER_GUID userFruId = {0};
-    NV_CPER_GUID fruId = {0};
     NvU8 emptyUuid[RM_SHA1_GID_SIZE] = {0};
+    NvBool bUseUuid = NV_FALSE;
+    NvU32 recordSize = 0;
+    NvU64 nextCursor = pParams->cperCursor;
 
     if (pParams->cperTypeMask == 0)
         return NV_OK;
+
+    if (opEventLog == NULL)
+    {
+        pParams->bufferSize = 0;
+        return NV_OK;
+    }
 
     if (portMemCmp(pParams->uuid, emptyUuid, RM_SHA1_GID_SIZE) != 0)
     {
@@ -5735,51 +5704,17 @@ cliresCtrlCmdSystemReadCper_IMPL
         bUseUuid = NV_TRUE;
     }
 
-    // User supplied cperCursor=0 means "no previous entry" so return first entry.
-    bFound = (pParams->cperCursor == 0);
+    status = opevtlogFindNextCper(opEventLog,
+                                  pParams->cperCursor,
+                                  bUseUuid ? &userFruId : NULL,
+                                  pParams->buffer,
+                                  sizeof(pParams->buffer),
+                                  &recordSize,
+                                  &nextCursor);
+    if (status != NV_OK)
+        return status;
 
-    portSyncSpinlockAcquire(opEventLog.pSpinlock);
-    it = listIterAll(&opEventLog.cperBufferList);
-    portSyncSpinlockRelease(opEventLog.pSpinlock);
-
-    // Index from 1 because 0 has "no previous entry" meaning
-    for (cursor = 1; listIterNext(&it); cursor++)
-    {
-        if (bFound)
-        {
-            if (it.pValue->size > sizeof(pParams->buffer))
-            {
-                return NV_ERR_BUFFER_TOO_SMALL;
-            }
-
-            if (bUseUuid)
-            {
-                cperGetFirstSectionFruId(it.pValue->pCperBuffer, it.pValue->size, &fruId);
-                // skip to next entry if UUID doesn't match
-                if (cperGuidEqual(&userFruId, &fruId) == NV_FALSE)
-                {
-                    continue;
-                }
-            }
-
-            portMemCopy(pParams->buffer, sizeof(pParams->buffer),
-                it.pValue->pCperBuffer, it.pValue->size);
-            pParams->bufferSize = it.pValue->size;
-            pParams->cperCursor = cursor;
-
-            return NV_OK;
-        }
-
-        // User supplied cursor matches current entry, so return the next entry
-        if (pParams->cperCursor == cursor)
-        {
-            bFound = NV_TRUE;
-            continue;
-        }
-    }
-
-    // If no buffer is found, return empty buffer size as signal to user
-    pParams->bufferSize = 0;
-
-    return status;
+    pParams->bufferSize = recordSize;
+    pParams->cperCursor = nextCursor;
+    return NV_OK;
 }

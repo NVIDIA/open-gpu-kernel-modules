@@ -24,4 +24,5 @@
 #ifndef __gh100_dev_pmc_h__
 #define __gh100_dev_pmc_h__
 #define NV_PMC_BOOT_0                                    0x00000000 /* R--4R */
+#define NV_PMC_ZB_BOOT_0                                 0x00000000 /* R--4R */
 #endif // __gh100_dev_pmc_h__

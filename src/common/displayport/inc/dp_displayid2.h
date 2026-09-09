@@ -109,7 +109,8 @@ namespace DisplayPort
 
     NvU8 getDID2BlockChecksum(NvU8 * buffer, NvU8 size);
 
-    const NvU8 NV_DISPLAYID2_READ_RETRY_MS = 100;
+    // Due to BUG# 6071201, reduce DID2 read retry time to 10ms from 100ms
+    const NvU8 NV_DISPLAYID2_READ_RETRY_MS = 10;
     const NvU8 NV_DISPLAYID2_MAX_AUX_RETRIES = 10;
     const NvU8 NV_DISPLAYID2_AUX_WAIT_TIME = 1;
 
@@ -131,7 +132,7 @@ namespace DisplayPort
            : topologyAddress(topologyAddress), manager(manager),
              retries(0), timer(timer), sink(sink), stream(displayId2x.getBuffer())
         {
-            startReadingDid2();
+            timer->queueCallback(this, "DID2", NV_DISPLAYID2_READ_RETRY_MS);
         }
 
         DisplayID2x     displayId2x;

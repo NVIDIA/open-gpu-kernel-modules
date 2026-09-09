@@ -776,6 +776,9 @@ extern "C" {
 #define NVC57D_HEAD_SET_STALL_LOCK_TEPOLARITY                                   14:14
 #define NVC57D_HEAD_SET_STALL_LOCK_TEPOLARITY_POSITIVE_TRUE                     (0x00000000)
 #define NVC57D_HEAD_SET_STALL_LOCK_TEPOLARITY_NEGATIVE_TRUE                     (0x00000001)
+#define NVC57D_HEAD_SET_LOCK_OFFSET(a)                                          (0x00002040 + (a)*0x00000400)
+#define NVC57D_HEAD_SET_LOCK_OFFSET_X                                           14:0
+#define NVC57D_HEAD_SET_LOCK_OFFSET_Y                                           30:16
 #define NVC57D_HEAD_SET_LOCK_CHAIN(a)                                           (0x00002044 + (a)*0x00000400)
 #define NVC57D_HEAD_SET_LOCK_CHAIN_POSITION                                     3:0
 #define NVC57D_HEAD_SET_VIEWPORT_POINT_IN(a)                                    (0x00002048 + (a)*0x00000400)

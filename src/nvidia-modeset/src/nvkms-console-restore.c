@@ -172,6 +172,9 @@ static void FlipBaseToNull(NVDevEvoPtr pDevEvo)
             pRequestApiHead->hdrInfoFrame.specified = TRUE;
             pRequestApiHead->hdrInfoFrame.enabled = FALSE;
 
+            pRequestApiHead->hdmiVsifMetadata.specified = TRUE;
+            pRequestApiHead->hdmiVsifMetadata.vsifMetadata.payloadSize = 0;
+
             pRequestApiHead->colorimetry.specified = TRUE;
             pRequestApiHead->colorimetry.val = NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
 

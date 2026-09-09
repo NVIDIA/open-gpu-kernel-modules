@@ -1399,6 +1399,17 @@ rmapiUnmapFromCpuWithSecInfo
         return NV_OK;
     }
 
+    //
+    // RTD3 uses RMAPI_GPU_LOCK_INTERNAL without holding the API lock. Correct
+    // the state initialized from that interface before Resource Server handles
+    // the unmap operation.
+    //
+    if (rmapiInRtd3PmPath())
+    {
+        lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+        lockInfo.state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
+    }
+
     LOCK_METER_DATA(UNMAPMEM, flags, 0, 0);
 
     portMemSet(&rmUnmapParams, 0, sizeof (rmUnmapParams));

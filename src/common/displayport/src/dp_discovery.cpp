@@ -496,8 +496,11 @@ void DiscoveryManager::BranchDetection::messageFailed(MessageManager::Message * 
     //
     if (from == &linkAddressMessage)
     {
-        if (retriesLinkAddressMessage < DPCD_LINK_ADDRESS_MESSAGE_RETRIES &&
-            (nakData->reason == NakDefer || nakData->reason == NakTimeout || nakData->reason == NakLinkFailure))
+        if ((retriesLinkAddressMessage < DPCD_LINK_ADDRESS_MESSAGE_RETRIES) &&
+            (nakData->reason == NakWriteFailure || nakData->reason == NakInvalidRAD ||
+             nakData->reason == NakCrcFailure   || nakData->reason == NakBadParam   ||
+             nakData->reason == NakDefer        || nakData->reason == NakLinkFailure ||
+             nakData->reason == NakTimeout))
         {
             retriesLinkAddressMessage++;
             retryLinkAddressMessage = true;
@@ -538,7 +541,8 @@ void DiscoveryManager::SinkDetection::messageFailed(MessageManager::Message * fr
     if (from == &remoteDpcdReadMessage)
     {
         if ((retriesRemoteDpcdReadMessage < DPCD_REMOTE_DPCD_READ_MESSAGE_RETRIES) &&
-            (nakData->reason == NakDefer || nakData->reason == NakTimeout))
+            (nakData->reason == NakDefer || nakData->reason == NakTimeout ||
+             nakData->reason == NakDpcdFail))
         {
             retriesRemoteDpcdReadMessage++;
             retryRemoteDpcdReadMessage = true;

@@ -310,6 +310,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE206, CS_AMPERE_AMPEREONE160, "Ampere AmpereOne-160", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE207, CS_AMPERE_AMPEREONE160, "Ampere AmpereOne-160", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_PHYTIUM,     0x5C16, CS_PHYTIUM_S5000,    "Phytium S5000", NULL},
+    {PCI_VENDOR_ID_NVIDIA,      0x3400, CS_NVIDIA_T268,      "T268",      Nvidia_T194_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE208, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE209, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE20A, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
@@ -451,6 +452,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE20D, CS_AMPERE_AMPEREONE192},   // Ampere AmpereOne-192
     {PCI_VENDOR_ID_AMPERE,      0xE20E, CS_AMPERE_AMPEREONE192},   // Ampere AmpereOne-192
     {PCI_VENDOR_ID_AMPERE,      0xE20F, CS_AMPERE_AMPEREONE192},   // Ampere AmpereOne-192
+    {PCI_VENDOR_ID_NVIDIA,      0x3400, CS_NVIDIA_T268},        // NVIDIA Tegra RP iGPU
     {PCI_VENDOR_ID_NVIDIA,      0x22D1, CS_NVIDIA_T254},
 
     // last element must have chipset CS_UNKNOWN (zero)

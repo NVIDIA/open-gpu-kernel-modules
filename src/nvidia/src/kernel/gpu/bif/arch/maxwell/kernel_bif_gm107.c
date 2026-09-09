@@ -34,7 +34,7 @@
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 
-#include "published/maxwell/gm107/dev_boot.h"
+#include "published/maxwell/gm107/dev_pmc.h"
 #include "published/maxwell/gm107/dev_nv_xp.h"
 #include "published/maxwell/gm107/dev_nv_xve.h"
 #include "published/maxwell/gm107/dev_nv_xve_addendum.h"

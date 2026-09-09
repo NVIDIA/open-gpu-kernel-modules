@@ -423,29 +423,8 @@ krcErrorInvokeCallback_IMPL
     }
     else
     {
-        // use the new CliNotifyDeviceFifoEvent() notification method
-        NvRcNotification       params;
-        OBJTMR                *pTmr = GPU_GET_TIMER(pGpu);
-        NvU64                  time;
-        CLI_CHANNEL_CLASS_INFO classInfo;
-
-        tmrGetCurrentTime(pTmr, &time);
-
-        params.timeStamp.nanoseconds[0] = NvU64_HI32(time);
-        params.timeStamp.nanoseconds[1] = NvU64_LO32(time);
-        params.exceptLevel              = exceptLevel;
-        params.exceptType               = exceptType;
-
-        // Get rc notifier index from class info
-
-        CliGetChannelClassInfo(RES_GET_EXT_CLASS_ID(pKernelChannel),
-                               &classInfo);
-
         // notify the Fifo channel based event listeners
-        kchannelNotifyEvent(pKernelChannel,
-                            classInfo.rcNotifierIndex,
-                            0, 0, &params,
-                            sizeof(params));
+        krcNotifyChannelEvent(pGpu, pKernelRc, pKernelChannel, exceptType, exceptLevel);
     }
 
     // update RC diagnostic records with process id and owner

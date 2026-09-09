@@ -40,6 +40,7 @@ typedef struct NV0050_ALLOCATION_PARAMETERS {
     NvHandle hVaspace;
     NV_DECLARE_ALIGNED(NvU64 flags, 8);
     NvU32    forceCeId;
+    NvU32    fixedChId;
 } NV0050_ALLOCATION_PARAMETERS;
 
 
@@ -79,3 +80,13 @@ typedef struct NV0050_ALLOCATION_PARAMETERS {
 #define NV0050_CEUTILS_FLAGS_ENABLE_COMPLETION_CB    6:6
 #define NV0050_CEUTILS_FLAGS_ENABLE_COMPLETION_CB_FALSE (0x00000000)
 #define NV0050_CEUTILS_FLAGS_ENABLE_COMPLETION_CB_TRUE  (0x00000001)
+
+// Allocate the channel at a fixed hardware channel ID specified by fixedChId
+#define NV0050_CEUTILS_FLAGS_FIXED_CH_ID             7:7
+#define NV0050_CEUTILS_FLAGS_FIXED_CH_ID_FALSE          (0x00000000)
+#define NV0050_CEUTILS_FLAGS_FIXED_CH_ID_TRUE           (0x00000001)
+
+// Allocate an independent sema page for finish payload (GSP CeUtils scrubber)
+#define NV0050_CEUTILS_FLAGS_EXPOSE_FINISH_SEMA      8:8
+#define NV0050_CEUTILS_FLAGS_EXPOSE_FINISH_SEMA_FALSE   (0x00000000)
+#define NV0050_CEUTILS_FLAGS_EXPOSE_FINISH_SEMA_TRUE    (0x00000001)

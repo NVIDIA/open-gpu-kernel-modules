@@ -737,3 +737,60 @@ NvBool crashcatReportIsWatchdog_V1(CrashCatReport *pReport)
 {
     return crashcatReportV1SourceCauseType(&pReport->v1.report) == NV_CRASHCAT_CAUSE_TYPE_WATCHDOG;
 }
+
+void crashcatReportExcerpt_V1(CrashCatReport *pReport, CrashCatExcerpt *pExcerpt)
+{
+    const NvU32 headerSize = sizeof(NvCrashCatPacketHeader_V1);
+
+    portMemSet(pExcerpt, 0, sizeof(*pExcerpt));
+
+    // Copy fixed-size structures
+    pExcerpt->report = pReport->v1.report;
+    pExcerpt->riscv64CsrState = pReport->v1.riscv64CsrState;
+    pExcerpt->riscv64GprState = pReport->v1.riscv64GprState;
+
+    // Copy and truncate the variable-length stack trace
+    if (pReport->v1.pRiscv64StackTrace != NULL)
+    {
+        NvU16 numEntries = crashcatPacketHeaderPayloadSize(pReport->v1.pRiscv64StackTrace->header) >> 3;
+        NvU32 entriesToCopy = NV_MIN(numEntries, CRASHCAT_EXCERPT_MAX_ENTRIES);
+        NvU32 dataSize = entriesToCopy * sizeof(NvU64);
+
+        portMemCopy(pExcerpt->riscv64StackTrace_V1, headerSize,
+                    &pReport->v1.pRiscv64StackTrace->header, headerSize);
+        portMemCopy(pExcerpt->riscv64StackTrace_V1 + headerSize, dataSize,
+                    pReport->v1.pRiscv64StackTrace->addr, dataSize);
+
+        pExcerpt->riscv64StackTraceSize = headerSize + dataSize;
+    }
+
+    // Copy and truncate the variable-length PC trace
+    if (pReport->v1.pRiscv64PcTrace != NULL)
+    {
+        NvU16 numEntries = crashcatPacketHeaderPayloadSize(pReport->v1.pRiscv64PcTrace->header) >> 3;
+        NvU32 entriesToCopy = NV_MIN(numEntries, CRASHCAT_EXCERPT_MAX_ENTRIES);
+        NvU32 dataSize = entriesToCopy * sizeof(NvU64);
+
+        portMemCopy(pExcerpt->riscv64PcTrace_V1, headerSize,
+                    &pReport->v1.pRiscv64PcTrace->header, headerSize);
+        portMemCopy(pExcerpt->riscv64PcTrace_V1 + headerSize, dataSize,
+                    pReport->v1.pRiscv64PcTrace->addr, dataSize);
+
+        pExcerpt->riscv64PcTraceSize = headerSize + dataSize;
+    }
+
+    // Copy and truncate the variable-length IO32 state
+    if (pReport->v1.pIo32State != NULL)
+    {
+        NvU16 numEntries = crashcatPacketHeaderPayloadSize(pReport->v1.pIo32State->header) >> 3;
+        NvU32 entriesToCopy = NV_MIN(numEntries, CRASHCAT_EXCERPT_MAX_ENTRIES);
+        NvU32 dataSize = entriesToCopy * sizeof(pReport->v1.pIo32State->regs[0]);
+
+        portMemCopy(pExcerpt->io32State_V1, headerSize,
+                    &pReport->v1.pIo32State->header, headerSize);
+        portMemCopy(pExcerpt->io32State_V1 + headerSize, dataSize,
+                    pReport->v1.pIo32State->regs, dataSize);
+
+        pExcerpt->io32StateSize = headerSize + dataSize;
+    }
+}

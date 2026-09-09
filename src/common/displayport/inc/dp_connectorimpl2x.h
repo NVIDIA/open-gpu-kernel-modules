@@ -45,10 +45,12 @@ namespace DisplayPort
         virtual LinkConfiguration getMaxLinkConfig();
 
         virtual bool train(const LinkConfiguration & lConfig, bool force,
-                           LinkTrainingType trainType = NORMAL_LINK_TRAINING);
+                           LinkTrainingType trainType = NORMAL_LINK_TRAINING,
+                           bool bAllowFullFallback = false);
 
         virtual bool allocateTimeslice(GroupImpl * targetGroup);
         virtual bool checkIsModePossibleMST(GroupImpl * group);
+        virtual void beginCompoundQuery(const bool bForceEnableFEC = false);
         virtual bool compoundQueryAttachMSTGeneric(Group * target,
                                                    const DpModesetParams &modesetParams,       // Modeset info
                                                    CompoundQueryAttachMSTInfo * info,          // local info with updates for DSC
@@ -59,7 +61,7 @@ namespace DisplayPort
 
         virtual void notifyAttachEnd(bool modesetCancelled);
         virtual void notifyDetachBegin(Group *target);
-        virtual void notifyDetachEnd(bool bKeepOdAlive);
+        virtual void notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn = false);
 
         virtual bool beforeAddStream(GroupImpl * group, bool test = false, bool forFlushMode = false);
         virtual void afterAddStream(GroupImpl * group);
@@ -89,6 +91,9 @@ namespace DisplayPort
         virtual void handleEdidWARs(Edid &edid, DiscoveryManager::Device &device);
         virtual void applyTimeslotWAR(unsigned &slot_count);
 
+        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
+                                                    bool bSameTimings);
+
         bool    bSupportUHBR2_50;               // Support UHBR2.5 for internal testing.
         bool    bSupportUHBR2_70;               // Support UHBR2.7 for internal testing.
         bool    bSupportUHBR5_00;               // Support UHBR5.0 for internal testing.
@@ -110,7 +115,6 @@ namespace DisplayPort
         bool    bStuffDummySymbolsFor128b132b;
         bool    bStuffDummySymbolsFor8b10b;
         bool    bDisableWatermarkCaching;
-        bool    bEnableClearMSAWhenNotUsed;
 
         // Do not enable downspread while link training.
         bool    bDisableDownspread;

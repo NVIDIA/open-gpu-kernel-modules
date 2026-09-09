@@ -34,9 +34,12 @@
 #ifndef GPU_CPER_H
 #define GPU_CPER_H
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
+#include "nvmisc.h"
 #include "cper.h"
+#include "events/gpu/gpu_event_ctx_defs.h"
+#include "events/gpu/gpu_event_defs.h"
 
 /*
  * ============================================================================
@@ -217,14 +220,15 @@ cperNvidiaSourceDeviceTypeToString(NV_CPER_NV_SOURCE_DEVICE_TYPE deviceType)
 /*
  * GPU Event Originator values
  */
-typedef enum NV_CPER_NV_GPU_EVENT_ORIGINATOR
+typedef GPU_OPERATIONAL_EVENT_ORIGINATOR NV_CPER_NV_GPU_EVENT_ORIGINATOR;
+enum
 {
-    NV_CPER_NV_GPU_ORIGINATOR_INVALID        = 0,
-    NV_CPER_NV_GPU_ORIGINATOR_PF_GSP_FW      = 2,
-    NV_CPER_NV_GPU_ORIGINATOR_VF_GSP_FW      = 3,
-    NV_CPER_NV_GPU_ORIGINATOR_PF_DRIVER      = 4,
-    NV_CPER_NV_GPU_ORIGINATOR_VF_DRIVER      = 5,
-} NV_CPER_NV_GPU_EVENT_ORIGINATOR;
+    NV_CPER_NV_GPU_ORIGINATOR_INVALID   = GPU_OPERATIONAL_EVENT_ORIGINATOR_NONE,
+    NV_CPER_NV_GPU_ORIGINATOR_PF_GSP_FW = GPU_OPERATIONAL_EVENT_ORIGINATOR_PF_GSP_FW,
+    NV_CPER_NV_GPU_ORIGINATOR_PF_DRIVER = GPU_OPERATIONAL_EVENT_ORIGINATOR_PF_DRIVER,
+    NV_CPER_NV_GPU_ORIGINATOR_VF_GSP_FW = GPU_OPERATIONAL_EVENT_ORIGINATOR_VF_GSP_FW,
+    NV_CPER_NV_GPU_ORIGINATOR_VF_DRIVER = GPU_OPERATIONAL_EVENT_ORIGINATOR_VF_DRIVER,
+};
 
 static NV_INLINE const char *
 cperNvidiaGpuEventOriginatorToString(NV_CPER_NV_GPU_EVENT_ORIGINATOR originator)
@@ -245,21 +249,27 @@ cperNvidiaGpuEventOriginatorToString(NV_CPER_NV_GPU_EVENT_ORIGINATOR originator)
  */
 typedef enum NV_CPER_NV_GPU_RECOVERY_ACTION
 {
-    NV_CPER_NV_GPU_RECOVERY_IGNORE          = 0,
-    NV_CPER_NV_GPU_RECOVERY_DRIVER_RELOAD   = 1,
-    NV_CPER_NV_GPU_RECOVERY_FLR             = 2,  // Function-Level Reset
-    NV_CPER_NV_GPU_RECOVERY_HOT_RESET       = 3,
-    NV_CPER_NV_GPU_RECOVERY_WARM_RESET      = 4,
-    NV_CPER_NV_GPU_RECOVERY_COLD_RESET      = 5,
-    NV_CPER_NV_GPU_RECOVERY_NODE_RESET      = 6
+    NV_CPER_NV_GPU_RECOVERY_IGNORE        = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_IGNORE,
+    NV_CPER_NV_GPU_RECOVERY_DRIVER_RELOAD = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_DRIVER_RELOAD,
+    NV_CPER_NV_GPU_RECOVERY_FLR           = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_FLR,
+    NV_CPER_NV_GPU_RECOVERY_HOT_RESET     = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_HOT_RESET,
+    NV_CPER_NV_GPU_RECOVERY_WARM_RESET    = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_WARM_RESET,
+    NV_CPER_NV_GPU_RECOVERY_COLD_RESET    = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_COLD_RESET,
+    NV_CPER_NV_GPU_RECOVERY_NODE_RESET    = GPU_OPERATIONAL_EVENT_CTX_RECOVERY_NODE_RESET,
 } NV_CPER_NV_GPU_RECOVERY_ACTION;
 
 /*
  * GPU Recommended Actions Flags
  */
-#define NV_CPER_NV_GPU_REC_FLAG_ALREADY_RECOVERED      NVBIT(0)
-#define NV_CPER_NV_GPU_REC_FLAG_IMMEDIATE_SERVICE      NVBIT(1)
-#define NV_CPER_NV_GPU_REC_FLAG_MORE_ANALYSIS_REQUIRED NVBIT(2)
+enum
+{
+    NV_CPER_NV_GPU_REC_FLAG_ALREADY_RECOVERED =
+        REF_DEF(GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_ALREADY_RECOVERED, _TRUE),
+    NV_CPER_NV_GPU_REC_FLAG_IMMEDIATE_SERVICE =
+        REF_DEF(GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_IMMEDIATE_SERVICE, _TRUE),
+    NV_CPER_NV_GPU_REC_FLAG_MORE_ANALYSIS_REQUIRED =
+        REF_DEF(GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_MORE_ANALYSIS_REQUIRED, _TRUE),
+};
 
 /*
  * ============================================================================
@@ -274,7 +284,6 @@ typedef enum NV_CPER_NV_GPU_RECOVERY_ACTION
 #define NV_CPER_NV_EVENT_HEADER_VERSION     1
 #define NV_CPER_NV_MODULE_SIGNATURE_LEN     16
 
-#pragma pack(1)
 typedef struct NV_CPER_NV_EVENT_HEADER
 {
     NvU8  version;                                        // Version of this header (currently 1)
@@ -283,10 +292,9 @@ typedef struct NV_CPER_NV_EVENT_HEADER
     NvU8  reserved;                                       // Reserved, set to 0
     NvU16 eventType;                                      // Top-level event type
     NvU16 eventSubType;                                   // Event sub-type
-    NvU64 eventLinkId;                                    // Links related events (0 if unused)
+    NvU64 traceId;                                        // Full operational event trace ID
     NvU8  sourceModuleSignature[NV_CPER_NV_MODULE_SIGNATURE_LEN]; // NUL-terminated ASCII module name
 } NV_CPER_NV_EVENT_HEADER;
-#pragma pack()
 
 /*
  * GPU EVENT_INFO structure (Version 1.0)
@@ -298,7 +306,6 @@ typedef struct NV_CPER_NV_EVENT_HEADER
     ((NV_CPER_NV_GPU_EVENT_INFO_VERSION_MINOR) | (NV_CPER_NV_GPU_EVENT_INFO_VERSION_MAJOR << 8))
 #define NV_CPER_NV_GPU_EVENT_INFO_SIZE           16
 
-#pragma pack(1)
 typedef struct NV_CPER_NV_GPU_EVENT_INFO
 {
     NvU16 version;           // Format version (1.0 = 0x0100)
@@ -308,7 +315,6 @@ typedef struct NV_CPER_NV_GPU_EVENT_INFO
     NvU16 sourceSubPartition;// Compute instance (for MIG)
     NvU64 pdi;               // Per-Device Identifier (globally unique)
 } NV_CPER_NV_GPU_EVENT_INFO;
-#pragma pack()
 
 /*
  * EVENT_CONTEXT Data Format Types
@@ -316,17 +322,21 @@ typedef struct NV_CPER_NV_GPU_EVENT_INFO
 typedef enum NV_CPER_NV_CONTEXT_DATA_FORMAT
 {
     // Common data format types (bit 15 = 0)
-    NV_CPER_NV_DATA_FORMAT_OPAQUE            = 0x0000,
-    NV_CPER_NV_DATA_FORMAT_KEY_VALUE_64      = 0x0001,
-    NV_CPER_NV_DATA_FORMAT_KEY_VALUE_32      = 0x0002,
-    NV_CPER_NV_DATA_FORMAT_VALUES_64         = 0x0003,
-    NV_CPER_NV_DATA_FORMAT_VALUES_32         = 0x0004,
+    NV_CPER_NV_DATA_FORMAT_OPAQUE            = OPERATIONAL_EVENT_CTX_TYPE_OPAQUE,
+    NV_CPER_NV_DATA_FORMAT_KEY_VALUE_64      = OPERATIONAL_EVENT_CTX_TYPE_KEY_VALUE_64,
+    NV_CPER_NV_DATA_FORMAT_KEY_VALUE_32      = OPERATIONAL_EVENT_CTX_TYPE_KEY_VALUE_32,
+    NV_CPER_NV_DATA_FORMAT_VALUES_64         = OPERATIONAL_EVENT_CTX_TYPE_VALUES_64,
+    NV_CPER_NV_DATA_FORMAT_VALUES_32         = OPERATIONAL_EVENT_CTX_TYPE_VALUES_32,
 
     // GPU-specific data format types (bit 15 = 1)
-    NV_CPER_NV_DATA_FORMAT_GPU_INIT_METADATA = 0x8000,
-    NV_CPER_NV_DATA_FORMAT_GPU_LEGACY_XID    = 0x8001,
-    NV_CPER_NV_DATA_FORMAT_GPU_REC_ACTIONS   = 0x8002,
+    NV_CPER_NV_DATA_FORMAT_GPU_RESERVED      = GPU_OPERATIONAL_EVENT_CTX_TYPE_RESERVED,
+    NV_CPER_NV_DATA_FORMAT_GPU_LEGACY_XID    = GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_LEGACY_XID,
+    NV_CPER_NV_DATA_FORMAT_GPU_REC_ACTIONS   = GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_REC_ACTIONS,
+    NV_CPER_NV_DATA_FORMAT_GPU_INIT_METADATA = GPU_EVENT_CTX_TYPE_GPU_INIT_METADATA,
 } NV_CPER_NV_CONTEXT_DATA_FORMAT;
+
+typedef OPERATIONAL_EVENT_CTX_KEY_VALUE_32 NV_CPER_NV_KEY_VALUE_32;
+typedef OPERATIONAL_EVENT_CTX_KEY_VALUE_64 NV_CPER_NV_KEY_VALUE_64;
 
 /*
  * EVENT_CONTEXT Header structure
@@ -336,7 +346,6 @@ typedef enum NV_CPER_NV_CONTEXT_DATA_FORMAT
 #define NV_CPER_NV_EVENT_CONTEXT_VERSION        \
     ((NV_CPER_NV_EVENT_CONTEXT_VERSION_MINOR) | (NV_CPER_NV_EVENT_CONTEXT_VERSION_MAJOR << 8))
 
-#pragma pack(1)
 typedef struct NV_CPER_NV_EVENT_CONTEXT_HEADER
 {
     NvU32 contextSize;       // Total size including header, data, and padding (multiple of 16)
@@ -346,87 +355,28 @@ typedef struct NV_CPER_NV_EVENT_CONTEXT_HEADER
     NvU16 dataFormatVersion; // Version of the data format
     NvU32 dataSize;          // Size of data in bytes
 } NV_CPER_NV_EVENT_CONTEXT_HEADER;
-#pragma pack()
 
 /*
- * GPU Initialization Metadata (Data Format Type 0x8000, Version 1.0)
- * Total size: 192 bytes
+ * GPU context payload aliases. The payload ABI is shared with GOE EventBuffer
+ * records and is defined in events/gpu/gpu_event_ctx_defs.h.
  */
-#define NV_CPER_NV_GPU_INIT_META_VERSION_MAJOR  1
-#define NV_CPER_NV_GPU_INIT_META_VERSION_MINOR  0
-#define NV_CPER_NV_GPU_INIT_META_VERSION        \
-    ((NV_CPER_NV_GPU_INIT_META_VERSION_MINOR) | (NV_CPER_NV_GPU_INIT_META_VERSION_MAJOR << 8))
-#define NV_CPER_NV_GPU_INIT_META_SIZE           192
+#define NV_CPER_NV_GPU_INIT_META_VERSION_MAJOR GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MAJOR
+#define NV_CPER_NV_GPU_INIT_META_VERSION_MINOR GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MINOR
+#define NV_CPER_NV_GPU_INIT_META_VERSION       GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION
+#define NV_CPER_NV_GPU_INIT_META_SIZE          GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_SIZE
+typedef GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA NV_CPER_NV_GPU_INIT_METADATA;
 
-#pragma pack(1)
-typedef struct NV_CPER_NV_GPU_INIT_METADATA
-{
-    NvU8  deviceName[48];
-    NvU8  firmwareVersion[16];
-    NvU8  pfDriverMicrocodeVersion[16];
-    NvU8  pfDriverVersion[16];
-    NvU8  vfDriverVersion[16];
-    NvU64 configuration;
-    NvU64 pdi;
-    NvU32 architectureId;
-    NvU8  hardwareInfoType;
-    NvU8  pciClass;
-    NvU8  pciSubclass;
-    NvU8  pciRev;
-    NvU16 pciVendorId;
-    NvU16 pciDeviceId;
-    NvU16 pciSubsystemVendorId;
-    NvU16 pciSubsystemId;
-    NvU64 bar0Start;
-    NvU64 bar0Size;
-    NvU64 bar1Start;
-    NvU64 bar1Size;
-    NvU64 bar2Start;
-    NvU64 bar2Size;
-} NV_CPER_NV_GPU_INIT_METADATA;
-#pragma pack()
+#define NV_CPER_NV_GPU_LEGACY_XID_VERSION_MAJOR GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MAJOR
+#define NV_CPER_NV_GPU_LEGACY_XID_VERSION_MINOR GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MINOR
+#define NV_CPER_NV_GPU_LEGACY_XID_VERSION       GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION
+#define NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN   GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_MAX_MSG_LEN
+typedef GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID NV_CPER_NV_GPU_LEGACY_XID;
 
-/*
- * GPU Legacy Xid (Data Format Type 0x8001, Version 1.0)
- */
-#define NV_CPER_NV_GPU_LEGACY_XID_VERSION_MAJOR  1
-#define NV_CPER_NV_GPU_LEGACY_XID_VERSION_MINOR  0
-#define NV_CPER_NV_GPU_LEGACY_XID_VERSION        \
-    ((NV_CPER_NV_GPU_LEGACY_XID_VERSION_MINOR) | (NV_CPER_NV_GPU_LEGACY_XID_VERSION_MAJOR << 8))
-#define NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN    236
-
-//
-// MSVC warning C4200 on "NV_CPER_NV_GPU_LEGACY_XID::message": zero-sized array in struct/union
-// Ignore the warning on VS2013+
-//
-#pragma pack(1)
-typedef struct NV_CPER_NV_GPU_LEGACY_XID
-{
-    NvU32 xidCode;
-    char message[];
-} NV_CPER_NV_GPU_LEGACY_XID;
-#pragma pack()
-
-/*
- * GPU Recommended Actions (Data Format Type 0x8002, Version 1.0)
- * Total size: 16 bytes
- */
-#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MAJOR  1
-#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MINOR  0
-#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION        \
-    ((NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MINOR) | (NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MAJOR << 8))
-#define NV_CPER_NV_GPU_REC_ACTIONS_SIZE           16
-
-#pragma pack(1)
-typedef struct NV_CPER_NV_GPU_RECOMMENDED_ACTIONS
-{
-    NvU8  flags;
-    NvU8  reserved[3];
-    NvU16 recoveryAction;
-    NvU16 diagnosticFlow;
-    NvU8  reserved2[8];
-} NV_CPER_NV_GPU_RECOMMENDED_ACTIONS;
-#pragma pack()
+#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MAJOR GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MAJOR
+#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION_MINOR GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MINOR
+#define NV_CPER_NV_GPU_REC_ACTIONS_VERSION       GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION
+#define NV_CPER_NV_GPU_REC_ACTIONS_SIZE          GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_SIZE
+typedef GPU_OPERATIONAL_EVENT_CTX_GPU_RECOMMENDED_ACTIONS NV_CPER_NV_GPU_RECOMMENDED_ACTIONS;
 
 /*
  * ============================================================================
@@ -461,7 +411,7 @@ typedef struct NV_CPER_NV_EVENT_PARAMS
     NvU16              eventType;              ///< Event type code
     NvU16              eventSubType;           ///< Event sub-type code
     const char        *pModuleSignature;       ///< Module name (max 15 chars), NULL for empty
-    NvU64              eventLinkId;            ///< Event link ID (0 if unused)
+    NvU64              traceId;                ///< Full operational event trace ID
 
     // GPU event info
     NV_CPER_NV_GPU_EVENT_ORIGINATOR originator;///< Who originated the event
@@ -671,6 +621,8 @@ NV_STATUS cperNvidiaEventAdd4BVContext(
  * @brief Dump NVIDIA CPER record header fields (notify/creator/severity)
  */
 void cperNvidiaEventDumpRecordHeader(
+    PORT_DEVICE                 *pDev,
+    PORT_LOG_LEVEL               level,
     const NV_CPER_RECORD_HEADER *pHdr,
     NvU32                        seq,
     const char                  *pLogPrefix
@@ -680,13 +632,15 @@ void cperNvidiaEventDumpRecordHeader(
  * @brief Dump an NVIDIA event section (NV_CPER_SECTION_NVIDIA_EVENT_GUID)
  */
 void cperNvidiaEventDumpSection(
-    NvU32                           eventIdx,
-    const NV_CPER_RECORD_HEADER    *pHdr,
+    PORT_DEVICE                      *pDev,
+    PORT_LOG_LEVEL                    level,
+    NvU32                             eventIdx,
+    const NV_CPER_RECORD_HEADER      *pHdr,
     const NV_CPER_SECTION_DESCRIPTOR *pDesc,
-    const NvU8                     *pSection,
-    NvU32                           sectionLength,
-    NvU32                           seq,
-    const char                     *pLogPrefix
+    const NvU8                       *pSection,
+    NvU32                             sectionLength,
+    NvU32                             seq,
+    const char                       *pLogPrefix
 );
 
 #endif /* GPU_CPER_H */

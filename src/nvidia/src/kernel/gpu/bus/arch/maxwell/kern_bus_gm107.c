@@ -37,6 +37,7 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "core/system.h"
 #include "mem_mgr/virt_mem_mgr.h"
+#include "rmapi/rmapi.h"
 #include "rmapi/rs_utils.h"
 #include "vgpu/rpc.h"
 #include "nvrm_registry.h"
@@ -378,6 +379,8 @@ kbusStateInitLockedKernel_GM107
 NV_STATUS
 kbusStateInitLocked_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus)
 {
+    NvBool bClearPciBarInfoCache = NV_FALSE;
+
     // Nothing to be done in guest for the paravirtualization case.
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
@@ -409,6 +412,7 @@ kbusStateInitLocked_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus)
         pKernelBus->pciBarSizes[BUS_BAR_1] = 0;
         pKernelBus->bar1[GPU_GFID_PF].physAddr = 0;
         pKernelBus->bar1[GPU_GFID_PF].apertureLength  = 0;
+        bClearPciBarInfoCache = NV_TRUE;
     }
 
     if (kbusIsCpuVisibleBar2Disabled(pKernelBus))
@@ -451,6 +455,16 @@ kbusStateInitLocked_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus)
         NV_PRINTF(LEVEL_INFO, "Setting cpuVisibleLimit: 0x%llX to 0\n", pKernelBus->bar2[GPU_GFID_PF].cpuVisibleLimit);
         pKernelBus->bar2[GPU_GFID_PF].cpuVisibleLimit = 0;
         pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
+        bClearPciBarInfoCache = NV_TRUE;
+    }
+
+    //
+    // NV2080_CTRL_CMD_BUS_GET_PCI_BAR_INFO can be cached in kbusInitBarsSize_KERNEL
+    // Clear the cached result when the data changes.
+    //
+    if (bClearPciBarInfoCache)
+    {
+        rmapiControlCacheFreeForControl(gpuGetInstance(pGpu), NV2080_CTRL_CMD_BUS_GET_PCI_BAR_INFO);
     }
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
@@ -516,7 +530,10 @@ kbusStatePreLoad_GM107
             NV_ASSERT(IsTEGRA(pGpu));
         }
 
-        NV_ASSERT_OK_OR_RETURN(kbusRestoreBar2_HAL(pKernelBus, flags));
+        if (kbusIsBar2Initialized(pKernelBus))
+        {
+            NV_ASSERT_OK_OR_RETURN(kbusRestoreBar2_HAL(pKernelBus, flags));
+        }
     }
 
     return NV_OK;
@@ -901,6 +918,14 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     if (pKernelBus->bar1[gfid].pVAS != NULL)
     {
         return rmStatus;
+    }
+
+    pKernelBus->bar1[gfid].pRusdBar1Lock =
+        portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
+
+    if (pKernelBus->bar1[gfid].pRusdBar1Lock == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
     }
 
     if (IsT234(pGpu) && pGpu->pGpuArch->bGpuArchIsZeroFb)
@@ -1319,6 +1344,12 @@ kbusDestroyBar1_GM107
         pKernelBus->bar1[gfid].pVAS = NULL;
     }
 
+    if (pKernelBus->bar1[gfid].pRusdBar1Lock != NULL)
+    {
+        portSyncSpinlockDestroy(pKernelBus->bar1[gfid].pRusdBar1Lock);
+        pKernelBus->bar1[gfid].pRusdBar1Lock = NULL;
+    }
+
     if (IS_GFID_VF(gfid) && (pKernelBus->bar1[gfid].pInstBlkMemDesc != NULL))
     {
         memdescFree(pKernelBus->bar1[gfid].pInstBlkMemDesc);
@@ -1583,6 +1614,7 @@ kbusTeardownBar2CpuAperture_GM107
         pKernelBus->virtualBar2[gfid].pPageLevels = NULL;
     }
 
+    kfifoUnmapVfPage(pGpu, GPU_GET_KERNEL_FIFO(pGpu));
     kbusDestroyCpuPointerForBusFlush_HAL(pGpu, pKernelBus);
 
     kbusFlushVirtualBar2_HAL(pGpu, pKernelBus, NV_FALSE, gfid);
@@ -1695,8 +1727,8 @@ kbusSetupBar2GpuVaSpace_GM107
 
     if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) &&
         ((pGpu->pGpuArch->bGpuArchIsZeroFb) ||
-        ((ADDR_FBMEM == pKernelBus->PDEBAR2Aperture) &&
-        (ADDR_FBMEM == pKernelBus->PTEBAR2Aperture))))
+         ((ADDR_FBMEM == pKernelBus->PDEBAR2Aperture) &&
+          (ADDR_FBMEM == pKernelBus->PTEBAR2Aperture))))
     {
         pKernelBus->bar2[gfid].bBootstrap = NV_TRUE;
         //
@@ -3946,9 +3978,14 @@ kbusStateDestroy_GM107
 
     NV_PRINTF(LEVEL_INFO, "FLA Supported: %x \n", kbusIsFlaSupported(pKernelBus));
 
-    // clean up FLA here
-    // if FLA supported & enabled FLA VAS
-    if (IS_VIRTUAL(pGpu) && kbusIsFlaSupported(pKernelBus))
+    //
+    // In a guest, FLA is set up by kbusStateInitLockedKernel_GM107() and this is its matching
+    // teardown. On bare metal and host RM, FLA is instead set up by knvlinkStateLoad() and torn
+    // down by knvlinkStateUnload(). StateUnload can be skipped if RmInit fails, so always attempt
+    // clean up here.
+    // Bug 38736658
+    //
+    if (kbusIsFlaSupported(pKernelBus))
     {
         NV_PRINTF(LEVEL_INFO, "Trying to destroy FLA VAS\n");
         kbusDestroyFla_HAL(pGpu, pKernelBus);
@@ -4344,26 +4381,8 @@ NV_STATUS kbusSetBarsApertureSize_GM107
     }
     else
     {
-        //
-        // For simulation mods we limit BAR2 size to decrease PTE init time.
-        // Backdoor fmodel/RTL could use the standard settings, but want to
-        // keep the code path the same for emulation.  With a 8MB BAR2 we do
-        // not expect instance memory to evict a cached mapping.
-        //
-        if ((IS_SIM_MODS(GPU_GET_OS(pGpu)) && IS_SILICON(pGpu) == 0) || (!RMCFG_FEATURE_MODS_FEATURES && IS_SIMULATION(pGpu)))
-        {
-            // Temporarily increasing the RM aperture size to 16MB - Bug 3317956
-            if (gpuIsCCFeatureEnabled(pGpu))
-                pKernelBus->bar2[gfid].rmApertureLimit = (BUS_BAR2_RM_APERTURE_MB << 20) - 1;  // 16MB
-            else
-                pKernelBus->bar2[gfid].rmApertureLimit = ((BUS_BAR2_RM_APERTURE_MB >> 1) << 20) - 1;  // 8MB
-            pKernelBus->bar2[gfid].cpuVisibleLimit = pKernelBus->bar2[gfid].rmApertureLimit;        // No VESA space
-        }
-        else
-        {
-            pKernelBus->bar2[gfid].cpuVisibleLimit = (BUS_BAR2_APERTURE_MB << 20) - 1;
-            pKernelBus->bar2[gfid].rmApertureLimit = (maxRmAddressibleBar2SizeMb << 20) - 1;
-        }
+        pKernelBus->bar2[gfid].cpuVisibleLimit = (BUS_BAR2_APERTURE_MB << 20) - 1;
+        pKernelBus->bar2[gfid].rmApertureLimit = (maxRmAddressibleBar2SizeMb << 20) - 1;
     }
 
     return NV_OK;
@@ -5015,7 +5034,7 @@ kbusUseDirectSysmemMap_GM107
       memdescGetFlag(pMemDesc, MEMDESC_FLAGS_PEER_IO_MEM)) &&
      ((memdescGetGpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED) || IsTEGRA(pGpu)))
     {
-         *pbAllowDirectMap =  NV_TRUE;
+         *pbAllowDirectMap =  (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1));
     }
 
     return NV_OK;
@@ -5085,7 +5104,7 @@ kbusBar1InstBlkVasUpdate_GM107
 
     // Initialize the instance block VAS state.
     NV_ASSERT_OK_OR_RETURN(
-        kgmmuInstBlkInit(pKernelGmmu, pKernelBus->bar1[gfid].pInstBlkMemDesc, pBar1VAS,
+        kgmmuInstBlkInit(pKernelGmmu, pKernelBus->bar1[gfid].pInstBlkMemDesc, pBar1VAS, NULL,
                         FIFO_PDB_IDX_BASE, &params));
 
     //
@@ -5857,6 +5876,7 @@ kbusCommitBar2_GM107
         // we will initialize bar2 to the default big page size of the system
         NV_ASSERT_OK_OR_RETURN(kbusInitVirtualBar2_HAL(pGpu, pKernelBus));
         NV_ASSERT_OK_OR_RETURN(kbusSetupCpuPointerForBusFlush_HAL(pGpu, pKernelBus));
+        NV_ASSERT_OK_OR_RETURN(kfifoMapVfPage(pGpu, GPU_GET_KERNEL_FIFO(pGpu)));
     }
 
     return NV_OK;

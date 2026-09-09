@@ -433,28 +433,52 @@ kmigmgrSwizzIdToSpan_GA100
             ret = rangeMake((3*(spanLen/4)), spanLen - 1);
             break;
         case 7:
-            ret = rangeMake(0, 0);
+            if (spanLen >= 8)
+                ret = rangeMake(0, (spanLen/8) - 1);
+            else
+                ret = rangeMake(0, 0);
             break;
         case 8:
-            ret = rangeMake(1, 1);
+            if (spanLen >= 8)
+                ret = rangeMake((spanLen/8), 2*(spanLen/8) - 1);
+            else
+                ret = rangeMake(1, 1);
             break;
         case 9:
-            ret = rangeMake(2, 2);
+            if (spanLen >= 8)
+                ret = rangeMake(2*(spanLen/8), 3*(spanLen/8) - 1);
+            else
+                ret = rangeMake(2, 2);
             break;
         case 10:
-            ret = rangeMake(3, 3);
+            if (spanLen >= 8)
+                ret = rangeMake(3*(spanLen/8), 4*(spanLen/8) - 1);
+            else
+                ret = rangeMake(3, 3);
             break;
         case 11:
-            ret = rangeMake(4, 4);
+            if (spanLen >= 8)
+                ret = rangeMake(4*(spanLen/8), 5*(spanLen/8) - 1);
+            else
+                ret = rangeMake(4, 4);
             break;
         case 12:
-            ret = rangeMake(5, 5);
+            if (spanLen >= 8)
+                ret = rangeMake(5*(spanLen/8), 6*(spanLen/8) - 1);
+            else
+                ret = rangeMake(5, 5);
             break;
         case 13:
-            ret = rangeMake(6, 6);
+            if (spanLen >= 8)
+                ret = rangeMake(6*(spanLen/8), 7*(spanLen/8) - 1);
+            else
+                ret = rangeMake(6, 6);
             break;
         case 14:
-            ret = rangeMake(7, 7);
+            if (spanLen >= 8)
+                ret = rangeMake(7*(spanLen/8), spanLen - 1);
+            else
+                ret = rangeMake(7, 7);
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Unsupported swizzid 0x%x\n", swizzId);

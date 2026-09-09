@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,6 +30,7 @@
 #include "nvidia-drm-crtc.h"
 #include "nvidia-drm-utils.h"
 #include "nvidia-drm-encoder.h"
+#include "nv_drm_common_ioctl.h"
 
 /*
  * Commit fcd70cd36b9b ("drm: Split out drm_probe_helper.h")
@@ -44,6 +45,7 @@
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_edid.h>
+#include <drm/drm_sysfs.h>
 
 /*
  * Dithering support requires connector atomic_check, which we only enable on
@@ -298,6 +300,16 @@ static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struc
     __drm_atomic_helper_connector_duplicate_state(connector, &nv_drm_new_connector_state->base);
 
     nv_drm_new_connector_state->dithering_mode = nv_drm_old_connector_state->dithering_mode;
+    nv_drm_new_connector_state->hdcp_topology_blob = nv_drm_old_connector_state->hdcp_topology_blob;
+    if (nv_drm_new_connector_state->hdcp_topology_blob) {
+        drm_property_blob_get(nv_drm_new_connector_state->hdcp_topology_blob);
+    }
+
+    nv_drm_new_connector_state->hdmi_vsif_metadata =
+        nv_drm_old_connector_state->hdmi_vsif_metadata;
+    if (nv_drm_new_connector_state->hdmi_vsif_metadata) {
+        drm_property_blob_get(nv_drm_new_connector_state->hdmi_vsif_metadata);
+    }
 
     return &nv_drm_new_connector_state->base;
 }
@@ -310,6 +322,9 @@ static void nv_drm_connector_atomic_destroy_state(
            to_nv_drm_connector_state(state);
 
     __drm_atomic_helper_connector_destroy_state(state);
+    drm_property_blob_put(nv_drm_connector_state->hdcp_topology_blob);
+
+    drm_property_blob_put(nv_drm_connector_state->hdmi_vsif_metadata);
 
     nv_drm_free(nv_drm_connector_state);
 }
@@ -341,6 +356,19 @@ static int nv_drm_connector_atomic_set_property(
         }
         nv_connector_state->dithering_mode = val;
         return 0;
+    } else if (property == nv_dev->nv_hdcp_level_property) {
+        // nv_hdcp_level_property is read only
+        return -EINVAL;
+    }
+    
+
+    if (property == nv_dev->nv_connector_hdmi_vsif_metadata_property) {
+        return nv_drm_atomic_replace_property_blob_from_id_size_range(
+                    nv_dev->dev,
+                    &nv_connector_state->hdmi_vsif_metadata,
+                    val,
+                    NV_DRM_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE,
+                    NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE);
     }
 
     /* Unknown property - DRM core handles standard connector properties */
@@ -354,11 +382,21 @@ static int nv_drm_connector_atomic_get_property(
     uint64_t *val)
 {
     struct nv_drm_device *nv_dev = to_nv_device(connector->dev);
+    struct nv_drm_connector *nv_conn = to_nv_connector(connector);    
     const struct nv_drm_connector_state *nv_connector_state =
         to_nv_drm_connector_state_const(state);
 
     if (property == nv_dev->nv_connector_dithering_mode_property) {
         *val = nv_connector_state->dithering_mode;
+        return 0;
+    } else if (property == nv_dev->nv_hdcp_level_property) {
+        *val = nv_conn->cp;
+        return 0;
+    }
+
+    if (property == nv_dev->nv_connector_hdmi_vsif_metadata_property) {
+        *val = nv_connector_state->hdmi_vsif_metadata ?
+            nv_connector_state->hdmi_vsif_metadata->base.id : 0;
         return 0;
     }
 
@@ -451,11 +489,11 @@ static int nv_drm_connector_get_modes(struct drm_connector *connector)
     return count;
 }
 
-static int nv_drm_connector_mode_valid(struct drm_connector    *connector,
+static enum drm_mode_status nv_drm_connector_mode_valid(struct drm_connector    *connector,
 #if defined(NV_DRM_CONNECTOR_HELPER_FUNCS_MODE_VALID_HAS_CONST_MODE_ARG)
-                                       const struct drm_display_mode *mode)
+                                                        const struct drm_display_mode *mode)
 #else
-                                       struct drm_display_mode *mode)
+                                                        struct drm_display_mode *mode)
 #endif
 {
     struct drm_device *dev = connector->dev;
@@ -539,6 +577,30 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
         }
         req_config->modeSetConfig.dithering.state = state;
         req_config->modeSetConfig.dithering.mode = mode;
+    }
+
+    /* Handle HDMI VSIF metadata changes */
+    req_config->flags.hdmiVsifMetadataChanged =
+        !nv_drm_blobs_equal(nv_old_connector_state->hdmi_vsif_metadata,
+                            nv_new_connector_state->hdmi_vsif_metadata);
+    if (req_config->flags.hdmiVsifMetadataChanged) {
+        if (nv_new_connector_state->hdmi_vsif_metadata &&
+            nv_new_connector_state->hdmi_vsif_metadata->data) {
+            struct drm_nvidia_hdmi_vsif_metadata* vsif_metadata =
+                (struct drm_nvidia_hdmi_vsif_metadata*)
+                nv_new_connector_state->hdmi_vsif_metadata->data;
+            NvU32 payload_size =
+                nv_new_connector_state->hdmi_vsif_metadata->length;
+            WARN_ON(payload_size < NV_DRM_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE ||
+                    payload_size > NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE);
+            memcpy(req_config->modeSetConfig.hdmiVsifMetadata.payload,
+                   vsif_metadata->payload,
+                   payload_size);
+            req_config->modeSetConfig.hdmiVsifMetadata.payloadSize =
+                payload_size;
+        } else {
+            req_config->modeSetConfig.hdmiVsifMetadata.payloadSize = 0;
+        }
     }
 
     /*
@@ -668,6 +730,7 @@ nv_drm_connector_new(struct drm_device *dev,
     nv_connector->internal = internal;
     nv_connector->modeset_permission_filep = NULL;
     nv_connector->modeset_permission_crtc = NULL;
+    nv_connector->cp = NVKMS_CONTENT_PROTECTION_OFF;
 
     strcpy(nv_connector->dpAddress, dpAddress);
 
@@ -693,6 +756,29 @@ nv_drm_connector_new(struct drm_device *dev,
             DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
     }
 
+#ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
+    /* attach content protection properties */
+    if ((nv_connector->type == NVKMS_CONNECTOR_TYPE_DP) ||
+        (nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI)) {
+        ret = drm_connector_attach_content_protection_property(&nv_connector->base, true);
+        if (ret != 0) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to attach content protection properties to connector created from physical index %u",
+                nv_connector->physicalIndex);
+            goto failed_connector_init;
+        }
+        /* attach nvidia defined connector properties */
+        drm_object_attach_property(&nv_connector->base.base,
+                                   nv_dev->nv_hdcp_topology_property,
+                                   0);
+        drm_object_attach_property(&nv_connector->base.base,
+                                   nv_dev->nv_hdcp_level_property,
+                                   0);
+    }
+#endif
+
+
 #if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
     if (nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI) {
 #if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
@@ -705,6 +791,12 @@ nv_drm_connector_new(struct drm_device *dev,
             drm_connector_attach_colorspace_property(&nv_connector->base);
         }
         drm_connector_attach_hdr_output_metadata_property(&nv_connector->base);
+
+        if (nv_dev->nv_connector_hdmi_vsif_metadata_property) {
+            drm_object_attach_property(&nv_connector->base.base,
+                                       nv_dev->nv_connector_hdmi_vsif_metadata_property,
+                                       0);
+        }
     } else if (nv_connector->type == NVKMS_CONNECTOR_TYPE_DP) {
 #if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
         if (drm_mode_create_dp_colorspace_property(
@@ -814,6 +906,76 @@ bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
     }
     nv_connector->modeset_permission_filep = NULL;
     return ret;
+}
+
+void nv_drm_connector_update_content_protection(struct nv_drm_connector *nv_connector)
+{
+#ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
+    struct drm_connector *connector = &nv_connector->base;
+    struct drm_connector_state *state = connector->state;
+    unsigned int content_protection = state->content_protection;
+    unsigned int hdcp_content_type = state->hdcp_content_type;
+    bool update_cp = false;
+    unsigned int cp_val;
+
+    if ((content_protection == DRM_MODE_CONTENT_PROTECTION_DESIRED) &&
+        (hdcp_content_type == DRM_MODE_HDCP_CONTENT_TYPE0)) {
+        if ((nv_connector->cp == NVKMS_CONTENT_PROTECTION_HDCP1X_ON) ||
+            (nv_connector->cp == NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE0_ON) ||
+            (nv_connector->cp == NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE1_ON)) {
+            cp_val = DRM_MODE_CONTENT_PROTECTION_ENABLED;
+            update_cp = true;
+        }
+    } else if ((content_protection == DRM_MODE_CONTENT_PROTECTION_DESIRED) &&
+             (hdcp_content_type == DRM_MODE_HDCP_CONTENT_TYPE1)) {
+        if (nv_connector->cp == NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE1_ON) {
+            cp_val = DRM_MODE_CONTENT_PROTECTION_ENABLED;
+            update_cp = true;
+        }
+    } else if (content_protection == DRM_MODE_CONTENT_PROTECTION_ENABLED) {
+        if ((nv_connector->cp == NVKMS_CONTENT_PROTECTION_OFF) || 
+            (nv_connector->cp == NVKMS_CONTENT_PROTECTION_FAILED)) {
+            cp_val = DRM_MODE_CONTENT_PROTECTION_DESIRED;
+            update_cp = true;
+        }
+    }
+
+    if (update_cp) {
+        drm_hdcp_update_content_protection(connector, cp_val);
+    }
+#endif
+}
+
+int nv_drm_connector_update_topology_property(struct nv_drm_connector *nv_connector,
+                                              const void *topology)
+{
+#ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
+    struct drm_connector *connector = &nv_connector->base;
+    struct drm_connector_state *state = connector->state;
+    struct nv_drm_connector_state *nv_state = to_nv_drm_connector_state(state);
+    struct drm_device *dev = connector->dev;
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    int ret;
+
+    ret = drm_property_replace_global_blob(dev,
+                                            &nv_state->hdcp_topology_blob,
+                                            NVKMS_HDCP_TOPOLOGY_SIZE,
+                                            topology,
+                                            &connector->base,
+                                            nv_dev->nv_hdcp_topology_property);
+    // Generate uevent on cp property when topology is updated
+#if defined(NV_DRM_SYSFS_CONNECTOR_PROPERTY_EVENT_PRESENT)
+    drm_sysfs_connector_property_event(connector,
+        dev->mode_config.content_protection_property);
+#elif defined(NV_DRM_SYSFS_CONNECTOR_STATUS_EVENT_PRESENT)
+    drm_sysfs_connector_status_event(connector,
+        dev->mode_config.content_protection_property);
+#endif
+
+    return ret;
+#else
+    return 0;
+#endif
 }
 
 #endif

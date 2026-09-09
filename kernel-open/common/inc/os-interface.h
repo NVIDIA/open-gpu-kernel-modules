@@ -191,7 +191,7 @@ NV_STATUS   NV_API_CALL  os_put_page                      (NvU64 address);
 NvU32       NV_API_CALL  os_get_page_refcount             (NvU64 address);
 NvU32       NV_API_CALL  os_count_tail_pages              (NvU64 address);
 void        NV_API_CALL  os_free_pages_phys               (NvU64, NvU32);
-NV_STATUS   NV_API_CALL  os_open_temporary_file           (void **);
+NV_STATUS   NV_API_CALL  os_allocate_temporary_file       (void **, NvU64);
 void        NV_API_CALL  os_close_file                    (void *);
 NV_STATUS   NV_API_CALL  os_write_file                    (void *, NvU8 *, NvU64, NvU64);
 NV_STATUS   NV_API_CALL  os_read_file                     (void *, NvU8 *, NvU64, NvU64);
@@ -213,7 +213,7 @@ int         NV_API_CALL  os_nv_cap_validate_and_dup_fd    (const nv_cap_t *, int
 void        NV_API_CALL  os_nv_cap_close_fd               (int);
 NvS32       NV_API_CALL  os_imex_channel_get              (NvU64);
 NvS32       NV_API_CALL  os_imex_channel_count            (void);
-NV_STATUS   NV_API_CALL  os_tegra_igpu_perf_boost         (void *, NvBool, NvU32);
+NV_STATUS   NV_API_CALL  os_tegra_igpu_perf_boost         (void *, NvBool, NvU32, int);
 
 NV_STATUS   NV_API_CALL  os_get_tegra_platform       (NvU32 *);
 enum os_pci_req_atomics_type {
@@ -223,6 +223,7 @@ enum os_pci_req_atomics_type {
 };
 NV_STATUS   NV_API_CALL  os_enable_pci_req_atomics   (void *, enum os_pci_req_atomics_type);
 void        NV_API_CALL  os_pci_trigger_flr(void *handle);
+NvU64       NV_API_CALL  os_get_reclaimable_memory_usage(void);
 NV_STATUS   NV_API_CALL  os_get_numa_node_memory_usage (NvS32, NvU64 *, NvU64 *);
 NV_STATUS   NV_API_CALL  os_numa_add_gpu_memory      (void *, NvU64, NvU64, NvU32 *);
 NV_STATUS   NV_API_CALL  os_numa_remove_gpu_memory   (void *, NvU64, NvU64, NvU32); 
@@ -264,6 +265,7 @@ extern NvBool os_imex_channel_is_supported;
 
 void NV_API_CALL  out_string(const char *str);
 int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);
+int  NV_API_CALL  nv_vprintf(NvU32 debuglevel, const char *printf_format, va_list arglist);
 
 #define NV_DEV_PRINTF(debuglevel, nv, format, ... ) \
         nv_printf(debuglevel, "NVRM: GPU " NV_PCI_DEV_FMT ": " format, NV_PCI_DEV_FMT_ARGS(nv), ## __VA_ARGS__)
@@ -289,14 +291,33 @@ int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);
 #define OS_CGROUP_IMPL_NONE 0
 #define OS_CGROUP_IMPL_MISC 1
 #define OS_CGROUP_IMPL_DMEM 2
+
+void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo, int impl);
+
+#if defined(NV_LINUX)
 NvU32 NV_API_CALL os_cgroup_implementation(void);
-void* NV_API_CALL os_dmem_cgroup_register_region(NvU64 size, const char *name);
-void NV_API_CALL os_dmem_cgroup_unregister_region(void *region);
+void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, NvU64 precharge, void **prechargePool);
+void NV_API_CALL os_dmem_cgroup_unregister_region(void *region, void *prechargePool, NvU64 precharge);
 NV_STATUS NV_API_CALL os_dmem_cgroup_try_charge(void *region, NvU64 size, void **ret_pool, void **ret_limit_pool);
 void NV_API_CALL os_dmem_cgroup_uncharge(void *pool, NvU64 size);
-
-void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo);
+void NV_API_CALL os_dmem_cgroup_pool_state_put(void *pool);
+NvBool NV_API_CALL os_dmem_cgroup_state_evict_valuable(void *limit_pool, void *test_pool, NvBool ignore_low, NvBool *ret_hit_low);
 void* NV_API_CALL os_cgroup_get_from_fd(NvU32 fd);
 void NV_API_CALL os_cgroup_put(void *cgroup);
+void NV_API_CALL os_cgroup_get(void *cgroup);
+void* NV_API_CALL os_cgroup_parent(void *cgroup);
+#else // !defined(NV_LINUX)
+#define os_cgroup_implementation()               OS_CGROUP_IMPL_NONE
+#define os_dmem_cgroup_register_region(...)      NULL
+#define os_dmem_cgroup_unregister_region(...)
+#define os_dmem_cgroup_try_charge(...)           NV_OK
+#define os_dmem_cgroup_uncharge(...)
+#define os_dmem_cgroup_pool_state_put(...)
+#define os_dmem_cgroup_state_evict_valuable(...) NV_FALSE
+#define os_cgroup_get_from_fd(...)               NULL
+#define os_cgroup_put(...)
+#define os_cgroup_get(...)
+#define os_cgroup_parent(...)                    NULL
+#endif // defined(NV_LINUX)
 
 #endif /* OS_INTERFACE_H */

@@ -223,13 +223,26 @@ static void nvDPAddDeviceToActiveGroup(NVDpyEvoPtr pDpyEvo)
     }
 }
 
-static bool DpyHasVRREDID(NVDpyEvoPtr pDpyEvo)
+static bool DpyHasGsyncEDID(NVDpyEvoPtr pDpyEvo)
 {
     return pDpyEvo->parsedEdid.valid &&
            pDpyEvo->parsedEdid.info.nvdaVsdbInfo.valid &&
-           // As of this writing, only version 1 is defined.
-           pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vsdbVersion == 1 &&
            pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vrrData.v1.supportsVrr;
+}
+
+static NvKmsDpyVRRType DpyGsyncVRRType(NVDpyEvoPtr pDpyEvo)
+{
+    DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
+
+    if (pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vsdbVersion < 2) {
+        return NVKMS_DPY_VRR_TYPE_GSYNC;
+    }
+
+    if (!device->getIgnoreMSACap()) {
+        return NVKMS_DPY_VRR_TYPE_GSYNC;
+    }
+
+    return NVKMS_DPY_VRR_TYPE_GSYNC_V2;
 }
 
 static void EnableVRR(NVDpyEvoPtr pDpyEvo)
@@ -238,64 +251,72 @@ static void EnableVRR(NVDpyEvoPtr pDpyEvo)
     DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
     const NvBool conceal = nvkms_conceal_vrr_caps();
     const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo) && !conceal;
+    const NvBool dpySupportsTrueGsync = DpyHasGsyncEDID(pDpyEvo);
+    // If the DP library already has the monitor GSYNC-enabled, then we don't
+    // need to do it again, but we should still update the minimum refresh rate
+    // from the EDID if one is available.
+    const NvBool trueGsyncEnabled = device->isVrrMonitorEnabled() &&
+                                    device->isVrrDriverEnabled();
 
     // If the dpy is a laptop internal panel and an SBIOS cookie indicates that
-    // it supports VRR, override its enable flag and timeout.  Note that in the
-    // internal panel scenario, the EDID may not claim VRR support, so honor
-    // hasPlatformCookie even if DpyHasVRREDID() reports FALSE.
+    // it supports G-SYNC, override its enable flag and timeout. Note that in
+    // the internal panel scenario, the EDID may not claim VRR support, so honor
+    // hasPlatformCookie even if DpyHasGsyncEDID() reports FALSE.
     if (!conceal && (pDpyEvo->internal && pDispEvo->vrr.hasPlatformCookie)) {
         pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
         return;
     }
 
-    // If the DP library already has the monitor VRR-enabled, then we don't need to
-    // do it again, but we should still update the minimum refresh rate from the
-    // EDID if one is available.
-    const bool alreadyEnabled = device->isVrrMonitorEnabled() &&
-                                device->isVrrDriverEnabled();
+    pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
 
-    if (DpyHasVRREDID(pDpyEvo) && !alreadyEnabled) {
-        // Perform VRR enablement whenever the monitor supports VRR, but only
-        // record it as actually enabled if the rest of the system supports VRR.
-        // Other state such as the availability of NV_CTRL_GSYNC_ALLOWED is
-        // keyed off of the presence of a dpy with vrr.type !=
-        // NVKMS_DPY_VRR_TYPE_NONE.
-        if (device->startVrrEnablement() && dispSupportsVrr) {
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
-        } else {
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+    if (!dispSupportsVrr) {
+        return;
+    }
+
+    if (trueGsyncEnabled) {
+        // Assign pDpyEvo->vrr.type independent of DpyHasGsyncEDID(), so that if
+        // the monitor is successfully reenabled by the DP library before it
+        // calls notifyZombieStateChange(), it'll pick up the correct state. If
+        // reenablement succeeds, the monitor supports G-SYNC even if we haven't
+        // read an EDID that says it does yet.
+        pDpyEvo->vrr.type = DpyGsyncVRRType(pDpyEvo);
+        return;
+    }
+
+    if (dpySupportsTrueGsync) {
+        // Perform G-SYNC enablement whenever the monitor supports G-SYNC, but
+        // only record it as actually enabled if the rest of the system supports
+        // G-SYNC. Other state such as the availability of NV_CTRL_GSYNC_ALLOWED
+        // is keyed off of the presence of a dpy with
+        // vrr.type != NVKMS_DPY_VRR_TYPE_NONE.
+        if (device->startVrrEnablement()) {
+            // If Adaptive-Sync is indicated and the NVIDIA VSDB version is
+            // greater than 1, this is a G-SYNC Pulsar monitor rather than the
+            // original G-SYNC monitor or G-SYNC Ultimate monitor. G-SYNC Pulsar
+            // requires Adaptive-Sync programming for VRR to function correctly.
+            pDpyEvo->vrr.type = DpyGsyncVRRType(pDpyEvo);
         }
 
-        if ((pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_NONE) && dispSupportsVrr) {
-            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
-                         "%s: Failed to initialize G-SYNC",
-                         pDpyEvo->name);
+        if (pDpyEvo->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
+            // If G-SYNC enablement is successful, do not list the monitor as an
+            // AdaptiveSync monitor.
+            return;
         }
-    } else if (device->getIgnoreMSACap()) {
+
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                     "%s: Failed to initialize G-SYNC",
+                     pDpyEvo->name);
+    }
+
+    if (device->getIgnoreMSACap()) {
         // DP monitors indicate Adaptive-Sync support through the
         // MSA_TIMING_PAR_IGNORED bit in the DOWN_STREAM_PORT_COUNT register
         // (DP spec 1.4a section 2.2.4.1.1)
-        if (dispSupportsVrr) {
-            if (nvDpyIsAdaptiveSyncDefaultlisted(pDpyEvo)) {
-                pDpyEvo->vrr.type =
-                    NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED;
-            } else {
-                pDpyEvo->vrr.type =
-                    NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED;
-            }
+        if (nvDpyIsAdaptiveSyncDefaultlisted(pDpyEvo)) {
+            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED;
         } else {
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
-        }
-    } else {
-        // Assign pDpyEvo->vrr.type independent of DpyHasVRREDID(), so that if
-        // the monitor is successfully reenabled by the DP library before it
-        // calls notifyZombieStateChange(), it'll pick up the correct state.  If
-        // reenablement succeeds, the monitor supports VRR even if we haven't
-        // read an EDID that says it does yet.
-        if (alreadyEnabled && dispSupportsVrr) {
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
-        } else {
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+            pDpyEvo->vrr.type =
+                NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED;
         }
     }
 }
@@ -504,6 +525,32 @@ void ConnectorEventSink::notifyCableOkStateChange(DisplayPort::Device *dev,
 void ConnectorEventSink::notifyHDCPCapDone(DisplayPort::Device *dev,
                                                       bool hdcpCap)
 {
+}
+
+void ConnectorEventSink::notifyHDCPEnabled(DisplayPort::Device *dev,
+                                           bool hdcpEnabled)
+{
+    NVDpyEvoPtr pDpyEvo = NULL;
+    pDpyEvo = FindDpyByDevice(pConnectorEvo, dev);
+    if (pDpyEvo) {
+        if (hdcpEnabled) {
+            // This would query RM via RM Ctrl Call *_GET_HDCP_STATE to get hdcp state
+            // and then propogate the state upwards via nvkms and nvdrm event
+            nvSendDpyContentProtectionEventEvo(pDpyEvo,
+                                               (enum NvKmsContentProtection)0, /* cp (unused) */
+                                               NV_TRUE /* queryCp */);
+        }
+        else {
+            // Here either the HDCP is disabled or being restarted by the RM hence we clear
+            // the content protection state. We don't query the RM via RM Ctrl Call as state 
+            // of RM objects and variables would be in a state of flux as HDCP is being 
+            // re-started. When RM is done with HDCP it will again send NVKMS appropriate event
+            // to refresh itself.
+            nvSendDpyContentProtectionEventEvo(pDpyEvo,
+                                               NVKMS_CONTENT_PROTECTION_OFF,
+                                               NV_FALSE);
+        }
+    }
 }
 
 void ConnectorEventSink::notifyMCCSEvent(DisplayPort::Device *dev)

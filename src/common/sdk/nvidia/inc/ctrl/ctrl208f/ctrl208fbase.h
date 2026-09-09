@@ -54,6 +54,7 @@
 #define NV208F_CTRL_PROFILING             (0x1B)
 #define NV208F_CTRL_CE                    (0x1C)
 #define NV208F_CTRL_SEC2                  (0x1D)
+#define NV208F_CTRL_LPSEC                 (0x1E)
 
 /*
  * NV208F_CTRL_CMD_NULL

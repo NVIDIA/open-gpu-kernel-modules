@@ -55,6 +55,7 @@ void EdidReadMultistream::startReadingEdid()
     edid.resetData();
 
     DDCAddress = ddcAddrList[ddcIndex];
+    i2c_retry = 0;
 
     // set offset within segment 0, no need to set segment, because we're starting reading EDID
     i2cWriteTransactions[0] = I2cWriteTransaction(DDCAddress >> 1,
@@ -196,8 +197,19 @@ void EdidReadMultistream::messageFailed(MessageManager::Message * from, NakData 
         else
             edidAttemptDone(false /* failed */);
     }
+    else if (nakData->reason == NakI2cNak)
+    {
+        if (i2c_retry < MST_EDID_I2C_NACK_RETRIES)
+        {
+            ++i2c_retry;
+            timer->queueCallback(this, "EDID", MST_EDID_COOLDOWN);
+        }
+        else
+            edidAttemptDone(false /* failed */);
+    }
     else
     {
+        DP_PRINTF(DP_NOTICE, "%d: Unknown reason, retries: %d", nakData->reason, retries);
         edidAttemptDone(false /* failed */);
     }
 }

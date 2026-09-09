@@ -235,8 +235,8 @@ typedef struct NV00FD_CTRL_DETACH_MEM_PARAMS {
  *  pageSize [IN]
  *    The page size requested by the remote client. Must match prime configuration.
  *
- *  cliqueId [IN]
- *    Clique ID of the remote GPU being attached.
+ *  clique [IN]
+ *    Clique of the remote GPU being attached.
  *
  *  nodeId [IN]
  *    nodeID from which the remote GPU is being attached.
@@ -253,7 +253,7 @@ typedef struct NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 key, 8);
     NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
-    NvU32 cliqueId;
+    NV_DECLARE_ALIGNED(NvU64 clique, 8);
     NvU16 nodeId;
     NvU16 bwMode;
 } NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS;

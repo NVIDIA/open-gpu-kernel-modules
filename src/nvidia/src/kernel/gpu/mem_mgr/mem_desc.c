@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -411,6 +411,18 @@ memdescCreate
     pMemDesc->bDeferredFree        = NV_FALSE;
     pMemDesc->numaNode             = NV0000_CTRL_NO_NUMA_NODE;
 
+    if ((AddressSpace == ADDR_SYSMEM) &&
+        !(Flags & MEMDESC_FLAGS_PRE_ALLOCATED))
+    {
+        pMemDesc->pFabricIommuMappingLock =
+            portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+        if (pMemDesc->pFabricIommuMappingLock == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto failed;
+        }
+    }
+
     // parameter to determine page granularity
     pMemDesc->pageArrayGranularity = RM_PAGE_SIZE;
 
@@ -453,6 +465,12 @@ memdescCreate
 failed:
     if (status != NV_OK)
     {
+        if (pMemDesc->pFabricIommuMappingLock != NULL)
+        {
+            portSyncMutexDestroy(pMemDesc->pFabricIommuMappingLock);
+            pMemDesc->pFabricIommuMappingLock = NULL;
+        }
+
         if (!(Flags & MEMDESC_FLAGS_PRE_ALLOCATED))
         {
             portMemFree(pMemDesc);
@@ -650,6 +668,12 @@ memdescDestroy
         // attached to this root memory descriptor, so release them now.
         //
         _memdescFreeIommuMappings(pMemDesc);
+
+        if (pMemDesc->pFabricIommuMappingLock != NULL)
+        {
+            portSyncMutexDestroy(pMemDesc->pFabricIommuMappingLock);
+            pMemDesc->pFabricIommuMappingLock = NULL;
+        }
 
         // Notify all interested parties of destruction
         while (pCb)
@@ -1138,9 +1162,7 @@ memdescAlloc
             //
             if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled)
             {
-                if (!gpuIsCCorApmFeatureEnabled(pGpu) ||
-                    (gpuIsApmFeatureEnabled(pGpu) &&
-                     !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT)))
+                if (!gpuIsCCFeatureEnabled(pGpu))
                 {
                     {
                         memdescSetFlag(pMemDesc,
@@ -1173,18 +1195,6 @@ memdescAlloc
                           "WARNING FB alloc on ZERO_FB config moved to sysmem\n");
                 pMemDesc->_addressSpace = ADDR_SYSMEM;
                 break;
-            }
-            //
-            // When APM is enabled, all RM internal vidmem allocations go to
-            // unprotected memory. There is an underlying assumption that
-            // memdescAlloc won't be directly called in the client vidmem alloc
-            // codepath. Note that memdescAlloc still gets called in the client
-            // sysmem alloc codepath. See CONFCOMP-529
-            //
-            if (gpuIsApmFeatureEnabled(pGpu))
-            {
-                memdescSetFlag(pMemDesc,
-                    MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY, NV_TRUE);
             }
             // If FB is broken then don't allow the allocation, unless running in L2 cache only mode
             if (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
@@ -2081,7 +2091,8 @@ memdescMapInternal
 
     NV_ASSERT_OR_RETURN(pMemDesc != NULL, NULL);
 
-    if (pMemDesc->_addressSpace == ADDR_FBMEM)
+    if (pMemDesc->_addressSpace == ADDR_FBMEM ||
+        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
     {
         pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
     }
@@ -2158,7 +2169,8 @@ void memdescUnmapInternal
     NV_ASSERT_OR_RETURN_VOID(pMemDesc != NULL);
     NV_ASSERT_OR_RETURN_VOID(pMemDesc->_pInternalMapping != NULL && pMemDesc->_internalMappingRefCount != 0);
 
-    if (pMemDesc->_addressSpace == ADDR_FBMEM)
+    if (pMemDesc->_addressSpace == ADDR_FBMEM ||
+        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
     {
         pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
     }
@@ -2190,7 +2202,8 @@ void memdescUnmapInternal
                 //
                 if (flags & TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457)
                 {
-                    osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo,
+                    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+                    kmemsysFlushCoherentCpuCache(pGpu, pKernelMemorySystem,
                                                     (NvUPtr)pMemDesc->_pInternalMapping,
                                                     pMemDesc->ActualSize);
                 }

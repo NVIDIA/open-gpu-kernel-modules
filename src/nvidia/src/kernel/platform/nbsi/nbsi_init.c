@@ -27,6 +27,7 @@
  */
 
 #include "os/os.h"
+#include "core/system.h"
 #include "platform/acpi_common.h"
 #include "platform/nbsi/nbsi_read.h"
 #include "platform/platform.h"

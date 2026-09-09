@@ -98,6 +98,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GSyncApi =
 {
     .classInfo.size =               sizeof(GSyncApi),
     .classInfo.classId =            classId(GSyncApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "GSyncApi",

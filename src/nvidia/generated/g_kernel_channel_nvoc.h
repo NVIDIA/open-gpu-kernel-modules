@@ -195,6 +195,12 @@ typedef struct _def_instance_block
 #define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_UVM_OWNED_NO                    0x0
 #define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_UVM_OWNED_YES                   0x1
 
+// Internal channel group ID for bare channels (kernel-RM tells GSP which TSG ID to use)
+#define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_INTERNAL_TSG_ID                 23:8
+#define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_INTERNAL_TSG_ID_VALID           24:24
+#define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_INTERNAL_TSG_ID_VALID_FALSE     0x0
+#define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_INTERNAL_TSG_ID_VALID_TRUE      0x1
+
 // printf format specifier for value returned by kchannelGetDebugTag
 #define FMT_CHANNEL_DEBUG_TAG "channel 0x%08x"
 
@@ -270,7 +276,6 @@ struct KernelChannel {
     // Data members
     NvU16 nextObjectClassID;
     struct KernelChannel *pNextBindKernelChannel;
-    FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData;
     NvHandle hErrorContext;
     MEMORY_DESCRIPTOR *pErrContextMemDesc;
     ErrorNotifierType errorContextType;
@@ -282,6 +287,7 @@ struct KernelChannel {
     struct UserInfo *pUserInfo;
     NvHandle hVASpace;
     struct OBJVASPACE *pVAS;
+    NvU32 subDeviceId;
     NvHandle hKernelGraphicsContext;
     NvU8 privilegeLevel;
     NvU32 runlistId;
@@ -299,6 +305,7 @@ struct KernelChannel {
     NvBool bClientAllocatedUserD;
     NvU32 swState[8];
     NvU32 hwState[8];
+    NvBool bEnablePbdmaAcquireTimeout;
     NvBool bIsRcPending[8];
     NvU32 ProcessID;
     NvU32 SubProcessID;
@@ -315,6 +322,8 @@ struct KernelChannel {
     NvU32 goldenCtxUpdateFlags;
     NvU32 disableRefCount[8];
     NvBool bCePrefetchEnable;
+    NvBool bHcePrivMode;
+    NvBool bAuthLevelPriv;
     CC_KMB clientKmb;
     NvHandle hEncryptStatsBuf;
     MEMORY_DESCRIPTOR *pEncStatsBufMemDesc;
@@ -549,6 +558,16 @@ static inline NV_STATUS kchannelSetEngineContextMemDesc(struct OBJGPU *pGpu, str
 #define kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, engine, pMemDesc) kchannelSetEngineContextMemDesc_IMPL(pGpu, pKernelChannel, engine, pMemDesc)
 #endif // __nvoc_kernel_channel_h_disabled
 
+NV_STATUS kchannelCommitEngineContext_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine, NvBool bSkipPreempt);
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline NV_STATUS kchannelCommitEngineContext(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine, NvBool bSkipPreempt) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_h_disabled
+#define kchannelCommitEngineContext(pGpu, pKernelChannel, engine, bSkipPreempt) kchannelCommitEngineContext_IMPL(pGpu, pKernelChannel, engine, bSkipPreempt)
+#endif // __nvoc_kernel_channel_h_disabled
+
 NV_STATUS kchannelMapEngineCtxBuf_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine);
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelMapEngineCtxBuf(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine) {
@@ -567,6 +586,16 @@ static inline NV_STATUS kchannelUnmapEngineCtxBuf(struct OBJGPU *pGpu, struct Ke
 }
 #else // __nvoc_kernel_channel_h_disabled
 #define kchannelUnmapEngineCtxBuf(pGpu, pKernelChannel, engine) kchannelUnmapEngineCtxBuf_IMPL(pGpu, pKernelChannel, engine)
+#endif // __nvoc_kernel_channel_h_disabled
+
+NV_STATUS kchannelGetInstBlkDesc_IMPL(struct KernelChannel *arg_this, INST_BLOCK_DESC *arg2);
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline NV_STATUS kchannelGetInstBlkDesc(struct KernelChannel *arg_this, INST_BLOCK_DESC *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_h_disabled
+#define kchannelGetInstBlkDesc(arg_this, arg2) kchannelGetInstBlkDesc_IMPL(arg_this, arg2)
 #endif // __nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelCheckBcStateCurrent_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
@@ -599,24 +628,6 @@ static inline NV_STATUS kchannelNotifyWorkSubmitToken(struct OBJGPU *pGpu, struc
 #define kchannelNotifyWorkSubmitToken(pGpu, arg_this, token) kchannelNotifyWorkSubmitToken_IMPL(pGpu, arg_this, token)
 #endif // __nvoc_kernel_channel_h_disabled
 
-void kchannelFillMmuExceptionInfo_IMPL(struct KernelChannel *pKernelChannel, FIFO_MMU_EXCEPTION_DATA *arg2);
-#ifdef __nvoc_kernel_channel_h_disabled
-static inline void kchannelFillMmuExceptionInfo(struct KernelChannel *pKernelChannel, FIFO_MMU_EXCEPTION_DATA *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-}
-#else // __nvoc_kernel_channel_h_disabled
-#define kchannelFillMmuExceptionInfo(pKernelChannel, arg2) kchannelFillMmuExceptionInfo_IMPL(pKernelChannel, arg2)
-#endif // __nvoc_kernel_channel_h_disabled
-
-void kchannelFreeMmuExceptionInfo_IMPL(struct KernelChannel *pKernelChannel);
-#ifdef __nvoc_kernel_channel_h_disabled
-static inline void kchannelFreeMmuExceptionInfo(struct KernelChannel *pKernelChannel) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-}
-#else // __nvoc_kernel_channel_h_disabled
-#define kchannelFreeMmuExceptionInfo(pKernelChannel) kchannelFreeMmuExceptionInfo_IMPL(pKernelChannel)
-#endif // __nvoc_kernel_channel_h_disabled
-
 NV_STATUS kchannelGetFromDualHandle_IMPL(struct RsClient *arg1, NvHandle arg2, struct KernelChannel **arg3);
 #define kchannelGetFromDualHandle(arg1, arg2, arg3) kchannelGetFromDualHandle_IMPL(arg1, arg2, arg3)
 
@@ -632,6 +643,9 @@ static inline NvU32 kchannelGetGfid(struct KernelChannel *pKernelChannel) {
 #else // __nvoc_kernel_channel_h_disabled
 #define kchannelGetGfid(pKernelChannel) kchannelGetGfid_IMPL(pKernelChannel)
 #endif // __nvoc_kernel_channel_h_disabled
+
+NvBool kchannelIsIsolated_IMPL(struct OBJGPU *arg1, FIFO_CHANNEL_INFO arg2);
+#define kchannelIsIsolated(arg1, arg2) kchannelIsIsolated_IMPL(arg1, arg2)
 
 NV_STATUS kchannelCtrlCmdResetIsolatedChannel_IMPL(struct KernelChannel *pKernelChannel, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *pResetParams);
 #ifdef __nvoc_kernel_channel_h_disabled
@@ -1325,6 +1339,10 @@ static inline NV_STATUS kchannelCtrlGetMMUDebugMode_a094e1(struct KernelChannel 
 }
 
 static inline NV_STATUS kchannelCtrlProgramVidmemPromote_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams){
+    return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
+}
+
+static inline NV_STATUS kchannelCtrlProgramSysmemPromote_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams){
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
 }
 

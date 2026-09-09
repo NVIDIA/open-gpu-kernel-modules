@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,15 @@
 #define NV_PGSP_QUEUE_HEAD(i)                                                                            (0x110c00+(i)*8) /* RW-4A */
 #define NV_PGSP_QUEUE_HEAD__SIZE_1                                                                       8              /*       */
 #define NV_PGSP_QUEUE_HEAD_ADDRESS                                                                       31:0           /* RWIVF */
+#define NV_PGSP_QUEUE_TAIL(i)                                                                            (0x110c04+(i)*8) /* RW-4A */
+#define NV_PGSP_QUEUE_TAIL__SIZE_1                                                                       8              /*       */
+#define NV_PGSP_QUEUE_TAIL_ADDRESS                                                                       31:0           /* RWIVF */
+#define NV_PGSP_MSGQ_HEAD(i)                                                                             (0x110c80+(i)*8) /* RW-4A */
+#define NV_PGSP_MSGQ_HEAD__SIZE_1                                                                        8              /*       */
+#define NV_PGSP_MSGQ_HEAD_VAL                                                                            31:0           /* RWIUF */
+#define NV_PGSP_MSGQ_TAIL(i)                                                                             (0x110c84+(i)*8) /* RW-4A */
+#define NV_PGSP_MSGQ_TAIL__SIZE_1                                                                        8              /*       */
+#define NV_PGSP_MSGQ_TAIL_VAL                                                                            31:0           /* RWIUF */
 #define NV_PGSP_EMEMC(i)                                                                                 (0x110ac0+(i)*8) /* RW-4A */
 #define NV_PGSP_EMEMC__SIZE_1                                                                            4              /*       */
 #define NV_PGSP_EMEMC_OFFS                                                                               7:2            /* RWIVF */

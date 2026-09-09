@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,6 +83,13 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
         if (IS_GPU_GC6_STATE_ENTERING(pGpu))
         {
             unloadMode = KGSP_UNLOAD_MODE_GC6_ENTER;
+        }
+        else if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_PREINITIALIZED_WPR_REGION)) &&
+                 (flags & GPU_STATE_FLAGS_PM_SUSPEND) &&
+                 (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SC7_SUPPORTED)))
+        {
+            // Mode is specifc to S3, as WPR carveout remains preserved
+            unloadMode = KGSP_UNLOAD_MODE_SR_WITH_WPR_IN_SYSMEM;
         }
         else
         {
@@ -182,6 +189,8 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         NV_ASSERT(status == NV_OK);
     }
 
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_BEFORE_SB;
+
     if (IS_GSP_CLIENT(pGpu))
     {
         //
@@ -198,7 +207,6 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
 
         gspSrInitArgs.oldLevel = oldLevel;
         gspSrInitArgs.flags = flags;
-        gspSrInitArgs.bInPMTransition = NV_TRUE;
 
         kgspPopulateGspRmInitArgs(pGpu, pKernelGsp, &gspSrInitArgs);
 
@@ -208,6 +216,9 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         {
             _gpuWaitForGfwBootOkFailureStore(
                 pGpu, status);
+
+            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x99);
+
             goto done;
         }
 
@@ -217,7 +228,16 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         }
         else
         {
-            bootMode = KGSP_BOOT_MODE_SR_RESUME;
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_STANDBY) &&
+                pGpu->getProperty(pGpu, PDB_PROP_GPU_PREINITIALIZED_WPR_REGION) &&
+                !pGpu->getProperty(pGpu, PDB_PROP_GPU_SC7_SUPPORTED))
+            {
+                bootMode = KGSP_BOOT_MODE_SR_WITH_WPR_IN_SYSMEM;
+            }
+            else
+            {
+                bootMode = KGSP_BOOT_MODE_SR_RESUME;
+            }
 
             status = kpmuInitLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
             if (status != NV_OK)
@@ -225,6 +245,9 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 NV_PRINTF(LEVEL_ERROR, "cannot init libOS PMU logging structures: 0x%x\n", status);
                 _gpuInitLibosLoggingStructuresFailureStore(
                     pGpu, status);
+
+                OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x98);
+
                 goto done;
             }
 
@@ -244,6 +267,9 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             NV_PRINTF(LEVEL_ERROR, "GSP boot preparation failed at resume (bootMode 0x%x): 0x%x\n", bootMode, status);
             _gpuGspPrepareForBootstrapFailureStore(
                 pGpu, status);
+
+            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x97);
+
             goto done;
         }
 
@@ -253,6 +279,9 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             NV_PRINTF(LEVEL_ERROR, "GSP boot failed at resume (bootMode 0x%x): 0x%x\n", bootMode, status);
             _gpuGspBootstrapFailureStore(
                 pGpu, status);
+
+            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x96);
+
             goto done;
         }
     }
@@ -267,24 +296,40 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 NV_PRINTF(LEVEL_ERROR, "GSP-RM proxy boot command failed during resume.\n");
                 _gpuBootGspRmProxyFailureStore(
                     pGpu, status);
+                OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x95);
                 goto done;
             }
         }
 
     }
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_END_SB;
 
     // This is a no-op in CPU-RM
     NV_ASSERT_OK_OR_GOTO(status, gpuPowerManagementResumePreLoadPhysical(pGpu, oldLevel, flags), done);
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_VGA_ENABLED, NV_FALSE);
 
-    NV_ASSERT_OK_OR_GOTO(status, gpuStateLoad(pGpu,
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_BEFORE_STATE_LOAD;
+    status = gpuStateLoad(pGpu,
         IS_GPU_GC6_STATE_EXITING(pGpu) ?
         GPU_STATE_FLAGS_PRESERVING | GPU_STATE_FLAGS_PM_TRANSITION | GPU_STATE_FLAGS_GC6_TRANSITION :
-        GPU_STATE_FLAGS_PRESERVING | GPU_STATE_FLAGS_PM_TRANSITION), done);
+        GPU_STATE_FLAGS_PRESERVING | GPU_STATE_FLAGS_PM_TRANSITION);
+
+    if (status != NV_OK)
+    {
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x93);
+        goto done;
+    }
+
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_END_STATE_LOAD;
 
     // This is a no-op in CPU-RM
-    NV_ASSERT_OK_OR_GOTO(status, gpuPowerManagementResumePostLoadPhysical(pGpu), done);
+    status = gpuPowerManagementResumePostLoadPhysical(pGpu);
+    if (status != NV_OK)
+    {
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x92);
+        goto done;
+    }
 
     NV_PRINTF(LEVEL_NOTICE, "Adapter now in D0 state\n");
 

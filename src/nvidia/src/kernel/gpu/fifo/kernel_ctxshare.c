@@ -54,15 +54,14 @@ kctxshareapiConstruct_IMPL
     KernelChannelGroup                 *pKernelChannelGroup;
     Device                             *pDevice      = NULL;
     RsResourceRef                      *pChanGrpRef;
-    RsClient                           *pClient;
+    RsClient                           *pClient      = pCallContext->pClient;
     NvHandle                            hDevice;
-    NvHandle                            hClient      = pParams->hClient;
     NvHandle                            hVASpace     = 0;
     NV_CTXSHARE_ALLOCATION_PARAMETERS  *pUserParams  = pParams->pAllocParams;
     RsShared                           *pShared      = NULL;
 
     // To make context share a child of a TSG, a TSG must exist.
-    if (CliGetChannelGroup(pParams->hClient, pParams->hParent,
+    if (CliGetChannelGroup(pClient, pParams->hParent,
             &pChanGrpRef, &hDevice) == NV_OK)
     {
         pKernelChannelGroupApi = dynamicCast(pChanGrpRef->pResource,
@@ -81,13 +80,6 @@ kctxshareapiConstruct_IMPL
     {
         rmStatus = kctxshareapiCopyConstruct_IMPL(pKernelCtxShareApi, pCallContext, pParams);
         return rmStatus;
-    }
-
-    rmStatus = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid client handle!\n");
-        return NV_ERR_INVALID_ARGUMENT;
     }
 
     //
@@ -151,7 +143,7 @@ kctxshareapiConstruct_IMPL
     if (hVASpace != NV01_NULL_OBJECT)
     {
         RsResourceRef *pVASpaceRef;
-        rmStatus = clientGetResourceRef(pCallContext->pClient, hVASpace, &pVASpaceRef);
+        rmStatus = clientGetResourceRef(pClient, hVASpace, &pVASpaceRef);
         if (rmStatus != NV_OK)
             goto failed;
 
@@ -161,7 +153,7 @@ kctxshareapiConstruct_IMPL
     if (pKernelChannelGroupApi->hKernelGraphicsContext != NV01_NULL_OBJECT)
     {
         RsResourceRef *pKernelGraphicsContextRef;
-        rmStatus = clientGetResourceRef(pCallContext->pClient, pKernelChannelGroupApi->hKernelGraphicsContext, &pKernelGraphicsContextRef);
+        rmStatus = clientGetResourceRef(pClient, pKernelChannelGroupApi->hKernelGraphicsContext, &pKernelGraphicsContextRef);
         if (rmStatus != NV_OK)
             goto failed;
 

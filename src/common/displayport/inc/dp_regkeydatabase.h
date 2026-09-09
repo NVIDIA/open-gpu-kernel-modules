@@ -97,16 +97,21 @@
 
 #define NV_DP_REGKEY_DISABLE_AVOID_HBR3_WAR         "DP_DISABLE_AVOID_HBR3_WAR"
 
-// Bug 5880515 : Avoid writing to DPCD 600h if panel target and current state is same
-#define NV_DP_REGKEY_SKIP_PANEL_POWER_WRITE         "DP_SKIP_PANEL_POWER_WRITE"
-
 #define NV_DP_REGKEY_DISABLE_POLLING_FOR_DP_MST_DETECTION    "DP_DISABLE_POLLING_FOR_DP_MST_DETECTION"
+
+// Bug 4949066 : Disable pclk WAR applied for LG monitors
+#define NV_DP_REGKEY_DISABLE_4949066_PCLK_WAR       "DP_DISABLE_4949066_PCLK_WAR"
 
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
 #define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
 
 // Bug 5088957 : Force head shutdown in DpLib
-#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN            "DP_WAR_5088957"
+#define NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN               "DP_WAR_5088957"
+
+// When set, force DP2.x to use the legacy head-shutdown policy: skip head shutdown when
+// the candidate link's total data rate is >= the active rate. When unset (default), DP2.x
+// skips head shutdown only when the candidate link configuration is identical to the active one.
+#define NV_DP_REGKEY_LEGACY_HEAD_SHUTDOWN_POLICY       "DP_LEGACY_HEAD_SHUTDOWN_POLICY"
 
 // Use max DSC compression for MST topologies
 #define NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST   "DP_USE_MAX_DSC_COMPRESSION_MST"
@@ -123,12 +128,27 @@
 
 #define NV_DP_REGKEY_DISABLE_NATIVE_DISPLAYID2X_SUPPORT    "DISABLE_NATIVE_DISPLAYID2X_SUPPORT"
 
-#define NV_DP_REGKEY_ENABLE_CLEAR_MSA_WHEN_NOT_USED          "DP_ENABLE_CLEAR_MSA_WHEN_NOT_USED"
+// Disable NO_VCPF WAR for DP_MST Tunneling
+#define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR     "DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR"
 
-#define NV_DP_REGKEY_FORCE_NLPIGNORE_DDS                     "DP_FORCE_NLPIGNORE_DDS"
 
-// Sets connector as HDMI for Dongle on DP++ port
-#define NV_DP_REGKEY_SET_CONNECTOR_HDMI_FOR_DONGLE           "DP_SET_CONNECTOR_HDMI_FOR_DONGLE"
+// Disable FEC for DP_MST Tunneling
+#define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC             "DISABLE_DP_MST_TUNNELING_FEC"
+
+//
+// Disable chunked LTTPR caps read on internal DP tunneling links.
+// This regkey is also used in RM. Both must be kept in sync.
+//
+#define NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR   "DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR"
+
+#define NV_DP_REGKEY_ENABLE_SST_EDID_RECOVERY_FIX             "DP_ENABLE_SST_EDID_RECOVERY_FIX"
+
+// Disable FEC on eDP via regkey by overriding FEC caps
+#define NV_DP_REGKEY_DISABLE_FEC_ON_EDP    "DISABLE_FEC_ON_EDP"
+
+// Enable per-device caching of panel FW checksum (DPCD 0x040A/0x040B) via regkey
+#define NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE  "DP_ENABLE_PANEL_FW_REVISION_CACHE"
+
 //
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
@@ -167,7 +187,6 @@ struct DP_REGKEY_DATABASE
     bool  bDisableEffBppSST8b10b;
     bool  bDisableWatermarkCaching;
     bool  bMSTPCONCapsReadDisabled;
-    bool  bSkipPanelPowerWrite;
     bool  bForceDisableTunnelBwAllocation;
     bool  bDownspreadDisabled;
     bool  bDisableAvoidHBR3War;
@@ -175,15 +194,20 @@ struct DP_REGKEY_DATABASE
     bool  bCableVconnSourceUnknownWar;
     bool  bSkipZeroOuiCache;
     bool  bForceHeadShutdown;
+    bool  bUseLegacyHeadShutdownPolicy;
     bool  bEnableDevId;
     bool  bEnableCqaStatsCollection;
     bool  bIgnoreCapsAndForceHighestLc;
     bool  bEnable128b132bDSCLnkCfgReduction;
     bool  bDisableNativeDisplayId2xSupport;
     bool  bUseMaxDSCCompressionMST;
-    bool  bEnableClearMSAWhenNotUsed;
-    bool  bIgnoreUnplugUnlessRequested;
-    bool  bSetConnectorHdmiForDongle;
+    bool  bDisable4949066PclkWar;
+    bool  bDisableDpMstTunnelingNoVcpfWar;
+    bool  bDisableDpMstTunnelingFec;
+    bool  bEnableSstEdidRecoveryFix;
+    bool  bDisableDpTunLttprCapsChunkRead;
+    bool  bDisableFecOnEdp;
+    bool  bEnablePanelFwRevisionCache;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

@@ -38,10 +38,37 @@ NV_BUILD_TYPE ?= release
 # just the object files.
 #
 ASSIGN_PER_OBJ_CFLAGS = \
- $(foreach _cflags_variable, \
- $(notdir $(1)) $(1), \
- $(eval $(addprefix CFLAGS_,$(_cflags_variable)) += $(2)))
+ $(foreach _obj, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix CFLAGS_,$(_obj)) += $(2)))
 
+#
+# Utility macro ASSIGN_PER_OBJ_CFLAGS_REMOVE: to control CFLAGS on a
+# per-object basis, Kbuild honors the 'CFLAGS_REMOVE_$(object)' variable.
+# E.g., "CFLAGS_REMOVE_nv.o" will remove those CFLAGS from the nv.o compilation
+# unit. It has the same workaround for the change in Kbuild handling of
+# object-specific CFLAGS as described in ASSIGN_PER_OBJ_CFLAGS.
+#
+ASSIGN_PER_OBJ_CFLAGS_REMOVE = \
+ $(foreach _obj, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix CFLAGS_REMOVE_,$(_obj)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object LDFLAGS.
+#
+ASSIGN_PER_OBJ_LDFLAGS = \
+ $(foreach _obj, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix LDFLAGS_,$(_obj)) += $(2)))
+
+#
+# As ASSIGN_PER_OBJ_CFLAGS, just for per-object OBJCOPYFLAGS.
+#
+ASSIGN_PER_OBJ_OBJCOPYFLAGS = \
+ $(foreach _obj, \
+ $(sort $(notdir $(1)) $(1)), \
+ $(eval $(addprefix OBJCOPYFLAGS_,$(_obj)) += $(2)))
 
 #
 # Include the specifics of the individual NVIDIA kernel modules.
@@ -79,7 +106,7 @@ ccflags-y += -I$(src)/common/inc
 ccflags-y += -I$(src)
 ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-ccflags-y += -DNV_VERSION_STRING=\"610.57.04\"
+ccflags-y += -DNV_VERSION_STRING=\"615.71.09\"
 
 # Include and link Tegra out-of-tree modules.
 ifneq ($(wildcard /usr/src/nvidia/nvidia-public),)

@@ -908,26 +908,30 @@ memoryfabricimportv2IsGpuMapAllowed_IMPL
     Memory *pMemory = staticCast(pMemoryFabricImportV2, Memory);
     FABRIC_IMPORT_MEMDESC_DATA *pMemdescData;
     NvU32 cliqueId;
+    NvU8 cliqueType;
+    NvU64 clique;
     NV_STATUS status;
 
     if (!gpuFabricProbeIsSupported(pGpu))
         return NV_TRUE;
 
-    pMemdescData =
-        (FABRIC_IMPORT_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+    pMemdescData = (FABRIC_IMPORT_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+    cliqueType = GPU_FABRIC_CLIQUE_TYPE(pMemdescData->clique);
 
-    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                             &cliqueId);
+    status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                   cliqueType, &cliqueId);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "unable to query cliqueId 0x%x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "unable to query clique ID of mapper 0x%x\n", status);
         return NV_FALSE;
     }
 
-    if (pMemdescData->cliqueId != cliqueId)
+    clique = GPU_FABRIC_MAKE_CLIQUE(cliqueType, cliqueId);
+
+    if (pMemdescData->clique != clique)
     {
-        NV_PRINTF(LEVEL_ERROR, "cliqueId does not match: owner %u, mapper %u\n",
-                  pMemdescData->cliqueId, cliqueId);
+        NV_PRINTF(LEVEL_ERROR, "clique does not match: owner %llu, mapper %llu\n",
+                  pMemdescData->clique, clique);
         return NV_FALSE;
     }
 

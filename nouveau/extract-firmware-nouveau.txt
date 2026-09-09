@@ -18,7 +18,7 @@ End-users cannot simply upgrade the firmware version and expect Nouveau to
 still function.
 
 This script is used to generate new firmware images so that Nouveau
-developers can add support to Nouveau itself for new GSP-RM versions.  For
+developers can add support in Nouveau for new GSP-RM versions.  For
 end-users, Nouveau is already packaged with the firmware version(s) that it
 supports.
 
@@ -30,7 +30,7 @@ different locations.  Both sources must support the new firmware versions.
   1) The GSP-RM firmware binaries themselves, which are extracted from the
      proprietary driver's ".run" installer file.  Typically there are two
      images, one for TU10x/GA100 GPUs, and another for all other GPUs.  The
-     images are several tens of megabytes in size.
+     images are tens of megabytes in size.
 
   2) Several auxiliary firmware images and metadata, which are extracted
      from the source files of this git repository.  There are multiple
@@ -62,8 +62,8 @@ to place them where they belong.
 The script can handle image extraction from both the git repository and the
 .run file.  The script has two modes of usage:
 
-  1) Generating new images for any Nouveau developers to support that new
-     version in Nouveau.
+  1) Generating new images so that Nouveau developers can support a new
+     firmware version in Nouveau.
 
   2) Generating new images for submission to the linux-firmware git
      repository.
@@ -75,10 +75,10 @@ for GSP-RM versions that are not (yet) available in linux-firmware.
 
 ## Preparation
 
-The first step is use "git checkout" in the OpenRM git repository to switch
+The first step is to use "git checkout" in the OpenRM git repository to switch
 to the desired version tag, e.g.
 
-    git checkout 570.133.07
+    git checkout 570.144
 
 Unfortunately, this has the side-effect of also checking out an outdated
 version of the script.  To ensure that the latest version is used:
@@ -91,25 +91,32 @@ the script does not overwrite its contents.
 
 ## Usage
 
-Executing `nouveau/extract-firmware-nouveau.py -h` will show:
+Executing `nouveau/extract-firmware-nouveau.py -h` will show something like:
 
     usage: extract-firmware-nouveau.py [-h] [-i INPUT] [-o OUTPUT] [-r REVISION] [--debug-fused] [-d [DRIVER]] [-s] [-w]
+                                       [--elf32 | --elf64]
 
-    Extract firmware binaries from the OpenRM git repository in a format expected by the Nouveau device driver.
+    Extract firmware binaries from the OpenRM git repository in a format expected by the Nouveau/Nova device drivers.
 
     options:
-    -h, --help            show this help message and exit
-    -i INPUT, --input INPUT
+      -h, --help            show this help message and exit
+      -i INPUT, --input INPUT
                             Path to source directory (where version.mk exists)
-    -o OUTPUT, --output OUTPUT
+      -o OUTPUT, --output OUTPUT
                             Path to target directory (where files will be written)
-    -r REVISION, --revision REVISION
+      -r REVISION, --revision REVISION
                             Files will be named with this version number
-    --debug-fused         Extract debug instead of production images
-    -d [DRIVER], --driver [DRIVER]
-                            Path or URL to NVIDIA-Linux-x86_64-<version>.run driver package, for also extracting the GSP-RM firmware
-    -s, --symlink         Also create symlinks for all supported GPUs
-    -w, --whence          Also generate a WHENCE file
+      --debug-fused         Extract debug instead of production images
+      -d [DRIVER], --driver [DRIVER]
+                            Also extract GSP-RM firmware from a source. A URL or path to a .run driver package downloads
+                            or extracts it. A path to a local build output directory (e.g.
+                            drivers/resman/build/gsp/_out/Linux_amd64_release) copies the GSP firmware directly. If -d is
+                            given with no argument, the .run file is downloaded automatically.
+      -s, --symlink         Also create symlinks for all supported GPUs
+      -w, --whence          Also generate a WHENCE file
+      --elf32               Generate Nouveau-compatible 32-bit ELF images for FMC
+      --elf64               Generate Nova-compatible 64-bit ELF images for FMC (default)
+
 
 To quickly extract and install the images, use this command:
 
@@ -119,9 +126,9 @@ To quickly extract and install the images, use this command:
  in /lib/firmware.  This is needed because Nouveau expects different
  directories for each specific GPU variant.
 
- The -d option by itself instructs the script to search for and download the
- matching .run file from Nvidia's website.  It will then extract the images
- from that archive and then clean up all the temporary files.
+The -d option by itself instructs the script to search for and download the
+matching .run file from Nvidia's website.  It will then extract the images
+from that archive and clean up the temporary files.
 
  The -r option is used to make one version of the firmware look like another.
  Nouveau uses file names to determine the version of any specific firmware
@@ -129,10 +136,14 @@ To quickly extract and install the images, use this command:
  version that it doesn't currently support, without having to edit the
  Nouveau source code.
 
- The --debug-fused option is used to extract the "debug fused" variants of
- the firmware images.  This option is only useful for Nvidia employees.
- Although OpenRM does include these images, they only can be used on special
- hardware that is not available to non-employees.
+The --debug-fused option is used to extract the "debug fused" variants of
+the firmware images.  This option is only useful for Nvidia employees.
+Although OpenRM does include these images, they can only be used on special
+hardware that Nvidia does not make available outside the company.
 
- The -w option is used to help update the WHENCE file for the linux-firmware
- git repository.  This is only useful for Mode #2.
+The -w option is used to help update the WHENCE file for the linux-firmware
+git repository.  This is only useful for Mode #2.
+
+The --elf32 and --elf64 options control whether FMC firmware is emitted as
+32-bit ELF (Nouveau) or 64-bit ELF (Nova).  They are mutually exclusive; the
+default is --elf64.

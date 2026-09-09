@@ -124,6 +124,12 @@ namespace DisplayPort
         unsigned QSESetECFRetries;                  // Retry counter for MST QSE and set ECF.
         virtual void hdcpMSTQSEandSetECF();
 
+        // Bug 5764757: returns false if QSES is moot for this group's
+        // stream - either the group targets a Logical Port (0x8..0xF)
+        // or the link uses 128b/132b channel coding (UHBR/HDCP 2.x).
+        // Gated by all QSES dispatch sites. See dp_groupimpl.cpp.
+        bool isQSESApplicable();
+
         unsigned authRetries;                       // Retry counter for the authentication.
 
         virtual void expired(const void * tag);

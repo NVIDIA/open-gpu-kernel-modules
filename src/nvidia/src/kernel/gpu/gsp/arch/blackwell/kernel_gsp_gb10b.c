@@ -66,8 +66,8 @@ kgspPopulateWprMeta_GB10B
     GSP_FIRMWARE   *pGspFw
 )
 {
-    GspFwWprMeta *pWprMeta = pKernelGsp->pWprMeta;
-    
+    GspFwWprMeta *pWprMeta = pKernelGsp->pWprMetaHopper;
+
     // Layout is close to GH100, so use that HAL first then override as necessary
     NV_ASSERT_OK_OR_RETURN(kgspPopulateWprMeta_GH100(pGpu, pKernelGsp, pGspFw));
 
@@ -76,7 +76,7 @@ kgspPopulateWprMeta_GB10B
     // The actual offsets get filled in by ACR ucode when it sets up WPR2.
     //
     pWprMeta->vgaWorkspaceSize = 0; // No VGA Workspace on iGPU
-    
+
     pWprMeta->pmuReservedSize = 0; // No PMU Reserved memory in GB10B
 
     //
@@ -86,5 +86,21 @@ kgspPopulateWprMeta_GB10B
     pWprMeta->nonWprHeapSize = 0;
 
     return NV_OK;
+}
+
+/*!
+ * Reuses the GH100 path then zeroes the iGPU-specific fields.
+ */
+void
+kgspPopulateSrRegionsInfo_GB10B
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    kgspPopulateSrRegionsInfo_GH100(pGpu, pKernelGsp);
+
+    pKernelGsp->srRegionsInfo.vgaWorkspaceSize = 0;
+    pKernelGsp->srRegionsInfo.nonWprHeapSize   = 0;
 }
 

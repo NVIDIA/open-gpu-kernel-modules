@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,7 +32,7 @@
 #include "gsp/gspifpub.h"
 #include "platform/p2p/p2p_caps.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "rmapi/rs_utils.h"
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
@@ -371,11 +371,6 @@ p2papiConstruct_IMPL
 
     API_GPU_FULL_POWER_SANITY_CHECK(pLocalGpu, NV_TRUE, NV_FALSE);
     API_GPU_FULL_POWER_SANITY_CHECK(pRemoteGpu, NV_TRUE, NV_FALSE);
-
-    if (gpuIsApmFeatureEnabled(pLocalGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     // SPA peer only supported when we support ATS
     if (bSpaAccessOnly && (!pLocalGpu->getProperty(pLocalGpu, PDB_PROP_GPU_ATS_SUPPORTED)))

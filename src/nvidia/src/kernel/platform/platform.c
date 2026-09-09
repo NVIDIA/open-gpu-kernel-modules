@@ -25,7 +25,7 @@
 *         Platform object function definitions.                             *
 \***************************************************************************/
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nvacpitypes.h"
 
 #include "core/system.h"

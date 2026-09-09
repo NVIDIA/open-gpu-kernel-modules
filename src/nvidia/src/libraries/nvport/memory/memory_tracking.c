@@ -180,7 +180,11 @@ static struct PORT_MEM_GLOBALS
     NvBool bLimitEnabled;
     PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking[PORT_MEM_LIMIT_MAX_GFID];
 #endif
+    PORT_MEM_OOM_REPORT_CB pOomReportCb;
+    PORT_ATOMIC NvU32 oomCount;
 } portMemGlobals;
+
+#define PORT_MEM_OOM_REPORT_INTERVAL 10U
 
 //
 // Memory counter implementation
@@ -1223,7 +1227,10 @@ _portMemAllocatorAlloc
 
     // Check if per-process memory limit will be exhausted by this allocation
     if (PORT_MEM_LIMIT_EXCEEDED(gfid, length))
+    {
+        portMemReportOom(length);
         return NULL;
+    }
 
     if (length > 0)
     {
@@ -1243,6 +1250,10 @@ _portMemAllocatorAlloc
             return NULL;
         }
         pMem = pAlloc->_portAlloc(pAlloc, paddedLength);
+    }
+    if (pMem == NULL && length > 0)
+    {
+        portMemReportOom(length);
     }
     if (pMem != NULL)
     {
@@ -1456,6 +1467,94 @@ portMemPrintAllTrackingInfo(NvBool bReportLeaks)
         portMemPrintTrackingInfo(pTracking, bReportLeaks);
     } while ((pTracking = pTracking->pNext) != &portMemGlobals.mainTracking);
     PORT_MEM_LOCK_RELEASE(portMemGlobals.trackingLock);
+}
+
+void
+portMemRegisterOomReportCb(PORT_MEM_OOM_REPORT_CB pReportCb)
+{
+    portMemGlobals.pOomReportCb = pReportCb;
+}
+
+void
+portMemReportOom(NvLength requestedSize)
+{
+    NvU32 oomCount;
+
+    if (portMemGlobals.pOomReportCb == NULL)
+        return;
+
+    oomCount = PORT_MEM_ATOMIC_INC_U32(&portMemGlobals.oomCount);
+
+    if (oomCount != 1U && (oomCount % PORT_MEM_OOM_REPORT_INTERVAL) != 0U)
+        return;
+
+    portDbgPrintf("[NvPort] ===== OOM REPORT #%u (requested %"NvUPtr_fmtu" bytes) =====\n",
+                  oomCount, requestedSize);
+
+    portDbgPrintf("  --- GSP-RM Malloc Heap ---\n");
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetHeapSize)
+    {
+        PORT_MEM_COUNTER *pCounter = &portMemGlobals.mainTracking.counter;
+        NvLength heapSize = portMemExTrackingGetHeapSize();
+        NvLength allocatedSize = pCounter->activeSize +
+            ((NvLength)pCounter->activeAllocs * PORT_MEM_STAGING_SIZE);
+        NvLength freeSize = (heapSize > allocatedSize)
+                            ? (heapSize - allocatedSize) : 0U;
+
+        portDbgPrintf("  FREE:   %"NvUPtr_fmtu" bytes of %"NvUPtr_fmtu" bytes heap\n",
+                    freeSize, heapSize);
+
+#if PORT_IS_FUNC_SUPPORTED(portMemGetLargestFreeChunkSize)
+        {
+            NvLength largestFreeChunk = portMemGetLargestFreeChunkSize();
+            NvLength fragPct = 0U;
+
+            // Clamp the ratio to 100 to avoid an unsigned underflow in the subtraction below.
+            if (freeSize > 0U && largestFreeChunk <= freeSize)
+            {
+                fragPct = 100U - ((100U * largestFreeChunk) / freeSize);
+            }
+
+            portDbgPrintf("  FRAG:   %"NvUPtr_fmtu"%% fragmentation,"
+                        " largest free chunk %"NvUPtr_fmtu" bytes\n",
+                        fragPct, largestFreeChunk);
+        }
+#endif
+    }
+#endif
+
+    portMemPrintAllTrackingInfo(NV_FALSE);
+
+#if PORT_MEM_TRACK_USE_LIMIT
+    {
+        NvU32 gfidIdx;
+
+        for (gfidIdx = 0U; gfidIdx < PORT_MEM_LIMIT_MAX_GFID; ++gfidIdx)
+        {
+            PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking =
+                portMemGlobals.pGfidTracking[gfidIdx];
+
+            if (pGfidTracking == NULL)
+                continue;
+
+            portDbgPrintf("  GFID %u: %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes RM",
+                          gfidIdx + 1U,
+                          pGfidTracking->counterGfid,
+                          pGfidTracking->limitGfid);
+            portDbgPrintf(", %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes LibOS",
+                          pGfidTracking->counterLibosGfid,
+                          pGfidTracking->limitLibosGfid);
+            portDbgPrintf("\n");
+        }
+    }
+#endif
+
+    if (portMemGlobals.pOomReportCb != NULL)
+    {
+        portMemGlobals.pOomReportCb();
+    }
+
+    portDbgPrintf("[NvPort] ===== END OOM REPORT =====\n");
 }
 
 #if portMemExTrackingGetActiveStats_SUPPORTED

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,15 +40,15 @@ CONS_SEGMENT(PAGE_CONS)
 
 #define CRC32_POLYNOMIAL 0xEDB88320
 
-void main() 
-{   
+void main()
+{
     unsigned int crc = 0, i = 0, j = 0;
     unsigned int CRCTable[256];
-    
-    for (i = 0; i < 256 ; i++) 
+
+    for (i = 0; i < 256 ; i++)
     {
         crc = i;
-        for (j = 8; j > 0; j--) 
+        for (j = 8; j > 0; j--)
         {
             if (crc & 1)
                 crc = (crc >> 1) ^ CRC32_POLYNOMIAL;
@@ -111,8 +111,8 @@ NvU32 axb_div_c(NvU32 a, NvU32 b, NvU32 c)
 {
     NvU32 AhxBl, AlxBh;
     NvU32 AxB_high, AxB_low;
-    NvU32 AxB_div_C_low;
-
+    NvU64 sum;
+    // If c is 0, return 0xFFFFFFFF (NaN)
     if (c==0)
         return 0xFFFFFFFF;
 
@@ -125,7 +125,7 @@ NvU32 axb_div_c(NvU32 a, NvU32 b, NvU32 c)
 
     AxB_high += AlxBh >> 16;
     AxB_high += AhxBl >> 16;
-    
+
     if ((AxB_low + (AlxBh<<16))< AxB_low)
         AxB_high ++;
     AxB_low  += AlxBh << 16;
@@ -134,12 +134,16 @@ NvU32 axb_div_c(NvU32 a, NvU32 b, NvU32 c)
         AxB_high ++;
     AxB_low  += AhxBl << 16;
 
-    AxB_div_C_low = AxB_low/c;
-    AxB_div_C_low += 0xFFFFFFFF / c * (AxB_high % c);
-    AxB_div_C_low += ((0xFFFFFFFF % c + 1) * (AxB_high % c) + (AxB_low % c) + c/2) / c;
-
-
-    return AxB_div_C_low;
+    // Use 64-bit accumulator to avoid overflow; result clamped to 32-bit range
+    sum  = (NvU64)(AxB_low / c);
+    sum += (NvU64)(0xFFFFFFFF / c) * (AxB_high % c);
+    sum += (NvU64)(((NvU64)(0xFFFFFFFFUL % c + 1UL) * (NvU64)(AxB_high % c) +
+                    (NvU64)(AxB_low % c) + (NvU64)(c / 2)) / c);
+    if (sum > 0xFFFFFFFF)
+    {
+        sum = 0xFFFFFFFF;
+    }
+    return (NvU32)sum;
 }
 
 CODE_SEGMENT(NONPAGE_DD_CODE)
@@ -147,7 +151,63 @@ NvU64 axb_div_c_64(NvU64 a, NvU64 b, NvU64 c)
 {
     // NvU64 arithmetic to keep precision and avoid floats
     // a*b/c = (a/c)*b + ((a%c)*b + c/2)/c
+    // If c is 0, return 0xFFFFFFFFFFFFFFFF (NaN)
+    if (c == 0)
+        return 0xFFFFFFFFFFFFFFFF;
+
     return ((a/c)*b + ((a%c)*b + c/2)/c);
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU32 nvt_sqrt(NvU32 n)
+{
+    NvU32 x;
+    NvU32 x1;
+
+    if (n == 0) return 0;
+
+    x = n;
+    x1 = (NvU32)(((NvU64)x + 1) >> 1);
+    while (x1 < x)
+    {
+        x  = x1;
+        /* Use 64-bit to avoid overflow when x is 1 and n is 0xFFFFFFFF (1 + n/x overflows) */
+        x1 = (NvU32)(((NvU64)x + (NvU64)(n / x)) >> 1);
+    }
+    return x;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU32 nvt_fp16ToFP32(NvU16 half)
+{
+    NvU32 sign     = (half >> 15) & 0x1;
+    NvU32 exponent = (half >> 10) & 0x1F;
+    NvU32 mantissa = half & 0x3FF;
+
+    if (exponent == 0)
+    {
+        if (mantissa == 0)
+        {
+            return sign << 31;
+        }
+        exponent = 113;
+        while (!(mantissa & 0x400))
+        {
+            mantissa <<= 1;
+            exponent--;
+        }
+        mantissa &= 0x3FF;
+        mantissa <<= 13;
+        return (sign << 31) | (exponent << 23) | mantissa;
+    }
+    else if (exponent == 31)
+    {
+        return (sign << 31) | 0x7F800000 | (mantissa << 13);
+    }
+
+    exponent += 112;
+    mantissa <<= 13;
+    return (sign << 31) | (exponent << 23) | mantissa;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -176,9 +236,12 @@ NvBool isChecksumValid(NvU8 *pBuf)
 {
     NvU8 i;
     NvU8 checksum = 0;
-    
+
+    if (pBuf == NULL)
+        return NV_FALSE;
+
     for (i= 0; i < NVT_EDID_BLOCK_SIZE; i++)
-    {        
+    {
         checksum += pBuf[i];
     }
 
@@ -186,8 +249,8 @@ NvBool isChecksumValid(NvU8 *pBuf)
     {
         return NV_TRUE;
     }
-    
-    return NV_FALSE;    
+
+    return NV_FALSE;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -195,6 +258,9 @@ void patchChecksum(NvU8 *pBuf)
 {
     NvU8 i;
     NvU8 chksum = 0;
+
+    if (pBuf == NULL)
+        return;
 
     for (i = 0; i < NVT_EDID_BLOCK_SIZE; i++)
     {
@@ -216,7 +282,12 @@ NvU32 NvTiming_CalculateVBlankTimeInUs(const NVT_TIMING *pT)
 {
     NvU32 activeLines, blankLines;
     NvU32 blankPixels;
-    NvU32 pclk1khz = pT->pclk1khz;
+    NvU32 pclk1khz;
+
+    if (pT == NULL)
+        return 0;
+
+    pclk1khz = pT->pclk1khz;
 
     if (pclk1khz == 0)
     {
@@ -229,11 +300,11 @@ NvU32 NvTiming_CalculateVBlankTimeInUs(const NVT_TIMING *pT)
 
     // Calculate HBlank pixels on the last active line
     blankPixels = pT->HTotal - pT->HVisible;
-    
+
     // Calculate active and blank lines (handle interlaced mode)
     activeLines = pT->interlaced ? pT->VVisible * 2 : pT->VVisible;
     blankLines  = (pT->interlaced == 0) ? (pT->VTotal - activeLines): (pT->VTotal * 2 + 1 - activeLines);
-    
+
     // Include HBlank time on the last active line together with all VBlank lines
     blankPixels = blankPixels + (blankLines * pT->HTotal);
     return (NvU32)((NvU64)blankPixels * 1000 / pclk1khz);
@@ -242,7 +313,7 @@ NvU32 NvTiming_CalculateVBlankTimeInUs(const NVT_TIMING *pT)
 CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS NvTiming_ComposeCustTimingString(NVT_TIMING *pT)
 {
-    if (pT == NULL) 
+    if (pT == NULL)
         return NVT_STATUS_ERR;
 
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CUST:%dx%dx%d.%03dHz%s",pT->HVisible, (pT->interlaced ? 2 : 1)*pT->VVisible , pT->etc.rrx1k/1000, pT->etc.rrx1k%1000, (pT->interlaced ? "/i" : ""));
@@ -300,7 +371,7 @@ NvU32 NvTiming_CalcRRx1k(NvU32 pclk1khz, NvU16 interlaced, NvU16 HTotal, NvU16 V
             rrx1k = (NvU32)axb_div_c_64((NvU64)pclk1khz, (NvU64)1000000, (NvU64)totalPixels);
         }
     }
- 
+
     return rrx1k;
 }
 
@@ -348,7 +419,7 @@ NvU32 NvTiming_IsTimingRelaxedEqual(const NVT_TIMING *pT1, const NVT_TIMING *pT2
     if ((pT1 == NULL) || (pT2 == NULL))
     {
         return 0;
-    } 
+    }
 
     return ((  pT1->HVisible     ==   pT2->HVisible) &&
             (  pT1->HBorder      ==   pT2->HBorder) &&
@@ -468,7 +539,7 @@ NvU32 NvTiming_GetVrrFmin(
             }
         }
 
-        // Display ID 2.0 Standalone
+        // Native Display ID 2.0
         if (pDisplayIdInfo)
         {
             // Go through all the Adaptive Sync Data Blocks and pick the right frequency based on nominalRR

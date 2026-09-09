@@ -175,6 +175,7 @@
 
 #if defined(__riscv) && (__riscv_xlen==64)
 #    define NVCPU_RISCV64
+#    define NVCPU_FAMILY_RISCV
 #    if defined(__nvriscv)
 #       define NVCPU_NVRISCV64
 #    endif
@@ -385,6 +386,11 @@
 #define NVCPU_IS_FAMILY_ARM 1
 #else
 #define NVCPU_IS_FAMILY_ARM 0
+#endif
+#if defined(NVCPU_FAMILY_RISCV)
+#define NVCPU_IS_FAMILY_RISCV 1
+#else
+#define NVCPU_IS_FAMILY_RISCV 0
 #endif
 #if defined(NVCPU_SH4)
 #define NVCPU_IS_SH4 1

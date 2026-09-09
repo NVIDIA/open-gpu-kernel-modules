@@ -635,9 +635,22 @@ typedef struct NV0073_CTRL_SYSTEM_GET_HEAD_ROUTING_MAP_PARAMS {
  *         that established by an NV client.  If this flag is not specified,
  *         then any active display is returned (setup at system boot by
  *         low-level software or later by an NV client).
+ *       NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_GOP_STALE_HEAD_NEEDS_CLEANUP
+ *         This output flag indicates RM found stale GOP state where the head
+ *         is still attached to a SOR, but that SOR is not routed to any
+ *         padlink. DD should tear down the head by head index even when
+ *         displayId is zero. When set, staleSorIndex carries the index of
+ *         the SOR that GOP attached to this head so DD can populate its OR
+ *         tracking before issuing cleanupMode.
  *   displayId
  *     This parameter returns the displayId of the active display.  A value
  *     of zero indicates no display is active.
+ *   staleSorIndex
+ *     Output. Valid only when GOP_STALE_HEAD_NEEDS_CLEANUP is YES. Contains
+ *     the SOR index (0-based) that is still attached to this head per HW
+ *     state, even though the SOR has no padlink route. DD must use this to
+ *     restore m_OrType/m_OrNumber tracking before driving the connector-less
+ *     NULL modeset that triggers RM SV1/SV2/SV3.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -653,12 +666,16 @@ typedef struct NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS {
     NvU32 head;
     NvU32 flags;
     NvU32 displayId;
+    NvU32 staleSorIndex;
 } NV0073_CTRL_SYSTEM_GET_ACTIVE_PARAMS;
 
 /* valid get active flags */
 #define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_CLIENT                 0:0
-#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_CLIENT_DISABLE (0x00000000U)
-#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_CLIENT_ENABLE  (0x00000001U)
+#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_CLIENT_DISABLE                   (0x00000000U)
+#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_CLIENT_ENABLE                    (0x00000001U)
+#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_GOP_STALE_HEAD_NEEDS_CLEANUP                 1:1
+#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_GOP_STALE_HEAD_NEEDS_CLEANUP_NO  (0x00000000U)
+#define NV0073_CTRL_SYSTEM_GET_ACTIVE_FLAGS_GOP_STALE_HEAD_NEEDS_CLEANUP_YES (0x00000001U)
 
 
 

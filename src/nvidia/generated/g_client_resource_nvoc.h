@@ -778,16 +778,6 @@ static inline NV_STATUS cliresCtrlCmdGpuGetMemOpEnable(struct RmClientResource *
 #define cliresCtrlCmdGpuGetMemOpEnable(pRmCliRes, pMemOpEnableParams) cliresCtrlCmdGpuGetMemOpEnable_IMPL(pRmCliRes, pMemOpEnableParams)
 #endif // __nvoc_client_resource_h_disabled
 
-NV_STATUS cliresCtrlCmdGpuDisableNvlinkInit_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *pParams);
-#ifdef __nvoc_client_resource_h_disabled
-static inline NV_STATUS cliresCtrlCmdGpuDisableNvlinkInit(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("RmClientResource was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_client_resource_h_disabled
-#define cliresCtrlCmdGpuDisableNvlinkInit(pRmCliRes, pParams) cliresCtrlCmdGpuDisableNvlinkInit_IMPL(pRmCliRes, pParams)
-#endif // __nvoc_client_resource_h_disabled
-
 NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams);
 #ifdef __nvoc_client_resource_h_disabled
 static inline NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams) {
@@ -986,6 +976,16 @@ static inline NV_STATUS cliresCtrlCmdOsUnixMemacctGetLimits(struct RmClientResou
 }
 #else // __nvoc_client_resource_h_disabled
 #define cliresCtrlCmdOsUnixMemacctGetLimits(pRmCliRes, pParams) cliresCtrlCmdOsUnixMemacctGetLimits_IMPL(pRmCliRes, pParams)
+#endif // __nvoc_client_resource_h_disabled
+
+NV_STATUS cliresCtrlCmdOsUnixMemacctGetImpl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_MEMACCT_GET_IMPL_PARAMS *pParams);
+#ifdef __nvoc_client_resource_h_disabled
+static inline NV_STATUS cliresCtrlCmdOsUnixMemacctGetImpl(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_MEMACCT_GET_IMPL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("RmClientResource was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_client_resource_h_disabled
+#define cliresCtrlCmdOsUnixMemacctGetImpl(pRmCliRes, pParams) cliresCtrlCmdOsUnixMemacctGetImpl_IMPL(pRmCliRes, pParams)
 #endif // __nvoc_client_resource_h_disabled
 
 NV_STATUS cliresCtrlCmdOsUnixFlushUserCache_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_FLUSH_USER_CACHE_PARAMS *pAddressSpaceParams);
@@ -1530,8 +1530,6 @@ NV_STATUS cliresCtrlCmdGpuQueryGpuDrainState_IMPL(struct RmClientResource *pRmCl
 
 NV_STATUS cliresCtrlCmdGpuGetMemOpEnable_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS *pMemOpEnableParams);
 
-NV_STATUS cliresCtrlCmdGpuDisableNvlinkInit_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *pParams);
-
 NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdGpuGetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *pParams);
@@ -1571,6 +1569,8 @@ NV_STATUS cliresCtrlCmdOsUnixImportObjectsFromFd_IMPL(struct RmClientResource *p
 NV_STATUS cliresCtrlCmdOsUnixMemacctSetLimits_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_MEMACCT_SET_LIMITS_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdOsUnixMemacctGetLimits_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_MEMACCT_GET_LIMITS_PARAMS *pParams);
+
+NV_STATUS cliresCtrlCmdOsUnixMemacctGetImpl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_MEMACCT_GET_IMPL_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdOsUnixFlushUserCache_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_OS_UNIX_FLUSH_USER_CACHE_PARAMS *pAddressSpaceParams);
 

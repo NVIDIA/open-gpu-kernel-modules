@@ -391,9 +391,9 @@ typedef struct
 {
     NV_PHYSICAL_MEMORY_ATTRS physAttrs;
     NvU32 memFlags;
-    NvU32 cliqueId;
+    NvU64 clique;
     NvU64 bwModeEpoch;
-    NvU16  bwMode;
+    NvU16 bwMode;
 } FABRIC_IMPORT_MEMDESC_DATA;
 
 //

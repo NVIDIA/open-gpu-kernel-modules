@@ -393,6 +393,7 @@ nvdDumpComponent_IMPL
         case NVDUMP_COMPONENT_ENG_NVENC:
         case NVDUMP_COMPONENT_ENG_GSP:
         case NVDUMP_COMPONENT_ENG_KGSP:
+        case NVDUMP_COMPONENT_ENG_KERNEL_NVLINK:
         {
             status = nvdDoEngineDump(pGpu,
                                      pNvd,

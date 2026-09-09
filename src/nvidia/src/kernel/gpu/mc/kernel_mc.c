@@ -60,10 +60,10 @@ subdeviceCtrlCmdMcGetArchInfo_IMPL
     }
     else
     {
-        pArchInfoParams->architecture = pGpu->chipInfo.pmcBoot0.arch;
-        pArchInfoParams->implementation = pGpu->chipInfo.pmcBoot0.impl;
-        pArchInfoParams->revision = (pGpu->chipInfo.pmcBoot0.majorRev << 4) | pGpu->chipInfo.pmcBoot0.minorRev;
-        pArchInfoParams->subRevision = pGpu->chipInfo.subRevision;
+        pArchInfoParams->architecture = pGpu->chipInfo.pmcBoot42.arch;
+        pArchInfoParams->implementation = pGpu->chipInfo.pmcBoot42.impl;
+        pArchInfoParams->revision = (pGpu->chipInfo.pmcBoot42.majorRev << 4) | pGpu->chipInfo.pmcBoot42.minorRev;
+        pArchInfoParams->subRevision = gpuGetChipSubRev_HAL(pGpu);
     }
 
     return NV_OK;

@@ -301,7 +301,7 @@ static bool lkca_ecdsa_verify_akcipher(void *ec_context, size_t hash_nid,
 #else // USE_LKCA
     struct ecc_ctx *ctx = ec_context;
     u8 *pub_key;
-    int err;
+    int err = -EINVAL;
     DECLARE_CRYPTO_WAIT(wait);
 
     // Roundabout way

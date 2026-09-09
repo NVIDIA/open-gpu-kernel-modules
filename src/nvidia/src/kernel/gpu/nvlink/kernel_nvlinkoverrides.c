@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -311,7 +311,7 @@ knvlinkApplyRegkeyOverrides_IMPL
         ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
         bCCFeatureEnabled        = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
 
-        // Both the modes should not be enabled together
+        // The modes should not be enabled together
         if (nvleModeEnabled && nvleQualModeEnabled)
         {
             NV_PRINTF(LEVEL_ERROR, "NVLE mode and NVLE Qual mode cannot be enabled together using regkey\n");
@@ -348,19 +348,12 @@ knvlinkApplyRegkeyOverrides_IMPL
                         NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is enabled with CC via regkey\n");
                     }
                 }
-                else
-                {
-                    pKernelNvlink->bNvleModeRegkey = NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_ENABLE;
-                    pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
-                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
-                    NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is enabled via regkey\n");
-                }
             }
         }
         else if (nvleQualModeEnabled)
         {
             pKernelNvlink->bNvleQualModeRegkey = NV_REG_STR_RM_NVLINK_ENCRYPTION_QUAL_MODE_ENABLE;
-            pKernelNvlink->gspProxyRegkeys     = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+            pKernelNvlink->gspProxyRegkeys     = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION_QUAL_MODE, _ENABLE);
             pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
             NV_PRINTF(LEVEL_INFO, "Nvlink Encryption Qual mode is enabled via regkey\n");
         }
@@ -403,6 +396,7 @@ knvlinkApplyRegkeyOverrides_IMPL
                     NV_PRINTF(LEVEL_INFO, "Nvlink Encryption is disabled by default because CC is disabled\n");
                 }
             }
+
         }
     }
 
@@ -454,6 +448,7 @@ knvlinkApplyRegkeyOverrides_IMPL
     }
 
     pKernelNvlink->bRemapTableLockDisable = NV_FALSE;
+    pKernelNvlink->bDisableNonDisruptiveLinkMask = NV_REG_STR_RM_NVLINK_DISABLE_NON_DISRUPTIVE_LINK_MASK_DEFAULT;
 
     // ABM settings
     if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE, &regdata))
@@ -468,10 +463,21 @@ knvlinkApplyRegkeyOverrides_IMPL
             NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) enabled via regkey\n");
             pKernelNvlink->bAbmEnabled = NV_TRUE;
         }
+
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ADAPTIVE_BW_MODE, _TRAFFIC_QUIESCE, _ENABLE, regdata))
+        {
+            NV_PRINTF(LEVEL_INFO, "Traffic Quiesce enabled via regkey\n");
+            pKernelNvlink->bTrafficQuiesceEnable = NV_TRUE;
+        }
+        else
+        {
+            pKernelNvlink->bTrafficQuiesceEnable = NV_FALSE;
+        }
     }
     else
     {
         pKernelNvlink->bAbmEnabled = NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_DEFAULT;
+        pKernelNvlink->bTrafficQuiesceEnable = NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_TRAFFIC_QUIESCE_DEFAULT;
 
         if (pKernelNvlink->bAbmEnabled == NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_ENABLE_YES)
         {
@@ -481,13 +487,42 @@ knvlinkApplyRegkeyOverrides_IMPL
         {
             NV_PRINTF(LEVEL_INFO, "Adaptive Bandwidth Mode (ABM) disabled by default\n");
         }
+
+        if (pKernelNvlink->bTrafficQuiesceEnable == NV_REG_STR_RM_NVLINK_ADAPTIVE_BW_MODE_TRAFFIC_QUIESCE_ENABLE)
+        {
+            NV_PRINTF(LEVEL_INFO, "Traffic Quiesce enabled by default\n");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Traffic Quiesce disabled by default\n");
+        }
     }
 
-    // Async RBM settings
-    pKernelNvlink->bAsyncRbmEnabled = NV_REG_STR_RM_NVLINK_ASYNC_RBM_ENABLE_DEFAULT;
-    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_ASYNC_RBM, &regdata))
+    if (NV_OK == osReadRegistryDword(pGpu,
+                NV_REG_STR_RM_NVLINK_DISABLE_NON_DISRUPTIVE_LINK_MASK, &regdata) &&
+        regdata == NV_REG_STR_RM_NVLINK_DISABLE_NON_DISRUPTIVE_LINK_MASK_TRUE)
     {
-        pKernelNvlink->bAsyncRbmEnabled = FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ASYNC_RBM, _ENABLE, _YES, regdata);
+        pKernelNvlink->bDisableNonDisruptiveLinkMask = NV_TRUE;
+        NV_PRINTF(LEVEL_INFO,
+                  "Non-disruptive link mask update disabled via regkey\n");
+    }
+
+    NV_PRINTF(LEVEL_INFO,
+              "bDisableNonDisruptiveLinkMask=%u\n",
+              pKernelNvlink->bDisableNonDisruptiveLinkMask);
+
+    // Async RBM settings
+    if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ASYNC_RBM_SUPPORTED))
+    {
+        pKernelNvlink->bAsyncRbmEnabled = NV_REG_STR_RM_NVLINK_ASYNC_RBM_ENABLE_DEFAULT;
+        if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_ASYNC_RBM, &regdata))
+        {
+            pKernelNvlink->bAsyncRbmEnabled = FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ASYNC_RBM, _ENABLE, _YES, regdata);
+        }
+    }
+    else
+    {
+        pKernelNvlink->bAsyncRbmEnabled = NV_FALSE;
     }
     NV_PRINTF(LEVEL_INFO, "Async RBM is %s by default\n", pKernelNvlink->bAsyncRbmEnabled ? "enabled" : "disabled");
 

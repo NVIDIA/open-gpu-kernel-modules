@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_UserInfo =
 {
     .classInfo.size =               sizeof(UserInfo),
     .classInfo.classId =            classId(UserInfo),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "UserInfo",
@@ -277,6 +278,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmClient =
 {
     .classInfo.size =               sizeof(RmClient),
     .classInfo.classId =            classId(RmClient),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RmClient",

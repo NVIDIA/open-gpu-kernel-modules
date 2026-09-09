@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,25 +104,15 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     pParams->devToolsMode = NV_CONF_COMPUTE_SYSTEM_DEVTOOLS_MODE_DISABLED;
     pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_NONE;
 
-    if (pCcCaps->bApmFeatureCapable)
-    {
-        pParams->gpusCapability = NV_CONF_COMPUTE_SYSTEM_GPUS_CAPABILITY_APM;
-    }
-    else if (pCcCaps->bHccFeatureCapable)
+    if (pCcCaps->bHccFeatureCapable)
     {
         pParams->gpusCapability = NV_CONF_COMPUTE_SYSTEM_GPUS_CAPABILITY_HCC;
     }
 
-    if (pCcCaps->bCCFeatureEnabled)
+
+    if (pCcCaps->bCCFeatureEnabled && pCcCaps->bHccFeatureCapable)
     {
-        if (pCcCaps->bApmFeatureCapable)
-        {
-            pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_APM_ENABLED;
-        }
-        else if (pCcCaps->bHccFeatureCapable)
-        {
-            pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED;
-        }
+        pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED;
     }
 
     if (pParams->ccFeature != NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED)
@@ -198,6 +188,7 @@ confComputeApiCtrlCmdSystemSetGpusState_IMPL
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
         KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
         if (pKernelNvlink && pKernelNvlink->getProperty(pGpu, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
         {
             // Update NVLE related topology infomation for all the GPUs 

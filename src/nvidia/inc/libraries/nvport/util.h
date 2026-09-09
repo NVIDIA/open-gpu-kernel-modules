@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -193,7 +193,7 @@ PORT_UTIL_INLINE NvU32 portUtilCountTrailingZeros32(NvU32 n);
 
 /// @} End core functions
 
-#include <stddef.h> /* NULL */
+#include <nv_stddef.h> /* NULL */
 
 /**
  * @name Extended Functions

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,14 @@
  * like this instead of just func(__VA_ARGS__) because some preprocessors treat __VA_ARGS__
  * as a single argument even when it contains commas. */
 #define NVOC_PP_CALL(func, ...) NV_EXPAND(func NV_EXPAND() (__VA_ARGS__))
+
+/*!
+ * @brief Opt-in marker for contract-unreachable halspec labels.
+ *
+ * If a HAL method contains only NVOC_UNREACHABLE() and no other statements, the method
+ * is not emitted. NVOC will keep vtable pointer for the method NULL-initialized.
+ */
+#define NVOC_UNREACHABLE() __builtin_unreachable()
 
 #ifndef NV_PRINTF_STRINGS_ALLOWED
 #if defined(DEBUG) || defined(NV_MODS) || defined(QA_BUILD)
@@ -164,6 +172,13 @@
 #define objCreateDynamicWithFlags(ppNewObj, pParent, pClassInfo, flags, ...) \
     __nvoc_objCreateDynamic((ppNewObj), staticCast((pParent), Dynamic),      \
                             (pClassInfo), (flags), ##__VA_ARGS__)
+
+/*!
+ * @brief Get the given object's event bus.
+ *
+ * The event bus is an object where other objects publish and subscribe to NVOC event classes.
+ */
+#define objEventBus(pObj) staticCast((pObj), Object)->pEventBus
 
 /*!
  * @brief Cast any object supporting Run-Time Type Information (RTTI) to 'Dynamic'.

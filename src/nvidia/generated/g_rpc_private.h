@@ -15,204 +15,204 @@
 
                                                // RPC:CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB
 RpcCtrlFifoSetupVfZombieSubctxPdb   rpcCtrlFifoSetupVfZombieSubctxPdb_v1A_23;
-RpcCtrlFifoSetupVfZombieSubctxPdb   rpcCtrlFifoSetupVfZombieSubctxPdb_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFifoSetupVfZombieSubctxPdb   rpcCtrlFifoSetupVfZombieSubctxPdb_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:VGPU_PF_REG_READ32
 RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_v15_00;
-RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_BUS_UNSET_P2P_MAPPING
 RpcCtrlBusUnsetP2pMapping          rpcCtrlBusUnsetP2pMapping_v21_03;
-RpcCtrlBusUnsetP2pMapping          rpcCtrlBusUnsetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlBusUnsetP2pMapping          rpcCtrlBusUnsetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:DUMP_PROTOBUF_COMPONENT
 RpcDumpProtobufComponent           rpcDumpProtobufComponent_v18_12;
-RpcDumpProtobufComponent           rpcDumpProtobufComponent_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcDumpProtobufComponent           rpcDumpProtobufComponent_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ECC_NOTIFIER_WRITE_ACK
 RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_v23_05;
-RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_MEMORY
 RpcAllocMemory                     rpcAllocMemory_v13_01;
-RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_READ_SINGLE_SM_ERROR_STATE
 RpcCtrlDbgReadSingleSmErrorState   rpcCtrlDbgReadSingleSmErrorState_v21_06;
-RpcCtrlDbgReadSingleSmErrorState   rpcCtrlDbgReadSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgReadSingleSmErrorState   rpcCtrlDbgReadSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:DISABLE_CHANNELS
 RpcDisableChannels                 rpcDisableChannels_v1E_0B;
-RpcDisableChannels                 rpcDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcDisableChannels                 rpcDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GPU_EXEC_REG_OPS
 RpcGpuExecRegOps                   rpcGpuExecRegOps_v12_01;
-RpcGpuExecRegOps                   rpcGpuExecRegOps_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGpuExecRegOps                   rpcGpuExecRegOps_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_PROMOTE_CTX
 RpcCtrlGpuPromoteCtx               rpcCtrlGpuPromoteCtx_v1A_20;
-RpcCtrlGpuPromoteCtx               rpcCtrlGpuPromoteCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuPromoteCtx               rpcCtrlGpuPromoteCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_NEXT_STOP_TRIGGER_TYPE
 RpcCtrlDbgSetNextStopTriggerType   rpcCtrlDbgSetNextStopTriggerType_v1A_10;
-RpcCtrlDbgSetNextStopTriggerType   rpcCtrlDbgSetNextStopTriggerType_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetNextStopTriggerType   rpcCtrlDbgSetNextStopTriggerType_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_SHARE_DEVICE
 RpcAllocShareDevice                rpcAllocShareDevice_v03_00;
-RpcAllocShareDevice                rpcAllocShareDevice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocShareDevice                rpcAllocShareDevice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PREEMPT
 RpcCtrlPreempt                     rpcCtrlPreempt_v1A_0A;
-RpcCtrlPreempt                     rpcCtrlPreempt_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPreempt                     rpcCtrlPreempt_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_INITIALIZE_CTX
 RpcCtrlGpuInitializeCtx            rpcCtrlGpuInitializeCtx_v1A_0E;
-RpcCtrlGpuInitializeCtx            rpcCtrlGpuInitializeCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuInitializeCtx            rpcCtrlGpuInitializeCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESERVE_PM_AREA_SMPC
 RpcCtrlReservePmAreaSmpc           rpcCtrlReservePmAreaSmpc_v1A_0F;
-RpcCtrlReservePmAreaSmpc           rpcCtrlReservePmAreaSmpc_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReservePmAreaSmpc           rpcCtrlReservePmAreaSmpc_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+
+                                               // RPC:CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE
+RpcCtrlFifoVgpuSwrunlistChannelUpdate   rpcCtrlFifoVgpuSwrunlistChannelUpdate_v2F_02;
+RpcCtrlFifoVgpuSwrunlistChannelUpdate   rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_MIGRATABLE_OPS
 RpcCtrlGpuMigratableOps            rpcCtrlGpuMigratableOps_v21_07;
-RpcCtrlGpuMigratableOps            rpcCtrlGpuMigratableOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuMigratableOps            rpcCtrlGpuMigratableOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_MODE_ERRBAR_DEBUG
 RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_v1A_10;
-RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PMA_STREAM_UPDATE_GET_PUT
 RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_v29_0B;
-RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FABRIC_MEMORY_DESCRIBE
 RpcCtrlFabricMemoryDescribe        rpcCtrlFabricMemoryDescribe_v1E_0C;
-RpcCtrlFabricMemoryDescribe        rpcCtrlFabricMemoryDescribe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFabricMemoryDescribe        rpcCtrlFabricMemoryDescribe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_CHANNEL_DMA
 RpcAllocChannelDma                 rpcAllocChannelDma_v1F_04;
-RpcAllocChannelDma                 rpcAllocChannelDma_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocChannelDma                 rpcAllocChannelDma_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_ZBC_DEPTH_CLEAR
 RpcCtrlSetZbcDepthClear            rpcCtrlSetZbcDepthClear_v1A_09;
-RpcCtrlSetZbcDepthClear            rpcCtrlSetZbcDepthClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetZbcDepthClear            rpcCtrlSetZbcDepthClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESET_ISOLATED_CHANNEL
 RpcCtrlResetIsolatedChannel        rpcCtrlResetIsolatedChannel_v1A_09;
-RpcCtrlResetIsolatedChannel        rpcCtrlResetIsolatedChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlResetIsolatedChannel        rpcCtrlResetIsolatedChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DMA_SET_DEFAULT_VASPACE
 RpcCtrlDmaSetDefaultVaspace        rpcCtrlDmaSetDefaultVaspace_v1A_0E;
-RpcCtrlDmaSetDefaultVaspace        rpcCtrlDmaSetDefaultVaspace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDmaSetDefaultVaspace        rpcCtrlDmaSetDefaultVaspace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_SUBDEVICE
 RpcAllocSubdevice                  rpcAllocSubdevice_v08_01;
-RpcAllocSubdevice                  rpcAllocSubdevice_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocSubdevice                  rpcAllocSubdevice_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_EXEC_PARTITIONS_EXPORT
 RpcCtrlExecPartitionsExport        rpcCtrlExecPartitionsExport_v29_0C;
 RpcCtrlExecPartitionsExport        rpcCtrlExecPartitionsExport_v2E_01;
-RpcCtrlExecPartitionsExport        rpcCtrlExecPartitionsExport_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlExecPartitionsExport        rpcCtrlExecPartitionsExport_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:FREE
 RpcFree                            rpcFree_v03_00;
-RpcFree                            rpcFree_STUB;             // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcFree                            rpcFree_STUB;             // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:DMA_CONTROL
 RpcDmaControl                      rpcDmaControl_v24_05;
-RpcDmaControl                      rpcDmaControl_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcDmaControl                      rpcDmaControl_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_CLEAR_SINGLE_SM_ERROR_STATE
 RpcCtrlDbgClearSingleSmErrorState   rpcCtrlDbgClearSingleSmErrorState_v1A_10;
-RpcCtrlDbgClearSingleSmErrorState   rpcCtrlDbgClearSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgClearSingleSmErrorState   rpcCtrlDbgClearSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:UNSET_PAGE_DIRECTORY
 RpcUnsetPageDirectory              rpcUnsetPageDirectory_v1E_05;
-RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESERVE_CCU_PROF
 RpcCtrlReserveCcuProf              rpcCtrlReserveCcuProf_v29_07;
-RpcCtrlReserveCcuProf              rpcCtrlReserveCcuProf_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReserveCcuProf              rpcCtrlReserveCcuProf_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_GSP_STATIC_INFO
 RpcGetGspStaticInfo                rpcGetGspStaticInfo_v14_00;
-RpcGetGspStaticInfo                rpcGetGspStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetGspStaticInfo                rpcGetGspStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:SAVE_HIBERNATION_DATA
 RpcSaveHibernationData             rpcSaveHibernationData_v1E_0E;
-RpcSaveHibernationData             rpcSaveHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSaveHibernationData             rpcSaveHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:DUP_OBJECT
 RpcDupObject                       rpcDupObject_v03_00;
-RpcDupObject                       rpcDupObject_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
-
-                                               // RPC:GSP_SET_SYSTEM_INFO
-RpcGspSetSystemInfo                rpcGspSetSystemInfo_v17_00;
-RpcGspSetSystemInfo                rpcGspSetSystemInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcDupObject                       rpcDupObject_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PM_AREA_PC_SAMPLER
 RpcCtrlPmAreaPcSampler             rpcCtrlPmAreaPcSampler_v21_0B;
-RpcCtrlPmAreaPcSampler             rpcCtrlPmAreaPcSampler_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPmAreaPcSampler             rpcCtrlPmAreaPcSampler_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SUBDEVICE_GET_LIBOS_HEAP_STATS
 RpcCtrlSubdeviceGetLibosHeapStats   rpcCtrlSubdeviceGetLibosHeapStats_v29_02;
-RpcCtrlSubdeviceGetLibosHeapStats   rpcCtrlSubdeviceGetLibosHeapStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSubdeviceGetLibosHeapStats   rpcCtrlSubdeviceGetLibosHeapStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_EXCEPTION_MASK
 RpcCtrlDbgSetExceptionMask         rpcCtrlDbgSetExceptionMask_v1A_0C;
-RpcCtrlDbgSetExceptionMask         rpcCtrlDbgSetExceptionMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetExceptionMask         rpcCtrlDbgSetExceptionMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_ZBC_STENCIL_CLEAR
 RpcCtrlSetZbcStencilClear          rpcCtrlSetZbcStencilClear_v27_06;
-RpcCtrlSetZbcStencilClear          rpcCtrlSetZbcStencilClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetZbcStencilClear          rpcCtrlSetZbcStencilClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_VASPACE_COPY_SERVER_RESERVED_PDES
 RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
-RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL
 RpcCtrlCmdGetChipletHsCreditPool   rpcCtrlCmdGetChipletHsCreditPool_v29_0A;
-RpcCtrlCmdGetChipletHsCreditPool   rpcCtrlCmdGetChipletHsCreditPool_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdGetChipletHsCreditPool   rpcCtrlCmdGetChipletHsCreditPool_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GR_CTXSW_PREEMPTION_BIND
 RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v28_07;
-RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_ALLOC_PMA_STREAM
 RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_v1A_14;
-RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_INTERNAL_GPU_CHECK_CTS_ID_VALID
 RpcCtrlCmdInternalGpuCheckCtsIdValid   rpcCtrlCmdInternalGpuCheckCtsIdValid_v2B_12;
-RpcCtrlCmdInternalGpuCheckCtsIdValid   rpcCtrlCmdInternalGpuCheckCtsIdValid_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdInternalGpuCheckCtsIdValid   rpcCtrlCmdInternalGpuCheckCtsIdValid_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_GET_HS_CREDITS_MAPPING
 RpcCtrlCmdGetHsCreditsMapping      rpcCtrlCmdGetHsCreditsMapping_v29_0A;
-RpcCtrlCmdGetHsCreditsMapping      rpcCtrlCmdGetHsCreditsMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdGetHsCreditsMapping      rpcCtrlCmdGetHsCreditsMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RELEASE_HES
 RpcCtrlReleaseHes                  rpcCtrlReleaseHes_v29_07;
-RpcCtrlReleaseHes                  rpcCtrlReleaseHes_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReleaseHes                  rpcCtrlReleaseHes_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESERVE_HWPM_LEGACY
 RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_v1A_0F;
-RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PERF_RATED_TDP_GET_STATUS
 RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
-RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_INTERNAL_QUIESCE_PMA_CHANNEL
 RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_v1C_08;
-RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SUBDEVICE_GET_VGPU_HEAP_STATS
 RpcCtrlSubdeviceGetVgpuHeapStats   rpcCtrlSubdeviceGetVgpuHeapStats_v28_06;
-RpcCtrlSubdeviceGetVgpuHeapStats   rpcCtrlSubdeviceGetVgpuHeapStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSubdeviceGetVgpuHeapStats   rpcCtrlSubdeviceGetVgpuHeapStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_BUS_SET_P2P_MAPPING
 RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_v29_08;
-RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_GET_INFO_V2
 RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v25_11;
@@ -222,213 +222,213 @@ RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v2B_05;
 RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v2B_0C;
 RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v2B_13;
 RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v2E_0C;
-RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_HS_CREDITS
 RpcCtrlGetHsCredits                rpcCtrlGetHsCredits_v21_08;
-RpcCtrlGetHsCredits                rpcCtrlGetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetHsCredits                rpcCtrlGetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GR_SET_CTXSW_PREEMPTION_MODE
 RpcCtrlGrSetCtxswPreemptionMode    rpcCtrlGrSetCtxswPreemptionMode_v1A_0E;
-RpcCtrlGrSetCtxswPreemptionMode    rpcCtrlGrSetCtxswPreemptionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrSetCtxswPreemptionMode    rpcCtrlGrSetCtxswPreemptionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_B0CC_EXEC_REG_OPS
 RpcCtrlB0ccExecRegOps              rpcCtrlB0ccExecRegOps_v1A_0F;
-RpcCtrlB0ccExecRegOps              rpcCtrlB0ccExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlB0ccExecRegOps              rpcCtrlB0ccExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GRMGR_GET_GR_FS_INFO
 RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_v1A_1D;
 RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_v2B_09;
-RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_ZBC_CLEAR_TABLE
 RpcCtrlGetZbcClearTable            rpcCtrlGetZbcClearTable_v1A_09;
-RpcCtrlGetZbcClearTable            rpcCtrlGetZbcClearTable_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetZbcClearTable            rpcCtrlGetZbcClearTable_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CLEANUP_SURFACE
 RpcCleanupSurface                  rpcCleanupSurface_v03_00;
-RpcCleanupSurface                  rpcCleanupSurface_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCleanupSurface                  rpcCleanupSurface_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_TIMESLICE
 RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_v1A_0A;
-RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_QUERY_ECC_STATUS
 RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_v24_06;
 RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_v26_02;
-RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_GET_MODE_MMU_DEBUG
 RpcCtrlDbgGetModeMmuDebug          rpcCtrlDbgGetModeMmuDebug_v25_04;
-RpcCtrlDbgGetModeMmuDebug          rpcCtrlDbgGetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgGetModeMmuDebug          rpcCtrlDbgGetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_CLEAR_ALL_SM_ERROR_STATES
 RpcCtrlDbgClearAllSmErrorStates    rpcCtrlDbgClearAllSmErrorStates_v1A_0C;
-RpcCtrlDbgClearAllSmErrorStates    rpcCtrlDbgClearAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgClearAllSmErrorStates    rpcCtrlDbgClearAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:VGPU_GSP_RING_DOORBELL
-RpcVgpuGspRingDoorbell             rpcVgpuGspRingDoorbell_GA102;  // GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
+RpcVgpuGspRingDoorbell             rpcVgpuGspRingDoorbell_GA102;  // GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
 RpcVgpuGspRingDoorbell             rpcVgpuGspRingDoorbell_STUB;  // TU10X, GA100, T23XD, T26XD
 
                                                // RPC:CTRL_GR_SET_TPC_PARTITION_MODE
 RpcCtrlGrSetTpcPartitionMode       rpcCtrlGrSetTpcPartitionMode_v1C_04;
-RpcCtrlGrSetTpcPartitionMode       rpcCtrlGrSetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrSetTpcPartitionMode       rpcCtrlGrSetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_TOTAL_HS_CREDITS
 RpcCtrlGetTotalHsCredits           rpcCtrlGetTotalHsCredits_v21_08;
-RpcCtrlGetTotalHsCredits           rpcCtrlGetTotalHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetTotalHsCredits           rpcCtrlGetTotalHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS
 RpcCtrlInternalPromoteFaultMethodBuffers   rpcCtrlInternalPromoteFaultMethodBuffers_v1E_07;
-RpcCtrlInternalPromoteFaultMethodBuffers   rpcCtrlInternalPromoteFaultMethodBuffers_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlInternalPromoteFaultMethodBuffers   rpcCtrlInternalPromoteFaultMethodBuffers_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FB_GET_INFO_V2
 RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_v27_00;
 RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_v2B_00;
-RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:VGPU_GSP_WRITE_SCRATCH_REGISTER
-RpcVgpuGspWriteScratchRegister     rpcVgpuGspWriteScratchRegister_GA102;  // GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
+RpcVgpuGspWriteScratchRegister     rpcVgpuGspWriteScratchRegister_GA102;  // GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
 RpcVgpuGspWriteScratchRegister     rpcVgpuGspWriteScratchRegister_STUB;  // TU10X, GA100, T23XD, T26XD
 
                                                // RPC:SET_PAGE_DIRECTORY
 RpcSetPageDirectory                rpcSetPageDirectory_v1E_05;
-RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_P2P_CAPS_V2
 RpcCtrlGetP2pCapsV2                rpcCtrlGetP2pCapsV2_v1F_0D;
-RpcCtrlGetP2pCapsV2                rpcCtrlGetP2pCapsV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetP2pCapsV2                rpcCtrlGetP2pCapsV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_NVLINK_GET_INBAND_RECEIVED_DATA
 RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_v25_0C;
-RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_CE_PCE_MASK
 RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_v1A_0E;
-RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_EVICT_CTX
 RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_v1A_1C;
-RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_MMU_DEBUG_MODE
 RpcCtrlGetMmuDebugMode             rpcCtrlGetMmuDebugMode_v1E_06;
-RpcCtrlGetMmuDebugMode             rpcCtrlGetMmuDebugMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetMmuDebugMode             rpcCtrlGetMmuDebugMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:INVALIDATE_TLB
 RpcInvalidateTlb                   rpcInvalidateTlb_v23_03;
-RpcInvalidateTlb                   rpcInvalidateTlb_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcInvalidateTlb                   rpcInvalidateTlb_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_SINGLE_SM_SINGLE_STEP
 RpcCtrlDbgSetSingleSmSingleStep    rpcCtrlDbgSetSingleSmSingleStep_v1C_02;
-RpcCtrlDbgSetSingleSmSingleStep    rpcCtrlDbgSetSingleSmSingleStep_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetSingleSmSingleStep    rpcCtrlDbgSetSingleSmSingleStep_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:UNLOADING_GUEST_DRIVER
 RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v1F_07;
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_ENGINE_UTILIZATION_WRAPPER
-RpcGetEngineUtilizationWrapper     rpcGetEngineUtilizationWrapper_GM204;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
+RpcGetEngineUtilizationWrapper     rpcGetEngineUtilizationWrapper_GM204;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X
 RpcGetEngineUtilizationWrapper     rpcGetEngineUtilizationWrapper_STUB;  // T23XD, T26XD
 
                                                // RPC:GET_CONSOLIDATED_GR_STATIC_INFO
 RpcGetConsolidatedGrStaticInfo     rpcGetConsolidatedGrStaticInfo_v1B_04;
-RpcGetConsolidatedGrStaticInfo     rpcGetConsolidatedGrStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetConsolidatedGrStaticInfo     rpcGetConsolidatedGrStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+
+                                               // RPC:CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT
+RpcCtrlFifoVgpuSwrunlistSubmit     rpcCtrlFifoVgpuSwrunlistSubmit_v2F_02;
+RpcCtrlFifoVgpuSwrunlistSubmit     rpcCtrlFifoVgpuSwrunlistSubmit_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:SWITCH_TO_VGA
 RpcSwitchToVga                     rpcSwitchToVga_v03_00;
-RpcSwitchToVga                     rpcSwitchToVga_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSwitchToVga                     rpcSwitchToVga_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESET_CHANNEL
 RpcCtrlResetChannel                rpcCtrlResetChannel_v1A_09;
-RpcCtrlResetChannel                rpcCtrlResetChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlResetChannel                rpcCtrlResetChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPFIFO_SCHEDULE
 RpcCtrlGpfifoSchedule              rpcCtrlGpfifoSchedule_v1A_0A;
-RpcCtrlGpfifoSchedule              rpcCtrlGpfifoSchedule_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
-
-                                               // RPC:SET_REGISTRY
-RpcSetRegistry                     rpcSetRegistry_v17_00;
-RpcSetRegistry                     rpcSetRegistry_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpfifoSchedule              rpcCtrlGpfifoSchedule_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_MODE_MMU_GCC_DEBUG
 RpcCtrlDbgSetModeMmuGccDebug       rpcCtrlDbgSetModeMmuGccDebug_v2A_05;
-RpcCtrlDbgSetModeMmuGccDebug       rpcCtrlDbgSetModeMmuGccDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetModeMmuGccDebug       rpcCtrlDbgSetModeMmuGccDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_NVLINK_STATUS
 RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_v28_09;
 RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_v2B_11;
 RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_v2D_01;
-RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_STATIC_DATA
 RpcGetStaticData                   rpcGetStaticData_v27_01;
 RpcGetStaticData                   rpcGetStaticData_v2D_00;
-RpcGetStaticData                   rpcGetStaticData_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetStaticData                   rpcGetStaticData_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GR_GET_TPC_PARTITION_MODE
 RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_v1C_04;
-RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_STOP_CHANNEL
 RpcCtrlStopChannel                 rpcCtrlStopChannel_v1A_1E;
-RpcCtrlStopChannel                 rpcCtrlStopChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlStopChannel                 rpcCtrlStopChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE
 RpcCtrlCmdInternalControlGspTrace   rpcCtrlCmdInternalControlGspTrace_v28_00;
-RpcCtrlCmdInternalControlGspTrace   rpcCtrlCmdInternalControlGspTrace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdInternalControlGspTrace   rpcCtrlCmdInternalControlGspTrace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:SET_SURFACE_PROPERTIES
 RpcSetSurfaceProperties            rpcSetSurfaceProperties_v07_07;
-RpcSetSurfaceProperties            rpcSetSurfaceProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSetSurfaceProperties            rpcSetSurfaceProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RELEASE_CCU_PROF
 RpcCtrlReleaseCcuProf              rpcCtrlReleaseCcuProf_v29_07;
-RpcCtrlReleaseCcuProf              rpcCtrlReleaseCcuProf_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReleaseCcuProf              rpcCtrlReleaseCcuProf_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_TIMER_SET_GR_TICK_FREQ
 RpcCtrlTimerSetGrTickFreq          rpcCtrlTimerSetGrTickFreq_v1A_1F;
-RpcCtrlTimerSetGrTickFreq          rpcCtrlTimerSetGrTickFreq_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlTimerSetGrTickFreq          rpcCtrlTimerSetGrTickFreq_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX
 RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex   rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_v1F_0A;
-RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex   rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex   rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_EVENT
 RpcAllocEvent                      rpcAllocEvent_v03_00;
-RpcAllocEvent                      rpcAllocEvent_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocEvent                      rpcAllocEvent_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_SET_MIGRATION_BLOCK
 RpcCtrlGpuSetMigrationBlock        rpcCtrlGpuSetMigrationBlock_v2E_0B;
-RpcCtrlGpuSetMigrationBlock        rpcCtrlGpuSetMigrationBlock_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuSetMigrationBlock        rpcCtrlGpuSetMigrationBlock_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GR_PC_SAMPLING_MODE
 RpcCtrlGrPcSamplingMode            rpcCtrlGrPcSamplingMode_v1A_1F;
-RpcCtrlGrPcSamplingMode            rpcCtrlGrPcSamplingMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrPcSamplingMode            rpcCtrlGrPcSamplingMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_MC_SERVICE_INTERRUPTS
 RpcCtrlMcServiceInterrupts         rpcCtrlMcServiceInterrupts_v1A_0E;
-RpcCtrlMcServiceInterrupts         rpcCtrlMcServiceInterrupts_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlMcServiceInterrupts         rpcCtrlMcServiceInterrupts_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_READ_ALL_SM_ERROR_STATES
 RpcCtrlDbgReadAllSmErrorStates     rpcCtrlDbgReadAllSmErrorStates_v21_06;
-RpcCtrlDbgReadAllSmErrorStates     rpcCtrlDbgReadAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgReadAllSmErrorStates     rpcCtrlDbgReadAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_ZBC_COLOR_CLEAR
 RpcCtrlSetZbcColorClear            rpcCtrlSetZbcColorClear_v1A_09;
-RpcCtrlSetZbcColorClear            rpcCtrlSetZbcColorClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetZbcColorClear            rpcCtrlSetZbcColorClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_ENCODER_CAPACITY
 RpcGetEncoderCapacity              rpcGetEncoderCapacity_v07_00;
-RpcGetEncoderCapacity              rpcGetEncoderCapacity_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetEncoderCapacity              rpcGetEncoderCapacity_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_P2P_CAPS
 RpcCtrlGetP2pCaps                  rpcCtrlGetP2pCaps_v1F_0D;
-RpcCtrlGetP2pCaps                  rpcCtrlGetP2pCaps_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetP2pCaps                  rpcCtrlGetP2pCaps_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:PERF_GET_LEVEL_INFO
 RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_v2B_0D;
-RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_OBJECT
 RpcAllocObject                     rpcAllocObject_v25_08;
@@ -437,11 +437,11 @@ RpcAllocObject                     rpcAllocObject_v27_00;
 RpcAllocObject                     rpcAllocObject_v29_06;
 RpcAllocObject                     rpcAllocObject_v2B_04;
 RpcAllocObject                     rpcAllocObject_v2C_01;
-RpcAllocObject                     rpcAllocObject_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocObject                     rpcAllocObject_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPU_HANDLE_VF_PRI_FAULT
 RpcCtrlGpuHandleVfPriFault         rpcCtrlGpuHandleVfPriFault_v1A_09;
-RpcCtrlGpuHandleVfPriFault         rpcCtrlGpuHandleVfPriFault_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpuHandleVfPriFault         rpcCtrlGpuHandleVfPriFault_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:RM_API_CONTROL
 RpcRmApiControl                    rpcRmApiControl_v29_09;
@@ -449,193 +449,196 @@ RpcRmApiControl                    rpcRmApiControl_v2A_08;
 RpcRmApiControl                    rpcRmApiControl_v2C_04;
 RpcRmApiControl                    rpcRmApiControl_v2C_06;
 RpcRmApiControl                    rpcRmApiControl_v2E_05;
-RpcRmApiControl                    rpcRmApiControl_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcRmApiControl                    rpcRmApiControl_v2F_01;
+RpcRmApiControl                    rpcRmApiControl_v2F_03;
+RpcRmApiControl                    rpcRmApiControl_v2F_05;
+RpcRmApiControl                    rpcRmApiControl_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FABRIC_MEM_STATS
 RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_v1E_0C;
-RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_NVLINK_INBAND_SEND_DATA
 RpcCtrlCmdNvlinkInbandSendData     rpcCtrlCmdNvlinkInbandSendData_v26_05;
-RpcCtrlCmdNvlinkInbandSendData     rpcCtrlCmdNvlinkInbandSendData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdNvlinkInbandSendData     rpcCtrlCmdNvlinkInbandSendData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GR_CTXSW_ZCULL_BIND
 RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_v1A_0E;
-RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED
 RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_v1F_05;
 RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_v2A_00;
 RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_v2B_0E;
 RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_v2E_08;
-RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:SETUP_HIBERNATION_BUFFER
 RpcSetupHibernationBuffer          rpcSetupHibernationBuffer_v2A_06;
-RpcSetupHibernationBuffer          rpcSetupHibernationBuffer_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSetupHibernationBuffer          rpcSetupHibernationBuffer_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PERF_RATED_TDP_SET_CONTROL
 RpcCtrlPerfRatedTdpSetControl      rpcCtrlPerfRatedTdpSetControl_v1A_1F;
-RpcCtrlPerfRatedTdpSetControl      rpcCtrlPerfRatedTdpSetControl_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPerfRatedTdpSetControl      rpcCtrlPerfRatedTdpSetControl_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_EXEC_PARTITIONS_CREATE
 RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_v24_05;
 RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_v2E_01;
-RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GPFIFO_GET_WORK_SUBMIT_TOKEN
 RpcCtrlGpfifoGetWorkSubmitToken    rpcCtrlGpfifoGetWorkSubmitToken_v1F_0A;
-RpcCtrlGpfifoGetWorkSubmitToken    rpcCtrlGpfifoGetWorkSubmitToken_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGpfifoGetWorkSubmitToken    rpcCtrlGpfifoGetWorkSubmitToken_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:IDLE_CHANNELS
 RpcIdleChannels                    rpcIdleChannels_v03_00;
-RpcIdleChannels                    rpcIdleChannels_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcIdleChannels                    rpcIdleChannels_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE
 RpcCtrlCmdInternalGpuStartFabricProbe   rpcCtrlCmdInternalGpuStartFabricProbe_v25_09;
-RpcCtrlCmdInternalGpuStartFabricProbe   rpcCtrlCmdInternalGpuStartFabricProbe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlCmdInternalGpuStartFabricProbe   rpcCtrlCmdInternalGpuStartFabricProbe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_BRAND_CAPS
 RpcGetBrandCaps                    rpcGetBrandCaps_v25_12;
-RpcGetBrandCaps                    rpcGetBrandCaps_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetBrandCaps                    rpcGetBrandCaps_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:RESTORE_HIBERNATION_DATA
 RpcRestoreHibernationData          rpcRestoreHibernationData_v1E_0E;
-RpcRestoreHibernationData          rpcRestoreHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcRestoreHibernationData          rpcRestoreHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK
 RpcCtrlFlaSetupInstanceMemBlock    rpcCtrlFlaSetupInstanceMemBlock_v21_05;
-RpcCtrlFlaSetupInstanceMemBlock    rpcCtrlFlaSetupInstanceMemBlock_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFlaSetupInstanceMemBlock    rpcCtrlFlaSetupInstanceMemBlock_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM
 RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_v1C_0C;
-RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FB_GET_FS_INFO
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v26_04;
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v2B_07;
-RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:INIT_GSP_TRACE_CRASH_BUFFER
 RpcInitGspTraceCrashBuffer         rpcInitGspTraceCrashBuffer_v03_00;
-RpcInitGspTraceCrashBuffer         rpcInitGspTraceCrashBuffer_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcInitGspTraceCrashBuffer         rpcInitGspTraceCrashBuffer_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_CHANNEL_INTERLEAVE_LEVEL
 RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_v1A_0A;
-RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_RESUME_CONTEXT
 RpcCtrlDbgResumeContext            rpcCtrlDbgResumeContext_v1A_10;
-RpcCtrlDbgResumeContext            rpcCtrlDbgResumeContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgResumeContext            rpcCtrlDbgResumeContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:ALLOC_ROOT
 RpcAllocRoot                       rpcAllocRoot_v07_00;
-RpcAllocRoot                       rpcAllocRoot_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcAllocRoot                       rpcAllocRoot_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FIFO_DISABLE_CHANNELS
 RpcCtrlFifoDisableChannels         rpcCtrlFifoDisableChannels_v1A_0A;
-RpcCtrlFifoDisableChannels         rpcCtrlFifoDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFifoDisableChannels         rpcCtrlFifoDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_HS_CREDITS
 RpcCtrlSetHsCredits                rpcCtrlSetHsCredits_v21_08;
-RpcCtrlSetHsCredits                rpcCtrlSetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetHsCredits                rpcCtrlSetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:GET_ENGINE_UTILIZATION
 RpcGetEngineUtilization            rpcGetEngineUtilization_v1F_0E;
-RpcGetEngineUtilization            rpcGetEngineUtilization_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcGetEngineUtilization            rpcGetEngineUtilization_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_ZBC_CLEAR_TABLE_ENTRY
 RpcCtrlGetZbcClearTableEntry       rpcCtrlGetZbcClearTableEntry_v1A_0E;
-RpcCtrlGetZbcClearTableEntry       rpcCtrlGetZbcClearTableEntry_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetZbcClearTableEntry       rpcCtrlGetZbcClearTableEntry_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_NVENC_SW_SESSION_UPDATE_INFO
 RpcCtrlNvencSwSessionUpdateInfo    rpcCtrlNvencSwSessionUpdateInfo_v1A_09;
-RpcCtrlNvencSwSessionUpdateInfo    rpcCtrlNvencSwSessionUpdateInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlNvencSwSessionUpdateInfo    rpcCtrlNvencSwSessionUpdateInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SUSPEND_CONTEXT
 RpcCtrlDbgSuspendContext           rpcCtrlDbgSuspendContext_v1A_10;
-RpcCtrlDbgSuspendContext           rpcCtrlDbgSuspendContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSuspendContext           rpcCtrlDbgSuspendContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_GET_P2P_CAPS_MATRIX
 RpcCtrlGetP2pCapsMatrix            rpcCtrlGetP2pCapsMatrix_v1A_0E;
-RpcCtrlGetP2pCapsMatrix            rpcCtrlGetP2pCapsMatrix_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlGetP2pCapsMatrix            rpcCtrlGetP2pCapsMatrix_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_EXEC_REG_OPS
 RpcCtrlDbgExecRegOps               rpcCtrlDbgExecRegOps_v1A_10;
-RpcCtrlDbgExecRegOps               rpcCtrlDbgExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgExecRegOps               rpcCtrlDbgExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FREE_PMA_STREAM
 RpcCtrlFreePmaStream               rpcCtrlFreePmaStream_v1A_1F;
-RpcCtrlFreePmaStream               rpcCtrlFreePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFreePmaStream               rpcCtrlFreePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_TSG_INTERLEAVE_LEVEL
 RpcCtrlSetTsgInterleaveLevel       rpcCtrlSetTsgInterleaveLevel_v1A_0A;
-RpcCtrlSetTsgInterleaveLevel       rpcCtrlSetTsgInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetTsgInterleaveLevel       rpcCtrlSetTsgInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK
 RpcCtrlMasterGetVirtualFunctionErrorContIntrMask   rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_v1F_0D;
-RpcCtrlMasterGetVirtualFunctionErrorContIntrMask   rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlMasterGetVirtualFunctionErrorContIntrMask   rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_RESERVE_HES
 RpcCtrlReserveHes                  rpcCtrlReserveHes_v29_07;
-RpcCtrlReserveHes                  rpcCtrlReserveHes_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlReserveHes                  rpcCtrlReserveHes_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:LOG
 RpcLog                             rpcLog_v03_00;
-RpcLog                             rpcLog_STUB;              // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcLog                             rpcLog_STUB;              // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_GET_MODE_MMU_GCC_DEBUG
 RpcCtrlDbgGetModeMmuGccDebug       rpcCtrlDbgGetModeMmuGccDebug_v2A_05;
-RpcCtrlDbgGetModeMmuGccDebug       rpcCtrlDbgGetModeMmuGccDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgGetModeMmuGccDebug       rpcCtrlDbgGetModeMmuGccDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_EXEC_PARTITIONS_DELETE
 RpcCtrlExecPartitionsDelete        rpcCtrlExecPartitionsDelete_v1F_0A;
-RpcCtrlExecPartitionsDelete        rpcCtrlExecPartitionsDelete_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlExecPartitionsDelete        rpcCtrlExecPartitionsDelete_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_PERF_BOOST
 RpcCtrlPerfBoost                   rpcCtrlPerfBoost_v1A_09;
-RpcCtrlPerfBoost                   rpcCtrlPerfBoost_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlPerfBoost                   rpcCtrlPerfBoost_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_DBG_SET_MODE_MMU_DEBUG
 RpcCtrlDbgSetModeMmuDebug          rpcCtrlDbgSetModeMmuDebug_v1A_10;
-RpcCtrlDbgSetModeMmuDebug          rpcCtrlDbgSetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlDbgSetModeMmuDebug          rpcCtrlDbgSetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_FIFO_SET_CHANNEL_PROPERTIES
 RpcCtrlFifoSetChannelProperties    rpcCtrlFifoSetChannelProperties_v1A_16;
-RpcCtrlFifoSetChannelProperties    rpcCtrlFifoSetChannelProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlFifoSetChannelProperties    rpcCtrlFifoSetChannelProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SUBDEVICE_GET_P2P_CAPS
 RpcCtrlSubdeviceGetP2pCaps         rpcCtrlSubdeviceGetP2pCaps_v21_02;
-RpcCtrlSubdeviceGetP2pCaps         rpcCtrlSubdeviceGetP2pCaps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSubdeviceGetP2pCaps         rpcCtrlSubdeviceGetP2pCaps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:UPDATE_BAR_PDE
 RpcUpdateBarPde                    rpcUpdateBarPde_v15_00;
-RpcUpdateBarPde                    rpcUpdateBarPde_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcUpdateBarPde                    rpcUpdateBarPde_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_BIND_PM_RESOURCES
 RpcCtrlBindPmResources             rpcCtrlBindPmResources_v1A_0F;
-RpcCtrlBindPmResources             rpcCtrlBindPmResources_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlBindPmResources             rpcCtrlBindPmResources_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:MAP_MEMORY_DMA
 RpcMapMemoryDma                    rpcMapMemoryDma_v2C_05;
-RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:UPDATE_GPM_GUEST_BUFFER_INFO
 RpcUpdateGpmGuestBufferInfo        rpcUpdateGpmGuestBufferInfo_v27_01;
 RpcUpdateGpmGuestBufferInfo        rpcUpdateGpmGuestBufferInfo_v2B_07;
-RpcUpdateGpmGuestBufferInfo        rpcUpdateGpmGuestBufferInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcUpdateGpmGuestBufferInfo        rpcUpdateGpmGuestBufferInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:CTRL_SET_VGPU_FB_USAGE
 RpcCtrlSetVgpuFbUsage              rpcCtrlSetVgpuFbUsage_v1A_08;
-RpcCtrlSetVgpuFbUsage              rpcCtrlSetVgpuFbUsage_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcCtrlSetVgpuFbUsage              rpcCtrlSetVgpuFbUsage_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:UNMAP_MEMORY_DMA
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_v2C_05;
-RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
                                                // RPC:SET_GUEST_SYSTEM_INFO_EXT
 RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_v25_1B;
-RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 
 
 
@@ -881,23 +884,6 @@ static void rpc_iGrp_ipVersions_Install_v14_02(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v15_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v17_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2868,6 +2854,74 @@ static void rpc_iGrp_ipVersions_Install_v2E_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v2F_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v2F_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v2F_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v2F_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2914,6 +2968,8 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlGpuInitializeCtx = rpcCtrlGpuInitializeCtx_v1A_0E;
     if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlReservePmAreaSmpc = rpcCtrlReservePmAreaSmpc_v1A_0F;
+    if (IsIPVersionInRange(pRpc, 0x2F020000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFifoVgpuSwrunlistChannelUpdate = rpcCtrlFifoVgpuSwrunlistChannelUpdate_v2F_02;
     if (IsIPVersionInRange(pRpc, 0x21070000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGpuMigratableOps = rpcCtrlGpuMigratableOps_v21_07;
     if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
@@ -2952,8 +3008,6 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcSaveHibernationData = rpcSaveHibernationData_v1E_0E;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcDupObject = rpcDupObject_v03_00;
-    if (IsIPVersionInRange(pRpc, 0x17000000, 0xFFFFFFFF))
-       pRpcHal->rpcGspSetSystemInfo = rpcGspSetSystemInfo_v17_00;
     if (IsIPVersionInRange(pRpc, 0x210B0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlPmAreaPcSampler = rpcCtrlPmAreaPcSampler_v21_0B;
     if (IsIPVersionInRange(pRpc, 0x29020000, 0xFFFFFFFF))
@@ -3054,14 +3108,14 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcUnloadingGuestDriver = rpcUnloadingGuestDriver_v1F_07;
     if (IsIPVersionInRange(pRpc, 0x1B040000, 0xFFFFFFFF))
        pRpcHal->rpcGetConsolidatedGrStaticInfo = rpcGetConsolidatedGrStaticInfo_v1B_04;
+    if (IsIPVersionInRange(pRpc, 0x2F020000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFifoVgpuSwrunlistSubmit = rpcCtrlFifoVgpuSwrunlistSubmit_v2F_02;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcSwitchToVga = rpcSwitchToVga_v03_00;
     if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlResetChannel = rpcCtrlResetChannel_v1A_09;
     if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGpfifoSchedule = rpcCtrlGpfifoSchedule_v1A_0A;
-    if (IsIPVersionInRange(pRpc, 0x17000000, 0xFFFFFFFF))
-       pRpcHal->rpcSetRegistry = rpcSetRegistry_v17_00;
     if (IsIPVersionInRange(pRpc, 0x2A050000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlDbgSetModeMmuGccDebug = rpcCtrlDbgSetModeMmuGccDebug_v2A_05;
     if (IsIPVersionInRange(pRpc, 0x28090000, 0x2B10FFFF))
@@ -3128,8 +3182,14 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v2C_04;
     if (IsIPVersionInRange(pRpc, 0x2C060000, 0x2E04FFFF))
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v2C_06;
-    if (IsIPVersionInRange(pRpc, 0x2E050000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x2E050000, 0x2F00FFFF))
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v2E_05;
+    if (IsIPVersionInRange(pRpc, 0x2F010000, 0x2F02FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v2F_01;
+    if (IsIPVersionInRange(pRpc, 0x2F030000, 0x2F04FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v2F_03;
+    if (IsIPVersionInRange(pRpc, 0x2F050000, 0xFFFFFFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v2F_05;
     if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlFabricMemStats = rpcCtrlFabricMemStats_v1E_0C;
     if (IsIPVersionInRange(pRpc, 0x26050000, 0xFFFFFFFF))
@@ -3253,6 +3313,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPreempt);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuInitializeCtx);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlReservePmAreaSmpc);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFifoVgpuSwrunlistChannelUpdate);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuMigratableOps);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetModeErrbarDebug);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPmaStreamUpdateGetPut);
@@ -3271,7 +3332,6 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetGspStaticInfo);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSaveHibernationData);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDupObject);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGspSetSystemInfo);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPmAreaPcSampler);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSubdeviceGetLibosHeapStats);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetExceptionMask);
@@ -3313,10 +3373,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetSingleSmSingleStep);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnloadingGuestDriver);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetConsolidatedGrStaticInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFifoVgpuSwrunlistSubmit);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSwitchToVga);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlResetChannel);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpfifoSchedule);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetRegistry);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetModeMmuGccDebug);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetNvlinkStatus);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetStaticData);
@@ -3434,9 +3494,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v15_00[] = {
         { 0x15000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v17_00[] = {
-        { 0x17000000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_12[] = {
         { 0x18120000, 0xFFFFFFFF, },          // 
@@ -3783,6 +3840,18 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v2E_0D[] = {
         { 0x2E0D0000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v2F_01[] = {
+        { 0x2F010000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v2F_02[] = {
+        { 0x2F020000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v2F_03[] = {
+        { 0x2F030000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v2F_05[] = {
+        { 0x2F050000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -3802,7 +3871,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v14_00),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v14_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v15_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v17_00),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v18_12),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_08),               // 
@@ -3918,6 +3986,10 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v2E_0B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v2E_0C),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v2E_0D),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v2F_01),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v2F_02),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v2F_03),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v2F_05),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3957,6 +4029,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -3975,7 +4048,6 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -4020,10 +4092,10 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -4160,6 +4232,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -4178,7 +4251,6 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -4223,10 +4295,10 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -4375,6 +4447,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -4393,7 +4466,6 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -4438,10 +4510,10 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -4578,6 +4650,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -4596,7 +4669,6 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -4641,10 +4713,10 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -4745,6 +4817,7 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -4763,7 +4836,6 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -4808,10 +4880,10 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -4907,6 +4979,15 @@ static void rpcHalIfacesSetup_GB10B(RPC_HAL_IFACES *pRpcHal)
 
 #endif  // GB10X or GB10B
 
+#if defined(RMCFG_HAL_SETUP_GB10C)
+
+static void rpcHalIfacesSetup_GB10C(RPC_HAL_IFACES *pRpcHal)
+{
+    rpcHalIfacesSetup_GB100(pRpcHal);   // GB10C interfaces identical to GB100
+}
+
+#endif  // GB10X or GB10C
+
 #if defined(RMCFG_HAL_SETUP_GB110)
 
 static void rpcHalIfacesSetup_GB110(RPC_HAL_IFACES *pRpcHal)
@@ -4948,6 +5029,7 @@ static void rpcHalIfacesSetup_GB202(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -4966,7 +5048,6 @@ static void rpcHalIfacesSetup_GB202(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -5011,10 +5092,10 @@ static void rpcHalIfacesSetup_GB202(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -5169,6 +5250,7 @@ static void rpcHalIfacesSetup_GR100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -5187,7 +5269,6 @@ static void rpcHalIfacesSetup_GR100(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -5232,10 +5313,10 @@ static void rpcHalIfacesSetup_GR100(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -5345,6 +5426,7 @@ static void rpcHalIfacesSetup_T234D(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -5363,7 +5445,6 @@ static void rpcHalIfacesSetup_T234D(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -5408,10 +5489,10 @@ static void rpcHalIfacesSetup_T234D(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_STUB,     // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData
@@ -5521,6 +5602,7 @@ static void rpcHalIfacesSetup_T264D(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
         rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
         rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlFifoVgpuSwrunlistChannelUpdate_STUB,   // rpcCtrlFifoVgpuSwrunlistChannelUpdate
         rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
         rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
         rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
@@ -5539,7 +5621,6 @@ static void rpcHalIfacesSetup_T264D(RPC_HAL_IFACES *pRpcHal)
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
         rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
         rpcDupObject_STUB,                       // rpcDupObject
-        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
         rpcCtrlSubdeviceGetLibosHeapStats_STUB,   // rpcCtrlSubdeviceGetLibosHeapStats
         rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
@@ -5584,10 +5665,10 @@ static void rpcHalIfacesSetup_T264D(RPC_HAL_IFACES *pRpcHal)
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
         rpcGetEngineUtilizationWrapper_STUB,     // rpcGetEngineUtilizationWrapper
         rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcCtrlFifoVgpuSwrunlistSubmit_STUB,     // rpcCtrlFifoVgpuSwrunlistSubmit
         rpcSwitchToVga_STUB,                     // rpcSwitchToVga
         rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
         rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
-        rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcCtrlDbgSetModeMmuGccDebug_STUB,       // rpcCtrlDbgSetModeMmuGccDebug
         rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
         rpcGetStaticData_STUB,                   // rpcGetStaticData

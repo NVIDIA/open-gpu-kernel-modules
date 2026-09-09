@@ -26,6 +26,7 @@
 #include "core/locks.h"
 #include "vgpu/rpc.h"
 #include "rmapi/rmapi_utils.h"
+#include "rmapi/param_copy.h"
 
 #include "g_finn_rm_api.h"
 #include "core/thread_state.h"
@@ -79,6 +80,20 @@ NV_STATUS RmGssLegacyRpcCmd
     }
     else
     {
+        NvU32 maxParamsSize =
+            ((pArgs->cmd & RM_GSS_LEGACY_MASK_PRIVILEGED) != RM_GSS_LEGACY_MASK_PRIVILEGED)
+                ? RMAPI_PARAM_COPY_MAX_PARAMS_SIZE
+                : RMAPI_PARAM_COPY_MAX_PARAMS_SIZE_PRIVILEGED;
+
+        if (pArgs->paramsSize > maxParamsSize)
+        {
+            NV_PRINTF(LEVEL_WARNING,
+                      "GSS legacy cmd 0x%x: params size exceeds max (0x%x > 0x%x)\n",
+                      pArgs->cmd, pArgs->paramsSize, maxParamsSize);
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
         pKernelParams = portMemAllocNonPaged(pArgs->paramsSize);
         if (pKernelParams == NULL)
         {

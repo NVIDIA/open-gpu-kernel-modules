@@ -28,7 +28,8 @@
 \***************************************************************************/
 
 /* ------------------------ Includes --------------------------------------- */
-#include "nvRmReg.h"
+#include "core/system.h"
+#include "nvrm_registry.h"
 #include "platform/platform_request_handler.h"
 #include "platform/platform_request_handler_utils.h"
 #include "platform/acpi_common.h"

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1700,11 +1700,13 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *   bAvoidHBR3
  *     Returns NV_TRUE if we need to avoid HBR3 as much as possible
  *   bPollingEnabledForDpMstDetection
- *     Returns NV_TRUE for N1X. 
+ *     Returns NV_TRUE if polling is enabled for DP MST Detection
  *        - The Post-based approach introduced a delay in processing LAM and EDID events
  *        - This never introduced any delay. There is some delay from an unknown source which needs to be debugged
  *   bIsDpTunnelingHwBugWarEnabled
  *     Returns NV_TRUE if USB4 DP tunneling HW bug WAR is enabled for the chip.
+ *   bIsInternalDpTunnelingSupported
+ *     Returns NV_TRUE if internal (on SOC) USB4 DP tunneling is supported.
  *
  *  DSC caps
  *
@@ -1738,6 +1740,7 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
     NvBool                         bAvoidHBR3;
     NvBool                         bPollingEnabledForDpMstDetection;
     NvBool                         bIsDpTunnelingHwBugWarEnabled;
+    NvBool                         bIsInternalDpTunnelingSupported;
     NV0073_CTRL_CMD_DSC_CAP_PARAMS DSC;
 } NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS;
 
@@ -3727,5 +3730,46 @@ typedef struct NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS {
 } NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS;
 
 #define NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO (0x731390U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_GET_USB_DPIN_ADAPTER_INFO_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV0073_CTRL_CMD_DP_SET_WAR_FLAGS
+ *
+ * This command lets dplib enable or disable a specific DisplayPort
+ * software workaround on the root-port displayId. Each workaround is
+ * identified by a simple enumerated warId; the command carries one
+ * enumerated WAR per call.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     Specifies the root port displayId the workaround applies to.
+ *   warId
+ *     Which workaround to enable/disable. Valid values:
+ *       NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE - force SW auto-read on a
+ *       DP-Tunneling DIA port by disabling HW AUTO_DPCD_READ (Bug 6102109).
+ *   bEnable
+ *     NV_TRUE to enable the workaround, NV_FALSE to clear it.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS_MESSAGE_ID (0x91U)
+
+typedef struct NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  warId;
+    NvBool bEnable;
+} NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS;
+
+#define NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE 1U
+
+#define NV0073_CTRL_CMD_DP_SET_WAR_FLAGS       (0x731391U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS_MESSAGE_ID" */
 
 /* _ctrl0073dp_h_ */

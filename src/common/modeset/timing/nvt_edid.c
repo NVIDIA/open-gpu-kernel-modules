@@ -2770,6 +2770,7 @@ void parseVTBExtension(NvU8 *pEdidExt, NVT_EDID_INFO *pInfo)
 CODE_SEGMENT(PAGE_DD_CODE)
 static int IsPrintable(NvU8 c)
 {
+    // ASCII 32(' ') to 126('~') are printable characters
     return ((c >= ' ') && (c <= '~'));
 }
 
@@ -2793,17 +2794,17 @@ static void RemoveTrailingWhiteSpace(NvU8 *str, int len)
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static void RemoveNonPrintableCharacters(NvU8 *str)
+static void ReplaceNonPrintableCharactersWithSpace(NvU8 *str)
 {
     int i;
 
     // Check that all characters are printable.
-    // If not, replace them with '?'
+    // If not, replace them with ' '
     for (i = 0; str[i] != '\0'; i++)
     {
         if (!IsPrintable(str[i]))
         {
-            str[i] = '?';
+            str[i] = ' ';
         }
     }
 }
@@ -2870,7 +2871,7 @@ NVT_STATUS NvTiming_GetProductName(const NVT_EDID_INFO *pEdidInfo,
 {
     NvU32 i = 0, m = 0, n = 0;
 
-    if( pEdidInfo == NULL || pProductName == NULL )
+    if( pEdidInfo == NULL || pProductName == NULL || productNameLength == 0 )
     {
         return NVT_STATUS_INVALID_PARAMETER;
     }
@@ -2879,12 +2880,44 @@ NVT_STATUS NvTiming_GetProductName(const NVT_EDID_INFO *pEdidInfo,
     {
         if (pEdidInfo->ldd[i].tag == NVT_EDID_DISPLAY_DESCRITPOR_DPN)
         {
-            for(n = 0; n < NVT_EDID_LDD_PAYLOAD_SIZE && pEdidInfo->ldd[i].u.product_name.str[n] != 0x0; n++)
+            const NvU8 *pProductStr = pEdidInfo->ldd[i].u.product_name.str;
+            NvU32 srcMaxLen = NVT_EDID_LDD_PAYLOAD_SIZE;
+
+            if (pEdidInfo->bIsNativeDID2 &&
+            	pEdidInfo->ext_displayid20.product_identity.product_string[0] != '\0')
             {
-                pProductName[m++] = pEdidInfo->ldd[i].u.product_name.str[n];
+                // Native DisplayID2 product strings can exceed EDID's 13-byte descriptor payload.
+                pProductStr = pEdidInfo->ext_displayid20.product_identity.product_string;
+                srcMaxLen   = NVT_DISPLAYID_2_0_PRODUCT_STRING_MAX_LEN;
+            }
+
+            for (n = 0; n < srcMaxLen && pProductStr[n] != '\0'; n++)
+            {
+                pProductName[m++] = pProductStr[n];
                 if ((m + 1) >= productNameLength)
                 {
                     goto done;
+                }
+            }
+       }
+    }
+
+    // Some panels (e.g. eDP) encode the product name in an ADS
+    // descriptor (0xFE) rather than a DPN descriptor (0xFC). Fall back
+    // to ADS if no DPN was found.
+    if (m == 0)
+    {
+        for ( i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++)
+        {
+            if (pEdidInfo->ldd[i].tag == NVT_EDID_DISPLAY_DESCRIPTOR_ADS)
+            {
+                for(n = 0; n < NVT_EDID_LDD_PAYLOAD_SIZE && pEdidInfo->ldd[i].u.data_str.str[n] != 0x0; n++)
+                {
+                    pProductName[m++] = pEdidInfo->ldd[i].u.data_str.str[n];
+                    if ((m + 1) >= productNameLength)
+                    {
+                        goto done;
+                    }
                 }
             }
         }
@@ -2892,8 +2925,8 @@ NVT_STATUS NvTiming_GetProductName(const NVT_EDID_INFO *pEdidInfo,
 done:
     pProductName[m] = '\0'; //Ensure a null termination at the end.
 
+    ReplaceNonPrintableCharactersWithSpace(pProductName);
     RemoveTrailingWhiteSpace(pProductName, m);
-    RemoveNonPrintableCharacters(pProductName);
 
     return NVT_STATUS_SUCCESS;
 }
@@ -3093,7 +3126,7 @@ NVT_STATUS NvTiming_CalculateEDIDLimits(NVT_EDID_INFO *pEdidInfo, NVT_EDID_RANGE
 // * prepend the vendor name and the product name, unless the product
 //   name already contains the vendor name
 // * if any characters in the string are outside the printable ASCII
-//   range, replace them with '?'
+//   range, replace them with ' '
 
 #define tolower(c)      (((c) >= 'A' && (c) <= 'Z') ? (c) + ('a'-'A') : (c))
 
@@ -3178,8 +3211,8 @@ void NvTiming_GetMonitorName(NVT_EDID_INFO *pEdidInfo,
     }
     monitor_name[j] = '\0';
 
+    ReplaceNonPrintableCharactersWithSpace(monitor_name);
     RemoveTrailingWhiteSpace(monitor_name, j);
-    RemoveNonPrintableCharacters(monitor_name);
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)

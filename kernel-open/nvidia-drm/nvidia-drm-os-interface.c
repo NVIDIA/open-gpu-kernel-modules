@@ -71,8 +71,6 @@ void nv_drm_free(void *ptr)
 
 #if defined(NVCPU_X86) || defined(NVCPU_X86_64)
   #define WRITE_COMBINE_FLUSH()    asm volatile("sfence":::"memory")
-#elif defined(NVCPU_PPC64LE)
-  #define WRITE_COMBINE_FLUSH()    asm volatile("sync":::"memory")
 #else
   #define WRITE_COMBINE_FLUSH()    mb()
 #endif

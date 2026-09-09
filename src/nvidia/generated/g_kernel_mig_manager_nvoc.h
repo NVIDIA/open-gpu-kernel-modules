@@ -244,11 +244,6 @@ typedef struct MIG_COMPUTE_INSTANCE
      * Compute mode rules and reservation for this compute instance.
      */
     ComputeModeState computeModeState;
-
-    /*!
-     * Kernel watchdog for this compute instance
-     */
-    struct KernelWatchdog *pKernelWatchdog;
 } MIG_COMPUTE_INSTANCE;
 
 /*!
@@ -430,6 +425,11 @@ typedef struct KERNEL_MIG_GPU_INSTANCE
      * GPU Instance UUID
      */
     NvUuid uuid;
+
+    /*!
+     * Free entry color for ZBC color table
+     */
+    NvU64 zbcFreeEntryColor;
 } KERNEL_MIG_GPU_INSTANCE;
 
 /*!
@@ -580,7 +580,7 @@ struct KernelMIGManager {
     NvBool PRIVATE_FIELD(bReenableWatchdog);
     union ENGTYPE_BIT_VECTOR PRIVATE_FIELD(partitionableEnginesInUse);
     NvBool PRIVATE_FIELD(bIsHalfReducedConfigGpcEnabled);
-    NvBool PRIVATE_FIELD(bDeviceProfilingInUse);
+    NvU32 PRIVATE_FIELD(deviceProfilingSubscriptionRefCount);
     NvBool PRIVATE_FIELD(bMIGAutoOnlineEnabled);
     NvBool PRIVATE_FIELD(bBootConfigSupported);
     NvBool PRIVATE_FIELD(bAutoUpdateBootConfig);
@@ -657,7 +657,7 @@ struct KernelMIGManager_PRIVATE {
     NvBool bReenableWatchdog;
     union ENGTYPE_BIT_VECTOR partitionableEnginesInUse;
     NvBool bIsHalfReducedConfigGpcEnabled;
-    NvBool bDeviceProfilingInUse;
+    NvU32 deviceProfilingSubscriptionRefCount;
     NvBool bMIGAutoOnlineEnabled;
     NvBool bBootConfigSupported;
     NvBool bAutoUpdateBootConfig;
@@ -1136,23 +1136,24 @@ static inline void kmigmgrTrimInstanceRunlistBufPools(OBJGPU *arg1, struct Kerne
 #define kmigmgrTrimInstanceRunlistBufPools(arg1, arg_this, arg3) kmigmgrTrimInstanceRunlistBufPools_IMPL(arg1, arg_this, arg3)
 #endif // __nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrSetDeviceProfilingInUse_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
+NV_STATUS kmigmgrIncDeviceProfilingSubscriptionRefCount_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrSetDeviceProfilingInUse(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
+static inline NV_STATUS kmigmgrIncDeviceProfilingSubscriptionRefCount(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrSetDeviceProfilingInUse(arg1, arg_this) kmigmgrSetDeviceProfilingInUse_IMPL(arg1, arg_this)
+#define kmigmgrIncDeviceProfilingSubscriptionRefCount(arg1, arg_this) kmigmgrIncDeviceProfilingSubscriptionRefCount_IMPL(arg1, arg_this)
 #endif // __nvoc_kernel_mig_manager_h_disabled
 
-void kmigmgrClearDeviceProfilingInUse_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
+NV_STATUS kmigmgrDecDeviceProfilingSubscriptionRefCount_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline void kmigmgrClearDeviceProfilingInUse(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
+static inline NV_STATUS kmigmgrDecDeviceProfilingSubscriptionRefCount(OBJGPU *arg1, struct KernelMIGManager *arg_this) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrClearDeviceProfilingInUse(arg1, arg_this) kmigmgrClearDeviceProfilingInUse_IMPL(arg1, arg_this)
+#define kmigmgrDecDeviceProfilingSubscriptionRefCount(arg1, arg_this) kmigmgrDecDeviceProfilingSubscriptionRefCount_IMPL(arg1, arg_this)
 #endif // __nvoc_kernel_mig_manager_h_disabled
 
 NvBool kmigmgrIsDeviceProfilingInUse_IMPL(OBJGPU *arg1, struct KernelMIGManager *arg_this);

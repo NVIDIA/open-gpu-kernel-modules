@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -182,6 +182,12 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             pParams->hdrInfoFrame.enabled;
     }
 
+    if (pParams->hdmiVsifMetadata.specified) {
+        pProposedApiHead->dirty.hdmiVsifMetadata = TRUE;
+        pProposedApiHead->hdmiVsifMetadataEnabled =
+            pParams->hdmiVsifMetadata.vsifMetadata.payloadSize != 0;
+    }
+
     for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
         if (pParams->layer[layer].hdr.specified) {
             pProposedApiHead->dirty.hdr = TRUE;
@@ -229,12 +235,10 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             }
         }
 
-        if (!nvChooseColorRangeEvo(pDpyEvo->requestedColorRange,
-                                   pProposedApiHead->hdr.dpyColor.format,
-                                   pProposedApiHead->hdr.dpyColor.bpc,
-                                   &pProposedApiHead->hdr.dpyColor.range)) {
-            return FALSE;
-        }
+        nvChooseColorRangeEvo(pDpyEvo->requestedColorRange,
+                              pProposedApiHead->hdr.dpyColor.format,
+                              pProposedApiHead->hdr.dpyColor.bpc,
+                              &pProposedApiHead->hdr.dpyColor.range);
     }
 
     if (pParams->viewPortIn.specified) {
@@ -246,6 +250,13 @@ static NvBool UpdateProposedFlipStateOneApiHead(
         return FALSE;
     }
     pProposedApiHead->lut = pParams->lut;
+
+    /* Propagate the postcomp passthrough mode to the API head. */
+    if (pParams->postcompColorPassthrough.specified) {
+        pProposedApiHead->dirty.postcompColorPassthrough = TRUE;
+        pProposedApiHead->postcompColorPassthrough =
+            pParams->postcompColorPassthrough.enabled;
+    }
 
     return TRUE;
 }
@@ -317,6 +328,8 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
                 pApiHeadState->hdrInfoFrameOverride;
             pProposedApiHead->hdr.staticMetadataLayerMask =
                 pApiHeadState->hdrStaticMetadataLayerMask;
+            pProposedApiHead->hdmiVsifMetadataEnabled =
+                pApiHeadState->hdmiVsifMetadataEnabled;
 
             pProposedApiHead->viewPortPointIn =
                 pApiHeadState->viewPortPointIn;
@@ -325,6 +338,9 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
                 FALSE;
             pProposedApiHead->lut.output.specified =
                 FALSE;
+
+            pProposedApiHead->postcompColorPassthrough =
+                pApiHeadState->postcompColorPassthrough;
         }
     }
 }
@@ -367,6 +383,8 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
     const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
     const NVT_HDR_STATIC_METADATA *pHdrInfo =
         &pInfo->hdr_static_metadata_info;
+    NvBool flipSynchronized = pDevEvo->supportsFlipSynchronizedInfoframes;
+    NvBool updateInfoFrames = FALSE;
 
     nvAssert(nvApiHeadIsActive(pDispEvo, apiHead));
 
@@ -384,7 +402,8 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
                          allowFlipLock,
                          pUpdateState);
 
-        if (pProposedApiHead->dirty.hdr) {
+        if (pProposedApiHead->dirty.hdr ||
+            pProposedApiHead->dirty.postcompColorPassthrough) {
             /* Update hardware's current color format and colorRange */
             nvUpdateCurrentHardwareColorFormatAndRangeEvo(
                 pDispEvo,
@@ -403,7 +422,28 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
         pApiHeadState->hdrStaticMetadataLayerMask =
             pProposedApiHead->hdr.staticMetadataLayerMask;
 
-        nvUpdateInfoFrames(pDpyEvo);
+        updateInfoFrames = TRUE;
+    }
+
+    if (pProposedApiHead->dirty.hdmiVsifMetadata) {
+        pApiHeadState->hdmiVsifMetadataEnabled =
+            pProposedApiHead->hdmiVsifMetadataEnabled;
+
+        updateInfoFrames = TRUE;
+    }
+
+    if (updateInfoFrames) {
+        nvUpdateCoreFid(
+            pDispEvo,
+            apiHead,
+            pUpdateState
+        );
+        nvUpdateInfoFrames(pDpyEvo, flipSynchronized);
+    }
+
+    if (pProposedApiHead->dirty.postcompColorPassthrough) {
+        pApiHeadState->postcompColorPassthrough =
+            pProposedApiHead->postcompColorPassthrough;
     }
 
     if (pProposedApiHead->dirty.viewPortPointIn) {
@@ -512,8 +552,8 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     NvBool replyApplyVrr = FALSE;
     struct NvKmsFlipWorkArea *pWorkArea;
 
-    NvU32 allowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES];
-    NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES];
+    NvU32 allowVrrApiHeadMask = 0;
+    NvU32 applyAllowVrrApiHeadMask = 0;
 
     /*
      * Do not execute NVKMS_IOCTL_FLIP if the display channel yet has not
@@ -533,9 +573,6 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     pWorkArea = nvPreallocGet(pDevEvo, PREALLOC_TYPE_FLIP_WORK_AREA,
                               sizeof(*pWorkArea));
     InitNvKmsFlipWorkArea(pDevEvo, pWorkArea);
-
-    nvkms_memset(allowVrrApiHeadMasks, 0, sizeof(allowVrrApiHeadMasks));
-    nvkms_memset(applyAllowVrrApiHeadMasks, 0, sizeof(applyAllowVrrApiHeadMasks));
 
     /* Validate the flip parameters and update the work area. */
 
@@ -581,9 +618,9 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
             }
         }
         if (dirtyMainLayer) {
-            applyAllowVrrApiHeadMasks[sd] |= (1 << apiHead);
+            applyAllowVrrApiHeadMask |= (1 << apiHead);
             if (allowVrr) {
-                allowVrrApiHeadMasks[sd] |= (1 << apiHead);
+                allowVrrApiHeadMask |= (1 << apiHead);
             }
         }
         pWorkArea->sd[sd].changed = TRUE;
@@ -658,8 +695,8 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     ret = TRUE;
     result = NV_KMS_FLIP_RESULT_SUCCESS;
 
-    nvPreFlip(pDevEvo, pWorkArea, applyAllowVrrApiHeadMasks, 
-              allowVrrApiHeadMasks, skipUpdate);
+    nvPreFlip(pDevEvo, pWorkArea, applyAllowVrrApiHeadMask,
+              allowVrrApiHeadMask, skipUpdate);
 
     for (NvU32 sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         NvU32 flip2Heads1OrApiHeadsMask = 0x0;
@@ -696,14 +733,9 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
         }
     }
 
-    nvPostFlip(pDevEvo, pWorkArea, skipUpdate, applyAllowVrrApiHeadMasks);
+    nvPostFlip(pDevEvo, pWorkArea, skipUpdate, applyAllowVrrApiHeadMask);
 
-    for (NvU32 sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        if (applyAllowVrrApiHeadMasks[sd] > 0) {
-            replyApplyVrr = NV_TRUE;
-            break;
-        }
-    }
+    replyApplyVrr = (applyAllowVrrApiHeadMask != 0);
 
     FillNvKmsFlipReply(pDevEvo, pWorkArea, replyApplyVrr, pFlipHead,
                        numFlipHeads, reply);
@@ -856,7 +888,7 @@ NvU32 nvApiHeadGetActiveViewportOffset(NVDispEvoRec *pDispEvo,
 }
 
 void nvApiHeadIdleMainLayerChannels(NVDevEvoRec *pDevEvo,
-    const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES])
+                                    const NvU32 apiHeadMask)
 {
     NVEvoChannelMask idleChannelMask = 0;
     const NVDispEvoRec *pDispEvo = pDevEvo->pDispEvo[0];
@@ -868,7 +900,7 @@ void nvApiHeadIdleMainLayerChannels(NVDevEvoRec *pDevEvo,
             &pDispEvo->apiHeadState[apiHead];
         NvU32 head;
 
-        if ((apiHeadMaskPerSd[0] & NVBIT(apiHead)) == 0x0) {
+        if ((apiHeadMask & NVBIT(apiHead)) == 0x0) {
             continue;
         }
 
@@ -889,7 +921,7 @@ void nvApiHeadIdleMainLayerChannels(NVDevEvoRec *pDevEvo,
 }
 
 void nvApiHeadUpdateFlipLock(NVDevEvoRec *pDevEvo,
-                             const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES],
+                             const NvU32 apiHeadMask,
                              const NvBool enable)
 {
     NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
@@ -904,7 +936,7 @@ void nvApiHeadUpdateFlipLock(NVDevEvoRec *pDevEvo,
             &pDispEvo->apiHeadState[apiHead];
         NvU32 head;
 
-        if ((apiHeadMaskPerSd[0] & NVBIT(apiHead)) == 0x0) {
+        if ((apiHeadMask & NVBIT(apiHead)) == 0x0) {
             continue;
         }
 
@@ -1150,18 +1182,11 @@ void nvEvoClearSurfaceUsage(NVDevEvoRec *pDevEvo,
 
     /*
      * If the core channel is no longer allocated, we don't need to
-     * clear usage/sync. This assumes the channels are allocated/deallocated
+     * sync. This assumes the channels are allocated/deallocated
      * together.
      */
     if (pDevEvo->core) {
-
-        if (pDevEvo->hal->ClearSurfaceUsage != NULL) {
-            pDevEvo->hal->ClearSurfaceUsage(pDevEvo, pSurfaceEvo);
-        }
-
-        /* HALs with ClearSurfaceUsage() require sync to ensure completion. */
-        if (!skipSync ||
-            (pDevEvo->hal->ClearSurfaceUsage != NULL)) {
+        if (!skipSync) {
             nvRMSyncEvoChannel(pDevEvo, pDevEvo->core, __LINE__);
 
             for (head = 0; head < pDevEvo->numHeads; head++) {

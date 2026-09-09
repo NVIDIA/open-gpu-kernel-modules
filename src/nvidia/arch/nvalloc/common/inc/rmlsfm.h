@@ -286,7 +286,7 @@ typedef enum
     LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_APM_RTS               = 3
 } LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_ENUM;
 
-#define LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_MAX         LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_APM_RTS
+#define LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_MAX         LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_PLAYREADY_SHARED_DATA
 #define LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_INVALID     (0xFFFFFFFFU)
 
 #define MAX_SUPPORTED_SHARED_SUB_WPR_USE_CASES          LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_MAX
@@ -568,7 +568,7 @@ typedef struct _def_booter_reserved_dmem
 // LS encryption context, to store data to decrypt LS images.
 #define LS_ENCRYPTION_AES128_CBC_IV_SIZE_BYTE (16)
 
-typedef struct
+typedef struct LSF_ENCRYPTION_CONTEXT
 {
     NvU8   bLsEncrypted;
     NvU8   rsvd[3];

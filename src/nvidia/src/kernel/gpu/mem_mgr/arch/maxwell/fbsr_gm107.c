@@ -483,10 +483,21 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
                     break;
                 }
 
-                // Open a temporary file for writing
-                status = osOpenTemporaryFile(&pFbsr->pagedBufferInfo.sectionHandle);
-                if (status != NV_OK)
-                    break;
+                //
+                // Normally the file is pre-opened and fallocated by
+                // RmReserveFbsrTempFile before suspend. Fall back to a
+                // best-effort open when preflight didn't run (e.g.
+                // PreserveVideoMemoryAllocations=0 with the FBSR
+                // fallback chain reaching FBSR_TYPE_FILE).
+                //
+                if (pFbsr->pagedBufferInfo.sectionHandle == NULL)
+                {
+                    status = osAllocateTemporaryFile(&pFbsr->pagedBufferInfo.sectionHandle, 0);
+                    if (status != NV_OK)
+                    {
+                        break;
+                    }
+                }
 
                 pFbsr->pagedBufferInfo.avblViewSz = 0;
                 break;
@@ -657,6 +668,7 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
 
                 // Close the file
                 osCloseFile(pFbsr->pagedBufferInfo.sectionHandle);
+                pFbsr->pagedBufferInfo.sectionHandle = NULL;
                 break;
             case FBSR_TYPE_CPU:
                 {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -114,7 +114,7 @@ memmgrGetMemTransferType
             !IS_MIG_ENABLED(pGpu)
             )
         {
-            NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
+            NV_PRINTF(LEVEL_INFO, "Can't copy using CE, falling back to other methods\n");
         }
     }
     else if (kbusIsBarAccessBlocked(pKernelBus) &&

@@ -142,6 +142,16 @@ RS_ENTRY(
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
+    /* External Class         */ NV_OPERATIONAL_EVENT_BUFFER_BIND,
+    /* Internal Class         */ OpEventBufferBind,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(RmClientResource)),
+    /* Alloc Param Info       */ RS_REQUIRED(NV_OPERATIONAL_EVENT_BUFFER_BIND_ALLOC_PARAMETERS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
     /* External Class         */ NV_SEMAPHORE_SURFACE,
     /* Internal Class         */ SemaphoreSurface,
     /* Multi-Instance         */ NV_TRUE,
@@ -264,6 +274,17 @@ RS_ENTRY(
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_LIST(classId(Subdevice)),
     /* Alloc Param Info       */ RS_REQUIRED(NVCDCD_ALLOC_PARAMETERS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK |
+                                 RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
+    /* External Class         */ WPPS_CONFIG_SESSION,
+    /* Internal Class         */ WppsConfigSession,
+    /* Multi-Instance         */ NV_FALSE,
+    /* Parents                */ RS_LIST(classId(Subdevice)),
+    /* Alloc Param Info       */ RS_REQUIRED(NVD0CD_ALLOC_PARAMETERS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK |
                                  RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
@@ -573,7 +594,8 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Device)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE |
+                                 RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -605,7 +627,7 @@ RS_ENTRY(
     /* Alloc Param Info       */ RS_REQUIRED(NV_OS_DESC_MEMORY_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC |
-                                 RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE |
+                                 RS_FLAGS_ACQUIRE_RELAXED_GPUS_LOCK_ON_DUP | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE |
                                  RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC |
                                  RS_FLAGS_FORCE_ACQUIRE_RO_API_LOCK_ON_ALLOC_FREE,
     /* Required Access Rights */ RS_ACCESS_NONE

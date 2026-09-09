@@ -25,7 +25,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/kern_gpu_power.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "diagnostics/journal.h"
 #include "diagnostics/tracer.h"
 #include "jt.h"

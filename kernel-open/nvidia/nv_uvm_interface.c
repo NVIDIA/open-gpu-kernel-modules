@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -207,7 +207,8 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
     }
 
     memset(platformInfo, 0, sizeof(*platformInfo));
-    platformInfo->atsSupported = nv_ats_supported;
+    platformInfo->atsSupported = READ_ONCE(nv_ats_supported);
+    platformInfo->nonAtsDevicePresent = READ_ONCE(nv_non_ats_device_present);
     platformInfo->confComputingEnabled = os_cc_enabled;
     platformInfo->cdmmEnabled = !NVreg_EnableUserNUMAManagement;
 

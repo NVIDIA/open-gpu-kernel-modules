@@ -58,7 +58,8 @@ _hwpmStreamoutAllocPmaMapping
     KernelHwpm        *pKernelHwpm,
     OBJVASPACE        *pPmaVAS,
     MEMORY_DESCRIPTOR *pMemDesc,
-    NvU64              virtualAddress
+    NvU64              virtualAddress,
+    NvU32              pageSizeFlag
 )
 {
     VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
@@ -69,6 +70,8 @@ _hwpmStreamoutAllocPmaMapping
     {
         flags |= FLD_SET_DRF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE, flags);
     }
+
+    flags |= pageSizeFlag;
 
     // Map it in PMA VA
     return dmaAllocMapping_HAL(pGpu, pDma, pPmaVAS, pMemDesc, &virtualAddress, flags, 0, NULL, KMIGMGR_SWIZZID_INVALID);
@@ -147,6 +150,65 @@ _hwpmStreamoutFreeCpuMapping
     }
 }
 
+static NV_STATUS
+_hwpmStreamoutGetMemDescPageSizeInfo
+(
+    OBJGPU            *pGpu,
+    OBJVASPACE        *pPmaVAS,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64             *pPageSize,
+    NvU32             *pPageSizeFlag
+)
+{
+    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    MEMORY_DESCRIPTOR  *pLocalMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
+    ADDRESS_TRANSLATION addressTranslation = VAS_ADDRESS_TRANSLATION(pPmaVAS);
+    NvU64               pageSize;
+    NV_STATUS           status;
+
+    NV_ASSERT_OR_RETURN(pLocalMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pageSize = memdescGetPageSize(pLocalMemDesc, addressTranslation);
+    if (pageSize == 0)
+    {
+        status = memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pLocalMemDesc, addressTranslation, RM_ATTR_PAGE_SIZE_DEFAULT);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+        pageSize = memdescGetPageSize(pLocalMemDesc, addressTranslation);
+        NV_ASSERT_OR_RETURN(pageSize != 0, NV_ERR_INVALID_STATE);
+    }
+
+    switch (pageSize)
+    {
+        case RM_PAGE_SIZE:
+            *pPageSizeFlag = DRF_DEF(OS46, _FLAGS, _PAGE_SIZE, _4KB);
+            break;
+        case RM_PAGE_SIZE_64K:
+        case RM_PAGE_SIZE_128K:
+            NV_ASSERT_OR_RETURN(pageSize == vaspaceGetBigPageSize(pPmaVAS), NV_ERR_INVALID_STATE);
+            *pPageSizeFlag = DRF_DEF(OS46, _FLAGS, _PAGE_SIZE, _BIG);
+            break;
+        case RM_PAGE_SIZE_HUGE:
+            *pPageSizeFlag = DRF_DEF(OS46, _FLAGS, _PAGE_SIZE, _HUGE);
+            break;
+        case RM_PAGE_SIZE_512M:
+            *pPageSizeFlag = DRF_DEF(OS46, _FLAGS, _PAGE_SIZE, _512M);
+            break;
+        case RM_PAGE_SIZE_256G:
+            *pPageSizeFlag = DRF_DEF(OS46, _FLAGS, _PAGE_SIZE, _256G);
+            break;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Unsupported page size 0x%llx for PMA streamout mapping.\n", pageSize);
+            return NV_ERR_NOT_SUPPORTED;
+    }
+
+    *pPageSize = pageSize;
+
+    return NV_OK;
+}
+
 /*!
  * @brief: Allocates a PMA stream for HWPM to streamout records.
  *
@@ -172,8 +234,13 @@ khwpmStreamoutAllocPmaStream_IMPL
     NvU64             virtualAddressIter = 0;
     NvU64             virtualAddress = 0;
     NvU64             virtualAddress2 = 0;
+    NvU64             recordPageSize = 0;
+    NvU64             numBytesPageSize = 0;
+    NvU32             recordPageSizeFlag = 0;
+    NvU32             numBytesPageSizeFlag = 0;
+    NvU64             recordMapLength = 0;
+    NvU64             numBytesMapLength = 0;
     NvU64             vaAlign;
-    NvU64             pageSize;
     NvU64             vaSizeRequested;
     VAS_ALLOC_FLAGS   allocFlags = {0};
     NV_STATUS         status = NV_OK;
@@ -210,8 +277,22 @@ khwpmStreamoutAllocPmaStream_IMPL
         goto hwpmStreamoutAllocPmaStream_fail;
     }
 
-    pageSize = vaspaceGetBigPageSize(pPmaVAS);
-    vaSizeRequested = RM_ALIGN_UP(pRecordBufDesc->Size, pageSize) + RM_ALIGN_UP(pNumBytesBufDesc->Size, pageSize);
+    status = _hwpmStreamoutGetMemDescPageSizeInfo(pGpu, pPmaVAS, pRecordBufDesc, &recordPageSize, &recordPageSizeFlag);
+    if (status != NV_OK)
+    {
+        goto hwpmStreamoutAllocPmaStream_fail;
+    }
+
+    status = _hwpmStreamoutGetMemDescPageSizeInfo(pGpu, pPmaVAS, pNumBytesBufDesc, &numBytesPageSize, &numBytesPageSizeFlag);
+    if (status != NV_OK)
+    {
+        goto hwpmStreamoutAllocPmaStream_fail;
+    }
+
+    recordMapLength = RM_ALIGN_UP(memdescGetSize(pRecordBufDesc), recordPageSize);
+    numBytesMapLength = RM_ALIGN_UP(memdescGetSize(pNumBytesBufDesc), numBytesPageSize);
+
+    vaSizeRequested = (recordMappingCount * recordMapLength) + numBytesMapLength;
     if (vaSizeRequested > pKernelHwpm->perCtxSize)
     {
         status = NV_ERR_INVALID_ARGUMENT;
@@ -232,7 +313,7 @@ khwpmStreamoutAllocPmaStream_IMPL
     virtualAddressIter = virtualAddress;
     for (i = 0; i < recordMappingCount; i++)
     {
-        status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pRecordBufDesc, virtualAddressIter);
+        status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pRecordBufDesc, virtualAddressIter, recordPageSizeFlag);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -240,12 +321,12 @@ khwpmStreamoutAllocPmaStream_IMPL
                     status);
             goto hwpmStreamoutAllocPmaStream_fail;
         }
-        virtualAddressIter += RM_ALIGN_UP(pRecordBufDesc->Size, pageSize);
+        virtualAddressIter += recordMapLength;
     }
 
-    // memBytes va start right after record buffer va.
+    // Request the memBytes mapping right after the record buffer mapping range.
     virtualAddress2 = virtualAddressIter;
-    status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pNumBytesBufDesc, virtualAddress2);
+    status = _hwpmStreamoutAllocPmaMapping(pGpu, pKernelHwpm, pPmaVAS, pNumBytesBufDesc, virtualAddress2, numBytesPageSizeFlag);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -529,7 +610,7 @@ khwpmStreamoutCreatePmaVaSpace_IMPL
     bRootPageDirPinned = NV_TRUE;
 
     status = kgmmuInstBlkInit(pKernelGmmu, pKernelHwpm->streamoutState[bpcIdx].pInstBlkMemDesc,
-                              pVAS, FIFO_PDB_IDX_BASE, &params);
+                              pVAS, NULL, FIFO_PDB_IDX_BASE, &params);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,

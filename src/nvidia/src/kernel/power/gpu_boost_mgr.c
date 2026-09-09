@@ -73,7 +73,7 @@ gpuboostmgrCreateGroup_IMPL
     NvU32      i;
 
     // See if we can accomodate one more SGBG
-    NV_ASSERT_OR_RETURN(pBoostMgr->groupCount < NV0000_SYNC_GPU_BOOST_MAX_GROUPS,
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBoostMgr->groupCount < NV0000_SYNC_GPU_BOOST_MAX_GROUPS,
                           NV_ERR_INSUFFICIENT_RESOURCES);
 
     // Check if requested config is valid.
@@ -82,7 +82,7 @@ gpuboostmgrCreateGroup_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Invalid Boost Config. Failing Boost Group creation.\n");
-        NV_ASSERT_OR_GOTO(NV_OK == status, gpuboostmgrCreateGroup_exit);
+        NV_CHECK_OR_GOTO(LEVEL_ERROR, NV_OK == status, gpuboostmgrCreateGroup_exit);
     }
 
     //
@@ -106,7 +106,7 @@ gpuboostmgrCreateGroup_IMPL
                 if (NULL == pGpuIdNode)
                 {
                     bCleanup = NV_TRUE;
-                    NV_ASSERT_OR_GOTO((pGpuIdNode != NULL), gpuboostmgrCreateGroup_exit);
+                    NV_CHECK_OR_GOTO(LEVEL_ERROR, (pGpuIdNode != NULL), gpuboostmgrCreateGroup_exit);
                 }
 
                 // Add each unique GPU ID in the GPU ID tree
@@ -117,7 +117,7 @@ gpuboostmgrCreateGroup_IMPL
                 if (NV_OK != status)
                 {
                     bCleanup = NV_TRUE;
-                    NV_ASSERT_OR_GOTO(NV_OK == status, gpuboostmgrCreateGroup_exit);
+                    NV_CHECK_OR_GOTO(LEVEL_ERROR, NV_OK == status, gpuboostmgrCreateGroup_exit);
                 }
 
                 pBoostMgr->pBoostGroups[i].gpuIds[j] = pBoostConfig->gpuIds[j];
@@ -192,9 +192,9 @@ gpuboostmgrDestroyGroup_IMPL
     NvU32      i;
 
     // Can't try to destroy a non-existing group
-    NV_ASSERT_OR_RETURN(pBoostMgr->groupCount > 0, NV_ERR_ILLEGAL_ACTION);
-    NV_ASSERT_OR_RETURN(NV0000_SYNC_GPU_BOOST_MAX_GROUPS > boostGroupId, NV_ERR_OUT_OF_RANGE);
-    NV_ASSERT_OR_RETURN(0 != pBoostMgr->pBoostGroups[boostGroupId].gpuCount, NV_ERR_ILLEGAL_ACTION);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBoostMgr->groupCount > 0, NV_ERR_ILLEGAL_ACTION);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, NV0000_SYNC_GPU_BOOST_MAX_GROUPS > boostGroupId, NV_ERR_OUT_OF_RANGE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, 0 != pBoostMgr->pBoostGroups[boostGroupId].gpuCount, NV_ERR_ILLEGAL_ACTION);
 
     // Remove each GPU ID from the ID tree before destorying the group.
     for(i = 0; i < pBoostMgr->pBoostGroups[boostGroupId].gpuCount; i++)
@@ -202,7 +202,7 @@ gpuboostmgrDestroyGroup_IMPL
         status = btreeSearch(pBoostMgr->pBoostGroups[boostGroupId].gpuIds[i],
                              &pGpuIdNode,
                              pBoostMgr->pGpuIdTree);
-        NV_ASSERT_OR_RETURN(((NV_OK == status) && (NULL != pGpuIdNode)), status);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, ((NV_OK == status) && (NULL != pGpuIdNode)), status);
         btreeUnlink(pGpuIdNode, &pBoostMgr->pGpuIdTree);
         portMemFree(pGpuIdNode);
     }

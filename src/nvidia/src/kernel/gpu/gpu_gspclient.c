@@ -215,10 +215,10 @@ gpuGetEmulationRev1_FWCLIENT
     OBJGPU *pGpu
 )
 {
-    const NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo = gpuGetChipInfo(pGpu);
-    NV_ASSERT_OR_RETURN(pChipInfo != NULL, 0);
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, 0);
 
-    return pChipInfo->emulationRev1;
+    return pGSCI->emulationRev1;
 }
 
 NV_STATUS
@@ -314,34 +314,8 @@ gpuGetShortNameString_FWCLIENT
     return NV_OK;
 }
 
-NV_STATUS
-gpuGetRegBaseOffset_FWCLIENT
-(
-    OBJGPU *pGpu,
-    NvU32 regBase,
-    NvU32 *pOffset
-)
-{
-    const NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo = gpuGetChipInfo(pGpu);
-    NV_ASSERT_OR_RETURN(pChipInfo != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(regBase < NV_ARRAY_ELEMENTS(pChipInfo->regBases), NV_ERR_NOT_SUPPORTED);
-
-    if (pChipInfo->regBases[regBase] != 0xFFFFFFFF)
-    {
-        *pOffset = pChipInfo->regBases[regBase];
-        return NV_OK;
-    }
-
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 /*!
  * @brief These functions are used on CPU RM when pGpu is a GSP client.
- * Data is fetched from GSP using subdeviceCtrlCmdInternalGetChipInfo and cached,
- * then retrieved through the internal gpuGetChipInfo.
- *
- * Functions either return value directly, or through a second [out] param, depending
- * on the underlying function.
  *
  * @param[in]  pGpu
  */
@@ -351,10 +325,22 @@ gpuGetChipSubRev_FWCLIENT
     OBJGPU *pGpu
 )
 {
-    const NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo = gpuGetChipInfo(pGpu);
-    NV_ASSERT_OR_RETURN(pChipInfo != NULL, 0);
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, 0);
 
-    return pChipInfo->chipSubRev;
+    return pGSCI->chipSubRev;
+}
+
+NvBool
+gpuGetIsCmpSku_FWCLIENT
+(
+    OBJGPU *pGpu
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, NV_FALSE);
+
+    return pGSCI->bIsCmpSku;
 }
 
 /*! GPU has a new reset required state */

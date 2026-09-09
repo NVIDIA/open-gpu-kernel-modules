@@ -259,7 +259,7 @@ struct KernelMemorySystem {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelMemorySystem *__nvoc_pbase_KernelMemorySystem;    // kmemsys
 
-    // Vtable with 44 per-object function pointers
+    // Vtable with 45 per-object function pointers
     NV_STATUS (*__kmemsysGetFbNumaInfo__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *, NvU64 *, NvU64 *, NvS32 *);  // halified (2 hals) body
     NV_STATUS (*__kmemsysReadUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (3 hals) body
     NV_STATUS (*__kmemsysGetUsableFbSize__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU64 *);  // halified (2 hals) body
@@ -304,6 +304,7 @@ struct KernelMemorySystem {
     NV_STATUS (*__kmemsysWriteBackAndInvalidateSysL2__)(OBJGPU *, struct KernelMemorySystem * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kmemsysMcFlaOffsetTableAlloc__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NV00FD_CTRL_ATTACH_MEM_PARAMS *, MEMORY_DESCRIPTOR *, MEMORY_DESCRIPTOR *, NvU8 *);  // halified (3 hals) body
     void (*__kmemsysMcFlaOffsetTableFree__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvU8);  // halified (2 hals) body
+    void (*__kmemsysFlushCoherentCpuCache__)(OBJGPU *, struct KernelMemorySystem * /*this*/, NvUPtr, NvU64);  // halified (3 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KMEMSYS_IS_MISSING inherited from OBJENGSTATE
@@ -782,6 +783,9 @@ static inline NV_STATUS kmemsysInitMIGGPUInstanceMemConfigForSwizzId(OBJGPU *arg
 #define kmemsysMcFlaOffsetTableFree_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysMcFlaOffsetTableFree__
 #define kmemsysMcFlaOffsetTableFree(pGpu, pKernelMemorySystem, offsetTableIndex) kmemsysMcFlaOffsetTableFree_DISPATCH(pGpu, pKernelMemorySystem, offsetTableIndex)
 #define kmemsysMcFlaOffsetTableFree_HAL(pGpu, pKernelMemorySystem, offsetTableIndex) kmemsysMcFlaOffsetTableFree_DISPATCH(pGpu, pKernelMemorySystem, offsetTableIndex)
+#define kmemsysFlushCoherentCpuCache_FNPTR(pKernelMemorySystem) pKernelMemorySystem->__kmemsysFlushCoherentCpuCache__
+#define kmemsysFlushCoherentCpuCache(pGpu, pKernelMemorySystem, address, size) kmemsysFlushCoherentCpuCache_DISPATCH(pGpu, pKernelMemorySystem, address, size)
+#define kmemsysFlushCoherentCpuCache_HAL(pGpu, pKernelMemorySystem, address, size) kmemsysFlushCoherentCpuCache_DISPATCH(pGpu, pKernelMemorySystem, address, size)
 #define kmemsysInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kmemsysInitMissing(pGpu, pEngstate) kmemsysInitMissing_DISPATCH(pGpu, pEngstate)
 #define kmemsysStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
@@ -1006,6 +1010,10 @@ static inline void kmemsysMcFlaOffsetTableFree_DISPATCH(OBJGPU *pGpu, struct Ker
     pKernelMemorySystem->__kmemsysMcFlaOffsetTableFree__(pGpu, pKernelMemorySystem, offsetTableIndex);
 }
 
+static inline void kmemsysFlushCoherentCpuCache_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvUPtr address, NvU64 size) {
+    pKernelMemorySystem->__kmemsysFlushCoherentCpuCache__(pGpu, pKernelMemorySystem, address, size);
+}
+
 static inline void kmemsysInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelMemorySystem *pEngstate) {
     pEngstate->__nvoc_metadata_ptr->vtable.__kmemsysInitMissing__(pGpu, pEngstate);
 }
@@ -1205,6 +1213,10 @@ NV_STATUS kmemsysMcFlaOffsetTableAlloc_GH100(OBJGPU *pGpu, struct KernelMemorySy
 
 void kmemsysMcFlaOffsetTableFree_GR100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU8 offsetTableIndex);
 
+void kmemsysFlushCoherentCpuCache_GR100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvUPtr address, NvU64 size);
+
+void kmemsysFlushCoherentCpuCache_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvUPtr address, NvU64 size);
+
 // Inline HAL method definitions
 static inline NV_STATUS kmemsysGetFbNumaInfo_ac1694(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *physAddr, NvU64 *physSize, NvU64 *rsvdPhysAddr, NvS32 *numaNodeId){
     return NV_OK;
@@ -1396,6 +1408,10 @@ static inline NV_STATUS kmemsysMcFlaOffsetTableAlloc_ac1694(OBJGPU *pGpu, struct
 }
 
 static inline void kmemsysMcFlaOffsetTableFree_d44104(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU8 offsetTableIndex){
+    return;
+}
+
+static inline void kmemsysFlushCoherentCpuCache_d44104(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvUPtr address, NvU64 size){
     return;
 }
 

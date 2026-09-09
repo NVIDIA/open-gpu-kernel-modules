@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -337,6 +337,8 @@ s_prepareHsFalconWithLoader
     ucodePACode = memdescGetPhysAddr(pUcode->pCodeMemDesc, AT_GPU, 0);
     ucodePAData = memdescGetPhysAddr(pUcode->pDataMemDesc, AT_GPU, 0);
 
+    portMemSet(&blDmemDesc, 0, sizeof(RM_FLCN_BL_DMEM_DESC));
+
     blDmemDesc.signature[0] = 0;
     blDmemDesc.signature[1] = 0;
     blDmemDesc.signature[2] = 0;
@@ -526,7 +528,7 @@ kgspExecuteCoreResume_TU102(OBJGPU *pGpu, KernelGsp *pKernelGsp)
     NV_ASSERT_OR_RETURN(sizeof(RM_FLCN_BL_DMEM_DESC) == pParams->dmemDescSize, NV_ERR_INVALID_ARGUMENT);
 
     // Wait for the GSP processor suspend to complete.
-    status = kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
+    status = kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp, NV_FALSE);
     if (status != NV_OK)
     {
         NvU32 mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_MAILBOX0);

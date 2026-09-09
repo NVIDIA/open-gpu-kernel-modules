@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,6 +104,7 @@ struct NvKmsKapiDevice {
 
     NvBool isSOC;
     NvBool isSOCDisplay;
+    NvBool isSocDgpuDisplayNeedingWar;
     NvKmsDispIOCoherencyModes isoIOCoherencyModes;
     NvKmsDispIOCoherencyModes nisoIOCoherencyModes;
     NvBool supportsSyncpts;
@@ -131,6 +132,10 @@ struct NvKmsKapiDevice {
         NvU32 maxCursorSizeInPixels;
 
         NvU8  genericPageKind;
+
+        NvBool supportsColorPassthrough;
+
+        NvBool supportsFlipSynchronizedInfoframes;
     } caps;
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];

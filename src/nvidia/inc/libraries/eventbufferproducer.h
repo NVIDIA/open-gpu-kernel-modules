@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 #ifndef _NV_EVENT_BUFFER_PRODUCER_H_
 #define _NV_EVENT_BUFFER_PRODUCER_H_
 #include "nvtypes.h"
+#include "nvstatus.h"
 #include "class/cl90cd.h"
 
 #ifdef __cplusplus
@@ -117,6 +118,15 @@ typedef struct
 *
 *   isKeepNewest
 *       This flag is set if keepNewest mode is selected by the consumer.
+*
+*   bMaintainRecordCount
+*       If set, the producer maintains pHeader->recordCount on each
+*       publish via the no-drop TryAddEvent path, and notify-threshold
+*       gating uses live ring math instead of the lifetime recordCount.
+*       Required for callers (e.g. Physical-RM op-event producers) that need
+*       reliable threshold notification before consumer UPDATE_GET runs.
+*       Incompatible with isKeepNewest — the KEEP_NEWEST writer
+*       overwrites without advancing recordGet, breaking the ring math.
 */
 typedef struct
 {
@@ -125,6 +135,7 @@ typedef struct
     NvP64                   notificationHandle;
     NvBool                  isEnabled;
     NvBool                  isKeepNewest;
+    NvBool                  bMaintainRecordCount;
 } EVENT_BUFFER_PRODUCER_INFO;
 
 /*
@@ -160,12 +171,16 @@ void eventBufferInitVardataBuffer(EVENT_BUFFER_PRODUCER_INFO *info, NvP64 vardat
 void eventBufferInitNotificationHandle(EVENT_BUFFER_PRODUCER_INFO *info, NvP64 notificationHandle);
 void eventBufferSetEnable(EVENT_BUFFER_PRODUCER_INFO *info, NvBool isEnabled);
 void eventBufferSetKeepNewest(EVENT_BUFFER_PRODUCER_INFO *info, NvBool isKeepNewest);
+void eventBufferSetMaintainRecordCount(EVENT_BUFFER_PRODUCER_INFO *info, NvBool bMaintain);
 void eventBufferUpdateRecordBufferGet(EVENT_BUFFER_PRODUCER_INFO *info, NvU32 get);
 void eventBufferUpdateVardataBufferGet(EVENT_BUFFER_PRODUCER_INFO *info, NvU32 get);
 NvU32 eventBufferGetRecordBufferCount(EVENT_BUFFER_PRODUCER_INFO *info);
 NvU32 eventBufferGetVardataBufferCount(EVENT_BUFFER_PRODUCER_INFO *info);
 
 void eventBufferProducerAddEvent(EVENT_BUFFER_PRODUCER_INFO* info, NvU16 eventType, NvU16 eventSubtype,
+    EVENT_BUFFER_PRODUCER_DATA *pData);
+
+NV_STATUS eventBufferProducerTryAddEvent(EVENT_BUFFER_PRODUCER_INFO* info, NvU16 eventType, NvU16 eventSubtype,
     EVENT_BUFFER_PRODUCER_DATA *pData);
 
 NvBool eventBufferIsNotifyThresholdMet(EVENT_BUFFER_PRODUCER_INFO* info);

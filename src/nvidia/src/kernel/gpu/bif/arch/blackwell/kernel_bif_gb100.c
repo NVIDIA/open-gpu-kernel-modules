@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/system.h"
 #include "gpu/gpu.h"
 
 #include "nverror.h"
@@ -33,7 +34,7 @@
 #include "os/os.h"
 
 #include "published/blackwell/gb100/hwproject.h"
-#include "published/blackwell/gb100/dev_boot_zb.h"
+#include "published/blackwell/gb100/dev_pmc_zb.h"
 
 /*!
  * @brief Check if MSIX is enabled in HW

@@ -32,6 +32,8 @@
 #include "gpu/timer/objtmr.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu_fabric_probe.h"
+#include "events/gpu/nvlink/nvlink_events.h"
+#include "nvoc/event_bus.h"
 #include "platform/sli/sli.h"
 
 /*!
@@ -354,6 +356,10 @@ knvlinkLogAliDebugMessages_GH100
 {
     NV2080_CTRL_NVLINK_GET_ERR_INFO_PARAMS *nvlinkErrInfoParams;
     NvU32         i;
+    NvU8          goeFailureLinkIds[NVLINK_ALI_TRAINING_FAILURE_MAX_ENTRIES];
+    NvU32         goeFailures[NVLINK_ALI_TRAINING_FAILURE_MAX_ENTRIES *
+                              NVLINK_ALI_TRAINING_FAILURE_MAX_DEBUG_WORDS];
+    NvU32         goeFailure = 0;
     // This is a Physical, Hopper specific HAL for debug purposes.
     NV_STATUS status;
 
@@ -380,17 +386,28 @@ knvlinkLogAliDebugMessages_GH100
 
     FOR_EACH_IN_BITVECTOR(&pKernelNvlink->postRxDetLinkMask, i)
     {
-        nvErrorLog_va((void *)pGpu, ALI_TRAINING_FAIL,
-                "NVLink: Link training failed for link %u"
-                "(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x)",
-                i,
-                nvlinkErrInfoParams->linkErrInfo[i].NVLIPTLnkCtrlLinkStateRequest,
-                nvlinkErrInfoParams->linkErrInfo[i].NVLDLRxSlsmErrCntl,
-                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopLinkState,
-                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopIntr,
-                nvlinkErrInfoParams->linkErrInfo[i].DLStatMN00,
-                nvlinkErrInfoParams->linkErrInfo[i].DLStatUC01,
-                nvlinkErrInfoParams->linkErrInfo[i].MinionNvlinkLinkIntr);
+        if (goeFailure < NVLINK_ALI_TRAINING_FAILURE_MAX_ENTRIES)
+        {
+            NvU32 *pGoeFailureDebugData =
+                &goeFailures[goeFailure * NVLINK_ALI_TRAINING_FAILURE_MAX_DEBUG_WORDS];
+
+            goeFailureLinkIds[goeFailure] = (NvU8)i;
+            pGoeFailureDebugData[0] =
+                nvlinkErrInfoParams->linkErrInfo[i].NVLIPTLnkCtrlLinkStateRequest;
+            pGoeFailureDebugData[1] =
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLRxSlsmErrCntl;
+            pGoeFailureDebugData[2] =
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopLinkState;
+            pGoeFailureDebugData[3] =
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopIntr;
+            pGoeFailureDebugData[4] =
+                nvlinkErrInfoParams->linkErrInfo[i].DLStatMN00;
+            pGoeFailureDebugData[5] =
+                nvlinkErrInfoParams->linkErrInfo[i].DLStatUC01;
+            pGoeFailureDebugData[6] =
+                nvlinkErrInfoParams->linkErrInfo[i].MinionNvlinkLinkIntr;
+            goeFailure++;
+        }
 
         if (pKernelNvlink->bLinkTrainingDebugSpew)
             NV_PRINTF(LEVEL_ERROR,"ALI Error for GPU %d::linkId %d:"
@@ -411,6 +428,22 @@ knvlinkLogAliDebugMessages_GH100
                     nvlinkErrInfoParams->linkErrInfo[i].MinionNvlinkLinkIntr);
     }
     FOR_EACH_IN_BITVECTOR_END();
+
+    eventEmit(NvlinkAliTrainingFailure,
+              pKernelNvlink,
+              OPERATIONAL_EVENT_SEVERITY_FATAL,
+              goeFailure,
+              NVLINK_ALI_TRAINING_FAILURE_MAX_DEBUG_WORDS,
+              goeFailureLinkIds,
+              goeFailures);
+    eventEmit(NvlinkAliTrainingFailureLegacy,
+              pKernelNvlink,
+              OPERATIONAL_EVENT_SEVERITY_FATAL,
+              goeFailure,
+              NVLINK_ALI_TRAINING_FAILURE_MAX_DEBUG_WORDS,
+              goeFailureLinkIds,
+              goeFailures,
+              ALI_TRAINING_FAIL);
     portMemFree(nvlinkErrInfoParams);
     return NV_OK;
 }

@@ -99,12 +99,13 @@ struct KernelFsp {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelFsp *__nvoc_pbase_KernelFsp;    // kfsp
 
-    // Vtable with 26 per-object function pointers
+    // Vtable with 27 per-object function pointers
     NV_STATUS (*__kfspConstructHal__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32);  // halified (3 hals) body
     NV_STATUS (*__kfspReadPacket__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8 *, NvU32, NvU32 *);  // halified (3 hals) body
     NvBool (*__kfspCanSendPacket__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     NvBool (*__kfspIsResponseAvailable__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
+    NvU32 (*__kfspGetMaxSendMessageSize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     NvU32 (*__kfspGetMaxSendPacketSize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     NvU32 (*__kfspGetMaxRecvPacketSize__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (3 hals) body
     NvBool (*__kfspGspFmcIsEnforced__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
@@ -127,7 +128,7 @@ struct KernelFsp {
     void (*__kfspCheckForClockBoostCapability__)(OBJGPU *, struct KernelFsp * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kfspSendClockBoostRpc__)(OBJGPU *, struct KernelFsp * /*this*/, NvU8);  // halified (2 hals) body
 
-    // 9 PDB properties
+    // 7 PDB properties
 //  NvBool PDB_PROP_KFSP_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED;
     NvBool PDB_PROP_KFSP_BOOT_COMMAND_OK;
@@ -135,8 +136,6 @@ struct KernelFsp {
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM;
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM;
     NvBool PDB_PROP_KFSP_DISABLE_GSPFMC;
-    NvBool PDB_PROP_KFSP_USE_MNOC_CPU;
-    NvBool PDB_PROP_KFSP_USE_MNOC_GSP;
 
     // Data members
     MEMORY_DESCRIPTOR *pSysmemFrtsMemdesc;
@@ -217,10 +216,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFsp;
 #define PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM_BASE_NAME PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM
 #define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_CAST
 #define PDB_PROP_KFSP_DISABLE_GSPFMC_BASE_NAME PDB_PROP_KFSP_DISABLE_GSPFMC
-#define PDB_PROP_KFSP_USE_MNOC_CPU_BASE_CAST
-#define PDB_PROP_KFSP_USE_MNOC_CPU_BASE_NAME PDB_PROP_KFSP_USE_MNOC_CPU
-#define PDB_PROP_KFSP_USE_MNOC_GSP_BASE_CAST
-#define PDB_PROP_KFSP_USE_MNOC_GSP_BASE_NAME PDB_PROP_KFSP_USE_MNOC_GSP
 
 
 NV_STATUS __nvoc_objCreateDynamic_KernelFsp(Dynamic**, Dynamic*, NvU32, va_list);
@@ -249,6 +244,26 @@ static inline void kfspReleaseProxyImage(OBJGPU *pGpu, struct KernelFsp *pKernel
 #define kfspReleaseProxyImage(pGpu, pKernelFsp, flags) kfspReleaseProxyImage_IMPL(pGpu, pKernelFsp, flags)
 #endif // __nvoc_kern_fsp_h_disabled
 
+NV_STATUS kfspSendMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline NV_STATUS kfspSendMessage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspSendMessage(pGpu, pKernelFsp, pPayload, size, nvdmType) kfspSendMessage_IMPL(pGpu, pKernelFsp, pPayload, size, nvdmType)
+#endif // __nvoc_kern_fsp_h_disabled
+
+NV_STATUS kfspReadMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pResponsePayload, NvU32 responseBufferSize);
+#ifdef __nvoc_kern_fsp_h_disabled
+static inline NV_STATUS kfspReadMessage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pResponsePayload, NvU32 responseBufferSize) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kern_fsp_h_disabled
+#define kfspReadMessage(pGpu, pKernelFsp, pResponsePayload, responseBufferSize) kfspReadMessage_IMPL(pGpu, pKernelFsp, pResponsePayload, responseBufferSize)
+#endif // __nvoc_kern_fsp_h_disabled
+
 NV_STATUS kfspSendAndReadMessage_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize);
 #ifdef __nvoc_kern_fsp_h_disabled
 static inline NV_STATUS kfspSendAndReadMessage(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize) {
@@ -269,14 +284,14 @@ static inline NV_STATUS kfspPollForCanSend(OBJGPU *pGpu, struct KernelFsp *pKern
 #define kfspPollForCanSend(pGpu, pKernelFsp) kfspPollForCanSend_IMPL(pGpu, pKernelFsp)
 #endif // __nvoc_kern_fsp_h_disabled
 
-NV_STATUS kfspPollForResponse_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+NV_STATUS kfspPollForResponse_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 timeoutUs);
 #ifdef __nvoc_kern_fsp_h_disabled
-static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+static inline NV_STATUS kfspPollForResponse(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 timeoutUs) {
     NV_ASSERT_FAILED_PRECOMP("KernelFsp was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kern_fsp_h_disabled
-#define kfspPollForResponse(pGpu, pKernelFsp) kfspPollForResponse_IMPL(pGpu, pKernelFsp)
+#define kfspPollForResponse(pGpu, pKernelFsp, timeoutUs) kfspPollForResponse_IMPL(pGpu, pKernelFsp, timeoutUs)
 #endif // __nvoc_kern_fsp_h_disabled
 
 void kfspEmitGpuInitErrorCper_IMPL(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, const NV_CPER_GUID *pNotifyType, NvU16 eventSubType, const char *pXidMessage);
@@ -313,6 +328,9 @@ static inline void kfspEmitGpuInitErrorCper(OBJGPU *pGpu, struct KernelFsp *pKer
 #define kfspIsResponseAvailable_FNPTR(pKernelFsp) pKernelFsp->__kfspIsResponseAvailable__
 #define kfspIsResponseAvailable(pGpu, pKernelFsp) kfspIsResponseAvailable_DISPATCH(pGpu, pKernelFsp)
 #define kfspIsResponseAvailable_HAL(pGpu, pKernelFsp) kfspIsResponseAvailable_DISPATCH(pGpu, pKernelFsp)
+#define kfspGetMaxSendMessageSize_FNPTR(pKernelFsp) pKernelFsp->__kfspGetMaxSendMessageSize__
+#define kfspGetMaxSendMessageSize(pGpu, pKernelFsp) kfspGetMaxSendMessageSize_DISPATCH(pGpu, pKernelFsp)
+#define kfspGetMaxSendMessageSize_HAL(pGpu, pKernelFsp) kfspGetMaxSendMessageSize_DISPATCH(pGpu, pKernelFsp)
 #define kfspGetMaxSendPacketSize_FNPTR(pKernelFsp) pKernelFsp->__kfspGetMaxSendPacketSize__
 #define kfspGetMaxSendPacketSize(pGpu, pKernelFsp) kfspGetMaxSendPacketSize_DISPATCH(pGpu, pKernelFsp)
 #define kfspGetMaxSendPacketSize_HAL(pGpu, pKernelFsp) kfspGetMaxSendPacketSize_DISPATCH(pGpu, pKernelFsp)
@@ -434,6 +452,10 @@ static inline NvBool kfspCanSendPacket_DISPATCH(OBJGPU *pGpu, struct KernelFsp *
 
 static inline NvBool kfspIsResponseAvailable_DISPATCH(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return pKernelFsp->__kfspIsResponseAvailable__(pGpu, pKernelFsp);
+}
+
+static inline NvU32 kfspGetMaxSendMessageSize_DISPATCH(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspGetMaxSendMessageSize__(pGpu, pKernelFsp);
 }
 
 static inline NvU32 kfspGetMaxSendPacketSize_DISPATCH(OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
@@ -575,31 +597,35 @@ NV_STATUS kfspSendAndReadMessageAsync_IMPL(OBJGPU *pGpu, struct KernelFsp *pKern
 
 // Exported method declarations and/or inline definitions
 // HAL method declarations without bodies
-NV_STATUS kfspConstructHal_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+NV_STATUS kfspConstructHal_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+NV_STATUS kfspSendPacket_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
 
 NV_STATUS kfspSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
 
-NV_STATUS kfspSendPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 packetSize);
+NV_STATUS kfspReadPacket_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
 
 NV_STATUS kfspReadPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
 
-NV_STATUS kfspReadPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 *pPacket, NvU32 maxPacketSize, NvU32 *bytesRead);
+NvBool kfspCanSendPacket_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvBool kfspCanSendPacket_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-NvBool kfspCanSendPacket_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+NvBool kfspIsResponseAvailable_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvBool kfspIsResponseAvailable_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-NvBool kfspIsResponseAvailable_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+NvU32 kfspGetMaxSendMessageSize_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+NvU32 kfspGetMaxSendMessageSize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+NvU32 kfspGetMaxSendPacketSize_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvU32 kfspGetMaxSendPacketSize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
-NvU32 kfspGetMaxSendPacketSize_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+NvU32 kfspGetMaxRecvPacketSize_GR100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvU32 kfspGetMaxRecvPacketSize_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
-
-NvU32 kfspGetMaxRecvPacketSize_GB100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 NvBool kfspGspFmcIsEnforced_GH100(OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
@@ -668,6 +694,10 @@ static inline NvBool kfspCanSendPacket_d69453(OBJGPU *pGpu, struct KernelFsp *pK
 
 static inline NvBool kfspIsResponseAvailable_d69453(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
     return NV_FALSE;
+}
+
+static inline NvU32 kfspGetMaxSendMessageSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
+    return 0;
 }
 
 static inline NvU32 kfspGetMaxSendPacketSize_b2b553(OBJGPU *pGpu, struct KernelFsp *pKernelFsp){
@@ -758,6 +788,9 @@ static inline NV_STATUS kfspSendClockBoostRpc_ac1694(OBJGPU *pGpu, struct Kernel
 // Static inline method definitions
 #undef PRIVATE_FIELD
 
+
+/*! Size of the FSP message header in bytes */
+#define FSP_MESSAGE_HEADER_BYTES (8)
 
 #endif // KERN_FSP_H
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@
 #include "nvswitch/ls10/ptop_discovery_ip.h"
 #include "nvswitch/ls10/dev_minion_ip.h"
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 /* ------------------------ Macros ----------------------------------------- */
 #define TNVL_MAX_CERT_CHAIN_SIZE         (0x1000)

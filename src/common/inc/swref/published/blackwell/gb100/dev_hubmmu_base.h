@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,4 +94,11 @@
 #define NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI                             0xa828 /* RW-4R */
 #define NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI_VAL                         31:4   /* RWEVF */
 #define NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI_ALIGNMENT                   0x0000000c /*       */
+
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE                           0xa3e0 /* RW-4R */
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE__PRIV_LEVEL_MASK          0xa7c4 /*       */
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE_LOWER_SCALE                      3:0 /* RWEVF */
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE_LOWER_SCALE_INIT          0x00000000 /* RWE-V */
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE_LOWER_MAG                       27:4 /* RWEVF */
+#define NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE_LOWER_MAG_INIT            0x00000000 /* RWE-V */
 #endif // __gb100_dev_hubmmu_base_h__

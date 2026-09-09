@@ -163,6 +163,8 @@ sysmemConstruct_IMPL
     NvU32 flags;
     RM_ATTR_PAGE_SIZE pageSizeAttr;
     NvBool bRetry = NV_FALSE;
+    NvBool bLockAcquired = NV_FALSE;
+    NvBool bPrevSkipIommuMapping = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
 
@@ -180,9 +182,35 @@ sysmemConstruct_IMPL
         NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
 
         if (memdescGetCustomHeap(pMemDesc) == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT) {
+            // For MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT acquire lock before doing anything
+            if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
+            {
+                if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance) && !rmGpuLockIsOwner())
+                {
+                    rmStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                                       RM_LOCK_MODULES_MEM);
+
+                    NV_ASSERT_OK_OR_RETURN(rmStatus);
+
+                    bLockAcquired = NV_TRUE;
+                }
+                else
+                {
+                    // This can happend during RM init
+                    // NV_ASSERT(0);
+                }
+            }
+
             status = memmgrDuplicateFromScanoutCarveoutRegion(pGpu,
-                                                              GPU_GET_MEMORY_MANAGER(pGpu),
-                                                              pMemDesc);
+                                      GPU_GET_MEMORY_MANAGER(pGpu),
+                                      pMemDesc);
+
+            if (bLockAcquired)
+            {
+                // UNLOCK: release GPUs lock
+                rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+            }
+
             return status;
         }
         return NV_OK;
@@ -279,7 +307,7 @@ sysmemConstruct_IMPL
         memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT, NV_TRUE);
 
         if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled &&
-            gpuIsCCorApmFeatureEnabled(pGpu) 
+            gpuIsCCFeatureEnabled(pGpu) 
             && FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED,
                         pAllocData->attr2))
             {
@@ -315,15 +343,50 @@ sysmemConstruct_IMPL
                                         AT_GPU, pageSizeAttr),
             failed_destroy_memdesc);
 
+        //
+        // Suppress IOMMU mapping to allow lockless sysmem alloc, manually create IOMMU mapping later
+        // memdesc is reconstructed on every loop
+        //
+        bPrevSkipIommuMapping = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING);
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING, NV_TRUE);
+
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
     {
         NvU32 heapFlag  = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
+
+        //
+        // For MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT acquire lock before doing anything
+        // carveout also does not retry, so we dont have to let go of the lock
+        //
+        if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
+        {
+            if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance) && !rmGpuLockIsOwner())
+            {
+                rmStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                                   RM_LOCK_MODULES_MEM);
+
+                NV_ASSERT_OR_GOTO(NV_OK == rmStatus, failed_free_memdesc);
+
+                bLockAcquired = NV_TRUE;
+            }
+            else
+            {
+                // This can happend during RM init
+                // NV_ASSERT(0);
+            }
+        }
 
         rmStatus = memmgrAllocScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
                                                              pAllocData,
                                                              pAllocRequest->hClient,
                                                              &heapFlag,
                                                              pMemDesc);
+        if ((rmStatus != NV_OK) && bLockAcquired)
+        {
+            // UNLOCK: release GPUs lock on failure
+            rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        }
+
         NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
 
         sizeOut = pMemDesc->Size;
@@ -359,6 +422,45 @@ sysmemConstruct_IMPL
             bRetry = NV_FALSE;
         }
     } while (bRetry);
+
+    //
+    // Acquire lock now before we alloc GPU resources
+    // We already grabbed it earlier if SCANOUT_CARVEOUT
+    //
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) && RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
+    {
+        // Acquire the lock *only after* kernel is done allocating.
+        if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance) && !rmGpuLockIsOwner())
+        {
+            rmStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                               RM_LOCK_MODULES_MEM);
+            NV_ASSERT_OR_GOTO(NV_OK == rmStatus, failed_free_memdesc);
+
+            bLockAcquired = NV_TRUE;
+        }
+        else
+        {
+            // This can happend during RM init
+            // NV_ASSERT(0);
+        }
+    }
+
+    //
+    // Now map IOMMU mapping after grabbing lock to allow lockless sysmem alloc
+    // memdescFree will clean it up
+    //
+    memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING, bPrevSkipIommuMapping);
+
+    if (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_CPU_ONLY) &&
+        !memdescIsEgm(pMemDesc) &&
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
+    {
+        rmStatus = memdescMapIommu(pMemDesc, pGpu->busInfo.iovaspaceId);
+        if (rmStatus != NV_OK)
+        {
+            goto failed_free_memdesc;
+        }
+    }
 
     offsetOut = 0;
 
@@ -478,12 +580,24 @@ sysmemConstruct_IMPL
 
     stdmemDumpOutputAllocParams(pAllocData);
 
+    if (bLockAcquired)
+    {
+        // UNLOCK: release GPUs lock
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
     return rmStatus;
 
 // Resource cleanup on failure
 failed_destruct_common:
     memDestructCommon(pMemory);
 failed_free_memdesc:
+    if (bLockAcquired)
+    {
+        // UNLOCK: release GPUs lock
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
     memdescFree(pMemDesc);
 failed_free_scanout_carveout:
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) {
@@ -819,7 +933,8 @@ void sysmemDestruct_IMPL(SystemMemory *pSystemMemory)
     if (pMemDesc->DupCount > 1)
         return;
 
-    if (pMemory->pHwResource != NULL && pMemory->pHwResource->hwResId != 0)
+    if (pMemory->pHwResource != NULL && pMemory->pHwResource->hwResId != 0 &&
+        memmgrIsScrubOnFreeEnabled(pMemoryManager))
     {
         NV_ASSERT_OR_RETURN_VOID(pMemoryManager->pSysmemScrubber != NULL);
         sysmemscrubScrubAndFree(pMemoryManager->pSysmemScrubber, pMemDesc);

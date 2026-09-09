@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -541,17 +541,10 @@ NV_STATUS heapInitInternal_IMPL
             (heapType != HEAP_TYPE_PARTITION_LOCAL))
         {
             memmgrSetPmaInitialized(pMemoryManager, NV_TRUE);
-            memmgrRegionSetupForPma(pGpu, pMemoryManager);
         }
 
         if (heapType != HEAP_TYPE_PARTITION_LOCAL)
         {
-            // For GSP RM, all PMA candidate regions are given to CPU RM for its use
-            if (RMCFG_FEATURE_PLATFORM_GSP)
-            {
-                memmgrRegionSetupForPma(pGpu, pMemoryManager);
-            }
-
             for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
             {
                 pFbRegion = &pMemoryManager->Ram.fbRegion[i];
@@ -571,8 +564,7 @@ NV_STATUS heapInitInternal_IMPL
                         continue;
                     }
 
-                    // TODO: Remove SRIOV check and enable on baremetal as well.
-                    if (IS_VIRTUAL_WITH_SRIOV(pGpu) && (pFbRegion->base >= (base + size)))
+                    if (pFbRegion->base >= (base + size))
                     {
                         continue;
                     }
@@ -1427,19 +1419,6 @@ NV_STATUS heapAlloc_IMPL
         pVidHeapAlloc->rangeHi = pHeap->base + pHeap->total - 1;
     }
 
-    if ((pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) == 0)
-    {
-        // Only want to override in one direction at a time
-        if (pMemoryManager->overrideInitHeapMin == 0)
-        {
-            pVidHeapAlloc->rangeHi = NV_MIN(pVidHeapAlloc->rangeHi, pMemoryManager->overrideHeapMax);
-        }
-        else
-        {
-            pVidHeapAlloc->rangeLo = NV_MAX(pVidHeapAlloc->rangeLo, pMemoryManager->overrideInitHeapMin);
-        }
-    }
-
     //
     // Check for valid range.
     //
@@ -1607,7 +1586,7 @@ NV_STATUS heapAlloc_IMPL
         }
         else
         {
-            NV_ASSERT( pMemoryManager->Ram.numFBRegionPriority > 0 );
+            NV_ASSERT(pMemoryManager->Ram.numFBRegionPriority > 0);
 
             if (FLD_TEST_DRF(OS32, _ATTR2, _PRIORITY, _LOW, pFbAllocInfo->pageFormat->attr2) ||
                 (pMemoryManager->bPreferSlowRegion &&

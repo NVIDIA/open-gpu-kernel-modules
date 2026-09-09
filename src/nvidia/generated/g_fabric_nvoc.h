@@ -465,6 +465,16 @@ static inline void fabricMulticastCleanupCacheInvokeCallback(struct Fabric *pFab
 #define fabricMulticastCleanupCacheInvokeCallback(pFabric, requestId, pCb) fabricMulticastCleanupCacheInvokeCallback_IMPL(pFabric, requestId, pCb)
 #endif // __nvoc_fabric_h_disabled
 
+NvU32 fabricMulticastCacheSnapshotRequestIds_IMPL(struct Fabric *pFabric, NvU64 **ppRequestIds);
+#ifdef __nvoc_fabric_h_disabled
+static inline NvU32 fabricMulticastCacheSnapshotRequestIds(struct Fabric *pFabric, NvU64 **ppRequestIds) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return 0;
+}
+#else // __nvoc_fabric_h_disabled
+#define fabricMulticastCacheSnapshotRequestIds(pFabric, ppRequestIds) fabricMulticastCacheSnapshotRequestIds_IMPL(pFabric, ppRequestIds)
+#endif // __nvoc_fabric_h_disabled
+
 
 // Wrapper macros for halified functions
 

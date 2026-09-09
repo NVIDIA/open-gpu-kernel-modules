@@ -73,7 +73,22 @@ NvBool nvDbgBreakpointEnabled(void)
 
 #if NV_PRINTF_STRINGS_ALLOWED
 static PORT_SPINLOCK *_nv_dbg_lock = NULL;
-static char   _nv_dbg_string[MAX_ERROR_STRING];
+static char   _nv_dbg_string1[MAX_ERROR_STRING];
+static char   _nv_dbg_string2[MAX_ERROR_STRING];
+static char  *_nv_dbg_string = &_nv_dbg_string1[0];
+
+// May only be called if _nv_dbg_lock is held.
+static inline void _nv_dbg_string_swap(void)
+{
+    if (_nv_dbg_string == &_nv_dbg_string1[0])
+        _nv_dbg_string = &_nv_dbg_string2[0];
+    else
+        _nv_dbg_string = &_nv_dbg_string1[0];
+}
+
+static NvU64 last_print_time;
+static NvU32 last_print_repeats;
+static NvU32 last_print_level;
 
 //
 // nvDbgInit - Allocate the printf spinlock
@@ -250,14 +265,54 @@ void nvDbg_vPrintf
 
     if (nvDbg_PrintMsg(filename, linenumber, function, debuglevel, printf_format, &force, &prefix))
     {
+        const NvU64 now = portTimeGetMilliseconds();
+        const NvU32 level = _nvDbgForceLevel(force, debuglevel);
+
         portSyncSpinlockAcquire(_nv_dbg_lock);
         _nvDbgPrepareString(filename, linenumber, function, printf_format, prefix, arglist);
-#if PORT_IS_FUNC_SUPPORTED(portDbgExPrintfLevel)
-        portDbgExPrintfLevel(_nvDbgForceLevel(force, debuglevel),
-                             "%.*s", MAX_ERROR_STRING, _nv_dbg_string);
-#else
-        portDbgPrintString(_nv_dbg_string, MAX_ERROR_STRING);
-#endif
+
+        //
+        // Basic repeat print coalescing
+        //
+        // If the message to be printed is *exactly* the same, and it comes in
+        // more often than once per second, don't print it and instead just
+        // increment a counter. We print the number of coalesced messages when
+        // either a different message comes in, or more than 1 second has passed
+        const NvU64 maxTimeForCoalescing = 1000; // milliseconds
+        //
+        // This has an edge case where a print comes in a couple of times in
+        // rapid succession, and then no prints happen for a long time. In this
+        // case only the first print would show up immediately, and the note
+        // about additional prints would come at some point in the future.
+        // To make this a bit less of an issue, we avoid coalescing the first
+        // couple of prints. This is only meant for *really* spammy prints.
+        const NvU32 coalesceThreshold = 2;
+        //
+        const NvLength len = portStringLength(_nv_dbg_string);
+        const NvBool bEndsWithNewline = (len > 0) && (_nv_dbg_string[len - 1] == '\n');
+        const NvBool bSame = bEndsWithNewline && (portStringCompare(_nv_dbg_string1, _nv_dbg_string2, MAX_ERROR_STRING) == 0);
+        const NvBool bWithinWindow = (now - last_print_time) < maxTimeForCoalescing;
+
+        if (!bSame || !bWithinWindow)
+        {
+            if (last_print_repeats > coalesceThreshold)
+            {
+                portDbgExPrintfLevel(last_print_level, NV_PRINTF_PREFIX NV_PRINTF_PREFIX_SEPARATOR
+                    "--- last print repeated %u times ---\n", last_print_repeats - coalesceThreshold);
+            }
+            last_print_repeats = 0;
+        }
+
+        last_print_repeats++;
+
+        if (!bSame || !bWithinWindow || (last_print_repeats <= coalesceThreshold))
+        {
+            portDbgExPrintfLevel(level, "%.*s", MAX_ERROR_STRING, _nv_dbg_string);
+            last_print_level = level;
+            last_print_time = now;
+        }
+
+        _nv_dbg_string_swap();
         portSyncSpinlockRelease(_nv_dbg_lock);
     }
 }

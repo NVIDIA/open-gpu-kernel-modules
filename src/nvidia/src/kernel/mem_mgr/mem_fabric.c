@@ -78,6 +78,34 @@ _memoryfabricMemDescGetNumAddr
 }
 
 static NV_STATUS
+_memoryfabricValidateHandleParams
+(
+    OBJGPU *pGpu,
+    NvU32   allocFlags
+)
+{
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_HANDLE_TRANSLATION_DEF))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Handle allocations are not supported on pre-Blackwell\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (allocFlags & NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Non-contiguous handle allocations are not supported\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!(allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Non-flexible handle allocations are not supported\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS
 _memoryfabricValidatePhysMem
 (
     RsClient           *pRsClient,
@@ -499,11 +527,32 @@ _memoryfabricAllocFabricVa
     }
     else
     {
+        NvBool bEmulatedHandle = !!(pAllocParams->allocFlags &
+                                    NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION);
+        NvU64 rangeLo;
+        NvU64 rangeHi;
+
+        if (bEmulatedHandle)
+        {
+            if (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) == 0)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "UC emulated-handle heap not configured on this platform\n");
+                return NV_ERR_NOT_SUPPORTED;
+            }
+            rangeLo = fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS);
+            rangeHi = fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS);
+        }
+        else
+        {
+            rangeLo = fabricvaspaceGetUCFlaStart(pFabricVAS);
+            rangeHi = fabricvaspaceGetUCFlaLimit(pFabricVAS);
+        }
+
         return fabricvaspaceAllocNonContiguous(pFabricVAS,
                                                pAllocParams->allocSize,
                                                pAllocParams->alignment,
-                                               fabricvaspaceGetUCFlaStart(pFabricVAS),
-                                               fabricvaspaceGetUCFlaLimit(pFabricVAS),
+                                               rangeLo, rangeHi,
                                                pAllocParams->pageSize, flags,
                                                ppAddr, pNumAddr);
     }
@@ -577,7 +626,7 @@ memoryfabricConstruct_IMPL
     NvHandle hPhysMem;
     NvBool   bFlexible = NV_FALSE;
     NvU32    mapFlags = 0;
-    NV_ADDRESS_SPACE addrSpace;
+    NV_ADDRESS_SPACE addrSpace = ADDR_UNKNOWN;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -644,6 +693,15 @@ memoryfabricConstruct_IMPL
 #endif
     }
 
+    if ((pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION))
+    {
+        status = _memoryfabricValidateHandleParams(pGpu, pAllocParams->allocFlags);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+    }
+
     if (bFlexible && (hPhysMem != 0))
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -674,7 +732,8 @@ memoryfabricConstruct_IMPL
                                NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS);
 
     {
-        addrSpace = ADDR_FABRIC_V2;
+        NvBool bEmulatedHandle = !!(pAllocParams->allocFlags &
+                                    NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION);
 
         status = _memoryfabricAllocFabricVa(pFabricVAS, pGpu,
                                             pParams, pAllocParams,
@@ -683,15 +742,22 @@ memoryfabricConstruct_IMPL
         {
             NV_PRINTF(LEVEL_ERROR,
                       "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
-                      "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx\n",
+                      "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx, "
+                      "heap: %s\n",
                       status, pAllocParams->allocSize,
-                      fabricvaspaceGetUCFlaStart(pFabricVAS),
-                      fabricvaspaceGetUCFlaLimit(pFabricVAS),
-                      pAllocParams->pageSize);
+                      bEmulatedHandle
+                          ? fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS)
+                          : fabricvaspaceGetUCFlaStart(pFabricVAS),
+                      bEmulatedHandle
+                          ? fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS)
+                          : fabricvaspaceGetUCFlaLimit(pFabricVAS),
+                      pAllocParams->pageSize,
+                      bEmulatedHandle ? "uc-emulated-handle" : "uc-pointer");
 
             return status;
         }
 
+        addrSpace = ADDR_FABRIC_V2;
     }
 
     // Create a memdesc to associate with the above allocation.
@@ -1018,23 +1084,29 @@ memoryfabricCtrlCmdDescribe_IMPL
 
     if (gpuFabricProbeIsSupported(pGpu))
     {
-        status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                                 &pParams->attrs.cliqueId);
+        NvU8 cliqueType = NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER;
+        NvU32 cliqueId;
+
+        if (pMemdescData->allocFlags & NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION)
+            cliqueType = NV_FABRIC_CLIQUE_TYPE_UNICAST_HANDLE;
+
+        status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                       cliqueType, &cliqueId);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "unable to query cliqueId 0x%x\n", status);
             return status;
         }
 
+        pParams->attrs.clique = GPU_FABRIC_MAKE_CLIQUE(cliqueType, cliqueId);
         pParams->attrs.bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
         pParams->attrs.bwModeEpoch = knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
-
     }
     else
     {
         pParams->attrs.bwMode = 0;
         pParams->attrs.bwModeEpoch = 0;
-        pParams->attrs.cliqueId = 0;
+        pParams->attrs.clique = 0;
     }
 
     pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);

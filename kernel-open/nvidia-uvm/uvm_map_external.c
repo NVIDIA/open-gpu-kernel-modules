@@ -370,10 +370,10 @@ static uvm_membar_t va_range_downgrade_membar(uvm_va_range_t *va_range, uvm_ext_
         return UVM_MEMBAR_GPU;
 
     // EGM uses the same barriers as sysmem.
-    return uvm_hal_downgrade_membar_type(ext_gpu_map->gpu,
+    return uvm_hal_downgrade_membar_type(ext_gpu_map->base.gpu,
                                          !ext_gpu_map->is_sysmem &&
                                          !ext_gpu_map->is_fabricmem &&
-                                         ext_gpu_map->gpu == ext_gpu_map->owning_gpu);
+                                         ext_gpu_map->base.gpu == ext_gpu_map->owning_gpu);
 }
 
 NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
@@ -423,8 +423,8 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
         // We should be never called with ext_gpu_map == NULL
         // and UVM_VA_RANGE_TYPE_EXTERNAL
         UVM_ASSERT(ext_gpu_map != NULL);
-        node = &ext_gpu_map->node;
-        pt_range_vec = &ext_gpu_map->pt_range_vec;
+        node = &ext_gpu_map->base.node;
+        pt_range_vec = &ext_gpu_map->base.pt_range_vec;
     }
     else {
         node = &va_range->node;
@@ -700,7 +700,7 @@ static uvm_ext_gpu_map_t *uvm_va_range_ext_gpu_map(uvm_va_range_external_t *exte
         node = uvm_range_tree_find(&range_tree->tree, addr);
         if (node) {
             ext_gpu_map = uvm_ext_gpu_map_container(node);
-            UVM_ASSERT(ext_gpu_map->gpu == mapping_gpu);
+            UVM_ASSERT(ext_gpu_map->base.gpu == mapping_gpu);
         }
     }
     else {
@@ -719,18 +719,18 @@ static NV_STATUS uvm_ext_gpu_map_split(uvm_range_tree_t *tree,
     NV_STATUS status;
     NvU64 new_start = new_end + 1;
 
-    if (!IS_ALIGNED(new_start, existing_map->pt_range_vec.page_size))
+    if (!IS_ALIGNED(new_start, existing_map->base.pt_range_vec.page_size))
         return NV_ERR_INVALID_ADDRESS;
 
-    UVM_ASSERT(new_start >= existing_map->node.start && new_start < existing_map->node.end);
+    UVM_ASSERT(new_start >= existing_map->base.node.start && new_start < existing_map->base.node.end);
 
     new = uvm_kvmalloc_zero(sizeof(*new));
     if (!new)
         return NV_ERR_NO_MEMORY;
 
-    RB_CLEAR_NODE(&new->node.rb_node);
+    RB_CLEAR_NODE(&new->base.node.rb_node);
     new->mem_handle = existing_map->mem_handle;
-    new->gpu = existing_map->gpu;
+    new->base.gpu = existing_map->base.gpu;
     new->owning_gpu = existing_map->owning_gpu;
     new->is_sysmem = existing_map->is_sysmem;
     new->is_egm = existing_map->is_egm;
@@ -745,20 +745,22 @@ static NV_STATUS uvm_ext_gpu_map_split(uvm_range_tree_t *tree,
         return status;
     }
 
-    status = uvm_page_table_range_vec_split_upper(&existing_map->pt_range_vec, new_start - 1, &new->pt_range_vec);
+    status = uvm_page_table_range_vec_split_upper(&existing_map->base.pt_range_vec,
+                                                  new_start - 1,
+                                                  &new->base.pt_range_vec);
     if (status != NV_OK) {
         uvm_tracker_deinit(&new->tracker);
         uvm_kvfree(new);
         return status;
     }
 
-    new->node.start = new_start;
+    new->base.node.start = new_start;
 
     // Sparse mappings don't have actual allocations.
     if (new->mem_handle)
         nv_kref_get(&new->mem_handle->ref_count);
 
-    uvm_range_tree_split(tree, &existing_map->node, &new->node);
+    uvm_range_tree_split(tree, &existing_map->base.node, &new->base.node);
 
     if (new_map)
         *new_map = new;
@@ -822,13 +824,13 @@ static NV_STATUS uvm_unmap_external_in_range(uvm_va_range_external_t *external_r
     //      newly created uvm_ext_gpu_map_t.
     ext_map = uvm_ext_gpu_map_iter_first(external_range, gpu, start, end);
     while (ext_map) {
-        if (start > ext_map->node.start) {
+        if (start > ext_map->base.node.start) {
             status = uvm_ext_gpu_map_split(&range_tree->tree, ext_map, start - 1, &ext_map_next);
             if (status != NV_OK)
                 break;
         }
         else {
-            if (end < ext_map->node.end) {
+            if (end < ext_map->base.node.end) {
                 status = uvm_ext_gpu_map_split(&range_tree->tree, ext_map, end, NULL);
                 if (status != NV_OK)
                     break;
@@ -886,9 +888,9 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_external_t *ext
 
     // Insert the ext_gpu_map into the external range immediately since some of
     // the below calls require it to be there.
-    ext_gpu_map->node.start = base;
-    ext_gpu_map->node.end = base + length - 1;
-    RB_CLEAR_NODE(&ext_gpu_map->node.rb_node);
+    ext_gpu_map->base.node.start = base;
+    ext_gpu_map->base.node.end = base + length - 1;
+    RB_CLEAR_NODE(&ext_gpu_map->base.node.rb_node);
     uvm_tracker_init(&ext_gpu_map->tracker);
     ext_gpu_map->mem_handle = uvm_kvmalloc_zero(sizeof(*ext_gpu_map->mem_handle));
     if (!ext_gpu_map->mem_handle) {
@@ -898,11 +900,11 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_external_t *ext
 
     // Due to the fact that any overlapping mappings were already unmapped,
     // adding the new mapping to the tree cannot fail.
-    status = uvm_range_tree_add(&range_tree->tree, &ext_gpu_map->node);
+    status = uvm_range_tree_add(&range_tree->tree, &ext_gpu_map->base.node);
     UVM_ASSERT(status == NV_OK);
 
     uvm_processor_mask_set_atomic(&external_range->mapped_gpus, mapping_gpu->id);
-    ext_gpu_map->gpu = mapping_gpu;
+    ext_gpu_map->base.gpu = mapping_gpu;
     ext_gpu_map->mem_handle->gpu = mapping_gpu;
     nv_kref_init(&ext_gpu_map->mem_handle->ref_count);
 
@@ -952,7 +954,7 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_external_t *ext
         // allocations, the vMMU segment size may limit the range of page sizes.
         biggest_mapping_page_size = uvm_mmu_biggest_page_size_up_to(&gpu_va_space->page_tables,
                                                                     mapping_gpu->mem_info.max_vidmem_page_size);
-        if (!ext_gpu_map->is_sysmem && (ext_gpu_map->gpu == ext_gpu_map->owning_gpu) &&
+        if (!ext_gpu_map->is_sysmem && (ext_gpu_map->base.gpu == ext_gpu_map->owning_gpu) &&
             (mapping_page_size > biggest_mapping_page_size))
             mapping_page_size = biggest_mapping_page_size;
     }
@@ -1135,31 +1137,31 @@ static NV_STATUS uvm_map_external_sparse_on_gpu(uvm_va_range_external_t *externa
         goto error;
     }
 
-    ext_gpu_map->node.start = base;
-    ext_gpu_map->node.end = base + length - 1;
-    RB_CLEAR_NODE(&ext_gpu_map->node.rb_node);
+    ext_gpu_map->base.node.start = base;
+    ext_gpu_map->base.node.end = base + length - 1;
+    RB_CLEAR_NODE(&ext_gpu_map->base.node.rb_node);
     uvm_tracker_init(&ext_gpu_map->tracker);
 
     // Due to the fact that any overlapping mappings were already unmapped,
     // adding the new mapping to the tree cannot fail.
-    status = uvm_range_tree_add(&range_tree->tree, &ext_gpu_map->node);
+    status = uvm_range_tree_add(&range_tree->tree, &ext_gpu_map->base.node);
     UVM_ASSERT(status == NV_OK);
 
     uvm_processor_mask_set_atomic(&external_range->mapped_gpus, mapping_gpu->id);
-    ext_gpu_map->gpu = mapping_gpu;
+    ext_gpu_map->base.gpu = mapping_gpu;
 
     UVM_ASSERT(uvm_va_range_ext_gpu_map(external_range, mapping_gpu, base) == ext_gpu_map);
 
     status = uvm_page_table_range_vec_init(page_tree,
-                                           ext_gpu_map->node.start,
-                                           uvm_range_tree_node_size(&ext_gpu_map->node),
+                                           ext_gpu_map->base.node.start,
+                                           uvm_range_tree_node_size(&ext_gpu_map->base.node),
                                            UVM_PAGE_SIZE_64K,
                                            UVM_PMM_ALLOC_FLAGS_EVICT,
-                                           &ext_gpu_map->pt_range_vec);
+                                           &ext_gpu_map->base.pt_range_vec);
     if (status != NV_OK)
         goto error;
 
-    status = uvm_page_table_range_vec_write_ptes(&ext_gpu_map->pt_range_vec,
+    status = uvm_page_table_range_vec_write_ptes(&ext_gpu_map->base.pt_range_vec,
                                                  UVM_MEMBAR_NONE,
                                                  external_sparse_pte_maker,
                                                  NULL);
@@ -1233,7 +1235,7 @@ static uvm_gpu_t *uvm_ext_gpu_map_free_internal(uvm_ext_gpu_map_t *ext_gpu_map)
     if (!ext_gpu_map)
         return NULL;
 
-    UVM_ASSERT(!ext_gpu_map->pt_range_vec.ranges);
+    UVM_ASSERT(!ext_gpu_map->base.pt_range_vec.ranges);
 
     if (ext_gpu_map->mem_handle)
         nv_kref_put(&ext_gpu_map->mem_handle->ref_count, uvm_release_rm_handle);
@@ -1267,13 +1269,13 @@ void uvm_ext_gpu_map_destroy(uvm_va_range_external_t *external_range,
     // The external map is inserted into the tree prior to the rest of the mapping
     // steps. So, if it has not been inserted yet, there is nothing to clean up. Just
     // free the memory.
-    if (RB_EMPTY_NODE(&ext_gpu_map->node.rb_node)) {
+    if (RB_EMPTY_NODE(&ext_gpu_map->base.node.rb_node)) {
         uvm_kvfree(ext_gpu_map->mem_handle);
         uvm_kvfree(ext_gpu_map);
         return;
     }
 
-    mapped_gpu = ext_gpu_map->gpu;
+    mapped_gpu = ext_gpu_map->base.gpu;
 
     range_tree = uvm_ext_gpu_range_tree(external_range, mapped_gpu);
 
@@ -1297,13 +1299,13 @@ void uvm_ext_gpu_map_destroy(uvm_va_range_external_t *external_range,
     uvm_assert_mutex_locked(&range_tree->lock);
     UVM_ASSERT(uvm_gpu_va_space_get(external_range->va_range.va_space, mapped_gpu));
 
-    uvm_range_tree_remove(&range_tree->tree, &ext_gpu_map->node);
+    uvm_range_tree_remove(&range_tree->tree, &ext_gpu_map->base.node);
 
     // Unmap the PTEs
-    if (ext_gpu_map->pt_range_vec.ranges) {
+    if (ext_gpu_map->base.pt_range_vec.ranges) {
         membar = va_range_downgrade_membar(&external_range->va_range, ext_gpu_map);
-        uvm_page_table_range_vec_clear_ptes(&ext_gpu_map->pt_range_vec, membar);
-        uvm_page_table_range_vec_deinit(&ext_gpu_map->pt_range_vec);
+        uvm_page_table_range_vec_clear_ptes(&ext_gpu_map->base.pt_range_vec, membar);
+        uvm_page_table_range_vec_deinit(&ext_gpu_map->base.pt_range_vec);
     }
 
     if (deferred_free_list && ext_gpu_map->mem_handle) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -227,6 +227,48 @@ nv_drm_atomic_replace_property_blob_from_id(struct drm_device *dev,
     drm_property_blob_put(new_blob);
 
     return 0;
+}
+
+int
+nv_drm_atomic_replace_property_blob_from_id_size_range(struct drm_device *dev,
+                                                       struct drm_property_blob **blob,
+                                                       uint64_t blob_id,
+                                                       ssize_t min_size,
+                                                       ssize_t max_size)
+{
+    struct drm_property_blob *new_blob = NULL;
+
+    if (blob_id != 0) {
+        new_blob = drm_property_lookup_blob(dev, blob_id);
+        if (new_blob == NULL) {
+            return -EINVAL;
+        }
+
+        if (((min_size > 0) && (new_blob->length < min_size)) ||
+            ((max_size > 0) && (new_blob->length > max_size))) {
+            drm_property_blob_put(new_blob);
+            return -EINVAL;
+        }
+    }
+
+    nv_drm_atomic_replace_property_blob(blob, new_blob, NULL);
+    drm_property_blob_put(new_blob);
+
+    return 0;
+}
+
+NvBool nv_drm_blobs_equal(const struct drm_property_blob *old_blob,
+                          const struct drm_property_blob *new_blob)
+{
+    if (!old_blob || !new_blob) {
+        return old_blob == new_blob;
+    }
+
+    if (old_blob->length != new_blob->length) {
+        return NV_FALSE;
+    }
+
+    return (memcmp(old_blob->data, new_blob->data, old_blob->length) == 0);
 }
 
 #endif /* NV_DRM_AVAILABLE */

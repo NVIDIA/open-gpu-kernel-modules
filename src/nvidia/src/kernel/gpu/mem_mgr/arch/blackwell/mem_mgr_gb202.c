@@ -25,7 +25,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "published/blackwell/gb202/kind_macros.h"
 #include "published/blackwell/gb202/dev_mmu.h"

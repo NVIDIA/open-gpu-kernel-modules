@@ -814,6 +814,7 @@ _gpuConvertPid
     NvU32    *pNsPid
 )
 {
+
     if (pClient->pOsPidInfo != NULL)
         return osFindNsPid(pClient->pOsPidInfo, pNsPid);
 
@@ -1087,7 +1088,7 @@ _gpuCollectMemInfo
         {
             NvBool bIsMemProtected = NV_FALSE;
 
-            bIsMemProtected = gpuIsCCorApmFeatureEnabled(pMemory->pMemDesc->pGpu) &&
+            bIsMemProtected = gpuIsCCFeatureEnabled(pMemory->pMemDesc->pGpu) &&
                               (pMemory->Flags & NVOS32_ALLOC_FLAGS_PROTECTED);
             if (bIsMemProtected)
             {

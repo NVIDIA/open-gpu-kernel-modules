@@ -28,7 +28,7 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "platform/sli/sli.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
@@ -111,7 +111,7 @@ memmgrScrubRegistryOverrides_GA100
     //
     // Disabling the SCRUB_ON_FREE property for all the platforms except Windows TCC Mode.
     // Disabling in Non-TCC windows because the OS manages FB
-    // Disabling for Simulation Platforms, since slower in simulation
+    // Disabling for Simulation Platforms, except for Tegra FSF
     // Disabling in DFPGA, since they skip the Host Load
     // Disabling for vGPU (host), since the plugin has scrubbing support
     // Disabling for legacy VGPU (guest), blocked on bug #1929798
@@ -121,7 +121,8 @@ memmgrScrubRegistryOverrides_GA100
     //
 
     if ((RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE)) ||
-         IS_SIMULATION(pGpu) || IsDFPGA(pGpu) ||
+         ((RMCFG_FEATURE_PLATFORM_MODS || !pMemoryManager->bSysmemCompressionSupportDef) &&
+            (IS_SIMULATION(pGpu) || IsDFPGA(pGpu))) ||
          pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU) ||
          IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
          RMCFG_FEATURE_PLATFORM_GSP ||
@@ -132,13 +133,11 @@ memmgrScrubRegistryOverrides_GA100
     }
 
     //
-    // CE virtual writes are used in the following cases
-    // 1. When SR-IOV heavy is in use on GA100
-    // 2. When APM is enabled on GA100.
+    // CE virtual writes are used in the following case:
+    // When SR-IOV heavy is in use on GA100
     //
     if (pMemoryManager->bScrubOnFreeEnabled &&
-        ((IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)) ||
-        gpuIsApmFeatureEnabled(pGpu)))
+        ((IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))))
     {
         pMemoryManager->bUseVasForCeMemoryOps = NV_TRUE;
     }
@@ -170,7 +169,7 @@ memmgrReadMmuLock_GA100
 
     if (!FLD_TEST_DRF(_PFB_PRI, _MMU_LOCK_CFG_PRIV_LEVEL_MASK, _READ_PROTECTION_LEVEL0, _ENABLE, plm))
     {
-        NV_PRINTF(LEVEL_ERROR, "MMU_LOCK read permission disabled, PLM val 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "MMU_LOCK read permission disabled, PLM val 0x%08x\n",
                          plm);
         NV_ASSERT(0);
         return NV_ERR_INSUFFICIENT_RESOURCES;
@@ -244,7 +243,7 @@ memmgrBlockMemLockedMemory_GA100
     blockedFbRegion.bInternalHeap = NV_FALSE;
     blockedFbRegion.bLostOnSuspend = NV_TRUE;
 
-    memmgrInsertFbRegion(pGpu, pMemoryManager, &blockedFbRegion);
+    NV_ASSERT_OK_OR_RETURN(memmgrInsertFbRegion(pGpu, pMemoryManager, &blockedFbRegion, NULL));
 
     pMemoryManager->Ram.fbUsableMemSize -= size;
 
@@ -490,7 +489,7 @@ memmgrInsertUnprotectedRegionAtBottomOfFb_GA100
     fbRegion.bProtected = NV_FALSE;
     fbRegion.bInternalHeap = NV_FALSE;
 
-    memmgrInsertFbRegion(pGpu, pMemoryManager, &fbRegion);
+    NV_ASSERT_OK_OR_RETURN(memmgrInsertFbRegion(pGpu, pMemoryManager, &fbRegion, NULL));
 
     NV_PRINTF(LEVEL_INFO, "Unprotected Block Start: 0x%0llx End: 0x%0llx Size: 0x%0llx\n",
                        memLockLo, memLockHi, size);

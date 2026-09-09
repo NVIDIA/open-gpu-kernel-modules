@@ -124,6 +124,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel =
 {
     .classInfo.size =               sizeof(DispChannel),
     .classInfo.classId =            classId(DispChannel),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "DispChannel",
@@ -757,6 +758,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio =
 {
     .classInfo.size =               sizeof(DispChannelPio),
     .classInfo.classId =            classId(DispChannelPio),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "DispChannelPio",
@@ -1410,6 +1412,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma =
 {
     .classInfo.size =               sizeof(DispChannelDma),
     .classInfo.classId =            classId(DispChannelDma),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "DispChannelDma",

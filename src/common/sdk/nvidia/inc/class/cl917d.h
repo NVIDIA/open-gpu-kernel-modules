@@ -1103,6 +1103,9 @@ extern "C" {
 #define NV917D_HEAD_SET_CONTROL_MASTER_STEREO_LOCK_MODE                         31:31
 #define NV917D_HEAD_SET_CONTROL_MASTER_STEREO_LOCK_MODE_DISABLE                 (0x00000000)
 #define NV917D_HEAD_SET_CONTROL_MASTER_STEREO_LOCK_MODE_ENABLE                  (0x00000001)
+#define NV917D_HEAD_SET_LOCK_OFFSET(a)                                          (0x0000040C + (a)*0x00000300)
+#define NV917D_HEAD_SET_LOCK_OFFSET_X                                           14:0
+#define NV917D_HEAD_SET_LOCK_OFFSET_Y                                           30:16
 #define NV917D_HEAD_SET_OVERSCAN_COLOR(a)                                       (0x00000410 + (a)*0x00000300)
 #define NV917D_HEAD_SET_OVERSCAN_COLOR_RED                                      9:0
 #define NV917D_HEAD_SET_OVERSCAN_COLOR_GRN                                      19:10

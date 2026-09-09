@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -138,7 +138,7 @@ static const PCIE_EXT_CFG_REG_INFO pcieExtCfgRegInfo[] = {
     {{NV_PF0_FLIT_LOGGING_EXTENDED_CAPABILITY_HEADER                   , NV_PF0_FBER_MEASUREMENT_STATUS_10                        , NV_PCIE_REG_CAP_ID_EXT_CFG_FLIT_LOGGING_CAP               }, NV_PCIE_REG_VEN_ID_INVALID                                               , NV_PCIE_REG_DVSEC_LENGTH_INVALID                                     },
     {{NV_PF0_DVSEC0_CAP_HEADER                                         , NV_PF0_NV_CXL_DVSEC0_CXL_LOCK_CAP_3                      , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                       , NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_LENGTH_DEFAULT                      },
     {{NV_PF0_DVSEC8_CAP_HEADER                                         , NV_PF0_DVSEC8_REGISTER_BLOCK_3_REGISTER_OFFSET_HIGH      , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DVSEC8_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                           , NV_PF0_DVSEC8_HEADER_1_DVSEC_LENGTH_DEFAULT                          },
-    {{NV_PF0_DVSEC0_CAPABILITY_HEADER                                  , NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1                       , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_VENDOR_ID_DEFAULT , NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_LENGTH_DEFAULT},
+    {{NV_PF0_DVSEC0_CAPABILITY_HEADER                                  , NV_PF0_DVSEC0_GPU_BOOT_STATUS                            , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_VENDOR_ID_DEFAULT , NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_LENGTH_DEFAULT},
     {{NV_PF0_DVSEC1_CAPABILITY_HEADER                                  , NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_2             , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_1_NV_DVSEC1_VENDOR_ID_DEFAULT , NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_1_NV_DVSEC1_LENGTH_DEFAULT},
     {{NV_PF0_DVSEC2_CAP_HEADER                                         , NV_PF0_NON_CXL_FUNCTION_REGISTER_8                       , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DVSEC2_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                           , NV_PF0_DVSEC2_HEADER_1_DVSEC_LENGTH_DEFAULT                          },
     {{NV_PF0_DVSEC7_CAP_HEADER                                         , NV_PF0_DVSEC7_FLEX_BUS_PORT_STATUS_2                     , NV_PCIE_REG_CAP_ID_EXT_CFG_DVSEC_CAP                      }, NV_PF0_DVSEC7_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                           , NV_PF0_DVSEC7_HEADER_1_DVSEC_LENGTH_DEFAULT                          },

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,8 +36,9 @@
 #include "gpu/hfrp/kernel_hfrp.h"
 #include "kernel/gpu/hfrp/kern_hfrp_common.h"
 #include "kernel/gpu/hfrp/kern_hfrp_commands_responses.h"
+#include "gpu/gpu_mods_error.h"
 
-#include "published/blackwell/gb20b/dev_boot_zb.h"
+#include "published/blackwell/gb20b/dev_pmc_zb.h"
 #include "published/blackwell/gb20b/dev_xtl_ep_pcfg_gpu.h"
 
 //
@@ -85,6 +86,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB20B[] =
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 1),
     GPU_CHILD_PRESENT(KernelHFRP, 1),
+    GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -117,6 +119,8 @@ gpuHandleSecFault_GB20B
 
     MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC:0x%x\n",
                             secDebug);
+    MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                          MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, secDebug);
     NV_PRINTF(LEVEL_FATAL, "SEC_FAULT lockdown detected. This is fatal. "
                             "RM will now shut down. NV_EP_PCFG_GPU_VSEC_DEBUG_SEC: 0x%x\n",
                             secDebug);
@@ -129,6 +133,8 @@ gpuHandleSecFault_GB20B
     if (DRF_VAL(_SYSCTRL, _SEC_FAULT_BIT_POSITION, field, secDebug) != 0) \
     { \
         MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC" #field "\n"); \
+        MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL, \
+                              MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, secDebug); \
         NV_PRINTF(LEVEL_FATAL, "SEC_FAULT type: " #field "\n"); \
         nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR, \
                       "SEC_FAULT: " #field ); \
@@ -157,6 +163,8 @@ gpuHandleSecFault_GB20B
     if (data != 0)
     {
         MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS value: 0x%x\n", data);
+        MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                              MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, data);
         NV_PRINTF(LEVEL_FATAL, "SEC_2_FAULT type: _IFF_POS value: 0x%x\n", data);
         nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR,
                       "SEC_FAULT: _IFF_POS value: 0x%x", data);
@@ -214,31 +222,46 @@ gpuPowerOn_GB20B(OBJGPU *pGpu)
         return NV_OK;
     }
 
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_GPU_HFRP_START;
+
     status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
                  &responseStatus, NULL, &responseSize);
 
     if (status != NV_OK)
     {
+
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_GPU_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn on iGPU power with status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn on iGPU power with status = 0x%x\n",
                   status);
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x80);
         return status;
     }
 
     if (responseStatus != 0U)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_GPU_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn on iGPU power with HFRP response status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn on iGPU power with HFRP response status = 0x%x\n",
                   responseStatus);
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x81);
+
         return NV_ERR_GENERIC;
     }
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_GPU_HFRP_END;
 
     status = gpuPowerOnHda_HAL(pGpu);
     if (status != NV_OK)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_HDA_HFRP_ERR;
+
         // Logging the error but not blocking iGPU D0 so reset to NV_OK
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn on HDA power\n");
+                  "ERROR: HFRP_CMD_failed to turn on HDA power\n");
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x82);
+
         status = NV_OK;
     }
 
@@ -275,25 +298,34 @@ gpuPowerOff_GB20B(OBJGPU *pGpu)
         return NV_OK;
     }
 
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_GPU_HFRP_START;
     status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
                  &responseStatus, NULL, &responseSize);
 
     if (status != NV_OK)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_GPU_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn off iGPU power with status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn off iGPU power with status = 0x%x\n",
                   status);
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x83);
+
         return status;
     }
 
     if (responseStatus != 0U)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_GPU_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn off iGPU power with HFRP response status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn off iGPU power with HFRP response status = 0x%x\n",
                   responseStatus);
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x84);
+
         return NV_ERR_GENERIC;
     }
-
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_GPU_HFRP_END;
     return status;
 }
 
@@ -335,24 +367,33 @@ gpuPowerOnHda_GB20B(OBJGPU *pGpu)
         return NV_OK;
     }
 
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_HDA_HFRP_START;
     status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
                  &responseStatus, NULL, &responseSize);
 
     if (status != NV_OK)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_HDA_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn on iGPU HDA power with status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn on iGPU HDA power with status = 0x%x\n",
                   status);
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x85);
+
         return status;
     }
 
     if (responseStatus != 0U)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_HDA_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn on iGPU HDA power with HFRP response status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn on iGPU HDA power with HFRP response status = 0x%x\n",
                   responseStatus);
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x86);
+
         return NV_ERR_GENERIC;
     }
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_PON_HDA_HFRP_END;
 
     return status;
 }
@@ -392,24 +433,34 @@ gpuPowerOffHda_GB20B(OBJGPU *pGpu)
         return NV_OK;
     }
 
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_HDA_HFRP_START;
     status = khfrpPostCommandBlocking(pKernelHfrp, HFRP_CMD_SOC_SET_DEVICE_POWER_STATE, &powerState, sizeof(powerState),
                  &responseStatus, NULL, &responseSize);
 
     if (status != NV_OK)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_HDA_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn off iGPU HDA power with status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn off iGPU HDA power with status = 0x%x\n",
                   status);
+
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x87);
+
         return status;
     }
 
     if (responseStatus != 0U)
     {
+        pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_HDA_HFRP_ERR;
         NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: HFRP_CMD_fialed to turn off iGPU HDA power with HFRP response status = 0x%x\n",
+                  "ERROR: HFRP_CMD_failed to turn off iGPU HDA power with HFRP response status = 0x%x\n",
                   responseStatus);
+        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x88);
+
         return NV_ERR_GENERIC;
     }
+
+    pGpu->resumeFootprint |= 1<<RESUME_FOOTPRINT_RESUME_POFF_HDA_HFRP_END;
 
     return status;
 }
@@ -424,6 +475,51 @@ NvBool
 gpuIsSocSdmEnabled_GB20B(OBJGPU *pGpu)
 {
 
+    return NV_TRUE;
+}
+
+/*!
+ * @brief Check if CBC SR needs to be scrubbed during GSP ACR boot
+ *
+ * Returns NV_TRUE when CBC SR scrubbing is needed (coldboot paths):
+ *   - Cold boot, FLR, driver disable/enable
+ *   - Hibernate (S4) resume: full power-off, GPU state not preserved
+ *
+ * Returns NV_FALSE when CBC SR scrubbing should be skipped (warmboot paths):
+ *   - D3hot (GC6/GC8 exit without power rail cut)
+ *   - D3cold (suspend/resume where memory is saved/restored)
+ *
+ * @param[in] pGpu      OBJGPU pointer
+ *
+ * @return NV_TRUE if CBC SR scrub is needed, NV_FALSE otherwise
+ */
+NvBool
+gpuRequiresCbcSrScrub_GB20B
+(
+    OBJGPU *pGpu
+)
+{
+    NvBool bGc6Exiting = IS_GPU_GC6_STATE_EXITING(pGpu);
+    NvBool bPmResume   = pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH);
+    NvBool bHibernate  = pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_HIBERNATE);
+
+    NV_PRINTF(LEVEL_INFO,
+        "gpuRequiresCbcSrScrub_GB20B: bGc6Exiting=%d bPmResume=%d bHibernate=%d\n",
+        bGc6Exiting, bPmResume, bHibernate);
+
+    if (bGc6Exiting)
+    {
+        NV_PRINTF(LEVEL_INFO, "gpuRequiresCbcSrScrub_GB20B: GC6 exit -> skip scrub (NV_FALSE)\n");
+        return NV_FALSE;
+    }
+
+    if (bPmResume && !bHibernate)
+    {
+        NV_PRINTF(LEVEL_INFO, "gpuRequiresCbcSrScrub_GB20B: PM resume (non-hibernate) -> skip scrub (NV_FALSE)\n");
+        return NV_FALSE;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "gpuRequiresCbcSrScrub_GB20B: coldboot/FLR/hibernate -> scrub (NV_TRUE)\n");
     return NV_TRUE;
 }
 

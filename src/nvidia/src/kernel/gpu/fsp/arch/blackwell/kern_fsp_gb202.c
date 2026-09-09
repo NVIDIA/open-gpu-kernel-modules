@@ -38,7 +38,10 @@
 #include "published/blackwell/gb202/dev_therm_addendum.h"
 
 #include "cper/gpu_cper.h"
-#include "nvRmReg.h"
+#include "events/gpu/fsp/fsp_events.h"
+#include "nvoc/event_bus.h"
+#include "nvport/time.h"
+#include "nvrm_registry.h"
 #include "nverror.h"
 
 // Keep NV_ERROR_LOG and CPER legacy-Xid text identical.
@@ -70,6 +73,7 @@ kfspWaitForSecureBoot_GB202
 {
     NV_STATUS status  = NV_OK;
     RMTIMEOUT timeout;
+    NvU32 timeoutUs;
 
     //
     // Polling for FSP boot complete
@@ -79,32 +83,29 @@ kfspWaitForSecureBoot_GB202
     // For flags, we must not use the GPU TMR since it is inaccessible.
     // Increase to 5 seconds for WS SKUs especially needed for SKU's with larger VRAM.
     //
-    gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 5000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 5000000), pGpu->timeoutData.defaultus);
+    gpuSetTimeout(pGpu, timeoutUs, &timeout,
+                  GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
+    NvU64 timeoutNs = (NvU64)timeoutUs * 1000ULL;
+    NvU64 waitStartNs = portTimeGetUptimeNanosecondsHighPrecision();
     status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GB202, NULL, &timeout);
 
     if (status != NV_OK)
     {
+        NvU64 waitEndNs = portTimeGetUptimeNanosecondsHighPrecision();
         NvU32 fspBootComplete = GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE);
         NvU32 s0 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0));
         NvU32 s1 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1));
         NvU32 s2 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2));
         NvU32 s3 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3));
-        char xidMessage[NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1];
-        static const NV_CPER_GUID notifyType = NV_CPER_NOTIFY_NVIDIA_GPU_TIMEOUT_GUID;
 
         NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
-        NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, KFSP_GB202_GPU_INIT_ERROR_FMT,
-                     status, fspBootComplete, s0, s1, s2, s3);
-
-        nvDbgSnprintf(xidMessage, sizeof(xidMessage), KFSP_GB202_GPU_INIT_ERROR_FMT,
-                      status, fspBootComplete, s0, s1, s2, s3);
-        kfspEmitGpuInitErrorCper(pGpu, pKernelFsp, &notifyType, 0x0001u, xidMessage);
+        eventEmit(FspBootTimeout, pKernelFsp, timeoutNs, waitEndNs - waitStartNs,
+                  status, fspBootComplete, s0, s1, s2, s3);
 
         kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
 
     return status;
 }
-

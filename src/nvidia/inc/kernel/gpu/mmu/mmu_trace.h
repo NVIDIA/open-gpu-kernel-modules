@@ -87,7 +87,7 @@ typedef struct
     PMMU_TRACE_ARG                     pArg;
 } MMU_TRACE_PARAM, *PMMU_TRACE_PARAM;
 
-typedef struct
+typedef struct MMU_TRACE_CALLBACKS
 {
     MmuTraceCbIsPte          isPte;
     MmuTraceCbGetFmtPde      getFmtPde;

@@ -22,6 +22,7 @@
  */
 
 #include "gpu/gpu.h"
+#include "core/system.h"
 #include "gpu/bif/kernel_bif.h"
 #include "platform/chipset/chipset.h"
 

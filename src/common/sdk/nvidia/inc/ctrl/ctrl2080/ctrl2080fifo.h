@@ -195,26 +195,6 @@ typedef struct NV2080_CTRL_FIFO_GET_INFO_PARAMS {
 
 
 /*
- * NV2080_CTRL_FIFO_CHANNEL_PREEMPTIVE_REMOVAL
- *
- * This command removes the specified channel from the associated GPU's runlist
- * and then initiates RC recovery.  If the channel is active it will first be preempted.
- *   hChannel
- *     The handle to the channel to be preempted.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_CHANNEL
- */
-#define NV2080_CTRL_CMD_FIFO_CHANNEL_PREEMPTIVE_REMOVAL (0x2080110a) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_CHANNEL_PREEMPTIVE_REMOVAL_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FIFO_CHANNEL_PREEMPTIVE_REMOVAL_PARAMS_MESSAGE_ID (0xAU)
-
-typedef struct NV2080_CTRL_FIFO_CHANNEL_PREEMPTIVE_REMOVAL_PARAMS {
-    NvHandle hChannel;
-} NV2080_CTRL_FIFO_CHANNEL_PREEMPTIVE_REMOVAL_PARAMS;
-
-/*
  * NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS
  *
  * This command will disable or enable scheduling of channels described in the
@@ -536,7 +516,7 @@ typedef struct NV2080_CTRL_FIFO_CONFIG_CTXSW_TIMEOUT_PARAMS {
 
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_DEVICES         256
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES         32
-#define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_DATA_TYPES   16
+#define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_DATA_TYPES   17
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_MAX_PBDMA    2
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_MAX_NAME_LEN 16
 
@@ -1137,4 +1117,52 @@ typedef struct NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS {
     NvU32    numChannels;
     NvU32    channelUniqueIDs[NV2080_CTRL_CMD_FIFO_MAX_CHANNELS_PER_TSG];
 } NV2080_CTRL_FIFO_QUERY_CHANNEL_UNIQUE_ID_PARAMS;
+/*
+ * NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT
+ *
+ * This command can be used to pass the guest virtual channel id to host
+ *
+ * NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS:
+ *  engineType             [IN]  engine type id as NV2080_ENGINE_TYPE_*
+ *  submitRunlistOffset    [IN]  For Turing+ submission offset of the submitting runlist.
+ *
+ * Channel IDs are maintained on the host via NV2080_CTRL_CMD_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE
+ * and no longer passed in the submit params.
+ *
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+
+#define NV2080_CTRL_CMD_FIFO_VGPU_SWRUNLIST_SUBMIT          (0x20801125) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_MAX_CHANNEL_ENTRIES 1024
+
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_MESSAGE_ID (0x25U)
+
+typedef struct NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS {
+    NvU32  engineType;
+    NvU32  submitRunlistOffset;
+    NvBool bUpdateRunlist;
+    NvBool bSkipSubmitRunlist;
+    NvBool bSubmitLastUpdatedRunlist;
+    NvU32  numRunlistEntries;
+} NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS;
+#define NV2080_CTRL_CMD_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE                    (0x20801126) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_OP_ADD                 0
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_OP_REMOVE              1
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_OP_CLEAR_ALL           2
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_OP_UPDATE_TSG_PRIORITY 3
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_LEVEL_REALTIME                0
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_LEVEL_FOCUS                   1
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_LEVEL_NORMAL                  2
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_LEVEL_IDLE                    3
+
+#define NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_MESSAGE_ID (0x26U)
+
+typedef struct NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS {
+    NvU32 engineType;
+    NvU32 vChId;
+    NvU32 channelLevel;
+    NvU32 operation;
+} NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS;
 /* _ctrl2080fifo_h_ */

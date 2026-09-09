@@ -26,7 +26,7 @@
  * @brief UEFI CPER (Common Platform Error Record) composition library implementation
  */
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 #include "cper/cper.h"
 #include "cper/gpu_cper.h"
@@ -41,9 +41,12 @@
 
 static NvBool _isValidCperHeader(const void *pBuffer, NvU32 bufferSize);
 
-void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefix)
+void cperDumpRecord(PORT_DEVICE        *pDev,
+                    PORT_LOG_LEVEL      level,
+                    const void         *pBuffer,
+                    NvU32               bufferSize,
+                    const char         *pLogPrefix)
 {
-    // TODO: switch to using a logger that propagates the log level in lieu of portDbgPrintf().
     const NV_CPER_RECORD_HEADER *pHdr;
     NvU32 i;
     NvU32 eventIdx = 0;
@@ -54,13 +57,13 @@ void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefi
 
     if (pBuffer == NULL || bufferSize < NV_CPER_RECORD_HEADER_SIZE)
     {
-        portDbgPrintf("invalid CPER buffer\n");
+        portDbgDevicePrintf(pDev, PORT_LOG_LEVEL_ERROR, "invalid CPER buffer\n");
         return;
     }
 
     if (!_isValidCperHeader(pBuffer, bufferSize))
     {
-        portDbgPrintf("invalid CPER signature\n");
+        portDbgDevicePrintf(pDev, PORT_LOG_LEVEL_ERROR, "invalid CPER signature\n");
         return;
     }
 
@@ -68,7 +71,7 @@ void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefi
     seq = cperRecordIdToSequence(pHdr->recordId);
 
     // For now this is NVIDIA-specific text formatting
-    cperNvidiaEventDumpRecordHeader(pHdr, seq, pLogPrefix);
+    cperNvidiaEventDumpRecordHeader(pDev, level, pHdr, seq, pLogPrefix);
 
     for (i = 0; i < pHdr->sectionCount; i++)
     {
@@ -91,9 +94,9 @@ void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefi
             sectionOffset + sectionLength > bufferSize ||
             sectionOffset < NV_CPER_RECORD_HEADER_SIZE)
         {
-            CPER_PRINT(seq, pLogPrefix, " Event %u, type: %s", eventIdx,
+            CPER_PRINT(pDev, level, seq, pLogPrefix, " Event %u, type: %s", eventIdx,
                        cperSeverityToString((NV_CPER_SEVERITY)pDesc->sectionSeverity));
-            CPER_PRINT(seq, pLogPrefix, " decoding_error: section out of bounds");
+            CPER_PRINT(pDev, level, seq, pLogPrefix, " decoding_error: section out of bounds");
             eventIdx++;
             continue;
         }
@@ -102,13 +105,14 @@ void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefi
 
         if (cperGuidEqual(&pDesc->sectionType, &nvEventSectionType))
         {
-            cperNvidiaEventDumpSection(eventIdx, pHdr, pDesc, pSection, sectionLength, seq, pLogPrefix);
+            cperNvidiaEventDumpSection(pDev, level, eventIdx, pHdr, pDesc, pSection,
+                                       sectionLength, seq, pLogPrefix);
         }
         else
         {
-            CPER_PRINT(seq, pLogPrefix, " Event %u, type: %s", eventIdx,
+            CPER_PRINT(pDev, level, seq, pLogPrefix, " Event %u, type: %s", eventIdx,
                        cperSeverityToString((NV_CPER_SEVERITY)pDesc->sectionSeverity));
-            CPER_PRINT(seq, pLogPrefix, "  section_type: " NV_CPER_GUID_FMT,
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "  section_type: " NV_CPER_GUID_FMT,
                        NV_CPER_GUID_FMT_ARGS(&pDesc->sectionType));
         }
 
@@ -191,6 +195,10 @@ static NvU64 _getDecadeEpochMicroseconds(void)
     PORT_WALLTIME decadeStart = {0};
     PORT_WALLTIME wallTime = portTimeGetLocalWallTime();
 
+    // If walltime isn't supported, don't bother with the remaining logic
+    if (wallTime.year == 0)
+        return 0;
+
     decadeStart.year = (wallTime.year / 10) * 10;
     decadeStart.month = 1;
     decadeStart.day = 1;
@@ -198,17 +206,21 @@ static NvU64 _getDecadeEpochMicroseconds(void)
     return portTimeConvertToUnixMs(decadeStart) * 1000ULL;
 }
 
-/*
- * Generate a unique record ID.
- * High 49 bits: microseconds since the start of the current decade
- * Low 15 bits: atomic counter
- *
- * The decade is derived from the current year (2020-2029 -> 2020, etc.).
- * 49 bits of microseconds covers ~17.8 years, fully covering any decade.
- * Combined with the BCD timestamp in the record header (which has the full year),
- * this provides unique identification without Y2K38 issues.
- */
-static NvU64 _generateRecordId(void)
+//
+// Generate a unique record ID.
+// High 49 bits: microseconds since the start of the current decade.
+// Low 15 bits: atomic counter.
+//
+// The decade is derived from the current year (2020-2029 -> 2020, etc.).
+// 49 bits of microseconds covers ~17.8 years, fully covering any decade.
+// Combined with the BCD timestamp in the record header (which has the full
+// year), this provides unique identification without Y2K38 issues.
+//
+// Public so that producers like the OpEventLog can construct group cursors in
+// the same encoding and avoid divergence when the cursor is later written into
+// the CPER record header.
+//
+NvU64 cperGenerateRecordId(void)
 {
     static PORT_ATOMIC NvU32 sCounter = 0;
     NvU64 currentUs;
@@ -226,12 +238,24 @@ static NvU64 _generateRecordId(void)
 }
 
 /*
- * Populate timestamp from system wall clock
+ * Populate timestamp from a supplied microsecond wall clock, or current time.
  */
-static void _populateTimestamp(NV_CPER_TIMESTAMP *pTimestamp, NvBool bPrecise)
+static NvBool _populateTimestamp
+(
+    NV_CPER_TIMESTAMP *pTimestamp,
+    NvU64              timestampUs,
+    NvBool             bPrecise
+)
 {
     PORT_WALLTIME wallTime = {0};
-    wallTime = portTimeGetLocalWallTime();
+
+    if (timestampUs != 0)
+        wallTime = portTimeConvertToWallTime(timestampUs / 1000ULL);
+    else
+        wallTime = portTimeGetLocalWallTime();
+
+    if (wallTime.year == 0)
+        return NV_FALSE;
 
     pTimestamp->seconds = _toBcd((NvU8)wallTime.second);
     pTimestamp->minutes = _toBcd((NvU8)wallTime.minute);
@@ -241,6 +265,7 @@ static void _populateTimestamp(NV_CPER_TIMESTAMP *pTimestamp, NvBool bPrecise)
     pTimestamp->year    = _toBcd((NvU8)(wallTime.year % 100));
     pTimestamp->century = _toBcd((NvU8)(wallTime.year / 100));
     pTimestamp->flags   = bPrecise ? 0x01 : 0x00;
+    return NV_TRUE;
 }
 
 /*
@@ -411,13 +436,15 @@ NV_STATUS cperInit
     pHeader->sectionCount = pParams->sectionCount;
     pHeader->errorSeverity = (NvU32)NV_CPER_SEVERITY_INFORMATIONAL;
     pHeader->recordLength = requiredSize;
-    pHeader->recordId = _generateRecordId();
+    pHeader->recordId = (pParams->recordId != 0) ? pParams->recordId : cperGenerateRecordId();
     pHeader->flags = 0;
     pHeader->persistenceInfo = 0;
 
-    // Populate timestamp from system wall clock
-    _populateTimestamp(&pHeader->timestamp, pParams->bTimestampPrecise);
-    pHeader->validationBits = NV_CPER_VALID_TIMESTAMP;
+    // Populate timestamp from caller-supplied or current wall clock.
+    if (_populateTimestamp(&pHeader->timestamp, pParams->timestampUs, pParams->bTimestampPrecise))
+        pHeader->validationBits = NV_CPER_VALID_TIMESTAMP;
+    else
+        pHeader->validationBits = 0;
 
     // Copy notification type and creator ID
     cperGuidCopy(&pHeader->notificationType, pParams->pNotifyType);
@@ -740,4 +767,3 @@ NV_STATUS cperGetFirstSectionFruId
 
     return NV_OK;
 }
-

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,11 +43,13 @@ typedef struct {
     enum NvKmsOutputTf tf;
     NvBool hdrInfoFrameOverride;
     NvU32 hdrStaticMetadataLayerMask;
-    NvBool colorFormatSpecified : 1;
-    NvBool colorBpcSpecified    : 1;
-    NvBool colorRangeSpecified  : 1;
-    NvBool hs10bpcHint          : 1;
-    NvBool changed              : 1;
+    NvBool postcompColorPassthrough : 1;
+    NvBool colorFormatSpecified     : 1;
+    NvBool colorBpcSpecified        : 1;
+    NvBool colorRangeSpecified      : 1;
+    NvBool hs10bpcHint              : 1;
+    NvBool hdmiVsifMetadataEnabled  : 1;
+    NvBool changed                  : 1;
 } NVProposedModeSetStateOneApiHead;
 
 typedef struct {

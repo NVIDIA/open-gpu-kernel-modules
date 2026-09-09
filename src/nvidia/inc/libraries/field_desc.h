@@ -232,6 +232,9 @@ nvFieldIsValid64(const NV_FIELD_DESC64 *pField)
 {
     NvU32 i;
     NvU32 aggregate_mask = 0;
+
+    (void)aggregate_mask;
+
     for (i = 0; i < pField->regionCount; i++) {
         // Forbid empty registers
         if (pField->regions[i].maskPos == 0)

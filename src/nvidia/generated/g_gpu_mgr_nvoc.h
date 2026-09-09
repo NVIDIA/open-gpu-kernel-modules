@@ -57,6 +57,7 @@ struct OBJGPU;
 #include "gpu/gpu_device_mapping.h"
 #include "gpu/gpu_access.h"
 #include "gpu/gpu_arch.h"
+#include "gpu/timer/objtmr.h"
 #include "ctrl/ctrl0000/ctrl0000gpu.h"
 #include "ctrl/ctrl2080/ctrl2080ce.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
@@ -108,8 +109,6 @@ typedef struct
     NvBool    bRemoveIdle;  // remove this GPU once it's idle (detached)
     NvBool    bExcluded;    // this gpu is marked as excluded; do not use
     NvBool    bUuidValid;   // cached uuid is valid
-    NvBool    bSkipHwNvlinkDisable; //skip HW registers configuration for disabled links
-    NV2080_CTRL_NVLINK_LINK_MASK initDisabledNvlinks;
     NV_STATUS initStatus;
     NvU8      uuid[RM_SHA1_GID_SIZE];
     OS_RM_CAPS *pOsRmCaps;    // "Opaque" pointer to os-specific capabilities
@@ -134,7 +133,6 @@ typedef struct _def_gpumgr_save_vbios_state
 
 typedef struct CONF_COMPUTE_CAPS
 {
-    NvBool bApmFeatureCapable;
     NvBool bHccFeatureCapable;
     NvBool bCCFeatureEnabled;
     NvBool bDevToolsModeEnabled;
@@ -204,15 +202,68 @@ typedef struct _def_gpu_nvlink_topology_info
 
 typedef struct NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO
 {
-    NvBool bValid;
-    NvU64 DomainBusDevice;
     NvU64 startTime;
     PORT_ATOMIC NvU32 active;
     PORT_ATOMIC NvU32 rcCompleted;
-    PORT_ATOMIC NvU32 uvmIdle;
     PORT_ATOMIC NvU32 recoveryReady;
-    NvU8 uuid[RM_SHA1_GID_SIZE];
 } NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO;
+
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE 31:0
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_NOT_SET                                    0U
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING                    BIT(0)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_DONE                       BIT(1)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING_LFM_ACTION         BIT(4)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE      BIT(6)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE_DONE BIT(7)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_UVM_RESUME          BIT(8)
+#define NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_UVM_RESUME_DONE     BIT(9)
+
+/*
+ * @brief: per GPU structure tracking state for quiesce + resume traffic
+ * @params startTime -- time the traffic quiesce was started
+ * @params bLfmResponse -- if set, RM must send LFM action completion responses
+ * @params state -- state of the traffic quiesce flow
+ */
+typedef struct NVLINK_QUIESCE_TRAFFIC_INFO
+{
+    NvU64 startTime;
+    PORT_ATOMIC NvU32 bLfmResponse;
+    PORT_ATOMIC NvU32 state;
+} NVLINK_QUIESCE_TRAFFIC_INFO;
+
+/*!
+ * Enum values to indicate the state of uvmIdling
+ *
+ * _NOT_SET: UVM idle is not set and no workitems are running
+ * _DRAINP2P_WORKITEM_LAUNCHED: drainP2P workitem is already launched
+ * _IDLE: UVM is idled
+ * _RESUMEP2P_WORKITEM_LAUNCHED: resumeP2P workitem is already launched
+*/
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE                                 31:0
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE_NOT_SET                         BIT(0U)
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE_DRAINP2P_WORKITEM_LAUNCHED      BIT(1U)
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE_IDLE                            BIT(2U)
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE_RESUMEP2P_WORKITEM_LAUNCHED     BIT(3U)
+
+typedef struct NVLINK_RESILIENCY_INFO
+{
+   NvBool bValid;
+   TMR_EVENT *pAbmRetryEvent;
+   TMR_EVENT *pLfmRetryEvent;
+   NvU32 abmRetryCount;
+   NvU32 lfmQuiesceRetryCount;
+   PORT_ATOMIC NvU32 bPendingAbmLinkMaskUpdate;
+   PORT_ATOMIC NvU32 bPendingLfmTrafficQuiesce;
+   PORT_ATOMIC NvU32 active;
+   NvU64 DomainBusDevice;
+   PORT_ATOMIC NvU32 uvmIdle;
+   PORT_ATOMIC NvU32 recoveryReady;
+   PORT_ATOMIC NvU32 state;
+   NvU8 uuid[RM_SHA1_GID_SIZE];
+   NvU64 startTime;
+   NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO uncontainedErrorRecovery;
+   NVLINK_QUIESCE_TRAFFIC_INFO            quiesceTraffic;
+} NVLINK_RESILIENCY_INFO;
 
 typedef struct
 {
@@ -377,9 +428,9 @@ struct OBJGPUMGR {
     NvU8 powerDisconnectedGpuCount;
     NvU8 powerDisconnectedGpuBus[32];
     NVLINK_TOPOLOGY_INFO nvlinkTopologyInfo[32];
-    NvU8 nvlinkBwMode;
+    NvU16 nvlinkBwMode;
     NvU8 bwModeScope;
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO nvlinkUncontainedErrorRecoveryInfo[32];
+    NVLINK_RESILIENCY_INFO nvlinkResiliencyInfo[32];
     GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY MIGTopologyInfo[32];
     void *cachedMIGInfoLock;
     GPUMGR_CACHED_MIG_STATE cachedMIGInfo[32];
@@ -442,14 +493,8 @@ NvBool gpumgrGetSystemNvlinkTopo_IMPL(NvU64 DomainBusDevice, struct NVLINK_TOPOL
 void gpumgrUpdateSystemNvlinkTopo_IMPL(NvU64 DomainBusDevice, struct NVLINK_TOPOLOGY_PARAMS *pTopoParams);
 #define gpumgrUpdateSystemNvlinkTopo(DomainBusDevice, pTopoParams) gpumgrUpdateSystemNvlinkTopo_IMPL(DomainBusDevice, pTopoParams)
 
-NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO * gpumgrGetNvlinkRecoveryInfo_IMPL(NvU64 DomainBusDevice);
-#define gpumgrGetNvlinkRecoveryInfo(DomainBusDevice) gpumgrGetNvlinkRecoveryInfo_IMPL(DomainBusDevice)
-
-NV_STATUS gpumgrSetGpuInitDisabledNvlinks_IMPL(NvU32 gpuId, NvU32 mask, NV2080_CTRL_NVLINK_LINK_MASK *pLinks, NvBool bSkipHwNvlinkDisable);
-#define gpumgrSetGpuInitDisabledNvlinks(gpuId, mask, pLinks, bSkipHwNvlinkDisable) gpumgrSetGpuInitDisabledNvlinks_IMPL(gpuId, mask, pLinks, bSkipHwNvlinkDisable)
-
-NV_STATUS gpumgrGetGpuInitDisabledNvlinks_IMPL(NvU32 gpuId, NV2080_CTRL_NVLINK_LINK_MASK *pLinks, NvBool *pbSkipHwNvlinkDisable);
-#define gpumgrGetGpuInitDisabledNvlinks(gpuId, pLinks, pbSkipHwNvlinkDisable) gpumgrGetGpuInitDisabledNvlinks_IMPL(gpuId, pLinks, pbSkipHwNvlinkDisable)
+NVLINK_RESILIENCY_INFO * gpumgrGetNvlinkResiliencyInfo_IMPL(NvU64 DomainBusDevice);
+#define gpumgrGetNvlinkResiliencyInfo(DomainBusDevice) gpumgrGetNvlinkResiliencyInfo_IMPL(DomainBusDevice)
 
 NvU16 gpumgrGetGpuNvlinkBwMode_IMPL(void);
 #define gpumgrGetGpuNvlinkBwMode() gpumgrGetGpuNvlinkBwMode_IMPL()
@@ -457,16 +502,16 @@ NvU16 gpumgrGetGpuNvlinkBwMode_IMPL(void);
 NvU8 gpumgrGetGpuNvlinkBwModeScope_IMPL(void);
 #define gpumgrGetGpuNvlinkBwModeScope() gpumgrGetGpuNvlinkBwModeScope_IMPL()
 
-void gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL(struct OBJGPU *pGpu);
+void gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL(OBJGPU *pGpu);
 #define gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu) gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL(pGpu)
 
 NV_STATUS gpumgrSetGpuNvlinkBwMode_IMPL(NvU16 mode, NvBool bSync);
 #define gpumgrSetGpuNvlinkBwMode(mode, bSync) gpumgrSetGpuNvlinkBwMode_IMPL(mode, bSync)
 
-NV_STATUS gpumgrSetGpuNvlinkBwModePerGpu_IMPL(struct OBJGPU *pGpu, NvU16 mode, NvBool bSync);
+NV_STATUS gpumgrSetGpuNvlinkBwModePerGpu_IMPL(OBJGPU *pGpu, NvU16 mode, NvBool bSync);
 #define gpumgrSetGpuNvlinkBwModePerGpu(pGpu, mode, bSync) gpumgrSetGpuNvlinkBwModePerGpu_IMPL(pGpu, mode, bSync)
 
-NvBool gpumgrCheckIndirectPeer_IMPL(struct OBJGPU *pGpu, struct OBJGPU *pRemoteGpu);
+NvBool gpumgrCheckIndirectPeer_IMPL(OBJGPU *pGpu, OBJGPU *pRemoteGpu);
 #define gpumgrCheckIndirectPeer(pGpu, pRemoteGpu) gpumgrCheckIndirectPeer_IMPL(pGpu, pRemoteGpu)
 
 void gpumgrAddSystemMIGInstanceTopo_IMPL(NvU64 domainBusDevice);
@@ -484,25 +529,25 @@ void gpumgrSetSystemMIGEnabled_IMPL(NvU64 domainBusDevice, NvBool bMIGEnabled);
 void gpumgrUnregisterRmCapsForMIGGI_IMPL(NvU64 gpuDomainBusDevice);
 #define gpumgrUnregisterRmCapsForMIGGI(gpuDomainBusDevice) gpumgrUnregisterRmCapsForMIGGI_IMPL(gpuDomainBusDevice)
 
-void gpumgrCacheCreateGpuInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId);
+void gpumgrCacheCreateGpuInstance_IMPL(OBJGPU *pGpu, NvU32 swizzId);
 #define gpumgrCacheCreateGpuInstance(pGpu, swizzId) gpumgrCacheCreateGpuInstance_IMPL(pGpu, swizzId)
 
-void gpumgrCacheDestroyGpuInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId);
+void gpumgrCacheDestroyGpuInstance_IMPL(OBJGPU *pGpu, NvU32 swizzId);
 #define gpumgrCacheDestroyGpuInstance(pGpu, swizzId) gpumgrCacheDestroyGpuInstance_IMPL(pGpu, swizzId)
 
-void gpumgrCacheCreateComputeInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
+void gpumgrCacheCreateComputeInstance_IMPL(OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
 #define gpumgrCacheCreateComputeInstance(pGpu, swizzId, ciId) gpumgrCacheCreateComputeInstance_IMPL(pGpu, swizzId, ciId)
 
-void gpumgrCacheDestroyComputeInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
+void gpumgrCacheDestroyComputeInstance_IMPL(OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
 #define gpumgrCacheDestroyComputeInstance(pGpu, swizzId, ciId) gpumgrCacheDestroyComputeInstance_IMPL(pGpu, swizzId, ciId)
 
-void gpumgrCacheSetMIGEnabled_IMPL(struct OBJGPU *pGpu, NvBool bMIGEnabled);
+void gpumgrCacheSetMIGEnabled_IMPL(OBJGPU *pGpu, NvBool bMIGEnabled);
 #define gpumgrCacheSetMIGEnabled(pGpu, bMIGEnabled) gpumgrCacheSetMIGEnabled_IMPL(pGpu, bMIGEnabled)
 
 NV_STATUS gpumgrCacheGetActiveDeviceIds_IMPL(NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams);
 #define gpumgrCacheGetActiveDeviceIds(pActiveDeviceIdsParams) gpumgrCacheGetActiveDeviceIds_IMPL(pActiveDeviceIdsParams)
 
-void gpumgrUpdateBoardId_IMPL(struct OBJGPU *arg1);
+void gpumgrUpdateBoardId_IMPL(OBJGPU *arg1);
 #define gpumgrUpdateBoardId(arg1) gpumgrUpdateBoardId_IMPL(arg1)
 
 void gpumgrServiceInterrupts_IMPL(NvU32 arg1, MC_ENGINE_BITVECTOR *arg2, NvBool arg3);

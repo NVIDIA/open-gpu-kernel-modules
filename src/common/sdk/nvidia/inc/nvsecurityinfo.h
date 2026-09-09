@@ -24,6 +24,8 @@
 #ifndef _NV_SECURITYINFO_H_
 #define _NV_SECURITYINFO_H_
 
+#include "nvtypes.h"
+
 /// opaque token used for the security model on all OS's (UID/PID for Linux, SID Windows, etc)
 typedef void *PSECURITY_TOKEN;
 
@@ -57,6 +59,7 @@ typedef enum _API_PARAM_LOCATION
     PARAM_LOCATION_MIXED  = 2,
 } API_PARAM_LOCATION;
 
+#define API_SECURITY_INFO_PROC_ID_OVERRIDE_MAGIC 0x52435049U // "RCPI"
 
 typedef struct _API_SECURITY_INFO
 {
@@ -65,6 +68,9 @@ typedef struct _API_SECURITY_INFO
     PSECURITY_TOKEN pProcessToken;
     void *clientOSInfo;
     void *gpuOsInfo;
+    // Kernel-only RM client ProcID override. PID 0 is treated as no override.
+    NvU32 procIDOverride;
+    NvU32 procIDOverrideMagic;
 } API_SECURITY_INFO;
 
 

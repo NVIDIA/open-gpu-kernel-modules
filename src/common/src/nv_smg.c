@@ -112,9 +112,7 @@ static struct nvGlobalMigMappingRec {
 
 static NvBool InitializeGlobalMapping(nvRMContextPtr rmctx);
 static NvBool ListPartitions(nvRMContextPtr rmctx, struct nvGlobalMigMappingRec *mappings);
-#if !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA)
 static NvBool GetGraphicsPartitionUUIDForDevice(nvRMContextPtr rmctx, nvMIGDeviceDescription *migDev);
-#endif
 static NvU32 DeviceInMigMode (nvRMContextPtr rmctx, NvU32 hSubDevice, NvBool *inMigMode);
 static NvBool GpuHasSMGPartitions (NvU32 gpuId);
 
@@ -388,7 +386,6 @@ static NvBool InitializeGlobalMapping(nvRMContextPtr rmctx)
  */
 static NvBool ListPartitions(nvRMContextPtr rmctx, struct nvGlobalMigMappingRec *mapping)
 {
-#if !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA)
     struct workspace {
         NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS activeParams;
         NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS idInfoParams;
@@ -474,20 +471,12 @@ static NvBool ListPartitions(nvRMContextPtr rmctx, struct nvGlobalMigMappingRec 
 
     EXIT_WORKSPACE_AND_RETURN(ws, NV_TRUE);
 
-#else /* !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA) */
-    /*
-     * MODS and TEgra builds don't have all the MIG related rmcontrols so
-     * don't do any queries, just leave it with zero SMG partitions.
-     */
-    return NV_TRUE;
-#endif /* !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA) */
 }
 
 /*
  * Obtain the UUID of the MIG device. This means allocating the devices and
  * partition refs so that we can access the GET_UUID control.
  */
-#if !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA)
 static NvBool GetGraphicsPartitionUUIDForDevice(nvRMContextPtr rmctx, nvMIGDeviceDescription *migDev)
 {
     struct workspace {
@@ -626,7 +615,6 @@ out:
     rmctx->free(rmctx, rmctx->clientHandle, rmctx->clientHandle, hDevice);
     EXIT_WORKSPACE_AND_RETURN(ws, success);
 }
-#endif /* !defined(NV_MODS) && !defined(NV_RMAPI_TEGRA) */
 
 /*
  * Quick getter for SMC mode.

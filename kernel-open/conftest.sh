@@ -3,8 +3,8 @@
 PATH="${PATH}:/bin:/sbin:/usr/bin"
 
 # make sure we are in the directory containing this script
-SCRIPTDIR=`dirname $0`
-cd $SCRIPTDIR
+SCRIPTDIR=$(dirname "$0")
+cd "$SCRIPTDIR" || exit 1
 
 CC="$1"
 ARCH=$2
@@ -58,8 +58,8 @@ append_conftest() {
     # older driver versions
     #
 
-    while read LINE; do
-        echo ${LINE}
+    while read -r LINE; do
+        echo "${LINE}"
     done
 }
 
@@ -80,7 +80,7 @@ test_header_presence() {
     TEST_CFLAGS="-E -M -I${NVIDIA_OOT_PATH}/include $CFLAGS"
 
     file="$1"
-    file_define=NV_`echo $file | tr '/.-' '___' | tr 'a-z' 'A-Z'`_PRESENT
+    file_define=NV_$(echo "$file" | tr '/.-' '___' | tr 'a-z' 'A-Z')_PRESENT
 
     CODE="#include <$file>"
 
@@ -101,7 +101,7 @@ test_header_presence() {
 }
 
 build_cflags() {
-    ISYSTEM=`$CC -print-file-name=include 2> /dev/null`
+    ISYSTEM=$($CC -print-file-name=include 2> /dev/null)
     BASE_CFLAGS="-O2 -D__KERNEL__ \
 -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
 -nostdinc -isystem $ISYSTEM \
@@ -130,7 +130,7 @@ build_cflags() {
 
     KERNEL_ARCH="$ARCH"
 
-    if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+    if [ "$ARCH" = "i386" ] || [ "$ARCH" = "x86_64" ]; then
         if [ -d "$SOURCES/arch/x86" ]; then
             KERNEL_ARCH="x86"
         fi
@@ -145,12 +145,11 @@ build_cflags() {
     # includes if that platform is enabled in the configuration file, which
     # may have a definition like this:
     #   #define CONFIG_ARCH_<MACHUPPERCASE> 1
-    for _mach_dir in `ls -1d $SOURCES/arch/$KERNEL_ARCH/mach-* 2>/dev/null`; do
-        _mach=`echo $_mach_dir | \
+    for _mach_dir in $(ls -1d "$SOURCES/arch/$KERNEL_ARCH"/mach-* 2>/dev/null); do
+        _mach=$(echo "$_mach_dir" | \
             sed -e "s,$SOURCES/arch/$KERNEL_ARCH/mach-,," | \
-            tr 'a-z' 'A-Z'`
-        grep "CONFIG_ARCH_$_mach \+1" $AUTOCONF_FILE > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
+            tr 'a-z' 'A-Z')
+        if grep "CONFIG_ARCH_$_mach \+1" "$AUTOCONF_FILE" > /dev/null 2>&1; then
             MACH_CFLAGS="$MACH_CFLAGS -I$_mach_dir/include"
         fi
     done
@@ -189,7 +188,7 @@ build_cflags() {
         # Newer versions of gcc-goto.sh don't print anything on success, but
         # this is okay, since it's no longer necessary to set CC_HAVE_ASM_GOTO
         # based on the output of those versions of gcc-goto.sh.
-        if [ `/bin/sh "$GCC_GOTO_SH" "$CC"` = "y" ]; then
+        if [ "$(/bin/sh "$GCC_GOTO_SH" "$CC")" = "y" ]; then
             CFLAGS="$CFLAGS -DCC_HAVE_ASM_GOTO"
         fi
     fi
@@ -202,8 +201,7 @@ build_cflags() {
     # fails to get compiled, because conftest.sh runs outside of Kbuild it ends
     # up building without -mfentry and CC_USING_FENTRY flags.
     #
-    grep "CONFIG_HAVE_FENTRY \+1" $AUTOCONF_FILE > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if grep "CONFIG_HAVE_FENTRY \+1" "$AUTOCONF_FILE" > /dev/null 2>&1; then
         echo "" > conftest$$.c
 
         $CC -mfentry -c -x c conftest$$.c > /dev/null 2>&1
@@ -247,7 +245,7 @@ test_configuration_option() {
     # Check to see if the given configuration option is defined
     #
 
-    get_configuration_option $1 >/dev/null 2>&1
+    get_configuration_option "$1" >/dev/null 2>&1
 
     return $?
 
@@ -355,7 +353,7 @@ check_symbol_exists() {
         # space separated list instead of semicolon separated so we can iterate
         # over it.
         if [ -z "${CONFTEST_BSD_KMODPATHS}" ] ; then
-            KMODPATHS=`sysctl -n kern.module_path | sed -e "s/;/ /g"`
+            KMODPATHS=$(sysctl -n kern.module_path | sed -e "s/;/ /g")
         else
             KMODPATHS="${CONFTEST_BSD_KMODPATHS}"
         fi
@@ -379,7 +377,7 @@ export_symbol_present_conftest() {
 
     SYMBOL="$1"
 
-    if check_symbol_exists $SYMBOL; then
+    if check_symbol_exists "$SYMBOL"; then
         echo "#define NV_IS_EXPORT_SYMBOL_PRESENT_$SYMBOL 1" |
             append_conftest "symbols"
     else
@@ -422,9 +420,9 @@ get_configuration_option() {
     NEW_FILE="generated/autoconf.h"
     FILE=""
 
-    if [ -f $HEADERS/$NEW_FILE -o -f $OUTPUT/include/$NEW_FILE ]; then
+    if [ -f "$HEADERS/$NEW_FILE" ] || [ -f "$OUTPUT/include/$NEW_FILE" ]; then
         FILE=$NEW_FILE
-    elif [ -f $HEADERS/$OLD_FILE -o -f $OUTPUT/include/$OLD_FILE ]; then
+    elif [ -f "$HEADERS/$OLD_FILE" ] || [ -f "$OUTPUT/include/$OLD_FILE" ]; then
         FILE=$OLD_FILE
     fi
 
@@ -435,9 +433,9 @@ get_configuration_option() {
         # via a compile check, and print the option's value.
         #
 
-        if [ -f $HEADERS/$FILE ]; then
+        if [ -f "$HEADERS/$FILE" ]; then
             INCLUDE_DIRECTORY=$HEADERS
-        elif [ -f $OUTPUT/include/$FILE ]; then
+        elif [ -f "$OUTPUT/include/$FILE" ]; then
             INCLUDE_DIRECTORY=$OUTPUT/include
         else
             return 1
@@ -451,7 +449,7 @@ get_configuration_option() {
         $OPTION
         " > conftest$$.c
 
-        $CC -E -P -I$INCLUDE_DIRECTORY -o conftest$$ conftest$$.c > /dev/null 2>&1
+        $CC -E -P -I"$INCLUDE_DIRECTORY" -o conftest$$ conftest$$.c > /dev/null 2>&1
 
         if [ -e conftest$$ ]; then
             tr -d '\r\n\t ' < conftest$$
@@ -461,8 +459,8 @@ get_configuration_option() {
         rm -f conftest$$.c conftest$$
     else
         CONFIG=$OUTPUT/.config
-        if [ -f $CONFIG ] && grep "^$OPTION=" $CONFIG; then
-            grep "^$OPTION=" $CONFIG | cut -f 2- -d "="
+        if [ -f "$CONFIG" ] && grep "^$OPTION=" "$CONFIG"; then
+            grep "^$OPTION=" "$CONFIG" | cut -f 2- -d "="
             RET=$?
         fi
     fi
@@ -1461,6 +1459,40 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_SYSFS_CONNECTOR_STATUS_EVENT_PRESENT" "" "functions"
         ;;
 
+        drm_connector_attach_content_protection_property)
+            #
+            # Determine if drm_connector_attach_content_protection_property() is present.
+            #
+            # Commit 6a99099fe1d6c ("drm/display: Move HDCP helpers into display-helper module")
+            # in Linux v5.19.
+            #
+            CODE="
+            #if defined(NV_DRM_DISPLAY_DRM_HDCP_HELPER_H_PRESENT)
+            #include <drm/display/drm_hdcp_helper.h>
+            #endif
+            void conftest_drm_connector_attach_content_protection_property(void) {
+                drm_connector_attach_content_protection_property();
+            }"
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_ATTACH_CONTENT_PROTECTION_PROPERTY_PRESENT" "" "functions"
+        ;;
+
+        drm_hdcp_update_content_protection)
+            #
+            # Determine if drm_hdcp_update_content_protection() is present.
+            #
+            # Commit 6a99099fe1d6c ("drm/display: Move HDCP helpers into display-helper module")
+            # in Linux v5.19.
+            #
+            CODE="
+            #if defined(NV_DRM_DISPLAY_DRM_HDCP_HELPER_H_PRESENT)
+            #include <drm/display/drm_hdcp_helper.h>
+            #endif
+            void conftest_drm_hdcp_update_content_protection(void) {
+                drm_hdcp_update_content_protection();
+            }"
+            compile_check_conftest "$CODE" "NV_DRM_HDCP_UPDATE_CONTENT_PROTECTION_PRESENT" "" "functions"
+        ;;
+
         pde_data)
             #
             # Determine if the pde_data() function is present.
@@ -2086,6 +2118,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_DRIVER_HAS_DRIVER_MANAGED_DMA" "" "types"
         ;;
 
+        device_has_tdi_enabled)
+            #
+            # Determine if "struct device" has .tdi_enabled member.
+            #
+            # tdi_enabled is provided by the downstream RMEDA module which
+            # supports CCA. This conftest is needed until upstream support
+            # is available.
+            #
+            CODE="
+            #include <linux/device.h>
+            int conftest_device_has_tdi_enabled(void) {
+                return offsetof(struct device, tdi_enabled);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DEVICE_HAS_TDI_ENABLED" "" "types"
+        ;;
+
         drm_file_get_master)
             #
             # Determine if function drm_file_get_master() is present.
@@ -2202,11 +2251,11 @@ compile_test() {
         ;;
 
         is_export_symbol_present_*)
-            export_symbol_present_conftest $(echo $1 | cut -f5- -d_)
+            export_symbol_present_conftest "$(echo "$1" | cut -f5- -d_)"
         ;;
 
         is_export_symbol_gpl_*)
-            export_symbol_gpl_conftest $(echo $1 | cut -f5- -d_)
+            export_symbol_gpl_conftest "$(echo "$1" | cut -f5- -d_)"
         ;;
 
         pcie_is_cxl)
@@ -2224,6 +2273,73 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_PCIE_IS_CXL_PRESENT" "" "functions"
+        ;;
+
+        cxl_init_supported)
+            #
+            # Probe CXL bring-up helpers (e.g. devm_cxl_dev_state_create(),
+            # cxl_pci_setup_regs(), and related calls below).
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <cxl/cxl.h>
+            #include <cxl/pci.h>
+
+            struct nv_conftest_cxl_dev_state {
+                struct cxl_dev_state cxlds;
+            };
+
+            struct nv_conftest_cxl_dev_state *
+            conftest_devm_cxl_dev_state_create(void)
+            {
+                return devm_cxl_dev_state_create(
+                    NULL, CXL_DEVTYPE_DEVMEM, 0, 0,
+                    struct nv_conftest_cxl_dev_state, cxlds, false);
+            }
+
+            typeof(cxl_pci_setup_regs) conftest_cxl_pci_setup_regs;
+            int conftest_cxl_pci_setup_regs(struct pci_dev *pdev,
+                                            enum cxl_regloc_type type,
+                                            struct cxl_register_map *map)
+            {
+                return 0;
+            }
+
+            typeof(cxl_set_capacity) conftest_cxl_set_capacity;
+            int conftest_cxl_set_capacity(struct cxl_dev_state *cxlds,
+                                          u64 capacity)
+            {
+                return 0;
+            }
+
+            typeof(devm_cxl_add_memdev) conftest_devm_cxl_add_memdev;
+            struct cxl_memdev *conftest_devm_cxl_add_memdev(
+                struct cxl_dev_state *cxlds,
+                const struct cxl_memdev_attach *attach)
+            {
+                return NULL;
+            }
+
+            typeof(cxl_get_committed_decoder) conftest_cxl_get_committed_decoder;
+            struct cxl_endpoint_decoder *conftest_cxl_get_committed_decoder(
+                struct cxl_memdev *cxlmd, struct cxl_region **cxlr)
+            {
+                return NULL;
+            }
+
+            typeof(cxl_get_region_range) conftest_cxl_get_region_range;
+            int conftest_cxl_get_region_range(struct cxl_region *region,
+                                              struct range *range)
+            {
+                return 0;
+            }
+
+            typeof(cxl_unregister_region) conftest_cxl_unregister_region;
+            void conftest_cxl_unregister_region(struct cxl_region *cxlr)
+            {
+            }"
+
+            compile_check_conftest "$CODE" "NV_CXL_INIT_SUPPORTED" "" "types"
         ;;
 
         get_backlight_device_by_name)
@@ -2364,6 +2480,57 @@ compile_test() {
             else
                 echo "#undef NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER" | append_conftest "types"
                 return
+            fi
+        ;;
+
+        dma_buf_supports_dynamic_importer)
+            #
+            # Determine if a move_notify() callback is present in struct
+            # dma_buf_attach_ops. The presence of this callback allows importers
+            # to safely revoke mappings when the underlying resource is moved.
+            #
+            # It will be superseded by the invalidate_mappings() callback in
+            # linux-next and likely to appear in v7.1.
+            #
+            # Added by commit: bb42df4662a4
+            # ("dma-buf: add dynamic DMA-buf handling v15") in v5.10 (2018-07-03)
+            #
+
+            # conftest #1: Check if dma_buf_attach_ops has the move_notify()
+            # callback
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/dma-buf.h>
+            int conftest_dma_buf_move_notify(void) {
+                return offsetof(struct dma_buf_attach_ops, move_notify);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                echo "#define NV_DMA_BUF_ATTACH_OPS_HAS_MOVE_NOTIFY" | append_conftest "types"
+                rm -f conftest$$.o
+                return
+            else
+                echo "#undef NV_DMA_BUF_ATTACH_OPS_HAS_MOVE_NOTIFY" | append_conftest "types"
+            fi
+
+            # conftest #2: Check if dma_buf_attach_ops has the
+            # invalidate_mappings() callback
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/dma-buf.h>
+            int conftest_dma_buf_invalidate_mappings(void) {
+                return offsetof(struct dma_buf_attach_ops, invalidate_mappings);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                echo "#define NV_DMA_BUF_ATTACH_OPS_HAS_INVALIDATE_MAPPINGS" | append_conftest "types"
+                rm -f conftest$$.o
+            else
+                echo "#undef NV_DMA_BUF_ATTACH_OPS_HAS_INVALIDATE_MAPPINGS" | append_conftest "types"
             fi
         ;;
 
@@ -3798,6 +3965,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_THERMAL_UNBIND_CDEV_FROM_TRIP_PRESENT" "" "functions"
         ;;
 
+        pm_qos_read_value_supported)
+            #
+            # Determine if 'dev_pm_qos' structure has member 'freq'
+            #
+            # Added by commit 36a8015f89e40
+            # ("PM / QoS: Restore DEV_PM_QOS_MIN/MAX_FREQUENCY") in v5.5-rc1
+            #
+            CODE="
+            #include <linux/pm_qos.h>
+            int conftest_pm_qos_read_value_supported(void) {
+                return offsetof(struct dev_pm_qos, freq);
+            }
+            "
+            compile_check_conftest "$CODE" "NV_PM_QOS_READ_VALUE_SUPPORTED" "" "types"
+        ;;
+
         update_devfreq)
             #
             # Determine if update_devfreq() function is present
@@ -4218,6 +4401,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED" "" "types"
         ;;
 
+        dma_fence_chain_alloc)
+            #
+            # Determine if the dma_fence_chain_alloc function is present.
+            #
+            # Added by commit 440d0f1 ("dma-buf: add dma_fence_chain_alloc/free v3")
+            # in 5.15.
+            #
+            CODE="
+            #include <linux/dma-fence-chain.h>
+            void conftest_dma_fence_chain_alloc(void) {
+                dma_fence_chain_alloc();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_FENCE_CHAIN_ALLOC_PRESENT" "" "functions"
+        ;;
+
         fence_ops_use_64bit_seqno)
             #
             # Determine if dma_fence_ops has the use_64bit_seqno member
@@ -4575,6 +4774,24 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_MMU_INTERVAL_NOTIFIER" "" "types"
+        ;;
+
+        drm_connector_attach_broadcast_rgb_property)
+            #
+            # Determine if the function
+            # drm_connector_attach_broadcast_rgb_property() is present.
+            #
+            # Added by commit ab52af4ba7c7d ("drm/connector: Introduce
+            # drm_connector_attach_broadcast_rgb_property()") in v6.8.
+            #
+            CODE="
+            #include <drm/drm_connector.h>
+
+            void conftest_drm_connector_attach_broadcast_rgb_property(void) {
+                drm_connector_attach_broadcast_rgb_property();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_ATTACH_BROADCAST_RGB_PROPERTY_PRESENT" "" "functions"
         ;;
 
         drm_mode_create_dp_colorspace_property_has_supported_colorspaces_arg)
@@ -5033,8 +5250,9 @@ compile_test() {
             CODE="
             #include <drm/drm_atomic_helper.h>
 
-            static int conftest_drm_connector_mode_valid(struct drm_connector *connector,
-                                                         const struct drm_display_mode *mode) {
+            static enum drm_mode_status
+            conftest_drm_connector_mode_valid(struct drm_connector *connector,
+                                              const struct drm_display_mode *mode) {
                 return 0;
             }
 
@@ -5085,6 +5303,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_SHRINKER_ALLOC_PRESENT" "" "functions"
         ;;
 
+        nr_kernel_misc_reclaimable)
+            #
+            # Determine if NR_KERNEL_MISC_RECLAIMABLE is present in
+            # enum node_stat_item.
+            #
+            # Added by commit a4a33ef5657a ("mm: add NR_KERNEL_MISC_RECLAIMABLE
+            # node stat for misc reclaimable kernel memory") in v5.9.
+            #
+            CODE="
+            #include <linux/mmzone.h>
+
+            void conftest_nr_kernel_misc_reclaimable(void) {
+                enum node_stat_item x = NR_KERNEL_MISC_RECLAIMABLE;
+                (void)x;
+            }"
+
+            compile_check_conftest "$CODE" "NV_NR_KERNEL_MISC_RECLAIMABLE_PRESENT" "" "types"
+        ;;
+
         memory_device_coherent_present)
             #
             # Determine if MEMORY_DEVICE_COHERENT support is present or not
@@ -5116,26 +5353,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_GET_VBLANK_TIMESTAMP" "" "types"
-        ;;
-
-        is_vma_write_locked_has_mm_lock_seq_arg)
-            #
-            # Determine if __is_vma_write_locked() takes only a single
-            # 'struct vm_area_struct *' argument.
-            #
-            # Commit 22f7639f2f03 ("mm/vma: improve and document
-            # __is_vma_write_locked()") removed the 'unsigned int *mm_lock_seq'
-            # parameter in v7.0-rc1.
-            #
-            CODE="
-            #include <linux/mm.h>
-            #include <linux/mmap_lock.h>
-            int conftest_is_vma_write_locked_has_mm_lock_seq_arg(struct vm_area_struct *vma) {
-                unsigned int mm_lock_seq;
-                return __is_vma_write_locked(vma, &mm_lock_seq);
-            }"
-
-            compile_check_conftest "$CODE" "NV_IS_VMA_WRITE_LOCKED_HAS_MM_LOCK_SEQ_ARG" "" "types"
         ;;
 
         pfn_is_map_memory)
@@ -5174,7 +5391,7 @@ compile_test() {
             #
             # Check to see if the misc cgroup type is available
             #
-            # dmem_cgrp_id was added by commit id a72232e ("cgroup: Add misc cgroup
+            # misc_cgrp_id was added by commit id a72232e ("cgroup: Add misc cgroup
             # controller") in 5.13
             #
             CODE="
@@ -5183,6 +5400,26 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_MISC_CGROUP_PRESENT" "" "types"
+        ;;
+
+        is_vma_write_locked_has_mm_lock_seq_arg)
+            #
+            # Determine if __is_vma_write_locked() takes only a single
+            # 'struct vm_area_struct *' argument.
+            #
+            # Commit ("mm/vma: improve and document
+            # __is_vma_write_locked()") removed the 'unsigned int *mm_lock_seq'
+            # parameter in linux-next, expected in v7.0-rc1.
+            #
+            CODE="
+            #include <linux/mm.h>
+            #include <linux/mmap_lock.h>
+            int conftest_is_vma_write_locked_has_mm_lock_seq_arg(struct vm_area_struct *vma) {
+                unsigned int mm_lock_seq;
+                return __is_vma_write_locked(vma, &mm_lock_seq);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IS_VMA_WRITE_LOCKED_HAS_MM_LOCK_SEQ_ARG" "" "types"
         ;;
 
         drm_color_lut32_present)
@@ -5235,6 +5472,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_USE_DMA_IOMMU_PRESENT" "" "functions"
         ;;
 
+        percpu_mm_counter)
+            #
+            # Determine if the mm_counter variable is percpu or an atomic
+            #
+            # Added by commit f1a7941 ("mm: convert mm's rss stats into percpu_counter") in 6.2.
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_percpu_mm_counter(struct mm_struct *mm) {
+                percpu_counter_add(&mm->rss_stat[0], 0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PERCPU_MM_COUNTER" "" "types"
+        ;;
+
         drm_atomic_commit_struct_present)
             #
             # Determine if 'struct drm_atomic_state' has been renamed to
@@ -5249,6 +5501,32 @@ compile_test() {
             struct drm_atomic_commit state;"
 
             compile_check_conftest "$CODE" "NV_DRM_ATOMIC_COMMIT_STRUCT_PRESENT" "" "types"
+        ;;
+
+        sg_alloc_table_from_pages_segment)
+            #
+            # Determine if the sg_alloc_table_from_pages_segment() function is
+            # present. This variant accepts an explicit max_segment cap and
+            # internally relies on sg_chain() to handle scatterlist tables
+            # whose total size exceeds 4 GB, letting the RM DMA path use a
+            # single submap instead of splitting at NV_DMA_SUBMAP_MAX_PAGES
+            # (~4 GB) boundaries.
+            #
+            # Added by commit 90e7a6de62781c27d6a111fccfb19b807f9b6887 
+            # ("lib/scatterlist: Provide a dedicated function to support table 
+            # append") in v5.15-rc1.
+            #
+            # See Bug 6419127 for the split-submap GMMU contiguity failure.
+            # This function and correct max_segment value avoid the overflow 
+            # issue in the kernel.
+            #
+            CODE="
+            #include <linux/scatterlist.h>
+            void conftest_sg_alloc_table_from_pages_segment(void) {
+                sg_alloc_table_from_pages_segment();
+            }"
+
+            compile_check_conftest "$CODE" "NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
@@ -5344,7 +5622,7 @@ case "$5" in
 
         kernel_compile_h=$OUTPUT/include/generated/compile.h
 
-        if [ ! -f ${kernel_compile_h} ]; then
+        if [ ! -f "${kernel_compile_h}" ]; then
             # The kernel's compile.h file is not present, so there
             # isn't a convenient way to identify the compiler version
             # used to build the kernel.
@@ -5355,15 +5633,15 @@ case "$5" in
             exit 0
         fi
 
-        kernel_cc_string=`cat ${kernel_compile_h} | \
-            grep LINUX_COMPILER | cut -f 2 -d '"'`
+        kernel_cc_string=$(cat "${kernel_compile_h}" | \
+            grep LINUX_COMPILER | cut -f 2 -d '"')
 
-        kernel_cc_version=`echo ${kernel_cc_string} | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -n 1`
+        kernel_cc_version=$(echo "${kernel_cc_string}" | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -n 1)
         if [ -z "${kernel_cc_version}" ]; then
-            kernel_cc_version=`echo ${kernel_cc_string} | grep -o '[0-9]\+\.[0-9]\+' | head -n 1`
+            kernel_cc_version=$(echo "${kernel_cc_string}" | grep -o '[0-9]\+\.[0-9]\+' | head -n 1)
         fi
-        kernel_cc_major=`echo ${kernel_cc_version} | cut -d '.' -f 1`
-        kernel_cc_minor=`echo ${kernel_cc_version} | cut -d '.' -f 2`
+        kernel_cc_major=$(echo "${kernel_cc_version}" | cut -d '.' -f 1)
+        kernel_cc_minor=$(echo "${kernel_cc_version}" | cut -d '.' -f 2)
 
         echo "
         #if (__GNUC__ != ${kernel_cc_major}) || (__GNUC_MINOR__ != ${kernel_cc_minor})
@@ -5408,7 +5686,7 @@ case "$5" in
                 echo "";
             elif [ "$VERBOSE" = "just_msg" ]; then
                 echo "Warning: The kernel was built with ${kernel_cc_string}, but the" \
-                     "current compiler version is `$CC --version | head -n 1`.";
+                     "current compiler version is $($CC --version | head -n 1).";
             fi
             exit 0;
         fi
@@ -5421,7 +5699,7 @@ case "$5" in
         #
         VERBOSE=$6
 
-        if [ -n "$IGNORE_XEN_PRESENCE" -o -n "$VGX_BUILD" ]; then
+        if [ -n "$IGNORE_XEN_PRESENCE" ] || [ -n "$VGX_BUILD" ]; then
             exit 0
         fi
 
@@ -5491,9 +5769,9 @@ case "$5" in
         PATCHES=""
 
         for PATCH in patch-*.h; do
-            if [ -f $PATCH ]; then
+            if [ -f "$PATCH" ]; then
                 echo "#include \"$PATCH\""
-                PATCHES="$PATCHES "`echo $PATCH | sed -s 's/patch-\(.*\)\.h/\1/'`
+                PATCHES="$PATCHES "$(echo "$PATCH" | sed -s 's/patch-\(.*\)\.h/\1/')
             fi
         done
 
@@ -5519,7 +5797,7 @@ case "$5" in
         CFLAGS=$1
         shift
 
-        for i in $*; do compile_test $i; done
+        for i in "$@"; do compile_test "$i"; done
 
         exit 0
     ;;
@@ -5532,7 +5810,7 @@ case "$5" in
 
         if [ -n "$VGX_BUILD" ]; then
             if [ -f /proc/xen/capabilities ]; then
-                if [ "`cat /proc/xen/capabilities`" = "control_d" ]; then
+                if [ "$(cat /proc/xen/capabilities)" = "control_d" ]; then
                     exit 0
                 fi
             else
@@ -5583,7 +5861,7 @@ case "$5" in
                 VFIO_PCI_CORE_PRESENT=1
             fi
 
-            if ([ "$VFIO_IOMMU_PRESENT" != "0" ] || [ "$VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT" != "0" ])&& [ "$KVM_PRESENT" != "0" ] ; then
+            if { [ "$VFIO_IOMMU_PRESENT" != "0" ] || [ "$VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT" != "0" ]; } && [ "$KVM_PRESENT" != "0" ] ; then
                 # vGPU requires either MDEV or vfio-pci-core framework to be present.
                 if [ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ]; then
                     exit 0
@@ -5622,7 +5900,7 @@ case "$5" in
         #
         OPTION=$6
 
-        test_configuration_option $OPTION
+        test_configuration_option "$OPTION"
         exit $?
     ;;
 
@@ -5632,7 +5910,7 @@ case "$5" in
         #
         OPTION=$6
 
-        get_configuration_option $OPTION
+        get_configuration_option "$OPTION"
         exit $?
     ;;
 
@@ -5643,10 +5921,8 @@ case "$5" in
         # to the extent that is possible.
         #
 
-        HASH=$(get_configuration_option CONFIG_MODULE_SIG_HASH)
-
-        if [ $? -eq 0 ] && [ -n "$HASH" ]; then
-            echo $HASH
+        if HASH=$(get_configuration_option CONFIG_MODULE_SIG_HASH) && [ -n "$HASH" ]; then
+            echo "$HASH"
             exit 0
         else
             for SHA in 512 384 256 224 1; do
@@ -5679,7 +5955,7 @@ case "$5" in
         #
 
         build_cflags
-        echo $CFLAGS
+        echo "$CFLAGS"
         exit 0
     ;;
 

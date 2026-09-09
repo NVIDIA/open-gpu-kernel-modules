@@ -96,6 +96,12 @@
 // used in VGPU-GSP RPC setup
 #define NV_VF_SCRATCH_REGISTER_GUEST_RPC_HI                                     0x3
 
+// Per-VF PRIV: GFID encoded in bits 37:32; per-GFID window size below.
+#define NV_VF_PRIV_ADDRESS_GFID                                                 37:32
+#define NV_VF_PRIV_PER_GFID_WINDOW_SIZE_64MB                                    (1ULL << 26)
+#define NV_VF_PRIV_PER_GFID_WINDOW_SIZE_256MB                                   (1ULL << 28)
+
 #define MAX_PARTITIONS_WITH_GFID                                                (48)
 #define MAX_PARTITIONS_WITH_GFID_32VM                                           (32)
 #define MAX_PARTITIONS_WITH_GFID_MIG_ENABLED                                    (7)
+#define MAX_PARTITIONS_WITH_GFID_1VM                                            (1)

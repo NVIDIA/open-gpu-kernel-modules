@@ -23,7 +23,7 @@
 #include "gpu/bif/kernel_bif.h"
 
 // TODO CLEANUP
-#include "published/volta/gv100/dev_boot.h"
+#include "published/volta/gv100/dev_pmc.h"
 
 /*!
  * @brief  Get the PMC bit of the valid Engines to reset.

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -342,7 +342,7 @@ kbusVerifyBar2_GH100
         {
             memdescCreateExisting(&memDesc, pGpu, size, ADDR_FBMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
         }
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95, 
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95,
                         (&memDesc));
         if (status != NV_OK)
         {
@@ -621,6 +621,7 @@ kbusTeardownBar2CpuAperture_GH100
         pKernelBus->virtualBar2[gfid].pPageLevels = NULL;
     }
 
+    kfifoUnmapVfPage(pGpu, GPU_GET_KERNEL_FIFO(pGpu));
     kbusDestroyCpuPointerForBusFlush_HAL(pGpu, pKernelBus);
 
     kbusFlushVirtualBar2_HAL(pGpu, pKernelBus, NV_FALSE, gfid);
@@ -787,16 +788,6 @@ kbusSetupP2PDomainAccess_GH100
     return kbusSetupPeerBarAccess(pGpu0, pGpu1,
                 pGpu0->busInfo.gpuPhysAddr + pXalAperture->baseAddress,
                 DRF_SIZE(NV_XAL_EP_P2P_ZB), ppP2PDomMemDesc);
-}
-
-NV_STATUS
-kbusFlushPcieForBar0Doorbell_GH100
-(
-    OBJGPU      *pGpu,
-    KernelBus   *pKernelBus
-)
-{
-    return kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY);
 }
 
 /*!
@@ -1004,6 +995,7 @@ kbusCarveoutWprs_GH100
  * @param[in] pKernelBus            Kernel bus pointer
  * @param[in] numaOnlineMemorySize  Size of FB memory to online in
  *                                  kernel as a NUMA node
+ * @param[in] cpuVisibleFbSize      FB size allowed to be accessed by CPU
  * @param[in] bFlush                Flush CPU cache or not
  *
  * @return 'NV_OK' if successful, an RM error code otherwise.
@@ -1014,6 +1006,7 @@ kbusCreateCoherentCpuMapping_GH100
     OBJGPU    *pGpu,
     KernelBus *pKernelBus,
     NvU64     numaOnlineMemorySize,
+    NvU64     cpuVisibleFbSize,
     NvBool    bFlush
 )
 {
@@ -1022,7 +1015,6 @@ kbusCreateCoherentCpuMapping_GH100
     NV_STATUS           status                     = NV_OK;
     KernelBif          *pKernelBif                 = GPU_GET_KERNEL_BIF(pGpu);
     NvP64               pCpuMapping                = NvP64_NULL;
-    NvU64               fbSize;
     NvU64               busAddrStart[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
     NvU64               busAddrSize[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
     NvU32               i;
@@ -1042,9 +1034,10 @@ kbusCreateCoherentCpuMapping_GH100
     NV_ASSERT_OR_RETURN(listCount(&pKernelBus->virtualBar2[GPU_GFID_PF].usedMapList) == 0,
                         NV_ERR_INVALID_STATE);
 
-    fbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
-
-    NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+    }
 
     // NUMA region
     pKernelBus->coherentCpuMapping.physAddr[COHERENT_CPU_MAPPING_REGION_0] = pMemoryManager->Ram.fbRegion[0].base;
@@ -1054,7 +1047,7 @@ kbusCreateCoherentCpuMapping_GH100
     pKernelBus->coherentCpuMapping.nrMapping = 1;
 
     start = pMemoryManager->Ram.fbRegion[0].base + numaOnlineMemorySize;
-    end = pMemoryManager->Ram.fbRegion[0].base + fbSize;
+    end = pMemoryManager->Ram.fbRegion[0].base + cpuVisibleFbSize;
 
     // reserved regions
     if (start != end)
@@ -1066,18 +1059,18 @@ kbusCreateCoherentCpuMapping_GH100
         {
             // carving out WPRs
             kbusCarveoutWprs_HAL(pGpu, pKernelBus, wprRegions);
-        
+
             NV_PRINTF(LEVEL_INFO, "wpr1 0x%llx->0x%llx, wpr2 0x%llx->0x%llx\n",
                 wprRegions[0].lo, wprRegions[0].hi, wprRegions[1].lo, wprRegions[1].hi);
-        
+
             status = rangesCarveout(
                 reservedRegions, COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1,
                 &numReservedRegions, wprRegions, 2);
-        
+
             NV_ASSERT_OR_RETURN(status == NV_OK, NV_ERR_GENERIC);
             NV_ASSERT(numReservedRegions <= COHERENT_CPU_MAPPING_TOTAL_REGIONS - 1);
         }
-    
+
         for (i = 0; i < numReservedRegions; ++i)
         {
             pKernelBus->coherentCpuMapping.physAddr[pKernelBus->coherentCpuMapping.nrMapping] =
@@ -1196,7 +1189,7 @@ kbusVerifyCoherentLink_GH100
 
     memdescCreateExisting(&memDesc, pGpu, size, ADDR_FBMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE);
 
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95, 
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_95,
                     (&memDesc));
     if (status != NV_OK)
     {
@@ -1225,7 +1218,7 @@ kbusVerifyCoherentLink_GH100
     }
 
     // Ensure the writes are flushed out of the CPU caches.
-    osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo, (NvUPtr)pOffset, size);
+    kmemsysFlushCoherentCpuCache(pGpu, pKernelMemorySystem, (NvUPtr)pOffset, size);
 
     // L2 invalidate registers are not present in VF BAR0. PF driver should have tested this on host so
     // skipping this on SRIOV guest
@@ -2292,7 +2285,8 @@ kbusAllocateFlaVaspace_GH100
     // Instantiate Inst Blk for pFlaVAS
     status = kgmmuInstBlkInit(pKernelGmmu,
                                 pKernelBus->flaInfo.pInstblkMemDesc,
-                                pFabricVAS->pGVAS, FIFO_PDB_IDX_BASE,
+                                pFabricVAS->pGVAS, NULL,
+                                FIFO_PDB_IDX_BASE,
                                 &pInstblkParams);
     if (status != NV_OK)
     {
@@ -2930,7 +2924,7 @@ kbusBar1InstBlkBind_GH100
 NvU32
 kbusGetEccCounts_GH100
 (
-    OBJGPU *pGpu,
+    OBJGPU    *pGpu,
     KernelBus *pKernelBus
 )
 {
@@ -2950,22 +2944,31 @@ kbusGetEccCounts_GH100
 }
 
 /*!
- * @brief This function issues a sysmembar by writing to NV_XAL_EP_UFLUSH_FB_FLUSH, which
- * tells HOST unit to flush all outstanding writes to the GPU from the PCIE path.
- * It guarantees any writes to the FB before the sysmembar has taken effect on the GPU
- * on the PCIE path.
+ * @brief This function issues an XAL-UFLUSH-based sysmembar by writing to
+ * NV_XAL_EP_UFLUSH_FB_FLUSH, which tells HOST unit to flush all outstanding
+ * writes to the GPU from the PCIE path. It guarantees any writes to the FB
+ * before the sysmembar has taken effect on the GPU on the PCIE path.
  *
  * Hopper replaces common pending/outstanding bit in memops with a token system.
- * To trigger a memop, SW issues a read of theregister as opposed to write of the memop.
- * This read would trigger an injection of the memop in HW. Once HW injects the memop
- * into the pipeline a free running token counter is incremented. The read return value
- * for this memop would be the value of the trigger token
- *
+ * To trigger a memop, SW issues a read of the register as opposed to write of
+ * the memop. This read would trigger an injection of the memop in HW. Once HW
+ * injects the memop into the pipeline a free running token counter is
+ * incremented. The read return value for this memop would be the value of the
+ * trigger token.
  *
  * NOTE: Must be called inside a SLI loop
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ *
+ * @returns NV_STATUS - Status
  */
 NV_STATUS
-kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
+kbusSendSysmembarSingleWithXalUflush_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
 {
     NV_STATUS    status = NV_OK;
     NV_STATUS    timeoutStatus = NV_OK;
@@ -3061,10 +3064,32 @@ kbusSendSysmembarSingle_GH100(OBJGPU *pGpu, KernelBus *pKernelBus)
     return status;
 }
 
+/*!
+ * @brief This function issues an XAL-UFLUSH-based sysmembar, which tells HOST
+ * unit to flush all outstanding writes to the GPU from the PCIE path. It
+ * guarantees any writes to the FB before the sysmembar has taken effect on the
+ * GPU on the PCIE path. See implementation of
+ * kbusSendSysmembarSingleWithXalUflush_GH100 for details.
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ *
+ * @returns NV_STATUS - Status
+ */
+NV_STATUS
+kbusSendSysmembarSingle_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    return kbusSendSysmembarSingleWithXalUflush_HAL(pGpu, pKernelBus);
+}
+
 NV_STATUS
 kbusConstructXalApertures_GH100
 (
-    OBJGPU *pGpu,
+    OBJGPU    *pGpu,
     KernelBus *pKernelBus
 )
 {

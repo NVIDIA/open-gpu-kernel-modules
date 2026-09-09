@@ -38,7 +38,7 @@ typedef struct MESSAGE_QUEUE_COLLECTION MESSAGE_QUEUE_COLLECTION;
 NV_STATUS GspMsgQueuesInit(OBJGPU *pGpu, MESSAGE_QUEUE_COLLECTION **ppMQCollection);
 void      GspMsgQueuesCleanup(MESSAGE_QUEUE_COLLECTION **ppMQCollection);
 NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI);
-NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
-NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
+NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu, NvU32 nvdmType, NvU32 size);
+NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu, NvU32 *pNvdmType);
 
 #endif // _MESSAGE_QUEUE_H_

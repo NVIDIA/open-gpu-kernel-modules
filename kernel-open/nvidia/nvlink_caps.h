@@ -24,6 +24,8 @@
 #ifndef _NVLINK_CAPS_H_
 #define _NVLINK_CAPS_H_
 
+
+
 /* List of supported capability type */
 #define NVLINK_CAP_FABRIC_MANAGEMENT  0
 

@@ -22,6 +22,7 @@
  */
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -31,6 +32,8 @@
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_ram.h"
 #include "published/hopper/gh100/dev_esched_pbdma.h"
+#include "published/hopper/gh100/dev_ctrl.h"
+#include "published/hopper/gh100/dev_gin_zb.h"
 
 #include "kernel/gpu/conf_compute/conf_compute.h"
 
@@ -131,10 +134,23 @@ kfifoConstructUsermodeMemdescs_GH100
         memdescSetCpuCacheSnoop(*ppMemDesc, MEMDESC_CACHE_SNOOP_ENABLE);
     }
 
+    pKernelFifo->bUseBar1Doorbell = !(kbusIsCpuVisibleBar2Disabled(GPU_GET_KERNEL_BUS(pGpu)) ||
+                         RMCFG_FEATURE_PLATFORM_GSP ||
+                         IsDFPGA(pGpu) ||
+                         pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+                         pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) ||
+                         pGpu->pGpuArch->bGpuArchIsZeroFb);
+
+    NV_ASSERT_OK_OR_GOTO(status, kfifoMapVfPage(pGpu, pKernelFifo), err);
+
     NV_ASSERT_OK_OR_GOTO(status,
-        kfifoConstructUsermodeMemdescs_GV100(pGpu, pKernelFifo),
-        err);
+        kfifoConstructUsermodeMemdescs_TU102(pGpu, pKernelFifo),
+        err_unmap);
+
     return NV_OK;
+    
+err_unmap:
+    kfifoUnmapVfPage(pGpu, pKernelFifo);
 err:
     memdescDestroy(pKernelFifo->pBar1VF);
     memdescDestroy(pKernelFifo->pBar1PrivVF);
@@ -571,24 +587,6 @@ kfifoGetClientIdString_GH100
     }
 }
 
-/*!
- * @brief Update the usermode doorbell register with work submit token to notify
- *        host that work is available on this channel.
- *
- * @param[in] pGpu
- * @param[in] pFifo
- * @param[in] pKernelChannel  Channel to ring the doorbell for
- */
-NV_STATUS
-kfifoRingChannelDoorBell_GH100
-(
-    OBJGPU          *pGpu,
-    KernelFifo      *pKernelFifo,
-    KernelChannel   *pKernelChannel
-)
-{
-    return kfifoRingChannelDoorBell_GV100(pGpu, pKernelFifo, pKernelChannel);
-}
 
 /*
  * @  Function to write gpfifo info in RAMFC
@@ -623,6 +621,41 @@ kfifoWriteRamfcGpfifo_GH100
     MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_GP_GET), 0);
 }
 
+/**
+ * @brief Actually writes the per-context notification interrupt vector in RAMFC
+ *
+ * Host uses the value programmed in this field to decide which interrupt
+ * vector to send a context's PBDMA nonstall interrupt on.
+ */
+void
+kfifoInitRamfcIntrNotifyRouting_GH100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    NvU32             intrVector,
+    NvU8             *pInstMem
+)
+{
+    NvU32 intrCtrl;
+
+    if ((DRF_SHIFTMASK(NV_GIN_ZB_INTR_CTRL_ACCESS_DEFINES_VECTOR) & intrVector) != intrVector)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Interrupt vector (0x%x) is larger "
+            "than the space in RAMFC to hold it\n", intrVector);
+        DBG_BREAKPOINT();
+        return;
+    }
+
+    //
+    // CPU and GSP routing bits are moved into the NV_PBDMA_INTR_NOTIFY_CTRL_ROUTING(i) register,
+    // and do not have backing RAMFC memory in Hopper+. HW defaults to only CPU. If this needs to
+    // change in the future, that programming will need to be done in fifo stateload.
+    //
+    intrCtrl = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY_CTRL));
+    intrCtrl = FLD_SET_DRF_NUM(_GIN_ZB, _INTR_CTRL_ACCESS_DEFINES, _VECTOR, intrVector, intrCtrl);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY_CTRL), intrCtrl);
+}
+
 void
 kfifoGetRamfcFaultMethodBufferAddrOffset_GH100
 (
@@ -634,6 +667,82 @@ kfifoGetRamfcFaultMethodBufferAddrOffset_GH100
 {
     *pOffsetAddrLo = SF_OFFSET(NV_RAMIN_ENG_METHOD_BUFFER_ADDR_LO);
     *pOffsetAddrHi = SF_OFFSET(NV_RAMIN_ENG_METHOD_BUFFER_ADDR_HI);
+}
+
+/**
+ * @brief Fill in per engine values for engine context setup
+ *
+ * @param pGpu
+ * @param pFifo
+ * @param [in] engine unused
+ * @param[out] targetAddr
+ * @param[out] targetAddrHi
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+kfifoChannelGetEngineContextOffset_GH100
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 engine,
+    NvU32 *targetAddr,
+    NvU32 *targetAddrHi
+)
+{
+    NV_STATUS ret;
+    NvBool bSupported = NV_FALSE;
+
+    ret = kfifoCheckEngine_HAL(pGpu, pKernelFifo, engine, &bSupported);
+
+    if (ret != NV_OK)
+        return ret;
+
+    if (!bSupported)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    /*
+     * Context can access single engine only
+     */
+    *targetAddr   = SF_OFFSET(NV_RAMIN_ENGINE_WFI_PTR_LO);
+    *targetAddrHi = SF_OFFSET(NV_RAMIN_ENGINE_WFI_PTR_HI);
+
+    return NV_OK;
+}
+
+/*
+ * Sets up the values to be written into PRIs obtained from
+ * kfifoChannelGetEngineContextOffset_HAL.
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelFifo        KernelFifo pointer
+ * @param[in]   addr               Address to program
+ * @param[out] *pTargetVal         HW Reg value
+ * @param[out] *pTargetValHi       HW Reg value
+ */
+void
+kfifoChannelGetEngineContextFieldFormat_GH100
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU64    addr,
+    NvU32   *pTargetVal,
+    NvU32   *pTargetValHi
+)
+{
+    NvU32 addrLo = NvU64_LO32(addr) >> RM_PAGE_SHIFT;
+    NvU32 addrHi = NvU64_HI32(addr);
+
+    NV_PRINTF(LEVEL_INFO, "addrLo=0x%08x addrHi=0x%08x\n", addrLo, addrHi);
+
+    NV_ASSERT_OR_RETURN_VOID(pTargetVal);
+    NV_ASSERT_OR_RETURN_VOID(pTargetValHi);
+
+    *pTargetVal   = SF_DEF( _RAMIN_ENGINE,       _CS,     _WFI     ) |
+                    SF_DEF( _RAMIN_ENGINE_WFI,   _MODE,   _VIRTUAL ) |
+                    SF_NUM( _RAMIN_ENGINE_WFI,   _PTR_LO, addrLo   );
+    *pTargetValHi = SF_NUM( _RAMIN_ENGINE_WFI,   _PTR_HI, addrHi );
+
 }
 
 NV_STATUS

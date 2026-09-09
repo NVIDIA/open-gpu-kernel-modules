@@ -99,6 +99,8 @@ namespace DisplayPort
         NV_DP_SBMSG_PRIORITY_LEVEL_1,
     } DPSideBandMessagePriority;
 
+    class GenericUpReplyMessage;
+
     //
     //  CLASS: MessageManager
     //
@@ -211,7 +213,8 @@ namespace DisplayPort
             splitterUpReply(hal, timer),
             mergerUpRequest(hal, timer, Address(0), this),
             mergerDownReply(hal, timer, Address(0), this),
-            isBeingDestroyed(false), isPaused(false)
+            isBeingDestroyed(false), isPaused(false),
+            nakUpReply(NULL)
         {
         }
 
@@ -326,6 +329,9 @@ namespace DisplayPort
                 if (parent) {
                     parent->timer->cancelCallbacks(this);
                     parent->splitterDownRequest.cancel(this);
+                    // Detach from up-reply splitter too; avoids UAF when
+                    // a Message is deleted mid-defer on the up-reply path.
+                    parent->splitterUpReply.cancel(this);
                 }
 
                 parent = 0;
@@ -347,6 +353,20 @@ namespace DisplayPort
             }
         };
 
+    private:
+        // Fire-and-forget sink for unknown-up-request NAK completion.
+        struct NakUpReplyEvtSink : Message::MessageEventSink
+        {
+            virtual void messageFailed(Message * from, NakData * nakData) {}
+            virtual void messageCompleted(Message * from) {}
+        };
+
+        GenericUpReplyMessage * nakUpReply;
+        NakUpReplyEvtSink       nakUpReplyEvtSink;
+
+        void sendNakForUnknownUpRequest(EncodedMessage * message);
+
+    public:
         //
         // Register new receiver for unpair messages
         // (eg. broadcast messages or sink->source messages)

@@ -30,7 +30,7 @@
 #include "platform/chipset/chipset.h"
 #include "nvdevid.h"
 
-#include "published/maxwell/gm200/dev_boot.h"
+#include "published/maxwell/gm200/dev_pmc.h"
 #include "published/maxwell/gm200/dev_nv_xp.h"
 #include "published/maxwell/gm200/dev_nv_xve.h"
 #include "published/maxwell/gm200/dev_nv_xve_addendum.h"

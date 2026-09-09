@@ -29,6 +29,7 @@
 #include "gpu/timer/objtmr.h"
 #include "core/thread_state.h"
 #include "core/locks.h"
+#include "core/system.h"
 
 static NvBool _os1HzCallbackIsOnList(OBJTMR *pTmr, OS1HZPROC callback, void *pData, NvU32 flags);
 static NV_STATUS _os1HzCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);

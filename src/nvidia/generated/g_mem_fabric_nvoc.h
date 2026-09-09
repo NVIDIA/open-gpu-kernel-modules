@@ -118,12 +118,12 @@ struct NVOC_VTABLE__MemoryFabric {
     NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__memoryfabricIsGpuMapAllowed__)(struct MemoryFabric * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__memoryfabricIsExportAllowed__)(struct MemoryFabric * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__memoryfabricAccessCallback__)(struct MemoryFabric * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memoryfabricControlSerialization_Prologue__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memoryfabricControlSerialization_Epilogue__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memoryfabricAccessCallback__)(struct MemoryFabric * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memoryfabricControlSerialization_Prologue__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memoryfabricControlSerialization_Epilogue__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__memoryfabricPreDestruct__)(struct MemoryFabric * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__memoryfabricControlFilter__)(struct MemoryFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__memoryfabricIsPartialUnmapSupported__)(struct MemoryFabric * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -349,27 +349,27 @@ static inline NvBool memoryfabricIsExportAllowed_DISPATCH(struct MemoryFabric *p
     return pMemory->__nvoc_metadata_ptr->vtable.__memoryfabricIsExportAllowed__(pMemory);
 }
 
-static inline NvBool memoryfabricAccessCallback_DISPATCH(struct MemoryFabric *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool memoryfabricAccessCallback_DISPATCH(struct MemoryFabric *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__memoryfabricAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool memoryfabricShareCallback_DISPATCH(struct MemoryFabric *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool memoryfabricShareCallback_DISPATCH(struct MemoryFabric *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__memoryfabricShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS memoryfabricControlSerialization_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memoryfabricControlSerialization_Prologue_DISPATCH(struct MemoryFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memoryfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memoryfabricControlSerialization_Epilogue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memoryfabricControlSerialization_Epilogue_DISPATCH(struct MemoryFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memoryfabricControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memoryfabricControl_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memoryfabricControl_Prologue_DISPATCH(struct MemoryFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memoryfabricControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memoryfabricControl_Epilogue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memoryfabricControl_Epilogue_DISPATCH(struct MemoryFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memoryfabricControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

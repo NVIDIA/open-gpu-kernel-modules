@@ -44,7 +44,9 @@
  * ============================================================================
  *
  * These are string tags used by cperDumpRecord() when emitting decoded CPER
- * contents via portDbgPrintf(). The log level is distinct from the severity.
+ * contents via portDbgDevicePrintf(). The log level is distinct from the
+ * severity. These strings are embedded in the printed text alongside the
+ * typed PORT_LOG_LEVEL value used for kernel syslog severity routing.
  * 
  * These are defined to match the prefixes used in the Linux kernel.
  */
@@ -58,11 +60,17 @@
  * CPER Dump Print Helpers
  * ============================================================================
  *
- * Convenience macros for emitting CPER dump lines via portDbgPrintf().
+ * Convenience macros for emitting CPER dump lines via portDbgDevicePrintf().
+ * The device handle is used by the NvPort backend for OS-level device-aware
+ * logging (e.g. dev_printk() on Linux); the typed PORT_LOG_LEVEL value is
+ * used for kernel syslog severity routing. The prefix string is preserved
+ * inside the format text for human readability and consistency with the
+ * Linux EDAC layer.
  */
 #define CPER_PREFIX_FMT "NVRM: {%u}%s: "
-#define CPER_PRINT(seq, prefix, fmt, ...) \
-    portDbgPrintf(CPER_PREFIX_FMT fmt "\n", (seq), (prefix), ##__VA_ARGS__)
+#define CPER_PRINT(pDev, level, seq, prefix, fmt, ...) \
+    portDbgDevicePrintf((pDev), (level), CPER_PREFIX_FMT fmt "\n", \
+                        (seq), (prefix), ##__VA_ARGS__)
 
 /*
  * ============================================================================
@@ -245,6 +253,16 @@ cperRecordIdToSequence(NvU64 recordId)
     return (NvU32)(recordId & NV_CPER_RECORD_ID_SEQUENCE_MASK);
 }
 
+//
+// Generate a fresh CPER recordId in the standard encoding (high 49 bits
+// = microseconds since the current decade epoch; low 15 bits = atomic
+// sequence counter). Producers that need a recordId-format value before
+// they have a CPER record on hand — e.g. the OpEventLog group cursor,
+// which is stamped into the CPER header on render — should use this so
+// the cursor and the recordId share one construction.
+//
+NvU64 cperGenerateRecordId(void);
+
 /*
  * CPER Section Descriptor (matches EFI_ERROR_SECTION_DESCRIPTOR)
  * Total size: 72 bytes
@@ -291,6 +309,8 @@ typedef struct NV_CPER_INIT_PARAMS
     const NV_CPER_GUID    *pCreatorId;     ///< Creator ID GUID (who created this record)
     const NV_CPER_GUID    *pPlatformId;    ///< Platform ID (SMBIOS UUID), NULL if not available
     const NV_CPER_GUID    *pPartitionId;   ///< Partition ID (VM GUID), NULL if not applicable
+    NvU64                  timestampUs;    ///< Microsecond wall clock timestamp, or 0 for current time
+    NvU64                  recordId;       ///< CPER record ID, or 0 to generate one
     NvBool                 bTimestampPrecise; ///< Whether timestamp is precise (vs. imprecise estimate)
     NvU16                  sectionCount;   ///< Number of section descriptors to pre-allocate
 } NV_CPER_INIT_PARAMS;
@@ -319,7 +339,8 @@ typedef struct NV_CPER_SECTION_PARAMS
  * @brief Initialize a CPER record header in a buffer
  *
  * This function initializes a CPER record header at the start of the provided
- * buffer. The timestamp is automatically populated from the system wall clock.
+ * buffer. The timestamp is populated from @ref NV_CPER_INIT_PARAMS::timestampUs
+ * when provided, or from the current system wall clock otherwise.
  *
  * @param[out] pBuffer      Buffer to write the CPER header into
  * @param[in]  bufferSize   Size of the buffer in bytes
@@ -481,7 +502,11 @@ NvBool cperGuidFromUuidBytes(const NvU8 uuidBytes[16], NV_CPER_GUID *pGuid);
  * This helper is intended for in-kernel use (it prints via NV_PRINTF).
  * In non-kernel builds it is a no-op.
  */
-void cperDumpRecord(const void *pBuffer, NvU32 bufferSize, const char *pLogPrefix);
+void cperDumpRecord(PORT_DEVICE        *pDev,
+                    PORT_LOG_LEVEL      level,
+                    const void         *pBuffer,
+                    NvU32               bufferSize,
+                    const char         *pLogPrefix);
 
 /*!
  * @brief Extract the FruId from the first CPER section

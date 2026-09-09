@@ -474,21 +474,24 @@ vidmemCopyConstruct
         bSrcLockAcquired = NV_TRUE;
     }
 
-    // No flags specified on the initial static BAR1 mapping 
-    status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
-                   pMemDesc, BUS_MAP_FB_FLAGS_NONE);
+    if (kbusShouldRefcountConstruct_HAL(pGpu, pKernelBus, pMemDesc))
+    {
+        // No flags specified on the initial static BAR1 mapping 
+        status = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                       pMemDesc, BUS_MAP_FB_FLAGS_NONE);
 
-    if (status == NV_OK)
-    {
-        // nothing
-    }
-    else if (status == NV_ERR_NOT_SUPPORTED)
-    {
-        status = NV_OK;
-    }
-    else
-    {
-        return status;
+        if (status == NV_OK)
+        {
+            // nothing
+        }
+        else if (status == NV_ERR_NOT_SUPPORTED)
+        {
+            status = NV_OK;
+        }
+        else
+        {
+            return status;
+        }
     }
 
     switch (memdescGetCustomHeap(pMemDesc))
@@ -620,10 +623,11 @@ vidmemConstruct_IMPL
 
     stdmemDumpInputAllocParams(pAllocData, pCallContext);
 
-    NvU64 pid = pRmClient->ProcID;
-    void *pidInfo = pRmClient->pOsPidInfo;
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        memacctTryCharge(osClientGroupID(pid, pidInfo), pGpu->gpuId, pAllocData->size, &pMemory->pCharge));
+    if (!IS_MIG_ENABLED(pGpu))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            memacctTryCharge(pRmClient, pGpu->gpuId, pAllocData->size, &pMemory->pCharge));
+    }
 
     if (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL)
     {
@@ -640,7 +644,7 @@ vidmemConstruct_IMPL
     attr  = pAllocData->attr;
     attr2 = pAllocData->attr2;
 
-    if (gpuIsCCorApmFeatureEnabled(pGpu) &&
+    if (gpuIsCCFeatureEnabled(pGpu) &&
         !FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
     {
         pAllocData->flags |= NVOS32_ALLOC_FLAGS_PROTECTED;
@@ -654,7 +658,7 @@ vidmemConstruct_IMPL
             rmStatus = NV_ERR_INVALID_ARGUMENT;
             goto done);
     }
-    else if (!gpuIsCCorApmFeatureEnabled(pGpu) &&
+    else if (!gpuIsCCFeatureEnabled(pGpu) &&
              FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED, pAllocData->attr2))
     {
         NV_PRINTF(LEVEL_ERROR, "Protected memory not enabled but PROTECTED flag is set by client");
@@ -896,7 +900,7 @@ vidmemConstruct_IMPL
     // unprotected region and use that to gather statistics like total
     // protected and unprotected memory usage by different clients, etc
     //
-    if (gpuIsCCorApmFeatureEnabled(pGpu) &&
+    if (gpuIsCCFeatureEnabled(pGpu) &&
         FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
     {
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
@@ -1070,32 +1074,35 @@ vidmemConstruct_IMPL
         }
     }
 
-    // No flags specified on the initial static BAR1 mapping 
-    rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
-                   pMemory->pMemDesc, BUS_MAP_FB_FLAGS_NONE);
+    if (kbusShouldRefcountConstruct_HAL(pGpu, pKernelBus, pMemory->pMemDesc))
+    {
+        // No flags specified on the initial static BAR1 mapping 
+        rmStatus = kbusIncreaseStaticBar1Refcount_HAL(pGpu, pKernelBus,
+                       pMemory->pMemDesc, BUS_MAP_FB_FLAGS_NONE);
 
-    if (rmStatus == NV_OK)
-    {
-        // nothing
-    }
-    else if (rmStatus == NV_ERR_NOT_SUPPORTED)
-    {
-        rmStatus = NV_OK;
-    }
-    else
-    {
-        if (pMemory->bRpcAlloc)
+        if (rmStatus == NV_OK)
         {
-            NV_STATUS status = NV_OK;
-            NV_RM_RPC_FREE(pGpu, hClient, hParent,
-                           pAllocRequest->hMemory, status);
-            NV_ASSERT(status == NV_OK);
+            // nothing
         }
-        memDestructCommon(pMemory);
-        memdescFree(pTopLevelMemDesc);
-        memdescDestroy(pTopLevelMemDesc);
-        pTopLevelMemDesc = NULL;
-        goto done;
+        else if (rmStatus == NV_ERR_NOT_SUPPORTED)
+        {
+            rmStatus = NV_OK;
+        }
+        else
+        {
+            if (pMemory->bRpcAlloc)
+            {
+                NV_STATUS status = NV_OK;
+                NV_RM_RPC_FREE(pGpu, hClient, hParent,
+                               pAllocRequest->hMemory, status);
+                NV_ASSERT(status == NV_OK);
+            }
+            memDestructCommon(pMemory);
+            memdescFree(pTopLevelMemDesc);
+            memdescDestroy(pTopLevelMemDesc);
+            pTopLevelMemDesc = NULL;
+            goto done;
+        }
     }
 
     pAllocData->size = sizeOut;
@@ -1142,6 +1149,7 @@ vidmemDestruct_IMPL
     OBJGPU             *pGpu           = pMemory->pGpu;
     MEMORY_DESCRIPTOR  *pMemDesc       = pMemory->pMemDesc;
     MEMDESC_CUSTOM_HEAP customHeap;
+    KernelBus          *pKernelBus      = GPU_GET_KERNEL_BUS(pGpu);
 
     // Free any association of the memory with existing third-party p2p object
     CliUnregisterMemoryFromThirdPartyP2P(pMemory);
@@ -1149,14 +1157,17 @@ vidmemDestruct_IMPL
     memacctReleaseCharge(pMemory->pCharge);
     memDestructCommon(pMemory);
 
-    //
-    // static BAR1: memory must be released from the static BAR1 mapping
-    // to restore the static BAR1 mapping to a default state since it can
-    // immediately be allocated by UVM after PMA free
-    //
-    (void)kbusDecreaseStaticBar1Refcount_HAL(pGpu,
-                    GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
+    if (kbusShouldRefcountConstruct_HAL(pGpu, pKernelBus, pMemDesc))
+    {
+        //
+        // static BAR1: memory must be released from the static BAR1 mapping
+        // to restore the static BAR1 mapping to a default state since it can
+        // immediately be allocated by UVM after PMA free
+        //
+        (void)kbusDecreaseStaticBar1Refcount_HAL(pGpu,
+                    pKernelBus, pMemDesc,
                     NULL);
+    }
 
     // free the video memory based on how it was alloced ... a non-zero
     // heapOwner indicates it was heapAlloc-ed.

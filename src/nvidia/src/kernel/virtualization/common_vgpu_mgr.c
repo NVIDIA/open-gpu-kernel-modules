@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,10 @@ static char * getGridLicenseProductName(const char* licenseInfo)
     {
         return (char *)NV_GRID_LICENSED_PRODUCT_VGPU_FOR_COMPUTE;
     }
+    else if (portStringCompare(licenseInfo, NV_GRID_LICENSE_FEATURE_VGAMEDEV_EDITION, (portStringLength(NV_GRID_LICENSE_FEATURE_VGAMEDEV_EDITION) + 1)) == 0)
+    {
+        return (char *)NV_GRID_LICENSED_PRODUCT_VGAMEDEV;
+    }
     else
     {
         return NULL;
@@ -96,6 +100,10 @@ vgpuMgrFillVgpuType(NVA081_CTRL_VGPU_INFO *pVgpuInfo, VGPU_TYPE *pVgpuTypeNode)
     pVgpuTypeNode->gpuDirectSupported = pVgpuInfo->gpuDirectSupported;
     pVgpuTypeNode->nvlinkP2PSupported = pVgpuInfo->nvlinkP2PSupported;
     pVgpuTypeNode->maxInstancePerGI   = pVgpuInfo->maxInstancePerGI;
+    pVgpuTypeNode->pvmrlSchedulingBaseWeightDivisor
+                                      = pVgpuInfo->pvmrlSchedulingBaseWeightDivisor;
+    pVgpuTypeNode->pvmrlSchedulingCap
+                                      = pVgpuInfo->pvmrlSchedulingCap;
     pVgpuTypeNode->multiVgpuExclusive = pVgpuInfo->multiVgpuExclusive;
     pVgpuTypeNode->frlEnable          = pVgpuInfo->frlEnable;
 
@@ -114,6 +122,18 @@ vgpuMgrFillVgpuType(NVA081_CTRL_VGPU_INFO *pVgpuInfo, VGPU_TYPE *pVgpuTypeNode)
     portMemCopy(
         (char *) pVgpuTypeNode->vgpuSignature, sizeof(pVgpuTypeNode->vgpuSignature),
         (char *) pVgpuInfo->vgpuSignature, sizeof(pVgpuInfo->vgpuSignature));
+
+    pVgpuTypeNode->vgpuTypeSupportedPlacementInfo.heterogeneousPlacementCount = 0;
+    pVgpuTypeNode->vgpuTypeSupportedPlacementInfo.homogeneousPlacementCount = 0;
+
+    VGPU_INSTANCE_SUPPORTED_PLACEMENT_INFO *pPlacementInfo =
+        pVgpuTypeNode->vgpuTypeSupportedPlacementInfo.vgpuInstanceSupportedPlacementInfo;
+
+    for (NvU32 i = 0; i < MAX_VGPU_DEVICES_PER_PGPU; i++)
+    {
+        pPlacementInfo[i].homogeneousSupportedPlacementId   = NVA081_PLACEMENT_ID_INVALID;
+        pPlacementInfo[i].heterogeneousSupportedPlacementId = NVA081_PLACEMENT_ID_INVALID;
+    }
 
     // Fetch vGPU license product name from license info
     licenseProductNameBuffer = getGridLicenseProductName((const char *)pVgpuInfo->license);

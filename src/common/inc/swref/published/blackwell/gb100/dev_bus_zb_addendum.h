@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,12 @@
 
 #ifndef gb100_dev_nv_bus_zb_addendum_h
 #define gb100_dev_nv_bus_zb_addendum_h
+
+//
+// This register is used to report GSP-FMC errors
+//
+#define NV_PBUS_ZB_SW_SCRATCH_GSP_FMC_ERROR                                    NV_PBUS_ZB_SW_SCRATCH(0x37)
+#define NV_PBUS_ZB_SW_SCRATCH_GSP_FMC_ERROR_CODE                               31:0
 
 /*!
  * @defgroup    FRTS_INSECURE_SCRATCH_REGISTERS

@@ -208,6 +208,13 @@ memmgrSavePowerMgmtState_KERNEL
         break;
     }
 
+    if (pMemoryManager->pActiveFbsr == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "FBSR: all methods failed, aborting power management\n");
+        rmStatus = NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
     if (rmStatus != NV_OK)
     {
         memmgrFreeFbsrMemory_HAL(pGpu, pMemoryManager);
@@ -336,8 +343,7 @@ _memmgrAllocFbsrReservedRanges
          */
         if (IS_GSP_CLIENT(pGpu))
         {
-            KernelGsp    *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-            GspFwWprMeta *pWprMeta   = pKernelGsp->pWprMeta;
+            KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
             NV_MEMORY_ALLOCATION_PARAMS memAllocParams;
             RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
@@ -351,8 +357,9 @@ _memmgrAllocFbsrReservedRanges
              *
              * TODO: Query GSP for size of its allocation instead of this calculation
              */
-            NvU64 size = ((pWprMeta->nonWprHeapOffset + pWprMeta->nonWprHeapSize) - rsvdMemEnd) + // GSP Heap start to end of NON WPR region
-                         pWprMeta->vgaWorkspaceSize;                                              // VGA Workspace
+            NvU64 size = ((pKernelGsp->srRegionsInfo.nonWprHeapOffset +
+                           pKernelGsp->srRegionsInfo.nonWprHeapSize) - rsvdMemEnd) + // GSP Heap start to end of NON WPR region
+                         pKernelGsp->srRegionsInfo.vgaWorkspaceSize;                 // VGA Workspace
 
             // Check if CBC region needs to be saved
             if (GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend)

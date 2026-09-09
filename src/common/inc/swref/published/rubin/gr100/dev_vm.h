@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,16 @@
 #define __gr100_dev_vm_h__
 #define NV_VIRTUAL_FUNCTION_PRIV                       0x0002FFFF:0x00000000 /* RW--D */
 #define NV_VIRTUAL_FUNCTION                            0x0003FFFF:0x00030000 /* RW--D */
+#define NV_VIRTUAL_FUNCTION_REGION5                    0x0004FFFF:0x00040000 /* RW--L */
+#define NV_VIRTUAL_FUNCTION_PHYS_OFFSET_REGION1        0x00DBFFFF:0x00D80000 /* RW--D */
+
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE                                    0x00000F10   /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_TOKEN                   (31-1):0   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED                           0x00000F14   /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED_TOKEN         (31-1):0   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED_STATUS                                   31:31   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED_STATUS_BUSY                         0x00000001   /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE_COMPLETED_STATUS_IDLE                         0x00000000   /* R-I-V */
 
 #define NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO               0x00003108 /* RW-4P */
 #define NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO_BASE               31:12 /* RWXVF */
@@ -56,4 +66,8 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_IG_MC_FLA_ADDR_ALIGN_TABLE_OFFSET_256B_ALIGNED_VALID_VALID                       31:31      /* RWEVF */
 #define NV_VIRTUAL_FUNCTION_PRIV_IG_MC_FLA_ADDR_ALIGN_TABLE_OFFSET_256B_ALIGNED_VALID_VALID_INIT                  0x00000000 /* RWE-V */
 
+#define NV_VIRTUAL_FUNCTION_REGION5_GSP_SCRATCH_RW(i)                    (0x40100+(i)*4) /* RW-4A */
+#define NV_VIRTUAL_FUNCTION_REGION5_GSP_SCRATCH_RW__SIZE_1                            16 /*       */
+#define NV_VIRTUAL_FUNCTION_REGION5_GSP_SCRATCH_RW_VALUE                            31:0 /* RWIVF */
+#define NV_VIRTUAL_FUNCTION_REGION5_GSP_SCRATCH_RW_VALUE_INIT                 0x00000000 /* RWI-V */
 #endif // __gr100_dev_vm_h__

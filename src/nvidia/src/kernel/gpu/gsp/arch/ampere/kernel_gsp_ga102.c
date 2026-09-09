@@ -37,7 +37,28 @@
 #include "published/ampere/ga102/dev_gsp.h"
 #include "published/ampere/ga102/dev_gsp_addendum.h"
 
-#define RISCV_BR_ADDR_ALIGNMENT                 (8)
+#define COMMON_UCODE_BIN_SUPPORT_ON_RELEASE_DRIVER      (1)
+
+#define RISCV_BR_ADDR_ALIGNMENT                         (8)
+
+
+/*!
+ * Same predicate as inc/kernel/gpu/gpu_common_ucode_bin.h (not included here:
+ * this TU is built in contexts without that include path). Gated by
+ * COMMON_UCODE_BIN_SUPPORT_ON_RELEASE_DRIVER, not nvconfig.
+ */
+ static NvBool
+ _kgspIsCommonSwDecUcodeBinForDebugPlatform(OBJGPU *pGpu)
+ {
+#if COMMON_UCODE_BIN_SUPPORT_ON_RELEASE_DRIVER
+     return (NvBool)((IsGB20X(pGpu) && !IsGB20Y(pGpu)) ||
+                     (IsGB10X(pGpu) && !IsGB10Y(pGpu)));
+#else
+     return NV_FALSE;
+#endif
+ }
+ 
+
 
 void
 kgspConfigureFalcon_GA102
@@ -86,14 +107,20 @@ kgspGetGspRmBootUcodeStorage_GA102
 )
 {
     const BINDATA_ARCHIVE *pBinArchive = kgspGetBinArchiveGspRmBoot_HAL(pKernelGsp);
+    const NvBool bDebugMode = kgspIsDebugModeEnabled(pGpu, pKernelGsp);
+    const NvBool bCommonSwDecDbgPlatform = _kgspIsCommonSwDecUcodeBinForDebugPlatform(pGpu);
 
-    if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
+    if (bDebugMode && !bCommonSwDecDbgPlatform)
     {
+        NV_PRINTF(LEVEL_INFO,
+                  "kgspGetGspRmBootUcodeStorage_GA102: selecting DBG bindata (IMAGE_DBG / DESC_DBG)\n");
         *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_IMAGE_DBG);
         *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_DESC_DBG);
     }
     else
     {
+        NV_PRINTF(LEVEL_INFO,
+                  "kgspGetGspRmBootUcodeStorage_GA102: selecting PROD bindata (IMAGE_PROD / DESC_PROD)\n");
         *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_IMAGE_PROD);
         *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, BINDATA_LABEL_UCODE_DESC_PROD);
     }

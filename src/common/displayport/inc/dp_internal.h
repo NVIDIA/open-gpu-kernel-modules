@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,7 +37,7 @@
 //
 
 #include <nvtypes.h>
-#include <stddef.h>      // size_t
+#include <nv_stddef.h>      // size_t
 
 #include "dp_object.h"
 #include "dp_ringbuffer.h"

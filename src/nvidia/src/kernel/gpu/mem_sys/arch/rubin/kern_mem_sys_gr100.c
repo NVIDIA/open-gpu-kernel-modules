@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "nvtypes.h"
 #include "published/rubin/gr100/hwproject.h"
@@ -395,32 +396,28 @@ kmemsysWriteBackAndInvalidateSysL2_GR100
 )
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    NV_STATUS rmStatus = NV_OK;
-    NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS *pParams = portMemAllocNonPaged(sizeof(*pParams));;
+    NV_STATUS rmStatus;
+    NvU32 reg;
+    RMTIMEOUT timeout = {0, };
 
-    if (pParams == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    portMemSet(pParams, 0, sizeof(*pParams));
-
-    pParams->flags =
-        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _APERTURE, _SYSTEM_MEMORY) |
-        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _WRITE_BACK, _YES)         |
-        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _INVALIDATE, _YES)         |
-        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _FB_FLUSH, _YES)           |
-        DRF_DEF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _FLUSH_MODE, _FULL_CACHE);
-
-    rmStatus = kmemsysFlushGpuCache(pGpu, pKernelMemorySystem, pKernelBus, pParams);
-
+    reg = NV_VIRTUAL_FUNCTION_PRIV_FUNC_L2_SYSMEM_INVALIDATE;
+    
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    rmStatus = kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, reg, 0, 0, &timeout);
     if (rmStatus != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to writeback & invalidate gpu L2 cache for sysmem."
+        NV_PRINTF(LEVEL_ERROR, "Failed to writeback & invalidate gpu L2 cache for sysmem. "
             "Status:0x%x\n", rmStatus);
+        return rmStatus;
     }
 
-    portMemFree(pParams);
+    rmStatus = kbusSendSysmembarSingleWithXalUflush_HAL(pGpu, pKernelBus);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to send sysmembar after WB&I for sysmem. Status:0x%x\n",
+            rmStatus);
+    }
+
     return rmStatus;
 }
 
@@ -600,5 +597,28 @@ void kmemsysDestroySysLtcApertures_GR100
     portMemFree(pKernelMemorySystem->pSysLtcApertures);
     pKernelMemorySystem->pSysLtcApertures = NULL;
     pKernelMemorySystem->sysLtcApertureCount = 0;
+}
+
+/*!
+ * @brief Flush CPU cache coherently on Vera+ platforms
+ *
+ * On Vera+ platforms, the standard OS cache flush is
+ * ineffective. Use the GPU L2 probe filter to actively pull dirty cache lines.
+ *
+ * @param[in] pGpu                  GPU object pointer
+ * @param[in] pKernelMemorySystem   KernelMemorySystem object pointer
+ * @param[in] address               CPU address to flush
+ * @param[in] size                  Size of region to flush
+ */
+void
+kmemsysFlushCoherentCpuCache_GR100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvUPtr              address,
+    NvU64               size
+)
+{
+    kmemsysCleanLTCProbeFilter(pGpu, pKernelMemorySystem);
 }
 

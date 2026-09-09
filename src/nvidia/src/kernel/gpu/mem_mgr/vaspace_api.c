@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -188,17 +188,21 @@ vaspaceapiConstruct_IMPL
     //
     // When MIG is enabled, ensure the client has a valid subscription.
     // While only split VA spaces should require this (and this will be
-    // checked by _vaspaceapiManagePageLevelsForSplitVaSpace), check for
-    // all platforms once the GPU lock is held, for consistency/to weed
-    // out any cases where the client creates the VAS before subscribing
-    // to the partition.
+    // checked by _vaspaceapiManagePageLevelsForSplitVaSpace if there's
+    // an FB), check for all platforms once the GPU lock is held, for
+    // consistency/to weed out any cases where the client creates the VAS
+    // before subscribing to the partition.
+    //
+    // ZeroFB requires special handling here as support for split VA spaces
+    // may be supported but without an FB (and PMA) the subscription check in
+    // the _vaspaceapiManagePageLevelsForSplitVaSpace path won't be triggered.
     //
     // Only check for cases where split VA space management is disabled -
     // other configurations (such as MODS SRIOV MIG testing) which use
     // split VA spaces have problems with this check.
     //
     if ((!NV_IS_MODS) && (pParams->externalClassId == FERMI_VASPACE_A) &&
-        (!gpuIsSplitVasManagementServerClientRmEnabled(pGpu)) &&
+        (!gpuIsSplitVasManagementServerClientRmEnabled(pGpu) || pGpu->pGpuArch->bGpuArchIsZeroFb) &&
         (pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
     {
         MIG_INSTANCE_REF ref;

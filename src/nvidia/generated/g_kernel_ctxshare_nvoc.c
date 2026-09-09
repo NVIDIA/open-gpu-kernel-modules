@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCtxShare =
 {
     .classInfo.size =               sizeof(KernelCtxShare),
     .classInfo.classId =            classId(KernelCtxShare),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelCtxShare",
@@ -351,6 +352,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCtxShareApi =
 {
     .classInfo.size =               sizeof(KernelCtxShareApi),
     .classInfo.classId =            classId(KernelCtxShareApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelCtxShareApi",

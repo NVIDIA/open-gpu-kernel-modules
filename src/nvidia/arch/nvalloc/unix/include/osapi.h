@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -197,7 +197,7 @@ void       RmUnixRmApiEpilogue      (nv_state_t *, THREAD_STATE_NODE *);
 
 static inline NvBool rm_is_system_notebook(void)
 {
-    return (nv_is_chassis_notebook() || nv_acpi_is_battery_present());
+    return sysGetStaticConfig(SYS_GET_INSTANCE())->bIsNotebook;
 }
 
 #endif // _OSAPI_H_

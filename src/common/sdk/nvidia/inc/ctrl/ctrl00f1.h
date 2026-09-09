@@ -109,8 +109,8 @@ typedef struct NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA {
  *  pageSize
  *    Client selected page size of the remote GPU being attached.
  *
- *  cliqueId
- *    Clique ID of the remote GPU being attached.
+ *  clique
+ *    Clique of the remote GPU being attached.
  *
  *  index
  *    Index of the export object to which the memory object is attached.
@@ -130,7 +130,7 @@ typedef struct NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA {
     NV_DECLARE_ALIGNED(NvU64 key, 8);
     NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
-    NvU32 cliqueId;
+    NV_DECLARE_ALIGNED(NvU64 clique, 8);
     NvU16 index;
     NvU16 exportNodeId;
     NvU16 bwMode;
@@ -139,14 +139,18 @@ typedef struct NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA {
 
 /*
  *  gpuId
- *    GPU ID of the GPU whose cliqueID has changed.
+ *    GPU ID of the GPU whose clique has changed.
  *
- *  cliqueId
- *    Clique ID of the GPU.
+ *  clique
+ *    New clique of the GPU.
+ *
+ *  oldClique
+ *    Old clique of the GPU.
  */
 typedef struct NV00F1_CTRL_CLIQUE_ID_CHANGE_GPU_EVENT_DATA {
     NvU32 gpuId;
-    NvU32 cliqueId;
+    NV_DECLARE_ALIGNED(NvU64 clique, 8);
+    NV_DECLARE_ALIGNED(NvU64 oldClique, 8);
 } NV00F1_CTRL_CLIQUE_ID_CHANGE_GPU_EVENT_DATA;
 
 /*
@@ -171,7 +175,7 @@ typedef struct NV00F1_CTRL_FABRIC_EVENT {
         NV_DECLARE_ALIGNED(NV00F1_CTRL_FABRIC_MEM_IMPORT_EVENT_DATA import, 8);
         NV_DECLARE_ALIGNED(NV00F1_CTRL_FABRIC_MEM_UNIMPORT_EVENT_DATA unimport, 8);
         NV_DECLARE_ALIGNED(NV00F1_CTRL_ATTACH_REMOTE_GPU_EVENT_DATA attach, 8);
-        NV00F1_CTRL_CLIQUE_ID_CHANGE_GPU_EVENT_DATA cliqueIdChange;
+        NV_DECLARE_ALIGNED(NV00F1_CTRL_CLIQUE_ID_CHANGE_GPU_EVENT_DATA cliqueIdChange, 8);
     } data;
 } NV00F1_CTRL_FABRIC_EVENT;
 

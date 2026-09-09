@@ -485,6 +485,9 @@ kdispInitBrightcStateLoad_IMPL(OBJGPU *pGpu,
     }
     portMemSet(pBrightcInfo, 0, sizeof(*pBrightcInfo));
 
+    // The Unix client has no nits interface; physical RM arms the PWM fallback instead.
+    pBrightcInfo->bNitsPwmFallbackEnabled = RMCFG_FEATURE_PLATFORM_UNIX;
+
     pBrightcInfo->status = status;
     if ((pKernelDisplay != NULL)
         && (pKernelDisplay->pStaticInfo->internalDispActiveMask != 0)

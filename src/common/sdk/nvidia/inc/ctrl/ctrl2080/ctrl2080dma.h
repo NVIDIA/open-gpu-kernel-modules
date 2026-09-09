@@ -31,6 +31,7 @@
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
+#include "nvcfg_sdk.h"
 
 /* NV20_SUBDEVICE_XX dma control commands and parameters */
 
@@ -176,5 +177,7 @@ typedef struct NV2080_CTRL_DMA_UPDATE_COMPTAG_INFO_TILE_INFO {
      */
     NvU16 relComptagIndex;
 } NV2080_CTRL_DMA_UPDATE_COMPTAG_INFO_TILE_INFO;
+
+
 
 // _ctrl2080dma_h_

@@ -25,7 +25,7 @@
 #include "gpu/perf/kern_perf.h"
 #include "core/locks.h"
 #include "vgpu/rpc.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "platform/sli/sli.h"
 
 /* ------------------------ Macros ----------------------------------------- */

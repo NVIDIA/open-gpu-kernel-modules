@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,7 @@
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
 #include "vgpu/rpc.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 /*
  * @brief Get the number of successful error recoveries
@@ -169,6 +169,11 @@ subdeviceCtrlCmdNvlinkSetPowerState_IMPL
 
         case NV2080_CTRL_NVLINK_POWER_STATE_L2:
         {
+            if (knvlinkIsP2PActive_IMPL(pGpu, pKernelNvlink))
+            {
+                NV_PRINTF(LEVEL_ERROR, "P2P is active. Return.\n");
+                return NV_ERR_INVALID_REQUEST;
+            }
             status = knvlinkEnterExitSleep(pGpu, pKernelNvlink,
                                            &localLinkMask,
                                            NV_TRUE);
@@ -274,26 +279,6 @@ subdeviceCtrlCmdNvlinkSetNvlinkPeer_IMPL
     return status;
 }
 
-NV_STATUS
-subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
-                                     kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
-    if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
-    {
-        NV_PRINTF(LEVEL_INFO, "NVLink unavailable. Return\n");
-        return NV_ERR_NOT_SUPPORTED;
-    }
-    return knvlinkGetSupportedCounters_HAL(pGpu, pKernelNvlink, pParams);
-}
-
 //
 // subdeviceCtrlCmdNvlinkGetSupportedBWMode_IMPL
 //    Query the supported RBM modes from probe repsonse
@@ -346,20 +331,60 @@ subdeviceCtrlCmdNvlinkSetBWMode_IMPL
                                      kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
 
     // Blackwell is always synchronous
-    NvBool bForceSync = NV_FALSE;
     if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
     {
         NV_PRINTF(LEVEL_INFO, "NVLink unavailable. Return\n");
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if ((pKernelNvlink->ipVerNvlink == NVLINK_VERSION_50) ||
-         pParams->bForceSync ||
-         !pKernelNvlink->bAsyncRbmEnabled)
+    // Direct-connect system
+    if (pGpu->fabricProbeRetryDelay == 0)
     {
-        bForceSync = NV_TRUE;
+        //TODO: handle direct connect systems
+        NV_PRINTF(LEVEL_ERROR, "RBM not currently implemented on direct connect systems.\n");
+        return NV_ERR_NOT_SUPPORTED;
     }
 
+    if (!gpuFabricProbeIsSuccess(pGpu->pGpuFabricProbeInfoKernel))
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Fabric probe is not successful, returning error.\n", pGpu->gpuInstance);
+        return NV_ERR_BUSY_RETRY;
+    }
+
+    // Check if requested BW mode is supported
+    if (!knvlinkIsBwModeSupported_HAL(pGpu, pKernelNvlink, pParams->rbmMode))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Requested RBM mode is not supported by GPU.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return gpumgrSetGpuNvlinkBwModePerGpu(pGpu, pParams->rbmMode, NV_TRUE);
+}
+
+NV_STATUS
+subdeviceCtrlCmdNvlinkSetBWModeAsync_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
+                                     kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
+
+    if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
+    {
+        NV_PRINTF(LEVEL_INFO, "NVLink unavailable. Return\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!knvlinkIsAsyncRbmEnabled(pGpu, pKernelNvlink))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Async RBM is not enabled. Return\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     // Direct-connect system
     if (pGpu->fabricProbeRetryDelay == 0)
@@ -376,12 +401,11 @@ subdeviceCtrlCmdNvlinkSetBWMode_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    // Client should wait for at least the probe request time + link state change time + 2 seconds
-    pParams->rbmSetPollTimeoutMs = (bForceSync) ?
-        NV2080_CTRL_CMD_NVLINK_SET_BW_MODE_POLL_TIMEOUT_MS_INVALID :
-        (pKernelNvlink->probeRequestTimeMs + pKernelNvlink->linkStateChangeTimeMs + 2000U);
+    // Client should wait for at least the probe request time + link state change time + RBM set buffer time (10 seconds)
+    pParams->rbmSetPollTimeoutMs =
+        (pKernelNvlink->probeRequestTimeMs + pKernelNvlink->linkStateChangeTimeMs + 10000U);
 
-    return gpumgrSetGpuNvlinkBwModePerGpu(pGpu, pParams->rbmMode, bForceSync);
+    return gpumgrSetGpuNvlinkBwModePerGpu(pGpu, pParams->rbmMode, NV_FALSE);
 }
 
 //
@@ -472,6 +496,9 @@ subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
 
     if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED) ||
         pKernelNvlink->bNvleQualModeRegkey)

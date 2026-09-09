@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,7 @@
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-modeset.h"
+#include "nvidia-drm-connector.h"
 #include "nvidia-drm-crtc.h"
 #include "nvidia-drm-os-interface.h"
 #include "nvidia-drm-helper.h"
@@ -500,10 +501,22 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                                    requested_config,
                                    &reply_config,
                                    commit)) {
-        if (commit || reply_config.flipResult != NV_KMS_FLIP_RESULT_IN_PROGRESS) {
-            return -EINVAL;
+        return -EINVAL;
+    }
+
+#ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
+    if (commit) {
+        struct drm_connector *connector;
+        struct drm_connector_state *connector_state;
+        int j;
+
+        for_each_new_connector_in_state(state, connector, connector_state, j) {
+            if (connector->state->content_protection == DRM_MODE_CONTENT_PROTECTION_DESIRED) {
+                nv_drm_connector_update_content_protection(to_nv_connector(connector));
+            }
         }
     }
+#endif
 
     if (commit && nv_drm_vblank_module_param) {
         for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
@@ -543,6 +556,7 @@ int nv_drm_atomic_check(struct drm_device *dev,
     bool cursor_surface_changed;
     bool cursor_only_commit;
 
+    bool infoframe_changed;
     for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
 
         /*
@@ -564,11 +578,60 @@ int nv_drm_atomic_check(struct drm_device *dev,
         }
 
         /*
-         * if the color management changed on the crtc, we need to update the
-         * crtc's plane's CSC matrices, so add the crtc's planes to the commit
+         * Check if infoframe-related properties changed on any connector
+         * attached to this CRTC. If so, we need to serialize the flip
+         * to ensure infoframe updates are properly sequenced.
+         */
+        infoframe_changed = false;
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+        {
+
+            struct drm_connector *connector;
+            struct drm_connector_state *connector_state;
+            struct drm_connector_state *old_connector_state;
+            struct nv_drm_connector_state *nv_connector_state;
+            struct nv_drm_connector_state *nv_old_connector_state;
+            int k;
+            bool hdr_changed, colorspace_changed, vsif_metadata_changed;
+
+            for_each_new_connector_in_state(state, connector, connector_state, k) {
+                if (connector_state->crtc != crtc) {
+                    continue;
+                }
+
+                old_connector_state = drm_atomic_get_old_connector_state(state, connector);
+                nv_connector_state = to_nv_drm_connector_state(connector_state);
+                nv_old_connector_state = to_nv_drm_connector_state(old_connector_state);
+
+                hdr_changed = !drm_connector_atomic_hdr_metadata_equal(old_connector_state,
+                                                                       connector_state);
+                colorspace_changed = (old_connector_state->colorspace != connector_state->colorspace);
+                vsif_metadata_changed = !nv_drm_blobs_equal(nv_connector_state->hdmi_vsif_metadata,
+                                                            nv_old_connector_state->hdmi_vsif_metadata);
+
+                /* Check if HDR metadata or colorspace changed */
+                if (hdr_changed || colorspace_changed || vsif_metadata_changed) {
+                    NV_DRM_LOG_INFO("Infoframe changed on CRTC %d (hdr=%d colorspace=%d vsif=%d), adding planes on CRTC to atomic commit\n",
+                           to_nv_crtc(crtc)->head,
+                           hdr_changed,
+                           colorspace_changed,
+                           vsif_metadata_changed);
+                    infoframe_changed = true;
+                    break;
+                }
+            }
+        }
+#endif
+
+        /*
+         * If the color management changed on the crtc, we need to update the
+         * crtc's plane's CSC matrices and ILUTs, so add the crtc's planes to
+         * the commit. Similarly, if infoframe properties changed, add all
+         * planes to ensure the flip is serialized via flip_list.
          */
         if (crtc_state->color_mgmt_changed ||
-            (cursor_surface_changed && cursor_only_commit)) {
+            (cursor_surface_changed && cursor_only_commit) ||
+            infoframe_changed) {
             if ((ret = drm_atomic_add_affected_planes(state, crtc)) != 0) {
                 goto done;
             }
@@ -711,70 +774,36 @@ int nv_drm_atomic_commit(struct drm_device *dev,
      * Our system already implements such a queue, but due to
      * bug 4054608, it is currently not used.
      */
-    for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
-        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+    if (nonblock) {
+        for_each_new_crtc_in_state(state, crtc, crtc_state, i) {
+            struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
 
-        /*
-         * Here you aren't required to hold nv_drm_crtc::flip_list_lock
-         * because:
-         *
-         * The core DRM driver acquires lock for all affected crtcs before
-         * calling into ->commit() hook, therefore it is not possible for
-         * other threads to call into ->commit() hook affecting same crtcs
-         * and enqueue flip objects into flip_list -
-         *
-         *   nv_drm_atomic_commit_internal()
-         *     |-> nv_drm_atomic_apply_modeset_config(commit=true)
-         *           |-> nv_drm_crtc_enqueue_flip()
-         *
-         * Only possibility is list_empty check races with code path
-         * dequeuing flip object -
-         *
-         *   __nv_drm_handle_flip_event()
-         *     |-> nv_drm_crtc_dequeue_flip()
-         *
-         * But this race condition can't lead list_empty() to return
-         * incorrect result. nv_drm_crtc_dequeue_flip() in the middle of
-         * updating the list could not trick us into thinking the list is
-         * empty when it isn't.
-         */
-        if (nonblock) {
+            /*
+             * Here you aren't required to hold nv_drm_crtc::flip_list_lock
+             * because:
+             *
+             * The core DRM driver acquires lock for all affected crtcs before
+             * calling into ->commit() hook, therefore it is not possible for
+             * other threads to call into ->commit() hook affecting same crtcs
+             * and enqueue flip objects into flip_list -
+             *
+             *   nv_drm_atomic_commit_internal()
+             *     |-> nv_drm_atomic_apply_modeset_config(commit=true)
+             *           |-> nv_drm_crtc_enqueue_flip()
+             *
+             * Only possibility is list_empty check races with code path
+             * dequeuing flip object -
+             *
+             *   __nv_drm_handle_flip_event()
+             *     |-> nv_drm_crtc_dequeue_flip()
+             *
+             * But this race condition can't lead list_empty() to return
+             * incorrect result. nv_drm_crtc_dequeue_flip() in the middle of
+             * updating the list could not trick us into thinking the list is
+             * empty when it isn't.
+             */
             if (!list_empty(&nv_crtc->flip_list)) {
                 return -EBUSY;
-            }
-        } else {
-            if (wait_event_timeout(
-                    nv_dev->flip_event_wq,
-                    list_empty(&nv_crtc->flip_list),
-                    3 * HZ /* 3 second */) == 0) {
-                NV_DRM_DEV_LOG_ERR(
-                    nv_dev,
-                    "Flip event timeout on head %u", nv_crtc->head);
-            }
-        }
-
-        /*
-         * If the legacy LUT needs to be updated, ensure that the previous LUT
-         * update is complete first.
-         */
-        if (crtc_state->color_mgmt_changed) {
-            NvBool complete = nvKms->checkLutNotifier(nv_dev->pDevice,
-                                                      nv_crtc->head,
-                                                      !nonblock /* waitForCompletion */);
-
-            /* If checking the LUT notifier failed, assume no LUT notifier is set. */
-            if (!complete) {
-                if (nonblock) {
-                    return -EBUSY;
-                } else {
-                    /*
-                     * checkLutNotifier should wait on the notifier in this
-                     * case, so we should only get here if the wait timed out.
-                     */
-                    NV_DRM_DEV_LOG_ERR(
-                        nv_dev,
-                        "LUT notifier timeout on head %u", nv_crtc->head);
-                }
             }
         }
     }
@@ -903,17 +932,6 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                     "Flip event timeout on head %u", nv_crtc->head);
                 while (!list_empty(&nv_crtc->flip_list)) {
                     __nv_drm_handle_flip_event(nv_crtc);
-                }
-            }
-
-            if (crtc_state->color_mgmt_changed) {
-                NvBool complete = nvKms->checkLutNotifier(nv_dev->pDevice,
-                                                          nv_crtc->head,
-                                                          true /* waitForCompletion */);
-                if (!complete) {
-                    NV_DRM_DEV_LOG_ERR(
-                        nv_dev,
-                        "LUT notifier timeout on head %u", nv_crtc->head);
                 }
             }
         }

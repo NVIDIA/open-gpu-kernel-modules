@@ -71,6 +71,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GR102[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
 const GPUCHILDPRESENT *

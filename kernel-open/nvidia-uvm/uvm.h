@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2025 NVIDIA Corporation
+    Copyright (c) 2013-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -233,7 +233,7 @@ NV_STATUS UvmDeinitialize(void);
 //
 // Arguments:
 //     flags: (INPUT)
-//         Must be zero.  UVM will be reinitialized with the
+//         Must be zero. UVM will be reinitialized with the
 //         Same flags that were passed to UvmInitialize() originally.
 //
 // Error codes:
@@ -475,17 +475,12 @@ NV_STATUS UvmUnregisterGpu(const NvProcessorUuid *gpuUuid);
 // on this GPU with the mapping and caching attributes as specified during that
 // call, or with default attributes if none were specified.
 //
-// Any VA ranges that had a preferred location set to this GPU will be mapped on
-// this GPU only if this GPU is not fault-capable and the VA range belongs to a
-// non-migratable range group. If such a mapping cannot be established, an error
-// is returned.
-//
 // Any VA ranges which have accessed-by set for this GPU will be mapped on this
 // GPU. If that VA range resides in a PCIe peer GPU's memory and P2P support
 // between the two GPUs has not been enabled via UvmEnablePeerAccess, then a
 // mapping won't be established. Also, if read duplication is enabled for this
 // VA range, or its preferred location is set to this GPU, and this GPU is a
-// fault-capable GPU, then a mapping will not be established.  If this is a
+// fault-capable GPU, then a mapping will not be established. If this is a
 // non-fault-capable GPU and a mapping cannot be established, then an error is
 // returned.
 //
@@ -926,9 +921,9 @@ NV_STATUS UvmReleaseVa(void     *base,
 //
 // Creates a new mapping in the virtual address space of the process, populates
 // it at the specified preferred location, maps it on the provided list of
-// processors if feasible and associates the range with the given range group.
-// If the preferredLocationUuid is the UUID of the CPU, preferred location is
-// set to all CPU nodes allowed by the global and thread memory policies.
+// processors if feasible. If the preferredLocationUuid is the UUID of the CPU,
+// preferred location is set to all CPU nodes allowed by the global and thread
+// memory policies.
 //
 // This API is equivalent to the following code sequence:
 //     UvmMemMap(base, length);
@@ -964,9 +959,6 @@ NV_STATUS UvmReleaseVa(void     *base,
 //     accessedByCount: (INPUT)
 //         Number of elements in the accessedByUuids array.
 //
-//     rangeGroupId: (INPUT)
-//         ID of the range group to associate this VA range with.
-//
 // Errors:
 //     NV_ERR_UVM_ADDRESS_IN_USE:
 //         The requested address range overlaps with an existing allocation.
@@ -979,9 +971,6 @@ NV_STATUS UvmReleaseVa(void     *base,
 //         Either preferredLocationUuid or one of the UUIDs in the
 //         accessedByUuids array was not registered or the UUID represents a GPU
 //         that has no VA space registered for it.
-//
-//     NV_ERR_OBJECT_NOT_FOUND:
-//         rangeGroupId was not found.
 //
 //     NV_ERR_NO_MEMORY:
 //         Internal memory allocation failed.
@@ -1092,9 +1081,8 @@ NV_STATUS UvmCleanUpZombieResources(void);
 // a GPU VA space is registered in the future for a GPU which is unable to map
 // this allocation, that GPU VA space registration will fail.
 //
-// The pages in this VA range cannot be associated with range groups, cannot be
-// the target for read duplication, cannot have a preferred location set, and
-// cannot have any accessed-by processors.
+// The pages in this VA range cannot be the target for read duplication, cannot
+// have a preferred location set, and cannot have any accessed-by processors.
 //
 // The VA range can be unmapped and freed via a call to UvmFree.
 //
@@ -1356,10 +1344,6 @@ NV_STATUS UvmAllocDeviceP2P(NvProcessorUuid gpuUuid,
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.
 //
-//     NV_WARN_MORE_PROCESSING_REQUIRED:
-//         Fewer than the number of requested pages were migrated because some
-//         pages were associated with a non-migratable range group.
-//
 //------------------------------------------------------------------------------
 NV_STATUS UvmMigrate(void                  *base,
                      NvLength               length,
@@ -1443,10 +1427,6 @@ NV_STATUS UvmMigrate(void                  *base,
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.
-//
-//     NV_WARN_MORE_PROCESSING_REQUIRED:
-//         Fewer than the number of requested pages were migrated because some
-//         pages were associated with a non-migratable range group.
 //
 //------------------------------------------------------------------------------
 NV_STATUS UvmMigrateAsync(void                  *base,
@@ -1657,10 +1637,9 @@ NV_STATUS UvmMemMap(void     *base,
 // previously reserved via UvmReserveVa.
 //
 // Any mappings created within this VA range are considered non-migratable.
-// Consequently, pages cannot be associated with range groups, cannot be
-// the target for read duplication, cannot have a preferred location set,
-// cannot have any accessed-by processors, and any GPU faults within this range
-// are fatal.
+// Consequently, pages cannot be the target for read duplication, cannot have a
+// preferred location set, cannot have any accessed-by processors, and any GPU
+// faults within this range are fatal.
 //
 // Mappings within this range neither create nor modify any CPU mappings, even
 // if the mappings came from a region previously reserved via UvmReserveVa.
@@ -1879,7 +1858,6 @@ NV_STATUS UvmMapExternalAllocation(void                              *base,
 //     length: (INPUT)
 //         Length, in bytes, of the range. The length must be 64K aligned.
 //
-//
 //     gpuUuid: (INPUT)
 //         UUID of the physical GPU if the GPU is not SMC capable or SMC
 //         enabled, or the GPU instance UUID of the partition to map the sparse
@@ -1969,6 +1947,225 @@ NV_STATUS UvmUnmapExternal(void                  *base,
                            const NvProcessorUuid *gpuUuid);
 
 //------------------------------------------------------------------------------
+// UvmIsDmaBufImportSupported
+//
+// Returns true only if the system features support for the Linux kernel
+// DMA-BUF interface.
+//
+// Arguments:
+//     dmaBufImportSupported: (OUTPUT)
+//         Returns true (non-zero) if the system has sufficient support for the
+//         Linux kernel DMA-BUF interface and false (zero) otherwise.
+//
+// Error codes:
+//     NV_ERR_INVALID_STATE:
+//         UVM was not initialized.
+//
+//     NV_ERR_GENERIC:
+//         Unexpected error. We try hard to avoid returning this error code,
+//         because it is not very informative.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmIsDmaBufImportSupported(NvBool *dmaBufImportSupported);
+
+//------------------------------------------------------------------------------
+// UvmImportDmaBuf
+//
+// Create a VA range within the process's address space reserved for mapping
+// memory exposed through the kernel DMA-BUF interface through a handle file
+// descriptor. The VA range is not mapped to any physical allocation at the
+// time of creation. Once the DMA-BUF VA range has been created using this API,
+// the user is free to map any number of gpus to the memory referenced by the
+// DMA-BUF (see UvmMapDmaBuf for more details) provided that they are
+// actually capable of mapping that memory. Often the DMA-BUF memories are
+// expected to be PCIe peers or otherwise on self-hosted systems, the CPU must
+// be able to map the memory.
+//
+// The virtual address range, itself, does not impose any restrictions on the
+// alignment of the physical allocations mapped within it. However, both base
+// and length must be aligned to the system page size.
+//
+// The VA range must not overlap with an existing VA range, irrespective of
+// whether the existing range corresponds to a UVM allocation or an external
+// allocation.
+//
+// It is allowed (but not required) for the VA range to come from a region
+// previously reserved via UvmReserveVa.
+//
+// Any mappings created within this VA range are considered non-migratable.
+// Consequently, pages cannot be the target for read duplication, cannot have a
+// preferred location set, cannot have any accessed-by processors, and any GPU
+// faults within this range are fatal.
+//
+// Mappings within this range neither create nor modify any CPU mappings, even
+// if the mappings came from a region previously reserved via UvmReserveVa.
+// This implies that CPU accesses to any mappings within this range will cause
+// a fatal fault if it's not mapped.
+//
+// The VA range is not reclaimed until UvmFree is called on it even if it is
+// fully unmapped from all GPUs either explicitly via UvmUnmapDmaBuf or
+// implicitly via APIs such as UvmUnregisterGpu, UvmUnregisterGpuVaSpace,
+// UvmDisablePeerAccess, etc.
+//
+// Arguments:
+//     base: (INPUT)
+//         Base address of the virtual address range.
+//
+//     length: (INPUT)
+//         Length, in bytes, of the range.
+//
+// Errors:
+//     NV_ERR_INVALID_ADDRESS:
+//         base is NULL or length is zero or at least one of base and length is
+//         not aligned to the system page size, or the length is not equal to
+//         the reported size of the DMA-BUF.
+//
+//     NV_ERR_UVM_ADDRESS_IN_USE:
+//         The requested address range overlaps with an existing allocation.
+//
+//     NV_ERR_NO_MEMORY:
+//         Internal memory allocation failed.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmImportDmaBuf(UvmDmaBufFileDescriptor handleFd,
+                          void *base,
+                          NvLength length);
+
+//------------------------------------------------------------------------------
+// UvmMapDmaBuf
+//
+// Maps a buffer exposed by file descriptor through the kernel DMA-BUF interface
+// on the specified GPU. The DMA-BUF can be unmapped from a specific GPU using
+// UvmUnmapDmaBuf or from all GPUs using UvmFree.
+//
+// The virtual address range specified by (base, length) must fall within a VA
+// range previously created with UvmImportDmaBuf. A GPU VA space must
+// have been registered for each GPU in the list. The (base, length) range must
+// lie within the largest possible virtual address supported by the specified
+// GPUs.
+//
+// The page size used for the mapping is the system page size, as the DMA-BUF
+// interface requires exporters to ensure page size alignment for the DMA
+// mapped chunks returned through the dma_buf_map_attachment() call.
+//
+// The page size used for the mapping is the largest supported page size less
+// than or equal to the alignments of base, length, offset, and the allocation
+// page size.
+//
+// If the range specified by (base, length) falls within any existing mappings,
+// the behavior is the same as if UvmUnmapDmaBuf with the range specified by
+// (base, length) had been called first.
+//
+// The underlying buffer must not reside in GPU memory.
+//
+// Arguments:
+//     base: (INPUT)
+//         Base address of the virtual address range.
+//
+//     length: (INPUT)
+//         Length, in bytes, of the range.
+//
+//     gpuUuid: (INPUT)
+//         UUID of the physical GPU if the GPU is not SMC capable or SMC
+//         enabled, or the GPU instance UUID of the partition to map the VA
+//         range.
+//
+// Errors:
+//     NV_ERR_INVALID_ADDRESS:
+//         One of the following occurred:
+//         - base is NULL.
+//         - length is zero.
+//         - either base and length are not aligned to the system page size.
+//         - The requested address range does not fall entirely within an
+//           existing external VA range created with a single call to
+//           UvmCreateExternalRange.
+//         - The mapping page size allowed by the alignments of base, length,
+//           and offset is smaller than the minimum supported page size on the
+//           GPU.
+//         - base or base + length fall within an existing mapping but are not
+//           aligned to that mapping's page size.
+//         - The DMA mappings to the memory backing this DMA-BUF have been
+//           revoked by the exporter, and so no GPU mapping is possible.
+//
+//     NV_ERR_OUT_OF_RANGE:
+//         The range specified by (base, length) exceeds the largest virtual
+//         address supported by one or more of the specified GPUs.
+//
+//     NV_ERR_INVALID_DEVICE:
+//         One of the following occurred:
+//         - The gpu UUID to be mapped was either not registered or has no GPU
+//           VA space registered for it.
+//         - The specified GPU is unable to DMA map the buffer (for example,
+//           the exporter rejected the attachment, the backing store is not
+//           reachable from this GPU, or the requested direction is not
+//           supported).
+//
+//     NV_ERR_NO_MEMORY:
+//         Internal memory allocation failed.
+//
+//     NV_ERR_GENERIC:
+//         Unexpected error. We try hard to avoid returning this error code,
+//         because it is not very informative.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmMapDmaBuf(void *base,
+                       NvLength length,
+                       const NvProcessorUuid *gpuUuid);
+
+//------------------------------------------------------------------------------
+// UvmUnmapDmaBuf
+//
+// Unmaps a virtual address range that was mapped using UvmMapDmaBuf from the
+// specified GPU. The range specified by (base, length) must be fully contained
+// within a single DMA-BUF VA range created with UvmImportDmaBuf.
+//
+// If the range specified by (base, length) range partially overlaps existing
+// mappings, the overlapping portion of the existing mappings will be unmapped
+// provided that the split points are aligned to the mappings' respective page
+// sizes. Otherwise, the overlapping portions of the existing mappings will be
+// left in an undefined state.
+//
+// Note that the VA range is not reclaimed until UvmFree is called on it even if
+// all mappings in the created range have been unmapped from all GPUs via this
+// API.
+//
+// Arguments:
+//     base: (INPUT)
+//         Base address of the virtual address range.
+//
+//     length: (INPUT)
+//         The length of the virtual address range.
+//
+//     gpuUuid: (INPUT)
+//         UUID of the physical GPU if the GPU is not SMC capable or SMC
+//         enabled, or the GPU instance UUID of the partition to unmap the VA
+//         range from.
+//
+// Errors:
+//     NV_ERR_INVALID_ADDRESS:
+//         One of the following has occurred:
+//         - base is NULL.
+//         - The requested address range does not fall entirely within an
+//           existing external VA range created with a single call to
+//           UvmImportDmaBuf.
+//         - base or base + length fall within an existing mapping but are not
+//           aligned to that mapping's page size.
+//
+//     NV_ERR_INVALID_DEVICE:
+//         Either gpuUuid does not represent a valid registered GPU or the VA
+//         range corresponding to the given base address is not mapped on the
+//         specified GPU.
+//
+//     NV_ERR_GENERIC:
+//         Unexpected error. We try hard to avoid returning this error code,
+//         because it is not very informative.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmUnmapDmaBuf(void *base,
+                         NvLength length,
+                         const NvProcessorUuid *gpuUuid);
+
+//------------------------------------------------------------------------------
 // UvmMapDynamicParallelismRegion
 //
 // Creates a special mapping required for dynamic parallelism. The mapping
@@ -1980,11 +2177,11 @@ NV_STATUS UvmUnmapExternal(void                  *base,
 // mapping for the GPU. A GPU VA space must have been registered for the GPU and
 // the GPU must support dynamic parallelism.
 //
-// The mapping is created immediately and not modified until a call to UvmFree
-// Calling UvmFree frees the GPU page table mapping. The range cannot be
-// associated with range groups and any GPU faults within this range are fatal.
-// Also, the pages cannot be the target for read duplication, cannot have a
-// preferred location set, and cannot have any accessed-by processors.
+// The mapping is created immediately and not modified until a call to UvmFree.
+// Calling UvmFree frees the GPU page table mapping. Any GPU faults within this
+// range are fatal. Also, the pages cannot be the target for read duplication,
+// cannot have a preferred location set, and cannot have any accessed-by
+// processors.
 //
 // Note that calling UvmUnregisterGpuVaSpace will also unmap all mappings
 // created via this API on the GPU that the GPU VA space is associated with.
@@ -2253,16 +2450,8 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //         specified processor.
 //
 //     NV_ERR_INVALID_DEVICE:
-//         One of the following occurred:
-//         - preferredLocationUuid is neither the UUID of the CPU nor the UUID
-//           of a GPU that was registered by this process.
-//         - At least one page in VA range belongs to a non-migratable range
-//           group and the specified UUID represents a fault-capable GPU.
-//         - preferredLocationUuid is the UUID of a non-fault-capable GPU and at
-//           least one page in the VA range belongs to a non-migratable range
-//           group and another non-fault-capable GPU is in the accessed-by list
-//           of the same page but P2P support between both GPUs has not been
-//           enabled.
+//         preferredLocationUuid is neither the UUID of the CPU nor the UUID of
+//         a GPU that was registered by this process.
 //
 //      NV_ERR_INVALID_ARGUMENT:
 //         One of the following occured:
@@ -2359,9 +2548,7 @@ NV_STATUS UvmUnsetPreferredLocation(void     *base,
 // permit a mapping to be established, then no mapping is created for that page.
 // If a page in the VA range migrates to a new location, then the mapping is
 // updated to point to the new location if establishing such a mapping is
-// possible. If a page in the VA range is associated with a non-migratable range
-// group and the specified processor is a non-fault-capable GPU, then an error
-// is returned if the mapping cannot be established.
+// possible.
 //
 // If the specified processor is a GPU and no GPU VA space has been registered
 // for it or if the registered GPU VA space gets unregistered, then the policies
@@ -2420,11 +2607,7 @@ NV_STATUS UvmUnsetPreferredLocation(void     *base,
 //
 //     NV_ERR_INVALID_DEVICE:
 //         accessedByUuid is neither the UUID of the CPU nor the UUID of a GPU
-//         that was registered by this process. Or accessedByUuid is the UUID of
-//         a non-fault-capable GPU and the VA range is associated with a
-//         non-migratable range group with a preferred location set to another
-//         non-fault-capable GPU that doesn't have P2P support enabled with this
-//         GPU.
+//         that was registered by this process.
 //
 //     NV_ERR_NO_MEMORY:
 //         accessedByUuid is a non-fault-capable GPU and there was insufficient
@@ -2691,7 +2874,6 @@ NV_STATUS UvmIs8Supported(NvU32 *is8Supported);
 // least that you should expect is that all your session related objects will
 // become useless once target process closes Uvm file handle.
 //
-//
 // There are security requirements for this call to be successful. Fortunately,
 // after validating a file descriptor, one of the following conditions must
 // hold:
@@ -2864,7 +3046,6 @@ NV_STATUS UvmToolsCreateEventQueue_V2(UvmToolsSessionHandle        session,
 
 UvmToolsEventQueueDescriptor UvmToolsGetEventQueueDescriptor(UvmToolsEventQueueHandle queue);
 
-
 //------------------------------------------------------------------------------
 // UvmToolsSetNotificationThreshold
 //
@@ -2980,7 +3161,6 @@ NV_STATUS UvmToolsEventQueueEnableEvents(UvmToolsEventQueueHandle queue,
 //------------------------------------------------------------------------------
 NV_STATUS UvmToolsEventQueueDisableEvents(UvmToolsEventQueueHandle queue,
                                           NvU64                    eventTypeFlags);
-
 
 //------------------------------------------------------------------------------
 // UvmToolsCreateProcessAggregateCounters
@@ -3348,7 +3528,7 @@ NV_STATUS UvmToolsGetProcessorUuidTable_V2(UvmToolsSessionHandle     session,
 // UvmToolsFlushEvents
 //
 // Some events, like migrations, which have end timestamps are not immediately
-// submitted to queues when they are completed.  This call enqueues any
+// submitted to queues when they are completed. This call enqueues any
 // completed but unenqueued events associated with the session.
 //
 // Arguments:

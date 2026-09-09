@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,14 @@ typedef struct Memory Memory;
 #endif /* __nvoc_class_id_Memory */
 
 
+struct OBJGPU;
+
+#ifndef __nvoc_class_id_OBJGPU
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
+#endif /* __nvoc_class_id_OBJGPU */
+
+
 
 typedef struct
 {
@@ -72,6 +80,26 @@ typedef struct
     NvP64                   vardataBuffAddr;
     NvP64                   vardataBuffPriv;
 } EVENT_BUFFER_MAP_INFO;
+
+//
+// Producer state.
+//
+// An EventBuffer may have one producer-owned state object. EventBuffer
+// stores the embedded base pointer and invokes destroy before listener
+// teardown and memory unmap so the producer can unlink any listener
+// entries it owns.
+//
+struct EventBuffer;
+struct EventBufferProducerState;
+
+typedef void (*EventBufferProducerDestroyCb)(
+                  struct EventBuffer *pBuf,
+                  struct EventBufferProducerState *pState);
+
+typedef struct EventBufferProducerState
+{
+    EventBufferProducerDestroyCb destroy;
+} EventBufferProducerState;
 
 // This class shares buffers between kernel and usermode
 
@@ -125,6 +153,7 @@ struct EventBuffer {
     struct Memory *pHeader;
     struct Memory *pRecord;
     struct Memory *pVardata;
+    EventBufferProducerState *pProducerState;
     NvHandle hInternalClient;
     NvHandle hInternalDevice;
     NvHandle hInternalSubdevice;
@@ -196,6 +225,84 @@ NV_STATUS eventbufferConstruct_IMPL(struct EventBuffer *pEventBuffer, struct CAL
 
 void eventbufferDestruct_IMPL(struct EventBuffer *pEventBuffer);
 #define __nvoc_eventbufferDestruct(pEventBuffer) eventbufferDestruct_IMPL(pEventBuffer)
+
+NV_STATUS eventbufferAddWithSubtype_IMPL(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, NvBool *pBNotify, NvP64 *pHandle);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NV_STATUS eventbufferAddWithSubtype(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, NvBool *pBNotify, NvP64 *pHandle) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferAddWithSubtype(pEventBuffer, pEventData, recordType, recordSubtype, pBNotify, pHandle) eventbufferAddWithSubtype_IMPL(pEventBuffer, pEventData, recordType, recordSubtype, pBNotify, pHandle)
+#endif // __nvoc_event_buffer_h_disabled
+
+NV_STATUS eventbufferAdd_IMPL(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvBool *pBNotify, NvP64 *pHandle);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NV_STATUS eventbufferAdd(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvBool *pBNotify, NvP64 *pHandle) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferAdd(pEventBuffer, pEventData, recordType, pBNotify, pHandle) eventbufferAdd_IMPL(pEventBuffer, pEventData, recordType, pBNotify, pHandle)
+#endif // __nvoc_event_buffer_h_disabled
+
+NV_STATUS eventbufferAddNotify_IMPL(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, NvU32 notifyIndex, struct OBJGPU *pGpu);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NV_STATUS eventbufferAddNotify(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, NvU32 notifyIndex, struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferAddNotify(pEventBuffer, pEventData, recordType, recordSubtype, notifyIndex, pGpu) eventbufferAddNotify_IMPL(pEventBuffer, pEventData, recordType, recordSubtype, notifyIndex, pGpu)
+#endif // __nvoc_event_buffer_h_disabled
+
+NV_STATUS eventbufferTryAddNotify_IMPL(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, struct OBJGPU *pGpu);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NV_STATUS eventbufferTryAddNotify(struct EventBuffer *pEventBuffer, EVENT_BUFFER_PRODUCER_DATA *pEventData, NvU32 recordType, NvU32 recordSubtype, struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferTryAddNotify(pEventBuffer, pEventData, recordType, recordSubtype, pGpu) eventbufferTryAddNotify_IMPL(pEventBuffer, pEventData, recordType, recordSubtype, pGpu)
+#endif // __nvoc_event_buffer_h_disabled
+
+NvBool eventbufferIsEmpty_IMPL(struct EventBuffer *pEventBuffer);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NvBool eventbufferIsEmpty(struct EventBuffer *pEventBuffer) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferIsEmpty(pEventBuffer) eventbufferIsEmpty_IMPL(pEventBuffer)
+#endif // __nvoc_event_buffer_h_disabled
+
+NV_STATUS eventbufferRegisterProducerState_IMPL(struct EventBuffer *pEventBuffer, EventBufferProducerState *pState);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline NV_STATUS eventbufferRegisterProducerState(struct EventBuffer *pEventBuffer, EventBufferProducerState *pState) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferRegisterProducerState(pEventBuffer, pState) eventbufferRegisterProducerState_IMPL(pEventBuffer, pState)
+#endif // __nvoc_event_buffer_h_disabled
+
+void eventbufferAddListener_IMPL(struct EventBuffer *pEventBuffer, EVENTNOTIFICATION *pEntry);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline void eventbufferAddListener(struct EventBuffer *pEventBuffer, EVENTNOTIFICATION *pEntry) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferAddListener(pEventBuffer, pEntry) eventbufferAddListener_IMPL(pEventBuffer, pEntry)
+#endif // __nvoc_event_buffer_h_disabled
+
+void eventbufferRemoveListener_IMPL(struct EventBuffer *pEventBuffer, EVENTNOTIFICATION *pEntry);
+#ifdef __nvoc_event_buffer_h_disabled
+static inline void eventbufferRemoveListener(struct EventBuffer *pEventBuffer, EVENTNOTIFICATION *pEntry) {
+    NV_ASSERT_FAILED_PRECOMP("EventBuffer was disabled!");
+}
+#else // __nvoc_event_buffer_h_disabled
+#define eventbufferRemoveListener(pEventBuffer, pEntry) eventbufferRemoveListener_IMPL(pEventBuffer, pEntry)
+#endif // __nvoc_event_buffer_h_disabled
 
 NV_STATUS eventbuffertBufferCtrlCmdEnableEvent_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_ENABLE_EVENTS_PARAMS *pEnableParams);
 #ifdef __nvoc_event_buffer_h_disabled
@@ -384,9 +491,11 @@ NV_STATUS eventbuffertBufferCtrlCmdPostTelemetryEvent_IMPL(struct EventBuffer *p
 #undef PRIVATE_FIELD
 
 
-NV_STATUS eventBufferAdd(struct EventBuffer *pEventBuffer, void* pEventData, NvU32 recordType, NvBool* bNotify, NvP64 *pHandle);
+#define EVENT_BUFFER_PP_CALL(func, ...) NV_EXPAND(func NV_EXPAND() (__VA_ARGS__))
 
-NvBool eventBufferIsEmpty(struct EventBuffer *pEventBuffer);
+// Compatibility macros for functions that were moved into EventBuffer class
+#define eventBufferAdd(...)            EVENT_BUFFER_PP_CALL(eventbufferAdd, __VA_ARGS__)
+#define eventBufferIsEmpty(...)        EVENT_BUFFER_PP_CALL(eventbufferIsEmpty, __VA_ARGS__)
 
 #endif
 

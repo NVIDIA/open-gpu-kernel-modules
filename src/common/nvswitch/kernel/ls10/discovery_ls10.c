@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@
 #include "nvswitch/ls10/nxbar_discovery.h"
 #include "nvswitch/ls10/dev_npg_ip.h"
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 #define VERBOSE_MMIO_DISCOVERY      0
 

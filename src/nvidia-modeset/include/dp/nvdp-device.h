@@ -33,12 +33,17 @@ extern "C" {
 void nvDPDeviceSetPowerState(NVDpyEvoPtr pDpyEvo, NvBool on);
 unsigned int nvDPGetEDIDSize(const NVDpyEvoRec *pDpyEvo);
 NvBool nvDPGetEDID(const NVDpyEvoRec *pDpyEvo, void *buffer, unsigned int size);
+unsigned int nvDPGetDisplayId2xSize(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDPGetDisplayId2x(const NVDpyEvoRec *pDpyEvo, void *buffer,
+                          unsigned int size);
 void nvDPGetDpyGUID(NVDpyEvoPtr pDpyEvo);
 void nvDPDpyFree(NVDpyEvoPtr pDpyEvo);
 NvBool nvDPDpyIsDscPossible(const NVDpyEvoRec *pDpyEvo);
 NvBool nvDPDpyGetDpcdRevision(const NVDpyEvoRec *pDpyEvo,
                               unsigned int *major,
                               unsigned int *minor);
+NvBool nvDPDpyIsHdcp1XCap(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDPDpyIsHdcp2XCap(const NVDpyEvoRec *pDpyEvo);
 
 #ifdef __cplusplus
 };

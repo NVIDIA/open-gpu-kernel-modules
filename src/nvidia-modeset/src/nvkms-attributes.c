@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -465,6 +465,8 @@ static void DpyPostColorFormatOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
     NvBool colorFormatChanged = FALSE;
     NvBool colorBpcChanged = FALSE;
     NVDpyAttributeColor tmpDpyColor;
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvBool flipSynchronizeInfoframes = pDevEvo->supportsFlipSynchronizedInfoframes;
 
     if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
         return;
@@ -475,9 +477,13 @@ static void DpyPostColorFormatOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
     nvAssert((pApiHeadState->hwHeadsMask) != 0x0 &&
              (nvDpyIdIsInDpyIdList(pDpyEvo->id, pApiHeadState->activeDpys)));
 
+    nvAssert(pDpyEvo->requestedColorFormat !=
+             NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN);
     /*
      * Choose current color format and colorRange based on the current mode
      * timings and the requested color format and range.
+     * Attribute changes are free to adjust the BPC of the current mode to
+     * satisfy the color format requirement. 
      */
     if (!nvChooseCurrentColorFormatAndRangeEvo(pDpyEvo,
                                               pApiHeadState->timings.yuv420Mode,
@@ -519,6 +525,8 @@ static void DpyPostColorFormatOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
             if (!nvEvoHdmiTmdsMaxPixelClockCheck(
                     pDpyEvo,
                     &pApiHeadState->modeValidationParams,
+                    TRUE /* colorFormatSpecified */,
+                    FALSE /* colorBpcSpecified */,
                     &tmpDpyColor,
                     &pApiHeadState->timings,
                     &dummyInfoString)) {
@@ -551,8 +559,14 @@ static void DpyPostColorFormatOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
         }
     }
 
+    nvUpdateCoreFid(
+        pDispEvo,
+        pDpyEvo->apiHead,
+        &updateState
+    );
+
     /* Update InfoFrames as needed. */
-    nvUpdateInfoFrames(pDpyEvo);
+    nvUpdateInfoFrames(pDpyEvo, flipSynchronizeInfoframes);
 
     // Kick off
     nvEvoUpdateAndKickOff(pDispEvo, FALSE, &updateState, TRUE /* releaseElv */);
@@ -728,12 +742,13 @@ static NvBool GetColorBpcValidValues(
 
     /* If new enum values are added, update the u.bits.ints assignment. */
     ct_assert(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX ==
-                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10);
+                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12);
 
     pValidValues->u.bits.ints =
-        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6) |
-        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8) |
-        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10);
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)  |
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8)  |
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10) |
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12);
 
     return TRUE;
 }

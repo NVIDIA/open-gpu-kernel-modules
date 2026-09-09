@@ -52,10 +52,10 @@ static NV_STATUS _pmaNumaAvailableEvictablePage(PMA *pPma, NvS32 *validRegionLis
 static NV_STATUS _pmaNumaAvailableEvictableRange(PMA *pPma, NvS32 *validRegionList,
     NvLength actualSize, NvU64 pageSize, NvU64 *evictStart, NvU64 *evictEnd);
 static NV_STATUS _pmaNumaAllocateRange(PMA *pPma, NvU32 numaNodeId, NvLength actualSize,
-    NvU64 pageSize, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvS32 *validRegionList,
+    NvU64 pageSize, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvBool bAccount, NvS32 *validRegionList,
     NvU64 *allocatedCount);
 static NV_STATUS _pmaNumaAllocatePages (PMA *pPma, NvU32 numaNodeId, NvU64 pageSize,
-    NvLength allocationCount, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvS32 *validRegionList,
+    NvLength allocationCount, NvU64 *pPages, NvBool bScrubOnAlloc, NvBool allowEvict, NvBool bAccount, NvS32 *validRegionList,
     NvU64 *allocatedPages);
 
 /*!
@@ -216,6 +216,7 @@ NV_STATUS _pmaNumaAllocateRange
     NvU64   *pPages,
     NvBool   bScrubOnAlloc,
     NvBool   allowEvict,
+    NvBool   bAccount,
     NvS32   *validRegionList,
     NvU64   *allocatedCount
 )
@@ -227,10 +228,15 @@ NV_STATUS _pmaNumaAllocateRange
 
     NV_ASSERT_OR_RETURN(actualSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
 
+    if (bAccount)
+    {
+        flags |= OS_ALLOC_PAGES_NODE_DO_ACCOUNT;
+    }
+
     // check if numFreeFrames(64KB) are below a certain % of PMA managed memory(indicated by num2mbPages).
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
     {
-        flags = OS_ALLOC_PAGES_NODE_SKIP_RECLAIM;
+        flags |= OS_ALLOC_PAGES_NODE_SKIP_RECLAIM;
     }
 
     portSyncSpinlockRelease(pPma->pPmaLock);
@@ -369,6 +375,7 @@ static NV_STATUS _pmaNumaAllocatePages
     NvU64   *pPages,
     NvBool   bScrubOnAlloc,
     NvBool   allowEvict,
+    NvBool   bAccount,
     NvS32   *validRegionList,
     NvU64   *allocatedPages
 )
@@ -382,10 +389,15 @@ static NV_STATUS _pmaNumaAllocatePages
     NV_ASSERT(allocationCount);
     NV_ASSERT_OR_RETURN(pageSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
 
+    if (bAccount)
+    {
+        flags |= OS_ALLOC_PAGES_NODE_DO_ACCOUNT;
+    }
+
     // check if numFreeFrames are below certain % of PMA managed memory.
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
     {
-        flags = OS_ALLOC_PAGES_NODE_SKIP_RECLAIM;
+        flags |= OS_ALLOC_PAGES_NODE_SKIP_RECLAIM;
     }
 
     portSyncSpinlockRelease(pPma->pPmaLock);
@@ -539,6 +551,9 @@ NV_STATUS pmaNumaAllocate
     NvU32 localizedUgpuNum = !!(flags & PMA_ALLOCATE_LOCALIZED_UGPU0) ? 0 : 1;
     NvU64 pagesPerLocalizedStride = 0;
     NvU64 pageSizeOrig = pageSize;
+    // Account for memory for non-UVM allocations
+    NvBool bAccount = !allowEvict;
+
     NvLength allocCountOrig = allocationCount;
 
     NvU64 finalAllocatedCount = 0;
@@ -670,13 +685,13 @@ NV_STATUS pmaNumaAllocate
     if (contigFlag)
     {
         allocSize  = allocationCount * pageSize;
-        status     = _pmaNumaAllocateRange(pPma, numaNodeId, allocSize, pageSize, pPages, bScrubOnAlloc, allowEvict, regionList, &finalAllocatedCount);
+        status     = _pmaNumaAllocateRange(pPma, numaNodeId, allocSize, pageSize, pPages, bScrubOnAlloc, allowEvict, bAccount, regionList, &finalAllocatedCount);
     }
     else
     {
         allocSize  = pageSize;
         // Fill in the page array at later indexes so we can deflate them later
-        status     = _pmaNumaAllocatePages(pPma, numaNodeId, (NvU32) pageSize, allocationCount, pPages + allocCountOrig - allocationCount, bScrubOnAlloc, allowEvict, regionList, &finalAllocatedCount);
+        status     = _pmaNumaAllocatePages(pPma, numaNodeId, (NvU32) pageSize, allocationCount, pPages + allocCountOrig - allocationCount, bScrubOnAlloc, allowEvict, bAccount, regionList, &finalAllocatedCount);
     }
 
     if ((status == NV_ERR_NO_MEMORY) && partialFlag && (finalAllocatedCount > 0))

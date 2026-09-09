@@ -124,6 +124,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannel =
 {
     .classInfo.size =               sizeof(KernelChannel),
     .classInfo.classId =            classId(KernelChannel),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelChannel",
@@ -326,6 +327,12 @@ static NV_STATUS kchannelCtrlProgramVidmemPromote__EXPORT(void *pKernelChannel, 
 #endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
+static NV_STATUS kchannelCtrlProgramSysmemPromote__EXPORT(void *pKernelChannel, void *pParams) {
+    return kchannelCtrlProgramSysmemPromote_a094e1(pKernelChannel, pParams);
+}
+#endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
 static NV_STATUS kchannelCtrlSetLgSectorPromotion__EXPORT(void *pKernelChannel, void *pParams) {
     return kchannelCtrlSetLgSectorPromotion_a094e1(pKernelChannel, pParams);
 }
@@ -410,6 +417,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [5] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &kchannelCtrlProgramSysmemPromote__EXPORT,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x90010eu,
+        /*paramSize=*/  sizeof(NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelChannel.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kchannelCtrlProgramSysmemPromote"
+#endif
+    },
+    {               /*  [6] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -424,7 +446,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdResetIsolatedChannel"
 #endif
     },
-    {               /*  [6] */
+    {               /*  [7] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -439,7 +461,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdInternalResetIsolatedChannel"
 #endif
     },
-    {               /*  [7] */
+    {               /*  [8] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -454,7 +476,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetClassEngineid"
 #endif
     },
-    {               /*  [8] */
+    {               /*  [9] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -469,7 +491,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdResetChannel"
 #endif
     },
-    {               /*  [9] */
+    {               /*  [10] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -484,7 +506,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetDeferRCState"
 #endif
     },
-    {               /*  [10] */
+    {               /*  [11] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -499,7 +521,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetMmuFaultInfo"
 #endif
     },
-    {               /*  [11] */
+    {               /*  [12] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -514,7 +536,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGpFifoSchedule"
 #endif
     },
-    {               /*  [12] */
+    {               /*  [13] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -529,7 +551,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdBind"
 #endif
     },
-    {               /*  [13] */
+    {               /*  [14] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -544,7 +566,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdSetErrorNotifier"
 #endif
     },
-    {               /*  [14] */
+    {               /*  [15] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10028u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -559,7 +581,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdSetInterleaveLevel"
 #endif
     },
-    {               /*  [15] */
+    {               /*  [16] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -574,7 +596,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdRestartRunlist"
 #endif
     },
-    {               /*  [16] */
+    {               /*  [17] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -589,7 +611,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdStopChannel"
 #endif
     },
-    {               /*  [17] */
+    {               /*  [18] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -604,7 +626,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetContextId"
 #endif
     },
-    {               /*  [18] */
+    {               /*  [19] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -619,7 +641,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetEngineCtxSize"
 #endif
     },
-    {               /*  [19] */
+    {               /*  [20] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -634,7 +656,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetEngineCtxData"
 #endif
     },
-    {               /*  [20] */
+    {               /*  [21] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14044u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -649,7 +671,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdMigrateEngineCtxData"
 #endif
     },
-    {               /*  [21] */
+    {               /*  [22] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -664,7 +686,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetEngineCtxState"
 #endif
     },
-    {               /*  [22] */
+    {               /*  [23] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -679,7 +701,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetChannelHwState"
 #endif
     },
-    {               /*  [23] */
+    {               /*  [24] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14044u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -694,7 +716,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdSetChannelHwState"
 #endif
     },
-    {               /*  [24] */
+    {               /*  [25] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -709,7 +731,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdSaveEngineCtxData"
 #endif
     },
-    {               /*  [25] */
+    {               /*  [26] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14044u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -724,7 +746,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdRestoreEngineCtxData"
 #endif
     },
-    {               /*  [26] */
+    {               /*  [27] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10008u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -739,7 +761,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGpfifoGetWorkSubmitToken"
 #endif
     },
-    {               /*  [27] */
+    {               /*  [28] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10244u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -754,7 +776,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer"
 #endif
     },
-    {               /*  [28] */
+    {               /*  [29] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -769,7 +791,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex"
 #endif
     },
-    {               /*  [29] */
+    {               /*  [30] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -784,7 +806,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken"
 #endif
     },
-    {               /*  [30] */
+    {               /*  [31] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -799,7 +821,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetKmb"
 #endif
     },
-    {               /*  [31] */
+    {               /*  [32] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1121,7 +1143,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelCha
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelChannel = 
 {
-    .numEntries=     32,
+    .numEntries=     33,
     .pExportEntries= __nvoc_exported_method_def_KernelChannel
 };
 
@@ -1354,8 +1376,8 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, GpuHalsp
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GA100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB10C | GB20B | GB20C */ 
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GB10B;
     }

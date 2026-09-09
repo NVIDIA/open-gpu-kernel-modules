@@ -335,6 +335,10 @@ typedef volatile struct _clc373_tag0 {
 #define NVC373_SOR_CAP_DP_8_LANES_INIT                                0x00000000 /* RWI-V */
 #define NVC373_SOR_CAP_DP_8_LANES_FALSE                               0x00000000 /* RW--V */
 #define NVC373_SOR_CAP_DP_8_LANES_TRUE                                0x00000001 /* RW--V */
+#define NVC373_HEAD_CLK_CAP(i)                                (0x5e8+(i)*4) /* RW-4A */
+#define NVC373_HEAD_CLK_CAP__SIZE_1                                            8 /*       */
+#define NVC373_HEAD_CLK_CAP_PCLK_MAX                                         7:0 /* RWIUF */
+#define NVC373_HEAD_CLK_CAP_PCLK_MAX_INIT                             0x00000085 /* RWI-V */
 #define NVC373_SOR_CLK_CAP(i)                                 (0x608+(i)*4) /* RW-4A */
 #define NVC373_SOR_CLK_CAP__SIZE_1                                             8 /*       */
 #define NVC373_SOR_CLK_CAP_DP_MAX                                            7:0 /* RWIUF */

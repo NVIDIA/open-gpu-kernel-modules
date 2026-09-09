@@ -111,6 +111,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApi =
 {
     .classInfo.size =               sizeof(BinaryApi),
     .classInfo.classId =            classId(BinaryApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "BinaryApi",
@@ -662,6 +663,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_BinaryApiPrivileged =
 {
     .classInfo.size =               sizeof(BinaryApiPrivileged),
     .classInfo.classId =            classId(BinaryApiPrivileged),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "BinaryApiPrivileged",

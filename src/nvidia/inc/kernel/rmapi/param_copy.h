@@ -56,11 +56,17 @@ typedef struct API_STATE RMAPI_PARAM_COPY;
 //
 #define RMAPI_PARAM_COPY_FLAGS_DISABLE_MAX_SIZE_CHECK  NVBIT(4)
 //
-// 1MB is the largest size allowed for an embedded pointer accessed through
-// apiParamAccess unless RMAPI_PARAM_COPY_FLAGS_DISABLE_MAX_SIZE_CHECK is specified
-// and the size is validated before calling apiParamsAcquire.
+// Set for privileged/kernel-privileged controls to use the larger size limit.
 //
-#define RMAPI_PARAM_COPY_MAX_PARAMS_SIZE              (1*1024*1024)
+#define RMAPI_PARAM_COPY_FLAGS_PRIVILEGED_SIZE_LIMIT   NVBIT(5)
+//
+// Default max size for non-privileged controls.
+//
+#define RMAPI_PARAM_COPY_MAX_PARAMS_SIZE              (2*1024*1024)
+//
+// Max size for privileged and kernel-privileged controls.
+//
+#define RMAPI_PARAM_COPY_MAX_PARAMS_SIZE_PRIVILEGED   (32*1024*1024)
 
 #if NV_PRINTF_STRINGS_ALLOWED
 #define RMAPI_PARAM_COPY_MSG_TAG(x)         x

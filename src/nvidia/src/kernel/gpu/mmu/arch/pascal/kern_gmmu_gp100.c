@@ -140,8 +140,7 @@ kgmmuInstBlkPageDirBaseGet_GP100
     if (pVAS != NULL)
     {
         KernelGmmu         *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-        OBJGVASPACE        *pGVAS       = dynamicCast(pVAS, OBJGVASPACE);
-        const GMMU_FMT     *pFmt        = gvaspaceGetGmmuFmt(pGVAS, pGpu);
+        const GMMU_FMT     *pFmt        = vaspaceGetGmmuFmt(pVAS, pGpu);
         PMEMORY_DESCRIPTOR pPDB;
         RmPhysAddr         physAdd;
         NvU32              aperture;

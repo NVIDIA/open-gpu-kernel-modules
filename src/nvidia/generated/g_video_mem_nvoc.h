@@ -111,12 +111,12 @@ struct NVOC_VTABLE__VideoMemory {
     NV_STATUS (*__vidmemIsReady__)(struct VideoMemory * /*this*/, NvBool);  // virtual inherited (mem) base (stdmem)
     NvBool (*__vidmemIsGpuMapAllowed__)(struct VideoMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (stdmem) body
     NvBool (*__vidmemIsExportAllowed__)(struct VideoMemory * /*this*/);  // inline virtual inherited (mem) base (stdmem) body
-    NvBool (*__vidmemAccessCallback__)(struct VideoMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (stdmem)
-    NvBool (*__vidmemShareCallback__)(struct VideoMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__vidmemControlSerialization_Prologue__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__vidmemControlSerialization_Epilogue__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__vidmemControl_Prologue__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__vidmemControl_Epilogue__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    NvBool (*__vidmemAccessCallback__)(struct VideoMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (stdmem)
+    NvBool (*__vidmemShareCallback__)(struct VideoMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (stdmem)
+    NV_STATUS (*__vidmemControlSerialization_Prologue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    void (*__vidmemControlSerialization_Epilogue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    NV_STATUS (*__vidmemControl_Prologue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
+    void (*__vidmemControl_Epilogue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
     void (*__vidmemPreDestruct__)(struct VideoMemory * /*this*/);  // virtual inherited (res) base (stdmem)
     NV_STATUS (*__vidmemControlFilter__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (stdmem)
     NvBool (*__vidmemIsPartialUnmapSupported__)(struct VideoMemory * /*this*/);  // inline virtual inherited (res) base (stdmem) body
@@ -276,27 +276,27 @@ static inline NvBool vidmemIsExportAllowed_DISPATCH(struct VideoMemory *pMemory)
     return pMemory->__nvoc_metadata_ptr->vtable.__vidmemIsExportAllowed__(pMemory);
 }
 
-static inline NvBool vidmemAccessCallback_DISPATCH(struct VideoMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool vidmemAccessCallback_DISPATCH(struct VideoMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__vidmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool vidmemShareCallback_DISPATCH(struct VideoMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool vidmemShareCallback_DISPATCH(struct VideoMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__vidmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS vidmemControlSerialization_Prologue_DISPATCH(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS vidmemControlSerialization_Prologue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__vidmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void vidmemControlSerialization_Epilogue_DISPATCH(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void vidmemControlSerialization_Epilogue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__vidmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS vidmemControl_Prologue_DISPATCH(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS vidmemControl_Prologue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__vidmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void vidmemControl_Epilogue_DISPATCH(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void vidmemControl_Epilogue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__vidmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

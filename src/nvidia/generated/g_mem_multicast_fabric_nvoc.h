@@ -126,12 +126,12 @@ struct NVOC_VTABLE__MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricCheckMemInterUnmap__)(struct MemoryMulticastFabric * /*this*/, NvBool);  // inline virtual inherited (mem) base (mem) body
     NV_STATUS (*__memorymulticastfabricGetMemoryMappingDescriptor__)(struct MemoryMulticastFabric * /*this*/, MEMORY_DESCRIPTOR **);  // virtual inherited (mem) base (mem)
     NV_STATUS (*__memorymulticastfabricCheckCopyPermissions__)(struct MemoryMulticastFabric * /*this*/, struct OBJGPU *, struct Device *);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__memorymulticastfabricAccessCallback__)(struct MemoryMulticastFabric * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__memorymulticastfabricShareCallback__)(struct MemoryMulticastFabric * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memorymulticastfabricControlSerialization_Prologue__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memorymulticastfabricControl_Epilogue__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memorymulticastfabricAccessCallback__)(struct MemoryMulticastFabric * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memorymulticastfabricShareCallback__)(struct MemoryMulticastFabric * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memorymulticastfabricControlSerialization_Prologue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memorymulticastfabricControl_Epilogue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__memorymulticastfabricPreDestruct__)(struct MemoryMulticastFabric * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__memorymulticastfabricControlFilter__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__memorymulticastfabricIsPartialUnmapSupported__)(struct MemoryMulticastFabric * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -376,27 +376,27 @@ static inline NV_STATUS memorymulticastfabricCheckCopyPermissions_DISPATCH(struc
     return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
-static inline NvBool memorymulticastfabricAccessCallback_DISPATCH(struct MemoryMulticastFabric *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool memorymulticastfabricAccessCallback_DISPATCH(struct MemoryMulticastFabric *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool memorymulticastfabricShareCallback_DISPATCH(struct MemoryMulticastFabric *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool memorymulticastfabricShareCallback_DISPATCH(struct MemoryMulticastFabric *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS memorymulticastfabricControlSerialization_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memorymulticastfabricControlSerialization_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memorymulticastfabricControlSerialization_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memorymulticastfabricControlSerialization_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memorymulticastfabricControl_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memorymulticastfabricControl_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memorymulticastfabricControl_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memorymulticastfabricControl_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
@@ -465,6 +465,7 @@ NV_STATUS memorymulticastfabricCtrlSetFailure_IMPL(struct MemoryMulticastFabric 
 
 NV_STATUS memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,
                                         NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
+void memorymulticastfabricQueueErrorAllInFlightRequests(OBJGPU *pGpu);
 
 #endif // _MEMORYMULTICASTFABRIC_H_
 

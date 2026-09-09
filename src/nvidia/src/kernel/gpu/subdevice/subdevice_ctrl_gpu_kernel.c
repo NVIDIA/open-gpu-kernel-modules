@@ -47,6 +47,7 @@
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu/gpu_fabric_probe.h"
+#include "kernel/mem_mgr/fabric_vaspace.h"
 #include "gpu/timer/objtmr.h"
 #include "platform/chipset/chipset.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
@@ -133,7 +134,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                         break;
                     }
 
-                    data =  pGSCI->ecidInfo.ecidLow;
+                    data =  NvU64_LO32(pGSCI->ecidInfo.info[0]);
                     break;
                 }
                 data = 0;
@@ -153,7 +154,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                         break;
                     }
 
-                    data = pGSCI->ecidInfo.ecidHigh;
+                    data =  NvU64_HI32(pGSCI->ecidInfo.info[0]);
                     break;
                 }
                 data = 0;
@@ -173,7 +174,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                         break;
                     }
 
-                    data = pGSCI->ecidInfo.ecidExtended;
+                    data = NvU64_LO32(pGSCI->ecidInfo.info[1]);
                     break;
                 }
                 data = 0;
@@ -480,10 +481,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_GPU_SELF_HOSTED_CAPABILITY:
             {
-                KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-
-                if (gpuIsSelfHosted(pGpu) &&
-                    pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP))
+                if (gpuIsSelfHosted(pGpu))
                 {
                     data = NV2080_CTRL_GPU_INFO_INDEX_GPU_SELF_HOSTED_CAPABILITY_YES;
                 }
@@ -514,7 +512,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_CMP_SKU:
             {
-                if (gpuGetChipInfo(pGpu) && gpuGetChipInfo(pGpu)->isCmpSku)
+                if (gpuGetIsCmpSku_HAL(pGpu))
                 {
                     data = NV2080_CTRL_GPU_INFO_INDEX_CMP_SKU_YES;
                 }
@@ -528,9 +526,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             {
                 data = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_NO;
 
-                if (osDmabufIsSupported() &&
-                    (!gpuIsApmFeatureEnabled(pGpu)) &&
-                    (!NVCPU_IS_PPC64LE))
+                if (osDmabufIsSupported() && (!NVCPU_IS_PPC64LE))
                 {
                     data = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_YES;
                 }
@@ -689,6 +685,7 @@ subdeviceCtrlCmdGpuForceGspUnload_IMPL
     rmStatus = kgspUnloadRm(pGpu, pKernelGsp, KGSP_UNLOAD_MODE_NORMAL, (GPU_STATE_FLAGS_FAST_UNLOAD|GPU_STATE_FLAGS_FORCE_GSP_UNLOAD));
 
     pKernelGsp->bFatalError = NV_TRUE;
+    pKernelGsp->bGspRmForceUnloaded = NV_TRUE;
 
     return rmStatus;;
 }
@@ -1990,10 +1987,8 @@ subdeviceCtrlCmdGpuGetPesInfo_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     KernelGraphics *pKernelGraphics;
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
-    RsClient *pRsClient;
     NvU32 gpcId = pParams->gpcId;
     NvU32 maxGpcCount;
 
@@ -2003,9 +1998,6 @@ subdeviceCtrlCmdGpuGetPesInfo_IMPL
     //
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    NV_ASSERT_OK_OR_RETURN(
-        serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_IN_USE(pGpu), NV_ERR_NOT_SUPPORTED);
     pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, 0);
@@ -2625,6 +2617,17 @@ subdeviceCtrlCmdGpuGetHwEngineId_IMPL
         }
     }
     return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGpuGetVmmuSegmentSize_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS *pParams
+)
+{
+    pParams->vmmuSegmentSize = gpuGetVmmuSegmentSize(GPU_RES_GET_GPU(pSubdevice));
+    return NV_OK;
 }
 
 NV_STATUS
@@ -3291,6 +3294,33 @@ _convertGpuFabricProbeInfoCaps
     return fabricCaps;
 }
 
+static NvBool
+_subdeviceCtrlGpuFabricProbeSupportsHandleUcClique
+(
+    OBJGPU *pGpu
+)
+{
+    FABRIC_VASPACE *pFabricVAS;
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_HANDLE_TRANSLATION_DEF))
+    {
+        return NV_FALSE;
+    }
+
+    if (pGpu->pFabricVAS == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    if (pFabricVAS == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    return (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) != 0);
+}
+
 static NvU8
 _convertGpuFabricProbeHealthSummary
 (
@@ -3331,11 +3361,12 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     NvU64 numProbeReqs = 0;
     NvU64 fmCaps = 0;
     NvUuid *pClusterUuid = (NvUuid*) pParams->clusterUuid;
-    NvU32 mask = 0, healthMask = 0;
+    NvU32 mask = 0, healthMask = 0, localMask = 0;
     RM_API *pRmApi;
     NvHandle hClient;
     NvHandle hSubdevice;
     NV2080_CTRL_NVLINK_GET_LOCAL_DEVICE_INFO_PARAMS localDeviceInfoParams = {0};
+    NvU8 index = 0;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() &&
                            rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
@@ -3360,51 +3391,83 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                            &numProbeReqs);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Error while retrieving numProbeReqs\n");
-        return status;
+        pParams->state = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED;
+        pParams->status = status;
+        return NV_OK;
     }
 
-    pParams->state = (numProbeReqs == 0) ?
-                     NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED :
-                     NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS;
+    pParams->state = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS;
+    pParams->numProbeReqs = numProbeReqs;
+
+    if (gpuGetChipArch(pGpu) >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)
+    {
+        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+        hSubdevice = RES_GET_HANDLE(pSubdevice);
+
+        NV_CHECK_OK_OR_RETURN(
+                LEVEL_ERROR,
+                pRmApi->Control(pRmApi,
+                                hClient,
+                                hSubdevice,
+                                NV2080_CTRL_CMD_NVLINK_GET_LOCAL_DEVICE_INFO,
+                                &localDeviceInfoParams,
+                                sizeof(localDeviceInfoParams)));
+
+        if (FLD_TEST_DRF(2080, _CTRL_NVLINK_DEVICE_INFO_FABRIC_RECOVERY_STATUS_MASK,
+                         _UNCONTAINED_ERROR_RECOVERY, _ACTIVE,
+                         localDeviceInfoParams.localDeviceInfo.fabricRecoveryStatusMask))
+        {
+            healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
+                                      _TRUE, healthMask);
+            mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
+                                _ACCESS_TIMEOUT_RECOVERY, _TRUE, mask);
+        }
+        else
+        {
+            healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
+                                      _FALSE, healthMask);
+            mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
+                                _ACCESS_TIMEOUT_RECOVERY, _FALSE, mask);
+        }
+    }
+    else
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
+                                  _NOT_SUPPORTED, healthMask);
+        mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
+                                _ACCESS_TIMEOUT_RECOVERY, _NOT_SUPPORTED, mask);
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_GFM_STATE_SUPPORTED))
+    {
+        healthMask |= FLD_SET_DRF_NUM(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _GFM_STATE,
+                      pGpu->gfmState, healthMask);
+        mask |= FLD_SET_DRF_NUM(LINK, _INBAND_FABRIC_HEALTH_MASK, _GFM_STATE,
+                      pGpu->gfmState, mask);
+    }
+    else
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _GFM_STATE,
+                      _NOT_SUPPORTED, healthMask);
+        mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _GFM_STATE,
+                      _NOT_SUPPORTED, mask);
+    }
+
+    pParams->fabricHealthMask = healthMask;
+    pParams->fabricHealthSummary =
+        _convertGpuFabricProbeHealthSummary(nvlinkGetFabricHealthSummary(mask));
 
     if (!gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfoKernel))
     {
         return NV_OK;
     }
 
-    pParams->state  = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
-    pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfoKernel);
-    if (pParams->status != NV_OK)
-    {
-        // Nothing needs to be done as probe response status is not success
-        return NV_OK;
-    }
-
-    ct_assert(NV2080_GPU_FABRIC_CLUSTER_UUID_LEN == NV_UUID_LEN);
-
-    status = gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfoKernel, pClusterUuid);
-    NV_ASSERT_OK_OR_RETURN(status);
-
-    status = gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
-                                                &pParams->fabricPartitionId);
-    NV_ASSERT_OK_OR_RETURN(status);
-
-    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
-    NV_ASSERT_OK_OR_RETURN(status);
-
-    if (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) && !gpuIsCCMultiGpuNvleModeEnabled(pGpu))
-    {
-        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
-    }
-
-    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                             &pParams->fabricCliqueId);
-    NV_ASSERT_OK_OR_RETURN(status);
-
+    localMask = mask;
     status = gpuFabricProbeGetFabricHealthStatus(pGpu->pGpuFabricProbeInfoKernel,
                                                  &mask);
     NV_ASSERT_OK_OR_RETURN(status);
+    mask |= localMask;
 
     // Fabric Degraded Bandwidth
     if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _DEGRADED_BW, _TRUE, mask))
@@ -3541,50 +3604,97 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                                   _PARTITION_ASSIGNED, _NOT_SUPPORTED, healthMask);
     }
 
-    if (gpuGetChipArch(pGpu) >= GPU_ARCHITECTURE_BLACKWELL_GB1XX)
-    {
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
-        hSubdevice = RES_GET_HANDLE(pSubdevice);
-
-        NV_CHECK_OK_OR_RETURN(
-                LEVEL_ERROR,
-                pRmApi->Control(pRmApi,
-                                hClient,
-                                hSubdevice,
-                                NV2080_CTRL_CMD_NVLINK_GET_LOCAL_DEVICE_INFO,
-                                &localDeviceInfoParams,
-                                sizeof(localDeviceInfoParams)));
-
-        if (FLD_TEST_DRF(2080, _CTRL_NVLINK_DEVICE_INFO_FABRIC_RECOVERY_STATUS_MASK,
-                         _UNCONTAINED_ERROR_RECOVERY, _ACTIVE,
-                         localDeviceInfoParams.localDeviceInfo.fabricRecoveryStatusMask))
-        {
-            healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
-                                      _TRUE, healthMask);
-            mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
-                                _ACCESS_TIMEOUT_RECOVERY, _TRUE, mask);
-        }
-        else
-        {
-            healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
-                                      _FALSE, healthMask);
-            mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
-                                _ACCESS_TIMEOUT_RECOVERY, _FALSE, mask);
-        }
-    }
-    else
-    {
-        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK, _ACCESS_TIMEOUT_RECOVERY,
-                                  _NOT_SUPPORTED, healthMask);
-        mask |= FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK,
-                                _ACCESS_TIMEOUT_RECOVERY, _NOT_SUPPORTED, mask);
-    }
-
     pParams->fabricHealthMask = healthMask;
-
     pParams->fabricHealthSummary =
         _convertGpuFabricProbeHealthSummary(nvlinkGetFabricHealthSummary(mask));
+
+    pParams->state  = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
+    pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfoKernel);
+    if (pParams->status != NV_OK)
+    {
+        return NV_OK;
+    }
+
+    ct_assert(NV2080_GPU_FABRIC_CLUSTER_UUID_LEN == NV_UUID_LEN);
+
+    status = gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfoKernel, pClusterUuid);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    status = gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
+                                                &pParams->fabricPartitionId);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    if (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) && !gpuIsCCMultiGpuNvleModeEnabled(pGpu))
+    {
+        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+    }
+
+    pParams->fabricCliques[index].type = NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER;
+    status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                   NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER,
+                                                   &pParams->fabricCliques[index].id);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    // Assign UC pointer clique ID to the existing deprecated clique ID for now, in future remove this.
+    pParams->fabricCliqueId = pParams->fabricCliques[index].id;
+    index++;
+
+    if (pParams->fabricCaps & NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED)
+    {
+        pParams->fabricCliques[index].type = NV_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER;
+        status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                       NV_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER,
+                                                       &pParams->fabricCliques[index].id);
+        NV_ASSERT_OK_OR_RETURN(status);
+        index++;
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_HANDLE_TRANSLATION_DEF))
+    {
+        if (_subdeviceCtrlGpuFabricProbeSupportsHandleUcClique(pGpu))
+        {
+            pParams->fabricCliques[index].type = NV_FABRIC_CLIQUE_TYPE_UNICAST_HANDLE;
+            status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                           NV_FABRIC_CLIQUE_TYPE_UNICAST_HANDLE,
+                                                           &pParams->fabricCliques[index].id);
+            NV_ASSERT_OK_OR_RETURN(status);
+            index++;
+        }
+
+        if (pParams->fabricCaps & NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED)
+        {
+            pParams->fabricCliques[index].type = NV_FABRIC_CLIQUE_TYPE_MULTICAST_HANDLE;
+            status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                           NV_FABRIC_CLIQUE_TYPE_MULTICAST_HANDLE,
+                                                           &pParams->fabricCliques[index].id);
+            NV_ASSERT_OK_OR_RETURN(status);
+            index++;
+        }
+    }
+
+    NV_ASSERT_OR_RETURN(index <= NV2080_CTRL_GPU_FABRIC_CLIQUE_MAX_SIZE, NV_ERR_BUFFER_TOO_SMALL);
+    pParams->fabricNumCliques = index;
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetLinkTrainingTime_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
+    pParams->linkStateChangeTimeMs = knvlinkGetLinkStateChangeTimeMs(pGpu, pKernelNvlink);
 
     return NV_OK;
 }
@@ -4469,5 +4579,35 @@ subdeviceCtrlCmdGpuSetMigrationBlock_IMPL
     NV2080_CTRL_GPU_SET_MIGRATION_BLOCK_PARAMS *pParams
 )
 {
+    return NV_OK;
+}
+
+/*!
+ * @brief Return EGM (Extended GPU Memory) info for this GPU.
+ *
+ * Reads EGM base physical address, size, and NUMA node ID from
+ * cached MemoryManager fields populated at GPU init.
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuGetEgmInfo_IMPL
+(
+    Subdevice                           *pSubdevice,
+    NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS *pParams
+)
+{
+    OBJGPU        *pGpu           = GPU_RES_GET_GPU(pSubdevice);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    if (!pMemoryManager->bLocalEgmEnabled)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    pParams->egmPhysAddr = pMemoryManager->localEgmBasePhysAddr;
+    pParams->egmSize     = pMemoryManager->localEgmSize;
+    pParams->egmNodeId   = pMemoryManager->localEgmNodeId;
+
     return NV_OK;
 }

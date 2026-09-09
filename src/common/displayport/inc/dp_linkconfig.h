@@ -384,7 +384,15 @@ namespace DisplayPort
 
         void enableFEC(bool setFEC)
         {
-            bEnableFEC = setFEC;
+            if (bIs128b132bChannelCoding)
+            {
+                // FEC is always enabled for 128b/132b channel coding.
+                bEnableFEC = true;
+            }
+            else
+            {
+                bEnableFEC = setFEC;
+            }
             // If FEC is enabled, update minRate with FEC+downspread overhead.
             minRate = linkOverhead(peakRate);
         }

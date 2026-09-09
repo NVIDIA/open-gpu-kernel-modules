@@ -61,6 +61,7 @@ NvBool nvValidateFlipEvoHwState(
     const NVDevEvoRec *pDevEvo,
     const NvU32 head,
     const NVHwModeTimingsEvo *pTimings,
+    const NVConnectorEvoRec *pConnectorEvo,
     const NVFlipEvoHwState *pFlipState);
 
 void
@@ -93,14 +94,14 @@ NvBool nvAllocatePreFlipBandwidth(NVDevEvoPtr pDevEvo,
 
 void nvPreFlip(NVDevEvoRec *pDevEvo,
                struct NvKmsFlipWorkArea *pWorkArea,
-               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
-               const NvU32 allowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+               const NvU32 applyAllowVrrApiHeadMask,
+               const NvU32 allowVrrApiHeadMask,
                const NvBool skipUpdate);
 
 void nvPostFlip(NVDevEvoRec *pDevEvo,
                 struct NvKmsFlipWorkArea *pWorkArea,
                 const NvBool skipUpdate,
-                const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES]);
+                const NvU32 applyAllowVrrApiHeadMask);
 
 NvBool nvPrepareToDoPreFlip(NVDevEvoRec *pDevEvo,
                             struct NvKmsFlipWorkArea *pWorkArea);

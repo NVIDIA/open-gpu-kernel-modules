@@ -95,6 +95,12 @@ typedef enum
     //
     ENGINE_INFO_TYPE_CHRAM_PRI_BASE,
 
+    //
+    // If this entry is a preemptable engine.
+    // Valid only for Esched-driven engines
+    //
+    ENGINE_INFO_TYPE_IS_PREEMPTABLE,
+
     // This entry added to copy data at RMCTRL_EXPORT() call for Kernel RM
     ENGINE_INFO_TYPE_KERNEL_RM_MAX,
     // Used for iterating the engine info table by the index passed.

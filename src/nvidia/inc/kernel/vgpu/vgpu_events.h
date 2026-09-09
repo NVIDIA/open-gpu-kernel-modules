@@ -87,7 +87,7 @@ void vgpuService(OBJGPU *pGpu);
 
 extern OBJVGPU *NvVGPU_Table[NV_VGPU_MAX_INSTANCES];
 
-#define NV_VGPU_RPC_TIMEOUT_USEC(pGpu) (10 * 1000000)
+#define NV_VGPU_RPC_TIMEOUT_USEC(pGpu) NV_VGPU_RPC_TIMEOUT_DEFAULT_USEC
 
 struct _vgpu_last_surface_info
 {
@@ -255,7 +255,7 @@ typedef struct vgpu_sysmem_pfn_info {
     MEMORY_DESCRIPTOR *pMemDesc_sysmemPfnRing;  // Describe shared page
 
     VGPU_SYSMEM_PFN_BITMAP_NODE_LIST listVgpuSysmemPfnBitmapHead;
-    VGPU_SYSMEM_PFN_BITMAP_NODE_P    bitmapNodes[MAX_SYSMEM_PFN_BITMAP_NODE];
+    VGPU_SYSMEM_PFN_BITMAP_NODE_P   *pBitmapNodes;
 } VGPU_SYSMEM_PFN_INFO;
 
 typedef VGPU_SYSMEM_PFN_INFO* VGPU_SYSMEM_PFN_INFO_P;

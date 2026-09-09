@@ -38,7 +38,7 @@
 #include "published/turing/tu102/dev_vm.h"
 
 #include "published/turing/tu102/dev_nv_pcfg_xve_regmap.h"
-#include "published/turing/tu102/dev_boot.h"
+#include "published/turing/tu102/dev_pmc.h"
 
 #include "ctrl/ctrla084.h"
 

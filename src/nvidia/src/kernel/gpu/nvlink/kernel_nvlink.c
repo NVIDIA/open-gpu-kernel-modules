@@ -48,6 +48,7 @@
 #include "gsp/gspifpub.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/mem_mgr/fabric_vaspace.h"
+#include "published/blackwell/gb100/dev_vm.h"
 #include "compute/imex_session_api.h"
 #include "compute/fabric.h"
 #include "mem_mgr/mem_multicast_fabric.h"
@@ -59,10 +60,15 @@
 #include "kernel/gpu/spdm/libspdm_includes.h"
 #include "hal/library/cryptlib.h"
 
+#include "lib/protobuf/prb_util.h"
+#include "g_nvdebug_pb.h"
+
 static NV_STATUS _knvlinkRefreshEncryptionKeys(OBJGPU *, KernelNvlink *, NvU8 *, NvU32, NvU32, sessionKeyRefreshStage, NvU8);
 
 // 4s timeout for inband retry
 #define KNVLINK_INBAND_RETRY_TIMEOUT_US (4000U * 1000U)
+
+static void _knvlinkTrafficQuiesceAction_WORKITEM(NvU32 gpuInstance, void *pArgs);
 
 /*!
  * @brief Is NVLINK topology forced? NVLink topology is considered
@@ -263,8 +269,13 @@ _knvlinkCheckFabricCliqueId
     NvU32 cliqueId, peerCliqueId;
     NV_STATUS status;
 
-    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                             &cliqueId);
+    //
+    // As this check is mainly about enabling P2P between GPUs within the node,
+    // using NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER check should be good enough
+    //
+    status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel,
+                                                   NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER,
+                                                   &cliqueId);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "GPU %d failed to get fabric clique Id: 0x%x\n",
@@ -272,8 +283,9 @@ _knvlinkCheckFabricCliqueId
         return NV_FALSE;
     }
 
-    status = gpuFabricProbeGetFabricCliqueId(pPeerGpu->pGpuFabricProbeInfoKernel,
-                                             &peerCliqueId);
+    status = gpuFabricProbeGetFabricCliqueIdByType(pPeerGpu->pGpuFabricProbeInfoKernel,
+                                                   NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER,
+                                                   &peerCliqueId);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "GPU %d failed to get fabric clique Id 0x%x\n",
@@ -483,7 +495,6 @@ knvlinkGetP2pConnectionStatus_IMPL
     KernelNvlink *pKernelNvlink0 = pKernelNvlink;
     KernelNvlink *pKernelNvlink1 = NULL;
     NvU32         numPeerLinks   = 0;
-    NvU32         numPeerLinksBack = 0;
     NvU32         enabledLinks;
 
     if (pGpu1 == NULL)
@@ -585,9 +596,7 @@ knvlinkGetP2pConnectionStatus_IMPL
 
     if (numPeerLinks > 0)
     {
-        numPeerLinksBack = knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0);
-
-        if (numPeerLinksBack != numPeerLinks)
+        if (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) != numPeerLinks)
         {
             // Get the remote ends of the links of remote GPU from the nvlink core
             status = knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
@@ -603,8 +612,6 @@ knvlinkGetP2pConnectionStatus_IMPL
             {
                 return status;
             }
-
-            numPeerLinksBack = knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0);
         }
 
         // Peers should have the same number of links pointing back at us
@@ -612,10 +619,14 @@ knvlinkGetP2pConnectionStatus_IMPL
             (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) == numPeerLinks),
             NV_ERR_INVALID_STATE);
 
-        // P2P is not supported between GPUs with different RBMs.
-        NV_CHECK_OR_RETURN(LEVEL_INFO,
-            (pKernelNvlink0->nvlinkBwMode == pKernelNvlink1->nvlinkBwMode),
-            NV_ERR_INVALID_STATE);
+        // P2P is not supported between GPUs with different RBMs on pre-Rubin.
+        // Async RBM (Rubin+) supports per-GPU RBM modes with P2P.
+        if (!knvlinkIsAsyncRbmEnabled(pGpu0, pKernelNvlink0))
+        {
+            NV_CHECK_OR_RETURN(LEVEL_INFO,
+                (pKernelNvlink0->nvlinkBwMode == pKernelNvlink1->nvlinkBwMode),
+                NV_ERR_INVALID_STATE);
+        }
 
         NV_CHECK_OR_RETURN(LEVEL_INFO,
                 knvlinkCheckNvswitchP2pConfig(pGpu0, pKernelNvlink0, pGpu1),
@@ -661,6 +672,11 @@ knvlinkUpdateCurrentConfig_IMPL
     KernelCE  *pKCe      = NULL;
     NvBool     bOwnsLock = NV_FALSE;
     NV_STATUS  status    = NV_OK;
+
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    {
+        return NV_ERR_GPU_IN_FULLCHIP_RESET;
+    }
 
     if (osAcquireRmSema(pSys->pSema) == NV_OK)
     {
@@ -778,8 +794,38 @@ const static NVLINK_INBAND_MSG_CALLBACK nvlink_inband_callbacks[] =
         .pCallback = gpuFabricProbeReceiveUpdateKernelCallback,
         .wqItemFlags = {.bLockSema = NV_TRUE,
                         .bLockGpuGroupSubdevice = NV_TRUE}
-    }
+    },
+
+    {
+        .messageType = NVLINK_INBAND_MSG_TYPE_GPU_GET_CURRENT_STATE_REQ,
+        .pCallback = gpuFabricReceiveGpuGetCurrentStateRequestKernelCallback,
+        .wqItemFlags = {.bLockSema = NV_TRUE,
+                        .bLockGpuGroupSubdevice = NV_TRUE}
+    },
 };
+
+NV_STATUS
+knvlinkSetAmapUpdateStatus_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU8 readyForTraffic,
+    NvU8 pendingForAbm,
+    NvU8 amapRequestFailed
+)
+{
+    // Set the AMAP update status for the GPU
+    if (pKernelNvlink == NULL || readyForTraffic > 2 || pendingForAbm > 2 || amapRequestFailed > 2)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to set AMAP update status\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pKernelNvlink->gpuAmapUpdateStatus = (readyForTraffic << 0) |
+                                         (pendingForAbm << 2) |
+                                         (amapRequestFailed << 4);
+    return NV_OK;
+}
 
 void
 knvlinkInbandMsgCallbackDispatcher_WORKITEM
@@ -1007,7 +1053,7 @@ knvlinkGetNumLinksToPeer_IMPL
 )
 {
     NVLINK_BIT_VECTOR *pPeerLinkMask;
-    NvU64 peerLinkMaskValue = 0;
+    NvU64 peerLinkMaskValue;
     NvU32 numPeerLinks = 0;
 
     pPeerLinkMask = knvlinkGetLinkMaskToPeer(pGpu, pKernelNvlink, pRemoteGpu);
@@ -1054,10 +1100,14 @@ knvlinkGetLinkMaskToPeer_IMPL
     }
 
     if(pKernelNvlink0->bIsGpuDegraded)
+    {
         return NULL;
+    }
 
     if(pKernelNvlink1->bIsGpuDegraded)
+    {
         return NULL;
+    }
 
     if (!knvlinkIsForcedConfig(pGpu0, pKernelNvlink0))
     {
@@ -1375,6 +1425,7 @@ knvlinkSetPowerFeatures_IMPL
             break;
         }
         case NVLINK_VERSION_50:
+        case NVLINK_VERSION_60:
         {
             pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_L2_POWER_STATE_ENABLED,
                                         (pKernelNvlink->bDisableL2Mode ? NV_FALSE : NV_TRUE));
@@ -1865,6 +1916,10 @@ knvlinkUpdatePostRxDetectLinkMask_IMPL
 
     FOR_EACH_IN_BITVECTOR(&pKernelNvlink->enabledLinks, i)
     {
+        if (i >= pKernelNvlink->maxNumLinks)
+        {
+            break;
+        }
         pKernelNvlink->nvlinkLinks[i].laneRxdetStatusMask = params.laneRxdetStatusMask[i];
     }
     FOR_EACH_IN_BITVECTOR_END();
@@ -1916,7 +1971,6 @@ knvlinkCopyNvlinkDeviceInfo_IMPL
     pKernelNvlink->ioctrlMask           = pNvlinkInfoParams->ioctrlMask;
     pKernelNvlink->ioctrlNumEntries     = pNvlinkInfoParams->ioctrlNumEntries;
     pKernelNvlink->ioctrlSize           = pNvlinkInfoParams->ioctrlSize;
-    pKernelNvlink->supportedCounterMask = pNvlinkInfoParams->supportedCounterMask;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             convertLinkMasksToBitVector(NULL, 0U,
@@ -2212,24 +2266,10 @@ knvlinkProcessInitDisabledLinks_IMPL
     KernelNvlink *pKernelNvlink
 )
 {
-    NV2080_CTRL_NVLINK_LINK_MASK links = {0};
-    NvBool    bSkipHwNvlinkDisable = 0;
-    NV_STATUS status               = NV_OK;
+    NV_STATUS         status;
     NVLINK_BIT_VECTOR localLinkMask;
 
     NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS params = {0};
-
-    status = gpumgrGetGpuInitDisabledNvlinks(pGpu->gpuId, &links, &bSkipHwNvlinkDisable);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to get init disabled links from gpumgr\n");
-        return status;
-    }
-
-    portMemSet(&params, 0, sizeof(params));
-
-    params.initDisabledLinks = links;
-    params.bSkipHwNvlinkDisable = bSkipHwNvlinkDisable;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                  NV2080_CTRL_CMD_NVLINK_PROCESS_INIT_DISABLED_LINKS,
@@ -2390,20 +2430,75 @@ knvlinkFatalErrorRecovery_WORKITEM
     (void)rcAndDisableOutstandingClientsWithImportedMemory(pGpu, NV_FABRIC_INVALID_NODE_ID);
 
     {
-        NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+        NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
         if (pInfo != NULL)
-            portAtomicSetU32(&pInfo->rcCompleted, 1);
+            portAtomicSetU32(&pInfo->uncontainedErrorRecovery.rcCompleted, 1);
     }
 }
 
+static void
+_knvlinkResiliencyTimingLog
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NVLINK_RESILIENCY_INFO *pInfo,
+    NvU32 flow,
+    NvU32 event,
+    NV_STATUS status,
+    NvU64 elapsedNs,
+    NvU32 flags
+)
+{
+    KNVLINK_RESILIENCY_TIMING_LOG_ENTRY entry = { 0 };
+    NvU32 writeCount;
+    NvU64 now = 0;
+    OBJTMR *pTmr;
+
+    NV_ASSERT_OR_RETURN_VOID((pGpu != NULL) && (pKernelNvlink != NULL));
+
+    pTmr = GPU_GET_TIMER(pGpu);
+    if (pTmr != NULL)
+    {
+        (void)tmrGetCurrentTime(pTmr, &now);
+    }
+
+    do
+    {
+        writeCount = portAtomicOrU32(&pKernelNvlink->resiliencyTimingWriteCount, 0U);
+    } while (!portAtomicCompareAndSwapU32(&pKernelNvlink->resiliencyTimingWriteCount,
+                                          writeCount + 1U,
+                                          writeCount));
+
+    entry.timestampNs   = now;
+    entry.elapsedNs     = elapsedNs;
+    entry.timeoutNs     = (flow == KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY) ?
+                          pKernelNvlink->uncontainedErrorAbortTimeoutNs :
+                          pKernelNvlink->trafficQuiesceAbortTimeoutNs;
+    entry.seqId         = (flow == KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY) ?
+                          portAtomicOrU32(&pKernelNvlink->uncontainedRecoverySeqId, 0U) :
+                          portAtomicOrU32(&pKernelNvlink->trafficQuiesceSeqId, 0U);
+    entry.flow          = flow;
+    entry.event         = event;
+    entry.status        = (NvU32)status;
+    entry.quiesceState  = (pInfo != NULL) ? portAtomicOrU32(&pInfo->quiesceTraffic.state, 0U) : 0U;
+    entry.uvmIdle       = (pInfo != NULL) ? portAtomicOrU32(&pInfo->uvmIdle, 0U) : 0U;
+    entry.flags         = flags;
+
+    // Keep the most recent events for field triage and overwrite oldest on overflow.
+    (void)ringbufAppendN(&pKernelNvlink->resiliencyTimingLog, &entry, 1, NV_TRUE);
+
+}
+
 void
-knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM
+knvlinkResiliencyUvmIdle_WORKITEM
 (
     NvU32 gpuInstance,
     void  *pArgs
 )
 {
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
+    KernelNvlink *pKernelNvlink = (pGpu != NULL) ? GPU_GET_KERNEL_NVLINK(pGpu) : NULL;
     NV_STATUS status;
 
     NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
@@ -2426,7 +2521,20 @@ knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM
     case NV_OK:
         // UVM channels were successfully suspended
 
-        portAtomicSetU32(&pInfo->uvmIdle, 1);
+        portAtomicSetU32(&pInfo->uvmIdle, NVLINK_RESILIENCY_INFO_UVM_IDLE_IDLE);
+        if (pKernelNvlink != NULL)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0U) != 0U) ?
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY :
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_QUIESCE_IDLE_CONFIRMED,
+                                        NV_OK,
+                                        0,
+                                        0);
+        }
         break;
 
     case NV_ERR_ECC_ERROR:
@@ -2440,24 +2548,100 @@ knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM
     default:
         NV_PRINTF(LEVEL_ERROR, "Failed to idle UVM peer traffic with status 0x%x. This will lead to NVLINK Degradation!\n",
                   status);
+        if (pKernelNvlink != NULL)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0U) != 0U) ?
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY :
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_ERROR,
+                                        status,
+                                        0,
+                                        0);
+        }
         break;
     }
 }
 
+
+static NV_STATUS
+_knvlinkTrafficQuiesceSendLfmAction
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32 action
+)
+{
+    NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_PARAMS params = { 0 };
+    params.action = action;
+
+    return knvlinkExecGspRmRpc_IMPL(pGpu, pKernelNvlink,
+            NV2080_CTRL_CMD_INTERNAL_NVLINK_LFM_RM_ACTION, &params, sizeof(params));
+}
+
+static NV_STATUS
+_knvlinkForceDebugStallAndUpdateAmap
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NV2080_CTRL_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP_PARAMS *pParams
+)
+{
+    return knvlinkExecGspRmRpc_IMPL(pGpu, pKernelNvlink,
+            NV2080_CTRL_CMD_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP, pParams, sizeof(*pParams));
+}
+
 void
-knvlinkUncontainedErrorRecoveryUvmResume_WORKITEM
+knvlinkResiliencyUvmResume_WORKITEM
 (
     NvU32 gpuInstance,
     void  *pArgs
 )
 {
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NV_STATUS status;
 
-    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+    NV_ASSERT_OR_RETURN_VOID((pInfo != NULL) && (pGpu != NULL) && (pKernelNvlink != NULL));
 
+    if (pKernelNvlink != NULL)
+    {
+        _knvlinkResiliencyTimingLog(pGpu,
+                                    pKernelNvlink,
+                                    pInfo,
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                    KNVLINK_RESILIENCY_TIMING_EVENT_UVM_RESUME_REQUESTED,
+                                    NV_OK,
+                                    0,
+                                    0);
+    }
     osQueueResumeP2PHandler(pInfo->uuid);
 
-    // Clear the active recovery
+    // LFM notification path requires locks to be held; queue a workitem to finalize the resume.
+    if (portAtomicOrU32(&pInfo->quiesceTraffic.bLfmResponse, 0) != 0)
+    {
+        status = _knvlinkTrafficQuiesceSendLfmAction(pGpu,
+            pKernelNvlink, NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_RESUME_TRAFFIC_DONE);
+        _knvlinkResiliencyTimingLog(pGpu,
+                                    pKernelNvlink,
+                                    pInfo,
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                    KNVLINK_RESILIENCY_TIMING_EVENT_RESUME_DONE_SENT_TO_LFM,
+                                    status,
+                                    0,
+                                    0);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to send RESUME_TRAFFIC_DONE to LFM status=0x%x\n", status);
+        }
+    }
+
+    portAtomicSetU32(&pInfo->uvmIdle, NVLINK_RESILIENCY_INFO_UVM_IDLE_NOT_SET);
+    portAtomicSetU32(&pInfo->quiesceTraffic.state, NVLINK_QUIESCE_TRAFFIC_INFO_STATE_NOT_SET);
+    portAtomicSetU32(&pInfo->uncontainedErrorRecovery.active, 0);
     portAtomicSetU32(&pInfo->active, 0);
 }
 
@@ -2468,7 +2652,7 @@ knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM
     void *pArgs
 )
 {
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
     NvU64 currentTime;
     NV_STATUS status = NV_OK;
@@ -2476,17 +2660,17 @@ knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM
     NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
 
     NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &currentTime), remove);
-    if ((currentTime - pInfo->startTime) <= NVLINK_UNCONTAINED_ERROR_IDLE_PERIOD_NS)
+    if ((currentTime - pInfo->uncontainedErrorRecovery.startTime) <= NVLINK_UNCONTAINED_ERROR_IDLE_PERIOD_NS)
         return;
 
-    portAtomicSetU32(&pInfo->recoveryReady, 1);
+    portAtomicSetU32(&pInfo->uncontainedErrorRecovery.recoveryReady, 1);
 
 remove:
     osRemove1HzCallback(pGpu, knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM, pArgs);
 }
 
 void
-knvlinkAbortUncontainedErrorRecovery_WORKITEM
+knvlinkAbortResiliencyRecovery_WORKITEM
 (
     NvU32 gpuInstance,
     void *pArgs
@@ -2508,49 +2692,304 @@ knvlinkAbortUncontainedErrorRecovery_WORKITEM
                         sizeof(params)));
 }
 
-void
-knvlinkUncontainedErrorRecovery_WORKITEM
+typedef struct
+{
+    NvU32 action;
+} KNVLINK_TRAFFIC_QUIESCE_ACTION_WORKITEM_INFO;
+
+static NV_STATUS
+_knvlinkTrafficQuiesceResumeDisableChannels
 (
-    OBJGPU *pGpu,
-    void *pArgs
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvBool bEnable
 )
 {
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    NV2080_CTRL_INTERNAL_NVLINK_RESUME_DISABLE_CHANNELS_PARAMS params = { 0 };
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    // Error out if traffic quiesce is not requested and we are trying to resume channels
+    if ((pKernelNvlink != NULL) && !knvlinkIsTrafficQuiesceRequested(pGpu, pKernelNvlink))
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    params.bEnable = bEnable;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                       knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                            NV2080_CTRL_CMD_INTERNAL_NVLINK_RESUME_DISABLE_CHANNELS,
+                                            &params,
+                                            sizeof(params)));
+
+
+    return NV_OK;
+}
+
+static void
+knvlinkTrafficQuiesceResumeChannels_WORKITEM
+(
+    NvU32 gpuInstance,
+    void  *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
+    KernelNvlink *pKernelNvlink;
+    NV_STATUS status;
+
+    NV_ASSERT_OR_RETURN_VOID((pInfo != NULL) && (pGpu != NULL));
+    pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NV_ASSERT_OR_RETURN_VOID(pKernelNvlink != NULL);
+
+    // Only attempt to resume channels if channel enable is pending
+    if ((portAtomicOrU32(&pInfo->quiesceTraffic.state, 0U) &
+            NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE) == 0)
+    {
+        return;
+    }
+
+    status = _knvlinkTrafficQuiesceResumeDisableChannels(pGpu, pKernelNvlink, NV_TRUE);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Traffic quiesce: failed to resume channels status=0x%x\n",
+                  status);
+        return;
+    }
+
+    portAtomicSetU32(&pInfo->quiesceTraffic.state,
+                     NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE_DONE);
+
+    _knvlinkResiliencyTimingLog(pGpu,
+                                pKernelNvlink,
+                                pInfo,
+                                KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                KNVLINK_RESILIENCY_TIMING_EVENT_RESUME_CHANNELS_ENABLED,
+                                NV_OK,
+                                0,
+                                0);
+}
+
+void
+knvlinkResiliencyRecovery_WORKITEM
+(
+    OBJGPU *pGpu,
+    void  *pArgs
+)
+{
+    NVLINK_RESILIENCY_INFO *pInfo = (NVLINK_RESILIENCY_INFO *)pArgs;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
     NvU64 currentTime;
     NvBool bRemove = NV_FALSE;
     NvBool bDegrade = NV_FALSE;
     NV_STATUS status = NV_OK;
+    NvU64 uncontainedElapsed = 0;
+    NvU64 quiesceElapsed = 0;
+    NvU64 uncontainedTimeoutNs = 0;
+    NvU64 quiesceTimeoutNs = 0;
+    NvBool bUncontainedActive = NV_FALSE;
+    NvBool bQuiesceActive = NV_FALSE;
+    NV_ASSERT_OR_GOTO(pInfo != NULL, exit);
+    NV_ASSERT_OR_GOTO(NV_OK == tmrGetCurrentTime(pTmr, &currentTime), exit);
+    NV_ASSERT_OR_GOTO(pKernelNvlink != NULL, exit);
 
-    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+    bUncontainedActive = (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0) != 0);
+    bQuiesceActive = (portAtomicOrU32(&pInfo->quiesceTraffic.state, 0) != NVLINK_QUIESCE_TRAFFIC_INFO_STATE_NOT_SET);
 
-    NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &currentTime), exit);
-
-    // If we do not successfully idle within a resonable time, degrade
-    if ((currentTime - pInfo->startTime) > NVLINK_UNCONTAINED_ERROR_ABORT_PERIOD_NS)
+    if (bUncontainedActive)
     {
+        uncontainedElapsed = currentTime - pInfo->uncontainedErrorRecovery.startTime;
+    }
+
+    if (bQuiesceActive)
+    {
+        quiesceElapsed = currentTime - pInfo->quiesceTraffic.startTime;
+    }
+
+    uncontainedTimeoutNs = pKernelNvlink->uncontainedErrorAbortTimeoutNs;
+    quiesceTimeoutNs = pKernelNvlink->trafficQuiesceAbortTimeoutNs;
+
+    //
+    // Timeout on either active sub-flow using its own start time.
+    // This keeps watchdog behavior aligned with per-flow timing intent.
+    //
+    if ((bUncontainedActive && (uncontainedElapsed > uncontainedTimeoutNs)) ||
+        (bQuiesceActive && (quiesceElapsed > quiesceTimeoutNs)))
+    {
+
+        NV_PRINTF(LEVEL_ERROR,
+                  "Resiliency timeout: uc_active=%u uc_elapsed_ns=%llu tq_active=%u tq_elapsed_ns=%llu\n",
+                  bUncontainedActive,
+                  uncontainedElapsed,
+                  bQuiesceActive,
+                  quiesceElapsed);
+        if (bUncontainedActive)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_TIMEOUT,
+                                        NV_ERR_TIMEOUT,
+                                        uncontainedElapsed,
+                                        0);
+        }
+        if (bQuiesceActive)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_TIMEOUT,
+                                        NV_ERR_TIMEOUT,
+                                        quiesceElapsed,
+                                        0);
+        }
         bRemove = NV_TRUE;
         bDegrade = NV_TRUE;
         // One more pass in case it just took a long time to get scheduled
     }
 
-    if (portAtomicOrU32(&pInfo->rcCompleted, 0) == 0)
+    // If UVM is not idle goto exit and reschedule the workitem
+    if ((portAtomicOrU32(&pInfo->uvmIdle, 0) & NVLINK_RESILIENCY_INFO_UVM_IDLE_IDLE) == 0)
         goto exit;
 
-    if (portAtomicOrU32(&pInfo->uvmIdle, 0) == 0)
-        goto exit;
+    // Check Uncontained Error Recovery conditions are met
+    if (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0) == 1)
+    {
+        if (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.recoveryReady, 0) == 0)
+            goto exit;
+        if (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.rcCompleted, 0) == 0)
+            goto exit;
+    }
 
-    if (portAtomicOrU32(&pInfo->recoveryReady, 0) == 0)
-        goto exit;
+    // Check traffic quiesce conditions are met
+    if (portAtomicOrU32(&pInfo->quiesceTraffic.state, 0) !=  NVLINK_QUIESCE_TRAFFIC_INFO_STATE_NOT_SET)
+    {
+        switch (portAtomicOrU32(&pInfo->quiesceTraffic.state, 0))
+        {
+            case NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING:
+            {
 
+                // If not in the resiliency flow then quiesce traffic is done otherwise pending LFM action
+                if (portAtomicOrU32(&pInfo->quiesceTraffic.bLfmResponse, 0) == 0)
+                {
+                     NVLINK_BIT_VECTOR peerLinkVec = { 0 };
+                    //
+                    // Send a TLB invalidation membar to ensure all nvlink traffic is quiesced before resuming
+                    // wait for 3 seconds for the TLB invalidation to complete (~3x worst case STO)
+                    //
+                    TLB_INVALIDATE_PARAMS   tlbInvalidateParams = { 0 };
+                    gpuSetTimeout(pGpu, 3000000, &tlbInvalidateParams.timeout, GPU_TIMEOUT_FLAGS_DEFAULT);
+
+                    // Ensure any pending TLB invalidates are completed
+                    status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &tlbInvalidateParams.timeout);
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Failed to check pending TLB invalidates status=0x%x\n", status);
+                        goto exit;
+                    }
+
+                    // Get the sysmembar register value
+                    tlbInvalidateParams.regVal = DRF_DEF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ALL_VA, _TRUE) |
+                                DRF_DEF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ALL_PDB, _TRUE) |
+                                DRF_DEF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ACK, _GLOBALLY) |
+                                DRF_DEF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _SYS_MEMBAR, _TRUE) |
+                                DRF_DEF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _TRIGGER, _TRUE);
+
+                    // Commit the TLB invalidation
+                    status = kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &tlbInvalidateParams);
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Failed to commit TLB invalidation status=0x%x\n", status);
+                        goto exit;
+                    }
+
+                    NV2080_CTRL_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP_PARAMS params = { 0 };
+                    gpuFabricProbeSetlinkMaskToBeReduced(pGpu->pGpuFabricProbeInfoKernel, &pKernelNvlink->pendingAbmLinkMaskToBeReduced);
+
+                    // Copy the peer link mask to the pending ABM link mask to be reduced
+                    bitVectorCopy(&peerLinkVec, &pKernelNvlink->pendingAbmLinkMaskToBeReduced);
+                    bitVectorInvAll(&peerLinkVec);
+                    bitVectorAnd(&peerLinkVec, &peerLinkVec, &pKernelNvlink->enabledLinks);
+
+                    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                        convertBitVectorToLinkMasks(&peerLinkVec, NULL, 0U, &params.peerLinkMask),
+                            exit);
+                    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, _knvlinkForceDebugStallAndUpdateAmap(pGpu, pKernelNvlink, &params), exit);
+
+                    portAtomicSetU32(&pInfo->quiesceTraffic.state,
+                        NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE);
+
+                }
+                else
+                {
+                    status = _knvlinkTrafficQuiesceSendLfmAction(pGpu,
+                                                                 pKernelNvlink,
+                                                                 NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_QUIESCE_TRAFFIC_DONE);
+                    _knvlinkResiliencyTimingLog(pGpu,
+                                                pKernelNvlink,
+                                                pInfo,
+                                                KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                                KNVLINK_RESILIENCY_TIMING_EVENT_QUIESCE_DONE_SENT_TO_LFM,
+                                                status,
+                                                quiesceElapsed,
+                                                0);
+                    NV_ASSERT_OK_OR_GOTO(status, status, exit);
+
+                    portAtomicSetU32(&pInfo->quiesceTraffic.state,
+                        NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING_LFM_ACTION);
+                }
+                goto exit;
+            }
+            case NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING_LFM_ACTION:
+            {
+                // Waiting for LFM to tell us to resume traffic
+                goto exit;
+            }
+            case NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE:
+            {
+                // Channel Resume requires API and GPU locks to be held, queue a workitem to handle this
+                NV_ASSERT_OK_OR_GOTO(status,
+                    osQueueWorkItem(pGpu,
+                                    knvlinkTrafficQuiesceResumeChannels_WORKITEM,
+                                    pInfo,
+                                    (OsQueueWorkItemFlags){
+                                        .bLockSema = NV_TRUE,
+                                        .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                        .bLockGpus = NV_TRUE,
+                                        .bDontFreeParams = NV_TRUE}),
+                    exit);
+                goto exit;
+            }
+            case NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE_DONE:
+            {
+                portAtomicSetU32(&pInfo->quiesceTraffic.state,
+                    NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_UVM_RESUME);
+
+                // UVM resumeP2P workitem is launched below
+                break;
+            }
+            default:
+            {
+                // Invalid state, should not happen
+                status = NV_ERR_INVALID_STATE;
+                goto exit;
+            }
+        }
+    }
+
+    // If we reach here all resiliency recovery checks are complete and we can remove this work item
     bRemove = NV_TRUE;
     bDegrade = NV_FALSE;
 
     // Launch recovery action in the HW to allow new traffic
+    if (bUncontainedActive)
     {
         NV2080_CTRL_INTERNAL_NVLINK_POST_FATAL_ERROR_RECOVERY_PARAMS params = { 0 };
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
         params.bSuccessful = NV_TRUE;
         NV_ASSERT_OK_OR_GOTO(status,
             pRmApi->Control(pRmApi,
@@ -2562,13 +3001,41 @@ knvlinkUncontainedErrorRecovery_WORKITEM
             exit);
     }
 
-    // Launch lockless workitem to resume P2P in UVM
+    // Launch lockless workitem to resume P2P in UVM.
     NV_ASSERT_OK_OR_GOTO(status,
         osQueueWorkItem(pGpu,
-                        knvlinkUncontainedErrorRecoveryUvmResume_WORKITEM,
+                        knvlinkResiliencyUvmResume_WORKITEM,
                         pInfo,
                         (OsQueueWorkItemFlags){.bDontFreeParams = NV_TRUE}),
         exit);
+
+    if (bUncontainedActive)
+    {
+        _knvlinkResiliencyTimingLog(pGpu,
+                                    pKernelNvlink,
+                                    pInfo,
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY,
+                                    KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_SUCCESS,
+                                    NV_OK,
+                                    uncontainedElapsed,
+                                    0);
+    }
+    if (bQuiesceActive)
+    {
+        _knvlinkResiliencyTimingLog(pGpu,
+                                    pKernelNvlink,
+                                    pInfo,
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                    KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_SUCCESS,
+                                    NV_OK,
+                                    quiesceElapsed,
+                                    0);
+
+        knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_TRUE,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_FALSE);
+    }
 
 exit:
     if (status != NV_OK)
@@ -2578,19 +3045,467 @@ exit:
     }
 
     if (bRemove)
-        osRemove1HzCallback(pGpu, knvlinkUncontainedErrorRecovery_WORKITEM, pArgs);
+        osRemove1HzCallback(pGpu, knvlinkResiliencyRecovery_WORKITEM, pArgs);
 
     if (bDegrade)
     {
+        if (bUncontainedActive)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_ABORT,
+                                        status, 
+                                        uncontainedElapsed,
+                                        0);
+        }
+
+        if (bQuiesceActive)
+        {
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_ABORT,
+                                        status,
+                                        quiesceElapsed,
+                                        0);
+
+            knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink,
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE,
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE,
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_TRUE);
+        }
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
             osQueueWorkItem(pGpu,
-                knvlinkAbortUncontainedErrorRecovery_WORKITEM,
+                knvlinkAbortResiliencyRecovery_WORKITEM,
                 NULL,
                 (OsQueueWorkItemFlags){
                     .bLockSema = NV_TRUE,
                     .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
                     .bLockGpuGroupSubdevice = NV_TRUE}));
     }
+}
+
+NV_STATUS 
+knvlinkLfmQuiesceRetryTimerCallback
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pEvent
+)
+{
+    KNVLINK_TRAFFIC_QUIESCE_ACTION_WORKITEM_INFO *pInfo = (KNVLINK_TRAFFIC_QUIESCE_ACTION_WORKITEM_INFO *)pEvent->pUserData;
+    NVLINK_RESILIENCY_INFO *pResiliencyInfo;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NV_STATUS status = NV_OK;
+
+    pResiliencyInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
+    if (pResiliencyInfo == NULL)
+    {
+        portMemFree(pInfo);
+        return NV_ERR_INVALID_STATE;
+    }
+
+    if (pKernelNvlink == NULL || pInfo == NULL)
+    {
+        portMemFree(pInfo);
+        portAtomicSetU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 0);
+        return NV_ERR_INVALID_STATE;
+    }
+
+    // Queue the workitem again (bDontFreeParams: workitem owns pInfo across retries)
+    status = osQueueWorkItem(pGpu,
+                    _knvlinkTrafficQuiesceAction_WORKITEM,
+                    pInfo,
+                    (OsQueueWorkItemFlags){
+                        .bLockSema = NV_TRUE,
+                        .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                        .bLockGpus = NV_TRUE,
+                        .bDontFreeParams = NV_TRUE});
+                        
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to queue NVLINK traffic quiesce action 0x%x workitem status=0x%x\n", pInfo->action, status);
+        portMemFree(pInfo);
+        portAtomicSetU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 0);
+        pEvent->pUserData = NULL;
+    }
+
+    return status;
+}
+
+static void
+_knvlinkTrafficQuiesceAction_WORKITEM
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    KNVLINK_TRAFFIC_QUIESCE_ACTION_WORKITEM_INFO *pInfo = pArgs;
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    KernelNvlink *pKernelNvlink;
+    NV_STATUS status = NV_OK;
+    NVLINK_RESILIENCY_INFO *pResiliencyInfo;
+
+    if ((pInfo == NULL) || (pGpu == NULL))
+    {
+        portMemFree(pInfo);
+        return;
+    }
+
+    pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    pResiliencyInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
+    if ((pKernelNvlink == NULL) || (pResiliencyInfo == NULL))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get kernel NVLINK or resiliency info\n");
+        portMemFree(pInfo);
+        return;
+    }
+
+    switch (pInfo->action)
+    {
+        case NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_QUIESCE_TRAFFIC:
+        {
+            status = knvlinkResiliencyEntryFunction(pGpu, pKernelNvlink, pResiliencyInfo, NV_FALSE, NV_TRUE);
+            // If the workitem is busy, schedule a timer event to retry
+            if (pResiliencyInfo->pLfmRetryEvent != NULL && 
+                status == NV_ERR_BUSY_RETRY &&
+                pResiliencyInfo->lfmQuiesceRetryCount < KNVLINK_TRAFFIC_QUIESCE_ACTION_RETRY_COUNT_MAX)
+            {
+                NV_PRINTF(LEVEL_INFO, "Existing traffic quiesce flow is running, scheduling timer event to retry the LFM action %d\n", pInfo->action);
+                pResiliencyInfo->lfmQuiesceRetryCount++;
+                pResiliencyInfo->pLfmRetryEvent->pUserData = pInfo;
+                status = tmrEventScheduleRelSec(GPU_GET_TIMER(pGpu), pResiliencyInfo->pLfmRetryEvent, 1U);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Failed to schedule timer event to retry the LFM action %d status=0x%x\n", pInfo->action, status);
+                    goto cleanup;
+                }
+                return;
+            }
+cleanup:
+            portAtomicSetU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 0);
+            pResiliencyInfo->lfmQuiesceRetryCount = 0;
+            // if the retry event is not NULL, clear the user data
+            if (pResiliencyInfo->pLfmRetryEvent != NULL)
+            {
+                pResiliencyInfo->pLfmRetryEvent->pUserData = NULL;
+            }
+            break;
+        }
+        case NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_RESUME_TRAFFIC:
+        {
+            NV_ASSERT(portAtomicOrU32(&pResiliencyInfo->quiesceTraffic.state, 0) ==
+                            NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING_LFM_ACTION);
+            portAtomicSetU32(&pResiliencyInfo->quiesceTraffic.state,
+                NVLINK_QUIESCE_TRAFFIC_INFO_STATE_RESUME_TRAFFIC_PENDING_CHANNEL_ENABLE);
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pResiliencyInfo,
+                                        KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_RESUME_REQUEST_FROM_LFM,
+                                        NV_OK,
+                                        0,
+                                        0);
+            break;
+        }
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid NVLINK traffic quiesce action 0x%x\n", pInfo->action);
+            portMemFree(pInfo);
+            return;
+    }
+
+
+    // If the workitem failed, log an error and return
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed NVLINK traffic quiesce action 0x%x status=0x%x after %d retries (max %d retries)\n",
+                  pInfo->action,
+                  status,
+                  pResiliencyInfo->lfmQuiesceRetryCount,
+                  KNVLINK_TRAFFIC_QUIESCE_ACTION_RETRY_COUNT_MAX);
+    }
+
+    portMemFree(pInfo);
+}
+
+NV_STATUS
+knvlinkTrafficQuiesceAction_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32 action
+)
+{
+    KNVLINK_TRAFFIC_QUIESCE_ACTION_WORKITEM_INFO *pInfo;
+    NVLINK_RESILIENCY_INFO *pResiliencyInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
+    NV_STATUS status = NV_OK;
+
+    if (pResiliencyInfo == NULL)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    switch (action)
+    {
+        case NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_QUIESCE_TRAFFIC:
+        {
+            if (portAtomicCompareAndSwapU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 1, 0) == 0)
+            {
+                NV_PRINTF(LEVEL_INFO, "NVLINK traffic quiesce action %d is already in progress, skipping\n", action);
+                return NV_ERR_INVALID_STATE;
+            }
+            // Fall through
+        }
+        case NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_RESUME_TRAFFIC:
+        {
+            pInfo = portMemAllocNonPaged(sizeof(*pInfo));
+            if (pInfo == NULL)
+            {
+                portAtomicSetU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 0);
+                return NV_ERR_NO_MEMORY;
+            }
+            pInfo->action = action;
+
+            status = osQueueWorkItem(pGpu,
+                                     _knvlinkTrafficQuiesceAction_WORKITEM,
+                                     pInfo,
+                                     (OsQueueWorkItemFlags){
+                                         .bLockSema = NV_TRUE,
+                                         .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                         .bLockGpus = NV_TRUE,
+                                         .bDontFreeParams = NV_TRUE});
+            if (status != NV_OK)
+            {
+                portMemFree(pInfo);
+                portAtomicSetU32(&pResiliencyInfo->bPendingLfmTrafficQuiesce, 0);
+                return status;
+            }
+            break;
+        }
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid NVLINK traffic quiesce action 0x%x\n", action);
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+knvlinkResiliencyEntryFunction_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NVLINK_RESILIENCY_INFO *pInfo,
+    NvBool bUncontainedErrorRecovery,
+    NvBool bTrafficQuiesceResiliencyFlow
+)
+{
+    NV_STATUS status = NV_OK;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NvBool bEnableRunningChannels = NV_FALSE;
+    NvBool bResiliencyAlreadyActive = NV_FALSE;
+
+    //
+    // Validate the input parameters
+    // Uncontained Recovery and Traffic Quiesce Resiliency Flow cannot be set simultaneously
+    //
+    if ((pInfo == NULL) ||
+        (!pInfo->bValid) ||
+        (!!bUncontainedErrorRecovery && !!bTrafficQuiesceResiliencyFlow))
+    {
+        status = NV_ERR_INVALID_STATE;
+        goto fail;
+    }
+
+    NvU32 flags = DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
+        DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY);
+    NvU32 uuidLength;
+    NvU8 *pUuid;
+
+    // allocates memory for pUuid on success
+    NV_ASSERT_OK_OR_GOTO(status, gpuGetGidInfo(pGpu, &pUuid, &uuidLength, flags), fail);
+    if (uuidLength != sizeof(pInfo->uuid))
+    {
+        portMemFree(pUuid);
+        status = NV_ERR_INVALID_STATE;
+        goto fail;
+    }
+
+    // If the resiliency info is not active, then set the UUID
+    if (portAtomicOrU32(&pInfo->active, 0) == 0)
+    {
+        portMemCopy(pInfo->uuid, uuidLength, (void *)pUuid, uuidLength);
+        portMemFree(pUuid);
+    }
+    // else if the UUID has changed, then assert failed
+    else if (portMemCmp(pInfo->uuid, pUuid, uuidLength) != 0)
+    {
+        NV_ASSERT_FAILED("NVLINK Resiliency re-triggered unexpectedly with different UUIDs!");
+        status = NV_ERR_INVALID_STATE;
+        portMemFree(pUuid);
+        goto fail;
+    }
+    else
+    {
+        // do nothing
+        portMemFree(pUuid);
+    }
+
+    bResiliencyAlreadyActive = (portAtomicOrU32(&pInfo->active, 0) != 0);
+
+    // Track if either sub-flow is active.
+    portAtomicSetU32(&pInfo->active, 1);
+    _knvlinkResiliencyTimingLog(pGpu,
+                                pKernelNvlink,
+                                pInfo,
+                                bUncontainedErrorRecovery ?
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY :
+                                    KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                KNVLINK_RESILIENCY_TIMING_EVENT_FLOW_ENTRY,
+                                NV_OK,
+                                0,
+                                0);
+
+    // Set up the state for uncontained error recovery or traffic quiesce
+    if (bUncontainedErrorRecovery)
+    {
+        // This recovery process should not be able to occur twice synchronously
+        if (portAtomicOrU32(&pInfo->uncontainedErrorRecovery.active, 0) != 0)
+        {
+            NV_ASSERT_FAILED("NVLINK Uncontained Error Recovery re-triggered unexpectedly!");
+            status = NV_ERR_INVALID_STATE;
+            goto fail;
+        }
+
+        // Set up tracking set for the uncontained error recovery
+        portAtomicSetU32(&pInfo->uncontainedErrorRecovery.active, 1);
+        portAtomicSetU32(&pInfo->uncontainedErrorRecovery.rcCompleted, 0);
+        portAtomicSetU32(&pInfo->uncontainedErrorRecovery.recoveryReady, 0);
+        NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &pInfo->uncontainedErrorRecovery.startTime), fail);
+
+        // Launch workitem to RC outstanding IMEX clients
+        NV_CHECK_OK_OR_GOTO(status,
+            LEVEL_ERROR,
+            osQueueWorkItem(pGpu,
+                            knvlinkFatalErrorRecovery_WORKITEM,
+                            pInfo,
+                            (OsQueueWorkItemFlags){
+                                .bLockSema = NV_TRUE,
+                                .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
+                                .bLockGpuGroupSubdevice = NV_TRUE,
+                                .bDontFreeParams = NV_TRUE}),
+                                fail);
+
+        // Launch repeated 1Hz workitem to wait 1 STO period
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osSchedule1HzCallback(pGpu, knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
+            fail);
+    }
+    else
+    {
+        // Check if traffic quiesce is supported
+        if (!knvlinkIsTrafficQuiesceRequested(pGpu, pKernelNvlink))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Traffic quiesce requested but not enabled!\n");
+            status = NV_ERR_INVALID_STATE;
+            goto fail;
+        }
+
+        // This recovery process should not be able to occur twice synchronously
+        if (portAtomicOrU32(&pInfo->quiesceTraffic.state, 0) != 0)
+        {
+            NV_PRINTF(LEVEL_INFO, "NVLINK Traffic Quiesce re-triggered unexpectedly! (request_flow=%u) (active_flow=%u)\n",
+                bTrafficQuiesceResiliencyFlow, portAtomicOrU32(&pInfo->quiesceTraffic.bLfmResponse, 0));
+            status = NV_ERR_BUSY_RETRY;
+            goto fail;
+        }
+
+        // set up the tracking state for traffic quiesce
+        portAtomicSetU32(&pInfo->quiesceTraffic.bLfmResponse, bTrafficQuiesceResiliencyFlow ? 1 : 0);
+        portAtomicSetU32(&pInfo->quiesceTraffic.state, NVLINK_QUIESCE_TRAFFIC_INFO_STATE_QUIESCE_TRAFFIC_PENDING);
+        NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &pInfo->quiesceTraffic.startTime), fail);
+        NV_PRINTF(LEVEL_INFO,
+                  "Traffic quiesce entry: resiliency_flow=%u start_ns=%llu\n",
+                  bTrafficQuiesceResiliencyFlow ? 1 : 0,
+                  pInfo->quiesceTraffic.startTime);
+
+
+        // disable running channels
+        status = _knvlinkTrafficQuiesceResumeDisableChannels(pGpu, pKernelNvlink, NV_FALSE);
+        if (status != NV_OK)
+        {
+            goto fail;
+        }
+
+        // set flag to indicate such if we hit failures we attempt to re-enable running channels
+        bEnableRunningChannels = NV_TRUE;
+    }
+
+    // If UVM idle workitem has not been launched, then launch it
+    {
+        NvBool bNotLaunched = portAtomicCompareAndSwapU32(&pInfo->uvmIdle,
+            NVLINK_RESILIENCY_INFO_UVM_IDLE_DRAINP2P_WORKITEM_LAUNCHED,
+            NVLINK_RESILIENCY_INFO_UVM_IDLE_NOT_SET);
+
+        if (bNotLaunched)
+        {
+            // Launch lockless workitem to idle UVM channels
+            NV_CHECK_OK_OR_GOTO(status,
+                LEVEL_ERROR,
+                osQueueWorkItem(pGpu,
+                            knvlinkResiliencyUvmIdle_WORKITEM,
+                            pInfo,
+                            (OsQueueWorkItemFlags){.bDontFreeParams = NV_TRUE}),
+                fail);
+            _knvlinkResiliencyTimingLog(pGpu,
+                                        pKernelNvlink,
+                                        pInfo,
+                                        bUncontainedErrorRecovery ?
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_UNCONTAINED_ERROR_RECOVERY :
+                                            KNVLINK_RESILIENCY_TIMING_FLOW_TRAFFIC_QUIESCE,
+                                        KNVLINK_RESILIENCY_TIMING_EVENT_WAITING_UVM_IDLE,
+                                        NV_OK,
+                                        0,
+                                        0);
+        }
+    }
+
+    // Launch repeated 1Hz workitem to await completion of recovery steps
+    if (!bResiliencyAlreadyActive)
+    {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osSchedule1HzCallback(pGpu, knvlinkResiliencyRecovery_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
+            fail);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Resiliency recovery already active; piggybacking sub-flow "
+                  "(uncontained=%u traffic_quiesce=%u)\n",
+                  bUncontainedErrorRecovery ? 1 : 0,
+                  bTrafficQuiesceResiliencyFlow ? 1 : 0);
+    }
+
+    return NV_OK;
+fail:
+
+
+   // Try to clean-up the best we can if traffic quiesce is active and we hit an error
+   if (bEnableRunningChannels && !bUncontainedErrorRecovery && !bResiliencyAlreadyActive)
+   {
+        knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE,
+            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_TRUE);
+
+        _knvlinkTrafficQuiesceResumeDisableChannels(pGpu, pKernelNvlink, NV_TRUE);
+   }
+
+   return status;
 }
 
 NV_STATUS
@@ -2603,7 +3518,7 @@ knvlinkFatalErrorRecovery_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = gpumgrGetNvlinkRecoveryInfo(gpuGetDBDF(pGpu));
+    NVLINK_RESILIENCY_INFO *pInfo = gpumgrGetNvlinkResiliencyInfo(gpuGetDBDF(pGpu));
 
     if (bLazy)
     {
@@ -2625,73 +3540,9 @@ knvlinkFatalErrorRecovery_IMPL
 
     if (bRecoverable && pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_UNCONTAINED_ERROR_RECOVERY_SUPPORTED))
     {
-        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-
-        if ((pInfo == NULL) || !pInfo->bValid)
-        {
-            status = NV_ERR_INVALID_STATE;
-            goto fail;
-        }
-
-        // This recovery process should not be able to occur twice synchronously
-        if (portAtomicOrU32(&pInfo->active, 0) != 0)
-        {
-            NV_ASSERT_FAILED("NVLINK Uncontained error recovery re-triggered unexpectedly!");
-            status = NV_ERR_INVALID_STATE;
-            goto fail;
-        }
-
-        // Kickoff the recovery process
-        portAtomicSetU32(&pInfo->active, 1);
-        portAtomicSetU32(&pInfo->rcCompleted, 0);
-        portAtomicSetU32(&pInfo->uvmIdle, 0);
-        portAtomicSetU32(&pInfo->recoveryReady, 0);
-        NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &pInfo->startTime), fail);
-
-        {
-            NvU32 flags = DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
-                DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY);
-            NvU32 uuidLength;
-            NvU8 *pUuid;
-
-            // allocates memory for pUuid on success
-            NV_ASSERT_OK_OR_GOTO(status, gpuGetGidInfo(pGpu, &pUuid, &uuidLength, flags), fail);
-            NV_ASSERT_OR_GOTO(uuidLength == sizeof(pInfo->uuid), fail);
-
-            portMemCopy(pInfo->uuid, uuidLength, pUuid, uuidLength);
-            portMemFree(pUuid);
-        }
-
-        // Launch workitem to RC outstanding IMEX clients
-        NV_CHECK_OK_OR_GOTO(status,
-            LEVEL_ERROR,
-            osQueueWorkItem(pGpu,
-                            knvlinkFatalErrorRecovery_WORKITEM,
-                            pInfo,
-                            (OsQueueWorkItemFlags){
-                                .bLockSema = NV_TRUE,
-                                .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
-                                .bLockGpuGroupSubdevice = NV_TRUE,
-                                .bDontFreeParams = NV_TRUE}),
-            fail);
-
-        // Launch lockless workitem to idle UVM channels
-        NV_CHECK_OK_OR_GOTO(status,
-            LEVEL_ERROR,
-            osQueueWorkItem(pGpu,
-                            knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM,
-                            pInfo,
-                            (OsQueueWorkItemFlags){.bDontFreeParams = NV_TRUE}),
-            fail);
-
-        // Launch repeated 1Hz workitem to wait 1 STO period
+        // Kickoff resiliency flows for uncontained error recovery
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            osSchedule1HzCallback(pGpu, knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
-            fail);
-
-        // Launch repeated 1Hz workitem to await completion and kickoff recovery process
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            osSchedule1HzCallback(pGpu, knvlinkUncontainedErrorRecovery_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
+            knvlinkResiliencyEntryFunction(pGpu, pKernelNvlink, pInfo, NV_TRUE, NV_FALSE),
             fail);
     }
     else
@@ -2712,7 +3563,7 @@ knvlinkFatalErrorRecovery_IMPL
 fail:
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
         osQueueWorkItem(pGpu,
-                        knvlinkAbortUncontainedErrorRecovery_WORKITEM,
+                        knvlinkAbortResiliencyRecovery_WORKITEM,
                         NULL,
                         (OsQueueWorkItemFlags){
                             .bLockSema = NV_TRUE,
@@ -2720,6 +3571,65 @@ fail:
                             .bLockGpuGroupSubdevice = NV_TRUE}));
 
     return status;
+}
+
+static void
+_knvlinkGfmErrorOutMcRequests
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    memorymulticastfabricQueueErrorAllInFlightRequests(pGpu);
+}
+
+const static KNVLINK_GFM_STATE_ACTION knvlink_gfm_state_actions[] =
+{
+    {
+        .gfmState = KNVLINK_GFM_STATE_DISCONNECTED,
+        .pAction  = _knvlinkGfmErrorOutMcRequests,
+    },
+};
+
+void
+knvlinkHandleGfmStateChange_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         gfmState
+)
+{
+    NvU32 i;
+
+    ct_assert(KNVLINK_GFM_STATE_CONNECTED ==
+              NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED);
+    ct_assert(KNVLINK_GFM_STATE_DISCONNECTED ==
+              NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED);
+
+    switch (gfmState)
+    {
+        case KNVLINK_GFM_STATE_CONNECTED:
+            pGpu->gfmState =
+                NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_CONNECTED;
+            break;
+
+        case KNVLINK_GFM_STATE_DISCONNECTED:
+            pGpu->gfmState =
+                NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_GFM_STATE_DISCONNECTED;
+            break;
+
+        default:
+            NV_PRINTF(LEVEL_WARNING, "Unknown GFM state 0x%x\n", gfmState);
+            return;
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(knvlink_gfm_state_actions); i++)
+    {
+        if (knvlink_gfm_state_actions[i].gfmState == gfmState)
+        {
+            knvlink_gfm_state_actions[i].pAction(pGpu, pKernelNvlink);
+        }
+    }
 }
 
 // Grab GPU locks before RPCing into GSP-RM for NVLink RPCs
@@ -3246,9 +4156,8 @@ knvlinkGetRemapTableInformation_IMPL
     NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_PARAMS params;
     NvU32 remapTabIdx;
 
-    // Return error if NVLink encryption is disabled or if NVLE Qual mode is enabled
-    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED) ||
-        pKernelNvlink->bNvleQualModeRegkey)
+    // Return error if NVLink encryption is disabled
+    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -3353,9 +4262,8 @@ knvlinkGetRemapTableInformationV2_IMPL
         (remapEntryEnd - remapEntryStart + 1 <= NV2080_CTRL_NVLINK_REMAP_TABLE_ENTRIES_CHUNK),
         NV_ERR_INVALID_ARGUMENT);
 
-    // Return error if NVLink encryption is disabled or if NVLE Qual mode is enabled
-    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED) ||
-        pKernelNvlink->bNvleQualModeRegkey)
+    // Return error if NVLink encryption is disabled
+    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
     {
         return NV_ERR_NOT_SUPPORTED;
     }

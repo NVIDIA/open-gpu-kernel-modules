@@ -54,8 +54,11 @@
 #define MCTP_MSG_HEADER_NVDM_TYPE   31:24
 
 // MCTP Constants from specification
-#define MCTP_MSG_HEADER_TYPE_VENDOR_PCI 0x7e
-#define MCTP_MSG_HEADER_VENDOR_ID_NV    0x10de
+#define MCTP_MSG_HEADER_TYPE_VENDOR_PCI   0x7e
+#define MCTP_MSG_HEADER_TYPE_VENDOR_IANA  0x7f
+
+#define MCTP_MSG_HEADER_VENDOR_ID_NV      0x10de
+#define MCTP_MSG_HEADER_VENDOR_ID_IANA_NV 0x1647
 
 /**
  * @brief Create MCTP transport header

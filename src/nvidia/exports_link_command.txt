@@ -18,6 +18,7 @@
 --undefined=rm_validate_ioctls
 --undefined=rm_is_supported_device
 --undefined=rm_is_supported_pci_device
+--undefined=rm_is_nvidia_gpu_device
 --undefined=rm_isr
 --undefined=rm_isr_bh
 --undefined=rm_isr_bh_unlocked

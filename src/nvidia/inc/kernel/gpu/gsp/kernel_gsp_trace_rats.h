@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,26 +39,27 @@ typedef struct
     NvU64        pUserInfo;
     NvU32       *message_buffer;
     MEMORY_DESCRIPTOR *pMemDesc;
-} NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE;
+} NV_EVENT_BUFFER_BIND_POINT_GSP_RATS;
 
-MAKE_MULTIMAP(GspTraceEventBufferBindMultiMap, NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE);
+MAKE_MULTIMAP(RatsEventBufferBindMultiMap, NV_EVENT_BUFFER_BIND_POINT_GSP_RATS);
 
-void gspTraceNotifyAllConsumers(OBJGPU *pGpu, void *pArgs);
+void gspRatsNotifyAllConsumers(OBJGPU *pGpu, void *pArgs);
 
-void gspTraceEventBufferLogRecord(OBJGPU *pGpu, NV_RATS_GSP_TRACE_RECORD *intrTraceRecord);
+void gspRatsEventBufferLogRecord(OBJGPU *pGpu, NV_RATS_RECORD *intrTraceRecord);
 
-void gspTraceServiceVgpuEventTracing(OBJGPU *pGpu);
+void gspRatsServiceVgpuEventTracing(OBJGPU *pGpu);
 
-NV_STATUS gspTraceAddBindpoint(OBJGPU *pGpu,
+NV_STATUS gspRatsAddBindpoint(OBJGPU *pGpu,
                                RsClient *pClient,
                                RsResourceRef *pEventBufferRef,
                                NvHandle hNotifier,
                                NvU64 tracepointMask,
                                NvU32 gspLoggingBufferSize,
-                               NvU32 gspLoggingBufferWatermark);
+                               NvU32 gspLoggingBufferWatermark,
+                               NvU16 targetTask);
 
-void gspTraceRemoveBindpoint(OBJGPU *pGpu, NvU64 uid, NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE *pBind);
+void gspRatsRemoveBindpoint(OBJGPU *pGpu, NvU64 uid, NV_EVENT_BUFFER_BIND_POINT_GSP_RATS *pBind);
 
-void gspTraceRemoveAllBindpoints(EventBuffer *pEventBuffer);
+void gspRatsRemoveAllBindpoints(EventBuffer *pEventBuffer);
 
 #endif

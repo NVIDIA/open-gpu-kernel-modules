@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -287,6 +287,9 @@ typedef struct NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS {
  *     be used with the NV0000_CTRL_CMD_GPU_ATTACH_IDS and
  *     NV0000_CTRL_CMD_GPU_DETACH_ID commands to attach and detach
  *     the GPU.
+ *     Valid entries are returned in ascending numerical GPU ID order.
+ *     This order is deterministic for an unchanged set of GPU IDs
+ *     and does not depend on probe-registration order.
  *     The valid entries in gpuIds[] are contiguous, with a value
  *     of NV0000_CTRL_GPU_INVALID_ID indicating the invalid entries.
  *   excludedGpuIds[]
@@ -294,11 +297,13 @@ typedef struct NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS {
  *     An excluded GPU ID is an opaque platform-dependent value that
  *     can be used with NV0000_CTRL_CMD_GPU_GET_PCI_INFO and
  *     NV0000_CTRL_CMD_GPU_GET_UUID_INFO.
+ *     Valid entries are returned in ascending numerical GPU ID order.
  *     The valid entries in excludedGpuIds[] are contiguous, with a value
  *     of NV0000_CTRL_GPU_INVALID_ID indicating the invalid entries.
  *   gpuFlags[]
  *     This parameter returns flags for each valid entry in the gpuIds[]
- *     table.  Note that excluded GPUs do not have a gpuFlags[] entry.
+ *     table. Each flag remains paired with its corresponding GPU ID.
+ *     Note that excluded GPUs do not have a gpuFlags[] entry.
  *     Valid flag values include:
  *       NV0000_CTRL_GPU_PROBED_ID_INFO_FLAGS_SOC_DISPLAY
  *         When TRUE this flag indicates the GPU supports SOC Display
@@ -805,36 +810,7 @@ typedef struct NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS {
     NvU32 enableMask;
 } NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS;
 
-#define NV0000_CTRL_GPU_FLAGS_MEMOP_ENABLE      (0x00000001U)
-
-/*
- * NV0000_CTRL_CMD_GPU_DISABLE_NVLINK_INIT
- *
- * This privileged command is used to disable initialization for the NVLinks
- * provided in the mask.
- *
- * The mask must be applied before the GPU is attached. DISABLE_NVLINK_INIT
- * is an NOP for non-NVLink GPUs.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_INVALID_DEVICE
- *   NV_ERR_INSUFFICIENT_PERMISSIONS
- *   NV_ERR_INVALID_STATE
- *   NV_ERR_IN_USE
- *
- */
-#define NV0000_CTRL_CMD_GPU_DISABLE_NVLINK_INIT (0x281U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS_MESSAGE_ID" */
-
-#define NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS_MESSAGE_ID (0x81U)
-
-typedef struct NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS {
-    NvU32  gpuId;
-    NvU32  mask; // This field will be deprecated in the future, please use links
-    NV_DECLARE_ALIGNED(NV0000_CTRL_NVLINK_LINK_MASK links, 8);
-    NvBool bSkipHwNvlinkDisable;
-} NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS;
+#define NV0000_CTRL_GPU_FLAGS_MEMOP_ENABLE               (0x00000001U)
 
 
 #define NV0000_CTRL_GPU_LEGACY_CONFIG_MAX_PARAM_DATA     0x00000175U
@@ -865,10 +841,13 @@ typedef struct NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS {
 #define NV0000_CTRL_GPU_IMAGE_TYPE_GSP           (0x00000001U)
 #define NV0000_CTRL_GPU_IMAGE_TYPE_GSP_LOG       (0x00000002U)
 #define NV0000_CTRL_GPU_IMAGE_TYPE_BINDATA_IMAGE (0x00000003U)
+#define NV0000_CTRL_GPU_IMAGE_TYPE_UCODES        (0x00000004U)
 /*
  * NV0000_CTRL_CMD_PUSH_UCODE_IMAGE
  *
- * This command is used to push the GSP ucode into RM.
+ * This command is used to push the GSP ucode (or related image such as
+ * gsp_log, bindata, or ucodes_*.bin) into RM. The image type is selected
+ * via the @ref image field using NV0000_CTRL_GPU_IMAGE_TYPE_*.
  * This function is used only on VMware
  *
  * Possible status values returned are:
@@ -916,7 +895,7 @@ typedef struct NV0000_CTRL_GPU_PUSH_UCODE_IMAGE_PARAMS {
  */
 
 #define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_SETTING_LEGACY     2:0
-#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_SETTING_LINK_COUNT 7:3
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_SETTING_LINK_COUNT 15:3
 
 #define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_FULL       (0x00U)
 #define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_OFF        (0x01U)

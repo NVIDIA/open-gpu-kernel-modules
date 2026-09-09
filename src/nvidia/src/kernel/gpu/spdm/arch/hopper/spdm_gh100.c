@@ -27,7 +27,7 @@
  */
 
 /* ------------------------ Includes --------------------------------------- */
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/spdm/spdm.h"
 #include "spdm/rmspdmtransport.h"
 #include "spdm/rmspdmvendordef.h"
@@ -1074,8 +1074,8 @@ spdmCheckConnection_GH100
         if (ret != LIBSPDM_STATUS_SUCCESS || actualAlgo != pCheckEntry->expectedAlgo)
         {
             NV_PRINTF(LEVEL_ERROR, "SPDM: Invalid crypto algorithms selected.\n");
-            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount 0x%0x, i is 0x%0x, status is 0x%0x.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
-            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected algo 0x%0x, actual algo 0x%0x\n", (NvU32)pCheckEntry->expectedAlgo, (NvU32)actualAlgo);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount 0x%08x, i is 0x%08x, status is 0x%08x.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected algo 0x%08x, actual algo 0x%08x\n", (NvU32)pCheckEntry->expectedAlgo, (NvU32)actualAlgo);
             return NV_ERR_INVALID_STATE;
         }
     }
@@ -1228,7 +1228,7 @@ spdmSendInitRmDataCommand_GH100
     status = params.msg.status;
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in INIT_RM_DATA command! status = 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in INIT_RM_DATA command! status = 0x%08x\n",
                   status);
         DBG_BREAKPOINT();
         return status;
@@ -1352,7 +1352,7 @@ spdmRegisterForHeartbeats_GH100
     status = spdmSendCtrlCall(pGpu, pSpdm, &params);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%08x\n", status);
         return status;
     }
 
@@ -1360,7 +1360,7 @@ spdmRegisterForHeartbeats_GH100
     status = params.msg.status;
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%08x\n",
                   status);
         DBG_BREAKPOINT();
         return status;
@@ -1397,7 +1397,7 @@ spdmUnregisterFromHeartbeats_GH100
     status = spdmSendCtrlCall(pGpu, pSpdm, &params);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%08x\n", status);
         goto ErrorExit;
     }
 
@@ -1405,7 +1405,7 @@ spdmUnregisterFromHeartbeats_GH100
     status = params.msg.status;
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%08x\n",
                   status);
         DBG_BREAKPOINT();
         goto ErrorExit;

@@ -43,6 +43,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsClient =
 {
     .classInfo.size =               sizeof(RsClient),
     .classInfo.classId =            classId(RsClient),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RsClient",
@@ -291,6 +292,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsClientResource =
 {
     .classInfo.size =               sizeof(RsClientResource),
     .classInfo.classId =            classId(RsClientResource),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RsClientResource",

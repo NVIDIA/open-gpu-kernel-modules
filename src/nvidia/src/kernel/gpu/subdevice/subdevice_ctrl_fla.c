@@ -282,7 +282,8 @@ subdeviceCtrlCmdFlaGetFabricMemStats_IMPL
     FABRIC_VASPACE *pFabricVAS = NULL;
     NV_STATUS       status = NV_OK;
 
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+                        NV_ERR_INVALID_LOCK_STATE);
 
     if (pGpu->pFabricVAS == NULL)
     {
@@ -309,6 +310,32 @@ subdeviceCtrlCmdFlaGetFabricMemStats_IMPL
     pParams->totalSize = fabricvaspaceGetUCFlaLimit(pFabricVAS) -
                          fabricvaspaceGetUCFlaStart(pFabricVAS) + 1;
 
-    return fabricvaspaceGetFreeHeap(pFabricVAS, &pParams->freeSize);
-}
+    status = fabricvaspaceGetFreeHeap(pFabricVAS, &pParams->freeSize);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to get fabric vaspace pointer heap free size, status=0x%x\n",
+                  status);
+        return status;
+    }
 
+    pParams->emulatedHandleTotalSize = 0;
+    pParams->emulatedHandleFreeSize = 0;
+
+    if (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) != 0)
+    {
+        pParams->emulatedHandleTotalSize = fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) -
+                                           fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS) + 1;
+
+        status = fabricvaspaceGetFreeEmulatedHandleHeap(pFabricVAS, &pParams->emulatedHandleFreeSize);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to get fabric vaspace emulated-handle heap free size, status=0x%x\n",
+                      status);
+            return status;
+        }
+    }
+
+    return NV_OK;
+}

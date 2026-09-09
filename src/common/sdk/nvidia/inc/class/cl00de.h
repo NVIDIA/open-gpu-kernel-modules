@@ -36,45 +36,20 @@ extern "C" {
 
 #define RUSD_TIMESTAMP_WRITE_IN_PROGRESS (NV_U64_MAX)
 #define RUSD_TIMESTAMP_INVALID           0
-
 #define RUSD_SEQ_START (0xFF00000000000000LLU)
-
-#define RUSD_SEQ_DATA_VALID(x) \
-    ((((x) < RUSD_SEQ_START)  && ((x) != RUSD_TIMESTAMP_INVALID)) || \
-     (((x) >= RUSD_SEQ_START) && (((x) & 0x1LLU) == 0x0LLU)))
-
-//
-// Helper macros to check seq before reading RUSD.
-// No dowhile wrap as it is using continue/break
-//
-#define RUSD_SEQ_CHECK1(dataField)                           \
-    NvU64 RUSD_SEQ = (dataField)->lastModifiedTimestamp;     \
-    portAtomicMemoryFenceLoad();                             \
-    if (!RUSD_SEQ_DATA_VALID(RUSD_SEQ))                      \
-         continue;
-
-// Clear lastModifiedTimestamp on failure in case of reaching loop limit
-#define RUSD_SEQ_CHECK2(dataField)                              \
-    portAtomicMemoryFenceLoad();                                \
-    if (RUSD_SEQ == (dataField)->lastModifiedTimestamp)         \
-         break;                                                 \
 
 //
 // Read RUSD data field `dataField` from NV00DE_SHARED_DATA struct `pSharedData` into destination pointer `pDst`
 // `pDst` should be the data struct type matching `dataField`
 // Check (pDst)->lastModifiedTimestamp using RUSD_IS_DATA_STALE to verify data validity.
 //
-#define RUSD_READ_DATA(pSharedData,dataField,pDst)                                        \
-do {                                                                                      \
-    portMemSet((pDst), 0, sizeof(*pDst));                                                 \
-    for (NvU32 RUSD_READ_DATA_ATTEMPTS = 0; RUSD_READ_DATA_ATTEMPTS < 10; ++RUSD_READ_DATA_ATTEMPTS) \
-    {                                                                                     \
-        RUSD_SEQ_CHECK1(&((pSharedData)->dataField));                                     \
-        portMemCopy((pDst), sizeof(*pDst), &((pSharedData)->dataField), sizeof(*pDst));   \
-        RUSD_SEQ_CHECK2(&((pSharedData)->dataField));                                     \
-        (pDst)->lastModifiedTimestamp = RUSD_TIMESTAMP_INVALID;                           \
-    }                                                                                     \
-} while(0);
+#define RUSD_READ_DATA_ATTEMPTS(pSharedData,dataField,pDst,attempts)                            \
+    RusdReadData((pSharedData), (pDst), ((NvU64 *)((NvUPtr) &((pDst)->lastModifiedTimestamp))), \
+        &(pSharedData)->dataField.lastModifiedTimestamp, &(pSharedData)->dataField,             \
+        sizeof(*pDst), (attempts))
+#define RUSD_READ_DATA(pSharedData,dataField,pDst) RUSD_READ_DATA_ATTEMPTS(pSharedData,dataField,pDst,10)
+
+#define RUSD_SEQ_DATA_VALID(x) RusdIsSeqValid(x)
 
 //
 // Check if RUSD data timestamp is stale.
@@ -96,12 +71,14 @@ enum {
     RUSD_CLK_THROTTLE_REASON_SYNC_BOOST                       = NVBIT(4), 
     RUSD_CLK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN              = NVBIT(5), 
     RUSD_CLK_THROTTLE_REASON_HW_THERMAL_SLOWDOWN              = NVBIT(6), 
-    RUSD_CLK_THROTTLE_REASON_HW_POWER_BRAKES_SLOWDOWN         = NVBIT(7), 
-    RUSD_CLK_THROTTLE_REASON_DISPLAY_CLOCK_SETTING            = NVBIT(8), 
+    RUSD_CLK_THROTTLE_REASON_HW_POWER_BRAKES_SLOWDOWN         = NVBIT(7),
+    RUSD_CLK_THROTTLE_REASON_DISPLAY_CLOCK_SETTING            = NVBIT(8),
+    RUSD_CLK_THROTTLE_REASON_BOARD_LIMIT                      = NVBIT(9),
+    RUSD_CLK_THROTTLE_REASON_RELIABILITY                      = NVBIT(10),
 };
 
 typedef struct RUSD_BAR1_MEMORY_INFO {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     //
     // Non-polled data, not tied to any specific RM API
     // Total size and available memory in Bar1
@@ -111,13 +88,13 @@ typedef struct RUSD_BAR1_MEMORY_INFO {
 } RUSD_BAR1_MEMORY_INFO;
 
 typedef struct RUSD_PMA_MEMORY_INFO {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     //
     // Non-polled data, not tied to any specific RM API
     // Total size and available memory in PMA
     //
-    NvU64 totalPmaMemory;
-    NvU64 freePmaMemory;
+    NV_DECLARE_ALIGNED(NvU64 totalPmaMemory, 8);
+    NV_DECLARE_ALIGNED(NvU64 freePmaMemory, 8);
 } RUSD_PMA_MEMORY_INFO;
 
 enum {
@@ -136,7 +113,7 @@ typedef struct RUSD_CLK_PUBLIC_DOMAIN_INFO {
 } RUSD_CLK_PUBLIC_DOMAIN_INFO;
 
 typedef struct RUSD_CLK_PUBLIC_DOMAIN_INFOS {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_CLK_PUBLIC_DOMAIN_INFO info[RUSD_CLK_PUBLIC_DOMAIN_MAX_TYPE];
 } RUSD_CLK_PUBLIC_DOMAIN_INFOS;
 
@@ -158,12 +135,12 @@ typedef struct RUSD_PERF_DEVICE_UTILIZATION_INFO {
 } RUSD_PERF_DEVICE_UTILIZATION_INFO;
 
 typedef struct RUSD_PERF_DEVICE_UTILIZATION {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_PERF_DEVICE_UTILIZATION_INFO info;
 } RUSD_PERF_DEVICE_UTILIZATION;
 
 typedef struct RUSD_PERF_CURRENT_PSTATE {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     // Provided from NV2080_CTRL_CMD_PERF_GET_CURRENT_PSTATE
     NvU32 currentPstate;
 } RUSD_PERF_CURRENT_PSTATE;
@@ -180,14 +157,14 @@ typedef struct RUSD_PERF_CURRENT_PSTATE {
 
 typedef struct RUSD_CLK_VIOLATION_STATUS {
     NvU32 perfPointMask;
-    NvU64 timeNs[RUSD_PERF_POINT_NUM];
+    NV_DECLARE_ALIGNED(NvU64 timeNs[RUSD_PERF_POINT_NUM], 8);
 } RUSD_CLK_VIOLATION_STATUS;
 
 typedef struct RUSD_CLK_THROTTLE_INFO {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     NvU32 reasonMask; // Bitmask of RUSD_CLK_THROTTLE_REASON_*
 
-    NvU64 referenceTimeNs;
+    NV_DECLARE_ALIGNED(NvU64 referenceTimeNs, 8);
     NvU32 supportedViolationTimeMask;
     RUSD_CLK_VIOLATION_STATUS violation[RUSD_CLK_VIOLATION_NUM];
     RUSD_CLK_VIOLATION_STATUS globalViolation;
@@ -196,10 +173,10 @@ typedef struct RUSD_CLK_THROTTLE_INFO {
 typedef struct RUSD_CLK_THROTTLE_INFO RUSD_CLK_THROTTLE_REASON;
 
 typedef struct RUSD_MEM_ERROR_COUNTS {
-    NvU64 correctedVolatile;
-    NvU64 correctedAggregate;
-    NvU64 uncorrectedVolatile;
-    NvU64 uncorrectedAggregate;
+    NV_DECLARE_ALIGNED(NvU64 correctedVolatile, 8);
+    NV_DECLARE_ALIGNED(NvU64 correctedAggregate, 8);
+    NV_DECLARE_ALIGNED(NvU64 uncorrectedVolatile, 8);
+    NV_DECLARE_ALIGNED(NvU64 uncorrectedAggregate, 8);
 } RUSD_MEM_ERROR_COUNTS;
 
 #define RUSD_MEMORY_ERROR_TYPE_TOTAL 0
@@ -213,7 +190,7 @@ typedef struct RUSD_ECC_COUNTS {
 } RUSD_ECC_INFO;
 
 typedef struct RUSD_MEM_ECC {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_MEM_ERROR_COUNTS count[RUSD_MEMORY_ERROR_TYPE_COUNT];
     // TODO: Due to incapability of getting voteup for X driver update with
     // existing RM APIs, need to resolve bug 5138911 before fully updating
@@ -227,7 +204,7 @@ typedef struct RUSD_POWER_LIMIT_INFO {
 } RUSD_POWER_LIMIT_INFO;
 
 typedef struct RUSD_POWER_LIMITS {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_POWER_LIMIT_INFO info;
 } RUSD_POWER_LIMITS;
 
@@ -251,7 +228,7 @@ typedef enum RUSD_TEMPERATURE_TYPE {
 } RUSD_TEMPERATURE_TYPE;
 
 typedef struct RUSD_TEMPERATURE {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     NvTemp temperature;
 } RUSD_TEMPERATURE;
 
@@ -272,9 +249,23 @@ typedef struct RUSD_MEM_ROW_REMAP_INFO {
 } RUSD_MEM_ROW_REMAP_INFO;
 
 typedef struct RUSD_MEM_ROW_REMAP {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_MEM_ROW_REMAP_INFO info;
 } RUSD_MEM_ROW_REMAP;
+
+typedef struct RUSD_MEM_BANK_REMAP_INFO {
+    // Provided from NV2080_CTRL_CMD_FB_GET_REMAPPED_BANKS
+    NvU32  maxSpareGroupCount;
+    NvU32  noSpareGroupCount;
+    NvBool bPending;
+    NvU32  activeRemappings;
+    NvU32  inactiveRemappings;
+} RUSD_MEM_BANK_REMAP_INFO;
+
+typedef struct RUSD_MEM_BANK_REMAP {
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
+    RUSD_MEM_BANK_REMAP_INFO info;
+} RUSD_MEM_BANK_REMAP;
 
 typedef struct RUSD_AVG_POWER_INFO {
     NvU32 averageGpuPower;      // mW
@@ -283,7 +274,7 @@ typedef struct RUSD_AVG_POWER_INFO {
 } RUSD_AVG_POWER_INFO;
 
 typedef struct RUSD_AVG_POWER_USAGE {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_AVG_POWER_INFO info;
 } RUSD_AVG_POWER_USAGE;
 
@@ -294,7 +285,7 @@ typedef struct RUSD_INST_POWER_INFO {
 } RUSD_INST_POWER_INFO;
 
 typedef struct RUSD_INST_POWER_USAGE {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_INST_POWER_INFO info;
 } RUSD_INST_POWER_USAGE;
 
@@ -303,7 +294,7 @@ typedef struct RUSD_POWER_POLICY_STATUS_INFO {
 } RUSD_POWER_POLICY_STATUS_INFO;
 
 typedef struct RUSD_POWER_POLICY_STATUS {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_POWER_POLICY_STATUS_INFO info;
 } RUSD_POWER_POLICY_STATUS;
 
@@ -314,12 +305,12 @@ typedef struct RUSD_FAN_COOLER_INFO {
 } RUSD_FAN_COOLER_INFO;
 
 typedef struct RUSD_FAN_COOLER_STATUS {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_FAN_COOLER_INFO info;
 } RUSD_FAN_COOLER_STATUS;
 
 typedef struct RUSD_SHADOW_ERR_CONT {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     //
     // Non-polled data, not tied to any specific RM API
     // Shadowed ERR_CONT register value
@@ -345,13 +336,13 @@ typedef struct RUSD_PCIE_DATA_INFO {
 } RUSD_PCIE_DATA_INFO;
 
 typedef struct RUSD_PCIE_DATA {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_PCIE_DATA_INFO info;
 } RUSD_PCIE_DATA;
 
 typedef struct RUSD_GR_INFO
 {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     NvBool bCtxswLoggingEnabled;
 } RUSD_GR_INFO;
 
@@ -386,7 +377,7 @@ typedef struct {
 } RUSD_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE;
 
 typedef struct  {
-    NvU64 timeStamp;  // Original is NV2080_CTRL_GPUMON_SAMPLE
+    NV_DECLARE_ALIGNED(NvU64 timeStamp, 8);  // Original is NV2080_CTRL_GPUMON_SAMPLE
     /*!
      * FB bandwidth utilization sample.
      */
@@ -418,7 +409,7 @@ typedef struct {
 } RUSD_PROC_UTIL_INFO;
 
 typedef struct {
-    volatile NvU64 lastModifiedTimestamp;
+    NV_DECLARE_ALIGNED(volatile NvU64 lastModifiedTimestamp, 8);
     RUSD_PROC_UTIL_INFO info;
 } RUSD_PROC_UTIL;
 
@@ -467,6 +458,9 @@ typedef struct NV00DE_SHARED_DATA {
     // POLL_MEMORY
     NV_DECLARE_ALIGNED(RUSD_MEM_ROW_REMAP memRowRemap, 8);
 
+    // POLL_MEMORY
+    NV_DECLARE_ALIGNED(RUSD_MEM_BANK_REMAP memBankRemap, 8);
+
     // POLL_POWER
     NV_DECLARE_ALIGNED(RUSD_AVG_POWER_USAGE avgPowerUsage, 8);
 
@@ -487,6 +481,145 @@ typedef struct NV00DE_SHARED_DATA {
 
 } NV00DE_SHARED_DATA;
 
+/*
+ * Nota bene: One may provide a custom set of memcopy and fence intrinsics to be used by this file.
+ * One may do so as follows:
+ * #define RUSD_CUSTOM_INTRINSICS 1
+ * 
+ * static inline void RusdFenceFunction(void) {...}
+ * static inline void RusdCopyFunction(void *pDst, const void *pSrc, NvLength size) {...}
+ * 
+ * #include "class/cl00de.h"
+ * 
+ * Note that one may also use macros to define the above, this header is agnostic to the actual
+ * implementation of the intrinsics.
+*/
+
+#if !defined(RUSD_CUSTOM_INTRINSICS)
+#if defined(PORT_MODULE_memory) && defined(PORT_MODULE_atomic) && \
+    (PORT_MODULE_memory == 1) && (PORT_MODULE_atomic == 1) && !defined(NVOC)
+#define RUSD_USE_PORT_MODULE 1
+#include "nvport/nvport.h"
+#else
+#include "nvmisc.h"
+#include "nvintrin.h"
+#endif
+
+static inline void
+RusdFenceFunction(void)
+{
+#if defined(RUSD_USE_PORT_MODULE)
+    portAtomicMemoryFenceLoad();
+#else
+    nvMemoryLoadFence();
+#endif
+}
+static inline void
+RusdCopyFunction(void *pDst, const void *pSrc, NvLength size)
+{
+#if defined(RUSD_USE_PORT_MODULE)
+    portMemCopy(pDst, size, pSrc, size);
+#else
+    NVMISC_MEMCPY(pDst, pSrc, size);
+#endif
+}
+#endif
+
+static inline NvBool
+RusdIsSeqValid
+(
+    NvU64 seq
+)
+{
+    return ((seq >= RUSD_SEQ_START) && !(seq & 0x1llu)) ||
+        (seq < RUSD_SEQ_START && 
+         seq != RUSD_TIMESTAMP_INVALID &&
+         seq != RUSD_TIMESTAMP_WRITE_IN_PROGRESS);
+}
+
+static inline NvBool
+RusdReadData
+(
+    NV00DE_SHARED_DATA *pSharedData,
+    void *pDataDst,
+    NvU64 *pTimestampDst,
+    volatile NvU64 *pTimestampSrc,
+    void *pDataSrc,
+    NvLength size,
+    NvU64 maxAttempts
+)
+{
+    NvU64 timestamp;
+    NvU64 secondTimestamp = *pTimestampSrc;
+    NvU64 i;
+    
+    for (i = 0; i < maxAttempts; i++)
+    {
+        //
+        // Set the current timestamp to the timestamp read in the tail of the last loop iteration.
+        // (or just initial read value)
+        //
+        timestamp = secondTimestamp;
+
+        // Non-sequential timestamps are actual timestamps.
+        if (timestamp < RUSD_SEQ_START)
+        {
+            if (timestamp == RUSD_TIMESTAMP_INVALID)
+            {
+                break;
+            }
+            //
+            // We will never reach into this condition as WRITE_IN_PROGRESS is above the seq threshold.
+            // This is very confusing so will keep this condition present for clarity -
+            // it will be optimized out.
+            //
+            if (timestamp == RUSD_TIMESTAMP_WRITE_IN_PROGRESS)
+            {
+                secondTimestamp = *pTimestampSrc;
+                continue;
+            }
+        }
+        // Sequential timestamps are write in progress markers.
+        else if (timestamp & 0x1llu)
+        {
+            secondTimestamp = *pTimestampSrc;
+            continue;
+        }
+
+        RusdFenceFunction();
+        RusdCopyFunction(pDataDst, pDataSrc, size);
+        RusdFenceFunction();
+
+        secondTimestamp = *pTimestampSrc;
+
+        if (secondTimestamp == timestamp)
+        {
+            return NV_TRUE;
+        }
+    }
+
+    if (RUSD_SEQ_DATA_VALID(secondTimestamp))
+    {
+        //
+        // We have to give back different invalid timestamps depending on seq/non-seq
+        // TODO: Remove this hack once all sites depend on the bool result of this function.
+        //
+        if (secondTimestamp < RUSD_SEQ_START)
+        {
+            secondTimestamp = RUSD_TIMESTAMP_WRITE_IN_PROGRESS;
+        }
+        else
+        {
+            secondTimestamp = secondTimestamp | 0x1llu;
+        }
+    }
+
+    // This will be the final returned timestamp if we timeout.
+    *pTimestampDst = secondTimestamp;
+
+    return NV_FALSE;
+}
+
 //
 // Polling mask bits, pass into ALLOC_PARAMETERS or NV00DE_CTRL_REQEUSET_DATA_POLL
 // to request above polled data to be provided
@@ -501,7 +634,7 @@ typedef struct NV00DE_SHARED_DATA {
 #define NV00DE_RUSD_POLL_PROC_UTIL 0x80
 
 typedef struct NV00DE_ALLOC_PARAMETERS {
-    NvU64 polledDataMask; // Bitmask of data to request polling at alloc time, 0 if not needed
+    NV_DECLARE_ALIGNED(NvU64 polledDataMask, 8); // Bitmask of data to request polling at alloc time, 0 if not needed
 } NV00DE_ALLOC_PARAMETERS;
 
 #ifdef __cplusplus

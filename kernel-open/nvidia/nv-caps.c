@@ -66,11 +66,11 @@ static nv_cap_table_entry_t g_nv_cap_mig_table[] =
 
 static nv_cap_table_entry_t g_nv_cap_sys_table[] =
 {
-    {"/driver/nvidia/capabilities/fabric-imex-mgmt"}
-    ,
+    {"/driver/nvidia/capabilities/fabric-imex-mgmt"},
     {"/driver/nvidia/capabilities/profiler-device"},
     {"/driver/nvidia/capabilities/profiler-context"},
-    {"/driver/nvidia/capabilities/trace-device"}
+    {"/driver/nvidia/capabilities/trace-device"},
+    {"/driver/nvidia/capabilities/wpps-access"},
 };
 
 #define NV_CAP_MIG_CI_ENTRIES(_gi)  \

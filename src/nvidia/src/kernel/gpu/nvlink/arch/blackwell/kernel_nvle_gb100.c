@@ -136,11 +136,11 @@ knvlinkEncryptionGetUpdateGpuIdentifiers_GB100
         if (pKernelNvlink->bClidUpdated)
         {
             // CLIDs are updated for this GPU's remap table. Copy the ALID-CLID map to KernelNvlink
-            pKernelNvlink->alidClidTable.numEntries = pGpuMgr->alidClidTable.numEntries;
+            pKernelNvlink->alidClidTable.numEntries = lidParams.alidClidTable.numEntries;
             portMemCopy(pKernelNvlink->alidClidTable.alidClidMap,
-                        NVLINK_NVLE_MAX_ALID_CLID_TABLE_ENTRIES * sizeof(ALID_CLID_MAP),
-                        pGpuMgr->alidClidTable.alidClidMap,
-                        NVLINK_NVLE_MAX_ALID_CLID_TABLE_ENTRIES * sizeof(ALID_CLID_MAP));
+                        NV2080_CTRL_NVLINK_MAX_ALID_CLID_TABLE_ENTRIES * sizeof(ALID_CLID_MAP),
+                        lidParams.alidClidTable.alidClidMap,
+                        NV2080_CTRL_NVLINK_MAX_ALID_CLID_TABLE_ENTRIES * sizeof(ALID_CLID_MAP));
         }
     }
     else // Direct connect system

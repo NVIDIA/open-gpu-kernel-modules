@@ -51,6 +51,7 @@ public:
     virtual void notifyZombieStateChange(DisplayPort::Device *dev, bool zombied);
     virtual void notifyCableOkStateChange(DisplayPort::Device *dev, bool cableOk);
     virtual void notifyHDCPCapDone(DisplayPort::Device *dev, bool hdcpCap);
+    virtual void notifyHDCPEnabled(DisplayPort::Device *dev, bool hdcpEnabled);
     virtual void notifyMCCSEvent(DisplayPort::Device *dev);
 };
 

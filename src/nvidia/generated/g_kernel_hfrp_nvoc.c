@@ -58,6 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHFRP =
 {
     .classInfo.size =               sizeof(KernelHFRP),
     .classInfo.classId =            classId(KernelHFRP),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelHFRP",

@@ -100,10 +100,12 @@ void GroupImpl::update(Device * dev, bool allocationState)
 
         // Trigger a refetch of epr
         ((DeviceImpl *)dev)->bandwidth.enum_path.dataValid = false;
+        ((DeviceImpl *)dev)->bandwidth.enum_path.availablePbnUpdated = false;
         DeviceImpl * tail = (DeviceImpl *) dev;
         while (tail && tail->getParent())
         {
             tail->bandwidth.enum_path.dataValid = false;
+            tail->bandwidth.enum_path.availablePbnUpdated = false;
             tail = (DeviceImpl *)tail->getParent();
         }
 
@@ -533,7 +535,7 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
                             {
                                 if (((DeviceImpl*)d)->isHDCPCap == True)
                                 {
-                                    parent->sink->notifyHDCPCapDone(d, False);
+                                    parent->sink->notifyHDCPEnabled(d, False);
                                 }
                             }
                         }
@@ -565,6 +567,37 @@ bool GroupImpl::hdcpGetEncrypted()
     }
 }
 
+//
+// Bug 5764757: QSES applicability predicate. Returns false if either:
+//   (a) any device in the group is on a Logical Port (0x8..0xF) - QSES
+//       does not apply to branch-internal panels (DP 1.2 14.3.2);
+//   (b) link uses 128b/132b channel coding - UHBR mandates HDCP 2.x,
+//       which does not use QSES.
+// Consumed by all QSES dispatch sites (hdcpMSTQSEandSetECF,
+// tagSendQseMessage, handleSSC).
+//
+bool GroupImpl::isQSESApplicable()
+{
+    if (parent != NULL)
+    {
+        LinkConfiguration linkConfig = parent->getActiveLinkConfig();
+        if (linkConfig.bIs128b132bChannelCoding)
+        {
+            return false;
+        }
+    }
+
+    for (Device * d = enumDevices(0); d != 0; d = enumDevices(d))
+    {
+        DeviceImpl * dev = (DeviceImpl *)d;
+        if (dev && dev->isLogical())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void GroupImpl::hdcpMSTQSEandSetECF()
 {
     NvBool bIs128b132bChannelCoding = false;
@@ -586,7 +619,7 @@ void GroupImpl::hdcpMSTQSEandSetECF()
     // This is added to provide driver for ST and not to be productized.
     //
     if ((parent->bIsEncryptionQseValid) &&
-        (!parent->main->getRegkeyValue(NV_DP_REGKEY_DISABLE_QSES)) 
+        (!parent->main->getRegkeyValue(NV_DP_REGKEY_DISABLE_QSES))
         && (!bIs128b132bChannelCoding)
         )
     {
@@ -670,6 +703,22 @@ void GroupImpl::hdcpMSTQSEandSetECF()
 
             if (this->headIndex == group->headIndex)
             {
+                //
+                // Bug 5764757: skip QSES for streams that target a branch
+                // Logical Port (0x8..0xF). 128b/132b coding is already filtered
+                // by the outer !bIs128b132bChannelCoding guard above, so the
+                // logical-port-specific log below is accurate here.
+                // See GroupImpl::isQSESApplicable.
+                //
+                if (!group->isQSESApplicable())
+                {
+                    DP_PRINTF(DP_NOTICE,
+                              "DP-QSE> Stream %d targets a logical port; "
+                              "skipping QSES probe (not applicable per DP 1.2 14.3.2).",
+                              group->streamIndex);
+                    continue;
+                }
+
                 if (NULL == group->streamEncryptionStatusDetection)
                 {
                     group->streamEncryptionStatusDetection =
@@ -702,10 +751,10 @@ void GroupImpl::hdcpMSTQSEandSetECF()
                 {
                     if (((DeviceImpl*)d)->isHDCPCap == True)
                     {
-                        parent->sink->notifyHDCPCapDone(d, True);
+                        parent->sink->notifyHDCPEnabled(d, True);
                     }
                 }
-	    }
+        }
         }
     }
 }

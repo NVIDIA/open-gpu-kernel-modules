@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1302,7 +1302,7 @@ typedef struct
 //
 // Force the video memory allocation to localized allocation.
 // Same attribute can be used to choose between uGPU0 and uGPU1.
-// if set to default, RM will choose the next available uGPU memory.
+// if set to default, the allocation will not be localized
 // if set to _UGPU0, RM will choose the memory from uGPU0.
 // if set to _UGPU1, RM will choose the memory from uGPU1.
 //
@@ -2041,6 +2041,7 @@ typedef struct
 #define NVOS46_FLAGS_PAGE_SIZE_BOTH                                (0x00000003)
 #define NVOS46_FLAGS_PAGE_SIZE_HUGE                                (0x00000004)
 #define NVOS46_FLAGS_PAGE_SIZE_512M                                (0x00000005)
+#define NVOS46_FLAGS_PAGE_SIZE_256G                                (0x00000006)
 
 // Some systems allow the device to use the system L3 cache when accessing the
 // system memory. For example, the iGPU on T19X can allocate from the system L3
@@ -2904,6 +2905,8 @@ typedef struct
     NvHandle hVASpace;                   // VA space handle for TSG
     NvU32    engineType;                 // Engine to which all channels in this TSG are associated with
     NvBool   bIsCallingContextVgpuPlugin;
+    NvU32    reserved;
+    NvU32    internalFlags;              // Internal flags for the channel group
 } NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS;
 
 /*

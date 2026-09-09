@@ -33,5 +33,6 @@
 #define NV_XAL_FUNC_BASE_ADDRESS               8585216
 #define NV_XAL_P2P_BASE_ADDRESS                8544256
 #define NV_FBPA_PRI_STRIDE                     16384
+#define NV_PMC0_PRI_BASE                       0x0 
 
 #endif // GH100_HWPROJECT_H_INCLUDED

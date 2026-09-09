@@ -38,6 +38,9 @@
 #include "vgpu/vgpu_events.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu/fifo/kernel_fifo.h"
+#include "gpu/device/device.h"
+#include "kernel/gpu/rc/kernel_rc.h"
 #include "os/os.h"
 #include "rmapi/rmapi.h"
 #include "gpu/gpu.h"
@@ -46,6 +49,11 @@
 #include "kernel/gpu/intr/engine_idx.h"
 #include "kernel/gpu/intr/intr.h"
 #include "nv_sriov_defines.h"
+
+#include "gpu/oob/kernel_oob.h"
+
+#include "events/gpu/mem_sys/mem_sys_events.h"
+#include "nvoc/event_bus.h"
 
 #include "kernel/gpu/conf_compute/ccsl.h"
 #include "gpu/conf_compute/conf_compute.h"
@@ -130,6 +138,12 @@ kgmmuConstructEngine_IMPL(OBJGPU *pGpu, KernelGmmu *pKernelGmmu, ENGDESCRIPTOR e
     pKernelGmmu->PTEAttr = NV_MEMORY_WRITECOMBINED;
     pKernelGmmu->PTEBAR1Aperture = ADDR_FBMEM;
     pKernelGmmu->PTEBAR1Attr = NV_MEMORY_WRITECOMBINED;
+
+    // Default placement for handle PDE/PTE is vidmem (RMInstLoc4 overrides applied in _kgmmuInitRegistryOverrides).
+    pKernelGmmu->HandlePDEAperture = ADDR_FBMEM;
+    pKernelGmmu->HandlePDEAttr = NV_MEMORY_WRITECOMBINED;
+    pKernelGmmu->HandlePTEAperture = ADDR_FBMEM;
+    pKernelGmmu->HandlePTEAttr = NV_MEMORY_WRITECOMBINED;
 
     _kgmmuInitRegistryOverrides(pGpu, pKernelGmmu);
 
@@ -521,6 +535,15 @@ _kgmmuInitRegistryOverrides(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
                            &pKernelGmmu->PTEBAR1Aperture,
                            &pKernelGmmu->PTEBAR1Attr);
 
+    memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _HANDLE_PDE, pGpu->instLocOverrides4),
+                           "Handle PDE",
+                           &pKernelGmmu->HandlePDEAperture,
+                           &pKernelGmmu->HandlePDEAttr);
+    memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _HANDLE_PTE, pGpu->instLocOverrides4),
+                           "Handle PTE",
+                           &pKernelGmmu->HandlePTEAperture,
+                           &pKernelGmmu->HandlePTEAttr);
+
     //
     // Check if we want to disable big page size per address space
     //
@@ -646,6 +669,7 @@ kgmmuFmtInit_IMPL(KernelGmmu *pKernelGmmu)
                 pFam->pFmts[b]->pPdeMulti  = &pFam->pdeMulti;
                 pFam->pFmts[b]->pPde       = &pFam->pde;
                 pFam->pFmts[b]->pPte       = &pFam->pte;
+                pFam->pFmts[b]->mode       = GMMU_FMT_MODE_PTR;
 
                 kgmmuFmtInitLevels_HAL(pKernelGmmu, pLvls, numLevels, ver, bigPageShift);
                 kgmmuFmtInitCaps_HAL(pKernelGmmu, pFam->pFmts[b]);
@@ -2042,6 +2066,7 @@ kgmmuGetMinBigPageSize_IMPL(KernelGmmu *pKernelGmmu)
  * @param[in] pKernelGmmu
  * @param[in] pInstBlkDesc    Memory descriptor for the instance block of the engine
  * @param[in] pVAS            OBJVASPACE pointer of the engine
+ * @param[in] reserved        Reserved field
  * @param[in] subctxId        subctxId Value
  * @param[in] pInstBlkParams  Pointer to the structure storing the parameters passed by the caller
  *
@@ -2053,6 +2078,7 @@ kgmmuInstBlkInit_IMPL
     KernelGmmu           *pKernelGmmu,
     MEMORY_DESCRIPTOR    *pInstBlkDesc,
     OBJVASPACE           *pVAS,
+    void                 *reserved,
     NvU32                 subctxId,
     INST_BLK_INIT_PARAMS *pInstBlkParams
 )
@@ -2486,6 +2512,7 @@ kgmmuExtractPteInfo_IMPL
     MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     const GMMU_FMT_PTE *pFmtPte = pFmt->pPte;
     NvBool              bPteValid;
+    GMMU_APERTURE       aperture;
 
     bPteValid = nvFieldGetBool(&pFmtPte->fldValid, pPte->v8);
 
@@ -2498,7 +2525,9 @@ kgmmuExtractPteInfo_IMPL
             nvFieldGetBool(&pFmtPte->fldEncrypted, pPte->v8), pPteInfo->pteFlags);
     }
 
-    switch (gmmuFieldGetAperture(&pFmtPte->fldAperture, pPte->v8))
+
+    aperture = gmmuFieldGetAperture(&pFmtPte->fldAperture, pPte->v8);
+    switch (aperture)
     {
         case GMMU_APERTURE_VIDEO:
             pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_APERTURE,
@@ -2538,28 +2567,29 @@ kgmmuExtractPteInfo_IMPL
             if (!(ptePcfSw & (1 << SW_MMU_PCF_UNCACHED_IDX)))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
             }
             if (ptePcfSw & (1 << SW_MMU_PCF_RO_IDX))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_READ_ONLY, _TRUE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_READ_ONLY, _TRUE, pPteInfo->pteFlags);
             }
             if (ptePcfSw & (1 << SW_MMU_PCF_NOATOMIC_IDX))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_ATOMIC, _DISABLE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_ATOMIC, _DISABLE, pPteInfo->pteFlags);
             }
             if (ptePcfSw & (1 << SW_MMU_PCF_REGULAR_IDX))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_PRIVILEGED, _FALSE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_PRIVILEGED, _FALSE, pPteInfo->pteFlags);
             }
             if (ptePcfSw & (1 << SW_MMU_PCF_ACE_IDX))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_ACCESS_COUNTING, _ENABLE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_ACCESS_COUNTING, _ENABLE, pPteInfo->pteFlags);
             }
+
         }
         else
         {
@@ -2568,12 +2598,12 @@ kgmmuExtractPteInfo_IMPL
                 if (ptePcfSw & (1 << SW_MMU_PCF_SPARSE_IDX))
                 {
                     pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                            _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
+                        _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
                 }
                 else
                 {
                     pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                            _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+                        _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
                 }
             }
             else
@@ -2586,12 +2616,12 @@ kgmmuExtractPteInfo_IMPL
                 if (pdePcfSw & (1 << SW_MMU_PCF_SPARSE_IDX))
                 {
                     pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                            _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
+                        _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
                 }
                 else
                 {
                     pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                            _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+                        _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
                 }
 
             }
@@ -2608,17 +2638,17 @@ kgmmuExtractPteInfo_IMPL
             if (nvFieldGetBool(&pFmtPte->fldWriteDisable, pPte->v8))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_SHADER_ACCESS, _READ_ONLY, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_SHADER_ACCESS, _READ_ONLY, pPteInfo->pteFlags);
             }
             else if (nvFieldGetBool(&pFmtPte->fldReadDisable, pPte->v8))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_SHADER_ACCESS, _WRITE_ONLY, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_SHADER_ACCESS, _WRITE_ONLY, pPteInfo->pteFlags);
             }
             else
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                        _PARAMS_FLAGS_SHADER_ACCESS, _READ_WRITE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_SHADER_ACCESS, _READ_WRITE, pPteInfo->pteFlags);
             }
         }
         else
@@ -2970,6 +3000,164 @@ kgmmuFaultCancelTargeted_VF
                                                &params, NV_FALSE);
 }
 
+NV_STATUS
+kgmmuServiceMmuFault_VF
+(
+    OBJGPU                 *pGpu,
+    KernelGmmu             *pKernelGmmu,
+    NvP64                   pParsedFaultInfo,
+    FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    MMU_FAULT_BUFFER_ENTRY *pParsedFaultEntry = KERNEL_POINTER_FROM_NvP64(MMU_FAULT_BUFFER_ENTRY *, pParsedFaultInfo);
+    KernelChannel *pKernelChannel = NULL;
+
+    rmStatus = kfifoConvertInstToKernelChannel_HAL(pGpu, pKernelFifo,
+                   &pParsedFaultEntry->mmuFaultInstBlock, &pKernelChannel);
+    if (rmStatus != NV_OK || pKernelChannel == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Could not get chid from inst addr\n");
+        DBG_BREAKPOINT();
+        return rmStatus;
+    }
+
+    NvBool bIsMmuDebugModeEnabled = NV_FALSE;
+    RM_ENGINE_TYPE rmEngineType = kchannelGetEngineType(pKernelChannel);
+
+    if ((rmStatus == NV_OK) && RM_ENGINE_TYPE_IS_GR(rmEngineType))
+    {
+        NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS params;
+
+        portMemSet(&params, 0, sizeof(params));
+        NV_RM_RPC_CONTROL(pGpu,
+                          RES_GET_CLIENT_HANDLE(pKernelChannel),
+                          RES_GET_HANDLE(pKernelChannel),
+                          NV0090_CTRL_CMD_GET_MMU_DEBUG_MODE,
+                          &params,
+                          sizeof(params),
+                          rmStatus);
+
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "RM control call to read MMU debug mode failed, rmStatus 0x%x\n",
+                      rmStatus);
+            DBG_BREAKPOINT();
+        }
+        else
+        {
+            bIsMmuDebugModeEnabled = params.bMode;
+        }
+    }
+
+    NV_PRINTF(LEVEL_INFO, "bIsMmuDebugModeEnabled: %s\n",
+              bIsMmuDebugModeEnabled ? "TRUE" : "FALSE");
+
+    if (!bIsMmuDebugModeEnabled)
+    {
+        RmCtrlParams rmCtrlParams = {0};
+        NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS resetChannelParams = {0};
+        RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
+        Device *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
+        NvU32 subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+        Subdevice *pSubDevice;
+        RM_ENGINE_TYPE rmEngineType;
+
+        rmStatus = subdeviceGetByInstance(pClient, RES_GET_HANDLE(pDevice),
+                                          subdeviceInstance, &pSubDevice);
+        if (rmStatus != NV_OK)
+            return rmStatus;
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
+
+        rmCtrlParams.hClient    = RES_GET_CLIENT_HANDLE(pKernelChannel);
+        rmCtrlParams.hObject    = RES_GET_HANDLE(pKernelChannel);
+        rmCtrlParams.cmd        = NV906F_CTRL_CMD_RESET_CHANNEL;
+        rmCtrlParams.pParams    = &resetChannelParams;
+        rmCtrlParams.paramsSize = sizeof(NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS);
+
+        if (kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, pParsedFaultEntry->mmuFaultEngineId))
+        {
+            rmEngineType = RM_ENGINE_TYPE_HOST;
+        }
+        else
+        {
+            rmStatus = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
+                                                ENGINE_INFO_TYPE_MMU_FAULT_ID, pParsedFaultEntry->mmuFaultEngineId,
+                                                ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType);
+            NV_ASSERT(rmStatus == NV_OK);
+        }
+
+        resetChannelParams.engineID          = gpuGetNv2080EngineType(rmEngineType);
+        resetChannelParams.subdeviceInstance = pSubDevice->subDeviceInst;
+        resetChannelParams.resetReason       = NV906F_CTRL_CMD_RESET_CHANNEL_REASON_MMU_FLT;
+
+        // Update the per-channel error notifier before performing the RC
+        rmStatus = krcErrorSetNotifier(pGpu, GPU_GET_KERNEL_RC(pGpu),
+            pKernelChannel,
+            ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT,
+            rmEngineType,
+            RC_NOTIFIER_SCOPE_TSG);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to set error notifier, rmStatus 0x%x\n",
+                      rmStatus);
+            DBG_BREAKPOINT();
+        }
+
+        //
+        // Reset rmStatus before calling reset channel RPC as we should return
+        // status of this RPC which actually performs channel reset.
+        //
+        rmStatus = NV_OK;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          rmCtrlParams.hClient,
+                          rmCtrlParams.hObject,
+                          rmCtrlParams.cmd,
+                          rmCtrlParams.pParams,
+                          rmCtrlParams.paramsSize,
+                          rmStatus
+                          );
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "RM control call to reset channel failed, rmStatus 0x%x\n",
+                      rmStatus);
+            DBG_BREAKPOINT();
+        }
+    }
+
+    //
+    // Fill exception info.
+    // Also mark this exception as notified to prevent duplication notification
+    // in vgpuService when PF has done its RC.
+    //
+    NV_ASSERT(krcMmuExceptionCacheInsert(GPU_GET_KERNEL_RC(pGpu), &pParsedFaultEntry->mmuFaultInstBlock, pMmuExceptionData) != NULL);
+
+    if (RM_ENGINE_TYPE_IS_GR(rmEngineType) && pMmuExceptionData->bGpc)
+    {
+        KernelGraphicsContext *pKernelGraphicsContext;
+
+        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
+                                            kgrctxFromKernelChannel(pKernelChannel,
+                                            &pKernelGraphicsContext));
+        if (rmStatus == NV_OK)
+        {
+            kgrctxRecordMmuFault(pGpu, pKernelGraphicsContext,
+                                 kgmmuGetFaultInfoFromFaultPckt_HAL(pKernelGmmu, pParsedFaultEntry),
+                                 pParsedFaultEntry->mmuFaultAddress,
+                                 pParsedFaultEntry->mmuFaultType,
+                                 pParsedFaultEntry->mmuFaultAccessType);
+        }
+    }
+
+    return rmStatus;
+}
+
 NvU32
 kgmmuGetFaultBufferReservedFbSpaceSize_IMPL
 (
@@ -3214,6 +3402,7 @@ kgmmuCheckMemSubsysError_IMPL
 )
 {
     NV_STATUS status = NV_OK;
+    MEM_SUBSYS_ERROR_TYPE error = MEM_SUBSYS_ERROR_TYPE_NONE;
 
     KernelBus  *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
 
@@ -3232,6 +3421,7 @@ kgmmuCheckMemSubsysError_IMPL
     if (status == NV_ERR_TIMEOUT)
     {
         NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kgmmuInvalidateTlb failed.\n");
+        error = MEM_SUBSYS_ERROR_TYPE_TLBI_WITHOUT_MEMBAR_FAILED;
         goto done;
     }
 
@@ -3239,11 +3429,25 @@ kgmmuCheckMemSubsysError_IMPL
     // 2. If 1 passes, issue membar / UFLUSH. UFLUSH does a flush/membar from HUB side
     //    A failure here would indicate an issue in FBHUB, HSHUBs, VidL2, SysL2 or NvLink
     //
-    status = kbusSendSysmembarSingle(pGpu, pKernelBus);
-    if (status == NV_ERR_TIMEOUT)
+
+    //
+    // NOTE: Step 2 is skipped on all chips where the sysmembar is routed via RPC to GSP 
+    // (Ampere and older, plus GB100 and other multidie chips). It is a tradeoff that the 
+    // mem subsystem HW team was okay with, since scenarios where kbusSendSysmembarSingle 
+    // would pass and kgmmuHandleInvalidateTlb_HAL with SYSMEMBAR would fail with a wedged
+    // memory subsystem are very narrow on Blackwell & Rubin. 
+    // However, it would be beneficial to keep this implementation on supported/raceless chips
+    // as this may help detecting those 'narrow' scenarios at least in them.
+    //
+    if (!pKernelBus->isKbusSendSysmembarSingleRoutedToGsp)
     {
-        NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kbusSendSysmembarSingle failed.\n");
-        goto done;
+        status = kbusSendSysmembarSingle_HAL(pGpu, pKernelBus);
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kbusSendSysmembarSingle failed.\n");
+            error = MEM_SUBSYS_ERROR_TYPE_UFLUSH_FAILED;
+            goto done;
+        }
     }
 
     //
@@ -3259,9 +3463,21 @@ kgmmuCheckMemSubsysError_IMPL
     if (status == NV_ERR_TIMEOUT)
     {
         NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kgmmuInvalidateTlb with sysmembar failed.\n");
+        error = MEM_SUBSYS_ERROR_TYPE_TLBI_WITH_MEMBAR_FAILED;
     }
 
 done:
+
+    if (error != MEM_SUBSYS_ERROR_TYPE_NONE)
+    {
+        KernelOob *pKernelOob  = GPU_GET_KERNEL_OOB(pGpu);
+        if (pKernelOob != NULL)
+            pKernelOob->memSubsysErrorMask = NVBIT(error);
+
+        eventEmit(MemSysTimeout, pKernelGmmu, OPERATIONAL_EVENT_SEVERITY_FATAL, error);
+        eventbusFlush(pGpu->pEventBus);
+    }
+
     // Set status to NV_ERR_MEMORY_ERROR if any of the above mem operations timed out
     status = (status == NV_ERR_TIMEOUT) ? NV_ERR_MEMORY_ERROR : status;
 

@@ -65,8 +65,11 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += vmf_insert_mixed
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_prime_mmap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_sysfs_connector_property_event
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_sysfs_connector_status_event
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_connector_attach_content_protection_property
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_hdcp_update_content_protection
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += pfn_is_map_memory
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_flags_set
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_fence_chain_alloc
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_legacy_dev_list
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_ops_fault_removed_vma_arg

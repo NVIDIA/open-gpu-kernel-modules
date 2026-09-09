@@ -292,6 +292,19 @@ struct uvm_gpu_chunk_struct
     // This field is always NULL in kernel chunks.
     uvm_va_block_t *va_block;
 
+    // The VA space owning the VA block using the chunk, if any. This caches
+    // uvm_va_block_get_va_space(va_block) (i.e. va_block->hmm.va_space for HMM
+    // blocks) and is kept in sync whenever va_block is assigned or cleared.
+    //
+    // It is needed because a device private (or device coherent) struct page
+    // can outlive its va_block: the Linux page_free() callback
+    // (devmem_page_free_gpu_chunk()) may run after the va_block has already been
+    // freed, so it must not dereference va_block to find the va_space. The
+    // va_space is guaranteed to outlive any device page referencing this chunk.
+    //
+    // This field is always NULL in kernel chunks.
+    uvm_va_space_t *va_space;
+
     // If this is subchunk it points to the parent - in other words
     // chunk of bigger size which contains this chunk.
     uvm_gpu_chunk_t *parent;
@@ -343,6 +356,8 @@ typedef struct uvm_pmm_gpu_struct
         // workqueue.
         struct list_head va_block_lazy_free;
         nv_kthread_q_item_t va_block_lazy_free_q_item;
+
+        NvU32 test_lazy_free_delay_us;
 
         // Count of the number of root chunks "in_eviction". Incremented for
         // each root chunks that starts the eviction process, and decremented

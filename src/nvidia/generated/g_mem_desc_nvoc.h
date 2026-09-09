@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -857,6 +857,14 @@ typedef struct MEMORY_DESCRIPTOR
     //
     struct IOVAMAPPING *_pIommuMappings;
 
+    //
+    // TODO Bug 1811006: This is a temporary WAR to unblock Fabric cross-GPU
+    // sysmem mapping for the FLA+sysmem case. Properly fix this as part of
+    // deviceless sysmem. Only sysmem memdescs allocate this lock, and GSP-RM
+    // skips it.
+    //
+    PORT_MUTEX *pFabricIommuMappingLock;
+
     // Kernel mapping of the memory
     NvP64 _kernelMapping;
     NvP64 _kernelMappingPriv;
@@ -869,7 +877,6 @@ typedef struct MEMORY_DESCRIPTOR
     // Static BAR1 mapping
     NvU32 staticBar1MappingRefCount;
     NvU32 staticBar1MappingKind;
-    NvU32 staticBar1DmaFlags;
 
     // Array to hold SPA addresses when memdesc is allocated from GPA. Valid only for SRIOV cases
     RmPhysAddr *pPteSpaMappings;

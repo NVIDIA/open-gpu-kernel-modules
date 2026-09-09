@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -56,6 +56,7 @@ typedef enum
     UVM_DEFERRED_FREE_OBJECT_GPU_VA_SPACE,
     UVM_DEFERRED_FREE_OBJECT_TYPE_EXTERNAL_ALLOCATION,
     UVM_DEFERRED_FREE_OBJECT_TYPE_DEVICE_P2P_MEM,
+    UVM_DEFERRED_FREE_OBJECT_TYPE_DMA_BUF_ATTACHMENT,
     UVM_DEFERRED_FREE_OBJECT_TYPE_COUNT
 } uvm_deferred_free_object_type_t;
 
@@ -881,8 +882,7 @@ NV_STATUS uvm_test_va_space_allow_movable_allocations(UVM_TEST_VA_SPACE_ALLOW_MO
 // VM_FAULT_NOPAGE: if page was faulted in OK
 //     (possibly or'ed with VM_FAULT_MAJOR if a migration was needed).
 // VM_FAULT_OOM: if system memory wasn't available.
-// VM_FAULT_SIGBUS: if a CPU mapping to fault_addr cannot be accessed,
-//     for example because it's within a range group which is non-migratable.
+// VM_FAULT_SIGBUS: if a CPU mapping to fault_addr cannot be accessed.
 vm_fault_t uvm_va_space_cpu_fault_managed(uvm_va_space_t *va_space, struct vm_fault *vmf);
 
 // Handle a CPU fault in the given VA space for a HMM allocation,

@@ -28,13 +28,17 @@
 #include "core/bin_data.h"
 #include "bin_data_pvt.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu_mgr/gpu_mgr.h"
+
+// defined in g_bindata.c or g_bindata_<HAL>.c
+extern BINDATA_CONST BINDATA_STORAGE_PVT g_bindata_pvt[];
+extern const NvU64 g_bindata_fingerprint;
+extern const NvU32 g_bindata_pvt_count;
 
 /*
  * Private helper functions
  */
-static NV_STATUS   _bindataWriteStorageToBuffer(const BINDATA_STORAGE *pBinStorage, NvU8 *pBuffer, NvU32 bufferSize);
 
 /*!
  * Helper function to get appropriate pointer to bindata, depending on whether it was loaded
@@ -64,32 +68,12 @@ bindataWriteToBuffer
     NvU32                  bufferSize
 )
 {
-    // paged memory access check
-    osPagedSegmentAccessCheck();
-
-    return _bindataWriteStorageToBuffer(pBinStorage, pBuffer, bufferSize);
-}
-
-/*!
- * Retrieve data from Bindata storage and write it to the given memory buffer.
- *
- * @param[in]   pBinStorage     Bindata storage
- * @param[in]   pBuffer         Pointer of given buffer
- * @param[in]   bufferSize      Size of given buffer
- *
- * @return      'NV_OK'         If the ucode was written to memory buffer successfully
- */
-NV_STATUS
-_bindataWriteStorageToBuffer
-(
-    const BINDATA_STORAGE *pBinStorage,
-    NvU8                  *pBuffer,
-    NvU32                  bufferSize
-)
-{
     const BINDATA_STORAGE_PVT *pBinStoragePvt = (const BINDATA_STORAGE_PVT *) pBinStorage;
     NvU32                      nBytesInflated;
     const NvU8                *pData;
+
+    // paged memory access check
+    osPagedSegmentAccessCheck();
 
     NV_ASSERT_OR_RETURN(pBinStorage != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -120,7 +104,6 @@ _bindataWriteStorageToBuffer
 
     return NV_OK;
 }
-
 
 NvU32
 bindataGetBufferSize
@@ -181,6 +164,19 @@ void bindataInitialize(void)
 
 void bindataDestroy(void)
 {
+
+#if BINDATA_IS_MUTABLE
+    for (NvU32 i = 0; i < g_bindata_pvt_count; i++)
+    {
+        BINDATA_STORAGE_PVT *pMutablePvt = (BINDATA_STORAGE_PVT *)&g_bindata_pvt[i];
+        if (pMutablePvt->flags & BINDATA_FLAG_HEAP_ALLOCATED)
+        {
+            portMemFree((void*)pMutablePvt->pData);
+            pMutablePvt->pData = NULL;
+            pMutablePvt->flags &= ~BINDATA_FLAG_HEAP_ALLOCATED;
+        }
+    }
+#endif
 }
 
 /*!
@@ -205,7 +201,6 @@ NV_STATUS bindataStorageAcquireData(
     {
         NvU32 bufferSize = bindataGetBufferSize(pBinStorage);
         *ppData = portMemAllocNonPaged(bufferSize);
-
         if (*ppData == NULL)
         {
             NV_PRINTF(LEVEL_ERROR, "bindata memory alloc failed\n");
@@ -213,17 +208,17 @@ NV_STATUS bindataStorageAcquireData(
         }
 
         status = bindataWriteToBuffer(pBinStorage, (NvU8 *)*ppData, bufferSize);
-
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                    "bindataWriteToBuffer failed. Freeing alloced memory, return code %u\n", status);
+                      "bindataWriteToBuffer failed. Freeing alloced memory, return code %u\n", status);
             portMemFree((void*)*ppData);
             *ppData = NULL;
             return status;
         }
     }
-    return status;
+
+    return NV_OK;
 }
 
 /*!
@@ -256,10 +251,6 @@ void bindataMarkReferenced(const BINDATA_STORAGE *pBinStorage)
 
 void* bindataGetNextUnreferencedStorage(NvU32 *pIdx, NvU32 *pDataSize)
 {
-    extern BINDATA_STORAGE_PVT g_bindata_pvt[];
-    extern const NvU32 g_bindata_pvt_count;
-
-
     NV_ASSERT_OR_RETURN((pIdx != NULL), NULL);
 
     // This API makes no sense if the data is const, so just bail out early.
@@ -284,9 +275,18 @@ void* bindataGetNextUnreferencedStorage(NvU32 *pIdx, NvU32 *pDataSize)
 
 void bindataDestroyStorage(NvU32 idx)
 {
-    extern BINDATA_STORAGE_PVT g_bindata_pvt[];
+#if BINDATA_IS_MUTABLE
+    //
+    // This is only called when donating the bindata storage to malloc.
+    // If the storage already came to malloc, we should just free it and not
+    // do this donate dance. But, if we _are_ doing it, then we have to ensure
+    // no one frees it afterwards, or the chunk will show up on the heap twice.
+    //
+    NV_ASSERT(!(g_bindata_pvt[idx].flags & BINDATA_FLAG_HEAP_ALLOCATED));
+    g_bindata_pvt[idx].flags = 0;
     g_bindata_pvt[idx].pData = NULL;
     g_bindata_pvt[idx].actualSize = 0;
     g_bindata_pvt[idx].compressedSize = 0;
+#endif
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,7 +62,7 @@ subdeviceCtrlCmdKPerfBoost_IMPL
 
         if (FLD_TEST_DRF(2080, _CTRL_PERF_BOOST_FLAGS, _CMD, _CLEAR, pBoostParams->flags))
         {
-            return osTegraiGpuPerfBoost(pGpu, NV_FALSE, 0);
+            return osTegraiGpuPerfBoost(pGpu, NV_FALSE, 0, KERNEL_DEVFREQ_BOOST_TYPE_DEFAULT);
         }
         else
         {
@@ -83,7 +83,7 @@ subdeviceCtrlCmdKPerfBoost_IMPL
                 pBoostParams->duration = 1;
             }
 
-            return osTegraiGpuPerfBoost(pGpu, NV_TRUE, pBoostParams->duration);
+            return osTegraiGpuPerfBoost(pGpu, NV_TRUE, pBoostParams->duration, KERNEL_DEVFREQ_BOOST_TYPE_FMAX);
         }
     }
 

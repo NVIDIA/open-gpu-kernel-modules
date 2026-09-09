@@ -145,16 +145,18 @@ _memmgrShiftFbRegions
  *
  * @return new FbRegion ID
  */
-NvU32
+NV_STATUS
 memmgrInsertFbRegion_IMPL
 (
     OBJGPU                 *pGpu,
     MemoryManager          *pMemoryManager,
-    PFB_REGION_DESCRIPTOR   pInsertRegion
+    PFB_REGION_DESCRIPTOR   pInsertRegion,
+    NvU32                  *pRegionId
 )
 {
     NvU32   insertRegion = 0;
     PFB_REGION_DESCRIPTOR pFbRegion;
+
     //
     // Consider that we have 4 Fb Regions
     //  +----------------------------- +
@@ -178,7 +180,7 @@ memmgrInsertFbRegion_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "New Region does not belong to any existing FB Regions\n");
-        NV_ASSERT(0);
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
     }
     else
     {
@@ -186,8 +188,9 @@ memmgrInsertFbRegion_IMPL
                   insertRegion);
     }
 
-
     pFbRegion = &pMemoryManager->Ram.fbRegion[insertRegion];
+
+    NV_ASSERT_OR_RETURN(!pFbRegion->bRsvdRegion && !pFbRegion->bInternalHeap, NV_ERR_INVALID_ARGUMENT);
 
     //
     // Consider that we have 4 FB regions and for the sake of example we will
@@ -270,7 +273,56 @@ memmgrInsertFbRegion_IMPL
     // Invalidate allocation priority list and regenerate it
     memmgrRegenerateFbRegionPriority(pGpu, pMemoryManager);
 
-    return insertRegion;
+    if (pRegionId != NULL)
+    {
+        *pRegionId = insertRegion;
+    }
+    return NV_OK;
+}
+
+/*!
+ * @brief Find the last non-reserved, usable FB region.
+ *
+ * Skips reserved regions. When pbMemoryProtectionEnabled is non-NULL,
+ * also skips regions whose bProtected flag does not match
+ * *pbMemoryProtectionEnabled. This is used to ensure RM internal data
+ * is placed in protected memory when confidential compute is enabled,
+ * and in unprotected memory otherwise.
+ *
+ * @param[in]  pbMemoryProtectionEnabled
+ *
+ * @returns Pointer to the matching FB_REGION_DESCRIPTOR, or NULL if none.
+ */
+PFB_REGION_DESCRIPTOR
+memmgrGetLastUsableFbRegion_IMPL
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    const NvBool  *pbMemoryProtectionEnabled
+)
+{
+    NvU32 i;
+    PFB_REGION_DESCRIPTOR pLastRegion = NULL;
+
+    for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
+    {
+        PFB_REGION_DESCRIPTOR pRegion = &pMemoryManager->Ram.fbRegion[i];
+
+        if (pRegion->bRsvdRegion)
+        {
+            continue;
+        }
+
+        if (pbMemoryProtectionEnabled != NULL &&
+            pRegion->bProtected != *pbMemoryProtectionEnabled)
+        {
+            continue;
+        }
+
+        pLastRegion = pRegion;
+    }
+
+    return pLastRegion;
 }
 
 /*
@@ -278,7 +330,7 @@ memmgrInsertFbRegion_IMPL
  *          Rm internal reserve region and unusable regions
  *          are all separate regions
  */
-void
+NV_STATUS
 memmgrRegionSetupCommon_IMPL
 (
     OBJGPU        *pGpu,
@@ -287,82 +339,6 @@ memmgrRegionSetupCommon_IMPL
 {
     FB_REGION_DESCRIPTOR    rsvdFbRegion;
     NvU32                   i;
-    Heap                   *pHeap     = GPU_GET_HEAP(pGpu);
-    NvU64                   heapBase  = pHeap->base;
-    NvU64                   heapEnd   = pHeap->total - 1;
-    NvU64                   fbTax     = memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
-
-    // TODO: Remove this check and enable on baremetal as well.
-    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-    {
-        for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
-        {
-            //
-            // Chop off anything that doesnt belong to the Heap object until
-            // we figure out why vGPU initializes objheap smaller.
-            //
-            if  (pMemoryManager->Ram.fbRegion[i].base < heapBase)
-            {
-                portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
-                rsvdFbRegion.limit              = heapBase - 1;
-                rsvdFbRegion.base               = pMemoryManager->Ram.fbRegion[i].base;
-                rsvdFbRegion.rsvdSize           = 0;
-
-                // Should never be true for internal heap
-                rsvdFbRegion.bRsvdRegion        = NV_TRUE;
-                rsvdFbRegion.performance        = pMemoryManager->Ram.fbRegion[i].performance;
-                rsvdFbRegion.bSupportCompressed = pMemoryManager->Ram.fbRegion[i].bSupportCompressed;
-                rsvdFbRegion.bSupportISO        = pMemoryManager->Ram.fbRegion[i].bSupportISO;
-                rsvdFbRegion.bProtected         = pMemoryManager->Ram.fbRegion[i].bProtected;
-                rsvdFbRegion.bInternalHeap      = NV_FALSE;
-
-                i = memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
-                continue;
-            }
-
-            if  (pMemoryManager->Ram.fbRegion[i].limit > heapEnd)
-            {
-                portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
-                rsvdFbRegion.limit              = pMemoryManager->Ram.fbRegion[i].limit;
-                rsvdFbRegion.base               = heapEnd + 1;
-                rsvdFbRegion.rsvdSize           = 0;
-
-                // Should never be true for internal heap
-                rsvdFbRegion.bRsvdRegion        = NV_TRUE;
-                rsvdFbRegion.performance        = pMemoryManager->Ram.fbRegion[i].performance;
-                rsvdFbRegion.bSupportCompressed = pMemoryManager->Ram.fbRegion[i].bSupportCompressed;
-                rsvdFbRegion.bSupportISO        = pMemoryManager->Ram.fbRegion[i].bSupportISO;
-                rsvdFbRegion.bProtected         = pMemoryManager->Ram.fbRegion[i].bProtected;
-                rsvdFbRegion.bInternalHeap      = NV_FALSE;
-
-                i = memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
-            }
-        }
-
-        // Create a separate region for FB tax as the last FB region, it's not accessible to VF
-        if (fbTax)
-        {
-            i = pMemoryManager->Ram.numFBRegions - 1;
-
-            portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
-            rsvdFbRegion.limit              = pMemoryManager->Ram.fbRegion[i].limit;
-            rsvdFbRegion.base               = pMemoryManager->Ram.fbRegion[i].limit - fbTax + 1;
-            rsvdFbRegion.rsvdSize           = 0;
-
-            // Should never be true for internal heap
-            rsvdFbRegion.bRsvdRegion        = NV_TRUE;
-            rsvdFbRegion.performance        = pMemoryManager->Ram.fbRegion[i].performance;
-            rsvdFbRegion.bSupportCompressed = pMemoryManager->Ram.fbRegion[i].bSupportCompressed;
-            rsvdFbRegion.bSupportISO        = pMemoryManager->Ram.fbRegion[i].bSupportISO;
-            rsvdFbRegion.bProtected         = pMemoryManager->Ram.fbRegion[i].bProtected;
-            rsvdFbRegion.bInternalHeap      = NV_FALSE;
-
-            // Not required to be saved on hibernation, mark it as lost on suspend
-            rsvdFbRegion.bLostOnSuspend     = NV_TRUE;
-
-            i = memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
-        }
-    }
 
     //
     // We really don't want to calculate this before we have complete
@@ -396,7 +372,7 @@ memmgrRegionSetupCommon_IMPL
             //
             if (pKernelMemorySystem->numaOnlineSize == 0)
             {
-                NV_ASSERT_OR_RETURN_VOID(osNumaMemblockSize(&memblockSize) == NV_OK);
+                NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
                 unusedBlockSize = usableBlockSize - KMEMSYS_FB_NUMA_ONLINE_SIZE(usableBlockSize, memblockSize);
             }
             else
@@ -406,7 +382,7 @@ memmgrRegionSetupCommon_IMPL
                 // of RM reserved memory is onlined to the kernel. In this case skip creating
                 // internal heap region.
                 //
-                NV_ASSERT_OR_RETURN_VOID(usableBlockSize >= pKernelMemorySystem->numaOnlineSize);
+                NV_ASSERT_OR_RETURN(usableBlockSize >= pKernelMemorySystem->numaOnlineSize, NV_ERR_INVALID_STATE);
 
                 unusedBlockSize = usableBlockSize - pKernelMemorySystem->numaOnlineSize;
             }
@@ -437,75 +413,11 @@ memmgrRegionSetupCommon_IMPL
                                                NV2080_FB_REGION_TAG_GSP_RM_RESERVED_HEAP :
                                                NV2080_FB_REGION_TAG_CPU_RM_RESERVED_HEAP;
 
-            i = memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
+            NV_ASSERT_OK_OR_RETURN(memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion, &i));
         }
     }
 
-    //
-    // If FB size is being overriden, PMA should only own
-    // memory below overrideHeapMax.
-    // Also note on Pascal&&+ with FB override which below
-    // code takes care of:
-    // We can no longer can rely on RM reserve region being
-    // in the pre-scrubbed region after FB size is restricted.
-    // Non-prescrubbed region could overlap with vpr region.
-    // Until fbstate init completes, RM cannot distinguish VPR
-    // region, hence we have a WAR to prevent RM internal
-    // allocations from falling into the VPR region by routing it
-    // outside the fb override zone essentially to the prescrubbed
-    // region. See fbHandleSizeOverrides_GP100. Till fbstate init
-    // completes objheap will force all internal allocations to the
-    // region outside the 'boot scrub'. To allow for it the region
-    // should be in objheap - but not in pma.
-    // Since we mark everything above overrideHeapMax as internal heap
-    // the WAR will still be valid.
-    //
-    for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
-    {
-        //
-        // Scan for the region that is above the overrideheapmax
-        // that is not already reserved and allow objheap to manage it.
-        //
-        if ((pMemoryManager->Ram.fbRegion[i].bRsvdRegion == NV_FALSE) &&
-            (pMemoryManager->overrideHeapMax < pMemoryManager->Ram.fbRegion[i].limit))
-        {
-            // Entire region is above the heap max
-            if ((pMemoryManager->overrideHeapMax <  pMemoryManager->Ram.fbRegion[i].base))
-            {
-                pMemoryManager->Ram.fbRegion[i].bInternalHeap = NV_TRUE;
-            }
-            else // straddling create a separate region
-            {
-                portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
-                rsvdFbRegion.base  = pMemoryManager->overrideHeapMax + 1;
-                rsvdFbRegion.limit = pMemoryManager->Ram.fbRegion[i].limit;
-                rsvdFbRegion.bInternalHeap      = NV_TRUE;
-                rsvdFbRegion.bRsvdRegion        = NV_FALSE;
-                rsvdFbRegion.performance        = pMemoryManager->Ram.fbRegion[i].performance;
-                rsvdFbRegion.bSupportCompressed = pMemoryManager->Ram.fbRegion[i].bSupportCompressed;
-                rsvdFbRegion.bSupportISO        = pMemoryManager->Ram.fbRegion[i].bSupportISO;
-                rsvdFbRegion.bProtected         = pMemoryManager->Ram.fbRegion[i].bProtected;
-                i = memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
-            }
-        }
-    }
-}
-
-/*
- *  @brief: Prepares the fb region for PMA such that PMA regions,
- *          Rm internal reserve region and unusable regions
- *          are all separate regions. In order to do that RM has
- *          to calculate the reserved region size a little earlier.
- */
-void
-memmgrRegionSetupForPma_IMPL
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
-    memmgrRegionSetupCommon(pGpu, pMemoryManager);
+    return NV_OK;
 }
 
 /*!

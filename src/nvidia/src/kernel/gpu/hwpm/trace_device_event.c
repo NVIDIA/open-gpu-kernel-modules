@@ -36,6 +36,7 @@
 
 
 #include "core/core.h"
+#include "core/system.h"
 #include "gpu/gpu.h"
 #include "class/clcdcd.h"
 #include "kernel/gpu/hwpm/trace_device_event.h"

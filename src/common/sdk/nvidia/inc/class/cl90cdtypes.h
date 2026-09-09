@@ -40,6 +40,8 @@ extern "C" {
 #define NV_EVENT_BUFFER_RECORD_TYPE_NVTELEMETRY_REPORT_EVENT_SUBDEVICE        (132)
 #define NV_EVENT_BUFFER_RECORD_TYPE_FECS_CTX_SWITCH                           (134)
 #define NV_EVENT_BUFFER_RECORD_TYPE_NOCAT_NOTIFY                              (16)
+#define NV_EVENT_BUFFER_RECORD_TYPE_OPERATIONAL_EVENT_GOE                     (17)
+#define NV_EVENT_BUFFER_RECORD_TYPE_OPERATIONAL_EVENT_CPER                    (18)
 
 #ifdef __cplusplus
 };     /* extern "C" */

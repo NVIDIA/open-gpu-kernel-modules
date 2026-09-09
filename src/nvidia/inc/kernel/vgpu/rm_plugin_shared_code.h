@@ -1663,29 +1663,6 @@ return_t deserialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GP
 
 #ifdef BUILD_COMMON_RPCS
 static
-return_t deserialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams,
-                                                                           NvU8 *buffer,
-                                                                           NvU32 bufferSize,
-                                                                           NvU32 *offset)
-{
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00 *src  = (void*)(buffer);
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS        *dest = pParams;
-
-    if (src && dest)
-    {
-        dest->hChannel = src->hChannel;
-        dest->property = src->property;
-        dest->value    = src->value;
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-#endif
-
-#ifdef BUILD_COMMON_RPCS
-static
 return_t deserialize_NV2080_CTRL_GPU_EVICT_CTX_PARAMS_v1A_1C(
                                                           NV2080_CTRL_GPU_EVICT_CTX_PARAMS *pParams,
                                                           NvU8 *buffer,
@@ -2566,6 +2543,58 @@ return_t deserialize_NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS_v1A_23(
         dest->size          = src->size;
         dest->addressSpace  = src->addressSpace;
         dest->cacheAttrib   = src->cacheAttrib;
+    }
+    else
+        return FAILURE_T;
+
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02(
+                                                                    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS *pParams,
+                                                                    NvU8 *buffer,
+                                                                    NvU32 bufferSize,
+                                                                    NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02 *src  = (void*)(buffer);
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->engineType      = src->engineType;
+        dest->vChId           = src->vChId;
+        dest->channelLevel    = src->channelLevel;
+        dest->operation       = src->operation;
+    }
+    else
+        return FAILURE_T;
+
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02(
+                                                                    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS *pParams,
+                                                                    NvU8 *buffer,
+                                                                    NvU32 bufferSize,
+                                                                    NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02 *src  = (void*)(buffer);
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->engineType                      = src->engineType;
+        dest->submitRunlistOffset              = src->submitRunlistOffset;
+        dest->bUpdateRunlist                   = src->bUpdateRunlist;
+        dest->bSkipSubmitRunlist               = src->bSkipSubmitRunlist;
+        dest->bSubmitLastUpdatedRunlist        = src->bSubmitLastUpdatedRunlist;
+        dest->numRunlistEntries                = src->numRunlistEntries;
     }
     else
         return FAILURE_T;
@@ -5279,29 +5308,6 @@ return_t serialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GPU_
 
 #ifdef BUILD_COMMON_RPCS
 static
-return_t serialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams,
-                                                                         NvU8 *buffer,
-                                                                         NvU32 bufferSize,
-                                                                         NvU32 *offset)
-{
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS        *src  = pParams;
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00 *dest = (void*)(buffer);
-
-    if (src && dest)
-    {
-        dest->hChannel = src->hChannel;
-        dest->property = src->property;
-        dest->value    = src->value;
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-#endif
-
-#ifdef BUILD_COMMON_RPCS
-static
 return_t serialize_NV2080_CTRL_GPU_EVICT_CTX_PARAMS_v1A_1C(
                                                           NV2080_CTRL_GPU_EVICT_CTX_PARAMS *pParams,
                                                           NvU8 *buffer,
@@ -6181,6 +6187,58 @@ return_t serialize_NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS_v1A_23(
         dest->size          = src->size;
         dest->addressSpace  = src->addressSpace;
         dest->cacheAttrib   = src->cacheAttrib;
+    }
+    else
+        return FAILURE_T;
+
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02(
+                                                                    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS *pParams,
+                                                                    NvU8 *buffer,
+                                                                    NvU32 bufferSize,
+                                                                    NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02 *dest = (void*)(buffer);
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS        *src  = pParams;
+
+    if (src && dest)
+    {
+        dest->engineType      = src->engineType;
+        dest->vChId           = src->vChId;
+        dest->channelLevel    = src->channelLevel;
+        dest->operation       = src->operation;
+    }
+    else
+        return FAILURE_T;
+
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02(
+                                                                    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS *pParams,
+                                                                    NvU8 *buffer,
+                                                                    NvU32 bufferSize,
+                                                                    NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02 *dest  = (void*)(buffer);
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS        *src = pParams;
+
+    if (src && dest)
+    {
+        dest->engineType                      = src->engineType;
+        dest->submitRunlistOffset              = src->submitRunlistOffset;
+        dest->bUpdateRunlist                   = src->bUpdateRunlist;
+        dest->bSkipSubmitRunlist               = src->bSkipSubmitRunlist;
+        dest->bSubmitLastUpdatedRunlist        = src->bSubmitLastUpdatedRunlist;
+        dest->numRunlistEntries                = src->numRunlistEntries;
     }
     else
         return FAILURE_T;

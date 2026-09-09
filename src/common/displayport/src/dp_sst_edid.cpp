@@ -33,6 +33,7 @@
 #include "dp_internal.h"
 #include "dp_edid.h"
 #include "dp_printf.h"
+#include "dp_regkeydatabase.h"
 
 using namespace DisplayPort;
 
@@ -191,6 +192,10 @@ static bool sstReadEdid(AuxBus * auxBus, Edid & edid, unsigned DDCAddr, Timer * 
         NvU8 offset = 0;
         unsigned totalRead = 0;
         edidReaderManager.reset();
+        if (dpRegkeyDatabase.bEnableSstEdidRecoveryFix)
+        {
+            edid.setPatchedChecksum(false);
+        }
 
         // start by reading first EDID block, posting it and analyzing for next request
         do
@@ -310,6 +315,16 @@ bool DisplayPort::EdidReadSST(Edid & edid, AuxBus * auxBus, Timer* timer,
 
             if (status)
             {
+                if (dpRegkeyDatabase.bEnableSstEdidRecoveryFix &&
+                    !bBypassAssembler &&
+                    !edid.isValidHeader())
+                {
+                    edid.resetData();
+                    elapsedTime = timer->getTimeUs() - startTime;
+                    timer->sleep(EDID_READ_RETRY_TIMEOUT_MS);
+                    continue;
+                }
+
                 if (edid.verifyCRC())
                 {
                     return true;

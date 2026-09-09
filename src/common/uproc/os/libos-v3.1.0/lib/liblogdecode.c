@@ -1,7 +1,7 @@
 /*
  * ----------------------------------------------------------------------
  * Copyright (c) 2005-2014 Rich Felker, et al.
- * Copyright (c) 2019-2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -27,7 +27,7 @@
 #ifdef NVRM
 
 #    include <core/core.h>
-#    include <stddef.h> // size_t
+#    include <nv_stddef.h> // size_t
 
 #define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) portDbgExPrintfLevel(level, fmt, ##__VA_ARGS__)
 
@@ -75,7 +75,7 @@
 #define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) printf(fmt, ...)
 #endif
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 #include "nvtypes.h"
 #include "nvstatus.h"
@@ -544,7 +544,9 @@ static int libos_printf_a(
             if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
                 && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
             {
-                sprintf(&taskPrefixString[0], "%s%c", logDecode->mergedLogResolver[pRec->taskId].taskPrefix, pRec->log->taskPrefix[4]);
+                const char *base = logDecode->mergedLogResolver[pRec->taskId].taskPrefix;
+
+                snprintf(taskPrefixString, sizeof(taskPrefixString), "%s%s", base, &pRec->log->taskPrefix[portStringLength(base)]);
                 taskPrefix = &taskPrefixString[0];
             }
 #endif
@@ -636,7 +638,9 @@ static int libos_printf_a(
             if ((pRec->log->libosLogFlags & LIBOS_LOG_NVLOG_BUFFER_FLAG_MERGED_NVLOG_BUFFER)
                 && (pRec->taskId != LIBOS_LOG_TASK_UNKNOWN))
             {
-                sprintf(&taskPrefixString[0], "%s%c", logDecode->mergedLogResolver[pRec->taskId].taskPrefix, pRec->log->taskPrefix[4]);
+                const char *base = logDecode->mergedLogResolver[pRec->taskId].taskPrefix;
+
+                snprintf(taskPrefixString, sizeof(taskPrefixString), "%s%s", base, &pRec->log->taskPrefix[portStringLength(base)]);
                 taskPrefix = &taskPrefixString[0];
             }
 #endif
@@ -1133,7 +1137,7 @@ static void libosPrintLogRecords(LIBOS_LOG_DECODE *logDecode, NvU64 *scratchBuff
  * @brief Fetch the correct metadata from the given index in the physical buffer.
  *        Initialize elfSectionName appropriately in case extended version of metadata is found.
  */
-static libosLogMetadata *_getLoggingMetadata(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DECODE_LOG *pLog, NvU64 idx, const char **elfSectionName, NvU32 *logEntrySize, NvU32 *taskId, NvBool *pHasPackedMeta)
+static libosLogMetadata *_getLoggingMetadata(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DECODE_LOG *pLog, NvU64 idx, NvBool bLogMetadataErrors, const char **elfSectionName, NvU32 *logEntrySize, NvU32 *taskId, NvBool *pHasPackedMeta)
 {
     libosLogMetadata *pMetadata = NULL;
     libosLogMetadata_extended *pMetadataEx = NULL;
@@ -1170,17 +1174,19 @@ static libosLogMetadata *_getLoggingMetadata(LIBOS_LOG_DECODE *logDecode, LIBOS_
     if (metadataVA < pLogLocal->loggingBaseAddress ||
         metadataVA >= pLogLocal->loggingBaseAddress + pLogLocal->loggingSize)
     {
-        LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR,
-                "**** Meta VA out of bounds.  MetaVA: 0x%llx loggingBeginVA: 0x%llx loggingEndVA: 0x%llx ****\n",
-                metadataVA, pLogLocal->loggingBaseAddress, pLogLocal->loggingBaseAddress + pLogLocal->loggingSize);
+        if (bLogMetadataErrors)
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR,
+                    "**** Meta VA out of bounds.  MetaVA: 0x%llx loggingBeginVA: 0x%llx loggingEndVA: 0x%llx ****\n",
+                    metadataVA, pLogLocal->loggingBaseAddress, pLogLocal->loggingBaseAddress + pLogLocal->loggingSize);
         return NULL;
     }
 
     pMetadata = (libosLogMetadata *) LibosElfMapVirtual(&pLogLocal->elfImage, metadataVA, sizeof(libosLogMetadata));
     if (pMetadata == NULL)
     {
-        LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR,
-                "**** Meta not found.  MetaVA: 0x%llx ****\n", metadataVA);
+        if (bLogMetadataErrors)
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR,
+                    "**** Meta not found.  MetaVA: 0x%llx ****\n", metadataVA);
         return NULL;
     }
 
@@ -1233,15 +1239,17 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
     NvU64 i;
     NvU64 argCount;
     NvU64 j;
-    NvBool hasPackedMeta = NV_FALSE;
-    NvBool failed = NV_FALSE;
     const char *elfSectionName;
+    NvU64 recoveryStepCounter = 0;
 
     while (1)
     {
         // Number of NvU64 entries for this record
         NvU32 logEntrySize = 0;
         NvU32 taskId = 0;
+        NvBool bHasPackedMeta = NV_FALSE;
+        NvBool bFailed = NV_FALSE;
+        NvBool const bLogMetadataErrors = (recoveryStepCounter == 0);
 
         i = pLog->putIter;
 
@@ -1283,8 +1291,8 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
         if (i < previousPut + 1)
             goto buffer_wrapped;
 
-        pLog->record.meta = _getLoggingMetadata(logDecode, pLog, 1 + (--i % log_entries),
-            &elfSectionName, &logEntrySize, &taskId, &hasPackedMeta);
+        pLog->record.meta = _getLoggingMetadata(logDecode, pLog, 1 + (--i % log_entries), bLogMetadataErrors,
+            &elfSectionName, &logEntrySize, &taskId, &bHasPackedMeta);
 
         pLog->record.log = pLog;
         pLog->record.taskId = taskId;
@@ -1292,30 +1300,34 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
         // Sanity check meta data.
         if (pLog->record.meta == NULL)
         {
-            failed = NV_TRUE;
-            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Meta not found. ****\n");
+            bFailed = NV_TRUE;
+            if (bLogMetadataErrors)
+                LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Meta not found. ****\n");
         }
         else if (pLog->record.meta->argumentCount > LIBOS_LOG_MAX_ARGS)
         {
-            failed = NV_TRUE;
-            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Invalid args count %u ****\n",
-                pLog->record.meta->argumentCount);
+            bFailed = NV_TRUE;
+            if (bLogMetadataErrors)
+                LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Invalid args count %u ****\n",
+                    pLog->record.meta->argumentCount);
         }
-        else if (hasPackedMeta && (LIBOS_LOG_ENTRY_V2_SIZE(pLog->record.meta->argumentCount) != (NvU8) logEntrySize))
+        else if (bHasPackedMeta && (LIBOS_LOG_ENTRY_V2_SIZE(pLog->record.meta->argumentCount) != (NvU8) logEntrySize))
         {
-            failed = NV_TRUE;
-            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Invalid entry size. actual: %u expected: %u ****\n",
-                logEntrySize, LIBOS_LOG_ENTRY_V2_SIZE(pLog->record.meta->argumentCount));
+            bFailed = NV_TRUE;
+            if (bLogMetadataErrors)
+                LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** Invalid entry size. actual: %u expected: %u ****\n",
+                    logEntrySize, LIBOS_LOG_ENTRY_V2_SIZE(pLog->record.meta->argumentCount));
         }
 
-        if (!failed)
+        if (!bFailed)
         {
             // Found valid record
             break;
         }
 
-        if (logDecode->bSynchronousBuffer || !hasPackedMeta)
+        if (logDecode->bSynchronousBuffer)
         {
+            // No timestamps to resync on - cannot safely skip forward.
             LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
                 "**** Bad metadata, FATAL!  Lost %lld entries from GPU %d %s-%s. putIter: 0x%llx previousPut: 0x%llx ****\n",
                 pLog->putIter - previousPut, pLog->gpuInstance, logDecode->sourceName,
@@ -1323,11 +1335,27 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
             goto error_ret;
         }
 
+        /* Cap recovery scan to LIBOS_LOG_ENTRY_MAX_SIZE (worst-case packed record length in NvU64 slots). */
+        if (recoveryStepCounter >= LIBOS_LOG_ENTRY_MAX_SIZE)
+        {
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
+                "**** Bad metadata recovery stopped after %llu skips (limit %u). Lost %lld entries from GPU %d %s-%s. putIter: 0x%llx previousPut: 0x%llx ****\n",
+                recoveryStepCounter, (NvU32)LIBOS_LOG_ENTRY_MAX_SIZE,
+                (pLog->putIter - previousPut) + recoveryStepCounter,
+                pLog->gpuInstance, logDecode->sourceName,
+                pLog->taskPrefix, pLog->putIter, pLog->previousPut);
+            goto error_ret;
+        }
+
+        recoveryStepCounter++;
+        pLog->putIter -= 1;
+    }
+
+    if (recoveryStepCounter > 0)
+    {
         LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-            "**** Bad metadata.  Skipping %lld entries from GPU %d %s-%s. putIter: 0x%llx previousPut: 0x%llx ****\n",
-            logEntrySize, pLog->gpuInstance, logDecode->sourceName, pLog->taskPrefix,
-            pLog->putIter, pLog->previousPut);
-        pLog->putIter -= logEntrySize;
+            "**** Bad metadata detected. Recovered after skipping %llu entries from GPU %d %s-%s. ****\n",
+            recoveryStepCounter, pLog->gpuInstance, logDecode->sourceName, pLog->taskPrefix);
     }
 
     pLog->record.logSymbolResolver = pLog;
@@ -1360,8 +1388,15 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
 
 buffer_wrapped:
     // Put pointer wrapped and caught up to us.  This means we lost entries.
+    if (recoveryStepCounter > 0)
+    {
+        LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
+            "**** Bad metadata detected. Skipped %llu entries in recovery attempt. ****\n",
+            recoveryStepCounter);
+    }
     LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
-        "**** Buffer wrapped. Lost %lld entries from GPU %d %s-%s ****\n", pLog->putIter - pLog->previousPut,
+        "**** Buffer wrapped. Lost %lld entries from GPU %d %s-%s ****\n",
+        (pLog->putIter - pLog->previousPut) + recoveryStepCounter,
         pLog->gpuInstance, logDecode->sourceName, pLog->taskPrefix);
 
 error_ret:

@@ -40,24 +40,26 @@
 // Values are allocated from a shared namespace across all subsystems.
 // Add new types here and update the NVDM Message Type allocation page.
 //
-#define NVDM_TYPE_RESET                 0x4
-#define NVDM_TYPE_HULK                  0x11
-#define NVDM_TYPE_FIRMWARE_UPDATE       0x12
-#define NVDM_TYPE_PRC                   0x13
-#define NVDM_TYPE_COT                   0x14
-#define NVDM_TYPE_FSP_RESPONSE          0x15
-#define NVDM_TYPE_SEC2_RESPONSE         NVDM_TYPE_FSP_RESPONSE
-#define NVDM_TYPE_CAPS_QUERY            0x16
-#define NVDM_TYPE_INFOROM               0x17
-#define NVDM_TYPE_SMBPBI                0x18
-#define NVDM_TYPE_ROMREAD               0x1A
-#define NVDM_TYPE_UEFI_RM               0x1C
-#define NVDM_TYPE_UEFI_XTL_DEBUG_INTR   0x1D
-#define NVDM_TYPE_TNVL                  0x1F
-#define NVDM_TYPE_CLOCK_BOOST           0x20
-#define NVDM_TYPE_FSP_GSP_COMM          0x21
-#define NVDM_TYPE_SEC2_GSP_COMM         NVDM_TYPE_FSP_GSP_COMM
+#define NVDM_TYPE_RESET                       0x4
+#define NVDM_TYPE_HULK                        0x11
+#define NVDM_TYPE_FIRMWARE_UPDATE             0x12
+#define NVDM_TYPE_PRC                         0x13
+#define NVDM_TYPE_COT                         0x14
+#define NVDM_TYPE_FSP_RESPONSE                0x15
+#define NVDM_TYPE_SEC2_RESPONSE               NVDM_TYPE_FSP_RESPONSE
+#define NVDM_TYPE_CAPS_QUERY                  0x16
+#define NVDM_TYPE_INFOROM                     0x17
+#define NVDM_TYPE_SMBPBI                      0x18
+#define NVDM_TYPE_ROMREAD                     0x1A
+#define NVDM_TYPE_UEFI_RM                     0x1C
+#define NVDM_TYPE_UEFI_XTL_DEBUG_INTR         0x1D
+#define NVDM_TYPE_TNVL                        0x1F
+#define NVDM_TYPE_CLOCK_BOOST                 0x20
+#define NVDM_TYPE_FSP_GSP_COMM                0x21
+#define NVDM_TYPE_SEC2_GSP_COMM               NVDM_TYPE_FSP_GSP_COMM
+#define NVDM_TYPE_FSP_GSP_RM_METHOD_OF_COMMS  0x23
 
 #define NVDM_TYPE_RM_RPC                0x25  // GSP-RM RPC messages
+#define NVDM_TYPE_GMCAPI                0x26  // GSP-RM GMCAPI messages
 
 #endif // NVDM_FORMAT_H

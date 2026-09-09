@@ -168,6 +168,22 @@ NV_STATUS_CODE(NV_ERR_MC_FLA_OFFSET_TABLE_FULL,                 0x0000008A, "Mul
 NV_STATUS_CODE(NV_ERR_OPERATION_ABORTED,                        0x0000008B, "Operation has aborted")
 NV_STATUS_CODE(NV_ERR_DMA_XFER_FAILED,                          0x0000008C, "DMA transfer failed")
 NV_STATUS_CODE(NV_ERR_RESOURCE_ACCOUNTING_HARD_LIMIT_EXCEEDED,  0x0000008D, "Resource accounting rejected request (hard limit)")
+NV_STATUS_CODE(NV_ERR_NVLINK_FW_NOT_LOADED,                     0x0000008E, "MSE firmware is not loaded")
+NV_STATUS_CODE(NV_ERR_INTR_STUCK,                               0x0000008F, "Interrupt is stuck")
+NV_STATUS_CODE(NV_ERR_GMCAPI_INVALID_MCTP,                      0x00000090, "Invalid MCTP header")
+NV_STATUS_CODE(NV_ERR_GMCAPI_INVALID_NVDM_TYPE,                 0x00000091, "Invalid NVDM message type")
+NV_STATUS_CODE(NV_ERR_GMCAPI_INVALID_COMMAND_ID,                0x00000092, "The given GMCAPI command ID is not valid")
+NV_STATUS_CODE(NV_ERR_GMCAPI_REQUEST_SIZE_TOO_LARGE,            0x00000093, "GMCAPI request size is too large")
+NV_STATUS_CODE(NV_ERR_GMCAPI_REQUEST_SIZE_TOO_SMALL,            0x00000094, "GMCAPI request size is too small")
+NV_STATUS_CODE(NV_ERR_GMCAPI_MAX_RESPONSE_SIZE_TOO_SMALL,       0x00000095, "GMCAPI maximum response size is too small")
+// bug 6141566: Unable to add new NV_STATUS values temporarily
+//NV_STATUS_CODE(NV_ERR_GMCAPI_RESERVED_FIELD_NOT_ZERO,           0x00000096, "GMCAPI reserved field not set to zero")
+//NV_STATUS_CODE(NV_ERR_GMCAPI_INVALID_FLAGS,                     0x00000097, "GMCAPI flags for this call are not valid")
+#define NV_ERR_GMCAPI_RESERVED_FIELD_NOT_ZERO       ((NV_STATUS)0x00000096)
+#define NV_ERR_GMCAPI_INVALID_FLAGS                 ((NV_STATUS)0x00000097)
+// Status codes 0x98..0x9D are reserved for GMCAPI
+NV_STATUS_CODE(NV_ERR_GMCAPI_INTERNAL_RM_ERROR,                 0x0000009E, "RM has hit an internal error while servicing GMCAPI")
+NV_STATUS_CODE(NV_ERR_GMCAPI_GENERIC_ERROR,                     0x0000009F, "Failed to service GMCAPI: Generic error")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                              0x00010001, "WARNING Hot switch")

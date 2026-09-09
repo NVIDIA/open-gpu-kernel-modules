@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,6 @@
 #include "gpu/gpu.h"
 
 #include "published/blackwell/gb100/dev_fuse_zb.h"
-#include "published/blackwell/gb100/hwproject.h"
 
 /*!
  * Returns the SEC2 fuse version of the provided ucode id (1-indexed)

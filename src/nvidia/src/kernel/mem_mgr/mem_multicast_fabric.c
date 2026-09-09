@@ -80,7 +80,8 @@ typedef struct mem_multicast_fabric_client_info
 
 typedef struct mem_multicast_fabric_gpu_nvlink_attr
 {
-    NvU32   cliqueId;
+    NvBool  bFilled;
+    NvU64   clique;
     NvU64   bwModeEpoch;
     NvU16   bwMode;
 } MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR;
@@ -91,8 +92,6 @@ typedef struct mem_multicast_fabric_gpu_info
     OBJGPU *pGpu;
     NvU64   gpuProbeHandle;
     NvBool  bMcflaAlloc;
-
-    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR nvlAttr;
 
     //
     // Unique import event ID. Valid only if the GPU was remotely attached to
@@ -208,6 +207,8 @@ typedef struct mem_multicast_fabric_descriptor
 
     NvS32 imexChannel;
 
+    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR nvlAttr;
+
     //
     // The lock protects MEM_MULTICAST_FABRIC_DESCRIPTOR, the MCFLA descriptor.
     //
@@ -266,7 +267,7 @@ _memMulticastFabricInitAttachEvent
     NvU64                        key,
     NvU64                        bwModeEpoch,
     NvU16                        bwMode,
-    NvU32                        cliqueId,
+    NvU64                        clique,
     NvU16                        exportNodeId,
     NvU16                        index,
     NvUuid                      *pExportUuid,
@@ -283,7 +284,7 @@ _memMulticastFabricInitAttachEvent
 
     pEvent->data.attach.gpuFabricProbeHandle = gpuFabricProbeHandle;
     pEvent->data.attach.key = key;
-    pEvent->data.attach.cliqueId = cliqueId;
+    pEvent->data.attach.clique = clique;
     pEvent->data.attach.bwModeEpoch = bwModeEpoch;
     pEvent->data.attach.bwMode = bwMode;
     pEvent->data.attach.index = index;
@@ -738,6 +739,9 @@ _memMulticastFabricSendInbandTeamSetupRequestV2
         status = NV_ERR_INVALID_STATE;
         goto done;
     }
+
+    if (pMulticastFabricDesc->allocFlags & NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_HANDLE_TRANSLATION)
+        pMcTeamSetupReq->flags |= NVLINK_INBAND_MC_TEAM_SETUP_FLAG_HANDLE_TRANSLATION;
 
     sendDataParams->dataSize = sendDataSize;
 
@@ -1512,11 +1516,11 @@ _memorymulticastFabricAllocVas
             goto cleanup;
         }
 
-        status = fabricvaspaceAllocMulticast(pFabricVAS,
-                                    memdescGetPageSize(pFabricMemDesc, AT_GPU),
-                                    pMulticastFabricDesc->alignment,
-                                    flags, pFabricMemDesc->_pteArray[0],
-                                    pMulticastFabricDesc->allocSize);
+        status = fabricvaspaceAllocFixed(pFabricVAS,
+                                         memdescGetPageSize(pFabricMemDesc, AT_GPU),
+                                         pMulticastFabricDesc->alignment,
+                                         flags, pFabricMemDesc->_pteArray[0],
+                                         pMulticastFabricDesc->allocSize);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -1651,60 +1655,21 @@ installMemDesc:
          _memMulticastFabricSendInbandRequest(pGpu, pMulticastFabricDesc, MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
 }
 
-NV_STATUS
-memorymulticastfabricTeamSetupResponseCallback
+static void
+_memorymulticastfabricProcessTeamSetupResponse
 (
-    NvU32                                           gpuInstance,
-    NvU64                                          *pNotifyGfidMask,
-    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
+    OBJGPU    *pGpu,
+    NvU64      requestId,
+    NV_STATUS  mcTeamStatus,
+    NvU64      mcTeamHandle,
+    NvU64      mcAddressBase,
+    NvU64      mcAddressSize
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
-    nvlink_inband_mc_team_setup_rsp_msg_t *pMcTeamSetupRspMsg;
-    nvlink_inband_mc_team_setup_rsp_t *pMcTeamSetupRsp;
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
-    NvU64 requestId;
-    NV_STATUS mcTeamStatus;
-    NvU64 mcTeamHandle = 0;
-    NvU64 mcAddressBase = 0;
-    NvU64 mcAddressSize = 0;
-    OBJGPU *pGpu;
 
-    NV_ASSERT(pInbandRcvParams != NULL);
     NV_ASSERT(rmGpuLockIsOwner());
-
-    if ((pGpu = gpumgrGetGpu(gpuInstance)) == NULL)
-    {
-        NV_ASSERT_FAILED("Invalid GPU instance");
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pMcTeamSetupRspMsg =
-        (nvlink_inband_mc_team_setup_rsp_msg_t *)&pInbandRcvParams->data[0];
-
-    pMcTeamSetupRsp =
-        (nvlink_inband_mc_team_setup_rsp_t *)&pMcTeamSetupRspMsg->mcTeamSetupRsp;
-
-    requestId = pMcTeamSetupRspMsg->msgHdr.requestId;
-
-    mcTeamStatus = pMcTeamSetupRspMsg->msgHdr.status;
-
-    if (mcTeamStatus == NV_OK)
-    {
-        mcTeamHandle = pMcTeamSetupRsp->mcTeamHandle;
-        mcAddressBase = pMcTeamSetupRsp->mcAddressBase;
-        mcAddressSize = pMcTeamSetupRsp->mcAddressSize;
-
-#if defined(DEBUG) || defined(DEVELOP)
-        {
-            // Make sure that the reserved fields are initialized to 0
-            NvU8 *pRsvd = &pMcTeamSetupRsp->reserved[0];
-
-            NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
-                      (sizeof(pMcTeamSetupRsp->reserved) - 1)) == 0);
-        }
-#endif
-    }
 
     //
     // Acquire pMulticastFabricModuleLock here, to make sure
@@ -1775,8 +1740,122 @@ memorymulticastfabricTeamSetupResponseCallback
         fabricMulticastCleanupCacheInvokeCallback(pFabric, requestId,
                                                   fabricWakeUpThreadCallback);
     }
+}
+
+NV_STATUS
+memorymulticastfabricTeamSetupResponseCallback
+(
+    NvU32                                           gpuInstance,
+    NvU64                                          *pNotifyGfidMask,
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
+)
+{
+    nvlink_inband_mc_team_setup_rsp_msg_t *pMcTeamSetupRspMsg;
+    nvlink_inband_mc_team_setup_rsp_t *pMcTeamSetupRsp;
+    NvU64 requestId;
+    NV_STATUS mcTeamStatus;
+    NvU64 mcTeamHandle = 0;
+    NvU64 mcAddressBase = 0;
+    NvU64 mcAddressSize = 0;
+    OBJGPU *pGpu;
+
+    NV_ASSERT(pInbandRcvParams != NULL);
+
+    if ((pGpu = gpumgrGetGpu(gpuInstance)) == NULL)
+    {
+        NV_ASSERT_FAILED("Invalid GPU instance");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pMcTeamSetupRspMsg =
+        (nvlink_inband_mc_team_setup_rsp_msg_t *)&pInbandRcvParams->data[0];
+
+    pMcTeamSetupRsp =
+        (nvlink_inband_mc_team_setup_rsp_t *)&pMcTeamSetupRspMsg->mcTeamSetupRsp;
+
+    requestId = pMcTeamSetupRspMsg->msgHdr.requestId;
+
+    mcTeamStatus = pMcTeamSetupRspMsg->msgHdr.status;
+
+    if (mcTeamStatus == NV_OK)
+    {
+        mcTeamHandle = pMcTeamSetupRsp->mcTeamHandle;
+        mcAddressBase = pMcTeamSetupRsp->mcAddressBase;
+        mcAddressSize = pMcTeamSetupRsp->mcAddressSize;
+
+#if defined(DEBUG) || defined(DEVELOP)
+        {
+            // Make sure that the reserved fields are initialized to 0
+            NvU8 *pRsvd = &pMcTeamSetupRsp->reserved[0];
+
+            NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
+                      (sizeof(pMcTeamSetupRsp->reserved) - 1)) == 0);
+        }
+#endif
+    }
+
+    _memorymulticastfabricProcessTeamSetupResponse(
+               pGpu, requestId, mcTeamStatus,
+               mcTeamHandle, mcAddressBase, mcAddressSize);
 
     return NV_OK;
+}
+
+static void
+_memorymulticastfabricErrorAllInFlightRequests
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    OBJGPU  *pGpu = gpumgrGetGpu(gpuInstance);
+    Fabric  *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NvU64   *pRequestIds = NULL;
+    NvU32    count;
+    NvU32    i;
+
+    NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
+
+    //
+    // Snapshot requestIds from both setup cache (key1=0, in-flight
+    // descriptors) and cleanup cache (key1=1, already-freed descriptors
+    // with parked threads), then call the response helper for each with
+    // NV_ERR_FABRIC_MANAGER_NOT_PRESENT.
+    //
+    // For setup cache entries, the helper finds the descriptor and errors
+    // it out through the post-processor. For cleanup cache entries, the
+    // helper does not find the descriptor in the setup cache, falls to
+    // its else branch, and wakes the parked thread via
+    // fabricMulticastCleanupCacheInvokeCallback.
+    //
+    // This workitem runs under GPU locks (.bLockGpus = NV_TRUE) which
+    // serializes against all setup cache mutations (descriptor free,
+    // response callback, attach path). Any descriptor that enters the
+    // setup cache after the snapshot will receive
+    // NV_ERR_FABRIC_MANAGER_NOT_PRESENT from LFM's response path
+    // (GFM is already dead at this point).
+    //
+    count = fabricMulticastCacheSnapshotRequestIds(pFabric, &pRequestIds);
+
+    for (i = 0; i < count; i++)
+    {
+        _memorymulticastfabricProcessTeamSetupResponse(
+            pGpu, pRequestIds[i],
+            NV_ERR_FABRIC_MANAGER_NOT_PRESENT, 0, 0, 0);
+    }
+
+    portMemFree(pRequestIds);
+}
+
+void
+memorymulticastfabricQueueErrorAllInFlightRequests
+(
+    OBJGPU *pGpu
+)
+{
+    NV_ASSERT_OK(osQueueWorkItem(pGpu,
+                                 _memorymulticastfabricErrorAllInFlightRequests, NULL,
+                                (OsQueueWorkItemFlags){.bLockSema = NV_TRUE, .bLockGpus = NV_TRUE}));
 }
 
 static void
@@ -1812,17 +1891,36 @@ memorymulticastfabricConstruct_IMPL
 }
 
 static NV_STATUS
-_memorymulticastfabricValidateNvlAttrCommon
+_memorymulticastfabricFillOrValidateNvlAttr
 (
-    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR *pNvlAttr,
-    NvU32                                 cliqueId,
-    NvU16                                 bwMode,
-    NvU64                                 bwModeEpoch
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc,
+    NvU64                            clique,
+    NvU16                            bwMode,
+    NvU64                            bwModeEpoch
 )
 {
-    if (pNvlAttr->cliqueId != cliqueId)
+    MEM_MULTICAST_FABRIC_GPU_NVLINK_ATTR *pNvlAttr = &pMulticastFabricDesc->nvlAttr;
+    NvU8 cliqueType = GPU_FABRIC_CLIQUE_TYPE(clique);
+
+    if ((cliqueType != NV_FABRIC_CLIQUE_TYPE_MULTICAST_HANDLE) &&
+        (cliqueType != NV_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER))
     {
-        NV_PRINTF(LEVEL_ERROR, "Clique ID mismatch %u:%u\n", pNvlAttr->cliqueId, cliqueId);
+        NV_PRINTF(LEVEL_ERROR, "Incorrect cliqueType 0x%x detected.\n", cliqueType);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!pNvlAttr->bFilled)
+    {
+        pNvlAttr->clique = clique;
+        pNvlAttr->bwMode = bwMode;
+        pNvlAttr->bwModeEpoch = bwModeEpoch;
+        pNvlAttr->bFilled = NV_TRUE;
+        return NV_OK;
+    }
+
+    if (pNvlAttr->clique != clique)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Clique mismatch %llu:%llu\n", pNvlAttr->clique, clique);
         return NV_ERR_INVALID_DEVICE;
     }
 
@@ -1836,40 +1934,6 @@ _memorymulticastfabricValidateNvlAttrCommon
     {
         NV_PRINTF(LEVEL_ERROR, "bwMode mismatch %u:%u\n", pNvlAttr->bwMode, bwMode);
         return NV_ERR_INVALID_DEVICE;
-    }
-
-    return NV_OK;
-}
-
-static NV_STATUS
-_memorymulticastfabricValidateNvlAttr
-(
-    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc,
-    NvU32                            cliqueId,
-    NvU16                             bwMode,
-    NvU64                            bwModeEpoch
-)
-{
-    MEM_MULTICAST_FABRIC_GPU_INFO *pHead;
-    MEM_MULTICAST_FABRIC_REMOTE_GPU_INFO *pRemoteHead;
-
-    pHead = listHead(&pMulticastFabricDesc->gpuInfoList);
-    pRemoteHead = multimapFirstItem(&pMulticastFabricDesc->remoteGpuInfoMap);
-
-    if (pHead != NULL)
-    {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            _memorymulticastfabricValidateNvlAttrCommon(&pHead->nvlAttr,
-                                                        cliqueId, bwMode,
-                                                        bwModeEpoch));
-    }
-
-    if (pRemoteHead != NULL)
-    {
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            _memorymulticastfabricValidateNvlAttrCommon(&pRemoteHead->nvlAttr,
-                                                        cliqueId, bwMode,
-                                                        bwModeEpoch));
     }
 
     return NV_OK;
@@ -1893,6 +1957,10 @@ _memorymulticastfabricCtrlAttachGpu
     FABRIC_VASPACE *pFabricVAS;
     MEM_MULTICAST_FABRIC_GPU_INFO *pNode;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NvU32   cliqueId = 0;
+    NvU64   bwModeEpoch = 0;
+    NvU16   bwMode = 0;
+    NvU8 cliqueType = NV_FABRIC_CLIQUE_TYPE_MULTICAST_POINTER;
 
     if (pParams->flags != 0)
     {
@@ -1923,6 +1991,13 @@ _memorymulticastfabricCtrlAttachGpu
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    if ((pMulticastFabricDesc->allocFlags & NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_HANDLE_TRANSLATION) &&
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_HANDLE_TRANSLATION_DEF))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Handle translations are not supported on this arch\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     // Perform validation of fabric page size against arch support
     if (!memmgrIsValidFlaPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), pMulticastFabricDesc->pageSize, NV_TRUE))
     {
@@ -1949,8 +2024,11 @@ _memorymulticastfabricCtrlAttachGpu
         goto fail;
     }
 
-    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                                             &pNode->nvlAttr.cliqueId);
+    if (pMulticastFabricDesc->allocFlags & NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_HANDLE_TRANSLATION)
+        cliqueType = NV_FABRIC_CLIQUE_TYPE_MULTICAST_HANDLE;
+
+    status = gpuFabricProbeGetFabricCliqueIdByType(pGpu->pGpuFabricProbeInfoKernel, cliqueType,
+                                                   &cliqueId);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1958,15 +2036,13 @@ _memorymulticastfabricCtrlAttachGpu
         goto fail;
     }
 
-    pNode->nvlAttr.bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
+    bwMode = knvlinkGetBWMode(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
 
-    pNode->nvlAttr.bwModeEpoch = knvlinkGetBWModeEpoch(pGpu,
-                                                       GPU_GET_KERNEL_NVLINK(pGpu));
+    bwModeEpoch = knvlinkGetBWModeEpoch(pGpu, GPU_GET_KERNEL_NVLINK(pGpu));
 
-    status = _memorymulticastfabricValidateNvlAttr(pMulticastFabricDesc,
-                                                   pNode->nvlAttr.cliqueId,
-                                                   pNode->nvlAttr.bwMode,
-                                                   pNode->nvlAttr.bwModeEpoch);
+    status = _memorymulticastfabricFillOrValidateNvlAttr(pMulticastFabricDesc,
+                                                         GPU_FABRIC_MAKE_CLIQUE(cliqueType, cliqueId),
+                                                         bwMode, bwModeEpoch);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Clique ID etc. validation failed\n");
@@ -2029,9 +2105,9 @@ _memorymulticastfabricCtrlAttachGpu
 
         _memMulticastFabricInitAttachEvent(pNode->gpuProbeHandle,
                                            pMulticastFabricDesc->inbandReqId,
-                                           pNode->nvlAttr.bwModeEpoch,
-                                           pNode->nvlAttr.bwMode,
-                                           pNode->nvlAttr.cliqueId,
+                                           pMulticastFabricDesc->nvlAttr.bwModeEpoch,
+                                           pMulticastFabricDesc->nvlAttr.bwMode,
+                                           pMulticastFabricDesc->nvlAttr.clique,
                                            pMulticastFabricDesc->exportNodeId,
                                            pMulticastFabricDesc->index,
                                            &pMulticastFabricDesc->expUuid,
@@ -2231,15 +2307,19 @@ _memorymulticastfabricValidateFabricAttr
     NvU64 pageSize
 )
 {
-    NV_STATUS status = NV_OK;
+    if (!_memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Validation is only supported on prime MCLFA object\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     if (pMulticastFabricDesc->pageSize != pageSize)
     {
-        NV_PRINTF(LEVEL_ERROR, "Fabric validation failed. Prime and non-prime object page sizes do not match.\n");
-        status = NV_ERR_INVALID_ARGUMENT;
+        NV_PRINTF(LEVEL_ERROR, "Prime and non-prime object page sizes do not match.\n");
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return status;
+    return NV_OK;
 }
 
 //
@@ -2296,10 +2376,10 @@ _memorymulticastfabricCtrlAttachRemoteGpu
         goto fail;
     }
 
-    status = _memorymulticastfabricValidateNvlAttr(pMulticastFabricDesc,
-                                                   pParams->cliqueId,
-                                                   pParams->bwMode,
-                                                   pParams->bwModeEpoch);
+    status = _memorymulticastfabricFillOrValidateNvlAttr(pMulticastFabricDesc,
+                                                         pParams->clique,
+                                                         pParams->bwMode,
+                                                         pParams->bwModeEpoch);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Clique ID etc. validation failed\n");
@@ -2351,9 +2431,6 @@ _memorymulticastfabricCtrlAttachRemoteGpu
     portMemSet(pNode, 0, sizeof(*pNode));
 
     pNode->key = pParams->key;
-    pNode->nvlAttr.cliqueId = pParams->cliqueId;
-    pNode->nvlAttr.bwMode = pParams->bwMode;
-    pNode->nvlAttr.bwModeEpoch = pParams->bwModeEpoch;
 
     if ((pMulticastFabricDesc->numAttachedGpus + 1)
                                     == pMulticastFabricDesc->numMaxGpus)

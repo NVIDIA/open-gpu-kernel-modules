@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -106,7 +106,7 @@ struct KernelSec2 {
     NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual halified (3 hals) override (kflcn) base (kflcn) body
     NV_STATUS (*__ksec2StateLoad__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual halified (3 hals) override (engstate) base (engstate) body
     void (*__ksec2StateDestroy__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual halified (2 hals) override (engstate) base (engstate) body
-    NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // halified (5 hals) body
+    NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // halified (6 hals) body
     const BINDATA_ARCHIVE * (*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/, const RM_FLCN_BL_DESC **, const NvU8 **);  // halified (3 hals) body
     const BINDATA_ARCHIVE * (*__ksec2GetBinArchiveSecurescrubUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
@@ -732,6 +732,8 @@ NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2
 NV_STATUS ksec2StateLoad_GH100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg3);
 
 void ksec2StateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+
+NvU32 ksec2ReadUcodeFuseVersion_GB202(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
 
 NvU32 ksec2ReadUcodeFuseVersion_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
 

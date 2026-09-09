@@ -55,6 +55,14 @@ int nv_drm_semsurf_fence_attach_ioctl(struct drm_device *dev,
                                       void *data,
                                       struct drm_file *filep);
 
+int nv_drm_semsurf_export_to_syncobj_point_ioctl(struct drm_device *dev,
+                                                  void *data,
+                                                  struct drm_file *filep);
+
+int nv_drm_syncobj_get_syncfd_ioctl(struct drm_device *dev,
+                                    void *data,
+                                    struct drm_file *filep);
+
 #endif /* NV_DRM_AVAILABLE */
 
 #endif /* __NVIDIA_DRM_PRIME_FENCE_H__ */

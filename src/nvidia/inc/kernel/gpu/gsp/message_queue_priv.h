@@ -31,6 +31,7 @@
 #include "msgq/msgq.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "gpu/conf_compute/ccsl.h"
+#include "nvctassert.h"
 
 // Shared memory layout.
 //
@@ -41,30 +42,100 @@
 //   Status queue header
 //   Status queue entries
 
+// NOTE: GSP Message Queue encryption is currently *NOT* ABI stable
 typedef struct GSP_MSG_QUEUE_ENCRYPTION_TAG
 {
-    NvU32 encryptedSize;             // Size of encrypted payload
-    NvU32 reserved;                  // Padding for 8-byte alignment
     NvU8  authTagBuffer[16];         // Authentication tag buffer
-    NvU8  aadBuffer[16];             // AAD buffer
 } GSP_MSG_QUEUE_ENCRYPTION_TAG;
 
-typedef struct GSP_MSG_QUEUE_ELEMENT
+//
+// A GSP message queue element is structured as layered protocol headers:
+//
+//   MCTP transport -> [optional encryption tag] -> NVDM -> RPC/GMCAPI payload
+//   |-----------------plaintext------------------|-encrypted (if CC enabled)-|
+//
+// The MCTP transport layer provides overall framing: routing info, the NVDM
+// message type (per the MCTP specification, the message type is encoded in the
+// MCTP header, not the NVDM header), and the total transfer size including any
+// padding needed for encryption alignment.
+//
+// When confidential compute is enabled, an AEAD authentication tag sits
+// between the MCTP and NVDM layers. Everything after the tag - the NVDM header,
+// payload size, and all payload data - is encrypted. The tag itself and
+// the MCTP framing above it remain in plaintext.
+//
+// The NVDM layer carries the payload size and is followed by the actual
+// protocol-specific data: either a vGPU RPC header or a GMCAPI header, each
+// with their own length fields and command-specific parameters.
+//
+// For example, consider a GMCAPI message with a payload of 100 bytes, with CC:
+//   Overall size of the message would be:
+//     16 bytes for the MCTP header (4x NvU32)
+//     16 bytes for the encryption tag
+//     8 bytes for the NVDM header (size+reserved)
+//     32 bytes for the GMCAPI_HEADER (see gmcapi_base.h)
+//     100 bytes for the GMCAPI payload
+//     3924 bytes for the padding to align the message to 4kb
+//
+//   The sizes would be:
+//     mctpPayloadSize = 4096
+//     nvdmPayloadSize = 132
+//     GMCAPI_HEADER.length = 100
+//
+//   Without CC, we would not have the encryption tag and the padding, so:
+//     mctpPayloadSize = 156
+//     nvdmPayloadSize = 132
+//     GMCAPI_HEADER.length = 100
+//
+typedef struct NV_ABI_STABLE GSP_MSG_QUEUE_ELEMENT
 {
+#define MCTP_MAGIC      0x4D435450   // "MCTP"
+#define MCTP_MAGIC_SEEN 0x5345454E   // "SEEN"
+    NvU32 mctpMagic;                 // "MCTP"
+    NvU32 mctpPayloadSize;           // Size of the full (encrypted?) payload
     NvU32 mctpHeader;                // MCTP transport header
     NvU32 nvdmHeader;                // NVDM over MCTP header
 
-    NvU32 checkSum;                  // Set to value needed to make checksum always zero.
-    NvU32 seqNum;                    // Sequence number maintained by the message queue.
-
-    //
-    // Flexible payload containing:
-    // (a) GSP_MSG_QUEUE_ENCRYPTION_TAG (if Confidential Compute is enabled)
-    // (b) rpc_message_header_v (RPC header)
-    // (c) actual payload data
-    //
-    NvU8 payload[];
+#ifdef GSPRM_HWASAN_ENABLE
+    // This is required to align `payload` on a granule-boundary. The specific
+    // alignment has to do with implementation details of shadow memory. For
+    // our purposes, we just need to have it be 16-byte aligned.
+    NvU8 __hwasan_meta_chromatics_padding[8];
+#endif
+    union
+    {
+        struct
+        {
+            GSP_MSG_QUEUE_ENCRYPTION_TAG encryptionTag;
+            NvU32 nvdmPayloadSize;
+            NvU32 reserved;
+            NvU8 payload[];  // vGPU RPC or GMCAPI payload
+        } withEncryption;
+        struct
+        {
+            NvU32 nvdmPayloadSize;
+            NvU32 reserved;
+            NvU8 payload[];  // vGPU RPC or GMCAPI payload
+        } noEncryption;
+    };
 } GSP_MSG_QUEUE_ELEMENT;
+
+#define GSP_MSG_QUEUE_ELEMENT_ENCRYPTION_OFFSET \
+    (NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, withEncryption) + sizeof(GSP_MSG_QUEUE_ENCRYPTION_TAG))
+
+#define GSP_MSG_QUEUE_ELEMENT_SIZE_WITH_ENCRYPTION sizeof(GSP_MSG_QUEUE_ELEMENT)
+#define GSP_MSG_QUEUE_ELEMENT_SIZE_NO_ENCRYPTION \
+    (NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, withEncryption) + 2 * sizeof(NvU32))
+
+ct_assert(GSP_MSG_QUEUE_ELEMENT_SIZE_WITH_ENCRYPTION ==
+    (GSP_MSG_QUEUE_ELEMENT_SIZE_NO_ENCRYPTION + sizeof(GSP_MSG_QUEUE_ENCRYPTION_TAG)));
+
+#ifdef GSPRM_HWASAN_ENABLE
+// Ensure payload is granule-aligned (16 bytes) for both encryption modes
+ct_assert((NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, withEncryption.payload) % 16) == 0);
+ct_assert((NV_OFFSETOF(GSP_MSG_QUEUE_ELEMENT, noEncryption.payload) % 16) == 0);
+#endif
+
 
 typedef struct _message_queue_info
 {
@@ -87,8 +158,6 @@ typedef struct _message_queue_info
     GSP_MSG_QUEUE_ELEMENT *pCmdQueueElement;    // Working copy of command queue element.
     void                  *pMetaData;
     msgqHandle             hQueue;              // Do not allow requests when hQueue is null.
-    NvU32                  txSeqNum;            // Next sequence number for tx.
-    NvU32                  rxSeqNum;            // Next sequence number for rx.
     NvU32                  txBufferFull;
     NvU32                  queueIdx;            // QueueIndex used to identify which task the message is supposed to be sent to.
     NvBool                 bErrorInjectionEnabled;
@@ -123,31 +192,17 @@ gspMsgQueueBytesToElements(NvU32 bytes, NvLength queueElementSizeMin)
 static NV_INLINE GSP_MSG_QUEUE_ENCRYPTION_TAG *
 gspMsgQueueGetEncryptionTag(GSP_MSG_QUEUE_ELEMENT *pQueueElem)
 {
-    return (GSP_MSG_QUEUE_ENCRYPTION_TAG *)pQueueElem->payload;
+    return &pQueueElem->withEncryption.encryptionTag;
 }
 
-static NV_INLINE rpc_message_header_v *
+static NV_INLINE void *
 gspMsgQueueGetRpcMessageHeader
 (
     MESSAGE_QUEUE_INFO *pMQI,
     GSP_MSG_QUEUE_ELEMENT *pQueueElem
 )
 {
-    if (pMQI->bEncryptionEnabled)
-        return (rpc_message_header_v *)(gspMsgQueueGetEncryptionTag(pQueueElem) + 1);
-
-    return (rpc_message_header_v *)pQueueElem->payload;
-}
-
-static NV_INLINE NvU32
-gspMsgQueueGetRpcMessageLength
-(
-    MESSAGE_QUEUE_INFO *pMQI,
-    GSP_MSG_QUEUE_ELEMENT *pQueueElem
-)
-{
-    rpc_message_header_v *pRpc = gspMsgQueueGetRpcMessageHeader(pMQI, pQueueElem);
-    return pRpc->length;
+    return (pMQI->bEncryptionEnabled) ? pQueueElem->withEncryption.payload : pQueueElem->noEncryption.payload;
 }
 
 static NV_INLINE NV_STATUS
@@ -160,14 +215,10 @@ gspMsgQueueCCEncrypt
 )
 {
     GSP_MSG_QUEUE_ENCRYPTION_TAG *pCcTag = gspMsgQueueGetEncryptionTag(pElement);
-    NvU8 *pRpcPayload = (NvU8 *)gspMsgQueueGetRpcMessageHeader(pMQI, pElement);
-
-    // Use sequence number as AAD
-    portMemCopy(pCcTag->aadBuffer, sizeof(pCcTag->aadBuffer),
-                (NvU8 *)&pElement->seqNum, sizeof(pElement->seqNum));
+    NvU8 *pRpcPayload = (NvU8 *)pElement + GSP_MSG_QUEUE_ELEMENT_ENCRYPTION_OFFSET;
 
     return ccslEncryptWithRotationChecks(pCcslCtx, payloadSize, pRpcPayload,
-                                         pCcTag->aadBuffer, sizeof(pCcTag->aadBuffer),
+                                         NULL, 0,
                                          pRpcPayload, pCcTag->authTagBuffer);
 }
 
@@ -181,31 +232,11 @@ gspMsgQueueCCDecrypt
 )
 {
     GSP_MSG_QUEUE_ENCRYPTION_TAG *pCcTag = gspMsgQueueGetEncryptionTag(pElement);
-    NvU8 *pRpcPayload = (NvU8 *)gspMsgQueueGetRpcMessageHeader(pMQI, pElement);
+    NvU8 *pRpcPayload = (NvU8 *)pElement + GSP_MSG_QUEUE_ELEMENT_ENCRYPTION_OFFSET;
 
     return ccslDecryptWithRotationChecks(pCcslCtx, payloadSize, pRpcPayload,
-                                         NULL, pCcTag->aadBuffer, sizeof(pCcTag->aadBuffer),
+                                         NULL, NULL, 0,
                                          pRpcPayload, pCcTag->authTagBuffer);
-}
-
-/*!
- * Calculate 32-bit checksum
- *
- * This routine assumes that the data is padded out with zeros to the next
- * 8-byte alignment, and it is OK to read past the end to the 8-byte alignment.
- */
-static NV_INLINE NvU32 _checkSum32(void *pData, NvU32 uLen)
-{
-    NvU64 *p        = (NvU64 *)pData;
-    NvU64 *pEnd     = (NvU64 *)((NvUPtr)pData + uLen);
-    NvU64  checkSum = 0;
-
-    NV_ASSERT_CHECKED(uLen > 0);
-
-    while (p < pEnd)
-        checkSum ^= *p++;
-
-    return NvU64_HI32(checkSum) ^ NvU64_LO32(checkSum);
 }
 
 #endif // _MESSAGE_QUEUE_PRIV_H_

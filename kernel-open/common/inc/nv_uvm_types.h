@@ -563,6 +563,10 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
+    // Out: Indicates that at least one non-ats device is present in the
+    // system
+    NvBool nonAtsDevicePresent;
+
     // Out: True if HW trusted execution, such as AMD's SEV-SNP or Intel's TDX,
     // is enabled in the VM, indicating that Confidential Computing must be
     // also enabled in the GPU(s); these two security features are either both
@@ -718,6 +722,28 @@ typedef struct UvmGpuInfo_tag
     // to direct NVLink peers.
     NvBool nvlDirectConnect;
     NvU64 nvlDirectConnectMemoryWindowStart;
+
+    // Compute GPU has no vidmem, used to detect iGPUs.
+    NvBool gpuArchIsZeroFb;
+
+    struct
+    {
+        // Indicates if fabric-based sysmem access is supported on this GPU
+        NvBool   bSupported;
+
+        // Start of the FLA window mapped to local CPU sysmem
+        NvU64    flaStart;
+
+        // Size of the FLA window starting from flaWindowStart
+        NvU64    flaSize;
+
+        // DMA/IOVA address corresponding to the start of local CPU sysmem
+        NvU64    dmaAddrBase;
+
+        // Indicates if DMA addresses are identity-mapped (no IOMMU translation).
+        // If false, physical sysmem ranges need to be linked into the IOVA range.
+        NvBool   bIdentityDmaMap;
+    } flaWindowForCpuMemNode;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag

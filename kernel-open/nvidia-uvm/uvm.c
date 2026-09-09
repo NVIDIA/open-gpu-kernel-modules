@@ -1013,6 +1013,10 @@ static long uvm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_CREATE_EXTERNAL_RANGE,          uvm_api_create_external_range);
         UVM_ROUTE_CMD_ALLOC_INIT_CHECK(UVM_MAP_EXTERNAL_ALLOCATION,        uvm_api_map_external_allocation);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_MAP_EXTERNAL_SPARSE,            uvm_api_map_external_sparse);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_IS_DMA_BUF_IMPORT_SUPPORTED,    uvm_api_is_dma_buf_import_supported);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_IMPORT_DMA_BUF,                 uvm_api_import_dma_buf);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_MAP_DMA_BUF,                    uvm_api_map_dma_buf);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_UNMAP_DMA_BUF,                  uvm_api_unmap_dma_buf);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_FREE,                           uvm_api_free);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_DISCARD,                        uvm_api_discard);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_SET_PREFERRED_LOCATION,         uvm_api_set_preferred_location);

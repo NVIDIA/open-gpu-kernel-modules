@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,13 +25,12 @@
 #include "core/core.h"
 
 #include "rmapi/client.h"
-#include "rmapi/rs_utils.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
 NvBool
 hypervisorCheckForObjectAccess_IMPL
 (
-    NvHandle hClient
+    RmClient *pClient
 )
 {
     NvBool bGrantAccess = NV_FALSE;

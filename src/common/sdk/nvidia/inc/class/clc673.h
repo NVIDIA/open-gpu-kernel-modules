@@ -493,6 +493,9 @@ typedef volatile struct _clc673_tag0 {
 #define NVC673_PRECOMP_WIN_PIPE_HDR_CAPF__SIZE_1                                          32 /*       */
 #define NVC673_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_2TAP                          15:0 /* RWIVF */
 #define NVC673_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_5TAP                         31:16 /* RWIVF */
+#define NVC673_HEAD_CLK_CAP(i)                                (0x5e8+(i)*4) /* RW-4A */
+#define NVC673_HEAD_CLK_CAP__SIZE_1                                            8 /*       */
+#define NVC673_HEAD_CLK_CAP_PCLK_MAX                                         7:0 /* RWIUF */
 #define NVC673_SOR_CLK_CAP(i)                                 (0x608+(i)*4) /* RW-4A */
 #define NVC673_SOR_CLK_CAP__SIZE_1                                             8 /*       */
 #define NVC673_SOR_CLK_CAP_DP_MAX                                            7:0 /* RWIUF */

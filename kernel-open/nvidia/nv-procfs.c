@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,6 +57,7 @@ static struct proc_dir_entry *proc_nvidia_gpus;
 extern NvU32 NVreg_EnableUserNUMAManagement;
 extern char *NVreg_RegistryDwords;
 extern char *NVreg_RegistryDwordsPerDevice;
+extern char *NVreg_RegistryBinaryFilePerDevice;
 extern char *NVreg_RmMsg;
 extern char *NVreg_GpuBlacklist;
 extern char *NVreg_TemporaryFilePath;
@@ -64,6 +65,8 @@ extern char *NVreg_ExcludedGpus;
 
 static char nv_registry_keys[NV_MAX_REGISTRY_KEYS_LENGTH];
 static struct semaphore nv_registry_keys_lock;
+
+static atomic_t nv_procfs_binary_registry_deprecation_warned = ATOMIC_INIT(0);
 
 #if defined(CONFIG_PM)
 nv_pm_action_depth_t nv_procfs_pm_action_depth = NV_PM_ACTION_DEPTH_DEFAULT;
@@ -359,7 +362,7 @@ nv_procfs_close_registry(
     nv_linux_state_t *nvl = NULL;
     nvidia_stack_t *sp = nvpp->sp;
     char *key_name, *key_value, *registry_keys;
-    size_t key_len, len;
+    size_t key_len;
     long count;
     NV_STATUS rm_status;
     int rc = 0;
@@ -388,6 +391,12 @@ nv_procfs_close_registry(
             goto done;
         }
 
+        if (atomic_cmpxchg(&nv_procfs_binary_registry_deprecation_warned, 0, 1) == 0)
+        {
+            nv_printf(NV_DBG_WARNINGS,
+                      "NVRM: Writing binary registry keys through procfs is deprecated on Linux. Use NVreg_RegistryBinaryFilePerDevice instead.\n");
+        }
+
         rm_status = rm_write_registry_binary(sp, nv, key_name,
                 key_value, count);
         if (rm_status != NV_OK)
@@ -406,7 +415,7 @@ nv_procfs_close_registry(
         // Keep the duplicate check, length check, and append atomic.
         if (strstr(registry_keys, key_name) == NULL)
         {
-            len = strlen(registry_keys);
+            size_t len = strlen(registry_keys);
 
             if ((len + key_len + 2) <= NV_MAX_REGISTRY_KEYS_LENGTH)
             {
@@ -450,6 +459,8 @@ nv_procfs_read_params(
                (NVreg_RegistryDwords != NULL) ? NVreg_RegistryDwords : "");
     seq_printf(s, "RegistryDwordsPerDevice: \"%s\"\n",
                (NVreg_RegistryDwordsPerDevice != NULL) ? NVreg_RegistryDwordsPerDevice : "");
+    seq_printf(s, "RegistryBinaryFilePerDevice: \"%s\"\n",
+               (NVreg_RegistryBinaryFilePerDevice != NULL) ? NVreg_RegistryBinaryFilePerDevice : "");
     seq_printf(s, "RmMsg: \"%s\"\n",
                (NVreg_RmMsg != NULL) ? NVreg_RmMsg : "");
     seq_printf(s, "GpuBlacklist: \"%s\"\n",

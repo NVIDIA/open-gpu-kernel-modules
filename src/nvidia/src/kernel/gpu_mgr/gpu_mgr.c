@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,7 +146,6 @@ _gpumgrDetermineConfComputeCapabilities
     // First GPU
     if (ONEBITSET(pGpuMgr->gpuAttachMask))
     {
-        pGpuMgr->ccCaps.bApmFeatureCapable = NV_FALSE;
         pGpuMgr->ccCaps.bHccFeatureCapable = pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE);
         pGpuMgr->ccCaps.bCCFeatureEnabled = bCCFeatureEnabled;
         pGpuMgr->ccCaps.bDevToolsModeEnabled = gpuIsCCDevToolsModeEnabled(pGpu);
@@ -2237,6 +2236,31 @@ OBJGPU *gpumgrGetDisplayParent(OBJGPU *pGpu)
     return pGpu;
 }
 
+static void
+_gpumgrSortGpuIds(NvU32 *pGpuIds, NvU32 *pGpuFlags, NvU32 gpuCount)
+{
+    NvU32 i;
+
+    for (i = 1; i < gpuCount; i++)
+    {
+        NvU32 gpuId = pGpuIds[i];
+        NvU32 gpuFlags = (pGpuFlags != NULL) ? pGpuFlags[i] : 0;
+        NvU32 insert = i;
+
+        while ((insert > 0) && (pGpuIds[insert - 1] > gpuId))
+        {
+            pGpuIds[insert] = pGpuIds[insert - 1];
+            if (pGpuFlags != NULL)
+                pGpuFlags[insert] = pGpuFlags[insert - 1];
+            insert--;
+        }
+
+        pGpuIds[insert] = gpuId;
+        if (pGpuFlags != NULL)
+            pGpuFlags[insert] = gpuFlags;
+    }
+}
+
 //
 // gpumgrGetProbedGpuIds
 //
@@ -2273,6 +2297,9 @@ gpumgrGetProbedGpuIds(NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuIdsParams)
     }
 
     portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    _gpumgrSortGpuIds(pGpuIdsParams->gpuIds, pGpuIdsParams->gpuFlags, j);
+    _gpumgrSortGpuIds(pGpuIdsParams->excludedGpuIds, NULL, k);
 
     for (i = j; i < NV_ARRAY_ELEMENTS(pGpuIdsParams->gpuIds); i++)
         pGpuIdsParams->gpuIds[i] = NV0000_CTRL_GPU_INVALID_ID;
@@ -3620,8 +3647,8 @@ gpumgrUpdateSystemNvlinkTopo_IMPL
     }
 }
 
-NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *
-gpumgrGetNvlinkRecoveryInfo_IMPL
+NVLINK_RESILIENCY_INFO *
+gpumgrGetNvlinkResiliencyInfo_IMPL
 (
     NvU64 DomainBusDevice
 )
@@ -3636,10 +3663,10 @@ gpumgrGetNvlinkRecoveryInfo_IMPL
         // Choose the correct GPU by comparing PCI BusDomainDevice
         // If no matching entry is found, pick the first invalid one.
         //
-        if (!pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].bValid ||
-            (pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].DomainBusDevice == DomainBusDevice))
+        if (!pGpuMgr->nvlinkResiliencyInfo[i].bValid ||
+            (pGpuMgr->nvlinkResiliencyInfo[i].DomainBusDevice == DomainBusDevice))
         {
-            return &pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i];
+            return &pGpuMgr->nvlinkResiliencyInfo[i];
         }
     }
 
@@ -3688,100 +3715,6 @@ gpumgrCheckIndirectPeer_IMPL
 #else
     return NV_FALSE;
 #endif
-}
-
-/*!
- * @brief Set NVLinks (mask) for which initialization is disabled.
- *
- * @param[in]  gpuId        Platform specific GPU Id.
- * @param[in]  mask         Mask representing the links to be disabled.
- *
- * @return NV_OK on success, appropriate error on failure.
- */
-NV_STATUS
-gpumgrSetGpuInitDisabledNvlinks_IMPL
-(
-    NvU32   gpuId,
-    NvU32   mask,
-    NV2080_CTRL_NVLINK_LINK_MASK *pLinks,
-    NvBool  bSkipHwNvlinkDisable
-)
-{
-    OBJSYS     *pSys = SYS_GET_INSTANCE();
-    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
-    NV_STATUS   status = NV_ERR_INVALID_DEVICE;
-    NVLINK_BIT_VECTOR localLinkMask;
-    NV2080_CTRL_NVLINK_LINK_MASK links = {0};
-    NvU32 i;
-
-    if (gpumgrGetGpuFromId(gpuId) != NULL)
-    {
-        return NV_ERR_IN_USE;
-    }
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        convertLinkMasksToBitVector(&mask, sizeof(mask),
-                                    pLinks, &localLinkMask));
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        convertBitVectorToLinkMasks(&localLinkMask, NULL, 0, &links));
-
-    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
-
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
-    {
-        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
-        {
-            // Mask will be validated during Nvlink construct.
-            pGpuMgr->probedGpus[i].initDisabledNvlinks = links;
-            pGpuMgr->probedGpus[i].bSkipHwNvlinkDisable = bSkipHwNvlinkDisable;
-            status = NV_OK;
-            break;
-        }
-    }
-
-    portSyncMutexRelease(pGpuMgr->probedGpusLock);
-
-    return status;
-}
-
-/*!
- * @brief Get NVLinks (mask) for which initialization is disabled.
- *
- * @param[in]  gpuId        Platform specific GPU Id.
- * @param[out]  mask        Mask representing the links to be disabled.
- *
- * @return NV_OK on success, appropriate error on failure.
- */
-NV_STATUS
-gpumgrGetGpuInitDisabledNvlinks_IMPL
-(
-    NvU32   gpuId,
-    NV2080_CTRL_NVLINK_LINK_MASK *pLinks,
-    NvBool  *pbSkipHwNvlinkDisable
-)
-{
-    OBJSYS     *pSys = SYS_GET_INSTANCE();
-    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
-    NV_STATUS   status = NV_ERR_INVALID_DEVICE;
-    NvU32 i;
-
-    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
-
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
-    {
-        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
-        {
-            *pLinks = pGpuMgr->probedGpus[i].initDisabledNvlinks;
-            *pbSkipHwNvlinkDisable = pGpuMgr->probedGpus[i].bSkipHwNvlinkDisable;
-            status = NV_OK;
-            break;
-        }
-    }
-
-    portSyncMutexRelease(pGpuMgr->probedGpusLock);
-
-    return status;
 }
 
 /*!

@@ -71,7 +71,14 @@ void DID2ReadMultistream::startReadingDid2()
                       NV_DISPLAYID2_DDC_ADDRESS >> 1,   // right shifted DDC Address (request identifier in spec)
                       NV_DISPLAYID2_BLOCK_SIZE);        // requested size
 
-    manager->post(&remoteI2cRead, this);
+    if(manager->isPollingEnabledForDpMstDetection())
+    {
+        manager->send(&remoteI2cRead, this);
+    }
+    else
+    {
+        manager->post(&remoteI2cRead, this);
+    }
 }
 
 void DID2ReadMultistream::messageCompleted(MessageManager::Message * from)
@@ -170,6 +177,8 @@ bool DID2ReadMultistream::readNextRequest()
                 DP_PRINTF(DP_ERROR, "Failed to resize buffer");
                 return false;
             }
+            // Reassign pSection as resize() may have reallocated buffer->data
+            pSection = buffer->getData() + displayId2xSize;
         }
     }
 
@@ -248,5 +257,12 @@ void DID2ReadMultistream::readNextBlock()
                       NV_DISPLAYID2_DDC_ADDRESS >> 1,   // right shifted DDC Address (request identifier in spec)
                       NV_DISPLAYID2_BLOCK_SIZE);        // requested size
 
-    manager->post(&remoteI2cRead, this, false);
+    if(manager->isPollingEnabledForDpMstDetection())
+    {
+        manager->send(&remoteI2cRead, this);
+    }
+    else
+    {
+        manager->post(&remoteI2cRead, this, false);
+    }
 }

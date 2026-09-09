@@ -26,7 +26,7 @@
  * @brief NVIDIA GPU-specific CPER section implementation
  */
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 #include "cper/gpu_cper.h"
 #include "nvport/nvport.h"
@@ -102,7 +102,7 @@ NV_STATUS cperAddNvidiaEventSection
     pEventHeader->sourceDeviceType = NV_CPER_NV_SOURCE_DEVICE_TYPE_GPU;
     pEventHeader->eventType = pParams->eventType;
     pEventHeader->eventSubType = pParams->eventSubType;
-    pEventHeader->eventLinkId = pParams->eventLinkId;
+    pEventHeader->traceId = pParams->traceId;
 
     // Copy module signature
     if (pParams->pModuleSignature != NULL)
@@ -279,20 +279,16 @@ NV_STATUS cperNvidiaEventAddGpuLegacyXidContext
     NV_STATUS status;
     void *pData;
     NV_CPER_NV_GPU_LEGACY_XID *pXid;
-    NvU32 maxDataSize;
     NvU32 actualDataSize;
     NvLength msgLen;
 
     if (pState == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Allocate max size for Xid struct + message
-    maxDataSize = sizeof(NV_CPER_NV_GPU_LEGACY_XID) + NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN;
-
     status = cperNvidiaEventSectionAddContext(pState,
                                               NV_CPER_NV_DATA_FORMAT_GPU_LEGACY_XID,
                                               NV_CPER_NV_GPU_LEGACY_XID_VERSION,
-                                              maxDataSize,
+                                              sizeof(GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID),
                                               &pData);
     if (status != NV_OK)
         return status;
@@ -302,15 +298,15 @@ NV_STATUS cperNvidiaEventAddGpuLegacyXidContext
 
     // Copy message and get actual length (including NUL terminator)
     if (pMessage != NULL)
-        msgLen = portStringCopy((char *)(pXid + 1),
-                                NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN,
+        msgLen = portStringCopy(pXid->message,
+                                NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1,
                                 pMessage,
-                                NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN);
+                                NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1);
     else
         msgLen = 0;
 
     // Shrink context to actual size
-    actualDataSize = (NvU32)(sizeof(NV_CPER_NV_GPU_LEGACY_XID) + msgLen);
+    actualDataSize = (NvU32)GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_SIZE(msgLen);
     cperNvidiaEventSectionSetContextDataSize(pState, pData, actualDataSize);
 
     return NV_OK;
@@ -383,8 +379,7 @@ NV_STATUS cperNvidiaEventAdd8BKVContext
     if (pState == NULL || (pKeyValues == NULL && count > 0))
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Each key-value pair is 2 x NvU64 = 16 bytes
-    dataSize = count * 2 * sizeof(NvU64);
+    dataSize = count * sizeof(NV_CPER_NV_KEY_VALUE_64);
 
     status = cperNvidiaEventSectionAddContext(pState,
                                               NV_CPER_NV_DATA_FORMAT_KEY_VALUE_64,
@@ -414,8 +409,7 @@ NV_STATUS cperNvidiaEventAdd4BKVContext
     if (pState == NULL || (pKeyValues == NULL && count > 0))
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Each key-value pair is 2 x NvU32 = 8 bytes
-    dataSize = count * 2 * sizeof(NvU32);
+    dataSize = count * sizeof(NV_CPER_NV_KEY_VALUE_32);
 
     status = cperNvidiaEventSectionAddContext(pState,
                                               NV_CPER_NV_DATA_FORMAT_KEY_VALUE_32,
@@ -493,6 +487,8 @@ NV_STATUS cperNvidiaEventAdd4BVContext
 
 void cperNvidiaEventDumpRecordHeader
 (
+    PORT_DEVICE                 *pDev,
+    PORT_LOG_LEVEL               level,
     const NV_CPER_RECORD_HEADER *pHdr,
     NvU32                        seq,
     const char                  *pLogPrefix
@@ -504,15 +500,17 @@ void cperNvidiaEventDumpRecordHeader
     if (pLogPrefix == NULL)
         pLogPrefix = CPER_LOG_LEVEL_FW_WARN;
 
-    CPER_PRINT(seq, pLogPrefix, "%s reported by the %s",
+    CPER_PRINT(pDev, level, seq, pLogPrefix, "%s reported by the %s",
                cperNvidiaNotifyTypeToString(&pHdr->notificationType),
                cperNvidiaCreatorIdToString(&pHdr->creatorId));
-    CPER_PRINT(seq, pLogPrefix, "event severity: %s",
+    CPER_PRINT(pDev, level, seq, pLogPrefix, "event severity: %s",
                cperSeverityToString((NV_CPER_SEVERITY)pHdr->errorSeverity));
 }
 
 void cperNvidiaEventDumpSection
 (
+    PORT_DEVICE                      *pDev,
+    PORT_LOG_LEVEL                    level,
     NvU32                             eventIdx,
     const NV_CPER_RECORD_HEADER      *pHdr,
     const NV_CPER_SECTION_DESCRIPTOR *pDesc,
@@ -533,22 +531,22 @@ void cperNvidiaEventDumpSection
     if (pLogPrefix == NULL)
         pLogPrefix = CPER_LOG_LEVEL_FW_WARN;
 
-    CPER_PRINT(seq, pLogPrefix, " Event %u, type: %s",
+    CPER_PRINT(pDev, level, seq, pLogPrefix, " Event %u, type: %s",
                eventIdx,
                cperSeverityToString((NV_CPER_SEVERITY)pDesc->sectionSeverity));
 
     if (pDesc->validationBits & NV_CPER_SECTION_VALID_FRU_ID)
-        CPER_PRINT(seq, pLogPrefix, " fru_id: " NV_CPER_GUID_FMT,
+        CPER_PRINT(pDev, level, seq, pLogPrefix, " fru_id: " NV_CPER_GUID_FMT,
                    NV_CPER_GUID_FMT_ARGS(&pDesc->fruId));
 
     if (pDesc->validationBits & NV_CPER_SECTION_VALID_FRU_TEXT)
-        CPER_PRINT(seq, pLogPrefix, " fru_text: %s", (const char *)pDesc->fruText);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, " fru_text: %s", (const char *)pDesc->fruText);
 
-    CPER_PRINT(seq, pLogPrefix, "  section_type: NVIDIA Event v1");
+    CPER_PRINT(pDev, level, seq, pLogPrefix, "  section_type: NVIDIA Event v1");
 
     if (sectionLength < (sizeof(*pEv) + sizeof(*pInfo)))
     {
-        CPER_PRINT(seq, pLogPrefix, "  decoding_error: section too small");
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  decoding_error: section too small");
         return;
     }
 
@@ -561,13 +559,14 @@ void cperNvidiaEventDumpSection
             (NV_CPER_NV_GPU_EVENT_ORIGINATOR)pInfo->eventOriginator);
         const char *pSig = (const char *)pEv->sourceModuleSignature;
 
-        CPER_PRINT(seq, pLogPrefix, "  source_device_type: %u, %s",
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  source_device_type: %u, %s",
                    pEv->sourceDeviceType, pTypeStr);
-        CPER_PRINT(seq, pLogPrefix, "  event_originator: %u, %s", pInfo->eventOriginator, pOrigStr);
-        CPER_PRINT(seq, pLogPrefix, "  module_signature: %s", pSig);
-        CPER_PRINT(seq, pLogPrefix, "  event_type: 0x%x", pEv->eventType);
-        CPER_PRINT(seq, pLogPrefix, "  event_subtype: 0x%x", pEv->eventSubType);
-        CPER_PRINT(seq, pLogPrefix, "  event_link_id: %llu", pEv->eventLinkId);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  event_originator: %u, %s",
+                   pInfo->eventOriginator, pOrigStr);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  module_signature: %s", pSig);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  event_type: 0x%x", pEv->eventType);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  event_subtype: 0x%x", pEv->eventSubType);
+        CPER_PRINT(pDev, level, seq, pLogPrefix, "  trace_id: 0x%llx", pEv->traceId);
     }
 
     // Walk all contexts and print any recognized ones.
@@ -591,7 +590,7 @@ void cperNvidiaEventDumpSection
         ctxMaxDataSize = ctxTotalSize - (NvU32)sizeof(*pCtxHdr);
         if (pCtxHdr->dataSize > ctxMaxDataSize)
         {
-            CPER_PRINT(seq, pLogPrefix,
+            CPER_PRINT(pDev, level, seq, pLogPrefix,
                        "   Event Context %u, type: 0x%x decoding_error: data_size %u > max %u",
                        ctxIdx, pCtxHdr->dataFormatType, pCtxHdr->dataSize, ctxMaxDataSize);
             offset += ctxTotalSize;
@@ -606,56 +605,63 @@ void cperNvidiaEventDumpSection
             const NV_CPER_NV_GPU_INIT_METADATA *pMeta =
                 (const NV_CPER_NV_GPU_INIT_METADATA *)pCtxData;
 
-            CPER_PRINT(seq, pLogPrefix, "   Event Context %u, type: GPU Init Info", ctxIdx);
-            CPER_PRINT(seq, pLogPrefix, "    device_name: %s",
+            CPER_PRINT(pDev, level, seq, pLogPrefix,
+                       "   Event Context %u, type: GPU Init Info", ctxIdx);
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "    device_name: %s",
                        (const char *)pMeta->deviceName);
-            CPER_PRINT(seq, pLogPrefix, "    vbios_version: %s",
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "    vbios_version: %s",
                        (const char *)pMeta->firmwareVersion);
-            CPER_PRINT(seq, pLogPrefix, "    gsp_fw_version: %s",
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "    gsp_fw_version: %s",
                        (const char *)pMeta->pfDriverMicrocodeVersion);
-            CPER_PRINT(seq, pLogPrefix, "    pf_driver_version: %s",
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "    pf_driver_version: %s",
                        (const char *)pMeta->pfDriverVersion);
 
             if (pMeta->vfDriverVersion[0] != 0)
-                CPER_PRINT(seq, pLogPrefix, "    vf_driver_version: %s",
+                CPER_PRINT(pDev, level, seq, pLogPrefix, "    vf_driver_version: %s",
                            (const char *)pMeta->vfDriverVersion);
 
             if (pMeta->pdi != 0)
-                CPER_PRINT(seq, pLogPrefix, "    pdi: 0x%llx", pMeta->pdi);
+                CPER_PRINT(pDev, level, seq, pLogPrefix, "    pdi: 0x%llx", pMeta->pdi);
 
             if ((pMeta->pciVendorId != 0) && (pMeta->pciDeviceId != 0))
             {
-                CPER_PRINT(seq, pLogPrefix, "    pci: %04x:%04x subsys %04x:%04x rev %02x",
+                CPER_PRINT(pDev, level, seq, pLogPrefix,
+                           "    pci: %04x:%04x subsys %04x:%04x rev %02x",
                            pMeta->pciVendorId, pMeta->pciDeviceId,
                            pMeta->pciSubsystemVendorId, pMeta->pciSubsystemId,
                            pMeta->pciRev);
             }
 
             if (pMeta->architectureId != 0)
-                CPER_PRINT(seq, pLogPrefix, "    architecture_id: 0x%x", pMeta->architectureId);
+                CPER_PRINT(pDev, level, seq, pLogPrefix, "    architecture_id: 0x%x",
+                           pMeta->architectureId);
 
             if (pMeta->bar0Start != 0 && pMeta->bar0Size != 0)
-                CPER_PRINT(seq, pLogPrefix, "    bar0: start 0x%llx size 0x%llx",
+                CPER_PRINT(pDev, level, seq, pLogPrefix,
+                           "    bar0: start 0x%llx size 0x%llx",
                            pMeta->bar0Start, pMeta->bar0Size);
             if (pMeta->bar1Start != 0 && pMeta->bar1Size != 0)
-                CPER_PRINT(seq, pLogPrefix, "    bar1: start 0x%llx size 0x%llx",
+                CPER_PRINT(pDev, level, seq, pLogPrefix,
+                           "    bar1: start 0x%llx size 0x%llx",
                            pMeta->bar1Start, pMeta->bar1Size);
             if (pMeta->bar2Start != 0 && pMeta->bar2Size != 0)
-                CPER_PRINT(seq, pLogPrefix, "    bar2: start 0x%llx size 0x%llx",
+                CPER_PRINT(pDev, level, seq, pLogPrefix,
+                           "    bar2: start 0x%llx size 0x%llx",
                            pMeta->bar2Start, pMeta->bar2Size);
         }
         else if (pCtxHdr->dataFormatType == NV_CPER_NV_DATA_FORMAT_GPU_LEGACY_XID &&
-                 pCtxHdr->dataSize >= sizeof(NV_CPER_NV_GPU_LEGACY_XID))
+                 pCtxHdr->dataSize >= NV_OFFSETOF(NV_CPER_NV_GPU_LEGACY_XID, message))
         {
             const NV_CPER_NV_GPU_LEGACY_XID *pLegacyXid =
                 (const NV_CPER_NV_GPU_LEGACY_XID *)pCtxData;
-            NvU32 msgMax = pCtxHdr->dataSize - (NvU32)sizeof(*pLegacyXid);
-            const char *pMsg = (const char *)(pLegacyXid + 1);
+            NvU32 msgLen = pCtxHdr->dataSize - NV_OFFSETOF(NV_CPER_NV_GPU_LEGACY_XID, message);
+            const char *pMsg = pLegacyXid->message;
 
-            CPER_PRINT(seq, pLogPrefix, "   Event Context %u, type: GPU Legacy Xid", ctxIdx);
-            CPER_PRINT(seq, pLogPrefix, "    xid: %u", pLegacyXid->xidCode);
-            if (msgMax > 0)
-                CPER_PRINT(seq, pLogPrefix, "    message: \"%s\"", pMsg);
+            CPER_PRINT(pDev, level, seq, pLogPrefix,
+                       "   Event Context %u, type: GPU Legacy Xid", ctxIdx);
+            CPER_PRINT(pDev, level, seq, pLogPrefix, "    xid: %u", pLegacyXid->xidCode);
+            if (msgLen > 0)
+                CPER_PRINT(pDev, level, seq, pLogPrefix, "    message: \"%s\"", pMsg);
         }
 
         offset += ctxTotalSize;

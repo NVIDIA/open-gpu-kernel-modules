@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include "gpu/gpu.h"
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -261,7 +262,7 @@ memmgrAllocDetermineAlignment_GM107
     return NV_OK;
 }
 
-static void
+static NV_STATUS
 memmgrSetZbcReferenced
 (
     OBJGPU *pGpu,
@@ -272,21 +273,50 @@ memmgrSetZbcReferenced
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV0080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS params = {0};
+    NvBool bLockAcquired = NV_FALSE;
+    NV_STATUS status = NV_OK;
 
     // Allocations are RPCed to host, so they are counted there
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
-        return;
+        return status;
+
+    //
+    // For lockless sysmem, tegra and tegra-PCIE support ZBC on sysmem and need
+    // the GPU lock in order to make the RPC.
+    // Conditionally acquire it in case the caller already has the lock
+    // (always the case for vidmem currently)
+    //
+    if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
+    {
+        if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance) && !rmGpuLockIsOwner())
+        {
+            status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                               RM_LOCK_MODULES_MEM);
+
+            NV_ASSERT_OK_OR_RETURN(status);
+
+            bLockAcquired = NV_TRUE;
+        }
+    }
 
     params.bZbcSurfacesExist = bZbcSurfacesExist;
 
-    NV_ASSERT_OK(
-        pRmApi->Control(
-            pRmApi,
-            hClient,
-            hDevice,
-            NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED,
-            &params,
-            sizeof(params)));
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hDevice,
+                             NV0080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED,
+                             &params,
+                             sizeof(params));
+
+    NV_ASSERT_OK(status);
+
+    if (bLockAcquired)
+    {
+        // UNLOCK: release GPUs lock
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    return status;
 }
 
 /*!
@@ -357,9 +387,9 @@ memmgrAllocHal_GM107
 {
     KernelMemorySystem *pKernelMemorySystem   = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS           status                = NV_OK;
-    NvU32               comprAttr, zcullAttr, type;
+    NvU32               zcullAttr;
     NvU32               cacheAttr;
-    NvU32               format, kind, bAlignPhase;
+    NvU32               kind, bAlignPhase;
     NvU32               retAttr               = pFbAllocInfo->retAttr;
     NvU32               retAttr2              = pFbAllocInfo->retAttr2;
     NV_ADDRESS_SPACE    addrSpace;
@@ -368,29 +398,13 @@ memmgrAllocHal_GM107
         kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
 
     // get the specified attribute values
-    comprAttr     = DRF_VAL(OS32, _ATTR, _COMPR, pFbAllocInfo->pageFormat->attr);
     zcullAttr     = DRF_VAL(OS32, _ATTR, _ZCULL, pFbAllocInfo->pageFormat->attr);
-    format        = DRF_VAL(OS32, _ATTR, _FORMAT, pFbAllocInfo->pageFormat->attr);
     cacheAttr     = DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pFbAllocInfo->pageFormat->attr2);
-    type          = pFbAllocInfo->pageFormat->type;
     addrSpace     = memmgrAllocGetAddrSpace(pMemoryManager, pFbAllocInfo->pageFormat->flags, retAttr);
 
     bAlignPhase = !!(pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_SKIP_RESOURCE_ALLOC);
 
-    //
-    // errorcheck specified attributes
-    // NOTE: With the new macro, the distinction between 32-bit colour
-    // compression and Z compression is in the value of 'type' - DEPTH or IMAGE
-    // So the caller is urged to verify integrity.
-    //
-    if (
-        // check the value of compression attribute
-        // attributes verification for compressed surfaces
-        !(memmgrVerifyComprAttrs_HAL(pMemoryManager, type, format, comprAttr)) ||
-        // depth buffer attribute verification
-        !(memmgrVerifyDepthSurfaceAttrs_HAL(pMemoryManager, type, format))
-        || (zcullAttr == NVOS32_ATTR_ZCULL_REQUIRED) || (zcullAttr == NVOS32_ATTR_ZCULL_SHARED)
-        )
+    if ((zcullAttr == NVOS32_ATTR_ZCULL_REQUIRED) || (zcullAttr == NVOS32_ATTR_ZCULL_SHARED))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -540,7 +554,7 @@ memmgrAllocHal_GM107
                           zbcTableIndex, pMemoryManager->zbcSurfaces[zbcTableIndex], pFbAllocInfo->hwResId);
 
                 if (pMemoryManager->zbcSurfaces[zbcTableIndex] == 1)
-                    memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_TRUE);
+                    NV_ASSERT_OK_OR_RETURN(memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_TRUE));
             }
         }
         else
@@ -607,7 +621,7 @@ memmgrFreeHal_GM107
             pMemoryManager->zbcSurfaces[zbcTableIndex]--;
 
             if (pMemoryManager->zbcSurfaces[zbcTableIndex] == 0)
-                memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_FALSE);
+                NV_ASSERT_OK(memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_FALSE));
         }
 
         NV_PRINTF(LEVEL_INFO,
@@ -940,12 +954,10 @@ memmgrInitReservedMemory_GM107
 )
 {
     NvU64                  tmpAddr          = 0;
-    NvU32                  i;
-    NvBool                 bRsvdRegionIsValid = NV_FALSE;
-    NvU32                  rsvdRegion       = 0;
     NvU64                  rsvdTopOfMem     = 0;
-    NvU64                  rsvdAlignment    = 0;
+    NvU64                  rsvdAlignment    = RM_PAGE_SIZE_64K;
     NvBool                 bMemoryProtectionEnabled = NV_FALSE;
+    PFB_REGION_DESCRIPTOR  pRsvdRegion      = NULL;
 
     if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
     {
@@ -962,158 +974,116 @@ memmgrInitReservedMemory_GM107
     memmgrStateInitReservedMemory(pGpu, pMemoryManager);
 
     // Align reserved memory to 64K granularity
-    pMemoryManager->rsvdMemorySize = NV_ALIGN_UP(pMemoryManager->rsvdMemorySize, 0x10000);
+    pMemoryManager->rsvdMemorySize = NV_ALIGN_UP(pMemoryManager->rsvdMemorySize, rsvdAlignment);
 
     NV_PRINTF(LEVEL_INFO, "Final reserved memory size = 0x%llx\n", pMemoryManager->rsvdMemorySize);
 
-    if (!IS_VIRTUAL(pGpu))
+    if (pMemoryManager->rsvdMemorySize != 0)
     {
-        //
-        // Reserved memory must fit in BAR0 window - well compression backing is after this.
-        // Does not matter for GSP itself as BAR0 is not used.
-        //
-        NV_ASSERT_OR_RETURN(RMCFG_FEATURE_PLATFORM_GSP ||
-            memmgrCheckReservedMemorySize_HAL(pGpu, pMemoryManager) == NV_OK, NV_ERR_INSUFFICIENT_RESOURCES);
-    }
-
-    NV_PRINTF(LEVEL_INFO, "RESERVED Memory size: 0x%llx\n", pMemoryManager->rsvdMemorySize);
-
-    // ***************************************************************
-    // Done sizing reserved memory
-    // ***************************************************************
-
-    if (pMemoryManager->Ram.numFBRegions > 0)
-    {
-        //
-        // Find the last region in memory which is not already reserved or
-        // protected.  RM's reserved memory will then be carved out of it below
-        // (once the final size and address are determined).
-        // RM internal data like BAR2 page tables, BAR1/2 instance blocks, etc should
-        // always be in protected memory whenever memory protection is enabled using Hopper
-        // Confidential Compute. For uses outside Hopper Confidential Compute, RM internal
-        // data should always be in unprotected video memory.
-        //
-        for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
+        NV_ASSERT_OR_RETURN(!pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB), NV_ERR_INVALID_STATE);
+        if (!IS_VIRTUAL(pGpu))
         {
-            if (pMemoryManager->Ram.fbRegion[i].bRsvdRegion ||
-                (bMemoryProtectionEnabled && !pMemoryManager->Ram.fbRegion[i].bProtected) ||
-                (!bMemoryProtectionEnabled && pMemoryManager->Ram.fbRegion[i].bProtected))
+            //
+            // Reserved memory must fit in BAR0 window - well compression backing is after this.
+            // Does not matter for GSP itself as BAR0 is not used.
+            //
+            NV_ASSERT_OR_RETURN(RMCFG_FEATURE_PLATFORM_GSP ||
+                memmgrCheckReservedMemorySize_HAL(pGpu, pMemoryManager) == NV_OK, NV_ERR_INSUFFICIENT_RESOURCES);
+        }
+
+        NV_PRINTF(LEVEL_INFO, "RESERVED Memory size: 0x%llx\n", pMemoryManager->rsvdMemorySize);
+
+        // ***************************************************************
+        // Done sizing reserved memory
+        // ***************************************************************
+
+        if (pMemoryManager->Ram.numFBRegions > 0)
+        {
+            //
+            // Find the last region in memory which is not already reserved or
+            // protected.  RM's reserved memory will then be carved out of it below
+            // (once the final size and address are determined).
+            // RM internal data like BAR2 page tables, BAR1/2 instance blocks, etc should
+            // always be in protected memory whenever memory protection is enabled using Hopper
+            // Confidential Compute. For uses outside Hopper Confidential Compute, RM internal
+            // data should always be in unprotected video memory.
+            //
+            pRsvdRegion = memmgrGetLastUsableFbRegion(pGpu, pMemoryManager,
+                                                      &bMemoryProtectionEnabled);
+        }
+
+        NV_ASSERT_OR_RETURN(pRsvdRegion != NULL, NV_ERR_INVALID_STATE);
+
+        //
+        // Generate the FB physical offset of reserved mem.
+        //
+        // In L2 cache only mode, base this off the size of L2 cache
+        // If reserved memory at top of FB, base this off the size of FB
+        //
+        if (gpuIsCacheOnlyModeEnabled(pGpu) || !pMemoryManager->bReservedMemAtBottom)
+        {
+            const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
+                kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+
+            if (gpuIsCacheOnlyModeEnabled(pGpu))
             {
-                continue;
+                rsvdTopOfMem = pMemorySystemConfig->l2CacheSize;
             }
+            else
+            {
+                rsvdTopOfMem = pRsvdRegion->limit + 1;
+            }
+            tmpAddr = rsvdTopOfMem - pMemoryManager->rsvdMemorySize;
+            pMemoryManager->rsvdMemoryBase = RM_ALIGN_DOWN(tmpAddr, rsvdAlignment);
+            pMemoryManager->rsvdMemorySize = rsvdTopOfMem - pMemoryManager->rsvdMemoryBase;
 
-            bRsvdRegionIsValid = NV_TRUE;
-            rsvdRegion = i;
+            // make sure we didn't just blindly truncate that...
+            NV_ASSERT(0 == NvU64_HI32(rsvdTopOfMem - pMemoryManager->rsvdMemoryBase));
         }
-    }
-
-
-    // No need to create a reserved region for vGPU.
-    // For vGPU, memory required for the host will be reserved separately.
-    //
-    if (IS_VIRTUAL(pGpu))
-    {
-        bRsvdRegionIsValid = NV_FALSE;
-    }
-
-    rsvdAlignment = RM_PAGE_SIZE;
-
-    //
-    // Generate the FB physical offset of reserved mem.
-    //
-    // In L2 cache only mode, base this off the size of L2 cache
-    // If reserved memory at top of FB, base this off the size of FB
-    //
-    if (gpuIsCacheOnlyModeEnabled(pGpu) || !pMemoryManager->bReservedMemAtBottom)
-    {
-        const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-            kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
-
-        if (gpuIsCacheOnlyModeEnabled(pGpu))
-        {
-            rsvdTopOfMem = pMemorySystemConfig->l2CacheSize;
-        }
+        // Reserved memory located at bottom of FB, base this at start of FB
         else
         {
-            rsvdTopOfMem = pMemoryManager->Ram.fbAddrSpaceSizeMb << 20;
-
-            //
-            // We are assuming that subheap is at the end of guest FB. We place
-            // the guest RM reserved region at the end of the guest client owned
-            // portion of the guest FB (total guest FB minus the subheap). The
-            // guest FB is partitioned in the following way (Addresses increasing
-            // from left to right).
-            //
-            //    Region 0                  Region 1                 Region 2
-            // [Guest client owned FB] [Guest RM reserved region] [Guest subheap]
-            //
-            // Guest heap is created only for Region 0.
-            //
-            if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-                rsvdTopOfMem -= memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
-
-            if (bRsvdRegionIsValid)
-            {
-                rsvdTopOfMem = NV_MIN(pMemoryManager->Ram.fbRegion[rsvdRegion].limit + 1, rsvdTopOfMem);
-            }
+            tmpAddr = pRsvdRegion->base;
+            pMemoryManager->rsvdMemoryBase = RM_ALIGN_UP(tmpAddr, rsvdAlignment);
+            pMemoryManager->rsvdMemorySize = RM_PAGE_ALIGN_UP(pMemoryManager->rsvdMemorySize);
         }
-        tmpAddr = rsvdTopOfMem - pMemoryManager->rsvdMemorySize;
-        pMemoryManager->rsvdMemoryBase = RM_ALIGN_DOWN(tmpAddr, rsvdAlignment);
-        pMemoryManager->rsvdMemorySize = rsvdTopOfMem - pMemoryManager->rsvdMemoryBase;
 
-        // make sure we didn't just blindly truncate that...
-        NV_ASSERT(0 == NvU64_HI32(rsvdTopOfMem - pMemoryManager->rsvdMemoryBase));
-    }
-    // Reserved memory located at bottom of FB, base this at start of FB
-    else
-    {
-        tmpAddr = 0;
-        if (bRsvdRegionIsValid)
-        {
-            tmpAddr = NV_MAX(pMemoryManager->Ram.fbRegion[rsvdRegion].base, tmpAddr);
-        }
-        pMemoryManager->rsvdMemoryBase = RM_ALIGN_UP(tmpAddr, rsvdAlignment);
-        pMemoryManager->rsvdMemorySize = RM_PAGE_ALIGN_UP(pMemoryManager->rsvdMemorySize);
-    }
-
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
-    {
         NV_ASSERT(pMemoryManager->Ram.fbUsableMemSize >= pMemoryManager->rsvdMemorySize);
         pMemoryManager->Ram.fbUsableMemSize -= RM_PAGE_ALIGN_UP(pMemoryManager->rsvdMemorySize);
-    }
 
-    // Now update the region table to remove rsvd memory
-    if (bRsvdRegionIsValid && pMemoryManager->rsvdMemorySize)
-    {
-        FB_REGION_DESCRIPTOR   rsvdFbRegion;
-        portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
-
-        // Add a new region that is a hole for reserved memory
-        rsvdFbRegion.bRsvdRegion = NV_TRUE;
-        rsvdFbRegion.base = pMemoryManager->rsvdMemoryBase;
-        rsvdFbRegion.limit =
-            pMemoryManager->rsvdMemoryBase + pMemoryManager->rsvdMemorySize - 1;
-        rsvdFbRegion.performance = 0;
-        rsvdFbRegion.bSupportCompressed = NV_FALSE;
-        rsvdFbRegion.bSupportISO = NV_FALSE;
-        rsvdFbRegion.rsvdSize = pMemoryManager->rsvdMemorySize;
-        rsvdFbRegion.bProtected = bMemoryProtectionEnabled;
-        rsvdFbRegion.bInternalHeap = NV_TRUE;
-        rsvdFbRegion.regionTag = (RMCFG_FEATURE_PLATFORM_GSP)?
-                                  NV2080_FB_REGION_TAG_GSP_RM_RESERVED :
-                                  NV2080_FB_REGION_TAG_CPU_RM_RESERVED;
-
-        if (RMCFG_FEATURE_PLATFORM_GSP)
+        // Now update the region table to remove rsvd memory
+        if (pRsvdRegion != NULL && pMemoryManager->rsvdMemorySize)
         {
-            rsvdFbRegion.bPreserveOnSuspend = NV_TRUE;
-        }
-        else
-        {
-            // Reserved region is explicitly saved as before/after Bar2 PTE region.
-            rsvdFbRegion.bLostOnSuspend = NV_TRUE;
-        }
+            FB_REGION_DESCRIPTOR   rsvdFbRegion;
+            portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
 
-        memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
+            // Add a new region that is a hole for reserved memory
+            rsvdFbRegion.bRsvdRegion = NV_TRUE;
+            rsvdFbRegion.base = pMemoryManager->rsvdMemoryBase;
+            rsvdFbRegion.limit =
+                pMemoryManager->rsvdMemoryBase + pMemoryManager->rsvdMemorySize - 1;
+            rsvdFbRegion.performance = 0;
+            rsvdFbRegion.bSupportCompressed = NV_FALSE;
+            rsvdFbRegion.bSupportISO = NV_FALSE;
+            rsvdFbRegion.rsvdSize = pMemoryManager->rsvdMemorySize;
+            rsvdFbRegion.bProtected = bMemoryProtectionEnabled;
+            rsvdFbRegion.bInternalHeap = NV_TRUE;
+            rsvdFbRegion.regionTag = (RMCFG_FEATURE_PLATFORM_GSP)?
+                                      NV2080_FB_REGION_TAG_GSP_RM_RESERVED :
+                                      NV2080_FB_REGION_TAG_CPU_RM_RESERVED;
+
+            if (RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                rsvdFbRegion.bPreserveOnSuspend = NV_TRUE;
+            }
+            else
+            {
+                // Reserved region is explicitly saved as before/after Bar2 PTE region.
+                rsvdFbRegion.bLostOnSuspend = NV_TRUE;
+            }
+
+            NV_ASSERT_OK_OR_RETURN(memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion, NULL));
+        }
     }
 
     // Add above reserved FB region base to reserved memory
@@ -1819,17 +1789,6 @@ memmgrGetBlackListPagesForHeap_GM107
     return NV_OK;
 }
 
-NvU32
-memmgrGetFBEndReserveSizeEstimate_GM107
-(
-    OBJGPU *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    const NvU32 ESTIMATED_RESERVE_FB = 0x200000;
-
-    return ESTIMATED_RESERVE_FB;
-}
 
 /*!
  *  @brief Calculate the reserved memory requirement
@@ -2073,7 +2032,7 @@ memmgrPreInitReservedMemory_GM107
     // vbios image / workspace area
     // ***************************************************************
 
-    if (IS_GSP_CLIENT(pGpu) && pKernelDisplay != NULL)
+    if (IS_GSP_CLIENT(pGpu) && pKernelDisplay != NULL && !pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
     {
         // TODO: Determine the correct size of display instance memory
         // via instmemGetSize_HAL(), as well as other parameters.
@@ -2140,13 +2099,14 @@ memmgrAllocateConsoleRegion_GM107
 {
 
     NV_STATUS status     = NV_OK;
-    NvU32     consoleRegionId = 0x0;
+    NvU32     consoleRegionId = (pMemoryManager->bReserveZeroFbAddressAsRegion ? 0x1 : 0x0);
     NvU64     regionSize, base, limit;
 
     if (pMemoryManager->Ram.ReservedConsoleDispMemSize > 0)
     {
-        pMemoryManager->Ram.fbRegion[consoleRegionId].bLostOnSuspend = NV_FALSE;
-        pMemoryManager->Ram.fbRegion[consoleRegionId].bPreserveOnSuspend = NV_TRUE;
+        // No need to save/restore legacy text console.
+        pMemoryManager->Ram.fbRegion[consoleRegionId].bLostOnSuspend = pMemoryManager->bIsConsoleVga;
+        pMemoryManager->Ram.fbRegion[consoleRegionId].bPreserveOnSuspend = !pMemoryManager->bIsConsoleVga;
 
         base = pMemoryManager->Ram.fbRegion[consoleRegionId].base;
         limit = pMemoryManager->Ram.fbRegion[consoleRegionId].limit;

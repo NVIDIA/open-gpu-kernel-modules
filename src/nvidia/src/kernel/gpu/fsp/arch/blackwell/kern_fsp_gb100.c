@@ -30,9 +30,13 @@
 #include "kernel/gpu/gpu.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/fsp/kern_fsp_retval.h"
+#include "events/gpu/fsp/fsp_events.h"
+#include "nvoc/event_bus.h"
+#include "nvport/time.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "fsp/fsp_caps_query_rpc.h"
 #include "fsp/fsp_clock_boost_rpc.h"
+#include "mctp_format.h"
 #include "nvdm_format.h"
 
 #include "published/blackwell/gb100/dev_therm.h"
@@ -41,8 +45,6 @@
 #include "published/blackwell/gb100/dev_fsp_addendum.h"
 #include "published/blackwell/gb100/dev_gsp.h"
 #include "published/blackwell/gb100/dev_oob_pri.h"
-#include "published/blackwell/gb100/dev_bus.h"
-#include "published/blackwell/gb100/dev_bus_addendum.h"
 #include "published/blackwell/gb100/dev_bus_zb.h"
 #include "published/blackwell/gb100/dev_bus_zb_addendum.h"
 #include "published/blackwell/gb100/dev_top_zb.h"
@@ -50,10 +52,10 @@
 
 #include "cper/gpu_cper.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nverror.h"
 
-#define KERNEL_FSP_MBOX_PORT 2
+#define NV_DEFINED_DOWNLOAD_LOG_COMMAND 0x06
 
 #define KFSP_GB100_GPU_INIT_ERROR_SUBTYPE_FSP_BOOT_TIMEOUT 1
 #define KFSP_GB100_GPU_INIT_ERROR_SUBTYPE_FSP_FUSE_ERROR   2
@@ -68,21 +70,53 @@
 #define CMS2_LOG_END     0x7FU
 #define CMS2_LOG_DWORDS  (CMS2_LOG_END - CMS2_LOG_START + 1)
 #define CMS2_LOG_BYTES   (CMS2_LOG_DWORDS * sizeof(NvU32))
+#define DMEM_LOG_MAX_BYTES (4096)
+#define DMEM_RESPONSE_TIMEOUT_US  (5000)
+
+#pragma pack(push)
+#pragma pack(1)
+
+typedef struct
+{
+    NvU8  messageType    : 7;
+    NvU8  ic             : 1;
+    NvU32 iana;
+    NvU8  instanceId     : 5;
+    NvU8  rsvd           : 1;
+    NvU8  d              : 1;
+    NvU8  rq             : 1;
+    NvU8  vendorMessageType;
+    NvU8  commandCode;
+    NvU8  messageVersion;
+} MctpVdmIanaRequest;
+
+typedef struct
+{
+    MctpVdmIanaRequest request;
+    NvU8  completionCode;
+} MctpVdmIanaResponse;
+
+typedef struct
+{
+    NvU32 mctpHeader;
+    MctpVdmIanaRequest request;
+    NvU8 sessionId;
+} MctpDownloadLogV1;
+
+typedef struct
+{
+    NvU8 sessionId;
+    NvU8 length;
+    NvU8 data[52];
+} MctpVdmIanaDownloadLogResponseV1;
+
+#pragma pack(pop)
 
 static void _kfspPrintCms2Log_GB100(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *cms2Log);
+static void _kfspPrintDmemLog_GB100(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pDmemLog, NvU32 logSize);
 static NvBool _kfspWaitBootCond_GB100(OBJGPU *pGpu, void *pArg);
 static void _kfspGatherCms2Log_GB100(OBJGPU *pGpu, NvU32  *cms2Log);
-
-NV_STATUS
-kfspConstructHal_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    return ioaprtInit(&pKernelFsp->mboxAperture, pGpu->pIOApertures[DEVICE_INDEX_GPU],
-                      NV_PFSP_MNOC_RX_FIFO_DATA(0), 0x200);
-}
+static NV_STATUS _kfspGatherDmemLog_GB100(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pDmemLog, const NvU32 maxLogSize, NvU32 *pLogSize);
 
 NV_STATUS
 kfspWaitForSecureBoot_GB100
@@ -93,8 +127,7 @@ kfspWaitForSecureBoot_GB100
 {
     NV_STATUS status  = NV_OK;
     RMTIMEOUT timeout;
-    static const NV_CPER_GUID timeoutNotifyType = NV_CPER_NOTIFY_NVIDIA_GPU_TIMEOUT_GUID;
-    static const NV_CPER_GUID fuseErrorNotifyType = NV_CPER_NOTIFY_NVIDIA_GPU_FW_FAULT_GUID;
+    NvU32 timeoutUs;
 
     //
     // Polling for FSP boot complete
@@ -103,30 +136,24 @@ kfspWaitForSecureBoot_GB100
     // for this wait to match MODS GetGFWBootTimeoutMs.
     // For flags, we must not use the GPU TMR since it is inaccessible.
     //
-    gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
+    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus);
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
+    NvU64 timeoutNs = (NvU64)timeoutUs * 1000ULL;
+    NvU64 waitStartNs = portTimeGetUptimeNanosecondsHighPrecision();
     status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GB100, NULL, &timeout);
 
     if (status != NV_OK)
     {
+        NvU64 waitEndNs = portTimeGetUptimeNanosecondsHighPrecision();
         NvU32 fspBootComplete = GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE);
         NvU32 s0 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0));
         NvU32 s1 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1));
         NvU32 s2 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2));
         NvU32 s3 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3));
-        char xidMessage[NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1];
-
-        nvDbgSnprintf(xidMessage, sizeof(xidMessage), KFSP_GB100_GPU_INIT_ERROR_FMT,
-                      status, fspBootComplete, s0, s1, s2, s3);
-
         NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
-        NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, KFSP_GB100_GPU_INIT_ERROR_FMT,
-                     status, fspBootComplete, s0, s1, s2, s3);
-
-        kfspEmitGpuInitErrorCper(pGpu, pKernelFsp, &timeoutNotifyType,
-                                 KFSP_GB100_GPU_INIT_ERROR_SUBTYPE_FSP_BOOT_TIMEOUT,
-                                 xidMessage);
+        eventEmit(FspBootTimeout, pKernelFsp, timeoutNs, waitEndNs - waitStartNs,
+                  status, fspBootComplete, s0, s1, s2, s3);
 
         kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
@@ -142,16 +169,8 @@ kfspWaitForSecureBoot_GB100
                   "****************************************** FSP Fuse Check Failure ************************************************\n");
         {
             NvU32 fuseStatus = GPU_REG_RD32(pGpu, NV_PFSP_FUSE_ERROR_CHECK);
-            char xidMessage[NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1];
 
-            NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, KFSP_GB100_GPU_INIT_FUSE_ERROR_FMT,
-                         fuseStatus);
-
-            nvDbgSnprintf(xidMessage, sizeof(xidMessage), KFSP_GB100_GPU_INIT_FUSE_ERROR_FMT,
-                          fuseStatus);
-            kfspEmitGpuInitErrorCper(pGpu, pKernelFsp, &fuseErrorNotifyType,
-                                     KFSP_GB100_GPU_INIT_ERROR_SUBTYPE_FSP_FUSE_ERROR,
-                                     xidMessage);
+            eventEmit(FspFuseError, pKernelFsp, fuseStatus);
         }
         NV_PRINTF(LEVEL_ERROR,
                     "** FSP fuse error check has failed. Status = 0x%x.                                                               **\n",
@@ -208,8 +227,11 @@ kfspDumpDebugState_GB100
     KernelFsp *pKernelFsp
 )
 {
-    NvU32 i;
-    NvU32 cms2Log[CMS2_LOG_DWORDS];
+    const NvU32  logBufferSize = DMEM_LOG_MAX_BYTES;
+    NvU32        i;
+    NvU32        logSize = 0;
+    NvU8        *pLogBuffer;
+
     const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
     //
     // Older microcodes did not have the version populated in scratch.
@@ -239,15 +261,26 @@ kfspDumpDebugState_GB100
     NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PGSP_FALCON_MAILBOX1));
     NV_PRINTF(LEVEL_ERROR, "NV_PBUS_SW_SCRATCH_GSP_FMC_ERROR = 0x%x\n",
-              GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH_GSP_FMC_ERROR));
+              GPU_REG_RD32(pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_SCRATCH_GSP_FMC_ERROR));
     for(i = 0; i < NV_PGSP_MAILBOX__SIZE_1; i++)
     {
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_MAILBOX(%d) = 0x%x\n",
                   i, GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(i)));
     }
+    pLogBuffer = portMemAllocNonPaged(logBufferSize);
 
-    _kfspGatherCms2Log_GB100(pGpu, cms2Log);
-    _kfspPrintCms2Log_GB100(pGpu, pKernelFsp, (NvU8*) cms2Log);
+    if (pLogBuffer == NULL)
+        return;
+
+    _kfspGatherCms2Log_GB100(pGpu, (NvU32*) pLogBuffer);
+    _kfspPrintCms2Log_GB100(pGpu, pKernelFsp, pLogBuffer);
+
+    if (_kfspGatherDmemLog_GB100(pGpu, pKernelFsp, pLogBuffer, logBufferSize, &logSize) == NV_OK)
+    {
+        _kfspPrintDmemLog_GB100(pGpu, pKernelFsp, pLogBuffer, logSize);
+    }
+
+    portMemFree(pLogBuffer);
 }
 
 NV_STATUS
@@ -275,6 +308,19 @@ _kfspPrintCms2Log_GB100
 {
     NV_PRINTF(LEVEL_ERROR, "CMS2 Log:\n");
     nvDbgDumpBufferBytes(cms2Log, CMS2_LOG_BYTES);
+}
+
+static void
+_kfspPrintDmemLog_GB100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU8      *pDmemLog,
+    NvU32      logSize
+)
+{
+    NV_PRINTF(LEVEL_ERROR, "DMEM Log:\n");
+    nvDbgDumpBufferBytes(pDmemLog, logSize);
 }
 
 static NvBool
@@ -307,114 +353,83 @@ _kfspGatherCms2Log_GB100
     }
 }
 
-NV_STATUS
-kfspSendPacket_GB100
+static NV_STATUS
+_kfspGatherDmemLog_GB100
 (
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp,
-    NvU8      *pPacket,
-    NvU32      packetSize
+    OBJGPU      *pGpu,
+    KernelFsp   *pKernelFsp,
+    NvU8        *pDmemLog,
+    const NvU32  maxLogSize,
+    NvU32       *pLogSize
 )
 {
-   if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
-   {
-        RMTIMEOUT timeout;
+    MctpDownloadLogV1 logRequest = {0};
+    NvU32 packetNumber = 0;
+    NvU32 responseSize = 0;
+    NvU32 packetSize = 0;
+    NvU8  recvBuffer[68];
+    // Response starts after the NVDM and MCTP VDM IANA headers
+    MctpVdmIanaDownloadLogResponseV1 *pResponse = (MctpVdmIanaDownloadLogResponseV1*)(recvBuffer + sizeof(NvU32) + sizeof(MctpVdmIanaResponse));
+    NvU32 minPacketSize = sizeof(NvU32) + sizeof(MctpVdmIanaResponse) +
+                          sizeof(MctpVdmIanaDownloadLogResponseV1) - sizeof(pResponse->data);
 
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    logRequest.mctpHeader = REF_NUM(MCTP_HEADER_SOM,  1) |
+                            REF_NUM(MCTP_HEADER_EOM,  1) |
+                            REF_NUM(MCTP_HEADER_SEID, 0) |
+                            REF_NUM(MCTP_HEADER_SEQ,  0) |
+                            REF_NUM(MCTP_HEADER_TAG,  1);
 
-        return gpuMnocMboxSend_HAL(pGpu, &pKernelFsp->mboxAperture, KERNEL_FSP_MBOX_PORT,
-                                   &timeout, pPacket, packetSize);
-    }
+    logRequest.request.messageType       = MCTP_MSG_HEADER_TYPE_VENDOR_IANA;
+    logRequest.request.ic                = 0;
+    logRequest.request.iana              = MCTP_MSG_HEADER_VENDOR_ID_IANA_NV;
+    logRequest.request.instanceId        = 0;
+    logRequest.request.d                 = 0;
+    logRequest.request.rq                = 1;
+    logRequest.request.vendorMessageType = 1;
+    logRequest.request.commandCode       = NV_DEFINED_DOWNLOAD_LOG_COMMAND;
+    logRequest.request.messageVersion    = 1;
+    // 0xFF requests a new session
+    logRequest.sessionId                 = 0xFF;
 
-    return kfspSendPacket_GH100(pGpu, pKernelFsp, pPacket, packetSize);
-}
-
-NV_STATUS
-kfspReadPacket_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp,
-    NvU8      *pPacket,
-    NvU32      maxPacketSize,
-    NvU32     *pBytesRead
-)
-{
-    NV_ASSERT_OR_RETURN(pBytesRead != NULL, NV_ERR_INVALID_POINTER);
-
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
+    //
+    // The download log command works by returning up to 52 bytes at a time
+    // while FSP keeps tracks of the current location in the log based on
+    // the session ID.
+    //
+    while(responseSize + sizeof(pResponse->data) < maxLogSize)
     {
-        NvU32 recvSize = maxPacketSize;
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                              gpuMnocMboxRecv_HAL(pGpu, &pKernelFsp->mboxAperture,
-                                                  KERNEL_FSP_MBOX_PORT,
-                                                  pPacket, &recvSize));
-        *pBytesRead = recvSize;
+        NV_ASSERT_OK_OR_RETURN(kfspSendPacket_HAL(pGpu, pKernelFsp, (NvU8*)&logRequest, sizeof(logRequest)));
+        //
+        // Older FSP versions do not support DMEM logging and will ignore
+        // the request causing a timeout here.
+        //
+        if (kfspPollForResponse(pGpu, pKernelFsp, DMEM_RESPONSE_TIMEOUT_US) != NV_OK)
+            return NV_ERR_NOT_SUPPORTED;
 
-        return NV_OK;
+        NV_ASSERT_OK_OR_RETURN(kfspReadPacket_HAL(pGpu, pKernelFsp, recvBuffer, sizeof(recvBuffer), &packetSize));
+
+        NV_ASSERT_OR_RETURN(packetSize >= minPacketSize, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pResponse->length <= sizeof(pResponse->data), NV_ERR_INVALID_STATE);
+
+        // A response size of 0 indicates the end of the logs
+        if (pResponse->length == 0)
+            break;
+
+        if (packetNumber == 0)
+        {
+            // The first response holds the sessionId to be used for future requests
+            logRequest.sessionId = pResponse->sessionId;
+        }
+
+        portMemCopy(pDmemLog + responseSize, pResponse->length, pResponse->data, pResponse->length);
+        responseSize += pResponse->length;
+
+        packetNumber++;
     }
 
-    return kfspReadPacket_GH100(pGpu, pKernelFsp, pPacket, maxPacketSize, pBytesRead);
-}
+    *pLogSize = responseSize;
 
-NvBool
-kfspCanSendPacket_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
-    {
-        // SendPacket is a blocking call
-        return NV_TRUE;
-    }
-
-    return kfspCanSendPacket_GH100(pGpu, pKernelFsp);
-}
-
-NvBool
-kfspIsResponseAvailable_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
-    {
-        return gpuMnocMboxIsMsgAvailable_HAL(pGpu, &pKernelFsp->mboxAperture, KERNEL_FSP_MBOX_PORT);
-    }
-
-    return kfspIsResponseAvailable_GH100(pGpu, pKernelFsp);
-}
-
-NvU32
-kfspGetMaxSendPacketSize_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
-    {
-        return gpuMnocMboxMaxMessageSize_HAL(pGpu);
-    }
-
-    return kfspGetMaxSendPacketSize_GH100(pGpu, pKernelFsp);
-}
-
-NvU32
-kfspGetMaxRecvPacketSize_GB100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_USE_MNOC_CPU))
-    {
-        return gpuMnocMboxMaxMessageSize_HAL(pGpu);
-    }
-
-    return kfspGetMaxRecvPacketSize_GH100(pGpu, pKernelFsp);
+    return NV_OK;
 }
 
 void

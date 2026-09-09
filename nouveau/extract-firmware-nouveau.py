@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,8 +21,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# Converts OpenRM binhex-encoded images to Nouveau-compatible binary blobs
-# See nouveau_firmware_layout.ods for documentation on the file format
+# Converts OpenRM binhex-encoded images to Nouveau- and Nova-compatible
+# binary blobs.
+# See nouveau_firmware_layout.ods for documentation on the file format.
 
 import sys
 import os
@@ -422,19 +423,31 @@ def scrubber(gpu, sigsize, fuse = "prod"):
         # And finally, the actual scrubber image
         f.write(firmware)
 
-ELF_HDR_SIZE = 52
-ELF_SHDR_SIZE = 40
+# Elf header sizes for 32-bit and 64-bit ELF images
+ELF_HDR_SIZE_32 = 52
+ELF_HDR_SIZE_64 = 64
+
+# Elf section header sizes for 32-bit and 64-bit ELF images
+ELF_SHDR_SIZE_32 = 40
+ELF_SHDR_SIZE_64 = 64
+
+# Padded alignment of blobs inside the ELF sections
 ELF_ALIGNMENT = 4
 
-# Create a 32-bit generic ELF header with no program header, and 'shnum'
-# section headers, not including the .shstrtab and NULL sections.
+# Create an ELF header with no program header and 'shnum' section headers,
+# not including the .shstrtab and NULL sections.
 # The section headers appear after the ELF header, and the section data
 # follows.  Note that e_shstrndx cannot be zero, because that implies
-# that the .shstrndx section does not exist.
-def elf_header(shnum: int):
-    bytes = struct.pack("<B3s5B7xHH5I6H",
+# that the .shstrndx sectio`n does not exist.
+def elf_header(shnum: int, elf64: bool):
+    PACK = "<B3s5B7xHHI3QI6H" if elf64 else "<B3s5B7xHH5I6H"
+    ELF_HDR_SIZE = ELF_HDR_SIZE_64 if elf64 else ELF_HDR_SIZE_32
+    ELF_SHDR_SIZE = ELF_SHDR_SIZE_64 if elf64 else ELF_SHDR_SIZE_32
+    EI_CLASS = 2 if elf64 else 1
+
+    bytes = struct.pack(PACK,
         0x7f, b'ELF',
-        1, 1, 1, 0, 0, # EI_CLASS, EI_DATA, EI_VERSION, EI_OSABI, EI_ABIVERSION
+        EI_CLASS, 1, 1, 0, 0, # EI_CLASS, EI_DATA, EI_VERSION, EI_OSABI, EI_ABIVERSION
         0, 0, 1, # e_type, e_machine, e_version
         0, 0, ELF_HDR_SIZE, 0, # e_entry, e_phoff, e_shoff, e_flags
         ELF_HDR_SIZE, 0, 0, # e_ehsize, e_phentsize, e_phnum
@@ -442,13 +455,15 @@ def elf_header(shnum: int):
 
     return bytes
 
-# Create a 32-bit ELF section header, where 'sh_name' is the offset of the
+# Create an ELF section header, where 'sh_name' is the offset of the
 # section name, 'sh_offset' is the offset of the section data, and 'sh_size'
 # is the size (in bytes) of the image in the section data.
 # We set sh_flags to SHF_OS_NONCONFORMING and use the sh_info field to store
 # a 32-bit CRC of the image data.
-def elf_section_header(sh_name, sh_offset, sh_size, sh_info):
-    bytes = struct.pack("<10I",
+def elf_section_header(sh_name, sh_offset, sh_size, sh_info, elf64: bool):
+    PACK = "<2I4Q2I2Q" if elf64 else "<10I"
+
+    bytes = struct.pack(PACK,
         sh_name,
         1, 0xFFF00102, 0, # sh_type, sh_flags, sh_addr
         sh_offset, sh_size,
@@ -461,19 +476,25 @@ def elf_section_header(sh_name, sh_offset, sh_size, sh_info):
 # A little-known fact about ELF files is that the first section header must
 # be empty.  Readelf doesn't care about that, but objdump does.  This may be
 # why the first byte of the .shstrtab should be zero.
-def elf_section_header_null():
+def elf_section_header_null(elf64: bool):
+    ELF_SHDR_SIZE = ELF_SHDR_SIZE_64 if elf64 else ELF_SHDR_SIZE_32
+
     return b'\0' * ELF_SHDR_SIZE
 
-# Create a 64-bit .shstrtab ELF section header.
+# Create a shstrtab ELF section header.
 # 'shnum' is the number of sections.
 # 'sh_offset' is the offset of the .shstrtab section.
 # 'sh_size' is the unpadded size of the section.
 # The section itself should be padded to the nearest 8-byte boundary, so that
 # all the sections are aligned.
-def elf_section_header_shstrtab(sh_name, shnum, sh_size):
+def elf_section_header_shstrtab(sh_name, shnum, sh_size, elf64: bool):
+    PACK = "<2I4Q2I2Q" if elf64 else "<10I"
+    ELF_HDR_SIZE = ELF_HDR_SIZE_64 if elf64 else ELF_HDR_SIZE_32
+    ELF_SHDR_SIZE = ELF_SHDR_SIZE_64 if elf64 else ELF_SHDR_SIZE_32
+
     sh_offset = ELF_HDR_SIZE + ELF_SHDR_SIZE * (shnum + 2);
 
-    bytes = struct.pack("<10I",
+    bytes = struct.pack(PACK,
         sh_name,
         3, 0x20, 0, # sh_type (SHT_STRTAB), sh_flags (SHF_STRINGS), sh_addr
         sh_offset, sh_size,
@@ -489,7 +510,7 @@ def elf_build_shstrtab(names):
 
     return bytes
 
-# Returns a tuple of the size of a bytearray and the size rounded up to the next 8
+# Returns a tuple of the size of a bytearray and the size aligned up
 def sizes(b):
     return (len(b), round_up_to_base(len(b), ELF_ALIGNMENT))
 
@@ -519,9 +540,12 @@ def write_padded(f, b):
 # Unlike the other images, FMC firmware and its metadata are encapsulated in
 # an ELF image.  FMC metadata is simpler than the other firmware types, as it
 # comprises just three binary blobs.
-def fmc(gpu, fuse = "Prod"):
+def fmc(gpu: str, fuse: str, elf64: bool):
     global outputpath
     global version
+
+    ELF_HDR_SIZE = ELF_HDR_SIZE_64 if elf64 else ELF_HDR_SIZE_32
+    ELF_SHDR_SIZE = ELF_SHDR_SIZE_64 if elf64 else ELF_SHDR_SIZE_32
 
     GPU=gpu.upper()
     filename = f"src/nvidia/generated/g_bindata_kgspGetBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}.c"
@@ -556,52 +580,52 @@ def fmc(gpu, fuse = "Prod"):
 
     with open(f"{outputpath}/nvidia/{gpu}/gsp/fmc-{version}.bin", "wb") as f:
         # Create the ELF header
-        header = elf_header(shnum)
+        header = elf_header(shnum, elf64)
         f.write(header)
 
         # Add the section headers
 
-        header = elf_section_header_null()
+        header = elf_section_header_null(elf64)
         f.write(header)
 
-        header = elf_section_header_shstrtab(offset_of(".shstrtab", shstrtab), shnum, len(shstrtab))
+        header = elf_section_header_shstrtab(offset_of(".shstrtab", shstrtab), shnum, len(shstrtab), elf64)
         f.write(header)
 
         header = elf_section_header(offset_of("hash", shstrtab),
-            hash_offset, ucode_hash_size, zlib.crc32(ucode_hash))
+            hash_offset, ucode_hash_size, zlib.crc32(ucode_hash), elf64)
         f.write(header)
 
         header = elf_section_header(offset_of("signature", shstrtab),
-            signature_offset, ucode_sig_size, zlib.crc32(ucode_sig))
+            signature_offset, ucode_sig_size, zlib.crc32(ucode_sig), elf64)
         f.write(header)
 
         header = elf_section_header(offset_of("publickey", shstrtab),
-            pkey_offset, ucode_pkey_size, zlib.crc32(ucode_pkey))
+            pkey_offset, ucode_pkey_size, zlib.crc32(ucode_pkey), elf64)
         f.write(header)
 
         header = elf_section_header(offset_of("image", shstrtab),
-            image_offset, ucode_image_size, zlib.crc32(ucode_image))
+            image_offset, ucode_image_size, zlib.crc32(ucode_image), elf64)
         f.write(header)
 
         # Make sure we're where we are supposed to be
-        assert f.tell() == ELF_HDR_SIZE + ELF_SHDR_SIZE * (shnum + 2)
+        assert f.tell() == shstrtab_offset
 
         # Write the .shstrtab section data.
         write_padded(f, shstrtab)
-        assert f.tell() % 4 == 0
+        assert f.tell() % ELF_ALIGNMENT == 0
 
         # Finally, write the four images in sequence
         write_padded(f, ucode_hash)
-        assert f.tell() % 4 == 0
+        assert f.tell() % ELF_ALIGNMENT == 0
 
         write_padded(f, ucode_sig)
-        assert f.tell() % 4 == 0
+        assert f.tell() % ELF_ALIGNMENT == 0
 
         write_padded(f, ucode_pkey)
-        assert f.tell() % 4 == 0
+        assert f.tell() % ELF_ALIGNMENT == 0
 
         write_padded(f, ucode_image)
-        assert f.tell() % 4 == 0
+        assert f.tell() % ELF_ALIGNMENT == 0
 
 # Extract the GSP-RM firmware from the .run file and copy the binaries
 # to the target directory.
@@ -655,13 +679,62 @@ def gsp_firmware(filename):
             raise
 
         if not os.path.exists('gsp_tu10x.bin') or not os.path.exists('gsp_ga10x.bin'):
-            print("Firmware files are missing")
-            sys.exit(1)
+            raise MyException(f"Firmware files are missing in {basename}")
 
         shutil.copyfile('gsp_tu10x.bin', f"{outputpath}/nvidia/tu102/gsp/gsp-{version}.bin")
         print(f"Copied gsp_tu10x.bin to tu102/gsp/gsp-{version}.bin")
         shutil.copyfile('gsp_ga10x.bin', f"{outputpath}/nvidia/ga102/gsp/gsp-{version}.bin")
         print(f"Copied gsp_ga10x.bin to ga102/gsp/gsp-{version}.bin")
+
+        # Copy ucodes binaries if present (r610+).  Each ucodes.bin is paired
+        # with the corresponding gsp.bin and loaded separately by the driver.
+        if os.path.exists('ucodes_tu10x.bin'):
+            shutil.copyfile('ucodes_tu10x.bin', f"{outputpath}/nvidia/tu102/gsp/ucodes-{version}.bin")
+            print(f"Copied ucodes_tu10x.bin to tu102/gsp/ucodes-{version}.bin")
+        if os.path.exists('ucodes_ga10x.bin'):
+            shutil.copyfile('ucodes_ga10x.bin', f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin")
+            print(f"Copied ucodes_ga10x.bin to ga102/gsp/ucodes-{version}.bin")
+
+
+# Extract GSP firmware from a local build output directory.
+# This is an NVIDIA-internal feature for use with internal build systems.
+def gsp_firmware_from_build(gsp_build_dir):
+    global outputpath
+    global version
+
+    import shutil
+
+    if not os.path.isdir(gsp_build_dir):
+        raise MyException(f"GSP build directory does not exist: {gsp_build_dir}")
+
+    tu10x_src = os.path.join(gsp_build_dir, "gsp_tu10x.bin")
+    ga10x_src = os.path.join(gsp_build_dir, "gsp_ga10x.bin")
+
+    if not os.path.exists(tu10x_src):
+        raise MyException(f"GSP firmware not found: {tu10x_src}")
+    if not os.path.exists(ga10x_src):
+        raise MyException(f"GSP firmware not found: {ga10x_src}")
+
+    os.makedirs(f"{outputpath}/nvidia/tu102/gsp/", exist_ok = True)
+    os.makedirs(f"{outputpath}/nvidia/ga102/gsp/", exist_ok = True)
+
+    shutil.copyfile(tu10x_src, f"{outputpath}/nvidia/tu102/gsp/gsp-{version}.bin")
+    print(f"Copied gsp_tu10x.bin to nvidia/tu102/gsp/gsp-{version}.bin")
+
+    shutil.copyfile(ga10x_src, f"{outputpath}/nvidia/ga102/gsp/gsp-{version}.bin")
+    print(f"Copied gsp_ga10x.bin to nvidia/ga102/gsp/gsp-{version}.bin")
+
+    # Copy ucodes binaries if present (r610+)
+    ucodes_tu10x_src = os.path.join(gsp_build_dir, "ucodes_tu10x.bin")
+    ucodes_ga10x_src = os.path.join(gsp_build_dir, "ucodes_ga10x.bin")
+
+    if os.path.exists(ucodes_tu10x_src):
+        shutil.copyfile(ucodes_tu10x_src, f"{outputpath}/nvidia/tu102/gsp/ucodes-{version}.bin")
+        print(f"Copied ucodes_tu10x.bin to nvidia/tu102/gsp/ucodes-{version}.bin")
+
+    if os.path.exists(ucodes_ga10x_src):
+        shutil.copyfile(ucodes_ga10x_src, f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin")
+        print(f"Copied ucodes_ga10x.bin to nvidia/ga102/gsp/ucodes-{version}.bin")
 
 # Create a symlink, deleting the existing file/link if necessary
 def symlink(dest, source, target_is_directory = False):
@@ -688,9 +761,12 @@ def symlinks():
     for d in ['tu116', 'ga100', 'ad102']:
         os.makedirs(d, exist_ok = True)
 
-    for d in ['tu104', 'tu106', 'tu117']:
+    for d in ['tu104', 'tu106']:
         os.makedirs(d, exist_ok = True)
         symlink('../tu102/gsp', f"{d}/gsp", target_is_directory = True)
+
+    os.makedirs('tu117', exist_ok = True)
+    symlink('../tu116/gsp', 'tu117/gsp', target_is_directory = True)
 
     for d in ['ga103', 'ga104', 'ga106', 'ga107']:
         os.makedirs(d, exist_ok = True)
@@ -705,8 +781,12 @@ def symlinks():
             os.rmdir(d)
         symlink('ad102', d, target_is_directory = True)
 
-    # TU11x uses the same bootloader as TU10x
+    # TU11x uses the same GSP bootloader as TU10x
     symlink(f"../../tu102/gsp/bootloader-{version}.bin", f"tu116/gsp/bootloader-{version}.bin")
+
+    # TU11x and GA100 use the same generic bootloader as TU10x
+    symlink(f"../../tu102/gsp/gen_bootloader-{version}.bin", f"tu116/gsp/gen_bootloader-{version}.bin")
+    symlink(f"../../tu102/gsp/gen_bootloader-{version}.bin", f"ga100/gsp/gen_bootloader-{version}.bin")
 
     # Blackwell is only supported with GSP, so we can symlink the top-level directories
     # instead of just the gsp/ subdirectories.
@@ -723,6 +803,16 @@ def symlinks():
     symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gh100/gsp/gsp-{version}.bin")
     symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gb100/gsp/gsp-{version}.bin")
     symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gb202/gsp/gsp-{version}.bin")
+
+    # Symlink the ucodes binaries
+    if os.path.exists(f"tu102/gsp/ucodes-{version}.bin"):
+        symlink(f"../../tu102/gsp/ucodes-{version}.bin", f"tu116/gsp/ucodes-{version}.bin")
+        symlink(f"../../tu102/gsp/ucodes-{version}.bin", f"ga100/gsp/ucodes-{version}.bin")
+    if os.path.exists(f"ga102/gsp/ucodes-{version}.bin"):
+        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"ad102/gsp/ucodes-{version}.bin")
+        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gh100/gsp/ucodes-{version}.bin")
+        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gb100/gsp/ucodes-{version}.bin")
+        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gb202/gsp/ucodes-{version}.bin")
 
 # Create a text file that can be inserted as-is to the WHENCE file of the
 # linux-firmware git repository.  Note that existing firmware versions in
@@ -743,9 +833,12 @@ def symlinks():
 #  4. Replacing a file/directory with a symlink (or vice versa) is strongly
 #     discouraged.  Many distros cannot handle this transition.
 #  5. The r535 release is deprecated, so no changes should be made to it.
-def whence():
+def whence(gsp_origin = None):
     global outputpath
     global version
+
+    if gsp_origin is None:
+        gsp_origin = f"NVIDIA-Linux-x86_64-{version}.run"
     versions = [ "535.113.01", "570.144" ]
     whence = []
 
@@ -845,16 +938,34 @@ File: nvidia/gb202/gsp/bootloader-{version}.bin
 File: nvidia/gb202/gsp/fmc-{version}.bin
 
 File: nvidia/tu102/gsp/gsp-{version}.bin
-Origin: gsp_tu10x.bin from NVIDIA-Linux-x86_64-{version}.run
+Origin: gsp_tu10x.bin from {gsp_origin}
 Link: nvidia/tu116/gsp/gsp-{version}.bin -> ../../tu102/gsp/gsp-{version}.bin
 Link: nvidia/ga100/gsp/gsp-{version}.bin -> ../../tu102/gsp/gsp-{version}.bin
 
 File: nvidia/ga102/gsp/gsp-{version}.bin
-Origin: gsp_ga10x.bin from NVIDIA-Linux-x86_64-{version}.run
+Origin: gsp_ga10x.bin from {gsp_origin}
 Link: nvidia/ad102/gsp/gsp-{version}.bin -> ../../ga102/gsp/gsp-{version}.bin
 Link: nvidia/gh100/gsp/gsp-{version}.bin -> ../../ga102/gsp/gsp-{version}.bin
 Link: nvidia/gb100/gsp/gsp-{version}.bin -> ../../ga102/gsp/gsp-{version}.bin
 Link: nvidia/gb202/gsp/gsp-{version}.bin -> ../../ga102/gsp/gsp-{version}.bin
+""")
+
+    if os.path.exists(f"{outputpath}/nvidia/tu102/gsp/ucodes-{version}.bin"):
+        whence.append(f"""
+File: nvidia/tu102/gsp/ucodes-{version}.bin
+Origin: ucodes_tu10x.bin from {gsp_origin}
+Link: nvidia/tu116/gsp/ucodes-{version}.bin -> ../../tu102/gsp/ucodes-{version}.bin
+Link: nvidia/ga100/gsp/ucodes-{version}.bin -> ../../tu102/gsp/ucodes-{version}.bin
+""")
+
+    if os.path.exists(f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin"):
+        whence.append(f"""
+File: nvidia/ga102/gsp/ucodes-{version}.bin
+Origin: ucodes_ga10x.bin from {gsp_origin}
+Link: nvidia/ad102/gsp/ucodes-{version}.bin -> ../../ga102/gsp/ucodes-{version}.bin
+Link: nvidia/gh100/gsp/ucodes-{version}.bin -> ../../ga102/gsp/ucodes-{version}.bin
+Link: nvidia/gb100/gsp/ucodes-{version}.bin -> ../../ga102/gsp/ucodes-{version}.bin
+Link: nvidia/gb202/gsp/ucodes-{version}.bin -> ../../ga102/gsp/ucodes-{version}.bin
 """)
 
     # Symlinks for GPUs that share all images
@@ -888,15 +999,15 @@ def main():
 
     parser = argparse.ArgumentParser(
         description = 'Extract firmware binaries from the OpenRM git repository'
-        ' in a format expected by the Nouveau device driver.',
+        ' in a format expected by the Nouveau/Nova device drivers.',
         epilog = 'Running as root and specifying -o /lib/firmware will install'
-        ' the firmware files directly where Nouveau expects them.'
+        ' the firmware files directly where Nouveau and Nova expects them.'
         ' The --revision option is useful for testing new firmware'
-        ' versions without changing Nouveau source code.'
-        ' The --driver option lets you specify the local path to the .run file,'
-        ' or the URL of a file to download, and this script also will extract'
-        ' and copy the GSP-RM firmware images.  If no path/url is provided, then'
-        ' the script will guess the URL and download the file automatically.')
+        ' versions without changing Nouveau/Nova source code.'
+        ' The --driver option accepts a .run file path, a URL, or a local'
+        ' build output directory.  If -d is given with no argument, the .run'
+        ' file is downloaded automatically.'
+        ' --elf32 and --elf64 are mutually exclusive.')
     parser.add_argument('-i', '--input', default = os.getcwd(),
         help = 'Path to source directory (where version.mk exists)')
     parser.add_argument('-o', '--output', default = os.path.join(os.getcwd(), '_out'),
@@ -907,15 +1018,34 @@ def main():
         help = 'Extract debug instead of production images')
     parser.add_argument('-d', '--driver',
         nargs = '?', const = '',
-        help = 'Path or URL to NVIDIA-Linux-x86_64-<version>.run driver package, for also extracting the GSP-RM firmware')
+        help = 'Also extract GSP-RM firmware from a source.'
+        ' A URL or path to a .run driver package downloads or extracts it.'
+        ' A path to a local build output directory (e.g.'
+        ' drivers/resman/build/gsp/_out/Linux_amd64_release) copies'
+        ' the GSP firmware directly.  If -d is given with no argument,'
+        ' the .run file is downloaded automatically.')
     parser.add_argument('-s', '--symlink', action='store_true',
         help = 'Also create symlinks for all supported GPUs')
     parser.add_argument('-w', '--whence', action='store_true',
         help = 'Also generate a WHENCE file')
+
+    elf_group = parser.add_mutually_exclusive_group()
+    elf_group.add_argument('--elf32', action='store_false', dest='elf64', default=True,
+        help = 'Generate Nouveau-compatible 32-bit ELF images for FMC')
+    elf_group.add_argument('--elf64', action='store_true', dest='elf64',
+        help = 'Generate Nova-compatible 64-bit ELF images for FMC (default)')
+
     args = parser.parse_args()
 
     args.output = os.path.abspath(args.output)
+    if args.driver is not None and args.driver != '' and not re.search('^http[s]://', args.driver):
+        args.driver = os.path.abspath(args.driver)
+
+    args.input = os.path.abspath(args.input)
     os.chdir(args.input)
+
+    if not os.path.isfile("version.mk"):
+        raise MyException(f"Source directory {args.input} is incorrect")
 
     version = args.revision
     if not version:
@@ -965,13 +1095,15 @@ def main():
     scrubber("ad102", 384, fuse) # Not currently used by Nouveau
 
     gsp_bootloader("gh100", fuse)
-    fmc("gh100", fmc_fuse)
+    fmc("gh100", fmc_fuse, args.elf64)
 
     gsp_bootloader("gb100", fuse)
-    fmc("gb100", fmc_fuse)
+    fmc("gb100", fmc_fuse, args.elf64)
 
     gsp_bootloader("gb202", fuse)
-    fmc("gb202", fmc_fuse)
+    fmc("gb202", fmc_fuse, args.elf64)
+
+    gsp_origin = None
 
     if args.driver is not None:
         if args.driver == '':
@@ -985,18 +1117,20 @@ def main():
                 urllib.request.urlretrieve(args.driver, f.name)
                 gsp_firmware(f.name)
             del f
+        elif os.path.isdir(args.driver):
+            gsp_firmware_from_build(args.driver)
+            gsp_origin = f"local build ({args.driver})"
         else:
             if not os.path.exists(args.driver):
-                print(f"File {args.driver} does not exist.")
-                sys.exit(1)
+                raise MyException(f"File {args.driver} does not exist.")
 
-            gsp_firmware(os.path.abspath(args.driver))
+            gsp_firmware(args.driver)
 
     if args.symlink:
         symlinks()
 
     if args.whence:
-        whence()
+        whence(gsp_origin)
 
 if __name__ == "__main__":
     try:

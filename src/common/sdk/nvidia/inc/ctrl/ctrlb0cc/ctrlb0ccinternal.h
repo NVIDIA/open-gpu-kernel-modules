@@ -126,11 +126,6 @@ typedef struct NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS {
 
 typedef struct NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS {
     /*!
-     * [in] Is Admin profiling permitted
-     */
-    NvBool bAdminProfilingPermitted;
-
-    /*!
      * [in] Is Device profiling permitted
      */
     NvBool bDevProfilingPermitted;

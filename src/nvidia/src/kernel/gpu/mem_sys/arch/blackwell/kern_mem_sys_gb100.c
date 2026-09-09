@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,8 @@
 #include "published/blackwell/gb100/dev_fuse_zb.h"
 #include "published/blackwell/gb100/hwproject.h"
 
-#include "published/blackwell/gb100/dev_fb.h"
+#include "published/blackwell/gb100/dev_hubmmu_base.h"
+#include "published/blackwell/gb100/dev_top_zb.h"
 #include "published/blackwell/gb100/dev_gc6_island.h"
 #include "published/blackwell/gb100/dev_gc6_island_addendum.h"
 
@@ -241,8 +242,8 @@ kmemsysGetL2EccDedCountRegAddr_GB100
  */
 static inline NvU64 _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(NvU32 regVal)
 {
-    NvU32 lowerRangeMag   = DRF_VAL(_PFB, _PRI_MMU_LOCAL_MEMORY_RANGE, _LOWER_MAG, regVal);
-    NvU32 lowerRangeScale = DRF_VAL(_PFB, _PRI_MMU_LOCAL_MEMORY_RANGE, _LOWER_SCALE, regVal);
+    NvU32 lowerRangeMag   = DRF_VAL(_HUBMMU_PRI_MMU, _LOCAL_MEMORY_RANGE, _LOWER_MAG, regVal);
+    NvU32 lowerRangeScale = DRF_VAL(_HUBMMU_PRI_MMU, _LOCAL_MEMORY_RANGE, _LOWER_SCALE, regVal);
     return ((NvU64) lowerRangeMag << (lowerRangeScale + 20));
 }
 
@@ -266,9 +267,16 @@ kmemsysReadHdmTopFromVbios_GB100
      * Compare secure scratch vs. local memory range to determine if emulated
      * HDM top is present.
      */
-
+    const DEVICE_INFO_ENTRY *pEntry;
+    NV_STATUS status = gpuGetOneDeviceEntry(pGpu,
+                                            NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_HUBMMU,
+                                            DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                            0,
+                                            DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                            &pEntry);
+    NV_ASSERT_OR_RETURN(status == NV_OK, NV_ERR_INVALID_STATE);
     NvU64 localMemoryRange = _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(
-        GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_LOCAL_MEMORY_RANGE));
+        GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_HUBMMU_PRI_MMU_LOCAL_MEMORY_RANGE));
 
     NvU64 scratchHdmTop = _kmemsysGetFbOffsetFromLocalMemoryRangeRegVal_GB100(
         GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_MMU_LOCAL_MEMORY_RANGE));

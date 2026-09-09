@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,8 @@
 
 #include "nv_smg.h"
 
+#include "nv_hdcp_topology.h"
+
 #include <class/cla083.h> /* NVA083_GRID_DISPLAYLESS */
 
 #include "class/cl00c3.h" /* NV01_MEMORY_SYNCPOINT */
@@ -81,7 +83,7 @@
 #include <ctrl/ctrl0073/ctrl0073specific.h> /* NV0073_CTRL_CMD_SPECIFIC_OR_GET_INFO */
 #include <ctrl/ctrl0073/ctrl0073system.h> /* NV0073_CTRL_CMD_SYSTEM_GET_SUPPORTED */
 #include <ctrl/ctrl0076.h> /* NV0076_CTRL_CMD_NOTIFY_CONSOLE_DISABLED */
-#include <ctrl/ctrl0080/ctrl0080gpu.h> /* NV0080_CTRL_CMD_GPU_SET_DISPLAY_OWNER */
+#include <ctrl/ctrl0080/ctrl0080gpu.h> /* NV0080_CTRL_CMD_GPU_GET_CLASSLIST */
 #include <ctrl/ctrl0080/ctrl0080unix.h> /* NV0080_CTRL_CMD_OS_UNIX_VT_SWITCH */
 #include <ctrl/ctrl2080/ctrl2080bus.h> /* NV2080_CTRL_CMD_BUS_GET_INFO */
 #include <ctrl/ctrl2080/ctrl2080event.h> /* NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION */
@@ -1537,6 +1539,124 @@ NvBool nvWriteDPCDReg(NVConnectorEvoPtr pConnectorEvo,
     return TRUE;
 }
 
+enum NvKmsContentProtection nvGetContentProtectionState(const NVDpyEvoRec *pDpyEvo)
+{
+    NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
+    NVDevEvoPtr pDevEvo = pConnectorEvo->pDispEvo->pDevEvo;
+    NvU32 subDeviceIndex = pConnectorEvo->pDispEvo->displayOwner;
+    NvU32 displayId;
+    NV0073_CTRL_SPECIFIC_GET_HDCP_STATE_PARAMS params = {0};
+    NvU32 ret = NVOS_STATUS_SUCCESS;
+    NvBool hdcpAuthOn, hdcp1xCapable, hdcp2xCapable, hdcp2xType1;
+    enum NvKmsContentProtection contentProtection;
+    NvU32 hwHead = nvGetPrimaryHwHead(pConnectorEvo->pDispEvo, pDpyEvo->apiHead);
+
+    // Call RmCtrl to get HDCP Status
+    params.subDeviceInstance = subDeviceIndex;
+    if (hwHead != NV_INVALID_HEAD && nvHeadIsActive(pConnectorEvo->pDispEvo, hwHead)) {
+        // DP-SST, DP-MST Monitors and HDMI will have active hwHead,
+        // so use the activeRmId connected to the hwHead
+        displayId = pConnectorEvo->pDispEvo->headState[hwHead].activeRmId;
+    } else {
+        // For DP-MST HUB, use connector display ID as it doesn't have active
+        // hwHead connected to it
+        displayId = nvDpyIdToNvU32(pConnectorEvo->displayId);
+    }
+    params.displayId = displayId;
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SPECIFIC_GET_HDCP_STATE,
+                         &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "CTRL CMD GET_HDCP_STATE failed");
+        contentProtection = NVKMS_CONTENT_PROTECTION_OFF;
+        goto exit;
+    }
+
+    // Interpret RmCtrl Call Return Values
+    hdcpAuthOn = FLD_TEST_DRF(0073_CTRL_SPECIFIC,
+        _HDCP_STATE, _AUTHENTICATED, _YES, params.flags);
+    hdcp2xType1 = FLD_TEST_DRF(0073_CTRL_SPECIFIC,
+        _HDCP_STATE, _HDCP22_TYPE1, _YES, params.flags);
+    if (nvDpyEvoIsDPMST(pDpyEvo)) {
+        // hdcp1xCapable and hdcp2xCapable reflect Monitor capability
+        hdcp2xCapable = nvDPDpyIsHdcp2XCap(pDpyEvo);
+        hdcp1xCapable = nvDPDpyIsHdcp1XCap(pDpyEvo);
+    } else {
+        // hdcp1xCapable and hdcp2xCapable reflect HUB capability
+        hdcp1xCapable = FLD_TEST_DRF(0073_CTRL_SPECIFIC,
+            _HDCP_STATE, _RECEIVER_CAPABLE, _YES, params.flags);
+        hdcp2xCapable = FLD_TEST_DRF(0073_CTRL_SPECIFIC,
+            _HDCP_STATE, _HDCP22_RECEIVER_CAPABLE, _YES, params.flags);
+    }
+
+    // Set final contentProtection status
+    if (hdcpAuthOn && hdcp2xCapable && hdcp2xType1) {
+        contentProtection = NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE1_ON;
+    } else if (hdcpAuthOn && hdcp2xCapable) {
+        contentProtection = NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE0_ON;
+    } else if (hdcpAuthOn && hdcp1xCapable) {
+        contentProtection = NVKMS_CONTENT_PROTECTION_HDCP1X_ON;
+    } else {
+        contentProtection = NVKMS_CONTENT_PROTECTION_OFF;
+    }
+exit:
+    return contentProtection;
+}
+
+void nvGetContentProtectionTopology(NVConnectorEvoPtr pConnectorEvo,
+                                    void *pTopology)
+{
+    NVDevEvoPtr pDevEvo = pConnectorEvo->pDispEvo->pDevEvo;
+    NvU32 displayId = nvDpyIdToNvU32(pConnectorEvo->displayId);
+    NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS *params = nvCalloc(1, sizeof(NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS));
+    NvU32 ret = NVOS_STATUS_SUCCESS;
+    struct NvHdcpTopology *topology = (struct NvHdcpTopology *)pTopology;
+
+    ct_assert(NVKMS_HDCP_TOPOLOGY_SIZE >= sizeof(struct NvHdcpTopology));
+    nvkms_memset(topology, 0, sizeof(*topology));
+    if (params == NULL) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                    "Failed to allocate memory for NV0073_CTRL_SPECIFIC_HDCP_CTRL_PARAMS");
+        goto exit;
+    }
+    params->displayId = displayId;
+    params->cmd = DRF_DEF(0073_CTRL_SPECIFIC, _HDCP_CTRL, _CMD, _READ_TOPOLOGY);
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SPECIFIC_HDCP_CTRL,
+                         params, sizeof(*params));
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "CTRL CMD READ_TOPOLOGY failed");
+        goto exit;
+    }
+
+    topology->isHdcpCapable = params->isHdcpCapable;
+    topology->isHdcpAuthOn = params->isHdcpAuthOn;
+    topology->isHdcpRp = params->isHdcpRp;
+    topology->isHdcp2X = params->isHdcp2X;
+    topology->maxCascadeExceeded = params->bMaxCascadeExceeded;
+    topology->maxDeviceExceeded = params->bMaxDeviceExceeded;
+    topology->isHdcp1DevDownstream = params->bHdcp1DevDownstream;
+    topology->isHdcp2LegacyDevDownstream = params->bHdcp2LegacyDevDownstream;
+    topology->cascadeDepth = params->cascadeDepth;
+    topology->linkCount = params->linkCount;
+    ct_assert(sizeof(params->bKsv) >= sizeof(topology->bksv));
+    nvkms_memcpy(topology->bksv,
+                 params->bKsv,
+                 sizeof(topology->bksv));
+    topology->numOfBksv = params->numBksvs;
+    ct_assert(sizeof(params->bKsvList) >= sizeof(topology->bksvList));
+    nvkms_memcpy(topology->bksvList,
+                 params->bKsvList,
+                 sizeof(topology->bksvList));
+exit:
+    nvFree(params);
+    return;
+}
+
 static NvBool ReadDPSerializerCaps(NVConnectorEvoPtr pConnectorEvo)
 {
     NVDpyIdList oneDpyIdList =
@@ -1719,6 +1839,23 @@ static void ReceiveHDMIFRLRetrainEvent(void *arg, void *pEventDataVoid, NvU32 hE
         0);
 }
 
+static void ReceiveCpEvent(void *arg, void *pEventDataVoid, NvU32 hEvent,
+                           NvU32 Data, NV_STATUS Status)
+{
+    Nv2080HdcpStatusChangeNotification *pEventData =
+        (Nv2080HdcpStatusChangeNotification*)(pEventDataVoid);
+    // eventData passed to nvHandleCpEventDeferredWork has to be NvU32 so we pack
+    // it such that top 8 bits identify the type of hdcp event and bottom 24 bits
+    // specify the displayId on which event occured.
+    NvU32 eventData = ((pEventData->hdcpStatusChangeNotif & 0xFFU) << 24) |
+                       (pEventData->displayId & 0x00FFFFFFU);
+    (void) nvkms_alloc_timer_with_ref_ptr(
+        nvHandleCpEventDeferredWork, /* callback */
+        arg, /* argument (this is a ref_ptr to a pDispEvo) */
+        eventData, /* dataU32 */
+        0);
+}
+
 NvBool nvRmRegisterCallback(const NVDevEvoRec *pDevEvo,
                             NVOS10_EVENT_KERNEL_CALLBACK_EX *cb,
                             struct nvkms_ref_ptr *ref_ptr,
@@ -1790,8 +1927,6 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
     unsigned int sd;
     enum NvKmsAllocDeviceStatus status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
     NvU32 totalDispNumSubDevices = 0;
-
-    pDevEvo->sli.bridge.present = FALSE;
 
     if (!QueryGpuCapabilities(pDevEvo)) {
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
@@ -2008,6 +2143,36 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
         }
     }
 
+    // Allocate a handler for the Content Protection event, which is signaled
+    // when there is a change in HDCP status
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS setEventParams = { };
+        NvU32 subDevice, ret;
+        subDevice = pDevEvo->pSubDevices[pDispEvo->displayOwner]->handle;
+        pDispEvo->cpEventHandle =
+            nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+        if (!RegisterDispCallback(&pDispEvo->rmCpCallback, pDispEvo,
+                                  pDispEvo->cpEventHandle, ReceiveCpEvent,
+                                  NV2080_NOTIFIERS_HDCP_STATUS_CHANGE)) {
+            nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+                        "Failed to register Content Protection event");
+        }
+
+        // Enable HDCP Status Change notifications from this subdevice.
+        setEventParams.event = NV2080_NOTIFIERS_HDCP_STATUS_CHANGE;
+        setEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+        if ((ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                                  subDevice,
+                                  NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                                  &setEventParams,
+                                  sizeof(setEventParams)))
+                != NVOS_STATUS_SUCCESS) {
+            nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+                        "Failed to register Content Protection event "
+                        "handler: 0x%x\n", ret);
+        }
+    }            
+
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
         ProbeBootDisplays(pDispEvo);
 
@@ -2116,6 +2281,16 @@ void nvRmDestroyDisplays(NVDevEvoPtr pDevEvo)
             nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
                                pDispEvo->HDMIFRLRetrainEventHandle);
             pDispEvo->HDMIFRLRetrainEventHandle = 0;
+        }
+
+        // Free the content protection event.
+        if (pDispEvo->cpEventHandle != 0) {
+            nvRmApiFree(nvEvoGlobal.clientHandle,
+                        nvEvoGlobal.clientHandle,
+                        pDispEvo->cpEventHandle);
+            nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                               pDispEvo->cpEventHandle);
+            pDispEvo->cpEventHandle = 0;
         }
     }
 
@@ -3328,10 +3503,16 @@ void nvRMFreeWindowChannels(NVDevEvoPtr pDevEvo)
     NvU32 window;
 
     for (window = 0; window < pDevEvo->numWindows; window++) {
-        nvRmEvoFreeSyncpt(pDevEvo, &pDevEvo->window[window]->postSyncpt);
-        RmFreeEvoChannel(pDevEvo, pDevEvo->window[window]);
+        NVEvoChannelPtr pWin = pDevEvo->window[window];
+
+        if (pWin == NULL) {
+            continue;
+        }
+        nvRmEvoFreeSyncpt(pDevEvo, &pWin->postSyncpt);
+        RmFreeEvoChannel(pDevEvo, pWin);
         pDevEvo->window[window] = NULL;
     }
+
 }
 
 /* Frees the Core RG Syncpts. */
@@ -4226,7 +4407,6 @@ NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
                           const struct NvKmsAllocDeviceRequest *pRequest)
 {
     NV0080_ALLOC_PARAMETERS allocParams = { 0 };
-    NV0080_CTRL_GPU_GET_NUM_SUBDEVICES_PARAMS getNumSubDevicesParams = { 0 };
     NvU32 ret, sd;
     NvU32 handleSpace = pRequest->deviceId.rmDeviceId;
 
@@ -4329,28 +4509,7 @@ NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
         goto failure;
     }
 
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         pDevEvo->deviceHandle,
-                         NV0080_CTRL_CMD_GPU_GET_NUM_SUBDEVICES,
-                         &getNumSubDevicesParams,
-                         sizeof(getNumSubDevicesParams));
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                    "Failed to determine number of GPUs");
-        goto failure;
-    }
-
-    ct_assert(NVKMS_MAX_SUBDEVICES == NV_MAX_SUBDEVICES);
-    if ((getNumSubDevicesParams.numSubDevices == 0) ||
-        (getNumSubDevicesParams.numSubDevices >
-         ARRAY_LEN(pDevEvo->pSubDevices))) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Unsupported number of GPUs: %d",
-                    getNumSubDevicesParams.numSubDevices);
-        goto failure;
-    }
-
-    pDevEvo->numSubDevices = getNumSubDevicesParams.numSubDevices;
+    pDevEvo->numSubDevices = 1;
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         pDevEvo->pSubDevices[sd] = AllocSubDevice(pDevEvo, sd);

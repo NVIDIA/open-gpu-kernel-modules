@@ -42,6 +42,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE =
 {
     .classInfo.size =               sizeof(OBJTRACEABLE),
     .classInfo.classId =            classId(OBJTRACEABLE),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "OBJTRACEABLE",

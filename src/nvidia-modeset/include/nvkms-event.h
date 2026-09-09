@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,5 +29,6 @@
 void nvHandleHotplugEventDeferredWork(void *dataPtr, NvU32 dataU32);
 void nvHandleDPIRQEventDeferredWork(void *dataPtr, NvU32 dataU32);
 void nvHandleHDMIFRLRetrainEventDeferredWork(void *dataPtr, NvU32 dataU32);
+void nvHandleCpEventDeferredWork(void *dataPtr, NvU32 dataU32);
 
 #endif /* __NVKMS_EVENT_H__ */

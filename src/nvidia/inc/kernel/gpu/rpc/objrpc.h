@@ -112,6 +112,14 @@ struct OBJRPC{
 #define rpcGetVgpuMessageHeader(pRpc) ((rpc_message_header_v*)(pRpc->message_buffer))
 #define rpcGetVgpuMessageData(pRpc)   (rpcGetVgpuMessageHeader(pRpc)->rpc_message_data)
 
+#define rpcGetGmcMessageHeader(pRpc)  ((GMCAPI_HEADER*)(pRpc->message_buffer))
+#define rpcGetGmcMessageData(pRpc)    (rpcGetGmcMessageHeader(pRpc)->data)
+
+#define rpcIsCurrentMessageVgpuStyle(pRpc) \
+    ((rpcGetVgpuMessageHeader(pRpc)->signature == NV_VGPU_MSG_SIGNATURE_VALID) && \
+     (rpcGetVgpuMessageHeader(pRpc)->header_version == 0x03000000))
+
+
 static inline void _objrpcStructureCopyAssignIpVersion(struct OBJRPCSTRUCTURECOPY* pRpcStructureCopy, NvU32 ipVersion)
 {
     pRpcStructureCopy->__nvoc_pbase_Object->ipVersion = ipVersion;

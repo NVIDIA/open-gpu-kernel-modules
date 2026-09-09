@@ -332,10 +332,10 @@ static void InsertProgressTracker(NvPushChannelPtr p, NvU32 putOffset,
 #define NV_CPU_MEMFENCE()   __asm__ __volatile__ ("sfence" : : : "memory")
 #elif NVCPU_IS_FAMILY_ARM
 #define NV_CPU_MEMFENCE()   __asm__ __volatile__ ("dsb sy\n\t" : : : "memory");
-#elif NVCPU_IS_PPC64LE
-#define NV_CPU_MEMFENCE()   __asm__ __volatile__ ("lwsync\n\t" : : : "memory")
+#elif NVCPU_IS_FAMILY_RISCV
+#define NV_CPU_MEMFENCE()   __asm__ __volatile__ ("fence iorw,iorw\n\t" : : : "memory");
 #else
-#define NV_CPU_MEMFENCE()   /* nothing */
+    #error "unknown arch"
 #endif
 
 static NvBool nvWriteGpEntry(
@@ -445,10 +445,13 @@ static void DoorbellKickoff(NvPushChannelPtr pChannel,
     /* First update GPPUT in USERD. */
     UserDKickoff(pChannel, oldGpPut, newGpPut);
 
-#if NVCPU_IS_PPC64LE
-    __asm__ __volatile__ ("sync\n\t" : : : "memory");
+#if defined(NVCPU_X86) || defined(NVCPU_X86_64)
 #elif NVCPU_IS_FAMILY_ARM
     __asm__ __volatile__ ("dsb sy\n\t" : : : "memory");
+#elif NVCPU_IS_FAMILY_RISCV
+    __asm__ __volatile__ ("fence iorw,iorw\n\t" : : : "memory");
+#else
+    #error "unknown arch"
 #endif
 
     /* Then ring the doorbells so HOST knows to check for the updated GPPUT. */

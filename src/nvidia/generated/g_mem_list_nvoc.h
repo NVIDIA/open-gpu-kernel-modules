@@ -103,12 +103,12 @@ struct NVOC_VTABLE__MemoryList {
     NV_STATUS (*__memlistIsReady__)(struct MemoryList * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__memlistIsGpuMapAllowed__)(struct MemoryList * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__memlistIsExportAllowed__)(struct MemoryList * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__memlistAccessCallback__)(struct MemoryList * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__memlistShareCallback__)(struct MemoryList * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memlistControlSerialization_Prologue__)(struct MemoryList * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memlistControlSerialization_Epilogue__)(struct MemoryList * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memlistControl_Prologue__)(struct MemoryList * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memlistControl_Epilogue__)(struct MemoryList * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memlistAccessCallback__)(struct MemoryList * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__memlistShareCallback__)(struct MemoryList * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memlistControlSerialization_Prologue__)(struct MemoryList * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memlistControlSerialization_Epilogue__)(struct MemoryList * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__memlistControl_Prologue__)(struct MemoryList * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__memlistControl_Epilogue__)(struct MemoryList * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__memlistPreDestruct__)(struct MemoryList * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__memlistControlFilter__)(struct MemoryList * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__memlistIsPartialUnmapSupported__)(struct MemoryList * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -262,27 +262,27 @@ static inline NvBool memlistIsExportAllowed_DISPATCH(struct MemoryList *pMemory)
     return pMemory->__nvoc_metadata_ptr->vtable.__memlistIsExportAllowed__(pMemory);
 }
 
-static inline NvBool memlistAccessCallback_DISPATCH(struct MemoryList *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool memlistAccessCallback_DISPATCH(struct MemoryList *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__memlistAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool memlistShareCallback_DISPATCH(struct MemoryList *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool memlistShareCallback_DISPATCH(struct MemoryList *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__memlistShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS memlistControlSerialization_Prologue_DISPATCH(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memlistControlSerialization_Prologue_DISPATCH(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memlistControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memlistControlSerialization_Epilogue_DISPATCH(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memlistControlSerialization_Epilogue_DISPATCH(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memlistControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memlistControl_Prologue_DISPATCH(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS memlistControl_Prologue_DISPATCH(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__memlistControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void memlistControl_Epilogue_DISPATCH(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void memlistControl_Epilogue_DISPATCH(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__memlistControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

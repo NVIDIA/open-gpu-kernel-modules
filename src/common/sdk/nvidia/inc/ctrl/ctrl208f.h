@@ -49,6 +49,7 @@
 #include "ctrl208f/ctrl208fnvlink.h"
 #include "ctrl208f/ctrl208fpmu.h"
 #include "ctrl208f/ctrl208fsec2.h"
+#include "ctrl208f/ctrl208flpsec.h"
 
 
 #include "ctrl208f/ctrl208fce.h"

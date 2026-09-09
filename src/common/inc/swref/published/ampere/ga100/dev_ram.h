@@ -36,4 +36,8 @@
 #define NV_RAMUSERD_GET_HI                     (24*32+31):(24*32+0) /* RW-UF */
 #define NV_RAMUSERD_GP_GET                     (34*32+31):(34*32+0) /* RW-UF */
 #define NV_RAMUSERD_GP_PUT                     (35*32+31):(35*32+0) /* RW-UF */
+#define NV_RAMFC                                                    /* ----G */
+#define NV_RAMFC_INTR_NOTIFY                   (62*32+31):(62*32+0) /* RW-UF */
+#define NV_RAMFC_SET_CHANNEL_INFO              (63*32+31):(63*32+0) /* RW-UF */
+#define NV_RAMIN_ENGINE_WFI_VEID             (134*32+(6-1)):(134*32+0) /*       */
 #endif // __ga100_dev_ram_h__

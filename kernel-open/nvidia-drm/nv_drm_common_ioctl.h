@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2015-2026, NVIDIA CORPORATION.  All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -57,6 +57,8 @@
 #define DRM_NVIDIA_UNREGISTER_ROI                   0x1a  /* Unregister ROI */
 #define DRM_NVIDIA_GET_CRTC_ROI_CRCS                0x1b  /* Read CRCs for registered ROIs */
 #define DRM_NVIDIA_GET_ROI_CAPABILITIES             0x1c  /* Get ROI related capabilities */
+#define DRM_NVIDIA_SEMSURF_EXPORT_TO_SYNCOBJ_POINT  0x1d
+#define DRM_NVIDIA_SYNCOBJ_GET_SYNCFD               0x1e
 
 
 /* Maximum possible telltale CRCs per plane (used for array size)
@@ -177,6 +179,16 @@
               DRM_NVIDIA_GET_DRM_FILE_UNIQUE_ID),                       \
               struct drm_nvidia_get_drm_file_unique_id_params)
 
+#define DRM_IOCTL_NVIDIA_SEMSURF_EXPORT_TO_SYNCOBJ_POINT                \
+    DRM_IOW((DRM_COMMAND_BASE +                                         \
+             DRM_NVIDIA_SEMSURF_EXPORT_TO_SYNCOBJ_POINT),               \
+             struct drm_nvidia_semsurf_export_to_syncobj_point_params)
+
+#define DRM_IOCTL_NVIDIA_SYNCOBJ_GET_SYNCFD                             \
+    DRM_IOWR((DRM_COMMAND_BASE +                                        \
+              DRM_NVIDIA_SYNCOBJ_GET_SYNCFD),                           \
+              struct drm_nvidia_syncobj_get_syncfd_params)
+
 #define DRM_IOCTL_NVIDIA_REGISTER_ROI                                    \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_REGISTER_ROI),               \
              struct drm_nvidia_register_roi_params)
@@ -192,6 +204,9 @@
 #define DRM_IOCTL_NVIDIA_GET_ROI_CAPABILITIES                         \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_ROI_CAPABILITIES),    \
              struct drm_nvidia_get_roi_capabilities_params)
+
+#define NV_DRM_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE                     3
+#define NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE                     27
 
 struct drm_nvidia_gem_import_nvkms_memory_params {
     uint64_t mem_size;           /* IN */
@@ -426,6 +441,19 @@ struct drm_nvidia_get_drm_file_unique_id_params {
     uint64_t id;                    /* OUT Unique ID of the DRM file */
 };
 
+struct drm_nvidia_semsurf_export_to_syncobj_point_params {
+    uint32_t fence_context_handle;  /* IN GEM handle to fence context */
+    uint32_t syncobj_handle;        /* IN DRM syncobj handle */
+    uint64_t wait_value;            /* IN Semsurf timeline point to export */
+    uint64_t syncobj_point;         /* IN DRM syncobj timeline point to export to */
+};
+
+struct drm_nvidia_syncobj_get_syncfd_params {
+    uint32_t syncobj_handle;        /* IN DRM syncobj timeline handle */
+    int32_t  fd;                    /* OUT sync FD for the syncobj timeline point */
+    uint64_t syncobj_point;         /* IN DRM syncobj timeline point */
+};
+
 /**
  * @brief Parameters for getting ROI capabilities
  *
@@ -581,6 +609,18 @@ struct drm_nvidia_read_crc_params {
     NV_DRM_TRANSFER_FUNCTION_SMPTE_170M,
     NV_DRM_TRANSFER_FUNCTION_TEGRA_MAX,
     NV_DRM_TRANSFER_FUNCTION_MAX = NV_DRM_TRANSFER_FUNCTION_SRGB,
+};
+
+
+/**
+ * @brief Struct for HDMI VSIF blob property
+ *
+ * This structure defines the content of the NV_HDMI_VSIF_METADATA blob property.
+ * The payload is a 27 byte array where the first three bytes are the vendor OUI,
+ * and the remaining bytes are the infoframe content.
+ */
+struct drm_nvidia_hdmi_vsif_metadata {
+    uint8_t payload[NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE];
 };
 
 #endif /* _NV_DRM_COMMON_IOCTL_H_ */

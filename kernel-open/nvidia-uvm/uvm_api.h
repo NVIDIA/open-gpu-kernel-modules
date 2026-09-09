@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -34,10 +34,10 @@
 #include "uvm_va_space.h"
 #include "nv_uvm_user_types.h"
 
-// This weird number comes from UVM_PREVENT_MIGRATION_RANGE_GROUPS_PARAMS. That
-// ioctl is called frequently so we don't want to allocate a copy every time.
-// It's a little over 256 bytes in size.
-#define UVM_MAX_IOCTL_PARAM_STACK_SIZE 288
+// This number comes from UVM_TEST_RANGE_TREE_RANDOM_PARAMS. It cover almost all
+// driver and test ioctls. Above this limit, ioctls require two orders of
+// magnitude more space. In these cases, the UVM_ROUTE_CMD_ALLOC_* is preferred.
+#define UVM_MAX_IOCTL_PARAM_STACK_SIZE 176
 
 // The UVM_ROUTE_CMD_* macros are only intended for use in the ioctl routines
 
@@ -238,6 +238,10 @@ NV_STATUS uvm_api_disable_peer_access(UVM_DISABLE_PEER_ACCESS_PARAMS *params, st
 NV_STATUS uvm_api_create_external_range(UVM_CREATE_EXTERNAL_RANGE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_map_external_allocation(UVM_MAP_EXTERNAL_ALLOCATION_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_map_external_sparse(UVM_MAP_EXTERNAL_SPARSE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_is_dma_buf_import_supported(UVM_IS_DMA_BUF_IMPORT_SUPPORTED_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_import_dma_buf(UVM_IMPORT_DMA_BUF_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_map_dma_buf(UVM_MAP_DMA_BUF_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_unmap_dma_buf(UVM_UNMAP_DMA_BUF_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_free(UVM_FREE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_discard(UVM_DISCARD_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS *params, struct file *filp);

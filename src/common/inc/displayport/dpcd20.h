@@ -533,6 +533,15 @@
 #define NV_DPCD20_DPTX_DISPLAY_DRIVER_BW_ALLOCATION_MODE_ENABLE_NO                    (0x00000000) /* R-XUV */
 #define NV_DPCD20_DPTX_DISPLAY_DRIVER_BW_ALLOCATION_MODE_ENABLE_YES                   (0x00000001) /* R-XUV */
 
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_1                                (0x0000221C) /* R-XUR */
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_1_VAL                                     7:0 /* R-XUF */
+
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2                                (0x0000221D) /* R-XUR */
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2_VAL                                     6:0 /* R-XUF */
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2_VALID                                   7:7 /* R-XUF */
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2_VALID_NO                       (0x00000000) /* R-XUV */
+#define NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2_VALID_YES                      (0x00000001) /* R-XUV */
+
 // DPCD Registers for Cable ID
 #define NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX                                               (0x00000110) /* R-XUR */
 #define NV_DPCD20_CABLE_ATTRIBUTES_UPDATED_BY_DPTX_UHBR20_10_CAPABILITY                                   1:0 /* R-XUF */

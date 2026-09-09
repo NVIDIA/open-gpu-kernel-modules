@@ -171,7 +171,6 @@ gpuGetUserRegisterAccessPermissions_IMPL(OBJGPU *pGpu, NvU32 offset)
     return nvBitFieldTest((NvU32*) pGpu->pUserRegisterAccessMap, pGpu->userRegisterAccessMapSize / sizeof(NvU32), bitOffset);
 }
 
-
 static NvBool _getIsProfilingPrivileged(OBJGPU *pGpu)
 {
     // On a vGPU Host, RmProfilingAdminOnly is always set to 1
@@ -187,14 +186,24 @@ static NvBool _getIsProfilingPrivileged(OBJGPU *pGpu)
     return NV_FALSE;
 #else
     NvU32 data32;
-    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_PROFILING_ADMIN_ONLY, &data32))
+    NvBool bReadProfilingRegister;
+
+    // Attempt to read the RmProfilingAdminOnly key from the registry 
+    bReadProfilingRegister = osReadAdminProfilingRegkey(pGpu, &data32);
+
+    if (bReadProfilingRegister)
     {
+        //
+        // If we read successfully from the registry 
+        // return the value read from the registry
+        //    
         return (data32 == NV_REG_STR_RM_PROFILING_ADMIN_ONLY_TRUE);
     }
 
     return NV_TRUE;
 #endif
 }
+
 /**
  * @brief Constructs the bitmap used to control whether a register can be accessed by user space.
  *

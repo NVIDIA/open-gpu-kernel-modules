@@ -112,6 +112,8 @@
 
 #define GPU_IMPLEMENTATION_GB10B         0x0B
 
+#define GPU_IMPLEMENTATION_GB10C         0x0C
+
 #define GPU_IMPLEMENTATION_GB110         0x03
 
 #define GPU_IMPLEMENTATION_GB112         0x04

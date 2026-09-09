@@ -111,6 +111,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Device =
 {
     .classInfo.size =               sizeof(Device),
     .classInfo.classId =            classId(Device),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "Device",
@@ -318,11 +319,11 @@ static NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize__EXPORT(void *pDevice, vo
 }
 #endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00050048u)
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00010248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000048u)
 static NV_STATUS deviceCtrlCmdFifoSetChannelProperties__EXPORT(void *pDevice, void *pSetChannelPropertiesParams) {
     return deviceCtrlCmdFifoSetChannelProperties_IMPL(pDevice, pSetChannelPropertiesParams);
 }
-#endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00010248u)
+#endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000048u)
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000109u)
 static NV_STATUS deviceCtrlCmdFifoIdleChannels__EXPORT(void *pDevice, void *pParams) {
@@ -1000,12 +1001,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [34] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) &deviceCtrlCmdFifoSetChannelProperties__EXPORT,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10248u)
-        /*flags=*/      0x10248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x80170fu,
         /*paramSize=*/  sizeof(NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS),

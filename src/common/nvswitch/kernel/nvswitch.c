@@ -4949,7 +4949,7 @@ nvswitch_reg_read_32
         if ((boot_0 & 0xFFFF0000) == 0xBADF0000)
         {
             NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_IO_FAILURE,
-                "IO failure\n");
+                "IO failure (0x%08x, 0x%08x, 0x%08x)\n", offset, val, boot_0);
             NVSWITCH_PRINT(device, ERROR,
                 "IO failure reading 0x%x (0x%x)\n", offset, val);
         }

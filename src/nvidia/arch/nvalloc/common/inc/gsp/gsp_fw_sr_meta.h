@@ -31,6 +31,8 @@
 
 #define GSP_FW_SR_META_INTERNAL_SIZE  128
 
+#define GSP_FW_SR_META_FLAGS_CLOCK_BOOST   NVBIT(0)
+
 /*!
  * GSP firmware SR metadata
  *

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,24 +27,8 @@
 #endif
 #include "mmu/gmmu_fmt.h"
 
-#ifndef NV_MMU_PTE_COMPTAG_USABLE
-#define NV_MMU_PTE_COMPTAG_USABLE    (1*32+27):(1*32+12) /* RWXVF */
-#endif
-#ifndef NV_MMU_PTE_COMPTAG_SUB_INDEX
-#define NV_MMU_PTE_COMPTAG_SUB_INDEX (1*32+28):(1*32+28) /* RWXVF */
-#endif
-
 void kgmmuFmtInitCaps_GM20X(KernelGmmu *pKernelGmmu,
                             GMMU_FMT *pFmt)
 {
     pFmt->bSparseHwSupport = NV_TRUE;
-}
-
-void kgmmuFmtInitPteComptagLine_GM20X(KernelGmmu *pKernelGmmu,
-                                      GMMU_FMT_PTE *pPte,
-                                      const NvU32 version)
-{
-    NV_ASSERT_OR_RETURN_VOID(version == GMMU_FMT_VERSION_1);
-    INIT_FIELD_DESC32(&pPte->fldCompTagLine, NV_MMU_PTE_COMPTAG_USABLE);
-    INIT_FIELD_DESC32(&pPte->fldCompTagSubIndex, NV_MMU_PTE_COMPTAG_SUB_INDEX);
 }

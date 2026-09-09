@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,9 +65,18 @@ namespace DisplayPort
                                    unsigned * pNakReason = NULL,
                                    NvU8 offset = 0, NvU8 nWriteTransactions = 0) = 0;
 
-        virtual unsigned transactionSize() = 0;              
-        virtual status fecTransaction(NvU8 *fecStatus, NvU16 **fecErrorCount, NvU32 flags) { return nack; }          
+        virtual unsigned transactionSize() = 0;
+        virtual status fecTransaction(NvU8 *fecStatus, NvU16 **fecErrorCount, NvU32 flags) { return nack; }
+        virtual void setGpuDPSupportedVersions(NvU32 dpVersionsSupported) {}
+        virtual NvU32 getGpuDPSupportedVersions()
+        {
+            return 0;
+        }
         virtual void setDevicePlugged(bool) {}
+        virtual bool isDevicePlugged()
+        {
+            return false;
+        }
         virtual ~AuxBus() {}
     };
 

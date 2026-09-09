@@ -652,6 +652,10 @@ typedef volatile struct _clc773_tag0 {
 #define NVC773_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_2TAP_INIT               0x00000000 /* RWI-V */
 #define NVC773_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_5TAP                         31:16 /* RWIVF */
 #define NVC773_PRECOMP_WIN_PIPE_HDR_CAPF_VSCLR_MAX_PIXELS_5TAP_INIT               0x00000000 /* RWI-V */
+#define NVC773_HEAD_CLK_CAP(i)                                (0x5e8+(i)*4) /* RW-4A */
+#define NVC773_HEAD_CLK_CAP__SIZE_1                                            8 /*       */
+#define NVC773_HEAD_CLK_CAP_PCLK_MAX                                         7:0 /* RWIUF */
+#define NVC773_HEAD_CLK_CAP_PCLK_MAX_INIT                             0x00000086 /* RWI-V */
 #define NVC773_SOR_CLK_CAP(i)                                 (0x608+(i)*4) /* RW-4A */
 #define NVC773_SOR_CLK_CAP__SIZE_1                                             8 /*       */
 #define NVC773_SOR_CLK_CAP_DP_MAX                                            7:0 /* RWIUF */

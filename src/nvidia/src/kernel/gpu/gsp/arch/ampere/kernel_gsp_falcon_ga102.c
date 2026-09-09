@@ -322,7 +322,7 @@ kgspLoadAndExecuteHsBinary_GA102
     KernelFalcon        *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
 
     // Wait for the GSP processor suspend to complete.
-    status = kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
+    status = kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp, NV_FALSE);
     if (status != NV_OK)
     {
         NvU32 mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_MAILBOX0);

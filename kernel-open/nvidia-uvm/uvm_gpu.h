@@ -1288,10 +1288,6 @@ struct uvm_parent_gpu_struct
         // 47-bit fabric memory physical offset that peer gpus need to access
         // to read a peer's memory
         NvU64 fabric_memory_window_start;
-
-        // 47-bit fabric memory physical offset that peer gpus need to access
-        // to read remote EGM memory.
-        NvU64 egm_fabric_memory_window_start;
     } nvswitch_info;
 
     struct
@@ -1351,15 +1347,34 @@ struct uvm_parent_gpu_struct
         // Is EGM support enabled on this GPU.
         bool enabled;
 
+        // Legacy EGM uses GPA GMMU mappings while non-legacy uses FLA.
+        bool legacy;
+
         // Local EGM peer ID. This ID is used to route EGM memory accesses to
-        // the local CPU socket.
+        // the local CPU socket. Only, valid/used for legacy EGM.
         NvU8 local_peer_id;
 
         // EGM base address of the EGM carveout for remote EGM accesses.
         // The base address is used when computing PTE PA address values for
         // accesses to the local CPU socket's EGM memory from other peer
         // GPUs.
-        NvU64 base_address;
+        // For non-legacy EGM, this is the base of the DMA mapping created
+        // by RM for the SYSMEM window of the NUMA node to which the GPU
+        // is attached.
+        dma_addr_t base_address;
+
+        // Size of EGM memory window. Effectively, this is the size of the
+        // DMA mapping created by RM.
+        size_t window_size;
+
+        // True if IOMMU is off or IOMMU_DOMAIN_IDENTITY type.
+        bool identity_iommu;
+
+        // 47-bit fabric memory physical offset that peer gpus need to access
+        // to read remote EGM memory.
+        // This field is also used for FLA mappings. It holds the base FLA
+        // address for each peer GPU.
+        NvU64 fabric_memory_window_start;
     } egm;
 
     // Peer VIDMEM base offset used when creating GPA PTEs for
@@ -1617,14 +1632,16 @@ static bool uvm_parent_gpu_supports_full_coherence(uvm_parent_gpu_t *parent_gpu)
 // so pageable memory which uses ZONE_DEVICE can only be migrated to GPUs which
 // have neither property.
 //
-// CDMM GPUs use a separate devmem mechanism that does not rely on
-// DEVICE_PRIVATE pages, so UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES() does
-// not apply to them — uvm_devmem_init() handles this distinction internally.
+// CDMM GPUs use a separate devmem mechanism that does not rely on HMM or
+// DEVICE_PRIVATE pages. Other GPUs only support devmem when HMM is enabled
+// system-wide and DEVICE_PRIVATE pages can be used.
 static bool uvm_gpu_supports_devmem(uvm_gpu_t *gpu)
 {
     if (gpu->mem_info.numa.enabled || gpu->parent->is_integrated_gpu)
         return false;
-    return gpu->parent->cdmm_enabled || UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES();
+
+    return gpu->parent->cdmm_enabled ||
+           (uvm_hmm_is_enabled_system_wide() && UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES());
 }
 
 // Returns a GPU peer pair index in the range [0 .. UVM_MAX_UNIQUE_GPU_PAIRS).
@@ -1788,8 +1805,58 @@ NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, 
 // uvm_hal_tlb_invalidate_phys().
 NV_STATUS uvm_gpu_map_cpu_pages_no_invalidate(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
 
+// Create IOVA mappings for EGM accesses.
+// Please note that the GPU passed here is not the accessing GPU
+// but the routing GPU.
+// Note that this function take in a parent GPU unlike other mapping
+// functions.
+//
+// Locking: The needs to have retained the parent GPU. The block
+//          lock for the black that is being mapped should be held.
+NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
+                                        struct page *page,
+                                        size_t size,
+                                        NvU64 *dma_address_out);
+
 // Unmap num_pages pages previously mapped with uvm_gpu_map_cpu_pages().
 void uvm_parent_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
+
+static bool uvm_parent_gpu_egm_enabled(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.enabled;
+}
+
+static bool uvm_parent_gpu_egm_iommu_is_identity(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.identity_iommu;
+}
+
+static bool uvm_parent_gpu_egm_is_legacy(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.legacy;
+}
+
+static dma_addr_t uvm_parent_gpu_egm_iova_address(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.base_address;
+}
+
+static NvU64 uvm_parent_gpu_egm_fabric_address(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.fabric_memory_window_start;
+}
+
+static size_t uvm_parent_gpu_egm_window_size(uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->egm.window_size;
+}
+
+// Destroy IOVA mappings for EGM.
+// Just like with uvm_vapu_map_cpu_pages_for_egm(), the parent GPU
+// passed here is the routing GPU.
+//
+// Locking: Same as uvm_parent_gpu_map_cpu_pages_for_egm()
+void uvm_parent_gpu_unmap_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
 
 static NV_STATUS uvm_gpu_map_cpu_page(uvm_gpu_t *gpu, struct page *page, NvU64 *dma_address_out)
 {
@@ -1917,5 +1984,7 @@ typedef enum
 
 // PCIe BAR containing static framebuffer memory mappings for PCIe P2P
 int uvm_device_p2p_static_bar(uvm_parent_gpu_t *gpu);
+
+NV_STATUS uvm_test_query_egm_state(UVM_TEST_QUERY_EGM_STATE_PARAMS *params, struct file *filp);
 
 #endif // __UVM_GPU_H__

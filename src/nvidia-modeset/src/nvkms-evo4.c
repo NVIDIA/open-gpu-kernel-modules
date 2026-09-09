@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,7 +126,7 @@ static void InitTaps5ScalerCoefficientsC9(NVDevEvoPtr pDevEvo,
 
     if (isPrecomp) {
         const NVEvoWindowCaps *pWinCaps =
-            &pDevEvo->gpus[0].capabilities.window[pChannel->instance];
+            &pDevEvo->capabilities.window[pChannel->instance];
         const NVEvoScalerCaps *pScalerCaps = &pWinCaps->scalerCaps;
 
         if (!pScalerCaps->present) {
@@ -759,6 +759,54 @@ static void EvoSetOutputScalerC9(const NVDispEvoRec *pDispEvo, const NvU32 head,
         DRF_NUM(C97D, _HEAD_SET_CONTROL_OUTPUT_SCALER, _HORIZONTAL_TAPS, hTaps));
 }
 
+/*
+ * The Blackwell postcomp scaler consumes fixed-point samples
+ * between the RGB2ITP and ITP2RGB blocks, so their paired FVLUTs must be
+ * enabled whenever postcomp scaling is active; left bypassed, the scaler
+ * misinterprets FP16 bit patterns as fixed point and corrupts scaled
+ * content.
+ */
+static void EvoSetOutputScalerCA(const NVDispEvoRec *pDispEvo, const NvU32 head,
+                                 NVEvoUpdateState *updateState)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVEvoChannelPtr pChannel = pDevEvo->core;
+    const NVHwModeViewPortEvo *pViewPort =
+        &pDispEvo->headState[head].timings.viewPort;
+    const NvBool scaling =
+        (pViewPort->in.width != pViewPort->out.width) ||
+        (pViewPort->in.height != pViewPort->out.height);
+    NvU32 rgb2ItpControl = 0;
+    NvU32 itp2RgbControl = 0;
+
+    nvUpdateUpdateState(pDevEvo, updateState, pChannel);
+
+    EvoSetOutputScalerC9(pDispEvo, head, updateState);
+
+    if (scaling) {
+        // Enable the paired FVLUTs with PQ defaults.
+        rgb2ItpControl =
+            DRF_DEF(CA7D, _HEAD_SET_RGB2ITP_CONTROL,
+                    _ENABLE_FVLUT, _ENABLE) |
+            DRF_DEF(CA7D, _HEAD_SET_RGB2ITP_CONTROL,
+                    _FVLUT_INTERPOLATE, _ENABLE);
+
+        itp2RgbControl =
+            DRF_DEF(CA7D, _HEAD_SET_ITP2RGB_CONTROL,
+                    _ENABLE_FVLUT, _ENABLE) |
+            DRF_DEF(CA7D, _HEAD_SET_ITP2RGB_CONTROL,
+                    _FVLUT_INTERPOLATE, _ENABLE);
+    }
+
+    nvDmaSetStartEvoMethod(
+        pChannel, NVCA7D_HEAD_SET_RGB2ITP_CONTROL(head), 1);
+    nvDmaSetEvoMethodData(pChannel, rgb2ItpControl);
+
+    nvDmaSetStartEvoMethod(
+        pChannel, NVCA7D_HEAD_SET_ITP2RGB_CONTROL(head), 1);
+    nvDmaSetEvoMethodData(pChannel, itp2RgbControl);
+}
+
 static NvBool EvoSetViewportInOut9(NVDevEvoPtr pDevEvo, const int head,
                                    const NVHwModeViewPortEvo *pViewPortMin,
                                    const NVHwModeViewPortEvo *pViewPort,
@@ -766,7 +814,7 @@ static NvBool EvoSetViewportInOut9(NVDevEvoPtr pDevEvo, const int head,
                                    NVEvoUpdateState *updateState,
                                    NvU32 setWindowUsageBounds)
 {
-    const NVEvoCapabilitiesPtr pEvoCaps = &pDevEvo->gpus[0].capabilities;
+    const NVEvoCapabilitiesPtr pEvoCaps = &pDevEvo->capabilities;
     NVEvoChannelPtr pChannel = pDevEvo->core;
     struct NvKmsScalingUsageBounds scalingUsageBounds = { };
     NvU32 win;
@@ -1854,15 +1902,14 @@ static NVEvoHwTileType EvoGetHwTileType(const NvU32 capA)
     return type;
 }
 static void EvoParseCapabilityNotifierCA(NVDevEvoPtr pDevEvo,
-                                         NVEvoSubDevPtr pEvoSubDev,
                                          volatile const NvU32 *pCaps)
 {
-    NVEvoCapabilitiesPtr pEvoCaps = &pEvoSubDev->capabilities;
+    NVEvoCapabilitiesPtr pEvoCaps = &pDevEvo->capabilities;
     const NvU32 sysCapC = nvEvoReadCapReg3(pCaps, NVCA73_SYS_CAPC);
     const NvU32 ihubCommomCapF = nvEvoReadCapReg3(pCaps,
                                                   NVCA73_IHUB_COMMON_CAPF);
 
-    nvEvoParseCapabilityNotifier6(pDevEvo, pEvoSubDev, pCaps);
+    nvEvoParseCapabilityNotifier6(pDevEvo, pCaps);
 
     ct_assert(ARRAY_LEN(pEvoCaps->hwTile) >=
                 NVCA73_SYS_CAPC_TILE_EXISTS__SIZE_1);
@@ -1914,10 +1961,6 @@ static NvU32 UsableHwTilesCount(const NVEvoCapabilities *pEvoCaps)
 
 static NvBool EvoGetCapabilitiesCA(NVDevEvoPtr pDevEvo)
 {
-    NvU32 sd;
-    const NVDispEvoRec *pDispEvo;
-    NvBool first = TRUE;
-
     if (!nvEvoGetCapabilities3(pDevEvo,
                                EvoParseCapabilityNotifierCA,
                                nvHwFormatFromKmsFormatC6,
@@ -1926,33 +1969,16 @@ static NvBool EvoGetCapabilitiesCA(NVDevEvoPtr pDevEvo)
         return FALSE;
     }
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
-
-        if (first) {
-            pDevEvo->numHwTiles =
-                UsableHwTilesCount(&pEvoSubDev->capabilities);
-            /*
-             * When multiple tiles are used, multiple precomp pipelines are
-             * used to render a single window. PHYWIN (Physical Window) is a
-             * precomp pipe that process some (or all) of a window pixels.
-             *
-             * In GB20X, the number of physical windows is same as the number
-             * of windows.
-             */
-            pDevEvo->numHwPhywins = pDevEvo->numWindows;
-            first = FALSE;
-        } else {
-            /*
-             * Assert that each subdevice has the same number of
-             * tiles and phywins.
-             */
-            nvAssert(pDevEvo->numHwTiles ==
-                         UsableHwTilesCount(&pEvoSubDev->capabilities));
-            nvAssert(pDevEvo->numHwPhywins == pDevEvo->numWindows);
-        }
-
-    }
+    pDevEvo->numHwTiles = UsableHwTilesCount(&pDevEvo->capabilities);
+    /*
+     * When multiple tiles are used, multiple precomp pipelines are
+     * used to render a single window. PHYWIN (Physical Window) is a
+     * precomp pipe that process some (or all) of a window pixels.
+     *
+     * In GB20X, the number of physical windows is same as the number
+     * of windows.
+     */
+    pDevEvo->numHwPhywins = pDevEvo->numWindows;
 
     return TRUE;
 }
@@ -2029,8 +2055,7 @@ static void UnassignExtraOrIncompatibleTiles(
     const NvU32 numRequiredTiles)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    const NVEvoCapabilities *pEvoCaps =
-        &pDevEvo->gpus[pDispEvo->displayOwner].capabilities;
+    const NVEvoCapabilities *pEvoCaps = &pDevEvo->capabilities;
     NvU32 tile;
     NvU32 numReusedTiles = 0;
     const NVEvoHwTileType requiredTileType = GetRequiredTileType(pTimings);
@@ -2079,8 +2104,7 @@ static NvU32 GetFreeTiles(const NVDispEvoRec *pDispEvo,
 {
     NvU32 tile;
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    const NVEvoCapabilities *pEvoCaps =
-        &pDevEvo->gpus[pDispEvo->displayOwner].capabilities;
+    const NVEvoCapabilities *pEvoCaps = &pDevEvo->capabilities;
     NvU32 outFreeTilesMask = *pFreeTilesMask;
     NvU32 tilesMask = 0;
 
@@ -2211,8 +2235,7 @@ static void ReclaimTilesOneType(const NVDispEvoRec *pDispEvo,
                                 NvU32 *pFreePhywinsMask)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    const NVEvoCapabilities *pEvoCaps =
-        &pDevEvo->gpus[pDispEvo->displayOwner].capabilities;
+    const NVEvoCapabilities *pEvoCaps = &pDevEvo->capabilities;
     NvU32 toBeUnassignedTilesMask = 0x0;
     NvU32 tile;
 
@@ -2848,7 +2871,6 @@ NVEvoHAL nvEvoC9 = {
     EvoSetDscParamsC9,                            /* SetDscParams */
     NULL,                                         /* EnableMidFrameAndDWCFWatermark */
     nvEvoGetActiveViewportOffsetC3,               /* GetActiveViewportOffset */
-    NULL,                                         /* ClearSurfaceUsage */
     nvEvoComputeWindowScalingTapsC5,              /* ComputeWindowScalingTaps */
     nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
     NULL,                                         /* SetMergeMode */
@@ -2869,6 +2891,7 @@ NVEvoHAL nvEvoC9 = {
     EvoSetWinNotifierSurfaceAddressAndControlC9,  /* SetWinNotifierSurfaceAddressAndControl */
     EvoSetSemaphoreSurfaceAddressAndControlC9,    /* SetSemaphoreSurfaceAddressAndControl */
     EvoSetAcqSemaphoreSurfaceAddressAndControlC9, /* SetAcqSemaphoreSurfaceAddressAndControl */
+    NULL,                                         /* SetCoreFid */
     EvoSetupVBlankRgSemaphoreInterruptC9,         /* SetupVBlankRgSemaphoreInterrupt */
     {                                             /* caps */
         TRUE,                                     /* supportsHDMIFRL */
@@ -2879,6 +2902,7 @@ NVEvoHAL nvEvoC9 = {
         TRUE,                                     /* supportsHDMI10BPC */
         TRUE,                                     /* supportsDPAudio192KHz */
         TRUE,                                     /* supportsYCbCr422OverHDMIFRL */
+        FALSE,                                    /* supportsColorPassthrough */
         NV_EVO3_X_EMULATED_SURFACE_MEMORY_FORMATS_C6, /* xEmulatedSurfaceMemoryFormats */
     },
 };
@@ -2900,7 +2924,7 @@ NVEvoHAL nvEvoCA = {
     nvEvoFlipTransitionWARC6,                     /* FlipTransitionWAR */
     nvEvoFillLUTSurfaceC5,                        /* FillLUTSurface */
     EvoSetOutputLutC9,                            /* SetOutputLut */
-    EvoSetOutputScalerC9,                         /* SetOutputScaler */
+    EvoSetOutputScalerCA,                         /* SetOutputScaler */
     EvoSetViewportPointInC9,                      /* SetViewportPointIn */
     EvoSetViewportInOutC9,                        /* SetViewportInOut */
     EvoSetCursorImageC9,                          /* SetCursorImage */
@@ -2932,7 +2956,6 @@ NVEvoHAL nvEvoCA = {
     EvoSetDscParamsC9,                            /* SetDscParams */
     NULL,                                         /* EnableMidFrameAndDWCFWatermark */
     nvEvoGetActiveViewportOffsetC3,               /* GetActiveViewportOffset */
-    NULL,                                         /* ClearSurfaceUsage */
     nvEvoComputeWindowScalingTapsC5,              /* ComputeWindowScalingTaps */
     nvEvoGetWindowScalingCapsC3,                  /* GetWindowScalingCaps */
     NULL,                                         /* SetMergeMode */
@@ -2953,6 +2976,7 @@ NVEvoHAL nvEvoCA = {
     EvoSetWinNotifierSurfaceAddressAndControlC9,  /* SetWinNotifierSurfaceAddressAndControl */
     EvoSetSemaphoreSurfaceAddressAndControlC9,    /* SetSemaphoreSurfaceAddressAndControl */
     EvoSetAcqSemaphoreSurfaceAddressAndControlC9, /* SetAcqSemaphoreSurfaceAddressAndControl */
+    NULL,                                         /* SetCoreFid */
     EvoSetupVBlankRgSemaphoreInterruptC9,         /* SetupVBlankRgSemaphoreInterrupt */
     {                                             /* caps */
         TRUE,                                     /* supportsHDMIFRL */
@@ -2963,6 +2987,7 @@ NVEvoHAL nvEvoCA = {
         TRUE,                                     /* supportsHDMI10BPC */
         TRUE,                                     /* supportsDPAudio192KHz */
         TRUE,                                     /* supportsYCbCr422OverHDMIFRL */
+        FALSE,                                    /* supportsColorPassthrough */
         NV_EVO3_X_EMULATED_SURFACE_MEMORY_FORMATS_C6, /* xEmulatedSurfaceMemoryFormats */
     },
 };

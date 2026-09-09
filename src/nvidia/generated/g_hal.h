@@ -126,6 +126,7 @@ typedef enum
     HAL_IMPL_GB100,
     HAL_IMPL_GB102,
     HAL_IMPL_GB10B,
+    HAL_IMPL_GB10C,
     HAL_IMPL_GB110,
     HAL_IMPL_GB112,
     HAL_IMPL_GB202,
@@ -180,6 +181,7 @@ typedef enum
     { HAL_IMPL_GB100, "GB100" }, \
     { HAL_IMPL_GB102, "GB102" }, \
     { HAL_IMPL_GB10B, "GB10B" }, \
+    { HAL_IMPL_GB10C, "GB10C" }, \
     { HAL_IMPL_GB110, "GB110" }, \
     { HAL_IMPL_GB112, "GB112" }, \
     { HAL_IMPL_GB202, "GB202" }, \

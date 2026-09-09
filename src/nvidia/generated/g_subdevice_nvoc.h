@@ -201,7 +201,7 @@ struct Subdevice {
     NvBool bMaxGrTickFreqRequested;
     NvU64 P2PfbMappedBytes;
     _Atomic(NvU32) notificationRefCount;
-    NvU32 notifyActions[200];
+    NvU32 notifyActions[202];
     NvHandle hNotifierMemory;
     struct Memory *pNotifierMemory;
     NvHandle hSemMemory;
@@ -214,6 +214,7 @@ struct Subdevice {
     NvBool bRcWatchdogEnableRequested;
     NvBool bRcWatchdogDisableRequested;
     NvBool bRcWatchdogSoftDisableRequested;
+    NvBool bRcWatchdogPauseRequested;
     NvBool bReservePerfMon;
     NvU32 perfBoostIndex;
     NvU32 perfBoostHighRefCount;
@@ -492,6 +493,16 @@ static inline NV_STATUS subdeviceCtrlCmdBusGetPciInfo(struct Subdevice *pSubdevi
 #define subdeviceCtrlCmdBusGetPciInfo(pSubdevice, pPciInfoParams) subdeviceCtrlCmdBusGetPciInfo_IMPL(pSubdevice, pPciInfoParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdBusGetPciInfoV2(pSubdevice, pPciInfoParams) subdeviceCtrlCmdBusGetPciInfoV2_IMPL(pSubdevice, pPciInfoParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdBusGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdBusGetInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams) {
@@ -702,16 +713,6 @@ static inline NV_STATUS subdeviceCtrlCmdBusSysmemAccess(struct Subdevice *pSubde
 #define subdeviceCtrlCmdBusSysmemAccess(pSubdevice, pParams) subdeviceCtrlCmdBusSysmemAccess_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
-NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *arg2);
-#ifdef __nvoc_subdevice_h_disabled
-static inline NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedCounters(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_subdevice_h_disabled
-#define subdeviceCtrlCmdNvlinkGetSupportedCounters(arg_this, arg2) subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL(arg_this, arg2)
-#endif // __nvoc_subdevice_h_disabled
-
 NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedBWMode_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS *arg2);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedBWMode(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS *arg2) {
@@ -742,6 +743,16 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkSetBWMode(struct Subdevice *arg_th
 #define subdeviceCtrlCmdNvlinkSetBWMode(arg_this, arg2) subdeviceCtrlCmdNvlinkSetBWMode_IMPL(arg_this, arg2)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdNvlinkSetBWModeAsync_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS *arg2);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdNvlinkSetBWModeAsync(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdNvlinkSetBWModeAsync(arg_this, arg2) subdeviceCtrlCmdNvlinkSetBWModeAsync_IMPL(arg_this, arg2)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdNvlinkGetLocalDeviceInfo_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_LOCAL_DEVICE_INFO_PARAMS *arg2);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdNvlinkGetLocalDeviceInfo(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_LOCAL_DEVICE_INFO_PARAMS *arg2) {
@@ -760,6 +771,26 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey(struct Subd
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey(arg_this, arg2) subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey_IMPL(arg_this, arg2)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkTrainingTime_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdNvlinkGetLinkTrainingTime(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdNvlinkGetLinkTrainingTime(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetLinkTrainingTime_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdGetNvlinkSupportedCounters_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdGetNvlinkSupportedCounters(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdGetNvlinkSupportedCounters(arg_this, pParams) subdeviceCtrlCmdGetNvlinkSupportedCounters_IMPL(arg_this, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdGetNvlinkCountersV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS *pParams);
@@ -850,6 +881,36 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkInjectSWError(struct Subdevice *pS
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdNvlinkInjectSWError(pSubdevice, pParams) subdeviceCtrlCmdNvlinkInjectSWError_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkAccumulativeMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_ACCUMULATIVE_METRIC_DATA_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdNvlinkGetLinkAccumulativeMetricData(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_ACCUMULATIVE_METRIC_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdNvlinkGetLinkAccumulativeMetricData(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetLinkAccumulativeMetricData_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkRecordMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_RECORD_METRIC_DATA_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdNvlinkGetLinkRecordMetricData(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_RECORD_METRIC_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdNvlinkGetLinkRecordMetricData(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetLinkRecordMetricData_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetDeviceRecordMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_DEVICE_RECORD_METRIC_DATA_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdNvlinkGetDeviceRecordMetricData(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_DEVICE_RECORD_METRIC_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdNvlinkGetDeviceRecordMetricData(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetDeviceRecordMetricData_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdNvlinkConfigureL1Toggle_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_CONFIGURE_L1_TOGGLE_PARAMS *pParams);
@@ -3529,6 +3590,16 @@ static inline NV_STATUS subdeviceCtrlCmdGpuSetMigrationBlock(struct Subdevice *p
 #define subdeviceCtrlCmdGpuSetMigrationBlock(pSubdevice, pParams) subdeviceCtrlCmdGpuSetMigrationBlock_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdGpuGetEgmInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdGpuGetEgmInfo(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdGpuGetEgmInfo(pSubdevice, pParams) subdeviceCtrlCmdGpuGetEgmInfo_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdEventSetTrigger_IMPL(struct Subdevice *pSubdevice);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdEventSetTrigger(struct Subdevice *pSubdevice) {
@@ -3757,6 +3828,16 @@ static inline NV_STATUS subdeviceCtrlCmdRcEnableWatchdog(struct Subdevice *pSubd
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdRcEnableWatchdog(pSubdevice) subdeviceCtrlCmdRcEnableWatchdog_IMPL(pSubdevice)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdRcPauseWatchdog_IMPL(struct Subdevice *pSubdevice);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdRcPauseWatchdog(struct Subdevice *pSubdevice) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdRcPauseWatchdog(pSubdevice) subdeviceCtrlCmdRcPauseWatchdog_IMPL(pSubdevice)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdRcReleaseWatchdogRequests_IMPL(struct Subdevice *pSubdevice);
@@ -4636,16 +4717,6 @@ static inline NV_STATUS subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer(st
 #define subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer(pSubdevice, pParams) subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
-NV_STATUS subdeviceCtrlCmdInternalGetChipInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pParams);
-#ifdef __nvoc_subdevice_h_disabled
-static inline NV_STATUS subdeviceCtrlCmdInternalGetChipInfo(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_subdevice_h_disabled
-#define subdeviceCtrlCmdInternalGetChipInfo(pSubdevice, pParams) subdeviceCtrlCmdInternalGetChipInfo_IMPL(pSubdevice, pParams)
-#endif // __nvoc_subdevice_h_disabled
-
 NV_STATUS subdeviceCtrlCmdInternalGetUserRegisterAccessMap_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_USER_REGISTER_ACCESS_MAP_PARAMS *pParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdInternalGetUserRegisterAccessMap(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_USER_REGISTER_ACCESS_MAP_PARAMS *pParams) {
@@ -5026,6 +5097,16 @@ static inline NV_STATUS subdeviceCtrlCmdInternalPerfGetAuxPowerState(struct Subd
 #define subdeviceCtrlCmdInternalPerfGetAuxPowerState(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfGetAuxPowerState_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdInternalPerfClientPerfModesSetControl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_PERF_CLIENT_PERF_MODES_SET_CONTROL_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdInternalPerfClientPerfModesSetControl(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_PERF_CLIENT_PERF_MODES_SET_CONTROL_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdInternalPerfClientPerfModesSetControl(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfClientPerfModesSetControl_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdInternalGcxEntryPrerequisite_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GCX_ENTRY_PREREQUISITE_PARAMS *pGcxEntryPrerequisite);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdInternalGcxEntryPrerequisite(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GCX_ENTRY_PREREQUISITE_PARAMS *pGcxEntryPrerequisite) {
@@ -5174,6 +5255,16 @@ static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkPostFatalErrorRecovery(str
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdInternalNvlinkPostFatalErrorRecovery(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkPostFatalErrorRecovery_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkLfmRmAction_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkLfmRmAction(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdInternalNvlinkLfmRmAction(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkLfmRmAction_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkEnableNvlinkPeer_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS *pParams);
@@ -5484,6 +5575,26 @@ static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkRCUserModeChannels(struct 
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdInternalNvlinkRCUserModeChannels(pSubdevice) subdeviceCtrlCmdInternalNvlinkRCUserModeChannels_IMPL(pSubdevice)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkResumeDisableChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_RESUME_DISABLE_CHANNELS_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkResumeDisableChannels(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_RESUME_DISABLE_CHANNELS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdInternalNvlinkResumeDisableChannels(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkResumeDisableChannels_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkForceDebugStallAndUpdateAmap_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdInternalNvlinkForceDebugStallAndUpdateAmap(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdInternalNvlinkForceDebugStallAndUpdateAmap(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkForceDebugStallAndUpdateAmap_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdInternalSetP2pCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams);
@@ -6124,6 +6235,46 @@ static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalSetVgpuMigTimesliceMode(s
 }
 #else // __nvoc_subdevice_h_disabled
 #define subdeviceCtrlCmdVgpuMgrInternalSetVgpuMigTimesliceMode(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalSetVgpuMigTimesliceMode_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalScrubGuestFb_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalScrubGuestFb(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdVgpuMgrInternalScrubGuestFb(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalScrubGuestFb_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalCheckScrubComplete_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalCheckScrubComplete(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdVgpuMgrInternalCheckScrubComplete(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalCheckScrubComplete_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalAllocGspCeUtils_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalAllocGspCeUtils(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdVgpuMgrInternalAllocGspCeUtils(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalAllocGspCeUtils_IMPL(pSubdevice, pParams)
+#endif // __nvoc_subdevice_h_disabled
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalFreeGspCeUtils_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS *pParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalFreeGspCeUtils(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdVgpuMgrInternalFreeGspCeUtils(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalFreeGspCeUtils_IMPL(pSubdevice, pParams)
 #endif // __nvoc_subdevice_h_disabled
 
 NV_STATUS subdeviceCtrlCmdGetAvailableHshubMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS *pParams);
@@ -6818,6 +6969,8 @@ NV_STATUS subdeviceCtrlCmdDmaGetInfo_IMPL(struct Subdevice *pSubdevice, NV2080_C
 
 NV_STATUS subdeviceCtrlCmdBusGetPciInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_PARAMS *pPciInfoParams);
 
+NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams);
+
 NV_STATUS subdeviceCtrlCmdBusGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams);
 
 NV_STATUS subdeviceCtrlCmdBusGetPciBarInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_BAR_INFO_PARAMS *pBarInfoParams);
@@ -6860,17 +7013,21 @@ NV_STATUS subdeviceCtrlCmdBusGetC2CPacketCounters_IMPL(struct Subdevice *pSubdev
 
 NV_STATUS subdeviceCtrlCmdBusSysmemAccess_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS *pParams);
 
-NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *arg2);
-
 NV_STATUS subdeviceCtrlCmdNvlinkGetSupportedBWMode_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkGetBWMode_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_BW_MODE_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkSetBWMode_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_SET_BW_MODE_PARAMS *arg2);
 
+NV_STATUS subdeviceCtrlCmdNvlinkSetBWModeAsync_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS *arg2);
+
 NV_STATUS subdeviceCtrlCmdNvlinkGetLocalDeviceInfo_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_LOCAL_DEVICE_INFO_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_SETUP_NVLE_ENCRYPTION_KEY_PARAMS *arg2);
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkTrainingTime_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdGetNvlinkSupportedCounters_IMPL(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdGetNvlinkCountersV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS *pParams);
 
@@ -6889,6 +7046,12 @@ NV_STATUS subdeviceCtrlCmdSetNvlinkHwErrorInjectSettings_IMPL(struct Subdevice *
 NV_STATUS subdeviceCtrlCmdGetNvlinkHwErrorInjectSettings_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_HW_ERROR_INJECT_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdNvlinkInjectSWError_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_INJECT_SW_ERROR_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkAccumulativeMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_ACCUMULATIVE_METRIC_DATA_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetLinkRecordMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_LINK_RECORD_METRIC_DATA_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetDeviceRecordMetricData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_DEVICE_RECORD_METRIC_DATA_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdNvlinkConfigureL1Toggle_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_CONFIGURE_L1_TOGGLE_PARAMS *pParams);
 
@@ -7424,6 +7587,8 @@ NV_STATUS subdeviceCtrlCmdGpuGetUnitFsInfoFromChiplet_IMPL(struct Subdevice *pSu
 
 NV_STATUS subdeviceCtrlCmdGpuSetMigrationBlock_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_SET_MIGRATION_BLOCK_PARAMS *pParams);
 
+NV_STATUS subdeviceCtrlCmdGpuGetEgmInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS *pParams);
+
 NV_STATUS subdeviceCtrlCmdEventSetTrigger_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdEventSetTriggerFifo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_EVENT_SET_TRIGGER_FIFO_PARAMS *pTriggerFifoParams);
@@ -7469,6 +7634,8 @@ NV_STATUS subdeviceCtrlCmdRcDisableWatchdog_IMPL(struct Subdevice *pSubdevice);
 NV_STATUS subdeviceCtrlCmdRcSoftDisableWatchdog_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdRcEnableWatchdog_IMPL(struct Subdevice *pSubdevice);
+
+NV_STATUS subdeviceCtrlCmdRcPauseWatchdog_IMPL(struct Subdevice *pSubdevice);
 
 NV_STATUS subdeviceCtrlCmdRcReleaseWatchdogRequests_IMPL(struct Subdevice *pSubdevice);
 
@@ -7640,8 +7807,6 @@ NV_STATUS subdeviceCtrlCmdInternalUvmRegisterAccessCntrBuffer_IMPL(struct Subdev
 
 NV_STATUS subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER_PARAMS *pParams);
 
-NV_STATUS subdeviceCtrlCmdInternalGetChipInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pParams);
-
 NV_STATUS subdeviceCtrlCmdInternalGetUserRegisterAccessMap_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPU_GET_USER_REGISTER_ACCESS_MAP_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalGetDeviceInfoTable_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS *pParams);
@@ -7718,6 +7883,8 @@ NV_STATUS subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount_IMPL(struct 
 
 NV_STATUS subdeviceCtrlCmdInternalPerfGetAuxPowerState_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_PERF_GET_AUX_POWER_STATE_PARAMS *pParams);
 
+NV_STATUS subdeviceCtrlCmdInternalPerfClientPerfModesSetControl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_PERF_CLIENT_PERF_MODES_SET_CONTROL_PARAMS *pParams);
+
 NV_STATUS subdeviceCtrlCmdInternalGcxEntryPrerequisite_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GCX_ENTRY_PREREQUISITE_PARAMS *pGcxEntryPrerequisite);
 
 NV_STATUS subdeviceCtrlCmdInternalBifGetData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams);
@@ -7747,6 +7914,8 @@ NV_STATUS subdeviceCtrlCmdInternalNvlinkGetNumActiveLinksPerIoctrl_IMPL(struct S
 NV_STATUS subdeviceCtrlCmdInternalNvlinkGetTotalNumLinksPerIoctrl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkPostFatalErrorRecovery_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_POST_FATAL_ERROR_RECOVERY_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkLfmRmAction_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_LFM_RM_ACTION_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkEnableNvlinkPeer_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS *pParams);
 
@@ -7809,6 +7978,10 @@ NV_STATUS subdeviceCtrlCmdInternalNvlinkEnableSysmemNvlinkAts_IMPL(struct Subdev
 NV_STATUS subdeviceCtrlCmdInternalNvlinkHshubGetSysmemNvlinkMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalNvlinkRCUserModeChannels_IMPL(struct Subdevice *pSubdevice);
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkResumeDisableChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_RESUME_DISABLE_CHANNELS_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdInternalNvlinkForceDebugStallAndUpdateAmap_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_NVLINK_FORCE_DEBUG_STALL_AND_UPDATE_AMAP_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdInternalSetP2pCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams);
 
@@ -7937,6 +8110,14 @@ NV_STATUS subdeviceCtrlCmdVgpuMgrInternalGetFrameRateLimiterStatus_IMPL(struct S
 NV_STATUS subdeviceCtrlCmdVgpuMgrInternalSetVgpuHeterogeneousMode_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdVgpuMgrInternalSetVgpuMigTimesliceMode_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_MIG_TIMESLICE_MODE_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalScrubGuestFb_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalCheckScrubComplete_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalAllocGspCeUtils_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS *pParams);
+
+NV_STATUS subdeviceCtrlCmdVgpuMgrInternalFreeGspCeUtils_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS *pParams);
 
 NV_STATUS subdeviceCtrlCmdGetAvailableHshubMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS *pParams);
 

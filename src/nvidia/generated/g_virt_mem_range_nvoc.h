@@ -110,12 +110,12 @@ struct NVOC_VTABLE__VirtualMemoryRange {
     NV_STATUS (*__vmrangeIsReady__)(struct VirtualMemoryRange * /*this*/, NvBool);  // virtual inherited (mem) base (virtmem)
     NvBool (*__vmrangeIsGpuMapAllowed__)(struct VirtualMemoryRange * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (virtmem) body
     NvBool (*__vmrangeIsExportAllowed__)(struct VirtualMemoryRange * /*this*/);  // inline virtual inherited (mem) base (virtmem) body
-    NvBool (*__vmrangeAccessCallback__)(struct VirtualMemoryRange * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (virtmem)
-    NvBool (*__vmrangeShareCallback__)(struct VirtualMemoryRange * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (virtmem)
-    NV_STATUS (*__vmrangeControlSerialization_Prologue__)(struct VirtualMemoryRange * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
-    void (*__vmrangeControlSerialization_Epilogue__)(struct VirtualMemoryRange * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
-    NV_STATUS (*__vmrangeControl_Prologue__)(struct VirtualMemoryRange * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
-    void (*__vmrangeControl_Epilogue__)(struct VirtualMemoryRange * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
+    NvBool (*__vmrangeAccessCallback__)(struct VirtualMemoryRange * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (virtmem)
+    NvBool (*__vmrangeShareCallback__)(struct VirtualMemoryRange * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (virtmem)
+    NV_STATUS (*__vmrangeControlSerialization_Prologue__)(struct VirtualMemoryRange * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
+    void (*__vmrangeControlSerialization_Epilogue__)(struct VirtualMemoryRange * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
+    NV_STATUS (*__vmrangeControl_Prologue__)(struct VirtualMemoryRange * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
+    void (*__vmrangeControl_Epilogue__)(struct VirtualMemoryRange * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (virtmem)
     void (*__vmrangePreDestruct__)(struct VirtualMemoryRange * /*this*/);  // virtual inherited (res) base (virtmem)
     NV_STATUS (*__vmrangeControlFilter__)(struct VirtualMemoryRange * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (virtmem)
     NvU32 (*__vmrangeGetRefCount__)(struct VirtualMemoryRange * /*this*/);  // virtual inherited (res) base (virtmem)
@@ -278,27 +278,27 @@ static inline NvBool vmrangeIsExportAllowed_DISPATCH(struct VirtualMemoryRange *
     return pMemory->__nvoc_metadata_ptr->vtable.__vmrangeIsExportAllowed__(pMemory);
 }
 
-static inline NvBool vmrangeAccessCallback_DISPATCH(struct VirtualMemoryRange *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool vmrangeAccessCallback_DISPATCH(struct VirtualMemoryRange *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__vmrangeAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool vmrangeShareCallback_DISPATCH(struct VirtualMemoryRange *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool vmrangeShareCallback_DISPATCH(struct VirtualMemoryRange *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__vmrangeShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS vmrangeControlSerialization_Prologue_DISPATCH(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS vmrangeControlSerialization_Prologue_DISPATCH(struct VirtualMemoryRange *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__vmrangeControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void vmrangeControlSerialization_Epilogue_DISPATCH(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void vmrangeControlSerialization_Epilogue_DISPATCH(struct VirtualMemoryRange *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__vmrangeControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS vmrangeControl_Prologue_DISPATCH(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS vmrangeControl_Prologue_DISPATCH(struct VirtualMemoryRange *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__vmrangeControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void vmrangeControl_Epilogue_DISPATCH(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void vmrangeControl_Epilogue_DISPATCH(struct VirtualMemoryRange *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__vmrangeControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

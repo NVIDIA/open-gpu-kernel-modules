@@ -68,6 +68,10 @@ NVSWITCH_STRUCT_PACKED_ALIGNED_SUFFIX
 //
 // Board Info area will be (size * 8) bytes. The last byte is a checksum byte
 //
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunaligned-access"
+#endif
 NVSWITCH_STRUCT_PACKED_ALIGNED(_NVSWITCH_IPMI_FRU_EEPROM_BOARD_INFO, 1)
 {
     NvU8 version;
@@ -76,6 +80,10 @@ NVSWITCH_STRUCT_PACKED_ALIGNED(_NVSWITCH_IPMI_FRU_EEPROM_BOARD_INFO, 1)
     NVSWITCH_IPMI_FRU_BOARD_INFO boardInfo; // True size in rom could be smaller, layout will be different
 } NVSWITCH_IPMI_FRU_EEPROM_BOARD_INFO;
 NVSWITCH_STRUCT_PACKED_ALIGNED_SUFFIX
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+ct_assert(sizeof(NVSWITCH_IPMI_FRU_EEPROM_BOARD_INFO) == 391);
 
 NvlStatus nvswitch_read_partition_fru_board_info(nvswitch_device *device,
                                                  NVSWITCH_IPMI_FRU_BOARD_INFO *pBoardInfo,

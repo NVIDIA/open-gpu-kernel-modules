@@ -262,7 +262,7 @@ kchangrpMapFaultMethodBuffers_GV100
 
     NV_PRINTF(LEVEL_INFO,
               "Allocating Method buffer with Bar2Addr LO 0x%08x Bar2Addr "
-              "HI 0x%08x runqueue 0x%0x\n",
+              "HI 0x%08x runqueue 0x%08x\n",
               NvU64_LO32(pFaultMthdBuf->bar2Addr),
               NvU64_HI32(pFaultMthdBuf->bar2Addr), runqueue);
 

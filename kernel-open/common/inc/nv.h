@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,13 +29,7 @@
 
 #include <nvlimits.h>
 
-#if defined(NV_KERNEL_INTERFACE_LAYER) && defined(__FreeBSD__)
-  #include <sys/stddef.h>   // NULL
-#elif defined(NV_KERNEL_INTERFACE_LAYER) && defined(NV_LINUX)
-  #include <linux/stddef.h> // NULL
-#else
-  #include <stddef.h>       // NULL
-#endif
+#include <nv_stddef.h>       // NULL
 
 #include <nvstatus.h>
 #include "nv_stdarg.h"
@@ -43,6 +37,8 @@
 #include <nv-firmware.h>
 #include <nv-ioctl.h>
 #include <nv-ioctl-numa.h>
+#include <nv-dev-printf.h>
+#include <nv-kernel-interface-api.h>
 #include <nvmisc.h>
 #include <os/nv_memory_area.h>
 
@@ -58,8 +54,6 @@ extern const NvBool nv_is_rm_firmware_supported_os;
 
 #include <nvi2c.h>
 #include <nvimpshared.h>
-
-#include <nv-kernel-interface-api.h>
 
 #define GPU_UUID_LEN    (16)
 
@@ -105,6 +99,13 @@ typedef enum _TEGRASOC_DEVFREQ_CLK
     TEGRASOC_DEVFREQ_CLK_GPC,
     TEGRASOC_DEVFREQ_CLK_NVD,
 } TEGRASOC_DEVFREQ_CLK;
+
+typedef enum _TEGRASOC_DEVFREQ_CLK_BOOST_TYPE
+{
+    TEGRASOC_DEVFREQ_CLK_BOOST_TYPE_DEFAULT,
+    TEGRASOC_DEVFREQ_CLK_BOOST_TYPE_FMAX,
+    TEGRASOC_DEVFREQ_CLK_BOOST_TYPE_RATED_TDP,
+} TEGRASOC_DEVFREQ_CLK_BOOST_TYPE;
 
 /*!
  * @brief The order of the display clocks in the below defined enum
@@ -478,6 +479,7 @@ typedef struct nv_state_t
         NvBool         valid;
         NvU8           uuid[GPU_UUID_LEN];
         NvBool         pci_uuid_read_attempted;
+        NvBool         pci_uuid_from_dvsec_pdi;
         NV_STATUS      pci_uuid_status;
     } nv_uuid_cache;
     void *handle;
@@ -514,6 +516,7 @@ typedef struct nv_state_t
     NvBool supports_tegra_igpu_rg;
     NvBool is_tegra_pci_igpu_rg_enabled;
     NvU32 tegra_pci_igpu_pg_mask;
+    NvU32 gpc_fuse_status_offset;
 
     NvBool primary_vga;
 
@@ -643,6 +646,15 @@ typedef struct nv_state_t
 
     /* Bool to check if the GPU is a CXL device */
     NvBool is_cxl_dev;
+    /*
+     * Tracks user-requested persistence mode for backward compatibility
+     * when init-on-probe is active. Existing scripts and tools expect
+     * PM0/PM1 state to be reflected in queries even though persistence
+     * mode has no functional effect under init-on-probe.
+     * This field will be removed when legacy persistence mode is
+     * deprecated in the future.
+     */
+    NvBool cached_persistence_mode;
 } nv_state_t;
 
 #define NVFP_TYPE_NONE       ((NvU32)0x0)
@@ -850,6 +862,7 @@ typedef enum {
 // Flags needed by osAllocPagesNode / os_alloc_pages_node
 #define NV_ALLOC_PAGES_NODE_NONE                0x0
 #define NV_ALLOC_PAGES_NODE_SKIP_RECLAIM        0x1
+#define NV_ALLOC_PAGES_NODE_DO_ACCOUNT          0x2
 
 /*
 ** where we hide our nv_state_t * ...
@@ -990,6 +1003,8 @@ void       NV_API_CALL  nv_dma_unmap_mmio        (nv_dma_device_t *, NvU64, NvU6
 void       NV_API_CALL  nv_dma_cache_invalidate  (nv_dma_device_t *, void *);
 void*      NV_API_CALL  nv_dma_get_dev_pagemap   (NvU64);
 void       NV_API_CALL  nv_dma_put_dev_pagemap   (void *);
+NV_STATUS  NV_API_CALL  nv_dma_init_sysmem_window_for_fabric_access (nv_state_t *, NvU64, NvU64 *, NvU64 *, NvBool *);
+void       NV_API_CALL  nv_dma_destroy_sysmem_window_for_fabric_access (nv_state_t *, NvU64, NvU64);
 NvBool     NV_API_CALL  nv_grdma_pci_topology_supported(nv_state_t *, nv_dma_device_t *);
 
 NvS32  NV_API_CALL  nv_start_rc_timer            (nv_state_t *);
@@ -1061,6 +1076,7 @@ NvBool    NV_API_CALL nv_match_gpu_os_info(nv_state_t *, void *);
 void      NV_API_CALL nv_get_updated_emu_seg(NvU32 *start, NvU32 *end);
 void      NV_API_CALL nv_get_screen_info(nv_state_t *, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU64 *);
 void      NV_API_CALL nv_set_gpu_pg_mask(nv_state_t *);
+void      NV_API_CALL nv_trigger_gpu_flr(nv_state_t *);
 
 struct dma_buf;
 typedef struct nv_dma_buf nv_dma_buf_t;
@@ -1083,6 +1099,7 @@ NvBool    NV_API_CALL nv_s2idle_pm_configured    (void);
 NvBool    NV_API_CALL nv_pci_tegra_register_power_domain    (nv_state_t *, NvBool);
 NvBool    NV_API_CALL nv_pci_tegra_pm_init        (nv_state_t *);
 void      NV_API_CALL nv_pci_tegra_pm_deinit      (nv_state_t *);
+NV_STATUS NV_API_CALL nv_pci_read_gpu_pdi_from_dvsec(nv_state_t *, NvU64 *);
 
 NvBool    NV_API_CALL nv_is_chassis_notebook      (void);
 void      NV_API_CALL nv_allow_runtime_suspend    (nv_state_t *nv);
@@ -1217,6 +1234,10 @@ NvBool     NV_API_CALL  rm_is_supported_pci_device(NvU8   pci_class,
                                                    NvU16  subsystem_vendor,
                                                    NvU16  subsystem_device,
                                                    NvBool print_legacy_warning);
+NvBool     NV_API_CALL  rm_is_nvidia_gpu_device(NvU8   pci_class,
+                                                NvU8   pci_subclass,
+                                                NvU16  vendor,
+                                                NvU16  device);
 
 void       NV_API_CALL  rm_i2c_remove_adapters    (nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL  rm_i2c_is_smbus_capable   (nvidia_stack_t *, nv_state_t *, void *);
@@ -1251,7 +1272,7 @@ void       NV_API_CALL  rm_dma_buf_unmap_mem_handle(nvidia_stack_t *, nv_state_t
 NV_STATUS  NV_API_CALL  rm_dma_buf_get_client_and_device(nvidia_stack_t *,
                                                 nv_state_t *, NvHandle, NvHandle,
                                                 NvU8, NvHandle *, NvHandle *,
-                                                NvHandle *, void **, NvBool *, NvBool *);
+                                                NvHandle *, void **, NvBool *);
 void       NV_API_CALL  rm_dma_buf_put_client_and_device(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle, void *);
 
 void       NV_API_CALL rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd);

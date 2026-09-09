@@ -49,7 +49,7 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "ctrl/ctrl0000/ctrl0000gpu.h"
 #include "nvlimits.h"

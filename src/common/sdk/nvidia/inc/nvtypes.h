@@ -518,6 +518,20 @@ typedef struct
 #define NV_ALIGNOF(type) __alignof__(type)
 #endif
 
+//
+// This tag can be applied to a type to mark it as ABI-stable and block most
+// changes to the internal layout. In all driver builds, this tag is a NOP and
+// is there for human benefit only. However, static checker tools may support
+// the custom attribute and use it to verify no changes across releases.
+// Tag comes between struct/enum keyword and the name, like GCC type attributes.
+//    e.g. typedef struct NV_ABI_STABLE MyStableStruct { ... } MyStableStruct;
+//
+#if defined(NV_ABI_STABLE_CHECKED_BUILD)
+#define NV_ABI_STABLE __attribute__((nv_abi_stable))
+#else
+#define NV_ABI_STABLE
+#endif
+
  /***************************************************************************\
 |*                       Function Declaration Types                          *|
  \***************************************************************************/

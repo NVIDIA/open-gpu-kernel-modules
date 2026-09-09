@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmHalspecOwner =
 {
     .classInfo.size =               sizeof(RmHalspecOwner),
     .classInfo.classId =            classId(RmHalspecOwner),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RmHalspecOwner",
@@ -161,6 +162,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GpuHalspecOwner =
 {
     .classInfo.size =               sizeof(GpuHalspecOwner),
     .classInfo.classId =            classId(GpuHalspecOwner),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "GpuHalspecOwner",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -519,28 +519,6 @@ static inline void NV_RM_RPC_PMA_SCRUBBER_SHARED_BUFFER_GUEST_PAGES_OPERATION(OB
         NV_ASSERT(pRpc != NULL);                                               \
         if ((status == NV_OK) && (pRpc != NULL))                               \
             status = rpcGetGspStaticInfo_HAL(pGpu, pRpc);                      \
-        else if (pRpc == NULL)                                                 \
-            status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
-    } while (0)
-
-#define NV_RM_RPC_GSP_SET_SYSTEM_INFO(pGpu, status)                            \
-    do                                                                         \
-    {                                                                          \
-        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                      \
-        NV_ASSERT(pRpc != NULL);                                               \
-        if ((status == NV_OK) && (pRpc != NULL))                               \
-            status = rpcGspSetSystemInfo_HAL(pGpu, pRpc);                      \
-        else if (pRpc == NULL)                                                 \
-            status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
-    } while (0)
-
-#define NV_RM_RPC_SET_REGISTRY(pGpu, status)                                   \
-    do                                                                         \
-    {                                                                          \
-        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                      \
-        NV_ASSERT(pRpc != NULL);                                               \
-        if ((status == NV_OK) && (pRpc != NULL))                               \
-            status = rpcSetRegistry_HAL(pGpu, pRpc);                           \
         else if (pRpc == NULL)                                                 \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
     } while (0)

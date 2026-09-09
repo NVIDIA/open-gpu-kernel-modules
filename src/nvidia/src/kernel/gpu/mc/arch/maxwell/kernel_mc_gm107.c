@@ -26,7 +26,7 @@
 #include "gpu/gpu.h"
 #include "os/os.h"
 
-#include "published/maxwell/gm107/dev_boot.h"
+#include "published/maxwell/gm107/dev_pmc.h"
 
 /*!
  * @brief Returns the BAR0 offset and size of the PMC range.

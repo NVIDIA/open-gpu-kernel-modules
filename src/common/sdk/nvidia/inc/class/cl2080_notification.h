@@ -238,7 +238,9 @@ extern "C" {
 #define NV2080_NOTIFIERS_GPU_RC_RESET                              (197)
 #define NV2080_NOTIFIERS_RESERVED_198                              (198) // Unused
 #define NV2080_NOTIFIERS_INFOROM_BRL_OBJECT_UPDATED                (199)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (200)
+#define NV2080_NOTIFIERS_MEMACCT_SOFT_LIMIT_EXCEEDED               (200)
+#define NV2080_NOTIFIERS_MEMACCT_RETURNED_BELOW_SOFT_LIMIT         (201)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (202)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))

@@ -76,6 +76,8 @@ namespace DisplayPort
         //
         virtual status read(int address, NvU8 * buffer, unsigned size, unsigned retries = minimumRetriesOnDefer);
 
+        virtual bool isDevicePlugged();
+
         //
         //  Perform an aux write transaction.
         //    - Automatically handles defers up to retry limit

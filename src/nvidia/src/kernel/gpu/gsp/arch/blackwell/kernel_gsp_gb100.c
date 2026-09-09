@@ -26,17 +26,25 @@
  */
 
 #include "rmconfig.h"
+#include "nvrm_registry.h"
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/rc/kernel_rc.h"
+#include "gpu/gpu_mods_error.h"
 
 #include "published/blackwell/gb100/dev_gsp.h"
 #include "published/blackwell/gb100/dev_fuse_zb.h"
 #include "published/blackwell/gb100/dev_hubmmu_base.h"
 #include "published/blackwell/gb100/hwproject.h"
+#include "published/blackwell/gb100/dev_bus.h"
+#include "published/blackwell/gb100/dev_bus_addendum.h"
 
 #include "gpu/conf_compute/conf_compute.h"
+
+#include "gpu/oob/kernel_oob.h"
+
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 /*!
  * Helper Function for kgspResetHw_GH100
@@ -102,8 +110,7 @@ kgspGetSignatureSectionNamePrefix_GB100
     KernelGsp *pKernelGsp
 )
 {
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    if (gpuIsCCFeatureEnabled(pGpu))
     {
         return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
     }
@@ -124,25 +131,31 @@ kgspGetGspRmBootUcodeStorage_GB100
     BINDATA_STORAGE **ppBinStorageDesc
 )
 {
-        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-        if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    NvBool bLoadCcProfile = NV_FALSE;
+
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        bLoadCcProfile = NV_TRUE;
+    }
+
+    if (bLoadCcProfile)
+    {
+        const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMCDesc = kgspGetBinArchiveConcatenatedFMCDesc_HAL(pKernelGsp);
+        const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMC     = kgspGetBinArchiveConcatenatedFMC_HAL(pKernelGsp);
+
+        if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
         {
-            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMCDesc = kgspGetBinArchiveConcatenatedFMCDesc_HAL(pKernelGsp);
-            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMC     = kgspGetBinArchiveConcatenatedFMC_HAL(pKernelGsp);
-
-            if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
-            {
-                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_DBG);
-                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_DBG);
-            }
-            else
-            {
-                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_PROD);
-                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_PROD);
-            }
-
-            return;
+            *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_DBG);
+            *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_DBG);
         }
+        else
+        {
+            *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_PROD);
+            *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_PROD);
+        }
+
+        return;
+    }
 
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
     if (pKernelFsp != NULL)
@@ -182,6 +195,8 @@ kgspCheckGspPoisonError_GB100
     {
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR unknown error pending\n");
         MODS_ARCH_ERROR_PRINTF("NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR unknown error pending\n");
+        MODS_REPORT_GSP_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                              MODSDRV_FALCON_ERROR_CODE_FATAL_ERROR, 0);
 
         return NV_FALSE;
     }
@@ -197,6 +212,12 @@ kgspCheckGspPoisonError_GB100
         if (!gpuIsGlobalPoisonFuseEnabled(pGpu))
         {
             NV_ASSERT_FAILED("GSP poison pending when poison is disabled");
+        }
+
+        KernelOob *pKernelOob = GPU_GET_KERNEL_OOB(pGpu);
+        if (pKernelOob != NULL)
+        {
+            pKernelOob->poisonErrorStatus = errorStatus;
         }
 
         return NV_TRUE;
@@ -233,6 +254,8 @@ kgspServiceFatalHwError_GB100
     {
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR unknown error pending\n");
         MODS_ARCH_ERROR_PRINTF("NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR unknown error pending\n");
+        MODS_REPORT_GSP_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                              MODSDRV_FALCON_ERROR_CODE_FATAL_ERROR, 0);
 
         nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_CONTAINED_ERROR, "GSP-RISCV instance 0 unknown fatal error");
 
@@ -251,6 +274,8 @@ kgspServiceFatalHwError_GB100
             NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR %s pending (mask: 0x%x)\n",
                       pErrorNameNvPrintf, errorStatus);
             MODS_ARCH_ERROR_PRINTF("NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR=0x%x\n", errorStatus);
+            MODS_REPORT_GSP_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                                  MODSDRV_FALCON_ERROR_CODE_IRQSTAT_FATAL, errorStatus);
         }
 #endif // NV_PRINTF_STRINGS_ALLOWED
 
@@ -347,4 +372,56 @@ kgspIsWpr2Up_GB100
         return NV_FALSE;
     }
     return (wpr2HiVal != 0);
+}
+
+/*!
+ * @brief Check if GPU is in containment mode
+ *
+ * This function checks the GPU containment scratch register to determine if
+ * the GPU is in containment mode. This occurs when the memory subsystem hangs
+ * and CPU detects it . RAS-FW writes to this register to indicate containment status.
+ *
+ * @param[in]  pGpu              OBJGPU pointer
+ * @param[in]  pKernelGsp        KernelGsp pointer
+ * @param[out] pContainmentCode  GPU containment scratch register code
+ *
+ * @return NV_ERR_FATAL_ERROR if GPU is in containment mode
+ *         NV_OK otherwise
+ */
+NV_STATUS
+kgspCheckGpuContainmentError_GB100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32     *pContainmentCode
+)
+{
+    NvU32 scratchVal;
+    NvU32 containmentCode;
+
+    if (pKernelGsp->gspGpuContainmentCheck == NV_REG_STR_RM_GSP_GPU_CONTAINMENT_CHECK_DISABLE)
+    {
+        return NV_OK;
+    }
+
+    if (!gpuIsSelfHosted(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "Bypassing GPU containment error check, as it is only applicable on self-hosted systems\n");
+        return NV_OK;
+    }
+
+    scratchVal = GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR);
+    containmentCode = DRF_VAL(_PBUS, _SW_SCRATCH_GPU_CONTAINMENT_ERROR, _CODE, scratchVal);
+
+    if (containmentCode != NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR_NO_CONTAINMENT)
+    {
+        if (pContainmentCode != NULL)
+            *pContainmentCode = containmentCode;
+
+        NV_PRINTF(LEVEL_ERROR, "GPU Containment Error detected. containment code = 0x%x\n",
+                  containmentCode);
+        return NV_ERR_FATAL_ERROR;
+    }
+
+    return NV_OK;
 }

@@ -190,8 +190,7 @@ typedef struct NV906F_CTRL_CMD_GET_DEFER_RC_STATE_PARAMS {
 /*
  * NV906F_CTRL_CMD_GET_MMU_FAULT_INFO
  *
- * This command returns MMU fault information for a given channel. The MMU
- * fault information will be cleared once this command is executed.
+ * This command returns MMU fault information for a given channel.
  *
  *   addrHi - [out]
  *      Upper 32 bits of faulting address

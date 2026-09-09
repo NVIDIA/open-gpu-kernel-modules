@@ -66,6 +66,25 @@ typedef NvU64 CrashCatImplementer;
 #define CRASHCAT_IMPLEMENTER_LIBOS3         0x4C49424F53332E31ull   // "LIBOS3.1"
 #define CRASHCAT_DEFAULT_XID                120ull
 
+#define CRASHCAT_EXCERPT_MAX_ENTRIES        10
+#define CRASHCAT_EXCERPT_MAX_SIZE           (sizeof(NvCrashCatPacketHeader_V1) + (CRASHCAT_EXCERPT_MAX_ENTRIES * sizeof(NvU64)))
+typedef struct CrashCatExcerpt
+{
+    NvCrashCatReport_V1             report;
+    NvCrashCatRiscv64CsrState_V1    riscv64CsrState;
+    NvCrashCatRiscv64GprState_V1    riscv64GprState;
+
+    // Sections with variable-sized data provide limited snapshot
+    NvU8 riscv64StackTrace_V1[CRASHCAT_EXCERPT_MAX_SIZE];
+    NvLength riscv64StackTraceSize;
+
+    NvU8 riscv64PcTrace_V1[CRASHCAT_EXCERPT_MAX_SIZE];
+    NvLength riscv64PcTraceSize;
+
+    NvU8 io32State_V1[CRASHCAT_EXCERPT_MAX_SIZE];
+    NvLength io32StateSize;
+} CrashCatExcerpt;
+
 struct CrashCatReportHal {
     unsigned short __nvoc_HalVarIdx;
 };
@@ -219,6 +238,14 @@ static inline NvU64 crashcatReportXtval(struct CrashCatReport *arg_this) {
 #endif // __nvoc_crashcat_report_h_disabled
 
 #ifdef __nvoc_crashcat_report_h_disabled
+static inline void crashcatReportExcerpt(struct CrashCatReport *arg_this, CrashCatExcerpt *pExcerpt) {
+    NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
+}
+#else // __nvoc_crashcat_report_h_disabled
+#define crashcatReportExcerpt(arg_this, pExcerpt) crashcatReportExcerpt_V1(arg_this, pExcerpt)
+#endif // __nvoc_crashcat_report_h_disabled
+
+#ifdef __nvoc_crashcat_report_h_disabled
 static inline void * crashcatReportExtract(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
@@ -314,6 +341,7 @@ static inline void crashcatReportLogIo32State(struct CrashCatReport *arg_this) {
 #define crashcatReportRa_HAL(arg_this) crashcatReportRa(arg_this)
 #define crashcatReportXcause_HAL(arg_this) crashcatReportXcause(arg_this)
 #define crashcatReportXtval_HAL(arg_this) crashcatReportXtval(arg_this)
+#define crashcatReportExcerpt_HAL(arg_this, pExcerpt) crashcatReportExcerpt(arg_this, pExcerpt)
 #define crashcatReportExtract_HAL(arg_this, pReportBytes, bytesRemaining) crashcatReportExtract(arg_this, pReportBytes, bytesRemaining)
 #define crashcatReportExtractReport_HAL(arg_this, pReportBytes, bytesRemaining) crashcatReportExtractReport(arg_this, pReportBytes, bytesRemaining)
 #define crashcatReportExtractRiscv64CsrState_HAL(arg_this, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64CsrState(arg_this, pReportBytes, bytesRemaining)
@@ -367,6 +395,8 @@ NvU64 crashcatReportRa_V1(struct CrashCatReport *arg_this);
 NvU64 crashcatReportXcause_V1(struct CrashCatReport *arg_this);
 
 NvU64 crashcatReportXtval_V1(struct CrashCatReport *arg_this);
+
+void crashcatReportExcerpt_V1(struct CrashCatReport *arg_this, CrashCatExcerpt *pExcerpt);
 
 void * crashcatReportExtract_V1(struct CrashCatReport *arg_this, void *pReportBytes, NvLength bytesRemaining);
 

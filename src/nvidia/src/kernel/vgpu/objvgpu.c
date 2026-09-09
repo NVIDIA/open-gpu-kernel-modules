@@ -77,7 +77,7 @@ vgpuCreateObject
         goto error_exit;
     }
 
-    if (hypervisorIsType(OS_HYPERVISOR_HYPERV))
+    if (hypervisorIsType(OS_HYPERVISOR_HYPERV) && !IS_VIRTUAL_WITH_FULL_SRIOV(pGpu))
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, NV_FALSE);
     }

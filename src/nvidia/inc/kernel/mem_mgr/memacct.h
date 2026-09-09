@@ -25,6 +25,7 @@
 
 #include "core/core.h"
 #include "os/os.h"
+#include "rmapi/client.h"
 
 //
 // Opaque type representing a single "charge" of memory. which is essentially
@@ -34,7 +35,7 @@
 //
 typedef struct MemoryCharge MemoryCharge;
 
-NV_STATUS memacctTryCharge(ClientGroupID cligrp, NvU32 gpuMask, NvLength size, MemoryCharge **ppCharge);
+NV_STATUS memacctTryCharge(RmClient *pRmClient, NvU32 gpuId, NvLength size, MemoryCharge **ppCharge);
 void memacctIncrementChargeRefCount(MemoryCharge *pCharge);
 void memacctReleaseCharge(MemoryCharge *pCharge);
 
@@ -44,5 +45,6 @@ NV_STATUS memacctGetLimits(ClientGroupID cligrp, NvU32 gpuId, NvLength *pSoftLim
 // Initialize the accounting for a given pGpu
 NV_STATUS memacctInitGpuInfo(OBJGPU *pGpu);
 void memacctRemoveGpu(OBJGPU *pGpu);
+NvCgroupImpl memacctActiveImplementation(void);
 
 #endif

@@ -114,12 +114,12 @@ struct NVOC_VTABLE__GpuUserSharedData {
     NV_STATUS (*__gpushareddataIsReady__)(struct GpuUserSharedData * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__gpushareddataIsGpuMapAllowed__)(struct GpuUserSharedData * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__gpushareddataIsExportAllowed__)(struct GpuUserSharedData * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__gpushareddataAccessCallback__)(struct GpuUserSharedData * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__gpushareddataShareCallback__)(struct GpuUserSharedData * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__gpushareddataControlSerialization_Prologue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__gpushareddataControlSerialization_Epilogue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__gpushareddataControl_Prologue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__gpushareddataControl_Epilogue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__gpushareddataAccessCallback__)(struct GpuUserSharedData * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__gpushareddataShareCallback__)(struct GpuUserSharedData * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__gpushareddataControlSerialization_Prologue__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__gpushareddataControlSerialization_Epilogue__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__gpushareddataControl_Prologue__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__gpushareddataControl_Epilogue__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__gpushareddataPreDestruct__)(struct GpuUserSharedData * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__gpushareddataControlFilter__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__gpushareddataIsPartialUnmapSupported__)(struct GpuUserSharedData * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -296,27 +296,27 @@ static inline NvBool gpushareddataIsExportAllowed_DISPATCH(struct GpuUserSharedD
     return pMemory->__nvoc_metadata_ptr->vtable.__gpushareddataIsExportAllowed__(pMemory);
 }
 
-static inline NvBool gpushareddataAccessCallback_DISPATCH(struct GpuUserSharedData *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool gpushareddataAccessCallback_DISPATCH(struct GpuUserSharedData *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__gpushareddataAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool gpushareddataShareCallback_DISPATCH(struct GpuUserSharedData *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool gpushareddataShareCallback_DISPATCH(struct GpuUserSharedData *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__gpushareddataShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS gpushareddataControlSerialization_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS gpushareddataControlSerialization_Prologue_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__gpushareddataControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void gpushareddataControlSerialization_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void gpushareddataControlSerialization_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__gpushareddataControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS gpushareddataControl_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS gpushareddataControl_Prologue_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__gpushareddataControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void gpushareddataControl_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void gpushareddataControl_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__gpushareddataControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

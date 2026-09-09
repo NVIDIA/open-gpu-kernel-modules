@@ -298,11 +298,9 @@ static enum NvYuv420Mode GetYUV420Value(
 
             const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
             const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+            const NVEvoCapabilities *pEvoCaps = &pDevEvo->capabilities;
             // XXX assume the heads have equal capabilities
-            // XXX assume the gpus have equal capabilities
-            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[0];
-            NVEvoCapabilitiesPtr pEvoCaps = &pEvoSubDev->capabilities;
-            NVEvoHeadCaps *pHeadCaps = &pEvoCaps->head[0];
+            const NVEvoHeadCaps *pHeadCaps = &pEvoCaps->head[0];
 
             if (pHeadCaps->supportsHDMIYUV420HW) {
                 return NV_YUV420_MODE_HW;
@@ -1009,7 +1007,7 @@ void nvEvoLogModeValidationModeTimings(NVEvoInfoStringPtr
  */
 static NvU32 Percentage(const NvU32 value, const NvU32 percentage)
 {
-    return axb_div_c(value, percentage, 100);
+    return nvAxBDivC(value, percentage, 100);
 }
 
 /*!
@@ -1316,7 +1314,7 @@ static NvBool ValidateModeTimings(
 
     if ((overrides & NVKMS_MODE_VALIDATION_NO_HORIZ_SYNC_CHECK) == 0) {
         if (pValidSyncs->horizSyncHz.numRanges > 0) {
-            NvU32 hSync = axb_div_c(pModeTimings->pixelClockHz, 1,
+            NvU32 hSync = nvAxBDivC(pModeTimings->pixelClockHz, 1,
                                     pModeTimings->hTotal);
 
             for (i = 0; i < pValidSyncs->horizSyncHz.numRanges; i++) {
@@ -1550,7 +1548,7 @@ static NvBool GetDpyOutputColor(
     enum NvKmsDpyAttributeRequestedColorFormatValue requestedColorFormat =
         pDpyOutputColorParam->formatSpecified ?
             pDpyOutputColorParam->format :
-            NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_RGB;
+            NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN;
 
     /*
      * Choose current color format and colorRange based on the current mode
@@ -1711,6 +1709,8 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                                      NULL, /* pViewPortSizeIn */
                                      NULL, /* pViewPortOut */
                                      flags->dscPassThrough,
+                                     pDpyOutputColorParams->formatSpecified,
+                                     pDpyOutputColorParams->bpcSpecified,
                                      &dpyColor,
                                      pTimingsEvo,
                                      pParams,
@@ -1737,7 +1737,10 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                 foundFrlConfig = TRUE;
                 break; 
             }
-        } while (nvDowngradeColorFormatAndBpc(pDpyEvo, &supportedColorFormats, &dpyColor));
+        } while (nvDowngradeColorFormatAndBpc(pDpyEvo, &supportedColorFormats,
+                                              pDpyOutputColorParams->formatSpecified,
+                                              pDpyOutputColorParams->bpcSpecified,
+                                              &dpyColor));
 
         if (!foundFrlConfig) {
             LogModeValidationEnd(pDispEvo, pInfoString,
@@ -1746,7 +1749,10 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
         }
 
     } else {
-        if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo, &dpyColor, b2Heads1Or,
+        if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo,
+                                 pDpyOutputColorParams->formatSpecified,
+                                 pDpyOutputColorParams->bpcSpecified,
+                                 &dpyColor, b2Heads1Or,
                                  pDscInfo, pParams)) {
             LogModeValidationEnd(pDispEvo,
                                  pInfoString, "DP Bandwidth check failed");
@@ -1758,8 +1764,8 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
      * Check ViewPortIn dimensions and ensure valid h/vTaps can be assigned.
      */
     if (!nvValidateHwModeTimingsViewPort(pDevEvo,
-                                         /* XXX assume the gpus have equal capabilities */
-                                         &pDevEvo->gpus[0].capabilities.head[0].scalerCaps,
+                                         /* XXX assume the heads have equal capabilities */
+                                         &pDevEvo->capabilities.head[0].scalerCaps,
                                          pTimingsEvo, pInfoString)) {
         goto done;
     }
@@ -2126,6 +2132,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 const struct NvKmsMode *pKmsMode,
                                 const struct NvKmsSize *pViewPortSizeIn,
                                 const struct NvKmsRect *pViewPortOut,
+                                const NvBool colorFormatSpecified,
+                                const NvBool colorBpcSpecified,
                                 NVDpyAttributeColor *pDpyColor,
                                 NVHwModeTimingsEvo *pTimingsEvo,
                                 NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
@@ -2162,6 +2170,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                      pViewPortSizeIn,
                                      pViewPortOut,
                                      flags.dscPassThrough,
+                                     colorFormatSpecified,
+                                     colorBpcSpecified,
                                      pDpyColor,
                                      pTimingsEvo,
                                      pParams,

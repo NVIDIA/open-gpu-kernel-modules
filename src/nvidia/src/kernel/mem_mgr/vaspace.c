@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,11 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
+#include "ctrl/ctrl90f1.h"
+#include "kernel/os/nv_memory_type.h"
 #include "gpu/mem_mgr/vaspace_api.h"
+#include "mmu/mmu_walk.h"
+#include "mmu/gmmu_fmt.h"
 
 void
 vaspaceIncRefCnt_IMPL(OBJVASPACE *pVAS)
@@ -254,3 +258,94 @@ vaspaceGetByHandleOrDeviceDefault_IMPL
     return NV_OK;
 }
 
+/*!
+ * Common helper to get page level information.
+ *
+ * @param[in]  pVAS            OBJVASPACE pointer
+ * @param[in]  pWalk           MMU walk object
+ * @param[in]  pRootFmt        Root level format
+ * @param[in]  virtAddress     Virtual address to query
+ * @param[in]  pageSize        Page size applicable to multi sublevel GMMU formats.
+ * @param[out] pNumLevels      Number of levels populated
+ * @param[out] pLevels         Per-level information array (size GMMU_FMT_MAX_LEVELS)
+ *
+ * @returns NV_OK on success.
+ */
+NV_STATUS
+vaspaceGetPageLevelInfoCommon_IMPL
+(
+    OBJVASPACE                 *pVAS,
+    MMU_WALK                   *pWalk,
+    const MMU_FMT_LEVEL        *pRootFmt,
+    NvU64                       virtAddress,
+    NvU64                       pageSize,
+    NvU32                      *pNumLevels,
+    NV_CTRL_VASPACE_PAGE_LEVEL *pLevels
+)
+{
+    const MMU_FMT_LEVEL *pLevelFmt  = pRootFmt;
+    const MMU_FMT_LEVEL *pTargetFmt = NULL;
+    NvU32                level      = 0;
+    NvU32                sublevel   = 0;
+
+    pTargetFmt = mmuFmtFindLevelWithPageShift(pRootFmt, BIT_IDX_64(pageSize));
+
+    for (level = 0; pLevelFmt != NULL; level++)
+    {
+        MEMORY_DESCRIPTOR *pMemDesc = NULL;
+        NvU32              memSize  = 0;
+
+        NV_ASSERT_OR_RETURN(level < GMMU_FMT_MAX_LEVELS, NV_ERR_INVALID_STATE);
+
+        NV_ASSERT_OR_RETURN(pLevelFmt->numSubLevels <= MMU_FMT_MAX_SUB_LEVELS, NV_ERR_INVALID_STATE);
+
+        NV_ASSERT_OK_OR_RETURN(
+            mmuWalkGetPageLevelInfo(pWalk, pLevelFmt, virtAddress, (const MMU_WALK_MEMDESC**)&pMemDesc, &memSize));
+
+        if (pMemDesc == NULL)
+        {
+            break;
+        }
+
+        pLevels[level].pFmt = (MMU_FMT_LEVEL *)pLevelFmt;
+        pLevels[level].size = memSize;
+
+        // Copy level formats
+        portMemCopy((void *)&(pLevels[level].levelFmt), sizeof(MMU_FMT_LEVEL),
+                    (void *)pLevelFmt, sizeof(MMU_FMT_LEVEL));
+
+        for (sublevel = 0; sublevel < pLevelFmt->numSubLevels; sublevel++)
+        {
+            portMemCopy((void *)&(pLevels[level].sublevelFmt[sublevel]), sizeof(MMU_FMT_LEVEL),
+                        (void *)(pLevelFmt->subLevels + sublevel), sizeof(MMU_FMT_LEVEL));
+        }
+
+        pLevels[level].physAddress = memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0);
+
+        switch (memdescGetAddressSpace(pMemDesc))
+        {
+            case ADDR_FBMEM:
+                pLevels[level].aperture = GMMU_APERTURE_VIDEO;
+                break;
+            case ADDR_SYSMEM:
+                if (NV_MEMORY_CACHED == memdescGetCpuCacheAttrib(pMemDesc))
+                {
+                    pLevels[level].aperture = GMMU_APERTURE_SYS_COH;
+                }
+                else
+                {
+                    pLevels[level].aperture = GMMU_APERTURE_SYS_NONCOH;
+                }
+                break;
+            default:
+                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
+        }
+
+        pLevels[level].entryIndex = mmuFmtVirtAddrToEntryIndex(pLevelFmt, virtAddress);
+        pLevelFmt = mmuFmtGetNextLevel(pLevelFmt, pTargetFmt);
+    }
+
+    *pNumLevels = level;
+
+    return NV_OK;
+}

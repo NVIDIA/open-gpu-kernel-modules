@@ -1,5 +1,5 @@
  /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,9 +22,12 @@
  */
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
+
+#include "kernel/gpu/mem_mgr/mem_mgr.h"
 
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "rmapi/rs_utils.h"
@@ -40,6 +43,7 @@
 #include "vgpu/vgpu_events.h"
 #include "nvrm_registry.h"
 #include "containers/eheap_old.h"
+#include "platform/sli/sli.h"
 
 #include "nvmisc.h"
 
@@ -47,6 +51,7 @@
 #include "class/cl2080.h"
 #include "class/cl208f.h"
 #include "class/clc572.h"
+#include "class/clc361.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
 
@@ -57,6 +62,12 @@
 // Currently used by CeUtils only
 //
 #define KFIFO_NUM_GSP_RESERVED_CHANNELS 1
+
+//
+// Reserve some TSG IDs for GSP-internal use
+// Currently used by CeUtils scrubber channel's internal TSG
+//
+#define KFIFO_NUM_GSP_RESERVED_TSGS 1
 
 static EHeapOwnershipComparator _kfifoUserdOwnerComparator;
 
@@ -1343,6 +1354,29 @@ kfifoRunlistQueryNumChannels_KERNEL
     return numChannels;
 }
 
+/*!
+ * @brief Find first free bit in bitmap within range [lo, hi].
+ *
+ * @return bit index if found, hi + 1 if none free
+ */
+static NvU32
+_kfifoFindFirstFreeBitInRange
+(
+    NvU32 *pBitField,
+    NvU32  numElements,
+    NvU32  lo,
+    NvU32  hi
+)
+{
+    NvU32 bit;
+    for (bit = lo; bit <= hi; bit++)
+    {
+        if (!nvBitFieldTest(pBitField, numElements, bit))
+            return bit;
+    }
+    return hi + 1;
+}
+
 /**
  * @brief reserves a hardware channel slot for a channel group
  *
@@ -1354,7 +1388,10 @@ kfifoRunlistQueryNumChannels_KERNEL
  * @param pGpu
  * @param pKernelFifo
  * @param pChidMgr
- * @param[out] grpID
+ * @param[in,out] pChGrpID  On input: requested ID when bFixedGrpID is set.
+ *                           On output: allocated grpID.
+ * @param[in] bFixedGrpID   If NV_TRUE, allocate the specific ID in *pChGrpID
+ * @param[in] bGspOwned     If NV_TRUE, allocate from GSP-reserved range
  */
 NV_STATUS
 kfifoChidMgrAllocChannelGroupHwID_IMPL
@@ -1362,10 +1399,14 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
     OBJGPU     *pGpu,
     KernelFifo *pKernelFifo,
     CHID_MGR   *pChidMgr,
-    NvU32      *pChGrpID
+    NvU32      *pChGrpID,
+    NvBool      bFixedGrpID,
+    NvBool      bGspOwned
 )
 {
     NvU32 maxChannelGroups;
+    NvU32 rangeLo;
+    NvU32 rangeHi;
     char logMessage[256] = "";
 
     if (pChGrpID == NULL)
@@ -1378,27 +1419,61 @@ kfifoChidMgrAllocChannelGroupHwID_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Find the least unused grpID
-    *pChGrpID = nvBitFieldLSZero(pChidMgr->channelGrpMgr.pHwIdInUse,
-                                 pChidMgr->channelGrpMgr.hwIdInUseSz);
+    rangeLo = 0;
+    rangeHi = maxChannelGroups - 1;
 
-    if (*pChGrpID < maxChannelGroups)
+    //
+    // GSP-reserved TSG range (mirrors KFIFO_NUM_GSP_RESERVED_CHANNELS for ChID)
+    //
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
+        if (bGspOwned)
+        {
+            rangeHi = KFIFO_NUM_GSP_RESERVED_TSGS - 1;
+        }
+        else if (RMCFG_FEATURE_PLATFORM_GSP || IS_GSP_CLIENT(pGpu))
+        {
+            rangeLo = KFIFO_NUM_GSP_RESERVED_TSGS;
+        }
+    }
+
+    if (bFixedGrpID)
+    {
+        NV_ASSERT_OR_RETURN(*pChGrpID >= rangeLo && *pChGrpID <= rangeHi,
+                            NV_ERR_INVALID_ARGUMENT);
+        NV_ASSERT_OR_RETURN(
+            !nvBitFieldTest(pChidMgr->channelGrpMgr.pHwIdInUse,
+                            pChidMgr->channelGrpMgr.hwIdInUseSz, *pChGrpID),
+            NV_ERR_STATE_IN_USE);
+
         nvBitFieldSet(pChidMgr->channelGrpMgr.pHwIdInUse,
                       pChidMgr->channelGrpMgr.hwIdInUseSz, *pChGrpID, NV_TRUE);
     }
     else
     {
-        *pChGrpID = maxChannelGroups;
-        NV_PRINTF(LEVEL_ERROR, "No allocatable FIFO available.\n");
+        *pChGrpID = _kfifoFindFirstFreeBitInRange(
+                        pChidMgr->channelGrpMgr.pHwIdInUse,
+                        pChidMgr->channelGrpMgr.hwIdInUseSz,
+                        rangeLo, rangeHi);
 
-        // For vGPU, log the error message on host side as well
-        if (IS_VIRTUAL(pGpu))
+        if (*pChGrpID <= rangeHi)
         {
-            nvDbgSnprintf(logMessage, sizeof(logMessage), "Guest attempted to allocate channel above its max per engine channel limit 0x%x", maxChannelGroups);
-            NV_RM_RPC_LOG(pGpu, (const char *)logMessage, NV_VGPU_LOG_LEVEL_ERROR);
+            nvBitFieldSet(pChidMgr->channelGrpMgr.pHwIdInUse,
+                          pChidMgr->channelGrpMgr.hwIdInUseSz, *pChGrpID, NV_TRUE);
         }
-        return NV_ERR_NO_FREE_FIFOS;
+        else
+        {
+            *pChGrpID = maxChannelGroups;
+            NV_PRINTF(LEVEL_ERROR, "No allocatable FIFO available.\n");
+
+            // For vGPU, log the error message on host side as well
+            if (IS_VIRTUAL(pGpu))
+            {
+                nvDbgSnprintf(logMessage, sizeof(logMessage), "Guest attempted to allocate channel above its max per engine channel limit 0x%x", maxChannelGroups);
+                NV_RM_RPC_LOG(pGpu, (const char *)logMessage, NV_VGPU_LOG_LEVEL_ERROR);
+            }
+            return NV_ERR_NO_FREE_FIFOS;
+        }
     }
     return NV_OK;
 }
@@ -1457,13 +1532,19 @@ kfifoGetChidMgr_IMPL
 {
     if (!kfifoIsPerRunlistChramEnabled(pKernelFifo))
     {
-        // We only have 1 chidmgr when we don't have a per-runlist channel RAM
-        if ((pKernelFifo->numChidMgrs != 1) ||
-            (pKernelFifo->ppChidMgr == NULL) ||
-            !bitVectorTest(&pKernelFifo->chidMgrValid, 0))
-        {
+        //
+        // Return NULL if chidmgr is not yet constructed. Fault method buffer depth calculation falls
+        // back to HW constant.
+        //
+        if (pKernelFifo->numChidMgrs == 0)
             return NULL;
-        }
+
+        // We only have 1 chidmgr when we don't have a per-runlist channel RAM
+        NV_ASSERT_OR_RETURN(pKernelFifo->numChidMgrs == 1 &&
+                            pKernelFifo->ppChidMgr != NULL &&
+                            bitVectorTest(&pKernelFifo->chidMgrValid, 0),
+                            NULL);
+
         return pKernelFifo->ppChidMgr[0];
     }
     else
@@ -1500,6 +1581,18 @@ kfifoGetChidMgrFromType_IMPL
 
     // Initialize the pointer to NULL, in case we fail and return early
     *ppChidMgr = NULL;
+
+    if (!kfifoIsPerRunlistChramEnabled(pKernelFifo))
+    {
+        // We only have 1 chidmgr when we don't have a per-runlist channel RAM
+        NV_ASSERT_OR_RETURN(pKernelFifo->numChidMgrs == 1 &&
+                            pKernelFifo->ppChidMgr != NULL &&
+                            bitVectorTest(&pKernelFifo->chidMgrValid, 0),
+                            NV_ERR_INVALID_STATE);
+
+        *ppChidMgr = pKernelFifo->ppChidMgr[0];
+        return NV_OK;
+    }
 
     status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                       engineInfoType, val,
@@ -1696,6 +1789,22 @@ kfifoChannelGroupSetTimeslice_IMPL
 
     return status;
 }
+
+NV_STATUS
+kfifoChannelGroupSetTimesliceSched_IMPL
+(
+    OBJGPU             *pGpu,
+    KernelFifo         *pKernelFifo,
+    KernelChannelGroup *pKernelChannelGroup,
+    NvU64               timesliceUs,
+    NvBool              bSkipSubmit
+)
+{
+    NV_STATUS    status = NV_OK;
+
+    return status;
+}
+
 
 void
 kfifoFillMemInfo_IMPL
@@ -3863,4 +3972,209 @@ KernelChannel *kfifoKernelChannelFromInfo_IMPL(OBJGPU *pGpu, KernelFifo *pKernel
 NV_STATUS kfifoConvertInstToChannelInfo_IMPL(KernelFifo * pKernelFifo, OBJGPU *pGpu, ENGDESCRIPTOR engDesc, const INST_BLOCK_DESC *pInstblk, FIFO_CHANNEL_INFO *pChannelInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+kfifoChannelGroupDisable_IMPL
+(
+    OBJGPU             *pGpu,
+    KernelFifo         *pKernelFifo,
+    KernelChannelGroup *pKernelChannelGroup
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+kfifoChannelGroupEnable_IMPL
+(
+    OBJGPU             *pGpu,
+    KernelFifo         *pKernelFifo,
+    KernelChannelGroup *pKernelChannelGroup
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
+ * @brief Ring channel doorbell to notify gpu of new work.
+ *
+ * Uses bUseInternalChannelDoorbell to decide whether to update the
+ * internal doorbell (GSP path on Ampere-Ada) or the usermode doorbell.
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelFifo     KernelFifo pointer
+ * @param[in] pKernelChannel  Channel to ring the doorbell for
+ *
+ * @returns NV_OK on success
+ */
+NV_STATUS
+kfifoRingChannelDoorbell_IMPL
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    KernelChannel   *pKernelChannel
+)
+{
+    NvU32 workSubmitToken;
+
+    //
+    // Updating the usermode doorbell is different for CPU vs. GSP.
+    //
+    if (pKernelFifo->bUseInternalChannelDoorbell)
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo,
+                                                                        pKernelChannel, &workSubmitToken));
+
+        NV_ASSERT_OK_OR_RETURN(kfifoUpdateInternalDoorbellForUsermode_HAL(pGpu, pKernelFifo,
+                                                                          workSubmitToken,
+                                                                          kchannelGetRunlistId(pKernelChannel)));
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo,
+                                                            pKernelChannel, &workSubmitToken,
+                                                            NV_TRUE));
+        NV_ASSERT_OK_OR_RETURN(kfifoUpdateUsermodeDoorbell(pGpu, pKernelFifo,
+                                                           workSubmitToken));
+    }
+    return NV_OK;
+}
+
+/*!
+ * @brief Updates the usermode doorbell register with a work submit token
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelFifo     KernelFifo pointer
+ * @param[in] workSubmitToken Token to update the doorbell with
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+kfifoUpdateUsermodeDoorbell_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32       workSubmitToken
+)
+{
+    const NvU32 workSubmitOffset = NVC361_NOTIFY_CHANNEL_PENDING;
+    osFlushCpuWriteCombineBuffer();
+
+    //
+    // If we are using the BAR0 doorbell when we have BAR1 available (in init for S/R),
+    // then we need to flush using a BAR1 read before the doorbell.
+    //
+    if (pKernelFifo->pMmioVfMap == NULL)
+    {
+        if (pKernelFifo->bUseBar1Doorbell)
+        {
+            //
+            // Use sysmembar here as we don't have read-to-flush yet at this point in init.
+            // Heavyweight but only during S/R
+            //
+            NV_ASSERT_OK_OR_RETURN(kbusSendSysmembarSingle(pGpu, GPU_GET_KERNEL_BUS(pGpu)));
+        }
+        GPU_REG_WR32(pGpu, workSubmitOffset + pKernelFifo->vfPageOffset, workSubmitToken);
+    }
+    else
+    {
+        MEM_WR32(&pKernelFifo->pMmioVfMap[workSubmitOffset], workSubmitToken);
+    }
+    return NV_OK;
+}
+
+/*!
+ * @brief Maps the VF if not already mapped
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelFifo     KernelFifo pointer
+ *
+ * @returns NV_OK or mapping error
+ */
+NV_STATUS
+kfifoMapVfPage_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    // If already mapped or BAR1 doobell is not available/can't be mapped, return success
+    if (pKernelFifo->pMmioVfMap != NULL ||
+        !pKernelFifo->bUseBar1Doorbell)
+    {
+        return NV_OK;
+    }
+
+    pKernelFifo->pMmioVfMap = (volatile NvU8*) kbusMapRmAperture_HAL(pGpu, pKernelFifo->pBar1VF);
+    NV_ASSERT_OR_RETURN(pKernelFifo->pMmioVfMap != NULL, NV_ERR_NO_MEMORY);
+    return NV_OK;
+}
+
+/*!
+ * @brief Unmaps the VF page if not already unmapped
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelFifo     KernelFifo pointer
+ *
+ * @returns NV_OK or unmapping error
+ */
+void
+kfifoUnmapVfPage_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    if (pKernelFifo->pMmioVfMap == NULL)
+    {
+        return;
+    }
+    kbusUnmapRmAperture_HAL(pGpu, pKernelFifo->pBar1VF, &pKernelFifo->pMmioVfMap, NV_TRUE);
+    pKernelFifo->pMmioVfMap = NULL;
+}
+
+/**
+ * @brief Computes the hardware timeslice (timeout<<timescale) from an input time
+ *
+ * @param[in] timeInMicroSeconds
+ * @param[out] timeout
+ * @param[out] timescale
+ * @param[in] TIMESCALEMAX  size of timescale field
+ * @param[in] TIMEOUTMAX  size of timeout field
+ */
+void
+kfifoRoundDownTimeSlice_IMPL
+(
+    NvU64  timeInMicroSeconds,
+    NvU32 *timeout,
+    NvU32 *timescale,
+    NvU32  TIMESCALEMAX,
+    NvU32  TIMEOUTMAX
+)
+{
+    NvU64 msb = nvMsb64(timeInMicroSeconds);
+
+    if (msb >= NVBIT64(TIMEOUTMAX))
+    {
+        //
+        // if requested value is greater than timeout field split into timeout and timescale.
+        // timescale is the difference between MSB of input and the MSB of
+        // timeout field, constrained to size of timescale field.
+        //
+        *timescale = BIT_IDX_64(msb) - (TIMEOUTMAX - 1);
+        *timescale = NvU64_LO32(NV_MIN(*timescale, (NVBIT64(TIMESCALEMAX) - 1)));
+
+        //
+        // timeout value is the input shifted by calculated timescale,
+        // constrained to the size of the timeout field.
+        //
+        *timeout = NvU64_LO32(NV_MIN((NVBIT64(TIMEOUTMAX) - 1), (timeInMicroSeconds >> *timescale)));
+    }
+    else
+    {
+        // If the input fits in the timescale field, just program it and be done.
+        *timescale = 0;
+        *timeout = NvU64_LO32(timeInMicroSeconds);
+    }
 }

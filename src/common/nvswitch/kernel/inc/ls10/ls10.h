@@ -29,7 +29,7 @@
 #include "export_nvswitch.h"
 #include "common_nvswitch.h"
 
-#include "nvswitch/ls10/dev_boot.h"
+#include "nvswitch/ls10/dev_pmc.h"
 #include "ctrl_dev_nvswitch.h"
 
 

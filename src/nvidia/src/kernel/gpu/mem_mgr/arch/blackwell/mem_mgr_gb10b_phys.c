@@ -199,7 +199,7 @@ memmgrAllocScanoutCarveoutRegionResources_GB10B
                                &offset, &size, alignment, alignment,
                                NULL, NULL, NULL);
     if (status != NV_OK) {
-        NV_PRINTF(LEVEL_ERROR, "EheapAlloc returns error 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "EheapAlloc returns error 0x%08x\n", status);
         return status;
     }
 
@@ -249,7 +249,7 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
                            MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "memdescCreate returns error 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "memdescCreate returns error 0x%08x\n", status);
         DBG_BREAKPOINT();
         pHeap->eheapFree(pHeap, offset);
         return status;
@@ -271,7 +271,7 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
     status = memdescAlloc(pMemDesc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "memdescAlloc returns error 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "memdescAlloc returns error 0x%08x\n", status);
         DBG_BREAKPOINT();
         memdescDestroy(pMemDesc);
         memmgrFreeScanoutCarveoutRegionResources(pMemoryManager, offset);
@@ -317,7 +317,7 @@ memmgrFreeScanoutCarveoutRegionResources_GB10B
     status = pHeap->eheapFree(pHeap, base);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Error in freeing eheap 0x%0x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "Error in freeing eheap 0x%08x\n", status);
     }
 }
 

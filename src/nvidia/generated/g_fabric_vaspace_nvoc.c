@@ -61,6 +61,8 @@ NvBool __nvoc_up_thunk_OBJVASPACE_fabricvaspaceIsExternallyOwned(struct FABRIC_V
 NvBool __nvoc_up_thunk_OBJVASPACE_fabricvaspaceIsAtsEnabled(struct FABRIC_VASPACE *pVAS);    // this
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPasid(struct FABRIC_VASPACE *pVAS, NvU32 *pPasid);    // this
 PMEMORY_DESCRIPTOR __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPageDirBase(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu);    // this
+const GMMU_FMT * __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetGmmuFmt(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu);    // this
+NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetMmuWalker(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk);    // this
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPageTableInfo(struct FABRIC_VASPACE *pVAS, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *pParams);    // this
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPteInfo(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *pParams, RmPhysAddr *pPhysAddr);    // this
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceSetPteInfo(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *pParams);    // this
@@ -71,6 +73,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_FABRIC_VASPACE =
 {
     .classInfo.size =               sizeof(FABRIC_VASPACE),
     .classInfo.classId =            classId(FABRIC_VASPACE),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "FABRIC_VASPACE",
@@ -139,6 +142,10 @@ static const struct NVOC_METADATA__FABRIC_VASPACE __nvoc_metadata__FABRIC_VASPAC
     .metadata__OBJVASPACE.vtable.__vaspaceGetPasid__ = &vaspaceGetPasid_14ee5e,    // inline virtual body
     .vtable.__fabricvaspaceGetPageDirBase__ = &__nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPageDirBase,    // inline virtual inherited (vaspace) base (vaspace) body
     .metadata__OBJVASPACE.vtable.__vaspaceGetPageDirBase__ = &vaspaceGetPageDirBase_9451a7,    // inline virtual body
+    .vtable.__fabricvaspaceGetGmmuFmt__ = &__nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetGmmuFmt,    // inline virtual inherited (vaspace) base (vaspace) body
+    .metadata__OBJVASPACE.vtable.__vaspaceGetGmmuFmt__ = &vaspaceGetGmmuFmt_9451a7,    // inline virtual body
+    .vtable.__fabricvaspaceGetMmuWalker__ = &__nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetMmuWalker,    // inline virtual inherited (vaspace) base (vaspace) body
+    .metadata__OBJVASPACE.vtable.__vaspaceGetMmuWalker__ = &vaspaceGetMmuWalker_14ee5e,    // inline virtual body
     .vtable.__fabricvaspaceGetPageTableInfo__ = &__nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPageTableInfo,    // inline virtual inherited (vaspace) base (vaspace) body
     .metadata__OBJVASPACE.vtable.__vaspaceGetPageTableInfo__ = &vaspaceGetPageTableInfo_14ee5e,    // inline virtual body
     .vtable.__fabricvaspaceGetPteInfo__ = &__nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPteInfo,    // inline virtual inherited (vaspace) base (vaspace) body
@@ -213,7 +220,7 @@ NV_STATUS __nvoc_down_thunk_FABRIC_VASPACE_vaspaceInvalidateTlb(struct OBJVASPAC
 }
 
 
-// 17 up-thunk(s) defined to bridge methods in FABRIC_VASPACE to superclasses
+// 19 up-thunk(s) defined to bridge methods in FABRIC_VASPACE to superclasses
 
 // fabricvaspaceIncAllocRefCnt: inline virtual inherited (vaspace) base (vaspace) body
 NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceIncAllocRefCnt(struct FABRIC_VASPACE *pVAS, NvU64 vAddr) {
@@ -278,6 +285,16 @@ NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPasid(struct FABRIC_VASPACE
 // fabricvaspaceGetPageDirBase: inline virtual inherited (vaspace) base (vaspace) body
 PMEMORY_DESCRIPTOR __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetPageDirBase(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu) {
     return vaspaceGetPageDirBase((struct OBJVASPACE *)(((unsigned char *) pVAS) + NV_OFFSETOF(FABRIC_VASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+}
+
+// fabricvaspaceGetGmmuFmt: inline virtual inherited (vaspace) base (vaspace) body
+const GMMU_FMT * __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetGmmuFmt(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu) {
+    return vaspaceGetGmmuFmt((struct OBJVASPACE *)(((unsigned char *) pVAS) + NV_OFFSETOF(FABRIC_VASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+}
+
+// fabricvaspaceGetMmuWalker: inline virtual inherited (vaspace) base (vaspace) body
+NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetMmuWalker(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk) {
+    return vaspaceGetMmuWalker((struct OBJVASPACE *)(((unsigned char *) pVAS) + NV_OFFSETOF(FABRIC_VASPACE, __nvoc_base_OBJVASPACE)), pGpu, ppWalk);
 }
 
 // fabricvaspaceGetPageTableInfo: inline virtual inherited (vaspace) base (vaspace) body
@@ -353,7 +370,7 @@ static void __nvoc_init_funcTable_FABRIC_VASPACE_1(FABRIC_VASPACE *pThis) {
 } // End __nvoc_init_funcTable_FABRIC_VASPACE_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_FABRIC_VASPACE(FABRIC_VASPACE *pThis) {
     __nvoc_init_funcTable_FABRIC_VASPACE_1(pThis);
 }

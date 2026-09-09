@@ -29,6 +29,9 @@
 /*!
  * @file    gspifpub.h
  * @brief   GSP Command/Message Interfaces - Published
+ *
+ * @note  If extending any of the NV_ABI_STABLE sub-structs, make sure to remove
+ *        the corresponding reserved fields from the parent struct.
  */
 
 /*!
@@ -44,10 +47,11 @@ typedef enum {
 /*!
  * @brief GSP-CC Microcode Initialization Parameters
  */
-typedef struct GSP_FMC_INIT_PARAMS
+typedef struct NV_ABI_STABLE GSP_FMC_INIT_PARAMS
 {
     // CC initialization "registry keys"
     NvU32 regkeys;
+    NvU32 reserved;
 } GSP_FMC_INIT_PARAMS;
 
 /*!
@@ -56,7 +60,7 @@ typedef struct GSP_FMC_INIT_PARAMS
  * The wprCarveout fields have no effect in environments where the WPR can be allocated
  * implicitly by ACR.
  */
-typedef struct GSP_ACR_BOOT_GSP_RM_PARAMS
+typedef struct NV_ABI_STABLE GSP_ACR_BOOT_GSP_RM_PARAMS
 {
     // Physical memory aperture through which gspRmDescPa is accessed
     GSP_DMA_TARGET target;
@@ -72,15 +76,22 @@ typedef struct GSP_ACR_BOOT_GSP_RM_PARAMS
     NvBool         bIsGspRmBoot;
     // Whether inst-in-sys mode is enabled or not
     NvBool         bInstInSysMode;
+    // Whether ICU-based authentication is enabled or not
+    NvBool         bIcuEnabled;
+
+    // Whether GSP ACR should scrub CBC SR during boot.
+    // NV_TRUE on coldboot / FLR / driver reload; NV_FALSE on D3 exit (warmboot).
+    NvBool         bScrubCbcSr;
 } GSP_ACR_BOOT_GSP_RM_PARAMS;
 
 /*!
  * @brief GSP-RM Parameters
  */
-typedef struct GSP_RM_PARAMS
+typedef struct NV_ABI_STABLE GSP_RM_PARAMS
 {
     // Physical memory aperture through which bootArgsOffset is accessed
     GSP_DMA_TARGET target;
+    NvU32          reserved;
     // Physical offset in the memory aperture that will be passed to GSP-RM
     NvU64          bootArgsOffset;
 } GSP_RM_PARAMS;
@@ -91,19 +102,20 @@ typedef struct GSP_RM_PARAMS
  * Parameters required to set up a communication mechanism between Kernel-RM
  * and SPDM partition inside GSP.
  */
-typedef struct GSP_SPDM_PARAMS
+typedef struct NV_ABI_STABLE GSP_SPDM_PARAMS
 {
     // Physical Memory Aperture through which all addresses are accessed
     GSP_DMA_TARGET target;
 
+    // Size of the payload buffer
+    NvU32 payloadBufferSize;
+
     // Physical offset in the memory aperture where SPDM payload is stored
     NvU64 payloadBufferOffset;
 
-    // Size of the above payload buffer
-    NvU32 payloadBufferSize;
 } GSP_SPDM_PARAMS;
 
-typedef struct GSP_RM_MEM_PARAMS
+typedef struct NV_ABI_STABLE GSP_RM_MEM_PARAMS
 {
     NvU32 flushSysmemAddrValLo;
     NvU32 flushSysmemAddrValHi;
@@ -112,13 +124,28 @@ typedef struct GSP_RM_MEM_PARAMS
 /*!
  * @brief GSP-CC Microcode Parameters for Boot Partitions
  */
-typedef struct GSP_FMC_BOOT_PARAMS
+typedef struct NV_ABI_STABLE GSP_FMC_BOOT_PARAMS
 {
+#define GSP_FMC_BOOT_PARAMS_MAGIC_VALUE (' ' << 24 | 'C' << 16 | 'M' << 8 | 'F')
+    NvU32                       magic;
+    NvU16                       size;
+    NvU16                       reserved0;
+    NvU64                       reserved1[3];
+
     GSP_FMC_INIT_PARAMS         initParams;
+    NvU64                       reserved2[3];
+
     GSP_ACR_BOOT_GSP_RM_PARAMS  bootGspRmParams;
+    NvU64                       reserved3[4];
+
     GSP_RM_PARAMS               gspRmParams;
+    NvU64                       reserved4[2];
+
     GSP_SPDM_PARAMS             gspSpdmParams;
+    NvU64                       reserved5[2];
+
     GSP_RM_MEM_PARAMS           gspRmMemParams;
+    NvU64                       reserved6[7];
 } GSP_FMC_BOOT_PARAMS;
 
 /*!

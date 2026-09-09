@@ -103,12 +103,12 @@ struct NVOC_VTABLE__ConsoleMemory {
     NV_STATUS (*__conmemIsReady__)(struct ConsoleMemory * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__conmemIsGpuMapAllowed__)(struct ConsoleMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__conmemIsExportAllowed__)(struct ConsoleMemory * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__conmemAccessCallback__)(struct ConsoleMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__conmemShareCallback__)(struct ConsoleMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__conmemControlSerialization_Prologue__)(struct ConsoleMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__conmemControlSerialization_Epilogue__)(struct ConsoleMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__conmemControl_Prologue__)(struct ConsoleMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__conmemControl_Epilogue__)(struct ConsoleMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__conmemAccessCallback__)(struct ConsoleMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__conmemShareCallback__)(struct ConsoleMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__conmemControlSerialization_Prologue__)(struct ConsoleMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__conmemControlSerialization_Epilogue__)(struct ConsoleMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__conmemControl_Prologue__)(struct ConsoleMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__conmemControl_Epilogue__)(struct ConsoleMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__conmemPreDestruct__)(struct ConsoleMemory * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__conmemControlFilter__)(struct ConsoleMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__conmemIsPartialUnmapSupported__)(struct ConsoleMemory * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -272,27 +272,27 @@ static inline NvBool conmemIsExportAllowed_DISPATCH(struct ConsoleMemory *pMemor
     return pMemory->__nvoc_metadata_ptr->vtable.__conmemIsExportAllowed__(pMemory);
 }
 
-static inline NvBool conmemAccessCallback_DISPATCH(struct ConsoleMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool conmemAccessCallback_DISPATCH(struct ConsoleMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__conmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool conmemShareCallback_DISPATCH(struct ConsoleMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool conmemShareCallback_DISPATCH(struct ConsoleMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__conmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS conmemControlSerialization_Prologue_DISPATCH(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS conmemControlSerialization_Prologue_DISPATCH(struct ConsoleMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__conmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void conmemControlSerialization_Epilogue_DISPATCH(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void conmemControlSerialization_Epilogue_DISPATCH(struct ConsoleMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__conmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS conmemControl_Prologue_DISPATCH(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS conmemControl_Prologue_DISPATCH(struct ConsoleMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__conmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void conmemControl_Epilogue_DISPATCH(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void conmemControl_Epilogue_DISPATCH(struct ConsoleMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__conmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

@@ -154,7 +154,7 @@ void       rmGpuLockInfoDestroy(void);
 NV_STATUS  rmGpuLockAlloc(NvU32);
 void       rmGpuLockFree(NvU32);
 NV_STATUS  rmGpuLocksAcquire(NvU32, NvU32);
-NvU32      rmGpuLocksRelease(NvU32, OBJGPU *);
+NV_STATUS  rmGpuLocksRelease(NvU32, OBJGPU *);
 void       rmGpuLocksFreeze(GPU_MASK);
 void       rmGpuLocksUnfreeze(GPU_MASK);
 NV_STATUS  rmGpuLockHide(NvU32);

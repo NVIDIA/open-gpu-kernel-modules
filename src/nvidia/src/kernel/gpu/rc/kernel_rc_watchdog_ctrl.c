@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,27 +33,38 @@ subdeviceCtrlCmdRcGetWatchdogInfo_IMPL
     NV2080_CTRL_RC_GET_WATCHDOG_INFO_PARAMS *pWatchdogInfoParams
 )
 {
-    OBJGPU   *pGpu      = GPU_RES_GET_GPU(pSubdevice);
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelWatchdogState *pWatchdogState;
+    KernelWatchdog *pKernelWatchdog = GPU_GET_KERNEL_WATCHDOG(pGpu);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelWatchdog != NULL, NV_ERR_INVALID_STATE);
+    pWatchdogState = &pKernelWatchdog->watchdogState;
 
     portMemSet(pWatchdogInfoParams, 0, sizeof *pWatchdogInfoParams);
 
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
 
-    if (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_INITIALIZED)
+    if (pWatchdogState->flags & WATCHDOG_FLAGS_INITIALIZED)
     {
         pWatchdogInfoParams->watchdogStatusFlags |=
             NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_INITIALIZED;
     }
 
-    if (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED)
+    if (pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED)
     {
         pWatchdogInfoParams->watchdogStatusFlags |=
             NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_DISABLED;
     }
 
-    if ((pKernelRc->watchdog.flags & WATCHDOG_FLAGS_INITIALIZED) &&
-        !(pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED) &&
+    if (pWatchdogState->flags & WATCHDOG_FLAGS_PAUSED)
+    {
+        pWatchdogInfoParams->watchdogStatusFlags |=
+            NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_PAUSED;
+    }
+
+    if ((pWatchdogState->flags  & WATCHDOG_FLAGS_INITIALIZED) &&
+        !(pWatchdogState->flags & WATCHDOG_FLAGS_DISABLED)    &&
+        !(pWatchdogState->flags & WATCHDOG_FLAGS_PAUSED)      &&
         gpuIsGpuFullPower(pGpu))
     {
         pWatchdogInfoParams->watchdogStatusFlags |=
@@ -72,10 +83,11 @@ subdeviceCtrlCmdRcDisableWatchdog_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL, NV_ERR_INVALID_STATE);
 
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
-                                  NULL,
+                                  GPU_GET_KERNEL_WATCHDOG(pGpu),
                                   pSubdevice,
                                   RMAPI_DISABLE_REQUEST);
 }
@@ -89,10 +101,11 @@ subdeviceCtrlCmdRcSoftDisableWatchdog_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL, NV_ERR_INVALID_STATE);
 
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
-                                  NULL,
+                                  GPU_GET_KERNEL_WATCHDOG(pGpu),
                                   pSubdevice,
                                   RMAPI_SOFT_DISABLE_REQUEST);
 }
@@ -106,12 +119,31 @@ subdeviceCtrlCmdRcEnableWatchdog_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL, NV_ERR_INVALID_STATE);
 
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
-                                  NULL,
+                                  GPU_GET_KERNEL_WATCHDOG(pGpu),
                                   pSubdevice,
                                   RMAPI_ENABLE_REQUEST);
+}
+
+NV_STATUS
+subdeviceCtrlCmdRcPauseWatchdog_IMPL
+(
+    Subdevice *pSubdevice
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    // Watchdog not supported while SMC is active
+    NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL, NV_ERR_INVALID_STATE);
+
+    // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
+    return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
+                                  GPU_GET_KERNEL_WATCHDOG(pGpu),
+                                  pSubdevice,
+                                  RMAPI_PAUSE_REQUEST);
 }
 
 NV_STATUS
@@ -123,10 +155,11 @@ subdeviceCtrlCmdRcReleaseWatchdogRequests_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     // Watchdog not supported while SMC is active
     NV_CHECK_OR_RETURN(LEVEL_INFO, !IS_MIG_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL, NV_ERR_INVALID_STATE);
 
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     return krcWatchdogChangeState(GPU_GET_KERNEL_RC(pGpu),
-                                  NULL,
+                                  GPU_GET_KERNEL_WATCHDOG(pGpu),
                                   pSubdevice,
                                   RMAPI_RELEASE_ALL_REQUESTS);
 }

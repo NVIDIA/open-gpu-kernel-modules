@@ -36,6 +36,7 @@
 
 
 #include "core/core.h"
+#include "core/system.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/hwpm/profiler_device_event.h"
 #include "class/clb0cd.h"

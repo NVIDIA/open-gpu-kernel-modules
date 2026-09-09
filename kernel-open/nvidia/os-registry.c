@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,118 @@
 #include "nv-linux.h"
 #include "nv-reg.h"
 #include "nv-gpu-info.h"
+#include <linux/firmware.h>
+
+#define NV_BINARY_REGISTRY_FIRMWARE_DIR "nvidia/"
+
+static NV_STATUS
+nv_parse_binary_registry_token(const char *param_name, char *token,
+                               char **key_name, char **path)
+{
+    if ((key_name == NULL) || (path == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Extract key name before first '='; reject if missing or empty
+    if (((*key_name = strsep(&token, "=")) == NULL) || !strlen(*key_name))
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s contains malformed token: missing key name\n",
+                  param_name);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Extract file path after first '='; reject if missing or empty
+    if (((*path = strsep(&token, "=")) == NULL) || !strlen(*path))
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s contains malformed token for key \"%s\": missing path\n",
+                  param_name, *key_name);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Reject tokens with more than one '=' (e.g. "key=path=extra")
+    if (strsep(&token, "=") != NULL)
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s contains malformed token for key \"%s\": too many '=' separators\n",
+                  param_name, *key_name);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS
+nv_write_binary_registry_file(nvidia_stack_t *sp, nv_state_t *nv,
+                              const char *key_name, const char *relative_path,
+                              const char *param_name)
+{
+    int fw_status;
+    char *firmware_path = NULL;
+    NV_STATUS status;
+    size_t firmware_path_len;
+    const struct firmware *fw = NULL;
+    nv_linux_state_t *nvl;
+
+    if ((nv == NULL) || (key_name == NULL) ||
+        (relative_path == NULL) || (param_name == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    firmware_path_len = strlen(NV_BINARY_REGISTRY_FIRMWARE_DIR) +
+                        strlen(relative_path) + 1;
+
+    status = os_alloc_mem((void **)&firmware_path, firmware_path_len);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    snprintf(firmware_path, firmware_path_len, "%s%s",
+             NV_BINARY_REGISTRY_FIRMWARE_DIR, relative_path);
+
+    fw_status = request_firmware(&fw, firmware_path, nvl->dev);
+    if (fw_status != 0)
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s key \"%s\" failed to load firmware file \"%s\" (rc=%d)\n",
+                  param_name, key_name, firmware_path, fw_status);
+        status = NV_ERR_OBJECT_NOT_FOUND;
+        goto done;
+    }
+
+    if (fw->size > NV_U32_MAX)
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s key \"%s\" firmware file \"%s\" too large (%zu bytes)\n",
+                  param_name, key_name, firmware_path, fw->size);
+        status = NV_ERR_INVALID_DATA;
+        goto done;
+    }
+
+    status = rm_write_registry_binary(sp, nv, key_name,
+                                      (NvU8 *)fw->data, (NvU32)fw->size);
+    if (status != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: %s key \"%s\" failed to write registry binary (status=0x%x)\n",
+                  param_name, key_name, status);
+    }
+
+done:
+    if (fw != NULL)
+    {
+        release_firmware(fw);
+    }
+
+    os_free_mem(firmware_path);
+    return status;
+}
 
 /*!
  * @brief This function parses the PCI BDF identifier string and returns the
@@ -184,6 +296,99 @@ void nv_enable_cdmm_mode(nvidia_stack_t *sp)
 }
 
 /*!
+ * @brief Parse and apply per-device binary registry key files configured via
+ * NVreg_RegistryBinaryFilePerDevice.
+ *
+ * @param[in]  sp          pointer to nvidia_stack_t struct.
+ * @param[in]  current_nv  pointer to the currently probing GPU state.
+ *
+ * @return NV_OK if succeeds, or NV_STATUS error code otherwise.
+ */
+NV_STATUS nv_parse_per_device_binary_option_string(nvidia_stack_t *sp,
+                                                   nv_state_t *current_nv)
+{
+    NV_STATUS status = NV_OK;
+    char *option_string = NULL;
+    char *ptr, *token;
+    char *name, *value;
+    NvU32 domain, bus, slot, func;
+    nv_state_t *nv = NULL;
+
+    if (current_nv == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (NVreg_RegistryBinaryFilePerDevice == NULL)
+    {
+        return NV_OK;
+    }
+
+    option_string = rm_remove_spaces(NVreg_RegistryBinaryFilePerDevice);
+    if (option_string == NULL)
+    {
+        return NV_ERR_GENERIC;
+    }
+
+    ptr = option_string;
+
+    while ((token = strsep(&ptr, ";")) != NULL)
+    {
+        if (!strlen(token))
+        {
+            continue;
+        }
+
+        status = nv_parse_binary_registry_token("NVreg_RegistryBinaryFilePerDevice",
+                                                token, &name, &value);
+        if (status != NV_OK)
+        {
+            break;
+        }
+
+        if (strcmp(name, NV_REG_PCI_DEVICE_BDF) == 0)
+        {
+            status = pci_str_to_bdf(value, &domain, &bus, &slot, &func);
+
+            if (status != NV_OK)
+            {
+                nv = NULL;
+                status = NV_OK;
+                continue;
+            }
+
+            if ((current_nv->pci_info.domain == domain) &&
+                (current_nv->pci_info.bus == bus) &&
+                (current_nv->pci_info.slot == slot) &&
+                (current_nv->pci_info.function == func))
+            {
+                nv = current_nv;
+            }
+            else
+            {
+                nv = NULL;
+            }
+            continue;
+        }
+
+        if (nv == NULL)
+        {
+            continue;
+        }
+
+        status = nv_write_binary_registry_file(sp, nv, name,
+                                               value, "NVreg_RegistryBinaryFilePerDevice");
+        if (status != NV_OK)
+        {
+            break;
+        }
+    }
+
+    os_free_mem(option_string);
+    return status;
+}
+
+/*!
  * @brief This function parses the registry keys per GPU device. It accepts a
  * semicolon separated list of key=value pairs. The first key value pair MUST be
  * "pci=DDDD:BB:DD.F;" where DDDD is Domain, BB is Bus Id, DD is device slot
@@ -198,19 +403,25 @@ void nv_enable_cdmm_mode(nvidia_stack_t *sp)
  * 3)  domain:bus:slot.func     : Complete PCI dev id string.
  *
  *
- * @param[in]  sp       pointer to nvidia_stack_t struct.
+ * @param[in]  sp          pointer to nvidia_stack_t struct.
+ * @param[in]  current_nv  pointer to the currently probing GPU state.
  *
  * @return NV_OK if succeeds, or NV_STATUS error code otherwise.
  */
-NV_STATUS nv_parse_per_device_option_string(nvidia_stack_t *sp)
+NV_STATUS nv_parse_per_device_option_string(nvidia_stack_t *sp,
+                                            nv_state_t *current_nv)
 {
     NV_STATUS status = NV_OK;
     char *option_string = NULL;
     char *ptr, *token;
     char *name, *value;
     NvU32 data, domain, bus, slot, func;
-    nv_linux_state_t *nvl = NULL;
     nv_state_t *nv = NULL;
+
+    if (current_nv == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     if (NVreg_RegistryDwordsPerDevice != NULL)
     {
@@ -250,22 +461,21 @@ NV_STATUS nv_parse_per_device_option_string(nvidia_stack_t *sp)
                     // lets reset cached pci dev
                     nv = NULL;
                 }
+                else if ((current_nv->pci_info.domain == domain) &&
+                         (current_nv->pci_info.bus == bus) &&
+                         (current_nv->pci_info.slot == slot) &&
+                         (current_nv->pci_info.function == func))
+                {
+                    nv = current_nv;
+                }
                 else
                 {
-                    nvl = find_pci(domain, bus, slot, func);
                     //
-                    // If NO GPU found corresponding to this GPU, then reset
-                    // cached state. This helps ignore the following registry
-                    // keys until valid PCI BDF is found in the commandline.
+                    // BDF doesn't match the currently probing GPU;
+                    // skip registry keys until next matching
+                    // pci= entry.
                     //
-                    if (!nvl)
-                    {
-                        nv = NULL;
-                    }
-                    else
-                    {
-                        nv = NV_STATE_PTR(nvl);
-                    }
+                    nv = NULL;
                 }
                 continue;
             }
@@ -362,6 +572,10 @@ NV_STATUS NV_API_CALL os_registry_init(void)
         if (strcmp(NVreg_CoherentGPUMemoryMode, "driver") == 0)
         {
             NVreg_EnableUserNUMAManagement = 0;
+        }
+        else
+        {
+            NVreg_EnableUserNUMAManagement = 1;
         }
     }
 

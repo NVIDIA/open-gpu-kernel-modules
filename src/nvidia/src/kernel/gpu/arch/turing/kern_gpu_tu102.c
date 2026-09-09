@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/gsp/kernel_gsp.h"
 
+#include "published/turing/tu102/dev_pmc.h"
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/dev_bus.h"
 #include "published/turing/tu102/hwproject.h"
@@ -38,7 +39,11 @@
 #include "published/turing/tu102/dev_nv_xve3g_vf.h"
 #include "published/turing/tu102/dev_gc6_island.h"
 #include "published/turing/tu102/dev_gc6_island_addendum.h"
+#include "published/turing/tu102/dev_gsp.h"
 #include "published/turing/tu104/dev_timer.h"
+
+#include "events/gpu/ras/ras_events.h"
+#include "nvoc/event_bus.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -297,6 +302,14 @@ gpuGetRegBaseOffset_TU102(OBJGPU *pGpu, NvU32 regBase, NvU32 *pOffset)
             *pOffset = DRF_BASE(NV_PTIMER);
             return NV_OK;
         }
+        case NV_REG_BASE_MASTER:
+        {
+            if (IS_VIRTUAL(pGpu))
+                return NV_ERR_NOT_SUPPORTED;
+
+            *pOffset = DRF_BASE(NV_PMC);
+            return NV_OK;
+        }
         default:
         {
 
@@ -348,7 +361,8 @@ gpuSanityCheckVirtRegAccess_TU102
 NvBool
 gpuCheckEccCounts_TU102
 (
-    OBJGPU *pGpu
+    OBJGPU *pGpu,
+    NvU32   severity
 )
 {
     NvU32 dramCount = 0;
@@ -364,10 +378,8 @@ gpuCheckEccCounts_TU102
     // If counts > 0 or if poison interrupt pending, ECC error has occurred.
     if (((dramCount + ltcCount + mmuCount + pcieCount) != 0) || gpuCheckIfFbhubPoisonIntrPending_HAL(pGpu))
     {
-        nvErrorLog_va((void *)pGpu, UNRECOVERABLE_ECC_ERROR_ESCAPE,
-                      "An uncorrectable ECC error detected "
-                      "(possible firmware handling failure) "
-                      "DRAM:%d, LTC:%d, MMU:%d, PCIE:%d", dramCount, ltcCount, mmuCount, pcieCount);
+        eventEmit(EccResidualUncorrectableError, pGpu, severity, dramCount, ltcCount,
+                  mmuCount, pcieCount);
         return NV_TRUE;
     }
 
@@ -579,4 +591,15 @@ void
 gpuWritePBusScratch_TU102(OBJGPU *pGpu, NvU8 idx, NvU32 data)
 {
     GPU_REG_WR32(pGpu, NV_PBUS_SW_SCRATCH(idx), data);
+}
+
+NV_STATUS
+gpuGetGspMsgQueueRegisters_TU102(OBJGPU *pGpu, NvU32 queueIdx, NvU32 *pCmdHead, NvU32 *pCmdTail, NvU32 *pMsgHead, NvU32 *pMsgTail)
+{
+    NV_ASSERT_OR_RETURN(queueIdx < NV_PGSP_QUEUE_HEAD__SIZE_1, NV_ERR_INVALID_ARGUMENT);
+    if (pCmdHead != NULL) *pCmdHead = NV_PGSP_QUEUE_HEAD(queueIdx);
+    if (pCmdTail != NULL) *pCmdTail = NV_PGSP_QUEUE_TAIL(queueIdx);
+    if (pMsgHead != NULL) *pMsgHead = NV_PGSP_MSGQ_HEAD(queueIdx);
+    if (pMsgTail != NULL) *pMsgTail = NV_PGSP_MSGQ_TAIL(queueIdx);
+    return NV_OK;
 }

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,6 +64,14 @@ typedef struct Object Object;
 #endif /* __nvoc_class_id_Object */
 
 
+struct EventBus;
+
+#ifndef __nvoc_class_id_EventBus
+#define __nvoc_class_id_EventBus 0x2e5918u
+typedef struct EventBus EventBus;
+#endif /* __nvoc_class_id_EventBus */
+
+
 struct NVOC_CLASS_INFO;
 
 /*!
@@ -105,6 +113,7 @@ struct Object {
 
     // Data members
     struct Object *pParent;
+    struct EventBus *pEventBus;
     struct NVOC_CHILD_TREE childTree;
     NvU32 ipVersion;
     NvU32 createFlags;

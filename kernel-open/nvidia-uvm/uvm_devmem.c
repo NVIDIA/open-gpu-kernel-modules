@@ -48,10 +48,12 @@ uvm_va_space_t *uvm_devmem_page_to_va_space(struct page *page)
 
     // uvm_hmm_unregister_gpu() needs to do a racy check here so
     // page->zone_device_data might be NULL.
-    if (!gpu_chunk || !gpu_chunk->va_block)
+    if (!gpu_chunk || !gpu_chunk->va_space)
         return NULL;
 
-    return gpu_chunk->va_block->hmm.va_space;
+    // Use the cached va_space rather than gpu_chunk->va_block->hmm.va_space
+    // since the va_block may have been freed while the va_space is still valid.
+    return gpu_chunk->va_space;
 }
 
 // Check there are no orphan pages. This should be only called as part of
@@ -113,10 +115,14 @@ static void devmem_page_free_gpu_chunk(uvm_gpu_chunk_t *chunk)
 {
     uvm_gpu_t *gpu = uvm_gpu_chunk_get_gpu(chunk);
 
-    if (chunk->va_block) {
-        uvm_va_space_t *va_space = chunk->va_block->hmm.va_space;
+    UVM_ASSERT(chunk->va_space);
 
-        UVM_ASSERT(va_space);
+    // Use the cached va_space rather than chunk->va_block->hmm.va_space. The
+    // va_block may already have been freed by the time this page_free() callback
+    // runs, but the va_space is guaranteed to outlive the device page.
+    if (chunk->va_space) {
+        uvm_va_space_t *va_space = chunk->va_space;
+
         atomic64_dec(&va_space->hmm.allocated_page_count);
         UVM_ASSERT(atomic64_read(&va_space->hmm.allocated_page_count) >= 0);
     }
@@ -130,6 +136,7 @@ static void devmem_page_free_gpu_chunk(uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk->is_referenced);
 
     chunk->va_block = NULL;
+    chunk->va_space = NULL;
     chunk->is_referenced = false;
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED) {

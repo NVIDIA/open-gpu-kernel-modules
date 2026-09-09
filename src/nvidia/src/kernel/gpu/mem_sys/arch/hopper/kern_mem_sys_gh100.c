@@ -711,3 +711,25 @@ kmemsysMcFlaOffsetTableAlloc_GH100
     return NV_OK;
 }
 
+/*!
+ * @brief Flush CPU cache coherently on Grace/Hopper+Blackwell platforms
+ *
+ * On Grace (Hopper and Blackwell self-hosted), the standard OS cache flush
+ * is sufficient since the CPU cache coherency works correctly.
+ *
+ * @param[in] pGpu                  GPU object pointer
+ * @param[in] pKernelMemorySystem   KernelMemorySystem object pointer
+ * @param[in] address               CPU address to flush
+ * @param[in] size                  Size of region to flush
+ */
+void
+kmemsysFlushCoherentCpuCache_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvUPtr              address,
+    NvU64               size
+)
+{
+    osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo, address, size);
+}

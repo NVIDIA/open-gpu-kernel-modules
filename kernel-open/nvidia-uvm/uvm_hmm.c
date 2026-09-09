@@ -1908,6 +1908,7 @@ static NV_STATUS gpu_chunk_add(uvm_va_block_t *va_block,
     uvm_page_mask_set(&gpu_state->resident, page_index);
 
     gpu_chunk->va_block = va_block;
+    gpu_chunk->va_space = va_block->hmm.va_space;
 
     gpu_state->chunks[page_index] = gpu_chunk;
 
@@ -3160,7 +3161,11 @@ NV_STATUS uvm_hmm_va_block_service_locked(uvm_gpu_t *gpu,
     args->fault_page = NULL;
 
     ret = migrate_vma_setup_locked(args, va_block);
-    UVM_ASSERT(!ret);
+    if (ret < 0) {
+        UVM_ASSERT(0);
+        gpu_chunk_free_preallocated(va_block, va_block_retry);
+        return errno_to_nv_status(ret);
+    }
 
     status = uvm_hmm_gpu_fault_alloc_and_copy(&uvm_hmm_gpu_fault_event);
     if (status == NV_WARN_MORE_PROCESSING_REQUIRED) {
@@ -3540,6 +3545,13 @@ NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
     return NV_OK;
 }
 
+void uvm_hmm_va_block_evict_chunk_cancel(uvm_va_block_context_t *block_context)
+{
+    migrate_device_finalize(block_context->hmm.src_pfns,
+                            block_context->hmm.dst_pfns,
+                            ARRAY_SIZE(block_context->hmm.src_pfns));
+}
+
 // Note that the caller must initialize va_block_context->hmm.src_pfns by
 // calling uvm_hmm_va_block_evict_chunk_prep() before calling this.
 static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
@@ -3660,6 +3672,7 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
 {
     uvm_va_block_context_t *block_context = service_context->block_context;
     unsigned long *src_pfns = block_context->hmm.src_pfns;
+    unsigned long *dst_pfns = block_context->hmm.dst_pfns;
     uvm_va_block_gpu_state_t *gpu_state;
     uvm_page_index_t page_index;
     uvm_gpu_chunk_t *gpu_chunk;
@@ -3673,6 +3686,7 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
 
     // Fill in the src_pfns[] with the ZONE_DEVICE private PFNs of the GPU.
     memset(src_pfns, 0, sizeof(block_context->hmm.src_pfns));
+    memset(dst_pfns, 0, sizeof(block_context->hmm.dst_pfns));
 
     // TODO: Bug 3368756: add support for large GPU pages.
     for_each_va_block_page_in_region_mask(page_index, pages_to_evict, region) {
@@ -3683,8 +3697,10 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
                                                    block_context,
                                                    gpu_chunk,
                                                    uvm_va_block_region_for_page(page_index));
-        if (status != NV_OK)
+        if (status != NV_OK) {
+            uvm_hmm_va_block_evict_chunk_cancel(block_context);
             return status;
+        }
     }
 
     return hmm_va_block_evict_chunks(va_block,

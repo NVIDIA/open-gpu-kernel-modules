@@ -34,11 +34,12 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "nvrm_registry.h"
+#include "gpu/gpu_mods_error.h"
 
 #include "published/blackwell/gb100/hwproject.h"
 #include "published/blackwell/gb100/dev_vm.h"
-#include "published/blackwell/gb100/dev_boot_zb.h"
-#include "published/blackwell/gb100/dev_boot_zb_addendum.h"
+#include "published/blackwell/gb100/dev_pmc_zb.h"
+#include "published/blackwell/gb100/dev_pmc_zb_addendum.h"
 #include "published/blackwell/gb100/dev_mnoc_pri_zb.h"
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 #include "published/blackwell/gb100/dev_nv_pcie_config_reg_addendum.h"
@@ -112,6 +113,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB100[] =
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -957,6 +959,13 @@ gpuGetIdInfo_GB100(OBJGPU *pGpu)
         return;
     }
 
+    pGpu->idInfo.PCIProgrammingInterface =
+        GPU_DRF_VAL(_PF0, _REVISION_ID_AND_CLASS_CODE, _PROGRAMMING_INTERFACE, data);
+    pGpu->idInfo.PCISubClass =
+        GPU_DRF_VAL(_PF0, _REVISION_ID_AND_CLASS_CODE, _SUB_CLASS_CODE, data);
+    pGpu->idInfo.PCIBaseClass =
+        GPU_DRF_VAL(_PF0, _REVISION_ID_AND_CLASS_CODE, _BASE_CLASS_CODE, data);
+
     // we only need the FIB and MASK values
     pGpu->idInfo.PCIRevisionID = (data & ~GPU_DRF_SHIFTMASK(NV_PF0_REVISION_ID_AND_CLASS_CODE_PROGRAMMING_INTERFACE)
                                        & ~GPU_DRF_SHIFTMASK(NV_PF0_REVISION_ID_AND_CLASS_CODE_SUB_CLASS_CODE)
@@ -1060,6 +1069,8 @@ gpuHandleSecFault_GB100
     NV_ASSERT_OK(GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1, &secDebug));
 
     MODS_ARCH_ERROR_PRINTF("NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1:0x%x\n", secDebug);
+    MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                          MODSDRV_BUS_ERROR_CODE_SEC_FAULT_REGISTER, 0, secDebug);
     NV_PRINTF(LEVEL_FATAL, "SEC_FAULT lockdown detected. This is fatal. "
                            "RM will now shut down. NV_PF0_DVSEC0_SEC_FAULT_REGISTER_1: 0x%x\n", secDebug);
 
@@ -1067,6 +1078,8 @@ gpuHandleSecFault_GB100
     if (DRF_VAL(_PF0, _DVSEC0_SEC_FAULT_REGISTER_1, field, secDebug) != 0) \
     { \
         MODS_ARCH_ERROR_PRINTF("DVSEC0_SEC_FAULT_REGISTER_1" #field "\n"); \
+        MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL, \
+                              MODSDRV_BUS_ERROR_CODE_SEC_FAULT_REGISTER, 0, secDebug); \
         NV_PRINTF(LEVEL_FATAL, "SEC_FAULT type: " #field "\n"); \
         nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR, \
                       "SEC_FAULT: " #field ); \
@@ -1817,6 +1830,14 @@ gpuGetRegBaseOffset_GB100(OBJGPU *pGpu, NvU32 regBase, NvU32 *pOffset)
         }
         default:
         {
+            if (!IS_VIRTUAL(pGpu))
+            {
+                if (regBase == NV_REG_BASE_MASTER)
+                {
+                    *pOffset = NV_PMC0_PRI_BASE;
+                    return NV_OK;
+                }
+            }
             return NV_ERR_NOT_SUPPORTED;
         }
     }

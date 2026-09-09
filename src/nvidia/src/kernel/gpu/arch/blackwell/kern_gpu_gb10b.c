@@ -33,10 +33,11 @@
 #include "os/os.h"
 #include "gpu/eng_desc.h"
 #include "nverror.h"
+#include "gpu/gpu_mods_error.h"
 
 #include "published/blackwell/gb10b/hwproject.h"
 #include "published/blackwell/gb10b/dev_xtl_ep_pcfg_gpu.h"
-#include "published/blackwell/gb10b/dev_boot_zb.h"
+#include "published/blackwell/gb10b/dev_pmc_zb.h"
 
 //
 // List of GPU children that present for the chip. List entries contain$
@@ -82,6 +83,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB10B[] =
     GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -114,6 +116,8 @@ gpuHandleSecFault_GB10B
 
     MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC:0x%x\n",
                             secDebug);
+    MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                          MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, secDebug);
     NV_PRINTF(LEVEL_FATAL, "SEC_FAULT lockdown detected. This is fatal. "
                             "RM will now shut down. NV_EP_PCFG_GPU_VSEC_DEBUG_SEC: 0x%x\n",
                             secDebug);
@@ -126,6 +130,8 @@ gpuHandleSecFault_GB10B
     if (DRF_VAL(_SYSCTRL, _SEC_FAULT_BIT_POSITION, field, secDebug) != 0) \
     { \
         MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC" #field "\n"); \
+        MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL, \
+                              MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, secDebug); \
         NV_PRINTF(LEVEL_FATAL, "SEC_FAULT type: " #field "\n"); \
         nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR, \
                       "SEC_FAULT: " #field ); \
@@ -151,6 +157,8 @@ gpuHandleSecFault_GB10B
     if (data != 0)
     {
         MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS value: 0x%x\n", data);
+        MODS_REPORT_BUS_ERROR(pGpu, MODSDRV_ERROR_SEVERITY_FATAL,
+                              MODSDRV_BUS_ERROR_CODE_VSEC_DEBUG_SEC_REGISTER, 0, data);
         NV_PRINTF(LEVEL_FATAL, "SEC_2_FAULT type: _IFF_POS value: 0x%x\n", data);
         nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR,
                       "SEC_FAULT: _IFF_POS value: 0x%x", data);

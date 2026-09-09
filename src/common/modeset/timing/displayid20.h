@@ -114,6 +114,7 @@ typedef struct _tagDISPLAYID_2_0_DATA_BLOCK_HEADER
 #define DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA             0x81
 // 0xFF - 0x82 RESERVED for additional data blocks related to external standards organization(s).
 
+#define DISPLAYID_2_0_PRODUCT_IDENTITY_MIN_LEN        12
 #define DISPLAYID_2_0_PRODUCT_NAME_STRING_MAX_LEN     ((0xFB - 0xF) + 1)
 
 typedef struct _tagDISPLAYID_2_0_PROD_IDENTIFICATION_BLOCK

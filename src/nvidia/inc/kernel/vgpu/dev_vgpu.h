@@ -144,6 +144,7 @@
 #define NV_VGPU_EV_FLAGS_TYPE_NVENC_REPORTING_STATE      0x00000006 /* RW--V */
 #define NV_VGPU_EV_FLAGS_TYPE_INBAND_RESPONSE            0x00000007 /* RW--V */
 #define NV_VGPU_EV_FLAGS_TYPE_TRACING                    0x00000008 /* RW--V */
+#define NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR_INSTBLK 0x00000009 /* RW--V */
 #define NV_VGPU_EV_NOTIFIER_TIMESTAMP                    0x00000010 /* RW-4R */
 #define NV_VGPU_EV_NOTIFIER_TIMESTAMP_HI                 0x00000014 /* RW-4R */
 #define NV_VGPU_EV_NOTIFIER_INFO32                       0x00000018 /* RW-4R */
@@ -183,6 +184,35 @@ ct_assert(VGPU_EVENT_BUF_ENTRY_SIZE == (NV_VGPU_EV__SIZE_1 * sizeof (NvU32)));
 /******************************************************************************/
 /* EVENT MEMORY - END                                                         */
 /******************************************************************************/
+
+/******************************************************************************/
+/* RC Subdevice notifier written by GSP-RM to notify plugin                   */
+/******************************************************************************/
+#define NV_VGPU_RC_NOTIFIER_CHANNEL_INFO 0u
+#define NV_VGPU_RC_NOTIFIER_INSTBLK      1u
+
+typedef struct {
+    NvU32 type; // NV_VGPU_RC_NOTIFIER
+
+    union
+    {
+        struct
+        {
+            NvU32 chid;
+            NvU32 tsgId;
+            NvU32 runlistId;
+        } channelInfo; // NV_VGPU_RC_NOTIFIER_CHANNEL_INFO
+
+        struct
+        {
+            NvU64 address;
+            NvU32 aperture; // INST_BLOCK_APERTURE
+        } instblk; // NV_VGPU_RC_NOTIFIER_INSTBLK
+    };
+
+    NvU32           exceptType;
+    NvU32           nv2080EngineType;
+} VGPU_RC_NOTIFIER;
 
 /* virtual GPU */
 #ifndef NV_XVE_ID_DEVICE_CHIP_VGPU
@@ -277,6 +307,7 @@ typedef union {
         volatile NvU32 putSaveHibernateBuf;     // PUT index in circular hibernate shared buffer during save
         volatile NvU32 getRestoreHibernateBuf;  // GET index in circular hibernate shared buffer during restore
         volatile NvU32 IsMoreHibernateDataSave; // Indicates if data is available to save during hibernation
+        volatile NvU32 covsanInfo;              // COVSAN information, if enabled
     };
     volatile NvU8 buf[VGPU_GSP_RESPONSE_BUF_SIZE_V1];
 } VGPU_GSP_RESPONSE_BUF_V1;
@@ -293,6 +324,7 @@ ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, enabledGspCaps          ) == 0x0
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, putSaveHibernateBuf     ) == 0x014);
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, getRestoreHibernateBuf  ) == 0x018);
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, IsMoreHibernateDataSave ) == 0x01C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, covsanInfo              ) == 0x020);
 
 /******************************************************************************/
 /* GSP Control buffer format - Version 1 - END                                */
@@ -321,6 +353,10 @@ typedef union {
 /******************************************************************************/
 /* GSP Control buffer shared between Guest RM and GSP Plugin - END            */
 /******************************************************************************/
+
+// vGPU RPC timeouts shared between Guest RM and GSP
+#define NV_VGPU_RPC_TIMEOUT_DEFAULT_USEC    12500000u                        // 12.5s
+#define NV_VGPU_RPC_TIMEOUT_EMU_USEC        (2700u * 1000u * 1000u)          // 2700s
 
 // VGPU GSP dirty sysmem tracking pfn format
 #define VGPU_GSP_SYSMEM_PFN_BITMAP_BUF_ADDR_VALIDITY                         0:0

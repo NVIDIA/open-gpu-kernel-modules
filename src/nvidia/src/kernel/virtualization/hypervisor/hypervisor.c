@@ -30,7 +30,7 @@
 #include "gpu/gpu.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "platform/chipset/chipset.h"
 
 static HYPERVISOR_OPS _hypervisorOps[OS_HYPERVISOR_UNKNOWN];

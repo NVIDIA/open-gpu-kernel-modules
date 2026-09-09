@@ -314,11 +314,6 @@ parseDisplayId20EDIDExtDataBlocks(
             pEdidInfo->input.u.digital.bpc = NVT_COLORDEPTH_HIGHEST_BPC(pDisplayId20Info->display_param.native_color_depth);
             pEdidInfo->gamma = pDisplayId20Info->display_param.gamma_x100;
 
-            if (pDisplayId20Info->display_param.audio_speakers_integrated == AUDIO_SPEAKER_INTEGRATED_SUPPORTED)
-            {
-                pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
-            }
-
             if (pDisplayId20Info->display_param.gamma_x100 != 0)
             {
                 pEdidInfo->hdr_static_metadata_info.supported_eotf.trad_gamma_sdr_eotf = 1;

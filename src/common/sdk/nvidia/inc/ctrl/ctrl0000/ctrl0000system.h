@@ -44,8 +44,6 @@
  *         
  *       NV0000_CTRL_GET_FEATURES_SLI
  *         When this bit is set, SLI is supported.
- *       NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT
- *         When this bit is set, EFI has initialized core channel 
  *       NV0000_CTRL_SYSTEM_GET_FEATURES_RM_TEST_ONLY_CODE_ENABLED
  *         When this bit is set, RM test only code is supported.
  *
@@ -2132,21 +2130,9 @@ typedef struct NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     NvU32  dcRosReserveOverridemW;
 
     /*
-     * This is the active arbitrated long timescale limit provided by Qboost and
-     * honored by JPAC/JPPC
-     */
-    NvU32  dcTspLongTimescaleLimitmA;
-
-    /*
      * The long timescale limit override.
      */
     NvU32  dcTspLongTimescaleLimitOverridemA;
-
-   /*
-    * This is the active arbitrated short timescale limit provided by Qboost and
-    * honored by RM/PMU
-    */
-    NvU32  dcTspShortTimescaleLimitmA;
 
    /*
     * This is the value provided by the SBIOS to update the short timescale 
@@ -3100,7 +3086,7 @@ typedef struct NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_SET_FRM_DATA_PARAMS {
 typedef struct NV0000_CTRL_SYSTEM_READ_CPER_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 cperTypeMask, 8);
     NvU8  uuid[16];
-    NvU32 cperCursor;
+    NV_DECLARE_ALIGNED(NvU64 cperCursor, 8);
     NvU8  buffer[READ_CPER_BUFFER_SIZE];
     NvU32 bufferSize;
 } NV0000_CTRL_SYSTEM_READ_CPER_PARAMS;

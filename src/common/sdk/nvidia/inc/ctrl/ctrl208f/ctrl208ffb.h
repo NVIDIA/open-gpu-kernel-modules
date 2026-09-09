@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,10 +59,7 @@ typedef struct NV208F_CTRL_FB_GET_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 data, 8);
 } NV208F_CTRL_FB_GET_INFO_PARAMS;
 
-/* valid fb info index values */
-#define NV208F_CTRL_FB_INFO_INDEX_FREE_CONTIG_COMPRESSION_SIZE (0x00000001)
 
-#define NV208F_CTRL_FB_INFO_INDEX_MAX                          NV208F_CTRL_FB_INFO_INDEX_FREE_CONTIG_COMPRESSION_SIZE
 
 /*
  * NV208F_CTRL_CMD_FB_GET_ZBC_REFCOUNT
@@ -70,7 +67,7 @@ typedef struct NV208F_CTRL_FB_GET_INFO_PARAMS {
  * This command gets the ZBC reference count associated with a given
  * compression tag address.  It is not supported on GPUs which support class
  * GF100_ZBC_CLEAR as it is specific to a different hardware implementation.
- * 
+ *
  *   compTagAddress
  *     The input parameter indicating the compression tag address for which the
  *     associated ZBC refcount should be looked up.
@@ -82,9 +79,9 @@ typedef struct NV208F_CTRL_FB_GET_INFO_PARAMS {
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NV208F_CTRL_CMD_FB_GET_ZBC_REFCOUNT                    (0x208f0505) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | 0x5" */ // Deprecated, removed form RM
+#define NV208F_CTRL_CMD_FB_GET_ZBC_REFCOUNT                     (0x208f0505) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | 0x5" */ // Deprecated, removed form RM
 
-#define NV208F_CTRL_FB_GET_ZBC_REFCOUNT_MAX_REFCOUNTS          2
+#define NV208F_CTRL_FB_GET_ZBC_REFCOUNT_MAX_REFCOUNTS           2
 typedef struct NV208F_CTRL_FB_GET_ZBC_REFCOUNT_PARAMS {
     NvU32 compTagAddress;
     NvU32 zbcRefCount[NV208F_CTRL_FB_GET_ZBC_REFCOUNT_MAX_REFCOUNTS];
@@ -115,7 +112,7 @@ typedef struct NV208F_CTRL_FB_GET_ZBC_REFCOUNT_PARAMS {
  *   vgaCacheMode
  *     Specifies whether or not to enable VGA out-of-cache mode.  Possible
  *     values are defined in NV208F_CTRL_FB_CTRL_GPU_CACHE_VGA_MODE.  Passing
- *     _DEFAULT means to maintain the current VGA caching mode.  
+ *     _DEFAULT means to maintain the current VGA caching mode.
  *   cacheReset
  *     Triggers a hardware reset of the cache.  Possible values are defined in
  *     NV208F_CTRL_FB_CTRL_GPU_CACHE_CACHE_RESET.  Passing _DEFAULT does
@@ -195,15 +192,15 @@ typedef struct NV208F_CTRL_FB_CTRL_GPU_CACHE_PARAMS {
 /*
  * NV208F_CTRL_CMD_FB_SET_STATE
  *
- * This command is used to put fb engine in a state requested by the caller. 
- * 
+ * This command is used to put fb engine in a state requested by the caller.
+ *
  *   state
  *     This parameter specifies the desired engine state:
  *       NV208F_CTRL_FB_SET_STATE_STOPPED
  *         This value stops/halts the fb engine.
- *       NV208F_CTRL_FB_SET_STATE_RESTART      
- *         This value restarts fb from a stopped state. 
- *   
+ *       NV208F_CTRL_FB_SET_STATE_RESTART
+ *         This value restarts fb from a stopped state.
+ *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_STATE
@@ -223,13 +220,13 @@ typedef struct NV208F_CTRL_FB_SET_STATE_PARAMS {
 
 /*
  * NV208F_CTRL_CMD_GPU_ECC_SCRUB_DIAG
- * 
+ *
  * This command reads all the settings internal to scrubbing (both asynchronous
  * and synchronous.
  *
  * Currently implemented: FB offset scrubber has completed, FB offset that scrubber
  * is completing to, whether or not asynchronous scrubbing is enabled.
- * 
+ *
  *   fbOffsetCompleted
  *      This is the offset into FB that the scrubber has completed up to at the
  *      time this function is invoked. Note that the scrubber is top-down. Therefore
@@ -281,7 +278,7 @@ typedef struct NV208F_CTRL_CMD_FB_ECC_ASYNC_SCRUB_REGION_PARAMS {
 /*
  * NV208F_CTRL_CMD_GPU_ECC_ERROR_INFO
  * This is a structure that is defined here for diag/debug purposes in mods.
- * It is used to return the error information as part of the callback to 
+ * It is used to return the error information as part of the callback to
  * kernel clients registering for SBE/DBE callbacks.
  */
 
@@ -673,11 +670,11 @@ typedef struct NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS {
  *
  * This API allows a client to inject ECC errors in the SYSLTC.
  *
- *   group:
- *      The physical group number to inject the error into.
+ *   dieletLoc:
+ *      Encoded DieletType (bits 7:4) and DieletId (bits 3:0) identifying the dielet.
  *   instance:
- *      The physical instance number within the group to inject the error into.
- *   instance:
+ *      The global SYSLTC instance ID to inject the error into.
+ *   slice:
  *      The physical slice number within the instance to inject the error into.
  *   locationMask
  *      SYSLTC location subtype(s) where error is to be injected. Same as LTC.
@@ -692,8 +689,8 @@ typedef struct NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS {
 #define NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS_MESSAGE_ID (0x17U)
 
 typedef struct NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS {
-    NvU8                      group;
-    NvU8                      instance;
+    NvU8                      dieletLoc;  // Encoded DieletType and DieletId
+    NvU8                      instance;  // local SYSLTC instance ID
     NvU8                      slice;
     NvU8                      locationMask;
     NV208F_CTRL_FB_ERROR_TYPE errorType;

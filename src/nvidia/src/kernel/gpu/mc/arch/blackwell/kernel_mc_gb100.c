@@ -26,7 +26,7 @@
 #include "gpu/gpu.h"
 #include "os/os.h"
 
-#include "published/blackwell/gb100/dev_boot_zb.h"
+#include "published/blackwell/gb100/dev_pmc_zb.h"
 #include "published/blackwell/gb100/hwproject.h"
 
 /*!

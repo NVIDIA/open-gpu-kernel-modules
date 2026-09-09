@@ -820,8 +820,11 @@ void NV_API_CALL rm_init_tegra_dynamic_power_management(
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
     void *fp;
 
-    if (!nv->supports_tegra_igpu_rg)
+    if (!nv->supports_tegra_igpu_rg) {
+        NV_PRINTF(LEVEL_INFO,
+            "NVRM: Tegra PCI iGPU Rail-Gating is not supported on this platform.\n");
         return;
+    }
 
     NV_ENTER_RM_RUNTIME(sp,fp);
 
@@ -2211,10 +2214,56 @@ static NvBool RmCheckForGcOffPM(
 }
 
 //
+// Open a temporary file for FBSR and reserve enough space in it to hold
+// all used FB memory. If the underlying filesystem can't accommodate the
+// reservation, the open+fallocate fails atomically and the caller aborts
+// suspend before any engine teardown. The handle is stashed in pFbsr so
+// fbsrBegin_GM107's SAVE path reuses it instead of opening its own.
+//
+static NV_STATUS
+RmReserveFbsrTempFile(OBJGPU *pGpu)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    OBJFBSR       *pFbsr;
+    NvU64          usedFbSize = 0;
+    void          *pFile = NULL;
+    NV_STATUS      status;
+
+    pFbsr = pMemoryManager->pFbsr[FBSR_TYPE_FILE];
+    if (pFbsr == NULL || !pFbsr->bInitialized)
+    {
+        return NV_OK;
+    }
+
+    NV_ASSERT(pFbsr->pagedBufferInfo.sectionHandle == NULL);
+
+    status = memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    status = osAllocateTemporaryFile(&pFile, usedFbSize);
+    if (status != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: FBSR: could not reserve space for video memory preservation. "
+            "Aborting suspend.\n");
+        nv_printf(NV_DBG_ERRORS,
+            "NVRM: Please refer to the 'Preserving Video Memory Allocations' "
+            "section in the driver README.\n");
+        return status;
+    }
+
+    pFbsr->pagedBufferInfo.sectionHandle = pFile;
+    return NV_OK;
+}
+
+//
 // Function to update fixed fbsr modes to support multiple vairants such as
 // GCOFF and cuda S3/resume.
 //
-static void
+static NV_STATUS
 RmUpdateFixedFbsrModes(OBJGPU *pGpu)
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -2224,10 +2273,22 @@ RmUpdateFixedFbsrModes(OBJGPU *pGpu)
     {
         pMemoryManager->fixedFbsrModesMask = NVBIT(FBSR_TYPE_DMA);
     }
-    else if (nv->preserve_vidmem_allocations)
+    else if (nv->preserve_vidmem_allocations &&
+             nv_dev_needs_vidmem_preservation(nv))
     {
+        NV_STATUS status;
+
         pMemoryManager->fixedFbsrModesMask = NVBIT(FBSR_TYPE_FILE);
+
+        status = RmReserveFbsrTempFile(pGpu);
+        if (status != NV_OK)
+        {
+            pMemoryManager->fixedFbsrModesMask = 0;
+            return status;
+        }
     }
+
+    return NV_OK;
 }
 
 static NV_STATUS
@@ -2255,7 +2316,19 @@ RmPowerManagement(
             // pFb object store the FBSR mode through which FB state unload has happened,
             // so os layer doesn't need to set FBSR mode on resume.
             //
-            RmUpdateFixedFbsrModes(pGpu);
+            rmStatus = RmUpdateFixedFbsrModes(pGpu);
+            if (rmStatus != NV_OK)
+            {
+                pMemoryManager->fixedFbsrModesMask = 0;
+                return rmStatus;
+            }
+        }
+        else
+        {
+            if (pGpu->powerManagementDepth == NV_PM_DEPTH_NONE)
+            {
+                return rmStatus;
+            }
         }
 
         switch (pmAction)
@@ -2272,7 +2345,6 @@ RmPowerManagement(
                 break;
 
             case NV_PM_ACTION_STANDBY:
-                nvp->pm_state.InHibernate = NV_FALSE;
                 nvp->pm_state.IntrEn = intrGetIntrEn(pIntr);
                 intrSetIntrEn(pIntr, INTERRUPT_TYPE_DISABLED);
                 gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
@@ -2288,6 +2360,7 @@ RmPowerManagement(
                 if (nvp->pm_state.InHibernate)
                 {
                     gpuResumeFromHibernate(pGpu);
+                    nvp->pm_state.InHibernate = NV_FALSE;
                 }
                 else
                 {
@@ -2317,6 +2390,20 @@ RmPowerManagement(
         }
 
         pMemoryManager->fixedFbsrModesMask = 0;
+
+        //
+        // The FBSR temp file handle may have remained open on a failed
+        // suspend. Close it.
+        //
+        if (rmStatus != NV_OK)
+        {
+            OBJFBSR *pFbsr = pMemoryManager->pFbsr[FBSR_TYPE_FILE];
+            if (pFbsr != NULL && pFbsr->pagedBufferInfo.sectionHandle != NULL)
+            {
+                osCloseFile(pFbsr->pagedBufferInfo.sectionHandle);
+                pFbsr->pagedBufferInfo.sectionHandle = NULL;
+            }
+        }
     }
 
     return rmStatus;

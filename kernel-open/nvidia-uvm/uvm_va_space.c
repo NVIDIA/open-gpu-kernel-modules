@@ -33,6 +33,7 @@
 #include "uvm_thread_context.h"
 #include "uvm_hal.h"
 #include "uvm_map_external.h"
+#include "uvm_va_range_dmabuf.h"
 #include "uvm_ats.h"
 #include "uvm_gpu_replayable_faults.h"
 #include "uvm_gpu_non_replayable_faults.h"
@@ -46,12 +47,10 @@
 #include "uvm_hmm.h"
 #include <linux/mmzone.h>
 
-static bool uvm_disable_sam_migration = false;
+static bool uvm_disable_sam_migration = true;
 MODULE_PARM_DESC(uvm_disable_sam_migration,
                  "Disable migration of system allocated memory for CDMM/HMM "
-                 "Default: false (migration is enabled if possible). "
-                 "However, even with uvm_disable_sam_migration=false, migation "
-                 "will not be enabled if is not supported in this driver build ");
+                 "Default: true (migration is disabled). ");
 module_param(uvm_disable_sam_migration, bool, 0444);
 
 static bool processor_mask_array_test(const uvm_processor_mask_t *mask,
@@ -364,13 +363,14 @@ static void va_space_parent_gpu_unregister(uvm_va_space_t *va_space, uvm_parent_
     if (!uvm_va_space_single_gpu_in_parent(va_space, parent))
         return;
 
-    if (parent->egm.enabled && parent->closest_cpu_numa_node != NUMA_NO_NODE) {
+    if (uvm_parent_gpu_egm_enabled(parent) && parent->closest_cpu_numa_node != NUMA_NO_NODE) {
         uvm_egm_numa_node_info_t *node_info = uvm_va_space_get_egm_numa_node_info(va_space,
                                                                                   parent->closest_cpu_numa_node);
         uvm_parent_processor_mask_clear(&node_info->parent_gpus, parent->id);
 
         // Clear local EGM routing
-        node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = NULL;
+        if (uvm_parent_gpu_egm_is_legacy(parent))
+            node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = NULL;
     }
 
     if (uvm_parent_processor_mask_test(&va_space->test.non_replayable_delay_set, parent->id)) {
@@ -752,8 +752,7 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_mem_info(uvm_va_space_t *va_space, const UvmG
     uvm_gpu_t *gpu;
 
     uvm_assert_rwsem_locked(&va_space->lock);
-
-    for_each_va_space_gpu(gpu, va_space) {
+    for_each_va_space_gpu (gpu, va_space) {
         if (uvm_uuid_eq(&gpu->uuid, &mem_info->uuid) ||
             (gpu->parent->smc.enabled && uvm_uuid_eq(&gpu->parent->uuid, &mem_info->uuid)))
             return gpu;
@@ -766,8 +765,16 @@ static void va_space_parent_gpu_register(uvm_va_space_t *va_space, uvm_parent_gp
 {
     uvm_egm_numa_node_info_t *node_info;
 
+    // If EGM is enabled and is not "legacy" EGM, we don't exit early.
+    // The GPU needs to be set in the parents_gpus processor mask
+    // since it's connected to the local node. Even if EGM is not
+    // enabled on the GPU, it could access memory on remote nodes
+    // through GPUs that are EGM-enabled.
+    // Being in the parent_gpus mask is required in order to
+    // successfully find the correct routing table if the GPU is
+    // not EGM-enabled.
     if (!uvm_va_space_single_gpu_in_parent(va_space, parent) ||
-        !parent->egm.enabled ||
+        (uvm_parent_gpu_egm_is_legacy(parent) && !uvm_parent_gpu_egm_enabled(parent)) ||
         parent->closest_cpu_numa_node == -1)
         return;
 
@@ -784,7 +791,8 @@ static void va_space_parent_gpu_register(uvm_va_space_t *va_space, uvm_parent_gp
     // This is done here because local EGM routing does need not any peers.
     // So, if there are no peers to this GPU, local EGM accesses should
     // still be possible.
-    if (parent->egm.enabled)
+    // Local EGM accesses are only done on "legacy" EGM.
+    if (uvm_parent_gpu_egm_enabled(parent) && uvm_parent_gpu_egm_is_legacy(parent))
         node_info->routing_table[uvm_parent_id_gpu_index(parent->id)] = parent;
 }
 
@@ -842,8 +850,21 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
             va_space->pageable.cdmm_enabled = g_uvm_global.cdmm_enabled;
         }
 
+        // HACK: Kernels with the bug UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES
+        // tests for requries us to disable migration on non-coherent GPUs.
+        // Ideally, we'd reject registering those GPUs on a VA space with
+        // migration enabled. Unfortunately, doing this would require a big
+        // rework our test suite.
+        //
+        // Fixing the tests is fairly involved, so the hackfix we're doing here
+        // is unconditionally disabling migration if there are any non-ATS
+        // (i.e. non-coherent) devices in the system. This still allows for
+        // migration on systems that have only coherent devices.
+        //
+        // TODO: Bug 5969467
         if (va_space->pageable.cdmm_enabled &&
             va_space->pageable.migrations_enabled &&
+            g_uvm_global.have_non_ats_devices &&
             !UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES()) {
                 va_space->pageable.migrations_enabled = NV_FALSE;
         }
@@ -1154,8 +1175,33 @@ static void disable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu
             uvm_parent_processor_mask_t proc_mask;
             uvm_parent_gpu_id_t peer_parent_id;
 
+            if (!uvm_parent_gpu_egm_is_legacy(gpu0->parent)) {
+                uvm_va_range_managed_t *va_range;
+                uvm_for_each_va_range_managed (va_range, va_space) {
+                    uvm_va_block_t *va_block;
+
+                    for_each_va_block_in_va_range (va_range, va_block)
+                        uvm_va_block_unmap_egm(va_block, gpu0->parent);
+                }
+            }
+
             uvm_parent_processor_mask_copy(&proc_mask, &node_info->parent_gpus);
             uvm_parent_processor_mask_clear(&proc_mask, gpu0->parent->id);
+
+            // EGM requires creating mappings on routing GPUs. This requires
+            // quiescing all access to remote EGM memory. In turn, this make
+            // re-assigning new remote GPU as the routing GPU racy.
+            // "Legacy" EGM, on the other hand, does not need any remapping,
+            // re-routing is only based on simple address calculation.
+            // So, for non-legacy EGM, we just remove the routing GPU, even
+            // though there could be other GPUs connected to the NUMA node.
+            // TODO: Bug 6196507: Re-assign routing GPU to the next GPU in
+            //       the mask.
+            if (!uvm_parent_gpu_egm_is_legacy(gpu0->parent)) {
+                node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = NULL;
+                continue;
+            }
+
             peer_parent_id = uvm_parent_processor_mask_find_first_gpu_id(&proc_mask);
             if (!UVM_PARENT_ID_IS_VALID(peer_parent_id)) {
                 node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = NULL;
@@ -1210,7 +1256,7 @@ static void disable_peers(uvm_va_space_t *va_space,
 
 static void enable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
-    if (gpu0->parent->egm.enabled) {
+    if (uvm_parent_gpu_egm_enabled(gpu0->parent)) {
         uvm_egm_numa_node_info_t *node_info;
         int nid;
 
@@ -1220,8 +1266,24 @@ static void enable_egm_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_
             // same NUMA node. Otherwise, we want accesses from it to this CPU NUMA
             // node to use gpu1's local EGM accesses.
             if (!node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] &&
-                !uvm_parent_processor_mask_test(&node_info->parent_gpus, gpu1->parent->id))
+                gpu0->parent->closest_cpu_numa_node != gpu1->parent->closest_cpu_numa_node) {
                 node_info->routing_table[uvm_parent_id_gpu_index(gpu1->parent->id)] = gpu0->parent;
+                if (!uvm_parent_gpu_egm_is_legacy(gpu0->parent)) {
+                    uvm_va_range_managed_t *va_range;
+
+                    uvm_for_each_va_range_managed (va_range, va_space) {
+                        uvm_va_block_t *va_block;
+
+                        for_each_va_block_in_va_range (va_range, va_block) {
+                            // We can ignore the status of uvm_va_block_map_egm().
+                            // It it succeeded, accesses will be over gLinks. If
+                            // not, they will take the cLink path. Either way
+                            // there is no reason to fail the peer setup.
+                            uvm_va_block_map_egm(va_block, gpu0->parent);
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -2029,6 +2091,10 @@ void uvm_deferred_free_object_list(struct list_head *deferred_free_list)
                 break;
             case UVM_DEFERRED_FREE_OBJECT_TYPE_DEVICE_P2P_MEM:
                 uvm_va_range_free_device_p2p_mem(container_of(object, uvm_device_p2p_mem_t, deferred_free));
+                break;
+            case UVM_DEFERRED_FREE_OBJECT_TYPE_DMA_BUF_ATTACHMENT:
+                uvm_va_range_dma_buf_attach_deferred_free(
+                        container_of(object, uvm_dma_buf_attach_deferred_t, deferred_free));
                 break;
             default:
                 UVM_ASSERT_MSG(0, "Invalid type %d\n", object->type);

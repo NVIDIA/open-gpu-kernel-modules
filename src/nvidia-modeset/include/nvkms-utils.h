@@ -169,6 +169,16 @@ static inline const char *nvSafeString(char *stringMightBeNull,
     return (stringMightBeNull != NULL) ? stringMightBeNull : safeString;
 }
 
+static inline char nvHexDigitToChar(NvU8 digit)
+{
+    nvAssert(digit <= 0xf);
+
+    if (digit < 0xa) {
+        return ('0' + digit);
+    }
+    return ('a' + (digit - 0xa));
+}
+
 static inline NvU64 nvCtxDmaOffsetFromBytes(NvU64 ctxDmaOffset)
 {
     nvAssert((ctxDmaOffset & ((1 << NV_SURFACE_OFFSET_ALIGNMENT_SHIFT) - 1))

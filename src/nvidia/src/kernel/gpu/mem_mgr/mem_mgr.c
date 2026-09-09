@@ -84,8 +84,6 @@ memmgrConstructEngine_IMPL
 {
     NV_STATUS rmStatus;
 
-    pMemoryManager->overrideInitHeapMin = 0;
-    pMemoryManager->overrideHeapMax     = ~0ULL;
     pMemoryManager->Ram.fbOverrideSizeMb = ~0ULL;
     pMemoryManager->localEgmPeerId = BUS_INVALID_PEER;
     pMemoryManager->localEgmNodeId = -1;
@@ -101,6 +99,25 @@ memmgrConstructEngine_IMPL
     pMemoryManager->MIGMemoryPartitioningInfo.partitionableMemoryRange = NV_RANGE_EMPTY;
 
     _memmgrInitRegistryOverridesAtConstruct(pGpu, pMemoryManager);
+
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb || pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
+    {
+        // Disabling reserving Zero FB address on 0FB chips.
+        pMemoryManager->bReserveZeroFbAddressAsRegion = NV_FALSE;
+    }
+
+    //
+    // Bug 6044888: disable the zero-FB-address reservation on SR-IOV hosts.
+    // The LTSS-interrupts workaround from bug 5806897 is not needed there:
+    // VFs own the FB slice and the PF does not enter S3 with active VFs.
+    // Exception: cGPU runs S3 suspend/resume even under SR-IOV and requires
+    // the reservation.
+    //
+    if (gpuIsSriovEnabled(pGpu)
+       )
+    {
+        pMemoryManager->bReserveZeroFbAddressAsRegion = NV_FALSE;
+    }
 
     return NV_OK;
 }
@@ -381,8 +398,6 @@ memmgrStatePreInitLocked_IMPL
         pMemoryManager->bUseVirtualCopyOnSuspend = NV_FALSE;
     }
 
-    memacctInitGpuInfo(pGpu);
-
     return NV_OK;
 }
 
@@ -492,7 +507,7 @@ memmgrInitInternalChannels_IMPL
 
     if (hypervisorIsVgxHyper() || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu)) ||
         IS_MIG_ENABLED(pGpu) ||
-        gpuIsCCorApmFeatureEnabled(pGpu) ||
+        gpuIsCCFeatureEnabled(pGpu) ||
         IsSLIEnabled(pGpu) ||
         gpuIsSelfHosted(pGpu) ||
         NVCPU_IS_PPC64LE)
@@ -615,6 +630,39 @@ memmgrRegisterSuspendCallbacks(MemoryManager *pMemoryManager)
     return NV_OK;
 }
 
+void memmgrReserveZeroFbAddressAsRegion
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    FB_REGION_DESCRIPTOR zeroAddressFbRegion;
+    NvU32 regionId;
+    NvU64 regionSize = RM_PAGE_SIZE_64K;
+    NV_STATUS status;
+
+    portMemSet(&zeroAddressFbRegion, 0, sizeof(zeroAddressFbRegion));
+
+    zeroAddressFbRegion.base           = pMemoryManager->Ram.fbRegion[0].base;
+    zeroAddressFbRegion.limit          = regionSize - 1;
+    zeroAddressFbRegion.bRsvdRegion    = NV_TRUE;
+    zeroAddressFbRegion.bInternalHeap  = NV_TRUE;
+    zeroAddressFbRegion.bLostOnSuspend = NV_TRUE;
+
+    NV_PRINTF(LEVEL_INFO, "Registering zero Fb Address region of size: %llx, base: %llx, regionSize: %llx \n",
+              zeroAddressFbRegion.limit, zeroAddressFbRegion.base, regionSize);
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        memmgrInsertFbRegion(pGpu, pMemoryManager, &zeroAddressFbRegion, &regionId),
+        return);
+
+    // We expect that the FB region starts at 0
+    NV_ASSERT(regionId == 0);
+
+    pMemoryManager->Ram.fbUsableMemSize -= regionSize;
+}
+
+
 NV_STATUS
 memmgrStateInitLocked_IMPL
 (
@@ -639,14 +687,18 @@ memmgrStateInitLocked_IMPL
 
     memmgrScrubRegistryOverrides_HAL(pGpu, pMemoryManager);
 
-    memmgrScrubInit_HAL(pGpu, pMemoryManager);
-
     if (GPU_GET_KERNEL_FIFO(pGpu) != NULL)
     {
         NV_ASSERT_OK_OR_RETURN(kfifoAddSchedulingHandler(pGpu,
                     GPU_GET_KERNEL_FIFO(pGpu),
                     memmgrPostSchedulingEnableHandler, NULL,
                     memmgrPreSchedulingDisableHandler, NULL));
+    }
+
+    // Reserve 0 FB address, so that it doesn't collide with CBC base HW Init value of 0.
+    if (!IS_GSP_CLIENT(pGpu) && pMemoryManager->bReserveZeroFbAddressAsRegion)
+    {
+        memmgrReserveZeroFbAddressAsRegion(pGpu, pMemoryManager);
     }
 
     //
@@ -771,6 +823,8 @@ failed:
         return status;
     }
 
+    memacctInitGpuInfo(pGpu);
+
     return NV_OK;
 }
 
@@ -783,7 +837,7 @@ memmgrVerifyGspDmaOps_IMPL
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NV_STATUS status = NV_OK;
-    MEMORY_DESCRIPTOR *pMemDesc;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NvU8 *pTestBuffer;
     NvU32 testData = 0xdeadbeef;
     TRANSFER_SURFACE surf = {0};
@@ -802,7 +856,7 @@ memmgrVerifyGspDmaOps_IMPL
 
     status = memdescCreate(&pMemDesc, pGpu, RM_PAGE_SIZE, RM_PAGE_SIZE,
                            NV_TRUE, ADDR_FBMEM, NV_MEMORY_UNCACHED, 0);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     memdescTagAlloc(status,
                     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_20, pMemDesc);
@@ -872,19 +926,6 @@ memmgrStateLoad_IMPL
     NvU32 flags
 )
 {
-    // If fbOverrideSizeMb is set, finish setting up the FB parameters now that state init has finished
-    memmgrFinishHandleSizeOverrides_HAL(pGpu, pMemoryManager);
-
-    if ((flags & GPU_STATE_FLAGS_PRESERVING) &&
-        !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
-    {
-        //
-        // Only do initialization scrubs (i.e. RM reserved region) on
-        // non-GC6 transitions since GC6 cycles leave FB powered.
-        //
-        memmgrScrubInit_HAL(pGpu, pMemoryManager);
-    }
-
     // Dump FB regions
     memmgrDumpFbRegions(pGpu, pMemoryManager);
 
@@ -930,16 +971,7 @@ memmgrStateUnload_IMPL
     NvU32 flags
 )
 {
-    if ((flags & GPU_STATE_FLAGS_PRESERVING) &&
-        !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
-    {
-        //
-        // Initialiation scrubs only happen during StateLoad on non-GC6
-        // transitions.
-        //
-        memmgrScrubDestroy_HAL(pGpu, pMemoryManager);
-    }
-
+    // TODO: MPV
     return NV_OK;
 }
 
@@ -1022,7 +1054,6 @@ memmgrStateDestroy_IMPL
             memmgrPostSchedulingEnableHandler, NULL,
             memmgrPreSchedulingDisableHandler, NULL);
     }
-    memmgrScrubDestroy_HAL(pGpu, pMemoryManager);
 
 }
 
@@ -1062,42 +1093,40 @@ memmgrCreateHeap_IMPL
     Heap               *newHeap;
     OBJGPU             *pGpu                = ENG_GET_GPU(pMemoryManager);
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-    NvU64               rsvdSize;
     NvU64               size;
     NV_STATUS           status              = NV_OK;
-
-    // If we're using FB regions then rsvd memory is already marked as a reserved region
-    if ((pMemoryManager->Ram.numFBRegions == 0) || (IS_VIRTUAL_WITH_SRIOV(pGpu)))
-    {
-        if (pMemoryManager->bReservedMemAtBottom)
-        {
-            // rsvd memory is already accounted for in heapStart
-            rsvdSize = 0;
-        }
-        else
-        {
-            rsvdSize = pMemoryManager->rsvdMemorySize;
-        }
-    }
-    else
-        rsvdSize = 0;
-
-    // for vGPU, add extra FB tax incurred by host RM to reserved size
-    rsvdSize += memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
-
-    //
-    // Fix up region descriptions to match with any FB override size
-    //
-    memmgrHandleSizeOverrides_HAL(pGpu, pMemoryManager);
 
     //
     // Calculate the FB heap size as the address space size, then deduct any reserved memory
     //
     size = pMemoryManager->Ram.fbAddrSpaceSizeMb << 20;
-    size -= NV_MIN(size, rsvdSize);
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        //
+        // guest tries to map the entire heap size
+        // plugin doesn't allow to touch fb tax
+        //
+        NvU64 fbTax = memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
+
+        NV_ASSERT_OR_RETURN(fbTax <= size, NV_ERR_INVALID_STATE);
+        size -= fbTax;
+    }
 
     if((size != 0) || (pMemoryManager->bScanoutSysmem))
     {
+        if (size != 0 &&
+            ((memmgrIsPmaEnabled(pMemoryManager) && memmgrIsPmaSupportedOnPlatform(pMemoryManager)) ||
+                RMCFG_FEATURE_PLATFORM_GSP))
+        {
+            memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
+            NV_ASSERT_OK_OR_RETURN(memmgrRegionSetupCommon(pGpu, pMemoryManager));
+        }
+
+        //
+        // Fix up region descriptions to match with any FB override size
+        //
+        NV_ASSERT_OK_OR_RETURN(memmgrHandleSizeOverrides_HAL(pGpu, pMemoryManager));
+
         status = objCreate(&newHeap, pMemoryManager, Heap);
         if (status != NV_OK)
         {
@@ -1114,8 +1143,8 @@ memmgrCreateHeap_IMPL
         }
 
         status = heapInit(pGpu, newHeap,
-                          pMemoryManager->heapStartOffset,
-                          size - pMemoryManager->heapStartOffset, HEAP_TYPE_RM_GLOBAL, GPU_GFID_PF, NULL);
+                          0,
+                          size, HEAP_TYPE_RM_GLOBAL, GPU_GFID_PF, NULL);
         NV_ASSERT_OK_OR_RETURN(status);
 
         if ((memmgrIsPmaInitialized(pMemoryManager)) && (pMemoryManager->pHeap->bHasFbRegions))
@@ -1123,27 +1152,6 @@ memmgrCreateHeap_IMPL
             status = memmgrPmaRegisterRegions(pGpu, pMemoryManager, pMemoryManager->pHeap,
                                               pMemoryManager->pHeap->pPmaObject);
             NV_ASSERT_OR_RETURN(status == NV_OK, status);
-        }
-
-        NV_ASSERT_OK_OR_RETURN(memmgrValidateFBEndReservation_HAL(pGpu, pMemoryManager));
-
-        //
-        // In case of Inst-in-sys boot by ACR we should not reserve memory in FB for WPR
-        // since neither exists
-        //
-        if (!gpuIsInstInSysBootByAcrEnabled(pGpu))
-        {
-            NV_ASSERT_OK_OR_RETURN(memmgrReserveMemoryForFakeWPR_HAL(pGpu, pMemoryManager));
-        }
-
-        NV_ASSERT_OK_OR_RETURN(memmgrReserveMemoryForPmu_HAL(pGpu, pMemoryManager));
-
-        // Reserve vidmem for FSP usage, including FRTS, WPR2
-        status = memmgrReserveMemoryForFsp(pGpu, pMemoryManager);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to reserve vidmem for WPR and FRTS.\n");
-            return status;
         }
 
         if (!IsSLIEnabled(pGpu))
@@ -1347,10 +1355,12 @@ memmgrGetUsedRamSize_IMPL
     //
     if (IS_GSP_CLIENT(pGpu))
     {
-        KernelGsp *pKernelGsp       = GPU_GET_KERNEL_GSP(pGpu);
-        GspFwWprMeta *pWprMeta      = pKernelGsp->pWprMeta;
-        NvU64      gspWprRegionSize = (pWprMeta->frtsOffset + pWprMeta->frtsSize) -
-                                      (pWprMeta->nonWprHeapOffset + pWprMeta->nonWprHeapSize);
+        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+        NvU64 gspWprRegionSize;
+
+        gspWprRegionSize =
+            (pKernelGsp->srRegionsInfo.frtsOffset + pKernelGsp->srRegionsInfo.frtsSize) -
+            (pKernelGsp->srRegionsInfo.nonWprHeapOffset + pKernelGsp->srRegionsInfo.nonWprHeapSize);
 
         *pFbUsedSize = *pFbUsedSize - gspWprRegionSize;
 
@@ -2461,11 +2471,6 @@ memmgrSetPartitionableMem_IMPL
         NV_ASSERT_OK(pmaQueryConfigs(pHeap->pPmaObject, &pmaConfig));
 
         //
-        // MIG won't be used alongside APM and hence the check below is of no use
-        // Even if we enable the check for APM the check will fail given that after
-        // enabling "scrub on free" using virtual CE writes, memory gets consumed by
-        // page tables backing the scrubber channel virtual mappings and hence the
-        // calculation below no longer holds good
         // In case of HCC, structures like PB, GPFIFO and USERD for scrubber and golden
         // channels are required to be in CPR vidmem. This changes the calculation below
         // We can ignore this for the non-MIG case.
@@ -2473,7 +2478,7 @@ memmgrSetPartitionableMem_IMPL
         // When FB memory is onlined as NUMA node, kernel can directly alloc FB memory
         // and hence free memory can not be expected to be same as total memory.
         //
-        if ((!gpuIsCCorApmFeatureEnabled(pGpu) || IS_MIG_ENABLED(pGpu)) &&
+        if ((!gpuIsCCFeatureEnabled(pGpu) || IS_MIG_ENABLED(pGpu)) &&
             !(pmaConfig & PMA_QUERY_NUMA_ONLINED))
         {
             //
@@ -3201,23 +3206,44 @@ _memmgrPmaStatsUpdateCb
     RUSD_BAR1_MEMORY_INFO *pBar1Info;
     NvU64 freeMem = freeFrames << PMA_PAGE_SHIFT;
     NvU64 totalMem = 0;
+    NV_STATUS status;
+    NvU32 gfid;
+    NvBool bUpdateStaticBar1Size = NV_FALSE;
 
     NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
-
-    pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
-    MEM_WR64(&pSharedData->freePmaMemory, freeMem);
-    gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
-
-    if (pKernelBus == NULL)
-    {
-        return;
-    }
 
     //
     // VGPU GFID check just accesses calling context, and the TLS database mantains its own global lock.
     // Thus, following call to kbusIsStaticBar1Enabled should be thread-safe even when RM lock not held.
     //
-    if ((!kbusIsStaticBar1Enabled(pGpu, pKernelBus)) || kbusIsBar1Disabled(pKernelBus))
+    if ((pKernelBus != NULL) && kbusIsStaticBar1Enabled(pGpu, pKernelBus) && !kbusIsBar1Disabled(pKernelBus))
+    {
+        NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
+
+        bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
+
+        // bar1Size is not owned here, no need to update anything if zero RUSD
+        if (!bZeroRusd)
+        {
+            NV_ASSERT_OK_OR_ELSE(status, vgpuGetCallingContextGfid(pGpu, &gfid), return);
+
+            //
+            // Check for NULL on pRusdBar1Lock in case it is not yet initialized during init.
+            // The bus code will init the value itself when BAR1 comes up.
+            //
+            if (pKernelBus->bar1[gfid].pRusdBar1Lock != NULL)
+            {
+                portSyncSpinlockAcquire(pKernelBus->bar1[gfid].pRusdBar1Lock);
+                bUpdateStaticBar1Size = NV_TRUE;
+            }
+        }
+    }
+
+    pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
+    MEM_WR64(&pSharedData->freePmaMemory, freeMem);
+    gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
+
+    if (!bUpdateStaticBar1Size)
     {
         return;
     }
@@ -3225,21 +3251,8 @@ _memmgrPmaStatsUpdateCb
     // static BAR1 update
     {
         NvU64 freeSize = 0;
-        NvU64 bar1AvailSize = 0;
-        NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
-        NvU32 gfid;
+        NvU32 bar1AvailSize = 0;
         NvU64 fbInUse;
-        NV_STATUS status;
-
-        NV_ASSERT_OK_OR_ELSE(status, vgpuGetCallingContextGfid(pGpu, &gfid), return);
-
-        bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
-
-        // bar1Size is not owned here, no need to update anything if zero RUSD
-        if (bZeroRusd)
-        {
-            return;
-        }
 
         // no need to update bar1size
         //
@@ -3256,11 +3269,11 @@ _memmgrPmaStatsUpdateCb
         bar1AvailSize = (freeSize + pKernelBus->bar1[gfid].staticBar1.size - fbInUse) / 1024;
 
         pBar1Info = gpushareddataWriteStart(pGpu, bar1MemoryInfo);
-
         MEM_WR32(&pBar1Info->bar1AvailSize, bar1AvailSize);
-
         gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
     }
+
+        portSyncSpinlockRelease(pKernelBus->bar1[gfid].pRusdBar1Lock);
 }
 
 static void
@@ -3598,15 +3611,6 @@ memmgrPmaRegisterRegions_IMPL
         pmaRegionIdx++;
     }
 
-    //
-    // bug #200354346, make sure the RM reserved region(s) are
-    // scrubbed during the region creation itself. Top Down scrubber,
-    // skips the RM reserved region(s) because the assumption is, they
-    // are pre-scrubbed.
-    //
-    if (heapType != HEAP_TYPE_PARTITION_LOCAL)
-        memmgrScrubInternalRegions_HAL(pGpu, pMemoryManager);
-
 _pmaInitFailed:
     portMemFree(pBlacklistPages);
 
@@ -3911,75 +3915,6 @@ memmgrDiscoverMIGPartitionableMemoryRange_VF
     return NV_OK;
 }
 
-NV_STATUS
-memmgrAllocReservedFBRegionMemdesc_IMPL
-(
-    OBJGPU                       *pGpu,
-    MemoryManager                *pMemoryManager,
-    MEMORY_DESCRIPTOR           **ppMemdesc,
-    NvU64                         rangeStart,
-    NvU64                         allocSize,
-    NvU64                         memdescFlags,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER allocTag
-)
-{
-    NV_STATUS status = NV_OK;
-
-    NV_ASSERT_OR_RETURN(ppMemdesc != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OK_OR_GOTO(status,
-        memdescCreate(ppMemdesc, pGpu, allocSize,
-                            RM_PAGE_SIZE, NV_TRUE, ADDR_FBMEM,
-                            NV_MEMORY_UNCACHED, memdescFlags),
-        memmgrAllocReservedFBRegionMemdesc_IMPL_exit);
-
-    memdescSetPageSize(*ppMemdesc, AT_GPU, RM_PAGE_SIZE);
-    memdescDescribe(*ppMemdesc, ADDR_FBMEM, rangeStart, allocSize);
-    memdescSetHeapOffset(*ppMemdesc, rangeStart);
-
-    memdescTagAlloc(status, allocTag, *ppMemdesc);
-    NV_ASSERT_OK_OR_GOTO(status, status, memmgrAllocReservedFBRegionMemdesc_IMPL_exit);
-
-memmgrAllocReservedFBRegionMemdesc_IMPL_exit:
-    if ((status != NV_OK) && (*ppMemdesc != NULL))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Cannot allocate the memory with range allocation\n");
-        memdescDestroy(*ppMemdesc);
-        *ppMemdesc = NULL;
-    }
-
-    return status;
-}
-
-
-NV_STATUS
-memmgrReserveMemoryForFsp_IMPL
-(
-    OBJGPU *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-
-    //
-    // If we sent FSP commands to boot ACR, we need to allocate the surfaces
-    // used by FSP and ACR as WPR/FRTS here from the reserved heap
-    //
-    if (pKernelFsp && (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) &&
-        (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK))))
-    {
-
-        // For GSP-RM flow, we don't need to allocate WPR since it is handled by CPU
-        if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
-        {
-            return NV_OK;
-        }
-
-    }
-
-    return NV_OK;
-}
-
 NvU64
 memmgrGetVgpuHostRmReservedFb_KERNEL
 (
@@ -4144,7 +4079,7 @@ memmgrInitCeUtils_IMPL
         ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE);
     }
 
-    // CeUtils doesn’t support MIG on host/baremetal
+    // CeUtils doesn't support MIG on host/baremetal
     if (IS_VIRTUAL(pGpu) && bMIGInUse)
     {
         KERNEL_MIG_GPU_INSTANCE *pCurrKernelMIGGPUInstance;
@@ -4237,4 +4172,122 @@ memmgrGetInternalClientHandles_IMPL
     }
 
     return NV_OK;
+}
+
+
+NvU64 memmgrGetTotalRamSizeBytes_IMPL
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager,
+    KernelMemorySystem *pKernelMemorySystem,
+    Heap *pHeap,
+    Heap *pMemoryPartitionHeap,
+    NvBool bIsPmaEnabled
+)
+{
+    NvU64 size = 0;
+
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+    {
+        NV_PRINTF(LEVEL_INFO,
+            "[zero-FB, No local RAM] TOTAL_RAM_SIZE = 0\n");
+    }
+    else if (pMemoryPartitionHeap != NULL)
+    {
+        if (bIsPmaEnabled)
+        {
+            pmaGetTotalMemory(pHeap->pPmaObject, &size);
+        }
+        else
+        {
+            heapGetSize(pHeap, &size);
+        }
+    }
+    else
+    {
+        size = NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 20),
+                      (pMemoryManager->Ram.fbOverrideSizeMb << 20))
+                      - (pKernelMemorySystem->fbOverrideStartKb << 10);
+    }
+
+    return size;
+}
+
+NvU64 memmgrGetHeapFreeBytes_IMPL
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager,
+    KernelMIGManager *pKernelMIGManager,
+    Heap *pHeap,
+    NvBool bIsPmaEnabled,
+    NvBool bIsMIG
+)
+{
+    NvU64 bytesFree = 0;
+
+    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+    {
+        NV_PRINTF(LEVEL_INFO, "[zero-FB, No local HEAP] HEAP_SIZE = 0\n");
+    }
+    else if (pHeap == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO, "[No HEAP] HEAP_SIZE = 0\n");
+    }
+    else if (bIsMIG)
+    {
+        NvU64 val = 0;
+
+        if (bIsPmaEnabled)
+            pmaGetFreeMemory(pHeap->pPmaObject, &val);
+        else
+            heapGetFree(pHeap, &val);
+
+        bytesFree = val;
+
+        //
+        // Add free memory across the all valid MIG GPU instances and
+        // the global heap.
+        //
+        // As MIG uses the global heap when memory is not
+        // partitioned, skip getting information from it.
+        //
+        if (kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
+        {
+            NvU64 partTotalBytesFree = 0;
+            NvU64 partTotalBytes = 0;
+            NvU32 config = PMA_QUERY_NUMA_ENABLED;
+
+            memmgrGetFreeMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytesFree);
+
+            //
+            // In the case of MIG+NUMA case(self hosted GPUs), NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE
+            // is not supported and hence the partition's memory is not accounted in the global PMA.
+            // This resulted in more free memory than the total memory resulting in the
+            // used memory(calculated as total - free) showing very large value.
+            // Now calculating the global free memory in the NUMA case as:
+            // partitions' free memory + (global total memory - all created partitions' total memory).
+            //
+            if (bIsPmaEnabled &&
+                (pmaQueryConfigs(pHeap->pPmaObject, &config) == NV_OK) &&
+                (config & PMA_QUERY_NUMA_ENABLED))
+            {
+                memmgrGetTotalMemoryForAllMIGGPUInstances(pGpu, pMemoryManager, &partTotalBytes);
+                pmaGetTotalMemory(pHeap->pPmaObject, &val);
+                bytesFree = partTotalBytesFree + (val - partTotalBytes);
+            }
+            else
+            {
+                bytesFree += partTotalBytesFree;
+            }
+        }
+    }
+    else if (bIsPmaEnabled)
+    {
+        pmaGetFreeMemory(pHeap->pPmaObject, &bytesFree);
+    }
+    else
+    {
+        heapGetFree(pHeap, &bytesFree);
+    }
+    return bytesFree;
 }

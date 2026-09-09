@@ -810,6 +810,16 @@ static inline NV_STATUS kgrctxCtrlProgramVidmemPromote(struct KernelGraphicsCont
 #define kgrctxCtrlProgramVidmemPromote(pKernelGraphicsContext, pParams) kgrctxCtrlProgramVidmemPromote_IMPL(pKernelGraphicsContext, pParams)
 #endif // __nvoc_kernel_graphics_context_h_disabled
 
+NV_STATUS kgrctxCtrlProgramSysmemPromote_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams);
+#ifdef __nvoc_kernel_graphics_context_h_disabled
+static inline NV_STATUS kgrctxCtrlProgramSysmemPromote(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsContext was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_graphics_context_h_disabled
+#define kgrctxCtrlProgramSysmemPromote(pKernelGraphicsContext, pParams) kgrctxCtrlProgramSysmemPromote_IMPL(pKernelGraphicsContext, pParams)
+#endif // __nvoc_kernel_graphics_context_h_disabled
+
 NV_STATUS kgrctxCtrlSetLgSectorPromotion_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams);
 #ifdef __nvoc_kernel_graphics_context_h_disabled
 static inline NV_STATUS kgrctxCtrlSetLgSectorPromotion(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams) {
@@ -1009,6 +1019,8 @@ NV_STATUS kgrctxCtrlSetTpcPartitionMode_IMPL(struct KernelGraphicsContext *pKern
 NV_STATUS kgrctxCtrlGetMMUDebugMode_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *pParams);
 
 NV_STATUS kgrctxCtrlProgramVidmemPromote_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *pParams);
+
+NV_STATUS kgrctxCtrlProgramSysmemPromote_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams);
 
 NV_STATUS kgrctxCtrlSetLgSectorPromotion_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_SET_LG_SECTOR_PROMOTION_PARAMS *pParams);
 

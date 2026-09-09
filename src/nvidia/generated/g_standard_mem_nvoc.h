@@ -123,12 +123,12 @@ struct NVOC_VTABLE__StandardMemory {
     NV_STATUS (*__stdmemIsReady__)(struct StandardMemory * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__stdmemIsGpuMapAllowed__)(struct StandardMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__stdmemIsExportAllowed__)(struct StandardMemory * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__stdmemAccessCallback__)(struct StandardMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__stdmemShareCallback__)(struct StandardMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__stdmemControlSerialization_Prologue__)(struct StandardMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__stdmemControlSerialization_Epilogue__)(struct StandardMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__stdmemControl_Epilogue__)(struct StandardMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__stdmemAccessCallback__)(struct StandardMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__stdmemShareCallback__)(struct StandardMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__stdmemControlSerialization_Prologue__)(struct StandardMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__stdmemControlSerialization_Epilogue__)(struct StandardMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__stdmemControl_Epilogue__)(struct StandardMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__stdmemPreDestruct__)(struct StandardMemory * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__stdmemControlFilter__)(struct StandardMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__stdmemIsPartialUnmapSupported__)(struct StandardMemory * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -294,27 +294,27 @@ static inline NvBool stdmemIsExportAllowed_DISPATCH(struct StandardMemory *pMemo
     return pMemory->__nvoc_metadata_ptr->vtable.__stdmemIsExportAllowed__(pMemory);
 }
 
-static inline NvBool stdmemAccessCallback_DISPATCH(struct StandardMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool stdmemAccessCallback_DISPATCH(struct StandardMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__stdmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool stdmemShareCallback_DISPATCH(struct StandardMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool stdmemShareCallback_DISPATCH(struct StandardMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__stdmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS stdmemControlSerialization_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS stdmemControlSerialization_Prologue_DISPATCH(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__stdmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void stdmemControlSerialization_Epilogue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void stdmemControlSerialization_Epilogue_DISPATCH(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__stdmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS stdmemControl_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS stdmemControl_Prologue_DISPATCH(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__stdmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void stdmemControl_Epilogue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void stdmemControl_Epilogue_DISPATCH(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__stdmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

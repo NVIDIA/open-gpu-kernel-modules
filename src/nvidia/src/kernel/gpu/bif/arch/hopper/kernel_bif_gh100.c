@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -908,8 +908,8 @@ kbifConfigAccessWait_GH100
                 break;
             }
         }
-        status = gpuCheckTimeout(pGpu, pTimeout);
 
+        status = gpuCheckTimeout(pGpu, pTimeout);
         if (status == NV_ERR_TIMEOUT)
         {
             NV_ASSERT_FAILED("Timed out waiting for devinit to complete\n");
@@ -958,6 +958,7 @@ kbifDoFunctionLevelReset_GH100
         status = osDoFunctionLevelReset(pGpu);
         if (status != NV_OK)
         {
+            kbifCheckResetStatus_HAL(pGpu, pKernelBif);
             NV_ASSERT_FAILED("osDoFunctionLevelReset failed!\n");
         }
         goto kbifDoFunctionLevelReset_GH100_exit;
@@ -983,7 +984,6 @@ kbifDoFunctionLevelReset_GH100
 
     // Trigger FLR now
     status = kbifTriggerFlr_HAL(pGpu, pKernelBif);
-
     if (status != NV_OK)
     {
         goto kbifDoFunctionLevelReset_GH100_exit;
@@ -1031,9 +1031,9 @@ kbifDoFunctionLevelReset_GH100
     gpuSetTimeout(pGpu, flrDevInitTimeout, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
     status = kbifConfigAccessWait_HAL(pGpu, pKernelBif, &timeout);
-
     if (status != NV_OK)
     {
+        kbifCheckResetStatus_HAL(pGpu, pKernelBif);
         NV_ASSERT_FAILED("Timed out waiting for devinit to complete\n");
         goto kbifDoFunctionLevelReset_GH100_exit;
     }
@@ -1069,6 +1069,7 @@ kbifDoFunctionLevelReset_GH100
 
         if (status != NV_OK)
         {
+            kbifCheckResetStatus_HAL(pGpu, pKernelBif);
             DBG_BREAKPOINT();
             NV_PRINTF(LEVEL_ERROR, "VBIOS boot failed!!\n");
             goto kbifDoFunctionLevelReset_GH100_exit;

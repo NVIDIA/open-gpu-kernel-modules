@@ -221,7 +221,6 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_SET_CURSOR_IMAGE,
     NVKMS_IOCTL_MOVE_CURSOR,
     NVKMS_IOCTL_SET_LUT,
-    NVKMS_IOCTL_CHECK_LUT_NOTIFIER,
     NVKMS_IOCTL_IDLE_BASE_CHANNEL,
     NVKMS_IOCTL_FLIP,
     NVKMS_IOCTL_DECLARE_DYNAMIC_DPY_INTEREST,
@@ -792,8 +791,33 @@ struct NvKmsFlipCommonParams {
 
     struct {
         NvBool specified;
+        /*!
+         * Note that “specified” serves to mark the field as being changed in
+         * this flip request, rather than as specified for this frame. So to
+         * disable VSIF metadata, set hdmiVsifMetadata.specified = TRUE
+         * and hdmiVsifMetadata.vsifMetadata.payloadSize = 0;
+         * To enable VSIF metadata, set hdmiVsifMetadata.specified = TRUE
+         * and hdmiVsifMetadata.vsifMetadata.payloadSize in the range of
+         * [NVKMS_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE,
+         *  NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE] or [3, 27].
+         */
+        struct NvKmsHdmiVsifMetadata vsifMetadata;
+    } hdmiVsifMetadata;
+
+    struct {
+        NvBool specified;
         enum NvKmsOutputColorimetry val;
     } colorimetry;
+
+    /*
+     * When enabled, configures all post-comp color pipeline blocks to
+     * "passthrough" the input pixels untouched. Passes through the OCSC0,
+     * OLUT, OCSC1, and the post-comp scaler.
+     */
+    struct {
+        NvBool specified;
+        NvBool enabled;
+    } postcompColorPassthrough;
 
     struct {
         NvBool specified;
@@ -808,10 +832,6 @@ struct NvKmsFlipCommonParams {
             NvBool specified;
         } surface;
 
-        /*
-         * sizeIn/sizeOut can be used when
-         * NvKmsAllocDeviceReply::layerCaps[layer].supportsWindowMode is TRUE.
-         */
         struct {
             struct NvKmsSize val;
             NvBool specified;
@@ -826,9 +846,6 @@ struct NvKmsFlipCommonParams {
          * Set the position of the layer, relative to the upper left
          * corner of the surface. This controls the same state as
          * NVKMS_IOCTL_SET_LAYER_POSITION.
-         *
-         * This field can be used when
-         * NvKmsAllocDeviceReply::layerCaps[layer].supportsWindowMode is TRUE.
          */
         struct {
             struct NvKmsSignedPoint val;
@@ -1028,6 +1045,18 @@ struct NvKmsFlipCommonParams {
             NvBool enabled;
             NvBool specified;
         } csc11Override;
+
+        /*
+         * When enabled, configures all pre-comp color pipeline blocks to
+         * "passthrough" the input pixels untouched. Passes through the FMT,
+         * ILUT, CSC00, CSC0, CSC0LUT, CSC10, pre-comp scaler, tone mapper,
+         * CSC10, CSC1LUT, and CSC11 color pipeline blocks. Also disables the
+         * compositor, and requires overlay layers to be disabled.
+         */
+        struct {
+            NvBool specified;
+            NvBool enabled;
+        } precompColorPassthrough;
     } layer[NVKMS_MAX_LAYERS_PER_HEAD];
 };
 
@@ -1167,6 +1196,15 @@ struct NvKmsAllocDeviceReply {
      */
     NvBool supportsWarpAndBlend;
 
+    /*!
+     * Whether this device is an SoC product whose display is driven by the
+     * dGPU-style display class and needs the resume connector re-probe
+     * workaround (bug 6422321).  Do not use this for anything else: it
+     * exists only for that workaround and is tracked for removal by bug
+     * 6556017.
+     */
+    NvBool isSocDgpuDisplayNeedingWar;
+
     /*
      * When requiresAllAllocationsInSysmem=TRUE, then all memory allocations
      * that will be accessed by display must come from sysmem.
@@ -1258,9 +1296,34 @@ struct NvKmsAllocDeviceReply {
      */
     NvBool supportsVblankSyncObjects;
 
+    /*!
+     * 'supportsColorPassthrough' indicates whether HW supports
+     * color pipeline passthrough, where pre-comp and or post-comp color pipeline
+     * blocks can be configured to pass through the input pixels untouched, bypassing
+     * the FP16 pipeline, LUTs, CSCs, composition, and scalers. Note that DSC,
+     * dithering, and the YUV420 packer can still be enabled and affect the pixels.
+     */
+    NvBool supportsColorPassthrough;
+
+    /*!
+     * 'supportsFlipSynchronizedInfoframes' indicates whether the HW supports advanced
+     * infoframes.
+     */
+    NvBool supportsFlipSynchronizedInfoframes;
+
+    /*!
+     * 'supportsGenericSharedInfoFrames' indicates whether the display HW
+     * supports generic shared infoframe slots (e.g. separate VSIF and HDR).
+     * When FALSE, HDR and VSIF share a single vendor-specific slot, and
+     * flips will be rejected if both HDR and VSIF are enabled. When HDR is
+     * disabled but DR&M infoframes are still being sent, those infoframes
+     * will be skipped in favor of the VSIF infoframe.
+     */
+    NvBool supportsGenericSharedInfoFrames;
+
     /*! framebuffer console base address and size. */
-    NvU64 vtFbBaseAddress;
-    NvU64 vtFbSize;
+    NvU64 vtFbBaseAddress NV_ALIGN_BYTES(8);
+    NvU64 vtFbSize NV_ALIGN_BYTES(8);
 };
 
 struct NvKmsAllocDeviceParams {
@@ -1452,7 +1515,6 @@ struct NvKmsQueryDpyStaticDataParams {
     struct NvKmsQueryDpyStaticDataReply reply;     /*! out */
 };
 
-
 /*!
  * NVKMS_IOCTL_QUERY_DPY_DYNAMIC_DATA: Query dynamic information about
  * the NVKMS dpy object specified by the triplet (deviceHandle,
@@ -1469,16 +1531,16 @@ struct NvKmsQueryDpyDynamicDataRequest {
 
     NvBool forceConnected;
     NvBool forceDisconnected;
-    NvBool overrideEdid;
-    NvBool ignoreEdid;
+    NvBool overrideMetadata;
+    NvBool ignoreMetadata;
     NvBool ignoreEdidChecksum;
     NvBool allowDVISpecPClkOverride;
     NvBool dpInbandStereoSignaling;
     NvBool disableACPIBrightnessHotkeys;
 
     /*
-     * If overrideEdid is TRUE, then edid::buffer[] contains an EDID
-     * to override anything detected.
+     * If overrideMetadata is TRUE, then edid::buffer[]
+     * contains display metadata to override anything detected.
      */
     struct {
         NvU16 bufferSize;
@@ -1492,8 +1554,9 @@ enum NvKmsDpyAttributeColorBpcValue {
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6       =  6,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8       =  8,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10      = 10,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12      = 12,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX     =
-        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10,
+        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12,
 };
 
 typedef struct _NvKmsDpyOutputColorFormatInfo {
@@ -1508,6 +1571,7 @@ enum NvKmsDpyVRRType {
     NVKMS_DPY_VRR_TYPE_GSYNC,
     NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED,
     NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED,
+    NVKMS_DPY_VRR_TYPE_GSYNC_V2,
 };
 
 struct NvKmsQueryDpyDynamicDataReply {
@@ -1550,26 +1614,31 @@ struct NvKmsQueryDpyDynamicDataReply {
 
     struct {
         /*!
-         * The size of the EDID in buffer[], or 0 if there is no EDID
-         * available in buffer[].
+         * The size of the display metadata in buffer[], or 0 if there is no
+         * display metadata available in buffer[].
          */
         NvU16 bufferSize;
 
         /*!
-         * Whether NVKMS determined that the EDID is valid.  If the
-         * EDID is not valid, there may still be information available
-         * in infoString: the infoString will describe why the EDID
-         * was deemed invalid.
+         * Whether NVKMS determined that the raw bytes in the buffer are valid.
+         * If the buffer is not valid, there may still be information available
+         * in infoString: the infoString will describe why the buffer was deemed
+         * invalid.
          */
         NvBool valid;
 
         /*!
-         * The raw EDID bytes.
+         * Whether the buffer contains EDID or native DisplayID bytes
+         */
+        NvBool isNativeDID;
+
+        /*!
+         * The raw bytes.
          */
         NvU8 buffer[NVKMS_EDID_BUFFER_SIZE];
 
         /*!
-         * Parsed information from the EDID.  For the raw EDID bytes,
+         * Parsed information from the buffer. For the raw bytes,
          * see NvKmsQueryDpyDynamicDataParams::edid::buffer[].
          */
         char infoString[NVKMS_EDID_INFO_STRING_LENGTH];
@@ -1590,6 +1659,7 @@ enum NvKmsDpyAttributeRequestedColorFormatValue {
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_RGB = 0,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr422 = 1,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr444 = 2,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN = 3,
 };
 
 struct NvKmsDpyOutputColorParams {
@@ -2214,28 +2284,6 @@ struct NvKmsSetLutReply {
 struct NvKmsSetLutParams {
     struct NvKmsSetLutRequest request; /*! in */
     struct NvKmsSetLutReply reply;     /*! out */
-};
-
-/*!
- * NVKMS_IOCTL_CHECK_LUT_NOTIFIER: Check or wait on the LUT notifier for the
- * specified apiHead.
- */
-
-struct NvKmsCheckLutNotifierRequest {
-    NvKmsDeviceHandle deviceHandle;
-    NvKmsDispHandle dispHandle;
-    NvU32 head;
-
-    NvBool waitForCompletion;
-};
-
-struct NvKmsCheckLutNotifierReply {
-    NvBool complete;
-};
-
-struct NvKmsCheckLutNotifierParams {
-    struct NvKmsCheckLutNotifierRequest request; /*! in */
-    struct NvKmsCheckLutNotifierReply reply;     /*! out */
 };
 
 /*!
@@ -3175,6 +3223,32 @@ struct NvKmsEventFlipOccurred {
 };
 
 
+/*!
+ * NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED
+ *
+ * When a dpy content protection status changes, this event will be generated.
+ */
+
+struct NvKmsEventDpyCpChanged {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NVDpyId dpyId;
+    enum NvKmsContentProtection cp;
+};
+
+/*!
+ * NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED
+ *
+ * When a dpy content protection topology changes, this event will be generated.
+ */
+
+struct NvKmsEventDpyCpTopologyChanged  {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NVDpyId dpyId;
+    const void *topology;
+};
+
 struct NvKmsEvent {
     enum NvKmsEventType eventType;
     union {
@@ -3184,6 +3258,8 @@ struct NvKmsEvent {
         struct NvKmsEventDpyAttributeChanged dpyAttributeChanged;
         struct NvKmsEventFrameLockAttributeChanged frameLockAttributeChanged;
         struct NvKmsEventFlipOccurred flipOccurred;
+        struct NvKmsEventDpyCpChanged dpyCpChanged;
+        struct NvKmsEventDpyCpTopologyChanged dpyCpTopologyChanged;
     } u;
 };
 
@@ -3272,9 +3348,6 @@ struct NvKmsClearUnicastEventParams {
  * for the specified heads on the specified disps.  The layer
  * position is in "desktop coordinate space", i.e., relative to the
  * upper left corner of the input viewport.
- *
- * Note that this is only valid if
- * NvKmsAllocDeviceReply::layerCaps[layer].supportsWindowMode is TRUE.
  */
 struct NvKmsSetLayerPositionRequest {
     NvKmsDeviceHandle deviceHandle;

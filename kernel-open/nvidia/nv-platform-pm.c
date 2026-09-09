@@ -88,8 +88,7 @@ NV_STATUS NV_API_CALL nv_soc_pm_unpowergate(
 /*!
  * @brief Powergate the display.
  *
- * Decrement the device's usage counter; if the result is 0 then run
- * pm_request_idle(dev) and return its result.
+ * Decrement the device's usage counter.
  *
  * For more details on runtime pm functions, please check the below
  * files in the Linux kernel:
@@ -107,22 +106,11 @@ NV_STATUS NV_API_CALL nv_soc_pm_powergate(
     nv_state_t *nv)
 {
 #if NV_SUPPORTS_PLATFORM_DISPLAY_DEVICE
-    NV_STATUS status      = NV_ERR_GENERIC;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-    NvS32 ret             = -EBUSY;
 
-    ret = pm_runtime_put(nvl->dev);
+    pm_runtime_put(nvl->dev);
 
-    if (ret == 0)
-    {
-        status = NV_OK;
-    }
-    else
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: powergate unsuccessful. ret: %d\n", ret);
-    }
-
-    return status;
+    return NV_OK;
 #else
     return NV_ERR_NOT_SUPPORTED;
 #endif

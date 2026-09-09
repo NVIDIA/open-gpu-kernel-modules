@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2024 NVIDIA Corporation
+    Copyright (c) 2013-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -47,8 +47,5 @@
 
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B              (0x0000000B)
 #define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B              (0x0000000B)
-/* valid ARCHITECTURE_GB20x implementation values */
-#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB206              (0x00000006)
-#define NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB207              (0x00000007)
 
 #endif /* _ctrl2080mc_h_ */

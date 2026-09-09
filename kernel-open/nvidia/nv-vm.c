@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -224,18 +224,35 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
     }
 }
 
-static NvU64 nv_get_max_sysmem_address(void)
+static NvU64 nv_max_sysmem_address;
+
+void nv_set_max_sysmem_address(void)
 {
     NvU64 global_max_pfn = 0ULL;
     int node_id;
+    struct zone *zone;
+    struct pglist_data *pgdat;
+    NvU32 zone_id;
 
     for_each_online_node(node_id)
     {
-        // node_end_pfn() returns the next PFN after the last PFN in the node.
-        global_max_pfn = max(global_max_pfn, (NvU64)node_end_pfn(node_id));
+        pgdat = NODE_DATA(node_id);
+
+        for (zone_id = 0; zone_id < MAX_NR_ZONES; zone_id++)
+        {
+#ifdef CONFIG_ZONE_DEVICE
+            if (zone_id == ZONE_DEVICE)
+                continue;
+#endif
+            zone = &(pgdat->node_zones[zone_id]);
+            if (!managed_zone(zone))
+                continue;
+
+            global_max_pfn = max(global_max_pfn, (NvU64)zone_end_pfn(zone));
+        }
     }
 
-    return (global_max_pfn << PAGE_SHIFT) - 1;
+    nv_max_sysmem_address = (global_max_pfn << PAGE_SHIFT) - 1;
 }
 
 static unsigned int nv_compute_gfp_mask(
@@ -258,8 +275,7 @@ static unsigned int nv_compute_gfp_mask(
      */
     if (!nv || !nv_requires_dma_remap(nv) || nv_is_dma_direct(dev) || nv->force_dma32_alloc)
     {
-        NvU64 max_sysmem_address = nv_get_max_sysmem_address();
-        if ((dev && dev->dma_mask && (*(dev->dma_mask) < max_sysmem_address)) ||
+        if ((dev && dev->dma_mask && (*(dev->dma_mask) < nv_max_sysmem_address)) ||
             (nv && nv->force_dma32_alloc))
         {
             gfp_mask = NV_GFP_KERNEL | NV_GFP_DMA32;
@@ -267,6 +283,16 @@ static unsigned int nv_compute_gfp_mask(
     }
 
     gfp_mask |= __GFP_RETRY_MAYFAIL;
+
+    /*
+     * __GFP_ACCOUNT is used to track/account for allocations with cgroups. The first attempt
+     * at adding this flag caused crashes in some tests using CentOS and old kernels (4.18).
+     * UVM has a similar guard against older versions, so we're using one here to be at-or-later
+     * than the versions we support for vidmem cgroup tracking (5.14+)
+     */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+    gfp_mask |= __GFP_ACCOUNT;
+#endif
 
     if (at->flags.zeroed)
         gfp_mask |= __GFP_ZERO;
@@ -465,6 +491,20 @@ static void nv_mem_pool_shrinker_register(nv_page_pool_t *mem_pool, struct shrin
 }
 #endif // NV_SHRINKER_ALLOC_PRESENT
 
+// Pages in the pool are reclaimable non-slab kernel memory.  Tracking them
+// with NR_KERNEL_MISC_RECLAIMABLE lets si_mem_available() include them in
+// MemAvailable (/proc/meminfo), giving the kernel an accurate picture of how
+// much memory can be recovered under pressure via the registered shrinker.
+static void nv_mem_pool_mod_misc_reclaimable(nv_page_pool_t *mem_pool, long delta_compound_pages)
+{
+#if defined(NV_NR_KERNEL_MISC_RECLAIMABLE_PRESENT)
+    if (delta_compound_pages != 0)
+        mod_node_page_state(NODE_DATA(mem_pool->node_id),
+                            NR_KERNEL_MISC_RECLAIMABLE,
+                            delta_compound_pages << mem_pool->order);
+#endif
+}
+
 static unsigned long
 nv_mem_pool_move_pages
 (
@@ -562,6 +602,8 @@ nv_mem_pool_shrinker_scan
     mem_pool->pages_owned -= pages_freed;
     os_release_mutex(mem_pool->lock);
 
+    nv_mem_pool_mod_misc_reclaimable(mem_pool, -(long)pages_freed);
+
     nv_mem_pool_free_page_list(&reclaim_list, mem_pool->order);
 
     nv_printf(NV_DBG_MEMINFO, "NVRM: VM: %s: node=%d order=%u: %lu/%lu pages freed\n",
@@ -619,6 +661,8 @@ nv_mem_pool_alloc_pages
     mem_pool->pages_owned -= pages_allocated;
     pages_owned = mem_pool->pages_owned;
     os_release_mutex(mem_pool->lock);
+
+    nv_mem_pool_mod_misc_reclaimable(mem_pool, -(long)pages_allocated);
 
     while ((pool_entry = NV_MEM_POOL_LIST_HEAD(&alloc_clean_pages)))
     {
@@ -692,9 +736,12 @@ static void
 nv_mem_pool_destroy(nv_page_pool_t *mem_pool)
 {
     NV_STATUS status;
+    unsigned long saved_pages_owned;
 
     status = os_acquire_mutex(mem_pool->lock);
     WARN_ON(status != NV_OK);
+    // Snapshot before freeing: counts dirty + in-flight + clean pages.
+    saved_pages_owned = mem_pool->pages_owned;
     nv_mem_pool_free_page_list(&mem_pool->dirty_list, mem_pool->order);
     os_release_mutex(mem_pool->lock);
 
@@ -706,6 +753,8 @@ nv_mem_pool_destroy(nv_page_pool_t *mem_pool)
     // free clean pages after scrubber can't add any new
     nv_mem_pool_free_page_list(&mem_pool->clean_list, mem_pool->order);
     os_release_mutex(mem_pool->lock);
+
+    nv_mem_pool_mod_misc_reclaimable(mem_pool, -(long)saved_pages_owned);
 
     nv_mem_pool_shrinker_free(mem_pool);
 
@@ -833,8 +882,12 @@ nv_mem_pool_free_pages
     pages_owned = mem_pool->pages_owned;
     os_release_mutex(mem_pool->lock);
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: %s: node=%d order=%u: %lu/%lu pages added to pool (%lu now in pool)\n",
-              __FUNCTION__, mem_pool->node_id, mem_pool->order, num_added_pages, num_pages, pages_owned);
+    nv_mem_pool_mod_misc_reclaimable(mem_pool, (long)num_added_pages);
+
+    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: %s: at = %lx, at->order = %u, at->num_pages = %u, \
+                pool_order = %u: %lu/%lu pages added to pool (%lu now in pool)\n", \
+              __FUNCTION__, (long int) at, at->order, at->num_pages, mem_pool->order, \
+              num_added_pages, num_pages, pages_owned);
 
     if (queue_worker)
     {
@@ -898,6 +951,61 @@ static nv_page_pool_t *nv_mem_pool_get(int node_id, unsigned int order)
     return sysmem_page_pools[node_id][order];
 }
 
+static void nv_account_mm_free_work(struct work_struct *work)
+{
+    nv_linux_mm_free_work_t *mm_work = container_of(work, nv_linux_mm_free_work_t, task);
+    mmdrop(mm_work->mm);
+    NV_KFREE(mm_work, sizeof(*mm_work));
+}
+
+static nv_linux_mm_free_work_t *nv_account_mm_alloc(NvU64 numPages)
+{
+    struct mm_struct *mm = current->mm;
+    nv_linux_mm_free_work_t *mm_work;
+    if (mm == NULL)
+    {
+        return NULL;
+    }
+#if defined(NV_PERCPU_MM_COUNTER)
+    // This should never happen, but certain kernels are buggy so add this check
+    if (mm->rss_stat[MM_SHMEMPAGES].counters == NULL)
+    {
+        return NULL;
+    }
+#endif
+
+    NV_KMALLOC(mm_work, sizeof(*mm_work));
+    if (mm_work == NULL)
+    {
+        return NULL;
+    }
+    INIT_WORK(&mm_work->task, nv_account_mm_free_work);
+    mm_work->mm = mm;
+    mm_work->num_pages = numPages;
+    mmgrab(mm);
+#if defined(NV_PERCPU_MM_COUNTER)
+    percpu_counter_add(&mm->rss_stat[MM_SHMEMPAGES], numPages);
+#else
+    atomic_long_add_return(numPages, &mm->rss_stat.count[MM_SHMEMPAGES]);
+#endif
+    return mm_work;
+}
+
+static void nv_account_mm_free(nv_linux_mm_free_work_t *mm_work)
+{
+    if (mm_work == NULL)
+    {
+        return;
+    }
+#if defined(NV_PERCPU_MM_COUNTER)
+    percpu_counter_add(&mm_work->mm->rss_stat[MM_SHMEMPAGES], -mm_work->num_pages);
+#else
+    atomic_long_add_return(-mm_work->num_pages, &mm_work->mm->rss_stat.count[MM_SHMEMPAGES]);
+#endif
+
+    schedule_work(&mm_work->task);
+}
+
 void
 nv_free_system_pages
 (
@@ -916,6 +1024,8 @@ nv_free_system_pages
 
         page_pool = nv_mem_pool_get(likely_node_id, at->order);
     }
+
+    nv_account_mm_free(at->accounting_mm_work);
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
@@ -1016,6 +1126,8 @@ nv_alloc_system_pages
 
         nv_alloc_set_page(at, i, virt_addr);
     }
+
+    at->accounting_mm_work = nv_account_mm_alloc(at->num_pages);
 
     for (i = 0; i < num_pages; i++)
     {
@@ -1121,6 +1233,35 @@ static NvUPtr nv_vmap(struct page **pages, NvU32 page_count,
     NV_MEMDBG_ADD(ptr, page_count * PAGE_SIZE);
 
     return (NvUPtr)ptr;
+}
+
+NvU64 nv_get_reclaimable_memory_usage(void)
+{
+    int node_id;
+    unsigned int order;
+    NvU64 reclaimable_memory_bytes = 0;
+    
+    for_each_node(node_id)
+    {
+        for (order = 0; order <= NV_MAX_PAGE_ORDER; order++)
+        {
+            if (sysmem_page_pools[node_id][order])
+            {
+                nv_printf(NV_DBG_MEMINFO, "NVRM: VM: %s: node_id = %u, pool_order = %u: %lu pages in pool\n", \
+                    __FUNCTION__, node_id, sysmem_page_pools[node_id][order]->order, \
+                    sysmem_page_pools[node_id][order]->pages_owned);
+
+                reclaimable_memory_bytes += (sysmem_page_pools[node_id][order]->pages_owned \
+                                                << sysmem_page_pools[node_id][order]->order) \
+                                                * PAGE_SIZE;
+
+                nv_printf(NV_DBG_MEMINFO, "NVRM: VM: %s: reclaimable_memory_bytes = %d\n", \
+                                            __FUNCTION__, reclaimable_memory_bytes);
+            }
+        }
+    }
+
+    return reclaimable_memory_bytes;
 }
 
 static void nv_vunmap(NvUPtr vaddr, NvU32 page_count)

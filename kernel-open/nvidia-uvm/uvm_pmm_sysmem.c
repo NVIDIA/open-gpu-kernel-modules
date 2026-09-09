@@ -27,6 +27,8 @@
 #include "uvm_va_block.h"
 #include "uvm_va_space.h"
 
+#define DMA_ADDR_INVALID (~(dma_addr_t)0)
+
 static int uvm_cpu_chunk_allocation_sizes = UVM_CPU_CHUNK_SIZES;
 module_param(uvm_cpu_chunk_allocation_sizes, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(uvm_cpu_chunk_allocation_sizes, "OR'ed value of all CPU chunk allocation sizes.");
@@ -164,6 +166,17 @@ static void chunk_inc_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gp
     mapping->map_count++;
 }
 
+static void cpu_chunk_unmap_physical_egm(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gpu_t *gpu)
+{
+    if (chunk->common.egm_dma_addr != DMA_ADDR_INVALID) {
+        UVM_ASSERT(uvm_parent_id_equal(chunk->egm_parent_id, gpu->id));
+        UVM_ASSERT(page_to_nid(chunk->common.page) == gpu->closest_cpu_numa_node);
+        uvm_parent_gpu_unmap_cpu_pages_for_egm(gpu, chunk->common.egm_dma_addr, uvm_cpu_chunk_get_size(&chunk->common));
+        chunk->common.egm_dma_addr = DMA_ADDR_INVALID;
+        chunk->egm_parent_id = UVM_PARENT_ID_INVALID;
+    }
+}
+
 static void chunk_dec_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gpu_id_t id)
 {
     uvm_cpu_phys_mapping_t *mapping;
@@ -179,13 +192,20 @@ static void chunk_dec_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gp
 
         uvm_parent_gpu_unmap_cpu_pages(parent_gpu, mapping->dma_addr, uvm_cpu_chunk_get_size(&chunk->common));
         mapping->dma_addr = 0;
+
+        if (UVM_PARENT_ID_IS_VALID(chunk->egm_parent_id)) {
+            parent_gpu = uvm_parent_gpu_get(chunk->egm_parent_id);
+            UVM_ASSERT(parent_gpu);
+            cpu_chunk_unmap_physical_egm(chunk, parent_gpu);
+        }
+
         if (chunk->gpu_mappings.max_entries > 1) {
             NvU32 num_active_entries = uvm_parent_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask);
             NvU32 array_index = compute_gpu_mappings_entry_index(&chunk->gpu_mappings.dma_addrs_mask, id);
 
             // Shift any GPU mappings above this one down in the mappings array.
             for (; array_index < num_active_entries - 1; array_index++)
-                chunk->gpu_mappings.dynamic_entries[array_index] = chunk->gpu_mappings.dynamic_entries[array_index+1];
+                chunk->gpu_mappings.dynamic_entries[array_index] = chunk->gpu_mappings.dynamic_entries[array_index + 1];
         }
 
         uvm_parent_processor_mask_clear(&chunk->gpu_mappings.dma_addrs_mask, id);
@@ -202,6 +222,8 @@ NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
     if (uvm_cpu_chunk_is_logical(chunk)) {
         uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
 
+        // For EGM, we don't care if the GPU is mapped. We know that the entire
+        // physical chunk is mapped, so we only need the offset.
         if (!uvm_processor_mask_test(&logical_chunk->mapped_gpus, gpu->id))
             return 0;
 
@@ -210,10 +232,38 @@ NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 
     uvm_mutex_lock(&phys_chunk->lock);
     mapping = chunk_phys_mapping_get(phys_chunk, gpu->parent->id);
-    if (mapping &&
-        (uvm_cpu_chunk_is_logical(chunk) ||
-         uvm_sub_processor_mask_test(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id))))
+    if (mapping && (uvm_cpu_chunk_is_logical(chunk) ||
+                    uvm_sub_processor_mask_test(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id)))) {
         dma_addr = mapping->dma_addr + (parent_offset * PAGE_SIZE);
+    }
+
+    uvm_mutex_unlock(&phys_chunk->lock);
+
+    return dma_addr;
+}
+
+NvU64 uvm_cpu_chunk_get_gpu_egm_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+    uvm_page_index_t parent_offset = 0;
+    uvm_cpu_logical_chunk_t *logical;
+    uvm_cpu_chunk_t *track_chunk;
+    NvU64 dma_addr = 0;
+
+    track_chunk = chunk;
+    uvm_mutex_lock(&phys_chunk->lock);
+    while (track_chunk->egm_dma_addr == DMA_ADDR_INVALID && uvm_cpu_chunk_is_logical(track_chunk)) {
+        logical = uvm_cpu_chunk_to_logical(track_chunk);
+        track_chunk = logical->parent;
+    }
+
+    if (track_chunk->egm_dma_addr == DMA_ADDR_INVALID) {
+        uvm_mutex_unlock(&phys_chunk->lock);
+        return 0;
+    }
+
+    parent_offset = (uvm_page_index_t)(chunk->page - track_chunk->page);
+    dma_addr = track_chunk->egm_dma_addr + (parent_offset * PAGE_SIZE);
     uvm_mutex_unlock(&phys_chunk->lock);
 
     return dma_addr;
@@ -262,11 +312,12 @@ static NV_STATUS cpu_chunk_map_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 
         mapping->dma_addr = dma_addr;
         mapping->map_count = 1;
+
         uvm_sub_processor_mask_zero(&mapping->sub_processors);
         if (!logical_chunk)
             uvm_sub_processor_mask_set(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id));
 
-        uvm_parent_processor_mask_set(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id);
+        uvm_parent_processor_mask_set(&phys_chunk->gpu_mappings.dma_addrs_mask, gpu->parent->id);
     }
     else {
         mapping = chunk_phys_mapping_get(phys_chunk, parent_gpu->id);
@@ -335,10 +386,68 @@ NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
     return status;
 }
 
+NV_STATUS uvm_cpu_chunk_map_gpu_egm(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+    uvm_cpu_logical_chunk_t *logical;
+    NV_STATUS status = NV_OK;
+    dma_addr_t dma_addr;
+
+    UVM_ASSERT(page_to_nid(chunk->page) == routing_gpu->closest_cpu_numa_node);
+    uvm_mutex_lock(&phys_chunk->lock);
+
+    while (chunk->egm_dma_addr == DMA_ADDR_INVALID && uvm_cpu_chunk_is_logical(chunk)) {
+        logical = uvm_cpu_chunk_to_logical(chunk);
+        chunk = logical->parent;
+    }
+
+    if (chunk->egm_dma_addr == DMA_ADDR_INVALID) {
+        status = uvm_gpu_map_cpu_pages_for_egm(routing_gpu, chunk->page, uvm_cpu_chunk_get_size(chunk), &dma_addr);
+        // NV_ERR_NOT_SUPPORTED is returned if the kernel is
+        // < 6.17. In this cases, there will be no mappings
+        // mappings created, which will result in non-EGM accesses.
+        if (status == NV_ERR_NOT_SUPPORTED) {
+            status = NV_OK;
+            goto done;
+        }
+
+        if (status != NV_OK)
+            goto done;
+
+        // We already hold a map count on the chunk. All of the
+        // EGM mappings will be destroyed when the chunk is freed.
+        chunk->egm_dma_addr = dma_addr;
+        phys_chunk->egm_parent_id = routing_gpu->id;
+    }
+
+done:
+    uvm_mutex_unlock(&phys_chunk->lock);
+    return status;
+}
+
 void uvm_cpu_chunk_unmap_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 {
     cpu_chunk_unmap_gpu_phys(chunk, gpu->id);
+}
 
+void uvm_cpu_chunk_unmap_gpu_egm(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+
+    uvm_cpu_logical_chunk_t *logical;
+
+    uvm_mutex_lock(&phys_chunk->lock);
+    while (chunk->egm_dma_addr == DMA_ADDR_INVALID && uvm_cpu_chunk_is_logical(chunk)) {
+        logical = uvm_cpu_chunk_to_logical(chunk);
+        chunk = logical->parent;
+    }
+
+    if (uvm_cpu_chunk_is_physical(chunk))
+        cpu_chunk_unmap_physical_egm(phys_chunk, routing_gpu);
+    else
+        uvm_parent_gpu_unmap_cpu_pages_for_egm(routing_gpu, chunk->egm_dma_addr, uvm_cpu_chunk_get_size(chunk));
+
+    uvm_mutex_unlock(&phys_chunk->lock);
     // Note: there is no corresponding uvm_mmu_sysmem_unmap() for
     // uvm_mmu_sysmem_map().
 }
@@ -486,6 +595,8 @@ static uvm_cpu_physical_chunk_t *uvm_cpu_chunk_create(uvm_chunk_size_t alloc_siz
     nv_kref_init(&chunk->common.refcount);
     uvm_mutex_init(&chunk->lock, UVM_LOCK_ORDER_LEAF);
     chunk->gpu_mappings.max_entries = 1;
+    chunk->egm_parent_id = UVM_PARENT_ID_INVALID;
+    chunk->common.egm_dma_addr = DMA_ADDR_INVALID;
 
     return chunk;
 }
@@ -613,6 +724,7 @@ NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chun
 
         new_chunk->common.type = UVM_CPU_CHUNK_TYPE_LOGICAL;
         new_chunk->common.page = chunk->page + (i * num_subchunk_pages);
+        new_chunk->common.egm_dma_addr = DMA_ADDR_INVALID;
         uvm_cpu_chunk_set_size(&new_chunk->common, new_size);
         nv_kref_init(&new_chunk->common.refcount);
         new_chunk->parent = chunk;

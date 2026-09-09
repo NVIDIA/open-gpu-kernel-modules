@@ -101,6 +101,19 @@ NVDPLibConnectorPtr nvDPCreateConnector(NVConnectorEvoPtr pConnectorEvo)
     return NULL;
 }
 
+void nvDPSetClientForcedConnected(NVConnectorEvoPtr pConnectorEvo,
+    NvBool enabled)
+{
+    NVDPLibConnectorPtr pNVDpLibConnector = pConnectorEvo->pDpLibConnector;
+
+    if (!pNVDpLibConnector || !pNVDpLibConnector->isActive) {
+        return;
+    }
+
+    pNVDpLibConnector->connector->setClientForcedConnected(enabled == TRUE);
+}
+
+
 void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
                          NvBool connected)
 {

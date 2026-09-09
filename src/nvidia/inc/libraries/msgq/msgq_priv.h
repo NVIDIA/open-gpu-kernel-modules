@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,12 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * Private header for message queues
- * Should not be used except for (direct) higher layer of messaging (rm, rpc)
- * Keep structures padded to 64bytes (to avoid cache issues)
- */
-
 #ifndef MSGQ_PRIV_H
 #define MSGQ_PRIV_H
 
@@ -34,78 +28,100 @@
 
 #include "msgq.h"
 
-// Version, gets increased with incompatible changes.
-#define MSGQ_VERSION 0
+// Major versions get increased with incompatible changes
+#define MSGQ_VERSION_MAJOR 2
+// Minor versions are compatible
+#define MSGQ_VERSION_MINOR 0
+
 
 /*
- * (Shared) queue Layout:
- * TX header (padded to cache line)
- * RX header (padded to cache line)
- * Ring buffer of messages
- * <possibly some leftover memory>
+ * NVIDIA MSGQ Protocol, version 2.0
+ *
+ * A single-producer, single-consumer ring buffer message queue for
+ * communication between CPU and GSP.
+ *
+ * Each direction of communication uses a separate unidirectional queue.
+ * A bidirectional channel consists of two queues with roles swapped:
+ * one side's TX queue is the other side's RX queue.
+ *
+ * Backing store layout (owned and initialized by the TX side):
+ *   [msgqTxHeader]  Header with version, sizes, and entry offset
+ *   [pad]           Padding to entry alignment
+ *   [entry 0]
+ *   [entry 1]
+ *   ...             msgCount entries, each msgSize bytes
+ *   [entry N]
+ *
+ * Synchronization:
+ *   Head/tail pointers are exchanged via hardware registers. Typically:
+ *      NV_PGSP_QUEUE_HEAD(i) -> TX head (CPU), RX head (GSP)
+ *      NV_PGSP_QUEUE_TAIL(i) -> TX tail (CPU), RX tail (GSP)
+ *      NV_PGSP_MSGQ_HEAD(i)  -> RX head (CPU), TX head (GSP)
+ *      NV_PGSP_MSGQ_TAIL(i)  -> RX tail (CPU), TX tail (GSP)
+ *   Each register holds a monotonic counter, that is used modulo msgCount.
+ *     Buffer is full when (writePtr - readPtr == msgCount)
+ *     Buffer is empty when (writePtr == readPtr)
+ *
+ * TX (send) flow:
+ *   1. msgqTxGetWriteBuffer(n) - get pointer to slot (writePtr + n) % msgCount
+ *   2. Write message payload into returned buffer
+ *   3. msgqTxSubmitBuffers(n)  - advance writePtr by n, write to TX_HEAD
+ *
+ * RX (receive) flow:
+ *   1. msgqRxGetReadBuffer(n)  - get pointer to slot (readPtr + n) % msgCount
+ *   2. Read message payload from returned buffer
+ *   3. msgqRxMarkConsumed(n)   - advance readPtr by n, write to RX_TAIL
+ *
+ * The protocol itself does not define how to notify the receiver that a new
+ * message is available; however, writing to NV_PGSP_QUEUE_HEAD will trigger
+ * a hardware interrupt on GSP which does this.
  */
 
-// buffer metadata, written by source, at start of block
-typedef struct
-{
-    NvU32 version;   // queue version
-    NvU32 size;      // bytes, page aligned
-    NvU32 msgSize;   // entry size, bytes, must be power-of-2, 16 is minimum
-    NvU32 msgCount;  // number of entries in queue
-    NvU32 writePtr;  // message id of next slot
-    NvU32 flags;     // if set it means "i want to swap RX"
-    NvU32 rxHdrOff;  // Offset of msgqRxHeader from start of backing store.
-    NvU32 entryOff;  // Offset of entries from start of backing store.
-} msgqTxHeader;
 
-// buffer metadata, written by sink
-typedef struct
+// Queue header, written to the start of the backing store by the TX side.
+typedef struct NV_ABI_STABLE msgqTxHeader
 {
-    NvU32 readPtr; // message id of last message read
-} msgqRxHeader;
+    NvU16 versionMajor; // MSGQ_VERSION_MAJOR
+    NvU16 versionMinor; // MSGQ_VERSION_MINOR
+    NvU32 size;         // Total backing store size in bytes
+    NvU32 msgSize;      // Entry size in bytes (minimum MSGQ_MSG_SIZE_MIN)
+    NvU32 msgCount;     // Number of entries that fit in the ring buffer
+    NvU32 entryOff;     // Byte offset of first entry from start of backing store
+    NvU32 reserved[3];  // Reserved for future use. Init to zero
+} msgqTxHeader;
 
 // Internal tracking structure (handle)
 typedef struct
 {
-    // Those are also bases of buffers; our / their means belonging to our/their buffer
     msgqTxHeader                *pOurTxHdr;
     volatile const msgqTxHeader *pTheirTxHdr;
-    msgqRxHeader                *pOurRxHdr;    // Can't set either RxHdr to volatile
-    msgqRxHeader                *pTheirRxHdr;  //   const due to MSGQ_FLAGS_SWAP_RX.
 
     NvU8        *pOurEntries;   // first tx entry
     const NvU8  *pTheirEntries; // first rx entry
 
-    // To simplify things - those elements are at *destination* surfaces
-    volatile const NvU32 *pReadIncoming;   // rx we read, they write
-    volatile const NvU32 *pWriteIncoming;  // tx we read, they write
-    NvU32                *pReadOutgoing;   // rx we write they read
-    NvU32                *pWriteOutgoing;  // tx we write they read
+    // Hardware register addresses for head/tail pointers
+    OBJGPU *pGpu;
+    NvU32 regTxHead;    // TX write pointer (written by us)
+    NvU32 regTxTail;    // TX read pointer  (written by remote)
+    NvU32 regRxHead;    // RX write pointer (written by remote)
+    NvU32 regRxTail;    // RX read pointer  (written by us)
 
     // tx == our
     msgqTxHeader tx;
-    NvU32        txReadPtr;    // Local cache for pQueue->pReadIncoming.
-    NvU32        txFree;       // Cached copy of msgqTxGetFreeSpace.
+    NvU32        txWritePtr;   // Monotonic write counter (slot = txWritePtr % tx.msgCount)
+    NvU32        txReadPtr;    // Cached value read from regTxTail
+    NvU32        txFree;       // Cached free slot count (may undercount)
     NvBool       txLinked;
 
     // rx == theirs
     msgqTxHeader rx;
-    NvU32        rxReadPtr;    // Local cache for pQueue->pReadOutgoing.
-    NvU32        rxAvail;      // Cached copy of msgqRxGetReadAvailable.
+    NvU32        rxWritePtr;   // Cached value read from regRxHead
+    NvU32        rxReadPtr;    // Our read position, written to regRxTail
+    NvU32        rxAvail;      // Cached available message count (may undercount)
     NvBool       rxLinked;
 
-    // swap rx backing store
-    NvBool       rxSwapped;
-
-    // notifications
-    msgqFcnNotifyRemote   fcnNotify;
-    void                 *fcnNotifyArg;
     msgqFcnBackendRw      fcnBackendRw;
     void                 *fcnBackendRwArg;
-    msgqFcnCacheOp        fcnInvalidate;
-    msgqFcnCacheOp        fcnFlush;
-    msgqFcnCacheOp        fcnZero;
-    msgqFcnBarrier        fcnBarrier;
 } msgqMetadata;
 
 #endif // MSGQ_PRIV_H

@@ -84,10 +84,6 @@ thirdpartyp2pConstruct_IMPL
     if (pGpu == NULL)
         return NV_ERR_INVALID_OBJECT_PARENT;
 
-    if (gpuIsApmFeatureEnabled(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     API_GPU_FULL_POWER_SANITY_CHECK(pGpu, NV_TRUE, NV_FALSE);
 

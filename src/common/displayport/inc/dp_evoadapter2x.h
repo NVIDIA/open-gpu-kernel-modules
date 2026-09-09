@@ -161,11 +161,7 @@ namespace DisplayPort
             return (gpuUhbrCaps & dfpUhbrCaps);
         }
 
-        virtual bool train(const LinkConfiguration & link, bool force,
-                           LinkTrainingType linkTrainingType,
-                           LinkConfiguration *retLink, bool bSkipLt = false,
-                           bool isPostLtAdjRequestGranted = false,
-                           unsigned phyRepeaterCount = 0);
+        virtual bool train(const LinkTrainParameters &trainParams);
 
         bool trainDP2xChannelCoding(LinkConfiguration & link, bool force,
                                     LinkTrainingType linkTrainingType,

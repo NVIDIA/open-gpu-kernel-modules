@@ -189,7 +189,7 @@ static NvU64 make_pte_hopper(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
         aperture_bits = NV_MMU_VER3_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
     else if (aperture == UVM_APERTURE_VID)
         aperture_bits = NV_MMU_VER3_PTE_APERTURE_VIDEO_MEMORY;
-    else if (aperture >= UVM_APERTURE_PEER_0 && aperture <= UVM_APERTURE_PEER_7)
+    else if (uvm_aperture_is_peer(aperture) || uvm_aperture_is_egm(aperture))
         aperture_bits = NV_MMU_VER3_PTE_APERTURE_PEER_MEMORY;
     else
         UVM_ASSERT_MSG(0, "Invalid aperture: %d\n", aperture);
@@ -213,8 +213,10 @@ static NvU64 make_pte_hopper(uvm_aperture_t aperture, NvU64 address, uvm_prot_t 
         pte_bits |= HWVALUE64(_MMU_VER3, PTE, ADDRESS, address);
 
         // peer id 63:61
-        if (aperture >= UVM_APERTURE_PEER_0 && aperture <= UVM_APERTURE_PEER_7)
+        if (uvm_aperture_is_peer(aperture))
             pte_bits |= HWVALUE64(_MMU_VER3, PTE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
+        else if (uvm_aperture_is_egm(aperture))
+            pte_bits |= HWVALUE64(_MMU_VER3, PTE, PEER_ID, UVM_APERTURE_EGM_PEER_ID(aperture));
     }
 
     return pte_bits;

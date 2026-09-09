@@ -364,6 +364,7 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 #define NVLINK_LINKSTATE_ALI                            0x1C   // ALI 
 #define NVLINK_LINKSTATE_ACTIVE_PENDING                 0x1D   // Intermediate state for a link going to active
 #define NVLINK_LINKSTATE_TRAINING_CCI                   0x1E   // Intermediate state for a link that is still training
+#define NVLINK_LINKSTATE_PHYSICAL_UP_NO_TRAFFIC         0x1F   // Physical layer up, no traffic configured
 #define NVLINK_LINKSTATE_INVALID                        0xFF   // Invalid state
 
 // NVLINK TX SUBLINK states

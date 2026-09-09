@@ -42,6 +42,7 @@
 #include "uvm_test_file.h"
 #include "uvm_user_channel.h"
 #include "uvm_gpu_non_replayable_faults.h"
+#include "uvm_gpu.h"
 
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
@@ -375,6 +376,11 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DEAD_CHANNEL,                 uvm_test_dead_channel);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SET_NON_REPLAYABLE_DELAY,     uvm_test_set_non_replayable_delay);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_QUERY_CDMM_DEVMEM,            uvm_test_query_cdmm_devmem);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_EXPORT_DMA_BUF,               uvm_test_export_dma_buf);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_REVOKE_DMA_BUF,               uvm_test_revoke_dma_buf);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_QUERY_EGM_STATE,              uvm_test_query_egm_state);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_LAZY_FREE_SET_DELAY,      uvm_test_pmm_lazy_free_set_delay);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_EVICT_TEMP_PINNED,        uvm_test_pmm_evict_temp_pinned);
     }
 
     return -EINVAL;

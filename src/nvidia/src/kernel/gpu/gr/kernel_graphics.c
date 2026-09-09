@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -313,6 +313,9 @@ kgraphicsStateInitLocked_IMPL
     pKernelGraphics->bug4208224Info.hDeviceId    = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
+
+    pKernelGraphics->goldenImageChannelInfo.hClient      = NV01_NULL_OBJECT;
+    pKernelGraphics->goldenImageChannelInfo.bConstructed = NV_FALSE;
 
     return NV_OK;
 }
@@ -2152,6 +2155,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
     RsClient                              *pClientId;
     KernelMIGManager                      *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool                                 bNeedMIGWar;
+    NvBool                                 bRetainGoldenImageChannel;
     NvBool                                 bBcStatus;
     NvBool                                 bAcquireLock = NV_FALSE;
     NvU32                                  sliLoopReentrancy;
@@ -2166,6 +2170,25 @@ kgraphicsCreateGoldenImageChannel_IMPL
     // XXX This should be removed when broadcast SLI support is deprecated
     if (!gpumgrIsParentGPU(pGpu))
     {
+        return NV_OK;
+    }
+
+    bNeedMIGWar = IS_MIG_IN_USE(pGpu);
+    bRetainGoldenImageChannel = bNeedMIGWar && IS_VIRTUAL(pGpu);
+
+    if (!bRetainGoldenImageChannel && pKernelGraphics->goldenImageChannelInfo.bConstructed)
+    {
+            NV_PRINTF(LEVEL_ERROR, "Golden image channel exists, but the retain flag is not set\n");
+            return NV_ERR_INVALID_STATE;
+    }
+    //
+    // For vGPU guest MIG the golden image channel is retained after first
+    // creation, so nothing to do if it is already constructed.
+    //
+    if (bRetainGoldenImageChannel && pKernelGraphics->goldenImageChannelInfo.bConstructed)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Golden image channel already retained for vGPU guest MIG; skipping re-creation\n");
         return NV_OK;
     }
 
@@ -2198,8 +2221,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NV_ASSERT_OR_ELSE(pChannelGPFIFOAllocParams != NULL,
         status = NV_ERR_NO_MEMORY;
         goto cleanup;);
-
-    bNeedMIGWar = IS_MIG_IN_USE(pGpu);
 
     // Allocate subdevices for secondary GPUs
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
@@ -2312,8 +2333,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     pMemAllocParams->hVASpace  = 0; // Physical allocations don't expect vaSpace handles
 
     //
-    // When APM feature is enabled all RM internal sysmem allocations must
-    // be in unprotected memory
     // When Hopper CC is enabled all RM internal sysmem allocations that
     // are required to be accessed from GPU should be in unprotected memory
     // Other sysmem allocations that are not required to be accessed from GPU
@@ -2398,14 +2417,11 @@ kgraphicsCreateGoldenImageChannel_IMPL
         }
 
         //
-        // When APM is enabled all RM internal allocations must to go to
-        // unprotected memory irrespective of vidmem or sysmem
         // When Hopper CC is enabled all RM internal sysmem allocations that
         // are required to be accessed from GPU should be in unprotected memory
         // and all vidmem allocations must go to protected memory
         //
-        if (gpuIsApmFeatureEnabled(pGpu) ||
-            FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, pMemAllocParams->attr))
+        if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, pMemAllocParams->attr))
         {
             pMemAllocParams->attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION,
                                               _UNPROTECTED);
@@ -2530,6 +2546,12 @@ kgraphicsCreateGoldenImageChannel_IMPL
                                 KGRAPHICS_CHANNEL_HANDLE_3DOBJ, classNum, NULL, 0),
         cleanup);
 
+    if (bRetainGoldenImageChannel)
+    {
+        pKernelGraphics->goldenImageChannelInfo.hClient = hClientId;
+        pKernelGraphics->goldenImageChannelInfo.bConstructed = NV_TRUE;
+    }
+
 cleanup:
 
     if (bAcquireLock)
@@ -2547,9 +2569,21 @@ cleanup:
     if (pChannelGPFIFOAllocParams != NULL)
         portMemFree(pChannelGPFIFOAllocParams);
 
-    // Free all handles
-    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-        pRmApi->Free(pRmApi, hClientId, hClientId));
+    //
+    // For vGPU guest MIG, retain the GR channel, 3D object, and their supporting 
+    // client tree until CI/GI teardown or driver unload. This prevents them from 
+    // being freed and causing golden‑context restore failures, where the absence 
+    // of the GR channel leads to accesses of non‑populated buffers and MMU faults 
+    // in the guest. 
+    // For bare‑metal MIG and non‑MIG flows, callers continue to free 
+    // these objects immediately after golden‑context initialization.
+    //
+    if (!(bRetainGoldenImageChannel && (status == NV_OK) &&
+          pKernelGraphics->goldenImageChannelInfo.bConstructed))
+    {
+        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+            pRmApi->Free(pRmApi, hClientId, hClientId));
+    }
 
     // Restore the reentrancy count
     gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
@@ -2557,6 +2591,60 @@ cleanup:
     gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
 
     return status;
+}
+
+/*!
+ * @brief Return whether the retained golden image channel is constructed.
+ *
+ * Used during compute-instance teardown to account for the CI share
+ * reference held by the golden channel's exec-partition subscription.
+ */
+ NvBool
+ kgraphicsIsGoldenImageChannelConstructed_IMPL
+ (
+     OBJGPU *pGpu,
+     KernelGraphics *pKernelGraphics
+ )
+ {
+     return pKernelGraphics->goldenImageChannelInfo.bConstructed;
+ }
+ 
+/*!
+ * @brief Free the golden image channel retained for vGPU guest MIG
+ */
+void
+kgraphicsDestroyGoldenImageChannel_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO *pGoldenImageChannelInfo =
+        &pKernelGraphics->goldenImageChannelInfo;
+    NvBool bBcStatus;
+    NvU32 sliLoopReentrancy;
+
+    if (!pGoldenImageChannelInfo->bConstructed)
+        return;
+
+    NV_ASSERT_OR_RETURN_VOID(gpumgrIsParentGPU(pGpu));
+
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        NvHandle hClient = pGoldenImageChannelInfo->hClient;
+
+        bBcStatus = gpumgrGetBcEnabledStatus(pGpu);
+        gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
+        sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
+
+        pRmApi->Free(pRmApi, hClient, hClient);
+
+        gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
+        gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
+    }
+
+    pGoldenImageChannelInfo->hClient = NV01_NULL_OBJECT;
+    pGoldenImageChannelInfo->bConstructed = NV_FALSE;
 }
 
 /*!
@@ -3184,6 +3272,7 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
         pParams->globalSmId[i].localSmId       = pStaticInfo->globalSmOrder.globalSmId[i].localSmId;
         pParams->globalSmId[i].globalTpcId     = pStaticInfo->globalSmOrder.globalSmId[i].globalTpcId;
         pParams->globalSmId[i].virtualGpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualGpcId;
+        pParams->globalSmId[i].virtualDpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualDpcId;
         pParams->globalSmId[i].migratableTpcId = pStaticInfo->globalSmOrder.globalSmId[i].migratableTpcId;
         pParams->globalSmId[i].ugpuId          = pStaticInfo->globalSmOrder.globalSmId[i].ugpuId;
         pParams->globalSmId[i].physicalCpcId   = pStaticInfo->globalSmOrder.globalSmId[i].physicalCpcId;
@@ -3654,16 +3743,15 @@ subdeviceCtrlCmdKGrFecsBindEvtbufForUid_IMPL
     RmClient *pClient;
     RsResourceRef *pEventBufferRef = NULL;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
         NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(
-        serverutilGetResourceRefWithType(hClient, pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
+        serverutilGetResourceRefWithType(RES_GET_CLIENT_HANDLE(pSubdevice), pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
 
-    pClient = serverutilGetClientUnderLock(hClient);
+    pClient = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
     NV_ASSERT_OR_RETURN(pClient != NULL, NV_ERR_INVALID_CLIENT);
 
     if (bMIGInUse)
@@ -3699,16 +3787,15 @@ subdeviceCtrlCmdKGrFecsBindEvtbufForUidV2_IMPL
     RmClient *pClient;
     RsResourceRef *pEventBufferRef = NULL;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     pParams->reasonCode = NV2080_CTRL_GR_FECS_BIND_REASON_CODE_NONE;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
         NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(
-        serverutilGetResourceRefWithType(hClient, pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
+        serverutilGetResourceRefWithType(RES_GET_CLIENT_HANDLE(pSubdevice), pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
 
-    pClient = serverutilGetClientUnderLock(hClient);
+    pClient = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
     NV_ASSERT_OR_RETURN(pClient != NULL, NV_ERR_INVALID_CLIENT);
 
     status = fecsAddBindpoint(pGpu,

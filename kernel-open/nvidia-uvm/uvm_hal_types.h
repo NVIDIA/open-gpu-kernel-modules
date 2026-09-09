@@ -42,6 +42,16 @@ typedef enum
     UVM_APERTURE_PEER_7,
     UVM_APERTURE_PEER_MAX,
 
+    UVM_APERTURE_EGM_PEER_0,
+    UVM_APERTURE_EGM_PEER_1,
+    UVM_APERTURE_EGM_PEER_2,
+    UVM_APERTURE_EGM_PEER_3,
+    UVM_APERTURE_EGM_PEER_4,
+    UVM_APERTURE_EGM_PEER_5,
+    UVM_APERTURE_EGM_PEER_6,
+    UVM_APERTURE_EGM_PEER_7,
+    UVM_APERTURE_EGM_PEER_MAX,
+
     // SYS aperture is used for memory addresses in system physical address
     // space, or device DMA space. This is currently used for system memory
     // and certain types of peer memory.
@@ -119,6 +129,27 @@ static inline uvm_aperture_t UVM_APERTURE_PEER(NvU32 id)
     uvm_aperture_t aperture = (uvm_aperture_t)id;
 
     UVM_ASSERT(UVM_APERTURE_PEER_ID(aperture) == id);
+
+    return aperture;
+}
+
+static bool uvm_aperture_is_egm(uvm_aperture_t aperture)
+{
+    return (aperture >= UVM_APERTURE_EGM_PEER_0) && (aperture < UVM_APERTURE_EGM_PEER_MAX);
+}
+
+static inline NvU32 UVM_APERTURE_EGM_PEER_ID(uvm_aperture_t aperture)
+{
+    UVM_ASSERT(uvm_aperture_is_egm(aperture));
+
+    return (NvU32)aperture - (NvU32)UVM_APERTURE_EGM_PEER_0;
+}
+
+static inline uvm_aperture_t UVM_APERTURE_EGM_PEER(NvU32 id)
+{
+    uvm_aperture_t aperture = (uvm_aperture_t)(UVM_APERTURE_EGM_PEER_0 + id);
+
+    UVM_ASSERT(UVM_APERTURE_EGM_PEER_ID(aperture) == id);
 
     return aperture;
 }

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -621,7 +621,6 @@ kernelhostvgpudeviceSetGuestFbInfo(OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE *pKerne
                                    NvU64 offset, NvU64 length);
 
 #endif // _KERNEL_HOSTVGPUDEVICEAPI_H_
-
 
 #ifdef __cplusplus
 } // extern "C"

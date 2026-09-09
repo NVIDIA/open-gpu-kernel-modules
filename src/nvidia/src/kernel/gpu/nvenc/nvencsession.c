@@ -97,7 +97,7 @@ nvencsessionConstruct_IMPL
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Unable to find mem corresponding to handle : 0x%0x.\n",
+                      "Unable to find mem corresponding to handle : 0x%08x.\n",
                       pNvA0BCAllocParams->hMem);
             pNvencSession->pMemory = NULL;
             return status;
@@ -113,7 +113,7 @@ nvencsessionConstruct_IMPL
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Error mapping memory to CPU VA space, error : 0x%0x.\n",
+                      "Error mapping memory to CPU VA space, error : 0x%08x.\n",
                       status);
             pNvencSession->pMemory = NULL;
             return status;
@@ -268,14 +268,14 @@ _gpuNvEncSessionProcessBuffer(OBJGPU *pGpu, NvencSession *pNvencSession)
     pSessionInfoBuffer = (NVENC_SESSION_INFO_V1 *)NvP64_VALUE(pNvencSession->pSessionStatsBuffer);
     if (pSessionInfoBuffer == NULL)
     {
-        NV_PRINTF(LEVEL_INFO, "GPU : 0x%0x, NvEnc session stats buffer pointer is null.\n", pGpu->gpuId);
+        NV_PRINTF(LEVEL_INFO, "GPU : 0x%08x, NvEnc session stats buffer pointer is null.\n", pGpu->gpuId);
         return;
     }
 
     pLocalSessionInfoBuffer = portMemAllocNonPaged(sizeof(NVENC_SESSION_INFO_V1));
     if (pLocalSessionInfoBuffer == NULL)
     {
-        NV_PRINTF(LEVEL_INFO, "GPU : 0x%0x, Failed to allocate memory for local stats buffer.\n", pGpu->gpuId);
+        NV_PRINTF(LEVEL_INFO, "GPU : 0x%08x, Failed to allocate memory for local stats buffer.\n", pGpu->gpuId);
         return;
     }
 

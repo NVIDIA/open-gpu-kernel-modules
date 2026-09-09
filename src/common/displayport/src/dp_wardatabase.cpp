@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -123,6 +123,20 @@ void ConnectorImpl2x::applyOuiWARs()
                 bApplyStuffDummySymbolsWAR = true;
                 bStuffDummySymbolsFor128b132b = false;
                 bStuffDummySymbolsFor8b10b = true;
+            }
+            break;
+
+        //
+        // Realtek DP sink (OUI 00:E0:4C, ouiId 0x4CE000, device "Dp1.4").
+        //
+        case 0x4CE000:
+            if ((modelName[0] == 'D') && (modelName[1] == 'p') && (modelName[2] == '1') &&
+                (modelName[3] == '.') && (modelName[4] == '4') &&
+                hal->isDpInTunnelingSupported() &&
+                main->isDpTunnelingHwBugWarEnabled())
+            {
+                main->setDpWarFlag(NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE, true);
+                this->bSwAutoReadWarActive = true;
             }
             break;
 
@@ -578,10 +592,19 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
 
         // Unigraf
         case 0xC754:
+            {
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Unigraf device, keep link alive during detection and force max link config during mode-set\n");
+                this->WARFlags.keepLinkAlive = true;
+                this->WARFlags.forceMaxLinkConfig = true;
+            }
+            break;
+
+        // M42De 
         case 0x1863:
             {
-                DP_PRINTF(DP_NOTICE, "DP-WAR> Unigraf device, keep link alive during detection\n");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> M42De device, keep link alive during detection and force max link config during mode-set\n");
                 this->WARFlags.keepLinkAlive = true;
+                this->WARFlags.forceMaxLinkConfig = true;
             }
             break;
 

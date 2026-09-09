@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -154,6 +154,7 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     struct GPUMGR_SAVE_COMPUTE_INSTANCE savedExecPartitions[NVC637_CTRL_MAX_EXEC_PARTITIONS];
     NvBool                            bGpupLiveMigrationEnabled; /* GPUP Live Migration Enabled status */
     NvBool                            bGspPluginTaskInitialized;
+    NvBool                            bGspPluginTaskShutdownComplete;
     NvU32                             vgpuDeviceInstanceId;
 } KERNEL_HOST_VGPU_DEVICE;
 
@@ -300,6 +301,7 @@ struct KernelVgpuMgr {
     // Data members
     KERNEL_PHYS_GPU_INFO pgpuInfo[32];
     NvU32 pgpuCount;
+    void *kernelVgpuMgrLock;
     VGPU_TYPE_LIST listVgpuTypeHead;
     KERNEL_VGPU_GUEST_LIST listVgpuGuestHead;
     NvU32 user_min_supported_version;

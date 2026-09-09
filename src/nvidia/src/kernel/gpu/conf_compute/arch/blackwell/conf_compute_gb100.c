@@ -32,6 +32,8 @@
 #include "gpu/conf_compute/conf_compute.h"
 #include "rmapi/rmapi.h"
 #include "conf_compute/cc_keystore.h"
+#include "nvdevid.h"
+#include "detect-self-hosted.h"
 
 /*!
  * Returns RM engine Id corresponding to a key space
@@ -242,5 +244,26 @@ NV_STATUS confComputeUpdatePerChannelSecrets_GB100(ConfidentialCompute *pConfCom
     // Call to Kernel-RM for new key-derivation on same KernelChannel instance.
     NV_ASSERT_OK_OR_RETURN(kchannelDeriveAndRetrieveKmb_HAL(pGpu, pKernelChannel, &(pKernelChannel->clientKmb)));
 
+    return NV_OK;
+}
+
+/*!
+ * @brief Blackwell implementation for checking CC support on self-hosted platforms
+ */
+NV_STATUS
+confComputeTestPlatformSupport_GB100
+(
+    OBJGPU              *pGpu,
+    ConfidentialCompute *pConfCompute
+)
+{
+    if (pci_devid_is_self_hosted(DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCIDeviceID)))
+    {
+        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+        {
+            NV_PRINTF(LEVEL_ERROR, "CC is not supported on self-hosted platforms\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
     return NV_OK;
 }

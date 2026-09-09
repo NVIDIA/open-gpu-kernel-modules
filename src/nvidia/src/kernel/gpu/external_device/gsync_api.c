@@ -173,7 +173,7 @@ CliNotifyGsyncEvent
                 (pGSyncApi->lastEventNotified != oldEventFlags))
             {
                 NV_PRINTF(LEVEL_INFO,
-                          "gsync instance 0x%0x has had a status change: 0x%0x\n",
+                          "gsync instance 0x%08x has had a status change: 0x%08x\n",
                           gsyncInst, oldEventFlags);
 
                 osEventNotification(
@@ -208,7 +208,7 @@ CliNotifyGsyncEvent
                 eventData.info32 = eventFlags;
 
                 NV_PRINTF(LEVEL_INFO,
-                          "gsync instance 0x%0x has had a status change: 0x%0x\n",
+                          "gsync instance 0x%08x has had a status change: 0x%08x\n",
                           gsyncInst, eventFlags);
 
                 osEventNotification(
@@ -230,7 +230,7 @@ CliNotifyGsyncEvent
                     if (eventFlags & NVBIT(notifyIndex))
                     {
                         NV_PRINTF(LEVEL_INFO,
-                                  "gsync instance 0x%0x has had a status change: %d\n",
+                                  "gsync instance 0x%08x has had a status change: %d\n",
                                   gsyncInst, notifyIndex);
 
                         if (pEventNotification->NotifyType == NV01_EVENT_OS_EVENT)

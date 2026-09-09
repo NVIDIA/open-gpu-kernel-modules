@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -230,8 +230,11 @@ void nvInitFlipEvoHwState(
     pFlipState->hdrInfoFrame.staticMetadata =
         pHeadState->hdrInfoFrameOverride.staticMetadata;
 
+    pFlipState->hdmiVsifMetadata = pHeadState->hdmiVsifMetadata;
+
     pFlipState->outputLut = pSdHeadState->outputLut;
     pFlipState->olutFpNormScale = pSdHeadState->olutFpNormScale;
+    pFlipState->postcompColorPassthrough = pHeadState->postcompColorPassthrough;
 }
 
 
@@ -255,7 +258,8 @@ NvBool nvIsLayerDirty(const struct NvKmsFlipCommonParams *pParams,
            pParams->layer[layer].csc00Override.specified ||
            pParams->layer[layer].csc01Override.specified ||
            pParams->layer[layer].csc10Override.specified ||
-           pParams->layer[layer].csc11Override.specified;
+           pParams->layer[layer].csc11Override.specified ||
+           pParams->layer[layer].precompColorPassthrough.specified;
 }
 
 /*!
@@ -773,54 +777,10 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
         pHwState->sizeOut = pParams->layer[layer].sizeOut.val;
     }
 
-    /*
-     * If supportsWindowMode = TRUE, the sizeIn/sizeOut dimensions can be
-     * any arbitrary (valid) values.
-     *
-     * If supportsWindowMode = FALSE (legacy EVO main layer), the sizeIn
-     * /sizeOut dimensions must match the size of the surface for that layer.
-     *
-     * Note that if sizeIn/Out dimensions are invalid i.e. with a width or
-     * height of zero, this will be rejected by a call to
-     * ValidateFlipChannelEvoHwState() later in the code path.
-     *
-     * Note that if scaling is unsupported, i.e. that sizeIn cannot differ
-     * from sizeOut, then any unsupported configurations will be caught by the
-     * ComputeWindowScalingTaps() call later on in this function.
-     */
-    if (!pDevEvo->caps.layerCaps[layer].supportsWindowMode &&
-        (pHwState->pSurfaceEvo[NVKMS_LEFT] != NULL)) {
-        const NVSurfaceEvoRec *pSurfaceEvo =
-            pHwState->pSurfaceEvo[NVKMS_LEFT];
-
-        if ((pHwState->sizeIn.width != pSurfaceEvo->widthInPixels) ||
-            (pHwState->sizeIn.height != pSurfaceEvo->heightInPixels)) {
-            return FALSE;
-        }
-
-        if ((pHwState->sizeOut.width != pSurfaceEvo->widthInPixels) ||
-            (pHwState->sizeOut.height != pSurfaceEvo->heightInPixels)) {
-            return FALSE;
-        }
-    }
-
-    /*
-     * Allow the client to specify non-origin outputPosition only if the
-     * layer supports window mode.
-     *
-     * If window mode is unsupported but the client specifies non-origin
-     * outputPosition, return FALSE.
-     */
-    if (pDevEvo->caps.layerCaps[layer].supportsWindowMode) {
-        if (pParams->layer[layer].outputPosition.specified) {
-            pHwState->outputPosition.x = pParams->layer[layer].outputPosition.val.x;
-            pHwState->outputPosition.y = pParams->layer[layer].outputPosition.val.y;
-            pFlipState->dirty.layerPosition[layer] = TRUE;
-        }
-    } else if (pParams->layer[layer].outputPosition.specified &&
-               ((pParams->layer[layer].outputPosition.val.x != 0) ||
-                (pParams->layer[layer].outputPosition.val.y != 0))) {
-        return FALSE;
+    if (pParams->layer[layer].outputPosition.specified) {
+        pHwState->outputPosition.x = pParams->layer[layer].outputPosition.val.x;
+        pHwState->outputPosition.y = pParams->layer[layer].outputPosition.val.y;
+        pFlipState->dirty.layerPosition[layer] = TRUE;
     }
 
     if (pParams->layer[layer].compositionParams.specified) {
@@ -959,8 +919,8 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
     if (!pFlipState->layer[layer].inputLut.fromOverride) {
         NvU32 apiHead;
         WITH_APIHEAD_FOR_HEAD(pDevEvo, sd, head, apiHead) {
-            NvBool ilutEnabled = pDevEvo->lut.apiHead[apiHead].disp[sd].curBaseLutEnabled;
-            NvU32 curLUTIndex = pDevEvo->lut.apiHead[apiHead].disp[sd].curLUTIndex;
+            NvBool ilutEnabled = pDevEvo->lut.apiHead[apiHead].curBaseLutEnabled;
+            NvU32 curLUTIndex = pDevEvo->lut.apiHead[apiHead].curLUTIndex;
             NvU32 nextLutIndex = (curLUTIndex + 1) % 3;
 
             /* If the legacy params are specified, update from those. */
@@ -1026,6 +986,12 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
         pFlipState->layer[layer].maxDownscaleFactors.vertical = 0;
         pFlipState->layer[layer].maxDownscaleFactors.horizontal = 0;
         pFlipState->layer[layer].maxDownscaleFactors.specified = FALSE;
+    }
+
+    /* Update the layer's pre-comp color passthrough if specified. */
+    if (pParams->layer[layer].precompColorPassthrough.specified) {
+        pFlipState->layer[layer].precompColorPassthrough =
+            pParams->layer[layer].precompColorPassthrough.enabled;
     }
 
     pFlipState->dirty.layer[layer] = TRUE;
@@ -1314,8 +1280,8 @@ NvBool nvUpdateFlipEvoHwState(
     if (!pFlipState->outputLut.fromOverride) {
         NvU32 apiHead;
         WITH_APIHEAD_FOR_HEAD(pDevEvo, sd, head, apiHead) {
-            NvBool olutEnabled = pDevEvo->lut.apiHead[apiHead].disp[sd].curOutputLutEnabled;
-            NvU32 curLUTIndex = pDevEvo->lut.apiHead[apiHead].disp[sd].curLUTIndex;
+            NvBool olutEnabled = pDevEvo->lut.apiHead[apiHead].curOutputLutEnabled;
+            NvU32 curLUTIndex = pDevEvo->lut.apiHead[apiHead].curLUTIndex;
             NvU32 nextLutIndex = (curLUTIndex + 1) % 3;
 
             if (pParams->lut.output.specified) {
@@ -1361,6 +1327,13 @@ NvBool nvUpdateFlipEvoHwState(
         pFlipState->dirty.olut = TRUE;
     }
 
+    /* Update postcomp color passthrough mode. */
+    if (pParams->postcompColorPassthrough.specified) {
+        pFlipState->dirty.postcompColorPassthrough = TRUE;
+        pFlipState->postcompColorPassthrough =
+            pParams->postcompColorPassthrough.enabled;
+    }
+
     if (!AssignUsageBounds(pDevEvo, head, pFlipState)) {
         return FALSE;
     }
@@ -1395,6 +1368,18 @@ NvBool nvUpdateFlipEvoHwState(
                 }
             }
         }
+    }
+
+    if (pParams->hdmiVsifMetadata.specified) {
+        if ((pParams->hdmiVsifMetadata.vsifMetadata.payloadSize != 0) &&
+            ((pParams->hdmiVsifMetadata.vsifMetadata.payloadSize <
+                NVKMS_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE) ||
+             (pParams->hdmiVsifMetadata.vsifMetadata.payloadSize >
+                NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE))) {
+            return FALSE;
+        }
+        pFlipState->hdmiVsifMetadata = pParams->hdmiVsifMetadata.vsifMetadata;
+        pFlipState->dirty.hdmiVsifMetadata = TRUE;
     }
 
     return TRUE;
@@ -1587,25 +1572,6 @@ ValidateMainFlipChannelEvoHwState(const NVDevEvoRec *pDevEvo,
          * guaranteed that. */
         nvAssert(pDevEvo->caps.maxWidthInPixels <= NV_U16_MAX);
         nvAssert(pDevEvo->caps.maxHeight <= NV_U16_MAX);
-
-        /*
-         * Validate that the requested viewport parameters fit within the
-         * specified surface, unless the main layer is allowed to be smaller
-         * than the viewport.
-         */
-        if (!pDevEvo->caps.layerCaps[NVKMS_MAIN_LAYER].supportsWindowMode) {
-            if (A_plus_B_greater_than_C_U16(viewPortPointIn.x,
-                                            pTimings->viewPort.in.width,
-                                            pSurfaceEvo->widthInPixels)) {
-                return FALSE;
-            }
-
-            if (A_plus_B_greater_than_C_U16(viewPortPointIn.y,
-                                            pTimings->viewPort.in.height,
-                                            pSurfaceEvo->heightInPixels)) {
-                return FALSE;
-            }
-        }
     }
 
     return TRUE;
@@ -1786,6 +1752,178 @@ static NvU32 ValidateCompositionDepth(const NVFlipEvoHwState *pFlipState,
     return TRUE;
 }
 
+static NvBool ValidateColorPassthroughFlipState(const NVDevEvoRec *pDevEvo,
+                                                const NvU32 head,
+                                                const NVHwModeTimingsEvo *pTimings,
+                                                const NVFlipEvoHwState *pFlipState)
+{
+    const NVFlipChannelEvoHwState *pHwState =
+        &pFlipState->layer[NVKMS_MAIN_LAYER];
+    const NVSurfaceEvoRec *pMainSurface = pHwState->pSurfaceEvo[NVKMS_LEFT];
+    NvU32 layer;
+
+    if (!pDevEvo->hal->caps.supportsColorPassthrough) {
+        if (pHwState->precompColorPassthrough ||
+            pFlipState->postcompColorPassthrough) {
+            return FALSE;
+        }
+    }
+
+    /* Validate that overlay layers have passthrough disabled. */
+    for (layer = 1; layer < pDevEvo->head[head].numLayers; layer++) {
+        if (pFlipState->layer[layer].precompColorPassthrough) {
+            return FALSE;
+        }
+    }
+
+    /* Validate precomp color passthrough on the main layer. */
+    if (pHwState->precompColorPassthrough) {
+        /*
+         * In the case where precomp color passthrough is enabled and
+         * postcomp color passthrough is disabled, the surface format
+         * must be FP16.
+         */
+        if (!pFlipState->postcompColorPassthrough) {
+            if (pMainSurface) {
+                if ((pMainSurface->format != NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) &&
+                    (pMainSurface->format != NvKmsSurfaceMemoryFormatRF16GF16BF16XF16)) {
+                    return FALSE;
+                }
+            }
+        }
+
+        /* Only the main layer surface can be enabled since composition is disabled. */
+        for (layer = 1; layer < pDevEvo->head[head].numLayers; layer++) {
+            if ((pFlipState->layer[layer].pSurfaceEvo[NVKMS_LEFT] != NULL) ||
+                (pFlipState->layer[layer].pSurfaceEvo[NVKMS_RIGHT] != NULL)) {
+                return FALSE;
+            }
+        }
+
+        /* ILUT override must not be provided. */
+        if (pHwState->inputLut.fromOverride &&
+            pHwState->inputLut.pLutSurfaceEvo != NULL) {
+            return FALSE;
+        }
+
+        /* FMT and CSC overrides must be identity. */
+        if ((pHwState->fmtOverride.enabled &&
+                !nvIsCscMatrixIdentity(&pHwState->fmtOverride.matrix)) ||
+            (pHwState->csc00Override.enabled &&
+                !nvIsCscMatrixIdentity(&pHwState->csc00Override.matrix)) ||
+            (pHwState->csc01Override.enabled &&
+                !nvIsCscMatrixIdentity(&pHwState->csc01Override.matrix)) ||
+            (pHwState->csc10Override.enabled &&
+                !nvIsCscMatrixIdentity(&pHwState->csc10Override.matrix)) ||
+            (pHwState->csc11Override.enabled &&
+                !nvIsCscMatrixIdentity(&pHwState->csc11Override.matrix))) {
+            return FALSE;
+        }
+
+        /* CSC matrix must be identity. */
+        if (!nvIsCscMatrixIdentity(&pHwState->cscMatrix)) {
+            return FALSE;
+        }
+
+        /* Window scaling must be disabled. */
+        if ((pHwState->sizeIn.width != pHwState->sizeOut.width) ||
+            (pHwState->sizeIn.height != pHwState->sizeOut.height)) {
+            return FALSE;
+        }
+
+        /* TMO LUT override must not be provided. */
+        if (pHwState->tmoLut.fromOverride &&
+            pHwState->tmoLut.pLutSurfaceEvo != NULL) {
+            return FALSE;
+        }
+
+        /* Input TF must be LINEAR. */
+        if (pHwState->tf != NVKMS_INPUT_TF_LINEAR) {
+            return FALSE;
+        }
+    }
+
+    /* Validate postcomp color passthrough (per-head). */
+    if (pFlipState->postcompColorPassthrough) {
+        /*
+         * Precomp color passthrough must be enabled as the ILUT
+         * would convert the input to FP16, which can't be outputted
+         * without the OLUT to convert it back.
+         */
+        if (!pHwState->precompColorPassthrough) {
+            return FALSE;
+        }
+
+        /*
+         * With FP16 input, post comp passthrough is not allowed, as the
+         * OLUT must be enabled.
+         */
+        if (pMainSurface) {
+            if ((pMainSurface->format == NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
+                (pMainSurface->format == NvKmsSurfaceMemoryFormatRF16GF16BF16XF16)) {
+                return FALSE;
+            }
+        }
+
+        /* OLUT override must not be provided. */
+        if (pFlipState->outputLut.fromOverride &&
+            pFlipState->outputLut.pLutSurfaceEvo != NULL) {
+            return FALSE;
+        }
+
+        /* Viewport scaling must be disabled. */
+        if ((pTimings->viewPort.in.width != pTimings->viewPort.out.width) ||
+            (pTimings->viewPort.in.height != pTimings->viewPort.out.height)) {
+            return FALSE;
+        }
+
+        /* Cursor must not be enabled. */
+        if (pFlipState->cursor.pSurfaceEvo != NULL) {
+            return FALSE;
+        }
+
+        /* Output TF must be NONE. */
+        if (pFlipState->tf != NVKMS_OUTPUT_TF_NONE) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static NvBool ValidateHdmiVsif(const NVDevEvoRec *pDevEvo,
+                               const NvU32 head,
+                               const NVFlipEvoHwState *pFlipState,
+                               const NVConnectorEvoRec *pConnectorEvo)
+{
+    if (pFlipState->hdmiVsifMetadata.payloadSize != 0) {
+        if ((pConnectorEvo == NULL) ||
+            (pConnectorEvo->type != NVKMS_CONNECTOR_TYPE_HDMI)) {
+            return FALSE;
+        }
+        /* Prevent HDR + VSIF when both infoframes can't be sent simultaneously. */
+        if (!pDevEvo->caps.supportsGenericSharedInfoFrames) {
+            /*
+             * Note: when pHeadState->hdrInfoFrame.state is TRANSITIONING,
+             * (HDR to SDR DR&M transition), VSIF can be enabled and will
+             * be sent instead of the SDR DR&M (when supportsGenericSharedInfoFrames
+             * is FALSE).
+             */
+            NvU32 layer;
+            if (pFlipState->hdrInfoFrame.enabled) {
+                return FALSE;
+            }
+            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+                if (pFlipState->layer[layer].hdrStaticMetadata.enabled) {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
 /*!
  * Perform validation of the the given NVFlipEvoHwState.
  */
@@ -1793,6 +1931,7 @@ NvBool nvValidateFlipEvoHwState(
     const NVDevEvoRec *pDevEvo,
     const NvU32 head,
     const NVHwModeTimingsEvo *pTimings,
+    const NVConnectorEvoRec *pConnectorEvo,
     const NVFlipEvoHwState *pFlipState)
 {
     NvU32 layer;
@@ -1846,6 +1985,14 @@ NvBool nvValidateFlipEvoHwState(
     }
 
     if (!ValidateHeadLutHwState(pDevEvo, pFlipState)) {
+        return FALSE;
+    }
+
+    if (!ValidateColorPassthroughFlipState(pDevEvo, head, pTimings, pFlipState)) {
+        return FALSE;
+    }
+
+    if (!ValidateHdmiVsif(pDevEvo, head, pFlipState, pConnectorEvo)) {
         return FALSE;
     }
 
@@ -2045,6 +2192,37 @@ static NvBool UpdateHDR(NVDevEvoPtr pDevEvo,
     return dirty;
 }
 
+static NvBool UpdatePassthrough(NVDevEvoPtr pDevEvo,
+                                const NVFlipEvoHwState *pFlipState,
+                                const NvU32 sd,
+                                const NvU32 head)
+{
+    NvBool dirty = FALSE;
+    NVDispEvoPtr pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+    NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+
+    if (pFlipState->dirty.postcompColorPassthrough) {
+        pHeadState->postcompColorPassthrough =
+            pFlipState->postcompColorPassthrough;
+        dirty = TRUE;
+    }
+
+    return dirty;
+}
+
+static void UpdateHDMIVsifMetadata(NVDevEvoPtr pDevEvo,
+                                   const NVFlipEvoHwState *pFlipState,
+                                   const NvU32 sd,
+                                   const NvU32 head)
+{
+    NVDispEvoPtr pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+    NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+
+    if (pFlipState->dirty.hdmiVsifMetadata) {
+        pHeadState->hdmiVsifMetadata = pFlipState->hdmiVsifMetadata;
+    }
+}
+
 /*!
  * Program a flip on all requested layers on the specified head.
  *
@@ -2070,7 +2248,7 @@ void nvFlipEvoOneHead(
     NVEvoSubDevHeadStateRec *pSdHeadState =
         &pDevEvo->gpus[sd].headState[head];
     NvU32 layer;
-    NvBool hdrDirty;
+    NvBool hdrDirty, passthroughDirty;
 
     /*
      * Provide the pre-update hardware state (in pSdHeadState) and the new
@@ -2130,8 +2308,9 @@ void nvFlipEvoOneHead(
     }
 
     hdrDirty = UpdateHDR(pDevEvo, pFlipState, sd, head, pHdrInfo, updateState);
+    passthroughDirty = UpdatePassthrough(pDevEvo, pFlipState, sd, head);
 
-    if (pFlipState->dirty.olut || hdrDirty) {
+    if (pFlipState->dirty.olut || hdrDirty || passthroughDirty) {
         pDevEvo->hal->SetOutputLut(pDevEvo, sd, head,
                                    &pFlipState->outputLut,
                                    pFlipState->olutFpNormScale,
@@ -2139,15 +2318,14 @@ void nvFlipEvoOneHead(
                                    bypassComposition);
     }
 
+    UpdateHDMIVsifMetadata(pDevEvo, pFlipState, sd, head);
+
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
         if (!pFlipState->dirty.layer[layer]) {
             continue;
         }
 
         if (pFlipState->dirty.layerPosition[layer]) {
-            /* Ensure position updates are supported on this layer. */
-            nvAssert(pDevEvo->caps.layerCaps[layer].supportsWindowMode);
-
             pDevEvo->hal->SetImmPointOut(pDevEvo,
                                          pDevEvo->head[head].layer[layer],
                                          sd,
@@ -2884,8 +3062,8 @@ static void SkipLayerPendingFlips(NVDevEvoRec *pDevEvo,
 
 void nvPreFlip(NVDevEvoRec *pDevEvo,
                struct NvKmsFlipWorkArea *pWorkArea,
-               const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
-               const NvU32 allowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES],
+               const NvU32 applyAllowVrrApiHeadMask,
+               const NvU32 allowVrrApiHeadMask,
                const NvBool skipUpdate)
 {
     NvU32 sd, head;
@@ -2915,19 +3093,16 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
                               pWorkArea);
     }
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        if (applyAllowVrrApiHeadMasks[sd] > 0){
-            // Applying allowVrrApiHeadMask to at least one apiHead
-            nvSetVrrActive(pDevEvo, applyAllowVrrApiHeadMasks, allowVrrApiHeadMasks);
-            break;
-        }
+    if (applyAllowVrrApiHeadMask != 0){
+        // Applying allowVrrApiHeadMask to at least one apiHead
+        nvSetVrrActive(pDevEvo, applyAllowVrrApiHeadMask, allowVrrApiHeadMask);
     }
 }
 
 void nvPostFlip(NVDevEvoRec *pDevEvo,
                 struct NvKmsFlipWorkArea *pWorkArea,
                 const NvBool skipUpdate,
-                const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES])
+                const NvU32 applyAllowVrrApiHeadMask)
 {
     NvU32 sd, head;
 
@@ -2944,7 +3119,7 @@ void nvPostFlip(NVDevEvoRec *pDevEvo,
     // NOTE: This call will not cancel the frame release timer in
     // the case where there is a vrr active head that is pending cursor motion
     // and not currently flipping, since we need to wait for the timer for that head
-    nvCancelVrrFrameReleaseTimers(pDevEvo, applyAllowVrrApiHeadMasks);
+    nvCancelVrrFrameReleaseTimers(pDevEvo, applyAllowVrrApiHeadMask);
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         if (!pWorkArea->sd[sd].changed) {
@@ -3097,6 +3272,7 @@ NvBool nvAssignNVFlipEvoHwState(NVDevEvoRec *pDevEvo,
     nvOverrideScalingUsageBounds(pDevEvo, head, pFlipHwState, pPossibleUsage);
 
     if (!nvValidateFlipEvoHwState(pDevEvo, head, &pHeadState->timings,
+                                  pHeadState->pConnectorEvo,
                                   pFlipHwState)) {
         return FALSE;
     }

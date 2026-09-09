@@ -26,7 +26,7 @@
  */
 
 /* ------------------------ Includes --------------------------------------- */
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/spdm/spdm.h"
 #include "gpu/spdm/libspdm_includes.h"
 #include "spdm/rmspdmvendordef.h"

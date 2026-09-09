@@ -133,7 +133,7 @@ typedef NV_STATUS dma_control_copy_params_from_rpc_buffer_v(NvU32 cmd, void *par
 #define VGPU_GSP_HIBERNATION_SHRD_BUFF_SIZE   RM_PAGE_SIZE_2M
 #define VGPU_GSP_HIBERNATION_DATA_BUFF_SIZE    8 * 1024 * 1024
 #define VGPU_GSP_HIBERNATION_DATA_MAX_SIZE    48 * 1024 * 1024
-#define VGPU_GSP_HIBERNTAION_TIMEOUT_US       8000000
+#define VGPU_GSP_HIBERNTAION_TIMEOUT_US       ((NV_VGPU_RPC_TIMEOUT_DEFAULT_USEC * 64u) / 100u) // 8s
 
 static NvU32 _gspHibernationBufAvailableData(OBJGPU *pGpu, OBJVGPU *pVGpu);
 static NV_STATUS _transferDataFromGspHibernationBuf(OBJGPU *pGpu, OBJVGPU *pVGpu, NvU64 num_bytes);
@@ -205,7 +205,7 @@ static RPC_VGX_VERSION rpcVgxVersion;
 static NvBool bSkipRpcVersionHandshake = NV_FALSE;
 
 // SYSMEM pfn bitMap info
-VGPU_SYSMEM_PFN_INFO vgpuSysmemPfnInfo = {.bitmapNodes = {NULL}};
+VGPU_SYSMEM_PFN_INFO vgpuSysmemPfnInfo;
 
 #define RESMAN_BUILD
 #define BUILD_LEGACY_RPCS
@@ -556,6 +556,12 @@ static NV_STATUS _setupGspDebugBuff(OBJGPU *pGpu, OBJVGPU *pVGpu)
     pVGpu->debugBuff.pfn = memdescGetPte(pVGpu->debugBuff.pMemDesc, AT_GPU, 0) >> RM_PAGE_SHIFT;
 
     pVGpu->gspCtrlBuf->v1.debugBuf.addr = vgpuGspMakeBufferAddress(&pVGpu->debugBuff, pVGpu->debugBuff.pfn);
+    if (pVGpu->gspCtrlBuf->v1.debugBuf.addr == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct debug buffer address\n");
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
     pVGpu->gspCtrlBuf->v1.requestedGspCaps = FLD_SET_DRF(_VGPU, _GSP_CAPS, _DEBUG_BUFF_SUPPORTED, _TRUE,
                                                          pVGpu->gspCtrlBuf->v1.requestedGspCaps);
 
@@ -694,6 +700,7 @@ static NV_STATUS _setupSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     NV_STATUS status = NV_OK;
     VGPU_SYSMEM_PFN_BITMAP_NODE_P node = NULL;
+    NvBool bBitmapNodesAllocated = NV_FALSE;
 
     if (RMCFG_FEATURE_PLATFORM_MODS ||
         !pGpu->getProperty(pGpu, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED))
@@ -702,6 +709,16 @@ static NV_STATUS _setupSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
     if (vgpuSysmemPfnInfo.pMemDesc_sysmemPfnRing == NULL)
     {
         listInitIntrusive(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead));
+    }
+
+    if (vgpuSysmemPfnInfo.pBitmapNodes == NULL)
+    {
+        const NvLength bitmapNodesSize = sizeof(vgpuSysmemPfnInfo.pBitmapNodes[0]) * MAX_SYSMEM_PFN_BITMAP_NODE;
+        vgpuSysmemPfnInfo.pBitmapNodes = portMemAllocNonPaged(bitmapNodesSize);
+        NV_ASSERT_TRUE_OR_GOTO(status, vgpuSysmemPfnInfo.pBitmapNodes != NULL, NV_ERR_NO_MEMORY, done);
+
+        bBitmapNodesAllocated = NV_TRUE;
+        portMemSet(vgpuSysmemPfnInfo.pBitmapNodes, 0, bitmapNodesSize);
     }
 
     // Initialize the per vGPU sysmem segment list.
@@ -776,6 +793,12 @@ done:
 
         vgpuSysmemPfnInfo.guestMaxPfn = 0;
         vgpuSysmemPfnInfo.sizeInBytes = 0;
+
+        if (bBitmapNodesAllocated)
+        {
+            portMemFree(vgpuSysmemPfnInfo.pBitmapNodes);
+            vgpuSysmemPfnInfo.pBitmapNodes = NULL;
+        }
     }
     else
     {
@@ -936,6 +959,9 @@ void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu)
 
         vgpuSysmemPfnInfo.guestMaxPfn = 0;
         vgpuSysmemPfnInfo.sizeInBytes = 0;
+
+        portMemFree(vgpuSysmemPfnInfo.pBitmapNodes);
+        vgpuSysmemPfnInfo.pBitmapNodes = NULL;
     }
     else
     {
@@ -1199,9 +1225,8 @@ static NvU64 vgpuGspMakeBufferAddress(VGPU_MEM_INFO *pMemInfo, NvU64 gpfn)
             gspBufferAddr |= REF_DEF64(VGPU_GSP_BUF_ADDR_V1_APERTURE, _FBMEM);
             break;
         default:
-            NV_PRINTF(LEVEL_ERROR, "RPC: Invlid address space %d\n", addressSpace);
-            gspBufferAddr = VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID;
-            break;
+            NV_PRINTF(LEVEL_ERROR, "RPC: Invalid address space %d\n", addressSpace);
+            return VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID;
     }
 
     switch (size)
@@ -1220,8 +1245,7 @@ static NvU64 vgpuGspMakeBufferAddress(VGPU_MEM_INFO *pMemInfo, NvU64 gpfn)
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "RPC: Invalid buffer size %lld\n", size);
-            gspBufferAddr = VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID;
-            break;
+            return VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID;
     }
 
     return gspBufferAddr;
@@ -1326,6 +1350,20 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
     pVGpu->gspCtrlBuf->v1.sharedMem.addr      = vgpuGspMakeBufferAddress(&pVGpu->sharedMemory, pVGpu->sharedMemory.pfn);
     pVGpu->gspCtrlBuf->v1.eventBuf.addr       = vgpuGspMakeBufferAddress(&pVGpu->eventRing.mem, pVGpu->eventRing.mem.pfn);
 
+    if (pVGpu->gspCtrlBuf->v1.responseBuf.addr == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID ||
+        pVGpu->gspCtrlBuf->v1.msgBuf.addr      == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID ||
+        pVGpu->gspCtrlBuf->v1.sharedMem.addr   == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID ||
+        pVGpu->gspCtrlBuf->v1.eventBuf.addr    == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct buffer address: "
+                  "responseBuf=0x%llx msgBuf=0x%llx sharedMem=0x%llx eventBuf=0x%llx\n",
+                  pVGpu->gspCtrlBuf->v1.responseBuf.addr,
+                  pVGpu->gspCtrlBuf->v1.msgBuf.addr,
+                  pVGpu->gspCtrlBuf->v1.sharedMem.addr,
+                  pVGpu->gspCtrlBuf->v1.eventBuf.addr);
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
     //
     // Save the BAR2 offsets for the buffers located in FBMEM
     // [*] pCpuMapping -> BAR2 is mapped at this location
@@ -1410,6 +1448,11 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
     }
 
     addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo, pVGpu->gspCtrlBufInfo.pfn);
+    if (addrCtrlBuf == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct control buffer address\n");
+        return NV_ERR_INVALID_ADDRESS;
+    }
 
     status = _vgpuGspSendSetupRequest(pGpu, addrCtrlBuf);
     if (status != NV_OK)
@@ -1428,11 +1471,21 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
 
         gfn = memdescGetPte(pVGpu->gspResponseBufInfo.pMemDesc, AT_CPU, 0) >> RM_PAGE_SHIFT;
         pVGpu->gspCtrlBuf->v1.responseBuf.addr    = vgpuGspMakeBufferAddress(&pVGpu->gspResponseBufInfo, gfn);
+        if (pVGpu->gspCtrlBuf->v1.responseBuf.addr == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+        {
+            NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct response buffer address (coherent CPU mapping)\n");
+            return NV_ERR_INVALID_ADDRESS;
+        }
 
         NV_PRINTF(LEVEL_INFO, "RPC: Control  buf addr IOVA   0x%llx\n", addrCtrlBuf);
 
         gfn = memdescGetPte(pVGpu->gspCtrlBufInfo.pMemDesc, AT_CPU, 0) >> RM_PAGE_SHIFT;
         addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo, gfn);
+        if (addrCtrlBuf == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+        {
+            NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct control buffer address (coherent CPU mapping)\n");
+            return NV_ERR_INVALID_ADDRESS;
+        }
 
         rpcVgpuGspWriteScratchRegister_HAL(pRpc, pGpu, addrCtrlBuf);
     }
@@ -1520,7 +1573,7 @@ NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
     status = _setupGspControlBuffer(pGpu, pVGpu);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "RPC: GSP Shared memory setup failed: 0x%x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "RPC: GSP Control buffer setup failed: 0x%x\n", status);
         goto fail;
     }
 
@@ -2111,11 +2164,11 @@ static NV_STATUS _issueRpcLarge
         if (entryLength > remainingSize)
             entryLength = remainingSize;
 
-        if (gpuIsCCFeatureEnabled(pGpu))
-        {
-            // Zero out the entire RPC message header to clear the state of previous chunk.
-            portMemSet(pVgpuRpcHeader, 0, sizeof(rpc_message_header_v));
-        }
+        // Zero out the entire RPC message header to clear the state of previous chunk.
+        portMemSet(pVgpuRpcHeader, 0, sizeof(rpc_message_header_v));
+        pVgpuRpcHeader->header_version = DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MAJOR, _TOT) |
+                                         DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MINOR, _TOT);
+        pVgpuRpcHeader->signature = NV_VGPU_MSG_SIGNATURE_VALID;
 
         portMemCopy(rpcGetVgpuMessageData(pRpc), entryLength, pBuf8, entryLength);
 
@@ -2255,19 +2308,6 @@ static NV_STATUS _issueRpcAndWaitLarge
     return _issueRpcLarge(pGpu, pRpc, bufSize, pBuffer,
                           bBidirectional,
                           NV_TRUE);  //bWait
-}
-
-static NV_STATUS _issueRpcAsyncLarge
-(
-    OBJGPU *pGpu,
-    OBJRPC *pRpc,
-    NvU32 bufSize,
-    const void *pBuffer
-)
-{
-    return _issueRpcLarge(pGpu, pRpc, bufSize, pBuffer,
-                          NV_FALSE,  //bBidirectional
-                          NV_FALSE); //bWait
 }
 
 static NV_STATUS _issuePteDescRpc
@@ -2980,17 +3020,22 @@ NV_STATUS rpcLog_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, const char *logstr, NvU32 lo
     NV_STATUS status;
     NvU32     length;
 
+    if (logstr == NULL)
+    {
+        return NV_ERR_INVALID_POINTER;
+    }
+
     length = (NvU32)portStringLength(logstr) + 1;
 
-    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00) + length);
-    if (status != NV_OK)
-        return status;
-
-    if (length > sizeof(rpc_log_v03_00) + pRpc->maxRpcSize)
+    if (sizeof(rpc_log_v03_00) + length > pRpc->maxRpcSize)
     {
         NV_PRINTF(LEVEL_ERROR, "LOG RPC - string too long\n");
         return NV_ERR_BUFFER_TOO_SMALL;
     }
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_LOG, sizeof(rpc_log_v03_00) + length);
+    if (status != NV_OK)
+        return status;
 
     rpcGetVgpuMessageData(pRpc)->log_v03_00.level    = loglevel;
     rpcGetVgpuMessageData(pRpc)->log_v03_00.log_len  = length;
@@ -4599,8 +4644,11 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
             return rpcCtrlSetTimeslice_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
         case NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS:
-            return rpcCtrlFifoDisableChannels_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
-
+            return rpcCtrlFifoDisableChannels_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);	
+		case NV2080_CTRL_CMD_FIFO_VGPU_SWRUNLIST_SUBMIT:
+            return rpcCtrlFifoVgpuSwrunlistSubmit_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
+        case NV2080_CTRL_CMD_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE:
+            return rpcCtrlFifoVgpuSwrunlistChannelUpdate_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
         case NVA06C_CTRL_CMD_PREEMPT:
             return rpcCtrlPreempt_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -4706,9 +4754,6 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
 
         case NV2080_CTRL_CMD_FB_GET_INFO_V2:
             return rpcCtrlFbGetInfoV2_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
-
-        case NV0080_CTRL_CMD_FIFO_SET_CHANNEL_PROPERTIES:
-            return rpcCtrlFifoSetChannelProperties_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
         case NV2080_CTRL_CMD_GPU_EVICT_CTX:
             return rpcCtrlGpuEvictCtx_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
@@ -5476,6 +5521,24 @@ NV_STATUS rpcRmApiControl_v2E_05(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, N
     return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
 }
 
+NV_STATUS rpcRmApiControl_v2F_01(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
+NV_STATUS rpcRmApiControl_v2F_03(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
+NV_STATUS rpcRmApiControl_v2F_05(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
 NV_STATUS rpcGetBrandCaps_v25_12(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                  void *pParamStructPtr, NvU32 paramSize)
 {
@@ -5950,6 +6013,74 @@ NV_STATUS rpcCtrlFifoDisableChannels_v1A_0A(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle
 
     status = deserialize_NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS_v06_00(pParams,
                                                                          (NvU8 *) rpc_ctrl_params,
+                                                                         0, NULL);
+    return status;
+}
+
+
+NV_STATUS rpcCtrlFifoVgpuSwrunlistSubmit_v2F_02(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS *pParams = (NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS *)pParamStructPtr;
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02 *rpc_ctrl_params = &rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_submit_v2F_02.vgpuSwrunlistSubmit;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT,
+                                  sizeof(rpc_ctrl_fifo_vgpu_swrunlist_submit_v2F_02));
+    if (status != NV_OK)
+        return status;
+
+    rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_submit_v2F_02.hClient = hClient;
+    rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_submit_v2F_02.hObject = hObject;
+
+    status = serialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02(pParams,
+                                                                       (NvU8 *) rpc_ctrl_params,
+                                                                       0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT_PARAMS_v2F_02(pParams,
+                                                                         (NvU8 *) rpc_ctrl_params,
+                                                                         0, NULL);
+    return status;
+
+}
+
+NV_STATUS rpcCtrlFifoVgpuSwrunlistChannelUpdate_v2F_02(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS *pParams =
+        (NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS *)pParamStructPtr;
+    NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02 *rpc_ctrl_params =
+        &rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_channel_update_v2F_02.vgpuSwrunlistChannelUpdate;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE,
+                                  sizeof(rpc_ctrl_fifo_vgpu_swrunlist_channel_update_v2F_02));
+    if (status != NV_OK)
+        return status;
+
+    rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_channel_update_v2F_02.hClient = hClient;
+    rpcGetVgpuMessageData(pRpc)->ctrl_fifo_vgpu_swrunlist_channel_update_v2F_02.hObject = hObject;
+
+    status = serialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02(pParams,
+                                                                         (NvU8 *)rpc_ctrl_params,
+                                                                         0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS_v2F_02(pParams,
+                                                                         (NvU8 *)rpc_ctrl_params,
                                                                          0, NULL);
     return status;
 }
@@ -8351,30 +8482,9 @@ NV_STATUS rpcCtrlGetMmuDebugMode_v1E_06(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hCl
 
 NV_STATUS rpcCtrlFifoSetChannelProperties_v1A_16(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
-    NV_STATUS status;
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams = (NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *)pParamStructPtr;
-    rpc_ctrl_fifo_set_channel_properties_v1A_16 *rpc_params = &rpcGetVgpuMessageData(pRpc)->ctrl_fifo_set_channel_properties_v1A_16;
+    osAssertFailed();
 
-    status = rpcWriteCommonHeader(pGpu,
-                                  pRpc,
-                                  NV_VGPU_MSG_FUNCTION_CTRL_FIFO_SET_CHANNEL_PROPERTIES,
-                                  sizeof(rpc_ctrl_fifo_set_channel_properties_v1A_16));
-    if (status != NV_OK)
-        return status;
-
-    rpc_params->hClient = hClient;
-    rpc_params->hObject = hObject;
-
-    status = serialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    if (status != NV_OK)
-        return status;
-
-    status = _issueRpcAndWait(pGpu, pRpc);
-    if (status != NV_OK)
-        return status;
-
-    status = deserialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    return status;
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS rpcCtrlBusSetP2pMapping_v29_08(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
@@ -9189,7 +9299,7 @@ cliresCtrlCmdDiagDumpRpc_IMPL
 
         while (i < pRpcDumpParams->firstEntryOffset)
         {
-            NV_ASSERT_OR_RETURN(rpcDumpRec.pHead, NV_ERR_INVALID_ARGUMENT);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, rpcDumpRec.pHead, NV_ERR_INVALID_ARGUMENT);
             rpcDumpRec.pHead = rpcDumpRec.pHead->pNext;
             i++;
         }
@@ -10180,6 +10290,13 @@ NV_STATUS rpcSetupHibernationBuffer_v2A_06(OBJGPU *pGpu, OBJRPC *pRpc)
     OBJVGPU *pVgpu = GPU_GET_VGPU(pGpu);
 
     addrBuf = vgpuGspMakeBufferAddress(&pVgpu->gspHibernateShrdBufInfo, pVgpu->gspHibernateShrdBufInfo.pfn);
+    if (addrBuf == VGPU_GSP_BUF_ADDR_V1_VALIDITY_INVALID)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RPC: Failed to construct hibernation buffer address\n");
+        status = NV_ERR_INVALID_ADDRESS;
+        goto exit;
+    }
+
     status  = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_SETUP_HIBERNATION_BUFFER,
                                    sizeof(rpc_setup_hibernation_buffer_v2A_06));
     if (status != NV_OK)
@@ -10418,127 +10535,6 @@ NV_STATUS rpcInvalidateTlb_v23_03(OBJGPU *pGpu, OBJRPC *pRpc, NvU64 pdbAddress, 
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to invaldiate TLB rpc 0x%x\n", status);
-    }
-
-    return status;
-}
-
-/*
- * Tells GSP-RM about the overall system environment, such as what physical
- * memory addresses to use.
- *
- * This is an init RPC for GSP-RM early boot.
- */
-NV_STATUS rpcGspSetSystemInfo_v17_00
-(
-    OBJGPU                *pGpu,
-    OBJRPC                *pRpc
-)
-{
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-        GspSystemInfo *rpcInfo = (GspSystemInfo *)&rpcGetVgpuMessageData(pRpc)->gsp_set_system_info_v17_00.data;
-        const NvU32 messageLength = sizeof(rpc_message_header_v) + sizeof(*rpcInfo);
-
-        if (messageLength > pRpc->maxRpcSize)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "GSP_SET_SYSTEM_INFO parameters size (0x%x) exceed message_buffer size (0x%x)\n",
-                      messageLength, pRpc->maxRpcSize);
-
-            NV_ASSERT(0);
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-        }
-
-        NV_ASSERT_OR_RETURN(pKernelGsp->pSystemInfo != NULL, NV_ERR_INVALID_STATE);
-
-        status = rpcWriteCommonHeader(pGpu, pRpc,
-                                    NV_VGPU_MSG_FUNCTION_GSP_SET_SYSTEM_INFO,
-                                    sizeof(GspSystemInfo));
-        if (status != NV_OK)
-            return status;
-
-        portMemCopy(rpcInfo, sizeof(*rpcInfo), pKernelGsp->pSystemInfo, sizeof(GspSystemInfo));
-
-        status = _issueRpcAsync(pGpu, pRpc);
-    }
-
-    return status;
-}
-
-/*
- * Transfers registry entries from CPU-RM to GSP-RM during init.
- *
- * This is an init RPC for GSP-RM early boot.
- */
-NV_STATUS rpcSetRegistry_v17_00
-(
-    OBJGPU                *pGpu,
-    OBJRPC                *pRpc
-)
-{
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-        NvU32 regTableSize = pKernelGsp->regTableSize;
-        NvU32 totalSize;
-        NvU32 remainingMessageSize;
-        PACKED_REGISTRY_TABLE *pRegTable;
-        rpc_message_header_v *largeRpcBuffer = NULL;
-
-        NV_ASSERT_OR_RETURN(pKernelGsp->pRegTable != NULL, NV_ERR_INVALID_STATE);
-
-        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_SET_REGISTRY, 0);
-        if (status != NV_OK)
-            return status;
-
-        remainingMessageSize = pRpc->maxRpcSize - sizeof(rpc_message_header_v);
-
-        //
-        // SET_REGISTRY is async RPC. If registry table exceeds size of
-        // message queue, we won't be able to send complete data and it's
-        // time to evaluate alternate implementations. Some ways to resolve
-        // this issue are use bigger queue, use sync RPC or allocate dedicated
-        // memory for sharing regkey table with GSP-RM.
-        //
-        totalSize = sizeof(rpc_message_header_v) + regTableSize;
-        NV_ASSERT(totalSize < pRpc->pMessageQueueInfo->commandQueueSize);
-
-        // Find out if we need to issue large RPC
-        if (regTableSize > remainingMessageSize)
-        {
-            largeRpcBuffer = portMemAllocNonPaged(totalSize);
-            if (largeRpcBuffer == NULL)
-                return NV_ERR_NO_MEMORY;
-
-            portMemCopy(largeRpcBuffer, totalSize,
-                        rpcGetVgpuMessageHeader(pRpc), sizeof(rpc_message_header_v));
-
-            pRegTable = (PACKED_REGISTRY_TABLE *)(&largeRpcBuffer->rpc_message_data);
-        }
-        else
-        {
-            pRegTable = (PACKED_REGISTRY_TABLE *)rpcGetVgpuMessageData(pRpc);
-        }
-
-        portMemCopy(pRegTable, regTableSize, pKernelGsp->pRegTable, regTableSize);
-
-        if (largeRpcBuffer != NULL)
-        {
-            status = _issueRpcAsyncLarge(pGpu, pRpc, totalSize, largeRpcBuffer);
-        }
-        else
-        {
-            rpcGetVgpuMessageHeader(pRpc)->length = totalSize;
-            status = _issueRpcAsync(pGpu, pRpc);
-        }
-
-        portMemFree(largeRpcBuffer);
     }
 
     return status;

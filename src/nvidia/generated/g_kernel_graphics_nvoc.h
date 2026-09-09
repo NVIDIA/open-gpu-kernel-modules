@@ -49,6 +49,7 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "kernel/gpu/gr/kernel_graphics_object.h"
 #include "kernel/gpu/gr/kernel_graphics_context.h"
+#include "kernel/gpu/gr/kernel_watchdog.h"
 #include "kernel/mem_mgr/ctx_buf_pool.h"
 #include "kernel/gpu/gr/fecs_event_list.h"
 #include "eventbufferproducer.h"
@@ -64,6 +65,7 @@ typedef struct KGRAPHICS_STATIC_INFO KGRAPHICS_STATIC_INFO;
 typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
 typedef struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO;
 typedef struct KGRAPHICS_BUG4208224_CONTEXT_INFO KGRAPHICS_BUG4208224_CONTEXT_INFO;
+typedef struct KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO;
 
 /*!
  * Static info retrieved from Physical RM detailing the configuration of the
@@ -179,6 +181,12 @@ struct KGRAPHICS_BUG4208224_CONTEXT_INFO
     NvBool bConstructed;
 };
 
+struct KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO
+{
+    NvHandle hClient;
+    NvBool   bConstructed;
+};
+
 // Opaque forward declarations
 typedef struct KGRAPHICS_PRIVATE_DATA KGRAPHICS_PRIVATE_DATA;
 typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
@@ -259,6 +267,7 @@ struct KernelGraphics {
     NvBool PRIVATE_FIELD(bRtvCbSupported);
     NvBool PRIVATE_FIELD(bFecsRecordUcodeSeqnoSupported);
     NvBool PRIVATE_FIELD(bBug4208224WAREnabled);
+    struct KernelWatchdog *PRIVATE_FIELD(pKernelWatchdog);
     NvU32 PRIVATE_FIELD(instance);
     KGRAPHICS_PRIVATE_DATA *PRIVATE_FIELD(pPrivate);
     NvBool PRIVATE_FIELD(bCollectingDeferredStaticData);
@@ -268,6 +277,7 @@ struct KernelGraphics {
     CTX_BUF_INFO PRIVATE_FIELD(maxCtxBufSize)[10];
     GR_BUFFER_ATTR PRIVATE_FIELD(ctxAttr)[10];
     struct KGRAPHICS_BUG4208224_CONTEXT_INFO PRIVATE_FIELD(bug4208224Info);
+    struct KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO PRIVATE_FIELD(goldenImageChannelInfo);
 };
 
 
@@ -323,6 +333,7 @@ struct KernelGraphics_PRIVATE {
     NvBool bRtvCbSupported;
     NvBool bFecsRecordUcodeSeqnoSupported;
     NvBool bBug4208224WAREnabled;
+    struct KernelWatchdog *pKernelWatchdog;
     NvU32 instance;
     KGRAPHICS_PRIVATE_DATA *pPrivate;
     NvBool bCollectingDeferredStaticData;
@@ -332,6 +343,7 @@ struct KernelGraphics_PRIVATE {
     CTX_BUF_INFO maxCtxBufSize[10];
     GR_BUFFER_ATTR ctxAttr[10];
     struct KGRAPHICS_BUG4208224_CONTEXT_INFO bug4208224Info;
+    struct KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO goldenImageChannelInfo;
 };
 
 
@@ -559,6 +571,25 @@ static inline NV_STATUS kgraphicsCreateGoldenImageChannel(OBJGPU *arg1, struct K
 }
 #else // __nvoc_kernel_graphics_h_disabled
 #define kgraphicsCreateGoldenImageChannel(arg1, arg_this) kgraphicsCreateGoldenImageChannel_IMPL(arg1, arg_this)
+#endif // __nvoc_kernel_graphics_h_disabled
+
+NvBool kgraphicsIsGoldenImageChannelConstructed_IMPL(OBJGPU *arg1, struct KernelGraphics *arg_this);
+#ifdef __nvoc_kernel_graphics_h_disabled
+static inline NvBool kgraphicsIsGoldenImageChannelConstructed(OBJGPU *arg1, struct KernelGraphics *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_kernel_graphics_h_disabled
+#define kgraphicsIsGoldenImageChannelConstructed(arg1, arg_this) kgraphicsIsGoldenImageChannelConstructed_IMPL(arg1, arg_this)
+#endif // __nvoc_kernel_graphics_h_disabled
+
+void kgraphicsDestroyGoldenImageChannel_IMPL(OBJGPU *arg1, struct KernelGraphics *arg_this);
+#ifdef __nvoc_kernel_graphics_h_disabled
+static inline void kgraphicsDestroyGoldenImageChannel(OBJGPU *arg1, struct KernelGraphics *arg_this) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
+}
+#else // __nvoc_kernel_graphics_h_disabled
+#define kgraphicsDestroyGoldenImageChannel(arg1, arg_this) kgraphicsDestroyGoldenImageChannel_IMPL(arg1, arg_this)
 #endif // __nvoc_kernel_graphics_h_disabled
 
 NvBool kgraphicsIsGFXSupported_IMPL(OBJGPU *arg1, struct KernelGraphics *arg_this);
@@ -1148,6 +1179,16 @@ static inline NvBool kgraphicsGetBug4208224WAREnabled(OBJGPU *pGpu, struct Kerne
 static inline void kgraphicsSetBug4208224WAREnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp){
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     pKernelGraphics_PRIVATE->bBug4208224WAREnabled = bProp;
+}
+
+static inline struct KernelWatchdog * kgraphicsGetKernelWatchdog(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics){
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    return pKernelGraphics_PRIVATE->pKernelWatchdog;
+}
+
+static inline void kgraphicsSetKernelWatchdog(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, struct KernelWatchdog *pKernelWatchdog){
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    pKernelGraphics_PRIVATE->pKernelWatchdog = pKernelWatchdog;
 }
 
 #undef PRIVATE_FIELD

@@ -115,6 +115,9 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAM
  * Unlike NVA081_CTRL_CMD_VGPU_CONFIG_SET_INFO, it does no validation
  * and is only to be used internally.
  *
+ * gspBuildVersion [IN]
+ *  NUL-terminated GSP RM build version
+ *
  * discardVgpuTypes [IN]
  *  This parameter specifies if existing vGPU configuration should be
  *  discarded for given pGPU
@@ -131,11 +134,14 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAM
  *   NV_ERR_OBJECT_NOT_FOUND
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE (0x20804003) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE                   (0x20804003) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_GSP_BUILD_VERSION_LEN 128
 
 #define NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS_MESSAGE_ID (0x3U)
 
 typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS {
+    NvU8   gspBuildVersion[NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_GSP_BUILD_VERSION_LEN];
     NvBool discardVgpuTypes;
     NvU32  vgpuInfoCount;
     NV_DECLARE_ALIGNED(NVA081_CTRL_VGPU_INFO vgpuInfo[NVA081_MAX_VGPU_TYPES_PER_PGPU], 8);
@@ -518,5 +524,103 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_MIG_TIMESLICE_MODE_PARAMS 
 typedef struct NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS {
     NvU32 state;
 } NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SET_POWER_STATE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB
+ *
+ * This command is used by kernel RM to start an async scrub of a guest FB
+ * region using a per-VM CeUtils instance. The kernel RM extracts the
+ * guest FB offset and size from the Memory object handle and passes them
+ * to GSP RM.
+ *
+ * fbOffset [IN]
+ *  Physical offset in FB of the guest FB region.
+ * fbSize [IN]
+ *  Size in bytes of the guest FB region.
+ * submittedWorkId [OUT]
+ *  Payload ID for polling completion via CHECK_SCRUB_COMPLETE.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB (0x20804011) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS_MESSAGE_ID (0x11U)
+
+typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 fbOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 fbSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 submittedWorkId, 8);
+    NvU32 gfid;
+} NV2080_CTRL_VGPU_MGR_INTERNAL_SCRUB_GUEST_FB_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE
+ *
+ * This command is used by the vGPU plugin on GSP to check if an async
+ * guest FB scrub has completed.
+ *
+ * submittedWorkId [IN]
+ *  Payload ID returned from SCRUB_GUEST_FB.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE (0x20804012) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS_MESSAGE_ID (0x12U)
+
+typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 submittedWorkId, 8);
+    NvU32 gfid;
+} NV2080_CTRL_VGPU_MGR_INTERNAL_CHECK_SCRUB_COMPLETE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS
+ *
+ * This command creates a per-VM CeUtils scrubber on GSP-RM at a fixed
+ * hardware channel ID. It is the responsibility of the caller (CPU-RM
+ * or Nova) to reserve the channel ID before calling this.
+ *
+ *  gfid              - GFID of the VM
+ *  fixedChId         - Hardware channel ID to pin CeUtils to; use ~0 (all bits set) for RM to assign
+ *  forceCeId         - Copy engine instance to force; use ~0 for RM to assign
+ *  swizzId           - MIG GPU instance swizzle ID (KMIGMGR_SWIZZID_INVALID for non-MIG)
+ *  semaPhysAddr [OUT] - Physical address of the independent finish-payload
+ *                       semaphore page allocated in vidmem by GSP-RM.
+ *                       CPU-RM maps this address to poll for scrub completion.
+ *  semaAperture [OUT] - Address space of the semaphore page (ADDR_FBMEM,
+ *                       ADDR_SYSMEM, etc.). Currently always ADDR_FBMEM.
+ */
+
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS (0x20804013) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS_MESSAGE_ID (0x13U)
+
+typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS {
+    NvU32 gfid;
+    NvU32 fixedChId;
+    NvU32 forceCeId;
+    NvU32 swizzId;
+    NV_DECLARE_ALIGNED(NvU64 semaPhysAddr, 8);
+    NvU32 semaAperture;
+} NV2080_CTRL_VGPU_MGR_INTERNAL_ALLOC_GSP_CEUTILS_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS
+ *
+ * This command destroys a per-VM CeUtils scrubber channel on GSP-RM.
+ * Called from CPU-RM during guest channel free.
+ *
+ *  gfid    - GFID of the VM
+ */
+#define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS (0x20804014) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS_MESSAGE_ID (0x14U)
+
+typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS {
+    NvU32 gfid;
+} NV2080_CTRL_VGPU_MGR_INTERNAL_FREE_GSP_CEUTILS_PARAMS;
+
+
 
 /* _ctrl2080vgpumgrinternal_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,6 +104,35 @@ typedef struct
     NVSWITCH_VERSION kernel;
     NvBool is_compatible;
 } NVSWITCH_CHECK_VERSION_PARAMS;
+
+/*
+ * NVSWITCH_CTL_CHECK_VERSION_V2
+ *
+ * V2 version check with explicit mode selection, modeled after RM's
+ * nv_ioctl_rm_api_version_t (NV_RM_API_VERSION_CMD_STRICT/RELAXED/QUERY).
+ *
+ * Parameters:
+ * cmd[in]
+ *    Version check mode: STRICT, RELAXED, or QUERY.
+ * user[in]
+ *    Version of the interface that the client is compiled with.
+ *    Ignored when cmd is QUERY.
+ * kernel[out]
+ *    Version of the interface that the kernel driver is compiled with.
+ * is_compatible[out]
+ *    Result of version comparison.  Always 0 for QUERY mode.
+ */
+#define NVSWITCH_CHECK_VERSION_CMD_STRICT   0
+#define NVSWITCH_CHECK_VERSION_CMD_RELAXED  1
+#define NVSWITCH_CHECK_VERSION_CMD_QUERY    2
+
+typedef struct
+{
+    NvU32            cmd;
+    NVSWITCH_VERSION user;
+    NVSWITCH_VERSION kernel;
+    NvBool           is_compatible;
+} NVSWITCH_CHECK_VERSION_V2_PARAMS;
 
 /*
  * Max devices supported by the driver
@@ -214,6 +243,7 @@ typedef struct
 #define CTRL_NVSWITCH_CHECK_VERSION       0x02
 #define CTRL_NVSWITCH_GET_DEVICES_V2      0x03
 #define CTRL_NVSWITCH_GET_DEVICE_NODES    0x04
+#define CTRL_NVSWITCH_CHECK_VERSION_V2    0x05
 
 /*
  * Nvswitchctl (device agnostic) IOCTLs
@@ -231,6 +261,9 @@ typedef struct
 #define IOCTL_NVSWITCH_GET_DEVICE_NODES \
     NVSWITCH_IOCTL_CODE(NVSWITCH_CTL_IO_TYPE, CTRL_NVSWITCH_GET_DEVICE_NODES, NVSWITCH_GET_DEVICE_NODES_PARAMS, \
                         NVSWITCH_IO_READ_ONLY)
+#define IOCTL_NVSWITCH_CHECK_VERSION_V2 \
+    NVSWITCH_IOCTL_CODE(NVSWITCH_CTL_IO_TYPE, CTRL_NVSWITCH_CHECK_VERSION_V2, NVSWITCH_CHECK_VERSION_V2_PARAMS, \
+                        NVSWITCH_IO_WRITE_READ)
 
 #ifdef __cplusplus
 }

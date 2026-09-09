@@ -82,7 +82,7 @@ struct OBJHALMGR {
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;    // halmgr
 
     // Data members
-    struct OBJHAL *pHalList[84];
+    struct OBJHAL *pHalList[85];
 };
 
 

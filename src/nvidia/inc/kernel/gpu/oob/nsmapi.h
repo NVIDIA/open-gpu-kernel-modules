@@ -111,13 +111,12 @@ typedef NvU8 NSM_API_STATUS;
 #define NSM_API_EVENT_CLASS_GENERAL                     0x00
 #define NSM_API_EVENT_CLASS_ASSERTION                   0x01
 
+#pragma pack(1)
 /*
  * The following types are just an indication that a given variable is meant
  * to be encoded as big-endian, regardless of the CPU's native endianness.
  */
-typedef struct { NvU16 value; } NvU16BE; // 16-bit big-endian unsigned integer
-
-#pragma pack(1)
+typedef struct { NvU16 value; } NvU16BE;
 /**
  * NSM Packet Header
  *
@@ -152,6 +151,22 @@ struct nsm_event
     NvU16 event_state;    //!< Additional class-dependent info about the event
     NvU8 data_size_bytes; //!< Size of the trailing payload pointed to by `data`
     NvU8 data[];          //!< Message Payload
+};
+
+/**
+ * NSM Event packet v2
+ *
+ * For internal use between OOBHUB and RM.
+ */
+struct nsm_event_v2
+{
+    struct nsm_header hdr;
+    NvU8 ackr_version;     //!< ACK required and Event payload version
+    NvU8 event_id;         //!< Event ID
+    NvU8 event_class;      //!< Category of the reported event. T
+    NvU16 event_state;     //!< Additional class-dependent info about the event
+    NvU32 data_size_bytes; //!< Size of the trailing payload pointed to by `data`
+    NvU8 data[];           //!< Message Payload
 };
 
 /**
@@ -207,6 +222,17 @@ struct nsm_event_info
     NvU8 *data;           //!< Pointer to additional data bytes
 };
 
+struct nsm_event_info_v2
+{
+    NvU8 version;          //!< Event data version
+    NvU8 event_id;         //!< Event ID
+    NvU8 event_class;      //!< Category of the reported event. T
+    NvU16 event_state;     //!< Additional class-dependent info about the event
+    NvU8 reserved[1];      //!< Padding to align to 4 byte boundary
+    NvU32 data_size_bytes; //!< Size of the trailing payload pointed to by `data`
+    NvU8 *data;            //!< Message Payload
+ };
+
 struct nsm_encdec_context
 {
     void *base;          //!< Start of the input/output buffer
@@ -241,6 +267,9 @@ NSM_API_STATUS nsm_api_decode_header(struct nsm_encdec_context *ctx, NvU8 *messa
 
 NSM_API_STATUS nsm_api_encode_event(struct nsm_encdec_context *ctx, const struct nsm_event_info *info,
                                     NvU8 nvidia_msg_type, NvU8 instance_id);
+
+NSM_API_STATUS nsm_api_encode_event_v2(struct nsm_encdec_context *ctx, const struct nsm_event_info_v2 *info,
+                                       NvU8 nvidia_msg_type, NvU8 instance_id);
 
 NSM_API_STATUS nsm_api_decode_request(struct nsm_encdec_context *ctx, struct nsm_request_info *info,
                                       NvU8 *nvidia_msg_type, NvU8 *instance_id);

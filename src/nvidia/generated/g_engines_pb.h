@@ -12,9 +12,11 @@ extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 #define NVDEBUG_ENG_GPU (&prb_messages_nvdebug_eng[1])
 #define NVDEBUG_ENG_NVD (&prb_messages_nvdebug_eng[2])
 #define NVDEBUG_ENG_KGSP (&prb_messages_nvdebug_eng[3])
-#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[4])
-#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[5])
-#define NVDEBUG_ENG_KGSP_RPCINFO (&prb_messages_nvdebug_eng[6])
+#define NVDEBUG_ENG_KERNELNVLINK (&prb_messages_nvdebug_eng[4])
+#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[5])
+#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[6])
+#define NVDEBUG_ENG_KGSP_RPCINFO (&prb_messages_nvdebug_eng[7])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG (&prb_messages_nvdebug_eng[8])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
@@ -22,9 +24,11 @@ extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 #define NVDEBUG_ENG_GPU_LEN 62
 #define NVDEBUG_ENG_NVD_LEN 30
 #define NVDEBUG_ENG_KGSP_LEN 100
+#define NVDEBUG_ENG_KERNELNVLINK_LEN 107
 #define NVDEBUG_ENG_MC_RMDATA_LEN 12
 #define NVDEBUG_ENG_MC_PCIBARINFO_LEN 22
 #define NVDEBUG_ENG_KGSP_RPCINFO_LEN 46
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_LEN 75
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc[];
 
@@ -88,6 +92,20 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp[];
 #define NVDEBUG_ENG_KGSP_RPC_HISTORY_LEN 49
 #define NVDEBUG_ENG_KGSP_EVENT_HISTORY_LEN 49
 
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink[];
+
+// 'KernelNvlink' field descriptor pointers
+#define NVDEBUG_ENG_KERNELNVLINK_UNCONTAINED_ERROR_ABORT_TIMEOUT_NS (&prb_fields_nvdebug_eng_kernelnvlink[0])
+#define NVDEBUG_ENG_KERNELNVLINK_TRAFFIC_QUIESCE_ABORT_TIMEOUT_NS (&prb_fields_nvdebug_eng_kernelnvlink[1])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG (&prb_fields_nvdebug_eng_kernelnvlink[2])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG_DROPS (&prb_fields_nvdebug_eng_kernelnvlink[3])
+
+// 'KernelNvlink' field lengths
+#define NVDEBUG_ENG_KERNELNVLINK_UNCONTAINED_ERROR_ABORT_TIMEOUT_NS_LEN 10
+#define NVDEBUG_ENG_KERNELNVLINK_TRAFFIC_QUIESCE_ABORT_TIMEOUT_NS_LEN 10
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG_LEN 78
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG_DROPS_LEN 5
+
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_rmdata[];
 
 // 'RmData' field descriptor pointers
@@ -125,6 +143,32 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp_rpcinfo[];
 #define NVDEBUG_ENG_KGSP_RPCINFO_DATA0_LEN 5
 #define NVDEBUG_ENG_KGSP_RPCINFO_DATA1_LEN 5
 #define NVDEBUG_ENG_KGSP_RPCINFO_SEQUENCE_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[];
+
+// 'ResiliencyTimingLog' field descriptor pointers
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_TIMESTAMP_NS (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[0])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_ELAPSED_NS (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[1])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_TIMEOUT_NS (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[2])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_SEQ_ID (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[3])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_FLOW (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[4])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_EVENT (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[5])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_STATUS (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[6])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_QUIESCE_STATE (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[7])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_UVM_IDLE (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[8])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_FLAGS (&prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[9])
+
+// 'ResiliencyTimingLog' field lengths
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_TIMESTAMP_NS_LEN 10
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_ELAPSED_NS_LEN 10
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_TIMEOUT_NS_LEN 10
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_SEQ_ID_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_FLOW_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_EVENT_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_STATUS_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_QUIESCE_STATE_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_UVM_IDLE_LEN 5
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_FLAGS_LEN 5
 
 extern const PRB_SERVICE_DESC prb_services_nvdebug_eng[];
 

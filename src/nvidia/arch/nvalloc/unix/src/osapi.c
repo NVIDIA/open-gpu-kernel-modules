@@ -265,7 +265,36 @@ NvBool osIsSwPreInitOnly
     return NV_FALSE;
 }
 
-const NvU8 * RmGetGpuUuidRaw(
+static NV_STATUS RmGenerateGpuUuidFromDvsecPdi
+(
+    nv_state_t *pNv,
+    NvUuid *pUuid
+)
+{
+    NV_STATUS rmStatus;
+    NvU64 pdi;
+    nv_priv_t *pNvp;
+    NvU16 chipId;
+
+    if ((pNv == NULL) || (pUuid == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pNvp = NV_GET_NV_PRIV(pNv);
+    chipId = (NvU16)decodePmcBoot42ChipId(pNvp->pmc_boot_42);
+
+    rmStatus = nv_pci_read_gpu_pdi_from_dvsec(pNv, &pdi);
+    if (rmStatus == NV_OK)
+    {
+        rmStatus = nvGenerateGpuUuid(chipId, pdi, pUuid);
+    }
+
+    return rmStatus;
+}
+
+const NvU8 * RmGetGpuUuidRaw
+(
     nv_state_t *pNv
 )
 {
@@ -303,7 +332,16 @@ const NvU8 * RmGetGpuUuidRaw(
     {
         if (!pNv->nv_uuid_cache.pci_uuid_read_attempted)
         {
-            rmStatus = pciPbiReadUuid(pNv->handle, pNv->nv_uuid_cache.uuid);
+            rmStatus = RmGenerateGpuUuidFromDvsecPdi(pNv,
+                                                     (NvUuid *)pNv->nv_uuid_cache.uuid);
+
+            pNv->nv_uuid_cache.pci_uuid_from_dvsec_pdi = (rmStatus == NV_OK);
+
+            if (rmStatus == NV_ERR_NOT_SUPPORTED)
+            {
+                rmStatus = pciPbiReadUuid(pNv->handle, pNv->nv_uuid_cache.uuid);
+            }
+
             pNv->nv_uuid_cache.pci_uuid_read_attempted = NV_TRUE;
             pNv->nv_uuid_cache.pci_uuid_status = rmStatus;
         }
@@ -327,7 +365,7 @@ const NvU8 * RmGetGpuUuidRaw(
     else if (rmStatus == NV_ERR_NOT_SUPPORTED)
     {
         nv_printf(NV_DBG_INFO,
-                  "NVRM: PBI is not supported for GPU " NV_PCI_DEV_FMT "\n",
+                  "NVRM: early GPU UUID retrieval is not supported for GPU " NV_PCI_DEV_FMT "\n",
                   NV_PCI_DEV_FMT_ARGS(pNv));
     }
 
@@ -1387,7 +1425,7 @@ static NvU32 RmDmabufMmapGetCpuCacheType(
     NvU8               mappingType
 )
 {
-    if (pGpu->pGpuArch->bGpuArchIsZeroFb)
+    if (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)
     {
         return memdescGetCpuCacheAttrib(pMemDesc);
     }
@@ -1418,6 +1456,7 @@ RmDmabufVerifyMemHandle(
     NvU64               offset,
     NvU64               size,
     void               *pGpuInstanceInfo,
+    NvU8                mappingType,
     MEMORY_DESCRIPTOR **ppMemDesc
 )
 {
@@ -1476,9 +1515,16 @@ RmDmabufVerifyMemHandle(
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Only supported for vidmem and sysmem(only for 0FB) handles
-    if ((memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM) &&
-        (!pGpu->pGpuArch->bGpuArchIsZeroFb))
+    // Permitted for both video memory and system memory allocations.
+    if (!((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM) ||
+          (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Only default export mapping is supported for ADDR_SYSMEM.
+    if ((mappingType != NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT) &&
+        (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -1504,9 +1550,12 @@ RmDmabufGetClientAndDevice(
     NvHandle *phClient,
     NvHandle *phDevice,
     NvHandle *phSubdevice,
-    void    **ppGpuInstanceInfo
+    void    **ppGpuInstanceInfo,
+    NvBool   *pbStaticPhysAddrs
 )
 {
+    RsClient *pClient;
+    Memory   *pMemory;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     // No dma-buf support for SLI-enabled GPU
@@ -1532,18 +1581,21 @@ RmDmabufGetClientAndDevice(
         }
     }
 
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          memGetByHandle(pClient, hMemory, &pMemory));
+
+    *pbStaticPhysAddrs = (memdescGetAddressSpace(pMemory->pMemDesc) == ADDR_SYSMEM) ||
+                         (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+                          (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT)) ||
+                         kbusIsStaticBar1Enabled(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+
     if (IS_MIG_ENABLED(pGpu))
     {
         MIG_INSTANCE_REF ref;
-        RsClient *pClient;
-        Memory *pMemory;
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                              serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                              memGetByHandle(pClient, hMemory, &pMemory));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                               kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
@@ -3764,7 +3816,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
                                                              FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, pmc_boot_1),
                                                              NV_IS_SOC_DISPLAY_DEVICE(pNv),
                                                              NULL,
-                                                             NV_FALSE /* bIsTccOrMcdm */);
+                                                             NULL);
         if (!bIsFirmwareCapable)
         {
             if (hypervisorIsVgxHyper())
@@ -3837,14 +3889,11 @@ threadfree:
     return rmStatus;
 }
 
-NvBool NV_API_CALL rm_is_supported_pci_device(
+NvBool NV_API_CALL rm_is_nvidia_gpu_device(
     NvU8   pci_class,
     NvU8   pci_subclass,
     NvU16  vendor,
-    NvU16  device,
-    NvU16  subsystem_vendor,
-    NvU16  subsystem_device,
-    NvBool print_legacy_warning
+    NvU16  device
 )
 {
     const NvU16 nv_pci_vendor_id            = 0x10DE;
@@ -3874,11 +3923,28 @@ NvBool NV_API_CALL rm_is_supported_pci_device(
         return NV_FALSE;
     }
 
-    if (rm_is_legacy_device(
-            device,
-            subsystem_vendor,
-            subsystem_device,
-            print_legacy_warning))
+    return NV_TRUE;
+}
+
+NvBool NV_API_CALL rm_is_supported_pci_device(
+    NvU8   pci_class,
+    NvU8   pci_subclass,
+    NvU16  vendor,
+    NvU16  device,
+    NvU16  subsystem_vendor,
+    NvU16  subsystem_device,
+    NvBool print_legacy_warning
+)
+{
+    if (!rm_is_nvidia_gpu_device(pci_class, pci_subclass, vendor, device))
+    {
+        return NV_FALSE;
+    }
+
+    if (rm_is_legacy_device(device,
+                            subsystem_vendor,
+                            subsystem_device,
+                            print_legacy_warning))
     {
         return NV_FALSE;
     }
@@ -5133,8 +5199,15 @@ void NV_API_CALL rm_disable_gpu_state_persistence(nvidia_stack_t *sp, nv_state_t
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_PERSISTENT_SW_STATE, NV_FALSE);
-    osModifyGpuSwStatePersistence(pGpu->pOsGpuInfo, NV_FALSE);
+    if (osIsInitOnProbeEnabled(pGpu->pOsGpuInfo))
+    {
+        osSetCachedPersistenceMode(pGpu->pOsGpuInfo, NV_FALSE);
+    }
+    else
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_PERSISTENT_SW_STATE, NV_FALSE);
+        osModifyGpuSwStatePersistence(pGpu->pOsGpuInfo, NV_FALSE);
+    }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -5644,7 +5717,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
 
     rmStatus = RmDmabufVerifyMemHandle(pGpu, hSrcClient, hMemory,
                                        offset, size, pGpuInstanceInfo,
-                                       &pMemDesc);
+                                       mappingType, &pMemDesc);
     if (rmStatus == NV_OK)
     {
         RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
@@ -5678,6 +5751,12 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
                 *phMemoryDuped = hMemoryDuped;
             }
         }
+
+        if (rmStatus != NV_OK)
+        {
+            goto Done;
+        }
+
         *ppMemInfo = (void *) pMemDesc;
 
         *pCacheType    = RmDmabufMmapGetCpuCacheType(pGpu, pMemDesc, mappingType);
@@ -5698,8 +5777,8 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
             *pMemoryType = NV_MEMORY_TYPE_FRAMEBUFFER;
         }
 
-        // mmap is allowed on 0FB chips(iGPU) for sysmem and on dGPU for vidmem only
-        *pbCanMmap = (pGpu->pGpuArch->bGpuArchIsZeroFb ||
+        // mmap is allowed for both video memory and system memory allocations.
+        *pbCanMmap = ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) ||
                       (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM));
     }
 
@@ -5785,12 +5864,20 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
     pMemDesc = (MEMORY_DESCRIPTOR *) pMemInfo;
 
-    if (((pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)) ||
-        (pGpu->pGpuArch->bGpuArchIsZeroFb)) &&
-        (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
+    if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) ||
+        (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+         (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT)))
     {
-        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
         NvBool contiguity = memdescCheckContiguity(pMemDesc, AT_CPU);
+        NvU64 physCpuBase = 0llu;
+
+        // Vidmem on coherent GPU: offset from coherent FB base.
+        if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
+        {
+            KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
+            physCpuBase = pKernelMemorySystem->coherentCpuFbBase;
+        }
 
         // On localized allocations over C2C/nvlink mappings, RDMA is not supported
         if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
@@ -5808,7 +5895,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
             NV_ASSERT_OK_OR_GOTO(rmStatus, os_alloc_mem((void **) &pMemArea->pRanges,
                 sizeof(MemoryRange)), Done);
 
-            pMemArea->pRanges[0].start = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            pMemArea->pRanges[0].start = physCpuBase + physAddr;
             pMemArea->pRanges[0].size  = memRange.size;
             pMemArea->numRanges = 1;
         }
@@ -5829,7 +5916,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
             {
                 NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU,
                     realStart + (idx * memdescPageSize));
-                pMemArea->pRanges[idx].start = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+                pMemArea->pRanges[idx].start = physCpuBase + physAddr;
                 pMemArea->pRanges[idx].size  = memdescPageSize;
             }
 
@@ -5920,15 +6007,16 @@ void NV_API_CALL rm_dma_buf_unmap_mem_handle(
     THREAD_STATE_NODE threadState;
     OBJGPU *pGpu;
     void *fp;
+    MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pMemInfo;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
-    if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
-        pGpu->pGpuArch->bGpuArchIsZeroFb) &&
-        (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
+    if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) ||
+        (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+         (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT)))
     {
         os_free_mem(memArea.pRanges);
     }
@@ -5937,7 +6025,6 @@ void NV_API_CALL rm_dma_buf_unmap_mem_handle(
         KernelBus *pKernelBus;
         NvU64 idx;
         NvU64 barOffset;
-        MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pMemInfo;
         NvBool bForcePcie = (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE);
 
         pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
@@ -5980,8 +6067,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
     NvHandle       *phDevice,
     NvHandle       *phSubdevice,
     void          **ppGpuInstanceInfo,
-    NvBool         *pbStaticPhysAddrs,
-    NvBool         *pbAcquireReleaseAllGpuLockOnDup
+    NvBool         *pbStaticPhysAddrs
 )
 {
     THREAD_STATE_NODE threadState;
@@ -6002,16 +6088,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
         {
             rmStatus = RmDmabufGetClientAndDevice(pGpu, hClient, hMemory, mappingType,
                                                   phClient, phDevice,
-                                                  phSubdevice, ppGpuInstanceInfo);
-            if (rmStatus == NV_OK)
-            {
-                *pbStaticPhysAddrs = ((pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
-                                       pGpu->pGpuArch->bGpuArchIsZeroFb) &&
-                                      (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT)) ||
-                                      kbusIsStaticBar1Enabled(pGpu, GPU_GET_KERNEL_BUS(pGpu));
-            }
-
-            *pbAcquireReleaseAllGpuLockOnDup = pGpu->pGpuArch->bGpuArchIsZeroFb;
+                                                  phSubdevice, ppGpuInstanceInfo, pbStaticPhysAddrs);
 
             rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
         }

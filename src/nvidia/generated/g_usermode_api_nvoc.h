@@ -111,12 +111,12 @@ struct NVOC_VTABLE__UserModeApi {
     NV_STATUS (*__usrmodeIsReady__)(struct UserModeApi * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__usrmodeIsGpuMapAllowed__)(struct UserModeApi * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__usrmodeIsExportAllowed__)(struct UserModeApi * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__usrmodeAccessCallback__)(struct UserModeApi * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__usrmodeShareCallback__)(struct UserModeApi * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__usrmodeControlSerialization_Prologue__)(struct UserModeApi * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__usrmodeControlSerialization_Epilogue__)(struct UserModeApi * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__usrmodeControl_Prologue__)(struct UserModeApi * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__usrmodeControl_Epilogue__)(struct UserModeApi * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__usrmodeAccessCallback__)(struct UserModeApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__usrmodeShareCallback__)(struct UserModeApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__usrmodeControlSerialization_Prologue__)(struct UserModeApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__usrmodeControlSerialization_Epilogue__)(struct UserModeApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__usrmodeControl_Prologue__)(struct UserModeApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__usrmodeControl_Epilogue__)(struct UserModeApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__usrmodePreDestruct__)(struct UserModeApi * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__usrmodeControlFilter__)(struct UserModeApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__usrmodeIsPartialUnmapSupported__)(struct UserModeApi * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -270,27 +270,27 @@ static inline NvBool usrmodeIsExportAllowed_DISPATCH(struct UserModeApi *pMemory
     return pMemory->__nvoc_metadata_ptr->vtable.__usrmodeIsExportAllowed__(pMemory);
 }
 
-static inline NvBool usrmodeAccessCallback_DISPATCH(struct UserModeApi *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool usrmodeAccessCallback_DISPATCH(struct UserModeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__usrmodeAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool usrmodeShareCallback_DISPATCH(struct UserModeApi *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool usrmodeShareCallback_DISPATCH(struct UserModeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__usrmodeShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS usrmodeControlSerialization_Prologue_DISPATCH(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS usrmodeControlSerialization_Prologue_DISPATCH(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__usrmodeControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void usrmodeControlSerialization_Epilogue_DISPATCH(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void usrmodeControlSerialization_Epilogue_DISPATCH(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__usrmodeControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS usrmodeControl_Prologue_DISPATCH(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS usrmodeControl_Prologue_DISPATCH(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__usrmodeControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void usrmodeControl_Epilogue_DISPATCH(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void usrmodeControl_Epilogue_DISPATCH(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__usrmodeControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

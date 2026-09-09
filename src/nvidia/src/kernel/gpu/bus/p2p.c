@@ -1368,11 +1368,6 @@ NV_STATUS RmP2PGetPagesPersistent(
     NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(length, NVRM_P2P_PAGESIZE_BIG_64K),
                         NV_ERR_INVALID_ARGUMENT);
 
-    if(gpuIsApmFeatureEnabled(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
     //
     // Forced PCIe mappings are to be used only on coherent systems with a
     // direct PCIe connection between the exporter and importer.

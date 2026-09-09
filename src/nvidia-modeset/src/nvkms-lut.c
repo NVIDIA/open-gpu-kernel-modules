@@ -330,19 +330,14 @@ void nvFreeUnrefedTmoLutSurfacesEvo(NVDevEvoPtr pDevEvo,
 
 void nvInvalidateDefaultLut(NVDevEvoPtr pDevEvo)
 {
-    NvU32 sd;
-
-    for (sd = 0; sd < NVKMS_MAX_SUBDEVICES; sd++) {
-        pDevEvo->lut.defaultBaseLUTState[sd] =
-        pDevEvo->lut.defaultOutputLUTState[sd] =
-            NvKmsLUTStateUninitialized;
-    }
+    pDevEvo->lut.defaultBaseLUTState =
+    pDevEvo->lut.defaultOutputLUTState =
+        NvKmsLUTStateUninitialized;
 }
 
 NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 apiHead, dispIndex, i;
+    NvU32 apiHead, i;
 
     for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         for (i = 0; i < ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT); i++) {
@@ -354,12 +349,10 @@ NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo)
             }
         }
 
-        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-            // No palette has been loaded yet, so disable the LUT.
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate = FALSE;
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curBaseLutEnabled = FALSE;
-            pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curOutputLutEnabled = FALSE;
-        }
+        // No palette has been loaded yet, so disable the LUT.
+        pDevEvo->lut.apiHead[apiHead].waitForPreviousUpdate = FALSE;
+        pDevEvo->lut.apiHead[apiHead].curBaseLutEnabled = FALSE;
+        pDevEvo->lut.apiHead[apiHead].curOutputLutEnabled = FALSE;
     }
 
     // Zero-initalize the LUT notifier state - ensure there's no stale data

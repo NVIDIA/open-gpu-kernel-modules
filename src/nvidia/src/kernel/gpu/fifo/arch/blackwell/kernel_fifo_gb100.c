@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,12 +27,15 @@
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
 #include "lib/base_utils.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "published/blackwell/gb100/dev_fault.h"
 #include "published/blackwell/gb100/dev_vm.h"
 #include "published/blackwell/gb100/dev_ram.h"
 #include "published/blackwell/gb100/dev_esched_pbdma.h"
 #include "published/blackwell/gb100/hwproject.h"
+#include "published/blackwell/gb100/dev_ctrl.h"
+#include "published/blackwell/gb100/dev_gin_zb.h"
 
 #include "kernel/gpu/conf_compute/conf_compute.h"
 #include "nvrm_registry.h"
@@ -299,12 +302,164 @@ kfifoInitRamfcPbHeader_GB100
     MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_PB_HEADER),
              DRF_DEF(_PBDMA, _PB_HEADER, _METHOD,     _ZERO) |
              DRF_DEF(_PBDMA, _PB_HEADER, _SUBCHANNEL, _ZERO) |
-             DRF_DEF(_PBDMA, _PB_HEADER, _LEVEL,      _MAIN) |
              DRF_DEF(_PBDMA, _PB_HEADER, _FIRST,      _TRUE));
 
     fetchState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE));
     fetchState = FLD_SET_DRF(_PBDMA, _MISC_FETCH_STATE, _PB_HEADER_TYPE, _INC, fetchState);
     MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE), fetchState);
+}
+
+/**
+ * @brief Configures Host Copy Engine (HCE) state in RAMFC.
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void kfifoInitHceRamfcState_GB100
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    KernelChannel *pKernelChannel,
+    NvU8          *pInstMem
+)
+{
+    if (pKernelChannel->bHcePrivMode)
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_HCE_CTRL),
+                  DRF_DEF(_PBDMA, _HCE_CTRL, _HCE_PRIV_MODE, _YES));
+    else
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_HCE_CTRL),
+                  DRF_DEF(_PBDMA, _HCE_CTRL, _HCE_PRIV_MODE, _NO));
+}
+
+/**
+ * @brief Configuring PBDMA Auth Level in RAMFC_CONFIG
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelFifo
+ * @param[in] pKernelChannel
+ * @param[in] pInstMem
+ */
+void
+kfifoInitAuthlevelRamfcConfig_GB100
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    KernelChannel *pKernelChannel,
+    NvU8          *pInstMem
+)
+{
+    NvU32 execState;
+
+    execState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE));
+    if (pKernelChannel->bAuthLevelPriv)
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_AUTH_LEVEL, _PRIVILEGED, execState);
+    }
+    else
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_AUTH_LEVEL, _NON_PRIVILEGED, execState);
+    }
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE), execState);
+}
+
+/**
+ * @brief Actually writes the per-context notification interrupt vector in RAMFC
+ *
+ * Host uses the value programmed in this field to decide which interrupt
+ * vector to send a context's PBDMA nonstall interrupt on.
+ */
+void
+kfifoInitRamfcIntrNotifyRouting_GB100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    NvU32             intrVector,
+    NvU8             *pInstMem
+)
+{
+    NvU32 intrCtrl;
+
+    if ((DRF_SHIFTMASK(NV_GIN_ZB_INTR_CTRL_ACCESS_DEFINES_VECTOR) & intrVector) != intrVector)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Interrupt vector (0x%x) is larger "
+            "than the space in RAMFC to hold it\n", intrVector);
+        DBG_BREAKPOINT();
+        return;
+    }
+
+    //
+    // CPU and GSP routing bits are moved into the NV_PBDMA_INTR_NOTIFY_CTRL_ROUTING(i) register,
+    // and do not have backing RAMFC memory in Hopper+. HW defaults to only CPU. If this needs to
+    // change in the future, that programming will need to be done in fifo stateload.
+    //
+    intrCtrl = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY_CTRL));
+    intrCtrl = FLD_SET_DRF_NUM(_GIN_ZB, _INTR_CTRL_ACCESS_DEFINES, _VECTOR, intrVector, intrCtrl);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_INTR_NOTIFY_CTRL), intrCtrl);
+}
+
+/**
+ * @brief Initialize SCG Type info in RAMFC
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void
+kfifoInitRamfcSubctx_GB100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 data;
+    
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+
+    NV_ASSERT(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
+
+    // Set the channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PBDMA, _SET_CHANNEL_INFO, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+
+    // Set the engine context VEID to channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID));
+    data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE_WFI, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID), data);
+
+}
+
+/**
+ * @brief Initializes the channel ID in RAMFC
+ */
+NV_STATUS
+kfifoInitRamfcChid_GB100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32          chId;
+    NvU32          data;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+    
+    chId = pKernelChannel->ChID;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PBDMA, _SET_CHANNEL_INFO, _CHID, chId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -379,4 +534,43 @@ kfifoDisableChannelsForKeyRotation_GB100
 
 done:
     return status;
+}
+
+void
+kfifoInitRamfcSubdevice_GB100
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 subDeviceMask = pKernelChannel->subDeviceId;
+    NvU32 fetchState;
+
+    if (subDeviceMask == 0)
+    {
+        subDeviceMask = gpuGetSubdeviceMask(pGpu);
+    }
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SUBDEVICE),
+                DRF_NUM( _PBDMA, _SUBDEVICE, _ID, subDeviceMask));
+
+    fetchState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE));
+    fetchState = FLD_SET_DRF(_PBDMA, _MISC_FETCH_STATE, _SUBDEVICE_STATUS, _ACTIVE, fetchState);
+    fetchState = FLD_SET_DRF(_PBDMA, _MISC_FETCH_STATE, _SUBDEVICE_CHANNEL_DMA, _ENABLE, fetchState);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_FETCH_STATE), fetchState);
+}
+
+void
+kfifoDumpUserd_GB100
+(
+    OBJGPU      *pGpu,
+    KernelFifo  *pKernelFifo,
+    NvU8        *pUserD
+)
+{
+    NV_PRINTF(LEVEL_ERROR,
+              "GP_PUT = 0x%x\n",
+              MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_GP_PUT)));
 }

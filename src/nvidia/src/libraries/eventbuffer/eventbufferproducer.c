@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 
 #include "eventbufferproducer.h"
 #include "nvport/nvport.h"
+#include "utils/nvassert.h"
 
 //
 // This file contains generic event buffer producer implementation for adding variable length data
@@ -68,6 +69,9 @@ eventBufferInitRecordBuffer
     pRecordBuffer->totalRecordCount = recordCount;
     pRecordBuffer->bufferSize = bufferSize;
     pRecordBuffer->notificationThreshold = notificationThreshold;
+
+    // Opt-in live-ring threshold gating.
+    info->bMaintainRecordCount = NV_FALSE;
 }
 
 void
@@ -104,6 +108,12 @@ void
 eventBufferSetKeepNewest(EVENT_BUFFER_PRODUCER_INFO *info,NvBool isKeepNewest)
 {
     info->isKeepNewest = isKeepNewest;
+}
+
+void
+eventBufferSetMaintainRecordCount(EVENT_BUFFER_PRODUCER_INFO *info, NvBool bMaintain)
+{
+    info->bMaintainRecordCount = bMaintain;
 }
 
 void
@@ -155,6 +165,57 @@ eventBufferGetVardataBufferCount(EVENT_BUFFER_PRODUCER_INFO *info)
 }
 
 //
+// Free record slots under keep-oldest ring semantics. One slot is reserved
+// to distinguish full from empty.
+//
+static NvU32
+eventBufferUsableFreeSlots(EVENT_BUFFER_PRODUCER_INFO *info)
+{
+    RECORD_BUFFER_INFO     *pRecInfo = &info->recordBuffer;
+    NV_EVENT_BUFFER_HEADER *pHeader  = pRecInfo->pHeader;
+    NvU32                   total    = pRecInfo->totalRecordCount;
+    NvU32                   used;
+
+    if (total == 0)
+        return 0;
+
+    used = (pHeader->recordPut + total - pHeader->recordGet) % total;
+    return (total - 1) - used;
+}
+
+//
+// Preflight predicate for the no-drop publish path; mirrors
+// _eventBufferAddVardata keep-oldest skip logic.
+//
+static NvBool
+_eventBufferVardataWouldFit(EVENT_BUFFER_PRODUCER_INFO *info, NvU32 size)
+{
+    VARDATA_BUFFER_INFO *pVarInfo = &info->vardataBuffer;
+    NvU32                alignedSize;
+    NvU32                vardataOffsetEnd;
+
+    if (size == 0)
+        return NV_TRUE;
+
+    alignedSize      = NV_ALIGN_UP(size, NV_EVENT_VARDATA_GRANULARITY);
+    vardataOffsetEnd = pVarInfo->put + alignedSize;
+
+    if (vardataOffsetEnd <= pVarInfo->bufferSize)
+    {
+        // No wrap.
+        return (pVarInfo->remainingSize >= alignedSize);
+    }
+    else
+    {
+        // Treat the end sentinel as 0 for post-wrap overlap checks.
+        NvU32 effectiveGet = (pVarInfo->get >= pVarInfo->bufferSize)
+                             ? 0U
+                             : pVarInfo->get;
+        return (effectiveGet > alignedSize);
+    }
+}
+
+//
 // eventBufferProducerAddEvent
 //
 // Adds an event to an event buffer
@@ -193,9 +254,77 @@ eventBufferProducerAddEvent
 
             _eventBufferAddVardata(info, pData->pVardata, pData->vardataSize, &record->recordHeader);
 
+            //
+            // Release-fence the record payload + vardata stores before
+            // publishing the recordPut advance, so a consumer that
+            // observes the new recordPut via an acquire load is
+            // guaranteed to see the full record contents.
+            //
+            portAtomicMemoryFenceStore();
             pHeader->recordPut = putNext;
         }
     }
+}
+
+//
+// eventBufferProducerTryAddEvent
+//
+// No-drop variant of eventBufferProducerAddEvent. Preflights ring capacity
+// and rejects KEEP_NEWEST because overwrite policy is incompatible with
+// capacity checks.
+//
+NV_STATUS
+eventBufferProducerTryAddEvent
+(
+    EVENT_BUFFER_PRODUCER_INFO *info,
+    NvU16 eventType,
+    NvU16 eventSubtype,
+    EVENT_BUFFER_PRODUCER_DATA *pData
+)
+{
+    RECORD_BUFFER_INFO     *pRecInfo;
+    NV_EVENT_BUFFER_HEADER *pHeader;
+    NV_EVENT_BUFFER_RECORD *record;
+    NvU32                   recordOffset;
+    NvU32                   putNext;
+
+    NV_ASSERT_OR_RETURN(!info->isKeepNewest, NV_ERR_INVALID_STATE);
+
+    if (!info->isEnabled)
+        return NV_WARN_NOTHING_TO_DO;
+
+    pRecInfo = &info->recordBuffer;
+    pHeader  = pRecInfo->pHeader;
+
+    // Preflight: record ring must have room (no overwrite).
+    if (eventBufferUsableFreeSlots(info) == 0)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    // Preflight: vardata ring must have room (no overwrite).
+    if (!_eventBufferVardataWouldFit(info, pData->vardataSize))
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    // Commit after both rings pass preflight.
+    recordOffset = pHeader->recordPut * pRecInfo->recordSize;
+    record       = (NV_EVENT_BUFFER_RECORD *)((NvUPtr)pRecInfo->recordBuffAddr + recordOffset);
+    putNext      = (pHeader->recordPut + 1) % pRecInfo->totalRecordCount;
+
+    record->recordHeader.type    = eventType;
+    record->recordHeader.subtype = eventSubtype;
+
+    if (pData->payloadSize)
+        portMemCopy(record->inlinePayload, pData->payloadSize,
+                    NvP64_VALUE(pData->pPayload), pData->payloadSize);
+
+    _eventBufferAddVardata(info, pData->pVardata, pData->vardataSize, &record->recordHeader);
+
+    portAtomicMemoryFenceStore();
+    pHeader->recordPut = putNext;
+
+    if (info->bMaintainRecordCount)
+        _eventBufferUpdateRecordBufferCount(info);
+
+    return NV_OK;
 }
 
 NV_EVENT_BUFFER_RECORD *
@@ -245,9 +374,13 @@ _eventBufferAddVardata
     }
     else
     {
-        // wrap-around; the effective vardataPut=0, vardataOffsetEnd=size
+        // Treat the end sentinel as 0 for post-wrap overlap checks.
+        NvU32 effectiveGet;
         vardataOffsetEnd = 0 + alignedSize;
-        if ((!info->isKeepNewest) && (pVarInfo->get <= vardataOffsetEnd))
+        effectiveGet     = (pVarInfo->get >= pVarInfo->bufferSize)
+                           ? 0U
+                           : pVarInfo->get;
+        if ((!info->isKeepNewest) && (effectiveGet <= vardataOffsetEnd))
             goto skip;
 
         recordHeader->varData = vardataOffsetEnd | NV_EVENT_VARDATA_START_OFFSET_ZERO;
@@ -294,9 +427,28 @@ eventBufferIsNotifyThresholdMet(EVENT_BUFFER_PRODUCER_INFO* info)
     VARDATA_BUFFER_INFO *pVarInfo = &info->vardataBuffer;
     RECORD_BUFFER_INFO* pRecInfo = &info->recordBuffer;
     NV_EVENT_BUFFER_HEADER* pHeader = pRecInfo->pHeader;
+    NvBool recordsThresholdMet;
 
-    if (((pRecInfo->totalRecordCount - pHeader->recordCount) <= pRecInfo->notificationThreshold) ||
-        (pVarInfo->remainingSize <= pVarInfo->notificationThreshold))
+    if (info->bMaintainRecordCount)
+    {
+        // Live ring math for callers that notify between consumer drains.
+        recordsThresholdMet =
+            (eventBufferUsableFreeSlots(info) <= pRecInfo->notificationThreshold);
+    }
+    else
+    {
+        //
+        // Existing semantics: relies on recordCount being maintained
+        // out-of-band by the caller (or zero-by-design for callers that
+        // never publish through eventBufferProducerAddEvent). Preserved
+        // for FECS / video / NOCAT / RATS / OpEventLog / vGPU FECS
+        // staging.
+        //
+        recordsThresholdMet =
+            ((pRecInfo->totalRecordCount - pHeader->recordCount) <= pRecInfo->notificationThreshold);
+    }
+
+    if (recordsThresholdMet || (pVarInfo->remainingSize <= pVarInfo->notificationThreshold))
     {
         return NV_TRUE;
     }

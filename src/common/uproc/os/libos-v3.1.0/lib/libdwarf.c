@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 
 #ifdef NVRM
 
-#    include <stddef.h>
+#    include <nv_stddef.h>
 #    include <nvport/nvport.h>
 #    define printf(fmt, ...) nv_printf(LEVEL_ERROR, fmt, ##__VA_ARGS__)
 

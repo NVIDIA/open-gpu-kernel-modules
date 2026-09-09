@@ -663,6 +663,9 @@ dmaAllocMapping_GM107
         case NVOS46_FLAGS_PAGE_SIZE_512M:
             pLocals->pageSize = RM_PAGE_SIZE_512M;
             break;
+        case NVOS46_FLAGS_PAGE_SIZE_256G:
+            pLocals->pageSize = RM_PAGE_SIZE_256G;
+            break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Unknown page size flag encountered during mapping\n");
             status = NV_ERR_INVALID_ARGUMENT;
@@ -1655,10 +1658,10 @@ dmaFreeMapping_GM107
 
     if (pCliMapInfo != NULL && pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap)
     {
-        GMMU_APERTURE aperture = (pCliMapInfo->pDmaMappingInfo->aperture == GMMU_APERTURE_PEER) ?
+        FB_CACHE_MEMTYPE cacheMemType = (pCliMapInfo->pDmaMappingInfo->aperture == GMMU_APERTURE_PEER) ?
             FB_CACHE_PEER_MEMORY : FB_CACHE_SYSTEM_MEMORY;
 
-        kmemsysCacheOp_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), NULL, aperture, FB_CACHE_INVALIDATE);
+        kmemsysCacheOp_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), NULL, cacheMemType, FB_CACHE_INVALIDATE);
     }
 
     return status;

@@ -26,7 +26,7 @@
 
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"              // To move to MIT license
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "os/os.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "rmapi/rmapi_utils.h"

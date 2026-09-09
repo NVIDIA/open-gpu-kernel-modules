@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,9 +48,21 @@
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 #include "diagnostics/instrumentation_manager.h"
 #endif
+#include "libraries/nvkv/nvkv.h"
+#include "core/gmcapi_impl.h"
+#include "gmcapi/gmcapi_vgpu.h"
 
 ct_assert(NVA084_MAX_VMMU_SEGMENTS == NV2080_CTRL_MAX_VMMU_SEGMENTS);
 ct_assert(NV2080_GPU_MAX_ENGINES == RM_ENGINE_TYPE_LAST);
+
+static NV_STATUS
+_kernelhostvgpudeviceapiKVEncodeBootloadParams
+(
+    const NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pBootloadParams,
+    NvU64 *kvData,
+    NvU64 *kvCount,
+    NvU64 kvLimit
+);
 
 NV_STATUS
 kernelhostvgpudeviceshrConstruct_IMPL
@@ -129,6 +141,7 @@ kernelhostvgpudeviceapiConstruct_IMPL
     pKernelHostVgpuDeviceApi->pShared->pDevice       = pKernelHostVgpuDevice;
     pKernelHostVgpuDevice->pGspPluginHeapMemDesc     = NULL;
     pKernelHostVgpuDevice->bGspPluginTaskInitialized = NV_FALSE;
+    pKernelHostVgpuDevice->bGspPluginTaskShutdownComplete = NV_FALSE;
     pKernelHostVgpuDevice->vgpuDeviceInstanceId      = pAllocParams->vgpuDeviceInstanceId;
 
     pKernelHostVgpuDevice->bGpupLiveMigrationEnabled = pAllocParams->bGpupLiveMigrationEnabled;
@@ -267,6 +280,67 @@ _kernelhostvgpudeviceInvalidateGpuTLBL2Cache(OBJGPU *pGpu, Device *pDevice)
     return rmStatus;
 }
 
+// This gets called when the vGPU plugin task is shutdown and the event is delivered.
+NV_STATUS
+gmcapiShutdownGspVgpuPluginTaskComplete(GMCAPI_CONTEXT *pCtx)
+{
+    OBJGPU *pGpu = pCtx->pGpu;
+    GmcApiShutdownGspVgpuPluginTaskCompleteEvent *pEvent = (GmcApiShutdownGspVgpuPluginTaskCompleteEvent *)pCtx->pInParams;
+
+    // Find the KERNEL_HOST_VGPU_DEVICE object that matches the GFID on this GPU.
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = NULL;
+    NV_ASSERT_OK_OR_RETURN(kvgpumgrGetHostVgpuDeviceFromGfid(pGpu->gpuId, pEvent->gfid, &pKernelHostVgpuDevice));
+
+    // Mark the vGPU plugin task as shutdown complete.
+    pKernelHostVgpuDevice->bGspPluginTaskShutdownComplete = NV_TRUE;
+    return NV_OK;
+}
+
+//
+// The GMCAPI_VGPU_PLUGIN_EVENT_* values are the stable wire encodings we get from GSP.
+// The NVA084_NOTIFIERS_EVENT_* values are what RM uses internally, and what is used
+// by RM clients via RMAPI. These are somewhat less stable in general, but there
+// is no reason they shouldn't be the same - this way we don't have to do any translations
+//
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_TASK_BOOTLOADED       == NVA084_NOTIFIERS_EVENT_VGPU_PLUGIN_TASK_BOOTLOADED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_TASK_UNLOADED         == NVA084_NOTIFIERS_EVENT_VGPU_PLUGIN_TASK_UNLOADED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_TASK_CRASHED          == NVA084_NOTIFIERS_EVENT_VGPU_PLUGIN_TASK_CRASHED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_GUEST_DRIVER_LOADED   == NVA084_NOTIFIERS_EVENT_GUEST_DRIVER_LOADED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_GUEST_DRIVER_UNLOADED == NVA084_NOTIFIERS_EVENT_GUEST_DRIVER_UNLOADED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_PRINT_ERROR_MESSAGE   == NVA084_NOTIFIERS_EVENT_PRINT_ERROR_MESSAGE);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_GUEST_LICENSE_STATE   == NVA084_NOTIFIERS_EVENT_GUEST_LICENSE_STATE_CHANGED);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_UPDATE_GUEST_OS_TYPE  == NVA084_NOTIFIERS_EVENT_UPDATE_GUEST_OS_TYPE);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_PRINT_GUEST_RPC_TRACE == NVA084_NOTIFIERS_EVENT_PRINT_GUEST_RPC_TRACE_LOG_MESSAGE);
+ct_assert(GMCAPI_VGPU_PLUGIN_EVENT_INIT_GR_ENGINE        == NVA084_NOTIFIERS_EVENT_INIT_GR_ENGINE);
+
+//
+// GSP -> Kernel notification that the vGPU plugin task triggered an event.
+// The kernel delivers this to any registered NVA084_KERNEL_HOST_VGPU_DEVICE listeners.
+//
+NV_STATUS
+gmcapiVgpuPluginTriggeredEvent(GMCAPI_CONTEXT *pCtx)
+{
+    OBJGPU *pGpu = pCtx->pGpu;
+    const GmcApiVgpuPluginTriggeredEvent *pEvt = (const GmcApiVgpuPluginTriggeredEvent *)pCtx->pInParams;
+
+    NV_ASSERT_OR_RETURN(IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pEvt->eventId < NVA084_NOTIFIERS_MAXCOUNT, NV_ERR_INVALID_ARGUMENT);
+
+    gpuGspPluginTriggeredEvent(pGpu, pEvt->gfid, pEvt->eventId);
+    return NV_OK;
+}
+
+static NvBool
+_vgpuPluginTaskIsShutdownComplete(OBJGPU *pGpu, void *contextData)
+{
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = (KERNEL_HOST_VGPU_DEVICE *)contextData;
+    // If this is NULL then something bad happened, but in any case don't let
+    // the event polling call continue to wait.
+    NV_ASSERT_OR_RETURN(pKernelHostVgpuDevice != NULL, NV_TRUE);
+
+    return pKernelHostVgpuDevice->bGspPluginTaskShutdownComplete;
+}
+
 void
 destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 {
@@ -297,30 +371,33 @@ destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 
     if (IS_GSP_CLIENT(pGpu) && pKernelHostVgpuDevice->bGspPluginTaskInitialized)
     {
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-        NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAMS shutdownParams = { 0 };
-        NV2080_CTRL_VGPU_MGR_INTERNAL_VGPU_PLUGIN_CLEANUP_PARAMS cleanupResourcesParams = {0};
-        // Extend timeout to 30s for these calls to account for long-running mass client free (bug 4928590)
-        // Otherwise this can hit XID 119 and orphan all remaining clients on GSP side
         NvU32 defaultus = pGpu->timeoutData.defaultus;
 
         pGpu->timeoutData.defaultus = 30*1000*1000;
 
-        shutdownParams.gfid = pKernelHostVgpuDevice->gfid;
-
-        status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                                 NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK,
-                                 &shutdownParams, sizeof(shutdownParams));
+        GmcApiShutdownGspVgpuPluginTaskRequest shutdown_request = {.gfid = pKernelHostVgpuDevice->gfid};
+        // Note: We don't forcibly clear the bGspPluginTaskShutdownComplete flag here because
+        // it may have already crashed, in which case GSP may not send us a completion event when
+        // we request the shutdown here.
+        status = gmcapiCommand(pGpu, GMCAPI_CMD_SHUTDOWN_GSP_VGPU_PLUGIN_TASK, &shutdown_request, (NvU32)sizeof(shutdown_request), NULL, NULL);
         if (status != NV_OK)
-            NV_PRINTF(LEVEL_ERROR, "Failed to call NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK\n");
+            NV_PRINTF(LEVEL_ERROR, "Failed to call GMCAPI_CMD_SHUTDOWN_GSP_VGPU_PLUGIN_TASK\n");
 
-        cleanupResourcesParams.gfid = pKernelHostVgpuDevice->gfid;
-        status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                                 NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_VGPU_PLUGIN_CLEANUP,
-                                 &cleanupResourcesParams, sizeof(cleanupResourcesParams));
+        // Shutting down the vGPU plugin task can take some time, and GSP needs to be able to respond to
+        // RPCs and send events while this is going on.  When the work is completed, it will send us
+        // a GMCAPI_CMD_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_COMPLETE event.  So we process RPCs until the
+        // kernel handler for that is called, which will set the shutdown complete flag our condition
+        // function is looking for.
+        status = gpuRpcConditionWait(pGpu, _vgpuPluginTaskIsShutdownComplete, pKernelHostVgpuDevice);
+        if (status != NV_OK)
+            NV_PRINTF(LEVEL_ERROR, "Failed to wait for GMCAPI_CMD_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_COMPLETE\n");
+
+        GmcApiCleanupGspVgpuPluginResourcesRequest cleanup_request = {.gfid = pKernelHostVgpuDevice->gfid};
+        status = gmcapiCommand(pGpu, GMCAPI_CMD_CLEANUP_GSP_VGPU_PLUGIN_RESOURCES, &cleanup_request, (NvU32)sizeof(cleanup_request), NULL, NULL);
+        if (status != NV_OK)
+            NV_PRINTF(LEVEL_ERROR, "Failed to call GMCAPI_CMD_CLEANUP_GSP_VGPU_PLUGIN_RESOURCES\n");
+
         pGpu->timeoutData.defaultus = defaultus;
-        if (status != NV_OK)
-            NV_PRINTF(LEVEL_ERROR, "Failed to call cleanup plugin resources\n");
 
         if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && pKernelHostVgpuDevice->pGspPluginHeapMemDesc != NULL)
         {
@@ -504,6 +581,7 @@ kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL
     OBJGPU     *pGpu                   = GPU_RES_GET_GPU(pKernelHostVgpuDeviceApi);
     NvBool      bPageRetirementEnabled = NV_FALSE;
     NvU64       Spa                    = 0;
+    NvU32      *pNewGuestFbSegment     = NULL;
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
 
     NV_ASSERT_OR_RETURN(!IS_GSP_CLIENT(pGpu) || pKernelHostVgpuDeviceApi->pShared->pDevice->bGspPluginTaskInitialized,
@@ -535,8 +613,8 @@ kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL
 
         NV_ASSERT_OR_RETURN((pParams->offlinedPageCount <= NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES), NV_ERR_OUT_OF_RANGE);
 
-        pKernelHostVgpuDevice->pGuestFbSegment = portMemAllocNonPaged(sizeof(NvU32) * guestPageCount);
-        if (pKernelHostVgpuDevice->pGuestFbSegment == NULL)
+        pNewGuestFbSegment = portMemAllocNonPaged(sizeof(NvU32) * guestPageCount);
+        if (pNewGuestFbSegment == NULL)
         {
             NV_PRINTF(LEVEL_ERROR, "GuestFbSegment allocation failed\n");
             return NV_ERR_NO_MEMORY;
@@ -545,7 +623,7 @@ kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL
         // Initialize the default hpfn of each segment.
         for (i = 0; i < guestPageCount; i++)
         {
-            pKernelHostVgpuDevice->pGuestFbSegment[i] = hpfn + i;
+            pNewGuestFbSegment[i] = hpfn + i;
         }
 
         // Patch offlined page with good page.
@@ -556,15 +634,20 @@ kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo_IMPL
             if (rmStatus != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR, "Offlined Page info Validation Failed\n");
-                portMemFree(pKernelHostVgpuDevice->pGuestFbSegment);
-                pKernelHostVgpuDevice->pGuestFbSegment = NULL;
+                portMemFree(pNewGuestFbSegment);
                 return rmStatus;
             }
 
             index = pParams->gpa[i] >> guestFbSegmentPageShift;
-            pKernelHostVgpuDevice->pGuestFbSegment[index] = Spa >> guestFbSegmentPageShift;
+            pNewGuestFbSegment[index] = Spa >> guestFbSegmentPageShift;
             pKernelHostVgpuDevice->offlinedPageGpa[i]           = pParams->gpa[i];
         }
+
+        if (pKernelHostVgpuDevice->pGuestFbSegment != NULL)
+        {
+            portMemFree(pKernelHostVgpuDevice->pGuestFbSegment);
+        }
+        pKernelHostVgpuDevice->pGuestFbSegment = pNewGuestFbSegment;
 
         pKernelHostVgpuDevice->guestFbSegmentPageSize = pParams->guestFbSegmentPageSize;
         pKernelHostVgpuDevice->offlinedPageCount      = pParams->offlinedPageCount;
@@ -883,7 +966,6 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
     NV_STATUS status = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelHostVgpuDeviceApi);
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pBootloadParams = NULL;
     Memory *pMemory;
     NvU32 i;
@@ -1073,9 +1155,27 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
         pBootloadParams->chidOffset[i] = pKernelHostVgpuDevice->chidOffset[rmEngineType];
     }
 
-    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK,
-                             pBootloadParams, sizeof(*pBootloadParams));
+    // The worst case size for the NVKV data should be less than 16KB.  In practice
+    // it seems to be ~500 bytes.  Since the original params struct is about 6K we
+    // just allocate (roughly) 2x that to be certain it will always fit.
+
+    NvU64 *kvData = portMemAllocNonPaged(sizeof(NvU64) * 2048);
+    if(kvData == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for NVKV data\n");
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+    NvU64 kvCount = 0;
+    NvU64 kvLimit = 2048;
+    // Long term we should just encode directly to NVKV format and skip the intermediate
+    // step of encoding to the 2080 control structure.
+    status = _kernelhostvgpudeviceapiKVEncodeBootloadParams(pBootloadParams, kvData, &kvCount, kvLimit);
+    if (status == NV_OK)
+    {
+        status = gmcapiCommand(pGpu, GMCAPI_CMD_BOOTLOAD_GSP_VGPU_PLUGIN_TASK, kvData, (NvU32)(sizeof(NvU64) * kvCount), NULL, NULL);
+    }
+    portMemFree(kvData);
 
     // Preserve any captured vGPU Partition logs
     NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pKernelHostVgpuDevice->gfid));
@@ -1084,9 +1184,9 @@ kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL
     OBJSYS *pSys = SYS_GET_INSTANCE();
     instrumentationmanagerReset(pSys->pInstrumentationManager, pKernelHostVgpuDevice->gfid, pGpu->gpuInstance);
 #endif
-    if (status != NV_OK && pBootloadParams != NULL)
+    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to call NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK\n");
+        NV_PRINTF(LEVEL_ERROR, "Failed to call GMCAPI_CMD_BOOTLOAD_GSP_VGPU_PLUGIN_TASK\n");
         NV_ASSERT_OK(kgspFreeVgpuPartitionLogging_HAL(pGpu, pKernelGsp, pKernelHostVgpuDevice->gfid));
     }
 
@@ -1157,18 +1257,20 @@ kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL
 
         portMemSet(&tmpEngineInfo, 0, sizeof(ENGINE_INFO));
 
-        NV_ASSERT_OK_OR_RETURN(kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, &tmpEngineInfo, pMigDevice));
-
-        rmStatus = vgpuMgrReserveSystemChannelIDs(pGpu,
-                                                  vgpuTypeInfo,
-                                                  pKernelHostVgpuDevice->gfid,
-                                                  pKernelHostVgpuDevice->chidOffset,
-                                                  pKernelHostVgpuDevice->channelCount,
-                                                  pMigDevice,
-                                                  pParams->numChannels,
-                                                  pKernelHostVgpuDevice->placementId,
-                                                  tmpEngineInfo.engineInfoListSize,
-                                                  tmpEngineInfo.engineInfoList);
+        rmStatus = kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, &tmpEngineInfo, pMigDevice);
+        if (rmStatus == NV_OK)
+        {
+            rmStatus = vgpuMgrReserveSystemChannelIDs(pGpu,
+                                                      vgpuTypeInfo,
+                                                      pKernelHostVgpuDevice->gfid,
+                                                      pKernelHostVgpuDevice->chidOffset,
+                                                      pKernelHostVgpuDevice->channelCount,
+                                                      pMigDevice,
+                                                      pParams->numChannels,
+                                                      pKernelHostVgpuDevice->placementId,
+                                                      tmpEngineInfo.engineInfoListSize,
+                                                      tmpEngineInfo.engineInfoList);
+        }
 
         portMemFree(tmpEngineInfo.engineInfoList);
         tmpEngineInfo.engineInfoList = NULL;
@@ -1177,4 +1279,73 @@ kernelhostvgpudeviceapiCtrlCmdSetPlacementId_IMPL
     // This block will execute in case of monolithic RM
 
     return rmStatus;
+}
+
+static NV_STATUS
+_kernelhostvgpudeviceapiKVEncodeBootloadParams
+(
+    const NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pBootloadParams,
+    NvU64 *kvData,
+    NvU64 *kvCount,
+    NvU64 kvLimit
+)
+{
+    NV_ASSERT_OR_RETURN(kvCount != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    #define NVKV_PREFIX NVGMC_VGPU_BOOTLOAD
+
+    NVKVContext ctx = NVKV_BEGIN(kvData, 0, kvLimit);
+    NVKV_SET_SEQ32_4U(&ctx,  0, DBDF, pBootloadParams->dbdf,
+                                GFID, pBootloadParams->gfid,
+                                VGPU_TYPE, pBootloadParams->vgpuType,
+                                VM_PID, pBootloadParams->vmPid);
+    NVKV_SET_SEQ32_3U(&ctx,  0, SWIZZ_ID, pBootloadParams->swizzId,
+                                NUM_CHANNELS, pBootloadParams->numChannels,
+                                NUM_PLUGIN_CHANNELS, pBootloadParams->numPluginChannels);
+
+    NvU32 i;
+    NvU64 channelMappings[NV2080_ENGINE_TYPE_LAST] = { 0 };
+    NvU64 channelMappingCount = 0;
+    for (i = 0; i < NV2080_ENGINE_TYPE_LAST; i++)
+    {
+        // pBootloadParams->chidOffset is in NV2080_ENGINE_TYPE order.  So we reach each
+        // entry from the table to get the offset for the NV2080_ENGINE_TYPE corresponding
+        // to the numeric index.  We then convert that to the GMC engine ID.  We skip any
+        // entries with a channel offset of 0.
+        if(pBootloadParams->chidOffset[i] != 0)
+        {
+            channelMappings[channelMappingCount++] = NVKV_NUM64(CHANNEL_MAPPING_ENGINE_ID, gpuGetGMCEngineIdFromNv2080EngineType(i)) |
+                                                     NVKV_NUM64(CHANNEL_MAPPING_OFFSET, pBootloadParams->chidOffset[i]);
+        }
+    }
+    // Send as single bulk array.
+    NVKV_SET_ARRAY64(&ctx, 0, CHANNEL_MAPPING, channelMappings, channelMappingCount);
+
+    NVKV_SET_SEQ32_1U(&ctx, 0, GUEST_FB_SEGMENT_COUNT, pBootloadParams->numGuestFbSegments);
+    NVKV_SET_ARRAY64(&ctx,  0, GUEST_FB_SEGMENT_PHYS_ADDR_LIST, pBootloadParams->guestFbPhysAddrList, pBootloadParams->numGuestFbSegments);
+    NVKV_SET_ARRAY64(&ctx,  0, GUEST_FB_SEGMENT_LENGTH_LIST, pBootloadParams->guestFbLengthList, pBootloadParams->numGuestFbSegments);
+    NVKV_SET_SEQ64_3U(&ctx, 0, PLUGIN_HEAP_MEMORY_PHYS_ADDR, pBootloadParams->pluginHeapMemoryPhysAddr,
+                               PLUGIN_HEAP_MEMORY_LENGTH, pBootloadParams->pluginHeapMemoryLength,
+                               CTRL_BUFF_OFFSET, pBootloadParams->ctrlBuffOffset);
+    NVKV_SET_SEQ64_4U(&ctx, 0, INIT_TASK_LOG_BUFF_OFFSET, pBootloadParams->initTaskLogBuffOffset,
+                               INIT_TASK_LOG_BUFF_SIZE, pBootloadParams->initTaskLogBuffSize,
+                               VGPU_TASK_LOG_BUFF_OFFSET, pBootloadParams->vgpuTaskLogBuffOffset,
+                               VGPU_TASK_LOG_BUFF_SIZE, pBootloadParams->vgpuTaskLogBuffSize);
+    NVKV_SET_SEQ64_4U(&ctx, 0, KERNEL_LOG_BUFF_OFFSET, pBootloadParams->kernelLogBuffOffset,
+                               KERNEL_LOG_BUFF_SIZE, pBootloadParams->kernelLogBuffSize,
+                               MIG_RM_HEAP_MEMORY_PHYS_ADDR, pBootloadParams->migRmHeapMemoryPhysAddr,
+                               MIG_RM_HEAP_MEMORY_LENGTH, pBootloadParams->migRmHeapMemoryLength);
+    {
+        NvU64 options = NVKV_NUM64(OPTIONS_DEVICE_PROFILING_ENABLED, pBootloadParams->bDeviceProfilingEnabled) |
+                        NVKV_NUM64(OPTIONS_DISABLE_DEFAULT_SMC_EXEC_PART_RESTORE, pBootloadParams->bDisableDefaultSmcExecPartRestore);
+        NVKV_SET_SEQ64_1U(&ctx, 0, OPTIONS, options);
+    }
+    *kvCount = NVKV_END(&ctx);
+
+    if(*kvCount > kvLimit)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    return NV_OK;
 }

@@ -213,7 +213,7 @@ NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE
     }
 
     // Add pointer to the node in bitmapNodes array at input index for faster lookups
-    vgpuSysmemPfnInfo.bitmapNodes[index] = *node;
+    vgpuSysmemPfnInfo.pBitmapNodes[index] = *node;
 
 done:
     if (status != NV_OK)
@@ -358,7 +358,7 @@ static NV_STATUS _updateSysmemPfnBitMap
 
     if (bitmapNodeIndex < listCount(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead)))
     {
-        node = vgpuSysmemPfnInfo.bitmapNodes[bitmapNodeIndex];
+        node = vgpuSysmemPfnInfo.pBitmapNodes[bitmapNodeIndex];
     }
 
     if (node)

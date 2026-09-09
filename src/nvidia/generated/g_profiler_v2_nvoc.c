@@ -111,6 +111,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerBase =
 {
     .classInfo.size =               sizeof(ProfilerBase),
     .classInfo.classId =            classId(ProfilerBase),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "ProfilerBase",
@@ -1499,6 +1500,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerCtx =
 {
     .classInfo.size =               sizeof(ProfilerCtx),
     .classInfo.classId =            classId(ProfilerCtx),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "ProfilerCtx",
@@ -2153,6 +2155,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ProfilerDev =
 {
     .classInfo.size =               sizeof(ProfilerDev),
     .classInfo.classId =            classId(ProfilerDev),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "ProfilerDev",

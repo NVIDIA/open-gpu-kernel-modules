@@ -68,10 +68,10 @@ NvU32 nvApiHeadGetActiveViewportOffset(NVDispEvoRec *pDispEvo,
                                        NvU32 apiHead);
 
 void nvApiHeadIdleMainLayerChannels(NVDevEvoRec *pDevEvo,
-    const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES]);
+                                    const NvU32 apiHeadMask);
 
 void nvApiHeadUpdateFlipLock(NVDevEvoRec *pDevEvo,
-                             const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES],
+                             const NvU32 apiHeadMask,
                              const NvBool enable);
 
 NvBool nvIdleMainLayerChannelCheckIdleOneApiHead(NVDispEvoPtr pDispEvo,

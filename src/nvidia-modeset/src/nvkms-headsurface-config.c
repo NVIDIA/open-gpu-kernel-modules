@@ -2059,42 +2059,39 @@ static void HsConfigRestoreMainLayerSurface(
 static void HsConfigUpdateFlipLockForSwapGroups(NVDevEvoPtr pDevEvo,
                                                 NvBool enable)
 {
-    NvU32 dispIndex, apiHead;
-    NVDispEvoPtr pDispEvo;
-    NvU32 flipLockToggleApiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES] = { };
+    NvU32 apiHead;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
+    NvU32 flipLockToggleApiHeadMask = 0;
     NvBool found = FALSE;
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
 
-            if (pHsChannel == NULL) {
-                continue;
-            }
-
-            /*
-             * This function is called in two cases, when disabling fliplock for
-             * the pHsChannels in the previous config, and when enabling
-             * fliplock for the pHsChannels in the new config.  In either case,
-             * if the old config wasn't using fliplock for swapgroups, or the
-             * new config won't be using fliplock for swapgroups, don't change
-             * the fliplock state here.
-             */
-            if (!pHsChannel->config.neededForSwapGroup) {
-                continue;
-            }
-
-            flipLockToggleApiHeadMaskPerSd[pDispEvo->displayOwner] |=
-                NVBIT(apiHead);
-            found = TRUE;
+        if (pHsChannel == NULL) {
+            continue;
         }
+
+        /*
+         * This function is called in two cases, when disabling fliplock for
+         * the pHsChannels in the previous config, and when enabling
+         * fliplock for the pHsChannels in the new config.  In either case,
+         * if the old config wasn't using fliplock for swapgroups, or the
+         * new config won't be using fliplock for swapgroups, don't change
+         * the fliplock state here.
+         */
+        if (!pHsChannel->config.neededForSwapGroup) {
+            continue;
+        }
+
+        flipLockToggleApiHeadMask |= NVBIT(apiHead);
+        found = TRUE;
     }
 
     if (!found) {
         return;
     }
 
-    nvApiHeadUpdateFlipLock(pDevEvo, flipLockToggleApiHeadMaskPerSd, enable);
+    nvApiHeadUpdateFlipLock(pDevEvo, flipLockToggleApiHeadMask, enable);
 }
 
 /*!
@@ -2115,10 +2112,10 @@ void nvHsConfigStop(
     NVDevEvoPtr pDevEvo,
     const NVHsConfig *pHsConfig)
 {
-    NvU32 dispIndex, apiHead;
-    NVDispEvoPtr pDispEvo;
+    NvU32 apiHead;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
     NVHsDeviceEvoPtr pHsDevice = pDevEvo->pHsDevice;
-    NvU32 hsDisableApiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES] = { };
+    NvU32 hsDisableApiHeadMask = 0;
 
     /*
      * We should only get here if this configuration is going to be committed.
@@ -2133,33 +2130,30 @@ void nvHsConfigStop(
     HsConfigUpdateFlipLockForSwapGroups(pDevEvo, FALSE /* enable */);
 
     /* Flip all headSurface heads to NULL. */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 apiHead;
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
 
-            if (pHsChannel != NULL) {
-                hsDisableApiHeadMaskPerSd[pDispEvo->displayOwner] |= NVBIT(apiHead);
+        if (pHsChannel != NULL) {
+            hsDisableApiHeadMask |= NVBIT(apiHead);
 
-                if (pHsChannel->config.pixelShift == NVKMS_PIXEL_SHIFT_8K) {
-                    nvSetStereo(pDispEvo, apiHead, FALSE);
-                }
-
-                if (pHsChannel->config.neededForSwapGroup) {
-                    pHsChannel->viewportFlipPending = FALSE;
-                    nvHsRemoveRgLine1Callback(pHsChannel);
-                }
-
-                nvHsRemoveVBlankCallback(pHsChannel);
-                nvHsFlip(pHsDevice,
-                         pHsChannel,
-                         0 /* eyeMask: ignored when disabling */,
-                         FALSE /* perEyeStereoFlip: ignored when disabling */,
-                         0 /* index: ignored when disabling */,
-                         NULL /* NULL == disable */,
-                         FALSE /* isFirstFlip */,
-                         FALSE /* allowFlipLock */);
+            if (pHsChannel->config.pixelShift == NVKMS_PIXEL_SHIFT_8K) {
+                nvSetStereo(pDispEvo, apiHead, FALSE);
             }
+
+            if (pHsChannel->config.neededForSwapGroup) {
+                pHsChannel->viewportFlipPending = FALSE;
+                nvHsRemoveRgLine1Callback(pHsChannel);
+            }
+
+            nvHsRemoveVBlankCallback(pHsChannel);
+            nvHsFlip(pHsDevice,
+                     pHsChannel,
+                     0 /* eyeMask: ignored when disabling */,
+                     FALSE /* perEyeStereoFlip: ignored when disabling */,
+                     0 /* index: ignored when disabling */,
+                     NULL /* NULL == disable */,
+                     FALSE /* isFirstFlip */,
+                     FALSE /* allowFlipLock */);
         }
     }
 
@@ -2170,23 +2164,20 @@ void nvHsConfigStop(
      * so if it does, just assert instead of forcing the channels idle.
      */
     nvApiHeadIdleMainLayerChannels(pDevEvo,
-                                   hsDisableApiHeadMaskPerSd);
+                                   hsDisableApiHeadMask);
 
     /* Update bookkeeping and restore the original surface in main layer. */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
 
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
+        if (pHsChannel != NULL) {
+            nvHsFreeStatistics(pHsChannel);
+            nvHsDrainFlipQueue(pHsChannel);
 
-            if (pHsChannel != NULL) {
-                nvHsFreeStatistics(pHsChannel);
-                nvHsDrainFlipQueue(pHsChannel);
-
-                HsConfigRestoreMainLayerSurface(
-                    pDispEvo,
-                    pHsChannel,
-                    &pHsConfig->apiHead[dispIndex][apiHead].channelConfig);
-            }
+            HsConfigRestoreMainLayerSurface(
+                pDispEvo,
+                pHsChannel,
+                &pHsConfig->apiHead[0][apiHead].channelConfig);
         }
     }
 
@@ -2196,23 +2187,19 @@ void nvHsConfigStop(
      * any deferred request fifos that are waiting for that pending flip to
      * complete.
      */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVSwapGroupRec *pSwapGroup = pDispEvo->pSwapGroup[apiHead];
-            if ((pSwapGroup != NULL) &&
-                pSwapGroup->pendingFlip) {
-                nvHsSwapGroupRelease(pDevEvo, pSwapGroup);
-            }
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVSwapGroupRec *pSwapGroup = pDispEvo->pSwapGroup[apiHead];
+        if ((pSwapGroup != NULL) &&
+            pSwapGroup->pendingFlip) {
+            nvHsSwapGroupRelease(pDevEvo, pSwapGroup);
         }
     }
 
     /* finally, make sure any remaining rendering commands have landed */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
-            if (pHsChannel != NULL) {
-                nvPushIdleChannel(&pHsChannel->nvPush.channel);
-            }
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
+        if (pHsChannel != NULL) {
+            nvPushIdleChannel(&pHsChannel->nvPush.channel);
         }
     }
 }

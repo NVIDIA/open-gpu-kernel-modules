@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,6 +97,11 @@ tmrStateInitUnlocked_IMPL
 {
     NV_STATUS  status;
 
+    if (!tmrIsGrTickFreqChangeSupported(pGpu, pTmr))
+    {
+        return NV_OK;
+    }
+
     status = _tmrGrTimeStampFreqRefcntInit(pGpu, pTmr);
 
     return status;
@@ -189,8 +194,11 @@ tmrDestruct_IMPL(OBJTMR  *pTmr)
         pTmr->pTmrSwrlLock = NULL;
     }
 
-    objDelete(pTmr->pGrTickFreqRefcnt);
-    pTmr->pGrTickFreqRefcnt = NULL;
+    if (pTmr->pGrTickFreqRefcnt != NULL)
+    {
+        objDelete(pTmr->pGrTickFreqRefcnt);
+        pTmr->pGrTickFreqRefcnt = NULL;
+    }
 
     osDestroy1HzCallbacks(pTmr);
 }
@@ -246,6 +254,8 @@ NV_STATUS tmrEventCreate_IMPL
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to create OS timer \n");
+            portMemFree(*ppEvent);
+            *ppEvent = NULL;
         }
     }
     return status;
@@ -446,7 +456,7 @@ tmrEventTimeUntilNextCallback_IMPL
 
     if (tmrIsOSTimer(pTmr, pEventPublic))
     {
-        currentTime = osGetMonotonicTimeNs();
+        currentTime = portTimeGetUptimeNanoseconds();
         // timens corresponds to relative time for OS timer
         NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
                            NV_ERR_INVALID_ARGUMENT);
@@ -632,7 +642,7 @@ NV_STATUS tmrEventScheduleRel_IMPL
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        pEventPvt->startTimeNs = osGetMonotonicTimeNs();
+        pEventPvt->startTimeNs = portTimeGetUptimeNanoseconds();
         if (!tmrEventOnList(pTmr, pEvent))
         {
             _tmrInsertCallback(pTmr, pEventPvt, RelTime);
@@ -1330,10 +1340,18 @@ _tmrStateLoadCallbacks
 {
     NvU64 nextAlarmTime = 0;
     TMR_EVENT_PVT *pScan = pTmr->pRmActiveOSTimerEventList;
+    NvBool bForceRearmCallbackInterrupt = NV_FALSE;
 
     if (tmrEventsExist(pTmr))
     {
-        if (tmrGetCallbackInterruptPending(pGpu, pTmr))
+        //
+        // On WoA SDM chips, if the queue head expires while the GPU is unloaded
+        // during D3 entry, the countdown is not reprogrammed. The expired queue
+        // head then blocksall callbacks queued behind it. Rearm the earliest
+        // queued callback after state load.
+        //
+        if (bForceRearmCallbackInterrupt ||
+            tmrGetCallbackInterruptPending(pGpu, pTmr))
         {
             if (NV_OK == _tmrGetNextAlarmTime(pTmr, &nextAlarmTime))
             {
@@ -1362,7 +1380,7 @@ _tmrStateLoadCallbacks
         // Capture system time here, this will help in scheduling callbacks
         // if there is a state unload before receiving the OS timer callback.
         //
-        pScan->startTimeNs = osGetMonotonicTimeNs();
+        pScan->startTimeNs = portTimeGetUptimeNanoseconds();
         tmrEventScheduleRelOSTimer_HAL(pTmr, (TMR_EVENT *)pScan, pScan->timens);
         pScan = pScan->pNext;
     }
@@ -1652,7 +1670,7 @@ tmrStateUnload_IMPL
     //
     while (pScan != NULL)
     {
-        currentSysTime = osGetMonotonicTimeNs();
+        currentSysTime = portTimeGetUptimeNanoseconds();
         //
         // If somehow any of the time difference is negative,
         // we will use the  original time duration.
@@ -1769,7 +1787,7 @@ tmrapiDeregisterEvents_IMPL(TimerApi *pTimerApi)
 // inner callback and calls it correctly from itself. Hacky but it should work around the
 // limitations in the SDK (all RM derived types undefined, so TIMEPROC type is impossible).
 //
-typedef NvU32 (*TMR_CALLBACK_FUNCTION)(void *pCallbackData);
+typedef void (*TMR_CALLBACK_FUNCTION)(void *pCallbackData);
 
 typedef struct
 {
@@ -1821,7 +1839,7 @@ tmrCtrlCmdEventCreate
     TMR_EVENT_SET_PARAMS *pParams
 )
 {
-    NV_STATUS         rc;
+    NV_STATUS         status;
     TMR_EVENT        *pEvent;
     wrapperStorage_t *pWrapper;
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
@@ -1835,15 +1853,20 @@ tmrCtrlCmdEventCreate
     pWrapper->pTimeProc     = (TMR_CALLBACK_FUNCTION)NvP64_VALUE(pParams->pTimeProc);
     pWrapper->pCallbackData = NvP64_VALUE(pParams->pCallbackData);
 
-    rc = tmrEventCreate(pTmr,
-                        &pEvent,
-                        _tmrCallbackWrapperfunction,
-                        pWrapper,
-                        pParams->flags);
+    status = tmrEventCreate(pTmr,
+                            &pEvent,
+                            _tmrCallbackWrapperfunction,
+                            pWrapper,
+                            pParams->flags);
+    if (status != NV_OK)
+    {
+        portMemFree(pWrapper);
+        return status;
+    }
 
     *(pParams->ppEvent) = NV_PTR_TO_NvP64(pEvent);
 
-    return rc;
+    return NV_OK;
 }
 
 

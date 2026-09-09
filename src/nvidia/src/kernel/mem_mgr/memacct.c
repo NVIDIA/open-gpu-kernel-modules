@@ -26,8 +26,6 @@
 #include "rmapi/client.h"
 #include "gpu/gpu.h"
 
-#define MEMACCT_DEBUG_LOG_LEVEL LEVEL_SILENT
-
 typedef struct ClientGroupLimits
 {
     NvLength SoftLimit;
@@ -41,7 +39,11 @@ MAKE_MAP(ClientGroupMapType, ClientGroupLimits);
 typedef struct GpuRegion
 {
     ClientGroupMapType clientGroupMap;
-    void *osRegion;
+    struct {
+        void *region;
+        void *prechargePool;
+        NvU64 precharge;
+    } os;
 } GpuRegion;
 
 // map region id (gpuId) to region's group limit map
@@ -56,30 +58,38 @@ static struct {
 struct MemoryCharge
 {
     NvU32 gpuId;
+    NvU32 pid;
     ClientGroupID cligrp;
     NvLength size;
     void *osPool;
     int refCount;
 };
 
-static NV_STATUS memacctTryChargeOs(void *osRegion, NvLength size, MemoryCharge **ppCharge)
+static NV_STATUS memacctTryChargeOs(void *osRegion, ClientGroupID cligrp, NvLength size, MemoryCharge **ppCharge)
 {
+    MemoryCharge *pCharge;
+    void *pPool;
+    NV_STATUS status;
+
     *ppCharge = NULL;
 
-    void *pPool;
-    NV_STATUS status = osMemacctTryCharge(osRegion, size, &pPool);
-    if (status != NV_OK)
+    status = osMemacctTryCharge(osRegion, size, &pPool, NULL);
+    if (status == NV_ERR_RESOURCE_ACCOUNTING_HARD_LIMIT_EXCEEDED)
     {
-        NV_PRINTF(LEVEL_NOTICE, "charge %llu osRegion 0x%016llx rejected\n", size, (NvU64)osRegion);
+        NV_PRINTF(LEVEL_INFO, "charge %llu osRegion 0x%016llx rejected\n", size, (NvU64)osRegion);
         return NV_ERR_RESOURCE_ACCOUNTING_HARD_LIMIT_EXCEEDED;
     }
+    else if (status != NV_OK)
+    {
+        return status;
+    }
 
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "charge %llu for osRegion 0x%016llx pool 0x%016llx ok\n", size, (NvU64)osRegion, (NvU64)pPool);
+    NV_PRINTF(LEVEL_INFO, "charge %llu for osRegion 0x%016llx pool 0x%016llx ok\n", size, (NvU64)osRegion, (NvU64)pPool);
 
-    MemoryCharge *pCharge = portMemAllocNonPaged(sizeof *pCharge);
+    pCharge = portMemAllocNonPaged(sizeof *pCharge);
     if (pCharge == NULL)
     {
-        NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "release %llu for pool 0x%016llx (charge structure allocation failure)\n",
+        NV_PRINTF(LEVEL_INFO, "release %llu for pool 0x%016llx (charge structure allocation failure)\n",
             size, (NvU64)pPool);
         osMemacctReleaseCharge(pPool, size);
         return NV_ERR_NO_MEMORY;
@@ -89,34 +99,62 @@ static NV_STATUS memacctTryChargeOs(void *osRegion, NvLength size, MemoryCharge 
     pCharge->osPool = pPool;
     pCharge->refCount = 1;
     *ppCharge = pCharge;
+
+    if ((osCgroupParent(cligrp) != NULL) && osCgroupCanEvict(NULL, pPool))
+        return NV_WARN_RESOURCE_ACCOUNTING_SOFT_LIMIT_EXCEEDED;
+
     return NV_OK;
+}
+
+static ClientGroupLimits *memacctLimitsForGroupLocked(GpuRegion *pRegion, ClientGroupID *cligrp)
+{
+    ClientGroupLimits *pLimits = NULL;
+    ClientGroupID limitingGroup = *cligrp;
+    while (limitingGroup != NULL)
+    {
+        pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)limitingGroup);
+        if (pLimits != NULL)
+        {
+            *cligrp = limitingGroup;
+            break;
+        }
+
+        limitingGroup = osCgroupParent(limitingGroup);
+    }
+    return pLimits;
 }
 
 static NV_STATUS memacctTryChargeInternalLocked(GpuRegion *pRegion, ClientGroupID cligrp, NvU32 gpuId, NvLength size, MemoryCharge *pCharge)
 {
-    ClientGroupLimits *pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)cligrp);
+    NvLength current;
+    ClientGroupLimits *pLimits;
+
+    pLimits = memacctLimitsForGroupLocked(pRegion, &cligrp);
     if (pLimits == NULL)
     {
-        NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u no limits set for group %016llx\n", gpuId,
+        NV_PRINTF(LEVEL_INFO, "region %x no limits set for group %016llx\n", gpuId,
             (NvU64)cligrp);
         return NV_ERR_INVALID_LIMIT;
     }
 
     if (size > pLimits->Available)
     {
-        NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u group %016llx request %llu over limit, available %llu/%llu\n",
+        NV_PRINTF(LEVEL_INFO, "region %x group %016llx request %llu over limit, available %llu/%llu\n",
             gpuId, (NvU64)cligrp, size, pLimits->Available, pLimits->HardLimit);
         return NV_ERR_RESOURCE_ACCOUNTING_HARD_LIMIT_EXCEEDED;
     }
 
     pCharge->size = size;
-    pCharge->gpuId = gpuId;
     pCharge->cligrp = cligrp;
     pCharge->refCount = 1;
     pLimits->Available -= size;
 
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u group %016llx charged %llu total %llu/%llu\n", gpuId,
-        (NvU64)cligrp, size, pLimits->HardLimit - pLimits->Available, pLimits->HardLimit);
+    current = pLimits->HardLimit - pLimits->Available;
+    NV_PRINTF(LEVEL_INFO, "region %x group %016llx charged %llu total %llu/%llu\n", gpuId,
+        (NvU64)cligrp, size, current, pLimits->HardLimit);
+
+    if (current > pLimits->SoftLimit)
+        return NV_WARN_RESOURCE_ACCOUNTING_SOFT_LIMIT_EXCEEDED;
 
     return NV_OK;
 }
@@ -129,13 +167,21 @@ void memacctIncrementChargeRefCount(MemoryCharge *pCharge)
     pCharge->refCount++;
 }
 
-NV_STATUS memacctTryCharge(ClientGroupID cligrp, NvU32 gpuId, NvLength size, MemoryCharge **ppCharge)
+NV_STATUS memacctTryCharge(RmClient *pRmClient, NvU32 gpuId, NvLength size, MemoryCharge **ppCharge)
 {
+    NV_STATUS status;
+    ClientGroupID cligrp;
+    GpuRegion *pRegion;
+
     if (g_memacct.impl == CGROUP_IMPL_NONE)
         return NV_OK;
 
-    NV_STATUS status;
-    NvBool doFree = NV_FALSE;
+    cligrp = osClientGroupID(pRmClient->ProcID, pRmClient->pOsPidInfo);
+    if (cligrp == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO, "no cgroup found for pid %d\n", pRmClient->ProcID);
+        return NV_OK;
+    }
 
     // attempt to pre-allocate charge structure outside the lock for the fallback/misc cgroup case
     if (g_memacct.impl == CGROUP_IMPL_FALLBACK)
@@ -143,70 +189,99 @@ NV_STATUS memacctTryCharge(ClientGroupID cligrp, NvU32 gpuId, NvLength size, Mem
         *ppCharge = portMemAllocNonPaged(sizeof **ppCharge);
         if (*ppCharge == NULL)
         {
-            NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u group %016llx request %llu charge structure allocation failure\n",
+            NV_PRINTF(LEVEL_INFO, "region %x group %016llx request %llu charge structure allocation failure\n",
                 gpuId, (NvU64)cligrp, size);
             return NV_ERR_NO_MEMORY;
         }
     }
 
     portSyncMutexAcquire(g_memacct.mutex);
-    GpuRegion *pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
+    pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
     if (pRegion == NULL)
     {
-        NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u not found\n", gpuId);
+        portSyncMutexRelease(g_memacct.mutex);
+        NV_PRINTF(LEVEL_INFO, "region %x not found\n", gpuId);
+        portMemFree(*ppCharge);
         *ppCharge = NULL;
-        status = NV_OK;
-        goto done;
+        return NV_OK;
     }
 
     if (g_memacct.impl == CGROUP_IMPL_OS)
     {
-        void *osRegion = pRegion->osRegion;
+        void *osRegion = pRegion->os.region;
         portSyncMutexRelease(g_memacct.mutex);
-        return memacctTryChargeOs(osRegion, size, ppCharge);
+        status = memacctTryChargeOs(osRegion, cligrp, size, ppCharge);
     }
     else
     {
         status = memacctTryChargeInternalLocked(pRegion, cligrp, gpuId, size, *ppCharge);
-        if (status != NV_OK)
+        portSyncMutexRelease(g_memacct.mutex);
+        if ((status != NV_OK) && (status != NV_WARN_RESOURCE_ACCOUNTING_SOFT_LIMIT_EXCEEDED))
         {
-            doFree = NV_TRUE;
             // not really an error case, just need to clean up the pre-allocation
             if (status == NV_ERR_INVALID_LIMIT)
                 status = NV_OK;
+
+            portMemFree(*ppCharge);
+            *ppCharge = NULL;
         }
     }
-done:
-    portSyncMutexRelease(g_memacct.mutex);
-    if (doFree)
+
+    if (*ppCharge != NULL)
     {
-        portMemFree(*ppCharge);
-        *ppCharge = NULL;
+        (*ppCharge)->gpuId = gpuId;
+        (*ppCharge)->pid = pRmClient->ProcID;
     }
+
+    if (status == NV_WARN_RESOURCE_ACCOUNTING_SOFT_LIMIT_EXCEEDED)
+    {
+        gpuNotifySubDeviceEvent(gpumgrGetGpuFromId(gpuId), NV2080_NOTIFIERS_MEMACCT_SOFT_LIMIT_EXCEEDED,
+            NULL, 0, pRmClient->ProcID, 0);
+
+        status = NV_OK;
+    }
+
     return status;
 }
 
-static void memacctReleaseChargeInternal(MemoryCharge *pCharge)
+static NvBool memacctReleaseChargeInternal(MemoryCharge *pCharge)
 {
+    NvBool notify = NV_FALSE;
+    GpuRegion *pRegion;
+    ClientGroupLimits *pLimits;
+    NvLength before;
+    NvLength after;
+
     portSyncMutexAcquire(g_memacct.mutex);
-    GpuRegion *pRegion = mapFind(&g_memacct.GpuRegionMap, pCharge->gpuId);
+    pRegion = mapFind(&g_memacct.GpuRegionMap, pCharge->gpuId);
     if (pRegion == NULL)
         goto done;
 
-    ClientGroupLimits *pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)pCharge->cligrp);
+    pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)pCharge->cligrp);
     if (pLimits == NULL)
         goto done;
 
+    // uncharge
+    before = pLimits->HardLimit - pLimits->Available;
     pLimits->Available += pCharge->size;
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u group %016llx released %llu total %llu/%llu\n",
+    after = pLimits->HardLimit - pLimits->Available;
+
+    NV_PRINTF(LEVEL_INFO, "region %x group %016llx released %llu total %llu/%llu\n",
         pCharge->gpuId, (NvU64)pCharge->cligrp, pCharge->size,
-        pLimits->HardLimit - pLimits->Available, pLimits->HardLimit);
+        after, pLimits->HardLimit);
+
+    if ((before > pLimits->SoftLimit) && (after <= pLimits->SoftLimit))
+        notify = NV_TRUE;
+
 done:
     portSyncMutexRelease(g_memacct.mutex);
+    return notify;
 }
 
 void memacctReleaseCharge(MemoryCharge *pCharge)
 {
+    NvBool notify;
+
     if (g_memacct.impl == CGROUP_IMPL_NONE)
         return;
 
@@ -216,15 +291,31 @@ void memacctReleaseCharge(MemoryCharge *pCharge)
     if (--pCharge->refCount)
         return;
 
+    notify = NV_FALSE;
     if (g_memacct.impl == CGROUP_IMPL_OS)
     {
-        NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "release %llu for pool 0x%016llx\n", pCharge->size,
+        NvBool overSoftLimitBefore;
+        NvBool overSoftLimitAfter;
+
+        NV_PRINTF(LEVEL_INFO, "release %llu for pool 0x%016llx\n", pCharge->size,
             (NvU64)pCharge->osPool);
+
+        overSoftLimitBefore = osCgroupCanEvict(NULL, pCharge->osPool);
         osMemacctReleaseCharge(pCharge->osPool, pCharge->size);
+        overSoftLimitAfter = osCgroupCanEvict(NULL, pCharge->osPool);
+
+        if (overSoftLimitBefore && !overSoftLimitAfter)
+            notify = NV_TRUE;
     }
     else
     {
-        memacctReleaseChargeInternal(pCharge);
+        notify = memacctReleaseChargeInternal(pCharge);
+    }
+
+    if (notify)
+    {
+        gpuNotifySubDeviceEvent(gpumgrGetGpuFromId(pCharge->gpuId), NV2080_NOTIFIERS_MEMACCT_RETURNED_BELOW_SOFT_LIMIT,
+            NULL, 0, pCharge->pid, 0);
     }
 
     portMemFree(pCharge);
@@ -232,30 +323,32 @@ void memacctReleaseCharge(MemoryCharge *pCharge)
 
 NV_STATUS memacctGetLimits(ClientGroupID cligrp, NvU32 gpuId, NvLength *pSoftLimit, NvLength *pHardLimit, NvLength *pCurrent)
 {
+    GpuRegion *pRegion;
+    ClientGroupLimits *pLimits;
+    NV_STATUS status = NV_OK;
+
     if (g_memacct.impl != CGROUP_IMPL_FALLBACK)
         return NV_ERR_NOT_SUPPORTED;
 
-    NV_STATUS status;
-
     portSyncMutexAcquire(g_memacct.mutex);
-    GpuRegion *pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
+    pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
     if (pRegion == NULL)
     {
-        status = NV_ERR_INVALID_INDEX;
+        // device doesn't exist - might be a bad argument or maybe was skipped as zerofb, for example
+        status = NV_ERR_INVALID_LIMIT;
         goto cleanup;
     }
 
-    ClientGroupLimits *pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)cligrp);
+    pLimits = memacctLimitsForGroupLocked(pRegion, &cligrp);
     if (pLimits == NULL)
     {
-        status = NV_ERR_INVALID_INDEX;
+        status = NV_ERR_NOT_SUPPORTED;
         goto cleanup;
     }
 
     *pSoftLimit = pLimits->SoftLimit;
     *pHardLimit = pLimits->HardLimit;
     *pCurrent = pLimits->HardLimit - pLimits->Available;
-    status = NV_OK;
 
 cleanup:
     portSyncMutexRelease(g_memacct.mutex);
@@ -264,26 +357,35 @@ cleanup:
 
 NV_STATUS memacctSetLimits(ClientGroupID cligrp, NvU32 gpuId, NvLength softlimit, NvLength hardlimit)
 {
+    NV_STATUS status;
+    GpuRegion *pRegion;
+    ClientGroupLimits *pLimits;
+
     if (g_memacct.impl != CGROUP_IMPL_FALLBACK)
         return NV_ERR_NOT_SUPPORTED;
 
-    NV_STATUS status;
-
     portSyncMutexAcquire(g_memacct.mutex);
-    GpuRegion *pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
+    pRegion = mapFind(&g_memacct.GpuRegionMap, gpuId);
     if (pRegion == NULL)
     {
-        status = NV_ERR_INVALID_INDEX;
+        status = NV_ERR_OBJECT_NOT_FOUND;
         goto cleanup;
     }
 
-    ClientGroupLimits *pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)cligrp);
+    // no setting root group limits (to match dmem)
+    if (osCgroupParent(cligrp) == NULL)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto cleanup;
+    }
+
+    pLimits = mapFind(&pRegion->clientGroupMap, (NvU64)cligrp);
     if (pLimits != NULL)
     {
         NvLength used = pLimits->HardLimit - pLimits->Available;
         if (used > hardlimit)
         {
-            NV_PRINTF(LEVEL_ERROR, "region %u group %016llx set limit error - requested limit %llu is lower than current allocation %llu\n",
+            NV_PRINTF(LEVEL_ERROR, "region %x group %016llx set limit error - requested limit %llu is lower than current allocation %llu\n",
                 gpuId, (NvU64)cligrp, hardlimit, used);
 
             status = NV_ERR_INVALID_LIMIT;
@@ -294,6 +396,11 @@ NV_STATUS memacctSetLimits(ClientGroupID cligrp, NvU32 gpuId, NvLength softlimit
     else
     {
         pLimits = mapInsertNew(&pRegion->clientGroupMap, (NvU64)cligrp);
+        if (pLimits == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
         pLimits->Available = hardlimit;
     }
 
@@ -301,8 +408,8 @@ NV_STATUS memacctSetLimits(ClientGroupID cligrp, NvU32 gpuId, NvLength softlimit
     pLimits->HardLimit = hardlimit;
     status = NV_OK;
 
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "region %u group %016llx setting limit %llu\n", gpuId,
-        (NvU64)cligrp, hardlimit);
+    NV_PRINTF(LEVEL_INFO, "region %x group %016llx setting limits %llu %llu\n", gpuId,
+        (NvU64)cligrp, softlimit, hardlimit);
 
 cleanup:
     portSyncMutexRelease(g_memacct.mutex);
@@ -320,78 +427,147 @@ static void memacctOneTimeSetup(void)
     }
 }
 
+NvCgroupImpl memacctActiveImplementation(void)
+{
+    return g_memacct.impl;
+}
+
 NV_STATUS memacctInitGpuInfo(OBJGPU *pGpu)
 {
+    NvU64 id;
+    MemoryManager *pMemoryManager;
+    KernelMemorySystem *pKernelMemorySystem;
+    KernelMIGManager *pKernelMIGManager;
+    NvBool bIsPmaEnabled;
+    Heap *pHeap;
+    NvU64 size;
+    NvU64 freeSize;
+    NvU64 precharge;
+    void *prechargePool;
+    void *osRegion;
+    NV_STATUS status;
+    GpuRegion *pRegion;
+
     memacctOneTimeSetup();
 
     if (g_memacct.impl == CGROUP_IMPL_NONE)
         return NV_OK;
 
     NV_ASSERT_OR_RETURN(gpumgrIsSafeToReadGpuInfo(), NV_ERR_INVALID_LOCK_STATE);
-    NvU64 id = pGpu->gpuId;
 
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64 size = memmgrGetUsableMemSizeMB(pGpu, pMemoryManager) * 1024 * 1024;
+    id = pGpu->gpuId;
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    bIsPmaEnabled = memmgrIsPmaInitialized(pMemoryManager);
+    pHeap = GPU_GET_HEAP(pGpu);
 
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "creating new memacct region %llu size %llu\n", id, size);
+    size = memmgrGetTotalRamSizeBytes(pGpu, pMemoryManager, pKernelMemorySystem, pHeap, NULL,
+        bIsPmaEnabled);
+    if (size == 0)
+    {
+        NV_PRINTF(LEVEL_INFO, "region %llx zero size, ignoring\n", id);
+        return NV_OK;
+    }
 
-    void *osRegion = NULL;
+    NV_PRINTF(LEVEL_INFO, "creating new memacct region %llx size %llu\n", id, size);
+    freeSize = memmgrGetHeapFreeBytes(pGpu, pMemoryManager, pKernelMIGManager, pHeap,
+        bIsPmaEnabled, NV_FALSE);
+    precharge = size - freeSize;
+    prechargePool = NULL;
+
+    osRegion = NULL;
     if (g_memacct.impl == CGROUP_IMPL_OS)
     {
-        osRegion = osCgroupRegisterRegion(pGpu, size);
+        osRegion = osCgroupRegisterRegion(pGpu, size, precharge, &prechargePool);
+        if (!osRegion)
+            return NV_ERR_OPERATING_SYSTEM;
     }
 
     portSyncMutexAcquire(g_memacct.mutex);
 
-    GpuRegion *pRegion = mapInsertNew(&g_memacct.GpuRegionMap, id);
+    status = NV_OK;
+    pRegion = mapInsertNew(&g_memacct.GpuRegionMap, id);
+    if (pRegion == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        if (osRegion)
+            osCgroupUnregisterRegion(osRegion, prechargePool, precharge);
+        goto cleanup;
+    }
+
     if (g_memacct.impl == CGROUP_IMPL_OS)
     {
-        pRegion->osRegion = osRegion;
+        pRegion->os.region = osRegion;
+        pRegion->os.precharge = precharge;
+        pRegion->os.prechargePool = prechargePool;
     }
     else
     {
         mapInit(&pRegion->clientGroupMap, portMemAllocatorGetGlobalNonPaged());
     }
-
+cleanup:
     portSyncMutexRelease(g_memacct.mutex);
-    return NV_OK;
+    return status;
 }
 
 void memacctRemoveGpu(OBJGPU *pGpu)
 {
+    void *osRegion = NULL;
+    void *prechargePool = NULL;
+    NvU64 precharge = 0;
+    GpuRegion *pRegion;
+    
     if (g_memacct.impl == CGROUP_IMPL_NONE)
+        return;
+
+    if (g_memacct.mutex == NULL)
         return;
 
     if (pGpu == NULL)
         return;
 
-    void *osRegion = NULL;
-
     NV_ASSERT_OR_RETURN_VOID(gpumgrIsSafeToReadGpuInfo());
 
     portSyncMutexAcquire(g_memacct.mutex);
-    GpuRegion *pRegion = mapFind(&g_memacct.GpuRegionMap, pGpu->gpuId);
+    pRegion = mapFind(&g_memacct.GpuRegionMap, pGpu->gpuId);
     if (pRegion == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO, "region %x not found, ignoring\n", pGpu->gpuId);
         goto cleanup;
+    }
 
-    NV_PRINTF(MEMACCT_DEBUG_LOG_LEVEL, "removing memacct region %u\n", pGpu->gpuId);
+    NV_PRINTF(LEVEL_INFO, "removing memacct region %x\n", pGpu->gpuId);
 
     if (g_memacct.impl == CGROUP_IMPL_OS)
-        osRegion = pRegion->osRegion;
+    {
+        osRegion = pRegion->os.region;
+        precharge = pRegion->os.precharge;
+        prechargePool = pRegion->os.prechargePool;
+    }
     else
+    {
         mapClear(&pRegion->clientGroupMap);
+    }
     mapRemove(&g_memacct.GpuRegionMap, pRegion);
 
 cleanup:
-    portSyncMutexRelease(g_memacct.mutex);
-    if (osRegion)
-        osCgroupUnregisterRegion(osRegion);
-
     if (mapCount(&g_memacct.GpuRegionMap) == 0)
     {
         mapClear(&g_memacct.GpuRegionMap);
+        portSyncMutexRelease(g_memacct.mutex);
         portSyncMutexDestroy(g_memacct.mutex);
         g_memacct.mutex = NULL;
     }
+    else
+    {
+        portSyncMutexRelease(g_memacct.mutex);
+    }
+
+    if (osRegion)
+    {
+        osCgroupUnregisterRegion(osRegion, prechargePool, precharge);
+    }
+
     return;
 }

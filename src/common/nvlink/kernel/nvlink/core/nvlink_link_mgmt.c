@@ -139,9 +139,10 @@ nvlink_core_check_link_state
                 return NV_FALSE;
             }
 
-            if (crntTlLinkMode == NVLINK_LINKSTATE_HS &&
-                (crntDlLinkMode == NVLINK_LINKSTATE_HS ||
-                 crntDlLinkMode == NVLINK_LINKSTATE_SLEEP))
+            if ((crntTlLinkMode == NVLINK_LINKSTATE_HS &&
+                 (crntDlLinkMode == NVLINK_LINKSTATE_HS ||
+                  crntDlLinkMode == NVLINK_LINKSTATE_SLEEP)) ||
+                crntTlLinkMode == NVLINK_LINKSTATE_PHYSICAL_UP_NO_TRAFFIC)
             {
                 return NV_TRUE;
             }

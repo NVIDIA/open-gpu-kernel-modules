@@ -251,6 +251,8 @@ namespace DisplayPort
                                                                 // regardless of whether the path leading to it supports HDCP.
         virtual TriState        hdcpAvailable() = 0;            // Whether HDCP can be enabled.
                                                                 // Note this checks that the entire path to the node support HDCP.
+        virtual bool            isHdcp1XCapable() = 0;          // Returns true if device is 1X capable
+        virtual bool            isHdcp2XCapable() = 0;          // Returns true if device is 2X capable
 
         virtual                 PortMap getPortMap() const = 0;
 
@@ -431,6 +433,7 @@ namespace DisplayPort
             virtual void notifyZombieStateChange(Device * dev, bool zombied)  = 0;  // Notification that zombie device was attached or dettached
             virtual void notifyCableOkStateChange(Device * dev, bool cableOk) = 0;  // Notification that device got cable state chagne (true - cable is good, false - cables is bad)
             virtual void notifyHDCPCapDone(Device * dev, bool hdcpCap) = 0;         // Notification that device's HDCP cap detection is done and get state change.
+            virtual void notifyHDCPEnabled(Device * dev, bool hdcpEnabled) { };     // Notification that HDCP ECF is enabled
             virtual void notifyMCCSEvent(Device * dev) = 0;                         // Notification that an MCCS event is coming
         };
 
@@ -623,7 +626,7 @@ namespace DisplayPort
 
         // Notify library before/after shutdown (update)
         virtual void notifyDetachBegin(Group * target) = 0;
-        virtual void notifyDetachEnd(bool bKeepOdAlive = false) = 0;
+        virtual void notifyDetachEnd(bool bKeepOdAlive = false, bool bKeepLinkOn = false) = 0;
 
         // Notify library to assess PCON link capability
         virtual bool assessPCONLinkCapability(PCONLinkControl *params) = 0;
@@ -631,6 +634,9 @@ namespace DisplayPort
         // Notify library of hotplug/IRQ
         virtual void notifyLongPulse(bool statusConnected) = 0;
         virtual void notifyShortPulse() = 0;
+
+        // Client-forced connection without physical HPD (fake EDID / forceConnected).
+        virtual void setClientForcedConnected(bool enabled) = 0;
 
         // Notify Library when ACPI initialization is done
         virtual void notifyAcpiInitDone() = 0;

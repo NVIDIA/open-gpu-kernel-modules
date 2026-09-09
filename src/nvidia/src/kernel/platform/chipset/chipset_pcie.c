@@ -78,6 +78,9 @@ static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
 static void      _objClGetUpstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
 static void      _objClGetDownstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
 static void      _objClIsPciePowerControlPresent(OBJGPU *, KernelBif *);
+static void      _objClPushBus(OBJCL *, NvS16);
+static NvU32     _objClPopBus(OBJCL *, NvS16 *);
+static NV_STATUS _objClScanPcieBusDfs(OBJGPU *, OBJCL *, NvU32);
 
 extern void _Set_ASPM_L0S_L1(OBJCL *, NvBool, NvBool);
 
@@ -545,7 +548,7 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
     {
         domain = gpuGetDomain(pGpu);
 
-        if (clStoreBusTopologyCache(pGpu, pCl, domain, PCI_MAX_BUSES) != NV_OK)
+        if (clStoreBusTopologyCache(pGpu, pCl, domain, PCI_MAX_BUSES, pGpu->PDB_PROP_GPU_BUG_5395859_DFS_SCAN_PCIE_BUS) != NV_OK)
         {
             return NV_ERR_GENERIC;
         }
@@ -1782,7 +1785,7 @@ clFindP2PBrdg_IMPL
     }
 
     // If the bus topology is not cached, do it here
-    if (clStoreBusTopologyCache(pGpu, pCl, domain, secBus16) != NV_OK)
+    if (clStoreBusTopologyCache(pGpu, pCl, domain, secBus16, pGpu->PDB_PROP_GPU_BUG_5395859_DFS_SCAN_PCIE_BUS) != NV_OK)
     {
         return NULL;
     }
@@ -2854,6 +2857,166 @@ clFreeBusTopologyCache_IMPL(OBJCL *pCl)
     pCl->pBusTopologyInfo = NULL;
 }
 
+/*!
+ * @brief Helper function to push bus numbers in the stack
+ */
+static void _objClPushBus(OBJCL *pCl, NvS16 bus)
+{
+    NvS32 stackTop = pCl->stackTop;
+
+    if (stackTop < PCI_MAX_STACK_DEPTH - 1)
+    {
+        pCl->busStack[++stackTop].bus = bus;
+        pCl->stackTop = stackTop;
+    }
+}
+
+/*!
+ * @brief Helper function to pop out bus numbers from the stack
+ */
+static NvU32 _objClPopBus(OBJCL *pCl, NvS16 *pBus)
+{
+    NvS32 stackTop = pCl->stackTop;
+
+    if (stackTop < 0)
+    {
+        return 0;
+    }
+
+    *pBus = pCl->busStack[stackTop--].bus;
+    pCl->stackTop = stackTop;
+
+    return 1;
+}
+
+/*!
+ * @brief Scan PCIe bus topology using DFS (Depth First Search)
+ *        algorithm applied on bus
+ */
+static NV_STATUS
+_objClScanPcieBusDfs
+(
+    OBJGPU *pGpu,
+    OBJCL  *pCl,
+    NvU32   domain
+)
+{
+    NvS16 bus;
+    NvS8  secBus;
+    NvS8  dev;
+    NvS8  func;
+    NvU8  classCode;
+    NvU8  multifunction;
+    NvU8  headerType;
+    void *handle;
+    NvU16 vendorID;
+    NvU16 deviceID;
+    NvU16 pciSubBaseClass;
+    PBUSTOPOLOGYINFO pBusTopologyInfo     = NULL;
+    PBUSTOPOLOGYINFO pBusTopologyInfoLast = NULL;
+    NvBool bGpuArchIsZeroFb = NV_FALSE;
+    
+    if ((pGpu != NULL) && (pGpu->pGpuArch != NULL))
+    {
+        bGpuArchIsZeroFb = pGpu->pGpuArch->bGpuArchIsZeroFb;
+    }
+    
+    pCl->stackTop = -1;
+
+    // Start from root bus 0
+    _objClPushBus(pCl, 0);
+
+    while (_objClPopBus(pCl, &bus))
+    {
+        for (dev = 0; dev < PCI_MAX_DEVICES; dev++)
+        {
+            handle = osPciInitHandle(domain, bus, dev, 0, &vendorID, &deviceID);
+            if (!handle || (!PCI_IS_VENDORID_VALID(vendorID)))
+                continue;
+
+            secBus = osPciReadByte(handle, PCI_TYPE_1_SECONDARY_BUS_NUMBER);
+
+            // Check for PCI-to-PCI bridge
+            classCode = osPciReadByte(handle, PCI_HEADER_TYPE0_BASECLASS);
+            if (classCode == PCI_CLASS_BRIDGE_DEV) 
+            {
+                if (secBus != 0) 
+                {
+                    // DFS behavior: push child bus
+                    _objClPushBus(pCl, secBus);
+                }
+            }
+
+            headerType = osPciReadByte(handle, PCI_HEADER_TYPE0_HEADER_TYPE);
+            multifunction = headerType & PCI_MULTIFUNCTION;
+
+            for (func = 0; func < (multifunction ? PCI_MAX_FUNCTIONS : 1); func++) 
+            {
+                handle = osPciInitHandle(domain, bus, dev, func, &vendorID, &deviceID);
+                if ((!handle) || (!PCI_IS_VENDORID_VALID(vendorID)))
+                    continue;
+
+                // Add device to the list
+                pBusTopologyInfo = portMemAllocNonPaged(sizeof(BUSTOPOLOGYINFO));
+                if (pBusTopologyInfo == NULL)
+                {
+                    NV_PRINTF(LEVEL_ERROR,
+                              "Buffer Allocation for clStoreBusTopologyCache FAILED\n");
+                    clFreeBusTopologyCache(pCl);
+
+                    return NV_ERR_INSUFFICIENT_RESOURCES;
+                }
+
+                portMemSet(pBusTopologyInfo, 0, sizeof(BUSTOPOLOGYINFO));
+
+                //
+                // Append the new node to the end of the cache linked list.
+                // NOTE: pBusTopologyInfoLast holds either the last node in the
+                // cache or is NULL, in which case pCl's cache list does not exist.
+                //
+                if (!pBusTopologyInfoLast)
+                {
+                    pCl->pBusTopologyInfo = pBusTopologyInfo;
+                }
+                else
+                {
+                    pBusTopologyInfoLast->next = pBusTopologyInfo;
+                }
+                pBusTopologyInfo->next = NULL;
+                pBusTopologyInfoLast = pBusTopologyInfo;
+
+                pciSubBaseClass = osPciReadWord(handle, PCI_COMMON_CLASS_SUBCLASS);
+
+                pBusTopologyInfo->handle              = handle;
+                pBusTopologyInfo->domain              = domain;
+                pBusTopologyInfo->bus                 = (NvU8) bus;
+                pBusTopologyInfo->device              = dev;
+                pBusTopologyInfo->func                = func;
+                pBusTopologyInfo->pciSubBaseClass     = pciSubBaseClass;
+                pBusTopologyInfo->busInfo.vendorID    = vendorID;
+                pBusTopologyInfo->busInfo.deviceID    = deviceID;
+                pBusTopologyInfo->busInfo.subvendorID = osPciReadWord(handle, PCI_COMMON_SUBSYSTEM_VENDOR_ID);
+                pBusTopologyInfo->busInfo.subdeviceID = osPciReadWord(handle, PCI_COMMON_SUBSYSTEM_ID);
+                pBusTopologyInfo->busInfo.revisionID  = osPciReadByte(handle, PCI_HEADER_TYPE0_REVISION_ID);
+
+                if ((pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_P2P) ||
+                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST) ||
+                    (bGpuArchIsZeroFb && (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_3DCTRL)))
+                {
+                    pBusTopologyInfo->secBus = secBus;
+                    pBusTopologyInfo->bVgaAdapter = NV_FALSE;
+                }
+                else
+                {
+                    pBusTopologyInfo->bVgaAdapter = NV_TRUE;
+                }
+            }
+        }
+    }
+
+    return NV_OK;
+}
+
 //
 // Cache the bus topology
 // Do not perform per-gpu memory tracking as pCl remains
@@ -2866,7 +3029,8 @@ clStoreBusTopologyCache_IMPL
     OBJGPU *pGpu,
     OBJCL  *pCl,
     NvU32   domain,
-    NvU16   secBus
+    NvU16   secBus,
+    NvBool  bScanPcieBusDfs
 )
 {
     void *handle;
@@ -2875,8 +3039,9 @@ clStoreBusTopologyCache_IMPL
     NvS8  device = 0, func = 0;
     NvU16 pciSubBaseClass;
     PBUSTOPOLOGYINFO pBusTopologyInfo = NULL, pBusTopologyInfoLast = NULL;
+    NV_STATUS status = NV_OK;
     NvBool bGpuArchIsZeroFb = NV_FALSE;
-
+    
     if ((pGpu != NULL) && (pGpu->pGpuArch != NULL))
     {
         bGpuArchIsZeroFb = pGpu->pGpuArch->bGpuArchIsZeroFb;
@@ -2890,13 +3055,20 @@ clStoreBusTopologyCache_IMPL
             if (pBusTopologyInfo->domain == domain)
             {
                 // Already cached
-                return NV_OK;
+                return status;
             }
 
             // Keep track of the current node  This will capture the last node on exit.
             pBusTopologyInfoLast = pBusTopologyInfo;
             pBusTopologyInfo = pBusTopologyInfo->next;
         }
+    }
+
+    if (bScanPcieBusDfs)
+    {
+        // Todo : Bug 5819532 - optimize this further and clean up the legacy code
+        status = _objClScanPcieBusDfs(pGpu, pCl, domain);
+        goto clStoreBusTopologyCache_exit;
     }
 
     // We did not find our domain, so enumerate devices again and update cache.
@@ -2937,7 +3109,8 @@ clStoreBusTopologyCache_IMPL
                               "Buffer Allocation for clStoreBusTopologyCache FAILED\n");
                     clFreeBusTopologyCache(pCl);
 
-                    return NV_ERR_INSUFFICIENT_RESOURCES;
+                    status = NV_ERR_INSUFFICIENT_RESOURCES;
+                    return status;
                 }
 
                 portMemSet(pBusTopologyInfo, 0, sizeof(BUSTOPOLOGYINFO));
@@ -2991,6 +3164,8 @@ clStoreBusTopologyCache_IMPL
             }
         }
     }
+
+clStoreBusTopologyCache_exit:
     //
     // Adding thread reset timeout here to fix Cisco bug 1277168.
     // Enumerating pcie bus topology in cisco host c240 takes too long
@@ -2998,9 +3173,8 @@ clStoreBusTopologyCache_IMPL
     //
     threadStateResetTimeout(NULL);
 
-    return NV_OK;
+    return status;
 }
-
 
 NV_STATUS
 clPcieWriteRootPortConfigReg_IMPL

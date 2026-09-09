@@ -83,7 +83,7 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
         parent_gpu->map_remap_larger_page_promotion = false;
 
         // Note that access bits are only supported GA10x onwards
-        parent_gpu->access_bits_supported = false;
+        parent_gpu->access_bits_supported = true;
     }
 
     parent_gpu->ats.no_ats_range_required = false;

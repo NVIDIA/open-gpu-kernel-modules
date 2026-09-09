@@ -102,12 +102,12 @@ struct NVOC_VTABLE__MemoryHwResources {
     NV_STATUS (*__hwresIsReady__)(struct MemoryHwResources * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__hwresIsGpuMapAllowed__)(struct MemoryHwResources * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__hwresIsExportAllowed__)(struct MemoryHwResources * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__hwresAccessCallback__)(struct MemoryHwResources * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__hwresShareCallback__)(struct MemoryHwResources * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__hwresControlSerialization_Prologue__)(struct MemoryHwResources * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__hwresControlSerialization_Epilogue__)(struct MemoryHwResources * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__hwresControl_Prologue__)(struct MemoryHwResources * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__hwresControl_Epilogue__)(struct MemoryHwResources * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__hwresAccessCallback__)(struct MemoryHwResources * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__hwresShareCallback__)(struct MemoryHwResources * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__hwresControlSerialization_Prologue__)(struct MemoryHwResources * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__hwresControlSerialization_Epilogue__)(struct MemoryHwResources * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__hwresControl_Prologue__)(struct MemoryHwResources * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__hwresControl_Epilogue__)(struct MemoryHwResources * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     void (*__hwresPreDestruct__)(struct MemoryHwResources * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__hwresControlFilter__)(struct MemoryHwResources * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
     NvBool (*__hwresIsPartialUnmapSupported__)(struct MemoryHwResources * /*this*/);  // inline virtual inherited (res) base (mem) body
@@ -264,27 +264,27 @@ static inline NvBool hwresIsExportAllowed_DISPATCH(struct MemoryHwResources *pMe
     return pMemory->__nvoc_metadata_ptr->vtable.__hwresIsExportAllowed__(pMemory);
 }
 
-static inline NvBool hwresAccessCallback_DISPATCH(struct MemoryHwResources *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool hwresAccessCallback_DISPATCH(struct MemoryHwResources *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__hwresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool hwresShareCallback_DISPATCH(struct MemoryHwResources *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool hwresShareCallback_DISPATCH(struct MemoryHwResources *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__hwresShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS hwresControlSerialization_Prologue_DISPATCH(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS hwresControlSerialization_Prologue_DISPATCH(struct MemoryHwResources *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__hwresControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void hwresControlSerialization_Epilogue_DISPATCH(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void hwresControlSerialization_Epilogue_DISPATCH(struct MemoryHwResources *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__hwresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS hwresControl_Prologue_DISPATCH(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS hwresControl_Prologue_DISPATCH(struct MemoryHwResources *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__hwresControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void hwresControl_Epilogue_DISPATCH(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void hwresControl_Epilogue_DISPATCH(struct MemoryHwResources *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__hwresControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

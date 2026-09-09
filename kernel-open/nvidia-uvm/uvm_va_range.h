@@ -77,6 +77,16 @@
 //     These ranges do not have blocks. All state (page tables, mapping handles,
 //     etc) is maintained within the range.
 //
+// VA ranges with type == UVM_VA_RANGE_TYPE_DMA_BUF:
+//     These ranges track DMA-BUF buffers that have been imported. The UVM driver is
+//     responsible for mapping them to the GPU(s), but not to the CPU. These
+//     ranges do not support faulting nor migration, and they typically represent
+//     access to PCIe peer device memories not controlled by UVM or RM, and with no
+//     backing vma.
+//
+//     These ranges do not have blocks. All state (page tables, mapping handles,
+//     etc) is maintained within the range.
+//
 // VA ranges with type == UVM_VA_RANGE_TYPE_CHANNEL:
 //     These are similar to EXTERNAL ranges, except they represent internal
 //     allocations required for user channels to operate (context save areas,
@@ -107,6 +117,7 @@ typedef enum
     UVM_VA_RANGE_TYPE_INVALID = 0,
     UVM_VA_RANGE_TYPE_MANAGED,
     UVM_VA_RANGE_TYPE_EXTERNAL,
+    UVM_VA_RANGE_TYPE_DMA_BUF,
     UVM_VA_RANGE_TYPE_CHANNEL,
     UVM_VA_RANGE_TYPE_SKED_REFLECTED,
     UVM_VA_RANGE_TYPE_SEMAPHORE_POOL,
@@ -141,9 +152,47 @@ typedef struct
     nv_kref_t ref_count;
 } uvm_ext_gpu_mem_handle;
 
+// Common base for per-GPU range trees of sub-range mappings.
+typedef struct
+{
+    // Lock protecting the range tree.
+    uvm_mutex_t lock;
+
+    // Range tree that contains all of the mapped portions of a range which
+    // permits per-GPU sub-range mappings. The tree holds uvm_gpu_map_t
+    // instances.
+    uvm_range_tree_t tree;
+} uvm_gpu_range_tree_t;
+
+typedef uvm_gpu_range_tree_t uvm_ext_gpu_range_tree_t;
+
+typedef struct
+{
+    uvm_gpu_range_tree_t base;
+
+    // A borrowed reference to the GPU's attachment. The attachment is created
+    // at time of first mapping on the GPU, but detached after this range is
+    // destroyed as a deferred-free in UvmFree(), outside of the va_space lock.
+    // This is due to the locking requirement imposed externally by DMA-BUF.
+    struct dma_buf_attachment *attach;
+} uvm_dma_buf_gpu_range_tree_t;
+
+// Common base for per-GPU sub-range mappings.
 typedef struct
 {
     uvm_range_tree_node_t node;
+
+    // GPU on which this allocation is mapped.
+    uvm_gpu_t *gpu;
+
+    uvm_page_table_range_vec_t pt_range_vec;
+} uvm_gpu_map_t;
+
+typedef uvm_gpu_map_t uvm_dma_buf_gpu_map_t;
+
+typedef struct
+{
+    uvm_gpu_map_t base;
 
     // Handle to the physical user allocation dup'd into our client. This
     // prevents the allocation from being removed until we free it, even if the
@@ -157,9 +206,6 @@ typedef struct
     // complete, so subsequent operations on this ext_gpu_map must acquire this
     // tracker before operating on pt_range_vec.
     uvm_tracker_t tracker;
-
-    // GPU on which this allocation is mapped.
-    uvm_gpu_t *gpu;
 
     // GPU which owns the allocation. For sysmem, this is the GPU that the
     // sysmem was originally allocated under. For the allocation to remain valid
@@ -191,8 +237,6 @@ typedef struct
     // Fabric memory. If true, the allocation is a fabric allocation.
     bool is_fabricmem;
 
-    uvm_page_table_range_vec_t pt_range_vec;
-
     // Node for the deferred free list where this allocation is stored upon
     // unmapped.
     //
@@ -209,16 +253,6 @@ typedef struct
     // however this introduces overhead during performance sensitive sections.
     bool need_l2_invalidate_at_unmap;
 } uvm_ext_gpu_map_t;
-
-typedef struct
-{
-    // Lock protecting the range tree.
-    uvm_mutex_t lock;
-
-    // Range tree that contains all of the mapped portions of an External VA
-    // range. The tree holds uvm_ext_gpu_map_t instances.
-    uvm_range_tree_t tree;
-} uvm_ext_gpu_range_tree_t;
 
 struct uvm_va_range_struct
 {
@@ -305,6 +339,43 @@ struct uvm_va_range_external_struct
 
     // Dynamically allocated page mask allocated in
     // uvm_va_range_create_external() and used and freed in uvm_free().
+    uvm_processor_mask_t *retained_mask;
+};
+
+struct uvm_va_range_dma_buf_struct
+{
+    // Base class
+    uvm_va_range_t va_range;
+
+    struct dma_buf *dmabuf;
+
+    // Mask of GPUs which have GMMU mappings to this VA range. If a bit in this
+    // mask is set, at a minimum there must exist for the relevant GPU a DMA-BUF
+    // attachment and the attachment must be mapped.
+    // The bitmap can be safely accessed by following the locking rules:
+    //   * If the VA space lock is held for write, the mask can be read or written
+    //     normally.
+    //   * If the VA space lock is held for read, and one of the range tree locks is
+    //     held, only the bit corresponding to that GPU range tree can be accessed.
+    //     Writes must use uvm_processor_mask_set_atomic and
+    //     uvm_processor_mask_clear_atomic to avoid clobbering other bits in the
+    //     mask. If no range tree lock is held, the mask cannot be accessed.
+    //   * If the VA space lock is not held, the mask cannot be accessed
+    uvm_processor_mask_t mapped_gpus;
+
+    // Mask of GPUs that have received a move_notify() notification, prohibiting
+    // further mappings from being established on this GPU.
+    // Members of this bitmap are accessible under the same restricions that
+    // mapped_gpus members are.
+    uvm_processor_mask_t revoked_gpus;
+
+    // Per-GPU tree of mapped dma-buf allocations. This has to be per-GPU in the VA
+    // range because each GPU is able to map a completely different set of
+    // allocations to the same VA range.
+    uvm_dma_buf_gpu_range_tree_t gpu_ranges[UVM_ID_MAX_GPUS];
+
+    // Dynamically allocated page mask allocated in
+    // uvm_va_range_create_dma_buf() and used and freed in uvm_free().
     uvm_processor_mask_t *retained_mask;
 };
 
@@ -427,6 +498,14 @@ static inline uvm_va_range_external_t *uvm_va_range_to_external(uvm_va_range_t *
     return container_of(va_range, uvm_va_range_external_t, va_range);
 }
 
+// DMA-BUF Range dynamic cast
+static inline uvm_va_range_dma_buf_t *uvm_va_range_to_dma_buf(uvm_va_range_t *va_range)
+{
+    UVM_ASSERT(va_range);
+    UVM_ASSERT(va_range->type == UVM_VA_RANGE_TYPE_DMA_BUF);
+    return container_of(va_range, uvm_va_range_dma_buf_t, va_range);
+}
+
 // Channel Range dynamic cast
 static inline uvm_va_range_channel_t *uvm_va_range_to_channel(uvm_va_range_t *va_range)
 {
@@ -514,6 +593,17 @@ NV_STATUS uvm_va_range_create_external(uvm_va_space_t *va_space,
                                        NvU64 start,
                                        NvU64 length,
                                        uvm_va_range_external_t **out_external_range);
+
+// Create an external range. out_dma_buf_range is optional.
+//
+// Returns NV_ERR_UVM_ADDRESS_IN_USE if the range overlaps with an existing
+// range in the va_space tree.
+NV_STATUS uvm_va_range_create_dma_buf(uvm_va_space_t *va_space,
+                                      struct mm_struct *mm,
+                                      struct dma_buf *dmabuf,
+                                      NvU64 start,
+                                      NvU64 length,
+                                      uvm_va_range_dma_buf_t **out_dmabuf_range);
 
 // Create a channel range. out_channel_range is optional.
 //
@@ -654,6 +744,18 @@ static uvm_va_range_external_t *uvm_va_range_external_find(uvm_va_space_t *va_sp
     return uvm_va_range_to_external(va_range);
 }
 
+static uvm_va_range_dma_buf_t *uvm_va_range_dma_buf_find(uvm_va_space_t *va_space, NvU64 addr)
+{
+    uvm_va_range_t *va_range;
+
+    va_range = uvm_va_range_find(va_space, addr);
+    if (!va_range)
+        return NULL;
+    if (va_range->type != UVM_VA_RANGE_TYPE_DMA_BUF)
+        return NULL;
+    return uvm_va_range_to_dma_buf(va_range);
+}
+
 static uvm_va_range_semaphore_pool_t *uvm_va_range_semaphore_pool_find(uvm_va_space_t *va_space,
                                                                        NvU64 addr)
 {
@@ -693,8 +795,47 @@ static uvm_ext_gpu_map_t *uvm_ext_gpu_map_container(uvm_range_tree_node_t *node)
 {
     if (!node)
         return NULL;
-    return container_of(node, uvm_ext_gpu_map_t, node);
+    return container_of(node, uvm_ext_gpu_map_t, base.node);
 }
+
+static uvm_dma_buf_gpu_map_t *uvm_dma_buf_gpu_map_container(uvm_range_tree_node_t *node)
+{
+    if (!node)
+        return NULL;
+    return container_of(node, uvm_dma_buf_gpu_map_t, node);
+}
+
+// Shared range tree iteration primitives.  Both the ext and dma_buf variants
+// delegate to these; callers get typed pointers back via the container_of
+// wrappers above.
+static uvm_range_tree_node_t *uvm_gpu_range_tree_iter_first(uvm_gpu_range_tree_t *range_tree,
+                                                             NvU64 start, NvU64 end)
+{
+    return uvm_range_tree_iter_first(&range_tree->tree, start, end);
+}
+
+static uvm_range_tree_node_t *uvm_gpu_range_tree_iter_next(uvm_gpu_range_tree_t *range_tree,
+                                                            uvm_gpu_map_t *map,
+                                                            NvU64 end)
+{
+    if (!map)
+        return NULL;
+    return uvm_range_tree_iter_next(&range_tree->tree, &map->node, end);
+}
+
+// Internal base macros for GPU map iteration; use the typed variants defined
+// in uvm_map_external.h and uvm_va_range_dmabuf.h.
+#define uvm_gpu_map_for_each_in(map, va_range, gpu, start, end, iter_first, iter_next)          \
+    for ((map) = (iter_first)((va_range), (gpu), (start), (end));                               \
+         (map);                                                                                 \
+         (map) = (iter_next)((va_range), (map), (end)))
+
+#define uvm_gpu_map_for_each_in_safe(map, map_next, va_range, gpu, start, end, iter_first, iter_next)   \
+    for ((map) = (iter_first)((va_range), (gpu), (start), (end)),                                       \
+             (map_next) = (iter_next)((va_range), (map), (end));                                        \
+         (map);                                                                                         \
+         (map) = (map_next),                                                                            \
+             (map_next) = (iter_next)((va_range), (map), (end)))
 
 // Iterators for all va_ranges
 

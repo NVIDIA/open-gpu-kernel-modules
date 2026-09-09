@@ -82,6 +82,7 @@ typedef NV_STATUS      RpcAllocShareDevice(POBJGPU, POBJRPC, NvHandle, NvHandle,
 typedef NV_STATUS      RpcCtrlPreempt(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpuInitializeCtx(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlReservePmAreaSmpc(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlFifoVgpuSwrunlistChannelUpdate(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpuMigratableOps(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlDbgSetModeErrbarDebug(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlPmaStreamUpdateGetPut(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -103,7 +104,6 @@ typedef NV_STATUS      RpcGetGspStaticInfo(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcSaveHibernationData(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcDupObject(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle,
                                     NvHandle, NvHandle, NvU32);
-typedef NV_STATUS      RpcGspSetSystemInfo(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlPmAreaPcSampler(POBJGPU, POBJRPC, NvHandle, NvHandle, NvU32, void*);
 typedef NV_STATUS      RpcCtrlSubdeviceGetLibosHeapStats(POBJGPU, POBJRPC, void*);
 typedef NV_STATUS      RpcCtrlDbgSetExceptionMask(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -150,10 +150,10 @@ typedef NV_STATUS      RpcCtrlDbgSetSingleSmSingleStep(POBJGPU, POBJRPC, NvHandl
 typedef NV_STATUS      RpcUnloadingGuestDriver(POBJGPU, POBJRPC, NvBool, NvBool, NvU32);
 typedef NV_STATUS      RpcGetEngineUtilizationWrapper(POBJGPU, POBJRPC, NvHandle, NvHandle, NvU32, void*, NvU32);
 typedef NV_STATUS      RpcGetConsolidatedGrStaticInfo(POBJGPU, POBJRPC);
+typedef NV_STATUS      RpcCtrlFifoVgpuSwrunlistSubmit(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcSwitchToVga(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlResetChannel(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpfifoSchedule(POBJGPU, POBJRPC, NvHandle, NvHandle, NvU32, void*);
-typedef NV_STATUS      RpcSetRegistry(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlDbgSetModeMmuGccDebug(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGetNvlinkStatus(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcGetStaticData(POBJGPU, POBJRPC);
@@ -252,6 +252,7 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlPreempt              *rpcCtrlPreempt;              /* CTRL_PREEMPT */
     RpcCtrlGpuInitializeCtx     *rpcCtrlGpuInitializeCtx;     /* CTRL_GPU_INITIALIZE_CTX */
     RpcCtrlReservePmAreaSmpc    *rpcCtrlReservePmAreaSmpc;    /* CTRL_RESERVE_PM_AREA_SMPC */
+    RpcCtrlFifoVgpuSwrunlistChannelUpdate  *rpcCtrlFifoVgpuSwrunlistChannelUpdate; /* CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE */
     RpcCtrlGpuMigratableOps     *rpcCtrlGpuMigratableOps;     /* NV2080_CTRL_CMD_GPU_MIGRATABLE_OPS */
     RpcCtrlDbgSetModeErrbarDebug  *rpcCtrlDbgSetModeErrbarDebug; /* CTRL_DBG_SET_MODE_ERRBAR_DEBUG */
     RpcCtrlPmaStreamUpdateGetPut  *rpcCtrlPmaStreamUpdateGetPut; /* CTRL_HWPM_STREAMOUT_UPDATE_GET_PUT */
@@ -270,7 +271,6 @@ typedef struct RPC_HAL_IFACES {
     RpcGetGspStaticInfo         *rpcGetGspStaticInfo;         /* Get static info from GSP RM. */
     RpcSaveHibernationData      *rpcSaveHibernationData;      /* SAVE_HIBERNATION_DATA */
     RpcDupObject                *rpcDupObject;                /* DUP_OBJECT */
-    RpcGspSetSystemInfo         *rpcGspSetSystemInfo;         /* Tells GSP-RM about the overall system environment */
     RpcCtrlPmAreaPcSampler      *rpcCtrlPmAreaPcSampler;      /* CTRL_PM_AREA_PC_SAMPLER */
     RpcCtrlSubdeviceGetLibosHeapStats  *rpcCtrlSubdeviceGetLibosHeapStats; /* CTRL_SUBDEVICE_GET_LIBOS_HEAP_STATS */
     RpcCtrlDbgSetExceptionMask  *rpcCtrlDbgSetExceptionMask;  /* CTRL_DBG_SET_EXCEPTION_MASK */
@@ -315,10 +315,10 @@ typedef struct RPC_HAL_IFACES {
     RpcUnloadingGuestDriver     *rpcUnloadingGuestDriver;     /* UNLOADING_GUEST_DRIVER */
     RpcGetEngineUtilizationWrapper  *rpcGetEngineUtilizationWrapper; /* Get engine utilization wrapper */
     RpcGetConsolidatedGrStaticInfo  *rpcGetConsolidatedGrStaticInfo; /* GET_CONSOLIDATED_GR_STATIC_INFO */
+    RpcCtrlFifoVgpuSwrunlistSubmit  *rpcCtrlFifoVgpuSwrunlistSubmit; /* CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT */
     RpcSwitchToVga              *rpcSwitchToVga;              /* SWITCH_TO_VGA */
     RpcCtrlResetChannel         *rpcCtrlResetChannel;         /* CTRL_RESET_CHANNEL */
     RpcCtrlGpfifoSchedule       *rpcCtrlGpfifoSchedule;       /* CTRL_GPFIFO_SCHEDULE */
-    RpcSetRegistry              *rpcSetRegistry;              /* GSP Init Set registry values */
     RpcCtrlDbgSetModeMmuGccDebug  *rpcCtrlDbgSetModeMmuGccDebug; /* CTRL_DBG_SET_MODE_MMU_GCC_DEBUG */
     RpcCtrlGetNvlinkStatus      *rpcCtrlGetNvlinkStatus;      /* CTRL_NVLINK_GET_NVLINK_STATUS */
     RpcGetStaticData            *rpcGetStaticData;            /* GET_STATIC_DATA published for OpenRM */
@@ -425,6 +425,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlGpuInitializeCtx(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlReservePmAreaSmpc_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlReservePmAreaSmpc(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlFifoVgpuSwrunlistChannelUpdate_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlFifoVgpuSwrunlistChannelUpdate(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGpuMigratableOps_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGpuMigratableOps(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlDbgSetModeErrbarDebug_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
@@ -461,8 +463,6 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcSaveHibernationData(_pGpu, _pRpc)
 #define rpcDupObject_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5)  \
         (_pRpc)->_hal.rpcDupObject(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5)
-#define rpcGspSetSystemInfo_HAL(_pGpu, _pRpc)  \
-        (_pRpc)->_hal.rpcGspSetSystemInfo(_pGpu, _pRpc)
 #define rpcCtrlPmAreaPcSampler_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3)  \
         (_pRpc)->_hal.rpcCtrlPmAreaPcSampler(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3)
 #define rpcCtrlSubdeviceGetLibosHeapStats_HAL(_pGpu, _pRpc, _pArg0)  \
@@ -551,14 +551,14 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcGetEngineUtilizationWrapper(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3, _arg4)
 #define rpcGetConsolidatedGrStaticInfo_HAL(_pGpu, _pRpc)  \
         (_pRpc)->_hal.rpcGetConsolidatedGrStaticInfo(_pGpu, _pRpc)
+#define rpcCtrlFifoVgpuSwrunlistSubmit_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlFifoVgpuSwrunlistSubmit(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcSwitchToVga_HAL(_pGpu, _pRpc)  \
         (_pRpc)->_hal.rpcSwitchToVga(_pGpu, _pRpc)
 #define rpcCtrlResetChannel_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlResetChannel(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGpfifoSchedule_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3)  \
         (_pRpc)->_hal.rpcCtrlGpfifoSchedule(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3)
-#define rpcSetRegistry_HAL(_pGpu, _pRpc)  \
-        (_pRpc)->_hal.rpcSetRegistry(_pGpu, _pRpc)
 #define rpcCtrlDbgSetModeMmuGccDebug_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlDbgSetModeMmuGccDebug(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGetNvlinkStatus_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

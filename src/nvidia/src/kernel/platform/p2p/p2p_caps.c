@@ -423,6 +423,24 @@ _kp2pCapsGetStatusOverPcie
         return NV_OK;
     }
 
+    //
+    // PCIe P2P is not supported on self-hosted platforms.
+    //
+    gpuInstance = 0;
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (gpuIsSelfHosted(pGpu))
+        {
+            *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+            *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+
+            NV_PRINTF(LEVEL_INFO, "PCIe P2P is not supported on self-hosted platforms\n");
+            return NV_OK;
+        }
+    }
+
+    gpuInstance = 0;
+
     pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
     if (IS_GSP_CLIENT(pGpu))
     {
@@ -559,7 +577,8 @@ _kp2pCapsGetStatusOverPcie
         // If the chipset is not capable AND there is no common PCIe switch,
         // then P2P is not supported.
         //
-        if ((!pCl->bPciePeerReadCapable || !pCl->bPciePeerWriteCapable) &&
+        if (!gpuGetPcieP2PSkipChipsetCheck(pGpu) &&
+            (!pCl->bPciePeerReadCapable || !pCl->bPciePeerWriteCapable) &&
             (!bCommonPciSwitchFound))
         {
             *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_CHIPSET_NOT_SUPPORTED;

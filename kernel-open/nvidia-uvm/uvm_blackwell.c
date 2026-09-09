@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022-2025 NVIDIA Corporation
+    Copyright (c) 2022-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -79,7 +79,7 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->ats.gmmu_pt_depth0_init_required = parent_gpu->ats.non_pasid_ats_enabled;
 
-    parent_gpu->access_bits_supported = false;
+    parent_gpu->access_bits_supported = true;
 
     // Blackwell has a physical translation prefetcher, meaning SW must assume
     // that any physical ATS translation can be fetched at any time. The
@@ -121,29 +121,18 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->conf_computing.per_channel_key_rotation = true;
 
-    // TODO: Bug 5023085: this should be queried from RM instead of determined
-    // by UVM.
-    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 &&
-        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B) {
+    // If the parent GPU has no vidmem, initialise as an iGPU. This is the
+    // same property that is queried by NV0000_CTRL_GPU_GET_ID_INFO_V2.
+    if (parent_gpu->rm_info.gpuArchIsZeroFb) {
         parent_gpu->is_integrated_gpu = true;
         parent_gpu->access_bits_supported = false;
+    }
+
+    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 &&
+        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B) {
         // GB10B has sticky L2 coherent cache lines.
         // For details, refer to the comments in uvm_gpu.h
         // where this field is declared.
         parent_gpu->sticky_l2_coherent_cache_lines = true;
-    }
-    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200 &&
-        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB20B) {
-        parent_gpu->is_integrated_gpu = true;
-        parent_gpu->access_bits_supported = false;
-    }
-    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB200 &&
-        (parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB206 ||
-         parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB207)) {
-        // TODO: Bug 3186788 : As reported in Bug 5309034, GB206
-        // and GB207 experience a GSP crash with VAB. Depending
-        // on whether RM fixes it or marks it as cannot fix, the
-        // below checks can be removed or retained.
-        parent_gpu->access_bits_supported = false;
     }
 }

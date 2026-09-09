@@ -23,7 +23,7 @@
 
 #include "gpu/bif/kernel_bif.h"
 
-#include "published/volta/gv11b/dev_boot.h"
+#include "published/volta/gv11b/dev_pmc.h"
 
 
 /*!

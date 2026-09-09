@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 //
 
 //
@@ -72,6 +72,7 @@
 #  define RMCFG_HAL_SETUP_GB100          1
 #  define RMCFG_HAL_SETUP_GB102          1
 #  define RMCFG_HAL_SETUP_GB10B          1
+#  define RMCFG_HAL_SETUP_GB10C          1
 #  define RMCFG_HAL_SETUP_GB110          1
 #  define RMCFG_HAL_SETUP_GB112          1
 #endif // GB10X
@@ -433,6 +434,22 @@ NV_STATUS registerHalModule_GB10B(void)
 }
 
 #endif  // GB10X or GB10B
+
+#if defined(RMCFG_HAL_SETUP_GB10C)
+
+static const HAL_IFACE_SETUP halIface_GB10C = {
+
+    rpcHalIfacesSetup_GB10C,
+    rpcstructurecopyHalIfacesSetup_GB10C,
+
+};
+
+NV_STATUS registerHalModule_GB10C(void)
+{
+    return registerHalModule(HAL_IMPL_GB10C, &halIface_GB10C);
+}
+
+#endif  // GB10X or GB10C
 
 #if defined(RMCFG_HAL_SETUP_GB110)
 

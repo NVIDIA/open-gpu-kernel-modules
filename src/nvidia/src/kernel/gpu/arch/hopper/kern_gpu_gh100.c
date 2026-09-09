@@ -135,6 +135,13 @@ gpuGetIdInfo_GH100
         return;
     }
 
+    pGpu->idInfo.PCIProgrammingInterface =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _PGM_INTERFACE, data);
+    pGpu->idInfo.PCISubClass =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _SUB_CLASSCODE, data);
+    pGpu->idInfo.PCIBaseClass =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _BASE_CLASSCODE, data);
+
     // we only need the FIB and MASK values
     pGpu->idInfo.PCIRevisionID = (data & ~GPU_DRF_SHIFTMASK(NV_EP_PCFG_GPU_REVISION_ID_AND_CLASSCODE_PGM_INTERFACE)
                                        & ~GPU_DRF_SHIFTMASK(NV_EP_PCFG_GPU_REVISION_ID_AND_CLASSCODE_SUB_CLASSCODE)
@@ -184,6 +191,22 @@ NvBool gpuIsAtsSupportedWithSmcMemPartitioning_GH100(OBJGPU *pGpu)
     }
 
     return NV_FALSE;
+}
+
+NvBool
+gpuIsValueSecFault_GH100
+(
+    OBJGPU *pGpu,
+    NvU32   value
+)
+{
+    //
+    // SEC_FAULT possibly detected, confirm by reading NV_PMC_BOOT_0
+    // Read BOOT_0 using the direct OS reg read call so we don't recurse
+    // on an actual sec fault
+    // 
+    return (value == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
+            (osGpuReadReg032(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_BOOT_0) == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT);
 }
 
 /*!
@@ -283,9 +306,7 @@ gpuHandleSanityCheckRegReadError_GH100
     NvU32 value
 )
 {
-    // SEC_FAULT possibly detected, confirm by reading NV_PMC_BOOT_0
-    if ((value == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
-        (kmcReadPmcBoot0_HAL(pGpu, GPU_GET_KERNEL_MC(pGpu)) == NV_XAL_EP_ZB_SCPM_PRI_DUMMY_DATA_PATTERN_INIT))
+    if (gpuIsValueSecFault_HAL(pGpu, value))
     {
         gpuHandleSecFault_HAL(pGpu);
     }
@@ -307,13 +328,46 @@ gpuHandleSanityCheckRegReadError_GH100
             FLD_TEST_DRF(_XAL_EP_ZB, _INTR_0, _PRI_REQ_TIMEOUT, _PENDING, intr) ||
             FLD_TEST_DRF(_XAL_EP_ZB, _INTR_0, _PRI_RSP_TIMEOUT, _PENDING, intr))
         {
+            //
+            // Rate-limit identical prints: allow first 2 per 1-second window,
+            // suppress the rest, and emit a summary when the message changes
+            // or the window expires (Bug 6265510).
+            //
+            NvU32 nowSec, nowUsec;
+            NvBool bSame = (addr == pGpu->priReadErrLastAddr) &&
+                           (value == pGpu->priReadErrLastValue);
+
+            osGetSystemTime(&nowSec, &nowUsec);
+
+            if (!bSame || (nowSec - pGpu->priReadErrTimeSec) >= 1)
+            {
+                if (pGpu->priReadErrCount > 2)
+                {
+                    NV_PRINTF(LEVEL_ERROR,
+                              "Possible bad register read: addr: 0x%x,  regvalue: 0x%x  suppressed %u times\n",
+                              pGpu->priReadErrLastAddr,
+                              pGpu->priReadErrLastValue,
+                              pGpu->priReadErrCount - 2);
+                }
+
+                pGpu->priReadErrTimeSec  = nowSec;
+                pGpu->priReadErrLastAddr  = addr;
+                pGpu->priReadErrLastValue = value;
+                pGpu->priReadErrCount     = 0;
+            }
+
+            if (++pGpu->priReadErrCount > 2)
+                return;
+
 #if NV_PRINTF_STRINGS_ALLOWED
-            const char *errorString = "Unknown SYS_PRI_ERROR_CODE";
-            gpuGetSanityCheckRegReadError_HAL(pGpu, value,
-                                              &errorString);
-            NV_PRINTF(LEVEL_ERROR,
-                      "Possible bad register read: addr: 0x%x,  regvalue: 0x%x,  error code: %s\n",
-                      addr, value, errorString);
+            {
+                const char *errorString = "Unknown SYS_PRI_ERROR_CODE";
+                gpuGetSanityCheckRegReadError_HAL(pGpu, value,
+                                                  &errorString);
+                NV_PRINTF(LEVEL_ERROR,
+                          "Possible bad register read: addr: 0x%x,  regvalue: 0x%x,  error code: %s\n",
+                          addr, value, errorString);
+            }
 #else // NV_PRINTF_STRINGS_ALLOWED
             NV_PRINTF(LEVEL_ERROR,
                       "Possible bad register read: addr: 0x%x,  regvalue: 0x%x\n",

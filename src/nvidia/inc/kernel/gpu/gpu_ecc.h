@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@ typedef struct ECC_INFO
     NvU32  addressExt;
     NvU32  locationId;     // Holds GPC#, Partition#, etc. depending on unit
     NvU32  subLocationId;  // Holds TPC#, sub-partition#, slice#, etc. depending on unit
+    NvU32  extLocationId;  // Holds LINK#, etc. depending on unit
     NvU64  corTotCnt;
     NvU64  corUniCnt;
     NvU64  uncTotCnt;

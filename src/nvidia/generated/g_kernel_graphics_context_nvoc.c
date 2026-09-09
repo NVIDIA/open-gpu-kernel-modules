@@ -111,6 +111,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsContext =
 {
     .classInfo.size =               sizeof(KernelGraphicsContext),
     .classInfo.classId =            classId(KernelGraphicsContext),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelGraphicsContext",
@@ -147,6 +148,12 @@ static NV_STATUS kgrctxCtrlGetMMUDebugMode__EXPORT(void *pKernelGraphicsContext,
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
 static NV_STATUS kgrctxCtrlProgramVidmemPromote__EXPORT(void *pKernelGraphicsContext, void *pParams) {
     return kgrctxCtrlProgramVidmemPromote_IMPL(pKernelGraphicsContext, pParams);
+}
+#endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
+static NV_STATUS kgrctxCtrlProgramSysmemPromote__EXPORT(void *pKernelGraphicsContext, void *pParams) {
+    return kgrctxCtrlProgramSysmemPromote_IMPL(pKernelGraphicsContext, pParams);
 }
 #endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000008u)
 
@@ -232,6 +239,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGr
         /*pClassInfo=*/ &(__nvoc_class_def_KernelGraphicsContext.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "kgrctxCtrlSetLgSectorPromotion"
+#endif
+    },
+    {               /*  [5] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) &kgrctxCtrlProgramSysmemPromote__EXPORT,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x90010eu,
+        /*paramSize=*/  sizeof(NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelGraphicsContext.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kgrctxCtrlProgramSysmemPromote"
 #endif
     },
 };
@@ -496,7 +518,7 @@ void __nvoc_up_thunk_RsResource_kgrctxAddAdditionalDependants(struct RsClient *p
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelGraphicsContext = 
 {
-    .numEntries=     5,
+    .numEntries=     6,
     .pExportEntries= __nvoc_exported_method_def_KernelGraphicsContext
 };
 
@@ -571,9 +593,9 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // kgrctxShouldPreAllocPmBuffer -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xbdf0ffe0UL) ) ||
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xfdf0ffe0UL) ) ||
         ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 | T234D | T239D | T264D */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 | T234D | T239D | T264D */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
     {
         pThis->__kgrctxShouldPreAllocPmBuffer__ = &kgrctxShouldPreAllocPmBuffer_VF;
     }
@@ -747,6 +769,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsContextShared =
 {
     .classInfo.size =               sizeof(KernelGraphicsContextShared),
     .classInfo.classId =            classId(KernelGraphicsContextShared),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelGraphicsContextShared",

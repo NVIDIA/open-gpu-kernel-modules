@@ -1185,10 +1185,14 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_PANEL_TARGET_LUMINANCE_LSB_VAL_INIT                 (0x00000000) /* RWXUV */
 #define NV_DPCD_PANEL_TARGET_LUMINANCE_MID                          (0x00000735) /* RWXUR */
 #define NV_DPCD_PANEL_TARGET_LUMINANCE_MID_VAL                              7:0  /* RWXUF */
-#define NV_DPCD_PANEL_TARGET_LUMINANCE_MID_VAL_INIT                  0x00000000) /* RWXUV */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MID_VAL_INIT                 (0x00000000) /* RWXUV */
 #define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB                          (0x00000736) /* RWXUR */
 #define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB_VAL                              7:0  /* RWXUF */
-#define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB_VAL_INIT                  0x00000000) /* RWXUV */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB_VAL_INIT                 (0x00000000) /* RWXUV */
+#define NV_DPCD_EDP_RESERVED_1                                      (0x0000073C) /* RWXUR */
+#define NV_DPCD_EDP_RESERVED_1_CUSTOMIZED_HPD                               0:0  /* RWXUF */
+#define NV_DPCD_EDP_RESERVED_1_CUSTOMIZED_HPD_YES                   (0x00000001) /* RWXUV */
+#define NV_DPCD_EDP_RESERVED_1_CUSTOMIZED_HPD_NO                    (0x00000000) /* RWXUV */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE                            (0x00000740) /* RWXUR */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE_INDEX_OFFSET_VAL                   7:0  /* RWXUF */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE_INDEX_OFFSET_VAL_INIT      (0x00000000) /* RWXUV */

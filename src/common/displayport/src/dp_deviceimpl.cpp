@@ -88,6 +88,7 @@ DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * pa
       plugged(false),
       friendlyAux(this),
       isHDCPCap(False),
+      isHdcp2XCap(False),
       isDeviceHDCPDetectionAlive(false),
       deviceHDCPDetection(0),
       vrrEnablement(0),
@@ -102,12 +103,15 @@ DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * pa
       maxModeBwRequired(0)
 {
     bandwidth.enum_path.dataValid = false;
+    bandwidth.enum_path.availablePbnUpdated = false;
     shadow.plugged = false;
     shadow.zombie = false;
     shadow.cableOk = true;
     shadow.hdcpCapDone = false;
     shadow.highestAssessedLC = connector->highestAssessedLC;
     dpMemZero(rawDscCaps, sizeof(rawDscCaps));
+    panelFwSwRevision       = 0;
+    bPanelFwSwRevisionValid = false;
 }
 
 bool DeviceImpl::isZombie()
@@ -1185,17 +1189,50 @@ bool DeviceImpl::getSDPExtnForColorimetrySupported()
 
 bool DeviceImpl::getPanelFwRevision(NvU16 *revision)
 {
-    NvU8 fwRevisionMajor   = 0;
-    NvU8 fwRevisionMinor   = 0;
-    unsigned size          = 0;
-    unsigned nakReason     = NakUndefined;
-
     if (!revision)
     {
         return false;
     }
 
     *revision = 0;
+
+    if (!connector->bEnablePanelFwRevisionCache)
+    {
+        // Regkey not set: read DPCD directly on every call (legacy behavior).
+        if (readPanelFwSwRevision())
+        {
+            *revision = panelFwSwRevision;
+            return true;
+        }
+    }
+    else
+    {
+        if (bPanelFwSwRevisionValid)
+        {
+            *revision = panelFwSwRevision;
+            return true;
+        }
+        else
+        {
+            // In case read during discovery was not successful, re-reading here
+            if (readPanelFwSwRevision())
+            {
+                *revision = panelFwSwRevision;
+                bPanelFwSwRevisionValid = true;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool DeviceImpl::readPanelFwSwRevision()
+{
+    NvU8 fwRevisionMajor = 0;
+    NvU8 fwRevisionMinor = 0;
+    unsigned size        = 0;
+    unsigned nakReason   = NakUndefined;
 
     //
     // On faked mux devices, we cannot check if the device has
@@ -1218,8 +1255,7 @@ bool DeviceImpl::getPanelFwRevision(NvU16 *revision)
         return false;
     }
 
-    *revision = (fwRevisionMajor << 8) | fwRevisionMinor;
-
+    panelFwSwRevision       = (NvU16)((fwRevisionMajor << 8) | fwRevisionMinor);
     return true;
 }
 
@@ -1379,6 +1415,31 @@ TriState DeviceImpl::hdcpAvailableHop()
 {
     return this->isHDCPCap;
 }
+
+bool DeviceImpl::isHdcp1XCapable()
+{
+    bool hdcp1xCap = false;
+    NvU8 Bcaps = (NvU8)(this->nvBCaps[0]);
+    if ((FLD_TEST_DRF(_DPCD, _HDCP_BCAPS_OFFSET, _HDCP_CAPABLE, _YES, Bcaps)) &&
+        (this->isHDCPCap == True))
+    {
+        hdcp1xCap = true;
+    }
+    return hdcp1xCap;
+}
+
+bool DeviceImpl::isHdcp2XCapable()
+{
+    bool hdcp2xCap = false;
+    NvU8 Bcaps = (NvU8)(this->nvBCaps[0]);
+    if ((FLD_TEST_DRF(_DPCD, _HDCP_BCAPS_OFFSET, _HDCP_CAPABLE, _YES, Bcaps)) &&
+        (this->isHDCPCap == True) && (this->isHdcp2XCap))
+    {
+        hdcp2xCap = true;
+    }
+    return hdcp2xCap;
+}
+
 
 TriState DeviceImpl::hdcpAvailable()
 {
@@ -1743,6 +1804,61 @@ NvBool DeviceImpl::getDSCSupport()
     }
 
     return dscCaps.bDSCSupported;
+}
+
+void DeviceImpl::setMaxUncompressedPixelRateValid()
+{
+    NvU8 byte = 0U;
+    unsigned size = 0U;
+    unsigned nakReason = NakUndefined;
+    Address::StringBuffer sb;
+    DP_USED(sb);
+
+    bMaxUncompressedPixelRateValid = false;
+    maxUncompressedPixelRate = 0U;
+
+    if (AuxBus::success == this->getDpcdData(NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2,
+                                             &byte, sizeof(byte), &size, &nakReason))
+    {
+        if (FLD_TEST_DRF(_DPCD20, _DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2, _VALID, _YES, byte))
+        {
+            bMaxUncompressedPixelRateValid = true;
+            maxUncompressedPixelRate = DRF_VAL(_DPCD20, _DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_2,
+                                               _VAL, byte);
+            maxUncompressedPixelRate = maxUncompressedPixelRate << 8U;
+
+            byte = 0U;
+            size = 0U;
+            nakReason = NakUndefined;
+
+            if (AuxBus::success == this->getDpcdData(NV_DPCD20_DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_1,
+                                                     &byte, sizeof(byte), &size, &nakReason))
+            {
+                maxUncompressedPixelRate = maxUncompressedPixelRate | DRF_VAL(_DPCD20, _DP_MAX_UNCOMPRESSED_PIXEL_RATE_CAP_1,
+                                                                              _VAL, byte);
+            }
+            else
+            {
+                DP_PRINTF(DP_ERROR, "DP-DEV> MAX UNCOMPRESSED PIXEL RATE Support AUX READ failed for %s!", address.toString(sb));
+                bMaxUncompressedPixelRateValid = false;
+                maxUncompressedPixelRate = 0U;
+            }
+        }
+    }
+    else
+    {
+        DP_PRINTF(DP_ERROR, "DP-DEV> MAX UNCOMPRESSED PIXEL RATE Support AUX READ failed for %s!", address.toString(sb));
+    }
+}
+
+NvBool DeviceImpl::getMaxUncompressedPixelRateValid()
+{
+    return bMaxUncompressedPixelRateValid;
+}
+
+NvU64 DeviceImpl::getMaxUncompressedPixelRate()
+{
+    return maxUncompressedPixelRate;
 }
 
 bool DeviceImpl::isPanelReplaySupported()
@@ -2297,11 +2413,32 @@ NvBool DeviceImpl::enableAdaptiveSyncSdp(NvBool bEnable)
     return true;
 }
 
+void DeviceImpl::resetDscAndFecCaps()
+{
+    dpMemZero(&dscCaps, sizeof(dscCaps));
+    dpMemZero(rawDscCaps, sizeof(rawDscCaps));
+    bDSCPossible = false;
+    devDoingDscDecompression = NULL;
+    bFECSupported = false;
+    bFECUncorrectedSupported = false;
+    bFECCorrectedSupported = false;
+    bFECBitSupported = false;
+    bFECParityBlockSupported = false;
+    bFECParitySupported = false;
+}
+
 bool DeviceImpl::getFECSupport()
 {
     NvU8 byte          = 0;
     unsigned size      = 0;
     unsigned nakReason = NakUndefined;
+
+    if (connector->disableFecOnEdp())
+    {
+        DP_PRINTF(DP_NOTICE, "DP-DEV> Disabling FEC on eDP as regkey is set");
+        bFECSupported = false;
+        return false;
+    }
 
     if(this->address.size() > 1)
     {
@@ -3486,6 +3623,7 @@ NativeDPCDHDCPCAPRead:
             // validate certificate with bksv in uproc.
             //
             parent->isHDCPCap = True;
+            parent->isHdcp2XCap = True;
             waivePendingHDCPCapDoneNotification();
             return;
         }
@@ -3621,6 +3759,7 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
 
             // hdcp22 will validate certificate's bksv directly.
             isBCapsHDCP = isValidBKSV = true;
+            parent->isHdcp2XCap = True;
 
             DP_PRINTF(DP_NOTICE, "DP-QM> Device at '%s' is with valid 22BCAPS : %x",
                 parent->address.toString(sb), *remote22BCapsReadMessage.replyGetData());

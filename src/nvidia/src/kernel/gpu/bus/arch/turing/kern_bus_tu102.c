@@ -566,6 +566,9 @@ kbusEnableStaticBar1Mapping_TU102
     mapFlags |= BUS_MAP_FB_FLAGS_PAGE_SIZE_2M;
 
     pKernelBus->staticBar1DefaultKind = NV_MMU_PTE_KIND_GENERIC_MEMORY;
+    // Don't take the FIXED or 2MB flags into consideration here because they are handled specially
+    pKernelBus->staticBar1DefaultDmaFlags = kbusConvertBusMapFlagsToDmaFlags(pKernelBus, pMemDesc, BUS_MAP_FB_FLAGS_MAP_UNICAST);
+    pKernelBus->staticBar1DefaultPageSize = RM_PAGE_SIZE_HUGE;
 
     // Setup GMK PTE type for this memory
     memdescSetPteKind(pMemDesc, pKernelBus->staticBar1DefaultKind);
@@ -671,29 +674,27 @@ kbusDisableStaticBar1Mapping_TU102
 /*!
  * @brief To update the Static Bar1 PTE kind for the specified memory.
  *
- *        Static BAR1 only supports GMK and the compressed kind PTE.
- *        By default, bar1 is statically mapped with GMK at boot when
- *        static bar1 is enabled.
+ *        By default, bar1 is statically mapped with GMK non-localized
+ *        at boot when static bar1 is enabled.
  *
- *        When mapping a uncompressed kind memory, RM just return the static
- *        bar1 address which is mapped to the specified memory.
+ *        When mapping a GMK memory, RM just return the static
+ *        bar1 address which is mapped to the specified memory, and this
+ *        function returns early since no mapping update is needed.
  *
  *        When mapping a non-GMK kind memory of page size >=2MB, RM must call this
  *        function to change the static mapped bar1 range to the specified memory
  *        from GMK to the non-GMK kind. And RM needs to call this function to
  *        change it back to GMK from the compressed kind after this mapping is
- *        released.
+ *        released. Same for localized memory.
  * 
  *        If a non-GMK mapping is page size <=2MB, it will be placed in the
- *        dynamic region instead.
+ *        dynamic region instead. Same for localized memory.
  * 
  *        If an allocation has different DMA mapping flags, currently it will
  *        also be placed in the dynamic region instead by the logic in
- *        kbusIncreaseStaticBar1Refcount_TU102. This can be relaxed later
- *        as needed by that function with no changes to this function by
- *        passing in the appropriate dmaMapFlags to this function.
- *        
- * kbusIncreaseStaticBar1Refcount_TU102
+ *        kbusIncreaseStaticBar1Refcount_TU102.
+ *
+ * _kbusUpdateStaticBar1VAMapping_TU102
  *
  * @param[in]   pGpu            GPU pointer
  * @param[in]   pKernelBus      Kernel bus pointer
@@ -712,7 +713,6 @@ _kbusUpdateStaticBar1VAMapping_TU102
     OBJGPU             *pGpu,
     KernelBus          *pKernelBus,
     MEMORY_DESCRIPTOR  *pMemDesc,
-    NvU32               dmaMapFlags,
     NvBool              bRelease
 )
 {
@@ -732,6 +732,7 @@ _kbusUpdateStaticBar1VAMapping_TU102
     NvU64               mapGranularity;
     NvU64               offset;
     ADDRESS_TRANSLATION addressTranslation;
+    NvU32               requestedKind;
 
     NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK,
                         NV_ERR_INVALID_STATE);
@@ -740,9 +741,6 @@ _kbusUpdateStaticBar1VAMapping_TU102
 
     NV_ASSERT_OR_RETURN(memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM,
                         NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
-                        NV_ERR_INVALID_LOCK_STATE);
 
     pVAS = pKernelBus->bar1[gfid].pVAS;
     addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
@@ -763,10 +761,45 @@ _kbusUpdateStaticBar1VAMapping_TU102
     NV_ASSERT_OK_OR_RETURN(memmgrGetKindComprFromMemDesc(pMemoryManager,
                                pMemDesc, 0, &kind, &comprInfo));
 
-    // Static BAR1 mapping only support >=2MB page size
-    NV_CHECK_OR_RETURN(LEVEL_SILENT,
-        (bRelease || pageSize >= RM_PAGE_SIZE_HUGE),
-        NV_ERR_NOT_SUPPORTED);
+    requestedKind = memdescGetPteKind(pMemDesc);
+
+    //
+    // Static BAR1 mapping only supports >=2MB non-GMK page size
+    // This is returned as an error so that a dynamic mapping is
+    // instead allocated by higher level functions.
+    //
+    // sub-2MB is allowed as GMK, but is mapped at 2MB page size
+    // (unless explicitly overridden with a non-NVOS46_FLAGS_PAGE_SIZE_DEFAULT
+    // which would be kicked to a dynamic mapping).But, also note
+    // that the busMap code does not actually pass through any
+    // non-default page size mapping flags.
+    // This is only good for TLB pressure but consequently consumes
+    // more BAR1.
+    //
+    if ((requestedKind != pKernelBus->staticBar1DefaultKind) &&
+        (pageSize < pKernelBus->staticBar1DefaultPageSize))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // If all of these are true, then there is nothing to update
+    // We only need to update if we're not the default kind, a larger
+    // page size than the static BAR1 default or if this is this is localized.
+    // This is never updated on second reference by higher level code.
+    // If we restore nonlocalized, that means there refcount == 0,
+    // so we won't access memory in a non-localized way.
+    //
+    if ((requestedKind == pKernelBus->staticBar1DefaultKind) &&
+        (pageSize <= pKernelBus->staticBar1DefaultPageSize) &&
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
+    {
+        return NV_OK;
+    }
+
+    // We will now do the update and must have the correct locks
+    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
+                        NV_ERR_INVALID_LOCK_STATE);
 
     if (bRelease)
     {
@@ -840,6 +873,42 @@ _kbusUpdateStaticBar1VAMapping_TU102
 }
 
 /*!
+ * @brief Determine whether we should try to increase
+ *        the refcount (create the static BAR1 mapping).
+ *        We only do so for the static BAR1 default kind
+ *        GMK so that we don't waste BAR1 sapce.
+ *        UVM will only assume static BAR1 mappings for
+ *        GMK memory
+ *
+ * @param[in]   pGpu            GPU pointer
+ * @param[in]   pKernelBus      Kernel bus pointer
+ * @param[in]   pMemDesc        The memory to update
+ *
+ * return NV_OK on success
+ * return NV_ERR_NOT_SUPPORTED if staticBar1 not enabled or the memdesc should
+ *                             otherwise go in the dynamic region
+ * return other on error
+ */
+NvBool kbusShouldRefcountConstruct_TU102
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    NvU32               requestedKind;
+
+    if (!kbusIsStaticBar1Enabled(pGpu, pKernelBus))
+    {
+        return NV_FALSE;
+    }
+
+    requestedKind = memdescGetPteKind(pMemDesc);
+
+    return requestedKind == pKernelBus->staticBar1DefaultKind;
+}
+
+/*!
  * @brief Increase the refcount on the staticBar1 mapped
  *        per memdesc or return error if it's already in use
  *        and the mapping should be made in the dynamic region.
@@ -862,11 +931,11 @@ NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
     NvU32 busMapFlags
 )
 {
-    NvU32               requestedKind;
     NvU64               rootOffset;
     MEMORY_DESCRIPTOR  *pRootMemDesc;
     NV_STATUS           status = NV_OK;
-    NvU32 requestedDmaFlags;
+    NvU32               requestedKind;
+    NvU32               requestedDmaFlags;
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, kbusIsStaticBar1Enabled(pGpu, pKernelBus),
                         NV_ERR_NOT_SUPPORTED);
@@ -880,10 +949,12 @@ NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
     // If the mapping kind or localization status doesn't match, allow updating it on first reference.
     // If the mapping dmaFlags don't match, don't allow updates at all since
     // static BAR1 does not handle all such updates/offsets/etc.
+    // Localized is a physical memory property and cannot change based on
+    // map flags and does not need a check
     //
     if ((pRootMemDesc->staticBar1MappingRefCount != 0 &&
-        requestedKind != pRootMemDesc->staticBar1MappingKind) ||
-        requestedDmaFlags != pRootMemDesc->staticBar1DmaFlags)
+         requestedKind != pRootMemDesc->staticBar1MappingKind) ||
+        requestedDmaFlags != pKernelBus->staticBar1DefaultDmaFlags)
     {
         //
         // The mapping is being used with a different kind
@@ -892,20 +963,17 @@ NV_STATUS kbusIncreaseStaticBar1Refcount_TU102
         return NV_ERR_IN_USE;
     }
 
-    // Default static BAR1 mapping is not localized
-    if (requestedKind != pKernelBus->staticBar1DefaultKind ||
-        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
+    // Subsequent refcounts do not update the mapping
+    if (pRootMemDesc->staticBar1MappingRefCount == 0)
     {
         status = _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus,
                                                      pRootMemDesc,
-                                                     requestedDmaFlags,
                                                      NV_FALSE);
     }
 
     if (status == NV_OK)
     {
         pRootMemDesc->staticBar1MappingKind = requestedKind;
-        pRootMemDesc->staticBar1DmaFlags = requestedDmaFlags;
         pRootMemDesc->staticBar1MappingRefCount++;
     }
 
@@ -982,25 +1050,14 @@ NV_STATUS kbusDecreaseStaticBar1Refcount_TU102
 
     NV_ASSERT_OR_RETURN(pRootMemDesc->staticBar1MappingRefCount != 0, NV_ERR_INVALID_STATE);
 
-    //
-    // If refcount reaches 0, we only need to update if we're not the default kind or
-    // if this is localized. If we restore nonlocalized, that means there refcount == 0,
-    // so we won't access memory in a non-localized way.
-    //
-    if (--pRootMemDesc->staticBar1MappingRefCount != 0 ||
-        ((pRootMemDesc->staticBar1MappingKind == pKernelBus->staticBar1DefaultKind) &&
-         !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED)))
+    if (--pRootMemDesc->staticBar1MappingRefCount != 0)
     {
         return NV_OK;
     }
 
-    //
-    // deploying the static mapping just uses BUS_MAP_FB_FLAGS_MAP_UNICAST,
-    // so nothing influences the dmaMapFlags (see kbusConvertBusMapFlagsToDmaFlags)
-    //
     NV_ASSERT_OK_OR_RETURN(
         _kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus, pRootMemDesc,
-            BUS_MAP_FB_FLAGS_NONE, NV_TRUE));
+            NV_TRUE));
 
     return NV_OK;
 }

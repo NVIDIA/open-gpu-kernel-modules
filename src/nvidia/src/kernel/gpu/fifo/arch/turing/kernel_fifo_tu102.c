@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,29 +37,9 @@
 #include "published/turing/tu102/hwproject.h"
 #include "published/turing/tu102/dev_esched_pbdma.h"
 #include "published/turing/tu102/dev_ram.h"
+#include "published/turing/tu102/dev_pbdma.h"
 
-/*!
- * @brief Update the usermode doorbell register with work submit token to notify
- *        host that work is available on this channel.
- *
- * @param[in] pGpu
- * @param[in] pKernelFifo
- * @param[in] workSubmitToken Token to update the doorbell with
- */
-NV_STATUS
-kfifoUpdateUsermodeDoorbell_TU102
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvU32       workSubmitToken
-)
-{
-    NV_PRINTF(LEVEL_INFO, "Poking workSubmitToken 0x%x\n", workSubmitToken);
-
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_DOORBELL, workSubmitToken);
-
-    return NV_OK;
-}
+#include "class/clc361.h"
 
 /*!
  * @brief Construct the worksubmit token. Caller cannot make assumption about this handle.
@@ -975,7 +955,7 @@ kfifoInitRamfcFaultMethodBuffers_TU102
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
 
     NV_PRINTF(LEVEL_INFO,
-              "Updating Method buffers for " FMT_CHANNEL_DEBUG_TAG " Grp ID 0x%0x\n",
+              "Updating Method buffers for " FMT_CHANNEL_DEBUG_TAG " Grp ID 0x%08x\n",
               kchannelGetDebugTag(pKernelChannel),
               pKernelChannelGroup->grpID);
 
@@ -1063,4 +1043,381 @@ kfifoInitRamfcCEThrottleMode_TU102
         ramfcConfig = FLD_SET_DRF(_PBDMA, _CONFIG, _CE_THROTTLE_MODE, _THROTTLE, ramfcConfig);
 
     MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_CONFIG), ramfcConfig);
+}
+
+/**
+ * @brief Configures Host Copy Engine (HCE) state in RAMFC.
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void kfifoInitHceRamfcState_TU102
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    KernelChannel *pKernelChannel,
+    NvU8          *pInstMem
+)
+{
+    if (pKernelChannel->bHcePrivMode)
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_HCE_CTRL),
+                  DRF_DEF(_PBDMA, _HCE_CTRL, _HCE_PRIV_MODE, _YES));
+    else
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_HCE_CTRL),
+                  DRF_DEF(_PBDMA, _HCE_CTRL, _HCE_PRIV_MODE, _NO));
+}
+
+void
+kfifoInitAuthlevelRamfcConfig_TU102
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    KernelChannel *pKernelChannel,
+    NvU8          *pInstMem
+)
+{
+    if (pKernelChannel->bAuthLevelPriv)
+    {
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_CONFIG),
+                  DRF_DEF(_PBDMA, _CONFIG, _AUTH_LEVEL, _PRIVILEGED));
+    }
+    else
+    {
+        MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_CONFIG),
+                  DRF_DEF(_PBDMA, _CONFIG, _AUTH_LEVEL, _NON_PRIVILEGED));
+    }
+}
+
+/**
+ * @brief Fill in per engine values for engine context setup
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param [in] engine unused
+ * @param[out] targetAddr
+ * @param[out] targetAddrHi
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+kfifoChannelGetEngineContextOffset_TU102
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 engine,
+    NvU32 *targetAddr,
+    NvU32 *targetAddrHi
+)
+{
+    NV_STATUS ret;
+    NvBool bSupported = NV_FALSE;
+
+    ret = kfifoCheckEngine_HAL(pGpu, pKernelFifo, engine, &bSupported);
+
+    if (ret != NV_OK)
+        return ret;
+
+    if (!bSupported)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    /*
+     * Context can access single engine only
+     */
+    *targetAddr   = SF_OFFSET(NV_RAMIN_ENGINE_WFI_PTR_LO);
+    *targetAddrHi = SF_OFFSET(NV_RAMIN_ENGINE_WFI_PTR_HI);
+
+    return NV_OK;
+}
+
+/*
+ * Sets up the values to be written into PRIs obtained from
+ * kfifoChannelGetEngineContextOffset_HAL.
+ *
+ * @param[in] pGpu                 OBJGPU pointer
+ * @param[in] pKernelFifo          KernelFifo pointer
+ * @param[in] addr                 Address to be programmed to PRI
+ * @param[out] *pTargetVal         HW Reg value
+ * @param[out] *pTargetValHi       HW Reg value
+ */
+void
+kfifoChannelGetEngineContextFieldFormat_TU102
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU64    addr,
+    NvU32   *pTargetVal,
+    NvU32   *pTargetValHi
+)
+{
+    NvU32 addrLo = NvU64_LO32(addr) >> RM_PAGE_SHIFT;
+    NvU32 addrHi = NvU64_HI32(addr);
+
+    NV_PRINTF(LEVEL_INFO, "addrLo=0x%08x addrHi=0x%08x\n", addrLo, addrHi);
+
+    NV_ASSERT_OR_RETURN_VOID(pTargetVal);
+    NV_ASSERT_OR_RETURN_VOID(pTargetValHi);
+
+    *pTargetVal   = SF_DEF( _RAMIN_ENGINE,       _CS,     _WFI     ) |
+                    SF_DEF( _RAMIN_ENGINE_WFI,   _MODE,   _VIRTUAL ) |
+                    SF_NUM( _RAMIN_ENGINE_WFI,   _PTR_LO, addrLo   );
+    *pTargetValHi = SF_NUM( _RAMIN_ENGINE_WFI,   _PTR_HI, addrHi );
+
+}
+
+/**
+ * @brief Writes the offset of a channel's USERD area to RAMFC
+ *
+ * @param pFifo
+ * @param[in] pInstMem CPU pointer to channel's instance memory
+ * @param[in] pUserdMemDesc memDesc describing channel's USERD memory.
+ */
+void
+kfifoCommitUserdOffset_TU102
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU8* pInstMem,
+    PMEMORY_DESCRIPTOR pUserdMemDesc
+)
+{
+    NvU32 targetAddr;
+    NvU32 targetAddrHi;
+    NvU32 userdShift;
+    NvU8 userdAper;
+
+    NV_ASSERT(pUserdMemDesc && pInstMem);
+
+    kfifoGetUserdSizeAlign_HAL(pKernelFifo, NULL, &userdShift);
+
+    targetAddr = NvU64_LO32(memdescGetPhysAddr(pUserdMemDesc, AT_GPU, 0) >> userdShift);
+    targetAddrHi = NvU64_HI32(memdescGetPhysAddr(pUserdMemDesc, AT_GPU, 0));
+    userdAper = kgmmuGetHwPteApertureFromMemdesc(GPU_GET_KERNEL_GMMU(pGpu), pUserdMemDesc);
+
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+        (userdAper == NV_RAMRL_ENTRY_CHAN_USERD_TARGET_VID_MEM))
+    {
+        userdAper = NV_RAMRL_ENTRY_CHAN_USERD_TARGET_VID_MEM_NVLINK_COHERENT;
+    }
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_RAMFC) + SF_OFFSET(NV_RAMFC_USERD),
+          DRF_NUM(_PBDMA, _USERD, _TARGET, userdAper) |
+          DRF_NUM(_PBDMA, _USERD, _ADDR,   targetAddr));
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_RAMFC) + SF_OFFSET(NV_RAMFC_USERD_HI),
+          DRF_NUM(_PBDMA, _USERD_HI, _ADDR, targetAddrHi));
+}
+
+/**
+ * @brief Initialize SCG Type info in RAMFC
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void
+kfifoInitRamfcSubctx_TU102
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 data;
+ 
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+    NV_ASSERT(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
+ 
+    // Set the channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PPBDMA, _SET_CHANNEL_INFO, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+    
+    // Set the engine context VEID to channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID));
+    data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE_WFI, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID), data);
+}
+
+/**
+ * @brief Get RAMFC size
+ *
+ * @param[in] pGpu          OBJGPU pointer
+ * @param[in] pKernelFifo   KernelFifo pointer
+ */
+NvU32
+kfifoGetRamfcSize_TU102
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo
+)
+{
+    return NV_RAMFC_SIZE_VAL;
+}
+
+/**
+ * @brief Initializes the channel ID in RAMFC
+ */
+NV_STATUS
+kfifoInitRamfcChid_TU102
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32          chId;
+    NvU32          data;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+    
+    chId = pKernelChannel->ChID;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO));
+    data = FLD_SET_DRF_NUM(_PPBDMA, _SET_CHANNEL_INFO, _CHID, chId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_SET_CHANNEL_INFO), data);
+
+    return NV_OK;
+}
+
+/*
+ * Allocate Memory Descriptors for Regmem VF page
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelFifo        KernelFifo pointer
+ */
+ NV_STATUS
+kfifoConstructUsermodeMemdescs_TU102
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    NvU32          attr           = 0;
+    NvU32          attr2          = 0;
+    NvU32          offset         = 0;
+ 
+    attr = FLD_SET_DRF(OS32, _ATTR,  _PHYSICALITY, _CONTIGUOUS, attr);
+    attr = FLD_SET_DRF(OS32, _ATTR,  _COHERENCY, _CACHED, attr);
+ 
+    attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO, attr2);
+ 
+    NV_ASSERT_OK_OR_RETURN(gpuGetRegBaseOffset_HAL(pGpu, NV_REG_BASE_USERMODE, &offset));
+ 
+    NV_ASSERT_OK_OR_RETURN(memCreateMemDesc(pGpu, &(pKernelFifo->pRegVF), ADDR_REGMEM,
+                                             offset, DRF_SIZE(NVC361), attr, attr2));
+ 
+    memdescSetFlag(pKernelFifo->pRegVF, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
+ 
+    pKernelFifo->vfPageOffset = offset;
+ 
+    return NV_OK;
+}
+
+/**
+ * @brief Initializing RAMFC subdevice
+ *
+ * @param[in] pGpu                OBJGPU pointer
+ * @param[in] pKernelFifo         KernelFifo pointer
+ * @param[in] pKernelChannel      KernelChannel pointer
+ * @param[in] pInstMem            INST_BLOCK_DESC pointer
+ */
+void
+kfifoInitRamfcSubdevice_TU102
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 subdeviceMask = pKernelChannel->subDeviceId;
+
+    if (subdeviceMask == 0)
+    {
+        subdeviceMask = gpuGetSubdeviceMask( pGpu );
+    }
+
+    MEM_WR32( pInstMem + SF_OFFSET( NV_RAMFC_SUBDEVICE ),
+              DRF_NUM( _PBDMA, _SUBDEVICE, _ID,          subdeviceMask ) |
+              DRF_DEF( _PBDMA, _SUBDEVICE, _STATUS,      _ACTIVE     ) |
+              DRF_DEF( _PBDMA, _SUBDEVICE, _CHANNEL_DMA, _ENABLE     ) );
+}
+
+/**
+ * @brief Initializing RAMFC acquire timeouts
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] pKernelFifo       KernelFifo pointer
+ * @param[in] pKernelChannel    KernelChannel pointer
+ * @param[in] pInstMem          INST_BLOCK_DESC pointer
+ */
+void
+kfifoInitRamfcAcquireTimeout_TU102
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32         timeoutMan = NV_PBDMA_ACQUIRE_TIMEOUT_MAN_MAX;
+    NvU32         timeoutExp = NV_PBDMA_ACQUIRE_TIMEOUT_EXP_MAX;
+    NvU32         timeoutEnable = NV_PBDMA_ACQUIRE_TIMEOUT_EN_DISABLE;
+
+    if (pKernelFifo->pbdmaAcquireTimeoutMs != 0)
+    {
+        timeoutEnable = NV_PBDMA_ACQUIRE_TIMEOUT_EN_ENABLE;
+        kfifoRoundDownTimeSlice((1000000ULL*(pKernelFifo->pbdmaAcquireTimeoutMs))/1024ULL, &timeoutMan, &timeoutExp,
+            DRF_SIZE(NV_PBDMA_ACQUIRE_TIMEOUT_EXP),
+            DRF_SIZE(NV_PBDMA_ACQUIRE_TIMEOUT_MAN));
+    }
+    else if (pKernelChannel->bEnablePbdmaAcquireTimeout)
+    {
+        timeoutEnable = NV_PBDMA_ACQUIRE_TIMEOUT_EN_ENABLE;
+        kfifoRoundDownTimeSlice(2000000000ULL / 1024ULL, &timeoutMan, &timeoutExp,
+            DRF_SIZE(NV_PBDMA_ACQUIRE_TIMEOUT_EXP),
+            DRF_SIZE(NV_PBDMA_ACQUIRE_TIMEOUT_MAN));
+    }
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_ACQUIRE),
+        DRF_DEF(_PBDMA, _ACQUIRE, _RETRY_MAN, _2) |
+        DRF_DEF(_PBDMA, _ACQUIRE, _RETRY_EXP, _2) |
+        DRF_NUM(_PBDMA, _ACQUIRE, _TIMEOUT_EXP, timeoutExp) |
+        DRF_NUM(_PBDMA, _ACQUIRE, _TIMEOUT_MAN, timeoutMan) |
+        DRF_NUM(_PBDMA, _ACQUIRE, _TIMEOUT_EN, timeoutEnable));
+}
+
+/**
+ * @brief Dumping the USERD GET/PUT
+ *
+ * @param  pGpu[in]
+ * @param  pKernelFifo[in]
+ * @param *pUserD[in]
+ *
+ * @returns void
+ */
+void
+kfifoDumpUserd_TU102
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    NvU8          *pUserD
+)
+{
+    NV_PRINTF(LEVEL_ERROR, "GP_PUT = 0x%x GP_GET = 0x%x\n",
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_GP_PUT)),
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_GP_GET)));
+
+    NV_PRINTF(LEVEL_ERROR, "PUT = 0x%x_%x GET = 0x%x_%x\n",
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_PUT_HI)),
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_PUT)),
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_GET_HI)),
+                MEM_RD32(pUserD + SF_OFFSET(NV_RAMUSERD_GET)));
 }

@@ -31,6 +31,7 @@
 #include "kernel/gpu/mem_mgr/context_dma.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "gpu/bus/kern_bus.h"
@@ -349,6 +350,38 @@ Error:
     return status;
 }
 
+void krcNotifyChannelEvent_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelRc      *pKernelRc,
+    KernelChannel *pKernelChannel,
+    NvU32          exceptType,
+    NvU32          exceptLevel
+)
+{
+    NvRcNotification       params;
+    OBJTMR                *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64                  time;
+    CLI_CHANNEL_CLASS_INFO classInfo;
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pKernelChannel != NULL);
+
+    tmrGetCurrentTime(pTmr, &time);
+
+    params.timeStamp.nanoseconds[0] = NvU64_HI32(time);
+    params.timeStamp.nanoseconds[1] = NvU64_LO32(time);
+    params.exceptLevel              = exceptLevel;
+    params.exceptType               = exceptType;
+
+    CliGetChannelClassInfo(RES_GET_EXT_CLASS_ID(pKernelChannel),
+                           &classInfo);
+
+    kchannelNotifyEvent(pKernelChannel,
+                        classInfo.rcNotifierIndex,
+                        0, 0, &params,
+                        sizeof(params));
+}
+
 
 /*! Send notifications for notifiers what were already written to.
  *
@@ -424,6 +457,17 @@ krcErrorSendEventNotificationsCtxDma_FWCLIENT
                              NV_OS_WRITE_THEN_AWAKEN);
             }
         }
+        else
+        {
+            CLI_CHANNEL_CLASS_INFO classInfo;
+            CliGetChannelClassInfo(
+                RES_GET_EXT_CLASS_ID(pChanNode->pKernelChannel),
+                &classInfo);
+
+            kchannelNotifyEvent(pChanNode->pKernelChannel,
+                                classInfo.rcNotifierIndex,
+                                0, 0, NULL, 0);
+        }
     }
 
 Error:
@@ -436,17 +480,14 @@ Error:
 
 
 NV_STATUS
-krcErrorSendEventNotifications_KERNEL
+krcErrorNotifyClients_KERNEL
 (
     OBJGPU            *pGpu,
     KernelRc          *pKernelRc,
     KernelChannel     *pKernelChannel,
-    RM_ENGINE_TYPE     rmEngineType,       // unused
-    NvU32              exceptLevel,        // unused
     NvU32              exceptType,
     RC_NOTIFIER_SCOPE  scope,
-    NvU16              partitionAttributionId,
-    NvBool             bOsRcCallbackNeeded // unused
+    NvU16              partitionAttributionId
 )
 {
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);

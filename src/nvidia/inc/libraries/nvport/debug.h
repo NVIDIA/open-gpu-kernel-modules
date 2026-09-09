@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,8 @@
 #ifndef _NVPORT_DEBUG_H_
 #define _NVPORT_DEBUG_H_
 
+#include <stdarg.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,6 +48,22 @@ extern "C" {
 #ifndef PORT_DEBUG_INLINE
 #define PORT_DEBUG_INLINE PORT_INLINE
 #endif
+
+/**
+ * @brief NvPort-owned log levels for user-visible/system logging.
+ *
+ * These levels are independent from NV_PRINTF/NvLog debug levels.
+ */
+typedef enum PORT_LOG_LEVEL
+{
+    PORT_LOG_LEVEL_DEBUG = 0,
+    PORT_LOG_LEVEL_INFO  = 1,
+    PORT_LOG_LEVEL_NOTICE  = 2,
+    PORT_LOG_LEVEL_WARNING = 3,
+    PORT_LOG_LEVEL_ERROR   = 4,
+    PORT_LOG_LEVEL_CRIT    = 5,
+    PORT_LOG_LEVEL_ALERT   = 6,
+} PORT_LOG_LEVEL;
 
 /**
  * @name Core Functions
@@ -306,6 +324,43 @@ PORT_DEBUG_INLINE void portDbgExPrintfLevel(NvU32 level, const char *format, ...
 
 #endif // PORT_IS_KERNEL_BUILD
 #endif // NV_MODS
+
+#if !defined(portDbgDeviceVPrintf_SUPPORTED)
+#define portDbgDeviceVPrintf_SUPPORTED 1
+#endif
+
+#if !defined(portDbgDevicePrintf_SUPPORTED)
+#define portDbgDevicePrintf_SUPPORTED portDbgDeviceVPrintf_SUPPORTED
+#endif
+
+#if PORT_IS_FUNC_SUPPORTED(portDbgDevicePrintf)
+#ifndef portDbgDevicePrintf
+PORT_DEBUG_INLINE void
+NVPORT_CHECK_PRINTF_ARGUMENTS(3, 4)
+portDbgDevicePrintf(PORT_DEVICE *pDevice, PORT_LOG_LEVEL level, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    portDbgDeviceVPrintf(pDevice, level, format, args);
+    va_end(args);
+}
+#endif
+#endif
+
+#if !defined(portDbgExSetFile_SUPPORTED)
+#define portDbgExSetFile_SUPPORTED 0
+#endif
+
+#if !PORT_IS_KERNEL_BUILD
+/**
+ * @brief Select the output stream used by userspace debug device backends.
+ *
+ * If not called, the default is platform-defined (e.g. stderr on Unix).
+ *
+ * @param pFile - Platform-native file handle (e.g. FILE* on Unix); may be NULL to reset to default.
+ */
+PORT_DEBUG_INLINE void portDbgExSetFile(void *pFile);
+#endif
 
 #if !defined(PORT_DUMP_STACK)
 #define PORT_DUMP_STACK() do {} while (0)

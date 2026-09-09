@@ -555,6 +555,31 @@ void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking, NvBo
  */
 void portMemPrintAllTrackingInfo(NvBool bReportLeaks);
 
+/**
+ * @brief Function type invoked by portMemReportOom to collect extended stats
+ * from RM (e.g. LibOS pool stats, active RM client counts).
+ */
+typedef void (*PORT_MEM_OOM_REPORT_CB)(void);
+
+/**
+ * @brief Registers a report function invoked when an OOM condition occurs.
+ *
+ * Only one may be registered at a time. Passing NULL clears it.
+ * The function must not allocate memory.
+ */
+void portMemRegisterOomReportCb(PORT_MEM_OOM_REPORT_CB pReportCb);
+
+/**
+ * @brief Prints a comprehensive OOM diagnostic report.
+ *
+ * Dumps heap size, active/peak allocation counters, fragmentation data,
+ * per-GFID usage, and invokes the registered OOM report for extended
+ * stats (LibOS pool stats, client counts). Rate-limited to avoid flooding.
+ *
+ * @param[in] requestedSize The allocation size that triggered OOM.
+ */
+void portMemReportOom(NvLength requestedSize);
+
 // @} End core functions
 
 

@@ -48,7 +48,7 @@ namespace DisplayPort
     #define HDCP_I2C_CLIENT_ADDR  0x74
     #define DEVICE_OUI_SIZE       3
     #define DSC_CAPS_SIZE         16
-
+    #define PCLK_MHZ_TO_HZ        1000000U
     struct GroupImpl;
     struct ConnectorImpl;
     class DeviceHDCPDetection;
@@ -158,6 +158,7 @@ namespace DisplayPort
         bool            isPendingHDCPCapDone();
 
         TriState        isHDCPCap;
+        bool            isHdcp2XCap; // if isHDCPCap and isHdcp2XCap both true then nvBCaps is for 2X
         bool            isDeviceHDCPDetectionAlive;
         DeviceHDCPDetection * deviceHDCPDetection;
 
@@ -175,11 +176,15 @@ namespace DisplayPort
         // DSC fields
         NvU8    rawDscCaps[16];
         DscCaps dscCaps;
+        NvBool  bMaxUncompressedPixelRateValid;
+        NvU64   maxUncompressedPixelRate;
 
         // Panel replay Caps
         PanelReplayCaps prCaps;
         // ALPM caps
         AlpmCaps alpmCaps;
+        NvU16 panelFwSwRevision;
+        bool  bPanelFwSwRevisionValid;
         bool bIsFakedMuxDevice;
         bool bIsPreviouslyFakedMuxDevice;
         bool bisMarkedForDeletion;
@@ -313,6 +318,8 @@ namespace DisplayPort
 
         virtual TriState hdcpAvailableHop();
         virtual TriState hdcpAvailable();
+        virtual bool     isHdcp1XCapable();
+        virtual bool     isHdcp2XCapable();
 
         virtual bool isMSAOverMSTCapable()
         {
@@ -472,6 +479,11 @@ namespace DisplayPort
         bool setPanelReplayConfig(panelReplayConfig prcfg);
         bool getPanelReplayConfig(panelReplayConfig *pPrcfg);
         bool getPanelReplayStatus(PanelReplayStatus *pPrStatus);
+        //
+        // When DP_ENABLE_PANEL_FW_REVISION_CACHE is set, do not
+        // re-read panel firmware revision if it's valid
+        //
+        bool readPanelFwSwRevision(void);
         NvBool isSelectiveUpdateSupported(void);
         NvBool isEarlyRegionTpSupported(void);
         NvBool enableAdaptiveSyncSdp(NvBool enable);
@@ -485,6 +497,10 @@ namespace DisplayPort
         NvBool isAuxLessAlpmSupported(void);
 
         NvBool getDSCSupport();
+        void resetDscAndFecCaps();
+        void   setMaxUncompressedPixelRateValid();
+        NvBool getMaxUncompressedPixelRateValid();
+        NvU64  getMaxUncompressedPixelRate();
         bool getFECSupport();
         NvBool isDSCPassThroughSupported();
         NvBool isDynamicPPSSupported();

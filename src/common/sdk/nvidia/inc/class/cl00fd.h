@@ -38,7 +38,7 @@
 
 
 
-#define NV_MEMORY_MULTICAST_FABRIC                               (0xfdU) /* finn: Evaluated from "NV00FD_ALLOCATION_PARAMETERS_MESSAGE_ID" */
+#define NV_MEMORY_MULTICAST_FABRIC                                (0xfdU) /* finn: Evaluated from "NV00FD_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /*
  *  expPacket [IN]
@@ -70,17 +70,23 @@
  *    Optional OS event handle created with NvRmAllocOsEvent().
  */
 
-#define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M                0x20000000
-#define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_256G                0x1000000000000
+#define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M                 0x20000000
+#define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_256G                 0x1000000000000
 
 /*
  * This flag must be passed if the object is created using export packet. Note
  * when this flag is provided, the input params: alignment, allocSize,
  * numGpus, pageSize won't be honored.
  */
-#define NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_USE_EXPORT_PACKET 0x00000001
+#define NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_USE_EXPORT_PACKET  0x00000001
 
 
+
+/*
+ * This flag must be passed when using handles (true or emulated) for accessing fabric memory.
+ * Must be passed along with FABRIC_ALLOC_FLAGS_USE_EXPORT_PACKET as well. Only supported on Blackwell+.
+ */
+#define NV_MEMORY_MULTICAST_FABRIC_ALLOC_FLAGS_HANDLE_TRANSLATION 0x00000004
 
 #define NV00FD_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00fdU)
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -291,46 +291,6 @@ kgmmuTranslatePdePcfFromHw_GH100
             default: return NV_ERR_NOT_SUPPORTED;
         }
     }
-
-    return NV_OK;
-}
-
-/*
- * @brief   Validates fabric base address.
- *
- * @param   pKernelGmmu
- * @param   fabricBaseAddr
- *
- * @returns On success, NV_OK.
- *          On failure, returns NV_ERR_XXX.
- */
-NV_STATUS
-kgmmuValidateFabricBaseAddress_GH100
-(
-    KernelGmmu *pKernelGmmu,
-    NvU64       fabricBaseAddr
-)
-{
-    OBJGPU        *pGpu = ENG_GET_GPU(pKernelGmmu);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64 fbSizeBytes;
-
-    fbSizeBytes = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
-
-    //
-    // Hopper SKUs will be paired with NVSwitches (Laguna Seca) supporting 2K
-    // mapslots that can cover 512GB each. Make sure that the fabric base
-    // address being used is valid to cover whole frame buffer.
-    //
-
-    // Check if fabric address is aligned to mapslot size.
-    if (fabricBaseAddr & (NVBIT64(39) - 1))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Align fbSize to mapslot size.
-    fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(39));
 
     return NV_OK;
 }

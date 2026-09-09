@@ -46,11 +46,13 @@
 #include "kernel/rmapi/rs_utils.h"
 #include "kernel/rmapi/mapping_list.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
+#include "kernel/gpu/ce/kernel_ce.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/timer/objtmr.h"
 #include "platform/sli/sli.h"
 
+#include "class/cla06f.h"   // NVA06F_DMA_SUBDEVICE_MASK
 #include "class/cl0090.h"   // KERNEL_GRAPHICS_CONTEXT
 #include "class/cl906fsw.h" // GF100_GPFIFO
 #include "class/cla06c.h"   // KEPLER_CHANNEL_GROUP_A
@@ -84,7 +86,8 @@
 #include "libraries/resserv/rs_client.h"
 #include "libraries/resserv/rs_resource.h"
 #include "libraries/resserv/rs_server.h"
-#include "nvRmReg.h"
+#include "libraries/containers/eheap_old.h"
+#include "nvrm_registry.h"
 #include "nvstatuscodes.h"
 #include "vgpu/rpc.h"
 
@@ -171,6 +174,17 @@ kchannelConstruct_IMPL
     NvU32                   callingContextGfid;
     Device                 *pDevice;
     NvBool                  bUvmOwnedFlag;
+    NvU32                   subDeviceId      = pChannelGpfifoParams->subDeviceId;
+
+    // check that subdevice ID is within range and one-hot encoded
+    if (subDeviceId != 0)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            ((subDeviceId & ~DRF_MASK(NVA06F_DMA_SUBDEVICE_MASK)) == 0) &&
+            (nvPopCount32(subDeviceId) == 1),
+            NV_ERR_INVALID_ARGUMENT);
+    }
+    pKernelChannel->subDeviceId = subDeviceId;
 
     if (rmapiLockIsOwner())
     {
@@ -277,7 +291,7 @@ kchannelConstruct_IMPL
             pKernelChannel->privilegeLevel = NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_KERNEL;
             pChannelGpfifoParams->flags = FLD_SET_DRF(OS04, _FLAGS, _PRIVILEGED_CHANNEL, _TRUE, pChannelGpfifoParams->flags);
         }
-        else if (rmclientIsAdmin(pRmClient, privLevel) || hypervisorCheckForObjectAccess(hClient))
+        else if (rmclientIsAdmin(pRmClient, privLevel) || hypervisorCheckForObjectAccess(pRmClient))
         {
             pKernelChannel->privilegeLevel = NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_ADMIN;
             pChannelGpfifoParams->flags = FLD_SET_DRF(OS04, _FLAGS, _PRIVILEGED_CHANNEL, _TRUE, pChannelGpfifoParams->flags);
@@ -376,6 +390,7 @@ kchannelConstruct_IMPL
         // in mirroring this allocation in the host, as the channel is
         // already mirrored.
         //
+
         NV_ASSERT_OK_OR_GOTO(status,
             pRmApi->AllocWithSecInfo(pRmApi,
                                      hClient,
@@ -783,7 +798,8 @@ kchannelConstruct_IMPL
         if ((pConfCompute != NULL) && kchannelCheckIsUserMode(pKernelChannel)
             && !confComputeAcceptClientRequest(pGpu, pConfCompute))
         {
-            return NV_ERR_NOT_READY;
+            status = NV_ERR_NOT_READY;
+            goto cleanup;
         }
 
         if ((pConfCompute != NULL) && pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
@@ -981,7 +997,7 @@ kchannelConstruct_IMPL
     }
 
     if (kfifoIsPerRunlistChramEnabled(pKernelFifo) ||
-        (gpuIsCCorApmFeatureEnabled(pGpu) || bMIGInUse))
+        (gpuIsCCFeatureEnabled(pGpu) || bMIGInUse))
     {
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
         {
@@ -1272,6 +1288,12 @@ skipChannelCounterDecrement:;
         }
     }
 
+    INST_BLOCK_DESC instblk;
+    if (kchannelGetInstBlkDesc(pKernelChannel, &instblk) == NV_OK)
+    {
+        krcMmuExceptionCacheDelete(GPU_GET_KERNEL_RC(pGpu), &instblk);
+    }
+
     _kchannelFreeHalData(pGpu, pKernelChannel);
 
     NV_ASSERT(pKernelChannel->pKernelChannelGroupApi != NULL);
@@ -1299,7 +1321,6 @@ skipChannelCounterDecrement:;
     }
 
     kchannelFreeHwID_HAL(pGpu, pKernelChannel);
-    kchannelFreeMmuExceptionInfo(pKernelChannel);
 
     NV_ASSERT(pKernelChannel->refCount == 1);
 
@@ -1422,7 +1443,7 @@ CliGetKernelChannelWithDevice
 
     *ppKernelChannel = NULL;
 
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pClient, hKernelChannel, &pResourceRef));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pClient, hKernelChannel, &pResourceRef));
 
     pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pKernelChannel != NULL, NV_ERR_OBJECT_NOT_FOUND);
@@ -2755,6 +2776,27 @@ _kchannelSendChannelAllocRpc
             }
             pRpcParams->ProcessID = pKernelChannel->ProcessID;
             pRpcParams->SubProcessID= pKernelChannel->SubProcessID;
+
+            //
+            // If we auto-created an internal TSG, tell GSP which grpID to
+            // use so both sides stay in sync (mirrors ChID sync logic).
+            //
+            // Skip this on vGPU host: vGPU plugin (vmiop-vgpu) pre-allocates TSGs locally
+            // on GSP that kernel-RM is not aware of. Forcing kernel-RM's grpID onto GSP
+            // would collide with those plugin TSGs.
+            //
+            if (pKernelChannelGroup->bAllocatedByRm &&
+                !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+            {
+                pRpcParams->internalFlags = FLD_SET_DRF_NUM(
+                    _KERNELCHANNEL, _ALLOC_INTERNALFLAGS,
+                    _INTERNAL_TSG_ID, pKernelChannelGroup->grpID,
+                    pRpcParams->internalFlags);
+                pRpcParams->internalFlags = FLD_SET_DRF(
+                    _KERNELCHANNEL, _ALLOC_INTERNALFLAGS,
+                    _INTERNAL_TSG_ID_VALID, _TRUE,
+                    pRpcParams->internalFlags);
+            }
         }
     }
 
@@ -3054,7 +3096,6 @@ kchannelCtrlCmdGpFifoSchedule_IMPL
     kchannelSetRunlistSet(pGpu, pKernelChannel, NV_TRUE);
     SLI_LOOP_END
 
-
     //
     // All real hardware management is done in the host.
     // Do an RPC to the host to do the hardware update and return.
@@ -3068,18 +3109,12 @@ kchannelCtrlCmdGpFifoSchedule_IMPL
                           pRmCtrlParams->pParams,
                           pRmCtrlParams->paramsSize,
                           rmStatus);
-
         return rmStatus;
     }
 
-    //
-    // Do an internal control call to do channel reset
-    // on Host (Physical) RM
-    //
-    return kchannelFwdToInternalCtrl_HAL(pGpu,
-                                         pKernelChannel,
-                                         NVA06F_CTRL_CMD_INTERNAL_GPFIFO_SCHEDULE,
-                                         pRmCtrlParams);
+    NV_PRINTF(LEVEL_ERROR, "Invalid state during gpfifo schedule call for "
+              FMT_CHANNEL_DEBUG_TAG "\n", kchannelGetDebugTag(pKernelChannel));
+    return NV_ERR_INVALID_STATE;
 }
 
 NV_STATUS
@@ -3613,10 +3648,189 @@ _kchannelClearVAList
     return NV_OK;
 }
 
+// Commit the engine context addr to instmem
+NV_STATUS
+kchannelCommitEngineContext_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelChannel *pKernelChannel,
+    NvU32          engine,
+    NvBool         bSkipPreempt
+)
+{
+    KernelFifo            *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    FIFO_INSTANCE_BLOCK   *pInstanceBlock = NULL;
+    OBJVASPACE            *pVAS           = NULL;
+    NvU8                  *pInstMem;
+    NV_STATUS              status         = NV_OK;
+    NV_STATUS              rmEngCtxSetupStatus = NV_OK;
+    ENGINE_CTX_DESCRIPTOR *pEngCtx;
+    NvU64                  addr;
+    NvU32                  targetAddr, targetAddrHi;
+    NvU32                  targetVal, targetValHi;
+    MEMORY_DESCRIPTOR     *pTempMemDesc;
+    MEMORY_DESCRIPTOR     *pGpuInstMemDesc;
+
+    NV_ASSERT_OR_RETURN(engine != ENG_FIFO, NV_ERR_INVALID_ARGUMENT);
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+
+    if (IS_GR(engine))
+    {
+        NV_ASSERT_OK_OR_RETURN(kchannelCheckBcStateCurrent(pGpu, pKernelChannel));
+    }
+
+    NV_PRINTF(LEVEL_INFO,
+              FMT_CHANNEL_DEBUG_TAG " engine %s (0x%x)\n",
+              kchannelGetDebugTag(pKernelChannel),
+              kfifoGetEngineName_HAL(GPU_GET_KERNEL_FIFO(pGpu),
+                                     ENGINE_INFO_TYPE_ENG_DESC,
+                                     engine),
+              engine);
+
+    pVAS = pKernelChannel->pVAS;
+
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
+
+    targetAddr   = 0;
+    targetAddrHi = 0;
+    targetVal    = 0;
+    targetValHi  = 0;
+
+    pInstanceBlock = pKernelChannel->pFifoHalData[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+    if (pInstanceBlock == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to retrieve channel instance block!\n");
+        SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+    }
+
+    pGpuInstMemDesc = pInstanceBlock->pInstanceBlockDesc;
+
+    if (!pGpuInstMemDesc)
+        SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+
+    NV_ASSERT(!memdescHasSubDeviceMemDescs(pGpuInstMemDesc));
+
+    // Update the instance block with TPC Count for this context.
+    // Adding this check to ensure, the instance block being committed to Engine
+    // has valid TPC Count for the given channel.
+    //
+    pInstMem = kbusMapRmAperture_HAL(pGpu, pGpuInstMemDesc);
+    if (pInstMem == NULL)
+    {
+        SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+    }
+
+    pEngCtx = pKernelChannel->pKernelChannelGroup->ppEngCtxDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+
+    pTempMemDesc = pEngCtx ? pEngCtx->pMemDesc : NULL;
+
+    if (pTempMemDesc != NULL)
+    {
+        //
+        // For virtual context, UMD has already alloced/mapped the engine context.
+        // So simply get the vaddr
+        //
+        if (memdescGetAddressSpace(memdescGetMemDescFromGpu(pTempMemDesc, pGpu)) == ADDR_VIRTUAL)
+        {
+            //
+            // No need to track the VA for virtual context.
+            // This is OK since SCG will continue to use single address space.
+            //
+            // NOTE: Adding map tracking is causing issues due to memory allocation in IRQ path.
+            // We can look into this later if we need m-vas in scg path.
+            //
+#ifdef DEBUG
+            // Check whether virtual context runs in SCG mode
+            KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroup;
+            OBJVASPACE         *pCheckVAS = NULL;
+            OBJEHEAP           *pSubctxIdHeap;
+            EMEMBLOCK          *pBlock;
+            NvU32               maxSubCtx;
+            NvU32               i;
+
+            NV_ASSERT_OR_RETURN(pKernelChannelGroup != NULL, NV_ERR_INVALID_STATE);
+
+            pSubctxIdHeap = pKernelChannelGroup->pSubctxIdHeap;
+
+            maxSubCtx = kfifoChannelGroupGetLocalMaxSubcontext_HAL(pGpu,
+                pKernelFifo, pKernelChannelGroup, NV_FALSE);
+
+            for (i = 0; i < maxSubCtx; i++)
+            {
+                pBlock = pSubctxIdHeap->eheapGetBlock(pSubctxIdHeap,
+                                                      i,
+                                                      NV_FALSE);
+                if (pBlock != NULL)
+                {
+                    if (pCheckVAS != NULL)
+                    {
+                        NV_ASSERT(pCheckVAS ==
+                                  (((KernelCtxShare *)pBlock->pData)->pVAS));
+                    }
+                    else
+                    {
+                        pCheckVAS = ((KernelCtxShare *)pBlock->pData)->pVAS;
+                    }
+                }
+            }
+#endif
+        }
+
+        status = vaListFindVa(&pEngCtx->vaList, pVAS, &addr);
+        if (status == NV_OK)
+        {
+            //
+            // Only increment the refcnt for non-UVM channel.
+            // For UVM, We have already added mapping in the UVM channel bind ctrl call.
+            //
+            if(vaListGetManaged(&pEngCtx->vaList))
+            {
+                NV_ASSERT_OK_OR_GOTO(status,
+                    vaListAddVa(&pEngCtx->vaList, pVAS, addr),
+                    fail);
+            }
+        }
+        else
+        {
+            NV_ASSERT_OK_FAILED("vaListFindVa", status);
+            goto fail;
+        }
+
+    }
+    else
+    {
+        addr = 0x0ULL;
+    }
+
+    rmEngCtxSetupStatus = kfifoChannelGetEngineContextOffset_HAL(pGpu, pKernelFifo,
+            engine, &targetAddr, &targetAddrHi);
+
+     // Only program engine-specific pointers if needed.
+    if (rmEngCtxSetupStatus == NV_OK)
+    {
+        kfifoChannelGetEngineContextFieldFormat_HAL(pGpu, pKernelFifo,
+                                                   addr, &targetVal, &targetValHi);
+
+        MEM_WR32( pInstMem + targetAddr,   targetVal);
+        MEM_WR32( pInstMem + targetAddrHi, targetValHi);
+    }
+
+fail:
+    kbusUnmapRmAperture_HAL(pGpu, pGpuInstMemDesc, &pInstMem, NV_TRUE);
+    if (status != NV_OK)
+    {
+        SLI_LOOP_BREAK;
+    }
+    SLI_LOOP_END
+
+    return status;
+}
+
 /**
  * @brief Set or clear the Engine Context Memdesc.
  *
- * Should be committed to hardware after this using channelCommitEngineContext().
+ * Should be committed to hardware after this using kchannelCommitEngineContext().
  * Should be unmapped before cleared/changed using kchannelUnmapEngineCtxBuf()
  *
  * @param[in] pGpu
@@ -4205,7 +4419,7 @@ kchannelGetFromDualHandle_IMPL
         return NV_OK;
     }
 
-    if (CliGetChannelGroup(pClient->hClient, hDual, &pChanGrpRef, NULL) == NV_OK)
+    if (CliGetChannelGroup(pClient, hDual, &pChanGrpRef, NULL) == NV_OK)
     {
         KernelChannelGroupApi *pKernelChannelGroupApi = dynamicCast(
             pChanGrpRef->pResource,
@@ -4316,12 +4530,10 @@ kchannelCtrlCmdGetKmb_KERNEL
     if ((pConfCompute != NULL) && pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
     {
         RM_API            *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        RsClient          *pRsClient      = NULL;
+        RsClient          *pRsClient      = RES_GET_CLIENT(pKernelChannel);
         RsResourceRef     *pResourceRef   = NULL;
-        NvHandle           hClient        = RES_GET_CLIENT_HANDLE(pKernelChannel);
+        NvHandle           hClient        = pRsClient->hClient;
         NvHandle           hDevice        = RES_GET_HANDLE(GPU_RES_GET_DEVICE(pKernelChannel));
-
-        NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
         // check if a valid memory handle was passed to us
         if (clientGetResourceRef(pRsClient, pGetKmbParams->hMemory, &pResourceRef) == NV_OK)
         {
@@ -4478,55 +4690,6 @@ kchannelCtrlRotateSecureChannelIv_PHYSICAL
     }
 
     return NV_OK;
-}
-
-/*!
- * Fill in per-channel MMU exception data and allocate memory for this data if
- * necessary
- *
- * @param[inout]    pKernelChannel
- * @param[in]       pMmuExceptionData MMU exception data to be copied
- */
-void
-kchannelFillMmuExceptionInfo_IMPL
-(
-    KernelChannel           *pKernelChannel,
-    FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData
-)
-{
-    NV_STATUS status = NV_OK;
-
-    NV_ASSERT_OR_RETURN_VOID(pKernelChannel);
-
-    if (pKernelChannel->pMmuExceptionData == NULL)
-    {
-        pKernelChannel->pMmuExceptionData = portMemAllocNonPaged(sizeof(FIFO_MMU_EXCEPTION_DATA));
-        if (pKernelChannel->pMmuExceptionData == NULL)
-            status = NV_ERR_NO_MEMORY;
-    }
-
-    if (status == NV_OK)
-    {
-        portMemCopy(pKernelChannel->pMmuExceptionData,
-                    sizeof(FIFO_MMU_EXCEPTION_DATA),
-                    pMmuExceptionData,
-                    sizeof(FIFO_MMU_EXCEPTION_DATA));
-    }
-}
-
-/*!
- * Free per-channel MMU exception data if it exists
- *
- * @param[inout]    pKernelChannel
- */
-void
-kchannelFreeMmuExceptionInfo_IMPL
-(
-    KernelChannel           *pKernelChannel
-)
-{
-    portMemFree(pKernelChannel->pMmuExceptionData);
-    pKernelChannel->pMmuExceptionData = NULL;
 }
 
 /*!
@@ -4746,3 +4909,53 @@ FIFO_CHANNEL_INFO kchannelGetInfo(KernelChannel* pKernelChannel)
     return (FIFO_CHANNEL_INFO){pKernelChannel->ChID,
            (FIFO_TSG_INFO){pKernelChannel->pKernelChannelGroup->grpID, pKernelChannel->runlistId}};
 }
+
+NV_STATUS
+kchannelGetInstBlkDesc_IMPL
+(
+    KernelChannel   *pKernelChannel,
+    INST_BLOCK_DESC *pInstBlkDesc
+)
+{
+    FIFO_INSTANCE_BLOCK *pInstanceBlock;
+    MEMORY_DESCRIPTOR   *pInstBlkMemDesc;
+    NV_ADDRESS_SPACE     addrSpace;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pInstBlkDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pInstanceBlock = pKernelChannel->pFifoHalData[0];
+    NV_ASSERT_OR_RETURN(pInstanceBlock != NULL, NV_ERR_INVALID_STATE);
+
+    pInstBlkMemDesc = pInstanceBlock->pInstanceBlockDesc;
+    NV_ASSERT_OR_RETURN(pInstBlkMemDesc != NULL, NV_ERR_INVALID_STATE);
+
+    pInstBlkDesc->address = memdescGetPhysAddr(pInstBlkMemDesc, AT_GPU, 0);
+    pInstBlkDesc->gfid    = kchannelGetGfid(pKernelChannel);
+
+    addrSpace = memdescGetAddressSpace(pInstBlkMemDesc);
+    switch (addrSpace)
+    {
+        case ADDR_FBMEM:
+            pInstBlkDesc->aperture = INST_BLOCK_APERTURE_VIDEO_MEMORY;
+            break;
+
+        case ADDR_SYSMEM:
+            if (memdescGetCpuCacheAttrib(pInstBlkMemDesc) == NV_MEMORY_CACHED)
+            {
+                pInstBlkDesc->aperture = INST_BLOCK_APERTURE_SYSTEM_COHERENT_MEMORY;
+            }
+            else
+            {
+                pInstBlkDesc->aperture = INST_BLOCK_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+            }
+            break;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid instance block aperture 0x%x\n", addrSpace);
+            return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
+}
+

@@ -25,7 +25,7 @@
 /* ------------------------- System Includes -------------------------------- */
 #include "gpu/gpu.h"
 #include "gpu/bif/kernel_bif.h"
-#include "published/pascal/gp100/dev_boot.h"
+#include "published/pascal/gp100/dev_pmc.h"
 
 /* ------------------------ Public Functions -------------------------------- */
 

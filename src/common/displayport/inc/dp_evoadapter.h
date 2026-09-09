@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -112,7 +112,8 @@ namespace DisplayPort
             timer(timer),
             displayId(provider->getDisplayId()),
             subdeviceIndex(provider->getSubdeviceIndex()),
-            devicePlugged(false)
+            devicePlugged(false),
+            gpuSupportedDpVersions(0)
         {
         }
 
@@ -121,7 +122,19 @@ namespace DisplayPort
                                    unsigned * pNakReason = NULL,
                                    NvU8 offset = 0, NvU8 nWriteTransactions = 0);
         virtual unsigned transactionSize();
+
+        virtual void setGpuDPSupportedVersions(NvU32 dpVersionsSupported);
+
+        virtual NvU32 getGpuDPSupportedVersions()
+        {
+            return gpuSupportedDpVersions;
+        }
+
         virtual void setDevicePlugged(bool);
+        virtual bool isDevicePlugged()
+        {
+            return devicePlugged;
+        }
 
       private:
         EvoInterface * provider;
@@ -129,6 +142,7 @@ namespace DisplayPort
         NvU32 displayId;
         NvU32 subdeviceIndex;
         bool devicePlugged;
+        NvU32 gpuSupportedDpVersions;
     };
 
     class EvoMainLink : public MainLink
@@ -165,6 +179,7 @@ namespace DisplayPort
         bool _bPollingDpMstDisabledByRegkey;
         bool _bAvoidHBR3DisabledByRegkey;
         bool _bIsDpTunnelingHwBugWarEnabled;
+        bool _bIsInternalDpTunnelingSupported;
         //
         // LTTPR count reported by RM, it might not be the same with DPLib probe
         // For example, some Intel LTTPR might not be ready to response 0xF0000 probe
@@ -289,6 +304,11 @@ namespace DisplayPort
         {
             return _bIsDpTunnelingHwBugWarEnabled;
         }
+
+        virtual bool isInternalDpTunnelingSupported()
+        {
+            return _bIsInternalDpTunnelingSupported;
+        }
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported,
                                 unsigned *pEncoderColorFormatMask,
@@ -365,9 +385,7 @@ namespace DisplayPort
         virtual const DP_REGKEY_DATABASE& getRegkeyDatabase();
         virtual NvU32 getSorIndex();
         virtual bool isInbandStereoSignalingSupported();
-        virtual bool train(const LinkConfiguration & link, bool force, LinkTrainingType linkTrainingType,
-                           LinkConfiguration *retLink, bool bSkipLt = false, bool isPostLtAdjRequestGranted = false,
-                           unsigned phyRepeaterCount = 0);
+        virtual bool train(const LinkTrainParameters &trainParams);
         virtual bool retrieveRingBuffer(NvU8 dpRingBuffertype, NvU32 numRecords);
         virtual void getLinkConfig(unsigned & laneCount, NvU64 & linkRate);
         void getLinkConfigWithFEC(unsigned & laneCount, NvU64 & linkRate, bool &bFECEnabled);
@@ -382,6 +400,7 @@ namespace DisplayPort
         virtual bool dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *headIndex);
 
         void triggerACT();
+        void setDpWarFlag(NvU32 warId, bool bEnable);
         void configureAndTriggerECF(NvU64 ecf, NvBool bForceClearEcf = NV_FALSE, NvBool bAddStreamBack = NV_FALSE); // This function program as well as trigger ECF on branch devices.
         virtual void disableAlternateScramblerReset();
         void configureHDCPDisableAuthentication();

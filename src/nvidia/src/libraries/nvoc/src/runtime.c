@@ -105,6 +105,14 @@ void objAddChild_IMPL(Object *pObj, Object *pChild)
     pChild->pParent = pObj;
     pChild->childTree.pSibling = pObj->childTree.pChild;
     pObj->childTree.pChild = pChild;
+
+    //
+    // Event bus propagation:
+    // If the child did not set its own event bus during construction, inherit
+    // the parent's bus when the object is attached to the ownership tree.
+    //
+    if (pChild->pEventBus == NULL)
+        pChild->pEventBus = pObj->pEventBus;
 }
 
 void objRemoveChild_IMPL(Object *pObj, Object *pChild)

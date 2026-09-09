@@ -1,0 +1,198 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+#ifndef _GPU_EVENT_CTX_DEFS_H_
+#define _GPU_EVENT_CTX_DEFS_H_
+
+#include "events/event_ctx_defs.h"
+#include "nvtypes.h"
+
+/*
+ * GPU operational event context type identifiers.
+ */
+typedef NvU16 GPU_OPERATIONAL_EVENT_CTX_TYPE;
+enum
+{
+    GPU_OPERATIONAL_EVENT_CTX_TYPE_RESERVED             = 0x8000,
+    GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_LEGACY_XID       = 0x8001,
+    GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_REC_ACTIONS      = 0x8002,
+    GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_TIMEOUT_DATA     = 0x9001,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_BASE            = 0xA000,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_LAST            = 0xA0FF,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_GSP_BASE        = 0xA100,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_GSP_LAST        = 0xA1FF,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_FSP_BASE        = 0xA200,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_FSP_LAST        = 0xA2FF,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_NVLINK_BASE     = 0xA300,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_NVLINK_LAST     = 0xA3FF,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_RC_BASE         = 0xA400,
+    GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_RC_LAST         = 0xA4FF,
+};
+
+typedef NvU16 GPU_EVENT_CTX_TYPE;
+enum
+{
+    GPU_EVENT_CTX_TYPES_BASE = GPU_OPERATIONAL_EVENT_CTX_TYPES_GPU_BASE,
+    GPU_EVENT_CTX_TYPE_GPU_INIT_METADATA, // 0xA001
+};
+
+/* --------------------------------- Common Context Structures --------------------------------- */
+
+/*
+ * GPU Legacy Xid (Context Type 0x8001, Version 1.0)
+ * Total size: variable (max 240 bytes)
+ */
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MAJOR 1
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MINOR 0
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION       \
+    ((GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MINOR) | \
+     (GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_VERSION_MAJOR << 8))
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_MAX_MSG_LEN   235
+
+typedef struct GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID
+{
+    NvU32 xidCode;
+    EVENT_CTX_FLEXIBLE_ARRAY_MEMBER(char, message,
+                                    GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_MAX_MSG_LEN + 1)
+} GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID;
+
+static inline NvLength GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_SIZE(NvLength messageSize)
+{
+    return NV_OFFSETOF(GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID, message) + messageSize;
+}
+
+/*
+ * GPU Recommended Actions (Context Type 0x8002, Version 1.0)
+ * Total size: 16 bytes
+ */
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MAJOR 1
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MINOR 0
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION       \
+    ((GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MINOR) | \
+     (GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_VERSION_MAJOR << 8))
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_REC_ACTIONS_SIZE          \
+    (sizeof(GPU_OPERATIONAL_EVENT_CTX_GPU_RECOMMENDED_ACTIONS))
+
+/*
+ * GPU recovery actions.
+ */
+ typedef enum GPU_OPERATIONAL_EVENT_CTX_RECOVERY_ACTION
+ {
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_IGNORE        = 0,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_DRIVER_RELOAD = 1,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_FLR           = 2,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_HOT_RESET     = 3,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_WARM_RESET    = 4,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_COLD_RESET    = 5,
+     GPU_OPERATIONAL_EVENT_CTX_RECOVERY_NODE_RESET    = 6,
+ } GPU_OPERATIONAL_EVENT_CTX_RECOVERY_ACTION;
+
+ /*
+  * GPU recommended actions flags.
+  */
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_ALREADY_RECOVERED            0:0
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_ALREADY_RECOVERED_FALSE      0x00000000U
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_ALREADY_RECOVERED_TRUE       0x00000001U
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_IMMEDIATE_SERVICE            1:1
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_IMMEDIATE_SERVICE_FALSE      0x00000000U
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_IMMEDIATE_SERVICE_TRUE       0x00000001U
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_MORE_ANALYSIS_REQUIRED       2:2
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_MORE_ANALYSIS_REQUIRED_FALSE 0x00000000U
+ #define GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_MORE_ANALYSIS_REQUIRED_TRUE  0x00000001U
+
+typedef struct GPU_OPERATIONAL_EVENT_CTX_GPU_RECOMMENDED_ACTIONS
+{
+    NvU8  flags;            // See GPU_OPERATIONAL_EVENT_CTX_REC_FLAG_*
+    NvU8  reserved[3];
+    NvU16 recoveryAction;   // See GPU_OPERATIONAL_EVENT_CTX_RECOVERY_ACTION
+    NvU16 diagnosticFlow;   // Not yet implemented
+    NvU8  reserved2[8];
+} GPU_OPERATIONAL_EVENT_CTX_GPU_RECOMMENDED_ACTIONS;
+
+/* ----------------------------- Event Category Context Structures ----------------------------- */
+
+/* ----------------------------- Event-Specific Context Structures ----------------------------- */
+/*
+ * GPU Timeout Data (Context Type 0x9001, Version 1.0)
+ * Total size: variable (max 48 bytes)
+ */
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION_MAJOR 1
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION_MINOR 0
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION       \
+    ((GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION_MINOR) | \
+     (GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION_MAJOR << 8))
+
+typedef struct GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA
+{
+    NvU64 timeoutNs;
+    NvU64 elapsedNs;
+
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_MAX_WAIT_TARGET_LEN 31
+    EVENT_CTX_FLEXIBLE_ARRAY_MEMBER(char, waitTarget,
+        GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_MAX_WAIT_TARGET_LEN + 1)
+} GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA;
+
+static inline NvLength GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_SIZE(NvLength waitTargetSize)
+{
+    return NV_OFFSETOF(GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA, waitTarget) + waitTargetSize;
+}
+
+/*
+ * GPU Initialization Metadata (Context Type 0xA001, Version 1.0)
+ * Total size: 192 bytes
+ */
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MAJOR 1
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MINOR 0
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION       \
+    ((GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MINOR) | \
+     (GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION_MAJOR << 8))
+#define GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_SIZE          \
+    (sizeof(GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA))
+
+typedef struct GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA
+{
+    NvU8  deviceName[48];
+    NvU8  firmwareVersion[16];
+    NvU8  pfDriverMicrocodeVersion[16];
+    NvU8  pfDriverVersion[16];
+    NvU8  vfDriverVersion[16];
+    NvU64 configuration;
+    NvU64 pdi;
+    NvU32 architectureId;
+    NvU8  hardwareInfoType;
+    NvU8  pciClass;
+    NvU8  pciSubclass;
+    NvU8  pciRev;
+    NvU16 pciVendorId;
+    NvU16 pciDeviceId;
+    NvU16 pciSubsystemVendorId;
+    NvU16 pciSubsystemId;
+    NvU64 bar0Start;
+    NvU64 bar0Size;
+    NvU64 bar1Start;
+    NvU64 bar1Size;
+    NvU64 bar2Start;
+    NvU64 bar2Size;
+} GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA;
+
+#endif // _GPU_EVENT_CTX_DEFS_H_

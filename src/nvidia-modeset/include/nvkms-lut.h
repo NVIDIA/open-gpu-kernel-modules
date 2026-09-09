@@ -52,8 +52,8 @@ static inline void nvCancelLutUpdateEvo(
     const NvU32 apiHead)
 {
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-    nvkms_free_timer(pDevEvo->lut.apiHead[apiHead].disp[pDispEvo->displayOwner].updateTimer);
-    pDevEvo->lut.apiHead[apiHead].disp[pDispEvo->displayOwner].updateTimer = NULL;
+    nvkms_free_timer(pDevEvo->lut.apiHead[apiHead].updateTimer);
+    pDevEvo->lut.apiHead[apiHead].updateTimer = NULL;
 }
 
 #ifdef __cplusplus

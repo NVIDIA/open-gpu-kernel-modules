@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,11 +26,12 @@
 
 
 typedef enum {
-    RMAPI_ENABLE_REQUEST       = 0xa,
-    RMAPI_DISABLE_REQUEST      = 0xb,
-    RMAPI_RELEASE_ALL_REQUESTS = 0xc,
-    RM_CLIENT_DESTRUCTION      = 0xd,
-    RMAPI_SOFT_DISABLE_REQUEST = 0xe
+    RMAPI_ENABLE_REQUEST = 0,
+    RMAPI_DISABLE_REQUEST,
+    RMAPI_RELEASE_ALL_REQUESTS,
+    RM_CLIENT_DESTRUCTION,
+    RMAPI_SOFT_DISABLE_REQUEST,
+    RMAPI_PAUSE_REQUEST
 } RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE;
 
 #endif // ifndef KERNEL_RC_WATCHDOG_H

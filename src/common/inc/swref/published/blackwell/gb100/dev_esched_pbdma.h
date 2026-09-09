@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,4 +61,29 @@
 #define NV_PBDMA_PB_HEADER_FIRST_TRUE                   0x00000001 /* RW--V */
 #define NV_PBDMA_MISC_FETCH_STATE_PB_HEADER_TYPE                        5:3 /* RWXUF */
 #define NV_PBDMA_MISC_FETCH_STATE_PB_HEADER_TYPE_INC             0x00000001 /* RW--V */
+#define NV_PBDMA_HCE_CTRL                                    0x054 /* RW-4R */
+#define NV_PBDMA_HCE_CTRL_HCE_PRIV_MODE                        5:5 /* RWXUF */
+#define NV_PBDMA_HCE_CTRL_HCE_PRIV_MODE_NO              0x00000000 /* RW--V */
+#define NV_PBDMA_HCE_CTRL_HCE_PRIV_MODE_YES             0x00000001 /* RW--V */
+#define NV_PBDMA_MISC_EXECUTE_STATE                          0x050 /* RW-4R */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_ENGINE              1:0 /* RWXUF */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_ENG_CTX_VALID       2:2 /* RWXUF */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_ENG_CTX_VALID_TRUE    1 /* RW--V */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_ENG_CTX_VALID_FALSE   0 /* RW--V */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_CE_CTX_VALID        3:3 /* RWXUF */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_CE_CTX_VALID_TRUE     1 /* RW--V */
+#define NV_PBDMA_MISC_EXECUTE_STATE_TARGET_CE_CTX_VALID_FALSE    0 /* RW--V */
+#define NV_PBDMA_MISC_EXECUTE_STATE_CONFIG_AUTH_LEVEL        13:13 /* R--VF */
+#define NV_PBDMA_MISC_EXECUTE_STATE_CONFIG_AUTH_LEVEL_NON_PRIVILEGED       0x00000000 /* R---V */
+#define NV_PBDMA_MISC_EXECUTE_STATE_CONFIG_AUTH_LEVEL_PRIVILEGED           0x00000001 /* R---V */
+#define NV_PBDMA_SET_CHANNEL_INFO_VEID                       13:8 /* RWXUF */
+#define NV_PBDMA_SET_CHANNEL_INFO_CHID                       27:16 /* R--VF */
+#define NV_PBDMA_SUBDEVICE_ID                                 11:0 /* RWXUF */
+#define NV_PBDMA_SUBDEVICE_ID_ENABLE                    0x00000FFF /* RW--V */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_STATUS                    17:17 /* RWXUF */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_STATUS_INACTIVE      0x00000000 /* RW--V */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_STATUS_ACTIVE        0x00000001 /* RW--V */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_CHANNEL_DMA               18:18 /* RWXUF */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_CHANNEL_DMA_DISABLE  0x00000000 /* RW--V */
+#define NV_PBDMA_MISC_FETCH_STATE_SUBDEVICE_CHANNEL_DMA_ENABLE   0x00000001 /* RW--V */
 #endif // __gb100_dev_esched_pbdma_h__

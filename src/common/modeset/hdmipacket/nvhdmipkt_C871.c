@@ -280,8 +280,6 @@ disableInfoframeC871(NVHDMIPKT_CLASS*  pThis,
     NVHDMIPKT_RESULT result = NVHDMIPKT_TIMEOUT;
     NvU32  regAddr, regData;
 
-    NvHdmiPkt_Print(pThis, "disableInfoframeC871: head %u ifIndex %u", head, ifIndex);
-
     regAddr = NVC871_SF_GENERIC_INFOFRAME_CTRL(head, ifIndex);
     regData = REG_RD32(pBaseReg, regAddr);
 
@@ -396,10 +394,6 @@ updateAdvancedInfoframeCtrlC871(NVHDMIPKT_CLASS                *pThis,
 
     // write reg
     REG_WR32(pBaseReg, regAddr, regData);
-
-    NvHdmiPkt_Print(pThis, "MoreInfoframe: Sent infoframe of length %d bytes, transmit ctrl 0x%x at offset %d head=%x fid=%d runMode=%d loc=%d numInfoframes=%d",
-        pInfoframe->packetLen, regData, ifIndex, head, pInfoframe->flipId, pInfoframe->runMode, pInfoframe->location,
-        pInfoframe->isLargeInfoframe ? (pInfoframe->numAdditionalInfoframes + 1) : 1);
 
     // setup MSC_CTRL
     regData = 0;

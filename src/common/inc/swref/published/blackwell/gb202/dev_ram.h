@@ -25,8 +25,11 @@
 #define __gb202_dev_ram_h__
 
 #define NV_PRAMIN                             0x007FFFFF:0x00700000 /* RW--M */
+#define NV_RAMIN_ENGINE_TOTAL_NUM_TPCS           (130*32+31):(130*32+0) /* RWXUF */
 #define NV_RAMRL_ENTRY_CHAN_RUNQUEUE_SELECTOR_RUNQUEUE1         0x00000001 /*       */
-#define NV_RAMRL_ENTRY_BASE_SHIFT      8 /*       */
-
+#define NV_RAMFC                                                    /* ----G */
+#define NV_RAMRL_ENTRY_BASE_SHIFT                8 /*       */
+#define NV_RAMFC_MISC_EXECUTE_STATE              (20*32+31):(20*32+0) /* RW-UF */
+#define NV_RAMIN_ENGINE_WFI_VEID             (134*32+(6-1)):(134*32+0) /*       */
 #endif // __gb202_dev_ram_h__
 

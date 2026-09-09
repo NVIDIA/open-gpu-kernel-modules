@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -682,11 +682,6 @@ static NvU32 DisplaylessGetActiveViewportOffset(
     return 0;
 }
 
-static void DisplaylessClearSurfaceUsage(
-    NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
-{
-}
-
 static NvBool DisplaylessComputeWindowScalingTaps(
     const NVDevEvoRec *pDevEvo,
     const NVEvoChannel *pChannel,
@@ -698,7 +693,7 @@ static NvBool DisplaylessComputeWindowScalingTaps(
 static void DisplaylessSendHdmiInfoFrame(
     const NVDispEvoRec *pDispEvo,
     const NvU32 head,
-    const NvEvoInfoFrameTransmitControl transmitCtrl,
+    const NvEvoInfoFrameTransmitControl *transmitCtrl,
     const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
     const NvU32 infoframeSize,
     NvBool needChecksum)
@@ -708,6 +703,7 @@ static void DisplaylessSendHdmiInfoFrame(
 static void DisplaylessDisableHdmiInfoFrame(
     const NVDispEvoRec *pDispEvo,
     const NvU32 head,
+    const NvEvoInfoFrameTransmitControl *transmitCtrl,
     const NvU8 nvtInfoFrameType)
 {
 }
@@ -715,7 +711,7 @@ static void DisplaylessDisableHdmiInfoFrame(
 static void DisplaylessSendDpInfoFrameSdp(
     const NVDispEvoRec *pDispEvo,
     const NvU32 head,
-    const NvEvoInfoFrameTransmitControl transmitCtrl,
+    const NvEvoInfoFrameTransmitControl *transmitCtrl,
     const DPSDP_DESCRIPTOR *sdp)
 {
 }
@@ -831,7 +827,6 @@ NVEvoHAL nvDisplayless = {
     DisplaylessSetDscParams,                            /* SetDscParams */
     NULL,                                               /* EnableMidFrameAndDWCFWatermark */
     DisplaylessGetActiveViewportOffset,                 /* GetActiveViewportOffset */
-    DisplaylessClearSurfaceUsage,                       /* ClearSurfaceUsage */
     DisplaylessComputeWindowScalingTaps,                /* ComputeWindowScalingTaps */
     NULL,                                               /* GetWindowScalingCaps */
     NULL,                                               /* SetMergeMode */
@@ -852,6 +847,7 @@ NVEvoHAL nvDisplayless = {
     DisplaylessSetWinNotifierSurfaceAddressAndControl,  /* SetWinNotifierSurfaceAddressAndControl */
     DisplaylessSetSemaphoreSurfaceAddressAndControl,    /* SetSemaphoreSurfaceAddressAndControl */
     DisplaylessSetAcqSemaphoreSurfaceAddressAndControl, /* SetAcqSemaphoreSurfaceAddressAndControl */
+    NULL,                                               /* SetCoreFid */
     NULL,                                               /* SetupVBlankRgSemaphoreInterrupt */
     {                                                   /* caps */
         FALSE,                                          /* supportsHDMIFRL */
@@ -862,6 +858,7 @@ NVEvoHAL nvDisplayless = {
         FALSE,                                          /* supportsHDMI10BPC */
         FALSE,                                          /* supportsDPAudio192KHz */
         FALSE,                                          /* supportsYCbCr422OverHDMIFRL */
+        FALSE,                                          /* supportsColorPassthrough */
         NV_EVO3_X_EMULATED_SURFACE_MEMORY_FORMATS_C6,   /* xEmulatedSurfaceMemoryFormats */
     },
 };

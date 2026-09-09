@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,57 +75,6 @@ intrGetPendingStall_GM107
     return NV_OK;
 }
 
-
-void intrGetAuxiliaryPendingStall_GM107
-(
-    OBJGPU              *pGpu,
-    Intr                *pIntr,
-    MC_ENGINE_BITVECTOR *pEngines,
-    NvBool               bGetAll,
-    NvU16                engIdx,
-    THREAD_STATE_NODE   *pThreadState
-)
-{
-    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
-    NvU8 i;
-
-    if ((bGetAll || engIdx == MC_ENGINE_IDX_VGPU) &&
-        (IS_VIRTUAL(pGpu) && vgpuGetPendingEvent(pGpu, pThreadState)))
-    {
-        bitVectorSet(pEngines, MC_ENGINE_IDX_VGPU);
-    }
-
-    // No register reads here, no need to filter on engIdx
-    if (pKernelDisplay != NULL && kdispGetDeferredVblankHeadMask(pKernelDisplay))
-    {
-        // Deferred vblank is pending which we need to handle
-        if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
-            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP_LOW);
-        else
-            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
-    }
-
-    // No register reads here, no need to filter on engIdx
-    if ((pKernelGraphicsManager != NULL) && (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0))
-    {
-        //
-        // WARNING: This loop must not call any GR HALs or
-        //          access any PGRAPH registers
-        //
-        for (i = 0; i < GPU_MAX_GRS; i++)
-        {
-            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, i);
-            if ((pKernelGraphics != NULL) &&
-                kgraphicsIsIntrDrivenCtxswLoggingEnabled(pGpu, pKernelGraphics) &&
-                fecsIsIntrPending(pGpu, pKernelGraphics))
-            {
-                bitVectorSet(pEngines, MC_ENGINE_IDX_GRn_FECS_LOG(i));
-            }
-        }
-    }
-}
-
 /*!
  *
  * @param[in]  pGpu
@@ -148,55 +97,4 @@ intrGetPendingDispLowLatencyAndStaticReg_GM107
 {
     // Just get all the interrupts, there's not much to optimize for pre-Turing
     return intrGetPendingStall_HAL(pGpu, pIntr, pEngines, pThreadState);
-}
-
-
-/*!
- * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending in hardware
- *        The MC_ENGINE_IDX_DISP that this function reports conflates both the low latency display
- *        interrupts and other display interrupts in architectures supported by this HAL.
- *
- * @param[in]  pGpu
- * @param[in]  pMc
- * @param[out] pEngines     List of engines that have pending stall interrupts
- * @param[in]  pThreadState
- *
- * @return NV_OK if the list of engines that have pending stall interrupts was retrieved
- */
-NV_STATUS
-intrGetPendingLowLatencyHwDisplayIntr_GM107
-(
-    OBJGPU              *pGpu,
-    Intr                *pIntr,
-    PMC_ENGINE_BITVECTOR pEngines,
-    THREAD_STATE_NODE   *pThreadState
-)
-{
-    MC_ENGINE_BITVECTOR intr0Pending;
-
-    bitVectorClrAll(pEngines);
-    bitVectorClrAll(&intr0Pending);
-
-    if (IS_GPU_GC6_STATE_ENTERED(pGpu))
-    {
-        return NV_ERR_GPU_NOT_FULL_POWER;
-    }
-
-    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
-    {
-        return NV_ERR_GPU_IS_LOST;
-    }
-
-    //
-    // Use lower level intrGetPendingStallEngines_HAL to get only the
-    // actual HW value of the registers
-    //
-    intrGetPendingStallEngines_HAL(pGpu, pIntr, NV_FALSE, 0, &intr0Pending, pThreadState);
-
-    if (bitVectorTest(&intr0Pending, MC_ENGINE_IDX_DISP))
-    {
-        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
-    }
-
-    return NV_OK;
 }

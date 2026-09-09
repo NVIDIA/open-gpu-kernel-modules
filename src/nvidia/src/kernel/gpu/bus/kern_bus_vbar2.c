@@ -930,7 +930,8 @@ kbusMapBar2Aperture_VBAR2
     //
     if (kbusIsBarAccessBlocked(pKernelBus) &&
        (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
-       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
     {
         os_dump_stack();
         NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");
@@ -961,7 +962,8 @@ kbusMapBar2Aperture_VBAR2
     //
     if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
         (pGpu->getProperty(pGpu, PDB_PROP_GPU_NVLINK_SYSMEM)) &&
-       !(pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB)))
+       !(pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB)) &&
+       !(memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1)))
     {
         //
         // Reflected mapping is deprecated and may cause GPU to enter deadlock
@@ -1067,7 +1069,8 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
     //
     if (kbusIsBarAccessBlocked(pKernelBus) &&
        (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
-       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
     {
         NV_ASSERT(0);
         NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");

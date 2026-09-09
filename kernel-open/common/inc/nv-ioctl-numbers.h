@@ -44,5 +44,11 @@
 #define NV_ESC_SYS_PARAMS            (NV_IOCTL_BASE + 14)
 #define NV_ESC_EXPORT_TO_DMABUF_FD   (NV_IOCTL_BASE + 17)
 #define NV_ESC_WAIT_OPEN_COMPLETE    (NV_IOCTL_BASE + 18)
-
+#ifdef NV_VMWARE
+/*
+ * NV_ESC_INIT_GPUS: VMware-only ioctl to initialize all probed GPUs from
+ * nvidia-ucodeoffload after GSP binary is pushed, avoiding rm_init from open.
+ */
+#define NV_ESC_INIT_GPUS             (NV_IOCTL_BASE + 19)
+#endif
 #endif

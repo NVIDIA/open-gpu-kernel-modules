@@ -138,6 +138,13 @@ typedef struct DEVICE_MAPPING
     DEVICE_REGFILTER_INFO devRegFilterInfo; // register filter range list
 } DEVICE_MAPPING;
 
+static NV_INLINE NvBool
+gpuMappingHasRegisterFilters(const DEVICE_MAPPING *pMapping)
+{
+    return (pMapping != NULL) &&
+           (pMapping->devRegFilterInfo.pRegFilterList != NULL);
+}
+
 typedef struct
 {
     // Pointer to GPU linked to this RegisterAccess object

@@ -24,7 +24,7 @@
 # include_next <stdatomic.h>
 #else
 
-#include <stddef.h>
+#include <nv_stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

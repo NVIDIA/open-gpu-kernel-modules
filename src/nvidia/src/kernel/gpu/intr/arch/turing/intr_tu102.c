@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 #include "kernel/gpu/intr/intr.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/intr/engine_idx.h"
+#include "kernel/gpu/gr/kernel_graphics.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/timer/objtmr.h"
 #include "gpu/uvm/uvm.h"
@@ -993,12 +994,64 @@ void intrGetAuxiliaryPendingStall_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    extern void intrGetAuxiliaryPendingStall_GP100(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *, NvBool bGetAll, NvU16 engIdx, THREAD_STATE_NODE *pThreadState);
-    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    KernelGmmu            *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    OBJTMR                *pTmr = GPU_GET_TIMER(pGpu);
+    KernelDisplay         *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    NvU8 i;
 
-    intrGetAuxiliaryPendingStall_GP100(pGpu, pIntr, pEngines, bGetAll, engIdx, pThreadState);
+    if ((bGetAll || (engIdx == MC_ENGINE_IDX_VGPU)) &&
+        (IS_VIRTUAL(pGpu) && vgpuGetPendingEvent(pGpu, pThreadState)))
+    {
+        bitVectorSet(pEngines, MC_ENGINE_IDX_VGPU);
+    }
 
-    if ((bGetAll || engIdx == MC_ENGINE_IDX_GMMU) && pKernelGmmu != NULL)
+    // No register reads here, no need to filter on engIdx
+    if ((pKernelDisplay != NULL) && kdispGetDeferredVblankHeadMask(pKernelDisplay))
+    {
+        // Deferred vblank is pending which we need to handle
+        if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
+            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP_LOW);
+        else
+            bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
+    }
+
+    // No register reads here, no need to filter on engIdx
+    if ((pKernelGraphicsManager != NULL) && (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0))
+    {
+        //
+        // WARNING: This loop must not call any GR HALs or
+        //          access any PGRAPH registers
+        //
+        for (i = 0; i < GPU_MAX_GRS; i++)
+        {
+            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, i);
+            if ((pKernelGraphics != NULL) &&
+                kgraphicsIsIntrDrivenCtxswLoggingEnabled(pGpu, pKernelGraphics) &&
+                fecsIsIntrPending(pGpu, pKernelGraphics))
+            {
+                bitVectorSet(pEngines, MC_ENGINE_IDX_GRn_FECS_LOG(i));
+            }
+        }
+    }
+
+    if ((bGetAll || (engIdx == MC_ENGINE_IDX_TMR)) && (pTmr != NULL))
+    {
+        NvU32 retVal;
+
+        tmrGetIntrStatus_HAL(pGpu, pTmr, &retVal, pThreadState);
+        if (retVal != 0)
+        {
+            bitVectorSet(pEngines, MC_ENGINE_IDX_TMR);
+        }
+    }
+
+    if (bGetAll || (engIdx == MC_ENGINE_IDX_GMMU))
+    {
+        intrGetGmmuInterrupts(pGpu, pIntr, pEngines, pThreadState);
+    }
+
+    if ((bGetAll || (engIdx == MC_ENGINE_IDX_GMMU)) && (pKernelGmmu != NULL))
     {
         NvBool bRmOwnsReplayableFault = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_MMU_REPLAYABLE_FAULT_NOTIFY);
         NvBool bRmOwnsAccessCntr      = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_HUB_ACCESS_COUNTER_NOTIFY);

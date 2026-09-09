@@ -66,7 +66,7 @@ void uvm_hal_rubin_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->access_counters_serialize_clear_ops_by_type = false;
 
-    parent_gpu->access_bits_supported = false;
+    parent_gpu->access_bits_supported = true;
 
     parent_gpu->has_clear_faulted_channel_sw_method = true;
 

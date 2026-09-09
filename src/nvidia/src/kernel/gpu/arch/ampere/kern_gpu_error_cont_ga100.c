@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,9 @@
 
 // Error Containment error ID string description
 const char *ppErrContErrorIdStr[] = NV_ERROR_CONT_ERR_ID_STRING_PUBLIC;
+
+// ct assert to check if the number of error ID strings is correct
+ct_assert(sizeof(ppErrContErrorIdStr) / sizeof(ppErrContErrorIdStr[0]) == NV_ERROR_CONT_ERR_ID_COUNT);
 
 /*!
  * Error Containment state table showing policy settings for each error ID
@@ -268,6 +271,7 @@ _gpuNotifySubDeviceEventNotifier
         case NV_ERROR_CONT_ERR_ID_E31_SYSLTC_ECC_TSTG:
         case NV_ERROR_CONT_ERR_ID_E32_SYSLTC_ECC_RSTG:
         case NV_ERROR_CONT_ERR_ID_E33_SYSLTC_ECC_DSTG_FATAL:
+        case NV_ERROR_CONT_ERR_ID_E34_LRC_DED:
             //
             // For now, we assign error codes defined in sdk/nvidia/inc/nverror.h
             // to info16. However, that header file is supposed to only include
@@ -280,6 +284,11 @@ _gpuNotifySubDeviceEventNotifier
             // these notifier error codes from XID definitions.
             //
             break;
+        default:
+            info16 = 0;
+            NV_ASSERT(0);
+            break;
+
     }
 
     gpuNotifySubDeviceEvent(pGpu, nv2080Notifier, NULL, 0, 0, info16);
@@ -450,12 +459,13 @@ _gpuGenerateErrorLog
         {
             nvErrorLog_va((void *)pGpu,
                           rcErrorCode,
-                          "%s: %s (%d, %d, %d). RST: %s, D-RST: %s",
+                          "%s: %s (0x%x, 0x%x, 0x%x, 0x%x). RST: %s, D-RST: %s",
                           rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
                             ROBUST_CHANNEL_CONTAINED_ERROR_STR :
                             ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
                           ppErrContErrorIdStr[errorCode],
-                          loc.locInfo.sysLtcLoc.groupId,
+                          loc.locInfo.sysLtcLoc.dieletType,
+                          loc.locInfo.sysLtcLoc.dieletId,
                           loc.locInfo.sysLtcLoc.instanceId,
                           loc.locInfo.sysLtcLoc.slice,
                           pErrorContSmcSettings->bGpuResetReqd ? "Yes" : "No",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -162,6 +162,9 @@ typedef struct NV2080_CTRL_RC_GET_ERROR_V2_PARAMS {
  *
  *       NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_INITIALIZED
  *         This means that the watchdog has been initialized.
+
+ *       NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_PAUSED
+ *         This means that the watchdog is paused.
  *
  *     A typical result would be either "running and initialized", or
  *     "disabled".  However, "initialized, but not running, and not disabled"
@@ -183,7 +186,7 @@ typedef struct NV2080_CTRL_RC_GET_WATCHDOG_INFO_PARAMS {
 #define NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_DISABLED    (0x00000001)
 #define NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_RUNNING     (0x00000002)
 #define NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_INITIALIZED (0x00000004)
-
+#define NV2080_CTRL_RC_GET_WATCHDOG_INFO_FLAGS_PAUSED      (0x00000008)
 /*
  * NV2080_CTRL_CMD_RC_DISABLE_WATCHDOG
  *
@@ -222,8 +225,8 @@ typedef struct NV2080_CTRL_RC_GET_WATCHDOG_INFO_PARAMS {
 /*
  * NV2080_CTRL_CMD_RC_RELEASE_WATCHDOG_REQUESTS
  *
- * This command releases all of the RM client's outstanding requests to enable
- * or disable the watchdog.
+ * This command releases all of the RM client's outstanding requests to enable,
+ * disable, or pause the watchdog.
  *
  * Possible status return values are:
  *   NV_OK
@@ -410,5 +413,18 @@ typedef NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS NV2080_CTRL_SET_RC_WATCHDOG_INFO
 #define NV2080_CTRL_GET_RC_WATCHDOG_INFO_PARAMS_MESSAGE_ID (0x15U)
 
 typedef NV2080_CTRL_CMD_RC_WATCHDOG_INFO_PARAMS NV2080_CTRL_GET_RC_WATCHDOG_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_RC_PAUSE_WATCHDOG
+ *
+ * This command unconditionally pauses the RC watchdog, disregarding requests from other clients.
+ * The enable/disable state may be changed while the watchdog is paused and it will be applied after
+ * the watchdog is resumed. To resume, release the request with NV2080_CTRL_CMD_RC_RELEASE_WATCHDOG_REQUESTS.
+ *
+ * Possible status return values are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_RC_PAUSE_WATCHDOG (0x20802216) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_RC_INTERFACE_ID << 8) | 0x16" */
 
 /* _ctrl2080rc_h_ */

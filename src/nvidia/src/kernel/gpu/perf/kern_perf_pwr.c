@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/perf/kern_perf.h"
+#include "ctrl/ctrl2080/ctrl2080perf.h"
 
 /* ------------------------ Global Variables ------------------------------- */
 /* ------------------------ Static Function Prototypes --------------------- */
@@ -92,6 +93,36 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
         NV_PRINTF(LEVEL_ERROR,
                 "Non-Privileged clients are not allowed to use Turbo Boost clock controls.\n");
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    //
+    // Redirect the request to OS layer because
+    // clocks control for GB10Y needs to be handled by OS.
+    //
+    if (IsGB10Y(pGpu))
+    {
+        if (pControlParams->input == NV2080_CTRL_PERF_RATED_TDP_ACTION_DEFAULT)
+        {
+            return osTegraiGpuPerfBoost(pGpu, NV_FALSE, 0, KERNEL_DEVFREQ_BOOST_TYPE_DEFAULT);
+        }
+        else if (pControlParams->input == NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_LOCK)
+        {
+            switch (pControlParams->vPstateType)
+            {
+                // lock to FMAX without power profile limitation
+                case NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST:
+                    return osTegraiGpuPerfBoost(pGpu, NV_TRUE, 0, KERNEL_DEVFREQ_BOOST_TYPE_FMAX);
+                // lock to FMAX under current power profile
+                case NV2080_CTRL_PERF_VPSTATE_RATED_TDP:
+                    return osTegraiGpuPerfBoost(pGpu, NV_TRUE, 0, KERNEL_DEVFREQ_BOOST_TYPE_RATED_TDP);
+                default:
+                    return NV_ERR_INVALID_ARGUMENT;
+            }
+        }
+        else
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
     }
 
     //

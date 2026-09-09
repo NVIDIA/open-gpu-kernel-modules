@@ -515,6 +515,7 @@ subdeviceRestoreWatchdog_IMPL
     pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pKernelRc != NULL);
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
-    krcWatchdogChangeState(pKernelRc, NULL, pSubdevice, RM_CLIENT_DESTRUCTION);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
+    krcWatchdogChangeState(pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu), pSubdevice, RM_CLIENT_DESTRUCTION);
 }
 

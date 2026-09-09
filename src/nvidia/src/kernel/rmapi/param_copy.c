@@ -82,12 +82,17 @@ NV_STATUS rmapiParamsAcquire
 
     if (!(pParamCopy->flags & RMAPI_PARAM_COPY_FLAGS_DISABLE_MAX_SIZE_CHECK))
     {
-        if (pParamCopy->paramsSize > RMAPI_PARAM_COPY_MAX_PARAMS_SIZE)
+        NvU32 maxParamsSize =
+            (pParamCopy->flags & RMAPI_PARAM_COPY_FLAGS_PRIVILEGED_SIZE_LIMIT)
+                ? RMAPI_PARAM_COPY_MAX_PARAMS_SIZE_PRIVILEGED
+                : RMAPI_PARAM_COPY_MAX_PARAMS_SIZE;
+
+        if (pParamCopy->paramsSize > maxParamsSize)
         {
             NV_PRINTF(LEVEL_WARNING,
                       "(%s): Requested size exceeds max (%ud > %ud)\n",
                       pParamCopy->msgTag, pParamCopy->paramsSize,
-                      RMAPI_PARAM_COPY_MAX_PARAMS_SIZE);
+                      maxParamsSize);
             rmStatus = NV_ERR_INVALID_ARGUMENT;
             goto done;
         }

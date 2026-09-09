@@ -27,6 +27,7 @@
 #include "uvm_api.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
+#include "uvm_hmm.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_tools.h"
 #include "uvm_va_block.h"
@@ -1126,7 +1127,8 @@ static NV_STATUS service_va_block_locked(uvm_gpu_t *gpu,
                                          uvm_va_block_t *va_block,
                                          uvm_va_block_retry_t *va_block_retry,
                                          uvm_service_block_context_t *service_context,
-                                         uvm_page_mask_t *accessed_pages)
+                                         uvm_page_mask_t *accessed_pages,
+                                         bool *did_migrate)
 {
     NV_STATUS status = NV_OK;
     uvm_page_index_t page_index;
@@ -1139,17 +1141,24 @@ static NV_STATUS service_va_block_locked(uvm_gpu_t *gpu,
 
     uvm_assert_mutex_locked(&va_block->lock);
 
-    // GPU VA space could be gone since we received the notification. We handle
-    // this case by skipping service if processor is not in the mapped mask.
-    // Using this approach we also filter out notifications for pages that
-    // moved since they were reported by the GPU. This is fine because:
+    // Filter out notifications for pages that moved since they were reported by
+    // the GPU. This is fine because:
     // - If the GPU is still accessing them, it should have faulted
     // - If the GPU gets remote mappings in the future, we will get new
     //   notifications and we will act accordingly
     // - If the GPU does not access the pages again, we do not want to migrate
     //   them
-    if (!uvm_processor_mask_test(&va_block->mapped, processor))
-        return NV_OK;
+    //
+    // Skip this check for coherent GPUs since the coherent GPU would never be
+    // in the mapped list of the va_block.
+    //
+    // gpu_va_space is obtained under va_space lock with uvm_gpu_va_space_get().
+    // gpu_va_space can't be destroyed from under us.This code is only reached
+    // iff gpu_va_space is active, valid and non-null.
+    if (!(uvm_parent_gpu_is_coherent(gpu->parent) && uvm_va_block_is_hmm(va_block)) &&
+        !uvm_processor_mask_test(&va_block->mapped, processor)) {
+            return NV_OK;
+    }
 
     if (uvm_processor_mask_test(&va_block->resident, processor))
         residency_mask = uvm_va_block_resident_mask_get(va_block, processor, NUMA_NO_NODE);
@@ -1264,8 +1273,21 @@ static NV_STATUS service_va_block_locked(uvm_gpu_t *gpu,
                                                                    &policy,
                                                                    &outer);
                     }
-                    if (status != NV_OK)
-                        break;
+                    if (status != NV_OK) {
+                        if (uvm_va_block_is_hmm(va_block)) {
+                            // HMM va_blocks may be backed by multiple VMAs with
+                            // different protections.
+                            // uvm_hmm_find_policy_vma_and_outer() can return
+                            // NV_ERR_INVALID_ADDRESS if one of the VMAs doesn't
+                            // even have VM_READ or if there's no backing VMA.
+                            status = NV_OK;
+                            first_page_index++;
+                            continue;
+                        }
+                        else {
+                            break;
+                        }
+                    }
                 }
 
                 service_context->region = uvm_va_block_region(first_page_index, outer);
@@ -1274,6 +1296,11 @@ static NV_STATUS service_va_block_locked(uvm_gpu_t *gpu,
                 status = uvm_va_block_service_locked(gpu, va_block, va_block_retry, service_context);
                 if (status != NV_OK)
                     break;
+
+                if (did_migrate &&
+                    !uvm_page_mask_empty(&service_context->block_context->make_resident.pages_changed_residency)) {
+                    *did_migrate = true;
+                }
             }
         }
     }
@@ -1294,11 +1321,14 @@ static NV_STATUS service_va_block_locked(uvm_gpu_t *gpu,
 static NV_STATUS service_notification_va_block_helper(struct mm_struct *mm,
                                                       uvm_va_block_t *va_block,
                                                       uvm_gpu_t *gpu,
-                                                      uvm_access_counter_service_batch_context_t *batch_context)
+                                                      uvm_access_counter_service_batch_context_t *batch_context,
+                                                      bool *did_migrate)
 {
     uvm_va_block_retry_t va_block_retry;
     uvm_page_mask_t *accessed_pages = &batch_context->accessed_pages;
     uvm_service_block_context_t *service_context = &batch_context->block_service_context;
+
+    *did_migrate = false;
 
     if (uvm_page_mask_empty(accessed_pages))
         return NV_OK;
@@ -1314,10 +1344,12 @@ static NV_STATUS service_notification_va_block_helper(struct mm_struct *mm,
                                                              va_block,
                                                              &va_block_retry,
                                                              service_context,
-                                                             accessed_pages));
+                                                             accessed_pages,
+                                                             did_migrate));
 }
 
 static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
+                                      struct mm_struct *mm,
                                       uvm_va_block_t *va_block,
                                       const uvm_access_counter_buffer_t *access_counters,
                                       uvm_va_block_context_t *va_block_context,
@@ -1326,10 +1358,10 @@ static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
 {
     NvU64 addr;
     NvU64 granularity = 0;
-    uvm_gpu_t *resident_gpu = NULL;
     uvm_processor_id_t resident_id;
     uvm_page_index_t page_index;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
+    const bool is_hmm = uvm_va_block_is_hmm(va_block);
 
     config_granularity_to_bytes(access_counters->current_config.rm.granularity, &granularity);
 
@@ -1347,16 +1379,28 @@ static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
 
     resident_id = uvm_va_block_page_get_closest_resident(va_block, va_block_context, page_index, gpu->id);
 
-    // resident_id might be invalid or might already be the same as the GPU
-    // which received the notification if the memory was already migrated before
-    // acquiring the locks either during the servicing of previous notifications
-    // or during faults or because of explicit migrations or if the VA range was
-    // freed after receiving the notification. Return NV_OK in such cases.
+    // For managed memory, resident_id might be invalid or might already be the
+    // same as the GPU which received the notification if the memory was already
+    // migrated before acquiring the locks either during the servicing of
+    // previous notifications or during faults or because of explicit migrations
+    // or if the VA range was freed after receiving the notification. Return
+    // NV_OK in such cases.
+    //
+    // For HMM/CDMM system memory, resident_id might be invalid if there were no
+    // associated va_blocks before the access counter notifications were
+    // triggered. This implies resident_id was CPU.
+    if (is_hmm) {
+        if (!UVM_ID_IS_VALID(resident_id)) {
+            NV_STATUS status = uvm_hmm_va_block_update_residency_info(va_block, mm, addr, false);
+            if (status != NV_OK)
+                return;
+
+            resident_id = uvm_va_block_page_get_closest_resident(va_block, va_block_context, page_index, gpu->id);
+        }
+    }
+
     if (!UVM_ID_IS_VALID(resident_id) || uvm_id_equal(resident_id, gpu->id))
         return;
-
-    if (UVM_ID_IS_GPU(resident_id))
-        resident_gpu = uvm_gpu_get(resident_id);
 
     if (uvm_va_block_get_physical_size(va_block, resident_id, page_index) != granularity) {
         uvm_page_mask_set(accessed_pages, page_index);
@@ -1390,6 +1434,7 @@ static NV_STATUS service_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space
                                                 struct mm_struct *mm,
                                                 uvm_access_counter_buffer_t *access_counters,
                                                 uvm_va_block_t *va_block,
+                                                struct vm_area_struct *vma,
                                                 NvU32 index,
                                                 NvU32 *out_index)
 {
@@ -1397,12 +1442,16 @@ static NV_STATUS service_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space
     NvU32 flags = 0;
     NV_STATUS status = NV_OK;
     NV_STATUS flags_status;
+    bool did_migrate = false;
+    bool has_accessed_pages;
+    NvU64 end;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_access_counter_service_batch_context_t *batch_context = &access_counters->batch_service_context;
     uvm_page_mask_t *accessed_pages = &batch_context->accessed_pages;
     uvm_access_counter_buffer_entry_t **notifications = batch_context->notifications;
     uvm_service_block_context_t *service_context = &batch_context->block_service_context;
+    const bool is_hmm = uvm_va_block_is_hmm(va_block);
 
     UVM_ASSERT(va_block);
     UVM_ASSERT(index < batch_context->num_notifications);
@@ -1413,6 +1462,19 @@ static NV_STATUS service_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space
 
     uvm_va_block_context_init(service_context->block_context, mm);
 
+    if (is_hmm) {
+        NvU64 base;
+        uvm_access_counter_buffer_entry_t *current_entry = notifications[index];
+        NvU64 address = current_entry->address;
+
+        uvm_hmm_migrate_begin_wait(va_block);
+
+        UVM_ASSERT(vma);
+
+        base = UVM_VA_BLOCK_ALIGN_DOWN(address);
+        end = min(base + UVM_VA_BLOCK_SIZE, (NvU64)vma->vm_end);
+    }
+
     uvm_mutex_lock(&va_block->lock);
 
     for (i = index; i < batch_context->num_notifications; i++) {
@@ -1422,7 +1484,11 @@ static NV_STATUS service_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space
         if (current_entry->va_space != va_space || current_entry->gpu != gpu || address > va_block->end)
             break;
 
+        if (is_hmm && (address >= end))
+            break;
+
         expand_notification_block(gpu_va_space,
+                                  mm,
                                   va_block,
                                   access_counters,
                                   batch_context->block_service_context.block_context,
@@ -1437,11 +1503,16 @@ static NV_STATUS service_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space
 
     batch_context->block_service_context.access_counters_buffer_index = access_counters->index;
 
-    status = service_notification_va_block_helper(mm, va_block, gpu, batch_context);
+    has_accessed_pages = !uvm_page_mask_empty(accessed_pages);
+
+    status = service_notification_va_block_helper(mm, va_block, gpu, batch_context, &did_migrate);
 
     uvm_mutex_unlock(&va_block->lock);
 
-    if (status == NV_OK)
+    if (is_hmm)
+        uvm_hmm_migrate_finish(va_block);
+
+    if (status == NV_OK && (!is_hmm || !has_accessed_pages || did_migrate))
         flags |= UVM_ACCESS_COUNTER_ACTION_BATCH_CLEAR;
 
     flags_status = notify_tools_and_process_flags(va_space,
@@ -1589,12 +1660,7 @@ static NV_STATUS service_notifications_batch(uvm_gpu_va_space_t *gpu_va_space,
         }
 
         if (va_block) {
-            status = service_notifications_in_block(gpu_va_space,
-                                                    mm,
-                                                    access_counters,
-                                                    va_block,
-                                                    index,
-                                                    out_index);
+            status = service_notifications_in_block(gpu_va_space, mm, access_counters, va_block, NULL, index, out_index);
         }
         else {
             status = notify_tools_and_process_flags(va_space,
@@ -1608,55 +1674,55 @@ static NV_STATUS service_notifications_batch(uvm_gpu_va_space_t *gpu_va_space,
             *out_index = index + 1;
         }
     }
-    else if (uvm_ats_can_service_faults(gpu_va_space, mm)) {
-        if (!gpu_va_space->gpu->parent->cdmm_enabled) {
-            status = service_notification_ats(gpu_va_space, mm, access_counters, index, out_index);
-        }
-        else {
-            status = notify_tools_and_process_flags(va_space,
-                                                    gpu_va_space->gpu,
-                                                    access_counters,
-                                                    0,
-                                                    batch_context->notifications,
-                                                    1,
-                                                    0,
-                                                    NULL);
-            *out_index = index + 1;
-        }
-    }
-    else {
-        NvU32 flags;
-        uvm_va_block_t *va_block = NULL;
-
-        status = uvm_hmm_va_block_find(va_space, address, &va_block);
-
-        // TODO: Bug 4309292: [UVM][HMM] Re-enable access counter HMM block
-        //                    migrations for virtual notifications
-        //
-        // - If the va_block is HMM, don't clear the notification since HMM
-        // migrations are currently disabled.
-        //
-        // - If the va_block isn't HMM, the notification belongs to a recently
-        // freed va_range. Clear the notification entry to continue receiving
-        // notifications when a new va_range is allocated in this region.
-        flags = va_block ? 0 : UVM_ACCESS_COUNTER_ACTION_BATCH_CLEAR;
-
-        UVM_ASSERT((status == NV_ERR_OBJECT_NOT_FOUND) ||
-                   (status == NV_ERR_INVALID_ADDRESS)  ||
-                   uvm_va_block_is_hmm(va_block));
-
-        // Clobber status to continue processing the rest of the notifications
-        // in the batch.
+    else if (!gpu_va_space->va_space->pageable.migrations_enabled) {
         status = notify_tools_and_process_flags(va_space,
                                                 gpu_va_space->gpu,
                                                 access_counters,
                                                 0,
-                                                batch_context->notifications,
+                                                &batch_context->notifications[index],
                                                 1,
-                                                flags,
+                                                0,
                                                 NULL);
 
         *out_index = index + 1;
+    }
+    else if (uvm_ats_can_service_faults(gpu_va_space, mm)) {
+        status = service_notification_ats(gpu_va_space, mm, access_counters, index, out_index);
+    }
+    else {
+        NvU32 flags;
+        uvm_va_block_t *va_block = NULL;
+        struct vm_area_struct *vma = NULL;
+
+        // HMM and CDMM pageable memory are serviced through HMM VA blocks.
+        status = uvm_hmm_va_block_find_create(va_space, address, &vma, &va_block);
+
+        if (va_block) {
+            UVM_ASSERT(uvm_va_block_is_hmm(va_block));
+
+            status = service_notifications_in_block(gpu_va_space, mm, access_counters, va_block, vma, index, out_index);
+        }
+        else {
+            // If no va_block was found, the notifications was for a recently
+            // freed memory region. Clear the notification entry to continue
+            // receiving notifications when a new region is allocated.
+            UVM_ASSERT(status == NV_ERR_INVALID_ADDRESS);
+
+            flags = UVM_ACCESS_COUNTER_ACTION_BATCH_CLEAR;
+
+            // Clobber status to continue processing the rest of the
+            // notifications in the batch.
+            status = notify_tools_and_process_flags(va_space,
+                                                    gpu_va_space->gpu,
+                                                    access_counters,
+                                                    0,
+                                                    &batch_context->notifications[index],
+                                                    1,
+                                                    flags,
+                                                    NULL);
+
+            *out_index = index + 1;
+        }
     }
 
     return status;

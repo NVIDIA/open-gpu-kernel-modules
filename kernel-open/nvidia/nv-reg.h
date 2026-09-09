@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -254,6 +254,27 @@
 #define __NV_REGISTRY_DWORDS_PER_DEVICE RegistryDwordsPerDevice
 #define NV_REG_REGISTRY_DWORDS_PER_DEVICE NV_REG_STRING(__NV_REGISTRY_DWORDS_PER_DEVICE)
 
+/*
+ * Option: RegistryBinaryFilePerDevice
+ *
+ * Description:
+ *
+ * This option allows specifying binary registry files per GPU device. It
+ * accepts semicolon separated key=value pairs and uses "pci=DDDD:BB:DD.F;"
+ * scoping identical to RegistryDwordsPerDevice.
+ *
+ * For each scoped key, the value is interpreted as a file path relative to
+ * /lib/firmware/nvidia/ and consumed during probe-time initialization.
+ *
+ * Format:
+ *
+ *  NVreg_RegistryBinaryFilePerDevice="pci=DDDD:BB:DD.F;<key=relative/path>;..; \
+ *                 pci=DDDD:BB:DD.F;<key=relative/path>;..;"
+ */
+
+#define __NV_REGISTRY_BINARY_FILE_PER_DEVICE RegistryBinaryFilePerDevice
+#define NV_REG_REGISTRY_BINARY_FILE_PER_DEVICE NV_REG_STRING(__NV_REGISTRY_BINARY_FILE_PER_DEVICE)
+
 #define __NV_RM_MSG RmMsg
 #define NV_RM_MSG NV_REG_STRING(__NV_RM_MSG)
 
@@ -414,8 +435,8 @@
  *
  * Possible Values:
  *
- *  0: disable user-mode NUMA management
- *  1: enable user-mode NUMA management (default)
+ *  0: disable user-mode NUMA management (default)
+ *  1: enable user-mode NUMA management
  */
 #define __NV_ENABLE_USER_NUMA_MANAGEMENT EnableUserNUMAManagement
 #define NV_REG_ENABLE_USER_NUMA_MANAGEMENT NV_REG_STRING(__NV_ENABLE_USER_NUMA_MANAGEMENT)
@@ -433,9 +454,9 @@
  *
  * Possible string values:
  *
- *  "driver" : disable onlining coherent memory to the OS as a NUMA node. The driver
- *             will manage it in this case
- *  "numa" (or unset) : enable onlining coherent memory to the OS as a NUMA node (default)
+ *  "driver" (or unset) : disable onlining coherent memory to the OS as a NUMA node. The driver
+ *             will manage it in this case (default)
+ *  "numa"   : enable onlining coherent memory to the OS as a NUMA node
  */
 #define __NV_COHERENT_GPU_MEMORY_MODE CoherentGPUMemoryMode
 #define NV_REG_COHERENT_GPU_MEMORY_MODE NV_REG_STRING(__NV_COHERENT_GPU_MEMORY_MODE)
@@ -583,8 +604,8 @@
  *
  * Possible Values:
  *
- *  0: Suspend notifiers are not used (default)
- *  1: Suspend notifiers are used when available
+ *  0: Suspend notifiers are not used
+ *  1: Suspend notifiers are used when available (default)
  */
 
 #define __NV_USE_KERNEL_SUSPEND_NOTIFIERS UseKernelSuspendNotifiers
@@ -1005,15 +1026,19 @@
  *
  * Description:
  *
- * This option allows the user to control initialization of the GPU at PCI probe time
+ * This option allows the user to control initialization of the GPU at PCI probe time.
  *
  * Possible values:
- * 0 - Disable initializing the GPUs on PCI probe
- * 1 - Initialize GPUs on PCI probe
+ *  0 - Force disable GPU initialization on PCI probe
+ *  1 - Force enable GPU initialization on PCI probe
+ *  2 - Automatically enable/disable GPU initialization on PCI probe
  */
- #define __NV_GPU_INIT_ON_PROBE GpuInitOnProbe
- #define NV_GPU_INIT_ON_PROBE NV_REG_STRING(__NV_GPU_INIT_ON_PROBE)
- #define NV_GPU_INIT_ON_PROBE_DEFAULT 0
+#define __NV_GPU_INIT_ON_PROBE GpuInitOnProbe
+#define NV_GPU_INIT_ON_PROBE NV_REG_STRING(__NV_GPU_INIT_ON_PROBE)
+#define NV_GPU_INIT_ON_PROBE_FORCE_OFF 0
+#define NV_GPU_INIT_ON_PROBE_FORCE_ON  1
+#define NV_GPU_INIT_ON_PROBE_AUTO      2
+#define NV_GPU_INIT_ON_PROBE_DEFAULT NV_GPU_INIT_ON_PROBE_AUTO
 
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
@@ -1042,7 +1067,7 @@ NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE, NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS, NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG);
 NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, 1);
 
-NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_USER_NUMA_MANAGEMENT, 1);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_USER_NUMA_MANAGEMENT, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_MEMORY_POOL_SIZE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_KMALLOC_HEAP_MAX_SIZE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_VMALLOC_HEAP_MAX_SIZE, 0);
@@ -1053,7 +1078,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PCI_DRIVER, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PLATFORM_DEVICE_DRIVER, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_RESIZABLE_BAR, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_DBG_BREAKPOINT, 0);
-NV_DEFINE_REG_ENTRY_GLOBAL(__NV_TEGRA_GPU_PG_MASK, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_TEGRA_GPU_PG_MASK, ~0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_NONBLOCKING_OPEN, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_EXCLUDE_ALL_GPUS, NV_EXCLUDE_ALL_GPUS_DEFAULT);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_GPU_INIT_ON_PROBE, NV_GPU_INIT_ON_PROBE_DEFAULT);
@@ -1061,6 +1086,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_GPU_INIT_ON_PROBE, NV_GPU_INIT_ON_PROBE_DEFAULT)
 NV_DEFINE_REG_STRING_ENTRY(__NV_COHERENT_GPU_MEMORY_MODE, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS_PER_DEVICE, NULL);
+NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_BINARY_FILE_PER_DEVICE, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_RM_MSG, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_GPU_BLACKLIST, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_TEMPORARY_FILE_PATH, NULL);
@@ -1072,7 +1098,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IMEX_CHANNEL_COUNT, 2048);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_CREATE_IMEX_CHANNEL_0, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_SYSTEM_MEMORY_POOLS, NV_ENABLE_SYSTEM_MEMORY_POOLS_DEFAULT);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_OS_ENABLE_CXL_SUPPORT, 1);
-NV_DEFINE_REG_ENTRY_GLOBAL(__NV_USE_KERNEL_SUSPEND_NOTIFIERS, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_USE_KERNEL_SUSPEND_NOTIFIERS, 1);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_NON_PREEMTABLE_DEBUGGER_SESSION, 0);
 /*
  *----------------registry database definition----------------------
@@ -1125,6 +1151,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_SYSTEM_MEMORY_POOLS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_OS_ENABLE_CXL_SUPPORT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_NON_PREEMTABLE_DEBUGGER_SESSION),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_GPU_INIT_ON_PROBE),
     {NULL, NULL}
 };
 

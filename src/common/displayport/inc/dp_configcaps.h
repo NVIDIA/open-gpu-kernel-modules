@@ -409,6 +409,7 @@ namespace DisplayPort
 
         virtual void setDPCDOffline(bool enable) = 0;
         virtual void updateDPCDOffline() = 0;
+        virtual void updateDPCDOfflineRetryOnNack() = 0;
         virtual bool auxAccessAvailable() = 0;
 
         virtual void setSupportsESI(bool bIsESISupported) = 0;
@@ -572,6 +573,9 @@ namespace DisplayPort
         virtual bool     clearDpTunnelingEstimatedBwStatus() = 0;
         virtual bool     clearDpTunnelingBwAllocationCapStatus() = 0;
         virtual void     setIgnoreDiaLttprInterlaneAlignStatus() = 0;
+        virtual void     setIgnoreDiaNonLttprCrDoneStatus() = 0;
+        virtual void     setOverrideExtendedWakeCapsForDpTunneling() = 0;
+        virtual void     setChunkedLttprCapsReadForDpTunneling() = 0;
 
         virtual AuxRetry::status notifySDPErrDetectionCapability() = 0;
         virtual bool isDp2xChannelCodingCapable() = 0;
@@ -583,6 +587,8 @@ namespace DisplayPort
         virtual void setUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) = 0;
         virtual void setCableVconnSourceUnknown() = 0;
         virtual bool isCableIdHandshakeCompleted() = 0;
+
+        virtual AuxRetry::status readLegacyIrqBlock() = 0;
         virtual ~DPCDHAL() {}
     };
 
@@ -712,6 +718,9 @@ namespace DisplayPort
         bool bEnableDpTunnelBwAllocationSupport;
         bool bIsDpTunnelBwAllocationEnabled;                        // This is set to true after we succeed in enabling BW allocation
         bool bIsIgnoreDiaLttprInterlaneAlignStatus;
+        bool bIsIgnoreDiaNonLttprCrDoneStatus;
+        bool bOverrideExtendedWakeCapsForDpTunneling;
+        bool bChunkedLttprCapsReadForDpTunneling;
 
         struct
         {
@@ -798,7 +807,11 @@ namespace DisplayPort
         : bus(bus), timer(timer), bGrantsPostLtRequest(false), uprequestEnable(false),
           upstreamIsSource(false), bMultistream(false), bGpuFECSupported(false),
           bBypassILREdpRevCheck(false), overrideDpcdMaxLinkRate(0),
-          overrideDpcdRev(0), gpuDPSupportedVersions(0)
+          overrideDpcdRev(0), gpuDPSupportedVersions(0),
+          bIsIgnoreDiaLttprInterlaneAlignStatus(false),
+          bIsIgnoreDiaNonLttprCrDoneStatus(false),
+          bOverrideExtendedWakeCapsForDpTunneling(false),
+          bChunkedLttprCapsReadForDpTunneling(false)
         {
             // start with default caps.
             dpcdOffline = true;
@@ -840,6 +853,7 @@ namespace DisplayPort
         }
 
         void updateDPCDOffline();
+        void updateDPCDOfflineRetryOnNack();
         bool auxAccessAvailable();
 
         void setPC2Disabled(bool disabled)
@@ -1526,6 +1540,21 @@ namespace DisplayPort
             bIsIgnoreDiaLttprInterlaneAlignStatus = true;
         }
 
+        virtual void setIgnoreDiaNonLttprCrDoneStatus()
+        {
+            bIsIgnoreDiaNonLttprCrDoneStatus = true;
+        }
+
+        virtual void setOverrideExtendedWakeCapsForDpTunneling()
+        {
+            bOverrideExtendedWakeCapsForDpTunneling = true;
+        }
+
+        virtual void setChunkedLttprCapsReadForDpTunneling()
+        {
+            bChunkedLttprCapsReadForDpTunneling = true;
+        }
+
         bool getDpTunnelEstimatedBw(NvU8 &estimatedBw);
         bool hasDpTunnelEstimatedBwChanged();
         bool hasDpTunnelBwAllocationCapabilityChanged();
@@ -1547,6 +1576,9 @@ namespace DisplayPort
         virtual void setConnectorTypeC(bool bTypeC) { return; }
         virtual void setUSBCCableIDInfo(NV0073_CTRL_DP_USBC_CABLEID_INFO *cableIDInfo) {}
         virtual bool isCableIdHandshakeCompleted() { return false; }
+
+        virtual AuxRetry::status readLegacyIrqBlock();
+
     };
 
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,13 +30,14 @@ NvBool nvEvo1NvtToHdmiInfoFramePacketType(const NvU32 srcType, NvU8 *pDstType);
 
 void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                              const NvU32 head,
-                             const NvEvoInfoFrameTransmitControl transmitCtrl,
+                             const NvEvoInfoFrameTransmitControl *transmitCtrl,
                              const NVT_INFOFRAME_HEADER *pInfoFrameHeader,
                              const NvU32 infoframeSize,
                              NvBool needChecksum);
 
 void nvEvo1DisableHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head,
+                                const NvEvoInfoFrameTransmitControl *transmitCtrl,
                                 const NvU8 nvtInfoFrameType);
 
 void nvEvo1DisableAdaptiveSyncSdp(const NVDispEvoRec *pDispEvo,
@@ -45,7 +46,7 @@ void nvEvo1DisableAdaptiveSyncSdp(const NVDispEvoRec *pDispEvo,
 
 void nvEvo1SendDpInfoFrameSdp(const NVDispEvoRec *pDispEvo,
                               const NvU32 head,
-                              const NvEvoInfoFrameTransmitControl transmitCtrl,
+                              const NvEvoInfoFrameTransmitControl *transmitCtrl,
                               const DPSDP_DESCRIPTOR *sdp);
 
 static inline NvU16 nvEvo1GetColorSpaceFlag(NVDevEvoPtr pDevEvo,

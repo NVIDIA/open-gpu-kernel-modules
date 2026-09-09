@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -902,6 +902,9 @@ NV_STATUS uvm_va_block_map_mask(uvm_va_block_t *va_block,
                                 uvm_prot_t new_prot,
                                 UvmEventMapRemoteCause cause);
 
+// Map all CPU chunks in the block for EGM access.
+NV_STATUS uvm_va_block_map_egm(uvm_va_block_t *va_block, uvm_parent_gpu_t *gpu);
+
 // Map pages not already mapped on the destination processor after a migration.
 //
 // LOCKING: The VA block lock must be held. If va_block_context->mm !=
@@ -953,6 +956,9 @@ NV_STATUS uvm_va_block_unmap(uvm_va_block_t *va_block,
                              uvm_va_block_region_t region,
                              const uvm_page_mask_t *unmap_page_mask,
                              uvm_tracker_t *out_tracker);
+
+// Unmap any EGM mappings for CPU chunks.
+void uvm_va_block_unmap_egm(uvm_va_block_t *block, uvm_parent_gpu_t *gpu);
 
 // Like uvm_va_block_unmap, except it unmaps all processors in the input mask.
 // The VA block tracker contains all map operations on return.
@@ -1253,8 +1259,7 @@ NV_STATUS uvm_va_block_split_locked(uvm_va_block_t *existing_va_block,
 // service_context->block_context.mm is ignored and vma->vm_mm is used instead.
 //
 // Returns NV_ERR_INVALID_ACCESS_TYPE if a CPU mapping to fault_addr cannot be
-// accessed, for example because it's within a range group which is non-
-// migratable.
+// accessed.
 NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
                                  NvU64 fault_addr,
                                  bool is_write,

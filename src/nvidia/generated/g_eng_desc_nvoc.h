@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1003,6 +1003,22 @@ typedef struct Spdm Spdm;
 #endif /* __nvoc_class_id_Spdm */
 
 
+struct Keystore;
+
+#ifndef __nvoc_class_id_Keystore
+#define __nvoc_class_id_Keystore 0x474273u
+typedef struct Keystore Keystore;
+#endif /* __nvoc_class_id_Keystore */
+
+
+struct KernelOob;
+
+#ifndef __nvoc_class_id_KernelOob
+#define __nvoc_class_id_KernelOob 0x710fb4u
+typedef struct KernelOob KernelOob;
+#endif /* __nvoc_class_id_KernelOob */
+
+
 #define ENG_CLASS_INVALID              classId(OBJINVALID)
 #define ENG_CLASS_SW                   classId(OBJSWENG)
 #define ENG_CLASS_GPU                  classId(OBJGPU)
@@ -1113,7 +1129,7 @@ typedef struct Spdm Spdm;
 #define ENG_CLASS_KERNEL_IOCTRL        classId(KernelIoctrl)
 #define ENG_CLASS_OFA                  classId(OBJOFA)
 #define ENG_CLASS_KERNEL_HFRP          classId(KernelHFRP)
-
+#define ENG_CLASS_KERNEL_OOB           classId(KernelOob)
 
 //
 // Engine tags to be used by both RM/HAL to reference specific engines.
@@ -1294,6 +1310,8 @@ typedef struct Spdm Spdm;
 #define GET_OFA_IDX(engDesc)        ENGDESC_FIELD(engDesc, _INST)
 
 #define ENG_KERNEL_HFRP          MKENGDESC(ENG_CLASS_KERNEL_HFRP,           0)
+
+#define ENG_KERNEL_OOB           MKENGDESC(ENG_CLASS_KERNEL_OOB,      0)
 
 #endif // _ENG_DESC_H_
 

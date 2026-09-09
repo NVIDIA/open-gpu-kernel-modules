@@ -58,6 +58,7 @@ typedef struct uvm_va_policy_struct uvm_va_policy_t;
 typedef struct uvm_va_range_struct uvm_va_range_t;
 typedef struct uvm_va_range_managed_struct uvm_va_range_managed_t;
 typedef struct uvm_va_range_external_struct uvm_va_range_external_t;
+typedef struct uvm_va_range_dma_buf_struct uvm_va_range_dma_buf_t;
 typedef struct uvm_va_range_channel_struct uvm_va_range_channel_t;
 typedef struct uvm_va_range_sked_reflected_struct uvm_va_range_sked_reflected_t;
 typedef struct uvm_va_range_semaphore_pool_struct uvm_va_range_semaphore_pool_t;

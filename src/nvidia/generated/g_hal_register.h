@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_register.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 //
 
 #ifndef _G_RMCFG_HAL_REGISTER_H_
@@ -136,6 +136,7 @@ static NV_STATUS NV_INLINE REGISTER_GH10X_HALS(void)
 NV_STATUS registerHalModule_GB100(void);    
 NV_STATUS registerHalModule_GB102(void);    
 NV_STATUS registerHalModule_GB10B(void);    
+NV_STATUS registerHalModule_GB10C(void);    
 NV_STATUS registerHalModule_GB110(void);    
 NV_STATUS registerHalModule_GB112(void);    
 
@@ -152,6 +153,10 @@ static NV_STATUS NV_INLINE REGISTER_GB10X_HALS(void)
         return rmStatus;
 
     rmStatus = registerHalModule_GB10B();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB10C();
     if (rmStatus != NV_OK)
         return rmStatus;
 

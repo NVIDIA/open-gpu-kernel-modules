@@ -256,6 +256,60 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp[] = {
     },
 };
 
+// 'KernelNvlink' field defaults
+
+// 'KernelNvlink' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink[] = {
+    {
+        11,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("uncontained_error_abort_timeout_ns")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        12,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("traffic_quiesce_abort_timeout_ns")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        13,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG,
+        0,
+        PRB_MAYBE_FIELD_NAME("resiliency_timing_log")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        14,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("resiliency_timing_log_drops")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // 'RmData' field defaults
 
 // 'RmData' field descriptors
@@ -394,6 +448,132 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp_rpcinfo[] = {
     },
 };
 
+// 'ResiliencyTimingLog' field defaults
+
+// 'ResiliencyTimingLog' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("timestamp_ns")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("elapsed_ns")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("timeout_ns")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("seq_id")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("flow")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        6,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("event")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        7,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("status")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        8,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("quiesce_state")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        9,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("uvm_idle")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        10,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("flags")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // Message descriptors
 const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
     {
@@ -417,6 +597,11 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp")
     },
     {
+        4,
+        prb_fields_nvdebug_eng_kernelnvlink,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KernelNvlink")
+    },
+    {
         2,
         prb_fields_nvdebug_eng_mc_rmdata,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Mc.RmData")
@@ -430,6 +615,11 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         6,
         prb_fields_nvdebug_eng_kgsp_rpcinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp.RpcInfo")
+    },
+    {
+        10,
+        prb_fields_nvdebug_eng_kernelnvlink_resiliencytiminglog,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KernelNvlink.ResiliencyTimingLog")
     },
 };
 

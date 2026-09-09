@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,8 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "os/os.h"
 
+#include "published/blackwell/gb202/dev_fuse_zb.h"
+
 #define getUpperPCIBits(Id) ((Id >> 16) & 0xFFFF)
 #define PCI_TABLE_ENTRY(id, subId) ((getUpperPCIBits(pciId) == id) && (getUpperPCIBits(subDeviceId) == subId))
 
@@ -44,7 +46,20 @@ static NvBool _is48VmEnabled(NvU64 pciId, NvU64 subDeviceId)
 
 NvU64 kgspVgpuFwHeapSize_GB202(OBJGPU *pGpu, KernelGsp *pKernelGsp)
 {
-    // This check only allows a subset of GPUs to support 48VMs. This comes from 
+    if (pKernelGsp->bVgpuGspSingleVmMode)
+    {
+        if (pKernelGsp->singleVmHeapAdjustmentMB != 0)
+        {
+            NvS64 heapSize = (NvS64)GSP_FW_HEAP_SIZE_VGPU_1VM +
+                             ((NvS64)pKernelGsp->singleVmHeapAdjustmentMB << 20);
+            heapSize = NV_MAX(heapSize, (NvS64)GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MIN_MB << 20);
+            heapSize = NV_MIN(heapSize, (NvS64)GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MAX_MB << 20);
+            return (NvU64)heapSize;
+        }
+        return GSP_FW_HEAP_SIZE_VGPU_1VM;
+    }
+
+    // This check only allows a subset of GPUs to support 48VMs. This comes from
     // VGPU requirements.
     if (_is48VmEnabled(pGpu->idInfo.PCIDeviceID, pGpu->idInfo.PCISubDeviceID))
         return GSP_FW_HEAP_SIZE_VGPU_48VMS;
@@ -61,3 +76,34 @@ NvU64 kgspVgpuNumVgpuPartitions_GB202(OBJGPU *pGpu, KernelGsp *pKernelGsp)
 
     return MAX_PARTITIONS_WITH_GFID_32VM;
 }
+
+/*!
+ * Returns the GSP fuse version of the provided ucode id (1-indexed)
+ *
+ * @param      pGpu         OBJGPU pointer
+ * @param      pKernelGsp   KernelGsp pointer
+ * @param[in]  ucodeId      Ucode Id (1-indexed) to read fuse for
+ */
+ NvU32
+ kgspReadUcodeFuseVersion_GB202
+ (
+     OBJGPU *pGpu,
+     KernelGsp *pKernelGsp,
+     const NvU32 ucodeId
+ )
+ {
+     NvU32 fuseVal = 0;
+     NvU32 index = ucodeId - 1;  // adjust to 0-indexed
+ 
+     if (index < DRF_SIZE(NV_FUSE_ZB_OPT_FPF_GSP_UCODE1_VERSION_DATA))
+     {
+         fuseVal = GPU_REG_RD32(pGpu, gpuGetPrimaryFuseBaseAddr_HAL(pGpu) + NV_FUSE_ZB_OPT_FPF_GSP_UCODE1_VERSION + (4 * index));
+         if (fuseVal)
+         {
+             HIGHESTBITIDX_32(fuseVal);
+             fuseVal = fuseVal + 1;
+         }
+     }
+ 
+     return fuseVal;
+ }

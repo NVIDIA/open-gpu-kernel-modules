@@ -22,7 +22,9 @@
 *******************************************************************************/
 
 #include "uvm_common.h"
+#include "uvm_forward_decl.h"
 #include "uvm_linux.h"
+#include "uvm_lock.h"
 #include "uvm_types.h"
 #include "uvm_api.h"
 #include "uvm_processors.h"
@@ -34,13 +36,22 @@
 #include "uvm_va_block.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_map_external.h"
+#include "uvm_va_range_dmabuf.h"
 #include "uvm_perf_thrashing.h"
 #include "nv_uvm_interface.h"
 
 #include <linux/sched.h>
 
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+#include <linux/dma-buf.h>
+#include <linux/dma-resv.h>
+#endif
+
 static struct kmem_cache *g_uvm_va_range_managed_cache __read_mostly;
 static struct kmem_cache *g_uvm_va_range_external_cache __read_mostly;
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+static struct kmem_cache *g_uvm_va_range_dma_buf_cache __read_mostly;
+#endif
 static struct kmem_cache *g_uvm_va_range_channel_cache __read_mostly;
 static struct kmem_cache *g_uvm_va_range_sked_reflected_cache __read_mostly;
 static struct kmem_cache *g_uvm_va_range_semaphore_pool_cache __read_mostly;
@@ -57,6 +68,12 @@ NV_STATUS uvm_va_range_init(void)
     g_uvm_va_range_external_cache = NV_KMEM_CACHE_CREATE("uvm_va_range_external_t", uvm_va_range_external_t);
     if (!g_uvm_va_range_external_cache)
         return NV_ERR_NO_MEMORY;
+
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+    g_uvm_va_range_dma_buf_cache = NV_KMEM_CACHE_CREATE("uvm_va_range_dma_buf_t", uvm_va_range_dma_buf_t);
+    if (!g_uvm_va_range_dma_buf_cache)
+        return NV_ERR_NO_MEMORY;
+#endif
 
     g_uvm_va_range_channel_cache = NV_KMEM_CACHE_CREATE("uvm_va_range_channel_t", uvm_va_range_channel_t);
     if (!g_uvm_va_range_channel_cache)
@@ -88,6 +105,9 @@ void uvm_va_range_exit(void)
     uvm_va_block_exit();
     kmem_cache_destroy_safe(&g_uvm_va_range_managed_cache);
     kmem_cache_destroy_safe(&g_uvm_va_range_external_cache);
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+    kmem_cache_destroy_safe(&g_uvm_va_range_dma_buf_cache);
+#endif
     kmem_cache_destroy_safe(&g_uvm_va_range_channel_cache);
     kmem_cache_destroy_safe(&g_uvm_va_range_sked_reflected_cache);
     kmem_cache_destroy_safe(&g_uvm_va_range_semaphore_pool_cache);
@@ -298,6 +318,74 @@ error:
 
     return status;
 }
+
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+NV_STATUS uvm_va_range_create_dma_buf(uvm_va_space_t *va_space,
+                                      struct mm_struct *mm,
+                                      struct dma_buf *dmabuf,
+                                      NvU64 start,
+                                      NvU64 length,
+                                      uvm_va_range_dma_buf_t **out_dmabuf_range)
+{
+    NV_STATUS status;
+    uvm_va_range_dma_buf_t *dmabuf_range = NULL;
+    NvU32 i;
+
+    // Assigns to zero mapped_gpus, revoked_gpus bitmasks.
+    dmabuf_range = nv_kmem_cache_zalloc(g_uvm_va_range_dma_buf_cache, NV_UVM_GFP_FLAGS);
+    if (!dmabuf_range)
+        return NV_ERR_NO_MEMORY;
+
+    get_dma_buf(dmabuf);
+    dmabuf_range->dmabuf = dmabuf;
+
+    status = uvm_va_range_initialize_reclaim(&dmabuf_range->va_range,
+                                             mm,
+                                             UVM_VA_RANGE_TYPE_DMA_BUF,
+                                             va_space,
+                                             start,
+                                             start + length - 1);
+    if (status != NV_OK) {
+        kmem_cache_free(g_uvm_va_range_dma_buf_cache, dmabuf_range);
+        return status;
+    }
+
+    dmabuf_range->retained_mask = uvm_processor_mask_cache_alloc();
+    if (!dmabuf_range->retained_mask) {
+        status = NV_ERR_NO_MEMORY;
+        goto error;
+    }
+
+    for (i = 0; i < ARRAY_SIZE(dmabuf_range->gpu_ranges); i++) {
+        uvm_mutex_init(&dmabuf_range->gpu_ranges[i].base.lock, UVM_LOCK_ORDER_DMA_BUF_RANGE_TREE);
+        uvm_range_tree_init(&dmabuf_range->gpu_ranges[i].base.tree);
+    }
+
+    status = uvm_range_tree_add(&va_space->va_range_tree, &dmabuf_range->va_range.node);
+    if (status != NV_OK)
+        goto error;
+
+    if (out_dmabuf_range)
+        *out_dmabuf_range = dmabuf_range;
+
+    return NV_OK;
+
+error:
+    uvm_va_range_destroy(&dmabuf_range->va_range, NULL);
+
+    return status;
+}
+#else
+NV_STATUS uvm_va_range_create_dma_buf(uvm_va_space_t *va_space,
+                                      struct mm_struct *mm,
+                                      struct dma_buf *dmabuf,
+                                      NvU64 start,
+                                      NvU64 length,
+                                      uvm_va_range_dma_buf_t **out_dmabuf_range)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+#endif // UVM_PROVIDES_DMA_BUF_IMPORTER()
 
 NV_STATUS uvm_va_range_create_channel(uvm_va_space_t *va_space,
                                       struct mm_struct *mm,
@@ -530,6 +618,26 @@ out:
     kmem_cache_free(g_uvm_va_range_external_cache, external_range);
 }
 
+#if UVM_PROVIDES_DMA_BUF_IMPORTER()
+static void uvm_va_range_destroy_dma_buf(uvm_va_range_dma_buf_t *dmabuf_range,
+                                         struct list_head *deferred_free_list)
+{
+    uvm_gpu_t *gpu;
+
+    uvm_processor_mask_cache_free(dmabuf_range->retained_mask);
+
+    for_each_va_space_gpu(gpu, dmabuf_range->va_range.va_space)
+        uvm_dma_buf_gpu_range_tree_deinit(dmabuf_range, gpu, deferred_free_list);
+    UVM_ASSERT(uvm_processor_mask_empty(&dmabuf_range->mapped_gpus));
+
+    dma_buf_put(dmabuf_range->dmabuf);
+    kmem_cache_free(g_uvm_va_range_dma_buf_cache, dmabuf_range);
+}
+#else
+static void uvm_va_range_destroy_dma_buf(uvm_va_range_dma_buf_t *dmabuf_range,
+                                         struct list_head *deferred_free_list) {}
+#endif // UVM_PROVIDES_DMA_BUF_IMPORTER()
+
 static void uvm_va_range_destroy_channel(uvm_va_range_channel_t *channel_range)
 {
     uvm_gpu_va_space_t *gpu_va_space = channel_range->gpu_va_space;
@@ -604,6 +712,13 @@ void uvm_va_range_destroy(uvm_va_range_t *va_range, struct list_head *deferred_f
         case UVM_VA_RANGE_TYPE_EXTERNAL:
             uvm_va_range_destroy_external(uvm_va_range_to_external(va_range), deferred_free_list);
             return;
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+#if !UVM_PROVIDES_DMA_BUF_IMPORTER()
+            UVM_ASSERT_MSG(0, "[0x%llx, 0x%llx] unexpected DMA_BUF range\n",
+                           va_range->node.start, va_range->node.end);
+#endif
+            uvm_va_range_destroy_dma_buf(uvm_va_range_to_dma_buf(va_range), deferred_free_list);
+            return;
         case UVM_VA_RANGE_TYPE_CHANNEL:
             uvm_va_range_destroy_channel(uvm_va_range_to_channel(va_range));
             return;
@@ -662,6 +777,30 @@ static uvm_processor_mask_t *uvm_free_external(uvm_va_range_external_t *external
     return retained_mask;
 }
 
+static uvm_processor_mask_t *uvm_free_dma_buf(uvm_va_range_dma_buf_t *dmabuf_range)
+{
+    uvm_processor_mask_t *retained_mask = dmabuf_range->retained_mask;
+    uvm_va_space_t *va_space = dmabuf_range->va_range.va_space;
+    uvm_gpu_t *gpu;
+
+    // Set the retained_mask to NULL to prevent uvm_va_range_destroy_dma_buf()
+    // from freeing the mask, should no attachments require deferred free.
+    dmabuf_range->retained_mask = NULL;
+
+    UVM_ASSERT(retained_mask);
+    uvm_processor_mask_zero(retained_mask);
+
+    // DMA-BUF ranges defer free the destruction of attachments, so GPUs must be
+    // retained. Construct the mask of all the GPUs that need to be retained.
+    uvm_assert_rwsem_locked(&va_space->lock);
+    for_each_va_space_gpu(gpu, va_space) {
+        if (uvm_dma_buf_gpu_range_tree(dmabuf_range, gpu)->attach)
+            uvm_processor_mask_set(retained_mask, gpu->id);
+    }
+
+    return retained_mask;
+}
+
 // This destroys VA ranges created by ioctl. VA ranges created by mmap, such as
 // through UvmMemMap, go through munmap.
 static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base)
@@ -683,6 +822,10 @@ static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base)
     switch (va_range->type) {
         case UVM_VA_RANGE_TYPE_EXTERNAL:
             retained_mask = uvm_free_external(uvm_va_range_to_external(va_range));
+            break;
+
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+            retained_mask = uvm_free_dma_buf(uvm_va_range_to_dma_buf(va_range));
             break;
 
         case UVM_VA_RANGE_TYPE_SEMAPHORE_POOL:
@@ -1339,6 +1482,13 @@ static void va_range_remove_gpu_va_space_external(uvm_va_range_external_t *exter
     uvm_mutex_unlock(&range_tree->lock);
 }
 
+static void va_range_remove_gpu_va_space_dma_buf(uvm_va_range_dma_buf_t *dmabuf_range,
+                                                 uvm_gpu_t *gpu,
+                                                 struct list_head *deferred_free_list)
+{
+    uvm_dma_buf_gpu_range_tree_deinit(dmabuf_range, gpu, deferred_free_list);
+}
+
 static void va_range_remove_gpu_va_space_semaphore_pool(uvm_va_range_semaphore_pool_t *semaphore_pool_range,
                                                         uvm_gpu_t *gpu)
 {
@@ -1362,6 +1512,15 @@ void uvm_va_range_remove_gpu_va_space(uvm_va_range_t *va_range,
             va_range_remove_gpu_va_space_external(uvm_va_range_to_external(va_range),
                                                   gpu_va_space->gpu,
                                                   deferred_free_list);
+            break;
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+#if !UVM_PROVIDES_DMA_BUF_IMPORTER()
+            UVM_ASSERT_MSG(0, "[0x%llx, 0x%llx] unexpected DMA_BUF range\n",
+                           va_range->node.start, va_range->node.end);
+#endif
+            va_range_remove_gpu_va_space_dma_buf(uvm_va_range_to_dma_buf(va_range),
+                                                 gpu_va_space->gpu,
+                                                 deferred_free_list);
             break;
         case UVM_VA_RANGE_TYPE_CHANNEL:
             // All channels under this GPU VA space should've been removed before
@@ -1431,6 +1590,9 @@ NV_STATUS uvm_va_range_enable_peer(uvm_va_range_t *va_range, uvm_gpu_t *gpu0, uv
         case UVM_VA_RANGE_TYPE_EXTERNAL:
             // UVM_VA_RANGE_TYPE_EXTERNAL doesn't create new mappings when enabling peer access
             return NV_OK;
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+            // UVM_VA_RANGE_TYPE_DMA_BUF should never have peer mappings
+            return NV_OK;
         case UVM_VA_RANGE_TYPE_CHANNEL:
             // UVM_VA_RANGE_TYPE_CHANNEL should never have peer mappings
             return NV_OK;
@@ -1492,6 +1654,9 @@ void uvm_va_range_disable_peer(uvm_va_range_t *va_range,
             uvm_va_range_disable_peer_external(uvm_va_range_to_external(va_range), gpu0, gpu1, deferred_free_list);
             // If GPU 1 has a mapping to GPU 0, remove GPU 1's mapping
             uvm_va_range_disable_peer_external(uvm_va_range_to_external(va_range), gpu1, gpu0, deferred_free_list);
+            break;
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+            // UVM_VA_RANGE_TYPE_DMA_BUF should never have peer mappings
             break;
         case UVM_VA_RANGE_TYPE_CHANNEL:
             // UVM_VA_RANGE_TYPE_CHANNEL should never have peer mappings
@@ -1607,6 +1772,18 @@ void uvm_va_range_unregister_gpu(uvm_va_range_t *va_range,
             break;
         case UVM_VA_RANGE_TYPE_EXTERNAL:
             va_range_unregister_gpu_external(uvm_va_range_to_external(va_range), gpu, deferred_free_list);
+            break;
+        case UVM_VA_RANGE_TYPE_DMA_BUF:
+#if !UVM_PROVIDES_DMA_BUF_IMPORTER()
+            UVM_ASSERT_MSG(0, "[0x%llx, 0x%llx] unexpected DMA_BUF range\n",
+                           va_range->node.start, va_range->node.end);
+#endif
+            // All ranges for this GPU should have been unmapped by GPU VA space
+            // unregister (va_range_remove_gpu_va_space_dma_buf), which should
+            // have already happened.
+            UVM_ASSERT(!uvm_processor_mask_test(&uvm_va_range_to_dma_buf(va_range)->mapped_gpus, gpu->id));
+            UVM_ASSERT(uvm_range_tree_empty(
+                    &uvm_dma_buf_gpu_range_tree(uvm_va_range_to_dma_buf(va_range), gpu)->base.tree));
             break;
         case UVM_VA_RANGE_TYPE_CHANNEL:
             // All ranges should have been destroyed by GPU VA space unregister,
@@ -2316,6 +2493,7 @@ NV_STATUS uvm_test_va_range_info(UVM_TEST_VA_RANGE_INFO_PARAMS *params, struct f
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_INVALID        != (int)UVM_VA_RANGE_TYPE_INVALID);
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_MANAGED        != (int)UVM_VA_RANGE_TYPE_MANAGED);
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_EXTERNAL       != (int)UVM_VA_RANGE_TYPE_EXTERNAL);
+    BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_DMA_BUF        != (int)UVM_VA_RANGE_TYPE_DMA_BUF);
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_CHANNEL        != (int)UVM_VA_RANGE_TYPE_CHANNEL);
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_SKED_REFLECTED != (int)UVM_VA_RANGE_TYPE_SKED_REFLECTED);
     BUILD_BUG_ON((int)UVM_TEST_VA_RANGE_TYPE_SEMAPHORE_POOL != (int)UVM_VA_RANGE_TYPE_SEMAPHORE_POOL);

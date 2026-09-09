@@ -79,8 +79,8 @@ enum {
     X(RM, RMFS_TEST,                                              69) // deprecated
     X(RM, UPDATE_BAR_PDE,                                         70)
     X(RM, CONTINUATION_RECORD,                                    71)
-    X(RM, GSP_SET_SYSTEM_INFO,                                    72)
-    X(RM, SET_REGISTRY,                                           73)
+    X(RM, GSP_SET_SYSTEM_INFO,                                    72) // deprecated
+    X(RM, SET_REGISTRY,                                           73) // deprecated
     X(GSP, GSP_INIT_POST_OBJGPU,                                  74) // deprecated
     X(RM, SUBDEV_EVENT_SET_NOTIFICATION,                          75) // deprecated
     X(GSP, GSP_RM_CONTROL,                                        76)
@@ -237,7 +237,9 @@ enum {
     X(RM, CTRL_CMD_INTERNAL_GPU_CHECK_CTS_ID_VALID,               227)
     X(RM, INIT_GSP_TRACE_CRASH_BUFFER,                            228)
     X(RM, CTRL_GPU_SET_MIGRATION_BLOCK,                           229)
-    X(RM, NUM_FUNCTIONS,                                          230)
+    X(RM, CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT,                        230)
+    X(RM, CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE,                231)
+    X(RM, NUM_FUNCTIONS,                                          232)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X
@@ -292,7 +294,11 @@ enum {
     E(GSP_LOAD_EXEC_HS_BINARY,                                0x1027)
     E(UPDATE_GRID_DISPLAYLESS_PARAMS,                         0x1028)
     E(PMU_HALTED,                                             0x1029)
-    E(NUM_EVENTS,                                             0x102a)
+    E(ECC_POSSIBLE_ERR_FAST_PATH,                             0x102a)
+    E(NVLINK_TRAFFIC_QUIESCE_NOTIFY,                          0x102b)
+    E(GPU_GFM_STATE_CHANGE,                                   0x102c)
+    E(NVLINK_ABM_FABRIC_HEALTH_MASK_UPDATE,                   0x102d)
+    E(NUM_EVENTS,                                             0x102e)
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef E

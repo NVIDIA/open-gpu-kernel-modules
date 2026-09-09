@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,7 @@
 #define INCLUDED_DP_OBJECT_H
 
 #include "nvtypes.h"
-#include "stddef.h"
+#include "nv_stddef.h"
 #include "dp_hostimp.h"
 
 static inline void dpMemCopy(void * target, const void * source, size_t len)

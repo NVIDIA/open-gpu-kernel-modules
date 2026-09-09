@@ -94,7 +94,7 @@ cisubscriptionConstruct_IMPL
         if ((status != NV_ERR_NOT_SUPPORTED) && (status != NV_OK))
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Capability validation failed: ID 0x%0x!\n",
+                      "Capability validation failed: ID 0x%08x!\n",
                       pUserParams->execPartitionId);
             return status;
         }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,12 +22,12 @@
  */
 
 
-#include "gpu/gpu.h"
-#include "gpu/ce/kernel_ce.h"
-#include "gpu/ce/kernel_ce_private.h"
-#include "gpu/bif/kernel_bif.h"
+#include "kernel/gpu/gpu.h"
+#include "kernel/gpu/ce/kernel_ce.h"
+#include "kernel/gpu/ce/kernel_ce_private.h"
+#include "kernel/gpu/bif/kernel_bif.h"
 #include "published/blackwell/gb100/dev_ce_base.h"
-#include "gpu/nvlink/kernel_nvlink.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 // Defines for PCE-LCE mapping algorithm
 #define NV_CE_LCE_MASK_INIT                   0xFFFFFFFF
@@ -83,6 +83,22 @@ kceGetGrceConfigSize1_GB100
 }
 
 /*!
+ * @brief Return KCE PublicId stride for each device info group
+ *
+ * @param[in] pKCe   KernelCE pointer
+ *
+ * @return  KCE group id stride value
+ */
+NvU32
+kceGetGroupIdStride_GB100
+(
+    KernelCE *pKCe
+)
+{
+    return NV_KCE_GROUP_ID_STRIDE;
+}
+
+/*!
  * @brief Set the shim instance based on the public ID.
  */
 void
@@ -92,7 +108,7 @@ kceSetShimInstance_GB100
     KernelCE *pKCe
 )
 {
-    pKCe->shimInstance = pKCe->publicID / NV_KCE_GROUP_ID_STRIDE;
+    pKCe->shimInstance = pKCe->publicID / kceGetGroupIdStride_HAL(pKCe);
 }
 
 /**
@@ -318,7 +334,7 @@ kceGetMappingsForMIGGpuInstance_GB100
             {
                 pcesLocalAvailable = pcesLocalAvailable & ~NVBIT32(pceIdx);
                 pcesForEvenLces    = pcesForEvenLces & ~NVBIT32(pceIdx);
-                pLocalPceLceMap[pceIdx] = lceIdx % NV_KCE_GROUP_ID_STRIDE;
+                pLocalPceLceMap[pceIdx] = lceIdx % kceGetGroupIdStride_HAL(pKCe);
                 NV_PRINTF(LEVEL_INFO, "GPU%d Mapping PCE %d to LCE %d\n",
                           gpuGetInstance(pGpu), pceIdx, lceIdx);
             }
@@ -359,7 +375,7 @@ kceGetMappingsForMIGGpuInstance_GB100
             {
                 pcesLocalAvailable = pcesLocalAvailable & ~NVBIT32(pceIdx);
                 pcesForOddLces     = pcesForOddLces & ~NVBIT32(pceIdx);
-                pLocalPceLceMap[pceIdx] = lceIdx % NV_KCE_GROUP_ID_STRIDE; //shim consideration
+                pLocalPceLceMap[pceIdx] = lceIdx % kceGetGroupIdStride_HAL(pKCe); //shim consideration
                 numPcesMapped++;
 
                 NV_PRINTF(LEVEL_INFO, "GPU%d Mapping PCE %d to LCE %d\n",
@@ -506,7 +522,7 @@ kceMapPceLceForWorkSubmitLces_GB100
                     //
                     // Convert absolute LCE index to shim local index
                     //
-                    pKCeIter->pPceLceMap[pceIndex] = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                    pKCeIter->pPceLceMap[pceIndex] = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                     *pExposedLceMask              |= NVBIT(lceIndex);
                     lceMask                       &= ~(NVBIT32(lceIndex));
 
@@ -621,7 +637,7 @@ kceMapPceLceForDecomp_GB100
                     //
                     // Convert absolute LCE index to shim local index
                     //
-                    pKCeIter->pPceLceMap[pceIndex]                  = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                    pKCeIter->pPceLceMap[pceIndex]                  = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                     *pExposedLceMask                               |= NVBIT(lceIndex);
                     pAvailablePceMaskForConnectingHub[hshubIndex]  &= (~NVBIT(pceIndex));
                     numDecompPcesAssigned++;
@@ -749,7 +765,7 @@ kceMapPceLceForNvlinkPeers_GB100
     OBJGPU         *pRemoteGpu;
     NvU32           lceIndex;
     NvU32           linkId;
-    NvU32           gpuMask;    
+    NvU32           gpuMask;
     NvU32           maxLceCount;
     NvU32           numPcesPerLce;
     NvU32           numLces;
@@ -799,8 +815,18 @@ kceMapPceLceForNvlinkPeers_GB100
         (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
     }
 
-   while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-   {
+    while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (knvlinkGetNumLinksToPeer(pGpu, pKernelNvlink, pRemoteGpu) != 0)
+        {
+            pKCe->nvlinkNumPeers++;
+        }
+    }
+
+    gpuInstance = 0;
+
+    while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
         NvU32 numLinksToPeer = knvlinkGetNumLinksToPeer(pGpu, pKernelNvlink, pRemoteGpu);
 
         if (numLinksToPeer == 0)
@@ -834,8 +860,6 @@ kceMapPceLceForNvlinkPeers_GB100
                         maxLceCount);
             return NV_OK;
         }
-
-        pKCe->nvlinkNumPeers++;
 
         pPeerLinkMask = knvlinkGetLinkMaskToPeer(pGpu, pKernelNvlink, pRemoteGpu);
         if (pPeerLinkMask == NULL)
@@ -885,18 +909,16 @@ kceMapPceLceForNvlinkPeers_GB100
                 peerAvailableLceMask &= ~(NVBIT32(lceIndex));
                 *pExposedLceMask     |= NVBIT32(lceIndex);
                 bPeerAssigned         = NV_TRUE;
-    
-                NvU32 numPceAssigned = 0;
-    
+
                 FOR_EACH_INDEX_IN_MASK(32, pceIndex, pceMask)
                 {
                     //
                     // Convert absolute LCE index to shim local index
                     //
-                    pKCe->pPceLceMap[pceIndex] = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                    pKCe->pPceLceMap[pceIndex] = lceIndex % kceGetGroupIdStride_HAL(pKCe);
                     KernelCE *pKCeLce          = GPU_GET_KCE(pGpu, lceIndex);
-                    numPceAssigned++;
-                    if(pKCeLce != NULL)
+
+                    if (pKCeLce != NULL)
                     {
                        pKCeLce->ceCapsMask     |= NVBIT32(CE_CAPS_NVLINK_P2P);
                        pKCeLce->nvlinkPeerMask |= NVBIT32(pRemoteGpu->gpuInstance);
@@ -947,7 +969,7 @@ kceMapPceLceForNvlinkPeers_GB100
 
                 numPcesAssigned = 0;
 
-                while (numPcesAssigned < numPcesPerLce)
+                while (numPcesAssigned < (numPcesPerLce / pKCe->nvlinkNumPeers))
                 {
                     bAtleastOnePceAssigned = NV_FALSE;
 
@@ -958,19 +980,19 @@ kceMapPceLceForNvlinkPeers_GB100
                             continue;
                         }
 
-                        if (numPcesAssigned >= numPcesPerLce)
+                        if (numPcesAssigned >= (numPcesPerLce / pKCe->nvlinkNumPeers))
                         {
                             break;
                         }
 
                         FOR_EACH_INDEX_IN_MASK(32, pceIndex, pAvailablePceMaskForConnectingHub[connectingHubIndex] & supportedPceMask)
                         {
-                            if (numPcesAssigned >= numPcesPerLce)
+                            if (numPcesAssigned >= (numPcesPerLce / pKCe->nvlinkNumPeers))
                             {
                                 break;
                             }
 
-                            pKCeIter->pPceLceMap[pceIndex]                         = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                            pKCeIter->pPceLceMap[pceIndex]                         = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                             pAvailablePceMaskForConnectingHub[connectingHubIndex] &= ~(NVBIT32(pceIndex));
                             *pExposedLceMask                                      |= NVBIT(lceIndex);
                             ++numPcesAssigned;
@@ -1279,7 +1301,7 @@ kceMapPceLceForPCIe_GB100
                         //
                         // Convert absolute LCE index to shim local index
                         //
-                        pKCeIter->pPceLceMap[pceIndex]  = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                        pKCeIter->pPceLceMap[pceIndex]  = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                         *pExposedLceMask               |= NVBIT32(lceIndex);
                         lceMask                        &= ~(NVBIT32(lceIndex));
                         bPceAssignedInCurrentIteration  = NV_TRUE;
@@ -1481,7 +1503,7 @@ kceMapPceLceForC2C_GB100
                     pAvailablePceMaskForConnectingHub[hshubIndex] &= ~(NVBIT32(pceIndex));
 
                     // Convert absolute LCE index to shim local index
-                    pKCeIter->pPceLceMap[pceIndex]  = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                    pKCeIter->pPceLceMap[pceIndex]  = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                     lceMask                        &= ~NVBIT32(lceIndex);
                     *pExposedLceMask               |= NVBIT32(lceIndex);
                     bAssignedAtleastOneLce          = NV_TRUE;
@@ -1648,7 +1670,7 @@ kceMapPceLceForScrub_GB100
                     //
                     // Convert absolute LCE index to shim local index
                     //
-                    pKCeIter->pPceLceMap[pceIndex]           = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                    pKCeIter->pPceLceMap[pceIndex]           = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
 
                     *pExposedLceMask                        |= NVBIT32(lceIndex);
 
@@ -1756,7 +1778,7 @@ kceMapAsyncLceDefault_GB100
                 //
                 // Convert absolute LCE index to shim local index
                 //
-                pKCeIter->pPceLceMap[pceIndex]                  = lceIndex % NV_KCE_GROUP_ID_STRIDE;
+                pKCeIter->pPceLceMap[pceIndex]                  = lceIndex % kceGetGroupIdStride_HAL(pKCeIter);
                 *pExposedLceMask                               |= NVBIT32(lceIndex);
                 pAvailablePceMaskForConnectingHub[hshubIndex]  &= (~NVBIT32(pceIndex));
 
@@ -1831,7 +1853,7 @@ kceGetMappings_GB100
     // Do not change the mappings if the KernelCE objects are unloaded.
     if (pKCeShimOwner->pPceLceMap == NULL)
     {
-        return NV_OK;
+        return NV_WARN_NOTHING_TO_DO;
     }
 
     if (pKCeShimOwner->shimInstance != 0 && pKCeShimOwner->bMapComplete)
@@ -2060,8 +2082,10 @@ kceGetLceMaskForShimInstance_GB100
     NvU32 shimMask;
     NvU32 shimInstance = pKCe->shimInstance;
 
-    shimMask = NVBIT32(NV_KCE_GROUP_ID_STRIDE * (shimInstance + 1)) -
-               NVBIT32(NV_KCE_GROUP_ID_STRIDE * shimInstance);
+    NvU32 kceGroupIdStride = kceGetGroupIdStride_HAL(pKCe);
+
+    shimMask = NVBIT32(kceGroupIdStride * (shimInstance + 1)) -
+               NVBIT32(kceGroupIdStride * shimInstance);
 
     return kceGetLceMask(pGpu) & shimMask;
 }

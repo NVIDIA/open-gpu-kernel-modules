@@ -49,6 +49,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJVASPACE =
 {
     .classInfo.size =               sizeof(OBJVASPACE),
     .classInfo.classId =            classId(OBJVASPACE),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "OBJVASPACE",
@@ -88,6 +89,8 @@ static const struct NVOC_METADATA__OBJVASPACE __nvoc_metadata__OBJVASPACE = {
     .vtable.__vaspaceIsAtsEnabled__ = &vaspaceIsAtsEnabled_2fa1ff,    // inline virtual body
     .vtable.__vaspaceGetPasid__ = &vaspaceGetPasid_14ee5e,    // inline virtual body
     .vtable.__vaspaceGetPageDirBase__ = &vaspaceGetPageDirBase_9451a7,    // inline virtual body
+    .vtable.__vaspaceGetGmmuFmt__ = &vaspaceGetGmmuFmt_9451a7,    // inline virtual body
+    .vtable.__vaspaceGetMmuWalker__ = &vaspaceGetMmuWalker_14ee5e,    // inline virtual body
     .vtable.__vaspacePinRootPageDir__ = &vaspacePinRootPageDir_14ee5e,    // inline virtual body
     .vtable.__vaspaceUnpinRootPageDir__ = &vaspaceUnpinRootPageDir_af5be7,    // inline virtual body
     .vtable.__vaspaceInvalidateTlb__ = &vaspaceInvalidateTlb_IMPL,    // virtual
@@ -155,7 +158,7 @@ static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
 } // End __nvoc_init_funcTable_OBJVASPACE_1
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_OBJVASPACE(OBJVASPACE *pThis) {
     __nvoc_init_funcTable_OBJVASPACE_1(pThis);
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@ NVConnectorEvoPtr nvGetConnectorFromDisp(NVDispEvoPtr pDispEvo, NVDpyId dpyId);
 
 void nvDpyAssignSDRInfoFramePayload(NVT_HDR_INFOFRAME_PAYLOAD *pPayload);
 void nvCancelSDRTransitionTimer(NVDpyEvoRec *pDpyEvo);
-void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo);
+void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo, NvBool flipSynchronized);
 
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                                 const NVHwModeTimingsEvo *pTimings);

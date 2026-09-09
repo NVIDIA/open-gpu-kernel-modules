@@ -23,6 +23,7 @@
 
 
 #include "core/locks.h"
+#include "core/system.h"
 #include "rmapi/client.h"
 #include "rmapi/lock_test.h"
 #include "rmapi/rs_utils.h"

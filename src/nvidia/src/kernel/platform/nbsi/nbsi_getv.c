@@ -32,6 +32,8 @@
 #include "nvlimits.h"
 #include "gpu/gpu.h"
 
+ct_assert(sizeof(NBSI_UID) == 16);
+
 //----------------------------------------------------------------------------
 //  NV_STATUS rtnNbsiElement(n, moduleID, thisPathHash, thisElementHash,
 //                          pNbsiElement, * pRetBuf, * pRetSize, * pErrorCode)

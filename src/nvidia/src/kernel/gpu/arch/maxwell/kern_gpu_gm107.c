@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,11 @@
 #include "published/maxwell/gm107/dev_pri_ringstation_sys.h"
 
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS
+
+#define GM107_PCI_CLASS_CODE_PROGRAMMING_INTERFACE_SHIFT 0
+#define GM107_PCI_CLASS_CODE_SUB_CLASS_SHIFT             8
+#define GM107_PCI_CLASS_CODE_BASE_CLASS_SHIFT            16
+#define GM107_PCI_CLASS_CODE_FIELD_MASK                  0xff
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -378,14 +383,47 @@ gpuHandleSanityCheckRegReadError_GM107
         FLD_TEST_DRF(_PBUS, _INTR_0, _PRI_FECSERR, _PENDING, intr) ||
         FLD_TEST_DRF(_PBUS, _INTR_0, _PRI_TIMEOUT, _PENDING, intr))
     {
-#if NV_PRINTF_STRINGS_ALLOWED
-        const char *errorString = "Unknown SYS_PRI_ERROR_CODE";
+        //
+        // Rate-limit identical prints: allow first 2 per 1-second window,
+        // suppress the rest, and emit a summary when the message changes
+        // or the window expires (Bug 6265510).
+        //
+        NvU32 nowSec, nowUsec;
+        NvBool bSame = (addr == pGpu->priReadErrLastAddr) &&
+                       (value == pGpu->priReadErrLastValue);
 
-        gpuGetSanityCheckRegReadError_HAL(pGpu, value,
-                                          &errorString);
-        NV_PRINTF(LEVEL_ERROR,
-                  "Possible bad register read: addr: 0x%x,  regvalue: 0x%x,  error code: %s\n",
-                  addr, value, errorString);
+        osGetSystemTime(&nowSec, &nowUsec);
+
+        if (!bSame || (nowSec - pGpu->priReadErrTimeSec) >= 1)
+        {
+            if (pGpu->priReadErrCount > 2)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "Possible bad register read: addr: 0x%x,  regvalue: 0x%x  suppressed %u times\n",
+                          pGpu->priReadErrLastAddr,
+                          pGpu->priReadErrLastValue,
+                          pGpu->priReadErrCount - 2);
+            }
+
+            pGpu->priReadErrTimeSec  = nowSec;
+            pGpu->priReadErrLastAddr  = addr;
+            pGpu->priReadErrLastValue = value;
+            pGpu->priReadErrCount     = 0;
+        }
+
+        if (++pGpu->priReadErrCount > 2)
+            return;
+
+#if NV_PRINTF_STRINGS_ALLOWED
+        {
+            const char *errorString = "Unknown SYS_PRI_ERROR_CODE";
+
+            gpuGetSanityCheckRegReadError_HAL(pGpu, value,
+                                              &errorString);
+            NV_PRINTF(LEVEL_ERROR,
+                      "Possible bad register read: addr: 0x%x,  regvalue: 0x%x,  error code: %s\n",
+                      addr, value, errorString);
+        }
 #else // NV_PRINTF_STRINGS_ALLOWED
         NV_PRINTF(LEVEL_ERROR,
                   "Possible bad register read: addr: 0x%x,  regvalue: 0x%x\n",
@@ -399,12 +437,24 @@ void
 gpuGetIdInfo_GM107(OBJGPU *pGpu)
 {
     NvU32 data;
+    NvU32 classCode;
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, NV_XVE_REV_ID, &data))
     {
         NV_PRINTF(LEVEL_ERROR, "unable to read NV_XVE_REV_ID\n");
         return;
     }
+
+    classCode = GPU_DRF_VAL(_XVE, _REV_ID, _CLASS_CODE, data);
+    pGpu->idInfo.PCIProgrammingInterface =
+        (classCode >> GM107_PCI_CLASS_CODE_PROGRAMMING_INTERFACE_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
+    pGpu->idInfo.PCISubClass =
+        (classCode >> GM107_PCI_CLASS_CODE_SUB_CLASS_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
+    pGpu->idInfo.PCIBaseClass =
+        (classCode >> GM107_PCI_CLASS_CODE_BASE_CLASS_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
 
     // we only need the FIB and MASK values
     pGpu->idInfo.PCIRevisionID = (data & ~GPU_DRF_SHIFTMASK(NV_XVE_REV_ID_CLASS_CODE));
@@ -493,6 +543,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJACR),             GCO_LIST_LOAD | GCO_LIST_UNLOAD | GCO_LIST_DESTROY},
     {classId(Pmu),                GCO_LIST_LOAD | GCO_LIST_UNLOAD | GCO_LIST_DESTROY},
     {classId(KernelPmu),          GCO_LIST_LOAD | GCO_LIST_UNLOAD | GCO_LIST_DESTROY},
+    {classId(KernelOob),          GCO_ALL},
     {classId(Gsp),                GCO_ALL},
     {classId(OBJFSP),             GCO_ALL},
     {classId(KernelFsp),          GCO_ALL},

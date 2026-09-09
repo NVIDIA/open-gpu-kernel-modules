@@ -41,7 +41,14 @@
 #define NV_SPDM_SECRET_TEARDOWN_ACK              (0x59D35EAC)
 
 // TDISP Defines for polling-based communication between Kernel-RM and GSP.
-#define NV_TDISP_PARTITION_BOOT_SUCCESS          (0x59D4B001)
+#define NV_TDISP_TSM_READY_TO_START             (0xA7010102U)
+#define NV_TDISP_DSM_READY_TO_START             (0xA7010103U)
+#define NV_TDISP_TSM_RUN_STATE_SUCCESS          (0xA7010104U)
+#define NV_TDISP_DSM_RUN_STATE_SUCCESS          (0xA7010105U)
+#define NV_TDISP_TSM_VALIDATION_COMPLETED       (0xA7010106U)
+#define NV_TDISP_DSM_VALIDATION_ACK             (0xA7010107U)
+#define NV_TDISP_DSM_RUN_STATE_FAILURE          (0xA7010108U)
+#define NV_TDISP_DSM_INIT_FAILURE               (0xA7010109U)
 
 //
 // The SPDM communication between Kernel-RM and GSP utilizes a buffer in sysmem accessible

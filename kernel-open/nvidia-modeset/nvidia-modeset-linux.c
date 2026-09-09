@@ -65,65 +65,111 @@
 #include "nv-retpoline.h"
 #endif
 
+/*
+ * Commit 0911b8c52c4d ("x86/bugs: Rename CONFIG_RETHUNK => 
+ * CONFIG_MITIGATION_RETHUNK)" in v6.9 renamed CONFIG_RETHUNK.
+ */
+#if !defined(CONFIG_RETHUNK) && !defined(CONFIG_MITIGATION_RETHUNK)
+#include "nv-rethunk.h"
+#endif
+
 #include <linux/backlight.h>
+#if IS_ENABLED(CONFIG_EXTCON_DISP_CABLE_STATE)
+#include <linux/extcon/extcon-disp.h>
+#endif
 
 #define NVKMS_LOG_PREFIX "nvidia-modeset: "
 
 static bool output_rounding_fix = true;
-module_param_named(output_rounding_fix, output_rounding_fix, bool, 0400);
+module_param_named(output_rounding_fix, output_rounding_fix, bool, 0444);
 
 static bool disable_hdmi_frl = false;
-module_param_named(disable_hdmi_frl, disable_hdmi_frl, bool, 0400);
+module_param_named(disable_hdmi_frl, disable_hdmi_frl, bool, 0444);
 
 static bool disable_vrr_memclk_switch = false;
-module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0400);
+module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0444);
 
 static bool hdmi_deepcolor = true;
-module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0400);
+module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0444);
+
+static unsigned int max_output_color_depth = 10;
+module_param_named(max_output_color_depth, max_output_color_depth, uint, 0444);
 
 static bool opportunistic_display_sync = true;
-module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0400);
+module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0444);
 
 static enum NvKmsDebugForceColorSpace debug_force_color_space = NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE;
-module_param_named(debug_force_color_space, debug_force_color_space, uint, 0400);
+module_param_named(debug_force_color_space, debug_force_color_space, uint, 0444);
 
 static bool enable_overlay_layers = true;
-module_param_named(enable_overlay_layers, enable_overlay_layers, bool, 0400);
+module_param_named(enable_overlay_layers, enable_overlay_layers, bool, 0444);
 
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
 static int fail_malloc_num = -1;
-module_param_named(fail_malloc, fail_malloc_num, int, 0400);
+module_param_named(fail_malloc, fail_malloc_num, int, 0444);
 
 MODULE_PARM_DESC(malloc_verbose, "Report information about malloc calls on module unload");
 static bool malloc_verbose = false;
-module_param_named(malloc_verbose, malloc_verbose, bool, 0400);
+module_param_named(malloc_verbose, malloc_verbose, bool, 0444);
 
 MODULE_PARM_DESC(force_frl_rate,
                  "Override the default FRL rate selection (2 = max FRL rate w/ DSC, 1 = max FRL rate, 0 = default rate)");
 static int force_frl_rate = 0;
-module_param_named(force_frl_rate, force_frl_rate, int, 0400);
+module_param_named(force_frl_rate, force_frl_rate, int, 0444);
 
 MODULE_PARM_DESC(conceal_vrr_caps,
                  "Conceal all display VRR capabilities");
 static bool conceal_vrr_caps = false;
-module_param_named(conceal_vrr_caps, conceal_vrr_caps, bool, 0400);
+module_param_named(conceal_vrr_caps, conceal_vrr_caps, bool, 0444);
 
 MODULE_PARM_DESC(enhanced_pcon_support,
                  "Enable enhanced display protocol converter features (e.g. VRR over active DP-HDMI converters)");
 static bool enhanced_pcon_support = false;
-module_param_named(enhanced_pcon_support, enhanced_pcon_support, bool, 0400);
+module_param_named(enhanced_pcon_support, enhanced_pcon_support, bool, 0444);
 
 /* Fail allocating the RM core channel for NVKMS using the i-th method (see
  * FailAllocCoreChannelMethod). Failures not using the i-th method are ignored. */
 MODULE_PARM_DESC(fail_alloc_core_channel, "Control testing for hardware core channel allocation failure");
 static int fail_alloc_core_channel_method = -1;
-module_param_named(fail_alloc_core_channel, fail_alloc_core_channel_method, int, 0400);
+module_param_named(fail_alloc_core_channel, fail_alloc_core_channel_method, int, 0444);
 
 MODULE_PARM_DESC(debug, "Enable debug logging");
 static int debug = 0;
-module_param_named(debug, debug, int, 0600);
+module_param_named(debug, debug, int, 0644);
+
+#if IS_ENABLED(CONFIG_EXTCON_DISP_CABLE_STATE)
+/*
+ * Extcon reporting for HDMI video and audio state.
+ *
+ * The extcon-disp-state driver (CONFIG_EXTCON_DISP_CABLE_STATE) is an Android-specific
+ * kernel driver that exposes HDMI hotplug and audio state to userspace via the
+ * extcon subsystem. This is required for AOSP's WiredAccessoryManager (audio routing)
+ * and WindowManager (display management) to receive HDMI state notifications.
+ *
+ * These APIs handle device management and duplicate-state checking internally.
+ */
+void nvkms_extcon_report_hdmi(NvBool state)
+{
+    disp_state_extcon_hdmi_report(state);
+}
+
+void nvkms_extcon_report_hdmi_audio(NvBool state)
+{
+    disp_state_extcon_hdmi_audio_report(state);
+}
+#else
+/* Unsupported STUB for nvkms_extcon APIs */
+void nvkms_extcon_report_hdmi(NvBool state)
+{
+}
+
+void nvkms_extcon_report_hdmi_audio(NvBool state)
+{
+}
+#endif
+
 
 #if NVKMS_CONFIG_FILE_SUPPORTED
 /* This parameter is used to find the dpy override conf file */
@@ -132,7 +178,7 @@ module_param_named(debug, debug, int, 0600);
 MODULE_PARM_DESC(config_file,
                  "Path to the nvidia-modeset configuration file (default: disabled)");
 static char *nvkms_conf = NULL;
-module_param_named(config_file, nvkms_conf, charp, 0400);
+module_param_named(config_file, nvkms_conf, charp, 0444);
 #endif
 
 static atomic_t nvkms_alloc_called_count;
@@ -202,6 +248,22 @@ NvBool nvkms_disable_vrr_memclk_switch(void)
 NvBool nvkms_hdmi_deepcolor(void)
 {
     return hdmi_deepcolor;
+}
+
+NvU32 nvkms_max_output_color_bpc(void)
+{
+    switch (max_output_color_depth) {
+        case 6:
+            return 6;
+        case 8:
+            return 8;
+        case 12:
+            return 12;
+        case 10:
+        case 0:
+        default:
+            return 10;
+    }
 }
 
 NvBool nvkms_opportunistic_display_sync(void)
@@ -473,20 +535,6 @@ NvBool nvkms_syncpt_op(
 
 #define NVKMS_MAJOR_DEVICE_NUMBER 195
 #define NVKMS_MINOR_DEVICE_NUMBER 254
-
-/*
- * Convert from microseconds to jiffies.  The conversion is:
- * ((usec) * HZ / 1000000)
- *
- * Use do_div() to avoid gcc-generated references to __udivdi3().
- * Note that the do_div() macro divides the first argument in place.
- */
-static inline unsigned long NVKMS_USECS_TO_JIFFIES(NvU64 usec)
-{
-    unsigned long result = usec * HZ;
-    do_div(result, 1000000);
-    return result;
-}
 
 
 /*************************************************************************
@@ -1116,7 +1164,7 @@ nvkms_init_timer(struct nvkms_timer_t *timer, nvkms_timer_proc_t *proc,
         timer_setup(&timer->kernel_timer, nvkms_timer_callback_typed_data, 0);
 
         timer->kernel_timer_created = NV_TRUE;
-        mod_timer(&timer->kernel_timer, jiffies + NVKMS_USECS_TO_JIFFIES(usec));
+        mod_timer(&timer->kernel_timer, jiffies + usecs_to_jiffies(usec));
     }
     spin_unlock_irqrestore(&nvkms_timers.lock, flags);
 }
@@ -2043,9 +2091,7 @@ static struct file_operations nvkms_fops = {
     .owner       = THIS_MODULE,
     .poll        = nvkms_poll,
     .unlocked_ioctl = nvkms_unlocked_ioctl,
-#if NVCPU_IS_X86_64 || NVCPU_IS_AARCH64
     .compat_ioctl = nvkms_unlocked_ioctl,
-#endif
     .mmap        = nvkms_mmap,
     .open        = nvkms_open,
     .release     = nvkms_close,

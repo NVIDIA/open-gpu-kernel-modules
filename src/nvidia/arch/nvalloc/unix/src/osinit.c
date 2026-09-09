@@ -348,6 +348,8 @@ osHandleGpuLost
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
     NvU32 pmc_boot_0;
 
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+
     // Determine if we've already run the handler
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
     {
@@ -357,6 +359,14 @@ osHandleGpuLost
     pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
     if (pmc_boot_0 != nvp->pmc_boot_0)
     {
+        if (pKernelBif != NULL)
+        {
+            //
+            // Bug 5197385: If BARs are not accessible but config space is still readable,
+            // check whether this was a reset failure
+            //
+            kbifCheckResetStatus_HAL(pGpu, pKernelBif);
+        }
         //
         // This doesn't support PEX Reset and Recovery yet.
         // This will help to prevent accessing registers of a GPU
@@ -1140,6 +1150,13 @@ RmSetConsolePreservationParams(OBJGPU *pGpu)
     if ((fbConsoleSize == 0) && nv->primary_vga)
     {
         fbConsoleSize = 0x40000;
+
+        pMemoryManager->bIsConsoleVga = NV_TRUE;
+        //
+        // Legacy console is at FB offset 0, so no need to reserve 0 FB address separately.
+        // Legacy conosle is not preserved across power management cycles, so no collision with CBC.
+        //
+        pMemoryManager->bReserveZeroFbAddressAsRegion = NV_FALSE;
     }
 
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
@@ -1595,8 +1612,12 @@ NvBool RmInitPrivateState(
     nv_set_dma_address_size(pNv, dmaAddrWidth);
 
     pNv->is_tegra_pci_igpu = !NV_IS_SOC_DISPLAY_DEVICE(pNv) && pGpuArch->bGpuArchIsZeroFb;
+
     //  Only certain Tegra PCI iGPUs support Rail-Gating
     pNv->supports_tegra_igpu_rg = pNv->is_tegra_pci_igpu && pGpuArch->bGpuarchSupportsIgpuRg;
+
+    // This offset is only used by the Tegra PCI iGPUs which register devfreq devices
+    pNv->gpc_fuse_status_offset = gpuarchGetGpcFuseStatusOffset(pGpuArch);
 
     pNv->sysmem_mapped_console = pGpuArch->bGpuArchIsZeroFb;
 
@@ -1903,18 +1924,8 @@ static NV_STATUS RmFetchGspRmImages
 
     NvBool bFirmwareLoadSuccessful = *gspFwHandle != NULL;
 
-    //
-    // GR-3428 development: Temporarily gated by regkey so this code can be
-    // decoupled from the build infra changes to package up ucodes.bin.
-    //
-    // Because loading the bindata ends up calling request_firmware() on Linux,
-    // and that function will always print an error to dmesg if the requested
-    // file is not found, we use this to skip trying to load it.
-    //
-    // Check will be removed once ucodes.bin becomes part of the driver package.
-    //
-    NvU32 data = 0;
-    if ((osReadRegistryDword(NULL, "GR3428ReadUcodesBin", &data) == NV_OK) && data)
+    // GB10Y does not have ucodes_xxx.bin firmware image
+    if (chipFamily != NV_FIRMWARE_CHIP_FAMILY_GB10Y)
     {
         *gspUcodesHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_UCODES,
                                            chipFamily,
@@ -2243,11 +2254,11 @@ NvBool RmInitAdapter(
 
     KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     // initialize the watchdog (disabled by default)
-    status.rmStatus = pKernelRc != NULL ? krcWatchdogInit_HAL(pGpu, pKernelRc, NULL) :
+    status.rmStatus = GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL ? krcWatchdogInit_HAL(pGpu, pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu)) :
                                           NV_ERR_NOT_SUPPORTED;
     if (status.rmStatus == NV_OK)
     {
-        krcWatchdogDisable(pKernelRc, NULL);
+        krcWatchdogDisable(pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu));
         nvp->flags |= NV_INIT_FLAG_FIFO_WATCHDOG;
     }
     else if (status.rmStatus == NV_ERR_NOT_SUPPORTED)
@@ -2392,6 +2403,14 @@ void RmShutdownAdapter(
         NvU32 deviceInstance = gpuGetDeviceInstance(pGpu);
         OBJSYS         *pSys = SYS_GET_INSTANCE();
 
+        //
+        // Shutdown path requires expanded GPU visibility in GPUMGR in order
+        // to access the GPU undergoing shutdown which may not be fully
+        // initialized, and to continue accessing the GPU undergoing shutdown
+        // after state destroy. RmUnixFreeRmApi will also require it.
+        //
+        NV_ASSERT_OK(gpumgrThreadEnableExpandedGpuVisibility());
+
         RmUnixFreeRmApi(nv);
 
         nv->ud.cpu_address = 0;
@@ -2406,14 +2425,6 @@ void RmShutdownAdapter(
             // LOCK: acquire GPUs lock
             if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
             {
-                //
-                // Shutdown path requires expanded GPU visibility in GPUMGR in order
-                // to access the GPU undergoing shutdown which may not be fully
-                // initialized, and to continue accessing the GPU undergoing shutdown
-                // after state destroy.
-                //
-                NV_ASSERT_OK(gpumgrThreadEnableExpandedGpuVisibility());
-
                 RmDestroyPowerManagement(nv);
 
                 freeNbsiTable(pGpu);
@@ -2432,11 +2443,15 @@ void RmShutdownAdapter(
                     }
                 }
 
-            if (nvp->flags & NV_INIT_FLAG_FIFO_WATCHDOG)
-            {
-                krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), NULL);
-                nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
-            }
+                if (nvp->flags & NV_INIT_FLAG_FIFO_WATCHDOG)
+                {
+                    NV_ASSERT(GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
+                    if (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL)
+                    {
+                        krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), GPU_GET_KERNEL_WATCHDOG(pGpu));
+                        nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
+                    }
+                }
 
                 rmapiSetDelPendingClientResourcesFromGpuMask(NVBIT(gpuInstance));
                 rmapiDelPendingDevices(NVBIT(gpuInstance));
@@ -2478,12 +2493,6 @@ void RmShutdownAdapter(
                 gpumgrDetachGpu(gpuInstance);
                 gpumgrDestroyDevice(deviceInstance);
 
-                //
-                // Expanded GPU visibility in GPUMGR is no longer needed once the
-                // GPU is removed from GPUMGR.
-                //
-                gpumgrThreadDisableExpandedGpuVisibility();
-
                 if (nvp->flags & NV_INIT_FLAG_DMA)
                 {
                     RmTeardownDeviceDma(nv);
@@ -2504,6 +2513,13 @@ void RmShutdownAdapter(
             if (nv->is_external_gpu)
                 serverUnlockAllClients(&g_resServ);
         }
+
+        //
+        // Expanded GPU visibility in GPUMGR is no longer needed once the
+        // GPU is removed from GPUMGR.
+        //
+        gpumgrThreadDisableExpandedGpuVisibility();
+
     }
     else
     {
@@ -2595,8 +2611,12 @@ void RmDisableAdapter(
 
             if (nvp->flags & NV_INIT_FLAG_FIFO_WATCHDOG)
             {
-                krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), NULL);
-                nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
+                NV_ASSERT(GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
+                if (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL)
+                {
+                    krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), GPU_GET_KERNEL_WATCHDOG(pGpu));
+                    nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
+                }
             }
 
             if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
@@ -2733,6 +2753,14 @@ static NvBool RmIsExcludingAllowed(
 
     // DGX-2/HGX-2 systems pre-date the PBI call
     if (pNv->pci_info.device_id == 0x1db8)
+        return NV_TRUE;
+
+    //
+    // Rubin+ platforms have PBI disabled and use the DVSEC3 PDI path for UUID
+    // retrieval instead (see RmGetGpuUuidRaw()), so treat exclusion as allowed
+    // whenever the UUID was generated via DVSEC3.
+    //
+    if (pNv->nv_uuid_cache.pci_uuid_from_dvsec_pdi)
         return NV_TRUE;
 
     if (pciPbiGetFeature(pNv->handle, &feature) != NV_OK)

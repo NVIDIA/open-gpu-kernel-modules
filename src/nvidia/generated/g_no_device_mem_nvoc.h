@@ -103,12 +103,12 @@ struct NVOC_VTABLE__NoDeviceMemory {
     NV_STATUS (*__nodevicememIsReady__)(struct NoDeviceMemory * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
     NvBool (*__nodevicememIsGpuMapAllowed__)(struct NoDeviceMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
     NvBool (*__nodevicememIsExportAllowed__)(struct NoDeviceMemory * /*this*/);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__nodevicememAccessCallback__)(struct NoDeviceMemory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__nodevicememShareCallback__)(struct NoDeviceMemory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__nodevicememControlSerialization_Prologue__)(struct NoDeviceMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__nodevicememControlSerialization_Epilogue__)(struct NoDeviceMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__nodevicememControl_Prologue__)(struct NoDeviceMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__nodevicememControl_Epilogue__)(struct NoDeviceMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NvBool (*__nodevicememAccessCallback__)(struct NoDeviceMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__nodevicememShareCallback__)(struct NoDeviceMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__nodevicememControlSerialization_Prologue__)(struct NoDeviceMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__nodevicememControlSerialization_Epilogue__)(struct NoDeviceMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__nodevicememControl_Prologue__)(struct NoDeviceMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__nodevicememControl_Epilogue__)(struct NoDeviceMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
     NvBool (*__nodevicememCanCopy__)(struct NoDeviceMemory * /*this*/);  // virtual inherited (res) base (mem)
     void (*__nodevicememPreDestruct__)(struct NoDeviceMemory * /*this*/);  // virtual inherited (res) base (mem)
     NV_STATUS (*__nodevicememControlFilter__)(struct NoDeviceMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
@@ -262,27 +262,27 @@ static inline NvBool nodevicememIsExportAllowed_DISPATCH(struct NoDeviceMemory *
     return pMemory->__nvoc_metadata_ptr->vtable.__nodevicememIsExportAllowed__(pMemory);
 }
 
-static inline NvBool nodevicememAccessCallback_DISPATCH(struct NoDeviceMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+static inline NvBool nodevicememAccessCallback_DISPATCH(struct NoDeviceMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__nvoc_metadata_ptr->vtable.__nodevicememAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
-static inline NvBool nodevicememShareCallback_DISPATCH(struct NoDeviceMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+static inline NvBool nodevicememShareCallback_DISPATCH(struct NoDeviceMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pResource->__nvoc_metadata_ptr->vtable.__nodevicememShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS nodevicememControlSerialization_Prologue_DISPATCH(struct NoDeviceMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS nodevicememControlSerialization_Prologue_DISPATCH(struct NoDeviceMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__nodevicememControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void nodevicememControlSerialization_Epilogue_DISPATCH(struct NoDeviceMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void nodevicememControlSerialization_Epilogue_DISPATCH(struct NoDeviceMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__nodevicememControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS nodevicememControl_Prologue_DISPATCH(struct NoDeviceMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS nodevicememControl_Prologue_DISPATCH(struct NoDeviceMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__nvoc_metadata_ptr->vtable.__nodevicememControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline void nodevicememControl_Epilogue_DISPATCH(struct NoDeviceMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline void nodevicememControl_Epilogue_DISPATCH(struct NoDeviceMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__nodevicememControl_Epilogue__(pResource, pCallContext, pParams);
 }
 

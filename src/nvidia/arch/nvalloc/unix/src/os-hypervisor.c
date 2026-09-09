@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -923,6 +923,14 @@ NvBool osIsGridSupported(OBJGPU *pGpu)
 NvU32 osGetGridCspSupport(void)
 {
     return os_get_grid_csp_support();
+}
+
+NvBool osReadAdminProfilingRegkey(OBJGPU *pGpu, NvU32 *pData32)
+{
+    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_PROFILING_ADMIN_ONLY, pData32))
+        return NV_TRUE;
+
+    return NV_FALSE;
 }
 
 void initVGXSpecificRegistry(OBJGPU *pGpu)

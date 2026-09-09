@@ -38,6 +38,7 @@
 #include "mem_mgr/mem_fabric_import_ref.h"
 #include "mem_mgr/mem_fabric_import_v2.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
+#include "kernel/gpu/gpu_fabric_probe.h"
 
 #include "class/cl00fb.h"
 
@@ -146,7 +147,7 @@ _createTempMemDesc
 
     pMemdescData->physAttrs = *pPhysAttrs;
     pMemdescData->memFlags = memFlags;
-    pMemdescData->cliqueId = pAttrs->cliqueId;
+    pMemdescData->clique = pAttrs->clique;
     pMemdescData->bwMode = pAttrs->bwMode;
     pMemdescData->bwModeEpoch = pAttrs->bwModeEpoch;
 
@@ -190,6 +191,7 @@ memoryfabricimportedrefCtrlValidate_IMPL
     NvU64 *pPfnArray = NULL;
     MEMORY_DESCRIPTOR *pTempMemDesc = pMemoryFabricImportedRef->pTempMemDesc;
     NvU64 result;
+    NvU8 cliqueType;
 
     pParams->bDone = NV_FALSE;
 
@@ -222,6 +224,15 @@ memoryfabricimportedrefCtrlValidate_IMPL
     if ((pParams->attrs.size == 0) ||
         !NV_IS_ALIGNED64(pParams->attrs.size, pParams->attrs.pageSize))
         return NV_ERR_INVALID_ARGUMENT;
+
+    cliqueType = GPU_FABRIC_CLIQUE_TYPE(pParams->attrs.clique);
+
+    if ((cliqueType != NV_FABRIC_CLIQUE_TYPE_UNICAST_HANDLE) &&
+        (cliqueType != NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Incorrect cliqueType 0x%x detected\n", cliqueType);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     pPfnArray = portMemAllocNonPaged(sizeof(NvU64) * pParams->numPfns);
     if (pPfnArray == NULL)

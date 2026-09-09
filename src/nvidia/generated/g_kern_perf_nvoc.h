@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,6 +65,9 @@ extern "C" {
  */
 #define KERNEL_PERF_REENTRANCY_TIMER_1HZ_CALLBACK    NVBIT(0)
 
+#define KERNEL_DEVFREQ_BOOST_TYPE_DEFAULT 0
+#define KERNEL_DEVFREQ_BOOST_TYPE_FMAX 1
+#define KERNEL_DEVFREQ_BOOST_TYPE_RATED_TDP 2
 /* -------------------------- Datatypes ------------------------------------- */
 /*!
  * KernelPerf is a logical abstraction of the GPU Perf Engine. The

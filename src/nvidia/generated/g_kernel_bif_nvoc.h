@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -226,6 +226,11 @@ typedef struct
 
 typedef struct KERNEL_HOST_VGPU_DEVICE KERNEL_HOST_VGPU_DEVICE;
 
+typedef enum {
+    NV_PCIE_RESET_ACTION_NONE = 0,
+    NV_PCIE_RESET_ACTION_SBR
+} KBIF_RESET_RECOMMENDED_ACTION;
+
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -259,7 +264,7 @@ struct KernelBif {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelBif *__nvoc_pbase_KernelBif;    // kbif
 
-    // Vtable with 73 per-object function pointers
+    // Vtable with 74 per-object function pointers
     NV_STATUS (*__kbifStatePostLoad__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     void (*__kbifDestruct__)(struct KernelBif * /*this*/);  // halified (2 hals) override (engstate) base (engstate) body
     void (*__kbifInitLtr__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
@@ -301,6 +306,7 @@ struct KernelBif {
     NV_STATUS (*__kbifInitXveRegMap__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU8);  // halified (5 hals) body
     NvU32 (*__kbifGetMSIXTableVectorControlSize__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__kbifConfigAccessWait__)(struct OBJGPU *, struct KernelBif * /*this*/, RMTIMEOUT *);  // halified (3 hals) body
+    NV_STATUS (*__kbifCheckResetStatus__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifGetPciConfigSpacePriMirror__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *, NvU32 *);  // halified (4 hals) body
     NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif * /*this*/, BUS_OPTIONS, NvU32 *);  // halified (4 hals) body
     NV_STATUS (*__kbifPreOsGlobalErotGrantRequest__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
@@ -334,7 +340,7 @@ struct KernelBif {
     void (*__kbifConstructXtlAperture__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (4 hals) body
     NV_STATUS (*__kbifDoCxlReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
 
-    // 25 PDB properties
+    // 26 PDB properties
 //  NvBool PDB_PROP_KBIF_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF;
     NvBool PDB_PROP_KBIF_IS_MSI_ENABLED;
@@ -345,6 +351,7 @@ struct KernelBif {
     NvBool PDB_PROP_KBIF_USE_CONFIG_SPACE_TO_REARM_MSI;
     NvBool PDB_PROP_KBIF_ALLOW_REARM_MSI_FOR_VF;
     NvBool PDB_PROP_KBIF_IS_C2C_LINK_UP;
+    NvBool PDB_PROP_KBIF_IS_C2CHBI_LINK_UP;
     NvBool PDB_PROP_KBIF_P2P_READS_DISABLED;
     NvBool PDB_PROP_KBIF_P2P_WRITES_DISABLED;
     NvBool PDB_PROP_KBIF_UPSTREAM_LTR_SUPPORT_WAR_BUG_200634944;
@@ -449,6 +456,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelBif;
 #define PDB_PROP_KBIF_ALLOW_REARM_MSI_FOR_VF_BASE_NAME PDB_PROP_KBIF_ALLOW_REARM_MSI_FOR_VF
 #define PDB_PROP_KBIF_IS_C2C_LINK_UP_BASE_CAST
 #define PDB_PROP_KBIF_IS_C2C_LINK_UP_BASE_NAME PDB_PROP_KBIF_IS_C2C_LINK_UP
+#define PDB_PROP_KBIF_IS_C2CHBI_LINK_UP_BASE_CAST
+#define PDB_PROP_KBIF_IS_C2CHBI_LINK_UP_BASE_NAME PDB_PROP_KBIF_IS_C2CHBI_LINK_UP
 #define PDB_PROP_KBIF_P2P_READS_DISABLED_BASE_CAST
 #define PDB_PROP_KBIF_P2P_READS_DISABLED_BASE_NAME PDB_PROP_KBIF_P2P_READS_DISABLED
 #define PDB_PROP_KBIF_P2P_WRITES_DISABLED_BASE_CAST
@@ -809,6 +818,9 @@ static inline NV_STATUS kbifResetFromTimeoutFullChip(struct OBJGPU *pGpu, struct
 #define kbifConfigAccessWait_FNPTR(pKernelBif) pKernelBif->__kbifConfigAccessWait__
 #define kbifConfigAccessWait(pGpu, pKernelBif, pTimeout) kbifConfigAccessWait_DISPATCH(pGpu, pKernelBif, pTimeout)
 #define kbifConfigAccessWait_HAL(pGpu, pKernelBif, pTimeout) kbifConfigAccessWait_DISPATCH(pGpu, pKernelBif, pTimeout)
+#define kbifCheckResetStatus_FNPTR(pKernelBif) pKernelBif->__kbifCheckResetStatus__
+#define kbifCheckResetStatus(pGpu, pKernelBif) kbifCheckResetStatus_DISPATCH(pGpu, pKernelBif)
+#define kbifCheckResetStatus_HAL(pGpu, pKernelBif) kbifCheckResetStatus_DISPATCH(pGpu, pKernelBif)
 #define kbifGetPciConfigSpacePriMirror_FNPTR(pKernelBif) pKernelBif->__kbifGetPciConfigSpacePriMirror__
 #define kbifGetPciConfigSpacePriMirror(pGpu, pKernelBif, pMirrorBase, pMirrorSize) kbifGetPciConfigSpacePriMirror_DISPATCH(pGpu, pKernelBif, pMirrorBase, pMirrorSize)
 #define kbifGetPciConfigSpacePriMirror_HAL(pGpu, pKernelBif, pMirrorBase, pMirrorSize) kbifGetPciConfigSpacePriMirror_DISPATCH(pGpu, pKernelBif, pMirrorBase, pMirrorSize)
@@ -1103,6 +1115,10 @@ static inline NvU32 kbifGetMSIXTableVectorControlSize_DISPATCH(struct OBJGPU *pG
 
 static inline NV_STATUS kbifConfigAccessWait_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout) {
     return pKernelBif->__kbifConfigAccessWait__(pGpu, pKernelBif, pTimeout);
+}
+
+static inline NV_STATUS kbifCheckResetStatus_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    return pKernelBif->__kbifCheckResetStatus__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifGetPciConfigSpacePriMirror_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pMirrorBase, NvU32 *pMirrorSize) {
@@ -1452,6 +1468,8 @@ NV_STATUS kbifConfigAccessWait_GB100(struct OBJGPU *pGpu, struct KernelBif *pKer
 
 NV_STATUS kbifConfigAccessWait_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout);
 
+NV_STATUS kbifCheckResetStatus_GR100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
 NV_STATUS kbifGetPciConfigSpacePriMirror_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pMirrorBase, NvU32 *pMirrorSize);
 
 NV_STATUS kbifGetPciConfigSpacePriMirror_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pMirrorBase, NvU32 *pMirrorSize);
@@ -1736,6 +1754,10 @@ static inline NvU32 kbifGetMSIXTableVectorControlSize_b3787c(struct OBJGPU *pGpu
 }
 
 static inline NV_STATUS kbifConfigAccessWait_395e98(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kbifCheckResetStatus_395e98(struct OBJGPU *pGpu, struct KernelBif *pKernelBif){
     return NV_ERR_NOT_SUPPORTED;
 }
 

@@ -53,6 +53,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_IoAperture =
 {
     .classInfo.size =               sizeof(IoAperture),
     .classInfo.classId =            classId(IoAperture),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "IoAperture",
@@ -359,6 +360,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SwBcAperture =
 {
     .classInfo.size =               sizeof(SwBcAperture),
     .classInfo.classId =            classId(SwBcAperture),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "SwBcAperture",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,6 +66,7 @@
 typedef struct NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS {
     NvU32 location;
     NvU32 sublocation;
+    NvU32 extlocation;
     NvU8  unit;
     NvU8  errorType;
 } NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS;

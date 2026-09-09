@@ -27,6 +27,7 @@
  */
 
 #include "os/os.h"
+#include "core/system.h"
 #include "acpidsmguids.h"
 #include "nvhybridacpi.h"
 #include "nbci.h"

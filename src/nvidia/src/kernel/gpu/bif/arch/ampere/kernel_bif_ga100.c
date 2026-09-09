@@ -27,7 +27,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/nvlink/kernel_nvlink.h"
-#include "published/ampere/ga100/dev_boot.h"
+#include "published/ampere/ga100/dev_pmc.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "platform/chipset/chipset.h"
 #include "published/ampere/ga100/dev_nv_xve.h"

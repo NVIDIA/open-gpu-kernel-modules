@@ -113,8 +113,13 @@
         NV_PUSH_DATA(d4);                                               \
     } while (0)
 
-#define READ_CHANNEL_PAYLOAD_SEMA(channel)  channelReadChannelMemdesc(channel, channel->finishPayloadOffset)
+#define READ_CHANNEL_PAYLOAD_SEMA(channel) \
+     channelReadFinishPayloadSema(channel)
 #define READ_CHANNEL_PB_SEMA(channel)       channelReadChannelMemdesc(channel, channel->semaOffset)
+
+#define NV_CEUTILS_SEMA_PAGE_MAGIC          0xCE5E5EA0u
+#define NV_CEUTILS_SEMA_PAGE_MAGIC_OFFSET   0x0
+#define NV_CEUTILS_SEMA_PAGE_PAYLOAD_OFFSET 0x4
 
 typedef void (*ChannelCompletionCallback)(void *);
 
@@ -150,6 +155,7 @@ NV_STATUS channelSetupIDs(OBJCHANNEL *pChannel, OBJGPU *pGpu, NvBool bUseVasForC
 NV_STATUS channelAllocSubdevice(OBJGPU *pGpu, OBJCHANNEL *pChannel);
 void channelSetupChannelBufferSizes(OBJCHANNEL *pChannel);
 NvU32 channelReadChannelMemdesc(OBJCHANNEL *pChannel, NvU32 offset);
+NvU32 channelReadFinishPayloadSema(OBJCHANNEL *pChannel);
 
 // Needed for pushbuffer management
 NV_STATUS channelWaitForFreeEntry(OBJCHANNEL *pChannel, NvU32 *pPutIndex);

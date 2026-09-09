@@ -111,13 +111,16 @@ mmuTraceWalk
 )
 {
     PMEMORY_DESCRIPTOR pPDB = vaspaceGetPageDirBase(pVAS, pGpu);
-    OBJGVASPACE       *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
-    GVAS_GPU_STATE    *pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
     NvBool             done = NV_FALSE;
     MMU_LAYOUT         layout;
-    MMU_WALK          *pWalk = pGpuState->pWalk;
+    MMU_WALK          *pWalk = NULL;
+    NV_STATUS          status;
 
-    NV_ASSERT(pPDB);
+    NV_ASSERT_OR_RETURN(pPDB != NULL, NV_ERR_INVALID_STATE);
+
+    status = vaspaceGetMmuWalker(pVAS, pGpu, &pWalk);
+    NV_ASSERT_OR_RETURN(status == NV_OK, status);
+
     _mmuInitLayout(pGpu, pVAS, &layout);
 
     if (verbose)
@@ -216,14 +219,11 @@ _mmuInitLayout
     PMMU_LAYOUT pLayout
 )
 {
-    OBJGVASPACE    *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
     const GMMU_FMT *pGmmuFmt;
 
     ct_assert(sizeof(GMMU_ENTRY_VALUE) <= sizeof(MMU_ENTRY));
 
-    NV_ASSERT(pGVAS); // Only valid for gvaspaces as of now
-
-    pGmmuFmt = gvaspaceGetGmmuFmt(pGVAS, pGpu);
+    pGmmuFmt = vaspaceGetGmmuFmt(pVAS, pGpu);
     NV_ASSERT(pGmmuFmt);
 
     pLayout->pFmt     = pGmmuFmt;
@@ -250,6 +250,7 @@ _mmuPrintPte
 )
 {
     NvU64 pageSize;
+    const GMMU_FMT_PTE *pFmtGmmuPte = (GMMU_FMT_PTE*)pFmtPte;
 
     if (!verbose)
     {
@@ -266,34 +267,40 @@ _mmuPrintPte
 
     if (pRange->bInvalid)
     {
-        NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", pRange->va,
-                  pRange->vaLimit);
+        if (pFmtGmmuPte->mode == GMMU_FMT_MODE_PTR)
+        {
+            NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", pRange->va,
+                      pRange->vaLimit);
+        }
         MMU_TRACE_INDENT(level);
 
-        switch (pageSize)
+        if (pFmtGmmuPte->mode == GMMU_FMT_MODE_PTR)
         {
-        case RM_PAGE_SIZE_256G:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_256G");
-            break;
-        case RM_PAGE_SIZE_512M:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_512M");
-            break;
-        case RM_PAGE_SIZE_HUGE:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_2M");
-            break;
-        case RM_PAGE_SIZE_128K:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_128K");
-            break;
-        case RM_PAGE_SIZE_64K:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_64K");
-            break;
-        case RM_PAGE_SIZE:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_4K");
-            break;
-        default:
-            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE");
-            NV_ASSERT(0);
-            break;
+            switch (pageSize)
+            {
+            case RM_PAGE_SIZE_256G:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_256G");
+                break;
+            case RM_PAGE_SIZE_512M:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_512M");
+                break;
+            case RM_PAGE_SIZE_HUGE:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_2M");
+                break;
+            case RM_PAGE_SIZE_128K:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_128K");
+                break;
+            case RM_PAGE_SIZE_64K:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_64K");
+                break;
+            case RM_PAGE_SIZE:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_4K");
+                break;
+            default:
+                NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE");
+                NV_ASSERT(0);
+                break;
+            }
         }
 
         NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "[0x%x", pRange->index);
@@ -306,7 +313,10 @@ _mmuPrintPte
 
     if (valid)
     {
-        NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", va, vaLimit);
+        if (pFmtGmmuPte->mode == GMMU_FMT_MODE_PTR)
+        {
+            NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", va, vaLimit);
+        }
         MMU_TRACE_INDENT(level);
         pTraceCb->printPte(pGpu, pFmtLevel, pFmtPte, pPte, index);
     }
@@ -332,6 +342,7 @@ _mmuPrintPt
     const void                *pFmtPde  = pTraceCb->getFmtPde(pFmt, pFmtLevel, subLevel);
 
     NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", va, vaLimit);
+
     MMU_TRACE_INDENT(level+1);
     pTraceCb->printPt(pGpu, pFmtSub, pFmtPde, pPde);
 }
@@ -350,14 +361,19 @@ _mmuPrintPdeInvalid
     const void                *pFmt     = pLayout->pFmt;
     const MMU_TRACE_CALLBACKS *pTraceCb = pLayout->pTraceCb;
     NvU32                      hwLevel  = pTraceCb->swToHwLevel(pFmt, level);
+    const GMMU_FMT            *pFmtGmmu = (GMMU_FMT*)pFmt;
 
     if (!verbose)
     {
         return;
     }
 
-    NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", pRange->va,
-              pRange->vaLimit);
+    if (pFmtGmmu->mode == GMMU_FMT_MODE_PTR)
+    {
+        NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", pRange->va,
+                  pRange->vaLimit);
+    }
+
     MMU_TRACE_INDENT(level);
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PDE%u[0x%x", hwLevel, pRange->index);
     if (pRange->index != pRange->indexLimit)
@@ -386,6 +402,7 @@ _mmuPrintPdeValid
 {
 #if NV_PRINTF_LEVEL_ENABLED(LEVEL_INFO)
     const void                *pFmt     = pLayout->pFmt;
+    const GMMU_FMT            *pFmtGmmu = (GMMU_FMT*)pFmt;
     const MMU_TRACE_CALLBACKS *pTraceCb = pLayout->pTraceCb;
     NvU32                      hwLevel  = pTraceCb->swToHwLevel(pFmt, level);
 
@@ -399,7 +416,11 @@ _mmuPrintPdeValid
         _mmuPrintPdeInvalid(pLayout, level, pRange, NV_TRUE);
     }
 
-    NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", va, vaLimit);
+    if (pFmtGmmu->mode == GMMU_FMT_MODE_PTR)
+    {
+        NV_PRINTF(LEVEL_INFO, "MMUTRACE: VA[0x%08llx-%08llx]", va, vaLimit);
+    }
+
     MMU_TRACE_INDENT(level);
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PDE%u[0x%x]: ", hwLevel, index);
     pTraceCb->printPde(pGpu, pFmt, pFmtLevel, pPde);
@@ -436,6 +457,7 @@ _mmuTraceWalk
     const void                *pFmt              = pLayout->pFmt;
     const MMU_TRACE_CALLBACKS *pTraceCb          = pLayout->pTraceCb;
     MMU_FMT_LEVEL             *pFmtLevel         = (MMU_FMT_LEVEL*)pInitialFmtLevel;
+    const void                *pFmtPte           = pTraceCb->getFmtPte(pFmt);
     NvU32                      index             = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
     NvU32                      offset            = index * pFmtLevel->entrySize;
     NV_STATUS                  status            = NV_OK;
@@ -488,7 +510,6 @@ begin_iteration:
         if (pTraceCb->isPte(pFmt, pFmtLevel, &entry, &valid))
         {
             NvU64 vaArg         = pInfo->vaArg;
-            const void *pFmtPte = pTraceCb->getFmtPte(pFmt);
             isPt                = NV_TRUE;
 
             if (pInfo->translateFunc != NULL &&
@@ -654,7 +675,7 @@ sublevel_loop:
         {
             if (pInfo->pteFunc)
             {
-                _mmuPrintPte(pGpu, pTraceCb, 0, 0, level, 0, pFmtLevel, NULL, NULL,
+                _mmuPrintPte(pGpu, pTraceCb, 0, 0, level, 0, pFmtLevel, pFmtPte, NULL,
                          NV_FALSE, &invalidRange, verbose);
                 status = pInfo->pteFunc(pGpu, pTraceCb, 0, NULL, NULL, NULL, NULL, NV_FALSE, pDone);
             }

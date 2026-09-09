@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelChannelGroup =
 {
     .classInfo.size =               sizeof(KernelChannelGroup),
     .classInfo.classId =            classId(KernelChannelGroup),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelChannelGroup",

@@ -26,6 +26,7 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 #include "nv-reg.h"
+#include <linux/iommu.h>
 
 #if IS_ENABLED(CONFIG_DRM)
 #include <drm/drm_device.h>
@@ -156,6 +157,10 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
     NV_STATUS status;
     nv_dma_submap_t *submap;
     NvU32 i;
+
+#if defined(NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT)
+    dma_map->mapping.discontig.submap_count = 1;
+#else
     NvU64 allocated_size = 0;
     NvU64 num_submaps = dma_map->page_count + NV_DMA_SUBMAP_MAX_PAGES - 1;
     NvU64 total_size = dma_map->page_count << PAGE_SHIFT;
@@ -175,6 +180,7 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
     }
 
     dma_map->mapping.discontig.submap_count = NvU64_LO32(num_submaps);
+#endif
 
     status = os_alloc_mem((void **)&dma_map->mapping.discontig.submaps,
         sizeof(nv_dma_submap_t) * dma_map->mapping.discontig.submap_count);
@@ -198,10 +204,14 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
 
     NV_FOR_EACH_DMA_SUBMAP(dma_map, submap, i)
     {
+#if defined(NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT)
+        submap->page_count = (NvU32)dma_map->page_count;
+#else
         NvU64 submap_size = NV_MIN(NV_DMA_SUBMAP_MAX_PAGES << PAGE_SHIFT,
                                    total_size - allocated_size);
 
         submap->page_count = (NvU32)(submap_size >> PAGE_SHIFT);
+#endif
 
         status = NV_ALLOC_DMA_SUBMAP_SCATTERLIST(dma_map, submap, i);
         if (status != NV_OK)
@@ -218,10 +228,14 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
         }
 #endif
 
+#if !(defined(NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT))
         allocated_size += submap_size;
+#endif
     }
 
+#if !(defined(NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT))
     WARN_ON(allocated_size != total_size);
+#endif
 
     if (status != NV_OK)
     {
@@ -1034,3 +1048,228 @@ void NV_API_CALL nv_dma_release_sgt
 {
 }
 #endif /* IS_ENABLED(CONFIG_DRM) */
+
+static NvBool nv_is_dma_domain
+(
+    nv_state_t *nv
+)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct iommu_domain *domain = iommu_get_domain_for_dev(nvl->dev);
+
+    if (domain == NULL)
+    {
+        return NV_FALSE;
+    }
+
+#if defined(NV_IOMMU_IS_DMA_DOMAIN_PRESENT)
+    return iommu_is_dma_domain(domain);
+#else
+    return (domain->type & __IOMMU_DOMAIN_DMA_API) != 0;
+#endif
+}
+
+static NV_STATUS _nv_dma_get_sysmem_range
+(
+    nv_state_t *nv,
+    NvU64      *phys_base,
+    NvU64      *size
+)
+{
+    NvS32 node_id = nv->cpu_numa_node_id;
+    NvU64 start_pfn = NV_U64_MAX;
+    NvU64 end_pfn = 0ULL;
+    struct zone *zone;
+    struct pglist_data *pgdat;
+    NvU32 zone_id;
+
+    if (node_id < 0 || !node_online(node_id))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // UVM uses ZONE_DEVICE for coherent device pages which adds into the
+    // available sysmem and the inflated size is included in sysmem accounting
+    // if node_start_pfn/node_end_pfn are used directly.
+    // Instead, compute the sysmem range from managed, non-ZONE_DEVICE zones
+    // so device PFNs don't inflate the result.
+    //
+    pgdat = NODE_DATA(node_id);
+    for (zone_id = 0; zone_id < MAX_NR_ZONES; zone_id++)
+    {
+#ifdef CONFIG_ZONE_DEVICE
+        if (zone_id == ZONE_DEVICE)
+            continue;
+#endif
+        zone = &(pgdat->node_zones[zone_id]);
+        if (!managed_zone(zone))
+            continue;
+
+        start_pfn = min(start_pfn, (NvU64)zone->zone_start_pfn);
+        end_pfn   = max(end_pfn,   (NvU64)zone_end_pfn(zone));
+    }
+
+    if (start_pfn >= end_pfn)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    *phys_base = start_pfn << PAGE_SHIFT;
+    *size      = (end_pfn - start_pfn) << PAGE_SHIFT;
+
+    return NV_OK;
+}
+
+static NV_STATUS nv_dma_map_sysmem_dynamic
+(
+    nv_state_t *nv,
+    NvU64       phys_size,
+    NvU64      *dma_addr,
+    NvU64      *dma_size
+)
+{
+#if NV_IS_EXPORT_SYMBOL_GPL_dma_iova_try_alloc
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct dma_iova_state state;
+
+    if (!dma_iova_try_alloc(nvl->dev, &state, 0, phys_size))
+    {
+        NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                      "Failed to allocate IOVA region for sysmem size 0x%llx\n",
+                      phys_size);
+
+        return NV_ERR_OPERATING_SYSTEM;
+    }
+
+    *dma_addr     = (NvU64)state.addr;
+    *dma_size     = (NvU64)dma_iova_size(&state);
+
+    NV_DEV_PRINTF(NV_DBG_INFO, nv,
+                  "Sysmem mapped in DMA domain, IOVA base: 0x%llx size: 0x%llx\n",
+                  *dma_addr, *dma_size);
+
+    return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif // NV_IS_EXPORT_SYMBOL_GPL_dma_iova_try_alloc
+}
+
+static NV_STATUS nv_dma_map_sysmem_identity
+(
+    nv_state_t *nv,
+    NvU64       phys_base,
+    NvU64       phys_size,
+    NvU64      *dma_addr,
+    NvU64      *dma_size
+)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    dma_addr_t addr;
+
+    addr = dma_map_single(nvl->dev, phys_to_virt(phys_base),
+                          phys_size, DMA_BIDIRECTIONAL);
+    if (dma_mapping_error(nvl->dev, addr))
+    {
+        NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                      "Local CPU NUMA sysmem mapping failed for phys: 0x%llx size: 0x%llx\n",
+                      phys_base, phys_size);
+
+        return NV_ERR_OPERATING_SYSTEM;
+    }
+
+    *dma_addr     = (NvU64)addr;
+    *dma_size     = phys_size;
+
+    NV_DEV_PRINTF(NV_DBG_INFO, nv,
+                  "Local CPU NUMA sysmem mapped in identity/off mode, addr: 0x%llx size: 0x%llx\n",
+                  *dma_addr, *dma_size);
+
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL nv_dma_init_sysmem_window_for_fabric_access
+(
+    nv_state_t *nv,
+    NvU64       alignment,
+    NvU64      *dma_addr,
+    NvU64      *dma_size,
+    NvBool     *dma_identity
+)
+{
+    NvU64 sysmem_base, sysmem_size;
+    NV_STATUS status;
+
+    if ((dma_addr == NULL) ||
+        (dma_size == NULL) ||
+        (dma_identity == NULL) ||
+        (alignment == 0))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    status = _nv_dma_get_sysmem_range(nv, &sysmem_base, &sysmem_size);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+    else if (sysmem_size == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    NV_DEV_PRINTF(NV_DBG_INFO, nv,
+                  "Local CPU NUMA sysmem phys base: 0x%llx size: 0x%llx\n",
+                  sysmem_base, sysmem_size);
+
+    if (nv_is_dma_domain(nv))
+    {
+        status = nv_dma_map_sysmem_dynamic(nv, NV_ALIGN_UP64(sysmem_size, alignment),
+                                           dma_addr, dma_size);
+        *dma_identity = NV_FALSE;
+    }
+    else
+    {
+        status = nv_dma_map_sysmem_identity(nv, sysmem_base, sysmem_size,
+                                            dma_addr, dma_size);
+        *dma_identity = NV_TRUE;
+    }
+
+    return status;
+}
+
+void NV_API_CALL nv_dma_destroy_sysmem_window_for_fabric_access
+(
+    nv_state_t *nv,
+    NvU64       dma_addr,
+    NvU64       dma_size
+)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct device *dev = nvl->dev;
+
+    if (!nv_is_dma_domain(nv))
+    {
+        NV_DEV_PRINTF(NV_DBG_INFO, nv,
+                      "Unmapping local CPU NUMA sysmem DMA addr: 0x%llx size: 0x%llx\n",
+                      dma_addr, dma_size);
+
+        dma_unmap_single(dev, (dma_addr_t)dma_addr,
+                         (size_t)dma_size, DMA_BIDIRECTIONAL);
+    }
+    else
+    {
+#if NV_IS_EXPORT_SYMBOL_GPL_dma_iova_try_alloc
+        struct dma_iova_state state;
+
+        state.addr   = (dma_addr_t)dma_addr;
+        state.__size = (u64)dma_size;
+
+        NV_DEV_PRINTF(NV_DBG_INFO, nv,
+                      "Freeing local NUMA sysmem IOVA range addr: 0x%llx size: 0x%llx\n",
+                      dma_addr, dma_size);
+
+        dma_iova_free(dev, &state);
+#endif
+    }
+}

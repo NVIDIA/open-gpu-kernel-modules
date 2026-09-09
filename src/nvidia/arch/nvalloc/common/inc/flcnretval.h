@@ -244,6 +244,19 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_HS_SCP_LIB_DMHASH_FAILED                                  (0xD3U)
 #define FLCN_ERR_HS_SCP_LIB_AESKDF_FAILED                                  (0xD4U)
 #define FLCN_ERR_INSUFFICIENT_NOPS                                         (0xD5U)
+// PRI error / CIOPMP Write err /DeviceMap violation
+#define FLCN_ERR_MEMERR_ERROR_VIOLATION                                    (0xD6U)
+#define FLCN_ERR_HUB_ERROR_VIOLATION                                       (0xD7U)
+#define FLCN_ERR_DIOPMP_ERROR_VIOLATION                                    (0xD8U)
+#define FLCN_ERR_RISCV_EXCEPTION_ERROR                                     (0xD9U)
+#define FLCN_ERR_RISCV_BOOTLOADER_ERROR                                    (0xDAU)
+#define FLCN_ERR_FMC_BOOT_CHECK_FAIL                                       (0xDBU)
+#define FLCN_ERR_SE_HW_INIT_FAIL                                           (0xDCU)
+#define FLCN_ERR_FMC_INVALID_DMA_TARGET                                    (0xDDU)
+#define FLCN_ERR_TEGRA_CRYPTO_INIT_FAIL                                    (0xDEU)
+#define FLCN_ERR_FMC_BOOT_FROM_INVALID_WPR                                 (0xDFU)
+#define FLCN_ERR_PRESYNC_TIMEOUT_ERR                                       (0xE0U)
+
 
 //
 // BAR0/CSB Priv Read/Write Error Handling Defines

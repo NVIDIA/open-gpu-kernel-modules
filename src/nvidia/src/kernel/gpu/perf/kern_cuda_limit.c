@@ -114,13 +114,13 @@ deviceCtrlCmdKPerfCudaLimitSetControl_IMPL
     }
 
     // Obtain current Cuda limit activation setting.
-    NV_ASSERT_OK_OR_RETURN(kperfCudaLimitCliGet(pDevice, &bCudaLimitBefore));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kperfCudaLimitCliGet(pDevice, &bCudaLimitBefore));
 
     // Set Cuda activation setting and error check the client ref count.
-    NV_ASSERT_OK_OR_RETURN(kperfCudaLimitCliSet(pDevice, pParams->bCudaLimit));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kperfCudaLimitCliSet(pDevice, pParams->bCudaLimit));
 
     // Obtain current Cuda limit activation setting again.
-    NV_ASSERT_OK_OR_RETURN(kperfCudaLimitCliGet(pDevice, &bCudaLimitAfter));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kperfCudaLimitCliGet(pDevice, &bCudaLimitAfter));
 
     // If the limit is changing.
     if (bCudaLimitBefore != bCudaLimitAfter)

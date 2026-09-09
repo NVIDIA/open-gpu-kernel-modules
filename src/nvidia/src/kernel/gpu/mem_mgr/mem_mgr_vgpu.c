@@ -57,6 +57,7 @@ memmgrInitBaseFbRegions_VF
     MemoryManager *pMemoryManager
 )
 {
+    NvU64 fbTax;
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
     NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
@@ -114,6 +115,37 @@ memmgrInitBaseFbRegions_VF
               NvU64_LO32(pMemoryManager->Ram.fbUsableMemSize),
               NvU64_HI32(pMemoryManager->Ram.fbAddrSpaceSizeMb),
               NvU64_LO32(pMemoryManager->Ram.fbAddrSpaceSizeMb));
+
+    //
+    // We are assuming that subheap is at the end of guest FB. We place
+    // the guest RM reserved region at the end of the guest client owned
+    // portion of the guest FB (total guest FB minus the subheap). The
+    // guest FB is partitioned in the following way (Addresses increasing
+    // from left to right).
+    //
+    //    Region 0                  Region 1                 Region 2
+    // [Guest client owned FB] [Guest RM reserved region] [Guest subheap]
+    //
+    // Guest heap is created only for Region 0.
+    //
+    fbTax = memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager);
+    if (fbTax != 0)
+    {
+        FB_REGION_DESCRIPTOR *pParentRegion = &pMemoryManager->Ram.fbRegion[pMemoryManager->Ram.numFBRegions - 1];
+        FB_REGION_DESCRIPTOR taxFbRegion = {0};
+
+        fbTax = NV_ALIGN_UP64(fbTax, RM_PAGE_SIZE_64K);
+
+        NV_ASSERT_OR_RETURN(fbTax <= pParentRegion->limit - pParentRegion->base + 1, NV_ERR_INVALID_STATE);
+
+        // Insert FB tax region, move reserved memory at a lower address
+        taxFbRegion.bRsvdRegion = NV_TRUE;
+        taxFbRegion.limit = pParentRegion->limit;
+        taxFbRegion.base = taxFbRegion.limit - fbTax + 1;
+        taxFbRegion.bLostOnSuspend = NV_TRUE;
+
+        NV_ASSERT_OK_OR_RETURN(memmgrInsertFbRegion(pGpu, pMemoryManager, &taxFbRegion, NULL));
+    }
 
     return NV_OK;
 }

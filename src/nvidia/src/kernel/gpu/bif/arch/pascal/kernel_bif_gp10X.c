@@ -24,10 +24,11 @@
 
 /* ------------------------- System Includes -------------------------------- */
 #include "gpu/gpu.h"
+#include "core/system.h"
 #include "gpu/bif/kernel_bif.h"
 #include "platform/chipset/chipset.h"
 
-#include "published/pascal/gp102/dev_boot.h"
+#include "published/pascal/gp102/dev_pmc.h"
 #include "published/pascal/gp102/dev_nv_xp.h"
 #include "published/pascal/gp102/dev_nv_xve.h"
 #include "published/pascal/gp102/dev_nv_xve_addendum.h"

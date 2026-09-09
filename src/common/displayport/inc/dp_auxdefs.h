@@ -55,6 +55,7 @@
 #define DPCD_QUERY_STREAM_MESSAGE_COOLDOWN      20  // 20ms between attempts
 
 #define MST_EDID_RETRIES                        20
+#define MST_EDID_I2C_NACK_RETRIES               10
 #define MST_EDID_COOLDOWN                       10
 
 #define MST_ALLOCATE_RETRIES                    10
@@ -92,5 +93,16 @@
 // trigger ACT sequence.
 //
 #define PAYLOADIDTABLE_UPDATED_CHECK_RETRIES    300
+
+//
+// Bug 6339341: Max consecutive AUX read failures tolerated while polling the
+// Payload ID Table update status.
+//
+// On a dead AUX channel (sink unplugged / link gone) every read fails, and each
+// dead read blocks for seconds at the HW timeout. Spinning the full retry budget
+// above hangs the thread for minutes while holding the DPLib lock, deadlocking
+// the OS. Bail out after this many failures instead.
+//
+#define PAYLOADIDTABLE_AUX_FAILURE_LIMIT        5
 
 #endif // __DP_AUXDEFS_H__

@@ -157,6 +157,8 @@
 #define NV_PCI_SUBID_DEVICE                    31:16  /* RW--F */
 #define NV_PCI_SUBID_VENDOR                    15:0   /* RW--F */
 
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
 // GPU DEVICE IDS
@@ -657,7 +659,7 @@ enum {
 ,     CS_PLDA_XPRESSRICH_AXI_REF
 ,     CS_AMPERE_AMPEREONE160
 ,     CS_PHYTIUM_S5000
-,     CS_RESERVED_2
+,     CS_NVIDIA_T268
 ,     CS_RESERVED_3
 ,     CS_AMD_RPH
 ,     CS_INTEL_B660

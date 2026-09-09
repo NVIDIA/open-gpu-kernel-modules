@@ -340,6 +340,9 @@ typedef struct
                                                 uvm_gpu_chunk_t *gpu_chunk,
                                                 uvm_va_block_region_t chunk_region);
 
+    // clears out any migration PTEs setup by uvm_hmm_va_block_evict_chunk_prep() above
+    void uvm_hmm_va_block_evict_chunk_cancel(uvm_va_block_context_t *block_context);
+
     // Migrate pages to system memory for the given page mask. Note that the
     // mmap lock is not held and there is no MM retained. This must be called
     // after uvm_hmm_va_block_evict_chunk_prep() has initialized
@@ -632,6 +635,11 @@ typedef struct
         return NV_OK;
     }
 
+    static void uvm_hmm_va_block_evict_chunk_cancel(uvm_va_block_context_t *block_context)
+    {
+        return;
+    }
+
     static NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
                                                    uvm_service_block_context_t *service_context,
                                                    const uvm_page_mask_t *pages_to_evict,
@@ -656,6 +664,14 @@ typedef struct
                                                    NvU64 *startp,
                                                    NvU64 *endp,
                                                    UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_update_residency_info(uvm_va_block_t *va_block,
+                                                            struct mm_struct *mm,
+                                                            NvU64 lookup_address,
+                                                            bool populate)
     {
         return NV_ERR_INVALID_ADDRESS;
     }

@@ -253,7 +253,7 @@ sec2utilsConstruct_IMPL
     NV_ASSERT_OK_OR_GOTO(status, channelAllocSubdevice(pGpu, pChannel), free_client);
 
     pMemoryManager->bScrubChannelSetupInProgress = NV_TRUE;
-    NV_ASSERT_OK_OR_GOTO(status, memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel), free_channel);
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel, NV_FALSE, 0), free_channel);
     pMemoryManager->bScrubChannelSetupInProgress = NV_FALSE;
 
     pSec2Utils->hDevice = pChannel->deviceId;

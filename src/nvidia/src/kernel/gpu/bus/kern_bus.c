@@ -43,6 +43,8 @@
 
 #include "nvrm_registry.h"
 
+#include "kernel/gpu/fifo/kernel_fifo.h"
+
 static NV_STATUS kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus);
 
 NV_STATUS
@@ -468,6 +470,7 @@ kbusCommitBar2_KERNEL
         // we will initialize bar2 to the default big page size of the system
         NV_ASSERT_OK_OR_RETURN(kbusInitVirtualBar2_HAL(pGpu, pKernelBus));
         NV_ASSERT_OK_OR_RETURN(kbusSetupCpuPointerForBusFlush_HAL(pGpu, pKernelBus));
+        NV_ASSERT_OK_OR_RETURN(kfifoMapVfPage(pGpu, GPU_GET_KERNEL_FIFO(pGpu)));
     }
     return NV_OK;
 }
@@ -1246,10 +1249,18 @@ kbusUpdateRusdStatistics_IMPL
     OBJVASPACE *pBar1VAS;
     OBJEHEAP *pVASHeap;
     RUSD_BAR1_MEMORY_INFO *pSharedData;
-    NvU64 bar1Size = 0;
-    NvU64 bar1AvailSize = 0;
+    NvU32 bar1Size = 0;
+    NvU32 bar1AvailSize = 0;
     NV_RANGE bar1VARange = NV_RANGE_EMPTY;
     NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
+    NvBool bStaticBar1Enabled = kbusIsStaticBar1Enabled(pGpu, pKernelBus);
+    NvU32 gfid = GPU_GFID_PF;
+
+    if (bStaticBar1Enabled)
+    {
+        NV_ASSERT_OK(vgpuGetCallingContextGfid(pGpu, &gfid));
+        portSyncSpinlockAcquire(pKernelBus->bar1[gfid].pRusdBar1Lock);
+    }
 
     bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
 
@@ -1269,19 +1280,16 @@ kbusUpdateRusdStatistics_IMPL
             pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
             bar1AvailSize = (NvU32)(freeSize / 1024);
 
-            if (kbusIsStaticBar1Enabled(pGpu, pKernelBus))
+            if (bStaticBar1Enabled)
             {
                 RUSD_PMA_MEMORY_INFO *pPmaInfo;
                 NvU64 freeMem = 0;
                 NvU64 totalMem = 0;
                 NvU64 fbInUse;
-                NvU32 gfid = GPU_GFID_PF;
-
-                NV_ASSERT_OK(vgpuGetCallingContextGfid(pGpu, &gfid));
 
                 // Cache off the vasFreeSize for PMA to use when it updates the memory
                 pKernelBus->bar1[gfid].vasFreeSize = freeSize;
-                
+
                 pPmaInfo = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
                 gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
                 totalMem = MEM_RD64(&pPmaInfo->totalPmaMemory);
@@ -1299,6 +1307,11 @@ kbusUpdateRusdStatistics_IMPL
     MEM_WR32(&pSharedData->bar1Size, bar1Size);
     MEM_WR32(&pSharedData->bar1AvailSize, bar1AvailSize);
     gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
+
+    if (bStaticBar1Enabled)
+    {
+        portSyncSpinlockRelease(pKernelBus->bar1[gfid].pRusdBar1Lock);
+    }
 
     return NV_OK;
 }

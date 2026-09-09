@@ -3123,6 +3123,23 @@ typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
  * luminanceSscalingFactor
  * HDR tone mapping luminance scaling factor
  *
+ * hlcAdjust
+ * highlight contrast adjustment for LTM LUT.
+ *
+ * blMaxDropPerFrame
+ * max backlight drop per frame
+ *
+ * blMaxBoostPerFrame
+ * max backlight boost per frame
+ *
+ * blDropThreshold
+ * In CABC scenario if target backlight level is greater than threshold, we can drop the backlight.
+ *
+ * blBoostThreshold
+ * In CABC scenario if the difference between target backlight and current backlight is greater 
+ * than threshold * max boost per frame, adjust backlight to the target value.
+ * If not, we adjust backlight gradually.
+ *
  * Possible status values returned include:
  * NV_OK
  * NV_ERR_NOT_SUPPORTED
@@ -3147,6 +3164,11 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS {
     NvU32  maxDisplayLuminance;
     NvU32  maxOutputLuminance;
     NvU32  luminanceScalingFactor;
+    NvU32  hlcAdjust;
+    NvU32  blMaxDropPerFrame;
+    NvU32  blMaxBoostPerFrame;
+    NvU32  blDropThreshold;
+    NvU32  blBoostThreshold;
 } NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS;
 
 #define NV0073_CTRL_SPECIFIC_GET_DISPLAY_BRIGHTNESS_LTM_PARAMS_MESSAGE_ID (0xAFU)
@@ -3181,4 +3203,28 @@ typedef struct NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS {
     NvU32 subDeviceInstance;
     NvU32 dispRegisterBase;
 } NV0073_CTRL_GET_REGISTER_OFFSET_FOR_ULMB_TIMESTAMP_PARAMS;
+
+/*
+* NV0073_CTRL_CMD_SPECIFIC_HDCP_KEY_DECRYPTION
+*
+* The command is used to triggering and checking the status for HDCP key decryption
+*
+* Possible status values returned are: 
+*   NV_OK
+*   NV_ERR_NOT_SUPPORTED
+*/
+
+#define NV0073_CTRL_CMD_SPECIFIC_HDCP_KEY_DECRYPTION (0x7302b2U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS_MESSAGE_ID (0xB2U)
+
+typedef struct NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 flags;
+} NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_STATUS                            0:0
+#define NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_STATUS_FAILED (0x0000000U)
+#define NV0073_CTRL_SPECIFIC_HDCP_KEY_DECRYPTION_STATUS_PASSED (0x0000001U)
+
 /* _ctrl0073specific_h_ */

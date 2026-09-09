@@ -795,6 +795,78 @@ fabricMulticastCleanupCacheInvokeCallback_IMPL
     portSyncRwLockReleaseWrite(pFabric->pMulticastFabriCacheLock);
 }
 
+NvU32
+fabricMulticastCacheSnapshotRequestIds_IMPL
+(
+    Fabric  *pFabric,
+    NvU64  **ppRequestIds
+)
+{
+    FabricCacheSubmap *pSetupSubmap;
+    FabricCacheSubmap *pCleanupSubmap;
+    FabricCacheIter smIter;
+    NvU32 totalCount = 0;
+    NvU32 idx = 0;
+
+    *ppRequestIds = NULL;
+
+    portSyncRwLockAcquireRead(pFabric->pMulticastFabriCacheLock);
+
+    pSetupSubmap = multimapFindSubmap(&pFabric->fabricMulticastCache, 0);
+    pCleanupSubmap = multimapFindSubmap(&pFabric->fabricMulticastCache, 1);
+
+    if (pSetupSubmap != NULL)
+        totalCount += multimapCountSubmapItems(&pFabric->fabricMulticastCache,
+                                                pSetupSubmap);
+    if (pCleanupSubmap != NULL)
+        totalCount += multimapCountSubmapItems(&pFabric->fabricMulticastCache,
+                                                pCleanupSubmap);
+
+    if (totalCount == 0)
+    {
+        portSyncRwLockReleaseRead(pFabric->pMulticastFabriCacheLock);
+        return 0;
+    }
+
+    *ppRequestIds = portMemAllocNonPaged(totalCount * sizeof(NvU64));
+    if (*ppRequestIds == NULL)
+    {
+        portSyncRwLockReleaseRead(pFabric->pMulticastFabriCacheLock);
+        return 0;
+    }
+
+    if (pSetupSubmap != NULL)
+    {
+        smIter = multimapSubmapIterItems(&pFabric->fabricMulticastCache,
+                                          pSetupSubmap);
+        while (multimapItemIterNext(&smIter))
+        {
+            NV_ASSERT_OR_GOTO(idx < totalCount, done);
+            (*ppRequestIds)[idx++] = multimapItemKey(
+                                         &pFabric->fabricMulticastCache,
+                                         smIter.pValue);
+        }
+    }
+
+    if (pCleanupSubmap != NULL)
+    {
+        smIter = multimapSubmapIterItems(&pFabric->fabricMulticastCache,
+                                          pCleanupSubmap);
+        while (multimapItemIterNext(&smIter))
+        {
+            NV_ASSERT_OR_GOTO(idx < totalCount, done);
+            (*ppRequestIds)[idx++] = multimapItemKey(
+                                         &pFabric->fabricMulticastCache,
+                                         smIter.pValue);
+        }
+    }
+
+done:
+    portSyncRwLockReleaseRead(pFabric->pMulticastFabriCacheLock);
+
+    return idx;
+}
+
 void
 fabricSetFmSessionFlags_IMPL
 (

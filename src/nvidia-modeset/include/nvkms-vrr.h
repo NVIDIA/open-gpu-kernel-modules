@@ -45,10 +45,10 @@ void nvAdjustHwModeTimingsForVrrEvo(
 void nvDisableVrr(NVDevEvoPtr pDevEvo);
 void nvEnableVrr(NVDevEvoPtr pDevEvo);
 void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo,
-                                   const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES]);
-void nvSetVrrActive(NVDevEvoPtr pDevEvo, 
-                    const NvU32 applyAllowVrrApiHeadMasks[NVKMS_MAX_SUBDEVICES], 
-                    const NvU32 vrrActiveApiHeadMasks[NVKMS_MAX_SUBDEVICES]);
+                                   const NvU32 applyAllowVrrApiHeadMask);
+void nvSetVrrActive(NVDevEvoPtr pDevEvo,
+                    const NvU32 applyAllowVrrApiHeadMask,
+                    const NvU32 vrrActiveApiHeadMask);
 void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
                                  const NVFlipChannelEvoHwState *pOld,
                                  NVFlipChannelEvoHwState *pNew);

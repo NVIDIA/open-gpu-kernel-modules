@@ -52,7 +52,7 @@
 #endif
 
 #ifndef LIBSPDM_STDDEF_ALT
-#include <stddef.h>
+#include <nv_stddef.h>
 #else
 #include LIBSPDM_STDDEF_ALT
 #endif

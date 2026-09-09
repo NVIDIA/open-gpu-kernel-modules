@@ -142,6 +142,7 @@ typedef enum
     UVM_TEST_VA_RANGE_TYPE_INVALID = 0,
     UVM_TEST_VA_RANGE_TYPE_MANAGED,
     UVM_TEST_VA_RANGE_TYPE_EXTERNAL,
+    UVM_TEST_VA_RANGE_TYPE_DMA_BUF,
     UVM_TEST_VA_RANGE_TYPE_CHANNEL,
     UVM_TEST_VA_RANGE_TYPE_SKED_REFLECTED,
     UVM_TEST_VA_RANGE_TYPE_SEMAPHORE_POOL,
@@ -1623,6 +1624,42 @@ typedef struct
     NvBool                          cdmmDevmemEnabled;          // Out
     NV_STATUS                       rmStatus;                   // Out
 } UVM_TEST_QUERY_CDMM_DEVMEM_PARAMS;
+
+#define UVM_TEST_EXPORT_DMA_BUF                          UVM_TEST_IOCTL_BASE(117)
+typedef struct {
+  NvU64     size;               // In
+  NvS32     fd;                 // Out
+  NV_STATUS rmStatus;           // Out
+} UVM_TEST_EXPORT_DMA_BUF_PARAMS;
+
+#define UVM_TEST_REVOKE_DMA_BUF                          UVM_TEST_IOCTL_BASE(118)
+typedef struct {
+  NvS32     fd;                 // In
+  NV_STATUS rmStatus;           // Out
+} UVM_TEST_REVOKE_DMA_BUF_PARAMS;
+
+#define UVM_TEST_QUERY_EGM_STATE                         UVM_TEST_IOCTL_BASE(119)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;   // In
+    NvBool          enabled;    // Out
+    NV_STATUS       rmStatus;   // Out
+} UVM_TEST_QUERY_EGM_STATE_PARAMS;
+
+#define UVM_TEST_PMM_LAZY_FREE_SET_DELAY                 UVM_TEST_IOCTL_BASE(120)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;   // In
+    NvU32           delay_us;   // In
+    NV_STATUS       rmStatus;   // Out
+} UVM_TEST_PMM_LAZY_FREE_SET_DELAY_PARAMS;
+
+#define UVM_TEST_PMM_EVICT_TEMP_PINNED                   UVM_TEST_IOCTL_BASE(121)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;   // In
+    NV_STATUS       rmStatus;   // Out
+} UVM_TEST_PMM_EVICT_TEMP_PINNED_PARAMS;
 
 #ifdef __cplusplus
 }

@@ -114,7 +114,6 @@ void ConnectorImpl2x::applyDP2xRegkeyOverrides()
     this->maxLinkRateFromRegkey = dpRegkeyDatabase.applyMaxLinkRateOverrides;
     bSupportInternalUhbrOnFpga  = dpRegkeyDatabase.supportInternalUhbrOnFpga;
     this->bDisableWatermarkCaching = dpRegkeyDatabase.bDisableWatermarkCaching;
-    this->bEnableClearMSAWhenNotUsed = dpRegkeyDatabase.bEnableClearMSAWhenNotUsed;
     if (dpRegkeyDatabase.bIgnoreCableIdCaps)
     {
         hal->setIgnoreCableIdCaps(true);
@@ -207,6 +206,17 @@ bool ConnectorImpl2x::willLinkSupportMode
     if (linkConfig.lanes == 0 || linkConfig.peakRate == 0)
         return false;
 
+    //
+    // Guard against depth=0 reaching RM IMP (NV0073_CTRL_CMD_CALCULATE_DP_IMP).
+    // Legitimate modes always carry a non-zero depth; landing here with 0
+    // indicates a caller bug (see bug 6112174). Reject before marshaling.
+    //
+    if (modesetInfo.depth == 0)
+    {
+        DP_ASSERT(!"DP2xCONN> willLinkSupportMode called with depth=0");
+        return false;
+    }
+
     DP_ASSERT(this->isFECSupported());
 
     // SST 8b/10b config
@@ -244,8 +254,8 @@ bool ConnectorImpl2x::willLinkSupportMode
             if ((modesetInfo.pixelClockHz * modesetInfo.depth) >= (8 * laneDataRate * linkConfig.lanes * DSC_FACTOR))
             {
                 return false;
-            }            
-        }      
+            }
+        }
     }
 
     if (!this->bDisableWatermarkCaching)
@@ -603,6 +613,12 @@ LinkConfiguration ConnectorImpl2x::getMaxLinkConfig()
  */
 bool ConnectorImpl2x::checkIsModePossibleMST(GroupImpl * targetGroup)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> checkIsModePossibleMST called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
     if (!willLinkSupportMode(activeLinkConfig, targetGroup->lastModesetInfo, targetGroup->headIndex,
                              &targetGroup->timeslot.watermarks))
     {
@@ -615,17 +631,70 @@ bool ConnectorImpl2x::checkIsModePossibleMST(GroupImpl * targetGroup)
     return true;
 }
 
+void ConnectorImpl2x::beginCompoundQuery(const bool bForceEnableFEC)
+{
+    // Base class initialization (link assessment, flags, counters)
+    if (linkGuessed && (main->getSorIndex() != DP_INVALID_SOR_INDEX))
+    {
+        assessLink();
+    }
+
+    DP_ASSERT(!compoundQueryActive && "Previous compoundQuery was not ended.");
+    compoundQueryActive = true;
+    compoundQueryCount = 0;
+    compoundQueryResult = true;
+    compoundQueryLocalLinkPBN = 0;
+    compoundQueryUsedTunnelingBw = 0;
+    compoundQueryForceEnableFEC = bForceEnableFEC;
+
+    for (Device * i = enumDevices(0); i; i = enumDevices(i))
+    {
+        DeviceImpl * dev = (DeviceImpl *)i;
+
+        if (i->getTopologyAddress().size() <= 1)
+        {
+            dev->bandwidth.lastHopLinkConfig = highestAssessedLC;
+            dev->bandwidth.compound_query_state.totalTimeSlots = 63;
+            dev->bandwidth.compound_query_state.timeslots_used_by_query = 0;
+            continue;
+        }
+
+        if (!this->linkUseMultistream())
+            continue;
+
+        // For 2x: skip per-device EPR here.
+        // EPR will be sent as a path message in compoundQueryAttachMSTGeneric
+        // to get the bottleneck PBN for the entire path.
+        dev->bandwidth.compound_query_state.timeslots_used_by_query = 0;
+        dev->bandwidth.compound_query_state.bandwidthAllocatedForIndex = 0;
+    }
+}
+
 bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
                                                     const DpModesetParams &modesetParams,         // Modeset info
                                                     CompoundQueryAttachMSTInfo * localInfo,
                                                     DscParams *pDscParams,                        // DSC parameters
                                                     DP_IMP_ERROR *pErrorCode)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> compoundQueryAttachMSTGeneric called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
     if (!pDscParams || (pDscParams && !pDscParams->bEnableDsc))
     {
         NvU32 symbolSize = GET_SYMBOL_SIZE(activeLinkConfig.bIs128b132bChannelCoding);
         NvU32 hActive = localInfo->localModesetInfo.surfaceWidth;
         NvU32 bpp = localInfo->localModesetInfo.depth;
+
+        //
+        // bpp/hActive should never be zero here. compoundQueryAttachMST
+        // validates input; if depth lands on 0 in this branch it means a
+        // prior MSTGeneric scaling leaked into a retry path (bug 6112174).
+        //
+        DP_ASSERT(bpp != 0 && "DP2xCONN> MSTGeneric non-DSC branch entered with depth=0");
+        DP_ASSERT(hActive != 0 && "DP2xCONN> MSTGeneric non-DSC branch entered with surfaceWidth=0");
 
         NvU32 bitsPerLane                   = (NvU32)NV_CEIL(hActive, LOGICAL_LANES) * bpp;
         NvU32 totalSymbolsPerLane           = (NvU32)NV_CEIL(bitsPerLane, symbolSize);
@@ -643,12 +712,23 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
 
     // I. Evaluate use of local link bandwidth
 
-    //      Calculate the PBN required
+    // Calculate the PBN required.
     unsigned base_pbn, slots, slots_pbn;
     localInfo->lc.pbnRequired(localInfo->localModesetInfo, base_pbn, slots, slots_pbn);
 
-    //      Accumulate the amount of PBN rounded up to nearest timeslot
+    // Accumulate the amount of PBN rounded up to nearest timeslot.
     compoundQueryLocalLinkPBN += slots_pbn;
+    //
+    // If NO_VCPF WAR is enabled, then the DP Branch Device adds +1 time-slot per DP stream due to the 0.3% overhead.
+    // To limit the available time-slots at DPTX to prevent the system from enumerating modes that would exceed the 63 time-slot limit
+    // at the DP_MST Branch Device, add +1 time-slot per DP stream to the compoundQueryLocalLinkPBN.
+    // Refer Bug 5795004.
+    //
+    if (hal->isDpInTunnelingSupported() && (!this->bDisableDpMstTunnelingNoVcpfWar) && (localInfo->lc.lanes == 4U) && main->isDpTunnelingHwBugWarEnabled())
+    {
+        compoundQueryLocalLinkPBN += localInfo->lc.PBNForSlots(1U);
+    }
+
     if (compoundQueryLocalLinkPBN > localInfo->lc.pbnTotal())
     {
         compoundQueryResult = false;
@@ -656,53 +736,13 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
         return false;
     }
 
-    //      Verify the min blanking, etc. No headIndex (default 0) for mode enumeration.
+    // Verify the min blanking, etc. No headIndex (default 0) for mode enumeration.
     if (!willLinkSupportMode(localInfo->lc, localInfo->localModesetInfo))
     {
         compoundQueryResult = false;
         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_WATERMARK_BLANKING)
         return false;
     }
-
-    if (!hal->isDp2xChannelCodingCapable())
-    {
-        for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
-        {
-            DeviceImpl * i = (DeviceImpl *)d;
-
-            // Allocate bandwidth for the entire path to the root
-            //   NOTE: Above we're already handle the local link
-            DeviceImpl * tail = i;
-            while (tail && tail->getParent())
-            {
-                // Have we already accounted for this stream?
-                if (!(tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex & (1 << compoundQueryCount)))
-                {
-                    tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex |= (1 << compoundQueryCount);
-
-                    LinkConfiguration * linkConfig = tail->inferLeafLink(NULL);
-                    tail->bandwidth.compound_query_state.timeslots_used_by_query += linkConfig->slotsForPBN(base_pbn);
-
-                    if (tail->bandwidth.compound_query_state.timeslots_used_by_query >
-                        tail->bandwidth.compound_query_state.totalTimeSlots)
-                    {
-                        compoundQueryResult = false;
-                        tail->bandwidth.compound_query_state.timeslots_used_by_query -= linkConfig->slotsForPBN(base_pbn);
-                        tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex &= ~(1 << compoundQueryCount);
-                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
-                    }
-                }
-                tail = (DeviceImpl*)tail->getParent();
-            }
-        }
-        // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
-        if (!compoundQueryResult)
-        {
-            compoundQueryLocalLinkPBN -= slots_pbn;
-        }
-    }
-    else
-    {
         for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
         {
             DeviceImpl * tail = (DeviceImpl *)d;
@@ -717,6 +757,16 @@ bool ConnectorImpl2x::compoundQueryAttachMSTGeneric(Group * target,
                     SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
                 }
             }
+        }
+
+    // If the compoundQueryResult is false, we need to reset the compoundQueryLocalLinkPBN
+    if (!compoundQueryResult)
+    {
+        compoundQueryLocalLinkPBN -= slots_pbn;
+        // Subtract 1 PBN from compoundQueryLocalLinkPBN which was added for DP_MST Tunneling NO_VCPF WAR.
+        if (hal->isDpInTunnelingSupported() && (!this->bDisableDpMstTunnelingNoVcpfWar) && (localInfo->lc.lanes == 4U) && main->isDpTunnelingHwBugWarEnabled())
+        {
+            compoundQueryLocalLinkPBN -= localInfo->lc.PBNForSlots(1U);
         }
     }
 
@@ -759,6 +809,19 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
     bool       bStuffDummySymbolsFor128b132b = this->bStuffDummySymbolsFor128b132b;
     bool       bStuffDummySymbolsFor8b10b    = this->bStuffDummySymbolsFor8b10b;
 
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyAttachBegin called when connector is not active or when detection is in progress!");
+        return false;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_PRINTF(DP_ERROR, "DP2xCONN> notifyAttachBegin called when Plugged State is false!");
+        return false;
+    }
+
     if(preferredLinkConfig.isValid())
     {
         bEnableFEC = preferredLinkConfig.bEnableFEC;
@@ -777,10 +840,17 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         }
     }
 
-    DP_PRINTF(DP_NOTICE, "DP2xCONN> Notify Attach Begin (Head %d, pclk %" NvU64_fmtu " (KHz) raster %d x %d  %d bpp)",
-              modesetParams.headIndex, (pixelClockHz/1000), rasterWidth, rasterHeight, depth);
+    DP_PRINTF(DP_NOTICE, "DP2xCONN> Notify Attach Begin (Head %d, pclk %" NvU64_fmtu " (KHz) raster %d x %d  %d bpp, DSC %d, FEC %d)",
+              modesetParams.headIndex, (pixelClockHz/1000), rasterWidth, rasterHeight, depth, bEnableDsc, bEnableFEC);
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN, modesetParams.headIndex, pixelClockHz, rasterWidth, rasterHeight,
                     depth, bEnableDsc, bEnableFEC);
+
+    if (linkUseMultistream() && hal->isDpInTunnelingSupported() && this->bDisableDpMstTunnelingFec)
+    {
+        // Disable FEC for DP_MST Tunneling.
+        DP_PRINTF(DP_NOTICE, "DP2xCONN> Forcing FEC disable for DP_MST Tunneling");
+        bEnableFEC = false;
+    }
 
     if (!depth || !pixelClockHz)
     {
@@ -980,15 +1050,11 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
     }
     else
     {
-        // Clear MSA parameters for MST topology
-        if (this->bEnableClearMSAWhenNotUsed)
-        {
-            NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS msaParams = modesetParams.msaparams;
-            msaParams.bEnableMSA        = false;
-
-            main->setDpStereoMSAParameters(false, msaParams);
-            main->setDpMSAParameters(false, msaParams);
-        }
+        // CLear MSA parameters for MST topology
+        NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS msaParams = modesetParams.msaparams;
+        msaParams.bEnableMSA        = false;
+        main->setDpStereoMSAParameters(false, msaParams);
+        main->setDpMSAParameters(false, msaParams);
     }
 
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN_STATUS, bLinkTrainingStatus);
@@ -1039,6 +1105,19 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 */
 void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyAttachEnd called when connector is not active or when detection is in progress!");
+        return;
+    }
+
+    // Skip gating modeset on HPD for DDS panels
+    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    {
+        DP_PRINTF(DP_ERROR, "DP2xCONN> notifyAttachEnd called when Plugged State is false!");
+        return;
+    }
+
     if (!activeLinkConfig.bIs128b132bChannelCoding)
         return ConnectorImpl::notifyAttachEnd(modesetCancelled);
 
@@ -1423,9 +1502,10 @@ void ConnectorImpl2x::afterDeleteStream(GroupImpl * group)
  *
  * @return      If link training is done and result is the same as requested.
  */
-bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTrainingType trainType)
+bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTrainingType trainType,
+                            bool bAllowFullFallback)
 {
-    bool trainResult = ConnectorImpl::train(lConfig, force, trainType);
+    bool trainResult = ConnectorImpl::train(lConfig, force, trainType, bAllowFullFallback);
     if (activeLinkConfig.lanes != 0 &&
         activeLinkConfig.bIs128b132bChannelCoding)
     {
@@ -1456,6 +1536,12 @@ bool ConnectorImpl2x::train(const LinkConfiguration &lConfig, bool force, LinkTr
  */
 void ConnectorImpl2x::notifyDetachBegin(Group *target)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyDetachBegin called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     bool bApplyStuffDummySymbolsWAR = this->bApplyStuffDummySymbolsWAR;
     if (!target)
         target = firmwareGroup;
@@ -1498,10 +1584,16 @@ void ConnectorImpl2x::notifyDetachBegin(Group *target)
     return ConnectorImpl::notifyDetachBegin(target);
 }
 
-void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive)
+void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
 {
+    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    {
+        DP_ASSERT(0 && "DPCONN> notifyDetachEnd called when connector is not active or when detection is in progress!");
+        return;
+    }
+
     if (!activeLinkConfig.bIs128b132bChannelCoding)
-        return ConnectorImpl::notifyDetachEnd(bKeepOdAlive);
+        return ConnectorImpl::notifyDetachEnd(bKeepOdAlive, bKeepLinkOn);
 
     GroupImpl* currentModesetDeviceGroup = NULL;
     DP_PRINTF(DP_NOTICE, "DP2xCONN> Notify detach end");
@@ -1613,8 +1705,10 @@ void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive)
             // lost device not yet detached. Avoid to powerdown for the case for following
             // device discovery hdcp probe.
             //
-            if (!bIsDiscoveryDetectActive)
+            if (!bIsDiscoveryDetectActive && !bMstTimeslotBug4968411)
+            {
                 powerdownLink(!main->skipPowerdownEdpPanelWhenHeadDetach() && !bKeepOdAlive);
+            }
         }
         if (this->policyModesetOrderMitigation && this->modesetOrderMitigation)
             this->modesetOrderMitigation = false;
@@ -2160,4 +2254,26 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
     {
         setDisableDownspread(true);
     }
+}
+
+bool ConnectorImpl2x::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
+                                                     bool bSameTimings)
+{
+    if (bUseLegacyHeadShutdownPolicy)
+    {
+        // Regkey override: fall back to the DP1.x-style data-rate >= policy.
+        return ConnectorImpl::avoidHeadShutdownForLinkConfig(targetLc, bSameTimings);
+    }
+
+    //
+    // T25x: scope bSameTimings requirement to N1x + DP tunneling only (bug 6054761).
+    // isDpInTunnelingSupported()     — runtime: DP tunnel topology detected
+    // isDpTunnelingHwBugWarEnabled() — set by RM only on T25x/N1x platforms
+    //
+    bool bN1xTunneling = hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled();
+    bool bAvoidShutdown = (targetLc == activeLinkConfig) && (!bN1xTunneling || bSameTimings);
+    DP_PRINTF(DP_NOTICE, "DP2.x avoidHeadShutdown: target=%llu active=%llu sameTimings=%d bN1xTunneling=%d result=%d",
+              targetLc.getTotalDataRate(), activeLinkConfig.getTotalDataRate(),
+              bSameTimings, bN1xTunneling, bAvoidShutdown);
+    return bAvoidShutdown;
 }

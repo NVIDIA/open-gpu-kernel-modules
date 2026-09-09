@@ -62,6 +62,7 @@
 #include <class/clb0cd.h>               // PROFILER_DEVICE_EVENT
 #include <class/clb0ce.h>               // PROFILER_CONTEXT_EVENT
 #include <class/clcdcd.h>               // TRACE_DEVICE_EVENT
+#include <class/cld0cd.h>               // WPPS_CONFIG_SESSION
 #include <class/cl00e0.h>               // NV_MEMORY_EXPORT
 #include <class/cl0050.h>               // NV_CE_UTILS
 #include <class/cl00f8.h>               // NV_MEMORY_FABRIC
@@ -256,6 +257,7 @@
 #include <class/clc076.h>               // GP100_UVM_SW
 #include <class/cla0bc.h>               // NVENC_SW_SESSION
 #include <class/cl90cd.h>               // NV_EVENT_BUFFER
+#include <class/cl90d0.h>               // NV_OPERATIONAL_EVENT_BUFFER_BIND
 #include <class/cla0bd.h>               // NVFBC_SW_SESSION
 #include <class/clcb33.h>               // NV_CONFIDENTIAL_COMPUTE
 #include <class/clcbca.h>               // NV_COUNTER_COLLECTION_UNIT
@@ -418,6 +420,10 @@
 
 #ifndef TRACE_DEVICE_EVENT
 #define TRACE_DEVICE_EVENT                       (0x0000cdcd)
+#endif
+
+#ifndef WPPS_CONFIG_SESSION
+#define WPPS_CONFIG_SESSION                      (0x0000d0cd)
 #endif
 
 #ifndef NV_MEMORY_EXPORT
@@ -1221,6 +1227,10 @@
 
 #ifndef NV_EVENT_BUFFER
 #define NV_EVENT_BUFFER                          (0x000090cd)
+#endif
+
+#ifndef NV_OPERATIONAL_EVENT_BUFFER_BIND
+#define NV_OPERATIONAL_EVENT_BUFFER_BIND         (0x000090d0)
 #endif
 
 #ifndef NVFBC_SW_SESSION

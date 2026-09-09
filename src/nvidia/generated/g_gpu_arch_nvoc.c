@@ -49,6 +49,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GpuArch =
 {
     .classInfo.size =               sizeof(GpuArch),
     .classInfo.classId =            classId(GpuArch),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "GpuArch",
@@ -111,8 +112,8 @@ void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // Hal field -- bGpuArchIsZeroFb
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB10C | GB20B | GB20C */ 
     {
         pThis->bGpuArchIsZeroFb = ((NvBool)(0 == 0));
     }
@@ -123,7 +124,7 @@ void __nvoc_init_dataField_GpuArch(GpuArch *pThis) {
     }
 
     // Hal field -- bGpuarchSupportsIgpuRg
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) )) /* ChipHal: GB10B | GB10C */ 
     {
         pThis->bGpuarchSupportsIgpuRg = ((NvBool)(0 == 0));
     }
@@ -178,14 +179,14 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     {
         pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_T234D;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB20B | GB20C */ 
-    {
-        pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_GB10B;
-    }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) )) /* ChipHal: GB10B | GB10C | GB20B | GB20C */ 
+    {
+        pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_GB10B;
     }
     else
     {
@@ -193,7 +194,7 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     }
 
     // gpuarchGetDmaAddrWidth -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) )) /* ChipHal: GB10B | GB10C */ 
     {
         pThis->__gpuarchGetDmaAddrWidth__ = &gpuarchGetDmaAddrWidth_GB10B;
     }
@@ -202,13 +203,24 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     {
         pThis->__gpuarchGetDmaAddrWidth__ = &gpuarchGetDmaAddrWidth_b2b553;
     }
-} // End __nvoc_init_funcTable_GpuArch_1 with approximately 6 basic block(s).
+
+    // gpuarchGetGpcFuseStatusOffset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) )) /* ChipHal: GB10B | GB10C */ 
+    {
+        pThis->__gpuarchGetGpcFuseStatusOffset__ = &gpuarchGetGpcFuseStatusOffset_GB10B;
+    }
+    // default
+    else
+    {
+        pThis->__gpuarchGetGpcFuseStatusOffset__ = &gpuarchGetGpcFuseStatusOffset_b2b553;
+    }
+} // End __nvoc_init_funcTable_GpuArch_1 with approximately 8 basic block(s).
 
 
-// Initialize vtable(s) for 2 virtual method(s).
+// Initialize vtable(s) for 3 virtual method(s).
 void __nvoc_init_funcTable_GpuArch(GpuArch *pThis) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
+    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_GpuArch_1(pThis);
 }
 

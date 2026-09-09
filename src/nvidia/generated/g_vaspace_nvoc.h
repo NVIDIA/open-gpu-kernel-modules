@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,6 +71,9 @@ typedef struct VirtMemAllocator VirtMemAllocator;
 
 typedef struct MMU_MAP_TARGET       MMU_MAP_TARGET;
 typedef struct NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS;
+typedef struct GMMU_FMT GMMU_FMT;
+typedef struct MMU_TRACE_CALLBACKS MMU_TRACE_CALLBACKS;
+typedef struct MMU_WALK MMU_WALK;
 struct Device;
 
 #ifndef __nvoc_class_id_Device
@@ -79,6 +82,10 @@ typedef struct Device Device;
 #endif /* __nvoc_class_id_Device */
 
 
+
+typedef struct MMU_WALK MMU_WALK;
+typedef struct MMU_FMT_LEVEL MMU_FMT_LEVEL;
+typedef struct NV_CTRL_VASPACE_PAGE_LEVEL NV_CTRL_VASPACE_PAGE_LEVEL;
 
 typedef struct
 {
@@ -287,7 +294,7 @@ struct OBJVASPACE {
 };
 
 
-// Vtable with 27 per-class function pointers
+// Vtable with 29 per-class function pointers
 struct NVOC_VTABLE__OBJVASPACE {
     NV_STATUS (*__vaspaceConstruct___)(struct OBJVASPACE * /*this*/, NvU32, NvU32, NvU64, NvU64, NvU64, NvU64, NvU32);  // pure virtual
     NV_STATUS (*__vaspaceAlloc__)(struct OBJVASPACE * /*this*/, NvU64, NvU64, NvU64, NvU64, NvU64, VAS_ALLOC_FLAGS, NvU64 *);  // pure virtual
@@ -309,6 +316,8 @@ struct NVOC_VTABLE__OBJVASPACE {
     NvBool (*__vaspaceIsAtsEnabled__)(struct OBJVASPACE * /*this*/);  // inline virtual body
     NV_STATUS (*__vaspaceGetPasid__)(struct OBJVASPACE * /*this*/, NvU32 *);  // inline virtual body
     PMEMORY_DESCRIPTOR (*__vaspaceGetPageDirBase__)(struct OBJVASPACE * /*this*/, struct OBJGPU *);  // inline virtual body
+    const GMMU_FMT * (*__vaspaceGetGmmuFmt__)(struct OBJVASPACE * /*this*/, struct OBJGPU *);  // inline virtual body
+    NV_STATUS (*__vaspaceGetMmuWalker__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, MMU_WALK **);  // inline virtual body
     NV_STATUS (*__vaspacePinRootPageDir__)(struct OBJVASPACE * /*this*/, struct OBJGPU *);  // inline virtual body
     void (*__vaspaceUnpinRootPageDir__)(struct OBJVASPACE * /*this*/, struct OBJGPU *);  // inline virtual body
     NV_STATUS (*__vaspaceInvalidateTlb__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, VAS_PTE_UPDATE_TYPE);  // virtual
@@ -382,6 +391,16 @@ static inline NV_STATUS vaspaceFillAllocParams(struct OBJVASPACE *pVAS, const FB
 #define vaspaceFillAllocParams(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags) vaspaceFillAllocParams_IMPL(pVAS, pAllocInfo, pSize, pAlign, pRangeLo, pRangeHi, pPageSizeLockMask, pFlags)
 #endif // __nvoc_vaspace_h_disabled
 
+NV_STATUS vaspaceGetPageLevelInfoCommon_IMPL(struct OBJVASPACE *pVAS, MMU_WALK *pWalk, const MMU_FMT_LEVEL *pRootFmt, NvU64 virtAddress, NvU64 pageSize, NvU32 *pNumLevels, NV_CTRL_VASPACE_PAGE_LEVEL *pLevels);
+#ifdef __nvoc_vaspace_h_disabled
+static inline NV_STATUS vaspaceGetPageLevelInfoCommon(struct OBJVASPACE *pVAS, MMU_WALK *pWalk, const MMU_FMT_LEVEL *pRootFmt, NvU64 virtAddress, NvU64 pageSize, NvU32 *pNumLevels, NV_CTRL_VASPACE_PAGE_LEVEL *pLevels) {
+    NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_vaspace_h_disabled
+#define vaspaceGetPageLevelInfoCommon(pVAS, pWalk, pRootFmt, virtAddress, pageSize, pNumLevels, pLevels) vaspaceGetPageLevelInfoCommon_IMPL(pVAS, pWalk, pRootFmt, virtAddress, pageSize, pNumLevels, pLevels)
+#endif // __nvoc_vaspace_h_disabled
+
 
 // Wrapper macros for halified functions
 #define vaspaceConstruct__FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceConstruct___
@@ -424,6 +443,10 @@ static inline NV_STATUS vaspaceFillAllocParams(struct OBJVASPACE *pVAS, const FB
 #define vaspaceGetPasid(pVAS, pPasid) vaspaceGetPasid_DISPATCH(pVAS, pPasid)
 #define vaspaceGetPageDirBase_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetPageDirBase__
 #define vaspaceGetPageDirBase(pVAS, pGpu) vaspaceGetPageDirBase_DISPATCH(pVAS, pGpu)
+#define vaspaceGetGmmuFmt_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetGmmuFmt__
+#define vaspaceGetGmmuFmt(pVAS, pGpu) vaspaceGetGmmuFmt_DISPATCH(pVAS, pGpu)
+#define vaspaceGetMmuWalker_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetMmuWalker__
+#define vaspaceGetMmuWalker(pVAS, pGpu, ppWalk) vaspaceGetMmuWalker_DISPATCH(pVAS, pGpu, ppWalk)
 #define vaspacePinRootPageDir_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspacePinRootPageDir__
 #define vaspacePinRootPageDir(pVAS, pGpu) vaspacePinRootPageDir_DISPATCH(pVAS, pGpu)
 #define vaspaceUnpinRootPageDir_FNPTR(pVAS) pVAS->__nvoc_metadata_ptr->vtable.__vaspaceUnpinRootPageDir__
@@ -520,6 +543,14 @@ static inline PMEMORY_DESCRIPTOR vaspaceGetPageDirBase_DISPATCH(struct OBJVASPAC
     return pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetPageDirBase__(pVAS, pGpu);
 }
 
+static inline const GMMU_FMT * vaspaceGetGmmuFmt_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetGmmuFmt__(pVAS, pGpu);
+}
+
+static inline NV_STATUS vaspaceGetMmuWalker_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__vaspaceGetMmuWalker__(pVAS, pGpu, ppWalk);
+}
+
 static inline NV_STATUS vaspacePinRootPageDir_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
     return pVAS->__nvoc_metadata_ptr->vtable.__vaspacePinRootPageDir__(pVAS, pGpu);
 }
@@ -613,6 +644,16 @@ static inline NV_STATUS vaspaceGetPasid_14ee5e(struct OBJVASPACE *pVAS, NvU32 *p
 static inline PMEMORY_DESCRIPTOR vaspaceGetPageDirBase_9451a7(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu){
     NV_ASSERT_PRECOMP(NV_FALSE);
     return ((void *)0);
+}
+
+static inline const GMMU_FMT * vaspaceGetGmmuFmt_9451a7(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu){
+    NV_ASSERT_PRECOMP(NV_FALSE);
+    return ((void *)0);
+}
+
+static inline NV_STATUS vaspaceGetMmuWalker_14ee5e(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk){
+    NV_ASSERT_PRECOMP(NV_FALSE);
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 static inline NV_STATUS vaspacePinRootPageDir_14ee5e(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu){

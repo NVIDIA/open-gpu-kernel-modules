@@ -122,6 +122,12 @@ struct FABRIC_VASPACE {
     NvU64 PRIVATE_FIELD(ucFabricLimit);
     NvU64 PRIVATE_FIELD(ucFabricInUseSize);
     NvU64 PRIVATE_FIELD(ucFabricFreeSize);
+    NvU64 PRIVATE_FIELD(ucEmulatedHandleBase);
+    NvU64 PRIVATE_FIELD(ucEmulatedHandleLimit);
+    NvU64 PRIVATE_FIELD(ucEmulatedHandleInUseSize);
+    NvU64 PRIVATE_FIELD(ucEmulatedHandleFreeSize);
+    NvU64 PRIVATE_FIELD(sysmemFabricBase);
+    NvU64 PRIVATE_FIELD(sysmemFabricLimit);
     NvU32 PRIVATE_FIELD(gfid);
 };
 
@@ -154,11 +160,17 @@ struct FABRIC_VASPACE_PRIVATE {
     NvU64 ucFabricLimit;
     NvU64 ucFabricInUseSize;
     NvU64 ucFabricFreeSize;
+    NvU64 ucEmulatedHandleBase;
+    NvU64 ucEmulatedHandleLimit;
+    NvU64 ucEmulatedHandleInUseSize;
+    NvU64 ucEmulatedHandleFreeSize;
+    NvU64 sysmemFabricBase;
+    NvU64 sysmemFabricLimit;
     NvU32 gfid;
 };
 
 
-// Vtable with 27 per-class function pointers
+// Vtable with 29 per-class function pointers
 struct NVOC_VTABLE__FABRIC_VASPACE {
     NV_STATUS (*__fabricvaspaceConstruct___)(struct FABRIC_VASPACE * /*this*/, NvU32, NvU32, NvU64, NvU64, NvU64, NvU64, NvU32);  // virtual override (vaspace) base (vaspace)
     NV_STATUS (*__fabricvaspaceAlloc__)(struct FABRIC_VASPACE * /*this*/, NvU64, NvU64, NvU64, NvU64, NvU64, VAS_ALLOC_FLAGS, NvU64 *);  // virtual override (vaspace) base (vaspace)
@@ -183,6 +195,8 @@ struct NVOC_VTABLE__FABRIC_VASPACE {
     NvBool (*__fabricvaspaceIsAtsEnabled__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__fabricvaspaceGetPasid__)(struct FABRIC_VASPACE * /*this*/, NvU32 *);  // inline virtual inherited (vaspace) base (vaspace) body
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetPageDirBase__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
+    const GMMU_FMT * (*__fabricvaspaceGetGmmuFmt__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *);  // inline virtual inherited (vaspace) base (vaspace) body
+    NV_STATUS (*__fabricvaspaceGetMmuWalker__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, MMU_WALK **);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__fabricvaspaceGetPageTableInfo__)(struct FABRIC_VASPACE * /*this*/, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__fabricvaspaceGetPteInfo__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *, RmPhysAddr *);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__fabricvaspaceSetPteInfo__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *);  // inline virtual inherited (vaspace) base (vaspace) body
@@ -254,6 +268,16 @@ static inline NV_STATUS fabricvaspaceGetFreeHeap(struct FABRIC_VASPACE *pFabricV
 #define fabricvaspaceGetFreeHeap(pFabricVAS, pFreeSize) fabricvaspaceGetFreeHeap_IMPL(pFabricVAS, pFreeSize)
 #endif // __nvoc_fabric_vaspace_h_disabled
 
+NV_STATUS fabricvaspaceGetFreeEmulatedHandleHeap_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceGetFreeEmulatedHandleHeap(struct FABRIC_VASPACE *pFabricVAS, NvU64 *pFreeSize) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceGetFreeEmulatedHandleHeap(pFabricVAS, pFreeSize) fabricvaspaceGetFreeEmulatedHandleHeap_IMPL(pFabricVAS, pFreeSize)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
 NV_STATUS fabricvaspaceGetGpaMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, NvBool bForcePhys, MEMORY_DESCRIPTOR **ppAdjustedMemdesc);
 #ifdef __nvoc_fabric_vaspace_h_disabled
 static inline NV_STATUS fabricvaspaceGetGpaMemdesc(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemdesc, struct OBJGPU *pMappingGpu, NvBool bForcePhys, MEMORY_DESCRIPTOR **ppAdjustedMemdesc) {
@@ -292,14 +316,14 @@ static inline void fabricvaspaceVaToGpaMapRemove(struct FABRIC_VASPACE *pFabricV
 #define fabricvaspaceVaToGpaMapRemove(pFabricVAS, vAddr) fabricvaspaceVaToGpaMapRemove_IMPL(pFabricVAS, vAddr)
 #endif // __nvoc_fabric_vaspace_h_disabled
 
-NV_STATUS fabricvaspaceAllocMulticast_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size);
+NV_STATUS fabricvaspaceAllocFixed_IMPL(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size);
 #ifdef __nvoc_fabric_vaspace_h_disabled
-static inline NV_STATUS fabricvaspaceAllocMulticast(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size) {
+static inline NV_STATUS fabricvaspaceAllocFixed(struct FABRIC_VASPACE *pFabricVAS, NvU64 pageSize, NvU64 alignment, VAS_ALLOC_FLAGS flags, NvU64 base, NvU64 size) {
     NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceAllocMulticast(pFabricVAS, pageSize, alignment, flags, base, size) fabricvaspaceAllocMulticast_IMPL(pFabricVAS, pageSize, alignment, flags, base, size)
+#define fabricvaspaceAllocFixed(pFabricVAS, pageSize, alignment, flags, base, size) fabricvaspaceAllocFixed_IMPL(pFabricVAS, pageSize, alignment, flags, base, size)
 #endif // __nvoc_fabric_vaspace_h_disabled
 
 NV_STATUS fabricvaspaceMapPhysMemdesc_IMPL(struct FABRIC_VASPACE *pFabricVAS, MEMORY_DESCRIPTOR *pFabricMemDesc, NvU64 fabricOffset, MEMORY_DESCRIPTOR *pPhysMemDesc, NvU64 physOffset, NvU64 physMapLength, NvU32 flags);
@@ -331,13 +355,42 @@ static inline NV_STATUS fabricvaspaceInitUCRange(struct FABRIC_VASPACE *pFabricV
 #define fabricvaspaceInitUCRange(pFabricVAS, pGpu, ucFabricBase, ucFabricSize) fabricvaspaceInitUCRange_IMPL(pFabricVAS, pGpu, ucFabricBase, ucFabricSize)
 #endif // __nvoc_fabric_vaspace_h_disabled
 
-void fabricvaspaceClearUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+NV_STATUS fabricvaspaceInitUCEmulatedHandleRange_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucEmulatedHandleBase, NvU64 ucEmulatedHandleSize);
 #ifdef __nvoc_fabric_vaspace_h_disabled
-static inline void fabricvaspaceClearUCRange(struct FABRIC_VASPACE *pFabricVAS) {
+static inline NV_STATUS fabricvaspaceInitUCEmulatedHandleRange(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 ucEmulatedHandleBase, NvU64 ucEmulatedHandleSize) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceInitUCEmulatedHandleRange(pFabricVAS, pGpu, ucEmulatedHandleBase, ucEmulatedHandleSize) fabricvaspaceInitUCEmulatedHandleRange_IMPL(pFabricVAS, pGpu, ucEmulatedHandleBase, ucEmulatedHandleSize)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceClearUCRanges_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceClearUCRanges(struct FABRIC_VASPACE *pFabricVAS) {
     NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
 }
 #else // __nvoc_fabric_vaspace_h_disabled
-#define fabricvaspaceClearUCRange(pFabricVAS) fabricvaspaceClearUCRange_IMPL(pFabricVAS)
+#define fabricvaspaceClearUCRanges(pFabricVAS) fabricvaspaceClearUCRanges_IMPL(pFabricVAS)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceInitSysmemFlaRange_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 sysmemFabricBase, NvU64 sysmemFabricSize);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceInitSysmemFlaRange(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NvU64 sysmemFabricBase, NvU64 sysmemFabricSize) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceInitSysmemFlaRange(pFabricVAS, pGpu, sysmemFabricBase, sysmemFabricSize) fabricvaspaceInitSysmemFlaRange_IMPL(pFabricVAS, pGpu, sysmemFabricBase, sysmemFabricSize)
+#endif // __nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceClearSysmemFlaRange_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceClearSysmemFlaRange(struct FABRIC_VASPACE *pFabricVAS) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else // __nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceClearSysmemFlaRange(pFabricVAS) fabricvaspaceClearSysmemFlaRange_IMPL(pFabricVAS)
 #endif // __nvoc_fabric_vaspace_h_disabled
 
 NV_STATUS fabricvaspaceGetPageLevelInfo_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
@@ -408,6 +461,10 @@ static inline NvBool fabricvaspaceIsInUse(struct FABRIC_VASPACE *pFabricVAS) {
 #define fabricvaspaceGetPasid(pVAS, pPasid) fabricvaspaceGetPasid_DISPATCH(pVAS, pPasid)
 #define fabricvaspaceGetPageDirBase_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetPageDirBase__
 #define fabricvaspaceGetPageDirBase(pVAS, pGpu) fabricvaspaceGetPageDirBase_DISPATCH(pVAS, pGpu)
+#define fabricvaspaceGetGmmuFmt_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetGmmuFmt__
+#define fabricvaspaceGetGmmuFmt(pVAS, pGpu) fabricvaspaceGetGmmuFmt_DISPATCH(pVAS, pGpu)
+#define fabricvaspaceGetMmuWalker_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetMmuWalker__
+#define fabricvaspaceGetMmuWalker(pVAS, pGpu, ppWalk) fabricvaspaceGetMmuWalker_DISPATCH(pVAS, pGpu, ppWalk)
 #define fabricvaspaceGetPageTableInfo_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetPageTableInfo__
 #define fabricvaspaceGetPageTableInfo(pVAS, pParams) fabricvaspaceGetPageTableInfo_DISPATCH(pVAS, pParams)
 #define fabricvaspaceGetPteInfo_FNPTR(pVAS) pVAS->__nvoc_base_OBJVASPACE.__nvoc_metadata_ptr->vtable.__vaspaceGetPteInfo__
@@ -510,6 +567,14 @@ static inline PMEMORY_DESCRIPTOR fabricvaspaceGetPageDirBase_DISPATCH(struct FAB
     return pVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceGetPageDirBase__(pVAS, pGpu);
 }
 
+static inline const GMMU_FMT * fabricvaspaceGetGmmuFmt_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceGetGmmuFmt__(pVAS, pGpu);
+}
+
+static inline NV_STATUS fabricvaspaceGetMmuWalker_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk) {
+    return pVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceGetMmuWalker__(pVAS, pGpu, ppWalk);
+}
+
 static inline NV_STATUS fabricvaspaceGetPageTableInfo_DISPATCH(struct FABRIC_VASPACE *pVAS, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *pParams) {
     return pVAS->__nvoc_metadata_ptr->vtable.__fabricvaspaceGetPageTableInfo__(pVAS, pParams);
 }
@@ -560,6 +625,26 @@ static inline NvU64 fabricvaspaceGetUCFlaStart(struct FABRIC_VASPACE *pFabricVAS
 static inline NvU64 fabricvaspaceGetUCFlaLimit(struct FABRIC_VASPACE *pFabricVAS){
     struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
     return pFabricVAS_PRIVATE->ucFabricLimit;
+}
+
+static inline NvU64 fabricvaspaceGetUCEmulatedHandleFlaStart(struct FABRIC_VASPACE *pFabricVAS){
+    struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
+    return pFabricVAS_PRIVATE->ucEmulatedHandleBase;
+}
+
+static inline NvU64 fabricvaspaceGetUCEmulatedHandleFlaLimit(struct FABRIC_VASPACE *pFabricVAS){
+    struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
+    return pFabricVAS_PRIVATE->ucEmulatedHandleLimit;
+}
+
+static inline NvU64 fabricvaspaceGetSysmemFlaStart(struct FABRIC_VASPACE *pFabricVAS){
+    struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
+    return pFabricVAS_PRIVATE->sysmemFabricBase;
+}
+
+static inline NvU64 fabricvaspaceGetSysmemFlaLimit(struct FABRIC_VASPACE *pFabricVAS){
+    struct FABRIC_VASPACE_PRIVATE *pFabricVAS_PRIVATE = (struct FABRIC_VASPACE_PRIVATE *)pFabricVAS;
+    return pFabricVAS_PRIVATE->sysmemFabricLimit;
 }
 
 #undef PRIVATE_FIELD

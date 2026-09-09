@@ -225,7 +225,7 @@ struct OBJTMR {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct OBJTMR *__nvoc_pbase_OBJTMR;    // tmr
 
-    // Vtable with 19 per-object function pointers
+    // Vtable with 20 per-object function pointers
     NV_STATUS (*__tmrDelay__)(struct OBJTMR * /*this*/, NvU32);  // halified (3 hals)
     NvU32 (*__tmrServiceInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (4 hals) override (intrserv) base (intrserv) body
     NV_STATUS (*__tmrSetCurrentTime__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (5 hals) body
@@ -242,6 +242,7 @@ struct OBJTMR {
     NV_STATUS (*__tmrSetCountdownIntrReset__)(OBJGPU *, struct OBJTMR * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (3 hals) body
     NV_STATUS (*__tmrGetTimerBar0MapInfo__)(OBJGPU *, struct OBJTMR * /*this*/, NvU64 *, NvU32 *);  // halified (3 hals) body
+    NvBool (*__tmrIsGrTickFreqChangeSupported__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__tmrGrTickFreqChange__)(OBJGPU *, struct OBJTMR * /*this*/, NvBool);  // halified (2 hals) body
     NV_STATUS (*__tmrGetGpuAndCpuTimestampPair__)(OBJGPU *, struct OBJTMR * /*this*/, NvU64 *, NvU64 *);  // halified (2 hals) body
     NvU32 (*__tmrGetTmrBaseAddr__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (3 hals) body
@@ -815,6 +816,9 @@ static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, struct TMR_E
 #define tmrGetTimerBar0MapInfo_FNPTR(pTmr) pTmr->__tmrGetTimerBar0MapInfo__
 #define tmrGetTimerBar0MapInfo(pGpu, pTmr, arg3, arg4) tmrGetTimerBar0MapInfo_DISPATCH(pGpu, pTmr, arg3, arg4)
 #define tmrGetTimerBar0MapInfo_HAL(pGpu, pTmr, arg3, arg4) tmrGetTimerBar0MapInfo_DISPATCH(pGpu, pTmr, arg3, arg4)
+#define tmrIsGrTickFreqChangeSupported_FNPTR(pTmr) pTmr->__tmrIsGrTickFreqChangeSupported__
+#define tmrIsGrTickFreqChangeSupported(pGpu, pTmr) tmrIsGrTickFreqChangeSupported_DISPATCH(pGpu, pTmr)
+#define tmrIsGrTickFreqChangeSupported_HAL(pGpu, pTmr) tmrIsGrTickFreqChangeSupported_DISPATCH(pGpu, pTmr)
 #define tmrGrTickFreqChange_FNPTR(pTmr) pTmr->__tmrGrTickFreqChange__
 #define tmrGrTickFreqChange(pGpu, pTmr, arg3) tmrGrTickFreqChange_DISPATCH(pGpu, pTmr, arg3)
 #define tmrGrTickFreqChange_HAL(pGpu, pTmr, arg3) tmrGrTickFreqChange_DISPATCH(pGpu, pTmr, arg3)
@@ -949,6 +953,10 @@ static inline NV_STATUS tmrGetTimerBar0MapInfo_DISPATCH(OBJGPU *pGpu, struct OBJ
     return pTmr->__tmrGetTimerBar0MapInfo__(pGpu, pTmr, arg3, arg4);
 }
 
+static inline NvBool tmrIsGrTickFreqChangeSupported_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return pTmr->__tmrIsGrTickFreqChangeSupported__(pGpu, pTmr);
+}
+
 static inline NV_STATUS tmrGrTickFreqChange_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg3) {
     return pTmr->__tmrGrTickFreqChange__(pGpu, pTmr, arg3);
 }
@@ -1022,9 +1030,9 @@ NvU32 tmrServiceInterrupt_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceSe
 
 NvU32 tmrServiceInterrupt_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams);
 
-NV_STATUS tmrSetCurrentTime_GB10B(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
 NV_STATUS tmrSetCurrentTime_GV100(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+NV_STATUS tmrSetCurrentTime_GB10B(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrSetCurrentTime_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
@@ -1180,8 +1188,8 @@ static inline NV_STATUS tmrGetIntrStatus_cb5ce8(OBJGPU *pGpu, struct OBJTMR *pTm
     return NV_OK;
 }
 
-static inline NV_STATUS tmrGetCurrentTime_18537a(struct OBJTMR *pTmr, NvU64 *pTime){
-    *pTime = osGetMonotonicTimeNs();
+static inline NV_STATUS tmrGetCurrentTime_f207dc(struct OBJTMR *pTmr, NvU64 *pTime){
+    *pTime = portTimeGetUptimeNanoseconds();
     return NV_OK;
 }
 
@@ -1190,8 +1198,8 @@ static inline NV_STATUS tmrGetCurrentTime_70fb36(struct OBJTMR *pTmr, NvU64 *pTi
     return NV_OK;
 }
 
-static inline NV_STATUS tmrGetCurrentTimeEx_18537a(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3){
-    *pTime = osGetMonotonicTimeNs();
+static inline NV_STATUS tmrGetCurrentTimeEx_f207dc(struct OBJTMR *pTmr, NvU64 *pTime, struct THREAD_STATE_NODE *arg3){
+    *pTime = portTimeGetUptimeNanoseconds();
     return NV_OK;
 }
 
@@ -1200,16 +1208,16 @@ static inline NV_STATUS tmrGetCurrentTimeEx_70fb36(struct OBJTMR *pTmr, NvU64 *p
     return NV_OK;
 }
 
-static inline NvU32 tmrGetTimeLo_b4121f(OBJGPU *pGpu, struct OBJTMR *pTmr){
-    return ((NvU32)(((NvU64)(osGetMonotonicTimeNs())) & 4294967295U));
+static inline NvU32 tmrGetTimeLo_07eed7(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return ((NvU32)(((NvU64)(portTimeGetUptimeNanoseconds())) & 4294967295U));
 }
 
 static inline NvU32 tmrGetTimeLo_841c58(OBJGPU *pGpu, struct OBJTMR *pTmr){
     return ((NvU32)(((NvU64)(osGetTimestamp())) & 4294967295U));
 }
 
-static inline NvU64 tmrGetTime_82bfc1(OBJGPU *pGpu, struct OBJTMR *pTmr){
-    return osGetMonotonicTimeNs();
+static inline NvU64 tmrGetTime_468d96(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return portTimeGetUptimeNanoseconds();
 }
 
 static inline NvU64 tmrGetTime_10cfcb(OBJGPU *pGpu, struct OBJTMR *pTmr){
@@ -1220,8 +1228,8 @@ static inline NvU32 tmrGetNsecShiftMask_b2b553(OBJGPU *pGpu, struct OBJTMR *pTmr
     return 0;
 }
 
-static inline NvU64 tmrGetTimeEx_82bfc1(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
-    return osGetMonotonicTimeNs();
+static inline NvU64 tmrGetTimeEx_468d96(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
+    return portTimeGetUptimeNanoseconds();
 }
 
 static inline NvU64 tmrGetTimeEx_10cfcb(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3){
@@ -1274,6 +1282,14 @@ static inline NV_STATUS tmrSetCountdown_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr
 
 static inline NV_STATUS tmrGetTimerBar0MapInfo_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg3, NvU32 *arg4){
     return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool tmrIsGrTickFreqChangeSupported_e661f0(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_TRUE;
+}
+
+static inline NvBool tmrIsGrTickFreqChangeSupported_d69453(OBJGPU *pGpu, struct OBJTMR *pTmr){
+    return NV_FALSE;
 }
 
 static inline NV_STATUS tmrGrTickFreqChange_395e98(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg3){

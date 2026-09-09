@@ -49,5 +49,12 @@
 #define NV_PBUS_SW_FRTS_INSECURE_CONFIG_MEDIA_TYPE_FB               0U
 #define NV_PBUS_SW_FRTS_INSECURE_CONFIG_MEDIA_TYPE_SYSMEM           1U
 /*!@}*/
+// Scratch bits for GPU containment error reporting
+#define NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR                            NV_PBUS_SW_SCRATCH(0x2D)
+#define NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR_CODE                       1:0
+#define NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR_NO_CONTAINMENT             0x0
+#define NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR_SW_CONTAINMENT             0x1
+#define NV_PBUS_SW_SCRATCH_GPU_CONTAINMENT_ERROR_HW_CONTAINMENT             0x2
+
 
 #endif // gb100_dev_nv_bus_addendum_h

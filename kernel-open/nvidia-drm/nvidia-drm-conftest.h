@@ -62,6 +62,8 @@
 #define NV_DRM_AVAILABLE
 #endif
 
+#if IS_ENABLED(CONFIG_DRM_FBDEV_EMULATION) || defined(__FreeBSD__)
+
 #if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) &&                             \
     defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
 #define NV_DRM_FBDEV_AVAILABLE
@@ -87,6 +89,7 @@
 #endif
 #endif
 
+#endif /* IS_ENABLED(CONFIG_DRM_FBDEV_EMULATION) || defined(__FreeBSD__) */
 
 /*
  * DRM color pipeline support (drm_colorop) was added by commit cfc27680ee20
@@ -94,6 +97,16 @@
  */
 #if defined(NV_DRM_DRM_COLOROP_H_PRESENT)
 #define NV_DRM_HAS_COLOROP
+#endif
+
+
+#if defined(NV_DRM_CONNECTOR_ATTACH_CONTENT_PROTECTION_PROPERTY_PRESENT) && \
+    defined(NV_DRM_HDCP_UPDATE_CONTENT_PROTECTION_PRESENT)
+#if (IS_ENABLED(CONFIG_DRM_DISPLAY_HDCP_HELPER))
+#include <drm/display/drm_hdcp_helper.h>
+// Support content protection prop only from K5.19 onwards
+#define NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
+#endif
 #endif
 
 /*

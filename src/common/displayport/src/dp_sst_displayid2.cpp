@@ -266,6 +266,8 @@ static bool sstReadDid2(DisplayID2x & did2x, AuxBus * aux, Timer * timer, MainLi
                             DP_PRINTF(DP_ERROR, "Failed to resize buffer");
                             return status;
                         }
+                        // Reassign pSection as resize() may have reallocated buffer->data
+                        pSection = buffer->data + vesaDisplayIdSize;
                         // Base block + extension blocks
                         did2x.setBlockCount(extensionCount + 1);
                     }

@@ -27,8 +27,12 @@
  * @brief   Provides the implementation for HOPPER chip specific FSP HAL
  *          interfaces.
  */
+
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/fsp/kern_fsp_retval.h"
+#include "events/gpu/fsp/fsp_events.h"
+#include "nvoc/event_bus.h"
+#include "nvport/time.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/gsp/gsp_init_args.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -49,7 +53,7 @@
 #include "published/hopper/gh100/dev_therm.h"
 #include "published/hopper/gh100/dev_therm_addendum.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nverror.h"
 #include "cper/gpu_cper.h"
 
@@ -61,8 +65,11 @@
 
 #include "gpu/conf_compute/conf_compute.h"
 
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
+
 // Blocks are 64 DWORDS
 #define DWORDS_PER_EMEM_BLOCK 64U
+#define FSP_EMEM_MAX_MESSAGE_SIZE_BYTES (32 * 1024)
 
 static void _kfspUpdateQueueHeadTail_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
     NvU32 queueHead, NvU32 queueTail);
@@ -167,6 +174,24 @@ _kfspGetMsgQueueHeadTail_GH100
 {
     *pMsgqHead = GPU_REG_RD32(pGpu, NV_PFSP_MSGQ_HEAD(FSP_EMEM_CHANNEL_RM));
     *pMsgqTail = GPU_REG_RD32(pGpu, NV_PFSP_MSGQ_TAIL(FSP_EMEM_CHANNEL_RM));
+}
+
+/*!
+ * @brief Return the max message size in bytes
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] pKernelFsp         KernelFsp pointer
+ *
+ * @return Max message size in bytes
+ */
+NvU32
+kfspGetMaxSendMessageSize_GH100
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    return FSP_EMEM_MAX_MESSAGE_SIZE_BYTES - FSP_MESSAGE_HEADER_BYTES;
 }
 
 /*!
@@ -390,7 +415,7 @@ kfspValidateMctpPayloadHeader_GH100
     mctpMessageType = REF_VAL(MCTP_MSG_HEADER_TYPE, mctpPayloadHeader);
     if (mctpMessageType != MCTP_MSG_HEADER_TYPE_VENDOR_PCI)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid MCTP Message type 0x%0x, expecting 0x7e (Vendor Defined PCI)\n",
+        NV_PRINTF(LEVEL_ERROR, "Invalid MCTP Message type 0x%08x, expecting 0x7e (Vendor Defined PCI)\n",
                   mctpMessageType);
         return NV_ERR_INVALID_DATA;
     }
@@ -398,7 +423,7 @@ kfspValidateMctpPayloadHeader_GH100
     mctpVendorId = REF_VAL(MCTP_MSG_HEADER_VENDOR_ID, mctpPayloadHeader);
     if (mctpVendorId != MCTP_MSG_HEADER_VENDOR_ID_NV)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid PCI Vendor Id 0x%0x, expecting 0x10de (Nvidia)\n",
+        NV_PRINTF(LEVEL_ERROR, "Invalid PCI Vendor Id 0x%08x, expecting 0x10de (Nvidia)\n",
                   mctpVendorId);
         return NV_ERR_INVALID_DATA;
     }
@@ -443,7 +468,7 @@ kfspProcessNvdmMessage_GH100
             status = kfspProcessCommandResponse_HAL(pGpu, pKernelFsp, pBuffer, size);
             break;
         default:
-            NV_PRINTF(LEVEL_ERROR, "Unknown or unsupported NVDM type received: 0x%0x\n",
+            NV_PRINTF(LEVEL_ERROR, "Unknown or unsupported NVDM type received: 0x%08x\n",
                       nvdmType);
             status = NV_ERR_NOT_SUPPORTED;
             break;
@@ -477,12 +502,12 @@ kfspProcessCommandResponse_GH100
 
     if (size < (headerSize + sizeof(NVDM_PAYLOAD_COMMAND_RESPONSE)))
     {
-        NV_PRINTF(LEVEL_ERROR, "Expected FSP command response, but packet is not big enough for payload. Size: 0x%0x\n", size);
+        NV_PRINTF(LEVEL_ERROR, "Expected FSP command response, but packet is not big enough for payload. Size: 0x%08x\n", size);
         return NV_ERR_INVALID_DATA;
     }
 
     pCmdResponse = (NVDM_PAYLOAD_COMMAND_RESPONSE *)&(pBuffer[1]);
-    NV_PRINTF(LEVEL_INFO, "Received FSP command response. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
+    NV_PRINTF(LEVEL_INFO, "Received FSP command response. Task ID: 0x%08x Command type: 0x%08x Error code: 0x%08x\n",
               pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
 
     status = kfspErrorCode2NvStatusMap_HAL(pGpu, pKernelFsp, pCmdResponse->errorCode);
@@ -492,7 +517,7 @@ kfspProcessCommandResponse_GH100
     }
     else if (status != NV_ERR_OBJECT_NOT_FOUND && status != NV_ERR_INVALID_ARGUMENT)
     {
-        NV_PRINTF(LEVEL_ERROR, "FSP response reported error. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
+        NV_PRINTF(LEVEL_ERROR, "FSP response reported error. Task ID: 0x%08x Command type: 0x%08x Error code: 0x%08x\n",
                 pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
         kfspDumpDebugState_HAL(pGpu, pKernelFsp);
     }
@@ -747,6 +772,7 @@ kfspWaitForSecureBoot_GH100
 {
     NV_STATUS status  = NV_OK;
     RMTIMEOUT timeout;
+    NvU32 timeoutUs;
 
     //
     // Polling for FSP boot complete
@@ -755,28 +781,25 @@ kfspWaitForSecureBoot_GH100
     // for this wait to match MODS GetGFWBootTimeoutMs.
     // For flags, we must not use the GPU TMR since it is inaccessible.
     //
-    gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
+    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus);
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
+    NvU64 timeoutNs = (NvU64)timeoutUs * 1000ULL;
+    NvU64 waitStartNs = portTimeGetUptimeNanosecondsHighPrecision();
     status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GH100, NULL, &timeout);
 
     if (status != NV_OK)
     {
+        NvU64 waitEndNs = portTimeGetUptimeNanosecondsHighPrecision();
         NvU32 fspBootComplete = GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE);
         NvU32 s0 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0));
         NvU32 s1 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1));
         NvU32 s2 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2));
         NvU32 s3 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3));
-        char xidMessage[NV_CPER_NV_GPU_LEGACY_XID_MAX_MSG_LEN + 1];
-        static const NV_CPER_GUID notifyType = NV_CPER_NOTIFY_NVIDIA_GPU_TIMEOUT_GUID;
 
         NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
-        NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, KFSP_GH100_GPU_INIT_ERROR_FMT,
-                     status, fspBootComplete, s0, s1, s2, s3);
-
-        nvDbgSnprintf(xidMessage, sizeof(xidMessage), KFSP_GH100_GPU_INIT_ERROR_FMT,
-                      status, fspBootComplete, s0, s1, s2, s3);
-        kfspEmitGpuInitErrorCper(pGpu, pKernelFsp, &notifyType, 0x0001u, xidMessage);
+        eventEmit(FspBootTimeout, pKernelFsp, timeoutNs, waitEndNs - waitStartNs,
+                  status, fspBootComplete, s0, s1, s2, s3);
     }
     return status;
 }
@@ -790,6 +813,7 @@ kfspGetGspUcodeArchive
 {
     KernelGsp *pKernelGsp                 = GPU_GET_KERNEL_GSP(pGpu);
     ConfidentialCompute *pCC              = GPU_GET_CONF_COMPUTE(pGpu);
+    NvBool        bLoadCcProfile          = NV_FALSE;
     NV_ASSERT(pCC != NULL);
 
     if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
@@ -799,7 +823,7 @@ kfspGetGspUcodeArchive
         if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
         {
 
-            if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+            if ((pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)) || bLoadCcProfile)
             {
                 return NULL;
             }
@@ -811,7 +835,7 @@ kfspGetGspUcodeArchive
         }
         else
         {
-            if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+            if ((pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)) || bLoadCcProfile)
             {
                 return kgspGetBinArchiveGspRmCcFmcGfwProdSigned_HAL(pKernelGsp);
             }
@@ -826,6 +850,9 @@ kfspGetGspUcodeArchive
     {
         Gsp *pGsp = GPU_GET_GSP(pGpu);
         Spdm *pSpdm = GPU_GET_SPDM(pGpu);
+        NvBool bIsNvleQualModeEnabled = NV_FALSE;
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+        bIsNvleQualModeEnabled = (pKernelNvlink != NULL && knvlinkIsNvleQualModeEnabled(pGpu, pKernelNvlink));
 
         // Intentional error print so that we know which mode RM is loaded with
         NV_PRINTF(LEVEL_ERROR, "Loading GSP image for monolithic RM using FSP.\n");
@@ -847,8 +874,13 @@ kfspGetGspUcodeArchive
                 //
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
 
+                // NVLE qual mode always uses SPDM profile.
+                if (bIsNvleQualModeEnabled)
+                {
+                    return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
+                }
                 // For debug board, when CC enabled, only pick SPDM profile if SPDM is enabled.
-                if  (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
+                else if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
                 {
                     if (confComputeIsSpdmSupported(pGpu, pCC) &&
                         pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
@@ -886,7 +918,13 @@ kfspGetGspUcodeArchive
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
                 Spdm  *pSpdm = GPU_GET_SPDM(pGpu);
 
-                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
+                // NVLE qual mode always uses SPDM profile.
+                if (bIsNvleQualModeEnabled)
+                {
+                    return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
+                }
+                // For prod board, when CC enabled, only pick SPDM profile if SPDM is enabled
+                else if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED))
                 {
                     if (confComputeIsSpdmSupported(pGpu, pCC) &&
                         pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
@@ -1391,23 +1429,12 @@ kfspPrepareBootCommands_GH100
     //
     if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) && !bIsKeepWPRGc6)
     {
-        //
-        // Since we are very early in the boot path, we cannot know how much
-        // vidmem reservation RM will need at the end of FB. For now use an
-        // estimated value to leave enough space for buffers such as vga
-        // workspace, BAR instance blocks and BAR page directories which will
-        // be allocated at the end of FB. If more reservations are added in the
-        // future, this code will need to be updated.
-        // Bug 200711957 has more info and tracks longer term improvements.
-        //
-
         // Offset from end of FB to be used by FSP
-        NvU64 frtsOffsetFromEnd =
-            memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu));
+        NvU64 frtsOffsetFromEnd = VGA_WORKSPACE_SIZE;
 
         //
-        // Layout: 0|| ....... | FRTS | PMU | rsvd est ||END
-        // frtsOffsetFromEnd =        ^ .............. ^
+        // Layout: 0|| ....... | FRTS | PMU | VGA workspace ||END
+        // frtsOffsetFromEnd =        ^ ................... ^
         //
         if (kpmuReservedMemorySizeGet(GPU_GET_KERNEL_PMU(pGpu)) != 0U)
         {

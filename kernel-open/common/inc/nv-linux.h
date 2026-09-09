@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,10 @@
 #include "nv-time.h"
 #include "nv-chardev-numbers.h"
 #include "nv-platform.h"
+
+#if defined(NV_CXL_CXL_H_PRESENT)
+#include <cxl/cxl.h>
+#endif
 
 #ifndef AUTOCONF_INCLUDED
 #if defined(NV_GENERATED_AUTOCONF_H_PRESENT)
@@ -103,6 +107,7 @@
 #endif
 
 /* task and signal-related items */
+#include <linux/sched/mm.h>
 #include <linux/sched/signal.h>
 #include <linux/sched/task.h>
 #include <linux/sched.h>
@@ -342,12 +347,12 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
 /* keep track of memory usage */
 #include "nv-memdbg.h"
 
-static inline void *nv_vmalloc(unsigned long size)
+static inline void *nv_vmalloc(unsigned long size, gfp_t flags)
 {
 #if defined(NV_VMALLOC_HAS_PGPROT_T_ARG)
-    void *ptr = __vmalloc(size, GFP_KERNEL, PAGE_KERNEL);
+    void *ptr = __vmalloc(size, flags, PAGE_KERNEL);
 #else
-    void *ptr = __vmalloc(size, GFP_KERNEL);
+    void *ptr = __vmalloc(size, flags);
 #endif
     NV_MEMDBG_ADD(ptr, size);
     return ptr;
@@ -489,8 +494,8 @@ static inline pgprot_t nv_adjust_pgprot(pgprot_t vm_prot)
 
 #define NV_IS_SUSER()                   capable(CAP_SYS_ADMIN)
 #define NV_MAY_SLEEP()                  (!irqs_disabled() && !in_interrupt() && !in_atomic())
-#define NV_MODULE_PARAMETER(x)          module_param(x, int, 0)
-#define NV_MODULE_STRING_PARAMETER(x)   module_param(x, charp, 0)
+#define NV_MODULE_PARAMETER(x)          module_param(x, int, 0444)
+#define NV_MODULE_STRING_PARAMETER(x)   module_param(x, charp, 0444)
 #undef  MODULE_PARM
 
 #define NV_HAVE_MEMORY_ENCRYPT_DECRYPT 0
@@ -677,15 +682,13 @@ static inline int nv_remap_page_range(struct vm_area_struct *vma,
 }
 
 static inline int nv_io_remap_page_range(struct vm_area_struct *vma,
-    NvU64 phys_addr, NvU64 size, NvU64 start)
+    NvU64 phys_addr, NvU64 size, NvU64 start, pgprot_t prot)
 {
     int ret = -1;
 #if !defined(NV_XEN_SUPPORT_FULLY_VIRTUALIZED_KERNEL)
-    ret = nv_remap_page_range(vma, start, phys_addr, size,
-        nv_adjust_pgprot(vma->vm_page_prot));
+    ret = nv_remap_page_range(vma, start, phys_addr, size, prot);
 #else
-    ret = io_remap_pfn_range(vma, start, (phys_addr >> PAGE_SHIFT),
-        size, nv_adjust_pgprot(vma->vm_page_prot));
+    ret = io_remap_pfn_range(vma, start, (phys_addr >> PAGE_SHIFT), size, prot);
 #endif
     return ret;
 }
@@ -902,6 +905,13 @@ struct nv_dma_buf
 };
 #endif // CONFIG_DMA_SHARED_BUFFER
 
+
+typedef struct nv_linux_mm_free_work_s {
+    NvU64 num_pages;
+    struct mm_struct *mm;
+    struct work_struct task;
+} nv_linux_mm_free_work_t;
+
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;
     struct device     *dev;
@@ -932,6 +942,7 @@ typedef struct nv_alloc_s {
     void          *import_priv;
     struct sg_table *import_sgt;
     dma_addr_t     dma_handle;          /* dma handle used by dma_alloc_coherent(), dma_free_coherent() */
+    nv_linux_mm_free_work_t *accounting_mm_work;
 } nv_alloc_t;
 
 /**
@@ -1104,12 +1115,30 @@ typedef struct nv_dma_map_s {
  * single-page sg elements on Xen Server.
  */
 #if !defined(NV_DOM0_KERNEL_PRESENT)
+#if defined(NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT)
+    /*
+    * See Bug 6419127 for the split-submap GMMU contiguity failure.
+    * This function and correct max_segment value avoid the overflow
+    * issue in the kernel.
+    */
+    #define NV_DMA_MAX_SEGMENT_SIZE   ((NvU32)(0x80000000)) /* 2G */
+    #define NV_ALLOC_DMA_SUBMAP_SCATTERLIST(dm, sm, i)                         \
+        ((sg_alloc_table_from_pages_segment(                                   \
+            &(sm)->sgt,                                                        \
+            &(dm)->pages[NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(i)],                    \
+            (sm)->page_count,                                                  \
+            0,                                                                 \
+            (sm)->page_count * PAGE_SIZE,                                      \
+            NV_DMA_MAX_SEGMENT_SIZE,                                           \
+            NV_GFP_KERNEL) == 0) ? NV_OK : NV_ERR_OPERATING_SYSTEM)
+#else
     #define NV_ALLOC_DMA_SUBMAP_SCATTERLIST(dm, sm, i)                        \
         ((sg_alloc_table_from_pages(&sm->sgt,                                 \
             &dm->pages[NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(i)],                     \
             sm->page_count, 0,                                                \
             sm->page_count * PAGE_SIZE, NV_GFP_KERNEL) == 0) ? NV_OK :        \
                 NV_ERR_OPERATING_SYSTEM)
+#endif
 #else
     #define NV_ALLOC_DMA_SUBMAP_SCATTERLIST(dm, sm, i)                \
         ((sg_alloc_table(&sm->sgt, sm->page_count, NV_GFP_KERNEL)) == \
@@ -1235,6 +1264,16 @@ struct nv_pci_tegra_devfreq_dev;
 /* linux-specific version of old nv_state_t */
 /* this is a general os-specific state structure. the first element *must* be
    the general state structure, for the generic unix-based code */
+
+#if defined(NV_CXL_CXL_H_PRESENT)
+struct nv_cxl {
+    struct cxl_dev_state         cxlds;
+    struct cxl_memdev           *cxlmd;
+    struct cxl_endpoint_decoder *cxled;
+    struct cxl_region           *nv_region;
+};
+#endif
+
 typedef struct nv_linux_state_s {
     nv_state_t nv_state;
 
@@ -1247,6 +1286,11 @@ typedef struct nv_linux_state_s {
 
     /* coherent link information */
      coherent_link_info_t coherent_link_info;
+
+#if defined(NV_CXL_CXL_H_PRESENT)
+    /* CXL device state; NULL for non-CXL GPUs */
+    struct nv_cxl *cxl;
+#endif
 
     /* Dedicated queue to be used for removing FB memory which is onlined
      * to kernel as a NUMA node. Refer Bug : 3879845*/
@@ -1418,11 +1462,10 @@ typedef struct nv_linux_state_s {
     struct nv_pci_tegra_devfreq_dev *nvd_devfreq_dev;
     struct nv_pci_tegra_devfreq_dev *sys_devfreq_dev;
     struct nv_pci_tegra_devfreq_dev *pwr_devfreq_dev;
-    NvU32 tegra_suspend_freq;
 
     int (*devfreq_suspend)(struct device *dev);
     int (*devfreq_resume)(struct device *dev);
-    int (*devfreq_enable_boost)(struct device *dev, unsigned int duration);
+    int (*devfreq_enable_boost)(struct device *dev, unsigned int duration, int boost_type);
     int (*devfreq_disable_boost)(struct device *dev);
 #endif
 
@@ -1457,6 +1500,9 @@ extern struct semaphore nv_linux_devices_lock;
 extern struct rw_semaphore nv_system_pm_lock;
 
 extern NvBool nv_ats_supported;
+extern NvBool nv_non_ats_device_present;
+
+void nv_set_max_sysmem_address(void);
 
 /*
  * file-private data
@@ -1605,8 +1651,8 @@ extern NvU32 NVreg_EnableNonblockingOpen;
 extern NvU32 NVreg_UseKernelSuspendNotifiers;
 extern NvU32 NVreg_GpuInitOnProbe;
 
-extern NvU32 num_probed_nv_devices;
-extern NvU32 num_nv_devices;
+extern atomic_t num_probed_nv_devices;
+extern atomic_t num_nv_devices;
 
 #define NV_FILE_INODE(file) (file)->f_inode
 
@@ -1724,7 +1770,7 @@ typedef enum
 #else
 #include <linux/gpio/driver.h>
 
-static inline int __to_hwgpio(const struct gpio_device *gdev,
+static inline int __to_hwgpio(struct gpio_device *gdev,
                               const struct of_phandle_args *gpiospec)
 {
 #if defined(CONFIG_OF_GPIO)
@@ -1797,5 +1843,7 @@ static inline int of_get_named_gpio(const struct device_node *np,
 
 #define NV_EXPORT_SYMBOL(symbol)        EXPORT_SYMBOL_GPL(symbol)
 #define NV_CHECK_EXPORT_SYMBOL(symbol)  NV_IS_EXPORT_SYMBOL_PRESENT_##symbol
+// Async PCI probe requires wait_for_device_probe() as a post-registration barrier
+#define NV_PCI_ASYNC_PROBE_SUPPORTED    NV_IS_EXPORT_SYMBOL_PRESENT_wait_for_device_probe
 
 #endif  /* _NV_LINUX_H_ */

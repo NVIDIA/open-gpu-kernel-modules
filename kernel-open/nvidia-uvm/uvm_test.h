@@ -131,6 +131,8 @@ NV_STATUS uvm_test_pma_get_batch_size(UVM_TEST_PMA_GET_BATCH_SIZE_PARAMS *params
 NV_STATUS uvm_test_pmm_alloc_free_root(UVM_TEST_PMM_ALLOC_FREE_ROOT_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_pmm_inject_pma_evict_error(UVM_TEST_PMM_INJECT_PMA_EVICT_ERROR_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_pmm_query_pma_stats(UVM_TEST_PMM_QUERY_PMA_STATS_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_pmm_lazy_free_set_delay(UVM_TEST_PMM_LAZY_FREE_SET_DELAY_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_pmm_evict_temp_pinned(UVM_TEST_PMM_EVICT_TEMP_PINNED_PARAMS *params, struct file *filp);
 
 NV_STATUS uvm_test_perf_events_sanity(UVM_TEST_PERF_EVENTS_SANITY_PARAMS *params, struct file *filp);
 
@@ -185,4 +187,8 @@ NV_STATUS uvm_test_dump_access_bits(UVM_TEST_DUMP_ACCESS_BITS_PARAMS *params, st
 NV_STATUS uvm_test_sec2_sanity(UVM_TEST_SEC2_SANITY_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_sec2_cpu_gpu_roundtrip(UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_cpu_chunk_api(UVM_TEST_CPU_CHUNK_API_PARAMS *params, struct file *filp);
+
+NV_STATUS uvm_test_export_dma_buf(UVM_TEST_EXPORT_DMA_BUF_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_revoke_dma_buf(UVM_TEST_REVOKE_DMA_BUF_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_query_egm_state(UVM_TEST_QUERY_EGM_STATE_PARAMS *params, struct file *filp);
 #endif

@@ -29,7 +29,7 @@
 #include "gpu/timer/objtmr.h"
 #include "vgpu/vgpu_events.h"
 
-#include "published/pascal/gp100/dev_boot.h"
+#include "published/pascal/gp100/dev_pmc.h"
 
 static void
 _intrSetIntrEnInHw_GP100
@@ -176,38 +176,6 @@ intrGetIntrMask_GP100
     }
 
     return NV_OK;
-}
-
-void intrGetAuxiliaryPendingStall_GP100
-(
-    OBJGPU              *pGpu,
-    Intr                *pIntr,
-    MC_ENGINE_BITVECTOR *pEngines,
-    NvBool               bGetAll,
-    NvU16                engIdx,
-    THREAD_STATE_NODE   *pThreadState
-)
-{
-    extern void intrGetAuxiliaryPendingStall_GM107(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *, NvBool bGetAll, NvU16 engIdx, THREAD_STATE_NODE *pThreadState);
-    OBJTMR *pTmr    = GPU_GET_TIMER(pGpu);
-
-    intrGetAuxiliaryPendingStall_GM107(pGpu, pIntr, pEngines, bGetAll, engIdx, pThreadState);
-
-    if ((bGetAll || engIdx == MC_ENGINE_IDX_TMR) && pTmr != NULL)
-    {
-        NvU32   retVal;
-
-        tmrGetIntrStatus_HAL(pGpu, pTmr, &retVal, pThreadState);
-        if (retVal != 0)
-        {
-            bitVectorSet(pEngines, MC_ENGINE_IDX_TMR);
-        }
-    }
-
-    if (bGetAll || engIdx == MC_ENGINE_IDX_GMMU)
-    {
-        intrGetGmmuInterrupts(pGpu, pIntr, pEngines, pThreadState);        
-    }
 }
 
 /*!

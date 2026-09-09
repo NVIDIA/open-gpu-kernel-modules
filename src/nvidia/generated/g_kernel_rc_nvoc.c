@@ -37,6 +37,7 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__KernelRc;
 
 // Down-thunk(s) to bridge KernelRc methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_KernelRc_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc, ENGDESCRIPTOR engDescriptor);    // this
+void __nvoc_down_thunk_KernelRc_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc);    // this
 
 // Up-thunk(s) to bridge KernelRc methods to ancestors (if any)
 void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
@@ -50,7 +51,6 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad(struct OBJGPU *pGpu, stru
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_krcStateDestroy(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
 NvBool __nvoc_up_thunk_OBJENGSTATE_krcIsPresent(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
 
 // Class-specific details for KernelRc
@@ -58,6 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelRc =
 {
     .classInfo.size =               sizeof(KernelRc),
     .classInfo.classId =            classId(KernelRc),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelRc",
@@ -82,6 +83,8 @@ static const struct NVOC_METADATA__KernelRc __nvoc_metadata__KernelRc = {
 
     .vtable.__krcConstructEngine__ = &krcConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelRc_engstateConstructEngine,    // virtual
+    .vtable.__krcStateDestroy__ = &krcStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelRc_engstateStateDestroy,    // virtual
     .vtable.__krcInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_krcInitMissing,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
     .vtable.__krcStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
@@ -104,8 +107,6 @@ static const struct NVOC_METADATA__KernelRc __nvoc_metadata__KernelRc = {
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
     .vtable.__krcStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__krcStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_krcStateDestroy,    // virtual inherited (engstate) base (engstate)
-    .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
     .vtable.__krcIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_krcIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
@@ -121,15 +122,20 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelRc = {
     }
 };
 
-// 1 down-thunk(s) defined to bridge methods in KernelRc from superclasses
+// 2 down-thunk(s) defined to bridge methods in KernelRc from superclasses
 
 // krcConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelRc_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc, ENGDESCRIPTOR engDescriptor) {
     return krcConstructEngine(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), engDescriptor);
 }
 
+// krcStateDestroy: virtual override (engstate) base (engstate)
+void __nvoc_down_thunk_KernelRc_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc) {
+    krcStateDestroy(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
+}
 
-// 13 up-thunk(s) defined to bridge methods in KernelRc to superclasses
+
+// 12 up-thunk(s) defined to bridge methods in KernelRc to superclasses
 
 // krcInitMissing: virtual inherited (engstate) base (engstate)
 void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
@@ -184,11 +190,6 @@ NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(struct OBJGPU *pGpu, struct
 // krcStatePostUnload: virtual inherited (engstate) base (engstate)
 NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStateDestroy: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_krcStateDestroy(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
 }
 
 // krcIsPresent: virtual inherited (engstate) base (engstate)

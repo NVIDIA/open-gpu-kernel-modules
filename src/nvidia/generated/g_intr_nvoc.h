@@ -160,12 +160,9 @@ interruptEntryIsEmpty(const InterruptEntry *pEntry)
 #define INTR_STUCK_THRESHOLD 1000
 
 // Minimum length of interrupt to log as long-running
-#define LONG_INTR_LOG_LENGTH_NS (1000000LLU) // 1ms
+#define LONG_INTR_LOG_LENGTH_NS (2000000LLU) // 2ms
 // Maximum frequency of long-running interrupt print, per engine
 #define LONG_INTR_LOG_RATELIMIT_NS (10000000000LLU) // 10s
-
-#define INTR_TABLE_INIT_KERNEL (1 << 0)
-#define INTR_TABLE_INIT_PHYSICAL (1 << 1)
 
 /**
  * @brief This enum specifies the type of DPC node
@@ -622,21 +619,21 @@ static inline NV_STATUS intrRouteInterruptsToSystemFirmware(OBJGPU *pGpu, struct
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
-static inline NV_STATUS intrInitDynamicInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, struct OBJFIFO *arg3, InterruptTable *arg4, NvU32 initFlags) {
+static inline NV_STATUS intrInitDynamicInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, struct OBJFIFO *arg3, InterruptTable *arg4) {
     NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_intr_h_disabled
-#define intrInitDynamicInterruptTable(pGpu, pIntr, arg3, arg4, initFlags) intrInitDynamicInterruptTable_5baef9(pGpu, pIntr, arg3, arg4, initFlags)
+#define intrInitDynamicInterruptTable(pGpu, pIntr, arg3, arg4) intrInitDynamicInterruptTable_5baef9(pGpu, pIntr, arg3, arg4)
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
-static inline NV_STATUS intrInitAnyInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags) {
+static inline NV_STATUS intrInitAnyInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable) {
     NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_intr_h_disabled
-#define intrInitAnyInterruptTable(pGpu, pIntr, pIntrTable, initFlags) intrInitAnyInterruptTable_5baef9(pGpu, pIntr, pIntrTable, initFlags)
+#define intrInitAnyInterruptTable(pGpu, pIntr, pIntrTable) intrInitAnyInterruptTable_5baef9(pGpu, pIntr, pIntrTable)
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
@@ -658,12 +655,12 @@ static inline NV_STATUS intrGetStaticVFmcEngines(OBJGPU *pGpu, struct Intr *pInt
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
-static inline NV_STATUS intrGetStaticInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags) {
+static inline NV_STATUS intrGetStaticInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable) {
     NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_intr_h_disabled
-#define intrGetStaticInterruptTable(pGpu, pIntr, pTable, initFlags) intrGetStaticInterruptTable_5baef9(pGpu, pIntr, pTable, initFlags)
+#define intrGetStaticInterruptTable(pGpu, pIntr, pTable) intrGetStaticInterruptTable_5baef9(pGpu, pIntr, pTable)
 #endif // __nvoc_intr_h_disabled
 
 NV_STATUS intrSetInterruptEntry_IMPL(struct Intr *pIntr, INTR_TREE tree, NvU32 vector, const InterruptEntry *pEntry);
@@ -677,12 +674,12 @@ static inline NV_STATUS intrSetInterruptEntry(struct Intr *pIntr, INTR_TREE tree
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
-static inline NV_STATUS intrInitGPUHostInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags) {
+static inline NV_STATUS intrInitGPUHostInterruptTable(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable) {
     NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_intr_h_disabled
-#define intrInitGPUHostInterruptTable(pGpu, pIntr, pIntrTable, initFlags) intrInitGPUHostInterruptTable_5baef9(pGpu, pIntr, pIntrTable, initFlags)
+#define intrInitGPUHostInterruptTable(pGpu, pIntr, pIntrTable) intrInitGPUHostInterruptTable_5baef9(pGpu, pIntr, pIntrTable)
 #endif // __nvoc_intr_h_disabled
 
 #ifdef __nvoc_intr_h_disabled
@@ -692,6 +689,14 @@ static inline NV_STATUS intrInitEngineSchedInterruptTable(OBJGPU *pGpu, struct I
 }
 #else // __nvoc_intr_h_disabled
 #define intrInitEngineSchedInterruptTable(pGpu, pIntr, pIntrTable) intrInitEngineSchedInterruptTable_5baef9(pGpu, pIntr, pIntrTable)
+#endif // __nvoc_intr_h_disabled
+
+#ifdef __nvoc_intr_h_disabled
+static inline void intrInitPbdmaNotifyCtrlRouting(OBJGPU *pGpu, struct Intr *pIntr) {
+    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
+}
+#else // __nvoc_intr_h_disabled
+#define intrInitPbdmaNotifyCtrlRouting(pGpu, pIntr) intrInitPbdmaNotifyCtrlRouting_d44104(pGpu, pIntr)
 #endif // __nvoc_intr_h_disabled
 
 void intrServiceStallListAllGpusCond_IMPL(OBJGPU *pGpu, struct Intr *pIntr, MC_ENGINE_BITVECTOR *arg3, NvBool arg4);
@@ -1136,8 +1141,8 @@ static inline NV_STATUS intrRefetchInterruptTable(OBJGPU *pGpu, struct Intr *pIn
 #define intrStateUnload_FNPTR(pIntr) pIntr->__intrStateUnload__
 #define intrStateUnload(pGpu, pIntr, arg3) intrStateUnload_DISPATCH(pGpu, pIntr, arg3)
 #define intrStateUnload_HAL(pGpu, pIntr, arg3) intrStateUnload_DISPATCH(pGpu, pIntr, arg3)
-#define intrInitDynamicInterruptTable_HAL(pGpu, pIntr, arg3, arg4, initFlags) intrInitDynamicInterruptTable(pGpu, pIntr, arg3, arg4, initFlags)
-#define intrInitAnyInterruptTable_HAL(pGpu, pIntr, pIntrTable, initFlags) intrInitAnyInterruptTable(pGpu, pIntr, pIntrTable, initFlags)
+#define intrInitDynamicInterruptTable_HAL(pGpu, pIntr, arg3, arg4) intrInitDynamicInterruptTable(pGpu, pIntr, arg3, arg4)
+#define intrInitAnyInterruptTable_HAL(pGpu, pIntr, pIntrTable) intrInitAnyInterruptTable(pGpu, pIntr, pIntrTable)
 #define intrInitSubtreeMap_HAL(pGpu, pIntr) intrInitSubtreeMap(pGpu, pIntr)
 #define intrInitInterruptTable_FNPTR(pIntr) pIntr->__intrInitInterruptTable__
 #define intrInitInterruptTable(pGpu, pIntr) intrInitInterruptTable_DISPATCH(pGpu, pIntr)
@@ -1149,9 +1154,10 @@ static inline NV_STATUS intrRefetchInterruptTable(OBJGPU *pGpu, struct Intr *pIn
 #define intrDestroyInterruptTable(pGpu, pIntr) intrDestroyInterruptTable_DISPATCH(pGpu, pIntr)
 #define intrDestroyInterruptTable_HAL(pGpu, pIntr) intrDestroyInterruptTable_DISPATCH(pGpu, pIntr)
 #define intrGetStaticVFmcEngines_HAL(pGpu, pIntr, ppMcEngines, pCount) intrGetStaticVFmcEngines(pGpu, pIntr, ppMcEngines, pCount)
-#define intrGetStaticInterruptTable_HAL(pGpu, pIntr, pTable, initFlags) intrGetStaticInterruptTable(pGpu, pIntr, pTable, initFlags)
-#define intrInitGPUHostInterruptTable_HAL(pGpu, pIntr, pIntrTable, initFlags) intrInitGPUHostInterruptTable(pGpu, pIntr, pIntrTable, initFlags)
+#define intrGetStaticInterruptTable_HAL(pGpu, pIntr, pTable) intrGetStaticInterruptTable(pGpu, pIntr, pTable)
+#define intrInitGPUHostInterruptTable_HAL(pGpu, pIntr, pIntrTable) intrInitGPUHostInterruptTable(pGpu, pIntr, pIntrTable)
 #define intrInitEngineSchedInterruptTable_HAL(pGpu, pIntr, pIntrTable) intrInitEngineSchedInterruptTable(pGpu, pIntr, pIntrTable)
+#define intrInitPbdmaNotifyCtrlRouting_HAL(pGpu, pIntr) intrInitPbdmaNotifyCtrlRouting(pGpu, pIntr)
 #define intrServiceStall_FNPTR(pIntr) pIntr->__intrServiceStall__
 #define intrServiceStall(pGpu, pIntr) intrServiceStall_DISPATCH(pGpu, pIntr)
 #define intrServiceStall_HAL(pGpu, pIntr) intrServiceStall_DISPATCH(pGpu, pIntr)
@@ -1721,17 +1727,17 @@ NV_STATUS intrGetStaticVFmcEngines_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU16
 
 NV_STATUS intrGetStaticVFmcEngines_GA100(OBJGPU *pGpu, struct Intr *pIntr, NvU16 **ppMcEngines, NvU32 *pCount);
 
-NV_STATUS intrGetStaticInterruptTable_GA100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags);
+NV_STATUS intrGetStaticInterruptTable_GA100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable);
 
-NV_STATUS intrGetStaticInterruptTable_TU102(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags);
+NV_STATUS intrGetStaticInterruptTable_TU102(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable);
 
-NV_STATUS intrGetStaticInterruptTable_GA102(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags);
+NV_STATUS intrGetStaticInterruptTable_GA102(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable);
 
-NV_STATUS intrGetStaticInterruptTable_GH100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags);
+NV_STATUS intrGetStaticInterruptTable_GH100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable);
 
-NV_STATUS intrInitGPUHostInterruptTable_GM107(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags);
+NV_STATUS intrInitGPUHostInterruptTable_TU102(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable);
 
-NV_STATUS intrInitGPUHostInterruptTable_GA100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags);
+NV_STATUS intrInitGPUHostInterruptTable_GA100(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable);
 
 void intrServiceStall_IMPL(OBJGPU *pGpu, struct Intr *pIntr);
 
@@ -1745,9 +1751,9 @@ NV_STATUS intrSetIntrMask_GP100(OBJGPU *pGpu, struct Intr *pIntr, MC_ENGINE_BITV
 
 NV_STATUS intrGetIntrMask_GP100(OBJGPU *pGpu, struct Intr *pIntr, MC_ENGINE_BITVECTOR *arg3, struct THREAD_STATE_NODE *arg4);
 
-NV_STATUS intrGetEccIntrMaskOffset_GP100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 *arg3, NvU32 *arg4);
+NV_STATUS intrGetEccIntrMaskOffset_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 *arg3, NvU32 *arg4);
 
-NV_STATUS intrGetNvlinkIntrMaskOffset_GP100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 *arg3, NvU32 *arg4);
+NV_STATUS intrGetNvlinkIntrMaskOffset_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 *arg3, NvU32 *arg4);
 
 NvBool intrRequiresPossibleErrorNotifier_TU102(OBJGPU *pGpu, struct Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines);
 
@@ -2031,11 +2037,11 @@ static inline NV_STATUS intrStateUnload_ac1694(OBJGPU *pGpu, struct Intr *pIntr,
     return NV_OK;
 }
 
-static inline NV_STATUS intrInitDynamicInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, struct OBJFIFO *arg3, InterruptTable *arg4, NvU32 initFlags){
+static inline NV_STATUS intrInitDynamicInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, struct OBJFIFO *arg3, InterruptTable *arg4){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-static inline NV_STATUS intrInitAnyInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags){
+static inline NV_STATUS intrInitAnyInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
@@ -2055,16 +2061,20 @@ static inline NV_STATUS intrGetStaticVFmcEngines_5baef9(OBJGPU *pGpu, struct Int
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-static inline NV_STATUS intrGetStaticInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable, NvU32 initFlags){
+static inline NV_STATUS intrGetStaticInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pTable){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-static inline NV_STATUS intrInitGPUHostInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable, NvU32 initFlags){
+static inline NV_STATUS intrInitGPUHostInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 static inline NV_STATUS intrInitEngineSchedInterruptTable_5baef9(OBJGPU *pGpu, struct Intr *pIntr, InterruptTable *pIntrTable){
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline void intrInitPbdmaNotifyCtrlRouting_d44104(OBJGPU *pGpu, struct Intr *pIntr){
+    return;
 }
 
 static inline void intrServiceStall_f2d351(OBJGPU *pGpu, struct Intr *pIntr){

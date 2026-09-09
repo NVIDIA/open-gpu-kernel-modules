@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,17 @@
 
 
 
+// Limit != 0 skips the check when the heap is not configured.
+#define FABRIC_VAS_ADDR_IN_UC_FLA(pFabricVAS, addr)                            \
+    ((fabricvaspaceGetUCFlaLimit(pFabricVAS) != 0) &&                          \
+     ((addr) >= fabricvaspaceGetUCFlaStart(pFabricVAS)) &&                     \
+     ((addr) <= fabricvaspaceGetUCFlaLimit(pFabricVAS)))
+
+#define FABRIC_VAS_ADDR_IN_UC_EMU_HANDLE_FLA(pFabricVAS, addr)                 \
+    ((fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) != 0) &&            \
+     ((addr) >= fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS)) &&       \
+     ((addr) <= fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS)))
+
 //
 // TODO: To be removed when legacy FLA VAS (pKernelBus->flaInfo.pFlaVAS) is removed"
 // The instance block is setup during kbusAllocateFlaVaspace_HAL(). However, we
@@ -112,7 +123,8 @@ _fabricvaspaceBindInstBlk
     // Instantiate the instance block for fabric vaspace.
     portMemSet(&instblkParams, 0, sizeof(instblkParams));
     status = kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                             pFabricVAS->pGVAS, FIFO_PDB_IDX_BASE,
+                             pFabricVAS->pGVAS, NULL,
+                             FIFO_PDB_IDX_BASE,
                              &instblkParams);
     if (status != NV_OK)
     {
@@ -138,7 +150,8 @@ failed:
     // Instantiate the instance block for FLA vaspace.
     portMemSet(&instblkParams, 0, sizeof(instblkParams));
     NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                              pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
+                              pKernelBus->flaInfo.pFlaVAS, NULL,
+                              FIFO_PDB_IDX_BASE,
                               &instblkParams) == NV_OK);
 
     // Bind the instance block for FLA vaspace.
@@ -187,7 +200,7 @@ _fabricvaspaceUnbindInstBlk
         // Instantiate the instance block for FLA vaspace.
         NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu,
                                    pKernelBus->flaInfo.pInstblkMemDesc,
-                                   pKernelBus->flaInfo.pFlaVAS,
+                                   pKernelBus->flaInfo.pFlaVAS, NULL,
                                    FIFO_PDB_IDX_BASE,
                                    &instblkParams) == NV_OK);
 
@@ -400,6 +413,7 @@ fabricvaspaceAllocNonContiguous_IMPL
     NvU64     addr;
     NvU32     idx;
     NvBool    bDefaultAllocMode;
+    NvBool    bEmulatedHandleHeap;
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
 
     if (fabricIsMemAllocDisabled(pFabric))
@@ -412,6 +426,9 @@ fabricvaspaceAllocNonContiguous_IMPL
     NV_ASSERT_OR_RETURN(pageSize >= RM_PAGE_SIZE_HUGE, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(align != 0,                    NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(size != 0,                     NV_ERR_INVALID_ARGUMENT);
+
+    // Infer which UC sub-heap the caller targeted from rangeLo.
+    bEmulatedHandleHeap = FABRIC_VAS_ADDR_IN_UC_EMU_HANDLE_FLA(pFabricVAS, rangeLo);
 
     // Check the alignment and size are pageSize aligned.
     NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(align, pageSize), NV_ERR_INVALID_ARGUMENT);
@@ -432,8 +449,16 @@ fabricvaspaceAllocNonContiguous_IMPL
         pageCount = (NvU32)pageCount64;
     }
 
-    // Check if heap can satisfy the request.
-    NV_ASSERT_OK_OR_RETURN(fabricvaspaceGetFreeHeap(pFabricVAS, &freeSize));
+    // Check if the targeted sub-heap can satisfy the request.
+    if (bEmulatedHandleHeap)
+    {
+        freeSize = pFabricVAS->ucEmulatedHandleFreeSize;
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_RETURN(fabricvaspaceGetFreeHeap(pFabricVAS, &freeSize));
+    }
+
     if (freeSize < size)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -454,7 +479,7 @@ fabricvaspaceAllocNonContiguous_IMPL
 
     // Adjust rangeLo and rangeHi.
     rangeLo = NV_ALIGN_DOWN(rangeLo, pageSize);
-    rangeHi = NV_ALIGN_UP(rangeHi, pageSize);
+    rangeHi = (NV_ALIGN_UP(rangeHi, pageSize) - 1);
 
     *ppAddr = portMemAllocNonPaged(sizeof(NvU64) * pageCount);
     if (*ppAddr == NULL)
@@ -525,8 +550,16 @@ fabricvaspaceAllocNonContiguous_IMPL
         }
     }
 
-    pFabricVAS->ucFabricFreeSize  -= size;
-    pFabricVAS->ucFabricInUseSize += size;
+    if (bEmulatedHandleHeap)
+    {
+        pFabricVAS->ucEmulatedHandleFreeSize  -= size;
+        pFabricVAS->ucEmulatedHandleInUseSize += size;
+    }
+    else
+    {
+        pFabricVAS->ucFabricFreeSize  -= size;
+        pFabricVAS->ucFabricInUseSize += size;
+    }
 
     _fabricvaspaceEncodeFabricAddresses(pFabricVAS, *ppAddr, *pNumAddr);
 
@@ -537,8 +570,16 @@ failed:
     // fabricvaspaceBatchFree adjusts the fabric vaspace usage counters.
     // Since we are error handling using that, we need to account for it before invoking it.
     //
-    pFabricVAS->ucFabricFreeSize  += pageSize * (*pNumAddr);
-    pFabricVAS->ucFabricInUseSize -= pageSize * (*pNumAddr);
+    if (bEmulatedHandleHeap)
+    {
+        pFabricVAS->ucEmulatedHandleFreeSize  += pageSize * (*pNumAddr);
+        pFabricVAS->ucEmulatedHandleInUseSize -= pageSize * (*pNumAddr);
+    }
+    else
+    {
+        pFabricVAS->ucFabricFreeSize  += pageSize * (*pNumAddr);
+        pFabricVAS->ucFabricInUseSize -= pageSize * (*pNumAddr);
+    }
 
     fabricvaspaceBatchFree(pFabricVAS, *ppAddr, *pNumAddr, 1);
     portMemFree(*ppAddr);
@@ -646,6 +687,20 @@ fabricvaspaceGetFreeHeap_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+fabricvaspaceGetFreeEmulatedHandleHeap_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS,
+    NvU64          *freeSize
+)
+{
+    NV_ASSERT_OR_RETURN(pFabricVAS->pGVAS != NULL, NV_ERR_OBJECT_NOT_FOUND);
+    NV_ASSERT_OR_RETURN(freeSize != NULL,         NV_ERR_INVALID_ARGUMENT);
+
+    *freeSize = pFabricVAS->ucEmulatedHandleFreeSize;
+    return NV_OK;
+}
+
 void
 fabricvaspaceBatchFree_IMPL
 (
@@ -658,17 +713,19 @@ fabricvaspaceBatchFree_IMPL
     OBJGPU     *pGpu = pFabricVAS->pGpu;
     KernelBus  *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU64       totalFreeSize = 0;
+    NvU64       totalEmulatedHandleFreeSize = 0;
     NvU64       freeSize;
     NvU32 count = 0;
     NvU32 idx   = 0;
     NvBool bUcFla;
+    NvBool bUcEmulatedHandleFla;
 
     _fabricvaspaceDecodeFabricAddresses(pFabricVAS, pAddr, numAddr);
 
     for (count = 0; count < numAddr; count++)
     {
-        bUcFla = (pAddr[idx] >= fabricvaspaceGetUCFlaStart(pFabricVAS) &&
-                  pAddr[idx] < fabricvaspaceGetUCFlaLimit(pFabricVAS));
+        bUcFla               = FABRIC_VAS_ADDR_IN_UC_FLA(pFabricVAS, pAddr[idx]);
+        bUcEmulatedHandleFla = FABRIC_VAS_ADDR_IN_UC_EMU_HANDLE_FLA(pFabricVAS, pAddr[idx]);
 
         NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS,
                                 pAddr[idx], &freeSize) == NV_OK);
@@ -677,6 +734,8 @@ fabricvaspaceBatchFree_IMPL
 
         if (bUcFla)
             totalFreeSize += freeSize;
+        else if (bUcEmulatedHandleFla)
+            totalEmulatedHandleFreeSize += freeSize;
     }
 
     kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
@@ -688,6 +747,9 @@ fabricvaspaceBatchFree_IMPL
 
     pFabricVAS->ucFabricFreeSize  += totalFreeSize;
     pFabricVAS->ucFabricInUseSize -= totalFreeSize;
+
+    pFabricVAS->ucEmulatedHandleFreeSize  += totalEmulatedHandleFreeSize;
+    pFabricVAS->ucEmulatedHandleInUseSize -= totalEmulatedHandleFreeSize;
 }
 
 NV_STATUS
@@ -715,6 +777,8 @@ fabricvaspaceGetGpaMemdesc_IMPL
     NODE              *pNode              = NULL;
     NV_STATUS          status             = NV_OK;
     NvU64              rootOffset         = 0;
+    NvBool             bInUcEmulatedHandleRange;
+    NvBool             bInUcFlaRange;
 
     NV_ASSERT_OR_RETURN(ppAdjustedMemdesc != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -727,11 +791,13 @@ fabricvaspaceGetGpaMemdesc_IMPL
 
     pRootMemDesc = memdescGetRootMemDesc(pFabricMemdesc, &rootOffset);
 
-    RmPhysAddr physAddr = memdescGetPhysAddr(pRootMemDesc, AT_GPU, 0);
+    RmPhysAddr fabricAddr = memdescGetPhysAddr(pRootMemDesc, AT_GPU, 0);
 
-    // Check if physAddr is within the VAS range for the mapping GPU.
-    if ((physAddr < fabricvaspaceGetUCFlaStart(pFabricVAS)) ||
-        (physAddr > fabricvaspaceGetUCFlaLimit(pFabricVAS)))
+    bInUcFlaRange            = FABRIC_VAS_ADDR_IN_UC_FLA(pFabricVAS, fabricAddr);
+    bInUcEmulatedHandleRange = FABRIC_VAS_ADDR_IN_UC_EMU_HANDLE_FLA(pFabricVAS, fabricAddr);
+
+    // If fabricAddr is NOT within the VAS ranges for the mapping GPU, allow peer map.
+    if (!bInUcFlaRange && !bInUcEmulatedHandleRange)
     {
         if (bForcePhysMemdescLookup)
         {
@@ -752,7 +818,7 @@ fabricvaspaceGetGpaMemdesc_IMPL
     // in the pteArray should be fine to determine if FLA import is on the
     // mapping GPU.
     //
-    status = btreeSearch(physAddr, &pNode, pFabricVAS->pFabricVaToGpaMap);
+    status = btreeSearch(fabricAddr, &pNode, pFabricVAS->pFabricVaToGpaMap);
     if (!RMCFG_FEATURE_MODS_FEATURES)
     {
         // Fatal for production path.
@@ -763,8 +829,7 @@ fabricvaspaceGetGpaMemdesc_IMPL
         return status;
     }
 
-    FABRIC_VA_TO_GPA_MAP_NODE *pFabricNode =
-                                 (FABRIC_VA_TO_GPA_MAP_NODE *)pNode->Data;
+    FABRIC_VA_TO_GPA_MAP_NODE *pFabricNode = (FABRIC_VA_TO_GPA_MAP_NODE *)pNode->Data;
 
     //
     // Create a sub-memdesc for the offset into the vidMemDesc where the GVA
@@ -857,7 +922,7 @@ fabricvaspaceVaToGpaMapInsert_IMPL
 }
 
 NV_STATUS
-fabricvaspaceAllocMulticast_IMPL
+fabricvaspaceAllocFixed_IMPL
 (
     FABRIC_VASPACE *pFabricVAS,
     NvU64           pageSize,
@@ -889,11 +954,12 @@ fabricvaspaceAllocMulticast_IMPL
     rangeHi = base + size - 1;
 
     //
-    // RM_PAGE_SIZE_HUGE is passed since MCFLA->PA mappings support minimum
-    // 2MB pagesize.
+    // Reserve [base, base + size) in the fabric VAS eheap at the caller's
+    // pageSize. Used by callers that need a fixed, pre-determined FLA range
+    // (e.g. Multicast FLA, UVM FLA sysmem window).
     //
     status = vaspaceAlloc(pFabricVAS->pGVAS, size, alignment, rangeLo,
-                          rangeHi, RM_PAGE_SIZE_HUGE, flags, &addr);
+                          rangeHi, pageSize, flags, &addr);
 
     NV_ASSERT(addr == base);
 
@@ -1120,6 +1186,30 @@ fabricvaspaceMapPhysMemdesc_IMPL
 
     pPhysMemManager = GPU_GET_MEMORY_MANAGER(pPhysMemDesc->pGpu);
 
+    if ((pPhysMemDesc->pGpu != pFabricGpu) &&
+        (memdescGetAddressSpace(pPhysMemDesc) == ADDR_SYSMEM) &&
+        !memdescGetFlag(pPhysMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1) &&
+        !memdescIsEgm(pPhysMemDesc))
+    {
+        MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pPhysMemDesc, NULL);
+
+        //
+        // TODO Bug 1811006: This is a temporary WAR to unblock Fabric
+        // cross-GPU sysmem mapping for the FLA+sysmem case. Properly fix this
+        // as part of deviceless sysmem. The root memdesc owns the shared IOMMU
+        // mapping list; submemdesc mappings hang off the root mapping as
+        // children, so serialize on the root lock.
+        //
+        NV_ASSERT_OR_RETURN(pRootMemDesc != NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pRootMemDesc->pFabricIommuMappingLock != NULL,
+                            NV_ERR_INVALID_STATE);
+        portSyncMutexAcquire(pRootMemDesc->pFabricIommuMappingLock);
+        // The memdesc layer owns IOMMU mapping lifetime and unmaps during teardown.
+        status = memdescMapIommu(pPhysMemDesc, pFabricGpu->busInfo.iovaspaceId);
+        portSyncMutexRelease(pRootMemDesc->pFabricIommuMappingLock);
+        NV_ASSERT_OK_OR_RETURN(status);
+    }
+
     status = memmgrGetKindComprFromMemDesc(pPhysMemManager, pPhysMemDesc,
                                            physOffset, &kind, &comprInfo);
     NV_ASSERT_OK_OR_RETURN(status);
@@ -1182,7 +1272,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
             // Physical address, may be localized
             // FLA code offsets into the page array
             //
-            dmaPageArrayInitFromMemDesc(&pageArray, pPhysMemDesc, AT_GPU);
+            dmaPageArrayInitFromMemDescForGpu(&pageArray, pPhysMemDesc,
+                                              pFabricGpu, AT_GPU);
 
             if (pageArray.count == 1)
             {
@@ -1192,7 +1283,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
                 // because it points back to the original pPhysMemDesc's
                 // pteArray, and doing so would corrupt that.
                 //
-                physAddr = memdescGetPhysAddr(pPhysMemDesc, AT_GPU, physOffset);
+                memdescGetPhysAddrsForGpu(pPhysMemDesc, pFabricGpu, AT_GPU,
+                                           physOffset, 0, 1, &physAddr);
                 pageArray.pData = &physAddr;
             }
             else
@@ -1286,8 +1378,35 @@ fabricvaspaceInitUCRange_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+fabricvaspaceInitUCEmulatedHandleRange_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS,
+    OBJGPU         *pGpu,
+    NvU64           emulatedHandleBase,
+    NvU64           emulatedHandleSize
+)
+{
+    if (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) != 0)
+        return NV_ERR_IN_USE;
+
+    if (emulatedHandleSize != 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Setting UC Emulated-Handle Base: %llx, size: %llx \n",
+                  emulatedHandleBase, emulatedHandleSize);
+        pFabricVAS->ucEmulatedHandleBase      = emulatedHandleBase;
+        pFabricVAS->ucEmulatedHandleLimit     = emulatedHandleBase +
+                                                emulatedHandleSize - 1;
+        pFabricVAS->ucEmulatedHandleInUseSize = 0;
+        pFabricVAS->ucEmulatedHandleFreeSize  = emulatedHandleSize;
+    }
+
+    return NV_OK;
+}
+
 void
-fabricvaspaceClearUCRange_IMPL
+fabricvaspaceClearUCRanges_IMPL
 (
     FABRIC_VASPACE *pFabricVAS
 )
@@ -1296,6 +1415,44 @@ fabricvaspaceClearUCRange_IMPL
     pFabricVAS->ucFabricLimit     = 0;
     pFabricVAS->ucFabricInUseSize = 0;
     pFabricVAS->ucFabricFreeSize  = 0;
+
+    pFabricVAS->ucEmulatedHandleBase      = 0;
+    pFabricVAS->ucEmulatedHandleLimit     = 0;
+    pFabricVAS->ucEmulatedHandleInUseSize = 0;
+    pFabricVAS->ucEmulatedHandleFreeSize  = 0;
+}
+
+NV_STATUS
+fabricvaspaceInitSysmemFlaRange_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS,
+    OBJGPU         *pGpu,
+    NvU64           fabricBase,
+    NvU64           fabricSize
+)
+{
+    if (fabricvaspaceGetSysmemFlaLimit(pFabricVAS) != 0)
+        return NV_ERR_IN_USE;
+
+    if (fabricSize != 0)
+    {
+        NV_PRINTF(LEVEL_INFO, "Setting sysmem FLA Base: %llx, size: %llx \n",
+                  fabricBase, fabricSize);
+        pFabricVAS->sysmemFabricBase  = fabricBase;
+        pFabricVAS->sysmemFabricLimit = fabricBase + fabricSize - 1;
+    }
+
+    return NV_OK;
+}
+
+void
+fabricvaspaceClearSysmemFlaRange_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS
+)
+{
+    pFabricVAS->sysmemFabricBase  = 0;
+    pFabricVAS->sysmemFabricLimit = 0;
 }
 
 NV_STATUS
@@ -1318,6 +1475,38 @@ fabricvaspaceIsInUse_IMPL
     FABRIC_VASPACE *pFabricVAS
 )
 {
-    return gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE));
+    OBJGVASPACE *pGVAS;
+    NvU64 freeSize  = 0;
+    NvU64 totalSize = 0;
+    NvU64 sysmemFlaBase = 0;
+    NvU64 sysmemFlaLimit = 0;
+    NvU64 sysmemFlaSize = 0;
+
+    pGVAS = dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE);
+    NV_ASSERT(pGVAS != NULL);
+
+    // Get the free heap size.
+    NV_ASSERT(gvaspaceGetFreeHeap(pGVAS, &freeSize) == NV_OK);
+
+    // Get the total heap size for FLA vaspace.
+    totalSize = vaspaceGetVaLimit(staticCast(pGVAS, OBJVASPACE)) -
+                vaspaceGetVaStart(staticCast(pGVAS, OBJVASPACE)) + 1;
+
+    //
+    // The FLA range used for sysmem by UVM needs to be discounted by
+    // this accounting because it is carved out at probe response and
+    // freed at invalidate/stop, even when UVM is not actively using it.
+    // Users of this function also check for the existence of p2p object
+    // and UVM is expected to create one to get fabric access to remote sysmem.
+    //
+    sysmemFlaLimit = fabricvaspaceGetSysmemFlaLimit(pFabricVAS);
+    sysmemFlaBase = fabricvaspaceGetSysmemFlaStart(pFabricVAS);
+
+    if (sysmemFlaLimit != 0)
+    {
+        sysmemFlaSize = sysmemFlaLimit - sysmemFlaBase + 1;
+    }
+
+    return ((totalSize - sysmemFlaSize) != freeSize);
 }
 

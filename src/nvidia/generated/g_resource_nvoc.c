@@ -42,6 +42,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon =
 {
     .classInfo.size =               sizeof(RmResourceCommon),
     .classInfo.classId =            classId(RmResourceCommon),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RmResourceCommon",
@@ -178,6 +179,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource =
 {
     .classInfo.size =               sizeof(RmResource),
     .classInfo.classId =            classId(RmResource),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "RmResource",

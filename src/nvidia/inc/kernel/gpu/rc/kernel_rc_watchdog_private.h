@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,7 @@
 #define WATCHDOG_FLAGS_INITIALIZED        NVBIT(0) // Fully initialized and ready
 #define WATCHDOG_FLAGS_DISABLED           NVBIT(1) // Disabled
 #define WATCHDOG_FLAGS_ALLOC_UNCACHED_PCI NVBIT(2) // Alloc cached / uncached pushbuffer
+#define WATCHDOG_FLAGS_PAUSED             NVBIT(3) // Paused
 
 /*! Volatile watchdog state that is destroyed when watchdog is shutdown */
 typedef struct {
@@ -88,6 +89,7 @@ typedef struct {
     NvS32 enableRequestsRefCount;
     NvS32 disableRequestsRefCount;
     NvS32 softDisableRequestsRefCount;
+    NvS32 pauseRequestsRefCount;
 
     /*! How long we wait for the notifier to come back after being run */
     NvU32 timeoutSecs;

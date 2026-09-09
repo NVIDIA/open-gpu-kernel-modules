@@ -124,6 +124,18 @@
         #define UVM_CAN_USE_MMU_NOTIFIERS() 0
     #endif
 
+// Check that importers can provide an invalidate_mappings() callback to
+// determine that DMA-BUF API stability has been reached and whether to provide
+// importer support through UVM.
+//
+// This callback was previously called move_notify().
+    #if (defined(NV_DMA_BUF_ATTACH_OPS_HAS_INVALIDATE_MAPPINGS) || defined(NV_DMA_BUF_ATTACH_OPS_HAS_MOVE_NOTIFY)) && \
+        defined(NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER)
+        #define UVM_PROVIDES_DMA_BUF_IMPORTER() 1
+    #else
+        #define UVM_PROVIDES_DMA_BUF_IMPORTER() 0
+    #endif
+
 //
 // printk.h already defined pr_fmt, so we have to redefine it so the pr_*
 // routines pick up our version
@@ -194,6 +206,12 @@ typedef struct
   #include <asm/pgtable.h>
   #include <asm/pgtable_types.h>
 #endif
+
+    #if NV_IS_EXPORT_SYMBOL_GPL_dma_iova_try_alloc
+        #define UVM_USE_DMA_IOVA_API() 1
+    #else
+        #define UVM_USE_DMA_IOVA_API() 0
+    #endif // NV_IS_EXPORT_SYMBOL_GPL_dma_iova_try_alloc
 
 // PAGE_KERNEL_NOENC is only defined on x86. Define it for all architectures so
 // we don't have to wrap uses in #ifdefs.

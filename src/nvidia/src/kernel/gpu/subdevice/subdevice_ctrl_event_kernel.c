@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -338,13 +338,14 @@ subdeviceCtrlCmdEventGspTraceRatsBindEvtbuf_IMPL
                                                             pParams->hEventBuffer,
                                                             classId(EventBuffer),
                                                             &pEventBufferRef));
-    status = gspTraceAddBindpoint(pGpu,
+    status = gspRatsAddBindpoint(pGpu,
                                pClient,
                                pEventBufferRef,
                                hNotifier,
                                pParams->tracepointMask,
                                pParams->gspLoggingBufferSize,
-                               pParams->gspLoggingBufferWatermark);
+                               pParams->gspLoggingBufferWatermark,
+                               pParams->targetTask);
 #endif
     return status;
 }

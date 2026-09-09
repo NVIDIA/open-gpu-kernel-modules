@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -213,5 +213,11 @@
 #define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_RECOVERY_INDICATION_DEFAULT         0x00000000          /* R-I-V */
 #define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_VENDOR_ID_DEFAULT                     0x000010de          /* R-I-V */
 #define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1                                                 0x00000af4          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_FLR_ALIVE                           22:22
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_CONV_RESET_ALIVE                    23:23
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_FLR_PENDING                         25:25
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_2_AND_GENERAL_CONV_RESET_PENDING                  26:26
+#define NV_PF0_DVSEC0_GPU_BOOT_STATUS                                                                0x00000b08
+#define NV_PF0_DVSEC0_GPU_BOOT_STATUS_ILLEGAL_UPHY_ACK                                               8:8
 
 #endif // __gr100_dev_pcfg_pf0_h__

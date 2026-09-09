@@ -64,6 +64,8 @@ usrmodeConstruct_IMPL
         bPrivMapping = pAllocParams->bPriv;
     }
 
+    // In TDISP mode, force BAR0 doorbell if IDE traffic is disabled
+
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
         !bPrivMapping || bBar1Mapping,
         NV_ERR_INVALID_PARAMETER);

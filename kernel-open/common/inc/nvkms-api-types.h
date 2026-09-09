@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,6 +51,9 @@
 #define NVKMS_LUT_ARRAY_SIZE                  (1 << NVKMS_LOG2_LUT_ARRAY_SIZE)
 
 #define NVKMS_OLUT_FP_NORM_SCALE_DEFAULT      0xffffffff
+
+#define NVKMS_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE                     3
+#define NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE                     27
 
 typedef NvU32 NvKmsDeviceHandle;
 typedef NvU32 NvKmsDispHandle;
@@ -186,6 +189,8 @@ enum NvKmsEventType {
     NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED,
     NVKMS_EVENT_TYPE_FRAMELOCK_ATTRIBUTE_CHANGED,
     NVKMS_EVENT_TYPE_FLIP_OCCURRED,
+    NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED,
+    NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED,
 };
 
 enum NvKmsFlipResult {
@@ -498,19 +503,6 @@ struct NvKmsCompositionCapabilities {
 
 struct NvKmsLayerCapabilities {
     /*!
-     * Whether Layer supports the window mode. If window mode is supported,
-     * then clients can set the layer's dimensions so that they're smaller than
-     * the viewport, and can also change the output position of the layer to a
-     * non-(0, 0) position.
-     *
-     * NOTE: Dimension changes are currently unsupported for the main layer,
-     * and output position changes for the main layer are currently only
-     * supported via IOCTL_SET_LAYER_POSITION but not via flips. Support for
-     * these is coming soon, via changes to flip code.
-     */
-    NvBool supportsWindowMode              :1;
-
-    /*!
      * Whether layer supports ICtCp pipe.
      */
     NvBool supportsICtCp                   :1;
@@ -782,6 +774,14 @@ struct NvKmsVblankSemControlData {
     struct NvKmsVblankSemControlDataOneHead head[NV_MAX_HEADS];
 };
 
+enum NvKmsContentProtection {
+    NVKMS_CONTENT_PROTECTION_OFF             = 0,
+    NVKMS_CONTENT_PROTECTION_HDCP1X_ON       = 1,
+    NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE0_ON = 2,
+    NVKMS_CONTENT_PROTECTION_HDCP2X_TYPE1_ON = 3,
+    NVKMS_CONTENT_PROTECTION_FAILED          = 4,
+};
+
 /*
  * Dithering control enums, shared between NVKMS API and KAPI.
  * These are defined here (instead of nvkms-api.h) so that nvkms-kapi.h
@@ -805,5 +805,22 @@ enum NvKmsDpyAttributeRequestedDitheringModeValue {
 
 typedef void (*NVRgInterruptCallbackProc)(NvU64 clientData,
                                           NvU64 timestamp);
+
+/*! hdcp topology struct defined in drivers/unix/common/inc/nv_hdcp_topology.h */
+#define NVKMS_HDCP_TOPOLOGY_SIZE (1296)
+
+/*
+ * HDMI Vendor Specific InfoFrame (VSIF) metadata.
+ * The payload is a 27 byte array where the first three bytes are
+ * the vendor OUI, and the remaining bytes are the infoframe content.
+ * payloadSize == 0 means disabled (no VSIF override).
+ * When payloadSize > 0, it must be in the range
+ * [NVKMS_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE,
+ *  NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE] to enable the VSIF.
+ */
+struct NvKmsHdmiVsifMetadata {
+    NvU8 payloadSize;
+    NvU8 payload[NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE];
+};
 
 #endif /* NVKMS_API_TYPES_H */

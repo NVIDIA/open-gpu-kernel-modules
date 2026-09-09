@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -124,6 +124,56 @@ namespace DisplayPort
         FAST_LINK_TRAINING,
     }LinkTrainingType;
 
+    // Parameters passed from ConnectorImpl to MainLink link training.
+    struct LinkTrainParameters
+    {
+        // Link configuration requested by client.
+        const LinkConfiguration &link;
+
+        // True if the link training request should be faked.
+        bool                    force;
+
+        // Normal/Fast/No Link Training.
+        LinkTrainingType        linkTrainingType;
+
+        // Real link configuration trained in the end.
+        LinkConfiguration      *retLink;
+
+        // True if the LT request is only for updating SW states.
+        // The link should already be trained to the requested configuration.
+        bool                    bSkipLt;
+
+        // True if sink granted to request Post_LT_Adjust.
+        bool                    isPostLtAdjRequestGranted;
+
+        // How many LTTPRs need to be trained.
+        unsigned                phyRepeaterCount;
+
+        // Only used by DP2.x link training. When false, EvoMainLink2x::train()
+        // limits total fallback time; assessLink() sets it true so link
+        // assessment can fully explore fallback configurations.
+        bool                    bAllowFullFallback;
+
+        LinkTrainParameters(const LinkConfiguration &_link,
+                            bool _force,
+                            LinkTrainingType _linkTrainingType,
+                            LinkConfiguration *_retLink,
+                            bool _bSkipLt = false,
+                            bool _isPostLtAdjRequestGranted = false,
+                            unsigned _phyRepeaterCount = 0,
+                            bool _bAllowFullFallback = false)
+            : link(_link),
+              force(_force),
+              linkTrainingType(_linkTrainingType),
+              retLink(_retLink),
+              bSkipLt(_bSkipLt),
+              isPostLtAdjRequestGranted(_isPostLtAdjRequestGranted),
+              phyRepeaterCount(_phyRepeaterCount),
+              bAllowFullFallback(_bAllowFullFallback)
+        {
+        }
+    };
+
     typedef enum
     {
         FlushModePhase1,
@@ -139,9 +189,7 @@ namespace DisplayPort
         //
         //  Wrappers for existing link training RM control calls
         //
-        virtual bool train(const LinkConfiguration & link, bool force, LinkTrainingType linkTrainingType,
-                           LinkConfiguration *retLink, bool bSkipLt = false, bool isPostLtAdjRequestGranted = false,
-                           unsigned phyRepeaterCount = 0) = 0;
+        virtual bool train(const LinkTrainParameters &trainParams) = 0;
 
         // RM control call to retrieve buffer from RM for DP Library to dump logs
         virtual bool retrieveRingBuffer(NvU8 dpRingBuffertype, NvU32 numRecords) = 0;
@@ -213,6 +261,7 @@ namespace DisplayPort
         virtual bool  isRgFlushSequenceUsed() {return false;}
         virtual bool isStreamCloningEnabled() = 0;
         virtual bool isDpTunnelingHwBugWarEnabled() = 0;
+        virtual bool isInternalDpTunnelingSupported() = 0;
         virtual NvU32 maxLinkRateSupported() = 0;
         virtual bool isLttprSupported() = 0;
         virtual bool isFECSupported() = 0;
@@ -239,6 +288,7 @@ namespace DisplayPort
         virtual void configureHDCPValidateLink(HDCPValidateData &hdcpValidateData, NvU64 cN = HDCP_DUMMY_CN, NvU64 cKsv = HDCP_DUMMY_CKSV) = 0;
         virtual void forwardPendingKsvListReady(NvBool bKsvListReady) = 0;
         virtual void triggerACT() = 0;
+        virtual void setDpWarFlag(NvU32 warId, bool bEnable) = 0;
         virtual void configureHDCPGetHDCPState(HDCPState &hdcpState) = 0;
 
         virtual NvU32 headToStream(NvU32 head, bool bSidebandMessageSupported,

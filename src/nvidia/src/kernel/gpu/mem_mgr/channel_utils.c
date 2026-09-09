@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,9 +76,6 @@ channelSetupIDs
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                           serverutilGenResourceHandle(pChannel->hClient, &pChannel->pushBufferId));
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                          serverutilGenResourceHandle(pChannel->hClient, &pChannel->doorbellRegionHandle));
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                           serverutilGenResourceHandle(pChannel->hClient, &pChannel->hUserD));
@@ -460,7 +457,6 @@ channelFillGpFifo
 {
     OBJGPU *pGpu = pChannel->pGpu;
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvBool bReleaseMapping = NV_FALSE;
     NvU32  *pGpEntry;
@@ -530,16 +526,6 @@ channelFillGpFifo
 
     osFlushCpuWriteCombineBuffer();
 
-    //
-    // On some architectures, if doorbell is mapped via bar0, we need to send
-    // an extra flush
-    //
-    if (kbusFlushPcieForBar0Doorbell_HAL(pGpu, pKernelBus) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Busflush failed in _scrubFillGpFifo\n");
-        return NV_ERR_GENERIC;
-    }
-
     if (RMCFG_FEATURE_PLATFORM_GSP ||
         kfifoIsLiteModeEnabled_HAL(pGpu, pKernelFifo))
     {
@@ -554,12 +540,12 @@ channelFillGpFifo
         if (pKernelFifo->bDoorbellsSupported)
         {
             NV_ASSERT_OK_OR_RETURN(
-                kfifoRingChannelDoorBell_HAL(pGpu,
-                                             pKernelFifo,
-                                             pKernelChannel));
+                kfifoRingChannelDoorbell(pGpu,
+                                         pKernelFifo,
+                                         pKernelChannel));
         }
     }
-    else if (pChannel->bUseDoorbellRegister)
+    else if (pKernelFifo->bDoorbellsSupported)
     {
         if (pChannel->pTokenFromNotifier == NULL)
         {
@@ -577,7 +563,7 @@ channelFillGpFifo
         }
 
         // Use the token from notifier memory for VM migration support.
-        MEM_WR32(pChannel->pDoorbellRegisterOffset,
+        kfifoUpdateUsermodeDoorbell(pGpu, pKernelFifo,
                  MEM_RD32(&(pChannel->pTokenFromNotifier->info32)));
 
         if (bReleaseMapping)
@@ -667,9 +653,21 @@ channelFillPbFastScrub
 
     if (semaValue)
     {
+        NvU64 finishSemaAddr;
+        if (pChannel->pFinishPayloadSemaMemDesc != NULL)
+        {
+            finishSemaAddr = pChannel->finishPayloadSemaGpuVA + NV_CEUTILS_SEMA_PAGE_PAYLOAD_OFFSET;
+            NV_PRINTF(LEVEL_NOTICE,
+                "CEUTILS_SCRUB: CePb(C8B5) finishSemaAddr=0x%llx payload=%u\n",
+                finishSemaAddr, pChannelPbInfo->payload);
+        }
+        else
+        {
+            finishSemaAddr = pChannel->pbGpuVA + pChannel->finishPayloadOffset;
+        }
         NV_PUSH_INC_3U(RM_SUBCHANNEL,
-            NVC8B5_SET_SEMAPHORE_A,       NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
-            NVC8B5_SET_SEMAPHORE_B,       NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVC8B5_SET_SEMAPHORE_A,       NvU64_HI32(finishSemaAddr),
+            NVC8B5_SET_SEMAPHORE_B,       NvU64_LO32(finishSemaAddr),
             NVC8B5_SET_SEMAPHORE_PAYLOAD, pChannelPbInfo->payload);
     }
 
@@ -829,14 +827,27 @@ channelFillCePb
 
     if (bInsertFinishPayload)
     {
+        NvU64 finishSemaAddr;
+        if (pChannel->pFinishPayloadSemaMemDesc != NULL)
+        {
+            finishSemaAddr = pChannel->finishPayloadSemaGpuVA + NV_CEUTILS_SEMA_PAGE_PAYLOAD_OFFSET;
+            NV_PRINTF(LEVEL_NOTICE,
+                "CEUTILS_SCRUB: CePb(B0B5) finishSemaAddr=0x%llx payload=%u\n",
+                finishSemaAddr, pChannelPbInfo->payload);
+        }
+        else
+        {
+            finishSemaAddr = pChannel->pbGpuVA + pChannel->finishPayloadOffset;
+        }
+
         semaValue = DRF_DEF(B0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _RELEASE_ONE_WORD_SEMAPHORE);
 
         // Do not support client semaphore for now
         NV_ASSERT(pChannelPbInfo->clientSemaAddr == 0);
 
         NV_PUSH_INC_3U(RM_SUBCHANNEL,
-            NVB0B5_SET_SEMAPHORE_A,       NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
-            NVB0B5_SET_SEMAPHORE_B,       NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVB0B5_SET_SEMAPHORE_A,       NvU64_HI32(finishSemaAddr),
+            NVB0B5_SET_SEMAPHORE_B,       NvU64_LO32(finishSemaAddr),
             NVB0B5_SET_SEMAPHORE_PAYLOAD, pChannelPbInfo->payload);
     }
 
@@ -987,7 +998,8 @@ channelFillSec2Pb
 
     *pMethodLength = 0;
     NvU32 methodSize = (NvU32)((NvU8*)pPtr - (NvU8*)pStartPtr);
-    NV_ASSERT_OR_RETURN(methodSize <= pChannel->methodSizePerBlock, NV_ERR_INVALID_STATE);
+    NV_ASSERT_TRUE_OR_GOTO(status, methodSize <= pChannel->methodSizePerBlock,
+        NV_ERR_INVALID_STATE, cleanup);
     *pMethodLength = methodSize;
 
 cleanup:
@@ -1165,4 +1177,23 @@ channelPushMethod
                    semaValue |
                    copyType);
     *ppPtr = pPtr;
+}
+
+NvU32
+channelReadFinishPayloadSema(OBJCHANNEL *pChannel)
+{
+    if (pChannel->pFinishPayloadSemaMemDesc != NULL)
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pChannel->pGpu);
+        NvU32 transferFlags = (pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE) |
+                               TRANSFER_FLAGS_SHADOW_ALLOC |
+                               TRANSFER_FLAGS_SHADOW_INIT_MEM;
+        NvU8 *pVA = (NvU8 *)memmgrMemDescBeginTransfer(
+            pMemoryManager, pChannel->pFinishPayloadSemaMemDesc, transferFlags);
+        NV_ASSERT_OR_RETURN(pVA != NULL, 0);
+        NvU32 val = MEM_RD32(pVA + NV_CEUTILS_SEMA_PAGE_PAYLOAD_OFFSET);
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pFinishPayloadSemaMemDesc, transferFlags);
+        return val;
+    }
+    return channelReadChannelMemdesc(pChannel, pChannel->finishPayloadOffset);
 }

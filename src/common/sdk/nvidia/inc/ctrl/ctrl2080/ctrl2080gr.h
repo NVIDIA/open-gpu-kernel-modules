@@ -339,7 +339,6 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 
 
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_05                            (0x00000A05U)
-#define NV2080_CTRL_GR_INFO_SM_VERSION_13_00                            (0x00000D00U)
 
 
 
@@ -368,7 +367,6 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 
 
 #define NV2080_CTRL_GR_INFO_SM_VERSION_10_5                             (NV2080_CTRL_GR_INFO_SM_VERSION_10_05)
-#define NV2080_CTRL_GR_INFO_SM_VERSION_13_0                             (NV2080_CTRL_GR_INFO_SM_VERSION_13_00)
 
 
 
@@ -1182,6 +1180,11 @@ typedef struct NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS {
  *         number of TPC counts) The GPCs are numbered from 0 to N-1, where N is the
  *         enabled GPC count and 8-23 for singleton TPC holders.
  *
+ *     virtualDpcId
+ *         Virtual DPC Id.
+ *         This is the ordering of all enabled DPCs in the GPU post floor sweeping.
+ *         The DPCs are numbered from 0 to N-1, where N is the enabled DPC count across all GPCs
+ *
  *     migratableTpcId
  *         Migratable TPC Id.
  *         This is the same as the Local Tpc Id for virtual GPC 0-8 (true physical gpcs) and 0 for
@@ -1217,6 +1220,7 @@ typedef struct NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS {
         NvU16 localSmId;
         NvU16 globalTpcId;
         NvU16 virtualGpcId;
+        NvU16 virtualDpcId;
         NvU16 migratableTpcId;
         NvU16 ugpuId;
         NvU16 physicalCpcId;
@@ -1658,6 +1662,8 @@ typedef struct NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS {
 #define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_FP32          (0xAU)
 #define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_DFMA          (0xBU)
 #define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_DMLA          (0xCU)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_CTRL0         (0xDU)
+#define NV2080_CTRL_GR_SM_ISSUE_RATE_MODIFIER_V2_CTRL1         (0xEU)
 
 /*
  * NV2080_CTRL_CMD_GR_GET_SM_ISSUE_RATE_MODIFIER_V2

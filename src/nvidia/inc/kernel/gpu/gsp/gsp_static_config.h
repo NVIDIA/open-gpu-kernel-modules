@@ -42,6 +42,7 @@
 #include "vgpu/rpc_headers.h" // MAX_GPC_COUNT
 #include "platform/chipset/chipset.h" // BUSINFO
 #include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
+#include "gmcapi/gmcapi_system_info.h" // NVGMC_SI_HOST_ARCH_*
 
 // VF related info for GSP-RM
 typedef struct GSP_VF_INFO
@@ -65,9 +66,7 @@ typedef struct
 
 typedef struct
 {
-    NvU32 ecidLow;
-    NvU32 ecidHigh;
-    NvU32 ecidExtended;
+    NvU64 info[2];
 } EcidManufacturingInfo;
 
 typedef struct
@@ -106,6 +105,7 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsTitan;
     NvBool bIsTesla;
     NvBool bIsMobile;
+    NvBool bIsCmpSku;
     NvBool bIsGc6Rtd3Allowed;
     NvBool bIsGc8Rtd3Allowed;
     NvBool bIsGcOffRtd3Allowed;
@@ -164,6 +164,9 @@ typedef struct GspStaticConfigInfo_t
 
     NvBool bBusResetRequired;
 
+    NvU8   chipSubRev;
+    NvU32  emulationRev1;
+
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -185,7 +188,9 @@ typedef struct GspSystemInfo
     NvU32 PCISubDeviceID;
     NvU32 PCIRevisionID;
     NvU32 pcieAtomicsCplDeviceCapMask;
-    NvU8 oorArch;
+    NvU8 oorArch; /* RM OOR_ARCH (gpu.h), not NVGMC_SI_HOST_ARCH_* wire values */
+    NvBool bUnstableRpcs;
+    NvBool bUnstableEvents;
     NvU64 clPdbProperties;
     NvU32 Chipset;
     NvBool bGpuBehindBridge;
@@ -226,7 +231,40 @@ typedef struct GspSystemInfo
     NvBool bPciePowerControlPresent;
     NvU32  pf0DeviceControl2Reg;
     NvBool bIsCxlDevice;
+    NvBool bReserveZeroFbAddressAsRegion;
 } GspSystemInfo;
 
+/*
+ * RM OOR_ARCH (gpu.h, NvU8 0..5) <-> NVGMC_SI_HOST_ARCH_* values placed in NVKV.
+ * Encode: write NVGMC_SI_HOST_ARCH_* into the key payload.  Decode: read that payload into RM OOR_ARCH.
+ */
+static inline NvU32 gmcapiOorArchRmToGmcapi(NvU8 rmOorArch)
+{
+    switch (rmOorArch)
+    {
+        case OOR_ARCH_X86_64:  return NVGMC_SI_HOST_ARCH_X86_64;
+        case OOR_ARCH_PPC64LE: return NVGMC_SI_HOST_ARCH_PPC64LE;
+        case OOR_ARCH_ARM:     return NVGMC_SI_HOST_ARCH_ARM;
+        case OOR_ARCH_AARCH64: return NVGMC_SI_HOST_ARCH_AARCH64;
+        case OOR_ARCH_RISCV64: return NVGMC_SI_HOST_ARCH_RISCV64;
+        case OOR_ARCH_NONE:    return NVGMC_SI_HOST_ARCH_NONE;
+        default:
+            return NVGMC_SI_HOST_ARCH_NONE;
+    }
+}
 
+static inline NvU8 gmcapiOorArchGmcapiToRm(NvU32 gmcapiOorArch)
+{
+    switch (gmcapiOorArch)
+    {
+        case NVGMC_SI_HOST_ARCH_NONE:     return OOR_ARCH_NONE;
+        case NVGMC_SI_HOST_ARCH_X86_64:   return OOR_ARCH_X86_64;
+        case NVGMC_SI_HOST_ARCH_PPC64LE:  return OOR_ARCH_PPC64LE;
+        case NVGMC_SI_HOST_ARCH_ARM:      return OOR_ARCH_ARM;
+        case NVGMC_SI_HOST_ARCH_AARCH64:  return OOR_ARCH_AARCH64;
+        case NVGMC_SI_HOST_ARCH_RISCV64:  return OOR_ARCH_RISCV64;
+        default:
+            return OOR_ARCH_NONE;
+    }
+}
 #endif /* GSP_STATIC_CONFIG_H */

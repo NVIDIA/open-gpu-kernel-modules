@@ -26,7 +26,7 @@
 #include "gpu/gpu.h"
 #include "os/os.h"
 
-#include "published/ampere/ga100/dev_boot.h"
+#include "published/ampere/ga100/dev_pmc.h"
 
 
 /*!

@@ -293,12 +293,12 @@ void LibosLogEntry(NvU64 nArgs, ...);
 // libnvriscv driver is incompatible with variadic dispatch
 #define LIBOS_LOG_DISPATCH(dispatcher, libos_pvt_meta, ...) \
     {                                                                                  \
-        const NvU64 tokens[] = {APPLY_REMAINDER(__VA_ARGS__) (NvU64)&libos_pvt_meta};  \
+        const NvU64 tokens[] = {APPLY_REMAINDER(__VA_ARGS__) (NvU64)(NvUPtr)&libos_pvt_meta};  \
         dispatcher(sizeof(tokens) / sizeof(*tokens), &tokens[0]);                      \
     }
 #else
 #define LIBOS_LOG_DISPATCH(dispatcher, libos_pvt_meta, ...) \
-    dispatcher(LIBOS_MACRO_GET_COUNT(__VA_ARGS__), APPLY_REMAINDER(__VA_ARGS__) (NvU64)&libos_pvt_meta);
+    dispatcher(LIBOS_MACRO_GET_COUNT(__VA_ARGS__), APPLY_REMAINDER(__VA_ARGS__) (NvU64)(NvUPtr)&libos_pvt_meta);
 #endif
 
 /*!

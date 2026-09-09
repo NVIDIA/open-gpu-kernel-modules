@@ -60,10 +60,18 @@ static NvU32 ce_aperture(uvm_aperture_t aperture)
         return HWCONST(C8B5, SET_SRC_PHYS_MODE, TARGET, LOCAL_FB);
     }
     else {
-        UVM_ASSERT(uvm_aperture_is_peer(aperture));
-        return HWCONST(C8B5, SET_SRC_PHYS_MODE, TARGET, PEERMEM) |
-               HWVALUE(C8B5, SET_SRC_PHYS_MODE, FLA, 0) |
-               HWVALUE(C8B5, SET_SRC_PHYS_MODE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
+        NvU32 aperture_bits;
+
+        UVM_ASSERT(uvm_aperture_is_peer(aperture) || uvm_aperture_is_egm(aperture));
+
+        aperture_bits = HWCONST(C8B5, SET_SRC_PHYS_MODE, TARGET, PEERMEM) | HWVALUE(C8B5, SET_SRC_PHYS_MODE, FLA, 0);
+
+        if (uvm_aperture_is_egm(aperture))
+            aperture_bits |= HWVALUE(C8B5, SET_SRC_PHYS_MODE, PEER_ID, UVM_APERTURE_EGM_PEER_ID(aperture));
+        else
+            aperture_bits |= HWVALUE(C8B5, SET_SRC_PHYS_MODE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
+
+        return aperture_bits;
     }
 }
 

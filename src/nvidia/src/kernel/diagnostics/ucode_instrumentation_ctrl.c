@@ -188,7 +188,7 @@ diagapiCtrlCmdUcodeInstrumentationGetData_IMPL
             copySize = sizeof(pParams->data);
         }
         portMemCopy(pParams->data, copySize, pInternalParams->data, copySize);
-        pParams->dataSize = pInternalParams->dataSize;
+        pParams->dataSize = copySize;
         pParams->bComplete = pInternalParams->bComplete;
 
         if (pParams->instrumentationType == NV208F_BULLSEYE_COVERAGE_TYPE &&

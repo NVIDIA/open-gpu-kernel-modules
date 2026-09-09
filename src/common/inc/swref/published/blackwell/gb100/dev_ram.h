@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,5 +37,11 @@
 #define NV_RAMFC_DEBUG_STATE_RAMFC_INDEX_hdr_shadow                     0x00000003 /*       */
 #define NV_RAMFC_SIGNATURE                                              (14*32+31):(14*32+0) /* RW-UF */
 #define NV_RAMFC_PB_HEADER                       (8*32+31):(8*32+0) /* RW-UF */
-#define NV_RAMFC_MISC_FETCH_STATE                (45*32+31):(45*32+0) /* RW-UF */
+#define NV_RAMFC_HCE_CTRL                        (21*32+31):(21*32+0) /* RW-UF */
+#define NV_RAMFC_MISC_EXECUTE_STATE              (20*32+31):(20*32+0) /* RW-UF */
+#define NV_RAMFC_INTR_NOTIFY_CTRL                (19*32+31):(19*32+0) /* RW-UF */
+#define NV_RAMFC_SET_CHANNEL_INFO                (22*32+31):(22*32+0) /* RW-UF */
+#define NV_RAMIN_ENGINE_WFI_VEID             (134*32+(6-1)):(134*32+0) /*       */
+#define NV_RAMFC_SUBDEVICE                       (15*32+31):(15*32+0) /* RW-UF */
+#define NV_RAMUSERD_GP_PUT                     (35*32+31):(35*32+0) /* RW-UF */
 #endif // __gb100_dev_ram_h__

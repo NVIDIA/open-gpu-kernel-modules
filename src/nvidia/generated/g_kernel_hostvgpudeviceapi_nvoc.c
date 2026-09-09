@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHostVgpuDeviceShr =
 {
     .classInfo.size =               sizeof(KernelHostVgpuDeviceShr),
     .classInfo.classId =            classId(KernelHostVgpuDeviceShr),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelHostVgpuDeviceShr",
@@ -345,6 +346,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHostVgpuDeviceApi =
 {
     .classInfo.size =               sizeof(KernelHostVgpuDeviceApi),
     .classInfo.classId =            classId(KernelHostVgpuDeviceApi),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelHostVgpuDeviceApi",

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
 #include "nvport/nvport.h"
 #include "rmapi/rmapi.h"
 #include "ctrl/ctrlc56f.h"
-#include <stddef.h>
+#include <nv_stddef.h>
 // This guard is here until we fix CONF_COMPUTE and SPDM guards across whole RM
 #include "kernel/gpu/spdm/libspdm_includes.h"
 #include <hal/library/cryptlib.h>

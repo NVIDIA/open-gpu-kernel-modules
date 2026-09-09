@@ -759,6 +759,10 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
 
             bUpdateNvlinkPceLce = NV_FALSE;
         }
+        else if (status == NV_WARN_NOTHING_TO_DO)
+        {
+            bUpdateNvlinkPceLce = NV_FALSE;
+        }
         else
         {
             if (status != NV_OK)

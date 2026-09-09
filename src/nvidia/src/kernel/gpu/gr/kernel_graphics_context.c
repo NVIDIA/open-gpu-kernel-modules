@@ -3478,6 +3478,40 @@ kgrctxCtrlProgramVidmemPromote_IMPL
                                              sizeof(*pParams));
 }
 
+NV_STATUS
+kgrctxCtrlProgramSysmemPromote_IMPL
+(
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NV0090_CTRL_PROGRAM_SYSMEM_PROMOTE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    {
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        NV_STATUS status = NV_OK;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+
+        return status;
+    }
+
+    return gpuresInternalControlForward_IMPL(staticCast(pKernelGraphicsContext, GpuResource),
+                                             NV0090_CTRL_CMD_INTERNAL_PROGRAM_SYSMEM_PROMOTE,
+                                             pParams,
+                                             sizeof(*pParams));
+}
+
 /*!
  * @brief Construct shared kernel graphics context. (Does nothing)
  */
@@ -3721,4 +3755,3 @@ void shrkgrctxDetach_IMPL
     }
     SLI_LOOP_END;
 }
-

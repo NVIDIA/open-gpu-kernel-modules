@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,45 +21,30 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <stddef.h>
+#include <nv_stddef.h>
 #include <nvtypes.h>
 #include <nvmisc.h>
+
 
 #include "msgq/msgq.h"
 #include "msgq/msgq_priv.h"
 
-#if defined(UPROC_RISCV) && !defined(NVRM)
-#include <sections.h>
-#include <shared.h>
-#else // defined(UPROC_RISCV) && !defined(NVRM)
-/* This is because this code will be shared with CPU */
-#define sysSHARED_CODE
-// MK TODO: we should have unified memset/memcpy interface at some point
-#if PORT_MODULE_memory
-#include "nvport/nvport.h"
-#define memcpy(d,s,l)  portMemCopy(d,l,s,l)
-#define memset         portMemSet
-#else  // PORT_MODULE_memory
-#include <memory.h>
-#endif // PORT_MODULE_memory
-#endif // defined(UPROC_RISCV) && !defined(NVRM)
 
-sysSHARED_CODE unsigned
+#include "nvport/nvport.h"
+#include "core/core.h"
+
+void osGpuWriteReg032(OBJGPU *pGpu, NvU32 thisAddress, NvV32 thisValue);
+NvU32 osGpuReadReg032(OBJGPU *pGpu, NvU32 thisAddress);
+#define WRITE_REG(gpu, addr, value) osGpuWriteReg032(gpu, addr, value)
+#define READ_REG(gpu, addr) osGpuReadReg032(gpu, addr)
+
+unsigned
 msgqGetMetaSize(void)
 {
     return sizeof(msgqMetadata);
 }
 
-sysSHARED_CODE void
-msgqSetNotification(msgqHandle handle, msgqFcnNotifyRemote fcn, void *pArg)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    pQueue->fcnNotify = fcn;
-    pQueue->fcnNotifyArg = pArg;
-}
-
-sysSHARED_CODE void
+void
 msgqSetBackendRw(msgqHandle handle, msgqFcnBackendRw fcn, void *pArg)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -68,100 +53,13 @@ msgqSetBackendRw(msgqHandle handle, msgqFcnBackendRw fcn, void *pArg)
     pQueue->fcnBackendRwArg = pArg;
 }
 
-sysSHARED_CODE void
-msgqSetRxInvalidate(msgqHandle handle, msgqFcnCacheOp fcn)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    pQueue->fcnInvalidate = fcn;
-}
-
-sysSHARED_CODE void
-msgqSetTxFlush(msgqHandle handle, msgqFcnCacheOp fcn)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    pQueue->fcnFlush = fcn;
-}
-
-sysSHARED_CODE void
-msgqSetZero(msgqHandle handle, msgqFcnCacheOp fcn)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    pQueue->fcnZero = fcn;
-}
-
-sysSHARED_CODE void
-msgqSetBarrier(msgqHandle handle, msgqFcnBarrier fcn)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    pQueue->fcnBarrier = fcn;
-}
-
-/*
- * Helper functions to access indirect backend.
- */
-// TODO: Make these funcions return NV_STATUS instead of int wherever possible.
-sysSHARED_CODE static int
-_backendRead32(msgqMetadata *pQueue, volatile const void *pAddr, NvU32 *pVal, unsigned flags)
-{
-    if (pQueue->fcnBackendRw != NULL)
-    {
-        int status = pQueue->fcnBackendRw(pVal, (const void *)pAddr, sizeof(*pVal),
-                                          flags | FCN_FLAG_BACKEND_ACCESS_READ,
-                                          pQueue->fcnBackendRwArg);
-        if (status != 0)
-        {
-            return -1;
-        }
-    }
-    else
-    {
-        *pVal = *(volatile const NvU32*)pAddr;
-    }
-    return 0;
-}
-
-sysSHARED_CODE static int
-_backendWrite32(msgqMetadata *pQueue, volatile void *pAddr, NvU32 *pVal, unsigned flags)
-{
-    if (pQueue->fcnBackendRw != NULL)
-    {
-        int status = pQueue->fcnBackendRw((void*)pAddr, pVal, sizeof(*pVal),
-                                          flags | FCN_FLAG_BACKEND_ACCESS_WRITE,
-                                          pQueue->fcnBackendRwArg);
-        if (status != 0)
-        {
-            return -1;
-        }
-    }
-    else
-    {
-        *(volatile NvU32*)pAddr = *pVal;
-    }
-    return 0;
-}
-
-/**
- * @brief Default barrier for (RISC-V) systems.
- */
-#ifdef UPROC_RISCV
-sysSHARED_CODE static void
-msgqRiscvDefaultBarrier(void)
-{
-    __asm__ volatile("fence iorw,iorw");
-}
-#endif
-
 /*
  *
  * Init and linking code
  *
  */
 
-sysSHARED_CODE int msgqInit(msgqHandle *pHandle, void *pBuffer)
+int msgqInit(msgqHandle *pHandle, void *pBuffer)
 {
     msgqMetadata *pQueue = pBuffer;
 
@@ -170,11 +68,7 @@ sysSHARED_CODE int msgqInit(msgqHandle *pHandle, void *pBuffer)
         return -1;
     }
 
-    memset(pQueue, 0, sizeof *pQueue);
-
-#ifdef UPROC_RISCV
-    pQueue->fcnBarrier = msgqRiscvDefaultBarrier;
-#endif
+    portMemSet(pQueue, 0, sizeof *pQueue);
 
     if (pHandle != NULL)
     {
@@ -183,7 +77,7 @@ sysSHARED_CODE int msgqInit(msgqHandle *pHandle, void *pBuffer)
     return 0;
 }
 
-sysSHARED_CODE int
+int
 msgqTxCreate
 (
     msgqHandle  handle,
@@ -192,7 +86,9 @@ msgqTxCreate
     unsigned    msgSize,
     unsigned    hdrAlign,
     unsigned    entryAlign,
-    unsigned    flags
+    OBJGPU     *pGpu,
+    NvU32       regHead,
+    NvU32       regTail
 )
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -227,15 +123,9 @@ msgqTxCreate
         return -1;
     }
 
-    // Make sure backing store is aligned for hdrAlign.
-    if ((NvUPtr)pBackingStore & ((hdrAlign - 1)))
-    {
-        return -1;
-    }
+    portMemSet(&pQueue->tx, 0, sizeof(pQueue->tx));
 
-    pQueue->tx.rxHdrOff = NV_ALIGN_UP(sizeof(msgqTxHeader), 1 << hdrAlign);
-    pQueue->tx.entryOff = NV_ALIGN_UP(pQueue->tx.rxHdrOff + sizeof(msgqRxHeader),
-                              1 << entryAlign);
+    pQueue->tx.entryOff = NV_ALIGN_UP(sizeof(msgqTxHeader), 1 << entryAlign);
 
     if (size < (pQueue->tx.entryOff + msgSize))
     {
@@ -243,51 +133,28 @@ msgqTxCreate
     }
 
     // Fill in local copy of msgqTxHeader.
-    pQueue->tx.version  = MSGQ_VERSION;
+    pQueue->tx.versionMajor = MSGQ_VERSION_MAJOR;
+    pQueue->tx.versionMinor = MSGQ_VERSION_MINOR;
     pQueue->tx.size     = size;
     pQueue->tx.msgSize  = msgSize;
-    pQueue->tx.writePtr = 0;
-    pQueue->tx.flags    = flags;
     pQueue->tx.msgCount = (NvU32)((size - pQueue->tx.entryOff) / msgSize);
 
     // Write our tracking metadata
     pQueue->pOurTxHdr   = (msgqTxHeader*)pBackingStore;
-    pQueue->pOurRxHdr   = (msgqRxHeader*)((NvU8*)pBackingStore + pQueue->tx.rxHdrOff);
     pQueue->pOurEntries = (NvU8*)pBackingStore + pQueue->tx.entryOff;
     pQueue->txLinked    = NV_TRUE;
+    pQueue->txWritePtr  = 0;
     pQueue->rxAvail     = 0;
 
     // Allow adding queue messages before rx is linked.
-    pQueue->txFree      = pQueue->tx.msgCount - 1;
+    pQueue->txFree      = pQueue->tx.msgCount;
 
-    // Swap only if both sides agree on it
-    pQueue->rxSwapped = (flags & MSGQ_FLAGS_SWAP_RX) &&
-                        (pQueue->rx.flags & MSGQ_FLAGS_SWAP_RX);
-
-    pQueue->pWriteOutgoing = &pQueue->pOurTxHdr->writePtr;
-
-    // if set, other side is already linked
-    if (pQueue->rxSwapped)
-    {
-        pQueue->pReadOutgoing = &pQueue->pOurRxHdr->readPtr;
-        pQueue->pReadIncoming = &pQueue->pTheirRxHdr->readPtr;
-    }
-    else
-    {
-        pQueue->pReadIncoming = &pQueue->pOurRxHdr->readPtr;
-        if (pQueue->rxLinked)
-        {
-            pQueue->pReadOutgoing = &pQueue->pTheirRxHdr->readPtr;
-        }
-    }
+    pQueue->pGpu        = pGpu;
+    pQueue->regTxHead   = regHead;
+    pQueue->regTxTail   = regTail;
 
     // write shared buffer (backend)
     pTx = pQueue->pOurTxHdr;
-
-    if (pQueue->fcnZero != NULL)
-    {
-        pQueue->fcnZero(pTx, sizeof *pTx);
-    }
 
     // Indirect access to backend
     if (pQueue->fcnBackendRw != NULL)
@@ -299,35 +166,29 @@ msgqTxCreate
         {
             return -1;
         }
-    } 
+    }
     else
     {
-        memcpy(pTx, &pQueue->tx, sizeof *pTx);
+        portMemCopy(pTx, sizeof(*pTx), &pQueue->tx, sizeof(pQueue->tx));
     }
 
-    // Flush
-    if (pQueue->fcnFlush != NULL)
-    {
-        pQueue->fcnFlush(pTx, sizeof *pTx);
-    }
-
-    // Barrier
-    if (pQueue->fcnBarrier != NULL)
-    {
-        pQueue->fcnBarrier();
-    }
-
-    // Notify that pQueue was created
-    if (pQueue->fcnNotify != NULL)
-    {
-        pQueue->fcnNotify(FCN_FLAG_NOTIFY_MSG_WRITE, pQueue->fcnNotifyArg);
-    }
+    portAtomicMemoryFenceStore();
+    WRITE_REG(pQueue->pGpu, pQueue->regTxHead, 0);
+    portAtomicMemoryFenceFull();
 
     return 0;
 }
 
-sysSHARED_CODE int
-msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned msgSize)
+int
+msgqRxLink
+(
+    msgqHandle   handle,
+    const void  *pBackingStore,
+    unsigned     size,
+    unsigned     msgSize,
+    NvU32        regHead,
+    NvU32        regTail
+)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
     int status;
@@ -347,18 +208,17 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
         return -3;
     }
 
+    if (!pQueue->txLinked)
+    {
+        return -4;
+    }
+
     if (pBackingStore == NULL)
     {
         return -5;
     }
 
     pQueue->pTheirTxHdr = (msgqTxHeader*)pBackingStore;
-
-    // Invalidate
-    if (pQueue->fcnInvalidate != NULL)
-    {
-        pQueue->fcnInvalidate(pQueue->pTheirTxHdr, sizeof(msgqTxHeader));
-    }
 
     // copy their metadata
     if (pQueue->fcnBackendRw != NULL)
@@ -374,7 +234,7 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
     }
     else
     {
-        memcpy(&pQueue->rx, (const void *)pQueue->pTheirTxHdr, sizeof pQueue->rx);
+        portMemCopy(&pQueue->rx, sizeof(pQueue->rx), (const void *)pQueue->pTheirTxHdr, sizeof(*pQueue->pTheirTxHdr));
     }
 
     if (size < (pQueue->rx.entryOff + msgSize))
@@ -391,71 +251,25 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
     {
         return -8;
     }
-    if (pQueue->rx.version != MSGQ_VERSION)
+    if (pQueue->rx.versionMajor != MSGQ_VERSION_MAJOR)
     {
         return -9;
     }
 
-    // Also check the calculated fields, to make sure the header arrived intact.
-    if ((pQueue->rx.rxHdrOff < sizeof(msgqTxHeader))                          ||
-        (pQueue->rx.entryOff < pQueue->tx.rxHdrOff + sizeof(msgqRxHeader))    ||
-        (pQueue->rx.msgCount != (NvU32)((size - pQueue->rx.entryOff) / msgSize)))
+    if (pQueue->rx.msgCount != (NvU32)((size - pQueue->rx.entryOff) / msgSize))
     {
         return -10;
     }
 
-    pQueue->pTheirRxHdr    = (msgqRxHeader*)((NvU8*)pBackingStore + pQueue->rx.rxHdrOff);
     pQueue->pTheirEntries  = (NvU8*)pBackingStore + pQueue->rx.entryOff;
-
     pQueue->rxLinked       = NV_TRUE;
-    pQueue->rxSwapped      = (pQueue->tx.flags & MSGQ_FLAGS_SWAP_RX) &&
-                             (pQueue->rx.flags & MSGQ_FLAGS_SWAP_RX);
-    pQueue->pWriteIncoming = &pQueue->pTheirTxHdr->writePtr;
 
-    // if set, other side is always linked
-    if (pQueue->rxSwapped)
-    {
-        pQueue->pReadOutgoing = &pQueue->pOurRxHdr->readPtr;
-        pQueue->pReadIncoming = &pQueue->pTheirRxHdr->readPtr;
-    }
-    else // may be unidir
-    {
-        pQueue->pReadOutgoing = &pQueue->pTheirRxHdr->readPtr;
-        if (pQueue->txLinked)
-        {
-            pQueue->pReadIncoming = &pQueue->pOurRxHdr->readPtr;
-        }
-    }
-
-    if (pQueue->fcnZero != NULL)
-    {
-        pQueue->fcnZero(pQueue->pReadOutgoing, sizeof(NvU32));
-    }
+    pQueue->regRxHead      = regHead;
+    pQueue->regRxTail      = regTail;
 
     pQueue->rxReadPtr = 0;
-    status = _backendWrite32(pQueue, pQueue->pReadOutgoing, &pQueue->rxReadPtr,
-                             pQueue->rxSwapped ? FCN_FLAG_BACKEND_QUEUE_TX : FCN_FLAG_BACKEND_QUEUE_RX);
-    if (status != 0)
-    {
-        return -12;
-    }
-
-    if (pQueue->fcnFlush != NULL)
-    {
-        pQueue->fcnFlush(pQueue->pReadOutgoing, sizeof(NvU32));
-    }
-
-    // Barrier, notify
-    if (pQueue->fcnBarrier != NULL)
-    {
-        pQueue->fcnBarrier();
-    }
-
-    // Notify that pQueue was created
-    if (pQueue->fcnNotify != NULL)
-    {
-        pQueue->fcnNotify(FCN_FLAG_NOTIFY_MSG_READ, pQueue->fcnNotifyArg);
-    }
+    portAtomicMemoryFenceStore();
+    WRITE_REG(pQueue->pGpu, pQueue->regRxTail, 0);
 
     return 0;
 }
@@ -466,7 +280,7 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
  *
  */
 
-sysSHARED_CODE unsigned
+unsigned
 msgqTxGetFreeSpace(msgqHandle handle)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -476,29 +290,39 @@ msgqTxGetFreeSpace(msgqHandle handle)
         return 0;
     }
 
-    if (_backendRead32(pQueue, pQueue->pReadIncoming, &pQueue->txReadPtr,
-                       pQueue->rxSwapped ? FCN_FLAG_BACKEND_QUEUE_RX : FCN_FLAG_BACKEND_QUEUE_TX) != 0)
+    NvU32 newReadPtr = READ_REG(pQueue->pGpu, pQueue->regTxTail);
+    portAtomicMemoryFenceLoad();
+
+    //
+    // It can happen that the register value gets reset to 0, notably during
+    // suspend/resume cycles. Normally, this is not an issue as we can just
+    // use the cached value, which might undercount the free space, but the
+    // real value will be restored as soon as the peer consumes one message.
+    // However, if the queue was empty at exactly the wrong time, restoring
+    // the cached value will just make it look full, so in this case force
+    // it back to empty. This was only observed on Turing.
+    //
+    if ((pQueue->txWritePtr - newReadPtr) > pQueue->tx.msgCount)
     {
-        return 0;
+        if (newReadPtr == 0 &&
+            (pQueue->txWritePtr - pQueue->txReadPtr) == pQueue->tx.msgCount)
+        {
+            newReadPtr = pQueue->txWritePtr;
+        }
+        else
+        {
+            newReadPtr = pQueue->txReadPtr;
+        }
     }
 
-    if (pQueue->txReadPtr >= pQueue->tx.msgCount)
-    {
-        return 0;
-    }
+    pQueue->txReadPtr = newReadPtr;
 
-    pQueue->txFree = pQueue->txReadPtr + pQueue->tx.msgCount - pQueue->tx.writePtr - 1;
-
-    // Avoid % operator due to performance issues on RISC-V.
-    if (pQueue->txFree >= pQueue->tx.msgCount)
-    {
-        pQueue->txFree -= pQueue->tx.msgCount;
-    }
+    pQueue->txFree = pQueue->tx.msgCount - (pQueue->txWritePtr - pQueue->txReadPtr);
 
     return pQueue->txFree;
 }
 
-sysSHARED_CODE void *
+void *
 msgqTxGetWriteBuffer(msgqHandle handle, unsigned n)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -521,20 +345,14 @@ msgqTxGetWriteBuffer(msgqHandle handle, unsigned n)
         return NULL;
     }
 
-    wp = pQueue->tx.writePtr + n;
-    if (wp >= pQueue->tx.msgCount)
-    {
-        wp -= pQueue->tx.msgCount;
-    }
-
+    wp = (pQueue->txWritePtr + n) % pQueue->tx.msgCount;
     return pQueue->pOurEntries + (wp * pQueue->tx.msgSize);
 }
 
-sysSHARED_CODE int
+int
 msgqTxSubmitBuffers(msgqHandle handle, unsigned n)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
-    int status;
 
     if ((pQueue == NULL) || !pQueue->txLinked)
     {
@@ -547,78 +365,18 @@ msgqTxSubmitBuffers(msgqHandle handle, unsigned n)
         return -1;
     }
 
-    // flush queues - TODO: make it more precise possibly
-    if (pQueue->fcnFlush != NULL)
-    {
-        pQueue->fcnFlush(pQueue->pOurEntries,
-                         pQueue->tx.msgCount * pQueue->tx.msgSize);
-    }
+    pQueue->txWritePtr += n;
 
-    // write pointer
-    pQueue->tx.writePtr += n;
-    if (pQueue->tx.writePtr >= pQueue->tx.msgCount)
-    {
-        pQueue->tx.writePtr -= pQueue->tx.msgCount;
-    }
-
-    status = _backendWrite32(pQueue, pQueue->pWriteOutgoing,
-                             &pQueue->tx.writePtr, FCN_FLAG_BACKEND_QUEUE_TX);
-    if (status != 0)
-    {
-        // restore write pointer
-        if (pQueue->tx.writePtr < n)
-        {
-            pQueue->tx.writePtr += pQueue->tx.msgCount;
-        }
-
-        pQueue->tx.writePtr -= n;
-        return -2;
-    }
+    portAtomicMemoryFenceStore();
+    WRITE_REG(pQueue->pGpu, pQueue->regTxHead, pQueue->txWritePtr);
 
     // Adjust cached value for number of free elements.
     pQueue->txFree -= n;
 
-    // flush tx header
-    if (pQueue->fcnFlush != NULL)
-    {
-        pQueue->fcnFlush(pQueue->pWriteOutgoing, sizeof(NvU32));
-    }
-
-    // barrier
-    if (pQueue->fcnBarrier != NULL)
-    {
-        pQueue->fcnBarrier();
-    }
-
-    // Send notification
-    if (pQueue->fcnNotify != NULL)
-    {
-        pQueue->fcnNotify(FCN_FLAG_NOTIFY_MSG_WRITE, pQueue->fcnNotifyArg);
-    }
-
     return 0;
 }
 
-sysSHARED_CODE int
-msgqTxSync(msgqHandle handle) // "transmit"
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    if ((pQueue == NULL) || !pQueue->txLinked)
-    {
-        return -1;
-    }
-
-    if (pQueue->fcnInvalidate != NULL)
-    {
-        // Invalidate caches for read / write pointers
-        pQueue->fcnInvalidate((void*)pQueue->pReadIncoming, sizeof(NvU32));
-    }
-
-    return msgqTxGetFreeSpace(handle);
-}
-
-sysSHARED_CODE unsigned
+unsigned
 msgqTxGetPending(msgqHandle handle)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -628,7 +386,7 @@ msgqTxGetPending(msgqHandle handle)
         return 0;
     }
 
-    return pQueue->tx.msgCount - msgqTxSync(handle) - 1;
+    return pQueue->tx.msgCount - msgqTxGetFreeSpace(handle);
 }
 
 /*
@@ -637,7 +395,7 @@ msgqTxGetPending(msgqHandle handle)
  *
  */
 
-sysSHARED_CODE unsigned
+unsigned
 msgqRxGetReadAvailable(msgqHandle handle)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -647,28 +405,31 @@ msgqRxGetReadAvailable(msgqHandle handle)
         return 0;
     }
 
-    if (_backendRead32(pQueue, pQueue->pWriteIncoming, &pQueue->rx.writePtr, FCN_FLAG_BACKEND_QUEUE_RX) != 0)
+    NvU32 newWritePtr = READ_REG(pQueue->pGpu, pQueue->regRxHead);
+    portAtomicMemoryFenceLoad();
+
+    // See comment in msgqTxGetFreeSpace().
+    if ((newWritePtr - pQueue->rxReadPtr) > pQueue->rx.msgCount)
     {
-        return 0;
+        if (newWritePtr == 0 &&
+            (pQueue->rxWritePtr - pQueue->rxReadPtr) == pQueue->rx.msgCount)
+        {
+            newWritePtr = pQueue->rxReadPtr;
+        }
+        else
+        {
+            newWritePtr = pQueue->rxWritePtr;
+        }
     }
 
-    if (pQueue->rx.writePtr >= pQueue->rx.msgCount)
-    {
-        return 0;
-    }
+    pQueue->rxWritePtr = newWritePtr;
 
-    pQueue->rxAvail = pQueue->rx.writePtr + pQueue->rx.msgCount - pQueue->rxReadPtr;
-
-    // Avoid % operator due to performance issues on RISC-V.
-    if (pQueue->rxAvail >= pQueue->rx.msgCount)
-    {
-        pQueue->rxAvail -= pQueue->rx.msgCount;
-    }
+    pQueue->rxAvail = pQueue->rxWritePtr - pQueue->rxReadPtr;
 
     return pQueue->rxAvail;
 }
 
-sysSHARED_CODE const void *
+const void *
 msgqRxGetReadBuffer(msgqHandle handle, unsigned n)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
@@ -683,7 +444,7 @@ msgqRxGetReadBuffer(msgqHandle handle, unsigned n)
     // Look at the cached elements available first.  If the cached value shows
     // enough elements available from last time, there is no reason to read and
     // calculate the elements available again.  Depending on the location of
-    // rx.writePtr, msgqRxGetReadAvailable can be a very costly operation.
+    // rxWritePtr, msgqRxGetReadAvailable can be a very costly operation.
     //
     if ((n >= pQueue->rxAvail) &&
         (n >= msgqRxGetReadAvailable(handle)))
@@ -691,20 +452,14 @@ msgqRxGetReadBuffer(msgqHandle handle, unsigned n)
         return NULL;
     }
 
-    rp = pQueue->rxReadPtr + n;
-    if (rp >= pQueue->rx.msgCount)
-    {
-        rp -= pQueue->rx.msgCount;
-    }
-
+    rp = (pQueue->rxReadPtr + n) % pQueue->rx.msgCount;
     return pQueue->pTheirEntries + (rp * pQueue->rx.msgSize);
 }
 
-sysSHARED_CODE int
+int
 msgqRxMarkConsumed(msgqHandle handle, unsigned n)
 {
     msgqMetadata *pQueue = (msgqMetadata*)handle;
-    int status;
 
     if ((pQueue == NULL) || !pQueue->rxLinked)
     {
@@ -719,68 +474,12 @@ msgqRxMarkConsumed(msgqHandle handle, unsigned n)
 
     // read pointer
     pQueue->rxReadPtr += n;
-    if (pQueue->rxReadPtr >= pQueue->rx.msgCount)
-    {
-        pQueue->rxReadPtr -= pQueue->rx.msgCount;
-    }
 
-    // Copy to backend
-    status = _backendWrite32(pQueue, pQueue->pReadOutgoing, &pQueue->rxReadPtr,
-                             pQueue->rxSwapped ? FCN_FLAG_BACKEND_QUEUE_TX : FCN_FLAG_BACKEND_QUEUE_RX);
-    if (status != 0)
-    {
-        // restore read pointer
-        if (pQueue->rxReadPtr < n)
-        {
-            pQueue->rxReadPtr += pQueue->rx.msgCount;
-        }
-
-        pQueue->rxReadPtr -= n;
-        return -2;
-    }
+    portAtomicMemoryFenceStore();
+    WRITE_REG(pQueue->pGpu, pQueue->regRxTail, pQueue->rxReadPtr);
 
     // Adjust cached value for number of available elements.
     pQueue->rxAvail -= n;
 
-    // flush rx header
-    if (pQueue->fcnFlush != NULL)
-    {
-        pQueue->fcnFlush(pQueue->pReadOutgoing, sizeof(NvU32));
-    }
-
-    // barrier
-    if (pQueue->fcnBarrier != NULL)
-    {
-        pQueue->fcnBarrier();
-    }
-
-    // Send notification
-    if (pQueue->fcnNotify != NULL)
-    {
-        pQueue->fcnNotify(FCN_FLAG_NOTIFY_MSG_READ, pQueue->fcnNotifyArg);
-    }
-
     return 0;
-}
-
-sysSHARED_CODE int
-msgqRxSync(msgqHandle handle)
-{
-    msgqMetadata *pQueue = (msgqMetadata*)handle;
-
-    if ((pQueue == NULL) || !pQueue->rxLinked)
-    {
-        return -1;
-    }
-
-    // flush queues - TODO: make it more precise :)
-    if (pQueue->fcnInvalidate != NULL)
-    {
-        pQueue->fcnInvalidate(pQueue->pTheirEntries,
-                              pQueue->rx.msgCount * pQueue->rx.msgSize);
-        // Invalidate caches for read / write pointers
-        pQueue->fcnInvalidate((void*)pQueue->pWriteIncoming, sizeof(NvU32));
-    }
-
-    return msgqRxGetReadAvailable(handle);
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -102,6 +102,13 @@ typedef struct nv_dma_buf_file_private
     //
     NvBool                   skip_iommu;
 
+    //
+    // Flag to skip p2p and PCI topology checks in attach.
+    // Set for sysmem allocations which have native struct pages
+    // and do not require peer-to-peer validation.
+    //
+    NvBool                   skip_p2p_check;
+
     struct
     {
         // True if the map attributes are cached
@@ -125,18 +132,17 @@ typedef struct nv_dma_buf_file_private
 
         // Memory type info: see nv_memory_type_t.
         nv_memory_type_t     memory_type;
+
+        //
+        // True if the dma-buf will use the struct page / dma_map_sg_attrs
+        // path (nv_dma_buf_map_pages). Set unconditionally for sysmem
+        // (native struct page), or for DEFAULT mapping type on coherent
+        // platforms (NUMA-onlined vidmem, CDMM vidmem via dev_pagemap).
+        // Used to drive map/unmap routing.
+        //
+        NvBool               mem_has_struct_page;
     } map_attrs;
 
-    //
-    // Flag to indicate if all GPU locks to be acquired/released before/after calling
-    // rm_dma_buf_dup_mem_handle().
-    // nv_dma_buf_dup_mem_handles() acquires GPU lock only for calling pGPU
-    // instance. However, it is not sufficient as per DupObject() SYSMEM's design
-    // since it expects either all GPU locks to be acquired by the caller or
-    // do not take any GPU locks. This flag is set to TRUE only for
-    // ZERO_FB chips.
-    //
-    NvBool                   acquire_release_all_gpu_lock_on_dup;
 } nv_dma_buf_file_private_t;
 
 static void
@@ -327,49 +333,6 @@ nv_dma_buf_undup_mem_handles(
     rm_release_api_lock(sp);
 }
 
-//
-// TODO: Temporary work around for SYSMEM Dup issue.
-// Take all GPU locks before calling the DupObject().
-// DupObject() requires the caller to either acquire all GPU locks beforehand or
-// refrain from acquiring any GPU locks before invoking it.
-// Otherwise DupObject() will fail for already locked gpu instance with below error print
-// for multi gpu instance use case:
-// "GPU lock already acquired by this thread" for gpuInst which is already locked during
-// nv_dma_buf_dup_mem_handles().
-// In TOT, nv_dma_buf_dup_mem_handles() acquires GPU lock only for calling pGPU
-// instance. However, it is not sufficient as per DupObject() SYSMEM's design since it expects
-// either all GPU locks to be acquired by the caller or do not take any GPU locks.
-// gpuarchIsZeroFb chips (iGPU) doesn't have local memory. In this case,
-// SYSMEM is used as Device resources. priv->acquire_release_all_gpu_lock_on_dup flag set as
-// NV_TRUE only for gpuarchIsZeroFb chips.
-//
-// Proper Fix (Bug 4866388):
-// The RS_FLAGS_ACQUIRE_RELAXED_GPUS_LOCK_ON_DUP flag was introduced to allow an
-// RM class to take GPU Group Lock if the source and the destination object
-// belongs to the same pGpu. Take all GPUs lock otherwise.
-// With above change, we are seeing test failures.
-// Until the above proper fix is added, we need to rely on temporary work around.
-//
-static inline NV_STATUS
-nv_dma_buf_acquire_gpu_lock(
-    nvidia_stack_t                  *sp,
-    nv_dma_buf_file_private_t       *priv
-)
-{
-    return (priv->acquire_release_all_gpu_lock_on_dup ?
-            rm_acquire_all_gpus_lock(sp): rm_acquire_gpu_lock(sp, priv->nv));
-}
-
-static inline NV_STATUS
-nv_dma_buf_release_gpu_lock(
-    nvidia_stack_t                  *sp,
-    nv_dma_buf_file_private_t       *priv
-)
-{
-    return (priv->acquire_release_all_gpu_lock_on_dup ?
-            rm_release_all_gpus_lock(sp): rm_release_gpu_lock(sp, priv->nv));
-}
-
 static NV_STATUS
 nv_dma_buf_dup_mem_handles(
     nvidia_stack_t                  *sp,
@@ -388,7 +351,7 @@ nv_dma_buf_dup_mem_handles(
         return status;
     }
 
-    status = nv_dma_buf_acquire_gpu_lock(sp, priv);
+    status = rm_acquire_gpu_lock(sp, priv->nv);
     if (status != NV_OK)
     {
         goto unlock_api_lock;
@@ -457,11 +420,33 @@ nv_dma_buf_dup_mem_handles(
         else
         {
             // Store the handle's mmap, RO and cache type info.
-            priv->map_attrs.can_mmap      = can_mmap;
-            priv->map_attrs.cache_type    = cache_type;
-            priv->map_attrs.read_only_mem = read_only_mem;
-            priv->map_attrs.memory_type   = memory_type;
-            priv->map_attrs.cached        = NV_TRUE;
+            priv->map_attrs.can_mmap            = can_mmap;
+            priv->map_attrs.cache_type          = cache_type;
+            priv->map_attrs.read_only_mem       = read_only_mem;
+            priv->map_attrs.memory_type         = memory_type;
+
+            //
+            // mem_has_struct_page drives map/unmap routing (pages vs PFN
+            // path).
+            //
+            // Set unconditionally for sysmem (native struct page).
+            //
+            // For coherent platforms with DEFAULT mapping type, the
+            // struct page path covers:
+            // 1. GPU memory with struct page from memory onlining (NUMA)
+            // 2. CDMM mode using MEMORY_DEVICE_COHERENT pages from UVM
+            //
+            // FORCE_PCIE on coherent platforms forces the BAR1 PFN path
+            // instead of C2C pages, so mem_has_struct_page is false.
+            //
+            priv->map_attrs.mem_has_struct_page =
+                (memory_type == NV_MEMORY_TYPE_SYSTEM) ||
+                ((priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT) &&
+                 priv->nv->coherent);
+
+            priv->skip_p2p_check = (memory_type == NV_MEMORY_TYPE_SYSTEM);
+
+            priv->map_attrs.cached              = NV_TRUE;
         }
 
         priv->attached_size += params->sizes[i];
@@ -481,35 +466,22 @@ nv_dma_buf_dup_mem_handles(
         goto failed;
     }
 
-    nv_dma_buf_release_gpu_lock(sp, priv);
+    rm_release_gpu_lock(sp, priv->nv);
 
     rm_release_api_lock(sp);
 
     return NV_OK;
 
 failed:
-    if (!priv->acquire_release_all_gpu_lock_on_dup)
-    {
-        //
-        // Undup requires taking all-GPUs lock.
-        // So if single GPU lock was taken,
-        // release it first so all-GPUs lock can be taken in
-        // nv_dma_buf_undup_mem_handles().
-        //
-        nv_dma_buf_release_gpu_lock(sp, priv);
+    //
+    // Undup requires taking all-GPUs lock.
+    // So if single GPU lock was taken,
+    // release it first so all-GPUs lock can be taken in
+    // nv_dma_buf_undup_mem_handles().
+    //
+    rm_release_gpu_lock(sp, priv->nv);
 
-        nv_dma_buf_undup_mem_handles_gpus_locked(sp, params->index, count, priv);
-    }
-    else
-    {
-        //
-        // Here, all-GPUs lock is already taken, so undup the handles under
-        // the unlocked version of the function and then release the locks.
-        //
-        nv_dma_buf_undup_mem_handles_unlocked(sp, params->index, count, priv);
-
-        nv_dma_buf_release_gpu_lock(sp, priv);
-    }
+    nv_dma_buf_undup_mem_handles_gpus_locked(sp, params->index, count, priv);
 
 unlock_api_lock:
     rm_release_api_lock(sp);
@@ -733,7 +705,8 @@ nv_dma_buf_unmap_pages(
         return;
     }
 
-    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
+    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents,
+                       DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
 }
 
 static void
@@ -771,7 +744,7 @@ nv_dma_buf_get_sg_count (
 )
 {
     NvU32 dma_max_seg_size, i;
-    NvU32 nents = 0;
+    NvU64 nents = 0;
 
     dma_max_seg_size = NV_ALIGN_DOWN(dma_get_max_seg_size(dev), PAGE_SIZE);
     if (dma_max_seg_size < PAGE_SIZE)
@@ -794,9 +767,14 @@ nv_dma_buf_get_sg_count (
         }
     }
 
+    if (WARN_ON(nents > (NvU64)UINT_MAX))
+    {
+        return 0;
+    }
+
     *max_seg_size = dma_max_seg_size;
 
-    return nents;
+    return (NvU32)nents;
 }
 
 static struct sg_table*
@@ -814,6 +792,10 @@ nv_dma_buf_map_pages (
     int rc;
 
     nents = nv_dma_buf_get_sg_count(dev, priv, &dma_max_seg_size);
+    if (nents == 0)
+    {
+        return ERR_PTR(-EINVAL);
+    }
 
     NV_KZALLOC(sgt, sizeof(struct sg_table));
     if (sgt == NULL)
@@ -827,7 +809,8 @@ nv_dma_buf_map_pages (
         goto free_sgt;
     }
 
-    if (priv->nv->coherent_gpu_mem_mode == NV_COHERENT_GPU_MEM_MODE_DRIVER)
+    if ((priv->nv->coherent_gpu_mem_mode == NV_COHERENT_GPU_MEM_MODE_DRIVER) &&
+        (priv->map_attrs.memory_type != NV_MEMORY_TYPE_SYSTEM))
     {
         //
         // For CDMM mode, on pre-6.18 kernels, we must use the
@@ -835,6 +818,7 @@ nv_dma_buf_map_pages (
         // This dependency will go away with 6.18 introducing dma_map_phys for which
         // struct page is not required.
         // Take a refcount on the dev_pagemap created for GPU memory by UVM here.
+        // Sysmem has native struct pages and does not need dev_pagemap.
         //
         pgmap = nv_dma_get_dev_pagemap(priv->handles[0].memArea.pRanges[0].start);
         if (pgmap == NULL)
@@ -938,6 +922,10 @@ nv_dma_buf_map_pfns (
     peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
 
     nents = nv_dma_buf_get_sg_count(dev, priv, &dma_max_seg_size);
+    if (nents == 0)
+    {
+        return ERR_PTR(-EINVAL);
+    }
 
     NV_KZALLOC(sgt, sizeof(struct sg_table));
     if (sgt == NULL)
@@ -1030,13 +1018,62 @@ nv_dma_buf_attach(
 {
     int rc = 0;
     nv_dma_buf_file_private_t *priv = buf->priv;
+    struct pci_dev *pci_dev;
 
     mutex_lock(&priv->lock);
 
+    if (priv->num_objects != priv->total_objects)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: dma-buf is not ready\n");
+        rc = -ENXIO;
+        goto unlock_priv;
+    }
+
+#if defined(NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER)
+    if ((attachment->importer_ops != NULL) &&
+        (!attachment->peer2peer) &&
+        (!priv->map_attrs.mem_has_struct_page))
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: dma-buf attach failed: "
+                  "importer unable to handle MMIO without struct page\n");
+        rc = -ENOTSUPP;
+        goto unlock_priv;
+    }
+#endif
+
+    if (!dev_is_pci(attachment->dev))
+    {
+        //
+        // Tegra supports dma-buf FD import for non-PCI devices (GPU -> VIC).
+        // If the device is non-PCI, perform no action and return.
+        //
+        goto unlock_priv;
+    }
+
+    pci_dev = to_pci_dev(attachment->dev);
+
+    if (priv->map_attrs.memory_type == NV_MEMORY_TYPE_FRAMEBUFFER)
+    {
+        if (rm_is_nvidia_gpu_device((pci_dev->class >> 16) & 0xFF,
+                                    (pci_dev->class >> 8) & 0xFF,
+                                    pci_dev->vendor,
+                                    pci_dev->device))
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: attaching GPU is not supported\n");
+            rc = -ENOTSUPP;
+            goto unlock_priv;
+        }
+    }
+
+    if (priv->skip_p2p_check)
+    {
+        goto unlock_priv;
+    }
+
     if (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE)
     {
-        if(!nv_pci_is_valid_topology_for_direct_pci(priv->nv,
-                                                    to_pci_dev(attachment->dev)))
+        if (!nv_pci_is_valid_topology_for_direct_pci(priv->nv, pci_dev))
         {
             nv_printf(NV_DBG_ERRORS,
                       "NVRM: dma-buf attach failed: "
@@ -1051,8 +1088,8 @@ nv_dma_buf_attach(
     {
         nv_dma_device_t peer_dma_dev = {{ 0 }};
 
-        peer_dma_dev.dev = &to_pci_dev(attachment->dev)->dev;
-        peer_dma_dev.addressable_range.limit = to_pci_dev(attachment->dev)->dma_mask;
+        peer_dma_dev.dev = &pci_dev->dev;
+        peer_dma_dev.addressable_range.limit = pci_dev->dma_mask;
 
         if (!nv_grdma_pci_topology_supported(priv->nv, &peer_dma_dev))
         {
@@ -1063,19 +1100,6 @@ nv_dma_buf_attach(
             goto unlock_priv;
         }
     }
-
-#if defined(NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER)
-    if ((attachment->importer_ops != NULL) &&
-        (!attachment->peer2peer) &&
-        (!priv->nv->mem_has_struct_page))
-    {
-        nv_printf(NV_DBG_ERRORS,
-                  "NVRM: dma-buf attach failed: "
-                  "importer unable to handle MMIO without struct page\n");
-        rc = -ENOTSUPP;
-        goto unlock_priv;
-    }
-#endif
 
 unlock_priv:
     mutex_unlock(&priv->lock);
@@ -1113,18 +1137,7 @@ nv_dma_buf_map(
         }
     }
 
-    //
-    // For MAPPING_TYPE_FORCE_PCIE on coherent platforms,
-    // get the BAR1 PFN scatterlist instead of C2C pages.
-    //
-    // If nv->coherent is true, that could mean two things:
-    // 1. GPU memory has struct page from memory onlining(NUMA)
-    // 2. GPU memory is not onlined but CDMM mode is enabled.
-    //    In CDMM, dma-buf depends on the MEMORY_DEVICE_COHERENT pages
-    //    created by UVM.
-    //
-    if (priv->nv->coherent &&
-        (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
+    if (priv->map_attrs.mem_has_struct_page)
     {
         sgt = nv_dma_buf_map_pages(attachment->dev, priv);
     }
@@ -1165,8 +1178,7 @@ nv_dma_buf_unmap(
 
     mutex_lock(&priv->lock);
 
-    if (priv->nv->coherent &&
-        (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
+    if (priv->map_attrs.mem_has_struct_page)
     {
         nv_dma_buf_unmap_pages(attachment->dev, sgt, priv);
     }
@@ -1296,7 +1308,7 @@ nv_dma_buf_mmap(
     NV_STATUS status;
     nv_dma_buf_file_private_t *priv = buf->priv;
     unsigned long addr = vma->vm_start;
-    NvU32 total_skip_size = 0;
+    NvU64 total_skip_size = 0;
     NvU64 total_map_len  = NV_VMA_SIZE(vma);
     NvU64 off_in_range_array = 0;
     NvU32 index;
@@ -1428,7 +1440,7 @@ found_start_page:
         nv_vm_flags_clear(vma, VM_MAYWRITE);
     }
 
-    nv_vm_flags_set(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP);
+    nv_vm_flags_set(vma, VM_SHARED | VM_DONTEXPAND | VM_DONTDUMP | VM_DONTCOPY);
 
     // Create user mapping
     for (; (i < priv->num_objects) && (addr < vma->vm_end); i++)
@@ -1625,8 +1637,7 @@ nv_dma_buf_create(
                                               &priv->h_device,
                                               &priv->h_subdevice,
                                               &priv->mig_info,
-                                              &priv->static_phys_addrs,
-                                              &priv->acquire_release_all_gpu_lock_on_dup);
+                                              &priv->static_phys_addrs);
     if (status != NV_OK)
     {
         goto cleanup_device;

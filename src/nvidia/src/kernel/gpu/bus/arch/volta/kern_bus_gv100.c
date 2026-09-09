@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -260,10 +260,12 @@ void kbusTeardownCoherentCpuMappingAcr_GV100
 {
     if (pKernelBus->coherentCpuMapping.bCoherentCpuMapping)
     {
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
         NV_ASSERT_OR_RETURN_VOID(pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING));
         NV_ASSERT_OR_RETURN_VOID( pKernelBus->coherentCpuMapping.refcnt[COHERENT_CPU_MAPPING_WPR] == 0);
 
-        osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo,
+        kmemsysFlushCoherentCpuCache(pGpu, pKernelMemorySystem,
              (NvUPtr)pKernelBus->coherentCpuMapping.pCpuMapping[COHERENT_CPU_MAPPING_WPR],
              pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_WPR]);
 
@@ -290,6 +292,7 @@ kbusTeardownCoherentCpuMapping_GV100
     NvBool    bFlush
 )
 {
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NvU32 i = 0;
 
     if (!pKernelBus->coherentCpuMapping.bCoherentCpuMapping)
@@ -303,7 +306,7 @@ kbusTeardownCoherentCpuMapping_GV100
         {
             if (bFlush)
             {
-                osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo,
+                kmemsysFlushCoherentCpuCache(pGpu, pKernelMemorySystem,
                                                 (NvUPtr)pKernelBus->coherentCpuMapping.pCpuMapping[i],
                                                 pKernelBus->coherentCpuMapping.size[i]);
             }

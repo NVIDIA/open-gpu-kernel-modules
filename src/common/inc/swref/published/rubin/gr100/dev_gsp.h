@@ -24,6 +24,10 @@
 #ifndef __gr100_dev_gsp_h__
 #define __gr100_dev_gsp_h__
 
+#define NV_PGSP_FALCON_MAILBOX0                                                                          0x110040       /* RW-4R */
+#define NV_PGSP_FALCON_MAILBOX0_DATA                                                                     31:0           /* RWIVF */
+#define NV_PGSP_FALCON_MAILBOX0_DATA_INIT                                                                0x00000000     /* RWI-V */
+
 #define NV_PGSP_EC_FEATURE                                                                               0x00110700     /* R--4R */
 #define NV_PGSP_EC_FEATURE_NUM_ERR                                                                            31:16     /* R-IVF */
 #define NV_PGSP_EC_FEATURE_NUM_ERR_INIT                                                                      0x0012     /* RWI-V */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1088,7 +1088,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
     of_property_read_string(nvl->dev->of_node, "nvidia,backlight-name",
                             &nvl->backlight.device_name);
 
-    num_probed_nv_devices++;
+    atomic_inc(&num_probed_nv_devices);
 
     if (!nv_lock_init_locks(sp, nv))
     {
@@ -1108,8 +1108,8 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
         goto err_destroy_lock;
     }
 
-    /* Initialize per-device init_on_probe from registry value NVreg_GpuInitOnProbe */
-    nvl->init_on_probe = (NVreg_GpuInitOnProbe != 0);
+    /* Resolve per-device init_on_probe from NVreg_GpuInitOnProbe policy. */
+    nv_set_init_on_probe(nv);
 
     if (nv_linux_init_open_q(nvl) != 0)
     {
@@ -1117,7 +1117,7 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
         goto err_free_private_state;
     }
 
-    num_nv_devices++;
+    atomic_inc(&num_nv_devices);
 
     /*
      * The newly created nvl object is added to the nv_linux_devices global list
@@ -1141,8 +1141,13 @@ static int nv_platform_device_display_probe(struct platform_device *plat_dev)
         ret = nv_start_device(nv, sp);
         if (ret)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: failed to start device\n");
-            goto err_remove_minor;
+            /*
+             * Log the failure but do not abort probe. The device will
+             * remain registered so that it can still be managed even
+             * though RM init did not succeed.
+             */
+            nv_printf(NV_DBG_ERRORS,
+                "NVRM: GPU init failed during probe (ret=%d).\n", ret);
         }
     }
 
@@ -1196,9 +1201,7 @@ err_remove_device:
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
-    if (nvl->init_on_probe)
-        nv_stop_device(nv, sp);
-err_remove_minor:
+    nv_stop_device(nv, sp);
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_minor_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
@@ -1253,6 +1256,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
     {
         return;
     }
+    nv = NV_STATE_PTR(nvl);
 
     if (WARN_ON(nv_kmem_cache_alloc_stack(&sp) < 0))
     {
@@ -1269,8 +1273,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
 
-    if ((nvl->init_on_probe) && !(nv->flags & NV_FLAG_EXCLUDE))
-        nv_stop_device(nv, sp);
+    nv_stop_device(nv, sp);
 
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_minor_locked(nvl);
@@ -1286,8 +1289,6 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
      * TODO: vt_switch, dynamic_power_management
      */
 
-    nv = NV_STATE_PTR(nvl);
-
     if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_INITIALIZED))
     {
         nv_acpi_unregister_notifier(nvl);
@@ -1301,7 +1302,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
 
     nv_lock_destroy_locks(sp, nv);
 
-    num_probed_nv_devices--;
+    atomic_dec(&num_probed_nv_devices);
 
     rm_free_private_state(sp, nv);
 
@@ -1330,7 +1331,7 @@ static void nv_platform_device_display_remove(struct platform_device *plat_dev)
     // Disabling power management for the device.
     pm_runtime_disable(&plat_dev->dev);
 
-    num_nv_devices--;
+    atomic_dec(&num_nv_devices);
 
     NV_KFREE(nv->soc_dcb_blob, nv->soc_dcb_size);
 

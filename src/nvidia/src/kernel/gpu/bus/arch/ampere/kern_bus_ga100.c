@@ -312,7 +312,8 @@ kbusAllocateFlaVaspace_GA100
         // Instantiate Inst Blk for pFlaVAS
         status = kgmmuInstBlkInit(pKernelGmmu,
                                  pKernelBus->flaInfo.pInstblkMemDesc,
-                                 pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
+                                 pKernelBus->flaInfo.pFlaVAS, NULL,
+                                 FIFO_PDB_IDX_BASE,
                                  &pInstblkParams);
         if (status != NV_OK)
         {
@@ -503,7 +504,8 @@ kbusAllocateHostManagedFlaVaspace_GA100
     // Instantiate Inst Blk for FLA
     status = kgmmuInstBlkInit(pKernelGmmu,
                               pKernelBus->flaInfo.pInstblkMemDesc,
-                              pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
+                              pKernelBus->flaInfo.pFlaVAS, NULL,
+                              FIFO_PDB_IDX_BASE,
                               &pInstblkParams);
     if (status != NV_OK)
     {
@@ -1172,7 +1174,8 @@ kbusUseDirectSysmemMap_GA100
 {
     *pbAllowDirectMap = NV_FALSE;
 
-    if((memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM))
+    if((memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM) && 
+       (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1)))
     {
         *pbAllowDirectMap = NV_TRUE;
     }

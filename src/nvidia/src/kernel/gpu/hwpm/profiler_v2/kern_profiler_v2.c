@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -350,6 +350,12 @@ profilerBaseDestructState_VF
             memdescUnmap(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc, NV_TRUE,
                          pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr,
                          pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddrPriv);
+            //
+            // Clear the CPU mapping pointers right after unmap so a stale,
+            // non-NULL address can't be dereferenced by a later teardown/free.
+            //
+            pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr = NvP64_NULL;
+            pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddrPriv = NvP64_NULL;
         }
 
         if (pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc != NULL )
@@ -420,15 +426,9 @@ profilerBaseQueryCapabilities_IMPL
     pClientPermissions->bSysMemoryProfilingPermitted = pClientPermissions->bVideoMemoryProfilingPermitted;
     pClientPermissions->bAsyncCeProfilingPermitted = pClientPermissions->bVideoMemoryProfilingPermitted;
 
-    //
-    // bAdminProfilingPermitted controls access to privileged profiling registers.
-    // This is admin-only; no exceptions, not even CAP_PERFMON
-    //
-    pClientPermissions->bAdminProfilingPermitted = NV_FALSE;
     if (pSecInfo->privLevel >= RS_PRIV_LEVEL_USER_ROOT)
     {
         bAnyProfilingPermitted = NV_TRUE;
-        pClientPermissions->bAdminProfilingPermitted = NV_TRUE;
     }
 
     if (_isDevProfilingPermitted(pGpu, pProfBase, pUserParams, pSecInfo, pProfBase, pRmClient))
@@ -579,7 +579,6 @@ profilerDevConstructStateInterlude_IMPL
     params.bDevProfilingPermitted = clientPermissions.bDevProfilingPermitted;
     params.bCtxProfilingPermitted = clientPermissions.bCtxProfilingPermitted;
     params.bDevTracePermitted = clientPermissions.bDevTracingPermitted;
-    params.bAdminProfilingPermitted = clientPermissions.bAdminProfilingPermitted;
     params.bVideoMemoryProfilingPermitted = clientPermissions.bVideoMemoryProfilingPermitted;
     params.bAsyncCeProfilingPermitted = clientPermissions.bAsyncCeProfilingPermitted;
     params.bSysMemoryProfilingPermitted = clientPermissions.bSysMemoryProfilingPermitted;
@@ -608,7 +607,6 @@ profilerCtxConstructStateInterlude_IMPL
     NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS params = {0};
 
     params.bCtxProfilingPermitted = clientPermissions.bCtxProfilingPermitted;
-    params.bAdminProfilingPermitted = clientPermissions.bAdminProfilingPermitted;
     params.bVideoMemoryProfilingPermitted = clientPermissions.bVideoMemoryProfilingPermitted;
     params.bAsyncCeProfilingPermitted = clientPermissions.bAsyncCeProfilingPermitted;
     params.bSysMemoryProfilingPermitted = clientPermissions.bSysMemoryProfilingPermitted;
@@ -727,7 +725,7 @@ profilerCtxConstruct_IMPL
     KernelHwpm        *pKernelHwpm = GPU_GET_KERNEL_HWPM(pGpu);
     ProfilerBase      *pProfBase   = staticCast(pProfCtx, ProfilerBase);
     RsResourceRef     *pParentRef  = pCallContext->pResourceRef->pParentRef;
-    RmClient          *pClient     = serverutilGetClientUnderLock(pCallContext->pClient->hClient);
+    RmClient          *pClient     = dynamicCast(pCallContext->pClient, RmClient);
     PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
 
     if (!pKernelHwpm->getProperty(pKernelHwpm, PDB_PROP_KHWPM_PROFILING_B1CC_SUPPORTED))

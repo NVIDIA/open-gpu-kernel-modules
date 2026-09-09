@@ -956,6 +956,52 @@ typedef struct
 } UVM_QUERY_RESIDENCY_PARAMS;
 
 //
+// UvmIsDmaBufImportSupported
+//
+#define UVM_IS_DMA_BUF_IMPORT_SUPPORTED                               UVM_IOCTL_BASE(82)
+typedef struct
+{
+    NvBool      dmaBufImportSupported;                                         // OUT
+    NV_STATUS   rmStatus;                                                      // OUT
+} UVM_IS_DMA_BUF_IMPORT_SUPPORTED_PARAMS;
+
+//
+// UvmImportDmaBuf
+//
+#define UVM_IMPORT_DMA_BUF                                            UVM_IOCTL_BASE(83)
+typedef struct
+{
+    NvU64                   base                            NV_ALIGN_BYTES(8); // IN
+    NvU64                   length                          NV_ALIGN_BYTES(8); // IN
+    NvS32                   handleFd;                                          // IN
+    NV_STATUS               rmStatus;                                          // OUT
+} UVM_IMPORT_DMA_BUF_PARAMS;
+
+//
+// UvmMapDmaBuf
+//
+#define UVM_MAP_DMA_BUF                                               UVM_IOCTL_BASE(84)
+typedef struct
+{
+    NvU64                   base                            NV_ALIGN_BYTES(8); // IN
+    NvU64                   length                          NV_ALIGN_BYTES(8); // IN
+    NvProcessorUuid         gpuUuid;                                           // IN
+    NV_STATUS               rmStatus;                                          // OUT
+} UVM_MAP_DMA_BUF_PARAMS;
+
+//
+// UvmUnmapDmaBuf
+//
+#define UVM_UNMAP_DMA_BUF                                             UVM_IOCTL_BASE(85)
+typedef struct
+{
+    NvU64                   base                            NV_ALIGN_BYTES(8); // IN
+    NvU64                   length                          NV_ALIGN_BYTES(8); // IN
+    NvProcessorUuid         gpuUuid;                                           // IN
+    NV_STATUS               rmStatus;                                          // OUT
+} UVM_UNMAP_DMA_BUF_PARAMS;
+
+//
 // Temporary ioctls which should be removed before UVM 8 release
 // Number backwards from 2047 - highest custom ioctl function number
 // windows can handle.

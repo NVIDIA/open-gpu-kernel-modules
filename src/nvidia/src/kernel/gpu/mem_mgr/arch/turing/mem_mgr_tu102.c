@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,13 +26,14 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "platform/sli/sli.h"
 
 #include "virtualization/hypervisor/hypervisor.h"
 
 #include "published/turing/tu102/dev_mmu.h"
 #include "published/turing/tu102/kind_macros.h"
 #include "published/turing/tu102/dev_fb_addendum.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 /*!
  * @brief Determine the kind of uncompressed PTE for a given allocation.
@@ -588,9 +589,123 @@ memmgrGetMaxContextSize_TU102
     MemoryManager *pMemoryManager
 )
 {
-    extern NvU64 memmgrGetMaxContextSize_GV100(OBJGPU *pGpu, MemoryManager *pMemoryManager);
+    NvU64 size = 0;
 
-    NvU64  size = memmgrGetMaxContextSize_GV100(pGpu, pMemoryManager);
+    //
+    // This function's original purpose was to estimate how much heap memory RM
+    // needs to keep in reserve from Windows LDDM driver to pass WHQL MaxContexts
+    // test.  This estimation is done after heap init before KMD allocates a
+    // kernel-managed chunk.
+    // UVM & PMA similarly require RM to estimate how much heap memory RM needs
+    // to reserve for page tables, contexts, etc.  This estimation is used during
+    // heap init to divide the FB into internal heap and external PMA managed
+    // spaces.
+    //
+
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTERNAL_HEAP_CONTROL))
+        {
+            // KMD in WDDM mode
+           // 640KB per context and WHQL_TEST_MAX_CONTEXTS(100) contexts
+           size = 640 * 1024 * WHQL_TEST_MAX_CONTEXTS;
+            // Additional 50MB in case of SLI
+            if (IsSLIEnabled(pGpu))
+            {
+                size += (50 * 1024 * 1024);
+            }
+        }
+        else
+        {
+            // KMD in TCC mode
+            //
+            // Reserve enough memory for a moderate number of page tables.
+            size = 48 * 1024 * 1024;
+        }
+    }
+    else if (RMCFG_FEATURE_PLATFORM_MODS)
+    {
+        // TODO: Remove the PMA check after enabling on all chips.
+        if (memmgrIsPmaInitialized(pMemoryManager) &&
+            !memmgrAreClientPageTablesPmaManaged(pMemoryManager))
+        {
+            // Reserve enough memory for a moderate context size.
+            size = 32 * 1024 * 1024;
+        }
+        else
+        {
+            // Reserve 16M -- MODS doesn't need RM to reserve excessive memory
+            size = 16 * 1024 * 1024;
+        }
+    }
+    else
+    {
+        if (memmgrIsPmaEnabled(pMemoryManager) &&
+            memmgrIsPmaSupportedOnPlatform(pMemoryManager))
+        {
+            //
+            // We need to estimate the reserved memory needs before PMA is initialized
+            // Reserve enough memory for a moderate number of page tables
+            //
+            size = 32 * 1024 * 1024;
+        }
+        else
+        {
+            // Non-specific platform -- non-specific reserved memory requirements
+            size = 0;
+        }
+    }
+
+    // Reserve enough memory for CeUtils
+    size += (7*1024*1024);
+
+    //
+    // Update for Pascal+ chips: on WDDMv2 KMD manages the reserve by locking down
+    // lowest level PDEs at RM device creation time (=process creation) via
+    // NV90F1_CTRL_CMD_VASPACE_RESERVE_ENTRIES rmControl call. Thus RM has to allocate
+    // the low level PTs for the entire reserve which is 4Gb (range 4Gb-8Gb).
+    // When PD0 is locked down and RM PD1 entries are valid, KMD can simply copy them
+    // at the setRootPageTable ddi call and don't restore at the unsetRootPT time.
+    // Because of the above reservation RM has to create quite a few 4k page tables and
+    // this results in extra ~28k consumption per default DX device (with default 2 contexts).
+    //
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+    {
+        // Only needs increase in single GPU case as 400 process requirement is satisfied on SLI with the additional SLI reserve
+        if (!IsSLIEnabled(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTERNAL_HEAP_CONTROL))
+        {
+            // KMD in WDDM mode
+        }
+    }
+
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+    {
+        //
+        // We are increasing the reserved mem size by 10 MB.
+        // This is to account for GR context buffer allocs by KMD's private channels.
+        // KMD allocates 10 GR channels (not in virtual context mode).
+        // This is causing an additional 8470 KB allocations from RM reserved heap.
+        // See bug 1882679 for more details.
+        //
+        size += (10 * 1024 *1024);
+    }
+    else if (RMCFG_FEATURE_PLATFORM_MODS)
+    {
+        // Double the context size
+        size *= 2;
+    }
+    else
+    {
+        if (!ctxBufPoolIsSupported(pGpu))
+        {
+            //
+            // Increase the context size by 120 MB.
+            // This is needed to run the same number glxgears instances as in GP102.
+            // See bug 1885000 comment 7 and bug 1885000 comment 36
+            //
+            size += (120 * 1024 *1024);
+        }
+    }
 
     if (RMCFG_FEATURE_PLATFORM_MODS)
     {
@@ -598,6 +713,29 @@ memmgrGetMaxContextSize_TU102
         {
             // Double the context size
             size *= 2;
+        }
+    }
+
+    //
+    // Deduct the total size of regions that are part of the GSP carveout that
+    // were (prior to the introduction of GSP carveout) allocated/reserved
+    // from RM reserved heap to avoid keeping around extra memory for them.
+    // To contain the deduction to one component of the heap size calculation
+    // (to ease refactoring in the future), the earliest max context size
+    // calculation will absorb the deduction.
+    //
+    if (pMemoryManager->gspCarveoutReservedFbDeduction > 0)
+    {
+        if (size > pMemoryManager->gspCarveoutReservedFbDeduction)
+        {
+            size -= pMemoryManager->gspCarveoutReservedFbDeduction;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "gspCarveoutReservedFbDeduction = 0x%llx is larger than max context size calculation = 0x%llx\n",
+                      pMemoryManager->gspCarveoutReservedFbDeduction, size);
+            NV_ASSERT_FAILED("max context size calculation is 0 after GSP carveout deduction");
+            size = 0;
         }
     }
 
@@ -645,12 +783,16 @@ memmgrCalculateHeapOffsetWithGSP_TU102
     NvU32         *offset
 )
 {
+    //
     // The heap will be located after the Console and CBC regions if they are
     // present. Zero, one, or both of them may be present. If Console and
     // CBC regions are present, they are guaranteed to be in Regions 0 and 1.
     // If only one is present, then it is guaranteed to be in Region 0. As an
     // extra check, it should be validated that these regions are indeed
-    // reserved
+    // reserved.
+    // Zero FB address is not reserved separately on Windows, it is part of
+    // console region.
+    //
     KernelMemorySystem   *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     FB_REGION_DESCRIPTOR *pFbRegion0          = &pMemoryManager->Ram.fbRegion[0];
     FB_REGION_DESCRIPTOR *pFbRegion1          = &pMemoryManager->Ram.fbRegion[1];

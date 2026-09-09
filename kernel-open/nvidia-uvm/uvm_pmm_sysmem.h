@@ -29,6 +29,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_lock.h"
 #include "uvm_pmm_gpu.h"
+#include "uvm_processors.h"
 
 // Global initialization/exit functions, that need to be called during driver
 // initialization/tear-down. These are needed to allocate/free global internal
@@ -101,12 +102,21 @@ struct uvm_cpu_chunk_struct
     // reference counted, there is no need to take separate references
     // to the struct page for logical chunks.
     struct page *page;
+
+    // This is the IOVA address used for EGM accesses. Each chunk
+    // holds it's own mapping address. The mapping size is the size
+    // of the chunk.
+    // EGM IOVA mappings are created on the parent GPU attached to
+    // the chunk's page NUMA node.
+    // This address is property of the common chunk in order to
+    // correctly handle splitting chunks and overlapping chunks.
+    dma_addr_t egm_dma_addr;
 };
 
 typedef struct
 {
     // Physical GPU DMA address of the CPU chunk.
-    NvU64 dma_addr;
+    dma_addr_t dma_addr;
 
     // Reference count of all sub_processors using this mapping across logical
     // and physical chunks.
@@ -153,6 +163,9 @@ typedef struct
         uvm_parent_processor_mask_t dma_addrs_mask;
     } gpu_mappings;
 
+    // ID of the parent GPU holding all of the EGM mappings. This value
+    // is mostly used for sanity checking.
+    uvm_parent_gpu_id_t egm_parent_id;
 } uvm_cpu_physical_chunk_t;
 
 typedef struct
@@ -282,15 +295,26 @@ void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk);
 // the operation is issued.
 NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
+// Create EGM mappings for the chunk chunk.
+// Mappings are created on the mapping GPU but they are with respect to IOVA
+// ranges on the routing GPU.
+NV_STATUS uvm_cpu_chunk_map_gpu_egm(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu);
+
 // Destroy a CPU chunk's DMA mapping for the given GPU.
 // If chunk is a logical chunk, this call may not necessarily destroy the DMA
 // mapping of the parent physical chunk since all logical chunks and MIG
 // partitions share the parent's DMA mapping.
 void uvm_cpu_chunk_unmap_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
+// Destroy EGM mappings for the CPU chunk.
+void uvm_cpu_chunk_unmap_gpu_egm(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu);
+
 // Get the CPU chunk's DMA mapping address for the specified GPU ID.
 // If there is no mapping for the GPU, 0 is returned.
 NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
+
+// Get the EGM mapping for the CPU chunk with respect to the routing GPU.
+NvU64 uvm_cpu_chunk_get_gpu_egm_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *routing_gpu);
 
 // Split a CPU chunk into a set of CPU chunks of the next size down from the set
 // of enabled CPU chunk sizes.

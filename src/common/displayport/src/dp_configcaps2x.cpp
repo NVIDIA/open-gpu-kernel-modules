@@ -351,7 +351,8 @@ void DPCDHALImpl2x::parseAndReadCaps()
     }
     if (bLttprSupported)
     {
-        if (AuxRetry::ack == bus.read(NV_DPCD14_LT_TUNABLE_PHY_REPEATER_REV, &buffer[0], 0x8, retries))
+        // 0xF0006 ~ 0xF0007: LTTPR 128b/132b channel coding and UHBR link rates
+        if (AuxRetry::ack == bus.read(NV_DPCD14_LT_TUNABLE_PHY_REPEATER_REV + 6, &buffer[6], 0x2, retries))
         {
             caps2x.repeaterCaps.bDP2xChannelCodingSupported =
                 FLD_TEST_DRF(_DPCD20,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -110,7 +110,8 @@ kpmuReservedMemorySurfacesSizeGet_IMPL
 {
     if (kpmuGetIsSelfInit(pKernelPmu))
     {
-        return PMU_RESERVED_MEMORY_SURFACES_SIZE;
+        OBJGPU *pGpu = ENG_GET_GPU(pKernelPmu);
+        return gpuGetPmuReservedMemorySurfacesSize(pGpu);
     }
 
     return 0U;
@@ -130,16 +131,15 @@ kpmuReservedMemoryMiscSizeGet_IMPL
     return 0U;
 }
 
-NvU64 kpmuReservedMemoryOffsetGet_IMPL
+NvU64 kpmuComputeReservedMemoryOffset_IMPL
 (
     OBJGPU *pGpu,
-    KernelPmu *pKernelPmu
+    KernelPmu *pKernelPmu,
+    NvU64 fbSize
 )
 {
     if (kpmuGetIsSelfInit(pKernelPmu))
     {
-        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-        const NvU64 fbTotalMemSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20U);
         KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
 
         if ((pKernelFsp != NULL) && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM))
@@ -160,16 +160,14 @@ NvU64 kpmuReservedMemoryOffsetGet_IMPL
             // because the FSP allocation may extend beyond where the
             // frtsVidmemOffset claims it stops.
             //
-            const NvU64 pmuRsvdOffset = fbTotalMemSize -
+            const NvU64 pmuRsvdOffset = fbSize -
                 pKernelFsp->pCotPayload->frtsVidmemOffset +
                 kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp);
             return pmuRsvdOffset;
         }
         else
         {
-            const NvU64 pmuRsvdOffset = fbTotalMemSize -
-                memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, pMemoryManager) -
-                kpmuReservedMemorySizeGet(pKernelPmu);
+            const NvU64 pmuRsvdOffset = fbSize - VGA_WORKSPACE_SIZE - kpmuReservedMemorySizeGet(pKernelPmu);
             return pmuRsvdOffset;
         }
     }

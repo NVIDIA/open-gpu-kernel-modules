@@ -358,81 +358,82 @@ typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
 } NV2080_CTRL_NVLINK_LINK_STATUS_INFO;
 
 // NVLink link states
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_INIT               (0x00000000U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_HWCFG              (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_SWCFG              (0x00000002U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_ACTIVE             (0x00000003U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_FAULT              (0x00000004U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_SLEEP              (0x00000005U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY           (0x00000006U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY_AC        (0x00000008U)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY_RX        (0x0000000aU)
-#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_INVALID            (0xFFFFFFFFU)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_INIT                   (0x00000000U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_HWCFG                  (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_SWCFG                  (0x00000002U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_ACTIVE                 (0x00000003U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_FAULT                  (0x00000004U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_SLEEP                  (0x00000005U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY               (0x00000006U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY_AC            (0x00000008U)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_RECOVERY_RX            (0x0000000aU)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_PHYSICAL_UP_NO_TRAFFIC (0x0000000bU)
+#define NV2080_CTRL_NVLINK_STATUS_LINK_STATE_INVALID                (0xFFFFFFFFU)
 
 // NVLink Rx sublink states
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_HIGH_SPEED_1 (0x00000000U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_HIGH_SPEED_1     (0x00000000U)
 // TODO: @achaudhry remove SINGLE_LANE define once references switch to LOW_POWER
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_SINGLE_LANE  (0x00000004) // Deprecated
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_LOW_POWER    (0x00000004)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_TRAINING     (0x00000005U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_SAFE_MODE    (0x00000006U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_OFF          (0x00000007U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_TEST         (0x00000008U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_FAULT        (0x0000000eU)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_INVALID      (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_SINGLE_LANE      (0x00000004) // Deprecated
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_LOW_POWER        (0x00000004)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_TRAINING         (0x00000005U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_SAFE_MODE        (0x00000006U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_OFF              (0x00000007U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_TEST             (0x00000008U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_FAULT            (0x0000000eU)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_RX_STATE_INVALID          (0x000000FFU)
 
 // NVLink Tx sublink states
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_HIGH_SPEED_1 (0x00000000U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_HIGH_SPEED_1     (0x00000000U)
 // TODO: @achaudhry remove SINGLE_LANE define once references switch to LOW_POWER
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_SINGLE_LANE  (0x00000004) // Deprecated
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_LOW_POWER    (0x00000004)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_TRAINING     (0x00000005U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_SAFE_MODE    (0x00000006U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_OFF          (0x00000007U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_TEST         (0x00000008U)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_FAULT        (0x0000000eU)
-#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_INVALID      (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_SINGLE_LANE      (0x00000004) // Deprecated
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_LOW_POWER        (0x00000004)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_TRAINING         (0x00000005U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_SAFE_MODE        (0x00000006U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_OFF              (0x00000007U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_TEST             (0x00000008U)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_FAULT            (0x0000000eU)
+#define NV2080_CTRL_NVLINK_STATUS_SUBLINK_TX_STATE_INVALID          (0x000000FFU)
 
-#define NV2080_CTRL_NVLINK_STATUS_PHY_NVHS                      (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_PHY_GRS                       (0x00000002U)
-#define NV2080_CTRL_NVLINK_STATUS_PHY_INVALID                   (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_PHY_NVHS                          (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_PHY_GRS                           (0x00000002U)
+#define NV2080_CTRL_NVLINK_STATUS_PHY_INVALID                       (0x000000FFU)
 
 // Version information
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0            (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_2_0            (0x00000002U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_2_2            (0x00000004U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_0            (0x00000005U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_1            (0x00000006U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0            (0x00000007U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0            (0x00000008U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_6_0            (0x00000009U)
-#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID        (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0                (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_2_0                (0x00000002U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_2_2                (0x00000004U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_0                (0x00000005U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_1                (0x00000006U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0                (0x00000007U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0                (0x00000008U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_6_0                (0x00000009U)
+#define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID            (0x000000FFU)
 
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_1_0               (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_2_0               (0x00000002U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_2_2               (0x00000004U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_0               (0x00000005U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_1               (0x00000006U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_4_0               (0x00000007U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_5_0               (0x00000008U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_6_0               (0x00000009U)
-#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_INVALID           (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_1_0                   (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_2_0                   (0x00000002U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_2_2                   (0x00000004U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_0                   (0x00000005U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_1                   (0x00000006U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_4_0                   (0x00000007U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_5_0                   (0x00000008U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_6_0                   (0x00000009U)
+#define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_INVALID               (0x000000FFU)
 
-#define NV2080_CTRL_NVLINK_STATUS_NVHS_VERSION_1_0              (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_NVHS_VERSION_INVALID          (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_NVHS_VERSION_1_0                  (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_NVHS_VERSION_INVALID              (0x000000FFU)
 
-#define NV2080_CTRL_NVLINK_STATUS_GRS_VERSION_1_0               (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_GRS_VERSION_INVALID           (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_GRS_VERSION_1_0                   (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_GRS_VERSION_INVALID               (0x000000FFU)
 
 // Connection properties
-#define NV2080_CTRL_NVLINK_STATUS_CONNECTED_TRUE                (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_CONNECTED_FALSE               (0x00000000U)
+#define NV2080_CTRL_NVLINK_STATUS_CONNECTED_TRUE                    (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_CONNECTED_FALSE                   (0x00000000U)
 
-#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_LOOPBACK        (0x00000001U)
-#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_LOOPOUT         (0x00000002U)
-#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE            (0x00000000U)
+#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_LOOPBACK            (0x00000001U)
+#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_LOOPOUT             (0x00000002U)
+#define NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE                (0x00000000U)
 
-#define NV2080_CTRL_NVLINK_STATUS_REMOTE_LINK_NUMBER_INVALID    (0x000000FFU)
+#define NV2080_CTRL_NVLINK_STATUS_REMOTE_LINK_NUMBER_INVALID        (0x000000FFU)
 
 // L1 Threshold Units
 typedef enum NV2080_CTRL_NVLINK_STATUS_L1_THRESHOLD_UNIT {
@@ -882,161 +883,196 @@ typedef struct NV2080_CTRL_NVLINK_CLEAR_COUNTERS_PARAMS {
 } NV2080_CTRL_NVLINK_CLEAR_COUNTERS_PARAMS;
 
 
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX0                                  0U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX1                                  1U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX0                                  2U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX1                                  3U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX0                                       0U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX1                                       1U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX0                                       2U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX1                                       3U
 
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_SIZE                4U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L0                  4U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L1                  5U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L2                  6U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L3                  7U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_SIZE                     4U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L0                       4U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L1                       5U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L2                       6U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L3                       7U
 
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_SIZE                8U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L0                  8U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L1                  9U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L2                  10U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L3                  11U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L4                  12U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L5                  13U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L6                  14U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L7                  15U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_SIZE                     8U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L0                       8U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L1                       9U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L2                       10U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L3                       11U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L4                       12U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L5                       13U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L6                       14U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L7                       15U
 
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_RECOVERY                     16U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_RECOVERY                          16U
 
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_REPLAY                       17U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_REPLAY                       18U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_REPLAY                            17U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_REPLAY                            18U
 
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_MASKED                   19U
-#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_FLIT                     20U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_MASKED                        19U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_FLIT                          20U
 
-#define NV2080_CTRL_NVLINK_COUNTER_LP_DL                                      21U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_DL                                           21U
 
 #define NV2080_CTRL_NVLINK_COUNTER_V1_MAX_COUNTER NV2080_CTRL_NVLINK_COUNTER_LP_DL
 
 /* Transmit Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_XMIT_PACKETS                               22U
-#define NV2080_CTRL_NVLINK_COUNTER_XMIT_BYTES                                 23U
+#define NV2080_CTRL_NVLINK_COUNTER_XMIT_PACKETS                                    22U
+#define NV2080_CTRL_NVLINK_COUNTER_XMIT_BYTES                                      23U
 /* Received Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_PACKETS                                24U
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_BYTES                                  25U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_PACKETS                                     24U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_BYTES                                       25U
 /* Link Events */
-#define NV2080_CTRL_NVLINK_COUNTER_LINK_ERROR_RECOVERY_COUNTER                26U
-#define NV2080_CTRL_NVLINK_COUNTER_LINK_DOWNED_COUNTER                        27U
-#define NV2080_CTRL_NVLINK_COUNTER_LINK_RECOVERY_SUCCESSFUL_COUNTER           28U
+#define NV2080_CTRL_NVLINK_COUNTER_LINK_ERROR_RECOVERY_COUNTER                     26U
+#define NV2080_CTRL_NVLINK_COUNTER_LINK_DOWNED_COUNTER                             27U
+#define NV2080_CTRL_NVLINK_COUNTER_LINK_RECOVERY_SUCCESSFUL_COUNTER                28U
 /* Link Receive Errors */
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_ERRORS                                 29U
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_REMOTE_ERRORS                          30U
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_GENERAL_ERRORS                         31U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_ERRORS                                      29U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_REMOTE_ERRORS                               30U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_GENERAL_ERRORS                              31U
 /* Link Receive Errors Detail */
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_MALFORMED_PKT_ERROR                    32U
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_BUFFER_OVERRUN_ERROR                   33U
-#define NV2080_CTRL_NVLINK_COUNTER_RCV_VL15DROPPED_ERROR                      34U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_MALFORMED_PKT_ERROR                         32U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_BUFFER_OVERRUN_ERROR                        33U
+#define NV2080_CTRL_NVLINK_COUNTER_RCV_VL15DROPPED_ERROR                           34U
 /* Link Other Errors Detail */
-#define NV2080_CTRL_NVLINK_COUNTER_LINK_INTEGRITY_ERRORS                      35U
-#define NV2080_CTRL_NVLINK_COUNTER_BUFFER_OVERRUN_ERRORS                      36U
+#define NV2080_CTRL_NVLINK_COUNTER_LINK_INTEGRITY_ERRORS                           35U
+#define NV2080_CTRL_NVLINK_COUNTER_BUFFER_OVERRUN_ERRORS                           36U
 /* Link Transmit Errors */
-#define NV2080_CTRL_NVLINK_COUNTER_XMIT_WAIT_TIME                             37U
-#define NV2080_CTRL_NVLINK_COUNTER_XMIT_ERRORS                                38U
+#define NV2080_CTRL_NVLINK_COUNTER_XMIT_WAIT_TIME                                  37U
+#define NV2080_CTRL_NVLINK_COUNTER_XMIT_ERRORS                                     38U
 /* FEC Block Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_SINGLE_ERROR_BLOCKS                        39U
-#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_BLOCKS                           40U
-#define NV2080_CTRL_NVLINK_COUNTER_UNCORRECTED_BLOCKS                         41U
+#define NV2080_CTRL_NVLINK_COUNTER_SINGLE_ERROR_BLOCKS                             39U
+#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_BLOCKS                                40U
+#define NV2080_CTRL_NVLINK_COUNTER_UNCORRECTED_BLOCKS                              41U
 /* FEC Symbol Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_LANE_0                   42U
-#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_LANE_1                   43U
-#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_TOTAL                    44U
+#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_LANE_0                        42U
+#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_LANE_1                        43U
+#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_SYMBOLS_TOTAL                         44U
 /* FEC Raw Error Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_RAW_ERRORS_LANE_0                          45U
-#define NV2080_CTRL_NVLINK_COUNTER_RAW_ERRORS_LANE_1                          46U
-#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_BITS                             47U
+#define NV2080_CTRL_NVLINK_COUNTER_RAW_ERRORS_LANE_0                               45U
+#define NV2080_CTRL_NVLINK_COUNTER_RAW_ERRORS_LANE_1                               46U
+#define NV2080_CTRL_NVLINK_COUNTER_CORRECTED_BITS                                  47U
 /* FEC Raw BER */
-#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_LANE_0                             48U
-#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_LANE_1                             49U
-#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_TOTAL                              50U
+#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_LANE_0                                  48U
+#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_LANE_1                                  49U
+#define NV2080_CTRL_NVLINK_COUNTER_RAW_BER_TOTAL                                   50U
 /* FEC Effective BER */
-#define NV2080_CTRL_NVLINK_COUNTER_NO_ERROR_BLOCKS                            51U
-#define NV2080_CTRL_NVLINK_COUNTER_EFFECTIVE_ERRORS                           52U
-#define NV2080_CTRL_NVLINK_COUNTER_EFFECTIVE_BER                              53U
+#define NV2080_CTRL_NVLINK_COUNTER_NO_ERROR_BLOCKS                                 51U
+#define NV2080_CTRL_NVLINK_COUNTER_EFFECTIVE_ERRORS                                52U
+#define NV2080_CTRL_NVLINK_COUNTER_EFFECTIVE_BER                                   53U
 /* Phy Symbol Errors Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_SYMBOL_ERRORS                              54U
-#define NV2080_CTRL_NVLINK_COUNTER_SYMBOL_BER                                 55U
-#define NV2080_CTRL_NVLINK_COUNTER_RECEIVED_BITS                              56U
+#define NV2080_CTRL_NVLINK_COUNTER_SYMBOL_ERRORS                                   54U
+#define NV2080_CTRL_NVLINK_COUNTER_SYMBOL_BER                                      55U
+#define NV2080_CTRL_NVLINK_COUNTER_RECEIVED_BITS                                   56U
 /* Phy Other Errors Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_SYNC_HEADER_ERRORS                         57U
-#define NV2080_CTRL_NVLINK_COUNTER_TIME_SINCE_LAST_CLEAR                      58U
+#define NV2080_CTRL_NVLINK_COUNTER_SYNC_HEADER_ERRORS                              57U
+#define NV2080_CTRL_NVLINK_COUNTER_TIME_SINCE_LAST_CLEAR                           58U
 /* PLR Receive Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS                             59U
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS_WITH_UNCORRECTABLE_ERRORS   60U
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS_WITH_ERRORS                 61U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS                                  59U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS_WITH_UNCORRECTABLE_ERRORS        60U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_RCV_BLOCKS_WITH_ERRORS                      61U
 /* PLR Transmit Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_BLOCKS                            62U
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_BLOCKS                      63U
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_EVENTS                      64U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_BLOCKS                                 62U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_BLOCKS                           63U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_EVENTS                           64U
 /* PLR BW Loss Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_BW_LOSS                                65U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_BW_LOSS                                     65U
 /* NVLE Rx counters */
-#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_GOOD                               66U
-#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_ERROR                              67U
-#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_AUTH                               68U
+#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_GOOD                                    66U
+#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_ERROR                                   67U
+#define NV2080_CTRL_NVLINK_COUNTER_NVLE_RX_AUTH                                    68U
 /* NVLE Tx Counters */
-#define NV2080_CTRL_NVLINK_COUNTER_NVLE_TX_GOOD                               69U
-#define NV2080_CTRL_NVLINK_COUNTER_NVLE_TX_ERROR                              70U
+#define NV2080_CTRL_NVLINK_COUNTER_NVLE_TX_GOOD                                    69U
+#define NV2080_CTRL_NVLINK_COUNTER_NVLE_TX_ERROR                                   70U
 /* FEC Histogram */
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_0                                  71U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_1                                  72U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_2                                  73U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_3                                  74U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_4                                  75U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_5                                  76U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_6                                  77U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_7                                  78U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_8                                  79U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_9                                  80U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_10                                 81U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_11                                 82U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_12                                 83U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_13                                 84U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_14                                 85U
-#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_15                                 86U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_0                                       71U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_1                                       72U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_2                                       73U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_3                                       74U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_4                                       75U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_5                                       76U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_6                                       77U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_7                                       78U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_8                                       79U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_9                                       80U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_10                                      81U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_11                                      82U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_12                                      83U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_13                                      84U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_14                                      85U
+#define NV2080_CTRL_NVLINK_COUNTER_HISTORY_15                                      86U
 
 /* Throughput counters */
-#define NV2080_CTRL_NVLINK_COUNTER_TP_RX_DATA                                 87U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TX_DATA                                 88U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_RX_RAW                                  89U
-#define NV2080_CTRL_NVLINK_COUNTER_TP_TX_RAW                                  90U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_RX_DATA                                      87U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TX_DATA                                      88U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_RX_RAW                                       89U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TX_RAW                                       90U
 
 /* Low power counters */
-#define NV2080_CTRL_NVLINK_COUNTER_L1_ENTRY                                   91U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_ENTRY_FORCE                             92U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT                                    93U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT_RECAL                              94U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT_REMOTE                             95U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_LP_STEADY_STATE_TIME                    96U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_HIGH_SPEED_STEADY_STATE_TIME            97U
-#define NV2080_CTRL_NVLINK_COUNTER_L1_OTHER_STATE_TIME                        98U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_ENTRY_TIME                        99U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_EXIT_TIME                         100U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_FULL_BW_ENTRY_TIME                101U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_FULL_BW_EXIT_TIME                 102U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_ENTRY_TIME                       103U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_EXIT_TIME                        104U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_FULL_BW_ENTRY_TIME               105U
-#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_FULL_BW_EXIT_TIME                106U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_ENTRY                                        91U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_ENTRY_FORCE                                  92U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT                                         93U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT_RECAL                                   94U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_EXIT_REMOTE                                  95U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_LP_STEADY_STATE_TIME                         96U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_HIGH_SPEED_STEADY_STATE_TIME                 97U
+#define NV2080_CTRL_NVLINK_COUNTER_L1_OTHER_STATE_TIME                             98U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_ENTRY_TIME                             99U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_EXIT_TIME                              100U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_FULL_BW_ENTRY_TIME                     101U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_LOCAL_FULL_BW_EXIT_TIME                      102U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_ENTRY_TIME                            103U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_EXIT_TIME                             104U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_FULL_BW_ENTRY_TIME                    105U
+#define NV2080_CTRL_NVLINK_COUNTER_LP_REMOTE_FULL_BW_EXIT_TIME                     106U
 
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_LAST_RAW_BER                           107U
-#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_EVENTS_WITHIN_T_SEC_MAX_LOW 108U
-#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ENTRY                           109U
-#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ENTRY_DUE_TO_L1                 110U
-#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_REQ_NOT_YET_ACTIVE              111U
-#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ACTIVE_DUE_TO_L1_REQ            112U
-#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ACTIVE                          113U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_LAST_RAW_BER                                107U
+#define NV2080_CTRL_NVLINK_COUNTER_PLR_XMIT_RETRY_EVENTS_WITHIN_T_SEC_MAX_LOW      108U
+#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ENTRY                                109U
+#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ENTRY_DUE_TO_L1                      110U
+#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_REQ_NOT_YET_ACTIVE                   111U
+#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ACTIVE_DUE_TO_L1_REQ                 112U
+#define NV2080_CTRL_NVLINK_COUNTER_L0_TX_IDLE_ACTIVE                               113U
 
-#define NV2080_CTRL_NVLINK_COUNTERS_MAX                                       114U
+/* Physical Recovery Counters */
+#define NV2080_CTRL_NVLINK_COUNTER_TOTAL_SUCCESSFUL_RECOVERY_EVENTS                114U
+#define NV2080_CTRL_NVLINK_COUNTER_UNINTENTIONAL_LINK_DOWN_EVENTS_PHY_REC          115U
+#define NV2080_CTRL_NVLINK_COUNTER_INTENTIONAL_LINK_DOWN_EVENTS_PHY_REC            116U
+#define NV2080_CTRL_NVLINK_COUNTER_TIME_IN_LAST_HOST_SERDES_FEQ_RECOVERY           117U
+#define NV2080_CTRL_NVLINK_COUNTER_TOTAL_TIME_IN_HOST_SERDES_FEQ_RECOVERY          118U
+#define NV2080_CTRL_NVLINK_COUNTER_TOTAL_HOST_SERDES_FEQ_RECOVERY_COUNT            119U
+#define NV2080_CTRL_NVLINK_COUNTER_TOTAL_HOST_SERDES_FEQ_SUCCESSFUL_RECOVERY_COUNT 120U
+#define NV2080_CTRL_NVLINK_COUNTER_LAST_HOST_SERDES_FEQ_ATTEMPTS_COUNT             121U
+#define NV2080_CTRL_NVLINK_COUNTER_TIME_SINCE_LAST_RECOVERY                        122U
+#define NV2080_CTRL_NVLINK_COUNTER_TIME_BETWEEN_LAST_2_RECOVERIES                  123U
 
-#define NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS                                 2U
-#define NV2080_CTRL_NVLINK_COUNTER_MAX_COUNTERS_PER_LINK_IN_REQ               28
+/* PHY Monitors Counters */
+#define NV2080_CTRL_NVLINK_COUNTER_LAST_EFF_BER_LF_COEF                            124U
+#define NV2080_CTRL_NVLINK_COUNTER_LAST_EFF_BER_LF_MAGNITUDE                       125U
+#define NV2080_CTRL_NVLINK_COUNTER_MEAN_EFF_BER_LF_COEF                            126U
+#define NV2080_CTRL_NVLINK_COUNTER_MEAN_EFF_BER_LF_MAGNITUDE                       127U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_EFF_BER_LF_COEF                             128U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_EFF_BER_LF_MAGNITUDE                        129U
+#define NV2080_CTRL_NVLINK_COUNTER_CONS_BELOW_EFF_BER_LF_THR                       130U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_EFF_BER_LF_WARNINGS                      131U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_EFF_BER_LF_ALARMS                        132U
+#define NV2080_CTRL_NVLINK_COUNTER_LAST_RECOVERY_BW_LOSS_LF                        133U
+#define NV2080_CTRL_NVLINK_COUNTER_MEAN_RECOVERY_BW_LOSS_LF                        134U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_RECOVERY_BW_LOSS_LF                         135U
+#define NV2080_CTRL_NVLINK_COUNTER_CONS_BELOW_RECOVERY_BW_LOSS_LF_THR              136U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_RECOVERY_BW_LOSS_LF_WARNINGS             137U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_RECOVERY_BW_LOSS_LF_ALARMS               138U
+#define NV2080_CTRL_NVLINK_COUNTER_LAST_PLR_TX_BW_LOSS_LF                          139U
+#define NV2080_CTRL_NVLINK_COUNTER_MEAN_PLR_TX_BW_LOSS_LF                          140U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_PLR_TX_BW_LOSS_LF                           141U
+#define NV2080_CTRL_NVLINK_COUNTER_CONS_BELOW_PLR_TX_BW_LOSS_LF_THR                142U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_PLR_TX_BW_LOSS_LF_WARNINGS               143U
+#define NV2080_CTRL_NVLINK_COUNTER_NUM_OF_PLR_TX_BW_LOSS_LF_ALARMS                 144U
+
+#define NV2080_CTRL_NVLINK_COUNTERS_MAX                                            145U
+
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS                                      3U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_COUNTERS_PER_LINK_IN_REQ                    28
 #define NV2080_CTRL_NVLINK_COUNTER_V2_GROUP(i)  ((i) / 64)
 #define NV2080_CTRL_NVLINK_COUNTER_V2_COUNTER_MASK(i) ((NvU64)1 << ((i) % 64))
 
@@ -2339,24 +2375,21 @@ typedef struct NV2080_CTRL_NVLINK_SYNC_LINK_MASKS_AND_VBIOS_INFO_PARAMS {
 /*
  * NV2080_CTRL_CMD_NVLINK_PROCESS_INIT_DISABLED_LINKS
  *
- * Process the init disabled NVLinks and filter those out
+ * Process the HW-detected init disabled NVLinks and
+ * filter those out from discovered links.
  *
- * [in/out]  initDisabledLinksMask (This field will be deprecated in the future, please use initDisabledLinks)
- *     Mask of links initdisabled on a given GPU
+ * [out]  initDisabledLinksMask
+ *     Mask of HW-detected init disabled links on a GPU
  *
- * [in/out]  initDisabledLinks
- *     Mask of links initdisabled on a given GPU
- *
- * [in] bSkipHwNvlinkDisable
- *     Whether to consider skipping the HW initdisable links
+ * [out]  initDisabledLinks
+ *     Mask of HW-detected init disabled links on a GPU
  */
 
 #define NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS_MESSAGE_ID (0x3bU)
 
 typedef struct NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS {
-    NvU32  initDisabledLinksMask;
+    NvU32 initDisabledLinksMask;
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK initDisabledLinks, 8);
-    NvBool bSkipHwNvlinkDisable;
 } NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_PROCESS_INIT_DISABLED_LINKS (0x2080303bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS_MESSAGE_ID" */
@@ -2640,12 +2673,30 @@ typedef struct NV2080_CTRL_NVLINK_PRM_DATA {
     NvU8 data[NV2080_CTRL_NVLINK_PRM_ACCESS_MAX_LENGTH];
 } NV2080_CTRL_NVLINK_PRM_DATA;
 
+/*
+ * NV2080_CTRL_CMD_NVLINK_GET_SUPPORTED_COUNTERS
+ *
+ *
+ *  This command retrieves the supported counters.
+ *
+ * [out] counterMask
+ *     Mask of counters that are supported
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *     If getting the supported completed successfully
+ *   NV_ERR_NOT_SUPPORTED
+ *     If NVLINK is not supported on the chip
+ *   NV_ERR_NOT_READY
+ *     If the links are not ready for counter queries
+ */
 #define NV2080_CTRL_CMD_NVLINK_GET_SUPPORTED_COUNTERS (0x20803074U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS_MESSAGE_ID" */
 #define NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS_MESSAGE_ID (0x74U)
 
 typedef struct NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 counterMask[NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS], 8);
 } NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS;
+
 /*
  * NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS
  *
@@ -2805,10 +2856,47 @@ typedef struct NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS {
 #define NV2080_CTRL_NVLINK_SET_BW_MODE_PARAMS_MESSAGE_ID (0x86U)
 
 typedef struct NV2080_CTRL_NVLINK_SET_BW_MODE_PARAMS {
-    NvU16  rbmMode;
-    NvBool bForceSync;
-    NvU32  rbmSetPollTimeoutMs;
+    NvU16 rbmMode;
 } NV2080_CTRL_NVLINK_SET_BW_MODE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_SET_BW_MODE_ASYNC
+ *
+ * This command sets the requested RBM of the GPU
+ *
+ * [in] rbmMode
+ *      Possible Legacy values that can be set in bits 2:0:
+ *        NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_FULL
+ *        NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_OFF
+ *        NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_MIN
+ *        NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_HALF
+ *        NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_3QUARTER
+ *      Blackwell bits 3:7 can be used to specify link count
+ *                 bits 8:15 are reserved
+
+ * [out] rbmSetPollTimeoutMs
+ *     timeout value for client to poll for RBM  to complete.
+ *     This will be set to NV2080_CTRL_CMD_NVLINK_SET_BW_MODE_POLL_TIMEOUT_MS_INVALID if
+ *     synchronous behavior is applied
+ *
+ * Possible status values returned are: TODO: Update this
+ *   NV_OK
+ *     If the BW mode is set successfully
+ *   NV_ERR_NOT_SUPPORTED
+ *     If NVLINK is not supported on the chip
+ *   NV_ERR_INVALID_ARGUMENT
+ *     If the link is not enabled on the GPU
+ *   NV_ERR_INVALID_STATE
+ *     If the link is in an invalid state
+ */
+#define NV2080_CTRL_CMD_NVLINK_SET_BW_MODE_ASYNC (0x208030a1U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS_MESSAGE_ID (0xA1U)
+
+typedef struct NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS {
+    NvU16 rbmMode;
+    NvU32 rbmSetPollTimeoutMs;
+} NV2080_CTRL_NVLINK_SET_BW_MODE_ASYNC_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_NVLINK_GET_BW_MODE
@@ -3472,7 +3560,7 @@ typedef struct NV2080_CTRL_NVLINK_SETUP_NVLE_ENCRYPTION_KEY_PARAMS {
  *  [in] remapEntryEnd
  *      Entry to end parsing at
  */
-#define NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID (0xA1U)
+#define NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID (0xA2U)
 
 typedef struct NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS {
     NvU32 flaRemapTabAddr[NV2080_CTRL_NVLINK_REMAP_TABLE_ENTRIES_CHUNK];
@@ -3482,7 +3570,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS {
     NvU32 remapEntryEnd;
 } NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS;
 
-#define NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2 (0x208030a1) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2 (0x208030a2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID" */
 
 /*
  * NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2
@@ -3503,7 +3591,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS {
  *  [out] bClidUpdated
  *      Whether CLIDs have been updated in the FLA and GPA remap tables
  */
-#define NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS_MESSAGE_ID (0xA2U)
+#define NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS_MESSAGE_ID (0xA3U)
 
 typedef struct NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS {
     NvBool                                     bGet;
@@ -3513,7 +3601,27 @@ typedef struct NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS {
     NvBool                                     bClidUpdated;
 } NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS;
 
-#define NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2 (0x208030a2U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2 (0x208030a3U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2_PARAMS_MESSAGE_ID" */
+
+/*!
+ * NV2080_CTRL_CMD_NVLINK_GET_LINK_TRAINING_TIME_PARAMS
+ *
+ * Lightweight control to retrieve NVLink link training / link-up timing
+ * for use by clients (e.g. CUDA) to size Phase A of the fabric init timeout.
+ *
+ *  linkStateChangeTimeMs[OUT]
+ *      - Maximum time (ms) for NVLink links to transition states (training/wake).
+ *        Sourced from RM per-arch HAL.
+ *        Returns NV2080_CTRL_INTERNAL_NVLINK_GET_NVLINK_DEVICE_INFO_INVALID_TIME_MS
+ *        on architectures that do not report this value.
+ */
+#define NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS_MESSAGE_ID (0xA4U)
+
+typedef struct NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS {
+    NvU32 linkStateChangeTimeMs;
+} NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_GET_LINK_TRAINING_TIME (0x208030a4U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_LINK_TRAINING_TIME_PARAMS_MESSAGE_ID" */
 
 
 /* _ctrl2080nvlink_h_ */

@@ -48,6 +48,14 @@
 
 #define portUtilGetReturnAddress() (NvUPtr)__builtin_return_address(0)
 
+#define NVPORT_ATTRIBUTE_NO_ASAN __attribute__((no_sanitize("address"), no_sanitize("hwaddress")))
+#ifdef __clang__
+#define NVPORT_ATTRIBUTE_NO_COVSAN __attribute__((no_sanitize("coverage")))
+#else
+#define NVPORT_ATTRIBUTE_NO_COVSAN __attribute__((no_sanitize_coverage))
+#endif
+#define NVPORT_ATTRIBUTE_NO_UBSAN __attribute__((no_sanitize("undefined")))
+
 #if NVCPU_IS_X86 || NVCPU_IS_X86_64
 #define NVPORT_DUMMY_LOOP()         \
     __asm__ __volatile__ ("pause"); \

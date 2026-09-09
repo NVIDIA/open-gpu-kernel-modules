@@ -343,39 +343,6 @@ kfifoGetMaxCeChannelGroups_GV100
     return numChannels;
 }
 
-/*
- * Allocate Memory Descriptors for Regmem VF page
- *
- * @param[in]   pGpu               OBJGPU pointer
- * @param[in]   pKernelFifo        KernelFifo pointer
- */
-NV_STATUS
-kfifoConstructUsermodeMemdescs_GV100
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo
-)
-{
-    NvU32          attr           = 0;
-    NvU32          attr2          = 0;
-    NvU64          offset         = 0;
-    NvU32          size           = 0;
-
-    attr = FLD_SET_DRF(OS32, _ATTR,  _PHYSICALITY, _CONTIGUOUS, attr);
-    attr = FLD_SET_DRF(OS32, _ATTR,  _COHERENCY, _CACHED, attr);
-
-    attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO, attr2);
-
-    NV_ASSERT_OK_OR_RETURN(kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, &offset, &size));
-
-    NV_ASSERT_OK_OR_RETURN(memCreateMemDesc(pGpu, &(pKernelFifo->pRegVF), ADDR_REGMEM,
-                                            offset, size, attr, attr2));
-
-    memdescSetFlag(pKernelFifo->pRegVF, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
-
-    return NV_OK;
-}
-
 /**
  * @brief Converts a MMU access type type (NV_PFAULT_ACCESS_TYPE_*) into a string.
  *
@@ -416,28 +383,3 @@ kfifoGetFaultAccessTypeString_GV100
     }
 }
 
-/*!
- * @brief Update the usermode doorbell register with work submit token to notify
- *        host that work is available on this channel.
- *
- * @param[in] pGpu
- * @param[in] pFifo
- * @param[in] pKernelChannel  Channel to ring the doorbell for
- */
-NV_STATUS
-kfifoRingChannelDoorBell_GV100
-(
-    OBJGPU          *pGpu,
-    KernelFifo      *pKernelFifo,
-    KernelChannel   *pKernelChannel
-)
-{
-    NvU32        workSubmitToken;
-
-    NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo,
-                                                        pKernelChannel, &workSubmitToken,
-                                                        NV_TRUE));
-    NV_ASSERT_OK_OR_RETURN(kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo,
-                                                            workSubmitToken));
-    return NV_OK;
-}

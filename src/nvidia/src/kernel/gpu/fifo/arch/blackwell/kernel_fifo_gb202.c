@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,11 +28,16 @@
 #include "kernel/gpu/gsplite/kernel_gsplite.h"
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
+#include "gpu/ce/kernel_ce.h"
+
+#include "gpu/gpu_access.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "published/blackwell/gb202/dev_fault.h"
 #include "published/blackwell/gb202/dev_vm.h"
 #include "published/blackwell/gb202/dev_ram.h"
 #include "published/blackwell/gb202/dev_runlist.h"
+#include "published/blackwell/gb202/dev_esched_pbdma.h"
 
 /*!
  * @brief Construct the worksubmit token. Caller cannot make assumption about this handle.
@@ -356,5 +361,207 @@ kfifoCompleteChannelHalt_GB202
 
         runlistVal = GPU_REG_RD32(pGpu, runlistPriBase + NV_RUNLIST_PREEMPT);
     } while (FLD_TEST_DRF(_RUNLIST, _PREEMPT, _RUNLIST_PREEMPT_PENDING, _TRUE, runlistVal));
+}
+
+/**
+ * @brief Configuring PBDMA Auth Level in RAMFC_CONFIG
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelFifo
+ * @param[in] pKernelChannel
+ * @param[in] pInstMem
+ */
+void
+kfifoInitAuthlevelRamfcConfig_GB202
+(
+    OBJGPU         *pGpu,
+    KernelFifo     *pKernelFifo,
+    KernelChannel  *pKernelChannel,
+    NvU8           *pInstMem
+)
+{
+    NvU32 execState;
+
+    execState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE));
+    if (pKernelChannel->bAuthLevelPriv)
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_AUTH_LEVEL, _PRIVILEGED, execState);
+    }
+    else
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_AUTH_LEVEL, _NON_PRIVILEGED, execState);
+    }
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE), execState);
+}
+
+void
+kfifoInitRamfcEvictLastCopy_GB202
+(
+    KernelFifo    *pKernelFifo,
+    OBJGPU        *pGpu,
+    KernelChannel *pKernelChannel,
+    NvU8          *pInstMem
+)
+{
+    NvU32     execState;
+    NvBool    bForceEnable  = NV_FALSE;
+    NvBool    bForceDisable = NV_FALSE;
+
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+
+    RM_ENGINE_TYPE rmEngineType = kchannelGetEngineType(pKernelChannel);
+
+    execState = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE));
+
+    if ((pKernelChannel->bAuthLevelPriv && RM_ENGINE_TYPE_IS_COPY(rmEngineType)
+        && !ceIsCeGrce(pGpu, rmEngineType) && !bForceDisable)
+        || bForceEnable)
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_EVICT_LAST_COPY, _TRUE, execState);
+    }
+    else
+    {
+        execState = FLD_SET_DRF(_PBDMA, _MISC_EXECUTE_STATE, _CONFIG_EVICT_LAST_COPY, _FALSE, execState);
+    }
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMFC_MISC_EXECUTE_STATE), execState);
+}
+
+/*
+ * @brief Get the Number of TPCs for the given Channel and Instance block
+ *
+ * @param pGpu
+ * @param pFifo
+ * @param engine
+ * @param pInstMem
+ */
+NvU32
+kfifoGetEngineCtxTpcCount_GB202
+(
+    OBJGPU            *pGpu,
+    KernelFifo        *pKernelFifo,
+    MEMORY_DESCRIPTOR *pInstBlkMemDesc,
+    NvU32              engine
+)
+{
+    NvU8     *pInstMem   = NULL;
+    NvU32     data       = 0;
+    NV_STATUS status     = NV_OK;
+    NvBool    bSupported = NV_FALSE;
+
+    // We need to Get TPC Counts only for Graphics Engine
+    if (!IS_GR(engine))
+    {
+        NV_PRINTF(LEVEL_INFO, "Engine is not a Graphics Engine\n");
+        return data;
+    }
+
+    status = kfifoCheckEngine_HAL(pGpu, pKernelFifo, engine, &bSupported);
+    if ((status != NV_OK) || (!bSupported))
+    {
+        NV_PRINTF(LEVEL_INFO, "Engine is not supported\n");
+        return data;
+    }
+
+    pInstMem = kbusMapRmAperture_HAL(pGpu, pInstBlkMemDesc);
+    if (NULL == pInstMem)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to map instance Block to RM\n");
+        return data;
+    }
+
+    // Get the Total Number of TPCs from the Intance Block
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_TOTAL_NUM_TPCS));
+
+    kbusUnmapRmAperture_HAL(pGpu, pInstBlkMemDesc, &pInstMem, NV_TRUE);
+
+    return data;
+}
+
+/*
+ * @brief Set the Number of TPCs for the given Channel and Instance block
+ *
+ * @param pGpu
+ * @param pFifo
+ * @param pInstMem
+ * @param engine
+ * @param numTpcs
+ */
+NV_STATUS
+kfifoSetEngineCtxTpcCount_GB202
+(
+    OBJGPU            *pGpu,
+    KernelFifo        *pKernelFifo,
+    MEMORY_DESCRIPTOR *pInstBlkMemDesc,
+    NvU32              engine,
+    NvU32              numTpcs
+)
+{
+    NvU8     *pInstMem   = NULL;
+    NvU32     data       = 0;
+    NV_STATUS status     = NV_OK;
+    NvBool    bSupported = NV_FALSE;
+
+    // We need to Set TPC Counts only for Graphics Engine
+    if (!IS_GR(engine))
+    {
+        NV_PRINTF(LEVEL_INFO, "Engine is not a Graphics Engine\n");
+        return status;
+    }
+
+    status = kfifoCheckEngine_HAL(pGpu, pKernelFifo, engine, &bSupported);
+    if ((status != NV_OK) || (!bSupported))
+    {
+        NV_PRINTF(LEVEL_INFO, "Engine is not supported\n");
+        return status;
+    }
+
+    pInstMem = kbusMapRmAperture_HAL(pGpu, pInstBlkMemDesc);
+    if (NULL == pInstMem)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to map instance Block to RM\n");
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "Updating the Total Number of TPCs %d into Instance Block with PA 0x%llx\n", numTpcs,
+              memdescGetPhysAddr(memdescGetMemDescFromGpu(pInstBlkMemDesc, pGpu), AT_GPU, 0));
+
+    // Set the Total Number of TPCs to current Instance block of the Channel
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_TOTAL_NUM_TPCS));
+    data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE, _TOTAL_NUM_TPCS, numTpcs, data);
+
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_TOTAL_NUM_TPCS), data);
+
+    kbusUnmapRmAperture_HAL(pGpu, pInstBlkMemDesc, &pInstMem, NV_TRUE);
+
+    return status;
+}
+
+/**
+ * @brief Initialize SCG Type info in RAMFC
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param pKernelChannel
+ * @param pInstMem
+ */
+void
+kfifoInitRamfcSubctx_GB202
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem
+)
+{
+    NvU32 data;
+
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
+
+    // Set the engine context VEID to channel VEID
+    data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID));
+    data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE_WFI, _VEID, pKernelChannel->subctxId, data);
+    MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID), data);
 }
 

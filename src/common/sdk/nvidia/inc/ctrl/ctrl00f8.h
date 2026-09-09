@@ -140,8 +140,8 @@ typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
  *  size
  *    Size of memory allocation
  *
- *  cliqueId
- *    Clique ID of the owner GPU
+ *  clique
+ *    Clique of the owner GPU
  *
  *  bwModeEpoch
  *    Currently active bwModeEpoch of of the owner GPU
@@ -153,7 +153,7 @@ typedef struct NV_FABRIC_MEMORY_ATTRS {
     NvU32 kind;
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NV_DECLARE_ALIGNED(NvU64 size, 8);
-    NvU32 cliqueId;
+    NV_DECLARE_ALIGNED(NvU64 clique, 8);
     NV_DECLARE_ALIGNED(NvU64 bwModeEpoch, 8);
     NvU16 bwMode;
 } NV_FABRIC_MEMORY_ATTRS;

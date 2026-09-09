@@ -58,6 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsManager =
 {
     .classInfo.size =               sizeof(KernelGraphicsManager),
     .classInfo.classId =            classId(KernelGraphicsManager),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "KernelGraphicsManager",
@@ -258,7 +259,7 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // kgrmgrGetVeidsFromGpcCount -- halified (4 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x20000000UL) )) /* ChipHal: GB10B */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) )) /* ChipHal: GB10B | GB10C */ 
     {
         pThis->__kgrmgrGetVeidsFromGpcCount__ = &kgrmgrGetVeidsFromGpcCount_GB10B;
     }

@@ -35,6 +35,7 @@
 #define NVOC_MIG_CONFIG_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
+#include "core/system.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/mig_mgr/mig_config_session.h"
 #include "class/clc639.h"

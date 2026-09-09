@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,7 @@
 #define __PRELUDE_H__
 
 /* ------------------------ C library --------------------------------------- */
-#include <stddef.h>                 // NULL
+#include <nv_stddef.h>                 // NULL
 
 /* ------------------------ SDK includes ------------------------------------ */
 

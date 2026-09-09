@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2025, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -156,11 +156,14 @@ struct nv_drm_device {
     NvBool contiguousPhysicalMappings;
 
     NvBool supportsSyncpts;
+    NvBool supportsColorPassthrough;
+    NvBool isSocDgpuDisplayNeedingWar;
     NvBool subOwnershipGranted;
     NvBool hasFramebufferConsole;
 
     struct drm_property *nv_out_fence_property;
     struct drm_property *nv_input_colorspace_property;
+    struct drm_property *nv_hdcp_level_property;
 
     struct {
         NvU32 count;
@@ -170,6 +173,7 @@ struct nv_drm_device {
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
     struct drm_property *nv_hdr_output_metadata_property;
 #endif
+    struct drm_property *nv_hdcp_topology_property;
 
     struct drm_property *nv_plane_lms_ctm_property;
     struct drm_property *nv_plane_lms_to_itp_ctm_property;
@@ -184,12 +188,18 @@ struct nv_drm_device {
     struct drm_property *nv_plane_tmo_lut_property;
     struct drm_property *nv_plane_tmo_lut_size_property;
 
+    struct drm_property *nv_plane_color_passthrough_property;
+
     struct drm_property *nv_crtc_regamma_tf_property;
     struct drm_property *nv_crtc_regamma_lut_property;
     struct drm_property *nv_crtc_regamma_lut_size_property;
     struct drm_property *nv_crtc_regamma_divisor_property;
 
+    struct drm_property *nv_crtc_color_passthrough_property;
+
     struct drm_property *nv_connector_dithering_mode_property;
+
+    struct drm_property *nv_connector_hdmi_vsif_metadata_property;
 
     struct nv_drm_device *next;
 
@@ -197,6 +207,9 @@ struct nv_drm_device {
     NvU64 vtFbSize;
 
     nv_drm_workthread vblank_worker;
+
+    struct mutex drm_lut_surface_pool_mutex;
+    struct list_head drm_lut_surface_pool;
 };
 
 static inline NvU32 nv_drm_next_display_semaphore(

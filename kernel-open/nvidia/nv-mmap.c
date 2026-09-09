@@ -424,7 +424,8 @@ static int nvidia_mmap_peer_io(
     start = at->page_table[page_index].phys_addr;
     size = pages * PAGE_SIZE;
 
-    ret = nv_io_remap_page_range(vma, start, size, vma->vm_start);
+    ret = nv_io_remap_page_range(vma, start, size, vma->vm_start,
+            nv_adjust_pgprot(vma->vm_page_prot));
 
     return ret;
 }
@@ -647,13 +648,14 @@ int nvidia_mmap_helper(
             {
                 NvU64 idx = 0;
                 NvU64 curOffs = 0;
+                pgprot_t prot = nv_adjust_pgprot(vma->vm_page_prot);
                 for(; idx < mmap_context->memArea.numRanges; idx++)
                 {
                     NvU64 nextOffs = curOffs + mmap_context->memArea.pRanges[idx].size;
                     if (nv_io_remap_page_range(vma,
                             mmap_context->memArea.pRanges[idx].start,
                             mmap_context->memArea.pRanges[idx].size,
-                            vma->vm_start + curOffs) != 0)
+                            vma->vm_start + curOffs, prot) != 0)
                     {
                         up(&nvl->mmap_lock);
                         ret = -EAGAIN;

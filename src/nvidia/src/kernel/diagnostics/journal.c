@@ -99,7 +99,7 @@ static NV_STATUS _rcdbReleaseNocatJournalRecord(RM_NOCAT_JOURNAL_ENTRY* pReturne
 static NV_STATUS _rcdbNocatReportAssert(OBJGPU* pGpu, RmRCCommonAssert_RECORD* pAssert);
 
 // Global flag to make sure we never re-enter the nvLog code.
-#if (defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX) || RMCFG_FEATURE_PLATFORM_GSP) && !defined(NV_MODS)
+#if (defined(_WIN32) || defined(_WIN64) || defined(NV_UNIX) || RMCFG_FEATURE_PLATFORM_GSP) && !defined(NV_MODS) && !defined(DEBUG) && !defined(QA_BUILD)
 static PORT_ATOMIC NvS32 nvLogRecursion = 0;
 #endif
 
@@ -775,17 +775,32 @@ rcdbAddRcDiagRec_IMPL
     return pCommon;
 }
 
+static void
+_rcdbSetRcDiagRecContext
+(
+    RmRcDiag_RECORD *pRecord,
+    NvU32            processId,
+    NvU32            owner
+)
+{
+    pRecord->owner = owner;
+    pRecord->processId = processId;
+}
+
 RmRCCommonJournal_RECORD *
 rcdbAddRcDiagRecFromGsp_IMPL
 (
     OBJGPU  *pGpu,
     Journal *pRcDB,
     RmRCCommonJournal_RECORD   *pCommonGsp,
-    RmRcDiag_RECORD            *pRmDiagGsp
+    RmRcDiag_RECORD            *pRmDiagGsp,
+    NvU32                       processId,
+    NvU32                       owner
 )
 {
     RmRCCommonJournal_RECORD   *pCommonCpu;
 
+    _rcdbSetRcDiagRecContext(pRmDiagGsp, processId, owner);
     pCommonCpu = rcdbAddRcDiagRec(pGpu, pRcDB, pRmDiagGsp);
     if (pCommonCpu)
     {
@@ -930,8 +945,7 @@ rcdbUpdateRcDiagRecContext_IMPL
         // get the pointer to the diag record.
         pRecord = (RmRcDiag_RECORD*) &(pCommon[1]);
 
-        pRecord->owner = owner;
-        pRecord->processId = processId;
+        _rcdbSetRcDiagRecContext(pRecord, processId, owner);
     }
     return status;
 }
@@ -2396,8 +2410,6 @@ static void _rcdbRmAssert(NvU32 level, NvU32 lineNum, NvU64 ip)
     {
         pRec->level = level;
     }
-
-    PORT_UNREFERENCED_VARIABLE(nvLogRecursion);
 
 #if !defined(DEBUG) && !defined(QA_BUILD)
     {

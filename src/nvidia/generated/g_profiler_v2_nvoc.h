@@ -63,7 +63,6 @@ typedef struct
     NvBool bVideoMemoryProfilingPermitted;
     NvBool bSysMemoryProfilingPermitted;
     NvBool bAsyncCeProfilingPermitted;
-    NvBool bAdminProfilingPermitted;
     NvBool bDevTracingPermitted;
     NvBool bDevProfilingPermitted;
     NvBool bCtxProfilingPermitted;

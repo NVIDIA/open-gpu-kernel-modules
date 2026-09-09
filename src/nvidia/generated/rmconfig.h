@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB100, GB102, GB10B, GB110, GB112, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
 //
 
 #ifndef _RMCFG_H_
@@ -75,6 +75,7 @@
 #define RMCFG_CHIP_GB100     1
 #define RMCFG_CHIP_GB102     1
 #define RMCFG_CHIP_GB10B     1
+#define RMCFG_CHIP_GB10C     1
 #define RMCFG_CHIP_GB110     1
 #define RMCFG_CHIP_GB112     1
 
@@ -306,6 +307,7 @@
 #define RMCFG_FEATURE_VERIF_ONLY_CONTROLS         0  // Allow verify only control cmds to be used on verif builds (determined by this feature)
 #define RMCFG_FEATURE_PAGE_RETIREMENT             1  // Offlining bad memory pages from the FB heap
 #define RMCFG_FEATURE_PMA                         1  // Physical memory allocator
+#define RMCFG_FEATURE_USE_COMMON_UCODE_BIN_SUPPORT  1  // Use common LS ucode binaries encrypted with a common key for both debug and prod platforms
 #define RMCFG_FEATURE_DEVINIT_SCRIPT              0  // VBIOS scripting engine for sharing register sequences
 #define RMCFG_FEATURE_UNIX_CONSOLE_STATE          1  // Unix console state management and display programming
 #define RMCFG_FEATURE_OLD_DAC                     1  // Legacy display support with dac code
@@ -324,6 +326,7 @@
 #define RMCFG_FEATURE_MODS_FEATURES               0  // Flag for enabling MODS required features in RM
 #define RMCFG_FEATURE_MULTINODE_FABRIC_IMEX       1  // Multinode fabric memory import/export support
 #define RMCFG_FEATURE_NVIDIA_CAP_FOR_PROFILING    1  // NVIDIA Capability for Profiling
+#define RMCFG_FEATURE_NVIDIA_CAP_FOR_WPPS         1  // NVIDIA Capability for WPPS (Workload Power Profile Settings)
 #define RMCFG_FEATURE_MANUAL_TRIGGER_BA_DMA_MODE  0  // Support for manually actuated BA DMA mode data collection.
 #define RMCFG_FEATURE_RM_DRIVEN_BA_DMA_MODE       0  // Support for RM-driven BA DMA mode data collection.
 #define RMCFG_FEATURE_VBLANK_CALLBACK             1  // Vblank callback functionality within RM
@@ -349,6 +352,8 @@
 #define RMCFG_FEATURE_SOC_PACKAGE_POWER_STATE     1  // RM support for SOC Package Power States
 #define RMCFG_FEATURE_DISP_POWER_GATING           1  // RM support for Display Power Gating
 #define RMCFG_FEATURE_INST_IN_SYS_SUPPORT_ACR_DEV_IN_PROGRESS  1  // RM support inst-in-sys mode ls engine boot via ACR
+#define RMCFG_FEATURE_ICU_COMPONENT_BIN_SUPPORT   1  // RM support for loading ICU component binaries instead of falcon ucode images
+#define RMCFG_FEATURE_GPU_OPERATIONAL_EVENTS      1  // Support for GPU operational event reporting
 
 
 
@@ -397,6 +402,7 @@
 #define RMCFG_CLASS_PROFILER_DEVICE_EVENT         1
 #define RMCFG_CLASS_PROFILER_CONTEXT_EVENT        1
 #define RMCFG_CLASS_TRACE_DEVICE_EVENT            1
+#define RMCFG_CLASS_WPPS_CONFIG_SESSION           1
 #define RMCFG_CLASS_NV_MEMORY_EXPORT              1
 #define RMCFG_CLASS_NV_CE_UTILS                   1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC              1
@@ -639,6 +645,7 @@
 #define RMCFG_CLASS_GP100_UVM_SW                  1  // UVM SW class to support SW methods for fault cancel
 #define RMCFG_CLASS_NVENC_SW_SESSION              1  // GPU NVENC Software Session
 #define RMCFG_CLASS_NV_EVENT_BUFFER               1  // Event buffer class used to share event data with UMD
+#define RMCFG_CLASS_NV_OPERATIONAL_EVENT_BUFFER_BIND  1  // Operational event subscription class used with NV_EVENT_BUFFER
 #define RMCFG_CLASS_NVFBC_SW_SESSION              1  // GPU NVFBC Software Session
 #define RMCFG_CLASS_NV_CONFIDENTIAL_COMPUTE       1  // Confidential Computing Class
 #define RMCFG_CLASS_NV_COUNTER_COLLECTION_UNIT    1  // Counter Collection Unit Class
@@ -722,6 +729,7 @@
 #define RMCFG_MODULE_KERNEL_I2C                   1  // Kernel controls for I2C
 #define RMCFG_MODULE_SPI                          0  // SPI Interface
 #define RMCFG_MODULE_OOB                          0  // Out-of-band Interface
+#define RMCFG_MODULE_KERNEL_OOB                   1  // Kernel Out-of-band Interface
 #define RMCFG_MODULE_GPIO                         0  // General Purpose I/O Pins
 #define RMCFG_MODULE_KERNEL_GPIO                  1  // Kernel controls for GPIO
 #define RMCFG_MODULE_FAN                          0  // General Purpose I/O Pins
@@ -854,6 +862,7 @@
 #define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM
 #define RMCFG_MODULE_LIBSPDM                      1  // Secure Protocol and Data Management (SPDM) library on Kernel(CPU) RM
 #define RMCFG_MODULE_SPDM                         1  // Secure Protocol and Data Management (SPDM) support Kernel(CPU)-Physical(GSP) RM
+#define RMCFG_MODULE_KEYSTORE                     1  // Crypto and key derivation Kernel RM
 
 
 

@@ -25,6 +25,7 @@
 
 #include <ctrl/ctrl90f1.h>
 
+
 #if (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
 #include <rmconfig.h>
 #else
@@ -184,6 +185,14 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_MAX_ENTRY_SIZE 16
 
 /*!
+ * Enum to distinguish between GPU vaspace and handle-based vaspace formats.
+ */
+typedef enum
+{
+    GMMU_FMT_MODE_PTR         //!< Standard GPU vaspace - PTEs contain physical addresses
+} GMMU_FMT_MODE;
+
+/*!
  * Default version specifier for API args to indicate no preference.
  * This is not a real version number and not part of the
  * enumeration array below.
@@ -242,6 +251,11 @@ union GMMU_ENTRY_VALUE
 struct GMMU_FMT
 {
     NvU32 version;
+
+    /*!
+     * Format mode indicating vaspace mode.
+     */
+    GMMU_FMT_MODE mode;
 
     /*!
      * Root of the page level topology (e.g. the root page directory).
@@ -421,6 +435,11 @@ struct GMMU_FMT_PDE
     NvU32 version;
 
     /*!
+     * Format mode indicating vaspace mode.
+     */
+    GMMU_FMT_MODE mode;
+
+    /*!
      * Aperture field indicating which physical address space the sublevel resides.
      */
     GMMU_FIELD_APERTURE fldAperture;
@@ -469,6 +488,11 @@ const GMMU_FIELD_ADDRESS *gmmuFmtPdePhysAddrFld(
 struct GMMU_FMT_PDE_MULTI
 {
     /*!
+     * Format mode indicating vaspace mode.
+     */
+    GMMU_FMT_MODE mode;
+
+    /*!
      * Reciprocal exponent field for partial sub-level size.
      * Minimum size of each sub-level is FullLevelSize / (2 ^ sizeRecipExpMax).
      */
@@ -504,6 +528,11 @@ struct GMMU_FMT_PTE
      * Should be always the same as version in GMMU_FMT above.
      */
     NvU32 version;
+
+    /*!
+     * Format mode indicating vaspace mode.
+     */
+    GMMU_FMT_MODE mode;
 
     /*!
      * Field that determines if the PTE is valid.

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,6 +61,14 @@ struct OBJOS;
 #define __nvoc_class_id_OBJOS 0xaa1d70u
 typedef struct OBJOS OBJOS;
 #endif /* __nvoc_class_id_OBJOS */
+
+
+struct RmClient;
+
+#ifndef __nvoc_class_id_RmClient
+#define __nvoc_class_id_RmClient 0xb23d83u
+typedef struct RmClient RmClient;
+#endif /* __nvoc_class_id_RmClient */
 
 
 
@@ -148,8 +156,8 @@ NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32);
 // Wrapper macros for implementation functions
 #define hypervisorIsVgxHyper() hypervisorIsVgxHyper_IMPL()
 
-NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
-#define hypervisorCheckForObjectAccess(hClient) hypervisorCheckForObjectAccess_IMPL(hClient)
+NvBool hypervisorCheckForObjectAccess_IMPL(struct RmClient *pClient);
+#define hypervisorCheckForObjectAccess(pClient) hypervisorCheckForObjectAccess_IMPL(pClient)
 
 NvBool hypervisorIsType_IMPL(HYPERVISOR_TYPE hyperType);
 #define hypervisorIsType(hyperType) hypervisorIsType_IMPL(hyperType)

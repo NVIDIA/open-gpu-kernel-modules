@@ -116,6 +116,11 @@ void __nvoc_init_halspec_ChipHal(ChipHal *pChipHal, NvU32 arch, NvU32 impl, NvU3
     {
         pChipHal->__nvoc_HalVarIdx = 61;
     }
+    // GB10C
+    else if(arch == 0x1A && impl == 0xC)
+    {
+        pChipHal->__nvoc_HalVarIdx = 62;
+    }
     // GB110
     else if(arch == 0x1A && impl == 0x3)
     {

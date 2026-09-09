@@ -156,6 +156,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2Context =
 {
     .classInfo.size =               sizeof(Sec2Context),
     .classInfo.classId =            classId(Sec2Context),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "Sec2Context",

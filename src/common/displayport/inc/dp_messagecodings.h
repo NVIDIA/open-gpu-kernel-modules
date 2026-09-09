@@ -232,6 +232,11 @@ namespace DisplayPort
     //
     // GENERIC_UP_REPLY  0xnn
     //
+    // ACK body = 1 byte (reply header). NAK body = 19 bytes (header +
+    // 16-byte GUID + 8-bit NAK_Reason + 8-bit NAK_Data). When
+    // bReplyIsNack is true, the full NAK body is emitted; NULL nakGuid
+    // writes a zero GUID. Default NAK_Reason = NakBadParam.
+    //
     class GenericUpReplyMessage : public MessageManager::Message
     {
         virtual ParseResponseStatus parseResponseAck(EncodedMessage * message,
@@ -243,11 +248,20 @@ namespace DisplayPort
     public:
         GenericUpReplyMessage(const Address & target, unsigned requestId,
                               bool bReplyIsNack = false, bool bBroadcast = true,
-                              bool bPath = false);
+                              bool bPath = false,
+                              const GUID * nakGuid = NULL,
+                              unsigned nakReason = NakBadParam,
+                              unsigned nakData = 0);
         GenericUpReplyMessage(unsigned requestId, bool bReplyIsNack,
-                              bool bBroadcast, bool bPath);
+                              bool bBroadcast, bool bPath,
+                              const GUID * nakGuid = NULL,
+                              unsigned nakReason = NakBadParam,
+                              unsigned nakData = 0);
         void set(const Address & target, bool bReplyIsNack = false,
-                 bool bBroadcast = true, bool bPath = false);
+                 bool bBroadcast = true, bool bPath = false,
+                 const GUID * nakGuid = NULL,
+                 unsigned nakReason = NakBadParam,
+                 unsigned nakData = 0);
 
     };
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,16 +34,21 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             const NvU32 head,
                             const NVDpyAttributeColor *pDpyColor,
                             const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
+                            NvEvoInfoframeFlipState *flipState,
+                            NvEvoInfoFrameTransmitControl *newTransmitCtrl,
                             NVDpyEvoRec *pDpyEvo);
 
 void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo);
 void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo);
 void nvSendHdmiCapsToRm(NVDpyEvoPtr pDpyEvo);
+void nvHdmiReportExtconVideoState(NVConnectorEvoPtr pConnectorEvo, NvBool connected);
+void nvHdmiReportExtconAudioState(NVConnectorEvoPtr pConnectorEvo, NvBool enable);
 
 void nvLogEdidCea861InfoEvo(NVDpyEvoPtr pDpyEvo,
                             NVEvoInfoStringPtr pInfoString);
 NvBool nvDpyIsHdmiEvo(const NVDpyEvoRec *pDpyEvo);
 NvBool nvDpyIsHdmiDepth30Evo(const NVDpyEvoRec *pDpyEvo);
+NvBool nvDpyIsHdmiDepth36Evo(const NVDpyEvoRec *pDpyEvo);
 
 NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsModeValidationParams *pParams,
@@ -79,9 +84,15 @@ void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
                                      const NVDpyEvoRec *pDpyEvo,
                                      NVDispHeadAudioStateEvoRec *pAudioState);
 
+NvU32 nvHdmiTmdsGetPixelClockKHz(
+    const NVDpyEvoRec *pDpyEvo,
+    NvU32 maxPixelClockKHz);
+
 NvBool nvEvoHdmiTmdsMaxPixelClockCheck(
     const NVDpyEvoRec *pDpyEvo,
     const struct NvKmsModeValidationParams *pValidationParams,
+    const NvBool colorFormatSpecified,
+    const NvBool colorBpcSpecified,
     NVDpyAttributeColor *pDpyColor,
     NVHwModeTimingsEvoPtr pTimings,
     NVEvoInfoStringPtr pInfoString);

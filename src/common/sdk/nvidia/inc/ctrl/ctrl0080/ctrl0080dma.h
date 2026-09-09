@@ -30,6 +30,9 @@
 // Source file:      ctrl/ctrl0080/ctrl0080dma.finn
 //
 
+
+
+#include "nvcfg_sdk.h"
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE dma control commands and parameters */
@@ -86,6 +89,8 @@
  *               SET: N/A
  */
 
+
+
 typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
     NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NV_DECLARE_ALIGNED(NvU64 pteEntrySize, 8);
@@ -133,6 +138,9 @@ typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
 #define NV0080_CTRL_DMA_PTE_INFO_PARAMS_FLAGS_PRIVILEGED_FALSE                    (0x00000000U)
 #define NV0080_CTRL_DMA_PTE_INFO_PARAMS_FLAGS_PRIVILEGED_TRUE                     (0x00000001U)
 
+
+
+
 /*
  * NV0080_CTRL_DMA_GET_PTE_INFO
  *
@@ -158,6 +166,8 @@ typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
  *   NV_ERR_GENERIC
  */
 
+
+
 #define NV0080_CTRL_CMD_DMA_GET_PTE_INFO                                          (0x801801U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS_MESSAGE_ID" */
 
 #define NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS                                   5U
@@ -170,6 +180,7 @@ typedef struct NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS {
     NvU8     skipVASpaceInit;
     NV_DECLARE_ALIGNED(NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK pteBlocks[NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS], 8);
     NvHandle hVASpace;
+
 } NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS;
 
 /*

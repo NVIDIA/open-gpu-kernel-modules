@@ -44,6 +44,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_P2PTokenShare =
 {
     .classInfo.size =               sizeof(P2PTokenShare),
     .classInfo.classId =            classId(P2PTokenShare),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "P2PTokenShare",
@@ -332,6 +333,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ThirdPartyP2P =
 {
     .classInfo.size =               sizeof(ThirdPartyP2P),
     .classInfo.classId =            classId(ThirdPartyP2P),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_NONEVENT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
     .classInfo.name =               "ThirdPartyP2P",

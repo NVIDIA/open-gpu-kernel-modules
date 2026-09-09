@@ -260,6 +260,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[] = {
         PRB_MAYBE_FIELD_NAME("eng_kgsp")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        25,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_KERNELNVLINK,
+        0,
+        PRB_MAYBE_FIELD_NAME("eng_kernel_nvlink")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'NvDump' field defaults
@@ -1044,7 +1056,7 @@ const PRB_MSG_DESC prb_messages_nvdebug[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo")
     },
     {
-        4,
+        5,
         prb_fields_nvdebug_gpuinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.GpuInfo")
     },

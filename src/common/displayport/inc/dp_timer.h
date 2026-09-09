@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,6 +94,7 @@ namespace DisplayPort
 
         void cancelCallback(Timer::TimerCallback * to, const void * context);
         void queueCallbackInOrder(Timer::TimerCallback * target, const  void * context, unsigned milliseconds, bool executeInSleep);
+        void cancelCallbacksWithContext(const  void * context);
         void cancelCallbacksWithoutContext(const  void * context);
         void cancelAllCallbacks();
         bool checkCallbacksOfSameContext(const void * context);

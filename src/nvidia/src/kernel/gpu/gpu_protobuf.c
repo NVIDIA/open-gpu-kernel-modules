@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/system.h" // IsMobile
 #include "gpu/gpu.h"
 #include "platform/sli/sli.h"
 

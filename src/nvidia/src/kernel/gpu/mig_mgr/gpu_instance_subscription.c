@@ -172,16 +172,11 @@ gisubscriptionConstruct_IMPL
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
         }
 
-        if (kmigmgrIsDeviceProfilingInUse(pGpu, pKernelMIGManager))
-        {
-            // Only one DeviceProfiling session is allowed to be used with-in a system
-            NV_PRINTF(LEVEL_ERROR,
-                      "Subscription failed: Device-Level-Monitoring already in use\n");
-            return NV_ERR_INVALID_STATE;
-        }
-
-        // Mark the root swizzID in use and return
-        NV_ASSERT_OK_OR_RETURN(kmigmgrSetDeviceProfilingInUse(pGpu, pKernelMIGManager));
+        // Root-SwizzID subscriptions may coexist. Track the subscription type
+        // explicitly, while profiling remains serialized by the profiler
+        // reservation logic.
+        NV_ASSERT_OK_OR_RETURN(
+            kmigmgrIncDeviceProfilingSubscriptionRefCount(pGpu, pKernelMIGManager));
         pGPUInstanceSubscription->bDeviceProfiling = NV_TRUE;
         goto done;
     }
@@ -199,7 +194,7 @@ gisubscriptionConstruct_IMPL
     if (!kmigmgrIsSwizzIdInUse(pGpu, pKernelMIGManager, swizzId))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Subscription failed: swizzid 0x%0x doesn't exist!\n",
+                  "Subscription failed: swizzid 0x%08x doesn't exist!\n",
                   swizzId);
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -225,7 +220,7 @@ gisubscriptionConstruct_IMPL
         if ((status != NV_ERR_NOT_SUPPORTED) && (status != NV_OK))
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Capability validation failed: swizzid 0x%0x!\n",
+                      "Capability validation failed: swizzid 0x%08x!\n",
                       swizzId);
             return status;
         }
@@ -235,13 +230,13 @@ gisubscriptionConstruct_IMPL
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "GPU instance ref-counting failed: swizzid 0x%0x!\n",
+                  "GPU instance ref-counting failed: swizzid 0x%08x!\n",
                   swizzId);
         goto cleanup_duped_desc;
     }
 
 done:
-    NV_PRINTF(LEVEL_INFO, "Client 0x%x subscribed to swizzid 0x%0x.\n",
+    NV_PRINTF(LEVEL_INFO, "Client 0x%x subscribed to swizzid 0x%08x.\n",
               pRmAllocParams->hClient, swizzId);
 
     return NV_OK;
@@ -319,7 +314,7 @@ gisubscriptionDestruct_IMPL
 
     if (pGPUInstanceSubscription->bDeviceProfiling)
     {
-        kmigmgrClearDeviceProfilingInUse(pGpu, pKernelMIGManager);
+        kmigmgrDecDeviceProfilingSubscriptionRefCount(pGpu, pKernelMIGManager);
         pGPUInstanceSubscription->bDeviceProfiling = NV_FALSE;
         return;
     }
@@ -331,7 +326,7 @@ gisubscriptionDestruct_IMPL
 
     gisubscriptionCleanupOnUnsubscribe(pCallContext);
 
-    NV_PRINTF(LEVEL_INFO, "Client 0x%x unsubscribed from swizzid 0x%0x.\n",
+    NV_PRINTF(LEVEL_INFO, "Client 0x%x unsubscribed from swizzid 0x%08x.\n",
               RES_GET_CLIENT(pGPUInstanceSubscription)->hClient, pGPUInstanceSubscription->pKernelMIGGpuInstance->swizzId);
 }
 

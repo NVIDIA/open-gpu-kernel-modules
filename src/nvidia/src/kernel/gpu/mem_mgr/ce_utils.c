@@ -40,7 +40,11 @@
 
 #include "class/clc8b5.h" // HOPPER_DMA_COPY_A
 
+#include "class/cl0040.h"
 #include "class/cl0080.h"
+#include "class/cl50a0.h"
+
+#include "gpu/mem_mgr/heap.h"
 
 NV_STATUS
 ceutilsGetFirstAsyncCe_IMPL
@@ -158,6 +162,86 @@ _ceutilsSemaphoreEventCallback
 )
 {
     _ceutilsProcessCompletionCallbacks(pArg);
+}
+
+
+static NV_STATUS
+_ceutilsAllocFinishPayloadSema(OBJGPU *pGpu, OBJCHANNEL *pChannel)
+{
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV_MEMORY_ALLOCATION_PARAMS memAllocParams = {0};
+    NvU32 attr;
+    NvU32 allocFlags = NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
+
+    attr = DRF_DEF(OS32, _ATTR, _LOCATION,  _VIDMEM) |
+           DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+    if (!IS_MIG_IN_USE(pGpu))
+    {
+        attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        clientGenResourceHandle(pChannel->pRsClient, &pChannel->hFinishPayloadSemaPhysMem));
+
+    memAllocParams.owner         = HEAP_OWNER_RM_CLIENT_GENERIC;
+    memAllocParams.type          = NVOS32_TYPE_IMAGE;
+    memAllocParams.size          = RM_PAGE_SIZE;
+    memAllocParams.attr          = attr;
+    memAllocParams.attr2         = NVOS32_ATTR2_NONE;
+    memAllocParams.flags         = allocFlags;
+    memAllocParams.internalflags = NVOS32_ALLOC_INTERNAL_FLAGS_SKIP_SCRUB;
+
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->AllocWithHandle(pRmApi, pChannel->hClient, pChannel->deviceId,
+                                pChannel->hFinishPayloadSemaPhysMem,
+                                NV01_MEMORY_LOCAL_USER,
+                                &memAllocParams, sizeof(memAllocParams)));
+
+    NV_ASSERT_OK_OR_RETURN(
+        clientGenResourceHandle(pChannel->pRsClient, &pChannel->hFinishPayloadSemaVirtMem));
+
+    portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
+    memAllocParams.owner    = HEAP_OWNER_RM_CLIENT_GENERIC;
+    memAllocParams.type     = NVOS32_TYPE_IMAGE;
+    memAllocParams.size     = RM_PAGE_SIZE;
+    memAllocParams.attr     = DRF_DEF(OS32, _ATTR, _LOCATION, _PCI);
+    memAllocParams.attr2    = NVOS32_ATTR2_NONE;
+    memAllocParams.flags   |= NVOS32_ALLOC_FLAGS_VIRTUAL;
+    memAllocParams.hVASpace = pChannel->hVASpaceId;
+
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->AllocWithHandle(pRmApi, pChannel->hClient, pChannel->deviceId,
+                                pChannel->hFinishPayloadSemaVirtMem,
+                                NV50_MEMORY_VIRTUAL,
+                                &memAllocParams, sizeof(memAllocParams)));
+
+    NVOS46_PARAMETERS mapDmaParams = {0};
+    mapDmaParams.hClient = pChannel->hClient;
+    mapDmaParams.hDevice = pChannel->deviceId;
+    mapDmaParams.hDma    = pChannel->hFinishPayloadSemaVirtMem;
+    mapDmaParams.hMemory = pChannel->hFinishPayloadSemaPhysMem;
+    mapDmaParams.length  = RM_PAGE_SIZE;
+
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Map(pRmApi, &mapDmaParams));
+    pChannel->finishPayloadSemaGpuVA = mapDmaParams.dmaOffset;
+
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    pChannel->pFinishPayloadSemaMemDesc =
+        memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pChannel->hClient,
+                                           pChannel->hFinishPayloadSemaPhysMem);
+    NV_ASSERT_OR_RETURN(pChannel->pFinishPayloadSemaMemDesc != NULL, NV_ERR_INVALID_STATE);
+
+    NvU32 transferFlags = (pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE) |
+                           TRANSFER_FLAGS_SHADOW_ALLOC |
+                           TRANSFER_FLAGS_SHADOW_INIT_MEM;
+    NvU8 *pSemaCpuVA = (NvU8 *)memmgrMemDescBeginTransfer(
+        pMemoryManager, pChannel->pFinishPayloadSemaMemDesc, transferFlags);
+    NV_ASSERT_OR_RETURN(pSemaCpuVA != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+    portMemSet(pSemaCpuVA, 0, RM_PAGE_SIZE);
+    MEM_WR32(pSemaCpuVA + NV_CEUTILS_SEMA_PAGE_MAGIC_OFFSET, NV_CEUTILS_SEMA_PAGE_MAGIC);
+    memmgrMemDescEndTransfer(pMemoryManager, pChannel->pFinishPayloadSemaMemDesc, transferFlags);
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -283,11 +367,18 @@ ceutilsConstruct_IMPL
             free_client);
     }
 
-    status = memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel);
+    NvBool bFixedChId = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FIXED_CH_ID, _TRUE, allocFlags);
+    status = memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel,
+                                                 bFixedChId, pAllocParams->fixedChId);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
 
     NV_PRINTF(LEVEL_INFO, "Channel alloc successful for ceUtils\n");
     pCeUtils->pChannel = pChannel;
+
+    if (FLD_TEST_DRF(0050, _CEUTILS_FLAGS, _EXPOSE_FINISH_SEMA, _TRUE, pAllocParams->flags))
+    {
+        NV_ASSERT_OK_OR_GOTO(status, _ceutilsAllocFinishPayloadSema(pGpu, pChannel), free_channel);
+    }
 
     pCeUtils->pCallbackLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     NV_ASSERT_TRUE_OR_GOTO(status, pCeUtils->pCallbackLock != NULL, NV_ERR_NO_MEMORY, free_client);
@@ -391,6 +482,8 @@ ceutilsDestruct_IMPL
             pChannel->pTokenFromNotifier = NULL;
         }
     }
+
+    pChannel->pFinishPayloadSemaMemDesc = NULL;
 
     // Resource server makes sure no leak can occur
     pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);

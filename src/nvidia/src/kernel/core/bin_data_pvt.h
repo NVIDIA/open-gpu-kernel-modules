@@ -56,13 +56,14 @@
 #define BINDATA_FLAG_REFERENCED      0x02
 #define BINDATA_FLAG_EXTERNAL        0x04 // Only relevant if GR-3428 is enabled
 #define BINDATA_FLAG_EXTERNAL_VMWARE 0x08 // GR-3428: Merge with the above
+#define BINDATA_FLAG_HEAP_ALLOCATED  0x10
 typedef struct
 {
     NvU32           actualSize;         // size of (uncompressed) pData
     NvU32           compressedSize;     // size of (compressed) pData array
     const void *    pData;              // pointer to the raw binary (whether compressed or not) data
     NvU32           flags;              // flags for the bindata entry
-    const NvU32     relOffset;          // Offset of bin within bindata file
+    NvU32           relOffset;          // Offset of bin within bindata file
 } BINDATA_STORAGE_PVT, *PBINDATA_STORAGE_PVT;
 
 //

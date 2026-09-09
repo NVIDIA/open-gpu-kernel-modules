@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,7 +37,7 @@
 
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 typedef NV_STATUS RmAllocMemoryFunc(
     DEPRECATED_CONTEXT *pContext,

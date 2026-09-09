@@ -48,7 +48,6 @@ EXTRA_CFLAGS          ?=
 EXTRA_LDFLAGS         ?=
 
 STACK_USAGE_WARNING   ?=
-CFLAGS                += $(if $(STACK_USAGE_WARNING),-Wstack-usage=$(STACK_USAGE_WARNING))
 
 IMPLICIT_FALLTHROUGH_WARNING ?=
 CFLAGS                += $(if $(IMPLICIT_FALLTHROUGH_WARNING),-Wimplicit-fallthrough=$(IMPLICIT_FALLTHROUGH_WARNING))
@@ -233,6 +232,10 @@ TEST_CC_ARG = \
  $(shell $(CC) -c -x c /dev/null -Werror $(1) -o /dev/null > /dev/null 2>&1 && \
    $(ECHO) $(1))
 
+# Use '-Wstack-usage=' for GCC.
+# TODO: enable '-Wframe-larger-than=' for clang (and gcc?) when ready.
+_STACK_USAGE_FLAG := $(if $(STACK_USAGE_WARNING),$(call TEST_CC_ARG, -Wstack-usage=$(STACK_USAGE_WARNING)))
+CFLAGS += $(_STACK_USAGE_FLAG)
 
 ##############################################################################
 # Test if instruction $(1) is understood by the assembler
