@@ -140,6 +140,11 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
         if (nv_acpi_get_powersource(&ac_plugged) != NV_OK)
             return;
 
+        nv_printf(NV_DBG_INFO,
+            "NVRM: [RTD3] ACPI power-source event: type=0x%x, ac_plugged=%u "
+            "(calling rm_power_source_change_event with battery=%u)\n",
+            event_type, ac_plugged, !ac_plugged);
+
         rm_power_source_change_event(pNvAcpiObject->sp, !ac_plugged);
     }
 }
