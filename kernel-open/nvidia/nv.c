@@ -3275,7 +3275,8 @@ nvidia_rc_timer_callback(
         return;
     }
 
-    if (rm_run_rc_callback(sp, nv) == NV_OK)
+    status = rm_run_rc_callback(sp, nv);
+    if ((status == NV_OK) || (nv->rc_timer_enabled != 0))
     {
         // set another timeout 1 sec in the future:
         mod_timer(&nvl->rc_timer.kernel_timer, jiffies + HZ);
