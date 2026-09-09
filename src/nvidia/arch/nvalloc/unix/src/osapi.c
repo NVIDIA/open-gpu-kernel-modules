@@ -6195,13 +6195,18 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
         if (pGpu != NULL)
         {
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-            if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
-                                                                         NV_OK)
+
+            /*
+             * NVPCF events carry no payload, so coalesce them while suspended
+             * and replay one after resume.
+             */
+            if (!RmDeferNvpcfNotifyIfIdle(nv) &&
+                (os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE) == NV_OK))
             {
-               gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
-                                       NULL, 0, 0, 0);
+                gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                                        NULL, 0, 0, 0);
+                os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
             }
-            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
         }
         rmapiLockRelease();
     }
