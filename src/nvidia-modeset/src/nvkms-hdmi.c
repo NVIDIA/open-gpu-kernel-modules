@@ -2149,8 +2149,10 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVHDMIPKT_RESULT ret;
     const NvU32 displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    const enum NvKmsFrlRateForce forceFrlRate = nvkms_force_frl_rate();
     NvBool bIsDisplayActive = NV_FALSE;
-    NvBool bPerformLinkTrainingToAssess = NV_TRUE;
+    NvBool bPerformLinkTrainingToAssess =
+        (forceFrlRate == NVKMS_FRL_RATE_FORCE_NONE);
     HDMI_FRL_DATA_RATE currFRLRate = HDMI_FRL_DATA_RATE_NONE;
 
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo) && nvHdmiDpySupportsFrl(pDpyEvo));
@@ -2162,11 +2164,9 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
         const HDMI_FRL_CONFIG *pFrlConfig = &pHeadState->hdmiFrlConfig;
 
         bIsDisplayActive = NV_TRUE;
-        if (pFrlConfig->frlRate == HDMI_FRL_DATA_RATE_NONE) {
-            bPerformLinkTrainingToAssess = NV_FALSE;
-        } else {
-            bPerformLinkTrainingToAssess = NV_TRUE;
-        }
+        bPerformLinkTrainingToAssess =
+            (pFrlConfig->frlRate != HDMI_FRL_DATA_RATE_NONE) &&
+            (forceFrlRate == NVKMS_FRL_RATE_FORCE_NONE);
         currFRLRate = pFrlConfig->frlRate;
     }
 
