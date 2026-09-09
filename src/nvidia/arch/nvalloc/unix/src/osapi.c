@@ -2117,6 +2117,17 @@ static void RmHandleGPSStatusChange
     RM_API            *pRmApi;
     THREAD_STATE_NODE  threadState;
     NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS gpsControl = { 0 };
+    nv_priv_t         *nvp = NV_GET_NV_PRIV(pNv);
+
+    //
+    // Don't wake a runtime-suspended GPU just to handle a GPS status
+    // change; service it only when the GPU is already awake.
+    //
+    if (nvp != NULL &&
+        nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_INDICATED)
+    {
+        return;
+    }
 
     pRmApi = RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI);
     if (pRmApi == NULL)
@@ -6195,13 +6206,23 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
         if (pGpu != NULL)
         {
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-            if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
-                                                                         NV_OK)
+            nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+
+            //
+            // Don't wake a runtime-suspended GPU just to deliver an NVPCF
+            // event; service it only when the GPU is already awake.
+            //
+            if (nvp == NULL ||
+                nvp->dynamic_power.state != NV_DYNAMIC_POWER_STATE_IDLE_INDICATED)
             {
-               gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
-                                       NULL, 0, 0, 0);
+                if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
+                                                                             NV_OK)
+                {
+                   gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                                           NULL, 0, 0, 0);
+                }
+                os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
             }
-            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
         }
         rmapiLockRelease();
     }
