@@ -144,6 +144,9 @@ typedef struct _NVDIFRStateEvoRec {
     /* Copy engine instance for DIFR prefetches. */
     NvU32 prefetchEngine;
 
+    /* Set if the prefetch channel could not be reallocated after a fault. */
+    NvBool channelBroken;
+
     /* For tracking which surfaces have been prefetched already. */
     NvU32 prefetchPass;
 } NVDIFRStateEvoRec;
@@ -162,6 +165,7 @@ static NvBool AllocDIFRPushChannel(NVDIFRStateEvoPtr pDifr);
 static void FreeDIFRPushChannel(NVDIFRStateEvoPtr pDifr);
 static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr);
 static void FreeDIFRCopyEngine(NVDIFRStateEvoPtr pDifr);
+static NvBool ResetDIFRPushChannel(NVDIFRStateEvoPtr pDifr);
 
 static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
                                    NVDIFRPrefetchParams *pParams,
@@ -298,6 +302,15 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
         return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_OS_FLIPS_ENABLED;
     }
 
+    /*
+     * We no longer have a usable prefetch channel. As above, despite its
+     * wording this is the code that tells RM (and further PMU) to stop
+     * requesting prefetches until the next modeset.
+     */
+    if (pDifr->channelBroken) {
+        return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_INSUFFICIENT_L2_SIZE;
+    }
+
     status = NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS;
 
     pSubDev = &pDevEvo->gpus[0];
@@ -372,6 +385,22 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     }
 
 out:
+    /*
+     * A CE error means we kicked off a prefetch that was never consumed,
+     * leaving GPFIFO entries queued on the channel for good. Reset the
+     * channel so that the failure doesn't cost us ring space permanently:
+     * otherwise repeated failures eventually exhaust the GPFIFO and the
+     * next kickoff has nothing left to wait for.
+     */
+    if (status == NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_CE_HW_ERROR) {
+        if (!ResetDIFRPushChannel(pDifr)) {
+            pDifr->channelBroken = TRUE;
+
+            nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+                        "Failed to reset the DIFR prefetch channel.");
+        }
+    }
+
     return status;
 }
 
@@ -431,6 +460,31 @@ static NvBool AllocDIFRPushChannel(NVDIFRStateEvoPtr pDifr)
     }
 
     if (!nvPushAllocChannel(&params, &pDifr->prefetchPushChannel)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*
+ * Tear down and reallocate the prefetch channel.
+ *
+ * A prefetch that fails with a CE error has already written GPFIFO entries
+ * that the copy engine never consumed. Nothing else reclaims them, so GET
+ * stays where it is and the channel permanently loses that much of its
+ * (small) GPFIFO ring. Reallocating the channel puts GET and PUT back in
+ * sync so a later prefetch can start from a clean slate.
+ */
+static NvBool ResetDIFRPushChannel(NVDIFRStateEvoPtr pDifr)
+{
+    FreeDIFRCopyEngine(pDifr);
+    FreeDIFRPushChannel(pDifr);
+
+    if (!AllocDIFRPushChannel(pDifr) ||
+        !AllocDIFRCopyEngine(pDifr)) {
+        FreeDIFRCopyEngine(pDifr);
+        FreeDIFRPushChannel(pDifr);
+
         return FALSE;
     }
 
