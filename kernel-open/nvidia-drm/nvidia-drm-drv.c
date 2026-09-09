@@ -95,6 +95,7 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_auth.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_managed.h>
 
 static int nv_drm_revoke_modeset_permission(struct drm_device *dev,
                                             struct drm_file *filep,
@@ -2052,6 +2053,22 @@ void nv_drm_update_drm_driver_features(void)
 
 
 /*
+ * nv_drm_device is referenced by userspace-visible DRM/GEM/fence objects
+ * which may outlive drm_dev_unplug(). Keep it alive until the DRM device's
+ * final reference is released.
+ */
+static void nv_drm_dev_private_release(struct drm_device *dev, void *data)
+{
+    struct nv_drm_device *nv_dev = data;
+
+    if (dev->dev_private == nv_dev) {
+        dev->dev_private = NULL;
+    }
+
+    nv_drm_free(nv_dev);
+}
+
+/*
  * Helper function for allocate/register DRM device for given NVIDIA GPU ID.
  */
 void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
@@ -2091,6 +2108,22 @@ void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
 
     dev->dev_private = nv_dev;
     nv_dev->dev = dev;
+
+    /*
+     * drm_dev_unplug() does not imply that all userspace DRM files are closed.
+     * GEM/fence teardown from those files still dereferences nv_dev, so make
+     * nv_dev a DRM-managed resource and free it only on the final drm_dev_put().
+     */
+    if (drmm_add_action(dev, nv_drm_dev_private_release, nv_dev) != 0) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to register DRM-managed nv_drm_device cleanup");
+        dev->dev_private = NULL;
+        nv_dev->dev = NULL;
+        drm_dev_put(dev);
+        nv_drm_free(nv_dev);
+        return;
+    }
 
     bus_is_pci =
 #if defined(NV_LINUX)
@@ -2191,10 +2224,16 @@ failed_drm_register:
 
 failed_drm_load:
 
+    /*
+     * The DRM-managed release action frees nv_dev when this is the final
+     * drm_dev_put(). Do not fall through and free it a second time.
+     */
     drm_dev_put(dev);
+    return;
 
 failed_drm_alloc:
 
+    /* drm_dev_alloc() failed, so no managed release action exists. */
     nv_drm_free(nv_dev);
 }
 
@@ -2266,8 +2305,13 @@ static void nv_drm_dev_destroy(struct nv_drm_device *nv_dev)
     struct drm_device *dev = nv_dev->dev;
 
     nv_drm_dev_unload(dev);
+
+    /*
+     * Drop the driver's DRM reference. Open userspace files may still hold
+     * references; nv_drm_device is freed by nv_drm_dev_private_release()
+     * only after the final one disappears.
+     */
     drm_dev_put(dev);
-    nv_drm_free(nv_dev);
 }
 
 /*
