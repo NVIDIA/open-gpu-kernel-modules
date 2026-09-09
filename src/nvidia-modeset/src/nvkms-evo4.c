@@ -2052,6 +2052,7 @@ static void UnassignExtraOrIncompatibleTiles(
     const NVDispEvoRec *pDispEvo,
     NVHwHeadMultiTileConfigRec *pMultiTileConfig,
     const NVHwModeTimingsEvo *pTimings,
+    const struct NvKmsUsageBounds *pUsage,
     const NvU32 numRequiredTiles)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
@@ -2082,6 +2083,11 @@ static void UnassignExtraOrIncompatibleTiles(
             layer < ARRAY_LEN(pMultiTileConfig->phywinsMask); layer++) {
         NvU32 numReusedPhywins = 0;
         NvU32 phywin;
+
+        /* Do not retain physical windows for layers excluded by IMP. */
+        if (!pUsage->layer[layer].usable) {
+            continue;
+        }
         FOR_EACH_INDEX_IN_MASK(32, phywin,
             pMultiTileConfig->phywinsMask[layer]) {
             nvAssert(phywin < pDevEvo->numHwPhywins);
@@ -2154,6 +2160,7 @@ static NvBool
 AssignNewPhywinsIfNeeded(const NVDispEvoRec *pDispEvo,
                          NVHwHeadMultiTileConfigRec *pMultiTileConfig,
                          const NvU32 head,
+                         const struct NvKmsUsageBounds *pUsage,
                          NvU32 *pFreePhywinsMask)
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
@@ -2162,6 +2169,12 @@ AssignNewPhywinsIfNeeded(const NVDispEvoRec *pDispEvo,
 
     for (NvU32 layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
         NvU32 phywin;
+
+        if (!pUsage->layer[layer].usable) {
+            nvAssert(outMultiTileConfig.phywinsMask[layer] == 0);
+            continue;
+        }
+
         FOR_EACH_INDEX_IN_MASK(32, phywin, outFreePhywinsMask) {
             nvAssert(phywin < pDevEvo->numHwPhywins);
 
@@ -2189,6 +2202,7 @@ static NvBool AssignNewTilesToHeadIfNeeded(
     NVHwHeadMultiTileConfigRec *pMultiTileConfig,
     const NvU32 head,
     const NVHwModeTimingsEvo *pTimings,
+    const struct NvKmsUsageBounds *pUsage,
     NvU32 numRequiredTiles,
     NvU32 *pFreeTilesMask,
     NvU32 *pFreePhywinsMask)
@@ -2203,21 +2217,19 @@ static NvBool AssignNewTilesToHeadIfNeeded(
     nvAssert(nvPopCount32(outMultiTileConfig.tilesMask) <= numRequiredTiles);
     nvAssert((outMultiTileConfig.tilesMask & outFreeTilesMask) == 0x0);
 
-    /* Return early if we already assigned sufficient tiles. */
-    if (deltaNumRequiredTiles == 0) {
-        return TRUE;
+    if (deltaNumRequiredTiles != 0) {
+        outMultiTileConfig.tilesMask |=
+            GetFreeTiles(pDispEvo, deltaNumRequiredTiles, requiredTileType,
+                         &outFreeTilesMask);
     }
-
-    outMultiTileConfig.tilesMask |=
-        GetFreeTiles(pDispEvo, deltaNumRequiredTiles, requiredTileType,
-                     &outFreeTilesMask);
 
     if (nvPopCount32(outMultiTileConfig.tilesMask) < numRequiredTiles) {
         return FALSE;
     }
 
+    /* Layer usage can change even when the tile count stays the same. */
     if (!AssignNewPhywinsIfNeeded(pDispEvo, &outMultiTileConfig, head,
-                                  &outFreePhywinsMask)) {
+                                  pUsage, &outFreePhywinsMask)) {
         return FALSE;
     }
 
@@ -2333,6 +2345,7 @@ AssignNewTilesToHeadsIfNeeded(
                                               pOutputMultiTileConfig,
                                               head,
                                               pTimings,
+                                              pInput->head[head].pUsage,
                                               numRequiredTiles[head],
                                               &freeTilesMask,
                                               &freePhywinsMask)) {
@@ -2351,7 +2364,18 @@ AssignNewTilesToHeadsIfNeeded(
                                                     pOutput,
                                                     &freeTilesMask,
                                                     &freePhywinsMask);
-                    break;
+
+                    /* Retry the failed head with the reclaimed resources. */
+                    if (AssignNewTilesToHeadIfNeeded(pDispEvo,
+                                                      pOutputMultiTileConfig,
+                                                      head,
+                                                      pTimings,
+                                                      pInput->head[head].pUsage,
+                                                      numRequiredTiles[head],
+                                                      &freeTilesMask,
+                                                      &freePhywinsMask)) {
+                        continue;
+                    }
                 }
 
                 return FALSE;
@@ -2371,7 +2395,8 @@ EvoAssignHwHeadMultiTileConfigDispOutputCA(
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NvU32 freeTilesMask = NVBIT(pDevEvo->numHwTiles) - 1;
-    NvU32 freePhywinsMask = NVBIT(pDevEvo->numHwPhywins) - 1;
+    /* The capability format allows 32 windows; avoid a 32-bit shift by 32. */
+    NvU32 freePhywinsMask = (NvU32)(NVBIT64(pDevEvo->numHwPhywins) - 1);
 
     for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
         if (pInput->head[head].pTimings == NULL) {
@@ -2400,7 +2425,18 @@ EvoAssignHwHeadMultiTileConfigDispOutputCA(
             UnassignExtraOrIncompatibleTiles(pDispEvo,
                                              &pOutput->head[head].multiTileConfig,
                                              pInput->head[head].pTimings,
+                                             pInput->head[head].pUsage,
                                              numRequiredTiles[head]);
+        } else {
+            /* A flip cannot bind a window or grow its physical assignment. */
+            for (NvU32 layer = 0;
+                    layer < pDevEvo->head[head].numLayers; layer++) {
+                if (pInput->head[head].pUsage->layer[layer].usable &&
+                        nvPopCount32(pOutput->head[head].multiTileConfig.
+                            phywinsMask[layer]) < numRequiredTiles[head]) {
+                    return FALSE;
+                }
+            }
         }
 
         freeTilesMask &= ~pOutput->head[head].multiTileConfig.tilesMask;
@@ -2788,6 +2824,68 @@ static void SetTileSize(NVEvoChannel *pCoreChannel,
     nvAssert(tileStart == hActive);
 }
 
+/*
+ * Physical window assignment changes need the same interlock handling as
+ * logical window assignment changes in EvoInitWindowMapping3().
+ */
+static void EvoTrackPhysicalWindowChangeCA(
+    NVDevEvoRec *pDevEvo,
+    const NVEvoChannel *pWindowChannel,
+    const NvU32 oldMask,
+    const NvU32 newMask,
+    NVEvoModesetUpdateState *pModesetUpdateState)
+{
+    if (oldMask == newMask) {
+        return;
+    }
+
+    pModesetUpdateState->windowMappingChanged = TRUE;
+    nvDisableCoreInterlockUpdateState(pDevEvo,
+                                      &pModesetUpdateState->updateState,
+                                      pWindowChannel);
+}
+
+/*
+ * Keep the software window-to-head mapping and advertised layers unchanged.
+ * Hardware ownership follows the physical assignment for the current mode:
+ * an unusable layer has neither an owner nor physical windows. This matches
+ * the unassigned-window state established by overlay-off initialization.
+ *
+ * The caller has shut down heads whose layer ownership changes.
+ */
+static void EvoSetWindowOwnerCA(
+    NVDevEvoRec *pDevEvo,
+    const NvU32 sd,
+    const NVEvoChannel *pWindowChannel,
+    const NvU32 head,
+    const NvU32 phywinsMask,
+    NVEvoModesetUpdateState *pModesetUpdateState)
+{
+    const NvU32 win = NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(
+        pWindowChannel->channelMask);
+    const void *pCoreDma = pDevEvo->pSubDevices[sd]->pCoreDma;
+    const NvU32 oldControl =
+        nvDmaLoadPioMethod(pCoreDma, NVCA7D_WINDOW_SET_CONTROL(win));
+    const NvU32 oldOwner = DRF_VAL(CA7D, _WINDOW_SET_CONTROL, _OWNER, oldControl);
+    const NvU32 owner = (phywinsMask != 0) ? head :
+        NVCA7D_WINDOW_SET_CONTROL_OWNER_NONE;
+
+    if (oldOwner != owner) {
+        pModesetUpdateState->windowMappingChanged = TRUE;
+        nvDisableCoreInterlockUpdateState(pDevEvo,
+                                          &pModesetUpdateState->updateState,
+                                          pWindowChannel);
+    }
+
+    /*
+     * Initialization may have queued a default binding that is not yet visible
+     * in PIO. Write the final owner even when the cached owner already matches.
+     */
+    nvDmaSetStartEvoMethod(pDevEvo->core, NVCA7D_WINDOW_SET_CONTROL(win), 1);
+    nvDmaSetEvoMethodData(pDevEvo->core,
+        FLD_SET_DRF_NUM(CA7D, _WINDOW_SET_CONTROL, _OWNER, owner, oldControl));
+}
+
 static void EvoSetMultiTileConfigCA(const NVDispEvoRec *pDispEvo,
                                     const NvU32 head,
                                     const NVHwModeTimingsEvo *pTimings,
@@ -2810,7 +2908,25 @@ static void EvoSetMultiTileConfigCA(const NVDispEvoRec *pDispEvo,
         const NvU32 win = NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(
             pWindowChannel->channelMask);
 
-        nvAssert(nvPopCount32(pConfig->tilesMask) == nvPopCount32(phywinsMask));
+        const void *pCoreDma =
+            pDevEvo->pSubDevices[pDispEvo->displayOwner]->pCoreDma;
+        const NvU32 oldPhywinsMask =
+            nvDmaLoadPioMethod(pCoreDma, NVCA7D_WINDOW_SET_PHYSICAL(win));
+
+        EvoTrackPhysicalWindowChangeCA(pDevEvo, pWindowChannel,
+                                        oldPhywinsMask, phywinsMask,
+                                        pModesetUpdateState);
+
+        /* Retain ownership during shutdown; change it in the next modeset. */
+        if (pTimings != NULL) {
+            EvoSetWindowOwnerCA(pDevEvo, pDispEvo->displayOwner,
+                                pWindowChannel, head, phywinsMask,
+                                pModesetUpdateState);
+        }
+
+        /* Unusable layers have no physical windows assigned. */
+        nvAssert((phywinsMask == 0) ||
+                 (nvPopCount32(pConfig->tilesMask) == nvPopCount32(phywinsMask)));
 
         nvDmaSetStartEvoMethod(pCoreChannel,
                                NVCA7D_WINDOW_SET_PHYSICAL(win), 1);
