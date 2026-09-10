@@ -3911,7 +3911,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             switch(pHdmiForum->DSC_MaxSlices)
             {
             case 8: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 900; break;
-            case 7: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 600; break;
+            case 7: pHdmiInfo->dsc_MaxSlices = 16; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
             case 6: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
             case 5: pHdmiInfo->dsc_MaxSlices = 8;  pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
             case 4: pHdmiInfo->dsc_MaxSlices = 8;  pHdmiInfo->dsc_MaxPclkPerSliceMHz = 340; break;
