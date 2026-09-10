@@ -4251,6 +4251,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT" "" "functions"
         ;;
 
+        pci_is_thunderbolt_attached)
+            #
+            # Determine if the pci_is_thunderbolt_attached() function is
+            # present.
+            #
+            # Added by commit 0d4ef7ce7e78 ("PCI: Identify Thunderbolt
+            # devices") in v4.15.
+            #
+            CODE="
+            #include <linux/pci.h>
+            void conftest_pci_is_thunderbolt_attached(void) {
+                pci_is_thunderbolt_attached();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_IS_THUNDERBOLT_ATTACHED_PRESENT" "" "functions"
+        ;;
+
         pci_resize_resource_has_exclude_bars_arg)
             #
             # Determine if pci_resize_resource() has exclude_bars argument.
