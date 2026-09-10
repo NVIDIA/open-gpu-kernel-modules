@@ -153,6 +153,19 @@ void GroupImpl::insert(Device * dev)
             return;
         }
         di->activeGroup = this;
+
+        // A returning SST sink may have lost DSC state while the head stayed
+        // attached. Restore sink decompression and the driver's DSC tracking.
+        if (!parent->linkUseMultistream() &&
+            di->getConnectorType() == connectorDisplayPort &&
+            di->isDSCPossible() &&
+            (dscModeActive == DSC_SINGLE || dscModeActive == DSC_DUAL))
+        {
+            if (!parent->setDeviceDscState(dev, true))
+            {
+                DP_PRINTF(DP_WARNING, "DP-GRP: failed to restore DSC state for active SST head %u.", headIndex);
+            }
+        }
     }
 
     members.insertFront(di);
