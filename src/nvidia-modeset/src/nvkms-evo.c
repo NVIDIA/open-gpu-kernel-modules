@@ -4515,10 +4515,19 @@ void nvSetViewPortsEvo(NVDispEvoPtr pDispEvo,
     pDevEvo->hal->SetOutputScaler(pDispEvo, head, updateState);
 
     /*
-     * Specify safe default values of 0 for viewPortPointIn x and y; these
-     * may be changed when panning out of band of a modeset.
+     * Specify safe default values for viewPortPointIn x and y; these may be
+     * changed when panning out of band of a modeset.
+     *
+     * Under 2Heads1OR the api head's frame is split horizontally across the
+     * hardware heads, so each head has to start at its own section of the
+     * surface: the same offset nvApiHeadSetViewportPointIn() applies when
+     * panning. Otherwise every merge head scans out from x=0 and the leftmost
+     * section is repeated across the whole output. mergeHeadSection is 0 when
+     * 2Heads1OR is not in use, leaving the default of 0,0.
      */
-    EvoSetViewportPointIn(pDispEvo, head, 0 /* x */, 0 /* y */, updateState);
+    EvoSetViewportPointIn(pDispEvo, head,
+                          pViewPort->in.width * pHeadState->mergeHeadSection,
+                          0 /* y */, updateState);
 }
 
 
