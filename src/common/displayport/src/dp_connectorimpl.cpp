@@ -3861,11 +3861,18 @@ void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
         return;
     }
 
-    // Skip gating modeset on HPD for DDS panels
+    // Skip gating modeset on HPD for DDS panels.
+    // Allow HPD-low detach bookkeeping; notifyLongPulse() permits detach.
     if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
     {
-        DP_ASSERT(0 && "DPCONN> dpPreModeset called when Plugged State is false!");
-        return;
+        for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+        {
+            if ((params.headMask & NVBIT(i)) && params.head[i].pTarget != NULL)
+            {
+                DP_ASSERT(0 && "DPCONN> dpPreModeset attach called when Plugged State is false!");
+                return;
+            }
+        }
     }
 
     this->bFECEnable |= this->needToEnableFEC(params);
