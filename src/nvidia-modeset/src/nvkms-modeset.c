@@ -2414,8 +2414,10 @@ static NvBool IsCurrentMultiTileConfigOneApiHeadIncompatible(
             &pDispEvo->headState[head].multiTileConfig;
         const NvU32 tilesMask = pMultiTileConfig->tilesMask;
         NvU32 phywinsMask = 0x0;
+        NvU32 proposedPhywinsMask = 0x0;
 
         for (NvU32 layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+            const NvU32 currentMask = pMultiTileConfig->phywinsMask[layer];
             const NvU32 proposedMask =
                 pProposedDisp->head[head].multiTileConfig.phywinsMask[layer];
 
@@ -2424,24 +2426,18 @@ static NvBool IsCurrentMultiTileConfigOneApiHeadIncompatible(
              * unbinds its window channel. Shut the head down before changing
              * that ownership, even if no resource moves to another window.
              */
-            if ((pMultiTileConfig->phywinsMask[layer] == 0) !=
-                    (proposedMask == 0)) {
+            if ((currentMask == 0) != (proposedMask == 0)) {
                 return TRUE;
             }
-            phywinsMask |= pMultiTileConfig->phywinsMask[layer];
-        }
 
-        /* Physical windows may also move between layers on the same head. */
-        for (NvU32 layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-            for (NvU32 otherLayer = 0;
-                    otherLayer < pDevEvo->head[head].numLayers; otherLayer++) {
-                if ((layer != otherLayer) &&
-                    ((pMultiTileConfig->phywinsMask[layer] &
-                      pProposedDisp->head[head].multiTileConfig.
-                          phywinsMask[otherLayer]) != 0x0)) {
-                    return TRUE;
-                }
+            /* Check both directions against earlier layers on this head. */
+            if (((currentMask & proposedPhywinsMask) != 0x0) ||
+                ((proposedMask & phywinsMask) != 0x0)) {
+                return TRUE;
             }
+
+            phywinsMask |= currentMask;
+            proposedPhywinsMask |= proposedMask;
         }
 
         for (NvU32 tmpHead = 0; tmpHead < pDevEvo->numHeads; tmpHead++) {
@@ -4701,4 +4697,3 @@ void nvApiHeadGetScanLine(const NVDispEvoRec *pDispEvo,
     pDispEvo->pDevEvo->hal->GetScanLine(pDispEvo, head, pScanLine,
                                         pInBlankingPeriod);
 }
-
