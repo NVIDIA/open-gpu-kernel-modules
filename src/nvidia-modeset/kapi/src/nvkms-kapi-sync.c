@@ -445,6 +445,11 @@ nvKmsKapiRegisterSemaphoreSurfaceCallback(
         }
         return NVKMS_KAPI_REG_WAITER_SUCCESS;
     case NVOS_STATUS_ERROR_ALREADY_SIGNALLED:
+        /*
+         * No waiter was registered, so neither the callback nor
+         * unregisterSemaphoreSurfaceCallback() will ever free cb.
+         */
+        nvKmsKapiFree(cb);
         return NVKMS_KAPI_REG_WAITER_ALREADY_SIGNALLED;
     default:
         break;
