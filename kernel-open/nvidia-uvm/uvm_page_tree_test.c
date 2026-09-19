@@ -1410,6 +1410,223 @@ done:
     return status;
 }
 
+static NV_STATUS test_tlb_batch_coalesce(uvm_gpu_t *gpu)
+{
+    NV_STATUS status = NV_OK;
+    uvm_page_tree_t tree;
+    uvm_push_t push;
+    uvm_tlb_batch_t batch;
+    NvU32 depth_2m;
+    NvU32 depth_64k;
+    NvU64 wrap_size;
+    int i;
+
+    MEM_NV_CHECK_RET(test_page_tree_init(gpu, &tree), NV_OK);
+    MEM_NV_CHECK_RET(uvm_push_begin_fake(gpu, &push), NV_OK);
+
+    depth_2m = tree.hal->page_table_depth(UVM_PAGE_SIZE_2M);
+    depth_64k = tree.hal->page_table_depth(UVM_PAGE_SIZE_64K);
+
+    fake_tlb_invals_enable();
+
+    // 1. Adjacent same page size
+    uvm_tlb_batch_begin(&tree, &batch);
+    for (i = 0; i < 16; ++i) {
+        uvm_tlb_batch_invalidate(&batch,
+                                 (NvU64)i * UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_MEMBAR_NONE);
+    }
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == 16 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size != (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 2. Overlapping
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == 3 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size != (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 3. Reverse adjacent
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == 2 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    fake_tlb_invals_reset();
+
+    // 4. Gap
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 2, done);
+    TEST_CHECK_GOTO(g_fake_invals[0].base == 0, done);
+    TEST_CHECK_GOTO(g_fake_invals[0].size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_fake_invals[1].base == 2 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_fake_invals[1].size == UVM_PAGE_SIZE_4K, done);
+    fake_tlb_invals_reset();
+
+    // 5. Mixed 2M+4K adjacent
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_2M, UVM_PAGE_SIZE_2M, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_2M, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == UVM_PAGE_SIZE_2M + UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->depth == depth_2m, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size != (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 6. Mixed 64K+4K adjacent
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_64K, UVM_PAGE_SIZE_64K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_64K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == UVM_PAGE_SIZE_64K + UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->depth == depth_64k, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size != (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 7. Contained mix
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_2M, UVM_PAGE_SIZE_2M, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == UVM_PAGE_SIZE_2M, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->page_size == UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->depth == depth_2m, done);
+    fake_tlb_invals_reset();
+
+    // 8. Merge then disjoint
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, 4 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 2, done);
+    TEST_CHECK_GOTO(g_fake_invals[0].base == 0, done);
+    TEST_CHECK_GOTO(g_fake_invals[0].size == 3 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_fake_invals[1].base == 4 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_fake_invals[1].size == UVM_PAGE_SIZE_4K, done);
+    fake_tlb_invals_reset();
+
+    // 9. Membar max
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_SYS);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->membar == UVM_MEMBAR_SYS, done);
+    fake_tlb_invals_reset();
+
+    // 10. Cap preserved
+    uvm_tlb_batch_begin(&tree, &batch);
+    for (i = 0; i < 5; ++i) {
+        uvm_tlb_batch_invalidate(&batch,
+                                 (NvU64)i * 2 * UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_MEMBAR_NONE);
+    }
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 11. count==4 touch
+    uvm_tlb_batch_begin(&tree, &batch);
+    for (i = 0; i < 4; ++i) {
+        uvm_tlb_batch_invalidate(&batch,
+                                 (NvU64)i * 2 * UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_MEMBAR_NONE);
+    }
+    uvm_tlb_batch_invalidate(&batch, 7 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 4, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 6 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == 2 * UVM_PAGE_SIZE_4K, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size != (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 12. Already-all + touch
+    uvm_tlb_batch_begin(&tree, &batch);
+    for (i = 0; i < 5; ++i) {
+        uvm_tlb_batch_invalidate(&batch,
+                                 (NvU64)i * 2 * UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_PAGE_SIZE_4K,
+                                 UVM_MEMBAR_NONE);
+    }
+    uvm_tlb_batch_invalidate(&batch, 7 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(g_fake_invals_count == 1, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->base == 0, done);
+    TEST_CHECK_GOTO(g_last_fake_inval->size == (NvU64)-1, done);
+    fake_tlb_invals_reset();
+
+    // 13. Wrap new
+    wrap_size = 0ull - UVM_PAGE_SIZE_4K;
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, 0, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, wrap_size, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(!(g_fake_invals_count == 1 &&
+                      g_last_fake_inval->base == 0 &&
+                      g_last_fake_inval->size == 2 * UVM_PAGE_SIZE_4K), done);
+    TEST_CHECK_GOTO(g_fake_invals_count == 2 ||
+                    (g_fake_invals_count == 1 &&
+                     g_last_fake_inval->base == 0 &&
+                     g_last_fake_inval->size == (NvU64)-1), done);
+    fake_tlb_invals_reset();
+
+    // 14. Wrap last
+    wrap_size = 0ull - UVM_PAGE_SIZE_4K;
+    uvm_tlb_batch_begin(&tree, &batch);
+    uvm_tlb_batch_invalidate(&batch, UVM_PAGE_SIZE_4K, wrap_size, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&batch, 0, 2 * UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_end(&batch, &push, UVM_MEMBAR_NONE);
+    TEST_CHECK_GOTO(!(g_fake_invals_count == 1 &&
+                      g_last_fake_inval->base == 0 &&
+                      g_last_fake_inval->size == 2 * UVM_PAGE_SIZE_4K), done);
+    TEST_CHECK_GOTO(g_fake_invals_count == 2 ||
+                    (g_fake_invals_count == 1 &&
+                     g_last_fake_inval->base == 0 &&
+                     g_last_fake_inval->size == (NvU64)-1), done);
+
+done:
+    fake_tlb_invals_disable();
+    uvm_push_end_fake(&push);
+    uvm_page_tree_deinit(&tree);
+
+    return status;
+}
+
 typedef struct
 {
     NvU64 count;
@@ -2189,6 +2406,7 @@ static NV_STATUS turing_test_page_tree(uvm_gpu_t *turing)
     MEM_NV_CHECK_RET(fast_split_double_backoff(turing), NV_OK);
     MEM_NV_CHECK_RET(test_tlb_invalidates_gmmu_v2(turing), NV_OK);
     MEM_NV_CHECK_RET(test_tlb_batch_invalidates(turing, page_sizes, num_page_sizes), NV_OK);
+    MEM_NV_CHECK_RET(test_tlb_batch_coalesce(turing), NV_OK);
 
     // Run the test again with a bigger limit on max pages
     tlb_batch_saved_max_pages = turing->parent->tlb_batch.max_pages;
@@ -2233,6 +2451,7 @@ static NV_STATUS ampere_test_page_tree(uvm_gpu_t *ampere)
 
     // TLB batch invalidate
     MEM_NV_CHECK_RET(test_tlb_batch_invalidates(ampere, page_sizes, num_page_sizes), NV_OK);
+    MEM_NV_CHECK_RET(test_tlb_batch_coalesce(ampere), NV_OK);
 
     // Run the test again with a bigger limit on max pages
     tlb_batch_saved_max_pages = ampere->parent->tlb_batch.max_pages;
@@ -2301,6 +2520,7 @@ static NV_STATUS blackwell_test_page_tree(uvm_gpu_t *blackwell)
 
         // TLB batch invalidate
         MEM_NV_CHECK_RET(test_tlb_batch_invalidates(blackwell, page_sizes, num_page_sizes), NV_OK);
+        MEM_NV_CHECK_RET(test_tlb_batch_coalesce(blackwell), NV_OK);
 
         // Run the test again with a bigger limit on max pages
         tlb_batch_saved_max_pages = blackwell->parent->tlb_batch.max_pages;
