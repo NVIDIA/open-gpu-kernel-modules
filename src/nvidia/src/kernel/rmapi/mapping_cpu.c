@@ -484,7 +484,17 @@ memMap_IMPL
                 // Below, we only map one GPU's address for CPU access, so we can use UNICAST here
                 NvU32 busMapFbFlags = BUS_MAP_FB_FLAGS_MAP_UNICAST;
 #if defined(NV_UNIX)
-                busMapFbFlags |= pMapParams->bKernel ? 0 : BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG;
+                //
+                // A discontiguous mapping only works when every range of the
+                // memArea gets mapped, as the mmap path does for user clients.
+                // A kernel client's MEM_SPACE_USER mapping only returns the
+                // start address, and the caller maps the whole length from it.
+                //
+                if (!pMapParams->bKernel &&
+                    (DRF_VAL(OS33, _FLAGS, _MEM_SPACE, pMapParams->flags) != NVOS33_FLAGS_MEM_SPACE_USER))
+                {
+                    busMapFbFlags |= BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG;
+                }
 #endif
                 if(DRF_VAL(OS33, _FLAGS, _MAPPING, pMapParams->flags) == NVOS33_FLAGS_MAPPING_DIRECT)
                 {
