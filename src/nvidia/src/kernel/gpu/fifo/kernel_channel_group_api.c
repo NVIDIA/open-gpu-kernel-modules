@@ -55,6 +55,7 @@ kchangrpapiConstruct_IMPL
 )
 {
     NvBool                                  bTsgAllocated       = NV_FALSE;
+    NvBool                                  bRpcAllocated       = NV_FALSE;
     RsResourceRef                          *pResourceRef        = pCallContext->pResourceRef;
     NV_STATUS                               rmStatus;
     OBJVASPACE                             *pVAS                = NULL;
@@ -478,6 +479,7 @@ kchangrpapiConstruct_IMPL
                       "KernelChannelGroupApi alloc RPC to vGpu Host failed\n");
             goto failed;
         }
+        bRpcAllocated = NV_TRUE;
 
         if (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) || IS_GSP_CLIENT(pGpu))
         {
@@ -559,6 +561,21 @@ failed:
         {
             pRmApi->Free(pRmApi, pParams->hClient,
                          pKernelChannelGroupApi->hKernelGraphicsContext);
+        }
+
+        //
+        // A failed constructor is never destructed, so the RPC free requested
+        // through bRpcFree does not happen. Free the object on GSP/host here,
+        // otherwise it keeps its handle and grpID there after they are
+        // released on this side.
+        //
+        if (bRpcAllocated)
+        {
+            NV_STATUS tmpStatus = NV_OK;
+
+            NV_RM_RPC_FREE(pGpu, pParams->hClient, pParams->hParent,
+                           pParams->hResource, tmpStatus);
+            NV_ASSERT(tmpStatus == NV_OK);
         }
 
         if (pKernelChannelGroup != NULL)
