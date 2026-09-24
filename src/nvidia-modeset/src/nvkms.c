@@ -5307,6 +5307,8 @@ void nvKmsClose(void *pOpenVoid)
 }
 
 
+static NvBool revokeInProgress = FALSE;
+
 /*
  *Frees all references to a device
  */
@@ -5315,6 +5317,21 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo)
     if (pDevEvo == NULL) {
         return;
     }
+
+    /*
+     * FreeDeviceReference() can call back into nvRevokeDevice() through
+     * ReleaseModesetOwnership() -> RestoreConsole() if the core channel
+     * cannot be reallocated.  The nested call would call
+     * FreeDeviceReference() again for the pOpenDev that is being freed,
+     * dropping its device reference twice, so the device could be freed
+     * while other clients still use it.  The outer loop frees all remaining
+     * references, so just return.
+     */
+    if (revokeInProgress) {
+        return;
+    }
+
+    revokeInProgress = TRUE;
 
     struct NvKmsPerOpen *pOpen;
 
@@ -5330,6 +5347,8 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo)
         }
         FreeDeviceReference(pOpen, pOpenDev);
     }
+
+    revokeInProgress = FALSE;
 }
 
 /*!
