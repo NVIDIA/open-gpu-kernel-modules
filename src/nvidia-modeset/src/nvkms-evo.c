@@ -4515,10 +4515,12 @@ void nvSetViewPortsEvo(NVDispEvoPtr pDispEvo,
     pDevEvo->hal->SetOutputScaler(pDispEvo, head, updateState);
 
     /*
-     * Specify safe default values of 0 for viewPortPointIn x and y; these
-     * may be changed when panning out of band of a modeset.
+     * Specify default values for viewPortPointIn x and y; these may be
+     * changed when panning out of band of a modeset.
      */
-    EvoSetViewportPointIn(pDispEvo, head, 0 /* x */, 0 /* y */, updateState);
+    EvoSetViewportPointIn(pDispEvo, head,
+                          pViewPort->in.width * pHeadState->mergeHeadSection,
+                          0 /* y */, updateState);
 }
 
 
