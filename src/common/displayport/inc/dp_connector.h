@@ -326,6 +326,13 @@ namespace DisplayPort
         // the MOT bit. It is needed for some special cases where the MOT bit shouldn't
         // be set but some customers need it to please their monitors.
         //
+        // Start and poll under the caller's lock; wait outside that lock.
+        virtual bool startMstI2cTransfer(NvU64 id, unsigned writeAddress,
+                                        NvU8 *writeData, unsigned writeSize,
+                                        unsigned readAddress, unsigned readSize) = 0;
+        virtual bool pollMstI2cTransfer(NvU64 id, NvU8 *readData,
+                                       unsigned readSize, bool *complete) = 0;
+        virtual void cancelMstI2cTransfer(NvU64 id) = 0;
         virtual bool getI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequested, unsigned * sizeCompleted, bool bForceMot = false) = 0;
         virtual bool setI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequested, unsigned * sizeCompleted, bool bForceMot = false) = 0;
 

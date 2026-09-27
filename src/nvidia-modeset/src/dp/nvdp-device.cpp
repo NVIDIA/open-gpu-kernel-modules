@@ -31,6 +31,41 @@
 
 #include "nvctassert.h"
 
+NvBool nvDPMstI2cTransfer(const NVDpyEvoRec *pDpyEvo,
+                           struct NvKmsMstI2cTransferParams *params)
+{
+    static NvU64 nextRequestId = 0; // Serialized by the NVKMS lock.
+    struct NvKmsMstI2cTransfer *transfer = &params->request.transfer;
+    if (!nvDpyUsesDPLib(pDpyEvo) || !nvDpyEvoIsDPMST(pDpyEvo) ||
+        pDpyEvo->dp.pDpLibDevice == NULL) {
+        return FALSE;
+    }
+    DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
+    switch (params->request.operation) {
+    case NVKMS_MST_I2C_START:
+        // Zero denotes no request. Never reuse a token after wraparound.
+        if (nextRequestId == ~NvU64(0)) {
+            return FALSE;
+        }
+        params->reply.requestId = ++nextRequestId;
+        params->reply.complete = FALSE;
+        return device->startMstI2cTransfer(params->reply.requestId,
+            transfer->writeAddress, transfer->writeData, transfer->writeSize,
+            transfer->readAddress, transfer->readSize);
+    case NVKMS_MST_I2C_POLL: {
+        bool complete = false;
+        bool success = device->pollMstI2cTransfer(params->request.requestId,
+            params->reply.readData, transfer->readSize, &complete);
+        params->reply.complete = complete;
+        return success;
+    }
+    case NVKMS_MST_I2C_CANCEL:
+        device->cancelMstI2cTransfer(params->request.requestId);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void nvDPDeviceSetPowerState(NVDpyEvoPtr pDpyEvo, NvBool on)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;

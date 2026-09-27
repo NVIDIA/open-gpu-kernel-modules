@@ -32,6 +32,7 @@
 #endif
 
 #include <drm/drm_connector.h>
+#include <linux/i2c.h>
 
 #include "nvtypes.h"
 #include "nvkms-api-types.h"
@@ -64,6 +65,12 @@ struct nv_drm_connector {
      * The crtc using this connector with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
      */
     struct nv_drm_crtc *modeset_permission_crtc;
+
+#if IS_ENABLED(CONFIG_I2C)
+    struct i2c_adapter mst_ddc;
+    NvU32 mst_ddc_display;
+    bool mst_ddc_registered;
+#endif
 
     struct drm_connector base;
 };
@@ -115,7 +122,8 @@ struct drm_connector*
 nv_drm_get_connector(struct drm_device *dev,
                      NvU32 physicalIndex, NvKmsConnectorType type,
                      NvBool internal,
-                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH]);
+                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH],
+                     NvU32 hDisplay);
 
 bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
                                          struct nv_drm_connector *nv_connector);

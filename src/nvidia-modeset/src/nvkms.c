@@ -24,6 +24,7 @@
 #include "nvkms.h"
 #include "nvkms-private.h"
 #include "nvkms-api.h"
+#include "dp/nvdp-device.h"
 
 #include "nvkms-types.h"
 #include "nvkms-utils.h"
@@ -5032,6 +5033,30 @@ static NvBool UnregisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
     return TRUE;
 }
 
+static NvBool MstI2cTransfer(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
+{
+    struct NvKmsMstI2cTransferParams *pParams = pParamsVoid;
+    struct NvKmsMstI2cTransfer *transfer = &pParams->request.transfer;
+    NVDpyEvoRec *pDpyEvo;
+
+    if (pOpen->clientType != NVKMS_CLIENT_KERNEL_SPACE) {
+        return FALSE;
+    }
+    pDpyEvo = GetPerOpenDpy(pOpen, pParams->request.deviceHandle,
+                           pParams->request.dispHandle, pParams->request.dpyId);
+    if (pDpyEvo == NULL || !nvDpyEvoIsDPMST(pDpyEvo) ||
+        (pParams->request.operation == NVKMS_MST_I2C_START &&
+         !nvDpyIdIsInDpyIdList(pDpyEvo->id,
+                              pDpyEvo->pDispEvo->connectedDisplays)) ||
+        transfer->writeAddress > 0x7f || transfer->readAddress > 0x7f ||
+        transfer->writeSize > NVKMS_MST_I2C_MAX_DATA ||
+        transfer->readSize > NVKMS_MST_I2C_MAX_DATA ||
+        (transfer->writeSize == 0 && transfer->readSize == 0)) {
+        return FALSE;
+    }
+    return nvDPMstI2cTransfer(pDpyEvo, pParams);
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -5159,6 +5184,7 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED, FramebufferConsoleDisabled),
         ENTRY(NVKMS_IOCTL_REGISTER_VBLANK_INTR_CALLBACK, RegisterVblankIntrCallback),
         ENTRY(NVKMS_IOCTL_UNREGISTER_VBLANK_INTR_CALLBACK, UnregisterVblankIntrCallback),
+        ENTRY(NVKMS_IOCTL_MST_I2C_TRANSFER, MstI2cTransfer),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;

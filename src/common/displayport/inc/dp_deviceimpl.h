@@ -116,6 +116,9 @@ namespace DisplayPort
         void                inferPathConstraints();
 
 
+        struct MstI2cRequest;
+        MstI2cRequest   * mstI2cRequest;
+
         DeviceImpl      * parent;               // Upstream parent device
         DeviceImpl      * children[16];
         PortMap         portMap;
@@ -461,6 +464,13 @@ namespace DisplayPort
         // the MOT bit. It is needed for some special cases where the MOT bit shouldn't
         // be set but some customers need it to please their monitors.
         //
+        // Start and poll under the caller's lock; wait outside that lock.
+        virtual bool startMstI2cTransfer(NvU64 id, unsigned writeAddress,
+                                        NvU8 *writeData, unsigned writeSize,
+                                        unsigned readAddress, unsigned readSize);
+        virtual bool pollMstI2cTransfer(NvU64 id, NvU8 *readData,
+                                       unsigned readSize, bool *complete);
+        virtual void cancelMstI2cTransfer(NvU64 id);
         virtual bool getI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequested, unsigned * sizeCompleted, bool bForceMot = false);
         virtual bool setI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequested, unsigned * sizeCompleted, bool bForceMot = false);
         virtual bool getRawEpr(unsigned * totalEpr, unsigned * freeEpr, rawEprState eprState);

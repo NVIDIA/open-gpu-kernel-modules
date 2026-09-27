@@ -823,4 +823,15 @@ struct NvKmsHdmiVsifMetadata {
     NvU8 payload[NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE];
 };
 
+/* One MST I2C write, read, or combined write/read transaction. */
+#define NVKMS_MST_I2C_MAX_DATA 128
+struct NvKmsMstI2cTransfer {
+    NvU8 writeAddress; /* 7-bit address */
+    NvU8 readAddress;
+    NvU16 writeSize;
+    NvU16 readSize;
+    NvU8 writeData[NVKMS_MST_I2C_MAX_DATA];
+    NvU8 readData[NVKMS_MST_I2C_MAX_DATA];
+};
+
 #endif /* NVKMS_API_TYPES_H */
