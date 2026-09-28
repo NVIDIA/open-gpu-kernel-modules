@@ -3855,20 +3855,39 @@ bool ConnectorImpl::needToEnableFEC(const DpPreModesetParams &params)
 
 void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
 {
-    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    bool bSkipAttach = false;
+
+    if(!connectorActive)
     {
-        DP_ASSERT(0 && "DPCONN> dpPreModeset called when connector is not active or when detection is in progress!");
+        DP_ASSERT(0 && "DPCONN> dpPreModeset called when connector is not active!");
         return;
+    }
+
+    //
+    // Only attaches need detection to be complete and the sink to be plugged.
+    // Detaches must still be processed: the client may shut a head down after
+    // the sink has been unplugged (for example when a monitor switches to
+    // another input). Dropping that detach leaves the group marked as
+    // head-attached, so the next attach tries to enter flush mode on a head
+    // that is no longer active, fails, and skips link training and DSC enable.
+    //
+    if (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete)
+    {
+        DP_PRINTF(DP_WARNING, "DPCONN> dpPreModeset called when detection is in progress, skipping head attach");
+        bSkipAttach = true;
     }
 
     // Skip gating modeset on HPD for DDS panels
     if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
     {
-        DP_ASSERT(0 && "DPCONN> dpPreModeset called when Plugged State is false!");
-        return;
+        DP_PRINTF(DP_WARNING, "DPCONN> dpPreModeset called when Plugged State is false, skipping head attach");
+        bSkipAttach = true;
     }
 
-    this->bFECEnable |= this->needToEnableFEC(params);
+    if (!bSkipAttach)
+    {
+        this->bFECEnable |= this->needToEnableFEC(params);
+    }
 
     DP_ASSERT(this->inTransitionHeadMask == 0x0);
     this->inTransitionHeadMask = 0x0;
@@ -3876,6 +3895,9 @@ void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
     for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
     {
         if ((params.headMask & NVBIT(i)) == 0x0)
+            continue;
+
+        if ((params.head[i].pTarget != NULL) && bSkipAttach)
             continue;
 
         this->inTransitionHeadMask |= NVBIT(i);
@@ -4378,9 +4400,9 @@ void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
 // Notify library before/after shutdown (update)
 void ConnectorImpl::notifyDetachBegin(Group * target)
 {
-    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    if(!connectorActive)
     {
-        DP_ASSERT(0 && "DPCONN> notifyDetachBegin called when connector is not active or when detection is in progress!");
+        DP_ASSERT(0 && "DPCONN> notifyDetachBegin called when connector is not active!");
         return;
     }
 
@@ -4454,9 +4476,9 @@ void ConnectorImpl::notifyDetachBegin(Group * target)
 //
 void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
 {
-    if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
+    if(!connectorActive)
     {
-        DP_ASSERT(0 && "DPCONN> notifyDetachEnd called when connector is not active or when detection is in progress!");
+        DP_ASSERT(0 && "DPCONN> notifyDetachEnd called when connector is not active!");
         return;
     }
 
