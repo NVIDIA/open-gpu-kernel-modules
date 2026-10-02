@@ -5387,6 +5387,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DMEM_CGROUP_PRESENT" "" "types"
         ;;
 
+        dmem_cgroup_register_region_has_init_arg)
+            #
+            # Determine if dmem_cgroup_register_region takes an initializer
+            # instead of the region size as its first argument.
+            #
+            CODE="
+            #include <linux/cgroup_dmem.h>
+            struct dmem_cgroup_init;
+            typeof(dmem_cgroup_register_region) conftest_dmem_cgroup_register_region_has_init_arg;
+            struct dmem_cgroup_region *conftest_dmem_cgroup_register_region_has_init_arg(
+                const struct dmem_cgroup_init *init, const char *fmt, ...) {
+                return NULL;
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG" "" "types"
+        ;;
+
         misc_cgrp_id)
             #
             # Check to see if the misc cgroup type is available

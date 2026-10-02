@@ -3028,7 +3028,12 @@ void* NV_API_CALL os_cgroup_parent(void *cgroup) { return NULL; }
 #if defined(NV_DMEM_CGROUP_PRESENT)
 void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, NvU64 precharge, void **prechargePool)
 {
+#if defined(NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG)
+    const struct dmem_cgroup_init init = { .size = size };
+    void *region = dmem_cgroup_register_region(&init, name);
+#else
     void *region = dmem_cgroup_register_region(size, name);
+#endif
     if (IS_ERR(region))
     {
         return NULL;
