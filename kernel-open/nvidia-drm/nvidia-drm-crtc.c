@@ -2193,6 +2193,27 @@ static inline struct nv_drm_plane_state *nv_drm_plane_state_alloc(void)
     return nv_plane_state;
 }
 
+#if defined(NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_plane_atomic_create_state - plane state creation hook
+ * @plane: DRM plane
+ *
+ * Allocate an empty DRM plane state.
+ */
+static struct drm_plane_state *
+nv_drm_plane_atomic_create_state(struct drm_plane *plane)
+{
+    struct nv_drm_plane_state *nv_plane_state =
+        nv_drm_plane_state_alloc();
+
+    if (!nv_plane_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+    __drm_atomic_helper_plane_state_init(&nv_plane_state->base, plane);
+    return &nv_plane_state->base;
+}
+#else
 /**
  * nv_drm_plane_atomic_reset - plane state reset hook
  * @plane: DRM plane
@@ -2223,6 +2244,7 @@ static void nv_drm_plane_atomic_reset(struct drm_plane *plane)
         kfree(nv_plane_state);
     }
 }
+#endif
 
 
 static struct drm_plane_state *
@@ -2344,7 +2366,11 @@ static const struct drm_plane_funcs nv_plane_funcs = {
     .update_plane           = drm_atomic_helper_update_plane,
     .disable_plane          = drm_atomic_helper_disable_plane,
     .destroy                = nv_drm_plane_destroy,
+#if defined(NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_plane_atomic_create_state,
+#else
     .reset                  = nv_drm_plane_atomic_reset,
+#endif
     .atomic_get_property    = nv_drm_plane_atomic_get_property,
     .atomic_set_property    = nv_drm_plane_atomic_set_property,
     .atomic_duplicate_state = nv_drm_plane_atomic_duplicate_state,
