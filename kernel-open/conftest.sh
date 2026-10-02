@@ -5350,6 +5350,19 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
         ;;
 
+        drm_crtc_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_crtc_funcs has an atomic_create_state callback.
+            #
+            CODE="
+            #include <drm/drm_crtc.h>
+            int conftest_drm_crtc_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_crtc_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
         drm_crtc_funcs_has_get_vblank_timestamp)
             #
             # Determine if the 'drm_crtc_funcs' structure has a

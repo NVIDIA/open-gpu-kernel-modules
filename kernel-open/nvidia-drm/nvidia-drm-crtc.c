@@ -2435,6 +2435,26 @@ static inline struct nv_drm_crtc_state *nv_drm_crtc_state_alloc(void)
 }
 
 
+#if defined(NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_atomic_crtc_create_state - crtc state creation hook
+ * @crtc: DRM crtc
+ *
+ * Allocate an empty DRM crtc state.
+ */
+static struct drm_crtc_state *
+nv_drm_atomic_crtc_create_state(struct drm_crtc *crtc)
+{
+    struct nv_drm_crtc_state *nv_state = nv_drm_crtc_state_alloc();
+
+    if (!nv_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+    __drm_atomic_helper_crtc_state_init(&nv_state->base, crtc);
+    return &nv_state->base;
+}
+#else
 /**
  * nv_drm_atomic_crtc_reset - crtc state reset hook
  * @crtc: DRM crtc
@@ -2464,6 +2484,7 @@ static void nv_drm_atomic_crtc_reset(struct drm_crtc *crtc)
         kfree(nv_state);
     }
 }
+#endif
 
 /**
  * nv_drm_atomic_crtc_duplicate_state - crtc state duplicate hook
@@ -2611,7 +2632,11 @@ static bool nv_drm_crtc_get_vblank_timestamp(
 static struct drm_crtc_funcs nv_crtc_funcs = {
     .set_config             = drm_atomic_helper_set_config,
     .page_flip              = drm_atomic_helper_page_flip,
+#if defined(NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_atomic_crtc_create_state,
+#else
     .reset                  = nv_drm_atomic_crtc_reset,
+#endif
     .destroy                = nv_drm_crtc_destroy,
     .atomic_get_property    = nv_drm_atomic_crtc_get_property,
     .atomic_set_property    = nv_drm_atomic_crtc_set_property,
