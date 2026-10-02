@@ -4039,7 +4039,11 @@ bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
     return !vma_is_anonymous(vma) ||
            (vma->vm_flags & (VM_IO | VM_DONTEXPAND | VM_PFNMAP | VM_MIXEDMAP)) ||
            vma_is_dax(vma) ||
+#if defined(NV_VMA_IS_HUGETLB_PRESENT)
+           vma_is_hugetlb(vma);
+#else
            is_vm_hugetlb_page(vma);
+#endif
 }
 
 #endif // UVM_IS_CONFIG_HMM()

@@ -5404,6 +5404,20 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG" "" "types"
         ;;
 
+        vma_is_hugetlb)
+            #
+            # Determine if the renamed hugetlb VMA helper is present.
+            # typeof requires a declaration even when implicit function
+            # declaration warnings are disabled for other conftests.
+            #
+            CODE="
+            #include <linux/mm.h>
+            typeof(vma_is_hugetlb) conftest_vma_is_hugetlb;
+            "
+
+            compile_check_conftest "$CODE" "NV_VMA_IS_HUGETLB_PRESENT" "" "types"
+        ;;
+
         misc_cgrp_id)
             #
             # Check to see if the misc cgroup type is available

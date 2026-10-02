@@ -70,6 +70,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
 NV_CONFTEST_TYPE_COMPILE_TESTS += sg_dma_page_iter
 NV_CONFTEST_TYPE_COMPILE_TESTS += struct_page_has_zone_device_data
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_device_coherent_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += vma_is_hugetlb
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_buf_supports_dynamic_importer
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
