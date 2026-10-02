@@ -4450,7 +4450,11 @@ compile_test() {
             # in v6.11.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_GENERIC_H_PRESENT)
             #include <drm/drm_fbdev_generic.h>
             #endif
@@ -4470,7 +4474,11 @@ compile_test() {
             # 1000634477d8 ("drm/fbdev-ttm:Convert to client-setup") in v6.13.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
             #include <drm/drm_fbdev_ttm.h>
             #endif
@@ -4492,7 +4500,11 @@ compile_test() {
             # in linux-next b86711c6d6e2.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
             #include <drm/drm_client_setup.h>
             #elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)
@@ -5337,6 +5349,32 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_DEVICE_COHERENT_PRESENT" "" "types"
         ;;
 
+        drm_plane_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_plane_funcs has an atomic_create_state callback.
+            #
+            CODE="
+            #include <drm/drm_plane.h>
+            int conftest_drm_plane_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_plane_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_crtc_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_crtc_funcs has an atomic_create_state callback.
+            #
+            CODE="
+            #include <drm/drm_crtc.h>
+            int conftest_drm_crtc_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_crtc_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
         drm_crtc_funcs_has_get_vblank_timestamp)
             #
             # Determine if the 'drm_crtc_funcs' structure has a
@@ -5385,6 +5423,37 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_DMEM_CGROUP_PRESENT" "" "types"
+        ;;
+
+        dmem_cgroup_register_region_has_init_arg)
+            #
+            # Determine if dmem_cgroup_register_region takes an initializer
+            # instead of the region size as its first argument.
+            #
+            CODE="
+            #include <linux/cgroup_dmem.h>
+            struct dmem_cgroup_init;
+            typeof(dmem_cgroup_register_region) conftest_dmem_cgroup_register_region_has_init_arg;
+            struct dmem_cgroup_region *conftest_dmem_cgroup_register_region_has_init_arg(
+                const struct dmem_cgroup_init *init, const char *fmt, ...) {
+                return NULL;
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG" "" "types"
+        ;;
+
+        vma_is_hugetlb)
+            #
+            # Determine if the renamed hugetlb VMA helper is present.
+            # typeof requires a declaration even when implicit function
+            # declaration warnings are disabled for other conftests.
+            #
+            CODE="
+            #include <linux/mm.h>
+            typeof(vma_is_hugetlb) conftest_vma_is_hugetlb;
+            "
+
+            compile_check_conftest "$CODE" "NV_VMA_IS_HUGETLB_PRESENT" "" "types"
         ;;
 
         misc_cgrp_id)
