@@ -4450,7 +4450,11 @@ compile_test() {
             # in v6.11.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_GENERIC_H_PRESENT)
             #include <drm/drm_fbdev_generic.h>
             #endif
@@ -4470,7 +4474,11 @@ compile_test() {
             # 1000634477d8 ("drm/fbdev-ttm:Convert to client-setup") in v6.13.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
             #include <drm/drm_fbdev_ttm.h>
             #endif
@@ -4492,7 +4500,11 @@ compile_test() {
             # in linux-next b86711c6d6e2.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
             #include <drm/drm_client_setup.h>
             #elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)
