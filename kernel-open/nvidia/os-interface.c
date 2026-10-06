@@ -345,7 +345,7 @@ NV_STATUS NV_API_CALL os_cond_acquire_rwlock_read(void *pRwLock)
 {
     os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
 
-    if (down_read_trylock(&os_rwlock->sem))
+    if (!down_read_trylock(&os_rwlock->sem))
     {
         return NV_ERR_TIMEOUT_RETRY;
     }
@@ -357,7 +357,7 @@ NV_STATUS NV_API_CALL os_cond_acquire_rwlock_write(void *pRwLock)
 {
     os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
 
-    if (down_write_trylock(&os_rwlock->sem))
+    if (!down_write_trylock(&os_rwlock->sem))
     {
         return NV_ERR_TIMEOUT_RETRY;
     }
