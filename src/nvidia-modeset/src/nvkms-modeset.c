@@ -2407,9 +2407,30 @@ static NvBool IsCurrentMultiTileConfigOneApiHeadIncompatible(
             &pDispEvo->headState[head].multiTileConfig;
         const NvU32 tilesMask = pMultiTileConfig->tilesMask;
         NvU32 phywinsMask = 0x0;
+        NvU32 proposedPhywinsMask = 0x0;
 
         for (NvU32 layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-            phywinsMask |= pMultiTileConfig->phywinsMask[layer];
+            const NvU32 currentMask = pMultiTileConfig->phywinsMask[layer];
+            const NvU32 proposedMask =
+                pProposedDisp->head[head].multiTileConfig.phywinsMask[layer];
+
+            /*
+             * Adding or removing a layer's physical assignment also binds or
+             * unbinds its window channel. Shut the head down before changing
+             * that ownership, even if no resource moves to another window.
+             */
+            if ((currentMask == 0) != (proposedMask == 0)) {
+                return TRUE;
+            }
+
+            /* Check both directions against earlier layers on this head. */
+            if (((currentMask & proposedPhywinsMask) != 0x0) ||
+                ((proposedMask & phywinsMask) != 0x0)) {
+                return TRUE;
+            }
+
+            phywinsMask |= currentMask;
+            proposedPhywinsMask |= proposedMask;
         }
 
         for (NvU32 tmpHead = 0; tmpHead < pDevEvo->numHeads; tmpHead++) {
@@ -3483,19 +3504,7 @@ KickoffProposedModeSetHwState(
 {
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NVEvoModesetUpdateState *pModesetUpdateState = &pWorkArea->modesetUpdateState;
-    /*
-     * If there is a change in window ownership, decouple window channel flips
-     * and the core channel update that performs a modeset.
-     *
-     * This allows window channel flips to be instead interlocked with the core
-     * channel update that sets the window usage bounds, avoiding window
-     * invalid usage exceptions.
-     *
-     * See comment about NVDisplay error code 37, in
-     * function EvoInitWindowMapping3().
-     */
-    const NvBool decoupleFlipUpdates =
-        pModesetUpdateState->windowMappingChanged;
+    NvBool decoupleFlipUpdates;
 
     /* Send methods to shut down any other unused heads, but don't update yet. */
     for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
@@ -3516,6 +3525,20 @@ KickoffProposedModeSetHwState(
             pWorkArea,
             bypassComposition);
     }
+
+    /*
+     * If window ownership or physical assignments change, decouple window
+     * channel flips from the core channel update that performs a modeset.
+     * Check after PreUpdate, which may change physical assignments on Blackwell.
+     *
+     * This allows window channel flips to be instead interlocked with the core
+     * channel update that sets the window usage bounds, avoiding window
+     * invalid usage exceptions.
+     *
+     * See comment about NVDisplay error code 37, in
+     * function EvoInitWindowMapping3().
+     */
+    decoupleFlipUpdates = pModesetUpdateState->windowMappingChanged;
 
     if (!decoupleFlipUpdates) {
         /* Merge modeset and flip state updates together */
@@ -4685,4 +4708,3 @@ void nvApiHeadGetScanLine(const NVDispEvoRec *pDispEvo,
     pDispEvo->pDevEvo->hal->GetScanLine(pDispEvo, head, pScanLine,
                                         pInBlankingPeriod);
 }
-
