@@ -349,6 +349,7 @@ static NvBool nvWriteGpEntry(
     NvU32 *gpPointer;
     const NvU32 entriesNeeded = NV_PUSH_NUM_GPFIFO_ENTRIES_PER_KICKOFF;
     NvPushDevicePtr pDevice = push_buffer->pDevice;
+    NvU64 baseTime, currentTime;
 
     FillGpEntry(&push_buffer->main, putOffset, &gpEntry0, &gpEntry1);
 
@@ -358,12 +359,32 @@ static NvBool nvWriteGpEntry(
 
     nvAssert((nextGpPut % 2) == 0);
 
-    // Wait for a free entry in the buffer
-    while (nextGpPut == ReadGpGetOffset(push_buffer)) {
+    /*
+     * Wait for a free entry in the buffer.
+     *
+     * Bail out if the channel faults, but also if GET simply stops
+     * advancing: a channel that is never serviced does not necessarily
+     * raise an error notifier, and without a deadline this loop would spin
+     * in kernel context indefinitely.
+     */
+    for (baseTime = currentTime = nvPushImportGetMilliSeconds(pDevice);
+         nextGpPut == ReadGpGetOffset(push_buffer);
+         currentTime = nvPushImportGetMilliSeconds(pDevice)) {
+
         if (nvPushCheckChannelError(push_buffer)) {
             nvAssert(!"A channel error occurred in nvWriteGpEntry()");
             return FALSE;
         }
+
+        if (!push_buffer->noTimeout &&
+            (currentTime > (baseTime + NV_PUSH_NOTIFIER_SHORT_TIMEOUT))) {
+            nvPushImportLogError(pDevice,
+                "Timed out waiting for a free GPFIFO entry.");
+            nvAssert(!"Timed out waiting for a free GPFIFO entry");
+            return FALSE;
+        }
+
+        nvPushImportYield(pDevice);
     }
     gpPointer[0] = gpEntry0;
     gpPointer[1] = gpEntry1;
