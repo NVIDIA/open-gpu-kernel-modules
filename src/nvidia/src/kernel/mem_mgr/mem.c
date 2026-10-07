@@ -487,7 +487,9 @@ memConstructCommon_IMPL
     {
         status = memRegisterWithGsp(pGpu, RES_GET_CLIENT(pMemory), hParent, hMemory);
         if (status != NV_OK)
+        {
             goto done;
+        }
     }
 
     // Initialize the circular list item for tracking dup/sharing of pMemDesc

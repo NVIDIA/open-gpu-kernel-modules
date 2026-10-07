@@ -166,9 +166,11 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_170           (0x0000000F)
-// Custom definition of peak throughput for HDMI YUV modes since those are not defined in spec
-// Starting with 0x100 to provide headroom for DSC spec definitions in future
+// Custom HDMI YUV throughput values that are not defined by the DSC specification.
+// Use 0x100 increments to avoid overlapping the specification-defined values.
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_680           (0x00000100)
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1200          (0x00000200)
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1800          (0x00000300)
 
         // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16
         NvU32  maxBitsPerPixelX16;

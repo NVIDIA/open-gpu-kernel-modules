@@ -130,6 +130,8 @@ namespace DisplayPort
             return gpuSupportedDpVersions;
         }
 
+        virtual NvU32 getDpTunnelingDownstreamDpcdRev();
+
         virtual void setDevicePlugged(bool);
         virtual bool isDevicePlugged()
         {

@@ -1316,7 +1316,7 @@ static NvS64 _scanContiguousSearchLoopReverse
 )
 {
     NvU64 realAlign = (frameAlignmentPadding + numFrames) & (frameAlignment - 1ll);
-    NvU64 frameBaseIdx = alignDownToMod(localEnd + 1llu, frameAlignment, realAlign);
+    NvU64 frameBaseIdx;
 
     NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
     NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
@@ -1328,6 +1328,8 @@ static NvS64 _scanContiguousSearchLoopReverse
     //
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 i;
+
+    frameBaseIdx = alignDownToMod(localEnd + 1ULL, frameAlignment, realAlign);
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
             latestFree[i] = frameBaseIdx;
@@ -1723,7 +1725,7 @@ _scanDiscontiguousSearchLoopReverse
 )
 {
     NvU64 realAlign = (frameAlignmentPadding + framesPerPage) & (frameAlignment - 1ll);
-    NvU64 frameBaseIdx = alignDownToMod(localEnd+1llu, frameAlignment, realAlign);
+    NvU64 frameBaseIdx;
 
     NvU64 localizedFrameBase = pRegmap->localizedFrameBase;
     NvU64 localizedFrameCount = pRegmap->localizedFrameCount;
@@ -1739,6 +1741,8 @@ _scanDiscontiguousSearchLoopReverse
     NvU64 curEvictPage = numPages;
     NvBool bEvictablePage = NV_FALSE;
     NvU64 i;
+
+    frameBaseIdx = alignDownToMod(localEnd + 1ULL, frameAlignment, realAlign);
 
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {

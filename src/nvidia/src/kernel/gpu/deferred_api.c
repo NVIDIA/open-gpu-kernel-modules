@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+
 #include "kernel/gpu/deferred_api.h"
 
 #include "kernel/core/locks.h"
@@ -374,6 +375,10 @@ defapiCtrlCmdDeferredApiV2_IMPL
 
                 break;
             }
+            case NV2080_CTRL_CMD_DMA_INVALIDATE_TLB:
+            {
+                break;
+            }
             default:
                 // Nothing to do in kernel RM; just forward to physical RM.
                 break;
@@ -716,4 +721,3 @@ NvBool defapiIsSwMethodStalling_IMPL
 
     return NV_TRUE;
 }
-

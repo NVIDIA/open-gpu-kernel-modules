@@ -1668,6 +1668,9 @@ void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
     {
         cancelHdcpCallbacks();
 
+        // Only clear no more auth triggered when empty group.
+        isHDCPAuthTriggered = false;
+
         // We disconnected a panel, try to clear the transition
         if (linkAwaitingTransition)
         {
@@ -2256,24 +2259,27 @@ void ConnectorImpl2x::handleEdidWARs(Edid & edid, DiscoveryManager::Device & dev
     }
 }
 
-bool ConnectorImpl2x::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
-                                                     bool bSameTimings)
+bool ConnectorImpl2x::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc)
 {
+    bool bAvoidShutdown = false;
     if (bUseLegacyHeadShutdownPolicy)
     {
         // Regkey override: fall back to the DP1.x-style data-rate >= policy.
-        return ConnectorImpl::avoidHeadShutdownForLinkConfig(targetLc, bSameTimings);
+        return ConnectorImpl::avoidHeadShutdownForLinkConfig(targetLc);
     }
 
     //
-    // T25x: scope bSameTimings requirement to N1x + DP tunneling only (bug 6054761).
-    // isDpInTunnelingSupported()     — runtime: DP tunnel topology detected
-    // isDpTunnelingHwBugWarEnabled() — set by RM only on T25x/N1x platforms
+    // Force head shutdown on platform where internal DP tunneling is supported and DP tunnel topology is detected.
+    // isDpInTunnelingSupported()        - runtime: DP tunneling detected
+    // isInternalDpTunnelingSupported()  - set by RM only on T25x/N1x+ platforms where internal DP tunneling is supported on SoC
     //
-    bool bN1xTunneling = hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled();
-    bool bAvoidShutdown = (targetLc == activeLinkConfig) && (!bN1xTunneling || bSameTimings);
-    DP_PRINTF(DP_NOTICE, "DP2.x avoidHeadShutdown: target=%llu active=%llu sameTimings=%d bN1xTunneling=%d result=%d",
+    bool bInternalDpTunneling = main->isInternalDpTunnelingSupported() && hal->isDpInTunnelingSupported();
+    if (!bInternalDpTunneling)
+    {
+        bAvoidShutdown = (targetLc == activeLinkConfig);
+    }
+    DP_PRINTF(DP_NOTICE, "DP2.x avoidHeadShutdown: target=%llu active=%llu bInternalDpTunneling=%d result=%d",
               targetLc.getTotalDataRate(), activeLinkConfig.getTotalDataRate(),
-              bSameTimings, bN1xTunneling, bAvoidShutdown);
+              bInternalDpTunneling, bAvoidShutdown);
     return bAvoidShutdown;
 }

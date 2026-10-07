@@ -3206,6 +3206,12 @@ static NV_STATUS dispcmnCtrlCmdDpSetWarFlags__EXPORT(void *pDispCommon, void *pP
 #endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000044u)
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000044u)
+static NV_STATUS dispcmnCtrlCmdDpGetWarData__EXPORT(void *pDispCommon, void *pParams) {
+    return dispcmnCtrlCmdDpGetWarData_IMPL(pDispCommon, pParams);
+}
+#endif // !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000044u)
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x00000044u)
 static NV_STATUS dispcmnCtrlCmdDpGetTestpattern__EXPORT(void *pDispCommon, void *pParams) {
     return dispcmnCtrlCmdDpGetTestpattern_IMPL(pDispCommon, pParams);
 }
@@ -5822,6 +5828,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
+        /*pFunc=*/      (void (*)(void)) &dispcmnCtrlCmdDpGetWarData__EXPORT,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+        /*flags=*/      0x44u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x731392u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdDpGetWarData"
+#endif
+    },
+    {               /*  [159] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
         /*pFunc=*/      (void (*)(void)) &dispcmnCtrlCmdPsrGetSrPanelInfo__EXPORT,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*flags=*/      0x44u,
@@ -6117,7 +6138,7 @@ NV_STATUS __nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare(struct DispCommon
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info__DispCommon = 
 {
-    .numEntries=     159,
+    .numEntries=     160,
     .pExportEntries= __nvoc_exported_method_def_DispCommon
 };
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,42 +28,6 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 
 #include "containers/eheap_old.h"
-
-static NV_STATUS _memmgrSocGetScanoutCarveout
-(
-    OBJGPU *pGpu,
-    NvU64  *pBase,
-    NvU64  *pSize
-)
-{
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NV_STATUS status;
-    NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS params;
-    NvU32 i;
-
-    portMemSet(&params, 0x0, sizeof(params));
-    status = memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, &params);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    *pBase = *pSize = 0;
-
-    for (i = 0; i < params.numCarveoutRegions; i++)
-    {
-        // On Linux, the complete display FRM will be managed by RM carveout code.
-        if (params.carveoutRegion[i].carveoutType ==
-                NV2080_CTRL_FB_GET_CARVEOUT_REGION_CARVEOUT_TYPE_DISPLAY_FRM)
-        {
-            *pBase = params.carveoutRegion[i].base;
-            *pSize = params.carveoutRegion[i].size;
-            break;
-        }
-    }
-
-    return NV_OK;
-}
 
 /**
  * @brief Initializes FB regions
@@ -127,9 +91,30 @@ memmgrCreateScanoutCarveoutHeap_GB10B
     MemoryManager *pMemoryManager
 )
 {
-    NvU64 base, size;
+    NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS params;
+    NvU64 base = 0, size = 0;
+    NvU32 i;
 
-    if (_memmgrSocGetScanoutCarveout(pGpu, &base, &size) != NV_OK) {
+    portMemSet(&params, 0x0, sizeof(params));
+    if (memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, &params) != NV_OK)
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT, NV_FALSE);
+        return NV_OK;
+    }
+
+    for (i = 0; i < params.numCarveoutRegions; i++)
+    {
+        if (params.carveoutRegion[i].carveoutType ==
+            NV2080_CTRL_FB_GET_CARVEOUT_REGION_CARVEOUT_TYPE_DISPLAY_FRM)
+        {
+            base = params.carveoutRegion[i].base;
+            size = params.carveoutRegion[i].size;
+            break;
+        }
+    }
+
+    if (size == 0)
+    {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT, NV_FALSE);
         return NV_OK;
     }
@@ -154,7 +139,6 @@ memmgrDestroyScanoutCarveoutHeap_GB10B
     MemoryManager *pMemoryManager
 )
 {
-
     if (pMemoryManager->pScanoutHeap)
     {
         pMemoryManager->pScanoutHeap->eheapDestruct(pMemoryManager->pScanoutHeap);

@@ -73,8 +73,11 @@ _mnocBufferPoolDestruct
     KoobMnocBufferPool  *pPool
 )
 {
-    portSyncSpinlockDestroy(pPool->pBufSpinLock);
-    pPool->pBufSpinLock = NULL;
+    if (pPool->pBufSpinLock != NULL)
+    {
+        portSyncSpinlockDestroy(pPool->pBufSpinLock);
+        pPool->pBufSpinLock = NULL;
+    }
 }
 
 NV_STATUS
@@ -87,6 +90,8 @@ koobStateLoad_GB100
 {
     NV_ASSERT_OK_OR_RETURN(_mnocBufferPoolConstruct(&pKernelOob->mnocBufferPool));
     koobDriverStartupNotify(pGpu, pKernelOob);
+    pKernelOob->bLoaded = NV_TRUE;
+
     return NV_OK;
 }
 
@@ -98,8 +103,13 @@ koobStateUnload_GB100
     NvU32      flags
 )
 {
-    koobDriverShutdownNotify(pGpu, pKernelOob);
-    _mnocBufferPoolDestruct(&pKernelOob->mnocBufferPool);
+    if (pKernelOob->bLoaded)
+    {
+        koobDriverShutdownNotify(pGpu, pKernelOob);
+        _mnocBufferPoolDestruct(&pKernelOob->mnocBufferPool);
+        pKernelOob->bLoaded = NV_FALSE;
+    }
+
     return NV_OK;
 }
 

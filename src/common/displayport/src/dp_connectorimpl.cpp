@@ -190,6 +190,12 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
         }
     }
 
+    if (main->isInternalDpTunnelingSupported() &&
+        !dpRegkeyDatabase.bDisableDpTunDiaDpcdRevWar)
+    {
+        hal->setOverrideDpcdRevFromDia();
+    }
+
     hal->setConnectorTypeC(main->isConnectorUSBTypeC());
 
     highestAssessedLC = initMaxLinkConfig();
@@ -463,6 +469,35 @@ void ConnectorImpl::discoveryNewDevice(const DiscoveryManager::Device & device)
     {
         processNewDevice({device, Edid(), DisplayID2x(), true, DISPLAY_PORT, RESERVED});
     }
+}
+
+//
+// True when the device has a non-DisplayPort downstream port with detailed
+// capabilities, i.e. a protocol converter. Bug 6546550.
+//
+static bool hasLegacyDownstreamPort(DeviceImpl * dev)
+{
+    NvU8        byte          = 0;
+    unsigned    sizeCompleted = 0;
+
+    if (dev == NULL)
+    {
+        return false;
+    }
+
+    if (dev->getDpcdData(NV_DPCD_DOWNSTREAMPORT, &byte, sizeof(byte),
+                         &sizeCompleted) != AuxBus::success)
+    {
+        return false;
+    }
+
+    if (FLD_TEST_DRF(_DPCD, _DOWNSTREAMPORT, _PRESENT, _NO, byte) ||
+        FLD_TEST_DRF(_DPCD, _DOWNSTREAMPORT, _DETAILED_CAP_INFO_AVAILABLE, _NO, byte))
+    {
+        return false;
+    }
+
+    return !FLD_TEST_DRF(_DPCD, _DOWNSTREAMPORT, _TYPE, _DISPLAYPORT, byte);
 }
 
 void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
@@ -861,6 +896,14 @@ create:
                 newDev->connectorType = newDev->parent->getConnectorType();
             }
         }
+    }
+    //
+    // Catch a protocol converter not enumerated as peer device type 4 above.
+    // No-op on a real sink. Bug 6546550.
+    //
+    else if (newDev->isAtLeastVersion(1,4) && hasLegacyDownstreamPort(newDev))
+    {
+        newDev->getPCONCaps(&(newDev->pconCaps));
     }
 
     // Read panel replay capabilities
@@ -1555,6 +1598,184 @@ reRunCompoundQuery:
     return bResult;
 }
 
+//
+// Highest TMDS character rate, in Hz, the HDMI sink accepts on its input,
+// from its EDID. 0 when unstated. Bug 6546550.
+//
+static NvU64 edidMaxTmdsCharRate(const Edid &edid)
+{
+    const NvU8 *pData      = edid.getBuffer()->getData();
+    unsigned    length     = edid.getBuffer()->getLength();
+    NvU64       hfVsdbRate = 0;
+    NvU64       vsdbRate   = 0;
+    unsigned    block;
+
+    if ((pData == NULL) || (length < (2 * EDID_BLOCK_SIZE)))
+    {
+        return 0;
+    }
+
+    for (block = EDID_BLOCK_SIZE; (block + EDID_BLOCK_SIZE) <= length;
+         block += EDID_BLOCK_SIZE)
+    {
+        const NvU8 *pExt = &pData[block];
+        unsigned    dtdOffset;
+        unsigned    i;
+
+        if ((pExt[CTA861_EXT_TAG_OFFSET] != CTA861_EXT_TAG) ||
+            (pExt[CTA861_EXT_REVISION_OFFSET] < CTA861_EXT_MIN_REVISION))
+        {
+            continue;
+        }
+
+        dtdOffset = pExt[CTA861_EXT_DTD_START_OFFSET];
+        if ((dtdOffset <= CTA861_DATA_BLOCK_START) || (dtdOffset > EDID_BLOCK_SIZE))
+        {
+            continue;
+        }
+
+        i = CTA861_DATA_BLOCK_START;
+        while (i < dtdOffset)
+        {
+            unsigned    blockTag   = pExt[i] >> CTA861_DATA_BLOCK_TAG_SHIFT;
+            unsigned    payloadLen = pExt[i] & CTA861_DATA_BLOCK_LEN_MASK;
+            const NvU8 *pPayload   = &pExt[i + 1U];
+            unsigned    oui;
+
+            if ((i + 1U + payloadLen) > dtdOffset)
+            {
+                // Malformed collection - stop rather than read past it.
+                break;
+            }
+            i += 1U + payloadLen;
+
+            if ((blockTag != CTA861_DATA_BLOCK_TAG_VENDOR) ||
+                (payloadLen < CTA861_VSDB_OUI_SIZE))
+            {
+                continue;
+            }
+
+            oui = (unsigned)pPayload[0] | ((unsigned)pPayload[1] << 8) |
+                  ((unsigned)pPayload[2] << 16);
+
+            if ((oui == CTA861_VSDB_OUI_HDMI_FORUM) &&
+                (payloadLen >= HF_VSDB_MIN_PAYLOAD_SIZE))
+            {
+                hfVsdbRate = (NvU64)pPayload[HF_VSDB_MAX_TMDS_RATE_OFFSET] *
+                             EDID_TMDS_RATE_UNIT_HZ;
+            }
+            else if ((oui == CTA861_VSDB_OUI_HDMI_LLC) &&
+                     (payloadLen >= HDMI_VSDB_MIN_PAYLOAD_SIZE))
+            {
+                vsdbRate = (NvU64)pPayload[HDMI_VSDB_MAX_TMDS_CLK_OFFSET] *
+                           EDID_TMDS_RATE_UNIT_HZ;
+            }
+        }
+    }
+
+    return (hfVsdbRate != 0) ? hfVsdbRate : vsdbRate;
+}
+
+//
+// Upper bound, in Hz, on the TMDS character rate a DP to HDMI protocol
+// converter can emit downstream. Returns 0 when no limit applies or none can
+// be established, which callers must treat as unconstrained.
+//
+static NvU64 pconMaxTmdsCharRate(const DeviceImpl * dev)
+{
+    NvU64 edidCharRate;
+
+    // connectorHDMI is the scope test: an HDMI connector type always means a
+    // protocol converter, regardless of how it was enumerated.
+    if ((dev == NULL) || (dev->connectorType != connectorHDMI))
+    {
+        return 0;
+    }
+
+    if (dev->pconCaps.maxHdmiLinkBandwidthGbps != 0)
+    {
+        return 0;
+    }
+
+    // Prefer what the converter advertised in its detailed port capabilities.
+    if (dev->pconCaps.maxTmdsClkRate != 0)
+    {
+        return (NvU64)dev->pconCaps.maxTmdsClkRate;
+    }
+
+    // No rate from the converter: a TMDS link is bounded at both ends, so
+    // fall back on what the sink's own EDID accepts.
+    edidCharRate = edidMaxTmdsCharRate(dev->rawEDID);
+    if (edidCharRate != 0)
+    {
+        return DP_MIN(edidCharRate, HDMI2_MAX_TMDS_CLK_RATE_HZ);
+    }
+
+    // Neither end published a rate: unknown, not unlimited. Don't reject on
+    // an assumption.
+    return 0;
+}
+
+//
+// TMDS character rate, in Hz, the HDMI side of a converter has to run at to
+// carry this mode. Mirrors the per format cases in compoundQueryAttachSST().
+//
+// TODO: move compoundQueryAttachSST() onto this function so the two copies
+// cannot drift apart again.
+//
+static NvU64 tmdsCharRateForMode(const DpModesetParams &modesetParams)
+{
+    NvU64 pixelClockHz = (NvU64)modesetParams.modesetInfo.pixelClockHz;
+
+    if ((modesetParams.colorFormat == dpColorFormat_YCbCr422) ||
+        (modesetParams.colorFormat == dpColorFormat_YCbCr422_Native))
+    {
+        return pixelClockHz;
+    }
+
+    // A converter emits uncompressed pixels, so a compressed depth is unusable.
+    if (modesetParams.modesetInfo.bEnableDsc || (modesetParams.modesetInfo.depth == 0))
+    {
+        return 0;
+    }
+
+    if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
+    {
+        return ((pixelClockHz * modesetParams.modesetInfo.depth) / 24U) / 2U;
+    }
+
+    return (pixelClockHz * modesetParams.modesetInfo.depth) / 24U;
+}
+
+//
+// Reject modes that overrun what a DP to HDMI protocol converter can emit
+// downstream. 0 on either side means unknown - do not guess. Bug 6546550.
+//
+static bool isModeWithinPconLimits(const DeviceImpl * dev,
+                                   const DpModesetParams &modesetParams,
+                                   DP_IMP_ERROR *pErrorCode)
+{
+    NvU64 maxCharRate = pconMaxTmdsCharRate(dev);
+    NvU64 requiredCharRate;
+
+    if (maxCharRate == 0)
+    {
+        return true;
+    }
+
+    requiredCharRate = tmdsCharRateForMode(modesetParams);
+    if ((requiredCharRate != 0) && (requiredCharRate > maxCharRate))
+    {
+        DP_PRINTF(DP_INFO,
+                  "DPCONN> Mode needs %" NvU64_fmtu " Hz TMDS character rate, PCON limit is %" NvU64_fmtu " Hz",
+                  requiredCharRate, maxCharRate);
+        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+        return false;
+    }
+
+    return true;
+}
+
 bool ConnectorImpl::compoundQueryAttachMST(Group * target,
                                            const DpModesetParams &modesetParams,         // Modeset info
                                            DscParams *pDscParams,                        // DSC parameters
@@ -1569,6 +1790,16 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
         DP_ASSERT(!"DPCONN> pixelCLockHz or surfaceWidth with zero value passed to compoundQueryAttachMST!");
         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_ZERO_VALUE_PARAMS)
         return false;
+    }
+
+    // Reject a mode the downstream HDMI port cannot clock out. Nothing is
+    // accumulated yet, so this needs no rollback. Bug 6546550.
+    for (Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
+    {
+        if (!isModeWithinPconLimits((DeviceImpl *)d, modesetParams, pErrorCode))
+        {
+            return false;
+        }
     }
 
     localInfo.localModesetInfo = modesetParams.modesetInfo;
@@ -1939,31 +2170,13 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
                 }
             }
             //
-            // If DP2HDMI PCON does not support FRL, but advertises TMDS
-            // Character clock rate on detailed caps, we need to honor that.
+            // No FRL, so the HDMI side is TMDS character rate limited.
+            // Bug 6546550.
             //
-            else if (dev->pconCaps.maxTmdsClkRate != 0)
+            else if (!isModeWithinPconLimits(dev, modesetParams, pErrorCode))
             {
-                NvU64 maxTmdsClkRateU64 = (NvU64)(dev->pconCaps.maxTmdsClkRate);
-                NvU64 requiredBw        = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
-                if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
-                {
-                    if (maxTmdsClkRateU64 < ((requiredBw/24)/2))
-                    {
-                        compoundQueryResult = false;
-                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (maxTmdsClkRateU64 < (requiredBw/24))
-                    {
-                        compoundQueryResult = false;
-                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
-                        return false;
-                    }
-                }
+                compoundQueryResult = false;
+                return false;
             }
         }
         else if (dev->devDoingDscDecompression != dev)
@@ -3336,7 +3549,7 @@ void ConnectorImpl::fireEventsInternal()
             //
             // Setting isDiscoveryDetectComplete to true, now DPLIB can proceed and handle the cleint requests.
             // Setting bNotifyDetectCompletePending to false, to indicate that the detect complete notification has been sent.
-            // 
+            //
             isDiscoveryDetectComplete = true;
             bNotifyDetectCompletePending = false;
             DP_PRINTF(DP_NOTICE, "DP-CONN> NotifyDetectComplete");
@@ -3496,17 +3709,7 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
         //
         else
         {
-            // For the "same timings" check we only care about the fields that drive PCLK
-            // and raster programming -- pixel clock, raster size, and blanking.
-            const ModesetInfo &lastMs = targetImpl->lastModesetInfo;
-            const bool bSameTimings =
-                modesetInfo.pixelClockHz      == lastMs.pixelClockHz      &&
-                modesetInfo.rasterWidth       == lastMs.rasterWidth       &&
-                modesetInfo.rasterHeight      == lastMs.rasterHeight      &&
-                modesetInfo.rasterBlankStartX == lastMs.rasterBlankStartX &&
-                modesetInfo.rasterBlankEndX   == lastMs.rasterBlankEndX;
-
-            if (avoidHeadShutdownForLinkConfig(lowestSelected, bSameTimings))
+            if (avoidHeadShutdownForLinkConfig(lowestSelected))
             {
                 bHeadShutdownNeeded = false;
             }
@@ -3525,8 +3728,7 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     return bHeadShutdownNeeded;
 }
 
-bool ConnectorImpl::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
-                                                   bool /*bSameTimings*/)
+bool ConnectorImpl::avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc)
 {
     // DP1.x: keep legacy data-rate >= behavior; not affected by the UHBR TU window.
     bool bAvoidShutdown = (targetLc.getTotalDataRate() >= activeLinkConfig.getTotalDataRate());
@@ -3861,14 +4063,52 @@ void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
         return;
     }
 
-    // Skip gating modeset on HPD for DDS panels
-    if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
+    //
+    // NVKMS funnels both attach and detach through this entry point. A detach
+    // that arrives after HPD de-assert has to be let through, otherwise DPLib
+    // stream state is left stale while the client clears its head mask. Attach
+    // stays gated on plug state; DDS panels are never gated on HPD.
+    //
+    bool  bAttachAllowed = previousPlugged || bClientForcedConnected ||
+                           main->isInternalPanelDynamicMuxCapable();
+    NvU32 attachHeadMask = 0x0;
+    NvU32 detachHeadMask = 0x0;
+
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
     {
-        DP_ASSERT(0 && "DPCONN> dpPreModeset called when Plugged State is false!");
-        return;
+        if ((params.headMask & NVBIT(i)) == 0x0)
+            continue;
+
+        if (params.head[i].pTarget != NULL)
+            attachHeadMask |= NVBIT(i);
+        else
+            detachHeadMask |= NVBIT(i);
     }
 
-    this->bFECEnable |= this->needToEnableFEC(params);
+    if (!bAttachAllowed)
+    {
+        if (detachHeadMask == 0x0)
+        {
+            DP_ASSERT(0 && "DPCONN> dpPreModeset called when Plugged State is false!");
+            return;
+        }
+
+        if (attachHeadMask != 0x0)
+        {
+            //
+            // notifyAttachBegin/notifyAttachEnd reject these anyway. Dropping them
+            // here too keeps bFECEnable, inTransitionHeadMask and
+            // perHeadAttachedGroup from recording an attach that DPLib never
+            // completed, which a later detach would otherwise act on.
+            //
+            DP_PRINTF(DP_ERROR, "DPCONN> dpPreModeset skipping attach on headMask 0x%x, Plugged State is false!",
+                      attachHeadMask);
+        }
+    }
+    else
+    {
+        this->bFECEnable |= this->needToEnableFEC(params);
+    }
 
     DP_ASSERT(this->inTransitionHeadMask == 0x0);
     this->inTransitionHeadMask = 0x0;
@@ -3876,6 +4116,9 @@ void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
     for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
     {
         if ((params.headMask & NVBIT(i)) == 0x0)
+            continue;
+
+        if (!bAttachAllowed && ((attachHeadMask & NVBIT(i)) != 0x0))
             continue;
 
         this->inTransitionHeadMask |= NVBIT(i);
@@ -4550,6 +4793,9 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
     {
         cancelHdcpCallbacks();
 
+        // Only clear no more auth triggered when empty group.
+        isHDCPAuthTriggered = false;
+
         // We disconnected a panel, try to clear the transition
         if (linkAwaitingTransition)
         {
@@ -4621,9 +4867,12 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
         {
             if (hdcpState.HDCP_State_22_Capable)
             {
+                // No need forceClear.
                 main->configureAndTriggerECF(0x0);
                 authRetries = 0;
                 isHDCPAuthOn = false;
+                // Group not empty, trigger authentication with flag set.
+                isHDCPAuthTriggered = true;
                 // numOfStream changed, AKE_Init needed to change dpTypeMask
                 main->configureHDCPRenegotiate();
                 // ReAuth, so schedule callback to check state later.
@@ -5595,6 +5844,16 @@ bool ConnectorImpl::handleCPIRQ()
                     // CP_Irq event since Auth never started after HPD high or
                     // LinkTraining start.
                     //
+                    // isHDCPAuthTriggered is only cleared at last-group detach
+                    // (activeGroups.isEmpty()), not at HPD high/low or in
+                    // cancelHdcpCallbacks(). This is deliberate: clearing it more
+                    // eagerly would reduce the (mild, self-recovering) risk of
+                    // honoring a stale post-plug IRQ here, but would raise the
+                    // risk of racing a real in-flight reAuth and dropping its
+                    // legitimate CP_IRQ, which is the more severe failure (sink
+                    // stuck). So the flag is kept true as long as possible and
+                    // only reset where doing so is unambiguously safe.
+                    //
                     if (isHDCPAuthTriggered)
                     {
                         bReAuthReq = NV_TRUE;
@@ -5666,6 +5925,7 @@ bool ConnectorImpl::handleCPIRQ()
                 //
                 if (bReAuthReq)
                 {
+                    // No need forceClear.
                     main->configureAndTriggerECF(0x0);
                 }
 
@@ -6799,8 +7059,14 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
 
     //
     // Cancel pending HDCP authentication callbacks if have or may interrupt
-    // active link training that violates spec.
+    // active link training that violates spec. Snapshot the pending state
+    // first so it can be restored below once training is done -- callers
+    // like notifyShortPulse()'s link-loss retrain invoke train() with no
+    // later notifyAttachEnd to re-arm HDCP, so a bare cancel here would
+    // permanently drop any HDCP re-authentication that was already queued.
     //
+    bool bHDCPAuthTriggered = this->isHDCPAuthTriggered;
+    bool bHDCPReAuthPending = this->isHDCPReAuthPending;
     cancelHdcpCallbacks();
 
     if (!lConfig.multistream)
@@ -6930,6 +7196,19 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     {
         // update PSR link cache on successful LT
         this->psrLinkConfig = activeLinkConfig;
+    }
+
+    //
+    // Re-arm HDCP re-authentication that was cancelled above, but only if the
+    // link came back up -- if training failed or the link was powered down
+    // (lanes == 0), there's nothing to re-authenticate against.
+    //
+    if ((bHDCPAuthTriggered || bHDCPReAuthPending) && result && (activeLinkConfig.lanes != 0))
+    {
+        this->isHDCPAuthTriggered = bHDCPAuthTriggered;
+        this->isHDCPReAuthPending = bHDCPReAuthPending;
+        timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN,
+                             false /* not allowed in sleep */);
     }
 
     return result;
@@ -9013,7 +9292,6 @@ bool ConnectorImpl::hdcpValidateKsv(const NvU8 *ksv, NvU32 Size)
 void ConnectorImpl::cancelHdcpCallbacks()
 {
     this->isHDCPReAuthPending = false;
-    this->isHDCPAuthTriggered = false;
     this->authRetries = 0;
 
     timer->cancelCallback(this, &tagHDCPReauthentication);      // Cancel any queue the auth callback.

@@ -124,7 +124,9 @@ namespace DisplayPort
         bool    isDP12AuthCap;                  // To tell whether this DP1.2 connector/ upmost device has the authentication Cap.
         bool    isHDCPAuthOn;                   // To tell whether this connector has the authentication on.
         bool    isHDCPReAuthPending;            // To tell whether HDCP Auth is pending (at every stream addition and cleared at handler).
-        bool    isHDCPAuthTriggered;            // To tell whether HDCP Auth is triggered and only cleared at unplug/device detach for MST.
+        bool    isHDCPAuthTriggered;            // To tell whether HDCP Auth is triggered. Only cleared at last-group detach (activeGroups
+                                                 // isEmpty()); deliberately NOT cleared at HPD high/low or in cancelHdcpCallbacks(), so it
+                                                 // is kept true as long as possible to avoid racing a real in-flight reAuth's CP_IRQ.
         bool    isHopLimitExceeded;             // To tell the current topology is over limitation.
         bool    bIsDiscoveryDetectActive;       // To tell device discovery is active ( isDiscoveryDetectComplete is also used as DD notify and not want to impacts that. )
         bool    bNotifyDetectCompletePending;   // To tell if we are pending to notify detect complete to client.
@@ -642,8 +644,7 @@ namespace DisplayPort
             unsigned headIndex,
             ModesetInfo modesetInfo);
 
-        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
-                                                    bool bSameTimings);
+        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc);
 
         virtual bool isLinkTrainingNeededForModeset(ModesetInfo modesetInfo);
 

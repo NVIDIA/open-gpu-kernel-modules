@@ -378,6 +378,7 @@ eventapiInit_IMPL
         rmStatus = serverGetClientUnderLock(&g_resServ, hNotifierClient, &pNotifierClient);
         if (rmStatus != NV_OK)
             return rmStatus;
+
     }
     else
     {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 /* ------------------------ Includes --------------------------------------- */
 #include "ctrl/ctrl2080/ctrl2080clk.h"
 #include "ctrl/ctrl2080/ctrl2080perf.h"
+
 #include "os/os.h"
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rmapi.h"
@@ -101,7 +102,8 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
     OBJGPU   *pGpu   = GPU_RES_GET_GPU(pSubdevice);
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *pSample;
-    NvU32 numEntries, index, nsPid;
+    NvU32 numEntries, index;
+    NvU32 nsPid;
 
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CLKS_IN_TEGRA_SOC))
     {
@@ -116,7 +118,7 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
                              pParams,
                              sizeof(*pParams)));
 
-    // Skip translation if the request from root namespace.
+    // Skip translation if the request is from the root namespace.
     if (osIsInitNs())
         return NV_OK;
 

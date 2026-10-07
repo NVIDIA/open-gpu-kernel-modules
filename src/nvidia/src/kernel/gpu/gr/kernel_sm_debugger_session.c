@@ -23,6 +23,7 @@
 
 #define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
+
 #include "kernel/os/os.h"
 #include "kernel/core/locks.h"
 #include "kernel/gpu/gr/kernel_sm_debugger_session.h"
@@ -55,6 +56,7 @@
     } while (0);
 
 static NV_STATUS _ShareDebugger(KernelSMDebuggerSession *, RsResourceRef *, RsResourceRef *);
+static void _ksmdbgssnCleanup(KernelSMDebuggerSession *, OBJGPU *, NvBool);
 
 void
 dbgSessionRemoveDependant_IMPL
@@ -209,6 +211,33 @@ failed:
     return status;
 }
 
+static void
+_ksmdbgssnCleanup
+(
+    KernelSMDebuggerSession *pKernelSMDebuggerSession,
+    OBJGPU                  *pGpu,
+    NvBool                   bRegistered
+)
+{
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    if (bRegistered ||
+        (pKernelSMDebuggerSession->hInternalClient != NV01_NULL_OBJECT))
+    {
+        pRmApi->Free(pRmApi,
+                     pKernelSMDebuggerSession->hInternalClient,
+                     pKernelSMDebuggerSession->hInternalClient);
+    }
+
+    if (bRegistered)
+    {
+        kgrctxDeregisterKernelSMDebuggerSession(pGpu,
+            kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
+            pKernelSMDebuggerSession);
+    }
+
+}
+
 NV_STATUS
 ksmdbgssnConstruct_IMPL
 (
@@ -350,6 +379,7 @@ ksmdbgssnConstruct_IMPL
         _ShareDebugger(pKernelSMDebuggerSession, pCallContext->pResourceRef, pGrResourceRef));
 
     return status;
+
 }
 
 /**
@@ -444,15 +474,9 @@ ksmdbgssnFreeCallback_IMPL
     KernelSMDebuggerSession *pKernelSMDebuggerSession
 )
 {
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    // This should free the entire hierarchy of objects.
-    pRmApi->Free(pRmApi, pKernelSMDebuggerSession->hInternalClient, pKernelSMDebuggerSession->hInternalClient);
-
-    // Remove it from the pObject debugger list
-    kgrctxDeregisterKernelSMDebuggerSession(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject), pKernelSMDebuggerSession);
-
+    _ksmdbgssnCleanup(pKernelSMDebuggerSession, pGpu, NV_TRUE);
 }
 
 NV_STATUS

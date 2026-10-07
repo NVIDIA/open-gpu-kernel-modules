@@ -41,6 +41,35 @@
 
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 
+static NV_STATUS
+_sysmemScrubScanoutCarveout
+(
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    void *pMap;
+
+    NV_ASSERT_OR_RETURN(memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_CPU), NV_ERR_INVALID_STATE);
+
+    pMap = osMapKernelSpace(memdescGetPhysAddr(pMemDesc, AT_CPU, 0),
+                            pMemDesc->Size,
+                            memdescGetCpuCacheAttrib(pMemDesc),
+                            NV_PROTECT_READ_WRITE);
+    if (pMap == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to map scanout carveout allocation for CPU scrub\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    portMemSet(pMap, 0, pMemDesc->Size);
+    osUnmapKernelSpace(pMap, pMemDesc->Size);
+
+    return NV_OK;
+}
+
 static NvU64
 _sysmemGetNextSmallestPageSize
 (
@@ -389,6 +418,9 @@ sysmemConstruct_IMPL
 
         NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
 
+        rmStatus = _sysmemScrubScanoutCarveout(pMemDesc);
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_scanout_carveout);
+
         sizeOut = pMemDesc->Size;
         pAllocData->limit = sizeOut - 1;
     }
@@ -584,6 +616,7 @@ sysmemConstruct_IMPL
     {
         // UNLOCK: release GPUs lock
         rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        bLockAcquired = NV_FALSE;
     }
 
     return rmStatus;
@@ -596,10 +629,17 @@ failed_free_memdesc:
     {
         // UNLOCK: release GPUs lock
         rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        bLockAcquired = NV_FALSE;
     }
 
     memdescFree(pMemDesc);
 failed_free_scanout_carveout:
+    if (bLockAcquired)
+    {
+        // UNLOCK: release GPUs lock
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        bLockAcquired = NV_FALSE;
+    }
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) {
         memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
                                                  memdescGetPte(pMemDesc, AT_CPU, 0));

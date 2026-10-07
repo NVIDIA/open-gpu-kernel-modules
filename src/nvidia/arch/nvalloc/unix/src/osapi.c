@@ -691,8 +691,8 @@ done:
 }
 
 static NV_STATUS free_os_event(
-    NvHandle    hParent,
-    NvU32       fd
+    NvHandle            hParent,
+    NvU32               fd
 )
 {
     nv_state_t *nv = nv_get_ctl_state();
@@ -703,7 +703,8 @@ static NV_STATUS free_os_event(
     tmp = event = nv->event_list;
     while (event)
     {
-        if ((event->fd == fd) && (event->hParent == hParent))
+        if ((event->fd == fd) && (event->hParent == hParent)
+           )
         {
             if (event == nv->event_list)
                 nv->event_list = event->next;
@@ -3043,7 +3044,8 @@ NV_STATUS NV_API_CALL rm_ioctl(
                 break;
             }
 
-            pApi->Status = free_os_event(pApi->hClient, pApi->fd);
+            pApi->Status = free_os_event(
+                pApi->hClient, pApi->fd);
             break;
         }
         case NV_ESC_RM_GET_EVENT_DATA:
@@ -4636,9 +4638,9 @@ void NV_API_CALL rm_power_source_change_event(
                 }
                 os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
             }
-            // UNLOCK: release API lock
-            rmapiLockRelease();
         }
+        // UNLOCK: release API lock
+        rmapiLockRelease();
     }
 
     if (rmStatus != NV_OK)

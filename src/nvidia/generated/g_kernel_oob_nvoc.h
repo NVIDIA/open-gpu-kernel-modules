@@ -161,6 +161,7 @@ struct KernelOob {
 //  NvBool PDB_PROP_KOOB_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
+    NvBool bLoaded;
     NvU32 registryOverride;
     NvBool bSupported;
     struct IoAperture mboxAperture;

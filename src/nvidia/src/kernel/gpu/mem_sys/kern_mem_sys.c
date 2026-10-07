@@ -323,32 +323,27 @@ kmemsysStatePostLoad_IMPL
     }
 
     //
-    // GB20Y iGPU family (GB20B...): After the ACR HW scrubber zeros the CBC
-    // backing store in DRAM, invalidate the L2 cache (including the CBC
-    // comptag cache) so the LTC discards any stale entries and re-reads
-    // from the clean backing store on first access.
+    // Bug 5947582 / Bug 6760855: SOC SDM iGPUs (GB10B/GB20B/GB20C and
+    // future) — invalidate the L2 cache (including the CBC comptag cache)
+    // on every StatePostLoad so the LTC discards stale entries and re-reads
+    // from the CBC SR backing store in DRAM.
     //
-    // gpuRequiresCbcSrScrub_HAL returns NV_TRUE for GB20Y... chips on
-    // coldboot, FLR, hibernate-resume, and driver reload — exactly the
-    // scenarios where ACR scrubs the CBC SR region.  It returns NV_FALSE
-    // for sleep resume and GC6 exit (state preserved) and for all other
-    // chip families (default HAL returns NV_FALSE).
+    // This covers coldboot, FLR, hibernate-resume, driver reload, AND sleep
+    // resume.  HW DRIPS power-gates the LTC SRAM during sleep, destroying
+    // CBC content, so the invalidation is needed on every resume path.
     //
     // Pure invalidate (FLAGS_ALL without FLAGS_CLEAN) so we discard L2
     // entries rather than writing potentially stale data back to DRAM.
     //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
     {
-        NvBool bCbcScrub = gpuRequiresCbcSrScrub_HAL(pGpu);
-        if (bCbcScrub)
+        NV_STATUS l2Status;
+        l2Status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem,
+                       NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_ALL);
+        if (l2Status != NV_OK)
         {
-            NV_STATUS l2Status;
-            l2Status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem,
-                           NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_ALL);
-            if (l2Status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_WARNING,
-                          "L2 CBC cache invalidate failed: 0x%x\n", l2Status);
-            }
+            NV_PRINTF(LEVEL_WARNING,
+                      "L2 CBC cache invalidate failed: 0x%x\n", l2Status);
         }
     }
 

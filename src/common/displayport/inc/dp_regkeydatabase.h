@@ -149,6 +149,16 @@
 // Enable per-device caching of panel FW checksum (DPCD 0x040A/0x040B) via regkey
 #define NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE  "DP_ENABLE_PANEL_FW_REVISION_CACHE"
 
+// Disable adopting the DIA aggregated downstream DPCD rev as the policy rev on
+// internal DP tunneling links.
+#define NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR "DISABLE_DP_TUN_DIA_DPCD_REV_WAR"
+
+//
+// Widen the DP tunneling DIA SW auto-read WAR to sinks of any OUI.
+// This does not bypass the DP tunneling and RM capability checks.
+//
+#define NV_DP_REGKEY_ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS "ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS"
+
 //
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
@@ -208,6 +218,8 @@ struct DP_REGKEY_DATABASE
     bool  bDisableDpTunLttprCapsChunkRead;
     bool  bDisableFecOnEdp;
     bool  bEnablePanelFwRevisionCache;
+    bool  bDisableDpTunDiaDpcdRevWar;
+    bool  bEnableDpTunSwAutoReadWarAllSinks;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

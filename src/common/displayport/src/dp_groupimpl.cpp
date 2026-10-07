@@ -426,8 +426,67 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
 
         if(!parent->isHDCPAuthOn || bNeedReNegotiate)
         {
+            //
+            // Bug 6472337: Renegotiate for MST needs to disable ECF ( uproc would disable HW encryption ).
+            // Here need to forceClear and addStreamBack or cannot clear under encrypted state.
+            //
+            // Bug 6755367: It would see transient blank with forceClear, wait add streams back.
+            // Repro is on the same legacy 8b/10b MST config as bug 6472337, so narrow this to
+            // N1X (GLOBAL_FEATURE_DP_TUNNELING_T25X) only, which is what bug 6472337's stuck
+            // state actually depends on. 128b132b is additionally excluded (on chips that also
+            // have GR1686_DISPLAYPORT_BLACKWELL) since the issue this force-clear protects
+            // against is 8b/10b-only regardless of tunneling. 2Head1OR (DSC_DUAL/DSC_DROP) is
+            // also excluded, since it doesn't reproduce bug 6472337's stuck state without this
+            // force-clear, so excluding it avoids the unneeded transient blank. The build-time
+            // config check above only reflects chip capability; also require both source
+            // (main->isInternalDpTunnelingSupported) and sink (parent->isDpInTunnelingSupported)
+            // to confirm the active link is actually a DP tunneling connection at runtime.
+            //
+            if (bNeedReNegotiate
+                && !linkConfig.bIs128b132bChannelCoding
+                && (this->lastModesetInfo.mode != DSC_DUAL)
+                && (this->lastModesetInfo.mode != DSC_DROP)
+                && parent->linkUseMultistream()
+                && parent->main->isInternalDpTunnelingSupported()
+                && parent->isDpInTunnelingSupported())
+            {
+                //
+                // Compute ECF with only this group's timeslot bits cleared, leaving every
+                // other currently-encrypted group's bits untouched — same mask math the
+                // disable branch below uses. Passing plain 0x0 here would force-clear
+                // every encrypted head on this SOR, not just this group (uproc iterates
+                // headOwnerMask and force-clears any head whose requested bits differ
+                // from current, see hdcp22wired_hdcp22wired0401.c).
+                //
+                NvU64 ecf = 0x0;
+                NvU64 countOnes, mask;
+                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+                    if (group->hdcpEnabled)
+                    {
+                        // Note: no 128b/132b 64-timeslot special-case here (unlike the disable
+                        // branch below) — this block only runs when !bIs128b132bChannelCoding.
+                        countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+                        mask = countOnes << group->timeslot.begin;
+                        ecf |= mask;
+                    }
+                }
+                countOnes = (((NvU64)1) << this->timeslot.count) - 1;
+                mask = countOnes << this->timeslot.begin;
+                ecf &= ~mask;
+
+                parent->main->configureAndTriggerECF(ecf, NV_TRUE, NV_TRUE);
+
+                // Force clear just zeroed HW encryption for this group; don't let
+                // hdcpGetEncrypted() report it as protected until renegotiate below
+                // resolves the real state.
+                this->hdcpEnabled = false;
+            }
+
             cancelHdcpCallbacks();
 
+            parent->isHDCPAuthTriggered = true;
             parent->main->configureHDCPRenegotiate();
             parent->main->configureHDCPGetHDCPState(hdcpState);
             if (hdcpState.HDCP_State_Encryption)

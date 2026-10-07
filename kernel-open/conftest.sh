@@ -5367,7 +5367,7 @@ compile_test() {
             CODE="
             #include <asm/page.h>
             int conftest_pfn_is_map_memory(void) {
-                return pfn_is_map_memory();
+                return pfn_is_map_memory(0);
             }"
             compile_check_conftest "$CODE" "NV_PFN_IS_MAP_MEMORY_PRESENT" "" "functions"
         ;;
@@ -5385,6 +5385,33 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_DMEM_CGROUP_PRESENT" "" "types"
+        ;;
+
+        dmem_cgroup_register_region_has_init_arg)
+            #
+            # Determine if dmem_cgroup_register_region() takes a
+            # 'const struct dmem_cgroup_init *' argument.
+            #
+            # Commit e11640b9cea4 ("cgroup/dmem: Introduce struct
+            # dmem_cgroup_init for region initialization") changed the first
+            # argument from 'u64 size' to 'const struct dmem_cgroup_init *'
+            # in Linux 7.3.
+            #
+            CODE="
+            #include <linux/cgroup_dmem.h>
+
+            typeof(dmem_cgroup_register_region)
+                conftest_dmem_cgroup_register_region_has_init_arg;
+
+            struct dmem_cgroup_region *
+            conftest_dmem_cgroup_register_region_has_init_arg(
+                const struct dmem_cgroup_init *init,
+                const char *name_fmt, ...)
+            {
+                return NULL;
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG" "" "types"
         ;;
 
         misc_cgrp_id)
@@ -5462,6 +5489,7 @@ compile_test() {
             # calls for common alloc/free page calls") in 6.12
             #
             CODE="
+            #include <linux/dma-mapping.h>
             #if defined(NV_LINUX_IOMMU_DMA_H_PRESENT)
             #include <linux/iommu-dma.h>
             #endif
@@ -5527,6 +5555,108 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT" "" "functions"
+        ;;
+
+        drm_atomic_helper_connector_state_init)
+            #
+            # Determine if __drm_atomic_helper_connector_state_init is present.
+            #
+            # Added by commit b74940afe5bc ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_connector_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_connector_state_init() {
+                __drm_atomic_helper_connector_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CONNECTOR_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_crtc_state_init)
+            #
+            # Determine if __drm_atomic_helper_crtc_state_init is present.
+            #
+            # Added by commit 915fdd2c7e87 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_crtc_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_crtc_state_init() {
+                __drm_atomic_helper_crtc_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CRTC_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_plane_state_init)
+            #
+            # Determine if __drm_atomic_helper_plane_state_init is present.
+            #
+            # Added by commit 3e5656ea5e73 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_plane_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_plane_state_init() {
+                __drm_atomic_helper_plane_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_PLANE_STATE_INIT" "" "functions"
+        ;;
+
+        drm_connector_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_connector_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 6db0e11f4806 ("drm/connector: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_connector_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_connector_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_crtc_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_crtc_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 58d426b5ed0d ("drm/crtc: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_crtc_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_crtc_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_plane_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_plane_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 1a185ddecaf9 ("drm/plane: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_plane_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_plane_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
