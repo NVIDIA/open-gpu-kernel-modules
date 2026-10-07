@@ -32,6 +32,7 @@
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/gsp/gsp_init_args.h"
@@ -575,7 +576,6 @@ gpuEnterStandby_IMPL(OBJGPU *pGpu)
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH, NV_TRUE);
 
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POWER_SUSPEND, NULL, 0, 0, 0);
-
     suspendStatus = gpuPowerManagementEnter(pGpu, NV2080_CTRL_GPU_SET_POWER_STATE_GPU_LEVEL_3, GPU_STATE_FLAGS_PM_SUSPEND);
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_STANDBY, NV_TRUE);

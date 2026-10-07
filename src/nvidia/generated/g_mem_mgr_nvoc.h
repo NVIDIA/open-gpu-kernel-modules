@@ -1609,24 +1609,6 @@ static inline NV_STATUS memmgrCalculateHeapOffsetWithGSP(OBJGPU *pGpu, struct Me
 #endif // __nvoc_mem_mgr_h_disabled
 
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrSaveDisplayFrmReservedRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_mem_mgr_h_disabled
-#define memmgrSaveDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrSaveDisplayFrmReservedRegion_395e98(pGpu, pMemoryManager)
-#endif // __nvoc_mem_mgr_h_disabled
-
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrRestoreDisplayFrmReservedRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_mem_mgr_h_disabled
-#define memmgrRestoreDisplayFrmReservedRegion(pGpu, pMemoryManager) memmgrRestoreDisplayFrmReservedRegion_395e98(pGpu, pMemoryManager)
-#endif // __nvoc_mem_mgr_h_disabled
-
-#ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryManager *pMemoryManager, NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
@@ -1921,8 +1903,6 @@ static inline NV_STATUS memmgrGetCarveoutRegionInfo(POBJGPU pGpu, struct MemoryM
 #define memmgrDuplicateFromScanoutCarveoutRegion_FNPTR(pMemoryManager) pMemoryManager->__memmgrDuplicateFromScanoutCarveoutRegion__
 #define memmgrDuplicateFromScanoutCarveoutRegion(pGpu, pMemoryManager, pMemDesc) memmgrDuplicateFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
 #define memmgrDuplicateFromScanoutCarveoutRegion_HAL(pGpu, pMemoryManager, pMemDesc) memmgrDuplicateFromScanoutCarveoutRegion_DISPATCH(pGpu, pMemoryManager, pMemDesc)
-#define memmgrSaveDisplayFrmReservedRegion_HAL(pGpu, pMemoryManager) memmgrSaveDisplayFrmReservedRegion(pGpu, pMemoryManager)
-#define memmgrRestoreDisplayFrmReservedRegion_HAL(pGpu, pMemoryManager) memmgrRestoreDisplayFrmReservedRegion(pGpu, pMemoryManager)
 #define memmgrGetCarveoutRegionInfo_HAL(pGpu, pMemoryManager, pParams) memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, pParams)
 #define memmgrIsMemoryIoCoherent_FNPTR(pMemoryManager) pMemoryManager->__memmgrIsMemoryIoCoherent__
 #define memmgrIsMemoryIoCoherent(pGpu, pMemoryManager, pAllocData) memmgrIsMemoryIoCoherent_DISPATCH(pGpu, pMemoryManager, pAllocData)
@@ -3066,14 +3046,6 @@ static inline NV_STATUS memmgrDestroyScanoutCarveoutHeap_395e98(OBJGPU *pGpu, st
 }
 
 static inline NV_STATUS memmgrDuplicateFromScanoutCarveoutRegion_395e98(POBJGPU pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR pMemDesc){
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS memmgrSaveDisplayFrmReservedRegion_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS memmgrRestoreDisplayFrmReservedRegion_395e98(OBJGPU *pGpu, struct MemoryManager *pMemoryManager){
     return NV_ERR_NOT_SUPPORTED;
 }
 

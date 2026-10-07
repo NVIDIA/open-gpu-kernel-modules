@@ -1977,6 +1977,13 @@ NV_STATUS NV_API_CALL os_numa_memblock_size
     return NV_OK;
 }
 
+/*
+ * Allocates an anonymous file to be used only within the kernel.
+ *
+ * This file may bypass LSM checks such as SELinux, so it is important that this
+ * file never be mapped, linked into the filesystem, or assigned a file
+ * descriptor unless access control is checked by the caller.
+ */
 NV_STATUS NV_API_CALL os_allocate_temporary_file
 (
     void **ppFile,
@@ -1992,9 +1999,15 @@ NV_STATUS NV_API_CALL os_allocate_temporary_file
     if (!path)
     {
 #if defined(mk_vma_flags)
-        file = shmem_file_setup("nvidia-tmp", 0, mk_vma_flags(VMA_NORESERVE_BIT));
+#define NV_VMA_NORESERVE mk_vma_flags(VMA_NORESERVE_BIT)
 #else
-        file = shmem_file_setup("nvidia-tmp", 0, VM_NORESERVE);
+#define NV_VMA_NORESERVE VM_NORESERVE
+#endif
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_shmem_kernel_file_setup
+        file = shmem_kernel_file_setup("nvidia-tmp", 0, NV_VMA_NORESERVE);
+#else
+        file = shmem_file_setup("nvidia-tmp", 0, NV_VMA_NORESERVE);
 #endif
         if (!IS_ERR(file))
         {
@@ -2979,6 +2992,9 @@ NvU32 NV_API_CALL os_cgroup_implementation(void)
 
 void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo, int impl)
 {
+    void *cgrp = NULL;
+
+#if defined(NV_DMEM_CGROUP_PRESENT) || defined(NV_MISC_CGROUP_PRESENT)
     struct task_struct *task;
     struct pid *p;
     int subsys_id;
@@ -3010,7 +3026,9 @@ void* NV_API_CALL os_cgroup_for_pid(int pid, void *pidInfo, int impl)
         default:
             return NULL;
     }
-    return task_cgroup(task, subsys_id);
+    cgrp = task_cgroup(task, subsys_id);
+#endif
+    return cgrp;
 }
 
 #if defined(NV_DMEM_CGROUP_PRESENT) || defined(NV_MISC_CGROUP_PRESENT)
@@ -3028,7 +3046,16 @@ void* NV_API_CALL os_cgroup_parent(void *cgroup) { return NULL; }
 #if defined(NV_DMEM_CGROUP_PRESENT)
 void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, NvU64 precharge, void **prechargePool)
 {
-    void *region = dmem_cgroup_register_region(size, name);
+    void *region;
+#if defined(NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG)
+    const struct dmem_cgroup_init init =
+    {
+        .size = size,
+    };
+    region = dmem_cgroup_register_region(&init, name);
+#else
+    region = dmem_cgroup_register_region(size, name);
+#endif
     if (IS_ERR(region))
     {
         return NULL;

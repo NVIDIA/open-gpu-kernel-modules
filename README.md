@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 615.71.09.
+version 615.78.08.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-615.71.09 driver release.  This can be achieved by installing
+615.78.08 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -186,7 +186,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/615.71.09/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/615.78.08/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -1030,3 +1030,4 @@ Subsystem Device ID.
 | NVIDIA B300 SXM6 AC                                     | 3182 10DE 20E6 |
 | NVIDIA GB300                                            | 31C2 10DE 21F1 |
 | NVIDIA GB300                                            | 31C3 10DE 22F8 |
+| NVIDIA GB300-252                                        | 31C3 10DE 23AB |

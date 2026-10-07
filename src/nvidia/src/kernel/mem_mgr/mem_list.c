@@ -510,7 +510,6 @@ continue_alloc_object:
         }
         pPteArray = memdescGetPteArray(pMemDesc, AT_GPU);
         // copy in the pages
-        // copy in the pages
         status = rmapiParamsCopyIn(NULL,
                                    pPteArray,
                                    pAllocParams->pageNumberList,

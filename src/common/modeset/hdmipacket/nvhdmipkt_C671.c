@@ -516,9 +516,16 @@ static void populateDscCaps(HDMI_SRC_CAPS         const * const pSrcCaps,
 
     NvU32 sliceCountMask = 0;
     NvU32 maxNumHztSlices = pSinkCaps->pHdmiForumInfo->dsc_MaxSlices;
-    NvU32 peakThroughput = (pSinkCaps->pHdmiForumInfo->dsc_MaxPclkPerSliceMHz == 400) ?
-                                DSC_DECODER_PEAK_THROUGHPUT_MODE0_400 :
-                                DSC_DECODER_PEAK_THROUGHPUT_MODE0_340;
+    NvU32 peakThroughput;
+
+    // HDMI 2.1b and HDMI 2.2 add 600 MHz and 900 MHz per-slice throughput caps.
+    switch (pSinkCaps->pHdmiForumInfo->dsc_MaxPclkPerSliceMHz)
+    {
+    case 900: peakThroughput = DSC_DECODER_PEAK_THROUGHPUT_MODE0_900; break;
+    case 600: peakThroughput = DSC_DECODER_PEAK_THROUGHPUT_MODE0_600; break;
+    case 400: peakThroughput = DSC_DECODER_PEAK_THROUGHPUT_MODE0_400; break;
+    default:  peakThroughput = DSC_DECODER_PEAK_THROUGHPUT_MODE0_340; break;
+    }
 
     switch(pSinkCaps->pHdmiForumInfo->dsc_MaxSlices)
     {
@@ -548,8 +555,21 @@ static void populateDscCaps(HDMI_SRC_CAPS         const * const pSrcCaps,
 
     // Per DSC v1.2 spec, native 422/420 per-slice peak throughput is approximately twice of RGB/444 peak throughput
     // HDMI has only one throughput cap reporting, no separate 422/420 throughput cap unlike for DP, so just double 444's value here.
-    pDscInfo->sinkCaps.peakThroughputMode1 = (peakThroughput == DSC_DECODER_PEAK_THROUGHPUT_MODE0_340) ? 
-                                                 DSC_DECODER_PEAK_THROUGHPUT_MODE1_680 : DSC_DECODER_PEAK_THROUGHPUT_MODE1_800;
+    switch (peakThroughput)
+    {
+    case DSC_DECODER_PEAK_THROUGHPUT_MODE0_900:
+        pDscInfo->sinkCaps.peakThroughputMode1 = DSC_DECODER_PEAK_THROUGHPUT_MODE1_1800;
+        break;
+    case DSC_DECODER_PEAK_THROUGHPUT_MODE0_600:
+        pDscInfo->sinkCaps.peakThroughputMode1 = DSC_DECODER_PEAK_THROUGHPUT_MODE1_1200;
+        break;
+    case DSC_DECODER_PEAK_THROUGHPUT_MODE0_400:
+        pDscInfo->sinkCaps.peakThroughputMode1 = DSC_DECODER_PEAK_THROUGHPUT_MODE1_800;
+        break;
+    default:
+        pDscInfo->sinkCaps.peakThroughputMode1 = DSC_DECODER_PEAK_THROUGHPUT_MODE1_680;
+        break;
+    }
 }
 
 // Fill in mode related info for DSC lib

@@ -124,7 +124,9 @@ const struct
     {NV_DP_REGKEY_ENABLE_SST_EDID_RECOVERY_FIX,             &dpRegkeyDatabase.bEnableSstEdidRecoveryFix,          DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR, &dpRegkeyDatabase.bDisableDpTunLttprCapsChunkRead,    DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_FEC_ON_EDP,                       &dpRegkeyDatabase.bDisableFecOnEdp,                   DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE,           &dpRegkeyDatabase.bEnablePanelFwRevisionCache,        DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE,           &dpRegkeyDatabase.bEnablePanelFwRevisionCache,        DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR,          &dpRegkeyDatabase.bDisableDpTunDiaDpcdRevWar,         DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS, &dpRegkeyDatabase.bEnableDpTunSwAutoReadWarAllSinks,  DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -361,9 +363,16 @@ void EvoMainLink::setDpWarFlag(NvU32 warId, bool bEnable)
     params.bEnable = bEnable ? NV_TRUE : NV_FALSE;
 
     NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_WAR_FLAGS, &params, sizeof params);
-    if (ret != NVOS_STATUS_SUCCESS)
+
+    //
+    // RM implements this control only where RMCFG_FEATURE_DP_TUNNELING is
+    // enabled. The clear runs on every plug and unplug, so ignore ERROR_NOT_SUPPORTED instead of
+    // logging it on every hotplug on GPUs that cannot have the WAR at all.
+    //
+    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED)
     {
-        DP_PRINTF(DP_ERROR, "setDpWarFlag failed!");
+        DP_PRINTF(DP_WARNING, "setDpWarFlag failed (warId: 0x%x, bEnable: %d, status: 0x%x)",
+                  warId, bEnable, ret);
     }
 }
 
@@ -377,9 +386,10 @@ void EvoMainLink::configureAndTriggerECF(NvU64 ecf, NvBool bForceClearEcf, NvBoo
     // ForceClearECF will delete DP MST Time slots along with ECF from GA10X and Later
     // if ADD Stream Back is set then it will add back same time slots after clearing ECF
     // bForceClear = TRUE should be set to have significance for bAddStreamBack
-    // bForceClear will be only set in case of Detach Stream/Flush mode
-    // bAddStream will also be set only in case of QSES error scenario
-    // In all other cases these are set to FALSE
+    // bForceClear will be set in case of Detach Stream/Flush mode, QSES error scenario,
+    // or MST HDCP content-type reAuth (GroupImpl::hdcpSetEncrypted, bNeedReNegotiate) —
+    // the latter deletes/re-adds time slots for the whole SOR, not just the group whose
+    // type changed. In all other cases these are set to FALSE.
     //
     params.bForceClearEcf = bForceClearEcf;
     params.bAddStreamBack = bAddStreamBack;
@@ -1201,6 +1211,26 @@ void EvoAuxBus::setDevicePlugged(bool plugged)
 void EvoAuxBus::setGpuDPSupportedVersions(NvU32 dpVersionsSupported)
 {
     gpuSupportedDpVersions = dpVersionsSupported;
+}
+
+NvU32 EvoAuxBus::getDpTunnelingDownstreamDpcdRev()
+{
+    NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS params = {0};
+    params.subDeviceInstance = this->subdeviceIndex;
+    params.displayId = this->displayId;
+    params.warId = NV0073_CTRL_DP_WAR_DATA_DIA_DPCD_REV;
+
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_WAR_DATA,
+                                       &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_WARNING,
+                  "DP> Failed to read DIA aggregated DPCD rev, status 0x%08x", ret);
+        return 0;
+    }
+
+    // Zero when the display is not on a DP IN adapter.
+    return params.data;
 }
 
 void EvoMainLink::preLinkTraining(NvU32 head)

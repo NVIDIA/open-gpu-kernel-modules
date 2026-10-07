@@ -2690,6 +2690,16 @@ static inline NV_STATUS dispcmnCtrlCmdDpSetWarFlags(struct DispCommon *pDispComm
 #define dispcmnCtrlCmdDpSetWarFlags(pDispCommon, pParams) dispcmnCtrlCmdDpSetWarFlags_IMPL(pDispCommon, pParams)
 #endif // __nvoc_disp_objs_h_disabled
 
+NV_STATUS dispcmnCtrlCmdDpGetWarData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS *pParams);
+#ifdef __nvoc_disp_objs_h_disabled
+static inline NV_STATUS dispcmnCtrlCmdDpGetWarData(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DispCommon was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_disp_objs_h_disabled
+#define dispcmnCtrlCmdDpGetWarData(pDispCommon, pParams) dispcmnCtrlCmdDpGetWarData_IMPL(pDispCommon, pParams)
+#endif // __nvoc_disp_objs_h_disabled
+
 NV_STATUS dispcmnCtrlCmdDpGetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams);
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispcmnCtrlCmdDpGetTestpattern(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams) {
@@ -3489,6 +3499,8 @@ NV_STATUS dispcmnCtrlCmdDpGetLaneData_IMPL(struct DispCommon *pDispCommon, NV007
 NV_STATUS dispcmnCtrlCmdDpSetLaneData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_LANE_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpSetWarFlags_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS *pParams);
+
+NV_STATUS dispcmnCtrlCmdDpGetWarData_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS *pParams);
 
 NV_STATUS dispcmnCtrlCmdDpGetTestpattern_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS *pParams);
 

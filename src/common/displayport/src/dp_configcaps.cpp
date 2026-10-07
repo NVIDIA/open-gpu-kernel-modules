@@ -235,6 +235,24 @@ void DPCDHALImpl::parseAndReadCaps()
     {
         caps.revisionMajor = DRF_VAL(_DPCD, _REV, _MAJOR, buffer[0]);
         caps.revisionMinor = DRF_VAL(_DPCD, _REV, _MINOR, buffer[0]);
+
+        if (isDpInTunnelingSupported() && bOverrideDpcdRevFromDia)
+        {
+            NvU32 diaDpcdRev = bus.getDirect()->getDpTunnelingDownstreamDpcdRev();
+
+            if ((DRF_VAL(_DPCD, _REV, _MAJOR, diaDpcdRev) == NV_DPCD_REV_MAJOR_1) &&
+                (DRF_VAL(_DPCD, _REV, _MINOR, diaDpcdRev) == NV_DPCD_REV_MINOR_1))
+            {
+                DP_PRINTF(DP_NOTICE,
+                          "DPHAL> DP Tunneling DIA reports DPCD 1.1 sink, AUX reply was %d.%d. "
+                          "Using 1.1 as policy rev.",
+                          caps.revisionMajor, caps.revisionMinor);
+
+                caps.revisionMajor = NV_DPCD_REV_MAJOR_1;
+                caps.revisionMinor = NV_DPCD_REV_MINOR_1;
+            }
+        }
+
         if (isAtLeastVersion(1, 2))
         {
             //

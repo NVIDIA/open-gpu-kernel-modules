@@ -23,6 +23,7 @@
 
 /* ------------------------ Includes --------------------------------------- */
 #include "os/os.h"
+
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rs_utils.h"
@@ -36,6 +37,7 @@
 /* ------------------------ Static Function Prototypes --------------------- */
 /* ------------------------ Macros ----------------------------------------- */
 /* ------------------------ Public Functions ------------------------------- */
+
 /*!
  * @brief Retrieving the current requested RATED_TDP action corresponding
  * to the specified client.

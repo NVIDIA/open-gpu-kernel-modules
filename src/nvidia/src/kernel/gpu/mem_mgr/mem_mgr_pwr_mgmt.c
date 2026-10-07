@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,7 +51,6 @@ memmgrSavePowerMgmtState_KERNEL
     NvU32     i;
     OBJFBSR  *pFbsr;
     NV_STATUS rmStatus = NV_OK;
-
 
     if (pGpu->pGpuArch->bGpuArchIsZeroFb ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
@@ -238,7 +237,6 @@ memmgrRestorePowerMgmtState_KERNEL
     NV_STATUS    status        = NV_OK;
     NvBool       bIsGpuLost    = NV_FALSE;
     RM_API      *pRmApi        = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-
 
     if (pGpu->pGpuArch->bGpuArchIsZeroFb ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))

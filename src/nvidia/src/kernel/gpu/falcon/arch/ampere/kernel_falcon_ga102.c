@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -383,8 +383,10 @@ kflcnDumpTracepc_GA102
     NvU64 pc;
     NvU32 ctl;
     NvU32 r, w, size;
+    NvU32 capacity;
     NvU32 entry;
     NvU32 count;
+    NvBool bFull = NV_FALSE;
 
     r = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_RDIDX);
     w = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_WTIDX);
@@ -398,29 +400,47 @@ kflcnDumpTracepc_GA102
 
     size = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _MAXIDX, r);
 
-    if (size > __RISCV_MAX_TRACE_ENTRIES)
+    // __RISCV_MAX_TRACE_ENTRIES is 64, this is the entry count allocated for pCore->tracePC[]
+    if (size > (__RISCV_MAX_TRACE_ENTRIES - 1))
     {
         NV_PRINTF(LEVEL_ERROR, "Trace buffer larger than expected. Bailing!\n");
         return;
     }
 
     r = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _RDIDX, r);
+
+    if (r > size)
+    {
+        return;
+    }
+
     w = DRF_VAL(_PRISCV_RISCV, _TRACE_WTIDX, _WTIDX, w);
 
-    ctl = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACECTL);
-
-    if ((w == r) && (DRF_VAL(_PRISCV_RISCV, _TRACECTL, _FULL, ctl) == 0))
+    if (w > size)
     {
-        count = 0;
+        return;
+    }
+
+    ctl = kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACECTL);
+    capacity = size + 1U;
+
+    if (DRF_VAL(_PRISCV_RISCV, _TRACECTL, _FULL, ctl))
+    {
+        bFull = NV_TRUE;
+    }
+
+    if (bFull)
+    {
+        //
+        // FULL indicates that the ring has wrapped at least once. All slots
+        // therefore contain valid trace entries, regardless of the indices.
+        //
+        count = capacity;
     }
     else
     {
-        //
-        // The number of entries in trace buffer is how far the w (put) pointer
-        // is ahead of the r (get) pointer. If this value is negative, add
-        // the size of the circular buffer to bring the element count back into range.
-        //
-        count = w > r ? w - r : w - r + size;
+        // WTIDX is the next write position; valid entries are [RDIDX, WTIDX).
+        count = (w + capacity - r) % capacity;
     }
 
     pCore->tracePCEntries = count;
@@ -429,9 +449,11 @@ kflcnDumpTracepc_GA102
     {
         for (entry = 0; entry < count; ++entry)
         {
-            if (entry > w)
-                w += size;
-            kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACE_RDIDX, w - entry);
+            // The stored trace is newest-to-oldest ordering
+            NvU32 index = (w + capacity - 1U - entry) % capacity;
+
+            kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn,
+                                   NV_PRISCV_RISCV_TRACE_RDIDX, index);
 
             pc = ((NvU64)kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACEPC_HI) << 32ull) |
                     kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_TRACEPC_LO);
@@ -446,7 +468,7 @@ kflcnDumpTracepc_GA102
 
 NV_STATUS kflcnCoreDumpPc_GA102(OBJGPU *pGpu, KernelFalcon *pKernelFlcn, NvU64 *pc)
 {
-    // 
+    //
     // This code originally handled 0xbadfxxxx values and returned failure,
     // however we may want to see badf values so it is now wired to return the read
     // register always. We want to also ensure any automated processing will know to

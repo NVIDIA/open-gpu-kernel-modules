@@ -96,6 +96,12 @@ void ConnectorImpl::applyOuiWARs()
 
 void ConnectorImpl2x::applyOuiWARs()
 {
+    //
+    // The regkey only extends the SW auto-read WAR to any OUI.
+    // It does not bypass the DP tunneling or RM capability checks.
+    //
+    bool bSwAutoReadWarNeeded = main->getRegkeyDatabase().bEnableDpTunSwAutoReadWarAllSinks;
+
     switch (ouiId)
     {
         // Novatek Microelectronics Corp.
@@ -127,19 +133,19 @@ void ConnectorImpl2x::applyOuiWARs()
             break;
 
         //
-        // Realtek DP sink (OUI 00:E0:4C, ouiId 0x4CE000, device "Dp1.4").
+        // Realtek DP sink (OUI 00:E0:4C), any model.
         //
         case 0x4CE000:
-            if ((modelName[0] == 'D') && (modelName[1] == 'p') && (modelName[2] == '1') &&
-                (modelName[3] == '.') && (modelName[4] == '4') &&
-                hal->isDpInTunnelingSupported() &&
-                main->isDpTunnelingHwBugWarEnabled())
-            {
-                main->setDpWarFlag(NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE, true);
-                this->bSwAutoReadWarActive = true;
-            }
+            bSwAutoReadWarNeeded = true;
             break;
+    }
 
+    if (bSwAutoReadWarNeeded &&
+        hal->isDpInTunnelingSupported() &&
+        main->isDpTunnelingHwBugWarEnabled())
+    {
+        main->setDpWarFlag(NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE, true);
+        this->bSwAutoReadWarActive = true;
     }
 }
 

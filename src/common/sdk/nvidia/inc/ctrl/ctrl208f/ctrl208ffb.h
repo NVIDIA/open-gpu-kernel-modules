@@ -836,4 +836,26 @@ typedef struct NV208F_CTRL_FB_SET_ROW_REMAP_FAILURE_FLAG_PARAMS {
     NvBool value;
 } NV208F_CTRL_FB_SET_ROW_REMAP_FAILURE_FLAG_PARAMS;
 
+/*
+ * NV208F_CTRL_CMD_FB_SET_XID92_THRESHOLD_ENABLEMENT
+ *
+ * This command enables or disables XID 92 threshold enforcement for FBPA SEC
+ * interrupt storms.
+ *
+ *  bEnable
+ *    When true, the threshold emits XID 92 and disables FBPA SEC interrupts.
+ *    When false, threshold-triggered XID 92 and interrupt disable actions are
+ *    skipped.
+ *
+ *  Possible status values returned are:
+ *    NV_OK
+ */
+#define NV208F_CTRL_CMD_FB_SET_XID92_THRESHOLD_ENABLEMENT (0x208f051dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_SET_XID92_THRESHOLD_ENABLEMENT_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_SET_XID92_THRESHOLD_ENABLEMENT_PARAMS_MESSAGE_ID (0x1dU)
+
+typedef struct NV208F_CTRL_FB_SET_XID92_THRESHOLD_ENABLEMENT_PARAMS {
+    NvBool bEnable;
+} NV208F_CTRL_FB_SET_XID92_THRESHOLD_ENABLEMENT_PARAMS;
+
 /* _ctrl208ffb_h_ */

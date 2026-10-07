@@ -1357,6 +1357,12 @@ DSC_GetPeakThroughputMps(NvU32 peak_throughput)
         case DSC_DECODER_PEAK_THROUGHPUT_MODE0_680:
             peak_throughput_mps = 680;
             break;
+        case DSC_DECODER_PEAK_THROUGHPUT_MODE1_1200:
+            peak_throughput_mps = 1200;
+            break;
+        case DSC_DECODER_PEAK_THROUGHPUT_MODE1_1800:
+            peak_throughput_mps = 1800;
+            break;
         default:
             peak_throughput_mps = 0;
     }

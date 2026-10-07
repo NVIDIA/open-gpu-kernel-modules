@@ -204,6 +204,7 @@ intrGetPendingNonStall_TU102
     NvU32           i, j;
     NvU32           pending;
     NvU32           intrVector;
+    NvU64           topNonStallMask;
 
     NV_ASSERT_OR_RETURN(pEngines != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -226,11 +227,15 @@ intrGetPendingNonStall_TU102
 
     NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
 
-    FOR_EACH_INDEX_IN_MASK(64, i, intrGetIntrTopNonStallMask_HAL(pGpu, pIntr))
+    topNonStallMask = intrGetIntrTopNonStallMask_HAL(pGpu, pIntr);
+
+    // Only INTR_TOP_0 is ever read
+    // guaranteed by ct_asserts in intrGetIntrTopNonStallMask*
+    pending = intrReadRegTop_HAL(pGpu, pIntr, 0, pThreadState);
+
+    FOR_EACH_INDEX_IN_MASK(64, i, topNonStallMask)
     {
-        j = NV_CTRL_INTR_SUBTREE_TO_TOP_IDX(i);
-        // TODO Bug 3823562: optimize this and don't read on every loop
-        pending = intrReadRegTop_HAL(pGpu, pIntr, j, pThreadState);
+        // i is never greater than 32 - see above
 
         if ((pending & (NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE_INTR_PENDING << NV_CTRL_INTR_SUBTREE_TO_TOP_BIT(i))) == 0)
         {

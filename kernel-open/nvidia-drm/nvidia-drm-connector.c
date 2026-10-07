@@ -266,6 +266,32 @@ done:
     return status;
 }
 
+#if defined(NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_connector_atomic_create_state - connector state creation hook
+ * @crtc: DRM connector
+ *
+ * Allocate an empty DRM connector state.
+ */
+static struct drm_connector_state *
+nv_drm_connector_atomic_create_state(struct drm_connector *connector)
+{
+    struct nv_drm_connector_state *nv_connector_state =
+        nv_drm_calloc(1, sizeof(*nv_connector_state));
+
+    if (!nv_connector_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+#if defined(NV_DRM_ATOMIC_HELPER_CONNECTOR_STATE_INIT)
+    __drm_atomic_helper_connector_state_init(&nv_connector_state->base, connector);
+#else
+    __drm_atomic_helper_connector_state_reset(&nv_connector_state->base, connector);
+#endif
+
+    return &nv_connector_state->base;
+}
+#else
 static void nv_drm_connector_reset(struct drm_connector *connector)
 {
     struct nv_drm_connector_state  * nv_connector_state =
@@ -285,6 +311,7 @@ static void nv_drm_connector_reset(struct drm_connector *connector)
 
     __drm_atomic_helper_connector_reset(connector, &nv_connector_state->base);
 }
+#endif
 
 static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struct drm_connector *connector)
 {
@@ -406,7 +433,11 @@ static int nv_drm_connector_atomic_get_property(
 
 static struct drm_connector_funcs nv_connector_funcs = {
     .destroy                = nv_drm_connector_destroy,
+#if defined(NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_connector_atomic_create_state,
+#else
     .reset                  = nv_drm_connector_reset,
+#endif
     .force                  = __nv_drm_connector_force,
     .detect                 = nv_drm_connector_detect,
     .fill_modes             = drm_helper_probe_single_connector_modes,

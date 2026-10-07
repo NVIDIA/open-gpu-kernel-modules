@@ -576,6 +576,7 @@ namespace DisplayPort
         virtual void     setIgnoreDiaNonLttprCrDoneStatus() = 0;
         virtual void     setOverrideExtendedWakeCapsForDpTunneling() = 0;
         virtual void     setChunkedLttprCapsReadForDpTunneling() = 0;
+        virtual void     setOverrideDpcdRevFromDia() = 0;
 
         virtual AuxRetry::status notifySDPErrDetectionCapability() = 0;
         virtual bool isDp2xChannelCodingCapable() = 0;
@@ -721,6 +722,7 @@ namespace DisplayPort
         bool bIsIgnoreDiaNonLttprCrDoneStatus;
         bool bOverrideExtendedWakeCapsForDpTunneling;
         bool bChunkedLttprCapsReadForDpTunneling;
+        bool bOverrideDpcdRevFromDia;
 
         struct
         {
@@ -811,7 +813,8 @@ namespace DisplayPort
           bIsIgnoreDiaLttprInterlaneAlignStatus(false),
           bIsIgnoreDiaNonLttprCrDoneStatus(false),
           bOverrideExtendedWakeCapsForDpTunneling(false),
-          bChunkedLttprCapsReadForDpTunneling(false)
+          bChunkedLttprCapsReadForDpTunneling(false),
+          bOverrideDpcdRevFromDia(false)
         {
             // start with default caps.
             dpcdOffline = true;
@@ -1553,6 +1556,11 @@ namespace DisplayPort
         virtual void setChunkedLttprCapsReadForDpTunneling()
         {
             bChunkedLttprCapsReadForDpTunneling = true;
+        }
+
+        virtual void setOverrideDpcdRevFromDia()
+        {
+            bOverrideDpcdRevFromDia = true;
         }
 
         bool getDpTunnelEstimatedBw(NvU8 &estimatedBw);
