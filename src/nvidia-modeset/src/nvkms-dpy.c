@@ -3712,7 +3712,8 @@ NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
 
             if (pDpyEvo->parsedEdid.valid &&
                 info->input.isDigital && info->version >= NVT_EDID_VER_1_4) {
-                if (info->input.u.digital.bpc < 8) {
+                if (info->input.u.digital.bpc != 0 &&
+                    info->input.u.digital.bpc < 8) {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
                     colorFormatsInfo.yuv444.maxBpc =
