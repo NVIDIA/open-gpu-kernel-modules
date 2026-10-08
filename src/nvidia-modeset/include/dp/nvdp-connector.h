@@ -40,6 +40,8 @@ void nvDPSetClientForcedConnected(NVConnectorEvoPtr pConnectorEvo,
 
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector);
 
+NvBool nvDPConnectorIsPlugged(const NVConnectorEvoRec *pConnectorEvo);
+
 void nvDPDestroyConnector(NVDPLibConnectorPtr pNVDpLibConnector);
 
 NVDPLibModesetStatePtr nvDPLibCreateModesetState(

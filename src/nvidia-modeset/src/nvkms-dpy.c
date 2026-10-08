@@ -3353,6 +3353,15 @@ NvBool nvDpyGetDynamicData(
         connectedList = nvDPLibDpyIsConnected(pDpyEvo) ?
             oneDpyIdList : nvEmptyDpyIdList();
     } else if (pRequest->forceConnected) {
+        if (nvConnectorUsesDPLib(pConnectorEvo) &&
+            !nvDPConnectorIsPlugged(pConnectorEvo)) {
+            /*
+             * Forced sink-less DP connector (EDID override): simulate a
+             * plug so the DP library performs discovery and creates a
+             * device, enabling DSC/HDR capability paths to be consulted.
+             */
+            nvDPNotifyLongPulse(pConnectorEvo, TRUE);
+        }
         connectedList = oneDpyIdList;
     } else if (pRequest->forceDisconnected) {
         connectedList = nvEmptyDpyIdList();
