@@ -73,7 +73,13 @@ else
   OBJDUMP ?= objdump
 
   ifndef ARCH
-    ARCH := $(shell uname -m | sed -e 's/i.86/i386/' \
+    ifdef TARGET_ARCH
+      ARCH := $(TARGET_ARCH)
+    else
+      ARCH := $(shell uname -m)
+    endif
+
+    ARCH := $(shell echo $(ARCH) | sed -e 's/i.86/i386/' \
       -e 's/aarch64/arm64/' \
       -e 's/riscv64/riscv/' \
     )
