@@ -64,7 +64,7 @@ _portTimeUnixTimeToDate
     *pYear = 1970;
     *pDay = 0;
 
-    while (t > _portTimeDaysInYear(*pYear))
+    while (t >= _portTimeDaysInYear(*pYear))
     {
         t -= _portTimeDaysInYear(*pYear);
         (*pYear)++;
@@ -73,7 +73,7 @@ _portTimeUnixTimeToDate
     if (_portTimeIsLeapYear(*pYear))
         daysInMonth[1]++;
 
-    for (*pMonth = 0; t > daysInMonth[*pMonth]; (*pMonth)++)
+    for (*pMonth = 0; t >= daysInMonth[*pMonth]; (*pMonth)++)
         t -= daysInMonth[*pMonth];
 
     (*pMonth)++;
