@@ -242,7 +242,8 @@ nvKmsKapiImportSemaphoreSurface(struct NvKmsKapiDevice *device,
                                 NvU64 nvKmsParamsUser,
                                 NvU64 nvKmsParamsSize,
                                 void **pSemaphoreMap,
-                                void **pMaxSubmittedMap);
+                                void **pMaxSubmittedMap,
+                                NvU64 *pSurfaceSize);
 
 void
 nvKmsKapiFreeSemaphoreSurface(struct NvKmsKapiDevice *device,

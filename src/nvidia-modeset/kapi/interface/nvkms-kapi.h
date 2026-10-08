@@ -1373,6 +1373,9 @@ struct NvKmsKapiFunctionsTable {
      * \param [out] pMaxSubmittedMap Returns a CPU mapping of the semaphore
      *                               surface's semaphore memory to the client.
      *
+     * \param [out] pSurfaceSize     Returns the size of the imported semaphore
+     *                               surface in bytes. May be NULL.
+     *
      * \return struct NvKmsKapiSemaphoreSurface* on success, NULL on failure.
      */
     struct NvKmsKapiSemaphoreSurface* (*importSemaphoreSurface)
@@ -1381,7 +1384,8 @@ struct NvKmsKapiFunctionsTable {
          NvU64 nvKmsParamsUser,
          NvU64 nvKmsParamsSize,
          void **pSemaphoreMap,
-         void **pMaxSubmittedMap
+         void **pMaxSubmittedMap,
+         NvU64 *pSurfaceSize
     );
 
     /*!
