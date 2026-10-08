@@ -433,8 +433,12 @@ nv_alloc_t *nvos_create_alloc(
         return NULL;
     }
 
-    /* kvzalloc() rejects sizes > INT_MAX; use vmalloc() for oversized tables. */
-    if (pt_size > (NvU64)INT_MAX)
+    /*
+     * Use nv_vmalloc() for pt_size >= PMD_SIZE to avoid huge page allocation
+     * and direct compaction while holding locks. This also covers oversized
+     * tables (> INT_MAX), which kvzalloc() rejects.
+     */
+    if (pt_size >= (NvU64)PMD_SIZE)
         at->page_table = nv_vmalloc(pt_size, NV_GFP_KERNEL | __GFP_ZERO);
     else
         at->page_table = kvzalloc(pt_size, NV_GFP_KERNEL);
@@ -468,7 +472,7 @@ int nvos_free_alloc(
 
     pt_size = (NvU64)at->num_pages * sizeof(nvidia_pte_t);
 
-    if (pt_size > (NvU64)INT_MAX)
+    if (pt_size >= (NvU64)PMD_SIZE)
         nv_vfree(at->page_table, pt_size);
     else
         kvfree(at->page_table);
