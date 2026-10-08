@@ -763,6 +763,24 @@ int nv_drm_atomic_commit(struct drm_device *dev,
     struct drm_crtc_state *crtc_state = NULL;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
+#if defined(NV_DRM_PLANE_HELPER_FUNCS_HAS_ATOMIC_ASYNC_CHECK)
+    if (state->async_update) {
+        ret = drm_atomic_helper_prepare_planes(dev, state);
+        if (ret) {
+            return ret;
+        }
+
+        drm_atomic_helper_async_commit(dev, state);
+
+#if defined(NV_DRM_ATOMIC_HELPER_UNPREPARE_PLANES_PRESENT)
+        drm_atomic_helper_unprepare_planes(dev, state);
+#else
+        drm_atomic_helper_cleanup_planes(dev, state);
+#endif
+        return 0;
+    }
+#endif
+
     /*
      * XXX: drm_mode_config_funcs::atomic_commit() mandates to return -EBUSY
      * for nonblocking commit if the commit would need to wait for previous

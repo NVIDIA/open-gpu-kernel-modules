@@ -3839,6 +3839,38 @@ static NvBool ApplyModeSetConfig(
     return KmsFlip(device, requestedConfig, replyConfig, commit);
 }
 
+static NvBool NvKmsKapiMoveCursor(
+    struct NvKmsKapiDevice *device,
+    const NvU32 head,
+    const NvS16 x,
+    const NvS16 y)
+{
+    struct NvKmsMoveCursorParams params = { };
+    NvBool status;
+
+    if (device == NULL) {
+        return NV_FALSE;
+    }
+
+    params.request.deviceHandle = device->hKmsDevice;
+    params.request.dispHandle   = device->hKmsDisp;
+    params.request.head         = head;
+    params.request.common.x     = x;
+    params.request.common.y     = y;
+
+    status = nvkms_ioctl_from_kapi(
+        device->pKmsOpen,
+        NVKMS_IOCTL_MOVE_CURSOR,
+        &params, sizeof(params));
+
+    if (!status) {
+        nvKmsKapiLogDeviceDebug(device, "NVKMS_IOCTL_MOVE_CURSOR ioctl failed");
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+
 /*
  * This executes without the nvkms_lock held. The lock will be grabbed
  * during the kapi dispatching contained in this function.
@@ -4189,6 +4221,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->validateDisplayMode = ValidateDisplayMode;
 
     funcsTable->applyModeSetConfig   = ApplyModeSetConfig;
+    funcsTable->moveCursor           = NvKmsKapiMoveCursor;
 
     funcsTable->allocateChannelEvent = nvKmsKapiAllocateChannelEvent;
     funcsTable->freeChannelEvent = nvKmsKapiFreeChannelEvent;
