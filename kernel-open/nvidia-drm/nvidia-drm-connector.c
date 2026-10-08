@@ -107,6 +107,18 @@ static void nv_drm_connector_destroy(struct drm_connector *connector)
     nv_drm_free(nv_connector);
 }
 
+#if !defined(NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID)
+static void nv_drm_connector_drop_probed_modes(struct drm_connector *connector)
+{
+    struct drm_display_mode *mode, *tmp;
+
+    list_for_each_entry_safe(mode, tmp, &connector->probed_modes, head) {
+        list_del(&mode->head);
+        drm_mode_destroy(connector->dev, mode);
+    }
+}
+#endif
+
 static bool
 __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
                         struct drm_connector *connector,
@@ -150,6 +162,7 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
 #if defined(NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID)
     if (connector->override_edid) {
 #else
+    nv_drm_connector_drop_probed_modes(connector);
     if (drm_edid_override_connector_update(connector) > 0) {
 #endif
         const struct drm_property_blob *edid = connector->edid_blob_ptr;
