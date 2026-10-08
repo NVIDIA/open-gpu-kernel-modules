@@ -214,7 +214,7 @@ nv_drm_add_encoder(struct drm_device *dev, NvKmsKapiDisplay hDisplay)
         nv_drm_get_connector(dev,
                                  connectorInfo->physicalIndex,
                                  connectorInfo->type,
-                                 displayInfo->internal, displayInfo->dpAddress);
+                                 displayInfo->internal, displayInfo->dpAddress, hDisplay);
 
     if (IS_ERR(connector)) {
         ret = PTR_ERR(connector);

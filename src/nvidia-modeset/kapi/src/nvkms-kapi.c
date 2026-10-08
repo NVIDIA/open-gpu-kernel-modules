@@ -4127,6 +4127,54 @@ done:
 }
 
 
+static NvBool MstI2cTransfer(struct NvKmsKapiDevice *device,
+                             NvKmsKapiDisplay display,
+                             struct NvKmsMstI2cTransfer *transfer)
+{
+    struct NvKmsMstI2cTransferParams params = { };
+    NvU64 startTime;
+
+    if (device == NULL || transfer == NULL ||
+        transfer->readSize > NVKMS_MST_I2C_MAX_DATA ||
+        transfer->writeSize > NVKMS_MST_I2C_MAX_DATA) {
+        return NV_FALSE;
+    }
+    params.request.deviceHandle = device->hKmsDevice;
+    params.request.dispHandle = device->hKmsDisp;
+    params.request.dpyId = nvNvU32ToDpyId(display);
+    params.request.transfer = *transfer;
+    params.request.operation = NVKMS_MST_I2C_START;
+    if (!nvkms_ioctl_from_kapi(device->pKmsOpen, NVKMS_IOCTL_MST_I2C_TRANSFER,
+                               &params, sizeof(params))) {
+        return NV_FALSE;
+    }
+
+    params.request.requestId = params.reply.requestId;
+    params.request.operation = NVKMS_MST_I2C_POLL;
+    startTime = nvkms_get_usec();
+    do {
+        // Like connector detection, wait outside both NVKMS and PM locks.
+        // Only handles/tokens cross this boundary, never DP object pointers.
+        nvkms_usleep(1000);
+        if (!nvkms_ioctl_from_kapi(device->pKmsOpen,
+                NVKMS_IOCTL_MST_I2C_TRANSFER, &params, sizeof(params))) {
+            break;
+        }
+        if (params.reply.complete) {
+            nvkms_memcpy(transfer->readData, params.reply.readData,
+                         transfer->readSize);
+            return NV_TRUE;
+        }
+    } while (nvkms_get_usec() - startTime < 5000000);
+
+    // Also cancel after errors: a display may still exist after disconnect.
+    // Token matching prevents cancelling a request on a reused display ID.
+    params.request.operation = NVKMS_MST_I2C_CANCEL;
+    nvkms_ioctl_from_kapi(device->pKmsOpen, NVKMS_IOCTL_MST_I2C_TRANSFER,
+                         &params, sizeof(params));
+    return NV_FALSE;
+}
+
 NvBool nvKmsKapiGetFunctionsTableInternal
 (
     struct NvKmsKapiFunctionsTable *funcsTable
@@ -4161,6 +4209,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
     funcsTable->getDeviceResourcesInfo = GetDeviceResourcesInfo;
     funcsTable->getDisplays            = GetDisplays;
+    funcsTable->mstI2cTransfer          = MstI2cTransfer;
     funcsTable->getConnectorInfo       = GetConnectorInfo;
 
     funcsTable->getStaticDisplayInfo   = GetStaticDisplayInfo;

@@ -36,6 +36,41 @@
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 using namespace DisplayPort;
 
+// Owned by DeviceImpl, never by the waiting KAPI caller. All accesses and
+// callbacks run under the NVKMS lock. Detach messages in both callbacks so a
+// completed request cannot retain a destroyed/replaced message manager.
+struct DeviceImpl::MstI2cRequest : public virtual Object, public GenericMessageCompletion
+{
+    NvU64 id;
+    unsigned readSize;
+    NvU8 data[REMOTE_READ_BUFFER_SIZE];
+    RemoteI2cReadMessage read;
+    RemoteI2cWriteMessage write;
+
+    MstI2cRequest(NvU64 id, unsigned readSize) : id(id), readSize(readSize) { }
+
+    virtual void messageFailed(MessageManager::Message *from, NakData *nak)
+    {
+        GenericMessageCompletion::messageFailed(from, nak);
+        from->clear();
+    }
+
+    virtual void messageCompleted(MessageManager::Message *from)
+    {
+        GenericMessageCompletion::messageCompleted(from);
+        if (readSize != 0) {
+            unsigned received;
+            unsigned char *reply = read.replyGetI2CData(&received);
+            if (received != readSize) {
+                failed = true;
+            } else {
+                dpMemCopy(data, reply, received);
+            }
+        }
+        from->clear();
+    }
+};
+
 bool DeviceImpl::isMustDisconnect()
 {
     //
@@ -51,6 +86,9 @@ bool DeviceImpl::isMustDisconnect()
 
 DeviceImpl::~DeviceImpl()
 {
+    delete mstI2cRequest;
+    mstI2cRequest = NULL;
+
     if (isDeviceHDCPDetectionAlive && deviceHDCPDetection)
     {
         delete deviceHDCPDetection;
@@ -79,7 +117,8 @@ DeviceImpl::~DeviceImpl()
 
 
 DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent)
-    : parent(parent),
+    : mstI2cRequest(NULL),
+      parent(parent),
       hal(hal),
       activeGroup(0),
       connector(connector),
@@ -223,6 +262,65 @@ bool DeviceImpl::isPendingCableOk()
 bool DeviceImpl::isPendingBandwidthChange()
 {
     return shadow.highestAssessedLC != connector->highestAssessedLC;
+}
+
+bool DeviceImpl::startMstI2cTransfer(NvU64 id, unsigned writeAddress,
+                                      NvU8 *writeData, unsigned writeSize,
+                                      unsigned readAddress, unsigned readSize)
+{
+    if (id == 0 || mstI2cRequest != NULL || !plugged || isZombie() ||
+        address.size() < 2 || connector == NULL ||
+        connector->messageManager == NULL ||
+        writeAddress > 0x7f || readAddress > 0x7f ||
+        writeSize > 255 || readSize > REMOTE_READ_BUFFER_SIZE ||
+        (writeSize == 0 && readSize == 0) ||
+        (writeSize != 0 && writeData == NULL)) {
+        return false;
+    }
+
+    mstI2cRequest = new MstI2cRequest(id, readSize);
+    if (mstI2cRequest == NULL) {
+        return false;
+    }
+    if (readSize != 0) {
+        I2cWriteTransaction write(writeAddress, writeSize, writeData, true);
+        mstI2cRequest->read.set(address.parent(), writeSize != 0 ? 1 : 0,
+                              address.tail(), &write, readAddress, readSize);
+        connector->messageManager->post(&mstI2cRequest->read, mstI2cRequest);
+    } else {
+        mstI2cRequest->write.set(address.parent(), address.tail(), writeAddress,
+                                writeSize, writeData);
+        connector->messageManager->post(&mstI2cRequest->write, mstI2cRequest);
+    }
+    return true;
+}
+
+bool DeviceImpl::pollMstI2cTransfer(NvU64 id, NvU8 *readData,
+                                     unsigned readSize, bool *complete)
+{
+    *complete = false;
+    if (mstI2cRequest == NULL || mstI2cRequest->id != id) {
+        return false;
+    }
+    if (!mstI2cRequest->completed) {
+        return true;
+    }
+    bool success = !mstI2cRequest->failed &&
+                   readSize == mstI2cRequest->readSize;
+    if (success && readSize != 0) {
+        dpMemCopy(readData, mstI2cRequest->data, readSize);
+    }
+    *complete = true;
+    cancelMstI2cTransfer(id);
+    return success;
+}
+
+void DeviceImpl::cancelMstI2cTransfer(NvU64 id)
+{
+    if (mstI2cRequest != NULL && mstI2cRequest->id == id) {
+        delete mstI2cRequest;
+        mstI2cRequest = NULL;
+    }
 }
 
 bool DeviceImpl::getI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequested, unsigned * sizeCompleted, bool bForceMot)

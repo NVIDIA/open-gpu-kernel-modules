@@ -30,6 +30,9 @@
 extern "C" {
 #endif
 
+NvBool nvDPMstI2cTransfer(const NVDpyEvoRec *pDpyEvo,
+                           struct NvKmsMstI2cTransferParams *params);
+
 void nvDPDeviceSetPowerState(NVDpyEvoPtr pDpyEvo, NvBool on);
 unsigned int nvDPGetEDIDSize(const NVDpyEvoRec *pDpyEvo);
 NvBool nvDPGetEDID(const NVDpyEvoRec *pDpyEvo, void *buffer, unsigned int size);

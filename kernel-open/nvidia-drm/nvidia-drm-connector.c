@@ -92,11 +92,140 @@ nv_drm_connector_translate_dither_mode(enum nv_drm_dithering_mode mode,
 }
 #endif /* NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT */
 
+#if IS_ENABLED(CONFIG_I2C)
+/* Experimental until hardware hotplug/suspend validation is complete. */
+static bool nv_drm_mst_ddc;
+module_param_named(mst_ddc, nv_drm_mst_ddc, bool, 0444);
+MODULE_PARM_DESC(mst_ddc, "Expose experimental per-display MST DDC adapters");
+
+static int nv_drm_mst_ddc_xfer(struct i2c_adapter *adapter,
+                              struct i2c_msg *msgs, int num)
+{
+    struct nv_drm_connector *nv_connector =
+        container_of(adapter, struct nv_drm_connector, mst_ddc);
+    struct nv_drm_device *nv_dev = to_nv_device(nv_connector->base.dev);
+    struct NvKmsMstI2cTransfer transfer = { };
+    const unsigned int supported_i2c_flags = I2C_M_RD
+#if defined(I2C_M_DMA_SAFE)
+        | I2C_M_DMA_SAFE
+#endif
+        ;
+    const struct i2c_msg *write = NULL;
+    struct i2c_msg *read = NULL;
+    int i;
+
+    if (num < 1 || num > 2) {
+        return -EOPNOTSUPP;
+    }
+    for (i = 0; i < num; i++) {
+        if ((msgs[i].flags & ~supported_i2c_flags) ||
+            msgs[i].addr > 0x7f || msgs[i].len == 0 ||
+            msgs[i].len > NVKMS_MST_I2C_MAX_DATA) {
+            return -EOPNOTSUPP;
+        }
+    }
+    if (num == 2) {
+        if ((msgs[0].flags & I2C_M_RD) || !(msgs[1].flags & I2C_M_RD)) {
+            return -EOPNOTSUPP;
+        }
+        write = &msgs[0];
+        read = &msgs[1];
+    } else if (msgs[0].flags & I2C_M_RD) {
+        read = &msgs[0];
+    } else {
+        write = &msgs[0];
+    }
+    if (write != NULL) {
+        transfer.writeAddress = write->addr;
+        transfer.writeSize = write->len;
+        memcpy(transfer.writeData, write->buf, write->len);
+    }
+    if (read != NULL) {
+        transfer.readAddress = read->addr;
+        transfer.readSize = read->len;
+    }
+    if (!nvKms->mstI2cTransfer(nv_dev->pDevice,
+                              READ_ONCE(nv_connector->mst_ddc_display), &transfer)) {
+        return -EIO;
+    }
+    if (read != NULL) {
+        memcpy(read->buf, transfer.readData, read->len);
+    }
+    return num;
+}
+
+static u32 nv_drm_mst_ddc_functionality(struct i2c_adapter *adapter)
+{
+    return I2C_FUNC_I2C | I2C_FUNC_SMBUS_BYTE | I2C_FUNC_SMBUS_BYTE_DATA |
+           I2C_FUNC_SMBUS_WORD_DATA | I2C_FUNC_SMBUS_I2C_BLOCK;
+}
+
+static const struct i2c_algorithm nv_drm_mst_ddc_algo = {
+    .master_xfer = nv_drm_mst_ddc_xfer,
+    .functionality = nv_drm_mst_ddc_functionality,
+};
+
+static const struct i2c_adapter_quirks nv_drm_mst_ddc_quirks = {
+    .flags = I2C_AQ_COMB_WRITE_THEN_READ
+#if defined(I2C_AQ_NO_ZERO_LEN)
+        | I2C_AQ_NO_ZERO_LEN
+#endif
+        ,
+    .max_num_msgs = 2,
+    .max_write_len = NVKMS_MST_I2C_MAX_DATA,
+    .max_read_len = NVKMS_MST_I2C_MAX_DATA,
+    .max_comb_1st_msg_len = NVKMS_MST_I2C_MAX_DATA,
+    .max_comb_2nd_msg_len = NVKMS_MST_I2C_MAX_DATA,
+};
+
+static void nv_drm_mst_ddc_init(struct nv_drm_connector *nv_connector,
+                               NvU32 hDisplay)
+{
+    struct drm_connector *connector = &nv_connector->base;
+    struct i2c_adapter *adapter = &nv_connector->mst_ddc;
+    int ret;
+
+    if (!nv_drm_mst_ddc || nv_connector->type != NVKMS_CONNECTOR_TYPE_DP ||
+        nv_connector->dpAddress[0] == '\0') {
+        return;
+    }
+
+    nv_connector->mst_ddc_display = hDisplay;
+    adapter->owner = THIS_MODULE;
+    adapter->algo = &nv_drm_mst_ddc_algo;
+    adapter->quirks = &nv_drm_mst_ddc_quirks;
+    adapter->dev.parent = connector->dev->dev;
+    /* Match the DRM MST adapter name recognized by existing DDC clients. */
+    snprintf(adapter->name, sizeof(adapter->name), "DPMST");
+    ret = i2c_add_adapter(adapter);
+    if (ret != 0) {
+        NV_DRM_LOG_ERR("Failed to register MST DDC adapter: %d", ret);
+        return;
+    }
+    nv_connector->mst_ddc_registered = true;
+    connector->ddc = adapter;
+}
+
+static void nv_drm_mst_ddc_fini(struct nv_drm_connector *nv_connector)
+{
+    if (nv_connector->mst_ddc_registered) {
+        i2c_del_adapter(&nv_connector->mst_ddc);
+        nv_connector->mst_ddc_registered = false;
+        nv_connector->base.ddc = NULL;
+    }
+}
+#else
+static void nv_drm_mst_ddc_init(struct nv_drm_connector *nv_connector,
+                               NvU32 hDisplay) { }
+static void nv_drm_mst_ddc_fini(struct nv_drm_connector *nv_connector) { }
+#endif
+
 static void nv_drm_connector_destroy(struct drm_connector *connector)
 {
     struct nv_drm_connector *nv_connector = to_nv_connector(connector);
 
     drm_connector_unregister(connector);
+    nv_drm_mst_ddc_fini(nv_connector);
 
     drm_connector_cleanup(connector);
 
@@ -737,7 +866,8 @@ static struct drm_connector*
 nv_drm_connector_new(struct drm_device *dev,
                      NvU32 physicalIndex, NvKmsConnectorType type,
                      NvBool internal,
-                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH])
+                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH],
+                     NvU32 hDisplay)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_connector *nv_connector = NULL;
@@ -849,6 +979,8 @@ nv_drm_connector_new(struct drm_device *dev,
                                    NV_DRM_DITHERING_MODE_AUTO);
     }
 
+    nv_drm_mst_ddc_init(nv_connector, hDisplay);
+
     /* Register connector with DRM subsystem */
 
     ret = drm_connector_register(&nv_connector->base);
@@ -864,6 +996,7 @@ nv_drm_connector_new(struct drm_device *dev,
     return &nv_connector->base;
 
 failed_connector_register:
+    nv_drm_mst_ddc_fini(nv_connector);
     drm_connector_cleanup(&nv_connector->base);
 
 failed_connector_init:
@@ -884,7 +1017,8 @@ struct drm_connector*
 nv_drm_get_connector(struct drm_device *dev,
                      NvU32 physicalIndex, NvKmsConnectorType type,
                      NvBool internal,
-                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH])
+                     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH],
+                     NvU32 hDisplay)
 {
     struct drm_connector *connector = NULL;
     struct drm_connector_list_iter conn_iter;
@@ -899,6 +1033,10 @@ nv_drm_get_connector(struct drm_device *dev,
                    nv_connector->internal != internal);
 
             if (strcmp(nv_connector->dpAddress, dpAddress) == 0) {
+#if IS_ENABLED(CONFIG_I2C)
+                /* A reused connector can be associated with a new display. */
+                WRITE_ONCE(nv_connector->mst_ddc_display, hDisplay);
+#endif
                 goto done;
             }
         }
@@ -911,7 +1049,7 @@ done:
     if (!connector) {
         connector = nv_drm_connector_new(dev,
                                          physicalIndex, type, internal,
-                                         dpAddress);
+                                         dpAddress, hDisplay);
     }
 
     return connector;

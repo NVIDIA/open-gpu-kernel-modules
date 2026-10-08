@@ -564,6 +564,9 @@ ParseResponseStatus RemoteI2cReadMessage::parseResponseAck(EncodedMessage * mess
     reader->readOrDefault(4 /*zeroes*/, 0);
     reply.portNumber = reader->readOrDefault(4 /*Port_Number*/, 0xF);
     reply.numBytesReadI2C = reader->readOrDefault(8 /*Num_Of_Bytes_Read*/, 0x0);
+    if (reply.numBytesReadI2C > sizeof(reply.readData))
+        return ParseResponseWrong;
+
     for (unsigned i=0; i<reply.numBytesReadI2C; i++)
     {
         reply.readData[i] = (NvU8)reader->readOrDefault(8 /*data*/, 0x0);

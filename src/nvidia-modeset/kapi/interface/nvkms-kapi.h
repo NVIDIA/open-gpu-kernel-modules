@@ -1671,6 +1671,11 @@ struct NvKmsKapiFunctionsTable {
         struct NvKmsKapiDevice *device,
         const NvU32 head,
         struct NvKmsKapiVblankIntrCallback *pCallback);
+
+    /* One bounded MST I2C transfer; serialized with modesetting and PM. */
+    NvBool (*mstI2cTransfer)(struct NvKmsKapiDevice *device,
+                             NvKmsKapiDisplay display,
+                             struct NvKmsMstI2cTransfer *transfer);
 };
 
 /** @} */
