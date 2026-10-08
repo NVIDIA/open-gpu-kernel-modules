@@ -3620,7 +3620,7 @@ void parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pMapS
                 }
 
                 // handle any additional per vic modes listed in the EDID
-                while (DataSz > DataCnt)
+                while ((pHDMIVideo->ThreeD_Present) && (DataSz > DataCnt))
                 {
                     // get a pointer to the entry.
                     NVT_3D_MULTI_LIST * pMultiListEntry = (NVT_3D_MULTI_LIST *) &pHdmiLLC->Data[DataCnt];
