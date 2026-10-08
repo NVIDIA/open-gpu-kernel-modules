@@ -185,6 +185,7 @@ NV_STATUS  RmPowerManagementTegra   (OBJGPU *pGpu, nv_pm_action_t pmAction);
 NV_STATUS  os_ref_dynamic_power     (nv_state_t *, nv_dynamic_power_mode_t);
 void       os_unref_dynamic_power   (nv_state_t *, nv_dynamic_power_mode_t);
 void       RmHandleDisplayChange    (nvidia_stack_t *, nv_state_t *);
+NvBool     RmDeferNvpcfNotifyIfIdle (nv_state_t *);
 void       RmUpdateGc6ConsoleRefCount (nv_state_t *, NvBool);
 
 NvBool     rm_get_uefi_console_status (nv_state_t *);

@@ -241,6 +241,9 @@ typedef struct nv_dynamic_power_s
     PORT_ATOMIC nv_dynamic_power_state_t state;
     NvS32 refcount;
 
+    /* Coalesced NVPCF notification to replay after runtime resume. */
+    NvBool nvpcf_notify_pending;
+
     /*
      * A word on lock ordering.  These locks must be taken in the order:
      *
