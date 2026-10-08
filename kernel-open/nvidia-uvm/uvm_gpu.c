@@ -4114,7 +4114,7 @@ done:
     }
 
     *dma_address_out = dma_addr;
-    return NV_OK;
+    return status;
 }
 
 NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out)
