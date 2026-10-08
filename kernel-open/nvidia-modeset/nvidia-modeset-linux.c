@@ -115,7 +115,9 @@ static bool malloc_verbose = false;
 module_param_named(malloc_verbose, malloc_verbose, bool, 0444);
 
 MODULE_PARM_DESC(force_frl_rate,
-                 "Override the default FRL rate selection (2 = max FRL rate w/ DSC, 1 = max FRL rate, 0 = default rate)");
+                 "Override the default FRL rate selection and use EDID-declared "
+                 "FRL link capabilities (2 = max FRL rate w/ DSC, "
+                 "1 = max FRL rate, 0 = default rate)");
 static int force_frl_rate = 0;
 module_param_named(force_frl_rate, force_frl_rate, int, 0444);
 
