@@ -2978,6 +2978,18 @@ nv_pci_shutdown(struct pci_dev *pci_dev)
         return;
     }
 
+    /*
+     * Hibernation power-off: thaw is a no-op, so the GPU is still suspended
+     * (procfs hibernate holds nv_system_pm_lock) and a full teardown hangs.
+     */
+    if (nvl->nv_state.flags & NV_FLAG_SUSPENDED)
+    {
+#ifdef CONFIG_PCI
+        pci_clear_master(pci_dev);
+#endif
+        return;
+    }
+
 #if defined(CONFIG_PM_DEVFREQ)
     nv_pci_tegra_unregister_devfreq(pci_dev);
 #endif
