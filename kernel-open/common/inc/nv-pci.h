@@ -28,11 +28,11 @@
 #include "nv-linux.h"
 #include <uapi/linux/pci_regs.h>
 
-#if defined(NV_CXL_CXL_H_PRESENT)
+#if defined(NV_CXL_CXL_H_PRESENT) && defined(NV_CXL_INIT_SUPPORTED)
 #include <cxl/cxl.h>
 #endif
 
-#if defined(NV_CXL_PCI_H_PRESENT)
+#if defined(NV_CXL_PCI_H_PRESENT) && defined(NV_CXL_INIT_SUPPORTED)
 #include <cxl/pci.h>
 #endif
 
