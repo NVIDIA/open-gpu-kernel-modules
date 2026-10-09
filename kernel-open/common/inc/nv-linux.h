@@ -38,7 +38,7 @@
 #include "nv-chardev-numbers.h"
 #include "nv-platform.h"
 
-#if defined(NV_CXL_CXL_H_PRESENT)
+#if defined(NV_CXL_CXL_H_PRESENT) && defined(NV_CXL_INIT_SUPPORTED)
 #include <cxl/cxl.h>
 #endif
 
@@ -1265,7 +1265,7 @@ struct nv_pci_tegra_devfreq_dev;
 /* this is a general os-specific state structure. the first element *must* be
    the general state structure, for the generic unix-based code */
 
-#if defined(NV_CXL_CXL_H_PRESENT)
+#if defined(NV_CXL_CXL_H_PRESENT) && defined(NV_CXL_INIT_SUPPORTED)
 struct nv_cxl {
     struct cxl_dev_state         cxlds;
     struct cxl_memdev           *cxlmd;
@@ -1287,7 +1287,7 @@ typedef struct nv_linux_state_s {
     /* coherent link information */
      coherent_link_info_t coherent_link_info;
 
-#if defined(NV_CXL_CXL_H_PRESENT)
+#if defined(NV_CXL_CXL_H_PRESENT) && defined(NV_CXL_INIT_SUPPORTED)
     /* CXL device state; NULL for non-CXL GPUs */
     struct nv_cxl *cxl;
 #endif
