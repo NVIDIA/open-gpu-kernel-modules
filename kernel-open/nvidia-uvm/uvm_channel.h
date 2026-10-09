@@ -211,6 +211,10 @@ typedef struct
     // Number of elements in the channel array
     NvU32 num_channels;
 
+    // Next channel to consider when selecting a least-busy channel.
+    // Protected by the pool lock.
+    NvU32 next_hint;
+
     // Index of the engine associated with the pool (index is an offset from the
     // first engine of the same engine type.)
     unsigned engine_index;
