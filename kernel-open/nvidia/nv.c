@@ -5952,6 +5952,16 @@ void NV_API_CALL nv_audio_dynamic_power(
     if (audio_pci_dev->dev.power.is_suspended)
         return;
 
+    /*
+     * Verify the audio function is bound to the HDA driver before accessing
+     * its driver data. When a different driver (e.g. vfio-pci) is bound,
+     * pci_get_drvdata() returns unrelated data and interpreting it as
+     * struct snd_card causes a kernel panic.
+     */
+    if (audio_pci_dev->driver == NULL ||
+        strcmp(audio_pci_dev->driver->name, "snd_hda_intel") != 0)
+        return;
+
     card = pci_get_drvdata(audio_pci_dev);
     if (card == NULL)
         return;
