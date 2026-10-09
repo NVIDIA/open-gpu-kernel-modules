@@ -1521,17 +1521,18 @@ pmaFreePages
     if (bScrubValid && bNeedScrub)
     {
         PSCRUB_NODE pPmaScrubList = NULL;
-        NvU64 count;
+        NvU64 count = 0;
+        NV_STATUS scrubStatus;
 
-        if (scrubSubmitPages(pPma->pScrubObj, size, pPages, pageCount,
-                             &pPmaScrubList, &count, scrubFlags) == NV_OK)
+        scrubStatus = scrubSubmitPages(pPma->pScrubObj, size, pPages, pageCount,
+                                       &pPmaScrubList, &count, scrubFlags);
+
+        if (count > 0)
         {
-            if (count > 0)
-            {
-                _pmaClearScrubBit(pPma, pPmaScrubList, count);
-            }
+            _pmaClearScrubBit(pPma, pPmaScrubList, count);
         }
-        else
+
+        if (scrubStatus != NV_OK)
         {
             portAtomicSetSize(&pPma->scrubberValid, PMA_SCRUBBER_INVALID);
         }

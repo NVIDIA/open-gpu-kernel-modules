@@ -265,18 +265,20 @@ NV_STATUS _pmaNumaAllocateRange
         if (bScrubOnAlloc)
         {
             PSCRUB_NODE pPmaScrubList = NULL;
-            NvU64 count;
+            NvU64 count = 0;
             NvU32 flags = 0;
 
-            if ((status = scrubSubmitPages(pPma->pScrubObj, (NvU32)actualSize, &gpaPhysAddr,
-                                           1, &pPmaScrubList, &count, flags)) != NV_OK)
+            status = scrubSubmitPages(pPma->pScrubObj, (NvU32)actualSize, &gpaPhysAddr,
+                                      1, &pPmaScrubList, &count, flags);
+
+            if (count > 0)
+                _pmaClearScrubBit(pPma, pPmaScrubList, count);
+
+            if (status != NV_OK)
             {
                 status = NV_ERR_INSUFFICIENT_RESOURCES;
                 goto scrub_exit;
             }
-
-            if (count > 0)
-                _pmaClearScrubBit(pPma, pPmaScrubList, count);
 
             if ((status = _pmaCheckScrubbedPages(pPma, actualSize, &gpaPhysAddr, 1)) != NV_OK)
             {
@@ -428,18 +430,20 @@ static NV_STATUS _pmaNumaAllocatePages
     if (bScrubOnAlloc && (i > 0))
     {
         PSCRUB_NODE pPmaScrubList = NULL;
-        NvU64 count;
+        NvU64 count = 0;
         NvU32 flags = 0;
 
-        if ((status = scrubSubmitPages(pPma->pScrubObj, pageSize, pPages,
-                                       i, &pPmaScrubList, &count, flags)) != NV_OK)
+        status = scrubSubmitPages(pPma->pScrubObj, pageSize, pPages,
+                                  i, &pPmaScrubList, &count, flags);
+
+        if (count > 0)
+            _pmaClearScrubBit(pPma, pPmaScrubList, count);
+
+        if (status != NV_OK)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto scrub_exit;
         }
-
-        if (count > 0)
-            _pmaClearScrubBit(pPma, pPmaScrubList, count);
 
         if ((status = _pmaCheckScrubbedPages(pPma, pageSize, pPages, (NvU32)i)) != NV_OK)
         {

@@ -74,8 +74,9 @@ static NvU32     _scrubMemory(OBJMEMSCRUB  *pScrubber, RmPhysAddr base, NvU64 si
                               NvU32 dstCpuCacheAttrib, NvU32 freeToken, NvU32 flags);
 static NV_STATUS _scrubWaitAndSave(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength  itemsToSave);
 static NvU64     _scrubGetFreeEntries(OBJMEMSCRUB *pScrubber);
-static NvU64     _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64 pageCount, PSCRUB_NODE  pList,
-                                   PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck, NvU32 flags);
+static NV_STATUS _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64 pageCount, PSCRUB_NODE  pList,
+                                      PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck,
+                                      NvU32 flags, NvU64 *pNumSubmitted, NvLength *pNumSaved);
 static void   _scrubCopyListItems(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength itemsToSave);
 
 static NV_STATUS _scrubCheckLocked(OBJMEMSCRUB  *pScrubber, PSCRUB_NODE *ppList, NvU64 *pSize);
@@ -395,10 +396,11 @@ scrubCheck
  * @param[in]  chunkSize   NvU64 size of each page
  * @param[in]  pPages     NvU64 array of base address
  * @param[in]  pageCount  NvU64 number of pages
- * @param[out] ppList     SCRUB_NODE double pointer to hand off the list
- * @param[out] pSize      NvU64 pointer to store the size
+ * @param[out] ppList     SCRUB_NODE double pointer to hand off completed work
+ * @param[out] pSize      NvU64 pointer to store the completed work size
+ *                      Completed work may be returned on error.
  *
- * @returns NV_OK on success, NV_ERR_GENERIC on HW Failure
+ * @returns NV_OK on success, error status otherwise
  */
 NV_STATUS
 scrubSubmitPages
@@ -419,6 +421,7 @@ scrubSubmitPages
     NvLength    pagesToScrubCheck = 0;
     NvU64       totalSubmitted    = 0;
     NvU64       numFinished       = 0;
+    NvLength    numSaved          = 0;
     NvU64       freeEntriesInList = 0;
     NvU64       scrubCount        = 0;
     NvU64       numPagesToScrub   = 0;
@@ -468,25 +471,47 @@ scrubSubmitPages
                 scrubCount        = scrubListSize;
             }
 
-            numFinished = _scrubCheckAndSubmit(pScrubber, scrubCount,
-                                               &pScrubList[totalSubmitted],
-                                               &pScrubListCopy[curPagesSaved],
-                                               pagesToScrubCheck,
-                                               flags);
+            status = _scrubCheckAndSubmit(pScrubber,
+                                          scrubCount,
+                                          &pScrubList[totalSubmitted],
+                                          &pScrubListCopy[curPagesSaved],
+                                          pagesToScrubCheck,
+                                          flags,
+                                          &numFinished,
+                                          &numSaved);
 
-            scrubListSize     -= numFinished;
-            curPagesSaved     += pagesToScrubCheck;
-            totalSubmitted    += numFinished;
+            scrubListSize  -= numFinished;
+            curPagesSaved  += numSaved;
+            totalSubmitted += numFinished;
+
+            if (status != NV_OK)
+                goto cleanup;
+
+            NV_CHECK_TRUE_OR_GOTO(status,
+                                  LEVEL_ERROR,
+                                  numFinished != 0,
+                                  NV_ERR_GENERIC,
+                                  cleanup);
+
             freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
         }
 
         *ppList = pScrubListCopy;
+        pScrubListCopy = NULL;
         *pSize  = curPagesSaved;
     }
     else
     {
-        totalSubmitted = _scrubCheckAndSubmit(pScrubber, scrubListSize,
-                                              pScrubList, NULL, 0, flags);
+        status = _scrubCheckAndSubmit(pScrubber,
+                                      scrubListSize,
+                                      pScrubList,
+                                      NULL,
+                                      0,
+                                      flags,
+                                      &totalSubmitted,
+                                      &numSaved);
+        if (status != NV_OK)
+            goto cleanup;
         *ppList = NULL;
         *pSize  = 0;
     }
@@ -498,6 +523,19 @@ cleanup:
     {
         portMemFree(pScrubList);
         pScrubList = NULL;
+    }
+
+    if ((pScrubListCopy != NULL) && (curPagesSaved != 0))
+    {
+        *ppList = pScrubListCopy;
+        *pSize  = curPagesSaved;
+        pScrubListCopy = NULL;
+    }
+
+    if (pScrubListCopy != NULL)
+    {
+        portMemFree(pScrubListCopy);
+        pScrubListCopy = NULL;
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
@@ -714,9 +752,11 @@ _scrubCopyListItems
  *  @param[in]  pList               pointer will store the return check array
  *  @param[in]  pScrubListCopy      List where pages are saved
  *  @param[in]  pagesToScrubCheck   How many pages will need to be saved
- *  @returns the number of work successfully submitted, else 0
+ *  @param[out] pNumSubmitted       Number of work items successfully submitted
+ *  @param[out] pNumSaved           Number of completed work items saved
+ *  @returns NV_OK on success, error status otherwise
  */
-static NvU64
+static NV_STATUS
 _scrubCheckAndSubmit
 (
     OBJMEMSCRUB *pScrubber,
@@ -724,17 +764,26 @@ _scrubCheckAndSubmit
     PSCRUB_NODE  pList,
     PSCRUB_NODE  pScrubListCopy,
     NvLength     pagesToScrubCheck,
-    NvU32        flags
+    NvU32        flags,
+    NvU64       *pNumSubmitted,
+    NvLength    *pNumSaved
 )
 {
-    NvU64     iter = 0;
+    NvU64     iter   = 0;
     NvU64     newId;
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pNumSubmitted != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pNumSaved != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    *pNumSubmitted = 0;
+    *pNumSaved = 0;
 
     if (pScrubListCopy == NULL && pagesToScrubCheck != 0)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "pages need to be saved off, but stash list is invalid\n");
+        status = NV_ERR_INVALID_ARGUMENT;
         goto exit;
     }
 
@@ -744,6 +793,8 @@ _scrubCheckAndSubmit
                                           pScrubListCopy,
                                           pagesToScrubCheck),
                         exit);
+
+    *pNumSaved = pagesToScrubCheck;
 
     for (iter = 0; iter < pageCount; iter++)
     {
@@ -765,11 +816,11 @@ _scrubCheckAndSubmit
         }
         _scrubAddWorkToList(pScrubber, pList[iter].base, pList[iter].size, newId);
         _scrubCheckProgress(pScrubber);
+        (*pNumSubmitted)++;
     }
 
-    return iter;
 exit:
-    return 0;
+    return status;
 
 }
 
@@ -888,9 +939,10 @@ _scrubWaitAndSave
                 else
                 {
                     status = NV_OK;
+                    break;
                 }
-                goto done;
             }
+            goto done;
         }
     }
 
