@@ -1010,7 +1010,7 @@ DSC_PpsCalcBase
         }
         else
         {
-            RANGE_CHECK("pic_width", in->pic_width, 32, 5120);
+            RANGE_CHECK("pic_width", in->pic_width, 32, DSC_MAX_SINGLE_HEAD_WIDTH);
         }
     }
 

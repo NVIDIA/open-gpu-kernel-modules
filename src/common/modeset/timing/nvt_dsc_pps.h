@@ -34,6 +34,7 @@
 
 /* ------------------------ Macros ----------------------------------------- */
 #define DSC_MAX_PPS_SIZE_DWORD 32
+#define DSC_MAX_SINGLE_HEAD_WIDTH 5120
 
 /* ------------------------ Datatypes -------------------------------------- */
 typedef struct

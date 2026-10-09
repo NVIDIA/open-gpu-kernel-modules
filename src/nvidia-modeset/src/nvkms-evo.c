@@ -7032,8 +7032,8 @@ NvBool nvDowngradeColorFormatAndBpc(
  * the given mode timings.
  */
 
-NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
-                           NVHwModeTimingsEvoPtr pTimings,
+NvBool nvDPValidateModeEvo(const NVDpyEvoRec *pDpyEvo,
+                           const NVHwModeTimingsEvo *pTimings,
                            const NvBool colorFormatSpecified,
                            const NvBool colorBpcSpecified,
                            NVDpyAttributeColor *pDpyColor,
@@ -9813,6 +9813,9 @@ NvBool nvEvoGetSingleMergeHeadSectionHwModeTimings(
 
 NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const NVHwModeTimingsEvo *pTimings,
+                         const NVDpyAttributeColor *pDpyColor,
+                         const NvBool colorFormatSpecified,
+                         const NvBool colorBpcSpecified,
                          const struct NvKmsModeValidationParams *pParams)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
@@ -9846,9 +9849,29 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
         return FALSE;
     }
 
-    /* Use 2Heads1OR mode only if the required pixel clock is greater than the
-     * maximum pixel clock support by a head. */
-    return (pTimings->pixelClock > pHeadCaps->maxPClkKHz);
+    if (pTimings->pixelClock > pHeadCaps->maxPClkKHz) {
+        return TRUE;
+    }
+
+    if (!nvDpyUsesDPLib(pDpyEvo) ||
+            (pParams->dscMode == NVKMS_DSC_MODE_FORCE_DISABLE) ||
+            (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ||
+            (nvEvoVisibleWidth(pTimings) <= DSC_MAX_SINGLE_HEAD_WIDTH)) {
+        return FALSE;
+    }
+
+    /*
+     * A wide DSC picture needs two heads even when its pixel clock fits one.
+     * Preserve single-head modes that can already pass DP validation,
+     * including its existing uncompressed color-depth fallbacks.
+     */
+    NVDpyAttributeColor dpyColor = *pDpyColor;
+
+    return !nvDPValidateModeEvo(pDpyEvo, pTimings,
+                                colorFormatSpecified,
+                                colorBpcSpecified,
+                                &dpyColor, FALSE /* b2Heads1Or */,
+                                NULL /* pDscInfo */, pParams);
 }
 
 NvBool nvIsLockGroupFlipLocked(const NVLockGroup *pLockGroup)
