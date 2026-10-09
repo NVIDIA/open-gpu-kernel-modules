@@ -3960,53 +3960,105 @@ static NV_STATUS RmDpAuxI2CTransfer
     nv_state_t  *pNv,
     NvU32       displayId,
     NvU8        addr,
+    NvU8        command,
     NvU32       len,
     NvU8       *pData,
     NvBool      bWrite
 )
 {
-    NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *pParams;
-    RM_API    *pRmApi   = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV_STATUS  status;
+    RM_API    *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV_STATUS  status = NV_OK;
+    NvU32      done   = 0;
+    const NvU32 chunkMax = NV0073_CTRL_DP_AUXCH_MAX_DATA_SIZE; /* 16 */
+    /* command bit0: keep the I2C transaction open after this message (MOT) */
 
-    if (len > NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_MAX_DATA_SIZE)
+    do
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "%s: requested I2C transfer length %u is greater than maximum supported length %u\n",
-                  __FUNCTION__, len, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_MAX_DATA_SIZE);
-        return NV_ERR_NOT_SUPPORTED;
+        NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pParams;
+        NvU32  chunk      = len - done;
+        NvU32  cmd        = 0;                 /* _AUXCH_CMD_TYPE_I2C == 0 */
+        NvBool bLastChunk;
+
+        if (chunk > chunkMax)
+        {
+            chunk = chunkMax;
+        }
+        bLastChunk = ((done + chunk) >= len);
+
+        pParams = portMemAllocNonPaged(sizeof(*pParams));
+        if (pParams == NULL)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+        portMemSet(pParams, 0, sizeof(*pParams));
+
+        pParams->subDeviceInstance = 0;
+        pParams->displayId         = displayId;
+        pParams->addr              = addr;
+
+        /* _AUXCH_CMD_I2C_MOT is bit 2, _AUXCH_CMD_REQ_TYPE_READ is bit 0.
+         * Mirror DPLib's EDID read: keep MOT set between chunks and between
+         * the offset write and the data read, clear it on the final chunk. */
+        if (!bLastChunk || (command & 0x1))
+        {
+            cmd |= (1u << 2);
+        }
+        if (!bWrite)
+        {
+            cmd |= (1u << 0);
+        }
+        pParams->cmd = cmd;
+
+        /* Control call takes size 0-based */
+        pParams->size = (chunk > 0) ? (chunk - 1) : 0;
+
+        if (bWrite && (chunk > 0))
+        {
+            portMemCopy(pParams->data, sizeof(pParams->data), pData + done, chunk);
+        }
+
+        status = pRmApi->Control(pRmApi, pNv->rmapi.hClient, pNv->rmapi.hDisp,
+                                 NV0073_CTRL_CMD_DP_AUXCH_CTRL,
+                                 pParams, sizeof(*pParams));
+
+        if ((status == NV_OK) &&
+            (pParams->replyType != NV0073_CTRL_DP_AUXCH_REPLYTYPE_ACK))
+        {
+            status = NV_ERR_GENERIC;
+        }
+
+        if (status == NV_OK)
+        {
+            if (!bWrite)
+            {
+                NvU32 n = pParams->size;
+                if (n > chunk)
+                {
+                    n = chunk;
+                }
+                if (n > 0)
+                {
+                    portMemCopy(pData + done, chunk, pParams->data, n);
+                }
+                portMemFree(pParams);
+                if (n == 0)
+                {
+                    break;
+                }
+                done += n;
+                continue;
+            }
+            done += chunk;
+        }
+
+        portMemFree(pParams);
+
+        if (status != NV_OK)
+        {
+            return status;
+        }
     }
-
-    pParams = portMemAllocNonPaged(sizeof(*pParams));
-    if (pParams == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    portMemSet(pParams, 0, sizeof(*pParams));
-
-    pParams->subDeviceInstance = 0;
-    pParams->displayId         = displayId;
-    pParams->addr              = addr;
-    pParams->size              = len;
-    pParams->bWrite            = bWrite;
-
-    if (bWrite)
-    {
-        portMemCopy(pParams->data, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_MAX_DATA_SIZE,
-                    pData, len);
-    }
-
-    status = pRmApi->Control(pRmApi, pNv->rmapi.hClient, pNv->rmapi.hDisp,
-                             NV0073_CTRL_CMD_DP_AUXCH_I2C_TRANSFER_CTRL,
-                             pParams, sizeof(*pParams));
-
-    if ((status == NV_OK) && !bWrite)
-    {
-        portMemCopy(pData, len, pParams->data, pParams->size);
-    }
-
-    portMemFree(pParams);
+    while (done < len);
 
     return status;
 }
@@ -4233,7 +4285,7 @@ NV_STATUS NV_API_CALL rm_i2c_transfer(
                 goto semafinish;
             }
 
-            rmStatus = RmDpAuxI2CTransfer(pNv, displayId, addr, len, pData,
+            rmStatus = RmDpAuxI2CTransfer(pNv, displayId, addr, command, len, pData,
                                           type == NV_I2C_CMD_WRITE);
         }
 semafinish:
