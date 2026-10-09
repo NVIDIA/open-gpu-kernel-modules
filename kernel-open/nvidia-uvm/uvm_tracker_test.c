@@ -388,6 +388,13 @@ static NV_STATUS test_tracker_add_tracker(uvm_va_space_t *va_space)
     TEST_CHECK_RET(uvm_tracker_get_entries(&dup_tracker)[0].channel == entry.channel);
     TEST_CHECK_RET(uvm_tracker_get_entries(&dup_tracker)[0].value == entry.value);
 
+    status = uvm_tracker_add_tracker(&dup_tracker, &tracker);
+    TEST_CHECK_GOTO(status == NV_OK, done);
+    TEST_CHECK_RET(dup_tracker.size == 1);
+    TEST_CHECK_RET(dup_tracker.max_size == ARRAY_SIZE(dup_tracker.static_entries));
+    TEST_CHECK_RET(uvm_tracker_get_entries(&dup_tracker)[0].channel == entry.channel);
+    TEST_CHECK_RET(uvm_tracker_get_entries(&dup_tracker)[0].value == entry.value);
+
     for_each_va_space_gpu(gpu, va_space) {
         uvm_channel_pool_t *pool;
 
