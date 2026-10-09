@@ -1564,6 +1564,14 @@
 // Use gen4 mapping that uses a HSHUB CE, if available
 // Else, continue using FBHUB PCEs
 
+// Type Dword (Boolean)
+// Encoding Numeric Value
+// Use the GEN5 PCIe PCE-LCE mapping when the root port link speed is unknown
+// (e.g. passthrough guests with no virtual root port above the GPU).
+#define NV_REG_STR_RM_CE_USE_GEN5_MAPPING                "RmCeUseGen5Mapping"
+#define NV_REG_STR_RM_CE_USE_GEN5_MAPPING_TRUE           0x1
+#define NV_REG_STR_RM_CE_USE_GEN5_MAPPING_FALSE          0x0
+
 // Type Dword
 // Enable PCE LCE auto config
 #define NV_REG_STR_RM_CE_ENABLE_AUTO_CONFIG                "RmCeEnableAutoConfig"
