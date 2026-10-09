@@ -28,7 +28,7 @@
 #include <linux/list.h>             // list
 #include <linux/sched.h>            // task_struct
 #include <linux/numa.h>             // NUMA_NO_NODE
-#include <linux/semaphore.h>
+#include <linux/wait.h>
 
 #include "conftest.h"
 
@@ -37,9 +37,8 @@ struct nv_kthread_q
     struct list_head q_list_head;
     spinlock_t q_lock;
 
-    // This is a counting semaphore. It gets incremented and decremented
-    // exactly once for each item that is added to the queue.
-    struct semaphore q_sem;
+    wait_queue_head_t q_wait_queue;
+    atomic_t pending_count;
     atomic_t main_loop_should_exit;
 
     struct task_struct *q_kthread;
