@@ -165,6 +165,7 @@
 #include "nv_uvm_interface.h"
 #include "uvm_api.h"
 #include "uvm_gpu.h"
+#include "uvm_gpu_isr.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_mem.h"
 #include "uvm_mmu.h"
@@ -2091,6 +2092,14 @@ void free_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chunk, free_
     if (chunk->is_zero)
         flags |= UVM_PMA_FREE_IS_ZERO;
 
+    // Skip PMA free if GPU is not accessible (e.g., hot-unplugged).
+    // Calling into the nvidia module with a gone GPU causes hangs
+    // due to corrupted locks.
+    if (!uvm_parent_gpu_is_accessible(gpu->parent)) {
+        uvm_up_read(&pmm->pma_lock);
+        return;
+    }
+
     nvUvmInterfacePmaFreePages(pmm->pma, &chunk->address, 1, UVM_CHUNK_SIZE_MAX, flags);
 
     uvm_up_read(&pmm->pma_lock);
@@ -3155,7 +3164,10 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
     UVM_ASSERT(uvm_devmem_check_orphan_pages(pmm));
     release_free_root_chunks(pmm);
 
-    if (gpu->mem_info.size != 0 && gpu_supports_pma_eviction(gpu))
+    // Skip unregistering callbacks if GPU is not accessible (hot-unplugged).
+    // The nvidia module's internal state is corrupted when the GPU is gone.
+    if (gpu->mem_info.size != 0 && gpu_supports_pma_eviction(gpu) &&
+        uvm_parent_gpu_is_accessible(gpu->parent))
         nvUvmInterfacePmaUnregisterEvictionCallbacks(pmm->pma);
 
     // TODO: Bug 1766184: Handle ECC/RC

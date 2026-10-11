@@ -252,12 +252,28 @@ static void nv_acpi_notify_event(acpi_handle handle, u32 event_type, void *data)
 {
     nv_acpi_t  *pNvAcpiObject = data;
     nv_state_t *nvl = pNvAcpiObject->notifier_data;
+    nv_state_t *nv;
+
+    if (nvl == NULL)
+        return;
+
+    nv = NV_STATE_PTR(nvl);
+    if (nv == NULL)
+        return;
+
+    /*
+     * Check if we're in surprise removal before processing ACPI events.
+     * This can happen during Thunderbolt eGPU hot-unplug where the device
+     * is being removed but ACPI events are still being delivered.
+     */
+    if (nv->flags & NV_FLAG_IN_SURPRISE_REMOVAL)
+        return;
 
     /*
      * Function to handle device specific ACPI events such as display hotplug,
      * GPS and D-notifier events.
      */
-    rm_acpi_notify(pNvAcpiObject->sp, NV_STATE_PTR(nvl), event_type);
+    rm_acpi_notify(pNvAcpiObject->sp, nv, event_type);
 }
 
 void nv_acpi_register_notifier(nv_linux_state_t *nvl)

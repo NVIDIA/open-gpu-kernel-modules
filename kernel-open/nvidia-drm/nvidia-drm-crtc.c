@@ -3235,6 +3235,7 @@ static void nv_drm_vblank_enable_fn(void *t)
 {
     struct nv_drm_crtc *nv_crtc = t;
     struct nv_drm_device *nv_dev = to_nv_device(nv_crtc->base.dev);
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     struct drm_device *dev = nv_crtc->base.dev;
     unsigned long irqflags;
 
@@ -3248,9 +3249,11 @@ static void nv_drm_vblank_enable_fn(void *t)
     nv_crtc->vblank_intr_fired = false;
     spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
 
-    if (nv_crtc->vblankIntrCallback == NULL) {
+    if (pDevice != NULL && !READ_ONCE(nv_dev->inSurpriseRemoval) &&
+        !READ_ONCE(nv_dev->inRemoval) &&
+        nv_crtc->vblankIntrCallback == NULL) {
         nv_crtc->vblankIntrCallback =
-            nvKms->registerVblankIntrCallback(nv_dev->pDevice, nv_crtc->head,
+            nvKms->registerVblankIntrCallback(pDevice, nv_crtc->head,
                 nv_drm_crtc_vblank_callback, (NvU64)(NvUPtr)nv_crtc);
     }
 
@@ -3262,13 +3265,17 @@ static void nv_drm_vblank_disable_fn(void *t)
     struct nv_drm_crtc *nv_crtc = t;
     struct drm_device *dev = nv_crtc->base.dev;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
+    struct NvKmsKapiDevice *pDevice = READ_ONCE(nv_dev->pDevice);
     unsigned long irqflags;
 
     mutex_lock(&nv_crtc->vblank_q_lock);
 
     if (nv_crtc->vblankIntrCallback != NULL) {
-        nvKms->unregisterVblankIntrCallback(nv_dev->pDevice, nv_crtc->head,
-            nv_crtc->vblankIntrCallback);
+        if (pDevice != NULL && !READ_ONCE(nv_dev->inSurpriseRemoval) &&
+            !READ_ONCE(nv_dev->inRemoval)) {
+            nvKms->unregisterVblankIntrCallback(pDevice, nv_crtc->head,
+                nv_crtc->vblankIntrCallback);
+        }
         nv_crtc->vblankIntrCallback = NULL;
     }
 

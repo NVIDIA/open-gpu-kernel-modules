@@ -935,6 +935,56 @@ static void nv_drm_dev_unload(struct drm_device *dev)
         return;
     }
 
+    /*
+     * During surprise removal (e.g., Thunderbolt eGPU hot-unplug),
+     * the GPU hardware is no longer accessible. Skip NVKMS calls that
+     * would access hardware to prevent page faults and crashes.
+     * Use freeDeviceForSurpriseRemoval which only releases kernel resources
+     * without attempting any hardware access.
+     */
+    /*
+     * For Thunderbolt eGPU hot-unplug, pci_channel_offline() returns false
+     * (it's a controlled PCIe removal, not a bus error), so inSurpriseRemoval
+     * is not set.  However, the GPU hardware is physically gone.  Use
+     * freeDeviceForSurpriseRemoval for ALL removals triggered via nv_drm_remove
+     * (inRemoval = TRUE) so we never attempt hardware-level RM teardown against
+     * a device that is no longer on the bus.  This suppresses the
+     * kgmmuInvalidateTlb / dmaFreeMapping error flood in the kernel log.
+     */
+    if (READ_ONCE(nv_dev->inSurpriseRemoval) ||
+        READ_ONCE(nv_dev->inRemoval)) {
+        NV_DRM_DEV_LOG_INFO(nv_dev,
+            "GPU removal detected (surprise or eGPU hot-unplug), skipping hardware access");
+
+        /* Wake up any processes waiting on flip events */
+        wake_up_all(&nv_dev->flip_event_wq);
+
+        cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
+        mutex_lock(&nv_dev->lock);
+
+        atomic_set(&nv_dev->enable_event_handling, false);
+        drm_kms_helper_poll_fini(dev);
+        drm_mode_config_cleanup(dev);
+
+        pDevice = READ_ONCE(nv_dev->pDevice);
+        WRITE_ONCE(nv_dev->pDevice, NULL);
+
+        mutex_unlock(&nv_dev->lock);
+
+        /*
+         * Use freeDeviceForSurpriseRemoval instead of freeDevice.
+         * This skips KmsFreeDevice() and RmFreeDevice() which would try
+         * to access GPU hardware via ioctls/RM API calls and cause
+         * page faults since the GPU memory is unmapped.
+         * It only calls nvkms_close_gpu() to release the GPU reference
+         * count, allowing the eGPU to be re-initialized when reconnected.
+         */
+        if (pDevice != NULL) {
+            nvKms->freeDeviceForSurpriseRemoval(pDevice);
+        }
+        return;
+    }
+
     /* Release modeset ownership if fbdev is enabled */
 
 #if defined(NV_DRM_FBDEV_AVAILABLE)
@@ -973,8 +1023,8 @@ static void nv_drm_dev_unload(struct drm_device *dev)
 
     /* Unset NvKmsKapiDevice */
 
-    pDevice = nv_dev->pDevice;
-    nv_dev->pDevice = NULL;
+    pDevice = READ_ONCE(nv_dev->pDevice);
+    WRITE_ONCE(nv_dev->pDevice, NULL);
 
     mutex_unlock(&nv_dev->lock);
 
@@ -1928,6 +1978,8 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
                       DRM_UNLOCKED|DRM_MASTER),
 };
 
+static void nv_drm_dev_release(struct drm_device *dev);
+
 static struct drm_driver nv_drm_driver = {
 
     .driver_features        =
@@ -2000,6 +2052,7 @@ static struct drm_driver nv_drm_driver = {
 #endif
 
     .load                   = nv_drm_load_noop,
+    .release                = nv_drm_dev_release,
 
     .postclose              = nv_drm_postclose,
     .open                   = nv_drm_open,
@@ -2192,10 +2245,13 @@ failed_drm_register:
 failed_drm_load:
 
     drm_dev_put(dev);
+    nv_dev = NULL;
 
 failed_drm_alloc:
 
-    nv_drm_free(nv_dev);
+    if (nv_dev != NULL) {
+        nv_drm_free(nv_dev);
+    }
 }
 
 /*
@@ -2267,7 +2323,44 @@ static void nv_drm_dev_destroy(struct nv_drm_device *nv_dev)
 
     nv_drm_dev_unload(dev);
     drm_dev_put(dev);
-    nv_drm_free(nv_dev);
+}
+
+static void nv_drm_dev_release(struct drm_device *dev)
+{
+    struct nv_drm_device *nv_dev;
+
+    if (dev == NULL) {
+        return;
+    }
+
+    nv_dev = dev->dev_private;
+    dev->dev_private = NULL;
+
+    if (nv_dev != NULL) {
+        nv_drm_free(nv_dev);
+    }
+}
+
+/*
+ * Helper to get PCI device from DRM device, handling both old and new kernels.
+ * Returns NULL if not a PCI device or device not available.
+ */
+static struct pci_dev *nv_drm_get_pci_dev(struct drm_device *dev)
+{
+    if (dev == NULL) {
+        return NULL;
+    }
+
+#if defined(NV_DRM_DEVICE_HAS_PDEV)
+    return dev->pdev;
+#else
+    /* On newer kernels (5.14+), drm_device.pdev was removed.
+     * Get PCI device from the parent device. */
+    if (dev->dev != NULL && dev->dev->bus == &pci_bus_type) {
+        return to_pci_dev(dev->dev);
+    }
+    return NULL;
+#endif
 }
 
 /*
@@ -2278,7 +2371,42 @@ void nv_drm_remove(NvU32 gpuId)
     struct nv_drm_device *nv_dev = nv_drm_find_and_remove_device(gpuId);
 
     if (nv_dev) {
+        struct pci_dev *pdev;
+
         NV_DRM_DEV_LOG_INFO(nv_dev, "Removing device");
+
+        /*
+         * Mark the device as being removed BEFORE drm_dev_unplug to close
+         * the race window where delayed_fput callbacks (e.g. DMA-buf release)
+         * check pDevice != NULL and proceed to call into nvidia_modeset state
+         * that may have already been freed by nv_drm_dev_unload running
+         * concurrently on another CPU.  Setting inRemoval first ensures all
+         * destructor guards skip nvKms calls from this point on.
+         */
+        WRITE_ONCE(nv_dev->inRemoval, NV_TRUE);
+
+        /*
+         * Check if this is a surprise removal (hot-unplug) by testing
+         * if the PCI channel is offline. This happens when:
+         * - Thunderbolt eGPU is physically disconnected
+         * - GPU falls off the bus unexpectedly
+         *
+         * Note: for Thunderbolt eGPU hot-unplug pci_channel_offline() often
+         * returns false (controlled PCIe hot-remove, not a bus error), so
+         * inSurpriseRemoval may not be set.  inRemoval above handles that.
+         * We keep inSurpriseRemoval for the hardware-access-skip path in
+         * nv_drm_dev_unload (freeDeviceForSurpriseRemoval vs freeDevice).
+         */
+        pdev = nv_drm_get_pci_dev(nv_dev->dev);
+        if (pdev != NULL && pci_channel_offline(pdev)) {
+            NV_DRM_DEV_LOG_INFO(nv_dev,
+                "PCI channel offline - surprise removal detected");
+            WRITE_ONCE(nv_dev->inSurpriseRemoval, NV_TRUE);
+
+            /* Wake up any processes waiting on flip events */
+            wake_up_all(&nv_dev->flip_event_wq);
+        }
+
         drm_dev_unplug(nv_dev->dev);
         nv_drm_dev_destroy(nv_dev);
     }

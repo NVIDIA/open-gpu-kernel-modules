@@ -317,6 +317,12 @@ void* nvkms_get_per_open_data(int fd);
 NvBool nvkms_open_gpu(NvU32 gpuId, NvBool reset_aware);
 void nvkms_close_gpu(NvU32 gpuId, NvBool reset_aware);
 
+/*!
+ * Mark a GPU as lost (surprise removal, e.g., Thunderbolt eGPU unplug).
+ * This prevents hardware access and cancels pending timers.
+ */
+void nvkms_gpu_lost(NvU32 gpuId);
+
 
 /*!
  * Enumerate nvidia gpus.
@@ -393,4 +399,3 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
 void nvkms_unregister_backlight(struct nvkms_backlight_device *nvkms_bd);
 
 #endif /* _NVIDIA_MODESET_OS_INTERFACE_H_ */
-

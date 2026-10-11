@@ -231,6 +231,16 @@ void nvEvoDisableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVVblankSemControl *pVblankSemControl)
 {
+    if (pDevEvo == NULL || pVblankSemControl == NULL) {
+        return;
+    }
+
+    /* No display hardware or RM teardown is valid after surprise removal. */
+    if (pDevEvo->gpuLost) {
+        nvFree(pVblankSemControl);
+        return;
+    }
+
     NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[pVblankSemControl->dispIndex];
 
     DisableVblankSemControl(pDispEvo, pVblankSemControl);

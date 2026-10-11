@@ -220,6 +220,17 @@ nvdDoEngineDump_IMPL
     NVD_ENGINE_CALLBACK *pEngineCallback;
     NV_STATUS            nvStatus = NV_OK;
 
+    //
+    // Skip engine dumps for expected external GPU surprise removal.
+    // Engine dump attempts will fail with GPU_IS_LOST errors which
+    // are expected and just add noise to the log.
+    //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        return NV_ERR_GPU_IS_LOST;
+    }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_GPU_INFO));
 
@@ -262,6 +273,17 @@ nvdDumpAllEngines_IMPL
 {
     NVD_ENGINE_CALLBACK    *pEngineCallback;
     NV_STATUS               nvStatus = NV_OK;
+
+    //
+    // Skip engine dumps for expected external GPU surprise removal.
+    // Engine dump attempts will fail with GPU_IS_LOST errors which
+    // are expected and just add noise to the log.
+    //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        return NV_ERR_GPU_IS_LOST;
+    }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_GPU_INFO));

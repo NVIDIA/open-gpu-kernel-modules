@@ -88,6 +88,8 @@ void nvKmsModuleUnload(void);
 void nvKmsSuspend(NvU32 gpuId);
 void nvKmsResume(NvU32 gpuId);
 
+void nvKmsGpuLost(NvU32 gpuId);
+
 void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles);
 
 NvBool nvKmsReadConf(const char *buff, size_t size,

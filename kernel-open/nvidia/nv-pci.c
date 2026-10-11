@@ -29,6 +29,7 @@
 #include "nv-reg.h"
 #include "nv-tegra-clk.h"
 #include "nvstatuscodes.h"
+#include "nv-rsync.h"
 
 #if defined(NV_VGPU_KVM_BUILD)
 #include "nv-vgpu-vfio-interface.h"
@@ -2817,20 +2818,33 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
     /*
      * Sanity check: A removed device shouldn't have a non-zero usage_count.
      * For eGPU, fall off the bus along with clients active is a valid scenario.
-     * Hence skipping the sanity check for eGPU.
+     * We still wait for a short time to allow in-progress close operations
+     * to complete, but with a timeout to prevent hangs.
      */
-    if ((atomic64_read(&nvl->usage_count) != 0) && !(nv->is_external_gpu))
+    if (atomic64_read(&nvl->usage_count) != 0)
     {
+        /*
+         * For external GPU: wait up to 5 seconds (10 iterations * 500ms)
+         * For internal GPU: wait up to 60 seconds (120 iterations * 500ms)
+         * This prevents indefinite hangs while still allowing time for
+         * graceful cleanup of in-progress operations.
+         */
+        int max_wait_iterations = nv->is_external_gpu ? 10 : 120;
+        int wait_iterations = 0;
+
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count!\n",
+                  "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count (%lld)%s\n",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
-                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn),
+                  atomic64_read(&nvl->usage_count),
+                  nv->is_external_gpu ? " (external GPU)" : "");
 
         /*
          * We can't return from this function without corrupting state, so we wait for
-         * the usage count to go to zero.
+         * the usage count to go to zero, but with a timeout.
          */
-        while (atomic64_read(&nvl->usage_count) != 0)
+        while ((atomic64_read(&nvl->usage_count) != 0) &&
+               (wait_iterations < max_wait_iterations))
         {
             /*
              * While waiting, release the locks so that other threads can make
@@ -2840,6 +2854,7 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
             UNLOCK_NV_LINUX_DEVICES();
 
             os_delay(500);
+            wait_iterations++;
 
             /* Re-acquire the locks before checking again */
             LOCK_NV_LINUX_DEVICES();
@@ -2858,10 +2873,32 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
             down(&nvl->ldata_lock);
         }
 
-        nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Continuing with GPU removal for device %04x:%02x:%02x.%x\n",
-                  NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
-                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+        if (atomic64_read(&nvl->usage_count) != 0)
+        {
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: Timeout waiting for usage count on device %04x:%02x:%02x.%x (remaining: %lld). Forcing removal.\n",
+                      NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                      NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn),
+                      atomic64_read(&nvl->usage_count));
+            /*
+             * Force the surprise removal flag so that any remaining
+             * close operations will take the fast-path.
+             */
+            nv->flags |= NV_FLAG_IN_SURPRISE_REMOVAL;
+
+            /*
+             * Mark that we had a surprise removal so rsync cleanup
+             * warnings are suppressed during module unload.
+             */
+            nv_set_rsync_had_surprise_removal();
+        }
+        else
+        {
+            nv_printf(NV_DBG_ERRORS,
+                      "NVRM: Continuing with GPU removal for device %04x:%02x:%02x.%x\n",
+                      NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                      NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+        }
     }
 
     rm_check_for_gpu_surprise_removal(sp, nv);

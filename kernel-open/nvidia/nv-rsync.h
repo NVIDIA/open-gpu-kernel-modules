@@ -31,6 +31,7 @@ typedef struct nv_rsync_info
     struct semaphore lock;
     uint32_t usage_count;
     NvBool relaxed_ordering_mode;
+    NvBool had_surprise_removal;
     int (*get_relaxed_ordering_mode)(int *mode, void *data);
     void (*put_relaxed_ordering_mode)(int mode, void *data);
     void (*wait_for_rsync)(struct pci_dev *gpu, void *data);
@@ -41,6 +42,7 @@ void nv_init_rsync_info(void);
 void nv_destroy_rsync_info(void);
 int nv_get_rsync_info(void);
 void nv_put_rsync_info(void);
+void nv_set_rsync_had_surprise_removal(void);
 int nv_register_rsync_driver(
                         int (*get_relaxed_ordering_mode)(int *mode, void *data),
                         void (*put_relaxed_ordering_mode)(int mode, void *data),
