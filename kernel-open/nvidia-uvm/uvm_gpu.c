@@ -4107,7 +4107,7 @@ NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
 
         atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
 
-done:
+done:;
 #else
         status = NV_ERR_NOT_SUPPORTED;
 #endif
