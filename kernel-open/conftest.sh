@@ -3472,7 +3472,7 @@ compile_test() {
             # Note: KERNELRELEASE and ARCH are defined by Kbuild and automatically
             # passed down to conftest.sh as env vars.
 
-            MLNX_OFED_KERNEL_DIR=/usr/src/ofa_kernel
+            MLNX_OFED_KERNEL_DIR="${MLNX_OFED_KERNEL_DIR:-/usr/src/ofa_kernel}"
             VAR_DKMS_SOURCES_DIR=$(test -d /var/lib/dkms/mlnx-ofed-kernel &&
                                    ls -d /var/lib/dkms/mlnx-ofed-kernel/*/build 2>/dev/null)
 
