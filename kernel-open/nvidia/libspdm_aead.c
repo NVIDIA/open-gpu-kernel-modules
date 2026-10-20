@@ -145,6 +145,11 @@ static int lkca_aead_internal(struct crypto_aead *aead,
         return -EINVAL;
     }
 
+    if (a_data_size == 0) {
+        sg_in = &sg_in[SG_AEAD_TEXT];
+        sg_out = &sg_out[SG_AEAD_TEXT];
+    }
+
     aead_request_set_ad(req, a_data_size);
 
     aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
