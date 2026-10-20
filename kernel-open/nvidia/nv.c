@@ -982,6 +982,8 @@ static int __init nvidia_init_module(void)
 
     nv_global_registry_keys_init(sp);
 
+    nv_acpi_psy_early_init(sp);
+
     rc = nv_drivers_init();
     if (rc < 0)
     {
@@ -1048,6 +1050,8 @@ static int __init nvidia_init_module(void)
 
     nv_report_applied_patches();
 
+    nv_acpi_psy_init();
+
     nv_printf(NV_DBG_ERRORS, "NVRM: loading %s\n", pNVRM_ID);
 
     /*
@@ -1079,6 +1083,8 @@ partial_chrdev_exit:
         &nv_linux_devices_cdev);
 
 drivers_exit:
+    nv_acpi_psy_exit();
+
     nv_drivers_exit();
 
 uvm_exit:
@@ -1112,6 +1118,8 @@ procfs_exit:
 static void __exit nvidia_exit_module(void)
 {
     nvidia_stack_t *sp = __nv_init_sp;
+
+    nv_acpi_psy_exit();
 
     nv_unregister_chrdev(NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE, 1,
         &nv_linux_control_device_cdev);
