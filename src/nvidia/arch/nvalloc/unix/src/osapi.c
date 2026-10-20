@@ -6178,6 +6178,35 @@ NvBool NV_API_CALL rm_is_altstack_in_use(void)
 #endif
 }
 
+//
+// Returns NV_TRUE if any subdevice of pGpu has a listener enabled for
+// notifyIndex. Only reads software state, so it does not wake the GPU.
+//
+static NvBool _rmGpuHasSubDeviceEventListener(
+    OBJGPU *pGpu,
+    NvU32   notifyIndex
+)
+{
+    NvBool bFound = NV_FALSE;
+    NvU32 i;
+
+    portSyncSpinlockAcquire(pGpu->pSubdeviceBackReferencesLock);
+    for (i = 0; i < pGpu->numSubdeviceBackReferences; i++)
+    {
+        Subdevice *pSubdevice = pGpu->pSubdeviceBackReferences[i];
+        if ((pSubdevice != NULL) &&
+            (pSubdevice->notifyActions[notifyIndex] !=
+             NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE))
+        {
+            bFound = NV_TRUE;
+            break;
+        }
+    }
+    portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
+
+    return bFound;
+}
+
 void NV_API_CALL rm_acpi_nvpcf_notify(
     nvidia_stack_t *sp
 )
@@ -6194,7 +6223,13 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
                                      RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
         OBJGPU *pGpu = gpumgrGetGpu(0);
-        if (pGpu != NULL)
+        //
+        // The only work done here is forwarding the event to clients. If no
+        // client listens for NVPCF events (e.g. nvidia-powerd is not
+        // running), skip it instead of waking a runtime-suspended GPU.
+        //
+        if ((pGpu != NULL) &&
+            _rmGpuHasSubDeviceEventListener(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS))
         {
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
             if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
