@@ -314,6 +314,9 @@ kgraphicsStateInitLocked_IMPL
     pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
 
+    pKernelGraphics->goldenImageChannelInfo.hClient      = NV01_NULL_OBJECT;
+    pKernelGraphics->goldenImageChannelInfo.bConstructed = NV_FALSE;
+
     return NV_OK;
 }
 
@@ -2156,6 +2159,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
     RsClient                              *pClientId;
     KernelMIGManager                      *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool                                 bNeedMIGWar;
+    NvBool                                 bRetainGoldenImageChannel;
     NvBool                                 bBcStatus;
     NvBool                                 bClientUserd = IsVOLTAorBetter(pGpu);
     NvBool                                 bAcquireLock = NV_FALSE;
@@ -2174,6 +2178,25 @@ kgraphicsCreateGoldenImageChannel_IMPL
         return NV_OK;
     }
 
+    bNeedMIGWar = IS_MIG_IN_USE(pGpu);
+    bRetainGoldenImageChannel = bNeedMIGWar && IS_VIRTUAL(pGpu);
+
+    if (!bRetainGoldenImageChannel && pKernelGraphics->goldenImageChannelInfo.bConstructed)
+    {
+            NV_PRINTF(LEVEL_ERROR, "Golden image channel exists, but the retain flag is not set\n");
+            return NV_ERR_INVALID_STATE;
+    }
+    //
+    // For vGPU guest MIG the golden image channel is retained after first
+    // creation, so nothing to do if it is already constructed.
+    //
+    if (bRetainGoldenImageChannel && pKernelGraphics->goldenImageChannelInfo.bConstructed)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Golden image channel already retained for vGPU guest MIG; skipping re-creation\n");
+        return NV_OK;
+    }
+
     bBcStatus = gpumgrGetBcEnabledStatus(pGpu);
 
     // FIXME these allocations corrupt BC state
@@ -2188,8 +2211,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
 
     // As we have forced here SLI broadcast mode, temporarily reset the reentrancy count
     sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
-
-    bNeedMIGWar = IS_MIG_IN_USE(pGpu);
 
     // Allocate subdevices for secondary GPUs
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
@@ -2520,6 +2541,12 @@ kgraphicsCreateGoldenImageChannel_IMPL
         pRmApi->AllocWithHandle(pRmApi, hClientId, hChannelId, hObj3D, classNum, NULL, 0),
         cleanup);
 
+    if (bRetainGoldenImageChannel)
+    {
+        pKernelGraphics->goldenImageChannelInfo.hClient = hClientId;
+        pKernelGraphics->goldenImageChannelInfo.bConstructed = NV_TRUE;
+    }
+
 cleanup:
 
     if (bAcquireLock)
@@ -2528,9 +2555,21 @@ cleanup:
             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR));
     }
 
-    // Free all handles
-    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-        pRmApi->Free(pRmApi, hClientId, hClientId));
+    //
+    // For vGPU guest MIG, retain the GR channel, 3D object, and their supporting 
+    // client tree until CI/GI teardown or driver unload. This prevents them from 
+    // being freed and causing golden‑context restore failures, where the absence 
+    // of the GR channel leads to accesses of non‑populated buffers and MMU faults 
+    // in the guest. 
+    // For bare‑metal MIG and non‑MIG flows, callers continue to free 
+    // these objects immediately after golden‑context initialization.
+    //
+    if (!(bRetainGoldenImageChannel && (status == NV_OK) &&
+          pKernelGraphics->goldenImageChannelInfo.bConstructed))
+    {
+        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+            pRmApi->Free(pRmApi, hClientId, hClientId));
+    }
 
     // Restore the reentrancy count
     gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
@@ -2538,6 +2577,60 @@ cleanup:
     gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
 
     return status;
+}
+
+/*!
+ * @brief Return whether the retained golden image channel is constructed.
+ *
+ * Used during compute-instance teardown to account for the CI share
+ * reference held by the golden channel's exec-partition subscription.
+ */
+ NvBool
+ kgraphicsIsGoldenImageChannelConstructed_IMPL
+ (
+     OBJGPU *pGpu,
+     KernelGraphics *pKernelGraphics
+ )
+ {
+     return pKernelGraphics->goldenImageChannelInfo.bConstructed;
+ }
+ 
+/*!
+ * @brief Free the golden image channel retained for vGPU guest MIG
+ */
+void
+kgraphicsDestroyGoldenImageChannel_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    KGRAPHICS_GOLDEN_IMAGE_CHANNEL_INFO *pGoldenImageChannelInfo =
+        &pKernelGraphics->goldenImageChannelInfo;
+    NvBool bBcStatus;
+    NvU32 sliLoopReentrancy;
+
+    if (!pGoldenImageChannelInfo->bConstructed)
+        return;
+
+    NV_ASSERT_OR_RETURN_VOID(gpumgrIsParentGPU(pGpu));
+
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        NvHandle hClient = pGoldenImageChannelInfo->hClient;
+
+        bBcStatus = gpumgrGetBcEnabledStatus(pGpu);
+        gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
+        sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
+
+        pRmApi->Free(pRmApi, hClient, hClient);
+
+        gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
+        gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
+    }
+
+    pGoldenImageChannelInfo->hClient = NV01_NULL_OBJECT;
+    pGoldenImageChannelInfo->bConstructed = NV_FALSE;
 }
 
 /*!

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -703,6 +703,7 @@ struct MemoryManager {
     NvU64 overrideInitHeapMin;
     NvU64 overrideHeapMax;
     NvU64 rsvdMemorySizeIncrement;
+    NvU64 rsvdHeapSizeOverride;
     struct OBJFBSR *pFbsr[8];
     struct OBJFBSR *pActiveFbsr;
     NvU32 fbsrStartMode;

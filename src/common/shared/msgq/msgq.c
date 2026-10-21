@@ -25,6 +25,7 @@
 #include <nvtypes.h>
 #include <nvmisc.h>
 
+
 #if defined(UPROC_RISCV) && !defined(NVRM)
 #include "msgq/msgq.h"
 #include "msgq/msgq_priv.h"
@@ -378,7 +379,12 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
         memcpy(&pQueue->rx, (const void *)pQueue->pTheirTxHdr, sizeof pQueue->rx);
     }
 
-    if (size < (pQueue->rx.entryOff + msgSize))
+    if (pQueue->rx.entryOff < sizeof(msgqTxHeader))
+    {
+        return -12;
+    }
+
+    if (pQueue->rx.entryOff > size - msgSize)
     {
         return -6;
     }
@@ -400,6 +406,8 @@ msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size, unsigned
     // Also check the calculated fields, to make sure the header arrived intact.
     if ((pQueue->rx.rxHdrOff < sizeof(msgqTxHeader))                          ||
         (pQueue->rx.entryOff < pQueue->tx.rxHdrOff + sizeof(msgqRxHeader))    ||
+        (pQueue->rx.rxHdrOff > size - sizeof(msgqRxHeader))                   ||
+        (pQueue->rx.rxHdrOff > pQueue->rx.entryOff - sizeof(msgqRxHeader))    ||
         (pQueue->rx.msgCount != (NvU32)((size - pQueue->rx.entryOff) / msgSize)))
     {
         return -10;

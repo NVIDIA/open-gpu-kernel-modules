@@ -1950,12 +1950,12 @@ static inline NvU64 kgspGetLogCount_13cd8d(struct KernelGsp *pKernelGSp) {
     return 0;
 }
 
-static inline NvU64 kgspGetMinWprHeapSizeMB_7185bf(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return (64U);
+static inline NvU64 kgspGetMinWprHeapSizeMB_fae61e(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return (30U);
 }
 
-static inline NvU64 kgspGetMinWprHeapSizeMB_647ce6(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return pGpu->bVgpuGspPluginOffloadEnabled ? (581U) : (88U);
+static inline NvU64 kgspGetMinWprHeapSizeMB_5b8d7a(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (581U) : (54U);
 }
 
 static inline NvU64 kgspGetMinWprHeapSizeMB_b2b553(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {

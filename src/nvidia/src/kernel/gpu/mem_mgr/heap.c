@@ -1607,7 +1607,9 @@ NV_STATUS heapAlloc_IMPL
         }
         else
         {
-            NV_ASSERT( pMemoryManager->Ram.numFBRegionPriority > 0 );
+            NV_ASSERT_OR_ELSE(pMemoryManager->Ram.numFBRegionPriority > 0,
+                              status = NV_ERR_INVALID_DATA;
+                              goto return_early;);
 
             if (FLD_TEST_DRF(OS32, _ATTR2, _PRIORITY, _LOW, pFbAllocInfo->pageFormat->attr2) ||
                 (pMemoryManager->bPreferSlowRegion &&

@@ -6183,6 +6183,9 @@ void NV_API_CALL nv_get_screen_info(
     NvU64       *pFbSize
 )
 {
+#if NV_CHECK_EXPORT_SYMBOL(screen_info) || NV_CHECK_EXPORT_SYMBOL(sysfb_primary_display)
+    struct screen_info *sysfb_info;
+#endif
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     struct pci_dev *pci_dev = nvl->pci_dev;
     int i;
@@ -6233,9 +6236,18 @@ void NV_API_CALL nv_get_screen_info(
      *
      * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
      * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
+     *
+     * After commit a41e0ab394e4 ("sysfb: Replace screen_info with sysfb_primary_display")
+     * in v7.0, 'screen_info' is refactored as 'sysfb_primary_display.screen'.
      */
 
-#if NV_CHECK_EXPORT_SYMBOL(screen_info)
+#if NV_CHECK_EXPORT_SYMBOL(screen_info) || NV_CHECK_EXPORT_SYMBOL(sysfb_primary_display)
+#if NV_CHECK_EXPORT_SYMBOL(sysfb_primary_display)
+    sysfb_info = &sysfb_primary_display.screen;
+#else
+    sysfb_info = &screen_info;
+#endif
+
     /*
      * If there is not a framebuffer console, return 0 size.
      *
@@ -6243,13 +6255,13 @@ void NV_API_CALL nv_get_screen_info(
      * initialization, and then will be set to a value, such as
      * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
      */
-    if (screen_info.orig_video_isVGA > 1)
+    if (sysfb_info->orig_video_isVGA > 1)
     {
-        NvU64 physAddr = screen_info.lfb_base;
+        NvU64 physAddr = sysfb_info->lfb_base;
 #if defined(VIDEO_CAPABILITY_64BIT_BASE)
-        if  (screen_info.capabilities & VIDEO_CAPABILITY_64BIT_BASE)
+        if  (sysfb_info->capabilities & VIDEO_CAPABILITY_64BIT_BASE)
         {
-            physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+            physAddr |= (NvU64)sysfb_info->ext_lfb_base << 32;
         }
 #endif
         /*
@@ -6261,10 +6273,10 @@ void NV_API_CALL nv_get_screen_info(
             NV_IS_CONSOLE_MAPPED(nv, physAddr))
         {
             *pPhysicalAddress = physAddr;
-            *pFbWidth = screen_info.lfb_width;
-            *pFbHeight = screen_info.lfb_height;
-            *pFbDepth = screen_info.lfb_depth;
-            *pFbPitch = screen_info.lfb_linelength;
+            *pFbWidth = sysfb_info->lfb_width;
+            *pFbHeight = sysfb_info->lfb_height;
+            *pFbDepth = sysfb_info->lfb_depth;
+            *pFbPitch = sysfb_info->lfb_linelength;
             *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
             return;
         }

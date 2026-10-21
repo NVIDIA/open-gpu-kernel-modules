@@ -41,5 +41,6 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/slub_def.h \
   linux/of_gpio.h \
   asm/mshyperv.h \
-  crypto/sig.h
+  crypto/sig.h \
+  linux/sysfb.h
 

@@ -680,9 +680,12 @@ _registerUserInfo
 
         if (listAppendValue(&g_userInfoList, (void*)&pUserInfo) == NULL)
         {
+            // Registration failed, so the caller retains ownership.
+            pUserInfo->pUidToken = NULL;
             serverFreeShare(&g_resServ, pShared);
             return NV_ERR_INSUFFICIENT_RESOURCES;
         }
+        *ppUidToken = NULL;
     }
     else
     {

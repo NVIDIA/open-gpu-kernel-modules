@@ -203,10 +203,10 @@ physmemConstruct_IMPL
     return NV_OK;
 
 cleanup_common:
-    memDestructCommon(pMemory);
 
 cleanup_mem:
-    memdescDestroy(pMemDesc);
+    if (!pMemory->bConstructed)
+        memdescDestroy(pMemDesc);
 
     return status;
 }

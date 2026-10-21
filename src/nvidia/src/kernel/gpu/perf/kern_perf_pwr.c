@@ -23,6 +23,7 @@
 
 /* ------------------------ Includes --------------------------------------- */
 #include "os/os.h"
+
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rs_utils.h"
@@ -34,6 +35,39 @@
 /* ------------------------ Static Function Prototypes --------------------- */
 /* ------------------------ Macros ----------------------------------------- */
 /* ------------------------ Public Functions ------------------------------- */
+
+static NvBool
+_kperfIsRatedTdpRequestAuthorized
+(
+    OBJGPU                           *pGpu,
+    RmClient                         *pRmClient,
+    RS_PRIV_LEVEL                     privLevel,
+    NV2080_CTRL_PERF_RATED_TDP_CLIENT client
+)
+{
+    if (rmclientIsAdmin(pRmClient, privLevel))
+    {
+        return NV_TRUE;
+    }
+
+    if (client != NV2080_CTRL_PERF_RATED_TDP_CLIENT_PROFILE)
+    {
+        return NV_FALSE;
+    }
+
+    if (!gpuIsRmProfilingPrivileged(pGpu))
+    {
+        return NV_TRUE;
+    }
+
+    if (osCheckAccess(RS_ACCESS_PERFMON))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 /*!
  * @brief Retrieving the current requested RATED_TDP action corresponding
  * to the specified client.
@@ -85,6 +119,19 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
     {
         NV_PRINTF(LEVEL_ERROR,
                 "Non-Privileged clients are not allowed to use Turbo Boost clock controls.\n");
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        ((pControlParams->client > NV2080_CTRL_PERF_RATED_TDP_CLIENT_RM) &&
+         (pControlParams->client < NV2080_CTRL_PERF_RATED_TDP_CLIENT_NUM_CLIENTS)),
+        NV_ERR_INVALID_ARGUMENT);
+
+    if (!_kperfIsRatedTdpRequestAuthorized(pGpu,
+                                           pRmClient,
+                                           pCallContext->secInfo.privLevel,
+                                           pControlParams->client))
+    {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 

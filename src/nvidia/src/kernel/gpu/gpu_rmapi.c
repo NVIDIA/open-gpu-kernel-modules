@@ -227,50 +227,165 @@ gpuGetByHandle
     return gpuGetByRef(pResourceRef, pbBroadcast, ppGpu);
 }
 
+static Subdevice **
+_allocSubdevBackRefArray
+(
+    OBJGPU *pGpu,
+    NvU32 newSize,
+    Subdevice **oldArray,
+    NvU32 oldSize
+)
+{
+    Subdevice **newArray;
+
+    // temporarily release spinlock to allocate memory at lower IRQL
+    portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
+
+    newArray = portMemAllocNonPaged(newSize);
+    if (newArray == NULL)
+        return NULL;
+
+    // copy old data if expanding an existing array
+    if (oldArray != NULL && oldSize > 0)
+    {
+        portMemCopy(newArray, newSize, oldArray, oldSize);
+    }
+
+    portSyncSpinlockAcquire(pGpu->pSubdeviceBackReferencesLock);
+
+    return newArray;
+}
+
 NV_STATUS gpuRegisterSubdevice_IMPL(OBJGPU *pGpu, Subdevice *pSubdevice)
 {
-    const NvU32 initialSize = 32;
+    const NvU32 initialCount = 32;
     const NvU32 expansionFactor = 2;
+    Subdevice **pArrayToFree = NULL;
+    NV_STATUS status = NV_OK;
 
+    //
+    // the GPU lock should already be held, but we need to synchronize with
+    // lockless notifications from work items
+    //
+    portSyncSpinlockAcquire(pGpu->pSubdeviceBackReferencesLock);
+
+    // first try to find a hole in the existing array to reuse.
+    for (NvU32 i = 0; i < pGpu->numSubdeviceBackReferences; i++)
+    {
+        if (pGpu->pSubdeviceBackReferences[i] == NULL)
+        {
+            pGpu->pSubdeviceBackReferences[i] = pSubdevice;
+            goto done;
+        }
+    }
+
+    //
+    // check if we need to allocate memory
+    // note that _allocSubdevBackRefArray temporarily drops the spinlock and
+    // this function is doing thurough checking after it's re-acquired, but the
+    // checks are a bit overkill because the GPU lock currently protects all
+    // writes to this array anyway (the spinlock is for synchronising with
+    // notifications)
+    //
     if (pGpu->numSubdeviceBackReferences == pGpu->maxSubdeviceBackReferences)
     {
-        if (pGpu->pSubdeviceBackReferences == NULL)
+        Subdevice **newArray;
+        Subdevice **oldArray = pGpu->pSubdeviceBackReferences;
+
+        if (oldArray == NULL)
         {
-            pGpu->pSubdeviceBackReferences = portMemAllocNonPaged(initialSize * sizeof(Subdevice*));
+            const NvU32 newSize = initialCount * sizeof(Subdevice*);
+
+            newArray = _allocSubdevBackRefArray(pGpu, newSize, NULL, 0);
+            if (newArray == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto done;
+            }
+
             if (pGpu->pSubdeviceBackReferences == NULL)
-                return NV_ERR_NO_MEMORY;
-            pGpu->maxSubdeviceBackReferences = initialSize;
+            {
+                pGpu->pSubdeviceBackReferences = newArray;
+                pGpu->maxSubdeviceBackReferences = initialCount;
+            }
+            else
+            {
+                // should not happen, but if it does we don't need it anymore
+                pArrayToFree = newArray;
+            }
         }
         else
         {
-            const NvU32 newSize = expansionFactor * pGpu->maxSubdeviceBackReferences * sizeof(Subdevice*);
-            Subdevice **newArray = portMemAllocNonPaged(newSize);
-            if (newArray == NULL)
-                return NV_ERR_NO_MEMORY;
+            const NvU32 oldSize = pGpu->maxSubdeviceBackReferences * sizeof(Subdevice*);
+            const NvU32 newSize = expansionFactor * oldSize;
 
-            portMemCopy(newArray, newSize, pGpu->pSubdeviceBackReferences, pGpu->maxSubdeviceBackReferences * sizeof(Subdevice*));
-            portMemFree(pGpu->pSubdeviceBackReferences);
-            pGpu->pSubdeviceBackReferences = newArray;
-            pGpu->maxSubdeviceBackReferences *= expansionFactor;
+            newArray = _allocSubdevBackRefArray(pGpu, newSize, oldArray, oldSize);
+            if (newArray == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto done;
+            }
+
+            if (pGpu->pSubdeviceBackReferences == oldArray)
+            {
+                pGpu->pSubdeviceBackReferences = newArray;
+                pGpu->maxSubdeviceBackReferences *= expansionFactor;
+                pArrayToFree = oldArray;
+            }
+            else
+            {
+                // should not happen, but if it does we don't need it anymore
+                pArrayToFree = newArray;
+            }
         }
+        NV_ASSERT_OR_ELSE(pGpu->numSubdeviceBackReferences < pGpu->maxSubdeviceBackReferences,
+            status = NV_ERR_INSUFFICIENT_RESOURCES; goto done);
     }
+
+    // insert at the end, numSubdeviceBackReferences is the high-water mark
     pGpu->pSubdeviceBackReferences[pGpu->numSubdeviceBackReferences++] = pSubdevice;
-    return NV_OK;
+
+  done:
+    portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
+    portMemFree(pArrayToFree);
+
+    return status;
 }
 
 void gpuUnregisterSubdevice_IMPL(OBJGPU *pGpu, Subdevice *pSubdevice)
 {
     NvU32 i;
+
+    if (pGpu->pSubdeviceBackReferencesLock == NULL)
+    {
+        NV_ASSERT_FAILED("GPU is not fully constructed!");
+        return;
+    }
+
+    portSyncSpinlockAcquire(pGpu->pSubdeviceBackReferencesLock);
+
     for (i = 0; i < pGpu->numSubdeviceBackReferences; i++)
     {
         if (pGpu->pSubdeviceBackReferences[i] == pSubdevice)
         {
-            pGpu->numSubdeviceBackReferences--;
-            pGpu->pSubdeviceBackReferences[i] = pGpu->pSubdeviceBackReferences[pGpu->numSubdeviceBackReferences];
-            pGpu->pSubdeviceBackReferences[pGpu->numSubdeviceBackReferences] = NULL;
+            pGpu->pSubdeviceBackReferences[i] = NULL;
+
+            // maintain the high-water mark
+            if (i == pGpu->numSubdeviceBackReferences - 1)
+            {
+                while (pGpu->numSubdeviceBackReferences > 0 &&
+                       pGpu->pSubdeviceBackReferences[pGpu->numSubdeviceBackReferences - 1] == NULL)
+                {
+                    pGpu->numSubdeviceBackReferences--;
+                }
+            }
+
+            portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
             return;
         }
     }
+
+    portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
     NV_ASSERT_FAILED("Subdevice not found!");
 }
 
@@ -534,19 +649,34 @@ gpuNotifySubDeviceEvent_IMPL
     // search notifiers with events hooked up for this gpu
     for (i = 0; i < pGpu->numSubdeviceBackReferences; i++)
     {
-        Subdevice *pSubdevice = pGpu->pSubdeviceBackReferences[i];
+        Subdevice *pSubdevice;
+        INotifier *pNotifier;
 
-        //
-        // We've seen cases where pSubdevice is NULL implying that the
-        // pSubdeviceBackReferences[] array is being modified during this loop.
-        // Adding a NULL pointer check here is only a stopgap. See bug 3892382.
-        //
-        NV_ASSERT_OR_RETURN_VOID(pSubdevice != NULL);
+        // get subdevice pointer and increment refcount while holding array lock
+        portSyncSpinlockAcquire(pGpu->pSubdeviceBackReferencesLock);
+        if (i >= pGpu->numSubdeviceBackReferences)
+        {
+            // index now out of bounds due to concurrent unregister - skip it
+            portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
+            continue;
+        }
+        pSubdevice = pGpu->pSubdeviceBackReferences[i];
+        if (pSubdevice != NULL)
+        {
+            portAtomicIncrementU32(&pSubdevice->notificationRefCount);
+        }
+        portSyncSpinlockRelease(pGpu->pSubdeviceBackReferencesLock);
 
-        INotifier *pNotifier = staticCast(pSubdevice, INotifier);
+        if (pSubdevice == NULL)
+            continue;
+
+        pNotifier = staticCast(pSubdevice, INotifier);
 
         if (inotifyGetNotificationShare(pNotifier) == NULL)
+        {
+            portAtomicDecrementU32(&pSubdevice->notificationRefCount);
             continue;
+        }
 
         GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
@@ -565,12 +695,14 @@ gpuNotifySubDeviceEvent_IMPL
                                              &localInfo32,
                                              partitionAttributionId) != NV_OK)
             {
+                portAtomicDecrementU32(&pSubdevice->notificationRefCount);
                 continue;
             }
         }
 
         if (pSubdevice->notifyActions[localNotifyType] == NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
         {
+            portAtomicDecrementU32(&pSubdevice->notificationRefCount);
             continue;
         }
 
@@ -594,6 +726,8 @@ gpuNotifySubDeviceEvent_IMPL
         {
             pSubdevice->notifyActions[localNotifyType] = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
         }
+
+        portAtomicDecrementU32(&pSubdevice->notificationRefCount);
     }
 }
 

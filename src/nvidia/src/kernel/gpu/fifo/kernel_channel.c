@@ -2519,8 +2519,10 @@ _kchannelDescribeMemDescsFromParams
     else if (pKernelChannelGroupApi->pKernelChannelGroup
                  ->pMthdBuffers[runqueue].pMemDesc == NULL)
     {
-        NV_ASSERT(pChannelGpfifoParams->mthdbufMem.size > 0);
-        NV_ASSERT(pChannelGpfifoParams->mthdbufMem.base != 0);
+        NV_ASSERT_OR_ELSE(pChannelGpfifoParams->mthdbufMem.size > 0,
+                          SLI_LOOP_RETURN(NV_ERR_INVALID_ARGUMENT););
+        NV_ASSERT_OR_ELSE(pChannelGpfifoParams->mthdbufMem.base != 0,
+                          SLI_LOOP_RETURN(NV_ERR_INVALID_ARGUMENT););
         status = memdescCreate(&pKernelChannelGroupApi->pKernelChannelGroup
                                     ->pMthdBuffers[runqueue].pMemDesc,
                                pGpu,

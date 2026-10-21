@@ -233,13 +233,13 @@ static const struct {
     {0x290110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 2155}, // NVIDIA B200X-3-90C
     {0x290110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 2156}, // NVIDIA B200X-4-90C
     {0x290110DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 2157}, // NVIDIA B200X-7-180C
-    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1445}, // NVIDIA GB200-1-24CME
-    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1446}, // NVIDIA GB200-1-24C
+    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1445}, // NVIDIA GB200-1-23CME
+    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1446}, // NVIDIA GB200-1-23C
     {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 1458}, // NVIDIA GB200-1-47C
     {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 1447}, // NVIDIA GB200-2-47C
-    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1459}, // NVIDIA GB200-3-95C
-    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1448}, // NVIDIA GB200-4-95C
-    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1460}, // NVIDIA GB200-7-189C
+    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1459}, // NVIDIA GB200-3-93C
+    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1448}, // NVIDIA GB200-4-93C
+    {0x294110DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1460}, // NVIDIA GB200-7-186C
     {0x2BB510DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _QUARTER)       , 1546}, // NVIDIA RTX Pro 6000 Blackwell DC-1-2Q
     {0x2BB510DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _QUARTER)       , 1547}, // NVIDIA RTX Pro 6000 Blackwell DC-1-2A
     {0x2BB510DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _QUARTER)       , 1548}, // NVIDIA RTX Pro 6000 Blackwell DC-1-2B

@@ -714,7 +714,14 @@ refAddDependant
     if (status != NV_OK)
         return status;
 
-    return indexAdd(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
+    status = indexAdd(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
+    if (status != NV_OK)
+    {
+        NV_ASSERT_OK(indexRemove(&pDependantRef->depBackRefMap,
+                                 pResourceRef->internalClassId, pResourceRef));
+    }
+
+    return status;
 }
 
 void

@@ -565,6 +565,9 @@ typedef struct
     NvU32                 Manufacturer;
     NvU32                 PCISubDeviceID;
     NvU32                 PCIRevisionID;
+    NvU32                 PCIProgrammingInterface;
+    NvU32                 PCISubClass;
+    NvU32                 PCIBaseClass;
     NvU32                 Subrevision;
 
 } GPUIDINFO;
@@ -1407,6 +1410,7 @@ struct OBJGPU {
     struct Subdevice **pSubdeviceBackReferences;
     NvU32 numSubdeviceBackReferences;
     NvU32 maxSubdeviceBackReferences;
+    PORT_SPINLOCK *pSubdeviceBackReferencesLock;
     NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo;
     NV2080_CTRL_GPU_GET_OEM_BOARD_INFO_PARAMS *boardInfo;
     GpuSharedDataMap userSharedData;

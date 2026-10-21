@@ -741,9 +741,6 @@ _kbusUpdateStaticBar1VAMapping_TU102
     NV_ASSERT_OR_RETURN(memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM,
                         NV_ERR_INVALID_ARGUMENT);
 
-    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
-                        NV_ERR_INVALID_LOCK_STATE);
-
     pVAS = pKernelBus->bar1[gfid].pVAS;
     addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
     pageSize = memdescGetPageSize(pMemDesc, addressTranslation);

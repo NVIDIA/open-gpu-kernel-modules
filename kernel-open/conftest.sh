@@ -3308,6 +3308,19 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
 
+        pfn_is_map_memory)
+            #
+            # Determine if pfn_is_map_memory() function is present.
+            # It only exists on aarch64.
+            #
+            CODE="
+            #include <asm/page.h>
+            int conftest_pfn_is_map_memory(void) {
+                return pfn_is_map_memory(0);
+            }"
+            compile_check_conftest "$CODE" "NV_PFN_IS_MAP_MEMORY_PRESENT" "" "functions"
+        ;;
+
         follow_pte_arg_vma)
             #
             # Determine if the first argument of follow_pte is

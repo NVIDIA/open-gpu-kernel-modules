@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -873,6 +873,26 @@
 //
 #define NV_REG_STR_RM_INCREASE_RSVD_MEMORY_SIZE_MB             "RMIncreaseRsvdMemorySizeMB"
 #define NV_REG_STR_RM_INCREASE_RSVD_MEMORY_SIZE_MB_DEFAULT     0x0
+
+//
+// TYPE DWORD
+// Overrides the size of the RM internal heap. The heap is
+// reserved for driver's use and is not available to applications. Its default
+// size is dynamically computed to support worst-case resource allocation
+// patterns, but targeted workloads can use these keys to reduce or increase it.
+//
+// Kernel-RM and GSP-RM have separate heaps and keys. Values are absolute sizes
+// in megabytes. A value of 0 keeps the computed size, and values greater than
+// half of usable FB are clamped.
+//
+// Undersizing the heap can cause allocation or driver initialization failures.
+// NVIDIA does not support setting these keys and requires bugs observed with
+// them set to be reproducible with the defaults.
+//
+#define NV_REG_STR_RM_RSVD_HEAP_SIZE_KERNEL_MB                 "RmRsvdHeapSizeKernelMB"
+#define NV_REG_STR_RM_RSVD_HEAP_SIZE_KERNEL_MB_DEFAULT         0
+#define NV_REG_STR_RM_RSVD_HEAP_SIZE_GSP_MB                    "RmRsvdHeapSizeGspMB"
+#define NV_REG_STR_RM_RSVD_HEAP_SIZE_GSP_MB_DEFAULT            0
 
 // TYPE Dword
 // Determines whether or not RM reserved space should be increased.

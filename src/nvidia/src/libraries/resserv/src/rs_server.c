@@ -47,6 +47,10 @@ enum CLIENT_LIST_LOCK_STATE
     CLIENT_LIST_LOCK_UNLOCKED,
 };
 
+#if RS_STANDALONE_TEST
+void serverTestFreeResourceRelock(RsServer *pServer, RS_RES_FREE_PARAMS *pParams);
+#endif // RS_STANDALONE_TEST 
+
 /**
  * Get the RsClient from a client handle without taking locks
  * @param[in]   pServer
@@ -1250,10 +1254,14 @@ serverFreeResourceTree
         {
             // Resource requires RW locking so need to re-lock and look up the resource again
             pParams->pResourceRef = NULL;
+            pResourceRef = NULL;
             _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry, pLockInfo, &releaseFlags);
             pClientEntry = NULL;
             serverTopLock_Epilogue(pServer, firstTopLockAccess, pLockInfo, &releaseFlags);
 
+#if RS_STANDALONE_TEST
+            serverTestFreeResourceRelock(pServer, pParams);
+#endif // RS_STANDALONE_TEST
             status = serverFreeResourceTreeLockAndFindResource(pServer, pParams, topLockAccess,
                                                                &releaseFlags, &pClientEntry, &pResourceRef);
             if ((status != NV_OK) || (pResourceRef == NULL))
@@ -1819,6 +1827,10 @@ _serverShareResourceAccessClient
 
     pClientOwner = pClientEntryOwner->pClient;
     pClientTarget = pClientEntryTarget->pClient;
+
+    status = clientValidate(pClientOwner, pParams->pSecInfo);
+    if (status != NV_OK)
+        goto done;
 
     status = clientGetResourceRef(pClientOwner, pParams->hResource, &pResourceRef);
     if (status != NV_OK)

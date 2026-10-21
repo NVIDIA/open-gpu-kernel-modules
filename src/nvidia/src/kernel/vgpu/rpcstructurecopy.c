@@ -1746,7 +1746,8 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_v20_04(NV2080_
 
         ciProfiles_v20_04 = (void*)(buffer + *offset);
 
-        NV_ASSERT(ciProfiles_v20_04->profileCount <= NV_ARRAY_ELEMENTS(ciProfiles->profiles));
+        NV_ASSERT_OR_RETURN(ciProfiles_v20_04->profileCount <= NV_ARRAY_ELEMENTS(ciProfiles->profiles),
+                            NV_ERR_INVALID_DATA);
 
         ciProfiles->profileCount = ciProfiles_v20_04->profileCount;
         for (i = 0; i < ciProfiles->profileCount; i++)

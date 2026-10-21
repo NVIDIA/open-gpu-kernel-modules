@@ -657,6 +657,15 @@ NV_STATUS gpuConstruct_IMPL
     pGpu->pDpcThreadState = portMemAllocNonPaged(sizeof(THREAD_STATE_NODE));
     NV_ASSERT_OR_RETURN(pGpu->pDpcThreadState != NULL, NV_ERR_NO_MEMORY);
 
+    // initialize spinlock for subdevice backreferences array protection
+    pGpu->pSubdeviceBackReferencesLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pGpu->pSubdeviceBackReferencesLock == NULL)
+    {
+        portMemFree(pGpu->pDpcThreadState);
+        pGpu->pDpcThreadState = NULL;
+        return NV_ERR_NO_MEMORY;
+    }
+
     return gpuConstructPhysical(pGpu);
 }
 
@@ -1603,6 +1612,8 @@ gpuDestruct_IMPL
     pGpu->pSubdeviceBackReferences = NULL;
     pGpu->numSubdeviceBackReferences = 0;
     pGpu->maxSubdeviceBackReferences = 0;
+    portSyncSpinlockDestroy(pGpu->pSubdeviceBackReferencesLock);
+    pGpu->pSubdeviceBackReferencesLock = NULL;
 
     multimapDestroy(&pGpu->videoEventBufferBindingsUid);
 

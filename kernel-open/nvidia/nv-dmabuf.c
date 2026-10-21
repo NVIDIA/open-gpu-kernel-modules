@@ -726,7 +726,8 @@ nv_dma_buf_unmap_pages(
         return;
     }
 
-    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
+    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->orig_nents,
+                       DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
 }
 
 static void
@@ -1017,6 +1018,11 @@ nv_dma_buf_attach(
     nv_dma_buf_file_private_t *priv = buf->priv;
 
     mutex_lock(&priv->lock);
+
+    if (!dev_is_pci(attachment->dev))
+    {
+        goto unlock_priv;
+    }
 
     if (priv->mapping_type == NV_DMABUF_EXPORT_MAPPING_TYPE_FORCE_PCIE)
     {

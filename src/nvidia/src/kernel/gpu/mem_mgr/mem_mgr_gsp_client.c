@@ -119,7 +119,8 @@ memmgrInitBaseFbRegions_FWCLIENT
     pMemoryManager->Ram.fbAddrSpaceSizeMb =
         (pMemoryManager->Ram.fbRegion[pFbRegionInfoParams->numFBRegions - 1].limit + bias) >> 20;
 
-    NV_ASSERT(pMemoryManager->Ram.fbAddrSpaceSizeMb >= pMemoryManager->Ram.fbTotalMemSizeMb);
+    NV_ASSERT_OR_RETURN(pMemoryManager->Ram.fbAddrSpaceSizeMb >= pMemoryManager->Ram.fbTotalMemSizeMb,
+                        NV_ERR_INVALID_DATA);
 
     // Dump some stats, region table is dumped in memsysStateLoad
     NV_PRINTF(LEVEL_INFO, "FB Memory from Static info:\n");

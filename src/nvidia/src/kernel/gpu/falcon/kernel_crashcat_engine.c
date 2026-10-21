@@ -97,6 +97,8 @@ MEMORY_DESCRIPTOR *kcrashcatEngineGetQueueMemDesc_IMPL(KernelCrashCatEngine *pKe
 
 void kcrashcatEngineUnload_IMPL(KernelCrashCatEngine *pKernelCrashCatEng)
 {
+    crashcatEngineUnload_IMPL(staticCast(pKernelCrashCatEng, CrashCatEngine));
+
     if (pKernelCrashCatEng->pQueueMemDesc != NULL)
     {
         kcrashcatEngineUnregisterCrashBuffer(pKernelCrashCatEng, pKernelCrashCatEng->pQueueMemDesc);
@@ -104,8 +106,6 @@ void kcrashcatEngineUnload_IMPL(KernelCrashCatEngine *pKernelCrashCatEng)
         memdescDestroy(pKernelCrashCatEng->pQueueMemDesc);
         pKernelCrashCatEng->pQueueMemDesc = NULL;
     }
-
-    crashcatEngineUnload_IMPL(staticCast(pKernelCrashCatEng, CrashCatEngine));
 }
 
 NvU32 kcrashcatEnginePriRead_IMPL

@@ -984,10 +984,6 @@ vidmemConstruct_IMPL
 
         if (rmStatus != NV_OK)
         {
-            memDestructCommon(pMemory);
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            pTopLevelMemDesc = NULL;
             goto done;
         }
 
@@ -1059,17 +1055,6 @@ vidmemConstruct_IMPL
     }
     else
     {
-        if (pMemory->bRpcAlloc)
-        {
-            NV_STATUS status = NV_OK;
-            NV_RM_RPC_FREE(pGpu, hClient, hParent,
-                           pAllocRequest->hMemory, status);
-            NV_ASSERT(status == NV_OK);
-        }
-        memDestructCommon(pMemory);
-        memdescFree(pTopLevelMemDesc);
-        memdescDestroy(pTopLevelMemDesc);
-        pTopLevelMemDesc = NULL;
         goto done;
     }
 

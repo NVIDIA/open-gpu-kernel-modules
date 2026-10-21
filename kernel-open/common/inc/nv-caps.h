@@ -24,6 +24,8 @@
 #ifndef _NV_CAPS_H_
 #define _NV_CAPS_H_
 
+
+
 #include <nv-kernel-interface-api.h>
 
 /*
@@ -79,6 +81,16 @@ void NV_API_CALL nv_cap_destroy_entry(nv_cap_t *cap);
  * Returns duplicate fd upon success. Otherwise, returns -1.
  */
 int NV_API_CALL nv_cap_validate_and_dup_fd(const nv_cap_t *cap, int fd);
+
+/*
+ * Validates the provided file descriptor
+ *
+ * @param[in]   cap         Capability entry
+ * @param[in]   fd          File descriptor to be validated
+ *
+ * Returns 0 upon success. Otherwise, returns -1.
+ */
+int NV_API_CALL nv_cap_validate_fd(const nv_cap_t *cap, int fd);
 
 /*
  * Closes file descriptor

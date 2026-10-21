@@ -117,6 +117,7 @@ typedef struct NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS {
  */
 #define NVB0CC_PMA_BUFFER_SIZE_MAX           (0xffe00000ULL) /* finn: Evaluated from "(4 * 1024 * 1024 * 1024 - 2 * 1024 * 1024)" */
 #define NVB0CC_PMA_BYTES_AVAILABLE_SIZE      (0x1000) /* finn: Evaluated from "(4 * 1024)" */
+#define NVB0CC_PMA_INSTANCE_BLOCK_SIZE       (0x1000) /* finn: Evaluated from "(4 * 1024)" */
 
 #define NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID (0x5U)
 

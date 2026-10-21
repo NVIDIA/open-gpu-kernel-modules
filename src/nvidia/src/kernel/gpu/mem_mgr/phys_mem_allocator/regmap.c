@@ -918,13 +918,20 @@ static NvS64 _scanContiguousSearchLoopReverse
 )
 {
     NvU64 realAlign = (frameAlignmentPadding + numFrames) & (frameAlignment - 1ll);
-    NvU64 frameBaseIdx = alignDownToMod(localEnd + 1llu, frameAlignment, realAlign);
+    NvU64 frameBaseIdx;
     //
     // latestFree stores the lowest '0' seen in the given map array in the current run
     // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
     //
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 i;
+
+    if ((localEnd == NV_U64_MAX) || ((localEnd + 1ULL) < realAlign))
+    {
+        return -1;
+    }
+
+    frameBaseIdx = alignDownToMod(localEnd + 1ULL, frameAlignment, realAlign);
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
             latestFree[i] = frameBaseIdx;
@@ -1000,6 +1007,10 @@ loop_begin:
 free_found:
                 // Found a free page, set frameBaseIdx and go back to the beginning of the loop
                 frameBaseIdx -= portUtilCountLeadingZeros64(~curMap);
+                if (frameBaseIdx < realAlign)
+                {
+                    return -1;
+                }
                 frameBaseIdx = alignDownToMod(frameBaseIdx, frameAlignment, realAlign);
                 goto loop_begin;
             }
@@ -1266,7 +1277,7 @@ _scanDiscontiguousSearchLoopReverse
 )
 {
     NvU64 realAlign = (frameAlignmentPadding + framesPerPage) & (frameAlignment - 1ll);
-    NvU64 frameBaseIdx = alignDownToMod(localEnd+1llu, frameAlignment, realAlign);
+    NvU64 frameBaseIdx;
 
     //
     // latestFree stores the lowest '0' seen in the given map array in the current run
@@ -1279,6 +1290,14 @@ _scanDiscontiguousSearchLoopReverse
     NvU64 curEvictPage = numPages;
     NvBool bEvictablePage = NV_FALSE;
     NvU64 i;
+
+    if ((localEnd == NV_U64_MAX) || ((localEnd + 1ULL) < realAlign))
+    {
+        *pNumEvictablePages = 0;
+        return 0;
+    }
+
+    frameBaseIdx = alignDownToMod(localEnd + 1ULL, frameAlignment, realAlign);
 
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
@@ -1362,6 +1381,11 @@ loop_begin:
 free_found:
                     // Found a free page, set frameBaseIdx and go back to the beginning of the loop
                     frameBaseIdx -= portUtilCountLeadingZeros64(~curMap);
+                    if (frameBaseIdx < realAlign)
+                    {
+                        *pNumEvictablePages = numPages - curEvictPage;
+                        return totalFound;
+                    }
                     frameBaseIdx = alignDownToMod(frameBaseIdx, frameAlignment, realAlign);
                     goto loop_begin;
                 }

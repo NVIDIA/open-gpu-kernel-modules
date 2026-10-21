@@ -1056,26 +1056,31 @@ static NV_STATUS _kmigmgrHandlePreSchedulingDisableCallback
     NV_STATUS rmStatus = NV_OK;
     NvBool bDisable = NV_FALSE;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvBool bLegacyVgpu = IS_VIRTUAL(pGpu) && kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager);
+    NvBool bMonolithic = !IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu);
 
-    for (GIIdx = 0; GIIdx < NV_ARRAY_ELEMENTS(pKernelMIGManager->kernelMIGGpuInstance); ++GIIdx)
+    if (bLegacyVgpu || bMonolithic)
     {
-        if (pKernelMIGManager->kernelMIGGpuInstance[GIIdx].bValid)
+        for (GIIdx = 0; GIIdx < NV_ARRAY_ELEMENTS(pKernelMIGManager->kernelMIGGpuInstance); ++GIIdx)
         {
-            kmigmgrDestroyGPUInstanceScrubber(pGpu, pKernelMIGManager, &pKernelMIGManager->kernelMIGGpuInstance[GIIdx]);
+            if (pKernelMIGManager->kernelMIGGpuInstance[GIIdx].bValid)
+            {
+                kmigmgrDestroyGPUInstanceScrubber(pGpu, pKernelMIGManager, &pKernelMIGManager->kernelMIGGpuInstance[GIIdx]);
+            }
         }
-    }
 
-    if (IS_VIRTUAL(pGpu) && kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager))
+        if (bMonolithic)
+        {
+            NV_ASSERT_OK(kmigmgrSaveToPersistence(pGpu, pKernelMIGManager));
+        }
         return NV_OK;
+    }
 
     //
     // Update persistent instance topology so that we can recreate it on next
     // GPU attach.
     //
     NV_ASSERT_OK(kmigmgrSaveToPersistence(pGpu, pKernelMIGManager));
-
-    if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
-        return NV_OK;
 
     for (GIIdx = 0; GIIdx < NV_ARRAY_ELEMENTS(pKernelMIGManager->kernelMIGGpuInstance); ++GIIdx)
     {
@@ -1130,6 +1135,15 @@ static NV_STATUS _kmigmgrHandlePreSchedulingDisableCallback
                                     sizeof(params)));
             }
         }
+
+        //
+        // All compute instances (and their retained golden image channels) have
+        // now been freed by kmigmgrDeleteComputeInstance. Destroy the partition
+        // scrubber before invalidating the GPU instance so the golden channel's
+        // scrub-on-free vidmem was freed while the scrubber was still valid.
+        // kmigmgrInvalidateGPUInstance also calls this, but it is idempotent.
+        //
+        kmigmgrDestroyGPUInstanceScrubber(pGpu, pKernelMIGManager, pKernelMIGGpuInstance);
 
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
             kmigmgrInvalidateGPUInstance(pGpu, pKernelMIGManager, swizzId, NV_TRUE));
@@ -1495,7 +1509,10 @@ kmigmgrLoadStaticInfo_VF
         NvU32 entryCount = 0;
         NvU32 i;
 
-        NV_ASSERT(pVSI->ciProfiles.profileCount <= NV_ARRAY_ELEMENTS(pPrivate->staticInfo.pCIProfiles->profiles));
+        NV_ASSERT_OR_ELSE(
+            pVSI->ciProfiles.profileCount <= NV_ARRAY_ELEMENTS(pPrivate->staticInfo.pCIProfiles->profiles),
+            status = NV_ERR_INVALID_DATA;
+            goto failed;);
 
         for (i = 0; i < pVSI->ciProfiles.profileCount; i++)
         {
@@ -3088,7 +3105,7 @@ kmigmgrIsDeviceUsingDeviceProfiling_IMPL
         subdeviceGetByInstance(pRsClient, RES_GET_HANDLE(pDevice), 0, &pSubdevice),
         return NV_FALSE; );
 
-    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_INFO,
         gisubscriptionGetGPUInstanceSubscription(pRsClient, RES_GET_HANDLE(pSubdevice), &pGPUInstanceSubscription),
         return NV_FALSE; );
 
@@ -5481,6 +5498,10 @@ kmigmgrDeleteComputeInstance_IMPL
     KMIGMGR_CONFIGURE_INSTANCE_REQUEST *pConfigRequestPerCi;
     NvU32 updateEngMask;
     NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics = NULL;
+    RM_ENGINE_TYPE globalRmEngType;
+    MIG_INSTANCE_REF ref;
+    NvS32 refCountThreshold = 2;
 
     NV_ASSERT_OR_RETURN(pKernelMIGGpuInstance != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(CIID < NV_ARRAY_ELEMENTS(pKernelMIGGpuInstance->MIGComputeInstance),
@@ -5494,12 +5515,30 @@ kmigmgrDeleteComputeInstance_IMPL
     pMIGComputeInstance = &pKernelMIGGpuInstance->MIGComputeInstance[CIID];
     pComputeResourceAllocation = &pMIGComputeInstance->resourceAllocation;
 
+    ref = kmigmgrMakeCIReference(pKernelMIGGpuInstance, pMIGComputeInstance);
+    
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
+                                      RM_ENGINE_TYPE_GR(0), &globalRmEngType));
+    pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(globalRmEngType));
+
+    //
+    // A retained golden image channel (vGPU guest MIG) holds one reference on
+    // this CI's share. Account for it so the gate fails only for genuine
+    // external clients; the channel is freed after the gate.
+    //
+    if ((pKernelGraphics != NULL) &&
+                kgraphicsIsGoldenImageChannelConstructed(pGpu, pKernelGraphics))
+    {
+        refCountThreshold++;
+    }
+
     //
     // Initial refCount is increased to "1" when instance is created and then
     // every subscription by a client should increase the refcount
     //
     if ((pMIGComputeInstance->pShare != NULL) &&
-        (serverGetShareRefCount(&g_resServ, pMIGComputeInstance->pShare) > 2))
+        (serverGetShareRefCount(&g_resServ, pMIGComputeInstance->pShare) > refCountThreshold))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Compute Instance with id - %d still in use by other clients\n",
@@ -5520,6 +5559,13 @@ kmigmgrDeleteComputeInstance_IMPL
         osRmCapUnregister(&pMIGComputeInstance->pOsRmCaps);
     }
 
+    // Gate passed: free the retained golden image channel, releasing its CI ref.
+    if ((pKernelGraphics != NULL) &&
+                kgraphicsIsGoldenImageChannelConstructed(pGpu, pKernelGraphics))
+    {
+        kgraphicsDestroyGoldenImageChannel(pGpu, pKernelGraphics);
+    }
+
     // Deconfigure the GR engine for this compute instance
     swizzId = pKernelMIGGpuInstance->swizzId;
 
@@ -5538,14 +5584,6 @@ kmigmgrDeleteComputeInstance_IMPL
         done);
 
     {
-        RM_ENGINE_TYPE globalRmEngType;
-        MIG_INSTANCE_REF ref = kmigmgrMakeCIReference(pKernelMIGGpuInstance, pMIGComputeInstance);
-        NV_ASSERT_OK_OR_GOTO(status,
-            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              RM_ENGINE_TYPE_GR(0),
-                                              &globalRmEngType),
-            done);
-
         // Free up the internal handles for this compute instance
         kmigmgrFreeComputeInstanceHandles(pGpu, pKernelMIGManager, pKernelMIGGpuInstance, pMIGComputeInstance);
 
@@ -8176,7 +8214,8 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo != NULL, NV_ERR_INVALID_STATE);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo->pCIProfiles != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT(pStaticInfo->pCIProfiles->profileCount <= NV_ARRAY_ELEMENTS(pParams->profiles));
+    NV_ASSERT_OR_RETURN(pStaticInfo->pCIProfiles->profileCount <= NV_ARRAY_ELEMENTS(pParams->profiles),
+                        NV_ERR_INVALID_DATA);
 
     entryCount = 0;
     for (i = 0; i < pStaticInfo->pCIProfiles->profileCount; i++)
@@ -9869,4 +9908,3 @@ kmigmgrIsGPUInstanceFlagLegal_IMPL
 
     return NV_TRUE;
 }
-

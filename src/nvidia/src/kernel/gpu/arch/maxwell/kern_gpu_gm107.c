@@ -35,6 +35,11 @@
 
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS
 
+#define GM107_PCI_CLASS_CODE_PROGRAMMING_INTERFACE_SHIFT 0
+#define GM107_PCI_CLASS_CODE_SUB_CLASS_SHIFT             8
+#define GM107_PCI_CLASS_CODE_BASE_CLASS_SHIFT            16
+#define GM107_PCI_CLASS_CODE_FIELD_MASK                  0xff
+
 /*!
  * @brief Returns SR-IOV capabilities
  *
@@ -399,12 +404,24 @@ void
 gpuGetIdInfo_GM107(OBJGPU *pGpu)
 {
     NvU32 data;
+    NvU32 classCode;
 
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, NV_XVE_REV_ID, &data))
     {
         NV_PRINTF(LEVEL_ERROR, "unable to read NV_XVE_REV_ID\n");
         return;
     }
+
+    classCode = GPU_DRF_VAL(_XVE, _REV_ID, _CLASS_CODE, data);
+    pGpu->idInfo.PCIProgrammingInterface =
+        (classCode >> GM107_PCI_CLASS_CODE_PROGRAMMING_INTERFACE_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
+    pGpu->idInfo.PCISubClass =
+        (classCode >> GM107_PCI_CLASS_CODE_SUB_CLASS_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
+    pGpu->idInfo.PCIBaseClass =
+        (classCode >> GM107_PCI_CLASS_CODE_BASE_CLASS_SHIFT) &
+        GM107_PCI_CLASS_CODE_FIELD_MASK;
 
     // we only need the FIB and MASK values
     pGpu->idInfo.PCIRevisionID = (data & ~GPU_DRF_SHIFTMASK(NV_XVE_REV_ID_CLASS_CODE));

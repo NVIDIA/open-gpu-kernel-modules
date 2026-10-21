@@ -1236,6 +1236,7 @@ virtmemMapTo_IMPL
 
     NvU32       tgtAddressSpace   = ADDR_UNKNOWN;
     NvBool      bDmaMappingRegistered = NV_FALSE;
+    NvBool      bDmaMapProgrammed     = NV_FALSE;
     NvBool      bFlaMapping           = pParams->bFlaMapping;
     NvBool      bIsIndirectPeer       = NV_FALSE;
     NvBool      bEncrypted;
@@ -1455,13 +1456,11 @@ virtmemMapTo_IMPL
             status = dmaAllocMap(pGpu, pDma, pVas, pVirtualMemory, pSrcMemory, pDmaMappingInfo);
             if (status != NV_OK)
                 goto done;
+            bDmaMapProgrammed = NV_TRUE;
 
             status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset, gpuMask);
             if (status != NV_OK)
             {
-                dmaFreeMap(pGpu, pDma, pVas,
-                           pVirtualMemory, pDmaMappingInfo,
-                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
                 goto done;
             }
 
@@ -1495,15 +1494,13 @@ virtmemMapTo_IMPL
             status = dmaAllocMap(pGpu, pDma, pVas, pVirtualMemory, pSrcMemory, pDmaMappingInfo);
             if (status != NV_OK)
                 goto done;
+            bDmaMapProgrammed = NV_TRUE;
 
             *pDmaOffset = pDmaMappingInfo->DmaOffset;
 
             status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset, gpuMask);
             if (status != NV_OK)
             {
-                dmaFreeMap(pGpu, pDma, pVas,
-                           pVirtualMemory, pDmaMappingInfo,
-                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
                 goto done;
             }
 
@@ -1615,6 +1612,13 @@ done:
                 {
                     _virtmemFreeKernelMapping(pGpu, pDmaMappingInfo);
                 }
+            }
+
+            if (bDmaMapProgrammed)
+            {
+                dmaFreeMap(pGpu, pDma, pVas,
+                           pVirtualMemory, pDmaMappingInfo,
+                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
             }
 
             if (pDmaMappingInfo->pMemDesc != NULL && bIsIndirectPeer)

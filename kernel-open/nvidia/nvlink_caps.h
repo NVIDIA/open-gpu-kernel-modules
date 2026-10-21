@@ -24,6 +24,8 @@
 #ifndef _NVLINK_CAPS_H_
 #define _NVLINK_CAPS_H_
 
+
+
 /* List of supported capability type */
 #define NVLINK_CAP_FABRIC_MANAGEMENT  0
 
@@ -33,6 +35,7 @@
 int nvlink_cap_init(const char *path);
 void nvlink_cap_exit(void);
 int nvlink_cap_acquire(int fd, NvU32 type);
+int nvlink_cap_validate(int fd, NvU32 type);
 void nvlink_cap_release(int fd);
 
 #endif //_NVLINK_CAPS_H_

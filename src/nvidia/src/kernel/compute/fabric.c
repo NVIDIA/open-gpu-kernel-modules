@@ -270,10 +270,7 @@ static NV_STATUS
 _fabricNotifyEvent(Fabric *pFabric)
 {
     if (pFabric->pOsImexEvent == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Unable to notify ImexSessionApi\n");
         return NV_ERR_NOT_READY;
-    }
 
     osSetEvent(NULL, pFabric->pOsImexEvent);
 

@@ -84,12 +84,7 @@ static void __nv_drm_gem_user_memory_prime_vunmap(
 static int __nv_drm_gem_user_memory_mmap(struct nv_drm_gem_object *nv_gem,
                                          struct vm_area_struct *vma)
 {
-    int ret = drm_gem_mmap_obj(&nv_gem->base,
-                drm_vma_node_size(&nv_gem->base.vma_node) << PAGE_SHIFT, vma);
-
-    if (ret < 0) {
-        return ret;
-    }
+    int ret;
 
     /*
      * Enforce that user-memory GEM mappings are MAP_SHARED, to prevent COW
@@ -97,6 +92,13 @@ static int __nv_drm_gem_user_memory_mmap(struct nv_drm_gem_object *nv_gem,
      */
     if (!(vma->vm_flags & VM_SHARED)) {
         return -EINVAL;
+    }
+
+    ret = drm_gem_mmap_obj(&nv_gem->base,
+              drm_vma_node_size(&nv_gem->base.vma_node) << PAGE_SHIFT, vma);
+
+    if (ret < 0) {
+        return ret;
     }
 
     nv_vm_flags_clear(vma, VM_PFNMAP);
@@ -194,6 +196,14 @@ int nv_drm_gem_import_userspace_memory_ioctl(struct drm_device *dev,
     unsigned long pages_count = 0;
 
     int ret = 0;
+
+    if ((params->address % PAGE_SIZE) != 0) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Userspace memory address 0x%" NvU64_fmtx " should be page aligned",
+            params->address);
+        return -EINVAL;
+    }
 
     if ((params->size % PAGE_SIZE) != 0) {
         NV_DRM_DEV_LOG_ERR(

@@ -24,6 +24,7 @@
 /* ------------------------ Includes --------------------------------------- */
 #include "ctrl/ctrl2080/ctrl2080clk.h"
 #include "ctrl/ctrl2080/ctrl2080perf.h"
+
 #include "os/os.h"
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rmapi.h"
@@ -35,6 +36,38 @@
 /* ------------------------ Static Function Prototypes --------------------- */
 /* ------------------------ Macros ----------------------------------------- */
 /* ------------------------ Public Functions ------------------------------- */
+
+static void
+_kernPerfCtrlSanitizeGpumonEngineUtilSample
+(
+    NV2080_CTRL_PERF_GPUMON_ENGINE_UTIL_SAMPLE *pEngineSample,
+    NvBool                                      bTranslatePid
+)
+{
+    if (pEngineSample->pOsPidInfo == 0)
+    {
+        return;
+    }
+
+    if (bTranslatePid)
+    {
+        NvU32 nsPid;
+
+        if (osFindNsPid((void *)pEngineSample->pOsPidInfo, &nsPid) == NV_OK)
+        {
+            pEngineSample->procId = nsPid;
+        }
+        else
+        {
+            pEngineSample->procId = NV2080_GPUMON_PID_INVALID;
+            pEngineSample->subProcessID = NV2080_GPUMON_PID_INVALID;
+            portMemSet(pEngineSample->subProcessName, 0,
+                       sizeof(pEngineSample->subProcessName));
+        }
+    }
+
+    pEngineSample->pOsPidInfo = 0;
+}
 
 /*!
  * @copydoc NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2
@@ -101,7 +134,8 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
     OBJGPU   *pGpu   = GPU_RES_GET_GPU(pSubdevice);
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *pSample;
-    NvU32 numEntries, index, nsPid;
+    NvU32 numEntries, index;
+    NvBool bTranslatePid;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
                           pRmApi->Control(pRmApi,
@@ -111,61 +145,24 @@ subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamplesV2_KERNEL
                              pParams,
                              sizeof(*pParams)));
 
-    // Skip translation if the request from root namespace.
-    if (osIsInitNs())
-        return NV_OK;
-
     // Now translate the sample's procId.
     numEntries = pParams->bufSize / sizeof (NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE);
     NV_ASSERT_OR_RETURN(numEntries <= NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL,
                         NV_ERR_BUFFER_TOO_SMALL);
+
+    bTranslatePid = !osIsInitNs();
 
     for (index = 0; index < numEntries; index++)
     {
         pSample = &pParams->samples[index];
 
         // pOsPidInfo is NULL for vGPU GSP case and RsClient of RS_PRIV_LEVEL_KERNEL and above.
-        if ((pSample->gr.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->gr.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->gr.pOsPidInfo = 0;
-            pSample->gr.procId = nsPid;
-        }
-
-        if ((pSample->fb.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->fb.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->fb.pOsPidInfo = 0;
-            pSample->fb.procId = nsPid;
-        }
-
-        if ((pSample->nvenc.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->nvenc.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->nvenc.pOsPidInfo = 0;
-            pSample->nvenc.procId = nsPid;
-        }
-
-        if ((pSample->nvdec.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->nvdec.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->nvdec.pOsPidInfo = 0;
-            pSample->nvdec.procId = nsPid;
-        }
-
-        if ((pSample->nvjpg.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->nvjpg.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->nvjpg.pOsPidInfo = 0;
-            pSample->nvjpg.procId = nsPid;
-        }
-
-        if ((pSample->nvofa.pOsPidInfo != 0) &&
-            (osFindNsPid((void *)pSample->nvofa.pOsPidInfo, &nsPid) == NV_OK))
-        {
-            pSample->nvofa.pOsPidInfo = 0;
-            pSample->nvofa.procId = nsPid;
-        }
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->gr, bTranslatePid);
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->fb, bTranslatePid);
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->nvenc, bTranslatePid);
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->nvdec, bTranslatePid);
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->nvjpg, bTranslatePid);
+        _kernPerfCtrlSanitizeGpumonEngineUtilSample(&pSample->nvofa, bTranslatePid);
     }
 
     return NV_OK;
