@@ -893,7 +893,9 @@ knvlinkSendInbandData_IMPL
                                         (void *)pParams,
                                         sizeof(*pParams));
 
-        if (status != NV_ERR_BUSY_RETRY)
+        // Emit a log print with the error status if inband data failed
+        if (status != NV_ERR_BUSY_RETRY &&
+            status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to send inband data: %llx\n", (NvU64)status);
             break;

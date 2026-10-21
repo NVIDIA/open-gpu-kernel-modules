@@ -726,7 +726,8 @@ nv_dma_buf_unmap_pages(
         return;
     }
 
-    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
+    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents,
+                       DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
 }
 
 static void

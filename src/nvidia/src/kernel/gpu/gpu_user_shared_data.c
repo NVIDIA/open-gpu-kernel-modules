@@ -99,6 +99,7 @@ gpushareddataConstruct_IMPL
     OBJGPU              *pGpu     = pMemory->pGpu; // pGpu is initialized in the Memory class constructor
     MEMORY_DESCRIPTOR  **ppMemDesc = &(pGpu->userSharedData.pMemDesc);
     NV00DE_ALLOC_PARAMETERS *pAllocParams = (NV00DE_ALLOC_PARAMETERS*)(pParams->pAllocParams);
+    NvU32 attr2 = 0;
 
     NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
 
@@ -125,7 +126,7 @@ gpushareddataConstruct_IMPL
     }
 
     NV_ASSERT_OK_OR_RETURN(memConstructCommon(pMemory,
-                NV01_MEMORY_SYSTEM, 0, *ppMemDesc, 0, NULL, 0, 0, 0, 0,
+                NV01_MEMORY_SYSTEM, 0, *ppMemDesc, 0, NULL, 0, attr2, 0, 0,
                 NVOS32_MEM_TAG_NONE, NULL));
     memdescAddRef(pGpu->userSharedData.pMemDesc);
 

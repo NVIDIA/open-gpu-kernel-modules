@@ -213,7 +213,11 @@ gisubscriptionConstruct_IMPL
         kmigmgrGetGPUInstanceInfo(pGpu, pKernelMIGManager, swizzId,
                                   &pGPUInstanceSubscription->pKernelMIGGpuInstance));
 
+    //
+    // Capability descriptors are validated in Client/CPU-RM before the
+    // subscription request is forwarded to physical GSP-RM.
     // For now skip kernel clients, such as UVM, until Bug 2729768 is fixed.
+    //
     if (pRsClient->type == CLIENT_TYPE_USER)
     {
         status = osRmCapAcquire(pGPUInstanceSubscription->pKernelMIGGpuInstance->pOsRmCaps,

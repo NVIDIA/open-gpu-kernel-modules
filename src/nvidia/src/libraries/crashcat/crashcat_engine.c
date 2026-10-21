@@ -104,6 +104,7 @@ void crashcatEngineUnload_IMPL
 )
 {
     objDelete(pCrashCatEng->pWayfinder);
+    pCrashCatEng->pWayfinder = NULL;
 }
 
 // Non-NVOC wrapper to handle variadic arguments

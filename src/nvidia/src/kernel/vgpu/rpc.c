@@ -4793,9 +4793,6 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NV2080_CTRL_CMD_FB_GET_INFO_V2:
             return rpcCtrlFbGetInfoV2_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
-        case NV0080_CTRL_CMD_FIFO_SET_CHANNEL_PROPERTIES:
-            return rpcCtrlFifoSetChannelProperties_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
-
         case NV2080_CTRL_CMD_GPU_EVICT_CTX:
             return rpcCtrlGpuEvictCtx_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -8458,30 +8455,9 @@ NV_STATUS rpcCtrlGetMmuDebugMode_v1E_06(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hCl
 
 NV_STATUS rpcCtrlFifoSetChannelProperties_v1A_16(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
 {
-    NV_STATUS status;
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams = (NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *)pParamStructPtr;
-    rpc_ctrl_fifo_set_channel_properties_v1A_16 *rpc_params = &rpc_message->ctrl_fifo_set_channel_properties_v1A_16;
+    osAssertFailed();
 
-    status = rpcWriteCommonHeader(pGpu,
-                                  pRpc,
-                                  NV_VGPU_MSG_FUNCTION_CTRL_FIFO_SET_CHANNEL_PROPERTIES,
-                                  sizeof(rpc_ctrl_fifo_set_channel_properties_v1A_16));
-    if (status != NV_OK)
-        return status;
-
-    rpc_params->hClient = hClient;
-    rpc_params->hObject = hObject;
-
-    status = serialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    if (status != NV_OK)
-        return status;
-
-    status = _issueRpcAndWait(pGpu, pRpc);
-    if (status != NV_OK)
-        return status;
-
-    status = deserialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(pParams, (NvU8 *) &rpc_params->ctrlParams, 0, NULL);
-    return status;
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS rpcCtrlBusSetP2pMapping_v29_08(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, void *pParamStructPtr)
@@ -11640,6 +11616,7 @@ NV_STATUS rpcCtrlCmdNvlinkInbandSendData_v26_05
 
     rpc_params->dataSize = pParams->dataSize;
     portMemCopy(rpc_params->buffer, rpc_params->dataSize, pParams->buffer, pParams->dataSize);
+
     status = _issueRpcAndWait(pGpu, pRpc);
 
     return status;

@@ -11489,10 +11489,25 @@ static void uvm_va_block_get_prefetch_hint(uvm_va_block_t *va_block,
                                            uvm_service_block_context_t *service_context)
 {
     uvm_processor_id_t new_residency;
+    struct vm_area_struct *hmm_vma = NULL;
+
+    if (uvm_va_block_is_hmm(va_block)) {
+        hmm_vma = service_context->block_context->hmm.vma;
+        UVM_ASSERT(hmm_vma);
+        UVM_ASSERT(va_block->hmm.va_space->va_space_mm.mm == hmm_vma->vm_mm);
+        uvm_assert_mmap_lock_locked(va_block->hmm.va_space->va_space_mm.mm);
+    }
 
     // Performance heuristics policy: we only consider prefetching when there
     // are migrations to a single processor, only.
-    if (uvm_processor_mask_get_count(&service_context->resident_processors) == 1) {
+    // Don't consider prefetching if the va_block is HMM and is backed by a
+    // non-anonymous VMA. Otherwise, since truncation calls on the file changes
+    // inode->i_size but doesn't change the VMA boundaries, hmm_range_fault()
+    // would fail if the faulting region expands beyond i_size but still within
+    // the VMA bounds.
+    if ((!hmm_vma || vma_is_anonymous(hmm_vma)) &&
+        uvm_processor_mask_get_count(&service_context->resident_processors) == 1) {
+
         uvm_page_index_t page_index;
         uvm_page_mask_t *new_residency_mask;
 

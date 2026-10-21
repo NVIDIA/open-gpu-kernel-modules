@@ -135,6 +135,13 @@ gpuGetIdInfo_GH100
         return;
     }
 
+    pGpu->idInfo.PCIProgrammingInterface =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _PGM_INTERFACE, data);
+    pGpu->idInfo.PCISubClass =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _SUB_CLASSCODE, data);
+    pGpu->idInfo.PCIBaseClass =
+        GPU_DRF_VAL(_EP_PCFG_GPU, _REVISION_ID_AND_CLASSCODE, _BASE_CLASSCODE, data);
+
     // we only need the FIB and MASK values
     pGpu->idInfo.PCIRevisionID = (data & ~GPU_DRF_SHIFTMASK(NV_EP_PCFG_GPU_REVISION_ID_AND_CLASSCODE_PGM_INTERFACE)
                                        & ~GPU_DRF_SHIFTMASK(NV_EP_PCFG_GPU_REVISION_ID_AND_CLASSCODE_SUB_CLASSCODE)

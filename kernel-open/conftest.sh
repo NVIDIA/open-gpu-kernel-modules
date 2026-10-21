@@ -3192,6 +3192,19 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
 
+        pfn_is_map_memory)
+            #
+            # Determine if pfn_is_map_memory() function is present.
+            # It only exists on aarch64.
+            #
+            CODE="
+            #include <asm/page.h>
+            int conftest_pfn_is_map_memory(void) {
+                return pfn_is_map_memory(0);
+            }"
+            compile_check_conftest "$CODE" "NV_PFN_IS_MAP_MEMORY_PRESENT" "" "functions"
+        ;;
+
         follow_pte_arg_vma)
             #
             # Determine if the first argument of follow_pte is
@@ -5172,6 +5185,21 @@ compile_test() {
             struct drm_atomic_commit state;"
 
             compile_check_conftest "$CODE" "NV_DRM_ATOMIC_COMMIT_STRUCT_PRESENT" "" "types"
+        ;;
+
+        percpu_mm_counter)
+            #
+            # Determine if the mm_counter variable is percpu or an atomic
+            #
+            # Added by commit f1a7941 ("mm: convert mm's rss stats into percpu_counter") in 6.2.
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_percpu_mm_counter(struct mm_struct *mm) {
+                percpu_counter_add(&mm->rss_stat[0], 0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PERCPU_MM_COUNTER" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

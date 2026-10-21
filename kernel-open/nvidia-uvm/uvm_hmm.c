@@ -335,20 +335,13 @@ static void hmm_va_block_unregister_gpu(uvm_va_block_t *va_block,
 void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_struct *mm)
 {
     uvm_range_tree_node_t *node;
-    uvm_va_block_t *va_block;
-    unsigned long devmem_start;
-    unsigned long devmem_end;
-    unsigned long pfn;
-    bool retry;
 
     if (!uvm_hmm_is_enabled(va_space))
         return;
 
-    devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
-    devmem_end = devmem_start + gpu->mem_info.size;
-
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
+
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
     // There could be pages with page->zone_device_data pointing to the va_space
@@ -357,31 +350,39 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
     // option here. Device-private pages can't be pinned so migration should
     // eventually succeed. Even if we did eventually bail out of the loop we'd
     // just stall in memunmap_pages() anyway.
-    do {
-        retry = false;
+    if (gpu->parent->devmem) {
+        unsigned long devmem_start = gpu->parent->devmem->pagemap.range.start + gpu->mem_info.phys_start;
+        unsigned long devmem_end = devmem_start + gpu->mem_info.size;
+        bool retry;
 
-        for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
-            struct page *page = pfn_to_page(pfn);
+        do {
+            unsigned long pfn;
 
-            // No need to keep scanning if no HMM pages are allocated for this
-            // va_space.
-            if (!atomic64_read(&va_space->hmm.allocated_page_count))
-                break;
+            retry = false;
 
-            UVM_ASSERT(is_device_private_page(page));
+            for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
+                struct page *page = pfn_to_page(pfn);
 
-            // This check is racy because nothing stops the page being freed and
-            // even reused. That doesn't matter though - worst case the
-            // migration fails, we retry and find the va_space doesn't match.
-            if (uvm_pmm_devmem_page_to_va_space(page) == va_space) {
-                if (uvm_hmm_pmm_gpu_evict_pfn(pfn) != NV_OK)
-                    retry = true;
+                // No need to keep scanning if no HMM pages are allocated for this
+                // va_space.
+                if (!atomic64_read(&va_space->hmm.allocated_page_count))
+                    break;
+
+                UVM_ASSERT(is_device_private_page(page));
+
+                // This check is racy because nothing stops the page being freed and
+                // even reused. That doesn't matter though - worst case the
+                // migration fails, we retry and find the va_space doesn't match.
+                if (uvm_pmm_devmem_page_to_va_space(page) == va_space) {
+                    if (uvm_hmm_pmm_gpu_evict_pfn(pfn) != NV_OK)
+                        retry = true;
+                }
             }
-        }
-    } while (retry);
+        } while (retry);
+    }
 
     uvm_range_tree_for_each(node, &va_space->hmm.blocks) {
-        va_block = hmm_va_block_from_node(node);
+        uvm_va_block_t *va_block = hmm_va_block_from_node(node);
 
         hmm_va_block_unregister_gpu(va_block, gpu, mm);
     }
@@ -3052,9 +3053,16 @@ NV_STATUS uvm_hmm_va_block_service_locked(uvm_processor_id_t processor_id,
         &service_context->per_processor_masks[uvm_id_value(new_residency)].new_residency;
     int ret;
     NV_STATUS status = NV_ERR_INVALID_ADDRESS;
+    uvm_page_index_t page_index;
 
     if (!mm)
         return status;
+
+    // Some of the HMM code works across the whole va_block region even if some
+    // particular pages in that region weren't faulting. This means access_type
+    // needs to be valid for the whole region to avoid stale faults.
+    for_each_va_block_unset_page_in_region_mask(page_index, new_residency_mask, region)
+        service_context->access_type[page_index] = UVM_FAULT_ACCESS_TYPE_PREFETCH;
 
     uvm_assert_mmap_lock_locked(mm);
     uvm_assert_rwsem_locked(&va_block->hmm.va_space->lock);

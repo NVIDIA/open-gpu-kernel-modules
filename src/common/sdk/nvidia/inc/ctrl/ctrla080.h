@@ -309,6 +309,8 @@ typedef struct NVA080_CTRL_SET_FB_USAGE_PARAMS {
  *          When false, TSG timeslice override is disabled.
  *      CAPS_GUEST_HIBERNATION_ENABLED
  *          Cap bit to indicate whether Guest OS Hibernation is supported or not.
+ *      CAPS_VIDEO_TRACE_ENABLED
+ *          Cap bit to indicate whether the video trace event buffer is enabled or not.
  *   uvmEnabledFeatures
  *      This parameter returns mask of UVM enabled features on vGPU. It comprises of
  *      UVM managed APIs and replayable faults that are enabled or disabled based on
@@ -405,6 +407,9 @@ typedef struct NVA080_CTRL_SET_FB_USAGE_PARAMS {
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED                     25:25
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED_FALSE              (0x00000000)
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_CI_MANIPULATION_ENABLED_TRUE               (0x00000001)
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_VIDEO_TRACE_ENABLED                         26:26
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_VIDEO_TRACE_ENABLED_FALSE                  (0x00000000)
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_VIDEO_TRACE_ENABLED_TRUE                   (0x00000001)
 
 /* UVM supported features */
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_UVM_FEATURES_REPLAYABLE_FAULTS_ENABLED                    0:0

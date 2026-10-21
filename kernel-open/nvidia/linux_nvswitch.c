@@ -167,14 +167,15 @@ MODULE_PARM_DESC(NvSwitchBlacklist, "NvSwitchBlacklist=uuid[,uuid...]");
 //   .ioctl, .poll and other background tasks.
 //
 //   The kernel guarantees that .close won't happen while .ioctl and .poll
-//   are going on and without successful .open one can't execute any file ops.
-//   This behavior guarantees correctness of the locking model.
+//   are going on for the same file. It does not serialize .close against
+//   operations on other fds for the same device, so .close must take
+//   nvswitch_dev.device_mutex before touching per-device state that is also
+//   accessed by those paths.
 //
-//   If .close is invoked and holding the lock which is also used by threaded
-//   tasks such as interrupt, driver will deadlock while trying to stop such
-//   tasks. For example, when threaded interrupts are enabled, free_irq() calls
-//   kthread_stop() to flush pending interrupt tasks. The locking model
-//   makes sure that such deadlock cases don't happen.
+//   Do not hold nvswitch_dev.device_mutex across operations that stop
+//   threaded tasks such as interrupt. For example, when threaded interrupts
+//   are enabled, free_irq() calls kthread_stop() to flush pending interrupt
+//   tasks. The locking model makes sure that such deadlock cases don't happen.
 //
 // Lock ordering:
 //   nvswitch.driver_mutex
@@ -2609,7 +2610,6 @@ nvswitch_os_is_fabric_manager
 {
     nvswitch_file_private_t *private_data = (nvswitch_file_private_t *)osPrivate;
 
-    /* Make sure that fabric mgmt capbaility fd is valid */
     if ((private_data == NULL) ||
         (private_data->capability_fds.fabric_mgmt < 0))
     {

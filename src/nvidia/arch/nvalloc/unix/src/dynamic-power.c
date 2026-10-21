@@ -2284,7 +2284,6 @@ RmPowerManagement(
                 break;
 
             case NV_PM_ACTION_STANDBY:
-                nvp->pm_state.InHibernate = NV_FALSE;
                 nvp->pm_state.IntrEn = intrGetIntrEn(pIntr);
                 intrSetIntrEn(pIntr, INTERRUPT_TYPE_DISABLED);
                 gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
@@ -2300,6 +2299,7 @@ RmPowerManagement(
                 if (nvp->pm_state.InHibernate)
                 {
                     gpuResumeFromHibernate(pGpu);
+                    nvp->pm_state.InHibernate = NV_FALSE;
                 }
                 else
                 {

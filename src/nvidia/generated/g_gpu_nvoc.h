@@ -500,6 +500,9 @@ typedef struct
     NvU32                 Manufacturer;
     NvU32                 PCISubDeviceID;
     NvU32                 PCIRevisionID;
+    NvU32                 PCIProgrammingInterface;
+    NvU32                 PCISubClass;
+    NvU32                 PCIBaseClass;
     NvU32                 Subrevision;
 
 } GPUIDINFO;

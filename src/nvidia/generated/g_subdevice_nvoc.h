@@ -479,6 +479,16 @@ static inline NV_STATUS subdeviceCtrlCmdBusGetPciInfo(struct Subdevice *pSubdevi
 #define subdeviceCtrlCmdBusGetPciInfo(pSubdevice, pPciInfoParams) subdeviceCtrlCmdBusGetPciInfo_IMPL(pSubdevice, pPciInfoParams)
 #endif // __nvoc_subdevice_h_disabled
 
+NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams);
+#ifdef __nvoc_subdevice_h_disabled
+static inline NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams) {
+    NV_ASSERT_FAILED_PRECOMP("Subdevice was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_h_disabled
+#define subdeviceCtrlCmdBusGetPciInfoV2(pSubdevice, pPciInfoParams) subdeviceCtrlCmdBusGetPciInfoV2_IMPL(pSubdevice, pPciInfoParams)
+#endif // __nvoc_subdevice_h_disabled
+
 NV_STATUS subdeviceCtrlCmdBusGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams);
 #ifdef __nvoc_subdevice_h_disabled
 static inline NV_STATUS subdeviceCtrlCmdBusGetInfoV2(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams) {
@@ -6627,6 +6637,8 @@ NV_STATUS subdeviceCtrlCmdDmaInvalidateTLB_IMPL(struct Subdevice *pSubdevice, NV
 NV_STATUS subdeviceCtrlCmdDmaGetInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_DMA_GET_INFO_PARAMS *pDmaInfoParams);
 
 NV_STATUS subdeviceCtrlCmdBusGetPciInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_PARAMS *pPciInfoParams);
+
+NV_STATUS subdeviceCtrlCmdBusGetPciInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS *pPciInfoParams);
 
 NV_STATUS subdeviceCtrlCmdBusGetInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *pBusInfoParams);
 

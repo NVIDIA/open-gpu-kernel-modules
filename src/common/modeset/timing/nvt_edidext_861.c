@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -3910,7 +3910,8 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             pHdmiInfo->dsc_MaxPclkPerSliceMHz = 0;
             switch(pHdmiForum->DSC_MaxSlices)
             {
-            case 7: pHdmiInfo->dsc_MaxSlices = 16; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
+            case 8: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 900; break;
+            case 7: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 600; break;
             case 6: pHdmiInfo->dsc_MaxSlices = 12; pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
             case 5: pHdmiInfo->dsc_MaxSlices = 8;  pHdmiInfo->dsc_MaxPclkPerSliceMHz = 400; break;
             case 4: pHdmiInfo->dsc_MaxSlices = 8;  pHdmiInfo->dsc_MaxPclkPerSliceMHz = 340; break;

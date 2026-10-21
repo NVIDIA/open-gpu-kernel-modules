@@ -100,18 +100,6 @@ NvBool IsGssLegacyCall(NvU32 cmd)
 RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArgs)
 {
     NvU32     i;
-    NV_STATUS nvStatus;
-    RsClient *pClient     = NULL;
-    OBJGPU   *pGpu        = NULL;
-    NvBool gssLegacyVgpuCall = NV_FALSE;
-
-    NV_CHECK_OK_OR_ELSE(nvStatus,
-                        LEVEL_ERROR,
-                        serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
-                        return NULL);
-
-    // pGpu is expected to be NULL on some controls, addi ng a void to avoid coverity failure.
-    (void)gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu);
 
     // search rmDeprecatedControlTable for handler
     for (i = 0; rmDeprecatedControlTable[i].cmd != 0; i++)
@@ -127,10 +115,7 @@ RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArg
         }
     }
 
-    gssLegacyVgpuCall = ((pGpu != NULL) && IS_VIRTUAL(pGpu));
-
-    // Check if the cmd is part of the legacy GSS control.
-    if (pGpu != NULL && IsGssLegacyCall(pArgs->cmd) && (IS_GSP_CLIENT(pGpu) || gssLegacyVgpuCall))
+    if (IsGssLegacyCall(pArgs->cmd))
     {
         extern NV_STATUS RmGssLegacyRpcCmd(API_SECURITY_INFO*, DEPRECATED_CONTEXT*, NVOS54_PARAMETERS*);
         return RmGssLegacyRpcCmd;

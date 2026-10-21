@@ -39,6 +39,8 @@
  * NV2080_CTRL_CMD_BUS_GET_PCI_INFO
  *
  * This command returns PCI bus identifier information for the specified GPU.
+ * This v1 control is retained only for existing clients. New clients should
+ * use NV2080_CTRL_CMD_BUS_GET_PCI_INFO_V2 instead.
  *
  *   pciDeviceId
  *       This parameter specifies the internal PCI device and vendor
@@ -70,6 +72,53 @@ typedef struct NV2080_CTRL_BUS_GET_PCI_INFO_PARAMS {
     NvU32 pciRevisionId;
     NvU32 pciExtDeviceId;
 } NV2080_CTRL_BUS_GET_PCI_INFO_PARAMS;
+
+/**
+ * NV2080_CTRL_CMD_BUS_GET_PCI_INFO_V2
+ *
+ * This command returns PCI bus identifier and class information for the
+ * specified GPU.
+ *
+ *   pciDeviceId[OUT]
+ *       This parameter specifies the internal PCI device and vendor
+ *       identifiers for the GPU.
+ *   pciSubSystemId[OUT]
+ *       This parameter specifies the internal PCI subsystem identifier for
+ *       the GPU.
+ *   pciRevisionId[OUT]
+ *       This parameter specifies the internal PCI device-specific revision
+ *       identifier for the GPU.
+ *   pciExtDeviceId[OUT]
+ *       This parameter specifies the external PCI device identifier for
+ *       the GPU.  It contains only the 16-bit device identifier.  This
+ *       value is identical to the device identifier portion of
+ *       pciDeviceId since non-transparent bridges are no longer supported.
+ *   pciProgrammingInterface[OUT]
+ *       This parameter specifies the PCI programming interface code.
+ *   pciSubClass[OUT]
+ *       This parameter specifies the PCI sub class code.
+ *   pciBaseClass[OUT]
+ *       This parameter specifies the PCI base class code.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_BUS_GET_PCI_INFO_V2 (0x2080183c) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS_MESSAGE_ID (0x3CU)
+
+typedef struct NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS {
+    NvU32 pciDeviceId;
+    NvU32 pciSubSystemId;
+    NvU32 pciRevisionId;
+    NvU32 pciExtDeviceId;
+    NvU32 pciProgrammingInterface;
+    NvU32 pciSubClass;
+    NvU32 pciBaseClass;
+} NV2080_CTRL_BUS_GET_PCI_INFO_V2_PARAMS;
 
 /*
  * NV2080_CTRL_BUS_INFO

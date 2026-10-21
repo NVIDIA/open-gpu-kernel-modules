@@ -134,6 +134,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += hv_get_isolation_type
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += seq_read_iter
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += follow_pfn
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ptep_get
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += pfn_is_map_memory
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_put_unlocked
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += add_memory_driver_managed
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += of_dma_configure
@@ -230,6 +231,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += register_shrinker_has_format_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += nr_kernel_misc_reclaimable
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_resize_resource_has_exclude_bars_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += is_vma_write_locked_has_mm_lock_seq_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += percpu_mm_counter
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

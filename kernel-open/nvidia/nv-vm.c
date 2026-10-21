@@ -924,6 +924,53 @@ static nv_page_pool_t *nv_mem_pool_get(int node_id, unsigned int order)
     return sysmem_page_pools[node_id][order];
 }
 
+static void nv_account_mm_free_work(struct work_struct *work)
+{
+    nv_linux_mm_free_work_t *mm_work = container_of(work, nv_linux_mm_free_work_t, task);
+    mmdrop(mm_work->mm);
+    NV_KFREE(mm_work, sizeof(*mm_work));
+}
+
+static nv_linux_mm_free_work_t *nv_account_mm_alloc(NvU64 numPages)
+{
+    struct mm_struct *mm = current->mm;
+    nv_linux_mm_free_work_t *mm_work;
+    if (mm == NULL)
+    {
+        return NULL;
+    }
+    NV_KMALLOC(mm_work, sizeof(*mm_work));
+    if (mm_work == NULL)
+    {
+        return NULL;
+    }
+    INIT_WORK(&mm_work->task, nv_account_mm_free_work);
+    mm_work->mm = mm;
+    mm_work->num_pages = numPages;
+    mmgrab(mm);
+#if defined(NV_PERCPU_MM_COUNTER)
+    percpu_counter_add(&mm->rss_stat[MM_SHMEMPAGES], numPages);
+#else
+    atomic_long_add_return(numPages, &mm->rss_stat.count[MM_SHMEMPAGES]);
+#endif
+    return mm_work;
+}
+
+static void nv_account_mm_free(nv_linux_mm_free_work_t *mm_work)
+{
+    if (mm_work == NULL)
+    {
+        return;
+    }
+#if defined(NV_PERCPU_MM_COUNTER)
+    percpu_counter_add(&mm_work->mm->rss_stat[MM_SHMEMPAGES], -mm_work->num_pages);
+#else
+    atomic_long_add_return(-mm_work->num_pages, &mm_work->mm->rss_stat.count[MM_SHMEMPAGES]);
+#endif
+
+    schedule_work(&mm_work->task);
+}
+
 void
 nv_free_system_pages
 (
@@ -942,6 +989,8 @@ nv_free_system_pages
 
         page_pool = nv_mem_pool_get(likely_node_id, at->order);
     }
+
+    nv_account_mm_free(at->accounting_mm_work);
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
@@ -1042,6 +1091,8 @@ nv_alloc_system_pages
 
         nv_alloc_set_page(at, i, virt_addr);
     }
+
+    at->accounting_mm_work = nv_account_mm_alloc(at->num_pages);
 
     for (i = 0; i < num_pages; i++)
     {

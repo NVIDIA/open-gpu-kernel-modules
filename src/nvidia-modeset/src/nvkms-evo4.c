@@ -777,6 +777,54 @@ static void EvoSetOutputScalerC9(const NVDispEvoRec *pDispEvo, const NvU32 head,
         DRF_NUM(C97D, _HEAD_SET_CONTROL_OUTPUT_SCALER, _HORIZONTAL_TAPS, hTaps));
 }
 
+/*
+ * The Blackwell postcomp scaler consumes fixed-point samples
+ * between the RGB2ITP and ITP2RGB blocks, so their paired FVLUTs must be
+ * enabled whenever postcomp scaling is active; left bypassed, the scaler
+ * misinterprets FP16 bit patterns as fixed point and corrupts scaled
+ * content.
+ */
+static void EvoSetOutputScalerCA(const NVDispEvoRec *pDispEvo, const NvU32 head,
+                                 NVEvoUpdateState *updateState)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVEvoChannelPtr pChannel = pDevEvo->core;
+    const NVHwModeViewPortEvo *pViewPort =
+        &pDispEvo->headState[head].timings.viewPort;
+    const NvBool scaling =
+        (pViewPort->in.width != pViewPort->out.width) ||
+        (pViewPort->in.height != pViewPort->out.height);
+    NvU32 rgb2ItpControl = 0;
+    NvU32 itp2RgbControl = 0;
+
+    nvUpdateUpdateState(pDevEvo, updateState, pChannel);
+
+    EvoSetOutputScalerC9(pDispEvo, head, updateState);
+
+    if (scaling) {
+        // Enable the paired FVLUTs with PQ defaults.
+        rgb2ItpControl =
+            DRF_DEF(CA7D, _HEAD_SET_RGB2ITP_CONTROL,
+                    _ENABLE_FVLUT, _ENABLE) |
+            DRF_DEF(CA7D, _HEAD_SET_RGB2ITP_CONTROL,
+                    _FVLUT_INTERPOLATE, _ENABLE);
+
+        itp2RgbControl =
+            DRF_DEF(CA7D, _HEAD_SET_ITP2RGB_CONTROL,
+                    _ENABLE_FVLUT, _ENABLE) |
+            DRF_DEF(CA7D, _HEAD_SET_ITP2RGB_CONTROL,
+                    _FVLUT_INTERPOLATE, _ENABLE);
+    }
+
+    nvDmaSetStartEvoMethod(
+        pChannel, NVCA7D_HEAD_SET_RGB2ITP_CONTROL(head), 1);
+    nvDmaSetEvoMethodData(pChannel, rgb2ItpControl);
+
+    nvDmaSetStartEvoMethod(
+        pChannel, NVCA7D_HEAD_SET_ITP2RGB_CONTROL(head), 1);
+    nvDmaSetEvoMethodData(pChannel, itp2RgbControl);
+}
+
 static NvBool EvoSetViewportInOut9(NVDevEvoPtr pDevEvo, const int head,
                                    const NVHwModeViewPortEvo *pViewPortMin,
                                    const NVHwModeViewPortEvo *pViewPort,
@@ -2909,7 +2957,7 @@ NVEvoHAL nvEvoCA = {
     nvEvoFlipTransitionWARC6,                     /* FlipTransitionWAR */
     nvEvoFillLUTSurfaceC5,                        /* FillLUTSurface */
     EvoSetOutputLutC9,                            /* SetOutputLut */
-    EvoSetOutputScalerC9,                         /* SetOutputScaler */
+    EvoSetOutputScalerCA,                         /* SetOutputScaler */
     EvoSetViewportPointInC9,                      /* SetViewportPointIn */
     EvoSetViewportInOutC9,                        /* SetViewportInOut */
     EvoSetCursorImageC9,                          /* SetCursorImage */

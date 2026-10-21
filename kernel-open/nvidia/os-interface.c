@@ -644,7 +644,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
         }
         if (*address == NULL)
         {
-            *address = nv_vmalloc(alloc_size);
+            *address = nv_vmalloc(alloc_size, GFP_KERNEL);
             alloc_size |= VMALLOC_ALLOCATION_SIZE_FLAG;
         }
     }

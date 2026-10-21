@@ -103,6 +103,7 @@
 #endif
 
 /* task and signal-related items */
+#include <linux/sched/mm.h>
 #include <linux/sched/signal.h>
 #include <linux/sched/task.h>
 #include <linux/sched.h>
@@ -354,12 +355,12 @@ extern int nv_pat_mode;
 /* keep track of memory usage */
 #include "nv-memdbg.h"
 
-static inline void *nv_vmalloc(unsigned long size)
+static inline void *nv_vmalloc(unsigned long size, gfp_t flags)
 {
 #if defined(NV_VMALLOC_HAS_PGPROT_T_ARG)
-    void *ptr = __vmalloc(size, GFP_KERNEL, PAGE_KERNEL);
+    void *ptr = __vmalloc(size, flags, PAGE_KERNEL);
 #else
-    void *ptr = __vmalloc(size, GFP_KERNEL);
+    void *ptr = __vmalloc(size, flags);
 #endif
     NV_MEMDBG_ADD(ptr, size);
     return ptr;
@@ -914,6 +915,13 @@ struct nv_dma_buf
 };
 #endif // CONFIG_DMA_SHARED_BUFFER
 
+
+typedef struct nv_linux_mm_free_work_s {
+    NvU64 num_pages;
+    struct mm_struct *mm;
+    struct work_struct task;
+} nv_linux_mm_free_work_t;
+
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;
     struct device     *dev;
@@ -944,6 +952,7 @@ typedef struct nv_alloc_s {
     void          *import_priv;
     struct sg_table *import_sgt;
     dma_addr_t     dma_handle;          /* dma handle used by dma_alloc_coherent(), dma_free_coherent() */
+    nv_linux_mm_free_work_t *accounting_mm_work;
 } nv_alloc_t;
 
 /**
@@ -1735,6 +1744,25 @@ typedef enum
 #else
 #include <linux/gpio/driver.h>
 
+static inline int __to_hwgpio(struct gpio_device *gdev,
+                              const struct of_phandle_args *gpiospec)
+{
+#if defined(CONFIG_OF_GPIO)
+    /*
+     * Use the chip's of_xlate callback to translate the DT GPIO
+     * specifier into a linear offset.  Tegra GPIO controllers encode
+     * port and pin in args[0] and of_xlate sums per-port pin counts
+     * to produce the real offset.
+     */
+    struct gpio_chip *chip = gpio_device_get_chip(gdev);
+
+    if (chip->of_xlate)
+        return chip->of_xlate(chip, gpiospec, NULL);
+#endif
+
+    return gpiospec->args[0];
+}
+
 /*
  * of_get_named_gpio() was removed along with linux/of_gpio.h by commit
  * 51aaf65bbd21 ("gpio: of: Remove <linux/of_gpio.h>"). Provide a compat
@@ -1746,7 +1774,7 @@ static inline int of_get_named_gpio(const struct device_node *np,
     struct of_phandle_args gpiospec;
     struct gpio_device *gdev;
     struct gpio_desc *desc;
-    int ret;
+    int ret, hwgpio;
 
     if (!np)
         return -ENOENT;
@@ -1761,30 +1789,13 @@ static inline int of_get_named_gpio(const struct device_node *np,
     if (!gdev)
         return -EPROBE_DEFER;
 
-    /*
-     * Use the chip's of_xlate callback to translate the DT GPIO
-     * specifier into a linear offset.  Tegra GPIO controllers encode
-     * port and pin in args[0] and of_xlate sums per-port pin counts
-     * to produce the real offset.
-     */
-    {
-        struct gpio_chip *chip = gpio_device_get_chip(gdev);
-        int hwgpio;
-
-#if defined(CONFIG_OF_GPIO)
-        if (chip->of_xlate)
-            hwgpio = chip->of_xlate(chip, &gpiospec, NULL);
-        else
-#endif
-            hwgpio = gpiospec.args[0];
-
-        if (hwgpio < 0) {
-            gpio_device_put(gdev);
-            return hwgpio;
-        }
-
-        desc = gpio_device_get_desc(gdev, hwgpio);
+    hwgpio = __to_hwgpio(gdev, &gpiospec);
+    if (hwgpio < 0) {
+        gpio_device_put(gdev);
+        return hwgpio;
     }
+
+    desc = gpio_device_get_desc(gdev, hwgpio);
     gpio_device_put(gdev);
 
     if (IS_ERR(desc))

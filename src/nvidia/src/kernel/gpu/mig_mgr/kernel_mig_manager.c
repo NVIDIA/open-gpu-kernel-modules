@@ -3102,7 +3102,7 @@ kmigmgrIsDeviceUsingDeviceProfiling_IMPL
         subdeviceGetByInstance(pRsClient, RES_GET_HANDLE(pDevice), 0, &pSubdevice),
         return NV_FALSE; );
 
-    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_INFO,
         gisubscriptionGetGPUInstanceSubscription(pRsClient, RES_GET_HANDLE(pSubdevice), &pGPUInstanceSubscription),
         return NV_FALSE; );
 
@@ -10139,4 +10139,3 @@ kmigmgrIsGPUInstanceFlagLegal_IMPL
 
     return NV_TRUE;
 }
-

@@ -256,7 +256,7 @@ krcErrorInvokeCallback_IMPL
     Journal            *pRcDB             = SYS_GET_RCDB(pSys);
     KernelMIGManager   *pKernelMigManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     RmClient           *pClient           = NULL;
-    RC_CALLBACK_STATUS  clientAction;
+    RC_CALLBACK_STATUS  clientAction      = RC_CALLBACK_IGNORE;
     RM_ENGINE_TYPE      localRmEngineType  = rmEngineType;
     NvU32               rcDiagRecOwner = RCDB_RCDIAG_DEFAULT_OWNER;
     NV_STATUS           status;
@@ -361,7 +361,7 @@ krcErrorInvokeCallback_IMPL
             // RM takes no action to the channel and triggers TDR (similar to RC_CALLBACK_IGNORE)
             return NV_FALSE;
         }
-        else
+        else if (pRcErrorContext != NULL)
         {
             if (IS_GSP_CLIENT(pGpu))
             {

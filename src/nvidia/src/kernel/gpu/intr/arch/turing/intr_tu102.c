@@ -718,7 +718,7 @@ intrIsPending_TU102
  *        for a generic interface that works across generations and doesn't expose the
  *        intrVector to the module. Extenuating circumstances, such as the interrupt
  *        table not being initialized, can still use this.
- * 
+ *
  *
  * @param[in]   pGpu          OBJGPU pointer
  * @param[in]   pIntr         Intr pointer
@@ -1114,11 +1114,19 @@ intrGetLeafStatus_TU102
 {
     NvU32 subtreeIndex;
     NvU32 leafIndex;
+    NvU32 lastLeafIndex;
 
     FOR_EACH_INDEX_IN_MASK(64, subtreeIndex,
                            intrGetIntrTopLegacyStallMask_HAL(pIntr))
     {
+        //
+        // The leafIndex and lastLeafIndex is computed from legacy stall tree.
+        // RM ensure that these two numbers are less than NV_MAX_INTR_LEAVES before.
+        // calling into this function.
+        //
         leafIndex = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(subtreeIndex);
+        lastLeafIndex = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(subtreeIndex);
+
         if (pIntr->getProperty(pIntr, PDB_PROP_INTR_READ_ONLY_EVEN_NUMBERED_INTR_LEAF_REGS))
         {
             //
@@ -1129,7 +1137,7 @@ intrGetLeafStatus_TU102
         }
         else
         {
-            for (; leafIndex <= NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(subtreeIndex); leafIndex++)
+            for (; leafIndex <= lastLeafIndex; leafIndex++)
             {
                 pLeafVals[leafIndex] = intrReadRegLeaf_HAL(pGpu, pIntr, leafIndex, pThreadState);
             }

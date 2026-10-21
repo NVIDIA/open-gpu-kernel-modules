@@ -40,6 +40,14 @@
 #define CE_TEST_MEM_MIDDLE_OFFSET (CE_TEST_MEM_BEGIN_SIZE)
 #define CE_TEST_MEM_END_OFFSET (CE_TEST_MEM_SIZE - CE_TEST_MEM_BEGIN_SIZE)
 #define CE_TEST_MEM_COUNT 5
+// Minimum payload size (bytes) for which the "ciphertext must differ from
+// plaintext" sanity check is statistically meaningful. AES-CTR produces
+// ciphertext = plaintext XOR keystream, so for tiny payloads (e.g. the 1-byte
+// small_sizes case) the keystream byte can be 0x00, making ciphertext ==
+// plaintext purely by chance (~1/256 per byte) even when encryption is
+// correct. Below this size the heuristic is skipped; the authoritative
+// correctness check remains the end-to-end roundtrip compare.
+#define CE_TEST_MIN_CIPHERTEXT_DIFF_SIZE 16
 
 static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
 {
@@ -1107,9 +1115,14 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
 
     TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
 
-    TEST_CHECK_GOTO(!mem_match(src_plain, src_cipher, size), out);
+    // Skip the "ciphertext must differ from plaintext" heuristic for tiny
+    // payloads; see CE_TEST_MIN_CIPHERTEXT_DIFF_SIZE above. The roundtrip
+    // compare below still verifies correctness for all sizes.
+    if (size >= CE_TEST_MIN_CIPHERTEXT_DIFF_SIZE) {
+        TEST_CHECK_GOTO(!mem_match(src_plain, src_cipher, size), out);
 
-    TEST_CHECK_GOTO(!mem_match(dst_cipher, src_plain, size), out);
+        TEST_CHECK_GOTO(!mem_match(dst_cipher, src_plain, size), out);
+    }
 
     // CPU (encrypted) > CPU (decrypted), using CPU
     if (decrypt_in_order) {

@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 595.44.15.
+version 595.44.16.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-595.44.15 driver release.  This can be achieved by installing
+595.44.16 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/595.44.15/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/595.44.16/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -1018,8 +1018,6 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU      | 2DB9           |
 | NVIDIA GeForce RTX 5050 Laptop GPU                      | 2DD8           |
 | NVIDIA RTX PRO 500 Blackwell Embedded GPU               | 2DF9           |
-| NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)      | 2E03           |
-| NVIDIA RTX Spark N1X (5120-core Blackwell RTX GPU)      | 2E06           |
 | NVIDIA GB10                                             | 2E12 10DE 21EC |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5060                                 | 2F06           |
@@ -1029,3 +1027,4 @@ Subsystem Device ID.
 | NVIDIA B300 SXM6 AC                                     | 3182 10DE 20E6 |
 | NVIDIA GB300                                            | 31C2 10DE 21F1 |
 | NVIDIA GB300                                            | 31C3 10DE 22F8 |
+| NVIDIA GB300-252                                        | 31C3 10DE 23AB |

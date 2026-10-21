@@ -421,7 +421,12 @@ nv_alloc_t *nvos_create_alloc(
         return NULL;
     }
 
-    at->page_table = kvzalloc(pt_size, NV_GFP_KERNEL);
+    /* kvzalloc() rejects sizes > INT_MAX; use vmalloc() for oversized tables. */
+    if (pt_size > (NvU64)INT_MAX)
+        at->page_table = nv_vmalloc(pt_size, NV_GFP_KERNEL | __GFP_ZERO);
+    else
+        at->page_table = kvzalloc(pt_size, NV_GFP_KERNEL);
+
     if (at->page_table == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate page table\n");
@@ -441,13 +446,20 @@ int nvos_free_alloc(
     nv_alloc_t *at
 )
 {
+    NvU64 pt_size;
+
     if (at == NULL)
         return -1;
 
     if (atomic64_read(&at->usage_count))
         return 1;
 
-    kvfree(at->page_table);
+    pt_size = (NvU64)at->num_pages * sizeof(nvidia_pte_t);
+
+    if (pt_size > (NvU64)INT_MAX)
+        nv_vfree(at->page_table, pt_size);
+    else
+        kvfree(at->page_table);
 
     NV_KFREE(at, sizeof(nv_alloc_t));
 

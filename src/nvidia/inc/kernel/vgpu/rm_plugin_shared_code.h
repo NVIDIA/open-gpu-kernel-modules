@@ -1778,29 +1778,6 @@ return_t deserialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GP
 
 #ifdef BUILD_COMMON_RPCS
 static
-return_t deserialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams,
-                                                                           NvU8 *buffer,
-                                                                           NvU32 bufferSize,
-                                                                           NvU32 *offset)
-{
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00 *src  = (void*)(buffer);
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS        *dest = pParams;
-
-    if (src && dest)
-    {
-        dest->hChannel = src->hChannel;
-        dest->property = src->property;
-        dest->value    = src->value;
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-#endif
-
-#ifdef BUILD_COMMON_RPCS
-static
 return_t deserialize_NV2080_CTRL_GPU_EVICT_CTX_PARAMS_v1A_1C(
                                                           NV2080_CTRL_GPU_EVICT_CTX_PARAMS *pParams,
                                                           NvU8 *buffer,
@@ -5552,29 +5529,6 @@ return_t serialize_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07(NV2080_CTRL_GPU_
             dest->regOps[idx].regValueHi = src->regOps[idx].regValueHi;
         }
 #endif
-    }
-    else
-        return FAILURE_T;
-
-    return SUCCESS_T;
-}
-#endif
-
-#ifdef BUILD_COMMON_RPCS
-static
-return_t serialize_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00(NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pParams,
-                                                                         NvU8 *buffer,
-                                                                         NvU32 bufferSize,
-                                                                         NvU32 *offset)
-{
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS        *src  = pParams;
-    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00 *dest = (void*)(buffer);
-
-    if (src && dest)
-    {
-        dest->hChannel = src->hChannel;
-        dest->property = src->property;
-        dest->value    = src->value;
     }
     else
         return FAILURE_T;

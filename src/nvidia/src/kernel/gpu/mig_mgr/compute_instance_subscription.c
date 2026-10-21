@@ -53,7 +53,6 @@ cisubscriptionConstruct_IMPL
 )
 {
     NVC638_ALLOCATION_PARAMETERS *pUserParams = pRmAllocParams->pAllocParams;
-    RsClient *pRsClient = pCallContext->pClient;
     RsResourceRef *pResourceRef = pCallContext->pResourceRef;
     RsResourceRef *pParentRef = pResourceRef->pParentRef;
     GPUInstanceSubscription *pGPUInstanceSubscription = dynamicCast(pParentRef->pResource, GPUInstanceSubscription);
@@ -81,21 +80,27 @@ cisubscriptionConstruct_IMPL
     pMIGComputeInstance = &gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription)->MIGComputeInstance[pUserParams->execPartitionId];
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pMIGComputeInstance->bValid, NV_ERR_INVALID_ARGUMENT);
 
-    //
-    // For now skip kernel clients, such as UVM, until Bug 2729768 is fixed.
-    //
-    if (pRsClient->type == CLIENT_TYPE_USER)
     {
-        status = osRmCapAcquire(pMIGComputeInstance->pOsRmCaps,
-                                NV_RM_CAP_SMC_EXEC_PARTITION_ACCESS,
-                                pUserParams->capDescriptor,
-                                &pComputeInstanceSubscription->dupedCapDescriptor);
-        if ((status != NV_ERR_NOT_SUPPORTED) && (status != NV_OK))
+        RsClient *pRsClient = pCallContext->pClient;
+
+        //
+        // Capability descriptors are validated in Client/CPU-RM before the
+        // subscription request is forwarded to physical GSP-RM.
+        // For now skip kernel clients, such as UVM, until Bug 2729768 is fixed.
+        //
+        if (pRsClient->type == CLIENT_TYPE_USER)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Capability validation failed: ID 0x%0x!\n",
-                      pUserParams->execPartitionId);
-            return status;
+            status = osRmCapAcquire(pMIGComputeInstance->pOsRmCaps,
+                                    NV_RM_CAP_SMC_EXEC_PARTITION_ACCESS,
+                                    pUserParams->capDescriptor,
+                                    &pComputeInstanceSubscription->dupedCapDescriptor);
+            if ((status != NV_ERR_NOT_SUPPORTED) && (status != NV_OK))
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "Capability validation failed: ID 0x%0x!\n",
+                          pUserParams->execPartitionId);
+                return status;
+            }
         }
     }
 

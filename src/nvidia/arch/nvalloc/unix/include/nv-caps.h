@@ -24,6 +24,8 @@
 #ifndef _NV_CAPS_H_
 #define _NV_CAPS_H_
 
+
+
 #include <nv-kernel-interface-api.h>
 
 /*
