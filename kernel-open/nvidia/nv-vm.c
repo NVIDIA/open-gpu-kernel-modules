@@ -939,6 +939,14 @@ static nv_linux_mm_free_work_t *nv_account_mm_alloc(NvU64 numPages)
     {
         return NULL;
     }
+#if defined(NV_PERCPU_MM_COUNTER)
+    // This should never happen, but certain kernels are buggy so add this check
+    if (mm->rss_stat[MM_SHMEMPAGES].counters == NULL)
+    {
+        return NULL;
+    }
+#endif
+
     NV_KMALLOC(mm_work, sizeof(*mm_work));
     if (mm_work == NULL)
     {

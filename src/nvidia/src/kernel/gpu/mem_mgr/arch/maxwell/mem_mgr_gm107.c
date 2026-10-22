@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2026,6 +2026,29 @@ memmgrCalcReservedFbSpaceHal_GM107
     {
         *rsvdFastSize = *rsvdFastSize + *rsvdSlowSize;
         *rsvdSlowSize = 0;
+    }
+
+    if (pMemoryManager->rsvdHeapSizeOverride != 0)
+    {
+        NvU64 requestedSize = pMemoryManager->rsvdHeapSizeOverride;
+        NvU64 maxSize       = pMemoryManager->Ram.fbUsableMemSize / 2;
+
+        if ((maxSize != 0) && (requestedSize > maxSize))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Requested internal heap size 0x%llx bytes exceeds half of usable FB; "
+                      "capping to 0x%llx bytes\n", requestedSize, maxSize);
+            requestedSize = maxSize;
+        }
+
+        NV_PRINTF(LEVEL_INFO,
+                  "Internal heap size set by regkey: computed 0x%llx bytes -> 0x%llx bytes "
+                  "(%llu MB)\n", *rsvdFastSize + *rsvdSlowSize + *rsvdISOSize, requestedSize,
+                  requestedSize >> 20);
+
+        *rsvdFastSize = requestedSize;
+        *rsvdSlowSize = 0;
+        *rsvdISOSize  = 0;
     }
 
     //

@@ -663,6 +663,20 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             if (i == 0)
             {
                 //
+                // Sanity check the element count before it drives the copy loop:
+                // the record must fit in the staging buffer.
+                //
+                if ((pMQI->pCmdQueueElement->elemCount == 0) ||
+                    (pMQI->pCmdQueueElement->elemCount >
+                     (pMQI->queueElementSizeMax / pMQI->queueElementSizeMin)))
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Incorrect element count %u\n",
+                        pMQI->pCmdQueueElement->elemCount);
+                    nvStatus = NV_ERR_INVALID_PARAM_STRUCT;
+                    break;
+                }
+
+                //
                 // Special processing for first element of the record.
                 // Pull out the element count. This adjusts the loop condition.
                 //

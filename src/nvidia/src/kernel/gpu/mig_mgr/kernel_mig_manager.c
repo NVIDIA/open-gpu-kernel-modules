@@ -1509,7 +1509,10 @@ kmigmgrLoadStaticInfo_VF
         NvU32 entryCount = 0;
         NvU32 i;
 
-        NV_ASSERT(pVSI->ciProfiles.profileCount <= NV_ARRAY_ELEMENTS(pPrivate->staticInfo.pCIProfiles->profiles));
+        NV_ASSERT_OR_ELSE(
+            pVSI->ciProfiles.profileCount <= NV_ARRAY_ELEMENTS(pPrivate->staticInfo.pCIProfiles->profiles),
+            status = NV_ERR_INVALID_DATA;
+            goto failed;);
 
         for (i = 0; i < pVSI->ciProfiles.profileCount; i++)
         {
@@ -8417,7 +8420,8 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo != NULL, NV_ERR_INVALID_STATE);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo->pCIProfiles != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT(pStaticInfo->pCIProfiles->profileCount <= NV_ARRAY_ELEMENTS(pParams->profiles));
+    NV_ASSERT_OR_RETURN(pStaticInfo->pCIProfiles->profileCount <= NV_ARRAY_ELEMENTS(pParams->profiles),
+                        NV_ERR_INVALID_DATA);
 
     entryCount = 0;
     for (i = 0; i < pStaticInfo->pCIProfiles->profileCount; i++)

@@ -1105,7 +1105,6 @@ done:
             pKernelHostVgpuDevice->pGspPluginHeapMemDesc = NULL;
         }
 
-        kvgpumgrGuestUnregister(pGpu, pKernelHostVgpuDevice);
     }
     else
     {

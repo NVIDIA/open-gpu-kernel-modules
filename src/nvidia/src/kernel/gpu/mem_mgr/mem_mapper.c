@@ -534,6 +534,10 @@ memmapperCtrlCmdSubmitOperations_IMPL
     CALL_CONTEXT                 *pCallContext       = resservGetTlsCallContext();
     NvU32                         i;
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        pParams->operationsCount <= NV00FE_MAX_OPERATIONS_COUNT,
+        NV_ERR_INVALID_ARGUMENT);
+
     // Check that the client hasn't dropped privileges
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pCallContext->secInfo.privLevel == pMemoryMapper->secInfo.privLevel,
         NV_ERR_INVALID_STATE);

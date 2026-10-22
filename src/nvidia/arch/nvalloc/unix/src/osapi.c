@@ -653,6 +653,7 @@ done:
 }
 
 static NV_STATUS free_os_event(
+    nv_file_private_t  *nvfp,
     NvHandle            hParent,
     NvU32               fd
 )
@@ -666,6 +667,7 @@ static NV_STATUS free_os_event(
     while (event)
     {
         if ((event->fd == fd) && (event->hParent == hParent)
+            && (event->nvfp == nvfp)
            )
         {
             if (event == nv->event_list)
@@ -2964,6 +2966,7 @@ NV_STATUS NV_API_CALL rm_ioctl(
             }
 
             pApi->Status = free_os_event(
+                nvfp,
                 pApi->hClient, pApi->fd);
             break;
         }

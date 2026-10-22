@@ -587,6 +587,14 @@ int nvidia_mmap_helper(
 
     prot = mmap_context->prot;
 
+    // Page-table entries inherit vm_page_prot when they are installed.
+    if ((prot & NV_PROTECT_WRITEABLE) == 0)
+    {
+        vma->vm_page_prot = NV_PGPROT_READ_ONLY(vma->vm_page_prot);
+        nv_vm_flags_clear(vma, VM_WRITE);
+        nv_vm_flags_clear(vma, VM_MAYWRITE);
+    }
+
     /*
      * Nvidia device node(nvidia#) maps device's BAR memory,
      * Nvidia control node(nvidiactrl) maps system memory.
@@ -768,13 +776,6 @@ int nvidia_mmap_helper(
             nv_vm_flags_set(vma, VM_SHARED);
             nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
         }
-    }
-
-    if ((prot & NV_PROTECT_WRITEABLE) == 0)
-    {
-        vma->vm_page_prot = NV_PGPROT_READ_ONLY(vma->vm_page_prot);
-        nv_vm_flags_clear(vma, VM_WRITE);
-        nv_vm_flags_clear(vma, VM_MAYWRITE);
     }
 
     vma->vm_ops = &nv_vm_ops;

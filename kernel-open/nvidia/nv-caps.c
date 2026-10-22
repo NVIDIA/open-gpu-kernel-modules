@@ -503,13 +503,45 @@ static nv_proc_ops_t g_nv_cap_procfs_fops = {
 /* forward declaration of g_nv_cap_drv_fops */
 static struct file_operations g_nv_cap_drv_fops;
 
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
+static int nv_cap_validate_file(const nv_cap_t *cap, struct file *file)
+{
+    struct inode *inode = NULL;
+    dev_t rdev = 0;
+
+    if ((cap == NULL) || (file == NULL))
+    {
+        return -1;
+    }
+
+    inode = NV_FILE_INODE(file);
+    if (inode == NULL)
+    {
+        return -1;
+    }
+
+    /* Make sure the fd belongs to the nv-cap-drv */
+    if (file->f_op != &g_nv_cap_drv_fops)
+    {
+        return -1;
+    }
+
+    /* Make sure the fd has the expected capability */
+    rdev = inode->i_rdev;
+    if (MINOR(rdev) != cap->minor)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+#endif
+
 int NV_API_CALL nv_cap_validate_and_dup_fd(const nv_cap_t *cap, int fd)
 {
 #if NV_FILESYSTEM_ACCESS_AVAILABLE
     struct file *file;
     int dup_fd;
-    struct inode *inode = NULL;
-    dev_t rdev = 0;
 
     if (cap == NULL)
     {
@@ -522,21 +554,7 @@ int NV_API_CALL nv_cap_validate_and_dup_fd(const nv_cap_t *cap, int fd)
         return -1;
     }
 
-    inode = NV_FILE_INODE(file);
-    if (inode == NULL)
-    {
-        goto err;
-    }
-
-    /* Make sure the fd belongs to the nv-cap-drv */
-    if (file->f_op != &g_nv_cap_drv_fops)
-    {
-        goto err;
-    }
-
-    /* Make sure the fd has the expected capability */
-    rdev = inode->i_rdev;
-    if (MINOR(rdev) != cap->minor)
+    if (nv_cap_validate_file(cap, file) < 0)
     {
         goto err;
     }
@@ -553,6 +571,31 @@ int NV_API_CALL nv_cap_validate_and_dup_fd(const nv_cap_t *cap, int fd)
 err:
     fput(file);
     return -1;
+#else
+    return -1;
+#endif
+}
+
+int NV_API_CALL nv_cap_validate_fd(const nv_cap_t *cap, int fd)
+{
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
+    struct file *file;
+    int ret = -1;
+
+    if (cap == NULL)
+    {
+        return -1;
+    }
+
+    file = fget(fd);
+    if (file == NULL)
+    {
+        return -1;
+    }
+
+    ret = nv_cap_validate_file(cap, file);
+    fput(file);
+    return ret;
 #else
     return -1;
 #endif

@@ -2623,32 +2623,64 @@ NV_STATUS nvGpuOpsDupAddressSpace(struct gpuDevice *device,
 
     // TODO - Move this check to RMDupObject later.
     // Find the device associated with the hUserVASpace and verify that the UUID belongs to it.
-    // TODO: Acquired because serverutilGetResourceRef expects RMAPI lock. Necessary?
-    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
-    if (status != NV_OK)
-        return status;
-    status = serverutilGetResourceRef(hUserClient, hUserVASpace, &pVaSpaceRef);
-    rmapiLockRelease();
-    if (status != NV_OK)
-        return status;
+    {
+        NvU32        deviceInst = 0;
+        CLIENT_ENTRY *pClientEntry = NULL;
 
-    if (!dynamicCast(pVaSpaceRef->pResource, VaSpaceApi))
-        return NV_ERR_INVALID_OBJECT;
+        //
+        // Hold the RM API lock and the per-client lock across the lookup and
+        // all subsequent dereferences of the returned RsResourceRef pointer.
+        // Copy out the values needed before releasing both locks.
+        //
+        status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+        if (status != NV_OK)
+            return status;
 
-    // The parent must be valid and a device if this is a VA space handle
-    // TODO: Acquired because serverutilGetResourceRef expects RMAPI lock. Necessary?
-    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
-    if (status != NV_OK)
-        return status;
-    status = serverutilGetResourceRef(hUserClient, pVaSpaceRef->pParentRef->hResource, &pDeviceRef);
-    rmapiLockRelease();
-    NV_ASSERT(status == NV_OK);
+        status = serverAcquireClient(&g_resServ, hUserClient, LOCK_ACCESS_WRITE, &pClientEntry);
+        if (status != NV_OK)
+        {
+            // serverAcquireClient returns NV_ERR_INVALID_OBJECT_HANDLE for an
+            // unknown client handle; normalize to NV_ERR_INVALID_CLIENT so
+            // callers see a consistent error for a bad hUserClient.
+            status = NV_ERR_INVALID_CLIENT;
+            goto done_release_api_lock;
+        }
 
-    pDevice = dynamicCast(pDeviceRef->pResource, Device);
-    NV_ASSERT(pDevice != NULL);
+        status = serverutilGetResourceRef(hUserClient, hUserVASpace, &pVaSpaceRef);
+        if (status != NV_OK)
+            goto done_release_locks;
 
-    if (pDevice->deviceInst != device->deviceInstance)
-        return NV_ERR_OTHER_DEVICE_FOUND;
+        if (!dynamicCast(pVaSpaceRef->pResource, VaSpaceApi))
+        {
+            status = NV_ERR_INVALID_OBJECT;
+            goto done_release_locks;
+        }
+
+        // The parent must be valid and a device if this is a VA space handle
+        status = serverutilGetResourceRef(hUserClient, pVaSpaceRef->pParentRef->hResource, &pDeviceRef);
+        if (status != NV_OK)
+            goto done_release_locks;
+
+        pDevice = dynamicCast(pDeviceRef->pResource, Device);
+        if (pDevice == NULL)
+        {
+            status = NV_ERR_INVALID_OBJECT;
+            goto done_release_locks;
+        }
+
+        deviceInst = pDevice->deviceInst;
+
+done_release_locks:
+        serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, pClientEntry);
+done_release_api_lock:
+        rmapiLockRelease();
+
+        if (status != NV_OK)
+            return status;
+
+        if (deviceInst != device->deviceInstance)
+            return NV_ERR_OTHER_DEVICE_FOUND;
+    }
 
     gpuVaSpace = portMemAllocNonPaged(sizeof(*gpuVaSpace));
     if (gpuVaSpace == NULL)
@@ -10656,7 +10688,9 @@ _shadowMemdescCreate(gpuRetainedChannel *retainedChannel,
             goto done;
         }
 
-        NV_ASSERT(j + pParams->numPages <= numBufferPages);
+        NV_ASSERT_OR_ELSE(pParams->numPages <= numBufferPages - j,
+                          status = NV_ERR_INVALID_DATA;
+                          goto done;);
 
         if (pCtxBufferInfo->bIsContigous)
         {
@@ -10821,7 +10855,9 @@ static NV_STATUS _nvGpuOpsRetainChannelResources(struct gpuDevice *device,
     if (status != NV_OK)
         goto done;
 
-    NV_ASSERT(pParams->bufferCount <= NV_ARRAY_ELEMENTS(channelInstanceInfo->resourceInfo));
+    NV_ASSERT_OR_ELSE(pParams->bufferCount <= NV_ARRAY_ELEMENTS(channelInstanceInfo->resourceInfo),
+                      status = NV_ERR_INVALID_DATA;
+                      goto done;);
 
     for (i = 0; i < pParams->bufferCount; i++)
     {

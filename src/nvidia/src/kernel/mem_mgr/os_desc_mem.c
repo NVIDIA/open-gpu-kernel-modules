@@ -273,7 +273,8 @@ osdescConstruct_IMPL
 
 failure:
     memdescFree(pMemDesc);
-    memdescDestroy(pMemDesc);
+    if (!pMemory->bConstructed)
+        memdescDestroy(pMemDesc);
 
     return status;
 }

@@ -97,6 +97,15 @@ static inline int nv_follow_pfn(struct vm_area_struct *vma,
 #endif
 }
 
+static inline NvBool nv_pfn_has_page_backing(unsigned long pfn)
+{
+#if defined(NV_PFN_IS_MAP_MEMORY_PRESENT)
+    return pfn_is_map_memory(pfn);
+#else
+    return pfn_valid(pfn);
+#endif
+}
+
 /*!
  * @brief Locates the PFNs for a user IO address range, and converts those to
  *        their associated PTEs.
@@ -122,6 +131,12 @@ static NV_STATUS get_io_ptes(struct vm_area_struct *vma,
     for (i = 0; i < page_count; i++)
     {
         if (nv_follow_pfn(vma, (start + (i * PAGE_SIZE)), &pfn) < 0)
+        {
+            return NV_ERR_INVALID_ADDRESS;
+        }
+
+        // Page-backed PFNs cannot be retained safely by the I/O memory path.
+        if (nv_pfn_has_page_backing(pfn))
         {
             return NV_ERR_INVALID_ADDRESS;
         }

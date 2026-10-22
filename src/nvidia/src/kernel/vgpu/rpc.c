@@ -11614,8 +11614,9 @@ NV_STATUS rpcCtrlCmdNvlinkInbandSendData_v26_05
     if (status != NV_OK)
         return status;
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pParams->dataSize <= sizeof(rpc_params->buffer)), NV_ERR_INVALID_ARGUMENT);
+    portMemCopy(rpc_params->buffer, sizeof(rpc_params->buffer), pParams->buffer, pParams->dataSize);
     rpc_params->dataSize = pParams->dataSize;
-    portMemCopy(rpc_params->buffer, rpc_params->dataSize, pParams->buffer, pParams->dataSize);
 
     status = _issueRpcAndWait(pGpu, pRpc);
 

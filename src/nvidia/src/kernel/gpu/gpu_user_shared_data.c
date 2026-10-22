@@ -101,6 +101,8 @@ gpushareddataConstruct_IMPL
     NV00DE_ALLOC_PARAMETERS *pAllocParams = (NV00DE_ALLOC_PARAMETERS*)(pParams->pAllocParams);
     NvU32 attr2 = 0;
 
+    attr2 = DRF_DEF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY);
+
     NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
 
     if (!_rusdSupported(pGpu))

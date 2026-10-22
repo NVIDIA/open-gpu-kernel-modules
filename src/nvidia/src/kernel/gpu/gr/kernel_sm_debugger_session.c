@@ -259,6 +259,7 @@ ksmdbgssnConstruct_IMPL
     Subdevice                *pSubdevice;
     RsResourceRef            *pGrResourceRef;
     RsResourceRef            *pParentRef;
+    NvBool                    bRegistered = NV_FALSE;
 
     // The app using the new interface should initialize this to 0.
     if (pNv83deAllocParams->hDebuggerClient_Obsolete)
@@ -363,23 +364,31 @@ ksmdbgssnConstruct_IMPL
     pKernelSMDebuggerSession->hChannel        = hAppChannel;
     pKernelSMDebuggerSession->hSubdevice      = hSubdevice;
 
-    // Insert it into this Object's debugger list
-    if (!kgrctxRegisterKernelSMDebuggerSession(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject), pKernelSMDebuggerSession))
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        _ksmdbgssnInitClient(pGpu, pKernelSMDebuggerSession),
+        failed);
+
+    if (!kgrctxRegisterKernelSMDebuggerSession(pGpu,
+            kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
+            pKernelSMDebuggerSession))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to insert Debugger into channel list, handle = 0x%x\n",
                   pKernelSMDebuggerSession->hDebugger);
-        return NV_ERR_INSUFFICIENT_RESOURCES;
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto failed;
     }
+    bRegistered = NV_TRUE;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        _ksmdbgssnInitClient(pGpu, pKernelSMDebuggerSession));
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        _ShareDebugger(pKernelSMDebuggerSession, pCallContext->pResourceRef, pGrResourceRef));
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        _ShareDebugger(pKernelSMDebuggerSession, pCallContext->pResourceRef, pGrResourceRef),
+        failed);
 
     return status;
 
+failed:
+    _ksmdbgssnCleanup(pKernelSMDebuggerSession, pGpu, bRegistered);
+    return status;
 }
 
 /**
@@ -411,6 +420,7 @@ _ShareDebugger
     if (pGrResourceRef->pDependantSession == NULL)
     {
         RsShared *pShared = NULL;
+        NvBool bDependencyAdded = NV_FALSE;
 
         status = serverAllocShare(&g_resServ, classInfo(RmDebuggerSession), &pShared);
         if (status != NV_OK)
@@ -420,10 +430,29 @@ _ShareDebugger
         pRsSession = staticCast(pKernelSMDebuggerSession->pDebugSession, RsSession);
 
         // Add KernelGraphicsObject as a dependency
-        sessionAddDependency(pRsSession, pGrResourceRef);
+        status = sessionAddDependency(pRsSession, pGrResourceRef);
+        if (status == NV_OK)
+        {
+            bDependencyAdded = NV_TRUE;
+        }
 
         // Add debugger object as a dependant of the new RsSession object
-        sessionAddDependant(pRsSession, pDebuggerRef);
+        if (status == NV_OK)
+        {
+            status = sessionAddDependant(pRsSession, pDebuggerRef);
+        }
+
+        if (status != NV_OK)
+        {
+            if (bDependencyAdded)
+            {
+                sessionRemoveDependency(pRsSession, pGrResourceRef);
+            }
+
+            pKernelSMDebuggerSession->pDebugSession = NULL;
+            serverFreeShare(&g_resServ, pShared);
+            return status;
+        }
 
         //
         // Decrease ref count if newly allocated, we only want the ref
@@ -444,7 +473,12 @@ _ShareDebugger
 
         // Add debugger object as a dependant of the existing RsSession object
         pRsSession = staticCast(pKernelSMDebuggerSession->pDebugSession, RsSession);
-        sessionAddDependant(pRsSession, pDebuggerRef);
+        status = sessionAddDependant(pRsSession, pDebuggerRef);
+        if (status != NV_OK)
+        {
+            pKernelSMDebuggerSession->pDebugSession = NULL;
+            return status;
+        }
     }
 
     return NV_OK;

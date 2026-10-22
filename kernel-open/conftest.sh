@@ -5202,6 +5202,108 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PERCPU_MM_COUNTER" "" "types"
         ;;
 
+        drm_atomic_helper_connector_state_init)
+            #
+            # Determine if __drm_atomic_helper_connector_state_init is present.
+            #
+            # Added by commit b74940afe5bc ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_connector_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_connector_state_init() {
+                __drm_atomic_helper_connector_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CONNECTOR_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_crtc_state_init)
+            #
+            # Determine if __drm_atomic_helper_crtc_state_init is present.
+            #
+            # Added by commit 915fdd2c7e87 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_crtc_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_crtc_state_init() {
+                __drm_atomic_helper_crtc_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CRTC_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_plane_state_init)
+            #
+            # Determine if __drm_atomic_helper_plane_state_init is present.
+            #
+            # Added by commit 3e5656ea5e73 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_plane_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_plane_state_init() {
+                __drm_atomic_helper_plane_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_PLANE_STATE_INIT" "" "functions"
+        ;;
+
+        drm_connector_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_connector_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 6db0e11f4806 ("drm/connector: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_connector_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_connector_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_crtc_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_crtc_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 58d426b5ed0d ("drm/crtc: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_crtc_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_crtc_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_plane_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_plane_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 1a185ddecaf9 ("drm/plane: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_plane_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_plane_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.  Please
         # avoid specifying -rc kernels, and only use SHAs that actually exist

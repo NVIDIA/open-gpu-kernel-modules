@@ -509,11 +509,17 @@ continue_alloc_object:
             goto done_fbmem;
         }
         pPteArray = memdescGetPteArray(pMemDesc, AT_GPU);
-        // copy in the pages
+        if ((pAllocParams->pageCount > pMemDesc->pageArraySize) ||
+            !portSafeMulU32(sizeof(NvU64), pAllocParams->pageCount, &result))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done_fbmem;
+        }
+
         status = rmapiParamsCopyIn(NULL,
                                    pPteArray,
                                    pAllocParams->pageNumberList,
-                                   sizeof(NvU64) * pAllocParams->pageCount,
+                                   result,
                                    bUserModeArgs);
 
         if (status != NV_OK)

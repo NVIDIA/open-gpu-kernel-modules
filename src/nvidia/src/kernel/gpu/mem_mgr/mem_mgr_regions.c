@@ -155,6 +155,7 @@ memmgrInsertFbRegion_IMPL
 {
     NvU32   insertRegion = 0;
     PFB_REGION_DESCRIPTOR pFbRegion;
+    NvU32   additionalRegionCount;
     //
     // Consider that we have 4 Fb Regions
     //  +----------------------------- +
@@ -188,6 +189,14 @@ memmgrInsertFbRegion_IMPL
 
 
     pFbRegion = &pMemoryManager->Ram.fbRegion[insertRegion];
+
+    additionalRegionCount =
+        ((pFbRegion->base != pInsertRegion->base) && (pFbRegion->limit != pInsertRegion->limit)) ? 2U :
+        ((pFbRegion->base != pInsertRegion->base) || (pFbRegion->limit != pInsertRegion->limit)) ? 1U : 0U;
+
+    NV_ASSERT_OR_RETURN((pMemoryManager->Ram.numFBRegions <= MAX_FB_REGIONS) &&
+                        (additionalRegionCount <= MAX_FB_REGIONS - pMemoryManager->Ram.numFBRegions),
+                        insertRegion);
 
     //
     // Consider that we have 4 FB regions and for the sake of example we will

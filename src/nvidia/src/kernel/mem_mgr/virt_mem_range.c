@@ -128,7 +128,6 @@ vmrangeConstruct_IMPL
             pAllocData, sizeof(*pAllocData), status);
         if (status != NV_OK)
         {
-            memdescDestroy(pMemDesc);
             return status;
         }
         pMemory->bRpcAlloc = NV_TRUE;

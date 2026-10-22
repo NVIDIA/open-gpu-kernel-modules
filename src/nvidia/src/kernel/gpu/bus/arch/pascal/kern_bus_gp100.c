@@ -85,10 +85,8 @@ _kbusExecGspRmRpcForNvlink
     NvU32         paramSize
 )
 {
-    NvU32     gpuMaskRelease = 0;
-    NvU32     gpuMaskInitial = rmGpuLocksGetOwnedMask();
-    NvU32     gpuMask        = gpuMaskInitial | NVBIT(pGpu->gpuInstance);
-    NV_STATUS status         = NV_OK;
+    NvU32     gpuMask = NVBIT(pGpu->gpuInstance);
+    NV_STATUS status  = NV_OK;
 
     //
     // XXX Bug 1795328: Fix P2P path to acquire locks for the GPU
@@ -96,26 +94,27 @@ _kbusExecGspRmRpcForNvlink
     //  consistently held at this point in the call stack. This function
     //  requires exclusive access to RM/PMU data structures to update HSHUB,
     //  and therefore requires the GPU lock to be held at this point.
-    //  This check should be removed once the P2P paths have been updated to
+    //  This temporary acquisition should be removed once the P2P paths
     //  acquire the GPU locks consistently for all platforms.
     //
     if (IS_GSP_CLIENT(pGpu))
     {
-        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_MASK, &gpuMask))
+        // SAFE_LOCK_UPGRADE preserves held locks and returns only newly acquired locks.
+        status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                       GPU_LOCK_GRP_MASK,
+                                       GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                       RM_LOCK_MODULES_NVLINK,
+                                       &gpuMask);
+        if (status != NV_OK)
         {
-            status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
-                                           GPU_LOCK_GRP_MASK,
-                                           GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
-                                           RM_LOCK_MODULES_NVLINK,
-                                           &gpuMask);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Failed to acquire locks for gpumask 0x%x\n", gpuMask);
-                return status;
-            }
-
-            gpuMaskRelease = (gpuMask & (~gpuMaskInitial));
+            NV_PRINTF(LEVEL_ERROR, "Failed to acquire locks for gpumask 0x%x\n", gpuMask);
+            return status;
         }
+    }
+    else
+    {
+        // No locks were acquired by this call.
+        gpuMask = 0;
     }
 
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -123,9 +122,9 @@ _kbusExecGspRmRpcForNvlink
                              pGpu->hInternalClient,
                              pGpu->hInternalSubdevice,
                              cmd, paramAddr, paramSize);
-    if (gpuMaskRelease)
+    if (gpuMask != 0)
     {
-        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
     }
 
     return status;

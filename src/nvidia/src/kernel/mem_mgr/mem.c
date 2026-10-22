@@ -488,6 +488,9 @@ memConstructCommon_IMPL
         status = memRegisterWithGsp(pGpu, RES_GET_CLIENT(pMemory), hParent, hMemory);
         if (status != NV_OK)
         {
+            NV_STATUS unlinkStatus =
+                btreeUnlink(&pMemory->Node, &pMemory->pDevice->DevMemoryTable);
+            NV_ASSERT(unlinkStatus == NV_OK);
             goto done;
         }
     }
@@ -979,6 +982,13 @@ memCopyConstruct_IMPL
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                         memCheckCopyPermissions(pMemorySrc, pDstGpu, pDstDevice), done);
+
+NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+                      memdescGetAddressSpace(pMemorySrc->pMemDesc) != ADDR_FBMEM ||
+                      gpumgrGetGpuMask(pDstGpu) == gpumgrGetGpuMask(pSrcGpu) ||
+                      pParams->pSecInfo->privLevel >= RS_PRIV_LEVEL_KERNEL,
+                      NV_ERR_INVALID_ARGUMENT,
+                      done);
 
     // Initialize Memory
     pMemoryDst->categoryClassId = pMemorySrc->categoryClassId;

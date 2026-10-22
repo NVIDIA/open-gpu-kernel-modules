@@ -74,8 +74,10 @@ extern NvBool nvos_is_chipset_io_coherent(void);
 #define NV_PGPROT_UNCACHED_DEVICE(old_prot)     pgprot_noncached(old_prot)
 #if defined(NVCPU_AARCH64)
 #define NV_PGPROT_WRITE_COMBINED(old_prot)      NV_PGPROT_UNCACHED(old_prot)
+// __pgprot_modify(prot, clear_mask, set_bits): clear PTE_WRITE because
+// retaining it permits dirty-bit write faults.
 #define NV_PGPROT_READ_ONLY(old_prot)                                         \
-            __pgprot_modify(old_prot, 0, PTE_RDONLY)
+            __pgprot_modify(old_prot, PTE_WRITE, PTE_RDONLY)
 #elif defined(NVCPU_X86_64)
 #define NV_PGPROT_UNCACHED_WEAK(old_prot)       pgprot_noncached_weak(old_prot)
 #define NV_PGPROT_WRITE_COMBINED(old_prot)                                    \

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -176,6 +176,18 @@ _memmgrInitRegistryOverridesAtConstruct
                 "Enabled FLA+sysmem via regkey.\n");
         }
     }
+
+    pMemoryManager->rsvdHeapSizeOverride = 0;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_RSVD_HEAP_SIZE_KERNEL_MB,
+                            &data32) == NV_OK)
+    {
+        pMemoryManager->rsvdHeapSizeOverride = (NvU64)data32 << 20;
+        if (pMemoryManager->rsvdHeapSizeOverride != 0)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "User specified internal heap size = %d MBs\n", data32);
+        }
+    }
 }
 
 static void
@@ -243,6 +255,16 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         {
             NV_PRINTF(LEVEL_ERROR, "Invalid value for RMOverrideMaxContextSizeRsvdMemoryMB: %d\n", data32);
         }
+    }
+
+    if ((pMemoryManager->rsvdHeapSizeOverride != 0) &&
+        (pMemoryManager->rsvdMemorySizeIncrement != 0))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Internal heap size is set outright; ignoring the requested "
+                  "increase of 0x%llx bytes\n",
+                  pMemoryManager->rsvdMemorySizeIncrement);
+        pMemoryManager->rsvdMemorySizeIncrement = 0;
     }
 
     if (osReadRegistryDword(pGpu,

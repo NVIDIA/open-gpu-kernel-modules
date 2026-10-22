@@ -482,7 +482,6 @@ sysmemConstruct_IMPL
 
 // Resource cleanup on failure
 failed_destruct_common:
-    memDestructCommon(pMemory);
 failed_free_memdesc:
     memdescFree(pMemDesc);
 failed_free_scanout_carveout:
@@ -491,7 +490,8 @@ failed_free_scanout_carveout:
                                                  memdescGetPte(pMemDesc, AT_CPU, 0));
     }
 failed_destroy_memdesc:
-    memdescDestroy(pMemDesc);
+    if (!pMemory->bConstructed)
+        memdescDestroy(pMemDesc);
 
     return rmStatus;
 }

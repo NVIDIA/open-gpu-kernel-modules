@@ -3232,11 +3232,23 @@ kgmmuCheckMemSubsysError_IMPL
     // 2. If 1 passes, issue membar / UFLUSH. UFLUSH does a flush/membar from HUB side
     //    A failure here would indicate an issue in FBHUB, HSHUBs, VidL2, SysL2 or NvLink
     //
-    status = kbusSendSysmembarSingle(pGpu, pKernelBus);
-    if (status == NV_ERR_TIMEOUT)
+    //
+    // NOTE: Step 2 is skipped on all chips where the sysmembar is routed via RPC to GSP
+    // (Ampere and older, plus GB100 and other multidie chips). It is a tradeoff that the
+    // mem subsystem HW team was okay with, since scenarios where kbusSendSysmembarSingle
+    // would pass and kgmmuHandleInvalidateTlb_HAL with SYSMEMBAR would fail with a wedged
+    // memory subsystem are very narrow on Blackwell+.
+    // However, it would be beneficial to keep this implementation on supported/raceless chips
+    // as this may help detecting those 'narrow' scenarios at least in them.
+    //
+    if (!pKernelBus->isKbusSendSysmembarSingleRoutedToGsp)
     {
-        NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kbusSendSysmembarSingle failed.\n");
-        goto done;
+        status = kbusSendSysmembarSingle_HAL(pGpu, pKernelBus);
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kbusSendSysmembarSingle failed.\n");
+            goto done;
+        }
     }
 
     //

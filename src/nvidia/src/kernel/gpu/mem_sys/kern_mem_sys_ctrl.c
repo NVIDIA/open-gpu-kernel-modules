@@ -999,7 +999,9 @@ _kmemsysGetFbInfos
         physIdx = 0;
         FOR_EACH_INDEX_IN_MASK(64, i, fbInfoListIndicesUnset)
         {
-            NV_ASSERT(pFbInfos[i].index == pRpcParams->fbInfoList[physIdx].index);
+            NV_ASSERT_OR_ELSE(pFbInfos[i].index == pRpcParams->fbInfoList[physIdx].index,
+                              portMemFree(pRpcParams);
+                              return NV_ERR_INVALID_DATA;);
 
             pFbInfos[i].data = pRpcParams->fbInfoList[physIdx].data;
 
@@ -1102,6 +1104,9 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
                 // Extract only the globally excluded page offsets
                 if (!pBlacklistChunks[i].bIsValid)
                 {
+                    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                        osBlackListCount < NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES,
+                        NV_ERR_INVALID_STATE);
                     pageAddress = pBlacklistChunks[i].physOffset;
                     pOsOfflinedParams->offlinedPages[osBlackListCount] = (NvU32) (pageAddress >> RM_PAGE_SHIFT);
                     osBlackListCount++;

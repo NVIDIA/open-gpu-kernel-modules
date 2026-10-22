@@ -379,6 +379,12 @@ eventapiInit_IMPL
         if (rmStatus != NV_OK)
             return rmStatus;
 
+        if (pResourceRef->externalClassId == NV01_EVENT_OS_EVENT)
+        {
+            rmStatus = clientValidate(pNotifierClient, &pCallContext->secInfo);
+            if (rmStatus != NV_OK)
+                return rmStatus;
+        }
     }
     else
     {

@@ -556,6 +556,7 @@ struct KernelBus {
     NvBool PDB_PROP_KBUS_SUPPORT_BAR1_P2P_BY_DEFAULT;
 
     // Data members
+    NvBool isKbusSendSysmembarSingleRoutedToGsp;
     NvU32 totalPciBars;
     RmPhysAddr pciBars[8];
     NvU64 pciBarSizes[8];
