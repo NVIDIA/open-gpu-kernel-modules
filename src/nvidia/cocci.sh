@@ -38,6 +38,19 @@ rpc_hal_init_filter() {
 	esac
 }
 
+no_const_filter() {
+	# What a hack, take 3!
+	#
+	# To be able to add __no_const annotations to structure type definitions
+	# we post-process a cocci patch that adds these as C++ style comments
+	# and remove the comment markers.
+	case "$1" in
+		pre)	;;
+		diff)	sed 's|/\*\(__no_const\)\*/|\1|'; ;;
+		post)	;;
+	esac
+}
+
 null_filter() {
 	case "$1" in
 		pre)	;;
