@@ -51,7 +51,6 @@
 #ifndef NO_SYS_HEADERS
 #define NO_SYS_HEADERS
 #endif
-#include <nv_stddef.h> /* NULL */
 #if     defined(__cplusplus) && !defined(_NO_INLINE)
 #define _INLINE inline
 #else
