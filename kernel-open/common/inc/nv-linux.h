@@ -1102,6 +1102,17 @@ typedef struct nv_dma_map_s {
 #if defined(CONFIG_ARM64_4K_PAGES)
 #define NV_DMA_U32_MAX_4K_PAGES           ((NvU32)((NV_U32_MAX >> PAGE_SHIFT) + 1))
 #define NV_DMA_SUBMAP_MAX_PAGES           ((NvU32)(NV_DMA_U32_MAX_4K_PAGES - 512))
+#elif defined(CONFIG_ARM64)
+/*
+ * The same 2M alignment rule applies to arm64 kernels that use 16K or 64K pages:
+ * the mapped IOVA range must still start on a 2M boundary, otherwise 2M sysmem
+ * allocations get split across submaps. Round the page count down to a whole
+ * number of 2M blocks instead of assuming that a page is 4K.
+ */
+#define NV_DMA_SUBMAP_PAGES_PER_2M        ((NvU32)((2 * 1024 * 1024) >> PAGE_SHIFT))
+#define NV_DMA_SUBMAP_MAX_PAGES           ((NvU32)((NV_U32_MAX >> PAGE_SHIFT) / \
+                                                  NV_DMA_SUBMAP_PAGES_PER_2M * \
+                                                  NV_DMA_SUBMAP_PAGES_PER_2M))
 #else
 #define NV_DMA_SUBMAP_MAX_PAGES           ((NvU32)(NV_U32_MAX >> PAGE_SHIFT))
 #endif
