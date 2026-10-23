@@ -1957,6 +1957,15 @@ memmgrDeterminePageSize_IMPL
             *pRetAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _BIG, *pRetAttr);
             break;
 
+        //
+        // On kernels that use a 16K page size, system memory is carved at the
+        // OS page size but is walked with 4K PTEs, so report the small-page
+        // attribute while returning the OS page size for alignment and sizing.
+        //
+        case RM_PAGE_SIZE_16K:
+            *pRetAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _4KB, *pRetAttr);
+            break;
+
         case RM_PAGE_SIZE_HUGE:
             *pRetAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, *pRetAttr);
             *pRetAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB, *pRetAttr2);
