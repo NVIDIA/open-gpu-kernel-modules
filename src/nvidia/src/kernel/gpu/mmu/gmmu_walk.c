@@ -1016,11 +1016,11 @@ _gmmuWalkCBCopyEntries
 
 const MMU_WALK_CALLBACKS g_gmmuWalkCallbacks =
 {
-    _gmmuWalkCBLevelAlloc,
-    _gmmuWalkCBLevelFree,
-    _gmmuWalkCBUpdatePdb,
-    _gmmuWalkCBUpdatePde,
-    _gmmuWalkCBFillEntries,
-    _gmmuWalkCBCopyEntries,
-    NULL,
+    .LevelAlloc  = _gmmuWalkCBLevelAlloc,
+    .LevelFree   = _gmmuWalkCBLevelFree,
+    .UpdatePdb   = _gmmuWalkCBUpdatePdb,
+    .UpdatePde   = _gmmuWalkCBUpdatePde,
+    .FillEntries = _gmmuWalkCBFillEntries,
+    .CopyEntries = _gmmuWalkCBCopyEntries,
+    .WriteBuffer = NULL,
 };

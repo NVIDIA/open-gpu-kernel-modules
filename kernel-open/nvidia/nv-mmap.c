@@ -112,6 +112,16 @@ nvidia_vma_release(struct vm_area_struct *vma)
     }
 }
 
+#ifdef NV_VM_OPS_ACCESS_SIZE_T_LEN
+static ssize_t
+nvidia_vma_access(
+    struct vm_area_struct *vma,
+    unsigned long addr,
+    void *buffer,
+    size_t length,
+    int write
+)
+#else
 static int
 nvidia_vma_access(
     struct vm_area_struct *vma,
@@ -120,6 +130,7 @@ nvidia_vma_access(
     int length,
     int write
 )
+#endif
 {
     nv_alloc_t *at = NULL;
     nv_linux_file_private_t *nvlfp = NV_GET_LINUX_FILE_PRIVATE(NV_VMA_FILE(vma));

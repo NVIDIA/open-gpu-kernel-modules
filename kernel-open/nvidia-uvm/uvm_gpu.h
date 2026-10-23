@@ -398,9 +398,9 @@ typedef struct
 
             NvU64 num_duplicate_faults;
 
-            atomic64_t num_pages_out;
+            atomic64_unchecked_t num_pages_out;
 
-            atomic64_t num_pages_in;
+            atomic64_unchecked_t num_pages_in;
 
             NvU64 num_replays;
 
@@ -448,9 +448,9 @@ typedef struct
 
             NvU64 num_physical_faults;
 
-            atomic64_t num_pages_out;
+            atomic64_unchecked_t num_pages_out;
 
-            atomic64_t num_pages_in;
+            atomic64_unchecked_t num_pages_in;
         } stats;
 
         // Tracker which temporarily holds the work pushed to service faults
@@ -559,9 +559,9 @@ struct uvm_access_counter_buffer_struct
     // Access counter statistics
     struct
     {
-        atomic64_t num_pages_out;
+        atomic64_unchecked_t num_pages_out;
 
-        atomic64_t num_pages_in;
+        atomic64_unchecked_t num_pages_in;
     } stats;
 
     // Ignoring access counters means that notifications are left in the HW
@@ -883,7 +883,7 @@ struct uvm_gpu_struct
         bool enabled;
 
         // Artificially injected error for testing
-        atomic_t injected_error;
+        atomic_unchecked_t injected_error;
 
         // Direct mapping of the 32-bit part of the hw interrupt tree that has
         // the NVLINK error bits.
@@ -1270,9 +1270,9 @@ struct uvm_parent_gpu_struct
 
         NvU64      num_non_replayable_faults;
 
-        atomic64_t             num_pages_out;
+        atomic64_unchecked_t             num_pages_out;
 
-        atomic64_t              num_pages_in;
+        atomic64_unchecked_t              num_pages_in;
     } stats;
 
     // Structure to hold nvswitch specific information. In an nvswitch

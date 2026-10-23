@@ -233,24 +233,24 @@ static void NvPushImportLogNvDiss(
 #endif /* DEBUG */
 
 static const NvPushImports NvKmsNvPushImports = {
-    NvPushImportRmApiControl,          /* rmApiControl */
-    NvPushImportRmApiAlloc,            /* rmApiAlloc */
-    NvPushImportRmApiFree,             /* rmApiFree */
-    NvPushImportRmApiMapMemoryDma,     /* rmApiMapMemoryDma */
-    NvPushImportRmApiUnmapMemoryDma,   /* rmApiUnmapMemoryDma */
-    NvPushImportRmApiAllocMemory64,    /* rmApiAllocMemory64 */
-    NvPushImportRmApiVidHeapControl,   /* rmApiVidHeapControl */
-    NvPushImportRmApiMapMemory,        /* rmApiMapMemory */
-    NvPushImportRmApiUnmapMemory,      /* rmApiUnmapMemory */
-    NvPushImportGetMilliSeconds,       /* getMilliSeconds */
-    NvPushImportYield,                 /* yield */
-    NvPushImportWaitForEvent,          /* waitForEvent */
-    NvPushImportEmptyEventFifo,        /* emptyEventFifo */
-    NvPushImportChannelErrorOccurred,  /* channelErrorOccurred */
-    NvPushImportPushbufferWrapped,     /* pushbufferWrapped */
-    NvPushImportLogError,              /* logError */
+    .rmApiControl           = NvPushImportRmApiControl,
+    .rmApiAlloc             = NvPushImportRmApiAlloc,
+    .rmApiFree              = NvPushImportRmApiFree,
+    .rmApiMapMemoryDma      = NvPushImportRmApiMapMemoryDma,
+    .rmApiUnmapMemoryDma    = NvPushImportRmApiUnmapMemoryDma,
+    .rmApiAllocMemory64     = NvPushImportRmApiAllocMemory64,
+    .rmApiVidHeapControl    = NvPushImportRmApiVidHeapControl,
+    .rmApiMapMemory         = NvPushImportRmApiMapMemory,
+    .rmApiUnmapMemory       = NvPushImportRmApiUnmapMemory,
+    .getMilliSeconds        = NvPushImportGetMilliSeconds,
+    .yield                  = NvPushImportYield,
+    .waitForEvent           = NvPushImportWaitForEvent,
+    .emptyEventFifo         = NvPushImportEmptyEventFifo,
+    .channelErrorOccurred   = NvPushImportChannelErrorOccurred,
+    .pushbufferWrapped      = NvPushImportPushbufferWrapped,
+    .logError               = NvPushImportLogError,
 #if defined(DEBUG)
-    NvPushImportLogNvDiss,             /* logNvDiss */
+    .logNvDiss              = NvPushImportLogNvDiss,
 #endif
 };
 

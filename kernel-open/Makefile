@@ -18,6 +18,11 @@ ifneq ($(KERNELRELEASE),)
   include $(src)/Kbuild
 else
 
+  # kernel configuration option helpers
+  kconfig_value = $(shell sed -n 's/^$(strip $(1))="\?\(.*\)"\?$$/\1/p' $(KERNEL_OUTPUT)/.config)
+  kconfig_enabled = $(if $(call kconfig_value,$(1)),y)
+  kconfig_check = $(if $(call kconfig_enabled,$(1)),$(warning $(1) is incompatible with binary objects!) $(1))
+
   # Determine the location of the Linux kernel source tree, and of the
   # kernel's output tree.  Use this to invoke Kbuild, and pass the paths
   # to the source and output trees to NVIDIA's Kbuild file via
@@ -55,8 +60,7 @@ else
   # If CC hasn't been set explicitly, check the value of CONFIG_CC_VERSION_TEXT.
   # Look for the compiler specified there, and use it by default, if found.
   ifeq ($(origin CC),default)
-    cc_version_text=$(firstword $(shell . $(KERNEL_OUTPUT)/.config; \
-                      echo "$$CONFIG_CC_VERSION_TEXT"))
+    cc_version_text=$(firstword $(call kconfig_value,CONFIG_CC_VERSION_TEXT))
 
     ifneq ($(cc_version_text),)
       ifeq ($(shell command -v $(cc_version_text)),)
@@ -64,12 +68,37 @@ else
             from CONFIG_CC_VERSION_TEXT in the kernel configuration.)
       else
           CC=$(cc_version_text)
+          CXX=$(subst cc,++,$(cc_version_text))
       endif
+    endif
+  endif
+
+  ifneq ($(USE_KBUILD),1)
+    # Check for incompatible features that'll break at runtime.
+    incompatible_kconfig :=
+
+    # CONFIG_PAX_PRIVATE_KSTACKS needs to make various data structures 'nolocal'.
+    # THREAD_STATE_NODE is one of them.
+    incompatible_kconfig += $(call kconfig_check,CONFIG_PAX_PRIVATE_KSTACKS)
+
+    # CONSTIFY may instrument a few of the HAL function pointer tables but
+    # these seem to be all allocated at runtime, so this is may become an issue
+    # under KERNSEAL only, if the allocation wrappers get smart enough to pass
+    # __GFP_SEALED_SLAB.
+    #incompatible_kconfig += $(call kconfig_check,CONFIG_PAX_CONSTIFY_PLUGIN)
+
+    # RAP embeds call and return hashes including checks for these that'll
+    # trigger at runtime if there's non-instrumented code.
+    incompatible_kconfig += $(call kconfig_check,CONFIG_PAX_RAP)
+
+    ifneq ($(strip $(incompatible_kconfig)),)
+      $(error Incompatible kernel configuration found, build with USE_KBUILD=1)
     endif
   endif
 
   CC ?= cc
   LD ?= ld
+  CXX ?= c++
   OBJDUMP ?= objdump
 
   ifndef ARCH
@@ -107,12 +136,20 @@ else
   KBUILD_PARAMS += NV_KERNEL_MODULES="$(NV_KERNEL_MODULES)"
   KBUILD_PARAMS += INSTALL_MOD_DIR="$(INSTALL_MOD_DIR)"
   KBUILD_PARAMS += NV_SPECTRE_V2=$(SPECTRE_V2_RETPOLINE)
+  ifeq ($(USE_KBUILD),1)
+    KBUILD_PARAMS += NV_PREPARE_ONLY=$(NV_PREPARE_ONLY)
+    ifeq ($(NV_PREPARE_ONLY),1)
+    KBUILD_PARAMS += KBUILD_MODPOST_NOFINAL=1
+    KBUILD_PARAMS += MODPOST=/bin/true
+    KBUILD_PARAMS += objtool-enabled=
+    endif
+  endif
 
   export ORIG_PAHOLE := $(PAHOLE)
 
   .PHONY: modules module clean clean_conftest modules_install
   modules clean modules_install:
-	@$(MAKE) "LD=$(LD)" "CC=$(CC)" "OBJDUMP=$(OBJDUMP)" \
+	@$(MAKE) "LD=$(LD)" "CC=$(CC)" "CXX=$(CXX)" "OBJDUMP=$(OBJDUMP)" \
 	  PAHOLE=$(CURDIR)/pahole.sh $(KBUILD_PARAMS) $@
 	@if [ "$@" = "modules" ]; then \
 	  for module in $(NV_KERNEL_MODULES); do \

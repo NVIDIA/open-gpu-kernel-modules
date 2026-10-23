@@ -335,7 +335,7 @@ typedef struct nvswitch_hal_functions
     NVSWITCH_HAL_FUNCTION_LIST(DECLARE_HAL_FUNCTIONS, HAL)
     NVSWITCH_HAL_FUNCTION_LIST_LS10(DECLARE_HAL_FUNCTIONS, HAL)
 
-} nvswitch_hal;
+} __no_const nvswitch_hal;
 
 //
 // Fill in HAL function pointer table

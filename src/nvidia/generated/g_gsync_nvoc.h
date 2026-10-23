@@ -200,7 +200,7 @@ typedef struct GSYNC_HAL_IFACES {
     GsyncSetVRR             *gsyncSetVRR;
     GsyncSetRasterSyncDecodeMode *gsyncSetRasterSyncDecodeMode;
 
-} GSYNC_HAL_IFACES;
+} __no_const GSYNC_HAL_IFACES;
 
 typedef struct _def_gsync {
     NvU32 gsyncId;

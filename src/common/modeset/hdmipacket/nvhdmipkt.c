@@ -25,7 +25,7 @@
  ** @brief Provide initialization functions for HDMI library
  */
 
-#include <stddef.h>
+#include <nv_stddef.h>
 #include "nvlimits.h"
 #include "nvhdmipkt_common.h"
 #include "nvhdmipkt_class.h"

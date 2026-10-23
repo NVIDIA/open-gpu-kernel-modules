@@ -44,6 +44,8 @@
 #include <sys/types.h>
 #endif
 
+#include <nv_stddef.h> /* NULL; include kernel types before the aliases below */
+
 /*
  * The following kludge is an attempt to work around typedef conflicts with
  * <sys/types.h>.

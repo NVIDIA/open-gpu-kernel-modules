@@ -693,7 +693,7 @@ struct uvm_host_hal_struct
     uvm_hal_access_counter_clear_targeted_t access_counter_clear_targeted;
     uvm_hal_access_counter_query_clear_op_t access_counter_query_clear_op;
     uvm_hal_get_time_t get_time;
-};
+} __mutable_const;
 
 struct uvm_ce_hal_struct
 {
@@ -719,7 +719,7 @@ struct uvm_ce_hal_struct
     uvm_hal_semaphore_reduction_inc_t semaphore_reduction_inc;
     uvm_hal_ce_encrypt_t encrypt;
     uvm_hal_ce_decrypt_t decrypt;
-};
+} __mutable_const;
 
 struct uvm_arch_hal_struct
 {
@@ -728,7 +728,7 @@ struct uvm_arch_hal_struct
     uvm_hal_mmu_enable_prefetch_faults_t enable_prefetch_faults;
     uvm_hal_mmu_disable_prefetch_faults_t disable_prefetch_faults;
     uvm_hal_mmu_client_id_to_utlb_id_t mmu_client_id_to_utlb_id;
-};
+} __mutable_const;
 
 struct uvm_fault_buffer_hal_struct
 {
@@ -746,7 +746,7 @@ struct uvm_fault_buffer_hal_struct
     uvm_hal_fault_buffer_entry_size_t entry_size;
     uvm_hal_fault_buffer_parse_non_replayable_entry_t parse_non_replayable_entry;
     uvm_hal_fault_buffer_get_fault_type_t get_fault_type;
-};
+} __mutable_const;
 
 struct uvm_access_counter_buffer_hal_struct
 {
@@ -757,7 +757,7 @@ struct uvm_access_counter_buffer_hal_struct
     uvm_hal_access_counter_buffer_entry_is_valid_t entry_is_valid;
     uvm_hal_access_counter_buffer_entry_clear_valid_t entry_clear_valid;
     uvm_hal_access_counter_buffer_entry_size_t entry_size;
-};
+} __mutable_const;
 
 struct uvm_sec2_hal_struct
 {
@@ -766,7 +766,7 @@ struct uvm_sec2_hal_struct
     uvm_hal_semaphore_release_t semaphore_release;
     uvm_hal_semaphore_timestamp_t semaphore_timestamp;
     uvm_hal_semaphore_target_is_valid_t semaphore_target_is_valid;
-};
+} __mutable_const;
 
 typedef struct
 {
@@ -793,8 +793,8 @@ typedef struct
 
         // sec2_ops: id is an architecture
         uvm_sec2_hal_t sec2_ops;
-    } u;
-} uvm_hal_class_ops_t;
+    } __mutable_const u;
+} __mutable_const uvm_hal_class_ops_t;
 
 NV_STATUS uvm_hal_init_table(void);
 NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu);

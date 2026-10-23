@@ -37,6 +37,7 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/interconnect.h \
   linux/ioasid.h \
   linux/stdarg.h \
+  linux/unaligned.h \
   linux/iosys-map.h \
   linux/vfio_pci_core.h \
   linux/nvgrace-egm.h \

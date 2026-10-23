@@ -120,7 +120,10 @@ struct DAYMSECTIME
  */
 struct TMR_EVENT
 {
-    TIMEPROC        pTimeProc;    //<! The callback function for the event.
+    union {
+        TIMEPROC    pTimeProc;    //<! The callback function for the event.
+        void (*pTimeProcWrap)(void *); //<! Wrapped callbacks, as used by tmrCtrlCmdEventCreate()
+    } __no_const;
     void *          pUserData;    //<! Special object used to associate event with.
                                   //<! It will be given to the callback inside this struct.
     void *          pOSTmrCBdata; //<! This parameter holds the data of OS registered timer

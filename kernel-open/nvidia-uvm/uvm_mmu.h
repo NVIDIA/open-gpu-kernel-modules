@@ -24,7 +24,6 @@
 #ifndef __UVM_MMU_H__
 #define __UVM_MMU_H__
 
-#include "uvm_forward_decl.h"
 #include "uvm_hal_types.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_types.h"
@@ -238,7 +237,7 @@ struct uvm_mmu_mode_hal_struct
 
     // bitwise-or of supported page sizes
     NvU64 (*page_sizes)(void);
-};
+} __mutable_const;
 
 struct uvm_page_table_range_struct
 {
