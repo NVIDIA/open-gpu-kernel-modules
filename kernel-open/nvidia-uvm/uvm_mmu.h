@@ -237,7 +237,7 @@ struct uvm_mmu_mode_hal_struct
 
     // bitwise-or of supported page sizes
     NvU64 (*page_sizes)(void);
-};
+} __mutable_const;
 
 struct uvm_page_table_range_struct
 {
