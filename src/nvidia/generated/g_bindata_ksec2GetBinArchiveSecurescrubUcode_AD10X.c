@@ -1261,7 +1261,7 @@ static const BINDATA_ARCHIVE __ksec2GetBinArchiveSecurescrubUcode_AD10X =
 
 
 #if defined(BINDATA_INCLUDE_FUNCTION)
-const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct KernelSec2 *pKernelSec2)
+const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2)
 {
     return &__ksec2GetBinArchiveSecurescrubUcode_AD10X;
 }
@@ -1269,7 +1269,7 @@ const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct KernelSec
 
 
 #if defined(BINDATA_INCLUDE_FUNCTION_STUB)
-const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct KernelSec2 *pKernelSec2)
+const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_AD10X(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2)
 {
     return NULL;
 }
