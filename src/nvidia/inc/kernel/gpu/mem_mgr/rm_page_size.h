@@ -36,6 +36,7 @@
 //---------------------------------------------------------------------------
 #define RM_PAGE_SIZE_INVALID 0
 #define RM_PAGE_SIZE         4096
+#define RM_PAGE_SIZE_16K     (16 * 1024)
 #define RM_PAGE_SIZE_64K     (64 * 1024)
 #define RM_PAGE_SIZE_128K    (128 * 1024)
 #define RM_PAGE_MASK         0x0FFF
