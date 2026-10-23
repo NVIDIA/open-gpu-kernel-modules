@@ -5203,16 +5203,16 @@ compile_test() {
             }
             " > conftest$$.c
 
-            $CC $CFLAGS -c conftest$$.c >/dev/null 2>&1
-            rm -f conftest$$.c conftest$$.h
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-
+            # Only macro expansion is needed to check the argument count.
+            # Avoid assembly errors when kernel headers use macros supplied
+            # by compiler plugins that are not enabled for conftests.
+            if $CC $CFLAGS -E conftest$$.c >/dev/null 2>&1; then
                 echo "#define NV_ASSIGN_STR_ARGUMENT_COUNT 1" | append_conftest "functions"
             else
                 echo "#define NV_ASSIGN_STR_ARGUMENT_COUNT 2" | append_conftest "functions"
             fi
+
+            rm -f conftest$$.c conftest$$.h
         ;;
 
         drm_driver_has_date)
