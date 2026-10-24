@@ -1628,8 +1628,30 @@ dmaFreeMapping_GM107
                                           pageSize);
             if (status != NV_OK)
             {
-                NV_PRINTF(LEVEL_ERROR, "error updating VA space.\n");
-                vaspaceFree(pVAS, vaLo);
+                //
+                // Do NOT call vaspaceFree() here.
+                //
+                // This branch runs when the PTE invalidation for a client
+                // (NV01_MEMORY_VIRTUAL) mapping failed, typically because the
+                // VA range is no longer registered in the VA space block's
+                // mapping tree (gpu_vaspace.c: _gvaspaceMappingRemove()).
+                //
+                // vaLo is the start of the *whole* VA space block, not just
+                // this mapping: vaspaceFree() drops the block's reference
+                // count and, for the last reference, unmaps every mapping
+                // still registered in that block and frees it (see
+                // _gvaspaceInternalFree()).  That would destroy VA space and
+                // PTE state which belongs to other, still live mappings of the
+                // same client, turning one failed unmap into a cascade of
+                // "already mapped" / "mapping not found" failures later on.
+                //
+                // The VA space block is owned by the client VirtualMemory
+                // object and is reclaimed by memmgrFree_IMPL() (which calls
+                // vaspaceFree()) when the client releases it, or by the VA
+                // space leak scanner.  Propagate the error and leave the block
+                // intact.
+                //
+                NV_PRINTF(LEVEL_ERROR, "error updating VA space; keeping VA block\n");
                 return status;
             }
         }

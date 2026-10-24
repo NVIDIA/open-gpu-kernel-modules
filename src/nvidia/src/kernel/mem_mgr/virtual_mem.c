@@ -1698,6 +1698,65 @@ virtmemUnmapFrom_IMPL
     NV_ASSERT_OR_RETURN(!bPartialUnmap || (gpuMask & (gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(!bPartialUnmap || !bIsIndirectPeer, NV_ERR_INVALID_ARGUMENT);
 
+    //
+    // Snap partial unmaps to the mapping page size.
+    //
+    // Three layers keep track of a mapping and they must all describe the
+    // same range:
+    //
+    //   1. the MMU page tables / gvaspace mapping tree, which are updated by
+    //      dmaFreeMapping() with a range that is always aligned to
+    //      pDmaMappingInfo->mapPageSize (it aligns the start down and the end
+    //      up),
+    //   2. the VA space block bookkeeping in gpu_vaspace.c, which splits the
+    //      registered range at those page aligned boundaries, and
+    //   3. pVirtualMemory->pDmaMappingList, which is split below at the exact
+    //      byte range the client asked for.
+    //
+    // If a client unmaps a sub-range that does not cover whole mapping pages,
+    // (2) releases the pages containing the request while (3) keeps
+    // descriptors that still cover part of them.  The next unmap of such a
+    // descriptor searches for a registration the VA space no longer has
+    // (gpu_vaspace.c "_gvaspaceMappingRemove(): NV_OK == status") and the
+    // error path then tears down the whole VA space block, which is what
+    // makes a single bad unmap turn into "already mapped"/"mapping not
+    // found" failures for unrelated mappings.
+    //
+    // Aligning the split boundaries makes (1), (2) and (3) agree again.  The
+    // invalidated page range is unchanged: dmaFreeMapping() already rounds
+    // outwards to the mapping page size, so only the client side DMA mapping
+    // list becomes page aligned.
+    //
+    NvU64 unmapSize = pParams->size;
+
+    if (bPartialUnmap && pDmaMappingInfo->mapPageSize != 0)
+    {
+        const NvU64 mapPageSize = pDmaMappingInfo->mapPageSize;
+        const NvU64 mappedLo    = pDmaMappingInfo->DmaOffset;
+        const NvU64 mappedHi    = pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size;
+        NvU64       alignedLo;
+        NvU64       alignedHi;
+
+        NV_ASSERT_OR_RETURN((mapPageSize & (mapPageSize - 1)) == 0, NV_ERR_INVALID_STATE);
+
+        alignedLo = RM_ALIGN_DOWN(dmaOffset, mapPageSize);
+        alignedHi = RM_ALIGN_UP(dmaOffset + unmapSize, mapPageSize);
+
+        if (alignedLo < mappedLo)
+            alignedLo = mappedLo;
+        if (alignedHi > mappedHi)
+            alignedHi = mappedHi;
+
+        if (alignedHi <= alignedLo)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        dmaOffset = alignedLo;
+        unmapSize = alignedHi - alignedLo;
+
+        bPartialUnmap = dmaOffset != pDmaMappingInfo->DmaOffset ||
+                        unmapSize != pDmaMappingInfo->pMemDesc->Size;
+    }
+
     if (FLD_TEST_DRF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE, pDmaMappingInfo->Flags))
     {
         NV_ASSERT_OR_RETURN(!bPartialUnmap, NV_ERR_INVALID_ARGUMENT);
@@ -1745,13 +1804,13 @@ virtmemUnmapFrom_IMPL
             failed);
     }
 
-    if (dmaOffset + pParams->size < pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size)
+    if (dmaOffset + unmapSize < pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size)
     {
         NV_ASSERT_OK_OR_GOTO(status,
             intermapCreateDmaMapping(pClient, pVirtualMemory, &pDmaMappingInfoRight, pDmaMappingInfo->Flags, pDmaMappingInfo->Flags2),
             failed);
 
-        pDmaMappingInfoRight->DmaOffset          = dmaOffset + pParams->size;
+        pDmaMappingInfoRight->DmaOffset          = dmaOffset + unmapSize;
         pDmaMappingInfoRight->bP2P               = pDmaMappingInfo->bP2P;
         pDmaMappingInfoRight->addressTranslation = pDmaMappingInfo->addressTranslation;
         pDmaMappingInfoRight->mapPageSize        = pDmaMappingInfo->mapPageSize;
@@ -1779,7 +1838,7 @@ virtmemUnmapFrom_IMPL
         NV_ASSERT_OK_OR_GOTO(status,
             memdescCreateSubMem(&pDmaMappingInfoUnmap->pMemDesc, pDmaMappingInfo->pMemDesc, pGpu,
                                 pDmaMappingInfoUnmap->DmaOffset - pDmaMappingInfo->DmaOffset,
-                                pParams->size),
+                                unmapSize),
             failed);
     }
 
