@@ -1295,6 +1295,24 @@ Mellanox_BlueField3_setupFunc
     return NV_OK;
 }
 
+// Apple PCIe tunnel root port Setup Function
+static NV_STATUS
+Apple_TunnelRootPort_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    // Apple Silicon Thunderbolt/USB4 PCIe tunnel root port (PCI vendor 0x106b,
+    // device 0x100f). Write-combined CPU mappings of GPU BAR memory do not
+    // work through the tunnel on this host; map BAR memory as device memory.
+    // Observed on a 16-inch M1 Max MacBook Pro: with the write-combining
+    // default the first adapter initialisation reset the machine, and with
+    // this property forced through the RmForceDisableIomapWC registry key the
+    // adapter initialises and runs CUDA without errors.
+    pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
+    return NV_OK;
+}
+
 
 // Amazon Gravitron2 Setup Function
 static NV_STATUS

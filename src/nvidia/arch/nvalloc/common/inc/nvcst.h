@@ -100,6 +100,7 @@ CHIPSET_SETUP_FUNC(Riscv_generic_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A70D_setupFunc)
 CHIPSET_SETUP_FUNC(AMD_14D8_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_TB500_setupFunc)
+CHIPSET_SETUP_FUNC(Apple_TunnelRootPort_setupFunc)
 
 
 // Keep string length <=32 (including termination) to avoid string copy overflow
@@ -320,6 +321,14 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE20E, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE20F, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22D1, CS_NVIDIA_T254,         "T254",                 Nvidia_T194_setupFunc},
+    //
+    // Apple Silicon Thunderbolt/USB4 PCIe tunnel root port. Write-combined CPU
+    // mappings of GPU BAR memory do not work through the tunnel on this host
+    // (observed on a 16-inch M1 Max MacBook Pro); map BAR memory as device
+    // memory instead.
+    //
+    {PCI_VENDOR_ID_APPLE,       0x100F, CS_APPLE_PCIE_TUNNEL_ROOT_PORT,
+     "Apple PCIe tunnel root port",    Apple_TunnelRootPort_setupFunc},
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -454,6 +463,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE20F, CS_AMPERE_AMPEREONE192},   // Ampere AmpereOne-192
     {PCI_VENDOR_ID_NVIDIA,      0x3400, CS_NVIDIA_T268},        // NVIDIA Tegra RP iGPU
     {PCI_VENDOR_ID_NVIDIA,      0x22D1, CS_NVIDIA_T254},
+    {PCI_VENDOR_ID_APPLE,       0x100F, CS_APPLE_PCIE_TUNNEL_ROOT_PORT}, // Apple PCIe tunnel root port
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}
