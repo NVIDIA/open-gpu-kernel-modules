@@ -2344,6 +2344,14 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
                                          &pDpyEvo->hdmi.sinkCaps);
     if (ret != NVHDMIPKT_SUCCESS) {
         nvAssert(ret == NVHDMIPKT_SUCCESS);
+
+        /*
+         * The assessment just rejected the link (training failure zeroes
+         * linkMaxFRLRate).  If the link trained successfully before and the
+         * EDID is unchanged, restore the last-known-good caps so FRL-capable
+         * modes remain in the connector mode list.
+         */
+        nvDpyFrlRestoreLastGoodCaps(pDpyEvo, "link assessment failed");
         return FALSE;
     }
 
