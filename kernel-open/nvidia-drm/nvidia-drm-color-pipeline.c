@@ -588,6 +588,12 @@ int nv_drm_plane_process_color_mgmt_state(struct drm_plane *plane,
     }
 
     if (clear_state) {
+        NvBool degamma_set =
+            (nv_plane_state->degamma_tf != NV_DRM_TRANSFER_FUNCTION_DEFAULT) ||
+            (nv_plane_state->degamma_lut != NULL) ||
+            (nv_plane_state->degamma_multiplier != NV_DRM_S31_32_ONE);
+        NvBool tmo_set = (nv_plane_state->tmo_lut != NULL);
+
         drm_property_blob_put(nv_plane_state->fmt_ctm);
         nv_plane_state->fmt_ctm = NULL;
 
@@ -607,11 +613,15 @@ int nv_drm_plane_process_color_mgmt_state(struct drm_plane *plane,
         drm_property_blob_put(nv_plane_state->degamma_lut);
         nv_plane_state->degamma_lut = NULL;
         nv_plane_state->degamma_multiplier = NV_DRM_S31_32_ONE;
-        nv_plane_state->degamma_changed = true;
+        if (degamma_set) {
+            nv_plane_state->degamma_changed = true;
+        }
 
         drm_property_blob_put(nv_plane_state->tmo_lut);
         nv_plane_state->tmo_lut = NULL;
-        nv_plane_state->tmo_changed = true;
+        if (tmo_set) {
+            nv_plane_state->tmo_changed = true;
+        }
     }
 
     /* If color pipeline is active, translate colorop state to nv_plane_state */
