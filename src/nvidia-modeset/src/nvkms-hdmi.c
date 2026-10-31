@@ -2969,17 +2969,39 @@ void nvHdmiFrlSetConfig(NVDispEvoRec *pDispEvo, NvU32 head)
 
     nvAssert(pHeadState->activeRmId != 0);
 
+    /*
+     * Some sinks (notably high-refresh FRL displays) take a couple of
+     * seconds after retraining before their SCDC is ready to accept a new
+     * FRL training request. The stock loop retries in a few milliseconds,
+     * so every attempt fails. An optional per-attempt delay is applied
+     * between attempts; 0 (the default) preserves the stock behavior.
+     */
+    const NvU32 backoffUsec =
+        (NvU32)nvkms_frl_train_backoff_ms() * (NvU32)1000;
+
     do {
         ret = NvHdmi_SetFRLConfig(pDevEvo->hdmiLib.handle,
                                   pDispEvo->displayOwner,
                                   pHeadState->activeRmId,
                                   NV_FALSE /* bFakeLt */,
                                   pFrlConfig);
+        if (ret != NVHDMIPKT_SUCCESS &&
+            retries < MAX_RETRIES &&
+            backoffUsec != 0) {
+            nvkms_usleep(backoffUsec);
+        }
     } while (ret != NVHDMIPKT_SUCCESS && retries++ < MAX_RETRIES);
 
     if (ret != NVHDMIPKT_SUCCESS) {
         nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
                      "HDMI FRL link training failed.");
+
+        if (backoffUsec == 0) {
+            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                         "Some sinks need a delay before FRL training "
+                         "retries can succeed; try the "
+                         "frl_train_backoff_ms module parameter.");
+        }
 
         /*
          * Link training failed even after retrying.  Since link training
