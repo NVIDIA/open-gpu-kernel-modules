@@ -134,6 +134,15 @@ MODULE_PARM_DESC(frl_train_backoff_ms,
 static unsigned int frl_train_backoff_ms = 0;
 module_param_named(frl_train_backoff_ms, frl_train_backoff_ms, uint, 0444);
 
+MODULE_PARM_DESC(frl_caps_retention,
+                  "When a fresh HDMI FRL link assessment fails (for example "
+                  "during display sleep/wake) and the EDID is unchanged, keep "
+                  "the last successfully assessed FRL link caps in the "
+                  "connector mode list instead of dropping FRL-capable modes "
+                  "(defaults to false).");
+static bool frl_caps_retention = false;
+module_param_named(frl_caps_retention, frl_caps_retention, bool, 0444);
+
 MODULE_PARM_DESC(conceal_vrr_caps,
                  "Conceal all display VRR capabilities");
 static bool conceal_vrr_caps = false;
@@ -238,6 +247,11 @@ enum NvKmsFrlRateForce nvkms_force_frl_rate(void)
 NvU32 nvkms_frl_train_backoff_ms(void)
 {
     return frl_train_backoff_ms;
+}
+
+NvBool nvkms_frl_caps_retention(void)
+{
+    return frl_caps_retention;
 }
 
 NvBool nvkms_conceal_vrr_caps(void)

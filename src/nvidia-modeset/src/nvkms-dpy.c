@@ -882,6 +882,85 @@ DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
     return passiveDpDongleType;
 }
 
+/*
+ * Capture the current (last-known-good) FRL caps and pixel clock ceilings on
+ * pDpyEvo for later restoration, in case a subsequent FRL assessment fails
+ * and zeroes the caps.  Only meaningful when the caps currently describe a
+ * FRL-capable link.
+ */
+static void nvDpyFrlCaptureLastGoodCaps(NVDpyEvoPtr pDpyEvo)
+{
+    NVDpyEvoRec *pDpyRec = (NVDpyEvoRec *) pDpyEvo;
+
+    if (pDpyRec->hdmi.sinkCaps.linkMaxFRLRate == HDMI_FRL_DATA_RATE_NONE) {
+        return;
+    }
+
+    pDpyRec->hdmi.lastGoodFrlCaps.valid = TRUE;
+    pDpyRec->hdmi.lastGoodFrlCaps.srcCaps = pDpyRec->hdmi.srcCaps;
+    pDpyRec->hdmi.lastGoodFrlCaps.sinkCaps = pDpyRec->hdmi.sinkCaps;
+    pDpyRec->hdmi.lastGoodFrlCaps.maxPixelClockKHz = pDpyRec->maxPixelClockKHz;
+    pDpyRec->hdmi.lastGoodFrlCaps.maxSingleLinkPixelClockKHz =
+        pDpyRec->maxSingleLinkPixelClockKHz;
+    pDpyRec->hdmi.lastGoodFrlCaps.edidLength = pDpyRec->edid.length;
+    if (pDpyRec->edid.buffer != NULL &&
+        pDpyRec->edid.length <= NVKMS_EDID_BUFFER_SIZE) {
+        nvkms_memcpy(pDpyRec->hdmi.lastGoodFrlCaps.edidBuffer,
+                     pDpyRec->edid.buffer, pDpyRec->edid.length);
+    }
+}
+
+NvBool nvDpyFrlRestoreLastGoodCaps(NVDpyEvoPtr pDpyEvo, const char *reason)
+{
+    NVDpyEvoRec *pDpyRec = (NVDpyEvoRec *) pDpyEvo;
+    NVDispEvoPtr pDispEvo = pDpyRec->pDispEvo;
+    const NvU32 displayId = nvDpyIdToNvU32(pDpyRec->pConnectorEvo->displayId);
+
+    if (!nvkms_frl_caps_retention() ||
+        !pDpyRec->hdmi.lastGoodFrlCaps.valid ||
+        pDpyRec->hdmi.sinkCaps.linkMaxFRLRate != HDMI_FRL_DATA_RATE_NONE) {
+        return FALSE;
+    }
+
+    /*
+     * The retained sink caps were derived from the parsed EDID (including
+     * the FRL forum info), so they are only valid while the raw EDID bytes
+     * are unchanged.  A different EDID (cable, adapter, or sink) invalidates
+     * them.
+     */
+    if (pDpyRec->edid.buffer == NULL ||
+        pDpyRec->edid.length != pDpyRec->hdmi.lastGoodFrlCaps.edidLength ||
+        (pDpyRec->edid.length > NVKMS_EDID_BUFFER_SIZE) ||
+        nvkms_memcmp(pDpyRec->edid.buffer,
+                     pDpyRec->hdmi.lastGoodFrlCaps.edidBuffer,
+                     pDpyRec->edid.length) != 0) {
+        return FALSE;
+    }
+
+    pDpyRec->hdmi.srcCaps = pDpyRec->hdmi.lastGoodFrlCaps.srcCaps;
+    pDpyRec->hdmi.sinkCaps = pDpyRec->hdmi.lastGoodFrlCaps.sinkCaps;
+    pDpyRec->maxPixelClockKHz = pDpyRec->hdmi.lastGoodFrlCaps.maxPixelClockKHz;
+    pDpyRec->maxSingleLinkPixelClockKHz =
+        pDpyRec->hdmi.lastGoodFrlCaps.maxSingleLinkPixelClockKHz;
+
+    /*
+     * The restored caps are a fallback; force a fresh FRL assessment on the
+     * next assessment path so a real assessment overwrites them as soon as
+     * the link is available.
+     */
+    pDpyRec->hdmi.reassessFrlLinkCaps = TRUE;
+
+    nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                 "HDMI FRL: restored last successfully assessed link caps "
+                 "after assessment failure (%s); display 0x%08x "
+                 "sink_max_rate=%u max_pclk_khz=%u",
+                 reason, displayId,
+                 pDpyRec->hdmi.sinkCaps.linkMaxFRLRate,
+                 pDpyRec->maxPixelClockKHz);
+
+    return TRUE;
+}
+
 /*!
  * Get the maximum allowed pixel clock for pDpyEvo.
  *
@@ -976,6 +1055,13 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                 nvHdmiTmdsGetPixelClockKHz(pDpyEvo,
                                            sorCaps[orIndex].maxTMDSClkKHz);
 
+            /*
+             * Remember the last-known-good FRL caps before they are zeroed,
+             * so they can be restored if the FRL assessment below is skipped
+             * or fails.
+             */
+            nvDpyFrlCaptureLastGoodCaps(pDpyEvo);
+
             nvkms_memset(&pDpyEvo->hdmi.srcCaps, 0, sizeof(pDpyEvo->hdmi.srcCaps));
             nvkms_memset(&pDpyEvo->hdmi.sinkCaps, 0, sizeof(pDpyEvo->hdmi.sinkCaps));
 
@@ -987,11 +1073,16 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                  * those driving heads, we don't need to exclude RM from
                  * selecting any SOR, so an sorExcludeMask of 0 is appropriate.
                  */
-                if (nvAssignSOREvo(pConnectorEvo,
-                                   nvDpyIdToNvU32(pConnectorEvo->displayId),
-                                   FALSE /* b2Heads1Or */,
-                                   0 /* sorExcludeMask */) &&
-                    nvHdmiFrlAssessLink(pDpyEvo)) {
+                if (!nvAssignSOREvo(pConnectorEvo,
+                                    nvDpyIdToNvU32(pConnectorEvo->displayId),
+                                    FALSE /* b2Heads1Or */,
+                                    0 /* sorExcludeMask */)) {
+                    nvDpyFrlRestoreLastGoodCaps(pDpyEvo,
+                                                "SOR assignment failed");
+                } else if (!nvHdmiFrlAssessLink(pDpyEvo)) {
+                    nvDpyFrlRestoreLastGoodCaps(pDpyEvo,
+                                                "link assessment failed");
+                } else {
                     /*
                      * Note that although we "assessed" the link above, the
                      * maximum pixel clock set here doesn't take that into
@@ -1013,6 +1104,12 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                      */
                     pDpyEvo->maxPixelClockKHz =
                         ((4 * 12 * 1000 * 1000 * 16) / 18);
+
+                    /*
+                     * The freshly assessed caps are now the
+                     * last-known-good set; refresh the snapshot.
+                     */
+                    nvDpyFrlCaptureLastGoodCaps(pDpyEvo);
                 }
             }
         } else {
