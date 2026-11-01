@@ -683,21 +683,21 @@ NvBool AssignProposedHwHeadsForDsiConnector(
     return ret;
 }
 
+static NvBool ApiHeadFitsHwHead(const NVDevEvoRec *pDevEvo,
+                                const NvU32 apiHead,
+                                const NvU32 head)
+{
+    return pDevEvo->apiHead[apiHead].numLayers <=
+        pDevEvo->head[head].numLayers;
+}
+
 static NvBool HeadIsFree(const NVDevEvoRec *pDevEvo,
                          const NvU32 apiHead,
                          const NvU32 freeHwHeadsMask,
                          const NvU32 head)
 {
-    if ((NVBIT(head) & freeHwHeadsMask) == 0x0) {
-        return FALSE;
-    }
-
-    if (pDevEvo->apiHead[apiHead].numLayers >
-            pDevEvo->head[head].numLayers) {
-        return FALSE;
-    }
-
-    return TRUE;
+    return ((NVBIT(head) & freeHwHeadsMask) != 0x0) &&
+        ApiHeadFitsHwHead(pDevEvo, apiHead, head);
 }
 
 static NvU32 GetFreeHeads(const NVDevEvoRec *pDevEvo,
@@ -916,6 +916,128 @@ void ClearIncompatibleHwHeadsMaskOneDisp(const NVDispEvoRec *pDispEvo,
     }
 }
 
+/*
+ * Whether the generic assignment chooses the hardware head for this dpy;
+ * DSI dpys need head 0 and DP serializer heads follow the stream index.
+ */
+static NvBool HwHeadIsFreelyAssigned(const NVDpyEvoRec *pDpyEvo)
+{
+    return (pDpyEvo->pConnectorEvo->signalFormat !=
+                NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) &&
+        !nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo);
+}
+
+/*
+ * On Blackwell, a DisplayPort SST stream using DSC on hardware head 0 can
+ * overflow the sink's DSC rate buffer (DPCD DSC_STATUS RC_BUFFER_OVERFLOW)
+ * and the panel flickers, while the same timings, PPS and tiles on another
+ * head do not. DSC is chosen after hardware heads are assigned, so this
+ * applies to every DSC-capable DP SST dpy.
+ */
+static NvBool AvoidHwHead0(const NVDevEvoRec *pDevEvo,
+                           const NVDpyEvoRec *pDpyEvo)
+{
+    return (pDevEvo->hal->InitHwHeadMultiTileConfig != NULL) &&
+        HwHeadIsFreelyAssigned(pDpyEvo) &&
+        nvDpyUsesDPLib(pDpyEvo) &&
+        !nvDpyEvoIsDPMST(pDpyEvo) &&
+        nvDPDpyIsDscPossible(pDpyEvo);
+}
+
+/*
+ * Return the changed api-head on hardware head 'head' that may trade places
+ * with AvoidHwHead0() api-head 'apiHead' on head 0, or numApiHeads if none.
+ */
+static NvU32 GetApiHeadToSwapOntoHwHead0(
+    const NVDispEvoRec *pDispEvo,
+    const NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    const NvU32 apiHead,
+    const NvU32 head)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+
+    if (!ApiHeadFitsHwHead(pDevEvo, apiHead, head)) {
+        return pDevEvo->numApiHeads;
+    }
+
+    for (NvU32 otherApiHead = 0; otherApiHead < pDevEvo->numApiHeads;
+            otherApiHead++) {
+        const NVProposedModeSetStateOneApiHead *pOther =
+            &pProposedDisp->apiHead[otherApiHead];
+
+        if (pOther->changed && (pOther->hwHeadsMask == NVBIT(head))) {
+            const NVDpyEvoRec *pDpyEvo =
+                nvGetOneArbitraryDpyEvo(pOther->dpyIdList, pDispEvo);
+
+            return (ApiHeadFitsHwHead(pDevEvo, otherApiHead, 0) &&
+                    HwHeadIsFreelyAssigned(pDpyEvo) &&
+                    !AvoidHwHead0(pDevEvo, pDpyEvo)) ?
+                otherApiHead : pDevEvo->numApiHeads;
+        }
+    }
+
+    return pDevEvo->numApiHeads;
+}
+
+/*
+ * A changed AvoidHwHead0() api-head can hold hardware head 0 after
+ * assignment: assigned last in this modeset, or kept from an earlier one
+ * that enabled the dpy when only head 0 was free (fbcon lights dpys one at
+ * a time as they are detected). Move it to a free head or, failing that,
+ * swap heads with another changed single-head api-head that may use head 0.
+ * Moved api-heads drop their per-hardware-head state, as in the second
+ * assignment pass, so the modeset programs both heads from scratch. Every
+ * move keeps the assignment valid, so success and failure match stock.
+ */
+static void MoveProposedApiHeadsOffHwHead0(const NVDispEvoRec *pDispEvo,
+                                           NVProposedModeSetHwState *pProposed,
+                                           NvU32 freeHwHeadsMask)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVProposedModeSetHwStateOneDisp *pProposedDisp =
+        &pProposed->disp[pDispEvo->displayOwner];
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+        NvU32 otherApiHead = pDevEvo->numApiHeads;
+
+        if (!pProposedApiHead->changed ||
+                (pProposedApiHead->hwHeadsMask != NVBIT(0)) ||
+                !AvoidHwHead0(pDevEvo, pDpyEvo)) {
+            continue;
+        }
+
+        NvU32 head = GetFreeHeads(pDevEvo, apiHead, pDpyEvo,
+                                  freeHwHeadsMask & ~NVBIT(0));
+        if (head == NV_INVALID_HEAD) {
+            for (head = pDevEvo->numHeads - 1; head > 0; head--) {
+                otherApiHead = GetApiHeadToSwapOntoHwHead0(pDispEvo,
+                                                           pProposedDisp,
+                                                           apiHead, head);
+                if (otherApiHead != pDevEvo->numApiHeads) {
+                    break;
+                }
+            }
+            if (head == 0) {
+                continue;
+            }
+        }
+
+        ClearHwHeadsMaskOneApiHead(pDispEvo, apiHead, pProposed);
+        if (otherApiHead != pDevEvo->numApiHeads) {
+            ClearHwHeadsMaskOneApiHead(pDispEvo, otherApiHead, pProposed);
+            nvAssignHwHeadsMaskProposedApiHead(
+                &pProposedDisp->apiHead[otherApiHead], NVBIT(0));
+        } else {
+            freeHwHeadsMask = (freeHwHeadsMask | NVBIT(0)) & ~NVBIT(head);
+        }
+        nvAssignHwHeadsMaskProposedApiHead(pProposedApiHead, NVBIT(head));
+    }
+}
+
 static
 NvBool AssignProposedHwHeadsOneDisp(const NVDispEvoRec *pDispEvo,
                                     NVProposedModeSetHwState *pProposed)
@@ -969,6 +1091,8 @@ repeatHwHeadsAssigment:
         pass = 1;
         goto repeatHwHeadsAssigment;
     }
+
+    MoveProposedApiHeadsOffHwHead0(pDispEvo, pProposed, freeHwHeadsMask);
 
     return TRUE;
 }
