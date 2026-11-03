@@ -260,17 +260,16 @@ void gpuGetRmEngineTypeCapsFromGMCEngineIdMasks_IMPL(NvU32 *pRmEngineTypeCap, co
         if (engineTypeMask != 0)
         {
             NvU32 engineType = gmcEngineTypeStart + i;
-            for (NvU32 j = 0; j < 64; j++)
+            while (engineTypeMask != 0)
             {
-                if (engineTypeMask & (1ULL << j))
+                NvU32 j = (NvU32)portUtilCountTrailingZeros64(engineTypeMask);
+                NvU32 engineId = NVGMC_ENGINE_ID_NUM(engineType, j);
+                NvU32 rmEngineType = gpuGetRmEngineTypeFromGMCEngineId(engineId);
+                if (rmEngineType != RM_ENGINE_TYPE_NULL)
                 {
-                    NvU32 engineId = NVGMC_ENGINE_ID_NUM(engineType, j);
-                    NvU32 rmEngineType = gpuGetRmEngineTypeFromGMCEngineId(engineId);
-                    if (rmEngineType != RM_ENGINE_TYPE_NULL)
-                    {
-                        NVGPU_SET_ENGINE_CAPS_MASK(pRmEngineTypeCap, rmEngineType);
-                    }
+                    NVGPU_SET_ENGINE_CAPS_MASK(pRmEngineTypeCap, rmEngineType);
                 }
+                engineTypeMask &= (engineTypeMask - 1ULL);
             }
         }
     }
